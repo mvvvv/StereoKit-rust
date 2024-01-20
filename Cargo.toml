@@ -7,7 +7,7 @@ homepage = "https://stereokit.net/"
 keywords = ["stereokit", "XR", "VR", "AR", "sys"]
 license = "MIT"
 links = "StereoKitC"
-repository = "https://github.com/mvvvv/stereokit-rust"
+repository = "https://github.com/mvvvv/StereoKit-rust"
 
 
 include = [
@@ -111,16 +111,6 @@ value = "quest|quest2|cambria"
 [[package.metadata.android.application.meta_data]]
 name = "com.oculus.intent.category.VR"
 value = "vr_only"
-
-#perf >>>
-[[package.metadata.android.application.meta_data]]
-name = "com.oculus.dualcorecpuset"
-value = "true"
-
-[[package.metadata.android.application.meta_data]]
-name = "com.oculus.trade_cpu_for_gpu_amount"
-value = "1"
-#<<<<
 
 [[package.metadata.android.application.activity.intent_filter]]
 actions = ["android.intent.action.MAIN"]
