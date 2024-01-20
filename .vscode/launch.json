@@ -1,0 +1,76 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+
+        // {
+        //     "type": "lldb",
+        //     "request": "launch",
+        //     "name": "Cargo launch",
+        //     "cargo": {
+        //         "args": [
+        //             "build",
+        //             "--lib"
+        //         ]
+        //     },
+        //     "program": "${cargo:program}",
+        //     "args": []
+        // },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'stereokit-rust'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=stereokit-rust"
+                ],
+                "filter": {
+                    "name": "stereokit-rust",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug with simulator 'demos'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=main_pc",
+                ],
+                "filter": {
+                    "name": "main_pc",
+                    "kind": "example"
+                }
+            },
+            "args": ["--test"],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug with PC headset 'demos'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=main_pc",
+                ],
+                "filter": {
+                    "name": "main_pc",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+
+    ]
+}

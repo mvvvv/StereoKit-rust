@@ -1,0 +1,1 @@
+# Images created with Dall-E-3 Image creator from designer of Microsoft
