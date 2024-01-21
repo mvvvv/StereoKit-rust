@@ -58,7 +58,7 @@ crate-type = ["cdylib"]
 package ="com.stereokit.rust_binding_demo"
 apk_label = "Stereokit-rust"
 fullscreen = true
-runtime_libs = "./common_lib"
+#runtime_libs = "./common_lib"
 assets = "./assets"
 
 [package.metadata.android.sdk]

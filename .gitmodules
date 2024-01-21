@@ -1,3 +1,4 @@
 [submodule "StereoKit"]
 	path = StereoKit
 	url = https://github.com/StereoKit/StereoKit.git
+	branch = develop
