@@ -27,6 +27,9 @@ readme = "README.md"
 [lib]
 crate-type = ["lib", "cdylib"]
 
+[[bin]]
+name = "to_sks"
+
 [build-dependencies]
 cmake = "0.1.50"
 

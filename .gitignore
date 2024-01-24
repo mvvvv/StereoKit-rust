@@ -2,3 +2,4 @@
 target/
 Cargo.lock
 common_lib/
+assets/shaders/*.sks
