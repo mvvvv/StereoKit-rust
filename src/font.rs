@@ -4,11 +4,11 @@ use std::{
     ptr::NonNull,
 };
 
-use crate::{StereoKitError, tex::TexT};
+use crate::{tex::TexT, StereoKitError};
 
-/// This class represents a text font asset! On the back-end, this asset is composed of a texture with font characters 
+/// This class represents a text font asset! On the back-end, this asset is composed of a texture with font characters
 /// rendered to it, and a list of data about where, and how large those characters are on the texture.
-/// 
+///
 /// This asset is used anywhere that text shows up, like in the UI or Text classes!
 /// <https://stereokit.net/Pages/StereoKit/Font.html>
 /// ## Examples
@@ -24,7 +24,7 @@ impl Drop for Font {
 }
 impl AsRef<Font> for Font {
     fn as_ref(&self) -> &Font {
-        &self
+        self
     }
 }
 #[repr(C)]
@@ -81,8 +81,8 @@ impl Font {
     /// see also [`crate::font::font_create_file`]
     pub fn from_files<P: AsRef<Path>>(files_utf8: &[P]) -> Result<Font, StereoKitError> {
         let mut c_files = Vec::new();
-        for i in 0..files_utf8.len() {
-            let path = files_utf8[i].as_ref();
+        for path in files_utf8 {
+            let path = path.as_ref();
             let c_str = CString::new(path.to_str().ok_or(StereoKitError::FontFiles(
                 path.to_str().unwrap().to_string(),
                 "CString conversion".to_string(),
@@ -112,7 +112,6 @@ impl Font {
                 .ok_or(StereoKitError::FontFind(id.as_ref().into(), "font_find failed".to_string()))?,
         ))
     }
-
 
     /// Gets or sets the unique identifier of this asset resource! This can be helpful for debugging,
     /// managing your assets, or finding them later on!

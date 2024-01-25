@@ -1,5 +1,3 @@
-
-
 use crate::maths::{Bool32T, Matrix};
 use crate::{
     material::{Cull, Material, MaterialT},
@@ -38,13 +36,13 @@ impl Drop for Model {
 /// AsRef
 impl AsRef<Model> for Model {
     fn as_ref(&self) -> &Model {
-        &self
+        self
     }
 }
-/// Into
-impl Into<ModelT> for Model {
-    fn into(self) -> ModelT {
-        self.0.as_ptr()
+/// From / Into
+impl From<Model> for ModelT {
+    fn from(val: Model) -> Self {
+        val.0.as_ptr()
     }
 }
 
@@ -135,12 +133,20 @@ impl IAsset for Model {
     }
 }
 
-impl<'a> Model {
+impl Default for Model {
+    /// Create an empty model
+    /// <https://stereokit.net/Pages/StereoKit/Model/Model.html>
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Model {
     /// Create an empty model
     /// <https://stereokit.net/Pages/StereoKit/Model/Model.html>
     ///
     /// see also [`crate::model::model_create`]
-    pub fn model() -> Model {
+    pub fn new() -> Model {
         Model(NonNull::new(unsafe { model_create() }).unwrap())
     }
 
@@ -350,6 +356,7 @@ impl<'a> Model {
     ///
     /// see also [`stereokit::model_ray_intersect`]
     #[inline]
+    #[allow(clippy::not_unsafe_ptr_arg_deref)]
     pub fn intersect_model_to_ptr(&self, ray: Ray, out_ray: *mut Ray, cull: Cull) -> bool {
         unsafe { model_ray_intersect(self.0.as_ptr(), ray, out_ray, cull) != 0 }
     }
@@ -393,7 +400,7 @@ impl<'a> Iterator for Anims<'a> {
                 duration: self.get_duration_at_index(self.curr),
             });
         } else {
-            return None;
+            None
         }
     }
 }
@@ -413,10 +420,7 @@ impl<'a> Anims<'a> {
 
     /// Get the name of the animation at given index
     fn get_name_at_index(&self, index: i32) -> Option<&str> {
-        unsafe { CStr::from_ptr(model_anim_get_name(self.model.0.as_ptr(), index)) }
-            .to_str()
-            .map(|a| Some(a))
-            .unwrap_or(None)
+        unsafe { CStr::from_ptr(model_anim_get_name(self.model.0.as_ptr(), index)) }.to_str().ok()
     }
 
     /// Get the duration of the animation at given index
@@ -894,12 +898,7 @@ impl<'a> ModelNode<'a> {
     ///
     /// see also [`crate::model::model_node_get_name`]
     pub fn get_name(&self) -> Option<&str> {
-        unsafe {
-            CStr::from_ptr(model_node_get_name(self.model.0.as_ptr(), self.id))
-                .to_str()
-                .map(|s| Some(s))
-                .unwrap_or(None)
-        }
+        unsafe { CStr::from_ptr(model_node_get_name(self.model.0.as_ptr(), self.id)).to_str().ok() }
     }
 
     /// Get the solid of the node. A flag that indicates if the Mesh for this node will be used in ray intersection tests.
@@ -1037,9 +1036,9 @@ impl<'a> Iterator for Infos<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(res) = Infos::info_iterate(self.model, self.curr, self.node_id) {
             self.curr = res.2;
-            return Some(Info { name: res.0.to_string(), value: res.1.to_string() });
+            Some(Info { name: res.0.to_string(), value: res.1.to_string() })
         } else {
-            return None;
+            None
         }
     }
 }
@@ -1054,7 +1053,7 @@ pub struct Info {
 impl<'a> Infos<'a> {
     /// Helper to get the collection struct
     pub fn from(node: &'a ModelNode) -> Infos<'a> {
-        Infos { model: &node.model, node_id: node.id, curr: 0 }
+        Infos { model: node.model, node_id: node.id, curr: 0 }
     }
 
     /// iterator of the node infos
@@ -1065,12 +1064,11 @@ impl<'a> Infos<'a> {
         let ref_iterator = &mut iterator as *mut i32;
 
         unsafe {
-            let res =
-                model_node_info_iterate(model.as_ref().0.as_ptr(), node, ref_iterator, out_key_utf8, out_value_utf8);
+            let res = model_node_info_iterate(model.0.as_ptr(), node, ref_iterator, out_key_utf8, out_value_utf8);
             if res != 0 {
                 let key = CStr::from_ptr(*out_key_utf8);
                 let value = CStr::from_ptr(*out_value_utf8);
-                Some((key.to_str().unwrap(), value.to_str().unwrap(), *ref_iterator as i32))
+                Some((key.to_str().unwrap(), value.to_str().unwrap(), *ref_iterator))
             } else {
                 None
             }
@@ -1118,8 +1116,7 @@ impl<'a> Infos<'a> {
     /// see also [`crate::model::model_node_info_get`]
     pub fn get_info<S: AsRef<str>>(&self, info_key_utf8: S) -> Option<&str> {
         let c_str = CString::new(info_key_utf8.as_ref()).unwrap();
-        match NonNull::new(unsafe { model_node_info_get(self.model.as_ref().0.as_ptr(), self.node_id, c_str.as_ptr()) })
-        {
+        match NonNull::new(unsafe { model_node_info_get(self.model.0.as_ptr(), self.node_id, c_str.as_ptr()) }) {
             Some(non_null) => return unsafe { CStr::from_ptr(non_null.as_ref()).to_str().ok() },
             None => None,
         }
@@ -1131,10 +1128,7 @@ impl<'a> Infos<'a> {
     ///
     /// see also [`crate::model::model_node_info_get`]
     pub fn contains<S: AsRef<str>>(&self, info_key_utf8: S) -> bool {
-        match self.get_info(info_key_utf8) {
-            Some(_) => return true,
-            None => return false,
-        }
+        self.get_info(info_key_utf8).is_some()
     }
 
     /// Get the number of infos for this node

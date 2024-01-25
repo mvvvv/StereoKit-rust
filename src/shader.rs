@@ -1,9 +1,9 @@
+use crate::{system::IAsset, StereoKitError};
 use std::{
     ffi::{c_void, CStr, CString},
     path::Path,
     ptr::NonNull,
 };
-use crate::{StereoKitError, system::IAsset};
 
 /// fluent syntax for Shader
 /// <https://stereokit.net/Pages/StereoKit/Shader.html>
@@ -20,7 +20,7 @@ impl Drop for Shader {
 }
 impl AsRef<Shader> for Shader {
     fn as_ref(&self) -> &Shader {
-        &self
+        self
     }
 }
 #[repr(C)]
@@ -50,10 +50,12 @@ impl IAsset for Shader {
     }
 }
 
-/// Default is asked when a problem occurs during Shader creation.
+/// This is a fast, general purpose shader. It uses a texture for ‘diffuse’, a ‘color’ property for tinting the
+/// material, and a ‘tex_scale’ for scaling the UV coordinates. For lighting, it just uses a lookup from the current cubemap.
+/// <https://stereokit.net/Pages/StereoKit/Shader/Default.html>
 impl Default for Shader {
     fn default() -> Self {
-        Shader::default()
+        Self::find("default/shader").unwrap()
     }
 }
 impl Shader {
@@ -127,13 +129,6 @@ impl Shader {
     /// see also [`stereokit::StereoKitMultiThread::shader_get_name`]
     pub fn get_name(&self) -> &str {
         unsafe { CStr::from_ptr(shader_get_name(self.0.as_ptr())) }.to_str().unwrap()
-    }
-
-    /// This is a fast, general purpose shader. It uses a texture for ‘diffuse’, a ‘color’ property for tinting the
-    /// material, and a ‘tex_scale’ for scaling the UV coordinates. For lighting, it just uses a lookup from the current cubemap.
-    /// <https://stereokit.net/Pages/StereoKit/Shader/Default.html>
-    pub fn default() -> Self {
-        Self::find("default/shader").unwrap()
     }
 
     /// <https://stereokit.net/Pages/StereoKit/Shader.html>

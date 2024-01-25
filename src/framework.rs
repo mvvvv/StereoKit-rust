@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, rc::Rc, cell::RefCell};
+use std::{cell::RefCell, collections::VecDeque, rc::Rc};
 
 use winit::event_loop::EventLoopProxy;
 
@@ -125,13 +125,7 @@ impl HandRadial {
 
     pub fn is_back_action(&self) -> bool {
         match self {
-            HandRadial::Item(item) => {
-                if item.action == HandMenuAction::Back {
-                    true
-                } else {
-                    false
-                }
-            }
+            HandRadial::Item(item) => item.action == HandMenuAction::Back,
             HandRadial::Layer(_) => false,
         }
     }
@@ -227,12 +221,10 @@ impl HandRadialLayer {
             match line {
                 HandRadial::Layer(s) => {
                     if s.layer_name.eq(&name.as_ref().to_string()) {
-                        return Some(&s);
-                    } else {
-                        if let Some(sub_s) = s.find_child(&name) {
-                            return Some(sub_s);
-                        };
-                    }
+                        return Some(s);
+                    } else if let Some(sub_s) = s.find_child(&name) {
+                        return Some(sub_s);
+                    };
                 }
                 HandRadial::Item(_) => {}
             }
@@ -245,8 +237,7 @@ impl HandRadialLayer {
     /// Not recursive. self must be the layer containing the one to delete
     /// <https://stereokit.net/Pages/StereoKit.Framework/HandRadialLayer/RemoveChild.html
     pub fn remove_child(&mut self, name: impl AsRef<str>) -> bool {
-        let mut index = 0;
-        for line in self.items.iter() {
+        for (index, line) in self.items.iter().enumerate() {
             let line = line.as_ref();
             match line {
                 HandRadial::Layer(s) => {
@@ -257,7 +248,6 @@ impl HandRadialLayer {
                 }
                 HandRadial::Item(_) => {}
             }
-            index += 1;
         }
 
         false
@@ -291,8 +281,7 @@ impl HandRadialLayer {
     /// Finds the item in the list, and removes it, if it exists.
     /// <https://stereokit.net/Pages/StereoKit.Framework/HandRadialLayer/RemoveItem.html
     pub fn remove_item(&mut self, name: impl AsRef<str>) -> bool {
-        let mut index = 0;
-        for line in self.items.iter() {
+        for (index, line) in self.items.iter().enumerate() {
             let line = line.as_ref();
             match line {
                 HandRadial::Item(s) => {
@@ -303,7 +292,6 @@ impl HandRadialLayer {
                 }
                 HandRadial::Layer(_) => {}
             }
-            index += 1;
         }
 
         false
@@ -333,8 +321,8 @@ pub enum HandMenuAction {
 /// perform actions by making fast, direction based motions that are easy to build muscle memory for.
 /// <https://stereokit.net/Pages/StereoKit.Framework/HandMenuRadial.html>
 pub struct HandMenuRadial {
-    id : StepperId,
-    event_loop_proxy : Option<EventLoopProxy<StepperAction>>,
+    id: StepperId,
+    event_loop_proxy: Option<EventLoopProxy<StepperAction>>,
     menu_pose: Pose,
     dest_pose: Pose,
     root: Rc<HandRadial>,
@@ -364,7 +352,7 @@ impl IStepper for HandMenuRadial {
 
     /// Part of IStepper, you shouldn’t be calling this yourself.
     /// <https://stereokit.net/Pages/StereoKit.Framework/HandMenuRadial/Step.html>
-    fn step(&mut self, _event_report : &Vec<StepperAction>) {
+    fn step(&mut self, _event_report: &[StepperAction]) {
         if self.active_hand == Handed::Max {
             for hand in [Handed::Left, Handed::Right] {
                 self.step_menu_indicator(hand);
@@ -377,12 +365,9 @@ impl IStepper for HandMenuRadial {
     /// Part of IStepper, you shouldn’t be calling this yourself.
     /// <https://stereokit.net/Pages/StereoKit.Framework/HandMenuRadial/Shutdown.html>
     fn shutdown(&mut self) {}
-
-
 }
 
 impl HandMenuRadial {
-     
     /// When using the Simulator, this key will activate the menu on the current hand, regardless of which direction it
     /// is facing.
     pub const SIMULATOR_KEY: Key = Key::Backtick;
@@ -439,7 +424,7 @@ impl HandMenuRadial {
         Sound::click().play(*at_pos, None);
         self.dest_pose.position = *at_pos;
         self.dest_pose.orientation = Quat::look_at(*at_pos, Input::get_head().position, None);
-        Log::info(format!("dest_pose at show{}", self.dest_pose.to_string()));
+        Log::info(format!("dest_pose at show{}", self.dest_pose));
         self.active_layer = self.root.clone();
         self.active_hand = hand;
 
@@ -571,8 +556,7 @@ impl HandMenuRadial {
         // Now draw each of the menu items !
         let color_primary = Ui::get_theme_color(UiColor::Primary, None).to_linear();
         let color_common = Ui::get_theme_color(UiColor::Background, None).to_linear();
-        let mut i = 0;
-        for line in layer.items() {
+        for (i, line) in layer.items().iter().enumerate() {
             let curr_angle = (i as f32) * step + layer.get_start_angle() + self.angle_offset;
             let highlight = focused && angle_id == i && self.activation >= 0.99;
             let depth = if highlight { -0.005 } else { 0.0 };
@@ -612,8 +596,6 @@ impl HandMenuRadial {
                 );
             }
             item_to_draw.draw(at, arc_length, curr_angle + half_step, highlight);
-
-            i += 1;
         }
         // Done with local work
         Hierarchy::pop();
@@ -636,7 +618,7 @@ impl HandMenuRadial {
     fn select_layer(&mut self, new_layer_rc: Rc<HandRadial>) {
         let new_layer = match new_layer_rc.as_ref() {
             HandRadial::Item(_) => {
-                Log::err(format!("HandMenuRadial : Item is not a valid layer"));
+                Log::err("HandMenuRadial : Item is not a valid layer");
                 return;
             }
             HandRadial::Layer(layer) => layer,
@@ -661,7 +643,7 @@ impl HandMenuRadial {
         if let Some(prev_layer) = self.nav_stack.pop_back() {
             self.active_layer = prev_layer.clone();
         } else {
-            Log::err(format!("HandMenuRadial : No back layer !!"))
+            Log::err("HandMenuRadial : No back layer !!")
         }
         let divisor = self.active_layer.items_count() as f32;
         generate_slice_mesh(360.0 / divisor, Self::MIN_DIST, Self::MAX_DIST, Self::SLICE_GAP, &mut self.background);
@@ -674,10 +656,9 @@ impl HandMenuRadial {
         );
     }
 
-    fn select_item(&mut self, line:  Rc<HandRadial>, at: Vec3, from_angle: f32) {
+    fn select_item(&mut self, line: Rc<HandRadial>, at: Vec3, from_angle: f32) {
         match line.as_ref() {
             HandRadial::Item(item) => {
-               
                 match item.action {
                     HandMenuAction::Close => self.close(),
                     HandMenuAction::Callback => {}
@@ -697,7 +678,6 @@ impl HandMenuRadial {
     }
 
     fn reposition(&mut self, at: Vec3, from_angle: f32) {
-
         let plane = Plane::from_point(self.menu_pose.position, self.menu_pose.get_forward());
         self.dest_pose.position = plane.closest(at);
 
@@ -738,7 +718,7 @@ fn generate_slice_mesh(angle: f32, min_dist: f32, max_dist: f32, gap: f32, mesh:
         verts.push(Vertex::new(inner_dir * min_dist, Vec3::FORWARD, None, None));
         verts.push(Vertex::new(outer_dir * min_dist, Vec3::FORWARD, None, None));
 
-        if !(i == icount - 1) {
+        if i != icount - 1 {
             inds.push((i + 1) * 2 + 1);
             inds.push(i * 2 + 1);
             inds.push(i * 2);
@@ -783,7 +763,7 @@ fn generate_activation_button(radius: f32) -> Mesh {
 
     let mut mesh = Mesh::new();
 
-    mesh.set_inds(&inds.as_slice());
+    mesh.set_inds(inds.as_slice());
     mesh.set_verts(verts.as_slice(), true);
     mesh
 }
@@ -798,7 +778,7 @@ fn generate_activation_hamburger(radius: f32) -> Mesh {
 
     for i in 0..3 {
         let y = -radius / 3.0 + (i as f32) * radius / 3.0;
-        
+
         let a = i * 4;
         let b = i * 4 + 1;
         let c = i * 4 + 2;
@@ -819,8 +799,8 @@ fn generate_activation_hamburger(radius: f32) -> Mesh {
     }
 
     let mut mesh = Mesh::new();
-    mesh.set_inds(&inds.as_slice());
-    mesh.set_verts(&verts.as_slice(), true);
+    mesh.set_inds(inds.as_slice());
+    mesh.set_verts(verts.as_slice(), true);
 
     mesh
 }
@@ -838,8 +818,8 @@ fn generate_child_indicator(distance: f32, radius: f32) -> Mesh {
     inds.push(2);
 
     let mut mesh = Mesh::new();
-    mesh.set_inds(&inds.as_slice());
-    mesh.set_verts(&verts.as_slice(), true);
+    mesh.set_inds(inds.as_slice());
+    mesh.set_verts(verts.as_slice(), true);
 
     mesh
 }

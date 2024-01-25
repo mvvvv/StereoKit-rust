@@ -40,7 +40,7 @@ impl Default for Anim1 {
             .iterate()
             .unwrap();
 
-        let mut anims = (&mobile).get_anims();
+        let mut anims = mobile.get_anims();
         anims.play_anim("flyRotate", AnimMode::Loop);
         anims.anim_time(1.0);
 
@@ -48,7 +48,7 @@ impl Default for Anim1 {
         for n in mobile.get_nodes().all() {
             Log::info(format!("---- : {:?} id: {:?} ", n.get_name(), n.get_id()));
             let material = n.get_material().unwrap_or_default();
-            Log::info(format!("------- material : {:?}", Material::from(material).get_id()));
+            Log::info(format!("------- material : {:?}", material.get_id()));
         }
 
         let transform =
@@ -77,7 +77,7 @@ impl IStepper for Anim1 {
         true
     }
 
-    fn step(&mut self, _event_report: &Vec<StepperAction>) {
+    fn step(&mut self, _event_report: &[StepperAction]) {
         self.mobile.draw(self.transform, None, None);
 
         if self.render_now {
@@ -113,7 +113,7 @@ impl IStepper for Anim1 {
                     Log::info(format!(
                         "sample : {:?} / dominent direction {}",
                         cube.sh.get_sample(glam::Vec3::ONE),
-                        cube.sh.get_dominent_dir().to_string()
+                        cube.sh.get_dominent_dir()
                     ))
                 }
             }

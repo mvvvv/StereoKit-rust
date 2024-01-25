@@ -1,4 +1,8 @@
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+/// Creates a text description of the Sphere, in the format of “[center:X radius:X]”
+use std::{
+    fmt::Display,
+    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
+};
 
 use crate::{
     material::Cull,
@@ -84,11 +88,9 @@ impl From<glam::Vec2> for Vec2 {
     }
 }
 
-impl Into<glam::Vec2> for Vec2 {
-    fn into(self) -> glam::Vec2 {
-        match self {
-            Vec2 { x, y } => glam::Vec2::new(x, y),
-        }
+impl From<Vec2> for glam::Vec2 {
+    fn from(val: Vec2) -> Self {
+        Self::new(val.x, val.y)
     }
 }
 
@@ -131,7 +133,7 @@ impl Vec2 {
         if result < 0.0 {
             result += 360.0
         };
-        return result;
+        result
     }
 
     /// Checks if a point is within a certain radius of this one. This is an easily readable shorthand of the squared
@@ -290,15 +292,15 @@ impl Vec2 {
     pub fn abs(&self) -> Self {
         Self { x: self.x.abs(), y: self.y.abs() }
     }
-
-    /// Mostly for debug purposes, this is a decent way to log or inspect the vector in debug mode. Looks like “[x, y]”
-    /// <https://stereokit.net/Pages/StereoKit/Vec2/ToString.html>
-    #[inline]
-    pub fn to_string(&self) -> String {
-        format!("[x:{}, y:{}]", self.x, self.y)
-    }
 }
 
+impl Display for Vec2 {
+    /// Mostly for debug purposes, this is a decent way to log or inspect the vector in debug mode. Looks like “[x, y]”
+    /// <https://stereokit.net/Pages/StereoKit/Vec2/ToString.html>
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[x:{}, y:{}]", self.x, self.y)
+    }
+}
 /// A component-wise vector division.
 /// <https://stereokit.net/Pages/StereoKit/Vec2/op_Division.html>
 impl Div<Vec2> for Vec2 {
@@ -470,13 +472,12 @@ impl From<glam::Vec3> for Vec3 {
     }
 }
 
-impl Into<glam::Vec3> for Vec3 {
-    fn into(self) -> glam::Vec3 {
-        match self {
-            Vec3 { x, y, z } => glam::Vec3::new(x, y, z),
-        }
+impl From<Vec3> for glam::Vec3 {
+    fn from(val: Vec3) -> Self {
+        Self::new(val.x, val.y, val.z)
     }
 }
+
 extern "C" {
     pub fn vec3_cross(a: *const Vec3, b: *const Vec3) -> Vec3;
 }
@@ -743,16 +744,16 @@ impl Vec3 {
     pub fn abs(&self) -> Self {
         Self { x: self.x.abs(), y: self.y.abs(), z: self.z.abs() }
     }
+}
 
+impl Display for Vec3 {
     /// Mostly for debug purposes, this is a decent way to log or inspect the vector in debug mode.
     /// Looks like “[x, y, z]”
     /// <https://stereokit.net/Pages/StereoKit/Vec3/ToString.html>
-    #[inline]
-    pub fn to_string(&self) -> String {
-        format!("[x:{}, y:{}, z:{}]", self.x, self.y, self.z)
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[x:{}, y:{}, z:{}]", self.x, self.y, self.z)
     }
 }
-
 /// A component-wise vector division.
 /// <https://stereokit.net/Pages/StereoKit/Vec3/op_Division.html>
 impl Div<Vec3> for Vec3 {
@@ -928,11 +929,9 @@ impl From<glam::Vec4> for Vec4 {
     }
 }
 
-impl Into<glam::Vec4> for Vec4 {
-    fn into(self) -> glam::Vec4 {
-        match self {
-            Vec4 { x, y, z, w } => glam::Vec4::new(x, y, z, w),
-        }
+impl From<Vec4> for glam::Vec4 {
+    fn from(value: Vec4) -> Self {
+        Self::new(value.x, value.y, value.z, value.w)
     }
 }
 
@@ -958,7 +957,7 @@ impl Vec4 {
 
     /// <https://stereokit.net/Pages/StereoKit/Vec4/Vec4.html>
     #[inline]
-    pub fn new(x: f32, y: f32, z: f32, w: f32) -> Self {
+    pub const fn new(x: f32, y: f32, z: f32, w: f32) -> Self {
         Self { x, y, z, w }
     }
 
@@ -1036,16 +1035,16 @@ impl Vec4 {
     pub fn min(a: Self, b: Self) -> Self {
         Self { x: f32::min(a.x, b.x), y: f32::min(a.y, b.y), z: f32::min(a.z, b.z), w: f32::min(a.w, b.w) }
     }
+}
 
+impl Display for Vec4 {
     /// Mostly for debug purposes, this is a decent way to log or inspect the vector in debug mode. Looks
     /// like “[x, y, z, w]”
     /// <https://stereokit.net/Pages/StereoKit/Bounds/ToString.html>
-    #[inline]
-    pub fn to_string(&self) -> String {
-        format!("[x:{}, y:{}, z:{}, w:{}]", self.x, self.y, self.z, self.w)
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[x:{}, y:{}, z:{}, w:{}]", self.x, self.y, self.z, self.w)
     }
 }
-
 /// A component-wise vector division.
 /// <https://stereokit.net/Pages/StereoKit/Vec4/op_Division.html>
 impl Div<Vec4> for Vec4 {
@@ -1229,9 +1228,19 @@ impl From<glam::Quat> for Quat {
         Quat { x: val.x, y: val.y, z: val.z, w: val.w }
     }
 }
+impl From<Quat> for glam::Quat {
+    fn from(val: Quat) -> Self {
+        Self::from_xyzw(val.x, val.y, val.z, val.w)
+    }
+}
 impl From<glam::Vec4> for Quat {
     fn from(val: glam::Vec4) -> Self {
         Quat { x: val.x, y: val.y, z: val.z, w: val.w }
+    }
+}
+impl From<Quat> for glam::Vec4 {
+    fn from(val: Quat) -> Self {
+        Self::new(val.x, val.y, val.z, val.w)
     }
 }
 impl From<Vec4> for Quat {
@@ -1239,12 +1248,9 @@ impl From<Vec4> for Quat {
         Quat { x: val.x, y: val.y, z: val.z, w: val.w }
     }
 }
-
-impl Into<glam::Quat> for Quat {
-    fn into(self) -> glam::Quat {
-        match self {
-            Quat { x, y, z, w } => glam::Quat::from_xyzw(x, y, z, w),
-        }
+impl From<Quat> for Vec4 {
+    fn from(val: Quat) -> Self {
+        Self { x: val.x, y: val.y, z: val.z, w: val.w }
     }
 }
 
@@ -1271,7 +1277,7 @@ impl Quat {
     /// know what you’re doing.
     /// <https://stereokit.net/Pages/StereoKit/Quat/Quat.html>
     #[inline]
-    pub fn new(x: f32, y: f32, z: f32, w: f32) -> Self {
+    pub const fn new(x: f32, y: f32, z: f32, w: f32) -> Self {
         Self { x, y, z, w }
     }
 
@@ -1449,13 +1455,14 @@ impl Quat {
     pub fn mul_vec3(&self, rhs: Vec3) -> Vec3 {
         unsafe { quat_mul_vec(self, &rhs) }
     }
+}
 
+impl Display for Quat {
     /// Mostly for debug purposes, this is a decent way to log or inspect the vector in debug mode. Looks
     /// like “[x, y, z, w]”
     /// <https://stereokit.net/Pages/StereoKit/Quat/ToString.html>
-    #[inline]
-    pub fn to_string(&self) -> String {
-        format!("[x:{}, y:{}, z:{}, w:{}]", self.x, self.y, self.z, self.w)
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[x:{}, y:{}, z:{}, w:{}]", self.x, self.y, self.z, self.w)
     }
 }
 
@@ -1538,19 +1545,9 @@ impl From<glam::Mat4> for Matrix {
     }
 }
 
-impl Into<glam::Mat4> for Matrix {
-    fn into(self) -> glam::Mat4 {
-        unsafe {
-            match self {
-                Matrix { row: r } => glam::Mat4::from_cols(r[0].into(), r[1].into(), r[2].into(), r[3].into()),
-            }
-        }
-    }
-}
-
 impl std::fmt::Debug for Matrix {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.to_string())
+        write!(f, "{}", self)
     }
 }
 
@@ -1676,6 +1673,7 @@ impl Matrix {
     ///
     /// see also [`crate::maths::matrix_trs_out`]
     #[inline]
+    #[allow(clippy::not_unsafe_ptr_arg_deref)]
     pub fn trs_to_pointer(translation: &Vec3, rotation: &Quat, scale: &Vec3, out_result: *mut Matrix) {
         unsafe { matrix_trs_out(out_result, translation, rotation, scale) }
     }
@@ -1745,6 +1743,7 @@ impl Matrix {
     ///
     /// see also [`crate::maths::matrix_decompose`]
     #[inline]
+    #[allow(clippy::not_unsafe_ptr_arg_deref)]
     pub fn decompose_to_ptr(&self, out_position: *mut Vec3, out_scale: *mut Vec3, out_orientation: *mut Quat) -> bool {
         unsafe { matrix_decompose(self, out_position, out_scale, out_orientation) != 0 }
     }
@@ -1821,6 +1820,7 @@ impl Matrix {
     ///
     /// see also [`crate::maths::matrix_inverse`]
     #[inline]
+    #[allow(clippy::not_unsafe_ptr_arg_deref)]
     pub fn get_inverse_to_ptr(&self, out: *mut Matrix) {
         unsafe {
             matrix_inverse(self, out);
@@ -1876,22 +1876,15 @@ impl Matrix {
     pub fn get_transposed(&self) -> Matrix {
         unsafe { matrix_transpose(*self) }
     }
-
-    /// Mostly for debug purposes, this is a decent way to log or inspect the matrix in debug mode. Looks
-    /// like “[, , , ]”
-    pub fn to_string(&self) -> String {
-        unsafe {
-            format!(
-                "[\r\n {},\r\n {},\r\n {},\r\n {}]",
-                self.row[0].to_string(),
-                self.row[1].to_string(),
-                self.row[2].to_string(),
-                self.row[3].to_string()
-            )
-        }
-    }
 }
 
+impl Display for Matrix {
+    /// Mostly for debug purposes, this is a decent way to log or inspect the matrix in debug mode. Looks
+    /// like “[, , , ]”
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        unsafe { write!(f, "[\r\n {},\r\n {},\r\n {},\r\n {}]", self.row[0], self.row[1], self.row[2], self.row[3]) }
+    }
+}
 /// Multiplies the vector by the Matrix! Since only a 1x4 vector can be multiplied against a 4x4 matrix, this uses ‘1’
 /// for the 4th element, so the result will also include translation! To exclude translation,
 /// use Matrix.transform_normal.
@@ -2136,7 +2129,7 @@ pub struct Bounds {
 /// AsRef
 impl AsRef<Bounds> for Bounds {
     fn as_ref(&self) -> &Bounds {
-        &self
+        self
     }
 }
 
@@ -2156,7 +2149,7 @@ impl Bounds {
     ///
     /// see also [`crate::maths::Bounds]
     #[inline]
-    pub fn bounds<V: Into<Vec3>>(center: V, dimensions: V) -> Bounds {
+    pub fn new<V: Into<Vec3>>(center: V, dimensions: V) -> Bounds {
         Bounds { center: center.into(), dimensions: dimensions.into() }
     }
 
@@ -2176,7 +2169,7 @@ impl Bounds {
     #[inline]
     pub fn from_corner<V: Into<Vec3>>(bottom_left_back: V, dimensions: V) -> Bounds {
         let dim = dimensions.into();
-        Bounds { center: bottom_left_back.into() + dim.clone() / 2.0, dimensions: dim }
+        Bounds { center: bottom_left_back.into() + dim / 2.0, dimensions: dim }
     }
 
     /// Create a bounding box between two corner points.
@@ -2187,7 +2180,7 @@ impl Bounds {
     pub fn from_corners<V: Into<Vec3>>(bottom_left_back: V, top_right_front: V) -> Bounds {
         let blb = bottom_left_back.into();
         let trf = top_right_front.into();
-        Bounds { center: blb.clone() / 2.0 + trf.clone() / 2.0, dimensions: (trf - blb).abs() }
+        Bounds { center: blb / 2.0 + trf / 2.0, dimensions: (trf - blb).abs() }
     }
 
     /// Grow the Bounds to encapsulate the provided point. Returns the result, and does NOT modify the current bounds.
@@ -2307,14 +2300,15 @@ impl Bounds {
     pub fn transformed(&self, transform: impl Into<Matrix>) -> Self {
         unsafe { bounds_transform(*self, transform.into()) }
     }
-
-    /// Creates a text description of the Bounds, in the format of “[center:X dimensions:X]”
-    /// <https://stereokit.net/Pages/StereoKit/Bounds/ToString.html>
-    pub fn to_string(&self) -> String {
-        format!("[center:{} dimensions:{}]", self.center.to_string(), self.dimensions.to_string())
-    }
 }
 
+impl Display for Bounds {
+    /// Creates a text description of the Bounds, in the format of “[center:X dimensions:X]”
+    /// <https://stereokit.net/Pages/StereoKit/Bounds/ToString.html>
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[center:{} dimensions:{}]", self.center, self.dimensions)
+    }
+}
 /// This operator will create a new Bounds that has been properly scaled up by the float. This does affect the center
 /// position of the Bounds.
 /// <https://stereokit.net/Pages/StereoKit/Bounds/op_Multiply.html>
@@ -2389,7 +2383,7 @@ pub struct Plane {
 /// AsRef
 impl AsRef<Plane> for Plane {
     fn as_ref(&self) -> &Plane {
-        &self
+        self
     }
 }
 
@@ -2427,7 +2421,7 @@ impl Plane {
         Plane { normal, d: -Vec3::dot(p_o_p, normal) }
     }
 
-    /// Creates a plane from 3 points that are directly on that plane. 
+    /// Creates a plane from 3 points that are directly on that plane.
     ///
     /// <https://stereokit.net/Pages/StereoKit/Plane/Plane.html>
     /// ## Examples
@@ -2441,8 +2435,8 @@ impl Plane {
         let p1 = point_on_plane1.into();
         let p2 = point_on_plane2.into();
         let p3 = point_on_plane3.into();
-        let dir1 = p2.clone() - p1;
-        let dir2 = p2.clone() - p3;
+        let dir1 = p2 - p1;
+        let dir2 = p2 - p3;
         let normal = Vec3::cross(dir1, dir2).normalized();
         //let plane0 = Plane { normal, d: 0.0 };
         //let p0 = plane0.closest(p2);
@@ -2497,27 +2491,22 @@ impl Plane {
             false => None,
         }
     }
-
-    /// Creates a text description of the Plane, in the format of “[normal:X distance:X]”
-    pub fn to_string(&self) -> String {
-        format!("[normal:{} distance:{}]", self.normal.to_string(), self.d.to_string())
-    }
 }
 
+impl Display for Plane {
+    /// Creates a text description of the Plane, in the format of “[normal:X distance:X]”
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[normal:{} distance:{}]", self.normal, self.d)
+    }
+}
 /// Pose represents a location and orientation in space, excluding scale! The default value of a Pose use
 /// Pose.Identity .
 /// <https://stereokit.net/Pages/StereoKit/Pose.html>
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
+#[derive(Default, Debug, Copy, Clone)]
 pub struct Pose {
     pub position: Vec3,
     pub orientation: Quat,
-}
-
-impl Default for Pose {
-    fn default() -> Self {
-        Self { position: Default::default(), orientation: Default::default() }
-    }
 }
 
 impl Pose {
@@ -2611,11 +2600,13 @@ impl Pose {
     pub fn get_up(&self) -> Vec3 {
         self.orientation.mul_vec3(Vec3::UP)
     }
+}
 
+impl Display for Pose {
     /// A string representation of the Pose, in the format of “position, Forward”. Mostly for debug visualization.
     /// <https://stereokit.net/Pages/StereoKit/Pose/ToString.html>
-    pub fn to_string(&self) -> String {
-        format!("[position:{} forward:{}]", self.position.to_string(), self.orientation.to_string())
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[position:{} forward:{}]", self.position, self.orientation)
     }
 }
 
@@ -2637,7 +2628,7 @@ pub struct Sphere {
 /// AsRef
 impl AsRef<Sphere> for Sphere {
     fn as_ref(&self) -> &Sphere {
-        &self
+        self
     }
 }
 
@@ -2652,7 +2643,7 @@ impl Sphere {
     ///
     /// see also [`crate::maths::Sphere]
     #[inline]
-    pub fn sphere<V: Into<Vec3>>(center: V, radius: f32) -> Sphere {
+    pub fn new<V: Into<Vec3>>(center: V, radius: f32) -> Sphere {
         Sphere { center: center.into(), radius }
     }
 
@@ -2678,13 +2669,13 @@ impl Sphere {
             false => None,
         }
     }
-
+}
+impl Display for Sphere {
     /// Creates a text description of the Sphere, in the format of “[center:X radius:X]”
-    pub fn to_string(&self) -> String {
-        format!("[center:{} radius:{}]", self.center.to_string(), self.radius)
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[center:{} radius:{}]", self.center, self.radius)
     }
 }
-
 /// A pretty straightforward 2D rectangle, defined by the top left corner of the rectangle, and its width/height.
 /// <https://stereokit.net/Pages/StereoKit/Rect.html>
 #[derive(Debug, Default, Copy, Clone)]
@@ -2703,7 +2694,7 @@ pub struct Rect {
 impl Rect {
     /// Create a 2D rectangle, defined by the top left corner of the rectangle, and its width/height.
     /// <https://stereokit.net/Pages/StereoKit/Rect/Rect.html>
-    pub fn new(x: f32, y: f32, width: f32, height: f32) -> Self {
+    pub const fn new(x: f32, y: f32, width: f32, height: f32) -> Self {
         Self { x, y, width, height }
     }
 }
@@ -2827,6 +2818,7 @@ impl Ray {
     ///
     /// see also [`crate::maths::mesh_ray_intersect`]
     #[inline]
+    #[allow(clippy::not_unsafe_ptr_arg_deref)]
     pub fn intersect_mesh_to_ptr(&self, mesh: &Mesh, out_ray: *mut Ray, out_inds: *mut u32, cull: Cull) -> bool {
         unsafe { mesh_ray_intersect(mesh.0.as_ptr(), *self, out_ray, out_inds, cull) != 0 }
     }
@@ -2854,13 +2846,15 @@ impl Ray {
     ///
     /// see also [`crate::maths::model_ray_intersect`]
     #[inline]
+    #[allow(clippy::not_unsafe_ptr_arg_deref)]
     pub fn intersect_model_to_ptr(&self, model: &Model, out_ray: *mut Ray, cull: Cull) -> bool {
         unsafe { model_ray_intersect(model.0.as_ptr(), *self, out_ray, cull) != 0 }
     }
-
+}
+impl Display for Ray {
     /// Creates a text description of the Ray, in the format of “[position:X direction:X]”
     /// <https://stereokit.net/Pages/StereoKit/Ray/ToString.html>
-    pub fn to_string(&self) -> String {
-        format!("[position:{} direction:{}]", self.position.to_string(), self.direction.to_string())
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[position:{} direction:{}]", self.position, self.direction)
     }
 }

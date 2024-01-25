@@ -1,15 +1,14 @@
-use std::ffi::{c_void, c_char, CStr, CString};
+use std::ffi::{c_char, c_void, CStr, CString};
 use std::marker::PhantomData;
 use std::path::Path;
 use std::ptr::NonNull;
 
-use crate::maths::{Bool32T, Matrix, Vec4, Vec2, Vec3};
+use crate::maths::{Bool32T, Matrix, Vec2, Vec3, Vec4};
 use crate::shader::{Shader, ShaderT};
 use crate::system::Log;
 use crate::tex::{Tex, TexT};
 use crate::util::Color128;
 use crate::StereoKitError;
-
 
 /// Also known as ‘alpha’ for those in the know. But there’s actually more than one type of transparency in rendering!
 /// The horrors. We’re keepin’ it fairly simple for now, so you get three options!
@@ -91,7 +90,7 @@ impl Drop for Material {
 }
 impl AsRef<Material> for Material {
     fn as_ref(&self) -> &Material {
-        &self
+        self
     }
 }
 #[repr(C)]
@@ -127,7 +126,12 @@ extern "C" {
     pub fn material_set_shader(material: MaterialT, shader: ShaderT);
     pub fn material_get_shader(material: MaterialT) -> ShaderT;
 }
+
 impl Default for Material {
+    /// The default material! This is used by many models and meshes rendered from within StereoKit. Its shader is
+    /// tuned for high performance, and may change based on system performance characteristics, so it can be great
+    /// to copy this one when creating your own materials! Or if you want to override StereoKit’s default material,
+    /// here’s where you do it!
     /// <https://stereokit.net/Pages/StereoKit/Material/Default.html>
     ///
     /// see also [`crate::font::font_find`]
@@ -137,7 +141,7 @@ impl Default for Material {
     }
 }
 
-impl<'a> Material {
+impl Material {
     /// Creates a material from a shader, and uses the shader’s default settings.
     /// <https://stereokit.net/Pages/StereoKit/Material/Material.html>
     /// * id - If None the id will be set to a default value "auto/asset_???"
@@ -157,7 +161,10 @@ impl<'a> Material {
     /// * id - If None the id will be set to a default value "auto/asset_???"
     ///
     /// see also [`crate::material::material_create`][`crate::material::material_set_id`]
-    pub fn from_file<S: AsRef<str>>(shader_file_name: impl AsRef<Path>, id: Option<S>) -> Result<Material, StereoKitError> {
+    pub fn from_file<S: AsRef<str>>(
+        shader_file_name: impl AsRef<Path>,
+        id: Option<S>,
+    ) -> Result<Material, StereoKitError> {
         let shader = Shader::from_file(&shader_file_name);
         match shader {
             Ok(shader) => {
@@ -548,12 +555,7 @@ impl<'a> Material {
     ///
     /// see also [`crate::material::material_get_chain`]
     pub fn get_chain(&self) -> Option<Material> {
-        unsafe {
-            match NonNull::new(material_get_chain(self.0.as_ptr())) {
-                Some(mat) => Some(Material(mat)),
-                None => None,
-            }
-        }
+        unsafe { NonNull::new(material_get_chain(self.0.as_ptr())).map(Material) }
     }
 
     /// Get All param infos.
@@ -562,15 +564,6 @@ impl<'a> Material {
     /// see also [`ParamInfos`][`stereokit::Material`]
     pub fn get_all_param_info(&self) -> ParamInfos<'_> {
         ParamInfos::from(self)
-    }
-
-    /// The default material! This is used by many models and meshes rendered from within StereoKit. Its shader is
-    /// tuned for high performance, and may change based on system performance characteristics, so it can be great
-    /// to copy this one when creating your own materials! Or if you want to override StereoKit’s default material,
-    /// here’s where you do it!
-    /// <https://stereokit.net/Pages/StereoKit/Material/Default.html>
-    pub fn default() -> Self {
-        Self::find("default/material").unwrap()
     }
 
     /// The default Physically Based Rendering material! This is used by StereoKit anytime a mesh or model has metallic
@@ -688,30 +681,16 @@ extern "C" {
     pub fn material_get_matrix(material: MaterialT, name: *const c_char) -> Matrix;
     pub fn material_get_texture(material: MaterialT, name: *const c_char) -> TexT;
     pub fn material_has_param(material: MaterialT, name: *const c_char, type_: MaterialParam) -> Bool32T;
-    pub fn material_set_param(
-        material: MaterialT,
-        name: *const c_char,
-        type_: MaterialParam,
-        value: *const c_void,
-    );
-    pub fn material_set_param_id(
-        material: MaterialT,
-        id: u64,
-        type_: MaterialParam,
-        value: *const c_void,
-    );
+    pub fn material_set_param(material: MaterialT, name: *const c_char, type_: MaterialParam, value: *const c_void);
+    pub fn material_set_param_id(material: MaterialT, id: u64, type_: MaterialParam, value: *const c_void);
     pub fn material_get_param(
         material: MaterialT,
         name: *const c_char,
         type_: MaterialParam,
         out_value: *mut c_void,
     ) -> Bool32T;
-    pub fn material_get_param_id(
-        material: MaterialT,
-        id: u64,
-        type_: MaterialParam,
-        out_value: *mut c_void,
-    ) -> Bool32T;
+    pub fn material_get_param_id(material: MaterialT, id: u64, type_: MaterialParam, out_value: *mut c_void)
+        -> Bool32T;
     pub fn material_get_param_info(
         material: MaterialT,
         index: i32,
@@ -746,7 +725,7 @@ pub enum MaterialParam {
     Vec4 = 5,
     /// A 4x4 matrix of floats.
     Matrix = 6,
-    ///	Texture information!
+    /// Texture information!
     Texture = 7,
     Int = 8,
     Int2 = 9,
@@ -768,7 +747,7 @@ impl<'a> Iterator for ParamInfos<'a> {
         self.index += 1;
         let count = unsafe { material_get_param_count(self.material.0.as_ptr()) };
         if self.index < count {
-            let i = self.index.clone();
+            let i = self.index;
             let res = self.material_get_param_info(i);
             match res {
                 Some((name, type_info)) => {
@@ -802,6 +781,7 @@ impl<'a> ParamInfos<'a> {
     /// <https://stereokit.net/Pages/StereoKit/Material/SetData.html>
     ///
     /// see also [`crate::material::material_set_param`]
+    #[allow(clippy::not_unsafe_ptr_arg_deref)]
     pub fn set_data<S: AsRef<str>>(&mut self, name: S, type_info: MaterialParam, value: *mut c_void) -> &mut Self {
         unsafe {
             let cstr = &CString::new(name.as_ref()).unwrap();
@@ -814,6 +794,7 @@ impl<'a> ParamInfos<'a> {
     /// <https://stereokit.net/Pages/StereoKit/Material/SetData.html>
     ///
     /// see also [`ParamInfo`][`crate::material::material_set_param_id`]
+    #[allow(clippy::not_unsafe_ptr_arg_deref)]
     pub fn set_data_with_id<S: AsRef<str>>(
         &mut self,
         id: u64,
@@ -828,10 +809,8 @@ impl<'a> ParamInfos<'a> {
     fn material_get_param_info(&self, index: i32) -> Option<(&str, MaterialParam)> {
         let name_info = CString::new("H").unwrap().into_raw() as *mut *mut c_char;
         let mut type_info = MaterialParam::Unknown;
-        unsafe { material_get_param_info(self.material.as_ref().0.as_ptr(), index, name_info, &mut type_info) }
+        unsafe { material_get_param_info(self.material.0.as_ptr(), index, name_info, &mut type_info) }
         let name_info = unsafe { CStr::from_ptr(*name_info).to_str().unwrap() };
-        let type_info = unsafe { ::std::mem::transmute(type_info) };
-
         Some((name_info, type_info))
     }
 
@@ -1031,7 +1010,7 @@ impl<T> Drop for MaterialBuffer_<T> {
 }
 impl<T> AsRef<MaterialBuffer_<T>> for MaterialBuffer_<T> {
     fn as_ref(&self) -> &MaterialBuffer_<T> {
-        &self
+        self
     }
 }
 
@@ -1041,8 +1020,9 @@ impl<T> MaterialBuffer_<T> {
     ///
     /// see also [`crate::material::material_buffer_create`]
     pub fn material_buffer(register_slot: i32) -> MaterialBuffer_<T> {
-        let mat_buffer = unsafe { material_buffer_create(register_slot, std::mem::size_of::<T> as i32) };
-        return MaterialBuffer_ { material_buffer: mat_buffer, phantom: PhantomData };
+        let size = std::mem::size_of::<T>();
+        let mat_buffer = unsafe { material_buffer_create(register_slot, size as i32) };
+        MaterialBuffer_ { material_buffer: mat_buffer, phantom: PhantomData }
     }
 
     /// <https://stereokit.net/Pages/StereoKit/MaterialBuffer/Set.html>

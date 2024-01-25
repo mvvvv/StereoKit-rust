@@ -554,7 +554,7 @@ impl Sk {
     }
 
     /// Get an event_loop_proxy clone to send events
-    pub fn get_event_loop_proxy (&self) -> EventLoopProxy<StepperAction> {
+    pub fn get_event_loop_proxy(&self) -> EventLoopProxy<StepperAction> {
         self.event_loop_proxy.clone()
     }
 
@@ -696,19 +696,19 @@ impl Sk {
                     Log::diag(format!("UserEvent {:?}", action));
                     self.steppers.push_action(action);
                 }
-                Event::Suspended => Log::info(format!("Suspended !!")),
-                Event::Resumed => Log::info(format!("Resumed !!")),
+                Event::Suspended => Log::info("Suspended !!"),
+                Event::Resumed => Log::info("Resumed !!"),
                 Event::AboutToWait => {
                     if !&self.step(&mut on_step) {
                         elwt.exit()
                     }
                 }
                 Event::LoopExiting => {
-                    Log::info(format!("LoopExiting !!"));
+                    Log::info("LoopExiting !!");
                     on_shutdown(&mut self);
                     self.shutdown();
                 }
-                Event::MemoryWarning => Log::warn(format!("MemoryWarning !!")),
+                Event::MemoryWarning => Log::warn("MemoryWarning !!"),
             })
             .unwrap_or_else(|e| {
                 Log::err(format!("!!!event_loop error closing!! : {}", e));
@@ -841,7 +841,6 @@ impl Sk {
 /// constructor is called on a different one.
 /// <https://stereokit.net/Pages/StereoKit.Framework/IStepper.html>
 pub trait IStepper {
-
     /// This is called by StereoKit at the start of the next frame, and on the main thread. This happens before
     /// StereoKit’s main Step callback, and always after Sk.initialize.
     /// <https://stereokit.net/Pages/StereoKit.Framework/IStepper/Initialize.html>
@@ -857,7 +856,7 @@ pub trait IStepper {
     /// This Step method will be called every frame of the application, as long as Enabled is true. This happens
     /// immediately before the main application’s Step callback.
     /// <https://stereokit.net/Pages/StereoKit.Framework/IStepper/Step.html>
-    fn step(&mut self, event_report: &Vec<StepperAction>);
+    fn step(&mut self, event_report: &[StepperAction]);
 
     /// This is called when the IStepper is removed, or the application shuts down. This is always called on the main
     /// thread, and happens at the start of the next frame, before the main application’s Step callback.
@@ -894,7 +893,7 @@ impl fmt::Debug for StepperAction {
             StepperAction::Remove(stepper_id) => write!(f, "StepperAction::Remove( id:{:?}", stepper_id),
             StepperAction::Quit(stepper_id) => write!(f, "StepperAction::Quit( sent by id:{:?}", stepper_id),
             StepperAction::Event(stepper_id, key, value) => {
-                write!(f, "StepperAction::Event( id:{:?} => {}->{}",  stepper_id, key, value)
+                write!(f, "StepperAction::Event( id:{:?} => {}->{}", stepper_id, key, value)
             }
             StepperAction::Suspended => write!(f, "StepperAction::Suspended"),
             StepperAction::Resumed => write!(f, "StepperAction::Resumed"),

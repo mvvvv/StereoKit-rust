@@ -3,8 +3,10 @@ pub mod demos;
 use std::env;
 
 use demos::program::launch;
-use stereokit_rust::{sk::{OriginMode, DisplayMode, AppMode, SkSettings}, system::LogLevel};
-
+use stereokit_rust::{
+    sk::{AppMode, DisplayMode, OriginMode, SkSettings},
+    system::LogLevel,
+};
 
 pub const _USAGE: &str = r#"Usage : program [OPTION] 
 launch Stereokit tests and demos
@@ -28,7 +30,6 @@ pub const USAGE: &str = r#"Usage : program [OPTION]
 #[allow(dead_code)]
 #[cfg(not(target_os = "android"))]
 fn main() {
-   
     let mut headless = false;
     let mut is_testing = false;
     let mut start_test = "".to_string();
@@ -64,7 +65,7 @@ fn main() {
             // }
             "--start" => {
                 if let Some(arg_config) = args.next() {
-                    if !arg_config.starts_with("-") {
+                    if !arg_config.starts_with('-') {
                         start_test = arg_config;
                     } else {
                         panic!("Value specified for --start must be the name of a test.");
@@ -94,7 +95,6 @@ fn main() {
         .disable_flatscreen_mr_sim(false)
         .no_flatscreen_fallback(true);
 
-
     if is_testing {
         if headless {
             settings.mode(AppMode::Offscreen);
@@ -104,6 +104,6 @@ fn main() {
         settings.disable_unfocused_sleep(true);
     }
 
-    let (sk,event_loop) = settings.init().unwrap();
-    launch(sk, event_loop,  is_testing,  start_test);
+    let (sk, event_loop) = settings.init().unwrap();
+    launch(sk, event_loop, is_testing, start_test);
 }

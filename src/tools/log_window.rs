@@ -88,16 +88,9 @@ impl<'a> LogWindow<'a> {
             //     self.log_index = 0.0;
             // }
         }
-        if let Some(pos) = Ui::vslider(
-            "scroll",
-            &mut self.log_index,
-            0.0,
-            items.len() as f32 ,
-            Some(1.0),
-            None,
-            None,
-            None,
-        ) {
+        if let Some(pos) =
+            Ui::vslider("scroll", &mut self.log_index, 0.0, items.len() as f32, Some(1.0), None, None, None)
+        {
             self.log_index = f32::max(f32::min(pos, items.len() as f32 - 1.0), 0.0);
         }
 
@@ -124,7 +117,7 @@ impl<'a> LogWindow<'a> {
 
                 let y = (i - index) as f32 * -text_size.y;
                 Text::add_in(
-                    &item.text.trim(),
+                    item.text.trim(),
                     Matrix::t(start + Vec3::new(0.0, y, -0.004)),
                     text_size,
                     TextFit::Clip | TextFit::Wrap,
@@ -170,7 +163,7 @@ impl<'a> IStepper for LogWindow<'a> {
         true
     }
 
-    fn step(&mut self, event_report: &Vec<StepperAction>) {
+    fn step(&mut self, event_report: &[StepperAction]) {
         for e in event_report.iter() {
             if let StepperAction::Event(_, key, _) = e {
                 if key.eq("ShowLogWindow") {

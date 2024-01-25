@@ -66,7 +66,7 @@ pub enum AssetState {
 
 /// A flag for what ‘type’ an Asset may store.
 ///
-/// None ->	No type, this may come from some kind of invalid Asset id.
+/// None -> No type, this may come from some kind of invalid Asset id.
 /// <https://stereokit.net/Pages/StereoKit/AssetType.html>
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
@@ -161,11 +161,11 @@ impl Iterator for AssetIter {
                     }
                     asset_type => {
                         let asset_id = unsafe { assets_get_index(self.index) };
-                        return Some(self.to_asset(asset_type, asset_id));
+                        Some(self.to_asset(asset_type, asset_id))
                     }
                 }
             } else {
-                return None;
+                None
             }
         } else {
             while self.index < count {
@@ -176,14 +176,14 @@ impl Iterator for AssetIter {
                     self.index += 1;
                 }
             }
-            return None;
+            None
         }
     }
 }
 
 impl AssetIter {
     /// Get the asset
-    fn to_asset(&self, asset_type: AssetType, c_id: *mut c_void) -> Asset {
+    fn to_asset(self, asset_type: AssetType, c_id: *mut c_void) -> Asset {
         match asset_type {
             AssetType::None => Asset::None,
             AssetType::Mesh => Asset::Mesh(Mesh(NonNull::new(c_id as *mut _MeshT).unwrap())),
@@ -1356,7 +1356,7 @@ impl Mouse {
     pub fn get_ray(&self) -> Ray {
         let mut out_ray = Ray::default();
         unsafe { ray_from_mouse(self.pos, &mut out_ray) };
-        return out_ray;
+        out_ray
     }
 }
 
@@ -1859,7 +1859,7 @@ impl Lines {
     ///
     /// see also [crate::system::line_add]
     pub fn add<V: Into<Vec3>>(start: V, end: V, color_start: Color32, color_end: Option<Color32>, thickness: f32) {
-        let color_end = color_end.unwrap_or(color_start.clone());
+        let color_end = color_end.unwrap_or(color_start);
         unsafe { line_add(start.into(), end.into(), color_start, color_end, thickness) }
     }
 
@@ -1875,7 +1875,7 @@ impl Lines {
         color_end: Option<Color32>,
         thickness: f32,
     ) {
-        let color_end = color_end.unwrap_or(color_start.clone());
+        let color_end = color_end.unwrap_or(color_start);
         let ray: Ray = ray.into();
         unsafe { line_add(ray.position, ray.get_at(lenght), color_start, color_end, thickness) }
     }
@@ -2268,7 +2268,7 @@ impl Default for RenderLayer {
 }
 impl RenderLayer {
     pub fn as_u32(&self) -> u32 {
-        self.bits() as u32
+        self.bits()
     }
 }
 
@@ -2584,7 +2584,7 @@ impl Renderer {
     ) {
         let layer_filter = layer_filter.unwrap_or(RenderLayer::Layer_all);
         let clear = clear.unwrap_or(RenderClear::All);
-        let viewport = viewport.unwrap_or(Rect::default());
+        let viewport = viewport.unwrap_or_default();
 
         unsafe {
             render_to(
@@ -2662,6 +2662,7 @@ impl Renderer {
     /// * tex_format - If None will use default value of TexFormat::RGBA32
     ///
     /// see also [`crate::system::render_screenshot_pose`]
+    #[allow(clippy::too_many_arguments)]
     pub fn screenshot_viewpoint<M: Into<Matrix>, F: FnMut(&[Color32], usize, usize)>(
         mut on_screenshot: F,
         camera: M,
@@ -2676,7 +2677,7 @@ impl Renderer {
         let tex_format = tex_format.unwrap_or(TexFormat::RGBA32);
         let render_layer = render_layer.unwrap_or(RenderLayer::all());
         let clear = clear.unwrap_or(RenderClear::All);
-        let viewport = viewport.unwrap_or(Rect::default());
+        let viewport = viewport.unwrap_or_default();
         let mut closure = &mut on_screenshot;
         unsafe {
             render_screenshot_viewpoint(
@@ -2880,13 +2881,15 @@ extern "C" {
     pub fn text_style_set_char_height(style: TextStyle, height_meters: f32);
 }
 
-impl TextStyle {
+impl Default for TextStyle {
     /// This is the default text style used by StereoKit.
     /// <https://stereokit.net/Pages/StereoKit/TextStyle/Default.html>
-    pub fn default() -> Self {
-        TextStyle { _id: 0 }
+    fn default() -> Self {
+        Self { _id: 0 }
     }
+}
 
+impl TextStyle {
     /// Create a text style for use with other text functions! A text style is a font plus size/color/material
     /// parameters, and are used to keep text looking more consistent through the application by encouraging devs to
     /// re-use styles throughout the project.
@@ -2954,7 +2957,7 @@ impl TextStyle {
     ///
     /// see also [`crate::system::text_style_set_char_height`]
     pub fn char_height(&mut self, char_height: f32) {
-        unsafe { text_style_set_char_height(self.clone(), char_height) }
+        unsafe { text_style_set_char_height(*self, char_height) }
     }
 
     /// Returns the maximum height of a text character using this style, in meters.
@@ -2962,7 +2965,7 @@ impl TextStyle {
     ///
     /// see also [`crate::system::text_style_get_char_height`]
     pub fn get_char_height(&self) -> f32 {
-        unsafe { text_style_get_char_height(self.clone()) }
+        unsafe { text_style_get_char_height(*self) }
     }
 
     /// This provides a reference to the Material used by this style, so you can override certain features! Note that if
@@ -2971,7 +2974,7 @@ impl TextStyle {
     ///
     /// see also [`crate::system::text_style_get_material`]
     pub fn get_material(&self) -> Material {
-        Material(NonNull::new(unsafe { text_style_get_material(self.clone()) }).unwrap())
+        Material(NonNull::new(unsafe { text_style_get_material(*self) }).unwrap())
     }
 }
 
@@ -3030,7 +3033,6 @@ bitflags::bitflags! {
         const Overflow = 16;
 }
 }
-
 
 /// Soft keyboard layouts are often specific to the type of text that they’re editing! This enum is a collection of
 /// common text contexts that SK can pass along to the OS’s soft keyboard for a more optimal layout.
@@ -3200,6 +3202,7 @@ impl Text {
     /// * off_? - if None will use 0.0
     ///
     /// see also [`crate::system::text_add_at`]
+    #[allow(clippy::too_many_arguments)]
     pub fn add_at(
         text: impl AsRef<str>,
         transform: impl Into<Matrix>,
@@ -3212,7 +3215,7 @@ impl Text {
         off_z: Option<f32>,
     ) {
         let c_str = CString::new(text.as_ref()).unwrap();
-        let style = text_style.unwrap_or(TextStyle::default());
+        let style = text_style.unwrap_or_default();
         let vertex_tint_linear = vertex_tint_linear.unwrap_or(Color128::WHITE);
         let position = position.unwrap_or(TextAlign::Center);
         let align = align.unwrap_or(TextAlign::Center);
@@ -3244,6 +3247,7 @@ impl Text {
     /// Returns the vertical space used by this text.
     ///
     /// see also [`crate::system::text_add_in`]
+    #[allow(clippy::too_many_arguments)]
     pub fn add_in(
         text: impl AsRef<str>,
         transform: impl Into<Matrix>,
@@ -3258,7 +3262,7 @@ impl Text {
         off_z: Option<f32>,
     ) -> f32 {
         let c_str = CString::new(text.as_ref()).unwrap();
-        let style = text_style.unwrap_or(TextStyle::default());
+        let style = text_style.unwrap_or_default();
         let vertex_tint_linear = vertex_tint_linear.unwrap_or(Color128::WHITE);
         let position = position.unwrap_or(TextAlign::Center);
         let align = align.unwrap_or(TextAlign::Center);
@@ -3291,7 +3295,7 @@ impl Text {
     /// see also [`crate::system::text_size`]
     pub fn size(text: impl AsRef<str>, text_style: Option<TextStyle>) -> Vec2 {
         let c_str = CString::new(text.as_ref()).unwrap();
-        let style = text_style.unwrap_or(TextStyle::default());
+        let style = text_style.unwrap_or_default();
         unsafe { text_size(c_str.as_ptr(), style) }
     }
 }
@@ -3450,6 +3454,7 @@ impl World {
     /// <https://stereokit.net/Pages/StereoKit/World/FromPerceptionAnchor.html>
     ///
     /// see also [crate::system::world_from_perception_anchor]
+    #[allow(clippy::not_unsafe_ptr_arg_deref)]
     pub fn from_perception_anchor(perception_spatial_anchor: *mut c_void) -> Option<Pose> {
         let mut pose = Pose::IDENTITY;
         if unsafe { world_try_from_perception_anchor(perception_spatial_anchor, &mut pose) != 0 } {

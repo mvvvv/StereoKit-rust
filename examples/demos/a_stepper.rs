@@ -38,15 +38,13 @@ impl IStepper for AStepper {
         true
     }
 
-    fn step(&mut self, _event_report: &Vec<StepperAction>) {
+    fn step(&mut self, _event_report: &[StepperAction]) {
         self.draw()
-          }
-
+    }
 }
 
 impl AStepper {
-
-    fn draw (&mut self) {
+    fn draw(&mut self) {
         Renderer::add_mesh(&self.round_cube, Material::pbr(), self.transform, Some(RED.into()), None);
         Text::add_at(&self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
     }

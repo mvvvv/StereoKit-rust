@@ -56,7 +56,7 @@ impl ScreenshotViewer {
             Ui::vspace(30.0 * CM);
             let mut name = FILE_NAME.lock().unwrap();
             if !name.is_empty() {
-                if let Some(sprite) = Sprite::from_file(name.to_string(), None, None).ok() {
+                if let Ok(sprite) = Sprite::from_file(name.to_string(), None, None) {
                     self.screen = Some(sprite);
                 } else {
                     Log::err(format!("ScreenshotViewer : file {} is not valid", name))
@@ -84,7 +84,7 @@ impl ScreenshotViewer {
         }
         Ui::same_line();
         if Ui::button("Take Screenshot", None) {
-            let mut  camera_at = self.pose.clone();
+            let mut camera_at = self.pose;
             camera_at.orientation = Quat::look_dir(camera_at.get_forward() * -1.0);
 
             Renderer::screenshot_capture(
@@ -106,20 +106,18 @@ impl ScreenshotViewer {
             self.screen = Sprite::from_tex(&self.tex, None, None).ok();
         }
         Ui::same_line();
-        if Ui::button("Save", None) {
-            if !Platform::get_file_picker_visible() {
-                Platform::file_picker_sz(
-                    PickerMode::Save,
-                    move |ok, file_name| {
-                        if ok {
-                            Log::err(format!("Save screenshot in {} not implemented yet", file_name));
-                            let _tex = Tex::find("ScreenshotTex").ok();
-                            // to continue ...
-                        }
-                    },
-                    &Assets::TEXTURE_FORMATS,
-                )
-            }
+        if Ui::button("Save", None) && !Platform::get_file_picker_visible() {
+            Platform::file_picker_sz(
+                PickerMode::Save,
+                move |ok, file_name| {
+                    if ok {
+                        Log::err(format!("Save screenshot in {} not implemented yet", file_name));
+                        let _tex = Tex::find("ScreenshotTex").ok();
+                        // to continue ...
+                    }
+                },
+                &Assets::TEXTURE_FORMATS,
+            )
         }
 
         Ui::window_end();
@@ -138,7 +136,7 @@ impl IStepper for ScreenshotViewer {
         true
     }
 
-    fn step(&mut self, event_report: &Vec<StepperAction>) {
+    fn step(&mut self, event_report: &[StepperAction]) {
         for e in event_report.iter() {
             if let StepperAction::Event(_, key, _) = e {
                 if key.eq("ShowScreenshotWindow") {

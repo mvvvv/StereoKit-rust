@@ -48,7 +48,7 @@ impl Drop for Sprite {
 }
 impl AsRef<Sprite> for Sprite {
     fn as_ref(&self) -> &Sprite {
-        &self
+        self
     }
 }
 #[repr(C)]

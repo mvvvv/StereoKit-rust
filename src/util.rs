@@ -6,7 +6,9 @@ use crate::{
 };
 use std::{
     ffi::{c_char, c_void, CStr, CString},
-    ptr::NonNull, ops::{Div, DivAssign, Mul, MulAssign},
+    fmt::Display,
+    ops::{Div, DivAssign, Mul, MulAssign},
+    ptr::NonNull,
 };
 
 /// A color value stored as 4 floats with values that are generally between 0 and 1! Note that there’s also a Color32
@@ -151,12 +153,14 @@ impl Color128 {
     pub fn to_lab(&self) -> Vec3 {
         unsafe { color_to_lab(self) }
     }
+}
 
+impl Display for Color128 {
     /// Mostly for debug purposes, this is a decent way to log or inspect the color in debug mode. Looks like
     /// “[r, g, b, a]”
-    /// <https://stereokit.net/Pages/StereoKit/Color/ToString.html>    
-    pub fn to_string(&self) -> String {
-        format!("r:{}, g:{}, b:{}, a:{}", self.r, self.g, self.b, self.a)
+    /// <https://stereokit.net/Pages/StereoKit/Color/ToString.html>
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "r:{}, g:{}, b:{}, a:{}", self.r, self.g, self.b, self.a)
     }
 }
 
@@ -182,7 +186,6 @@ impl std::ops::Sub for Color128 {
     }
 }
 
-
 /// This will divide a color component-wise against another color, including alpha. Best done on colors in linear space.
 /// No clamping is applied.
 /// <https://stereokit.net/Pages/StereoKit/Color/op_Division.html>
@@ -190,7 +193,7 @@ impl Div<Color128> for Color128 {
     type Output = Self;
     #[inline]
     fn div(self, rhs: Self) -> Self::Output {
-        Self { r: self.r.div(rhs.r), g: self.g.div(rhs.g), b: self.b.div(rhs.b) , a: self.a.div(rhs.a)}
+        Self { r: self.r.div(rhs.r), g: self.g.div(rhs.g), b: self.b.div(rhs.b), a: self.a.div(rhs.a) }
     }
 }
 
@@ -213,7 +216,7 @@ impl Div<f32> for Color128 {
     type Output = Self;
     #[inline]
     fn div(self, rhs: f32) -> Self::Output {
-        Self { r: self.r.div(rhs), g: self.g.div(rhs), b: self.b.div(rhs) , a: self.a.div(rhs)}
+        Self { r: self.r.div(rhs), g: self.g.div(rhs), b: self.b.div(rhs), a: self.a.div(rhs) }
     }
 }
 
@@ -235,22 +238,22 @@ impl Div<Color128> for f32 {
     type Output = Color128;
     #[inline]
     fn div(self, rhs: Color128) -> Self::Output {
-        Self::Output { r: self.div(rhs.r), g: self.div(rhs.g), b: self.div(rhs.b) , a: self.div(rhs.a)}
+        Self::Output { r: self.div(rhs.r), g: self.div(rhs.g), b: self.div(rhs.b), a: self.div(rhs.a) }
     }
 }
 
-/// This will multiply a color component-wise against another color, including alpha. Best done on colors in linear 
+/// This will multiply a color component-wise against another color, including alpha. Best done on colors in linear
 /// space. No clamping is applied.
 /// <https://stereokit.net/Pages/StereoKit/Color/op_Multiply.html>
 impl Mul<Color128> for Color128 {
     type Output = Self;
     #[inline]
     fn mul(self, rhs: Self) -> Self::Output {
-        Self { r: self.r.mul(rhs.r), g: self.g.mul(rhs.g), b: self.b.mul(rhs.b) , a: self.a.mul(rhs.a)}
+        Self { r: self.r.mul(rhs.r), g: self.g.mul(rhs.g), b: self.b.mul(rhs.b), a: self.a.mul(rhs.a) }
     }
 }
 
-/// This will multiply a color component-wise against another color, including alpha. Best done on colors in linear 
+/// This will multiply a color component-wise against another color, including alpha. Best done on colors in linear
 /// space. No clamping is applied.
 /// <https://stereokit.net/Pages/StereoKit/Color/op_Multiply.html>
 impl MulAssign<Color128> for Color128 {
@@ -269,7 +272,7 @@ impl Mul<f32> for Color128 {
     type Output = Self;
     #[inline]
     fn mul(self, rhs: f32) -> Self::Output {
-        Self { r: self.r.mul(rhs), g: self.g.mul(rhs), b: self.b.mul(rhs) , a: self.a.mul(rhs)}
+        Self { r: self.r.mul(rhs), g: self.g.mul(rhs), b: self.b.mul(rhs), a: self.a.mul(rhs) }
     }
 }
 
@@ -291,7 +294,7 @@ impl Mul<Color128> for f32 {
     type Output = Color128;
     #[inline]
     fn mul(self, rhs: Color128) -> Self::Output {
-        Self::Output { r: self.mul(rhs.r), g: self.mul(rhs.g), b: self.mul(rhs.b) , a: self.mul(rhs.a)}
+        Self::Output { r: self.mul(rhs.r), g: self.mul(rhs.g), b: self.mul(rhs.b), a: self.mul(rhs.a) }
     }
 }
 
@@ -361,12 +364,14 @@ impl Color32 {
             a: (hex_value & 0x000000FF) as u8,
         }
     }
+}
 
+impl Display for Color32 {
     /// Mostly for debug purposes, this is a decent way to log or inspect the color in debug mode. Looks like
     /// “[r, g, b, a]”
-    /// <https://stereokit.net/Pages/StereoKit/Color/ToString.html>    
-    pub fn to_string(&self) -> String {
-        format!("r:{}, g:{}, b:{}, a:{}", self.r, self.g, self.b, self.a)
+    /// <https://stereokit.net/Pages/StereoKit/Color/ToString.html>  
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "r:{}, g:{}, b:{}, a:{}", self.r, self.g, self.b, self.a)
     }
 }
 
@@ -709,7 +714,7 @@ impl Drop for Gradient {
 }
 impl AsRef<Gradient> for Gradient {
     fn as_ref(&self) -> &Gradient {
-        &self
+        self
     }
 }
 #[repr(C)]
@@ -735,7 +740,7 @@ impl Gradient {
     /// <https://stereokit.net/Pages/StereoKit/Gradient/Gradient.html>
     ///
     /// see also [`crate::util::gradient_create`][`crate::util::gradient_create_keys`]
-    pub fn gradient(keys: Option<&[GradientKey]>) -> Self {
+    pub fn new(keys: Option<&[GradientKey]>) -> Self {
         match keys {
             Some(keys) => {
                 Gradient(NonNull::new(unsafe { gradient_create_keys(keys.as_ptr(), keys.len() as i32) }).unwrap())
@@ -777,7 +782,7 @@ impl Gradient {
     ///
     /// see also [`crate::util::gradient_get`]
     pub fn get(&self, at: f32) -> Color128 {
-        unsafe { gradient_get(self.0.as_ptr(), at) }.into()
+        unsafe { gradient_get(self.0.as_ptr(), at) }
     }
 
     /// Samples the gradient’s color at the given position, and converts it to a 32 bit color. If your RGBA color
@@ -786,7 +791,7 @@ impl Gradient {
     ///
     /// see also [`crate::util::gradient_get32`]
     pub fn get32(&self, at: f32) -> Color32 {
-        unsafe { gradient_get32(self.0.as_ptr(), at) }.into()
+        unsafe { gradient_get32(self.0.as_ptr(), at) }
     }
 }
 
@@ -810,10 +815,6 @@ impl FileFilter {
         value[0..c_array.len()].fill_with(|| c_array_iter.next().unwrap());
 
         Self { ext: value }
-    }
-
-    pub fn default() -> Self {
-        Self { ext: [0; 32usize] }
     }
 }
 
@@ -940,8 +941,8 @@ impl Platform {
         filters: &[impl AsRef<str>],
     ) {
         let mut c_filters = Vec::new();
-        for i in 0..filters.len() {
-            c_filters.push(FileFilter::new(filters[i].as_ref()));
+        for filter in filters {
+            c_filters.push(FileFilter::new(filter));
         }
 
         let mut closure = (&mut on_select_file, &mut on_cancel);
@@ -975,8 +976,8 @@ impl Platform {
     ///  see also [`platform_file_picker_sz`]
     pub fn file_picker_sz<F: FnMut(bool, &str)>(mode: PickerMode, mut on_complete: F, filters: &[impl AsRef<str>]) {
         let mut c_filters = Vec::new();
-        for i in 0..filters.len() {
-            c_filters.push(FileFilter::new(filters[i].as_ref()));
+        for filter in filters {
+            c_filters.push(FileFilter::new(filter));
         }
 
         let mut closure = &mut on_complete;
@@ -1153,7 +1154,7 @@ impl SphericalHarmonics {
     /// <https://stereokit.net/Pages/StereoKit/SphericalHarmonics/SphericalHarmonics.html>
     ///
     ///  see also [`crate::util::sh_create`]
-    pub fn spherical_harmonics(coefficients: [Vec3; 9]) -> Self {
+    pub fn new(coefficients: [Vec3; 9]) -> Self {
         SphericalHarmonics { coefficients }
     }
 
@@ -1239,13 +1240,13 @@ impl Time {
         unsafe { time_scale(factor) }
     }
 
-    /// This allows you to override the application time! The application will progress from this time using the current 
+    /// This allows you to override the application time! The application will progress from this time using the current
     /// timescale.
     /// <https://stereokit.net/Pages/StereoKit/Time/SetTime.html>
     ///
     ///  see also [`crate::util::time_set_time`]
     pub fn set_time(total_seconds: f64, frame_elapsed_seconds: f64) {
-        unsafe { time_set_time(total_seconds,frame_elapsed_seconds ) }
+        unsafe { time_set_time(total_seconds, frame_elapsed_seconds) }
     }
 
     /// The number of frames/steps since the app started.
@@ -1281,7 +1282,7 @@ impl Time {
         unsafe { time_step_unscaled() }
     }
 
-    /// How many seconds have elapsed since the last frame? 32 bit time precision, calculated at the start of the frame. 
+    /// How many seconds have elapsed since the last frame? 32 bit time precision, calculated at the start of the frame.
     /// This version is unaffected by the Time.Scale value!
     /// <https://stereokit.net/Pages/StereoKit/Time/StepUnscaledf.html>
     ///
@@ -1299,7 +1300,7 @@ impl Time {
         unsafe { time_total() }
     }
 
-    /// How many seconds have elapsed since StereoKit was initialized? 32 bit time precision, calculated at the start of 
+    /// How many seconds have elapsed since StereoKit was initialized? 32 bit time precision, calculated at the start of
     /// the frame.
     /// <https://stereokit.net/Pages/StereoKit/Time/Totalf.html>
     ///
@@ -1308,7 +1309,7 @@ impl Time {
         unsafe { time_totalf() }
     }
 
-    /// How many seconds have elapsed since StereoKit was initialized? 64 bit time precision, calculated at the start of 
+    /// How many seconds have elapsed since StereoKit was initialized? 64 bit time precision, calculated at the start of
     /// the frame. This version is unaffected by the Time::scale value!
     /// <https://stereokit.net/Pages/StereoKit/Time/TotalUnscaled.html>
     ///
@@ -1317,7 +1318,7 @@ impl Time {
         unsafe { time_total_unscaled() }
     }
 
-    /// How many seconds have elapsed since StereoKit was initialized? 32 bit time precision, calculated at the start of 
+    /// How many seconds have elapsed since StereoKit was initialized? 32 bit time precision, calculated at the start of
     /// the frame. This version is unaffected by the Time::scale value!
     /// <https://stereokit.net/Pages/StereoKit/Time/TotalUnscaledf.html>
     ///

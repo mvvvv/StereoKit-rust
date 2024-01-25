@@ -9,7 +9,6 @@ use stereokit_rust::util::{
     Color128, Color32, Gradient,
 };
 
-
 use glam::{Mat4, Quat, Vec3};
 use winit::event_loop::EventLoopProxy;
 
@@ -46,9 +45,7 @@ pub struct Tex1 {
 impl Tex1 {
     /// Change the default title.
     pub fn new(title: String) -> Self {
-        let mut this = Self::default();
-        this.title = title;
-        this
+        Self { title, ..Default::default() }
     }
 }
 
@@ -64,7 +61,7 @@ impl Default for Tex1 {
         let files = [
             //r"textures/exit.jpeg",
             //r"textures/open_gltf.jpeg",
-            r"textures/screenshot.jpeg"
+            r"textures/screenshot.jpeg",
         ];
         let mut tex_zarbi = Tex::from_files(&files, true, None).unwrap();
         tex_zarbi.id("zarbi zarbi");
@@ -121,7 +118,7 @@ impl Default for Tex1 {
         let color_dots = raw_dots.as_slice();
         let color_dots128 = raw_dots128.as_slice();
 
-        let mut tex_color_32a = Tex::tex(TexType::Image, TexFormat::RGBA32, "tex_color");
+        let mut tex_color_32a = Tex::new(TexType::Image, TexFormat::RGBA32, "tex_color");
         tex_color_32a.set_colors(width, height, color_dots.as_ptr() as *mut std::os::raw::c_void);
 
         let mut tex_color_32b = Tex::gen_color(BLUE, 10, 10, TexType::Dynamic, TexFormat::RGBA32);
@@ -133,12 +130,12 @@ impl Default for Tex1 {
 
         let tex_color_32d = Tex::from_color128(color_dots128, width, height, true).unwrap();
 
-        let tex_vide = Tex::tex(TexType::ImageNomips, TexFormat::RGBA128, "tex_vide");
-        let tex_vide2 = Tex::tex(TexType::ImageNomips, TexFormat::R8, "tex_vide2");
-        let tex_vide3 = Tex::tex(TexType::ImageNomips, TexFormat::R16f, "tex_vide3");
-        let tex_vide4 = Tex::tex(TexType::ImageNomips, TexFormat::R32, "tex_vide4");
+        let tex_vide = Tex::new(TexType::ImageNomips, TexFormat::RGBA128, "tex_vide");
+        let tex_vide2 = Tex::new(TexType::ImageNomips, TexFormat::R8, "tex_vide2");
+        let tex_vide3 = Tex::new(TexType::ImageNomips, TexFormat::R16f, "tex_vide3");
+        let tex_vide4 = Tex::new(TexType::ImageNomips, TexFormat::R32, "tex_vide4");
 
-        let mut gradient = Gradient::gradient(None);
+        let mut gradient = Gradient::new(None);
         gradient.add(RED, 0.01);
         gradient.add(YELLOW, 0.1);
         gradient.add(LIGHT_BLUE, 0.3);
@@ -181,7 +178,7 @@ impl Default for Tex1 {
         let mut zarbi = Material::copy(Material::unlit());
         zarbi.id("zarbi").diffuse_tex(&tex_zarbi).tex_scale(2.0);
 
-        let panels = Model::model();
+        let panels = Model::new();
         let mut nodes = panels.get_nodes();
         nodes
             .add(
@@ -273,7 +270,6 @@ impl Default for Tex1 {
         let render_now = true;
         let stage = 0;
 
-
         let this = Self {
             title: "Tex1".to_owned(),
             id: "Tex1".to_owned(),
@@ -314,10 +310,10 @@ impl IStepper for Tex1 {
         true
     }
 
-    fn step(&mut self, _event_report: &Vec<StepperAction>) {
+    fn step(&mut self, _event_report: &[StepperAction]) {
         self.panels.draw(
             Mat4::IDENTITY.mul(Mat4::from_scale_rotation_translation(
-                Vec3::ONE*0.25,
+                Vec3::ONE * 0.25,
                 Quat::from_rotation_y(0.0),
                 Vec3::new(-0.5, 2.0, -2.0),
             )),
@@ -328,8 +324,7 @@ impl IStepper for Tex1 {
         if self.render_now {
             match self.stage % 3 {
                 // get a texture flood error
-                0 => {
-                }
+                0 => {}
                 1 => {
                     self.tex_vide.set_colors128(self.width, self.height, self.raw_dots128.as_slice());
                     self.tex_vide2.set_colors_r8(self.width, self.height, self.raw_dots_byte.as_slice());
@@ -365,7 +360,7 @@ impl IStepper for Tex1 {
                     if let Some((w, h, size)) = tex_i.get_data_infos(mip) {
                         let color32_buff = vec![self.base_color; size];
                         Log::info(format!("--Tex in mip {} -> {}x{} = {}", mip, w, h, color32_buff.len()));
-                        if let Some(_) = tex_i.get_colors32(color32_buff.as_slice(), mip as i8) {
+                        if tex_i.get_colors32(color32_buff.as_slice(), mip).is_some() {
                             self.tex_color_32b.set_colors32(w, h, &color32_buff[..]);
                             Log::info(format!("--Tex out mips number {}", self.tex_color_32b.get_mips().unwrap()));
                         }
@@ -377,7 +372,7 @@ impl IStepper for Tex1 {
                     if let Some((w, h, size)) = tex_i.get_data_infos(mip) {
                         let color128_buff = vec![self.base_color128; size];
                         Log::info(format!("--Tex in mip {} -> {}x{} = {}", mip, w, h, color128_buff.len()));
-                        if let Some(_) = tex_i.get_colors128(color128_buff.as_slice(), mip as i8) {
+                        if tex_i.get_colors128(color128_buff.as_slice(), mip).is_some() {
                             self.tex_vide.set_colors128(w, h, &color128_buff[..]);
                             Log::info(format!("--Tex out mips number {}", self.tex_vide.get_mips().unwrap()));
                         }
@@ -389,7 +384,7 @@ impl IStepper for Tex1 {
                     if let Some((w, h, size)) = tex_i.get_data_infos(mip) {
                         let color_r8_buff: Vec<u8> = vec![60; size];
                         Log::info(format!("--Tex in mip {} -> {}x{} = {}", mip, w, h, color_r8_buff.len()));
-                        if let Some(_) = tex_i.get_colors_r8(color_r8_buff.as_slice(), mip as i8) {
+                        if tex_i.get_colors_r8(color_r8_buff.as_slice(), mip).is_some() {
                             self.tex_vide2.set_colors_r8(w, h, &color_r8_buff[..]);
                             Log::info(format!("--Tex out mips number {}", self.tex_vide2.get_mips().unwrap()));
                         }
@@ -401,7 +396,7 @@ impl IStepper for Tex1 {
                     if let Some((w, h, size)) = tex_i.get_data_infos(mip) {
                         let color_r16_buff: Vec<u16> = vec![60; size];
                         Log::info(format!("--Tex in mip {} -> {}x{} = {}", mip, w, h, color_r16_buff.len()));
-                        if let Some(_) = tex_i.get_colors_r16(color_r16_buff.as_slice(), mip as i8) {
+                        if tex_i.get_colors_r16(color_r16_buff.as_slice(), mip).is_some() {
                             self.tex_vide3.set_colors_r16(w, h, &color_r16_buff[..]);
                             Log::info(format!("--Tex out mips number {}", self.tex_vide3.get_mips().unwrap()));
                         }
@@ -413,7 +408,7 @@ impl IStepper for Tex1 {
                     if let Some((w, h, size)) = tex_i.get_data_infos(mip) {
                         let color_r32_buff: Vec<f32> = vec![0.5; size];
                         Log::info(format!("--Tex in mip {} -> {}x{} = {}", mip, w, h, color_r32_buff.len()));
-                        if let Some(_) = tex_i.get_colors_r32(color_r32_buff.as_slice(), mip as i8) {
+                        if tex_i.get_colors_r32(color_r32_buff.as_slice(), mip).is_some() {
                             self.tex_vide4.set_colors_r32(w, h, &color_r32_buff[..]);
                             Log::info(format!("--Tex out mips number {}", self.tex_vide4.get_mips().unwrap()));
                         }
@@ -443,7 +438,5 @@ impl IStepper for Tex1 {
         }
     }
 
-    fn shutdown(&mut self) {
-        
-    }
+    fn shutdown(&mut self) {}
 }

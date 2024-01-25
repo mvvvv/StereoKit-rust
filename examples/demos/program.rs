@@ -27,12 +27,7 @@ use winit::event_loop::EventLoop;
 static LOG_LOG: Mutex<Vec<LogItem>> = Mutex::new(vec![]);
 
 use super::Test;
-pub fn launch(
-    mut sk: Sk,
-    event_loop: EventLoop<StepperAction>,
-    is_testing: bool,
-    start_test: String,
-) {
+pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool, start_test: String) {
     Log::diag(
         "======================================================================================================== !!",
     );
@@ -74,7 +69,7 @@ pub fn launch(
     log_window.show(true);
 
     //---- Sky domes and floor
-    let mut gradient_sky = Gradient::gradient(None);
+    let mut gradient_sky = Gradient::new(None);
     gradient_sky
         .add(Color128::BLACK, 0.0)
         .add(BLUE, 0.4)
@@ -83,7 +78,7 @@ pub fn launch(
         .add(WHITE, 1.0);
     let mut cube0 = SHCubemap::gen_cubemap_gradient(gradient_sky, Vec3::Y, 1024);
 
-    let mut gradient = Gradient::gradient(None);
+    let mut gradient = Gradient::new(None);
     gradient
         .add(RED, 0.01)
         .add(YELLOW, 0.1)
@@ -216,7 +211,7 @@ pub fn launch(
 
     sk.push_action(StepperAction::add("HandMenuStepper".to_string(), hand_menu_stepper));
     sk.push_action(StepperAction::add("LogWindow".to_string(), log_window));
-    sk.push_action(StepperAction::add_default::<ScreenshotViewer>("Screenshoot".to_string()));
+    sk.push_action(StepperAction::add_default::<ScreenshotViewer>("Screenshoot"));
 
     let tests = Test::get_tests();
 
@@ -269,9 +264,8 @@ pub fn launch(
             }
             scene_frame += 1;
 
-            match Input::key(Key::Esc) {
-                BtnState::JustActive => sk.quit(),
-                _ => (),
+            if Input::key(Key::Esc) == BtnState::JustActive {
+                sk.quit()
             }
 
             // Playing with projection in simulator mode

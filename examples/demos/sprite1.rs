@@ -3,7 +3,7 @@ use std::f32::consts::PI;
 use stereokit_rust::font::Font;
 use stereokit_rust::material::Material;
 use stereokit_rust::maths::{Matrix, Quat, Vec3};
-use stereokit_rust::sk::{IStepper, StepperId, StepperAction};
+use stereokit_rust::sk::{IStepper, StepperAction, StepperId};
 use stereokit_rust::sprite::{Sprite, SpriteType};
 use stereokit_rust::system::{AssetType, Assets, Handed, Input, Lines, Log, Text, TextAlign, TextStyle};
 use stereokit_rust::tex::Tex;
@@ -13,12 +13,11 @@ use stereokit_rust::util::{Color128, Gradient};
 use glam::Mat4;
 use winit::event_loop::EventLoopProxy;
 
-
 #[derive(Debug)]
 pub struct Sprite1 {
-    pub title : String,
-    id : StepperId,
-    event_loop_proxy : Option<EventLoopProxy<StepperAction>>,
+    pub title: String,
+    id: StepperId,
+    event_loop_proxy: Option<EventLoopProxy<StepperAction>>,
     tex_particule1: Tex,
     tex_particule2: Tex,
     color1: Material,
@@ -35,11 +34,8 @@ pub struct Sprite1 {
 
 impl Sprite1 {
     /// Change the default title.
-    pub fn new(title : String) -> Self {
-        let mut this = Self::default();
-        this.title = title;
-        this
-        
+    pub fn new(title: String) -> Self {
+        Self { title, ..Default::default() }
     }
 }
 
@@ -47,7 +43,7 @@ impl Default for Sprite1 {
     fn default() -> Self {
         //---- Textures
 
-        let mut gradient = Gradient::gradient(None);
+        let mut gradient = Gradient::new(None);
         gradient
             .add(Color128::BLACK_TRANSPARENT, 0.0)
             .add(YELLOW, 0.1)
@@ -65,10 +61,9 @@ impl Default for Sprite1 {
         let text_style = Text::make_style(font, 0.50, CYAN);
 
         let mut this = Self {
-            title : "Stereokit Sprites".to_owned(),
-            id : "Sprite 1".to_string(),
+            title: "Stereokit Sprites".to_owned(),
+            id: "Sprite 1".to_string(),
             event_loop_proxy: None,
-
 
             //----- Materials
             color1: Material::copy(Material::pbr_clip()),
@@ -97,7 +92,7 @@ impl Default for Sprite1 {
 }
 
 impl IStepper for Sprite1 {
-    fn initialize(&mut self, id : StepperId, event_loop_proxy : EventLoopProxy<StepperAction>) -> bool {
+    fn initialize(&mut self, id: StepperId, event_loop_proxy: EventLoopProxy<StepperAction>) -> bool {
         self.id = id;
         self.event_loop_proxy = Some(event_loop_proxy);
 
@@ -109,7 +104,7 @@ impl IStepper for Sprite1 {
                 sprite.get_aspect(),
                 sprite.get_height(),
                 sprite.get_width(),
-                sprite.get_normalized_dimensions().to_string()
+                sprite.get_normalized_dimensions()
             ));
         }
 
@@ -125,30 +120,18 @@ impl IStepper for Sprite1 {
         true
     }
 
-    fn step(&mut self, _event_report : &Vec<StepperAction>) {
-        self.sprite1.draw(
-            Mat4::from_translation(glam::Vec3::new(-2.5, 1.5, -2.5)),
-            TextAlign::Center,
-            None,
-        );
+    fn step(&mut self, _event_report: &[StepperAction]) {
+        self.sprite1.draw(Mat4::from_translation(glam::Vec3::new(-2.5, 1.5, -2.5)), TextAlign::Center, None);
 
         self.sprite_ico.draw(
-            Mat4::from_rotation_translation(glam::Quat::from_rotation_y(PI),glam::Vec3::new(0.0, 1.5, -2.5)),
+            Mat4::from_rotation_translation(glam::Quat::from_rotation_y(PI), glam::Vec3::new(0.0, 1.5, -2.5)),
             TextAlign::BottomCenter,
             None,
         );
 
-        self.sprite3.draw(
-            Mat4::from_translation(glam::Vec3::new(2.5, 1.5, -2.5)),
-            TextAlign::YTop,
-            None,
-        );
+        self.sprite3.draw(Mat4::from_translation(glam::Vec3::new(2.5, 1.5, -2.5)), TextAlign::YTop, None);
 
-        self.sprite4.draw(
-            Mat4::from_translation(glam::Vec3::new(0.0, 3.5, -2.5)),
-            TextAlign::YTop,
-            None,
-        );
+        self.sprite4.draw(Mat4::from_translation(glam::Vec3::new(0.0, 3.5, -2.5)), TextAlign::YTop, None);
 
         Text::add_at(
             &self.title,
@@ -168,10 +151,8 @@ impl IStepper for Sprite1 {
 
         if self.render_now {
             match self.stage % 2 {
-                0 => {
-                }
-                1 => {
-                }
+                0 => {}
+                1 => {}
                 _ => {
                     self.stage = 0;
                 }
@@ -195,7 +176,5 @@ impl IStepper for Sprite1 {
         }
     }
 
-    fn shutdown(&mut self) {
-        
-    }
+    fn shutdown(&mut self) {}
 }

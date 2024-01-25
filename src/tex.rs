@@ -1,4 +1,3 @@
-
 use std::{
     ffi::{c_char, c_void, CStr, CString},
     path::{Path, PathBuf},
@@ -6,7 +5,7 @@ use std::{
 };
 
 use crate::{
-    maths::{Bool32T,Vec3},
+    maths::{Bool32T, Vec3},
     system::{
         render_enable_skytex, render_get_skylight, render_get_skytex, render_set_skylight, render_set_skytex,
         AssetState, IAsset, Log,
@@ -51,7 +50,7 @@ bitflags::bitflags! {
 }
 impl TexType {
     pub fn as_u32(&self) -> u32 {
-        self.bits() as u32
+        self.bits()
     }
 }
 /// What type of color information will the texture contain? A
@@ -102,20 +101,20 @@ pub enum TexFormat {
     /// to reduce memory usage. Values in the shader are always 0.0-1.0.
     R8 = 11,
     /// A single channel of data, with 16 bits per-pixel! This is a good format for height maps, since it stores a fair
-    /// bit of information in it. Values in the shader are always 0.0-1.0. 
-    /// TODO: remove during major version update, prefer s, f, or u postfixed versions of this format, this item is the 
+    /// bit of information in it. Values in the shader are always 0.0-1.0.
+    /// TODO: remove during major version update, prefer s, f, or u postfixed versions of this format, this item is the
     /// same as  r16u.
     //R16 = 12,
-	/// A single channel of data, with 16 bits per-pixel! This is a good format for height maps, since it stores a fair 
-    /// bit of information in it. The u postfix indicates that the raw color data is stored as an unsigned 16 bit 
+    /// A single channel of data, with 16 bits per-pixel! This is a good format for height maps, since it stores a fair
+    /// bit of information in it. The u postfix indicates that the raw color data is stored as an unsigned 16 bit
     /// integer, which is then normalized into the 0, 1 floating point range on the GPU.
     R16u = 12,
-    /// A single channel of data, with 16 bits per-pixel! This is a good format for height maps, since it stores a fair 
-    /// bit of information in it. The s postfix indicates that the raw color data is stored as a signed 16 bit integer, 
+    /// A single channel of data, with 16 bits per-pixel! This is a good format for height maps, since it stores a fair
+    /// bit of information in it. The s postfix indicates that the raw color data is stored as a signed 16 bit integer,
     /// which is then normalized into the -1, +1 floating point range on the GPU.
     R16s = 13,
-    /// A single channel of data, with 16 bits per-pixel! This is a good format for height maps, since it stores a fair 
-    /// bit of information in it. The f postfix indicates that the raw color data is stored as 16 bit floats, which may 
+    /// A single channel of data, with 16 bits per-pixel! This is a good format for height maps, since it stores a fair
+    /// bit of information in it. The f postfix indicates that the raw color data is stored as 16 bit floats, which may
     /// be tricky to work with in most languages.
     R16f = 14,
     /// A single channel of data, with 32 bits per-pixel! This basically treats each pixel as a generic float, so you
@@ -132,7 +131,7 @@ pub enum TexFormat {
     /// depth.
     Depth16 = 18,
     /// A double channel of data that supports 8 bits for the red channel and 8 bits for the green channel.
-	R8G8 = 19,
+    R8G8 = 19,
 }
 
 /// How does the shader grab pixels from the texture? Or more
@@ -173,8 +172,8 @@ pub enum TexAddress {
     Mirror = 2,
 }
 
-/// This is the texture asset class! This encapsulates 2D images, texture arrays, cubemaps, and rendertargets! It can 
-/// load any image format that stb_image can, (jpg, png, tga, bmp, psd, gif, hdr, pic) plus more later on, and you can 
+/// This is the texture asset class! This encapsulates 2D images, texture arrays, cubemaps, and rendertargets! It can
+/// load any image format that stb_image can, (jpg, png, tga, bmp, psd, gif, hdr, pic) plus more later on, and you can
 /// also create textures procedurally.
 /// Tex Builder
 /// <https://stereokit.net/Pages/StereoKit/Tex.html>
@@ -189,7 +188,7 @@ impl Drop for Tex {
 }
 impl AsRef<Tex> for Tex {
     fn as_ref(&self) -> &Tex {
-        &self
+        self
     }
 }
 #[repr(C)]
@@ -322,7 +321,7 @@ impl Tex {
     /// <https://stereokit.net/Pages/StereoKit/Tex/Tex.html>
     ///
     /// see also [`crate::tex::tex_create`]
-    pub fn tex<S: AsRef<str>>(r#type: TexType, format: TexFormat, id: S) -> Tex {
+    pub fn new<S: AsRef<str>>(r#type: TexType, format: TexFormat, id: S) -> Tex {
         let tex = Tex(NonNull::new(unsafe { tex_create(r#type, format) }).unwrap());
         let c_str = CString::new(id.as_ref()).unwrap();
         unsafe { tex_set_id(tex.0.as_ptr(), c_str.as_ptr()) };
@@ -349,7 +348,11 @@ impl Tex {
     /// * priority - If None will be set to 10
     ///
     /// see also [`crate::tex::tex_create_file`]
-    pub fn from_file(file_utf8: impl AsRef<Path>, srgb_data: bool, priority: Option<i32>) -> Result<Tex, StereoKitError> {
+    pub fn from_file(
+        file_utf8: impl AsRef<Path>,
+        srgb_data: bool,
+        priority: Option<i32>,
+    ) -> Result<Tex, StereoKitError> {
         let priority = priority.unwrap_or(10);
         let path_buf = file_utf8.as_ref().to_path_buf();
         let c_str = CString::new(
@@ -369,11 +372,15 @@ impl Tex {
     /// * priority - If None will be set to 10
     ///
     /// see also [`crate::tex::tex_create_file`]
-    pub fn from_files<P: AsRef<Path>>(files_utf8: &[P], srgb_data: bool, priority: Option<i32>) -> Result<Tex, StereoKitError> {
+    pub fn from_files<P: AsRef<Path>>(
+        files_utf8: &[P],
+        srgb_data: bool,
+        priority: Option<i32>,
+    ) -> Result<Tex, StereoKitError> {
         let priority = priority.unwrap_or(10);
         let mut c_files = Vec::new();
-        for i in 0..files_utf8.len() {
-            let path = files_utf8[i].as_ref();
+        for path in files_utf8 {
+            let path = path.as_ref();
             let path_buf = path.to_path_buf();
             let c_str =
                 CString::new(path.to_str().ok_or(StereoKitError::TexCString(path_buf.to_str().unwrap().to_owned()))?)?;
@@ -475,7 +482,7 @@ impl Tex {
                     GradientKey { color: [1.0, 1.0, 1.0, 0.0].into(), position: 0.0 },
                     GradientKey { color: Color128::WHITE, position: 1.0 },
                 ];
-                Gradient::gradient(Some(&keys))
+                Gradient::new(Some(&keys))
             }
         };
         Tex(NonNull::new(unsafe { tex_gen_particle(width, height, roundness, gradient_linear.0.as_ptr()) }).unwrap())
@@ -558,6 +565,7 @@ impl Tex {
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetColors.html>
     ///
     /// see also [`crate::tex::tex_set_colors`]
+    #[allow(clippy::not_unsafe_ptr_arg_deref)]
     pub fn set_colors(&mut self, width: usize, height: usize, data: *mut std::os::raw::c_void) -> &mut Self {
         unsafe { tex_set_colors(self.0.as_ptr(), width as i32, height as i32, data) };
         self
@@ -771,6 +779,8 @@ impl Tex {
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetNativeSurface.html>
     ///
     /// see also [`crate::tex::tex_set_surface`]
+    #[allow(clippy::not_unsafe_ptr_arg_deref)]
+    #[allow(clippy::too_many_arguments)]
     pub fn set_native_surface(
         &mut self,
         native_surface: *mut std::os::raw::c_void,
@@ -875,7 +885,7 @@ impl Tex {
             AssetState::LoadedMeta => (),
             _ => return None,
         }
-        return Some(unsafe { tex_get_format(self.0.as_ptr()) });
+        Some(unsafe { tex_get_format(self.0.as_ptr()) })
     }
 
     /// The width of the texture, in pixels. This will be a blocking call if AssetState is less than LoadedMeta so None will be return instead
@@ -941,15 +951,15 @@ impl Tex {
             size_test = width * height;
         } else {
             mips_test = deux.pow(mip as u32);
-            width = width / mips_test;
-            height = height / mips_test;
+            width /= mips_test;
+            height /= mips_test;
 
             size_test = width * height;
         }
         Some((width, height, size_test))
     }
 
-    ///	Retrieve the color data of the texture from the GPU. This can be a very slow operation,
+    /// Retrieve the color data of the texture from the GPU. This can be a very slow operation,
     /// so use it cautiously. The out_data pointer must correspond to an array with the correct size.
     /// <https://stereokit.net/Pages/StereoKit/Tex/GetColors.html>
     ///
@@ -994,7 +1004,7 @@ impl Tex {
         Some(true)
     }
 
-    ///	Retrieve the color data of the texture from the GPU. This can be a very slow operation,
+    /// Retrieve the color data of the texture from the GPU. This can be a very slow operation,
     /// so use it cautiously. The out_data pointer must correspond to an array with the correct size.
     /// <https://stereokit.net/Pages/StereoKit/Tex/GetColors.html>
     ///
@@ -1039,7 +1049,7 @@ impl Tex {
         Some(true)
     }
 
-    ///	Retrieve the color data of the texture from the GPU. This can be a very slow operation,
+    /// Retrieve the color data of the texture from the GPU. This can be a very slow operation,
     /// so use it cautiously. The out_data pointer must correspond to an array with the correct size.
     /// <https://stereokit.net/Pages/StereoKit/Tex/GetColors.html>
     ///
@@ -1068,15 +1078,13 @@ impl Tex {
             return None;
         }
         if mip < 0 {
-            unsafe {
-                tex_get_data(self.0.as_ptr(), color_data.as_ptr() as *mut std::os::raw::c_void, color_data.len() * 1)
-            };
+            unsafe { tex_get_data(self.0.as_ptr(), color_data.as_ptr() as *mut c_void, color_data.len()) };
         } else {
             unsafe {
                 tex_get_data_mip(
                     self.0.as_ptr(),
                     color_data.as_ptr() as *mut std::os::raw::c_void,
-                    color_data.len() * 1,
+                    color_data.len(),
                     mip as i32,
                 )
             };
@@ -1084,7 +1092,7 @@ impl Tex {
         Some(true)
     }
 
-    ///	Retrieve the color data of the texture from the GPU. This can be a very slow operation,
+    /// Retrieve the color data of the texture from the GPU. This can be a very slow operation,
     /// so use it cautiously. The out_data pointer must correspond to an array with the correct size.
     /// <https://stereokit.net/Pages/StereoKit/Tex/GetColors.html>
     ///
@@ -1129,7 +1137,7 @@ impl Tex {
         Some(true)
     }
 
-    ///	Retrieve the color data of the texture from the GPU. This can be a very slow operation,
+    /// Retrieve the color data of the texture from the GPU. This can be a very slow operation,
     /// so use it cautiously. The out_data pointer must correspond to an array with the correct size.
     /// <https://stereokit.net/Pages/StereoKit/Tex/GetColors.html>
     ///
@@ -1220,10 +1228,10 @@ impl Tex {
     ///
     /// see also [`crate::tex::tex_gen_cubemap_sh`]
     pub fn get_cubemap_lighting(&self) -> SHCubemap {
-        return SHCubemap {
+        SHCubemap {
             sh: unsafe { tex_get_cubemap_lighting(self.0.as_ptr()) },
             tex: Tex(NonNull::new(unsafe { tex_find(tex_get_id(self.0.as_ptr())) }).unwrap()),
-        };
+        }
     }
 
     /// Default 2x2 black opaque texture, this is the texture referred to as ‘black’ in the shader texture defaults.
@@ -1327,8 +1335,8 @@ impl SHCubemap {
     ) -> Result<SHCubemap, StereoKitError> {
         let mut sh = SphericalHarmonics::default();
         let mut c_files = Vec::new();
-        for i in 0..6 {
-            let path = files_utf8[i].as_ref();
+        for path in files_utf8 {
+            let path = path.as_ref();
             let path_buf = path.to_path_buf();
             let c_str =
                 CString::new(path.to_str().ok_or(StereoKitError::TexCString(path_buf.to_str().unwrap().to_owned()))?)?;
@@ -1436,6 +1444,6 @@ impl SHCubemap {
     ///
     /// see also [`crate::tex::Tex`] [`crate::util::SphericalHarmonics`]
     pub fn get(self) -> (SphericalHarmonics, Tex) {
-        (self.sh.clone(), Tex(NonNull::new(unsafe { tex_find(tex_get_id(self.tex.0.as_ptr())) }).unwrap()))
+        (self.sh, Tex(NonNull::new(unsafe { tex_find(tex_get_id(self.tex.0.as_ptr())) }).unwrap()))
     }
 }

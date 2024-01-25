@@ -1,5 +1,5 @@
 use std::{
-    ffi::{c_char, CStr, CString, c_void},
+    ffi::{c_char, c_void, CStr, CString},
     ptr::{null_mut, NonNull},
 };
 
@@ -23,7 +23,7 @@ impl Drop for Anchor {
 }
 impl AsRef<Anchor> for Anchor {
     fn as_ref(&self) -> &Anchor {
-        &self
+        self
     }
 }
 #[repr(C)]
@@ -175,7 +175,7 @@ impl Anchor {
     /// see also [`crate::anchor::anchor_get_name`]
     pub fn try_get_perception_anchor<T>(&self) -> Option<*mut T> {
         let out_anchor: *mut T = null_mut();
-        if unsafe { anchor_get_perception_anchor(self.0.as_ptr(), out_anchor as *mut *mut c_void) } != 0{
+        if unsafe { anchor_get_perception_anchor(self.0.as_ptr(), out_anchor as *mut *mut c_void) } != 0 {
             Some(out_anchor)
         } else {
             None

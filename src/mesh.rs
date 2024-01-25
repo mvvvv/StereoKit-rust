@@ -34,11 +34,15 @@ impl Vertex {
     /// <https://stereokit.net/Pages/StereoKit/Vertex/Vertex.html>
     /// * texture_coordinate - If None, set the value to Vec2::ZERO
     /// * color - If None, set the value to Color32::WHITE
-    pub fn new<V: Into<Vec3>>(position : V, normal : V, texture_coordinate : Option<Vec2>, color : Option<Color32> ) -> Self{
+    pub fn new<V: Into<Vec3>>(
+        position: V,
+        normal: V,
+        texture_coordinate: Option<Vec2>,
+        color: Option<Color32>,
+    ) -> Self {
         let texture_coordinate = texture_coordinate.unwrap_or(Vec2::ZERO);
         let color = color.unwrap_or(Color32::WHITE);
-        Self{ pos: position.into(), norm: normal.into(), uv: texture_coordinate, col: color }
-
+        Self { pos: position.into(), norm: normal.into(), uv: texture_coordinate, col: color }
     }
 }
 
@@ -82,7 +86,7 @@ impl Drop for Mesh {
 }
 impl AsRef<Mesh> for Mesh {
     fn as_ref(&self) -> &Mesh {
-        &self
+        self
     }
 }
 
@@ -193,6 +197,15 @@ impl IAsset for Mesh {
         self.get_id()
     }
 }
+
+impl Default for Mesh {
+    /// Creates an empty mesh.
+    /// <https://stereokit.net/Pages/StereoKit/Mesh/Mesh.html>
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Mesh {
     /// Creates an empty mesh.
     /// <https://stereokit.net/Pages/StereoKit/Mesh/Mesh.html>
@@ -236,11 +249,7 @@ impl Mesh {
     /// * `double_side` - if None has default value of false
     ///
     /// see also [`crate::mesh::mesh_gen_plane`]
-    pub fn generate_plane_up(
-        dimensions: impl Into<Vec2>,
-        subdivisions: Option<i32>,
-        double_sided: bool,
-    ) -> Mesh {
+    pub fn generate_plane_up(dimensions: impl Into<Vec2>, subdivisions: Option<i32>, double_sided: bool) -> Mesh {
         let subdivisions = subdivisions.unwrap_or(0);
         Mesh(
             NonNull::new(unsafe {
@@ -391,9 +400,9 @@ impl Mesh {
         unsafe {
             mesh_set_data(
                 self.0.as_ptr(),
-                std::mem::transmute(vertices.as_ptr()),
+                vertices.as_ptr(),
                 vertices.len() as i32,
-                std::mem::transmute(indices.as_ptr()),
+                indices.as_ptr(),
                 indices.len() as i32,
                 calculate_bounds as Bool32T,
             )
@@ -408,12 +417,7 @@ impl Mesh {
     /// see also [`crate::mesh::mesh_set_verts`]
     pub fn set_verts(&mut self, vertices: &[Vertex], calculate_bounds: bool) -> &mut Self {
         unsafe {
-            mesh_set_verts(
-                self.0.as_ptr(),
-                std::mem::transmute(vertices.as_ptr()),
-                vertices.len() as i32,
-                calculate_bounds as Bool32T,
-            )
+            mesh_set_verts(self.0.as_ptr(), vertices.as_ptr(), vertices.len() as i32, calculate_bounds as Bool32T)
         };
         self
     }
@@ -423,7 +427,7 @@ impl Mesh {
     ///
     /// see also [`crate::mesh::mesh_set_indss`]
     pub fn set_inds(&mut self, indices: &[u32]) -> &mut Self {
-        unsafe { mesh_set_inds(self.0.as_ptr(), std::mem::transmute(indices.as_ptr()), indices.len() as i32) };
+        unsafe { mesh_set_inds(self.0.as_ptr(), indices.as_ptr(), indices.len() as i32) };
         self
     }
 
@@ -492,12 +496,12 @@ impl Mesh {
     /// <https://stereokit.net/Pages/StereoKit/Mesh/GetInds.html>
     ///
     /// see also [`crate::mesh::mesh_get_inds_ref`]
-    pub fn get_inds(&self) -> &mut [u32] {
+    pub fn get_inds(&self) -> &[u32] {
         let inds_ptr = CString::new("H").unwrap().into_raw() as *mut *mut u32;
-        let mut inds_len = 0 as i32;
+        let mut inds_len = 0;
         unsafe {
             mesh_get_inds(self.0.as_ptr(), inds_ptr, &mut inds_len, Memory::Reference);
-            &mut *slice_from_raw_parts_mut(std::mem::transmute(*inds_ptr), inds_len as usize)
+            &mut *slice_from_raw_parts_mut(*inds_ptr, inds_len as usize)
         }
     }
 
@@ -518,7 +522,7 @@ impl Mesh {
         let mut verts_len = 0;
         unsafe {
             mesh_get_verts(self.0.as_ptr(), verts_pointer, &mut verts_len, Memory::Reference);
-            &mut *slice_from_raw_parts_mut(std::mem::transmute(*verts_pointer), verts_len as usize)
+            &mut *slice_from_raw_parts_mut(*verts_pointer, verts_len as usize)
         }
     }
 
@@ -575,6 +579,7 @@ impl Mesh {
     ///
     /// see also [`stereokit::mesh_ray_intersect`]
     #[inline]
+    #[allow(clippy::not_unsafe_ptr_arg_deref)]
     pub fn intersect_mesh_to_ptr(&self, ray: Ray, out_ray: *mut Ray, out_inds: *mut u32, cull: Cull) -> bool {
         unsafe { mesh_ray_intersect(self.0.as_ptr(), ray, out_ray, out_inds, cull) != 0 }
     }

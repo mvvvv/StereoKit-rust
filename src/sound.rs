@@ -1,6 +1,7 @@
 use crate::{
     maths::{Bool32T, Vec3},
-    StereoKitError, system::IAsset,
+    system::IAsset,
+    StereoKitError,
 };
 
 use std::{
@@ -9,12 +10,12 @@ use std::{
     ptr::NonNull,
 };
 
-/// This class represents a sound effect! Excellent for blips and bloops and little clips that you might play around 
+/// This class represents a sound effect! Excellent for blips and bloops and little clips that you might play around
 /// your scene. Right now, this supports .wav, .mp3, and procedurally generated noises!
-/// 
-/// On HoloLens 2, sounds are automatically processed on the HPU, freeing up the CPU for more of your app’s code. To 
-/// simulate this same effect on your development PC, you need to enable spatial sound on your audio endpoint. To do 
-/// this, right click the speaker icon in your system tray, navigate to “Spatial sound”, and choose “Windows Sonic for 
+///
+/// On HoloLens 2, sounds are automatically processed on the HPU, freeing up the CPU for more of your app’s code. To
+/// simulate this same effect on your development PC, you need to enable spatial sound on your audio endpoint. To do
+/// this, right click the speaker icon in your system tray, navigate to “Spatial sound”, and choose “Windows Sonic for
 /// Headphones.” For more information, visit https://docs.microsoft.com/en-us/windows/win32/coreaudio/spatial-sound
 ///<https://stereokit.net/Pages/StereoKit/Sound.html>
 /// ## Examples
@@ -30,7 +31,7 @@ impl Drop for Sound {
 }
 impl AsRef<Sound> for Sound {
     fn as_ref(&self) -> &Sound {
-        &self
+        self
     }
 }
 #[repr(C)]
@@ -107,10 +108,7 @@ impl Sound {
     pub fn from_samples(in_arr_samples_at_48000s: &[f32]) -> Result<Sound, StereoKitError> {
         Ok(Sound(
             NonNull::new(unsafe {
-                sound_create_samples(
-                    in_arr_samples_at_48000s.as_ptr() as *const f32,
-                    in_arr_samples_at_48000s.len() as u64,
-                )
+                sound_create_samples(in_arr_samples_at_48000s.as_ptr(), in_arr_samples_at_48000s.len() as u64)
             })
             .ok_or(StereoKitError::SoundCreate("from_samples failed".into()))?,
         ))
@@ -170,41 +168,42 @@ impl Sound {
         Sound(NonNull::new(unsafe { sound_find(cstr_id.as_ptr()) }).unwrap())
     }
 
-
-    /// Plays the sound at the 3D location specified, using the volume parameter as an additional volume control option! 
-    /// Sound volume falls off from 3D location, and can also indicate direction and location through spatial audio 
-    /// cues. So make sure the position is where you want people to think it’s from! Currently, if this sound is playing 
+    /// Plays the sound at the 3D location specified, using the volume parameter as an additional volume control option!
+    /// Sound volume falls off from 3D location, and can also indicate direction and location through spatial audio
+    /// cues. So make sure the position is where you want people to think it’s from! Currently, if this sound is playing
     /// somewhere else, it’ll be canceled, and moved to this location.
     /// <https://stereokit.net/Pages/StereoKit/Sound/Play.html>
     /// * volume - if None will have default value of 1.0
     ///
     /// see also [`stereokit::StereoKitDraw::sound_play`]
-    pub fn play(&self,at : impl Into<Vec3>, volume:Option<f32> ) -> SoundInst {
+    pub fn play(&self, at: impl Into<Vec3>, volume: Option<f32>) -> SoundInst {
         let volume = volume.unwrap_or(1.0);
         unsafe { sound_play(self.0.as_ptr(), at.into(), volume) }
     }
 
-    /// This will read samples from the sound stream, starting from the first unread sample. Check UnreadSamples for how 
+    /// This will read samples from the sound stream, starting from the first unread sample. Check UnreadSamples for how
     /// many samples are available to read.
     /// <https://stereokit.net/Pages/StereoKit/Sound/ReadSamples.html>
     ///
     /// see also [`stereokit::StereoKitDraw::sound_read_samples`]
-    pub fn read_samples(&self,out_arr_samples : *mut f32, sample_count : u64) -> u64 {
+    #[allow(clippy::not_unsafe_ptr_arg_deref)]
+    pub fn read_samples(&self, out_arr_samples: *mut f32, sample_count: u64) -> u64 {
         unsafe { sound_read_samples(self.0.as_ptr(), out_arr_samples, sample_count) }
     }
 
-    /// Only works if this Sound is a stream type! This writes a number of audio samples to the sample buffer, and 
-    /// samples should be between -1 and +1. Streams are stored as ring buffers of a fixed size, so writing beyond the 
+    /// Only works if this Sound is a stream type! This writes a number of audio samples to the sample buffer, and
+    /// samples should be between -1 and +1. Streams are stored as ring buffers of a fixed size, so writing beyond the
     /// capacity of the ring buffer will overwrite the oldest samples.
-    /// 
+    ///
     /// StereoKit uses 48,000 samples per second of audio.
-    /// 
-    /// This variation of the method bypasses marshalling memory into C#, so it is the most optimal way to copy sound 
+    ///
+    /// This variation of the method bypasses marshalling memory into C#, so it is the most optimal way to copy sound
     /// data if your source is already in native memory!
     /// <https://stereokit.net/Pages/StereoKit/Sound/WriteSamples.html>
     ///
     /// see also [`stereokit::StereoKitDraw::sound_write_samples`]
-    pub fn write_samples(&self,in_arr_samples : *const f32, sample_count : u64)  {
+    #[allow(clippy::not_unsafe_ptr_arg_deref)]
+    pub fn write_samples(&self, in_arr_samples: *const f32, sample_count: u64) {
         unsafe { sound_write_samples(self.0.as_ptr(), in_arr_samples, sample_count) };
     }
 
@@ -243,7 +242,7 @@ impl Sound {
         unsafe { sound_duration(self.0.as_ptr()) }
     }
 
-    /// This will return the total number of audio samples used by the sound! StereoKit currently uses 48,000 samples 
+    /// This will return the total number of audio samples used by the sound! StereoKit currently uses 48,000 samples
     /// per second for all audio.
     /// <https://stereokit.net/Pages/StereoKit/Sound/TotalSamples.html>
     ///
@@ -252,13 +251,13 @@ impl Sound {
         unsafe { sound_total_samples(self.0.as_ptr()) }
     }
 
-    /// This is the maximum number of samples in the sound that are currently available for reading via ReadSamples! 
-    /// ReadSamples will reduce this number by the amount of samples read. This is only really valid for Stream 
+    /// This is the maximum number of samples in the sound that are currently available for reading via ReadSamples!
+    /// ReadSamples will reduce this number by the amount of samples read. This is only really valid for Stream
     /// sounds, all other sound types will just return 0.
     /// <https://stereokit.net/Pages/StereoKit/Sound/UnreadSamples.html>
     ///
     /// see also [`crate::sound::sound_unread_samples`]
-    pub fn get_unread_samples(&self) -> u64{
+    pub fn get_unread_samples(&self) -> u64 {
         unsafe { sound_unread_samples(self.0.as_ptr()) }
     }
 }
@@ -284,16 +283,16 @@ impl SoundInst {
     /// <https://stereokit.net/Pages/StereoKit/SoundInst/Stop.html>
     ///
     /// see also [`crate::sound::sound_inst_stop`]
-    pub fn stop(self){
+    pub fn stop(self) {
         unsafe { sound_inst_stop(self) }
     }
 
-    /// The 3D position in world space this sound instance is currently playing at. If this instance is no longer 
+    /// The 3D position in world space this sound instance is currently playing at. If this instance is no longer
     /// valid, the position will be at zero.
     /// <https://stereokit.net/Pages/StereoKit/SoundInst/Position.html>
     ///
     /// see also [`crate::sound::sound_inst_set_pos`]
-    pub fn position(&mut self, at : impl Into<Vec3>) -> &mut Self{
+    pub fn position(&mut self, at: impl Into<Vec3>) -> &mut Self {
         unsafe { sound_inst_set_pos(*self, at.into()) }
         self
     }
@@ -302,17 +301,17 @@ impl SoundInst {
     /// <https://stereokit.net/Pages/StereoKit/SoundInst/Volume.html>
     ///
     /// see also [`crate::sound::sound_inst_set_volume`]
-    pub fn volume(&mut self, volume:f32) -> &mut Self{
+    pub fn volume(&mut self, volume: f32) -> &mut Self {
         unsafe { sound_inst_set_volume(*self, volume) }
         self
     }
 
-    /// The 3D position in world space this sound instance is currently playing at. If this instance is no longer 
+    /// The 3D position in world space this sound instance is currently playing at. If this instance is no longer
     /// valid, the position will be at zero.
     /// <https://stereokit.net/Pages/StereoKit/SoundInst/Position.html>
     ///
     /// see also [`crate::sound::sound_inst_get_pos`]
-    pub fn get_position(&self) -> Vec3{
+    pub fn get_position(&self) -> Vec3 {
         unsafe { sound_inst_get_pos(*self) }
     }
 
@@ -320,16 +319,16 @@ impl SoundInst {
     /// <https://stereokit.net/Pages/StereoKit/SoundInst/Volume.html>
     ///
     /// see also [`crate::sound::sound_inst_get_volume`]
-    pub fn get_volume(&self) -> f32{
+    pub fn get_volume(&self) -> f32 {
         unsafe { sound_inst_get_volume(*self) }
     }
 
-    /// Is this Sound instance currently playing? For streaming assets, this will be true even if they don’t have any 
+    /// Is this Sound instance currently playing? For streaming assets, this will be true even if they don’t have any
     /// new data in them, and they’re just idling at the end of their data.
     /// <https://stereokit.net/Pages/StereoKit/SoundInst/IsPlaying.html>
     ///
     /// see also [`crate::sound::sound_inst_is_playing`]
-    pub fn is_playing(&self) -> bool{
-        unsafe { sound_inst_is_playing(*self) != 0}
+    pub fn is_playing(&self) -> bool {
+        unsafe { sound_inst_is_playing(*self) != 0 }
     }
 }

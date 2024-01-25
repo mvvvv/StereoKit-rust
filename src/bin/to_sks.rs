@@ -1,4 +1,4 @@
-use std::{ ffi::OsStr, io, path::PathBuf, process::Command};
+use std::{ffi::OsStr, io, path::PathBuf, process::Command};
 
 fn main() {
     is_input_file_outdated().unwrap();
@@ -20,7 +20,7 @@ fn is_input_file_outdated() -> Result<bool, io::Error> {
     shaders_path.push("assets");
     shaders_path.push("shaders");
 
-    println!("Shaders path {:?}",shaders_path);
+    println!("Shaders path {:?}", shaders_path);
 
     let command = OsStr::new(skshaderc.as_os_str());
     let excluded_extensions = [OsStr::new("sks"), OsStr::new("txt"), OsStr::new("md")];
@@ -30,12 +30,9 @@ fn is_input_file_outdated() -> Result<bool, io::Error> {
             if file.is_file() {
                 if let Some(extension) = file.extension() {
                     if !excluded_extensions.contains(&extension) {
-
-                        println!("shader file : {:?}",file);
-                        let output = Command::new(command)
-                            .args(&[file])
-                            .output()
-                            .expect(format!("failed to run {}", command.to_str().unwrap()).as_str());
+                        println!("shader file : {:?}", file);
+                        let output =
+                            Command::new(command).args(&[file]).output().expect("failed to run shader compiler");
                         println!("{}", String::from_utf8(output.stdout).unwrap());
                     }
                 }

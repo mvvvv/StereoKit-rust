@@ -8,7 +8,7 @@ use crate::{
     maths::{Bool32T, Bounds, Pose, Vec2, Vec3},
     mesh::{Mesh, MeshT, Vertex},
     model::{Model, ModelT},
-    sound::{SoundT, Sound},
+    sound::{Sound, SoundT},
     sprite::{Sprite, SpriteT},
     system::{BtnState, Handed, TextAlign, TextContext, TextFit, TextStyle},
     util::{Color128, Color32},
@@ -255,20 +255,20 @@ pub struct UICorner : u32
     const Right  = Self::TopRight.bits()   | Self::BottomRight.bits();
 }
 }
-/// A point on a lathe for a mesh generation algorithm. This is the 'silhouette' of the mesh, or the shape the mesh 
+/// A point on a lathe for a mesh generation algorithm. This is the 'silhouette' of the mesh, or the shape the mesh
 /// would take if you spun this line of points in a cylinder.
 /// <https://stereokit.net/Pages/StereoKit/UILathePt.html>
 #[derive(Debug, Copy, Clone)]
 #[repr(C)]
 pub struct UILathePt {
-    /// Lathe point 'location', where 'x' is a percentage of the lathe radius alnong the current surface normal, and Y 
+    /// Lathe point 'location', where 'x' is a percentage of the lathe radius alnong the current surface normal, and Y
     /// is the absolute Z axis value.
     pub pt: Vec2,
     /// The lathe normal point, which will be rotated along the surface of the mesh.
     pub normal: Vec2,
     /// Vertex color of the current lathe vertex.
     pub color: Color32,
-    /// Will there be triangles connecting this lathe point to the next in the list, or is this a jump without 
+    /// Will there be triangles connecting this lathe point to the next in the list, or is this a jump without
     /// triangles?
     pub connect_next: Bool32T,
 }
@@ -863,6 +863,7 @@ impl Ui {
     /// * hand - Id of the hand that interacted with the button. This will be -1 if no interaction has occurred.
     ///
     /// see also [`crate::ui::ui_button_behavior_depth`]
+    #[allow(clippy::too_many_arguments)]
     pub fn button_behavior_depth(
         top_left_corner: impl Into<Vec3>,
         size: impl Into<Vec2>,
@@ -1042,6 +1043,7 @@ impl Ui {
     /// * notifyOn - Allows you to modify the behavior of the return value. Default is UiNotify::Change
     ///
     /// see also [`crate::ui::ui_vslider`]
+    #[allow(clippy::too_many_arguments)]
     pub fn hslider(
         id: impl AsRef<str>,
         value: &mut f32,
@@ -1073,6 +1075,7 @@ impl Ui {
     /// * notifyOn - Allows you to modify the behavior of the return value. Default is UiNotify::Change
     ///
     /// see also [`crate::ui::ui_hslider_f64`]
+    #[allow(clippy::too_many_arguments)]
     pub fn hslider_f64(
         id: impl AsRef<str>,
         value: &mut f64,
@@ -1101,6 +1104,7 @@ impl Ui {
     /// * notifyOn - Allows you to modify the behavior of the return value. Default is UiNotify::Change
     ///
     /// see also [`crate::ui::ui_hslider_at`]
+    #[allow(clippy::too_many_arguments)]
     pub fn hslider_at(
         id: impl AsRef<str>,
         value: &mut f32,
@@ -1140,6 +1144,7 @@ impl Ui {
     /// * notifyOn - Allows you to modify the behavior of the return value. Default is UiNotify::Change
     ///
     /// see also [`crate::ui::ui_hslider_at_f64`]
+    #[allow(clippy::too_many_arguments)]
     pub fn hslider_at_f64(
         id: impl AsRef<str>,
         value: &mut f64,
@@ -1376,8 +1381,8 @@ impl Ui {
         unsafe { ui_pop_preserve_keyboard() };
     }
 
-    /// This removes an enabled status for grab auras from the stack, returning it to the state before the previous 
-    /// push_grab_aura call. Grab auras are an extra space and visual element that goes around Window elements to make 
+    /// This removes an enabled status for grab auras from the stack, returning it to the state before the previous
+    /// push_grab_aura call. Grab auras are an extra space and visual element that goes around Window elements to make
     /// them easier to grab.
     /// <https://stereokit.net/Pages/StereoKit/UI/PopGrabAurahtml>
     ///
@@ -1386,13 +1391,13 @@ impl Ui {
         unsafe { ui_pop_grab_aura() };
     }
 
-    /// This retreives the top of the grab aura enablement stack, in case you need to know if the current window will 
+    /// This retreives the top of the grab aura enablement stack, in case you need to know if the current window will
     /// have an aura.
     /// <https://stereokit.net/Pages/StereoKit/UI/GrabAuraEnabled>
     ///
     /// see also [`crate::ui::ui_grab_aura_enabled`]
     pub fn grab_aura_enabled() -> bool {
-        unsafe { ui_grab_aura_enabled() != 0 } 
+        unsafe { ui_grab_aura_enabled() != 0 }
     }
 
     /// This will return to the previous UI layout on the stack. This must be called after a PushSurface call.
@@ -1476,7 +1481,7 @@ impl Ui {
         unsafe { ui_push_preserve_keyboard(preserve_keyboard as Bool32T) }
     }
 
-    /// This pushes an enabled status for grab auras onto the stack. Grab auras are an extra space and visual element 
+    /// This pushes an enabled status for grab auras onto the stack. Grab auras are an extra space and visual element
     /// that goes around Window elements to make them easier to grab. MUST be matched by a pop_grab_aura call.
     /// <https://stereokit.net/Pages/StereoKit/UI/PushGrabAura.html>
     ///
@@ -1697,7 +1702,7 @@ impl Ui {
             Some(mat) => mat.0.as_ptr(),
             None => null_mut(),
         };
-        let min_size = size.unwrap_or(Vec2::default());
+        let min_size = size.unwrap_or_default();
         unsafe { ui_set_element_visual(visual, mesh.as_ref().0.as_ptr(), material, min_size) };
     }
 
@@ -1806,9 +1811,9 @@ impl Ui {
     /// <https://stereokit.net/Pages/StereoKit/UI/Text.html>
     /// * text_align - Where should the text position itself within its bounds? Default is TextAlign.TopLeft is how most
     /// european language are aligned.
-    /// * fit	- Describe how the text should behave when one of its size dimensions conflicts with the provided ‘size’
+    /// * fit - Describe how the text should behave when one of its size dimensions conflicts with the provided ‘size’
     /// parameter. Ui::text uses TextFit.Wrap by default.
-    /// * size	- The layout size for this element in Hierarchy space. If an axis is left as zero, it will be
+    /// * size - The layout size for this element in Hierarchy space. If an axis is left as zero, it will be
     /// auto-calculated. For X this is the remaining width of the current layout, and for Y this is UI::line_height.
     ///
     /// see also [`crate::ui::ui_text`]
@@ -1828,9 +1833,9 @@ impl Ui {
     /// <https://stereokit.net/Pages/StereoKit/UI/TextAt.html>
     /// * text_align - Where should the text position itself within its bounds? TextAlign.TopLeft is how most
     /// european language are aligned.
-    /// * fit	- Describe how the text should behave when one of its size dimensions conflicts with the provided ‘size’
+    /// * fit - Describe how the text should behave when one of its size dimensions conflicts with the provided ‘size’
     /// parameter. Ui::text uses TextFit.Wrap by default.
-    /// * size	- The layout size for this element in Hierarchy space.
+    /// * size - The layout size for this element in Hierarchy space.
     ///
     /// see also [`crate::ui::ui_text_at`]
     pub fn text_at(
@@ -1916,7 +1921,7 @@ impl Ui {
     /// A variant of Ui::toggle that doesn’t use the layout system, and instead goes exactly where you put it.
     /// <https://stereokit.net/Pages/StereoKit/UI/ToggleAt.html>
     /// * toggle-off- Image to use when the toggle value is false or when no toggle-on image is specified
-    /// * toggle-on	- Image to use when the toggle value is true and toggle-off has been specified.
+    /// * toggle-on - Image to use when the toggle value is true and toggle-off has been specified.
     /// * imageLayout - This enum specifies how the text and image should be laid out on the button.
     /// Default is UiBtnLayout.Left will have the image on the left, and text on the right.
     ///
@@ -1962,9 +1967,9 @@ impl Ui {
     /// A volume for helping to build one handed interactions. This checks for the presence of a hand inside the bounds,
     /// and if found, return that hand along with activation and focus information defined by the interactType.
     /// <https://stereokit.net/Pages/StereoKit/UI/VolumeAt.html>
-    /// * hand	- This will be the last unpreoccupied hand found inside the volume, and is the hand controlling the
+    /// * hand - This will be the last unpreoccupied hand found inside the volume, and is the hand controlling the
     /// interaction.
-    /// focusState	- The focus state tells if the element has a hand inside of the volume that qualifies for focus.
+    /// focusState - The focus state tells if the element has a hand inside of the volume that qualifies for focus.
     ///
     /// see also [`crate::ui::ui_volumei_at`]
     pub fn volume_at(
@@ -1990,6 +1995,7 @@ impl Ui {
     /// * notifyOn - Allows you to modify the behavior of the return value. Default is UiNotify::Change
     ///
     /// see also [`crate::ui::ui_vslider`]
+    #[allow(clippy::too_many_arguments)]
     pub fn vslider(
         id: impl AsRef<str>,
         value: &mut f32,
@@ -2021,6 +2027,7 @@ impl Ui {
     /// * notifyOn - Allows you to modify the behavior of the return value. Default is UiNotify::Change
     ///
     /// see also [`crate::ui::ui_vslider_f64`]
+    #[allow(clippy::too_many_arguments)]
     pub fn vslider_f64(
         id: impl AsRef<str>,
         value: &mut f64,
@@ -2049,6 +2056,7 @@ impl Ui {
     /// * notifyOn - Allows you to modify the behavior of the return value. Default is UiNotify::Change
     ///
     /// see also [`crate::ui::ui_vslider_at`]
+    #[allow(clippy::too_many_arguments)]
     pub fn vslider_at(
         id: impl AsRef<str>,
         value: &mut f32,
@@ -2088,6 +2096,7 @@ impl Ui {
     /// * notifyOn - Allows you to modify the behavior of the return value. Default is UiNotify::Change
     ///
     /// see also [`crate::ui::ui_vslider_at_f64`]
+    #[allow(clippy::too_many_arguments)]
     pub fn vslider_at_f64(
         id: impl AsRef<str>,
         value: &mut f64,
