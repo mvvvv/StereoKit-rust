@@ -15,24 +15,29 @@ fn is_input_file_outdated() -> Result<bool, io::Error> {
     } else {
         skshaderc.push("skshaderc");
     }
-
+    let mut shaders_source_path = project_dir.clone();
+    shaders_source_path.push("shaders_src");
     let mut shaders_path = project_dir.clone();
     shaders_path.push("assets");
     shaders_path.push("shaders");
 
-    println!("Shaders path {:?}", shaders_path);
+    println!("Shaders path {:?}", &shaders_path);
 
     let command = OsStr::new(skshaderc.as_os_str());
     let excluded_extensions = [OsStr::new("sks"), OsStr::new("txt"), OsStr::new("md")];
-    if let Ok(entries) = shaders_path.read_dir() {
+    if let Ok(entries) = shaders_source_path.read_dir() {
         for entry in entries {
             let file = entry?.path();
             if file.is_file() {
                 if let Some(extension) = file.extension() {
                     if !excluded_extensions.contains(&extension) {
                         println!("shader file : {:?}", file);
-                        let output =
-                            Command::new(command).args(&[file]).output().expect("failed to run shader compiler");
+                        let output = Command::new(command)
+                            .arg(file)
+                            .arg("-o")
+                            .arg(&shaders_path)
+                            .output()
+                            .expect("failed to run shader compiler");
                         println!("{}", String::from_utf8(output.stdout).unwrap());
                     }
                 }
