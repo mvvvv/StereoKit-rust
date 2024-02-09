@@ -3,15 +3,17 @@ use stereokit_rust::{
     sk::{Sk, StepperAction, StepperId},
 };
 
-pub mod program;
 pub mod a_stepper;
+pub mod anim1;
+pub mod math1;
+pub mod program;
+pub mod shaders1;
 pub mod sprite1;
 pub mod tex1;
-pub mod anim1;
 
 use a_stepper::AStepper;
 
-use self::{sprite1::Sprite1, tex1::Tex1, anim1::Anim1};
+use self::{anim1::Anim1, math1::Math1, shaders1::Shader1, sprite1::Sprite1, tex1::Tex1};
 
 pub struct Test {
     pub name: String,
@@ -46,6 +48,14 @@ impl Test {
             Test::new("Animation".to_string(), |sk| {
                 sk.push_action(StepperAction::add_default::<Anim1>("Animation"));
                 "Animation".to_string()
+            }),
+            Test::new("Shader1".to_string(), |sk| {
+                sk.push_action(StepperAction::add_default::<Shader1>("Shader1"));
+                "Shader1".to_string()
+            }),
+            Test::new("Math1".to_string(), |sk| {
+                sk.push_action(StepperAction::add_default::<Math1>("Math1"));
+                "Math1".to_string()
             }),
         ];
         Box::new(tests)

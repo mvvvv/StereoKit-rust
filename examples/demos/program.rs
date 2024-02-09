@@ -9,7 +9,7 @@ use stereokit_rust::{
     shader::Shader,
     sk::{AppFocus, DisplayBlend, DisplayMode, Sk, StepperAction, StepperId},
     sprite::Sprite,
-    system::{Assets, BtnState, Handed, Input, Key, Log, LogLevel, Projection, Renderer, Text, World},
+    system::{BtnState, Input, Key, Log, LogLevel, Projection, Renderer, Text, World},
     tex::{SHCubemap, Tex},
     tools::{
         log_window::{LogItem, LogWindow},
@@ -95,8 +95,12 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
     //save the default cubemap.
     let mut cube_default = SHCubemap::get_rendered_sky();
 
-    let _mobile = Model::from_file("mobiles.gltf", Some(Shader::pbr())).unwrap();
+    let mobile = Model::from_file("mobiles.gltf", Some(Shader::pbr())).unwrap();
     let mut clean_tile = Material::find("mobiles.gltf/mat/Calcaire blanc").unwrap_or_default();
+    Log::diag(format!("{:?}", mobile.get_id()));
+    for iter in mobile.get_nodes().visuals() {
+        Log::diag(format!("{:?}", iter.get_mesh().unwrap().get_id()));
+    }
 
     clean_tile
         // I use it in anim1 .id("clean_tile")
@@ -250,13 +254,13 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
                     }
                     None => {}
                 }
-                if is_testing {
-                    Time::set_time(0.0, 0.0);
-                    Input::hand_visible(Handed::Max, false);
-                    Input::hand_clear_override(Handed::Left);
-                    Input::hand_clear_override(Handed::Right);
-                    Assets::block_for_priority(i32::MAX);
-                }
+                // if is_testing {
+                //     Time::set_time(0.0, 0.0);
+                //     Input::hand_visible(Handed::Max, false);
+                //     Input::hand_clear_override(Handed::Left);
+                //     Input::hand_clear_override(Handed::Right);
+                //     Assets::block_for_priority(i32::MAX);
+                // }
                 let next_launcher = (next_s.launcher)(sk);
                 active_scene = Some(next_launcher);
                 scene_time = Time::get_totalf();
@@ -296,12 +300,13 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
                     if curr_width_total + width + ui_settings.gutter > demo_win_width {
                         let inflate =
                             (demo_win_width - (curr_width_total - ui_settings.gutter + 0.0001)) / ((i - start) as f32);
-                        for _t in start..i {
+                        for t in start..i {
+                            let test_in_line = &tests[t];
                             let curr_width =
-                                Text::size(&test.name, Some(style)).x + ui_settings.padding * 2.0 + inflate;
-                            if Ui::button(&test.name, Some(Vec2::new(curr_width, 0.0))) {
-                                Log::info(format!("Starting scene: {}", &test.name.to_string()));
-                                next_scene = Some(test);
+                                Text::size(&test_in_line.name, Some(style)).x + ui_settings.padding * 2.0 + inflate;
+                            if Ui::button(&test_in_line.name, Some(Vec2::new(curr_width, 0.0))) {
+                                Log::info(format!("Starting scene: {}", &test_in_line.name.to_string()));
+                                next_scene = Some(test_in_line);
                             }
                             Ui::same_line();
                         }

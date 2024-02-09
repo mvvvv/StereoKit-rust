@@ -11,16 +11,10 @@ repository = "https://github.com/mvvvv/StereoKit-rust"
 
 
 include = [
-  "Cargo.toml",
-  "build.rs",
-  "src/*",
-  "StereoKit/cmake",
-  "StereoKit/StereoKitC",
-  "StereoKit/CMakeLists.txt",
   "StereoKit/tools/include",
-  "StereoKit/tools/skshaderc",
-  "StereoKit/tools/skshaderc.exe",
-  "README.md",
+# "StereoKit/tools/skshaderc",
+# "StereoKit/tools/skshaderc.exe",
+  "/README.md",
 ]
 readme = "README.md"
 

@@ -978,6 +978,8 @@ impl Ui {
     /// window, except with a more flexible handle, and no header. You can draw the handle, but it will have no text on
     /// it. Returns true for every frame the user is grabbing the handle.
     /// <https://stereokit.net/Pages/StereoKit/UI/Handle.html>
+    /// * move_type - If None, has default value of UiMove::Exact
+    /// * allower_gesture - If None, has default value of UiGesture::Pinch
     ///
     /// see also [`crate::ui::ui_handle_begin`] [`crate::ui::ui_handle_end`]
     pub fn handle(
@@ -985,9 +987,11 @@ impl Ui {
         pose: &mut Pose,
         handle: Bounds,
         draw_handle: bool,
-        move_type: UiMove,
-        allower_gesture: UiGesture,
+        move_type: Option<UiMove>,
+        allower_gesture: Option<UiGesture>,
     ) -> bool {
+        let move_type = move_type.unwrap_or(UiMove::Exact);
+        let allower_gesture = allower_gesture.unwrap_or(UiGesture::Pinch);
         let cstr = CString::new(id.as_ref()).unwrap();
         let result = unsafe {
             ui_handle_begin(cstr.as_ptr(), pose, handle, draw_handle as Bool32T, move_type, allower_gesture) != 0
@@ -1002,6 +1006,8 @@ impl Ui {
     /// drawn up to the corresponding Ui::handle_end() will get transformed by the handle pose. Returns true for every
     /// frame the user is grabbing the handle.
     /// <https://stereokit.net/Pages/StereoKit/UI/HandleBegin.html>
+    /// * move_type - If None, has default value of UiMove::Exact
+    /// * allower_gesture - If None, has default value of UiGesture::Pinch
     ///
     /// see also [`crate::ui::ui_handle_begin`]
     pub fn handle_begin(
@@ -1009,9 +1015,11 @@ impl Ui {
         pose: &mut Pose,
         handle: Bounds,
         draw_handle: bool,
-        move_type: UiMove,
-        allower_gesture: UiGesture,
+        move_type: Option<UiMove>,
+        allower_gesture: Option<UiGesture>,
     ) -> bool {
+        let move_type = move_type.unwrap_or(UiMove::Exact);
+        let allower_gesture = allower_gesture.unwrap_or(UiGesture::Pinch);
         let cstr = CString::new(id.as_ref()).unwrap();
         unsafe { ui_handle_begin(cstr.as_ptr(), pose, handle, draw_handle as Bool32T, move_type, allower_gesture) != 0 }
     }

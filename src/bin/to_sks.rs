@@ -21,10 +21,15 @@ fn is_input_file_outdated() -> Result<bool, io::Error> {
     shaders_path.push("assets");
     shaders_path.push("shaders");
 
+    let mut shaders_include = project_dir.clone();
+    shaders_include.push("StereoKit");
+    shaders_include.push("tools");
+    shaders_include.push("include");
+
     println!("Shaders path {:?}", &shaders_path);
 
     let command = OsStr::new(skshaderc.as_os_str());
-    let excluded_extensions = [OsStr::new("sks"), OsStr::new("txt"), OsStr::new("md")];
+    let excluded_extensions = [OsStr::new("hlsli"), OsStr::new("sks"), OsStr::new("txt"), OsStr::new("md")];
     if let Ok(entries) = shaders_source_path.read_dir() {
         for entry in entries {
             let file = entry?.path();
@@ -34,11 +39,15 @@ fn is_input_file_outdated() -> Result<bool, io::Error> {
                         println!("shader file : {:?}", file);
                         let output = Command::new(command)
                             .arg(file)
+                            .arg("-i")
+                            .arg(&shaders_path)
+                            .arg("-i")
+                            .arg(&shaders_include)
                             .arg("-o")
                             .arg(&shaders_path)
                             .output()
                             .expect("failed to run shader compiler");
-                        println!("{}", String::from_utf8(output.stdout).unwrap());
+                        println!("{}", String::from_utf8(output.clone().stdout).unwrap_or(format!("{:#?}", output)));
                     }
                 }
             }

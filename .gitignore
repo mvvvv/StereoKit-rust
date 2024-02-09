@@ -3,3 +3,4 @@ target/
 Cargo.lock
 common_lib/
 assets/shaders/*.sks
+src/bin/test.rs

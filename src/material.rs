@@ -147,7 +147,7 @@ impl Material {
     /// * id - If None the id will be set to a default value "auto/asset_???"
     ///
     /// see also [`crate::material::material_create`][`crate::material::material_set_id`]
-    pub fn new(shader: impl AsRef<Shader>, id: Option<String>) -> Material {
+    pub fn new(shader: impl AsRef<Shader>, id: Option<&str>) -> Material {
         let mut mat = Material(NonNull::new(unsafe { material_create(shader.as_ref().0.as_ptr()) }).unwrap());
         if let Some(id) = id {
             mat.id(id);
@@ -161,10 +161,7 @@ impl Material {
     /// * id - If None the id will be set to a default value "auto/asset_???"
     ///
     /// see also [`crate::material::material_create`][`crate::material::material_set_id`]
-    pub fn from_file<S: AsRef<str>>(
-        shader_file_name: impl AsRef<Path>,
-        id: Option<S>,
-    ) -> Result<Material, StereoKitError> {
+    pub fn from_file(shader_file_name: impl AsRef<Path>, id: Option<&str>) -> Result<Material, StereoKitError> {
         let shader = Shader::from_file(&shader_file_name);
         match shader {
             Ok(shader) => {

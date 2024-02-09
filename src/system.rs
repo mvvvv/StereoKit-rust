@@ -3563,6 +3563,18 @@ impl World {
         unsafe { world_get_origin_mode() }
     }
 
+    /// This reports the status of the device's positional tracking. If the room is too dark, or a hand is covering
+    /// tracking sensors, or some other similar 6dof tracking failure, this would report as not tracked.
+    ///
+    /// Note that this does not factor in the status of rotational tracking. Rotation is typically done via
+    /// gyroscopes/accelerometers, which don't really fail the same way positional tracking system can.
+    /// <https://stereokit.net/Pages/StereoKit/World/Tracked.html>
+    ///
+    /// see also [crate::system::world_get_tracked]
+    pub fn get_tracked() -> BtnState {
+        unsafe { world_get_tracked() }
+    }
+
     /// This is relative to the base reference point and is NOT in world space! The origin StereoKit uses is actually a
     /// base reference point combined with an offset! You can use this to read or set the offset from the OriginMode
     /// reference point.
