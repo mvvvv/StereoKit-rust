@@ -961,7 +961,7 @@ impl Tex {
 
     /// Retrieve the color data of the texture from the GPU. This can be a very slow operation,
     /// so use it cautiously. The out_data pointer must correspond to an array with the correct size.
-    /// <https://stereokit.net/Pages/StereoKit/Tex/GetColors.html>
+    /// <https://stereokit.net/Pages/StereoKit/Tex/GetColorData.html>
     ///
     /// set mip < 0 for textures with type [TexType::IMAGE_NO_MIPS]
     ///     the length of the array must be  width * height
@@ -1006,7 +1006,7 @@ impl Tex {
 
     /// Retrieve the color data of the texture from the GPU. This can be a very slow operation,
     /// so use it cautiously. The out_data pointer must correspond to an array with the correct size.
-    /// <https://stereokit.net/Pages/StereoKit/Tex/GetColors.html>
+    /// <https://stereokit.net/Pages/StereoKit/Tex/GetColorData.html>
     ///
     /// set mip < 0 for textures with type [TexType::IMAGE_NO_MIPS]
     ///     the length of the array must be  width * height
@@ -1051,7 +1051,7 @@ impl Tex {
 
     /// Retrieve the color data of the texture from the GPU. This can be a very slow operation,
     /// so use it cautiously. The out_data pointer must correspond to an array with the correct size.
-    /// <https://stereokit.net/Pages/StereoKit/Tex/GetColors.html>
+    /// <https://stereokit.net/Pages/StereoKit/Tex/GetColorData.html>
     ///
     /// set mip < 0 for textures with type [TexType::IMAGE_NO_MIPS]
     ///     the length of the array must be  width * height
@@ -1094,7 +1094,7 @@ impl Tex {
 
     /// Retrieve the color data of the texture from the GPU. This can be a very slow operation,
     /// so use it cautiously. The out_data pointer must correspond to an array with the correct size.
-    /// <https://stereokit.net/Pages/StereoKit/Tex/GetColors.html>
+    /// <https://stereokit.net/Pages/StereoKit/Tex/GetColorData.html>
     ///
     /// set mip < 0 for textures with type [TexType::IMAGE_NO_MIPS]
     ///     the length of the array must be  width * height
@@ -1139,7 +1139,7 @@ impl Tex {
 
     /// Retrieve the color data of the texture from the GPU. This can be a very slow operation,
     /// so use it cautiously. The out_data pointer must correspond to an array with the correct size.
-    /// <https://stereokit.net/Pages/StereoKit/Tex/GetColors.html>
+    /// <https://stereokit.net/Pages/StereoKit/Tex/GetColorData.html>
     ///
     /// set mip < 0 for textures with type [TexType::IMAGE_NO_MIPS]
     ///     the length of the array must be  width * height

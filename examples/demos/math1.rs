@@ -96,9 +96,10 @@ impl Math1 {
 
         // Add little_spheres and change color of the big sphere if the ray hit bounds then sphere surface.
         let mut color = WHITE;
-        if let Some(out_bounds) = ray_to_bounds.intersect_bound(self.model.get_bounds()) {
+        if let Some(out_bounds_inverse) = ray_to_bounds.intersect_bound(self.model.get_bounds()) {
             color = RED; // changed from WHITE
-            let sphere_transform = Matrix::t(transform.transform_point(out_bounds));
+            let out_bounds = transform.transform_point(out_bounds_inverse);
+            let sphere_transform = Matrix::t(out_bounds);
             self.little_sphere.draw(&self.material, sphere_transform, Some(GREEN.into()), None);
 
             let sphere_form = Sphere::new(self.model_pose.position, SPHERE_RADIUS);
@@ -106,13 +107,13 @@ impl Math1 {
                 let sphere_transform = Matrix::t(out_sphere);
                 self.little_sphere.draw(&self.material, sphere_transform, Some(BLUE.into()), None);
 
-                let sphere_ctrl = Sphere::new(out_sphere, 0.02);
+                let sphere_ctrl = Sphere::new(out_sphere, 0.01);
                 if sphere_ctrl.contains(out_bounds) {
-                    color = GREEN; // changed from RED
+                    color = GREEN; // changed from Black
                 } else {
-                    let bound_ctrl = Bounds::new(out_sphere, Vec3::ONE * 0.01);
+                    let bound_ctrl = Bounds::new(out_sphere, Vec3::ONE * 0.05);
                     if bound_ctrl.contains_point(out_bounds) {
-                        color = BLACK; // changed from GREEN
+                        color = BLACK; // changed from RED
                     }
                 }
             }
