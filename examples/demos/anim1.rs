@@ -1,11 +1,11 @@
-use stereokit_rust::material::Material;
+use stereokit_rust::material::{Cull, Material, Transparency};
 use stereokit_rust::maths::{Matrix, Quat, Vec3};
 use stereokit_rust::model::{AnimMode, Model};
 use stereokit_rust::shader::Shader;
 use stereokit_rust::sk::{IStepper, StepperAction, StepperId};
 use stereokit_rust::system::{Handed, Input, Log};
 use stereokit_rust::tex::SHCubemap;
-use stereokit_rust::util::named_colors::DARK_RED;
+use stereokit_rust::util::named_colors::{DARK_RED, WHITE};
 
 use winit::event_loop::EventLoopProxy;
 
@@ -22,23 +22,31 @@ pub struct Anim1 {
 }
 impl Default for Anim1 {
     fn default() -> Self {
+        let calcaire = Material::find("clean_tile").unwrap_or_default();
         let mobile = Model::from_file("mobiles.gltf", Some(Shader::pbr())).unwrap();
-        let calcaire = Material::find("mobiles.gltf/mat/Calcaire blanc").unwrap_or_default();
-        let mut gray_tile = Material::copy(calcaire);
-        gray_tile.roughness_amount(0.7).color_tint(DARK_RED).tex_scale(5.0);
-        //gray_tile.id("gray tiles"); // Previous gray_tile is not deleted
+        let mut brick_wall = Material::copy(calcaire);
+        brick_wall
+            .roughness_amount(0.7)
+            .color_tint(DARK_RED)
+            .tex_scale(5.0)
+            .transparency(Transparency::None)
+            .face_cull(Cull::None);
+        // The nodes stay alive and keep Material alive so, no id .id("brick_wall");
+        let mut ico_material = Material::copy(&brick_wall);
+        ico_material.face_cull(Cull::Back).color_tint(WHITE);
         let nodes = &mobile.get_nodes();
         nodes
             .get_root_node()
-            .material(&gray_tile)
+            .material(&ico_material)
             .iterate()
             .unwrap()
-            .material(&gray_tile)
+            .material(&brick_wall)
             .iterate()
             .unwrap()
-            .material(&gray_tile)
+            .material(&ico_material)
             .iterate()
-            .unwrap();
+            .unwrap()
+            .material(&ico_material);
 
         let mut anims = mobile.get_anims();
         anims.play_anim("flyRotate", AnimMode::Loop);

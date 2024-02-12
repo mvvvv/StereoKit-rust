@@ -9,9 +9,10 @@ use stereokit_rust::{
     shader::Shader,
     sk::{AppFocus, DisplayBlend, DisplayMode, Sk, StepperAction, StepperId},
     sprite::Sprite,
-    system::{BtnState, Input, Key, Log, LogLevel, Projection, Renderer, Text, World},
+    system::{BtnState, Input, Key, Lines, Log, LogLevel, Projection, Renderer, Text},
     tex::{SHCubemap, Tex},
     tools::{
+        fly_over::FlyOver,
         log_window::{LogItem, LogWindow},
         screenshoot::ScreenshotViewer,
     },
@@ -96,24 +97,33 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
     let mut cube_default = SHCubemap::get_rendered_sky();
 
     let mobile = Model::from_file("mobiles.gltf", Some(Shader::pbr())).unwrap();
-    let mut clean_tile = Material::find("mobiles.gltf/mat/Calcaire blanc").unwrap_or_default();
+    let tile = Material::find("mobiles.gltf/mat/Calcaire blanc").unwrap_or_default();
     Log::diag(format!("{:?}", mobile.get_id()));
     for iter in mobile.get_nodes().visuals() {
         Log::diag(format!("{:?}", iter.get_mesh().unwrap().get_id()));
     }
 
+    let mut clean_tile = Material::copy(Material::pbr());
+    for param in tile.get_all_param_info() {
+        match param.get_name() {
+            "diffuse" => clean_tile.diffuse_tex(param.get_texture().unwrap()),
+            "metal" => clean_tile.metal_tex(param.get_texture().unwrap()),
+            "normal" => clean_tile.normal_tex(param.get_texture().unwrap()),
+            "occlusion" => clean_tile.occlusion_tex(param.get_texture().unwrap()),
+            _ => &mut clean_tile,
+        };
+    }
     clean_tile
-        // I use it in anim1 .id("clean_tile")
+        .id("clean_tile")
         .tex_scale(3.0)
         .roughness_amount(0.7)
         .color_tint(BLACK)
-        // .transparency(Transparency::Blend)
-        // .queue_offset(-11)
-        ;
+        //.transparency(Transparency::Add)
+        .queue_offset(-11);
 
     let floor_model =
         Model::from_mesh(Mesh::generate_plane(Vec2::new(40.0, 40.0), Vec3::UP, Vec3::FORWARD, None, true), clean_tile);
-    let floor_tr = Matrix::tr(&Vec3::new(0.0, -1.5, 0.0), &Quat::IDENTITY);
+    let floor_tr = Matrix::tr(&Vec3::new(0.0, 0.0, 0.0), &Quat::IDENTITY);
 
     let tex_particule = Tex::gen_particle(128, 128, 0.9, None);
     let exit_button =
@@ -216,6 +226,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
     sk.push_action(StepperAction::add("HandMenuStepper".to_string(), hand_menu_stepper));
     sk.push_action(StepperAction::add("LogWindow".to_string(), log_window));
     sk.push_action(StepperAction::add_default::<ScreenshotViewer>("Screenshoot"));
+    sk.push_action(StepperAction::add_default::<FlyOver>("FlyOver"));
 
     let tests = Test::get_tests();
 
@@ -283,8 +294,9 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
 
             // draw a floor if needed
             if sk.get_system().display_type == DisplayBlend::Opaque {
-                let transform = if World::has_bounds() { World::get_bounds_pose().to_matrix(None) } else { floor_tr };
-                Renderer::add_model(&floor_model, transform, None, None);
+                //let transform = if World::has_bounds() { World::get_bounds_pose().to_matrix(None) } else { floor_tr };
+                floor_model.draw(floor_tr, None, None);
+                Lines::add_axis(Pose::IDENTITY, Some(0.5), None);
             }
 
             if !window_demo_show {
