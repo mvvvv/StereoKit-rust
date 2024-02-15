@@ -1792,6 +1792,9 @@ impl Matrix {
         unsafe { matrix_transform_quat(*self, rotation) }
     }
 
+    /// Transforms a point through the Matrix, but excluding translation! This is great for transforming vectors that
+    /// are -directions- rather than points in space. Use this to transform normals and directions. The same as
+    /// multiplying (x,y,z,0) with the Matrix.
     /// <https://stereokit.net/Pages/StereoKit/Matrix/TransformNormal.html> do not correspond to * operator !
     ///
     /// see also [`crate::maths::matrix_transform_dir`]

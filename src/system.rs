@@ -2305,6 +2305,8 @@ extern "C" {
     pub fn render_set_cam_root(cam_root: *const Matrix);
     pub fn render_set_skytex(sky_texture: TexT);
     pub fn render_get_skytex() -> TexT;
+    pub fn render_set_skymaterial(sky_material: MaterialT);
+    pub fn render_get_skymaterial() -> MaterialT;
     pub fn render_set_skylight(light_info: *const SphericalHarmonics);
     pub fn render_get_skylight() -> SphericalHarmonics;
     pub fn render_set_filter(layer_filter: RenderLayer);
@@ -2503,6 +2505,24 @@ impl Renderer {
     /// see also [`crate::system::render_set_skytex`]
     pub fn skytex(tex: impl AsRef<Tex>) {
         unsafe { render_set_skytex(tex.as_ref().0.as_ptr()) }
+    }
+
+    /// This is the Material that StereoKit is currently using to draw the skybox! It needs a special shader that's
+    /// tuned for a full-screen quad. If you just want to change the skybox image, try setting `Renderer.SkyTex`
+    /// instead.
+    ///  
+    /// This value will never be null! If you try setting this to null, it will assign SK's built-in default sky
+    /// material. If you want to turn off the skybox, see `Renderer.EnableSky` instead.
+    ///  
+    /// Recommended Material settings would be:
+    /// - DepthWrite: false
+    /// - DepthTest: LessOrEq
+    /// - QueueOffset: 100</summary>
+    /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyMaterial.html>
+    ///
+    /// see also [`crate::system::render_set_skymaterial`]
+    pub fn skymaterial(material: impl AsRef<Material>) {
+        unsafe { render_set_skymaterial(material.as_ref().0.as_ptr()) }
     }
 
     /// Adds a mesh to the render queue for this frame! If the Hierarchy has a transform on it, that transform is
@@ -2849,6 +2869,24 @@ impl Renderer {
     /// see also [`crate::system::render_get_skytex`]
     pub fn get_skytex() -> Tex {
         Tex(NonNull::new(unsafe { render_get_skytex() }).unwrap())
+    }
+
+    /// This is the Material that StereoKit is currently using to draw the skybox! It needs a special shader that's
+    /// tuned for a full-screen quad. If you just want to change the skybox image, try setting `Renderer.SkyTex`
+    /// instead.
+    ///  
+    /// This value will never be null! If you try setting this to null, it will assign SK's built-in default sky
+    /// material. If you want to turn off the skybox, see `Renderer.EnableSky` instead.
+    ///  
+    /// Recommended Material settings would be:
+    /// - DepthWrite: false
+    /// - DepthTest: LessOrEq
+    /// - QueueOffset: 100</summary>
+    /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyMaterial.html>
+    ///
+    /// see also [`crate::system::render_get_skymaterial`]
+    pub fn get_skymaterial() -> Material {
+        Material(NonNull::new(unsafe { render_get_skymaterial() }).unwrap())
     }
 }
 

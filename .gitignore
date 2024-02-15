@@ -4,3 +4,4 @@ Cargo.lock
 common_lib/
 assets/shaders/*.sks
 src/bin/test.rs
+quest_lib/arm64-v8a/libopenxr_loader.so
