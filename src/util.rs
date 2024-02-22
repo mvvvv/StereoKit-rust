@@ -585,6 +585,7 @@ extern "C" {
     pub fn device_display_get_fov() -> FovInfo;
     pub fn device_get_tracking() -> DeviceTracking;
     pub fn device_get_name() -> *const c_char;
+    pub fn device_get_runtime() -> *const c_char;
     pub fn device_get_gpu() -> *const c_char;
     pub fn device_has_eye_gaze() -> Bool32T;
     pub fn device_has_hand_tracking() -> Bool32T;
@@ -615,6 +616,18 @@ impl Device {
     /// see also [`crate::util::device_display_get_type`]
     pub fn get_display_type() -> DisplayType {
         unsafe { device_display_get_type() }
+    }
+
+    /// This is the name of the OpenXR runtime that powers the current device! This can help you determine which
+    /// implementation quirks to expect based on the codebase used. On the simulator, this will be "Simulator", and in
+    /// other non-XR modes this will be "None".
+    /// <https://stereokit.net/Pages/StereoKit/Device/Runtime.html>
+    ///
+    /// see also [`crate::util::device_get_runtime`]
+    pub fn get_runtime<'a>() -> Result<&'a str, StereoKitError> {
+        unsafe { CStr::from_ptr(device_get_runtime()) }
+            .to_str()
+            .map_err(|e| StereoKitError::CStrError(e.to_string()))
     }
 
     /// The reported name of the GPU, this will differ between D3D and GL.
