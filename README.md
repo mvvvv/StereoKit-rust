@@ -1,4 +1,4 @@
-##This project is a rust binding of the excellent [StereoKit](https://StereoKit.net) [project](https://github.com/StereoKit/StereoKit/)
+## This project is a rust binding of the excellent [StereoKit](https://StereoKit.net) [project](https://github.com/StereoKit/StereoKit/)
 
 ![Screenshot](/StereoKit-rust.png)
 
