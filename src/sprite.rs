@@ -183,6 +183,69 @@ impl Sprite {
         Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).unwrap())
     }
 
+    /// This is a 64x64 image of a slightly rounded triangle pointing left.
+    /// <https://stereokit.net/Pages/StereoKit/Sprite/ArrowLeft.html>
+    pub fn arrow_left() -> Self {
+        let cstr_id = CString::new("sk/ui/arrow_left").unwrap();
+        Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).unwrap())
+    }
+
+    /// This is a 64x64 image of a slightly rounded triangle pointing right.
+    /// <https://stereokit.net/Pages/StereoKit/Sprite/ArrowRight.html>
+    pub fn arrow_right() -> Self {
+        let cstr_id = CString::new("sk/ui/arrow_right").unwrap();
+        Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).unwrap())
+    }
+
+    /// This is a 64x64 image of a slightly rounded triangle pointing up.
+    /// <https://stereokit.net/Pages/StereoKit/Sprite/ArrowUp.html>
+    pub fn arrow_up() -> Self {
+        let cstr_id = CString::new("sk/ui/arrow_up").unwrap();
+        Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).unwrap())
+    }
+
+    /// This is a 64x64 image of a slightly rounded triangle pointing down.
+    /// <https://stereokit.net/Pages/StereoKit/Sprite/ArrowDown.html>
+    pub fn arrow_down() -> Self {
+        let cstr_id = CString::new("sk/ui/arrow_down").unwrap();
+        Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).unwrap())
+    }
+
+    /// This is a 64x64 image of a backspace action button, similar to a backspace button you might find on a mobile
+    /// keyboard.
+    /// <https://stereokit.net/Pages/StereoKit/Sprite/Backspace.html>
+    pub fn backspace() -> Self {
+        let cstr_id = CString::new("sk/ui/backspace").unwrap();
+        Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).unwrap())
+    }
+
+    /// This is a 64x64 image of an upward facing rounded arrow. This is a triangular top with a narrow rectangular
+    /// base, and is used to indicate a ‘shift’ icon on a keyboard.
+    /// <https://stereokit.net/Pages/StereoKit/Sprite/Shift.html>
+    pub fn shift() -> Self {
+        let cstr_id = CString::new("sk/ui/shift").unwrap();
+        Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).unwrap())
+    }
+
+    /// This is a 64x64 image of a square aspect X, with rounded edge. It’s used to indicate a ‘close’ icon.
+    /// <https://stereokit.net/Pages/StereoKit/Sprite/Close.html>
+    pub fn close() -> Self {
+        let cstr_id = CString::new("sk/ui/close").unwrap();
+        Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).unwrap())
+    }
+
+    /// <https://stereokit.net/Pages/StereoKit/Sprite/List.html>
+    pub fn list() -> Self {
+        let cstr_id = CString::new("sk/ui/list").unwrap();
+        Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).unwrap())
+    }
+
+    /// <https://stereokit.net/Pages/StereoKit/Sprite/Grid.html>
+    pub fn grid() -> Self {
+        let cstr_id = CString::new("sk/ui/grid").unwrap();
+        Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).unwrap())
+    }
+
     /// Draws the sprite at the location specified by the transform matrix. A sprite is always sized in model space as 1 x Aspect
     /// meters on the x and y axes respectively, so scale appropriately. The ‘position’ attribute describes what corner of the sprite
     ///  you’re specifying the transform of.

@@ -9,10 +9,23 @@ use crate::{
     StereoKitError,
 };
 
-/// Anchor
-/// <https://stereokit.net/Pages/StereoKit/Anchor/Find.html>
+/// An Anchor in StereoKit is a completely virtual pose that is pinned to a real-world location. They are creatable via
+/// code, generally can persist across sessions, may provide additional stability beyond the system’s 6dof tracking,
+/// and are not physical objects!
 ///
-/// ## Examples
+/// This functionality is backed by extensions like the Microsoft Spatial Anchor, or the Facebook Spatial Entity. If a
+/// proper anchoring system isn’t present on the device, StereoKit will fall back to a stage- relative anchor.
+/// Stage-relative anchors may be a good solution for devices with a consistent stage, but may be troublesome if the user
+/// adjusts their stage frequently.
+///
+/// A conceptual guide to Anchors:
+///
+/// * A cloud anchor is an Anchor
+/// * A QR code is not an Anchor (it’s physical)
+/// * That spot around where your coffee usually sits can be an Anchor
+/// * A semantically labeled floor plane is not an Anchor (it’s physical)
+/// <https://stereokit.net/Pages/StereoKit/Anchor.html>
+///
 #[repr(C)]
 #[derive(Debug)]
 pub struct Anchor(pub NonNull<_AnchorT>);
@@ -33,11 +46,18 @@ pub struct _AnchorT {
 }
 pub type AnchorT = *mut _AnchorT;
 
-/// Anchor capabilities
+/// This is a bit flag that describes what an anchoring system is capable of doing.
+/// <https://stereokit.net/Pages/StereoKit/AnchorCaps.html>
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
 pub enum AnchorCaps {
+    /// This anchor system can store/persist anchors across sessions. Anchors must still be explicitly marked as
+    /// persistent.
     Storable = 1,
+
+    /// This anchor system will provide extra accuracy in locating the Anchor, so if the SLAM/6dof tracking drifts over
+    /// time or distance, the anchor may remain fixed in the correct physical space, instead of drifting with the
+    /// virtual content.
     Stability = 2,
 }
 
@@ -78,7 +98,7 @@ impl Anchor {
         ))
     }
 
-    /// Create an anchor at the given pose
+    /// This creates a new Anchor from a world space pose.
     /// <https://stereokit.net/Pages/StereoKit/Anchor/FromPose.html>
     ///
     /// see also [`crate::anchor::anchor_create`]
