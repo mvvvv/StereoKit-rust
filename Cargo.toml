@@ -18,6 +18,10 @@ include = [
 ]
 readme = "README.md"
 
+[features]
+dynamic-openxr = []                       # Add openxr_loader.so in Android APK
+build-dynamic-openxr = ["dynamic-openxr"] # Build openxr_loader from Khronos OpenXR project
+
 [lib]
 crate-type = ["lib", "cdylib"]
 
@@ -55,7 +59,8 @@ crate-type = ["cdylib"]
 package ="com.stereokit.rust_binding_demo"
 apk_label = "Stereokit-rust"
 fullscreen = true
-runtime_libs = "./quest_lib"
+runtime_libs = "./target/runtime_libs"   #---the way to build and add Khronos libopenxr_loader.so for feature build-dynamic-openxr
+#runtime_libs = "./quest_lib"            #---the way to add existing libopenxr_loader.so for feature dynamic-openxr
 assets = "./assets"
 
 [package.metadata.android.sdk]
@@ -76,11 +81,33 @@ required = true
 name = "oculus.software.handtracking"
 required = false
 
+[[package.metadata.android.uses_feature]]
+name = "oculus.software.body_tracking"
+required = false
+
+[[package.metadata.android.uses_feature]]
+name = "oculus.software.face_tracking"
+required = false
+
+[[package.metadata.android.uses_feature]]
+name = "oculus.software.eye_tracking"
+required = false
+
+[[package.metadata.android.uses_feature]]
+name = "com.oculus.experimental.enabled"
+required = false
+
 [[package.metadata.android.uses_permission]]
 name = "android.permission.INTERNET"
 
 [[package.metadata.android.uses_permission]]
-name = "android.permission.access_network_state"
+name = "android.permission.RECORD_AUDIO"
+
+[[package.metadata.android.uses_permission]]
+name = "android.permission.CAPTURE_AUDIO_OUTPUT"
+
+[[package.metadata.android.uses_permission]]
+name = "android.permission.MODIFY_AUDIO_SETTINGS"
 
 [[package.metadata.android.uses_permission]]
 name = "android.permission.WRITE_EXTERNAL_STORAGE"
@@ -90,6 +117,18 @@ name = "android.permission.READ_EXTERNAL_STORAGE"
 
 [[package.metadata.android.uses_permission]]
 name = "com.oculus.permission.HAND_TRACKING"
+required = false
+
+[[package.metadata.android.uses_permission]]
+name = "com.oculus.permission.BODY_TRACKING"
+required = false
+
+[[package.metadata.android.uses_permission]]
+name = "com.oculus.permission.FACE_TRACKING"
+required = false
+
+[[package.metadata.android.uses_permission]]
+name = "com.oculus.permission.EYE_TRACKING"
 required = false
 
 [package.metadata.android.application]

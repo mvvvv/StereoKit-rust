@@ -918,9 +918,9 @@ impl StepperAction {
     /// to do before Sk.initialize is called, the constructor is called right away, and Initialize is called right after
     /// Sk.initialize, or at the start of the next frame before the next main Step callback if SK is already initialized.
     /// <https://stereokit.net/Pages/StereoKit/SK/AddStepper.html>
-    pub fn add<T: IStepper + 'static>(stepper_id: StepperId, stepper: T) -> Self {
+    pub fn add<T: IStepper + 'static>(stepper_id: impl AsRef<str>, stepper: T) -> Self {
         let stepper_type = stepper.type_id();
-        StepperAction::Add(Box::new(stepper), stepper_type, stepper_id)
+        StepperAction::Add(Box::new(stepper), stepper_type, stepper_id.as_ref().to_string())
     }
 
     /// This removes all IStepper instances that are assignable to the generic type specified. This will call the
@@ -933,8 +933,8 @@ impl StepperAction {
     /// This removes one or all IStepper instances that are assignable to the generic type specified. This will call the
     /// IStepper’s Shutdown method on each removed instance before returning.
     /// <https://stereokit.net/Pages/StereoKit/SK/RemoveStepper.html>
-    pub fn remove(stepper_id: StepperId) -> Self {
-        StepperAction::Remove(stepper_id)
+    pub fn remove(stepper_id: impl AsRef<str>) -> Self {
+        StepperAction::Remove(stepper_id.as_ref().to_string())
     }
 
     pub fn event<S: AsRef<str>>(stepper_id: StepperId, key: S, value: S) -> Self {

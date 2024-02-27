@@ -223,8 +223,8 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
         ],
     ));
 
-    sk.push_action(StepperAction::add("HandMenuStepper".to_string(), hand_menu_stepper));
-    sk.push_action(StepperAction::add("LogWindow".to_string(), log_window));
+    sk.push_action(StepperAction::add("HandMenuStepper", hand_menu_stepper));
+    sk.push_action(StepperAction::add("LogWindow", log_window));
     sk.push_action(StepperAction::add_default::<ScreenshotViewer>("Screenshoot"));
     sk.push_action(StepperAction::add_default::<FlyOver>("FlyOver"));
 

@@ -34,7 +34,7 @@ impl Test {
             Test::new("Test B".to_string(), |sk| {
                 let mut a = AStepper::default();
                 a.transform = Matrix::t(Vec3::NEG_Z + Vec3::Y);
-                sk.push_action(StepperAction::add("Test B".to_string(), a));
+                sk.push_action(StepperAction::add("Test B", a));
                 "Test B".to_string()
             }),
             Test::new("Sprites".to_string(), |sk| {

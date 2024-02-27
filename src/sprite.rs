@@ -153,7 +153,7 @@ impl Sprite {
     /// indicate an un-selected radio, and a filled hole for a selected radio. This is used by the UI for radio buttons!
     /// <https://stereokit.net/Pages/StereoKit/Sprite/RadioOn.html>
     pub fn radio_on() -> Self {
-        let cstr_id = CString::new("sk/ui/radio_on_spr").unwrap();
+        let cstr_id = CString::new("sk/ui/radio_on").unwrap();
         Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).unwrap())
     }
 
@@ -161,7 +161,7 @@ impl Sprite {
     /// indicate an un-selected radio, and a filled hole for a selected radio. This is used by the UI for radio buttons!
     /// <https://stereokit.net/Pages/StereoKit/Sprite/RadioOff.html>
     pub fn radio_off() -> Self {
-        let cstr_id = CString::new("sk/ui/radio_off_spr").unwrap();
+        let cstr_id = CString::new("sk/ui/radio_off").unwrap();
         Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).unwrap())
     }
 
@@ -170,7 +170,7 @@ impl Sprite {
     /// by the UI for toggle buttons!
     /// <https://stereokit.net/Pages/StereoKit/Sprite/ToggleOn.html>
     pub fn toggle_on() -> Self {
-        let cstr_id = CString::new("sk/ui/toggle_on_spr").unwrap();
+        let cstr_id = CString::new("sk/ui/toggle_on").unwrap();
         Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).unwrap())
     }
 
@@ -179,7 +179,7 @@ impl Sprite {
     /// for toggle buttons!
     /// <https://stereokit.net/Pages/StereoKit/Sprite/ToggleOff.html>
     pub fn toggle_off() -> Self {
-        let cstr_id = CString::new("sk/ui/toggle_off_spr").unwrap();
+        let cstr_id = CString::new("sk/ui/toggle_off").unwrap();
         Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).unwrap())
     }
 

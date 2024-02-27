@@ -1,14 +1,5 @@
-use std::env;
+use std::{env, fs, path::Path};
 
-macro_rules! cargo_cmake_feat {
-    ($feature:literal) => {
-        if cfg!(feature = $feature) {
-            "ON"
-        } else {
-            "OFF"
-        }
-    };
-}
 macro_rules! cargo_link {
     ($feature:expr) => {
         println!("cargo:rustc-link-lib={}", $feature);
@@ -20,17 +11,22 @@ fn main() {
 
     // Build StereoKit, and tell rustc to link it.
     let mut cmake_config = cmake::Config::new("StereoKit");
+
     cmake_config.define("SK_BUILD_SHARED_LIBS", "OFF");
     cmake_config.define("SK_BUILD_TESTS", "OFF");
-    cmake_config.define("SK_LINUX_EGL", cargo_cmake_feat!("linux-egl"));
-    cmake_config.define("SK_PHYSICS", cargo_cmake_feat!("physics")); // cannot get this to work on windows.
+    cmake_config.define("SK_PHYSICS", "OFF");
     if target_os == "android" {
-        cmake_config.define("CMAKE_ANDROID_API", "25");
-        // When you need to ship your own openxr loader set this to ON :
-        cmake_config.define("SK_DYNAMIC_OPENXR", "ON");
-        //cmake_config.define("ANDROID_LIBRARY","there");
-        //cargo clcmake_config.define("ANDROID_LOG_LIBRARY","there");
-        //cmake_config.define("ANDROID", "TRUE");
+        cmake_config.define("CMAKE_ANDROID_API", "29");
+        cmake_config.define("CMAKE_INSTALL_INCLUDEDIR", "install");
+        cmake_config.define("CMAKE_INSTALL_LIBDIR", "install");
+        if cfg!(feature = "build-dynamic-openxr") {
+            // When you need to build and use Khronos openxr loader use this feature:
+            cmake_config.define("SK_DYNAMIC_OPENXR", "ON");
+            cmake_config.define("SK_BUILD_OPENXR_LOADER", "ON");
+        } else if cfg!(feature = "dynamic-openxr") {
+            // When you need to ship your own openxr loader use this feature:
+            cmake_config.define("SK_DYNAMIC_OPENXR", "ON");
+        }
     }
 
     let dst = cmake_config.build();
@@ -50,10 +46,6 @@ fn main() {
             cargo_link!("user32");
             cargo_link!("comdlg32");
             println!("cargo:rustc-link-search=native={}", dst.display());
-            if cfg!(feature = "physics") {
-                println!("cargo:rustc-link-lib=static=build/_deps/reactphysics3d-build/Debug/reactphysics3d");
-            }
-            //cargo_link!("static=reactphysics3d");
         }
         "wasm" => {
             unimplemented!("sorry wasm isn't implemented yet");
@@ -67,6 +59,39 @@ fn main() {
             if target_os == "android" {
                 cargo_link!("android");
                 cargo_link!("EGL");
+
+                let mut abi = env::var("CARGO_CFG_TARGET_ARCH").unwrap();
+                if abi == "aarch64" {
+                    abi = "arm64-v8a".to_string();
+                }
+                //---- A directory whose content is only used during the production of the APK (no need for DEBUG/RELEASE sub directory)
+                //---- Copying from ./target/aarch64-linux-android/debug/build/stereokit-rust-1d044aba61d6313d/out/lib/libopenxr_loader.so
+                //---- to   ./target/runtime_libs/
+                let out_dir = env::var("OUT_DIR").unwrap(); //---must be equal to dst
+                let target_dir = Path::new(&out_dir)
+                    .parent()
+                    .unwrap()
+                    .parent()
+                    .unwrap()
+                    .parent()
+                    .unwrap()
+                    .parent()
+                    .unwrap()
+                    .parent()
+                    .unwrap();
+                let mut runtime_libs = target_dir.join("runtime_libs");
+                println!("dst --> {:?}", dst);
+                println!("Android runtime_libs are copied here --> {:?}", runtime_libs);
+                assert!(target_dir.ends_with("target"));
+                if let Err(_e) = fs::create_dir(&runtime_libs) {};
+                runtime_libs = runtime_libs.join(&abi);
+                if let Err(_e) = fs::create_dir(&runtime_libs) {};
+                let dest_file_so = runtime_libs.join("libopenxr_loader.so");
+                if cfg!(feature = "build-dynamic-openxr") {
+                    let file_so = dst.join("lib/libopenxr_loader.so");
+                    let _lib_o = fs::copy(file_so, dest_file_so).unwrap();
+                } else if let Err(_e) = fs::remove_file(dest_file_so) {
+                }
             } else {
                 cargo_link!("X11");
                 cargo_link!("Xfixes");
@@ -82,7 +107,6 @@ fn main() {
     }
 
     // Tell cargo to invalidate the built crate whenever the wrapper changes
-    // println!("cargo:rerun-if-changed=src/static-wrapper.h");
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=StereoKit/StereoKitC/stereokit.h");
     println!("cargo:rerun-if-changed=StereoKit/StereoKitC/stereokit_ui.h");
@@ -91,6 +115,6 @@ fn main() {
     // For more details, see https://github.com/rust-windowing/android-ndk-rs/issues/167
     use std::env::var;
     if var("TARGET").map(|target| target == "aarch64-linux-android").unwrap_or(false) {
-        println!("cargo:rustc-link-lib=dylib=c++");
+        cargo_link!("dylib=c++");
     }
 }

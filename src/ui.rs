@@ -715,7 +715,7 @@ extern "C" {
     pub fn ui_progress_bar(percent: f32, width: f32);
     pub fn ui_progress_bar_at(percent: f32, window_relative_pos: Vec3, size: Vec2);
     pub fn ui_hseparator();
-    pub fn ui_space(space: f32);
+    // Deprecated : pub fn ui_space(space: f32);
     pub fn ui_hspace(horizontal_space: f32);
     pub fn ui_vspace(vertical_space: f32);
     pub fn ui_handle_begin(
@@ -1584,16 +1584,18 @@ impl Ui {
     /// auto-calculated. For X this is the remaining width of the current layout, and for Y this is Ui::line_height.
     ///
     /// see also [`crate::ui::ui_radio`] [`crate::ui::ui_radio_sz`]
+    #[deprecated(since = "0.0.1", note = "Performence issues, use radio_img instead")]
     pub fn radio(id: impl AsRef<str>, active: bool, size: Option<Vec2>) -> bool {
         let cstr = CString::new(id.as_ref()).unwrap();
-        let active = active as Bool32T;
+        let mut active: Bool32T = active as Bool32T;
+        let active_ptr: *mut Bool32T = &mut active;
         match size {
             Some(size) => unsafe {
                 ui_toggle_img_sz(
                     cstr.as_ptr(),
-                    active as *mut Bool32T,
-                    Sprite::toggle_off().0.as_ptr(),
-                    Sprite::toggle_on().0.as_ptr(),
+                    active_ptr,
+                    Sprite::radio_off().0.as_ptr(),
+                    Sprite::radio_on().0.as_ptr(),
                     UiBtnLayout::Left,
                     size,
                 ) != 0
@@ -1601,9 +1603,9 @@ impl Ui {
             None => unsafe {
                 ui_toggle_img(
                     cstr.as_ptr(),
-                    active as *mut Bool32T,
-                    Sprite::toggle_off().0.as_ptr(),
-                    Sprite::toggle_on().0.as_ptr(),
+                    active_ptr,
+                    Sprite::radio_off().0.as_ptr(),
+                    Sprite::radio_on().0.as_ptr(),
                     UiBtnLayout::Left,
                 ) != 0
             },
@@ -1628,12 +1630,13 @@ impl Ui {
         size: Option<Vec2>,
     ) -> bool {
         let cstr = CString::new(id.as_ref()).unwrap();
-        let active = active as Bool32T;
+        let mut active: Bool32T = active as Bool32T;
+        let active_ptr: *mut Bool32T = &mut active;
         match size {
             Some(size) => unsafe {
                 ui_toggle_img_sz(
                     cstr.as_ptr(),
-                    active as *mut Bool32T,
+                    active_ptr,
                     image_off.as_ref().0.as_ptr(),
                     image_on.as_ref().0.as_ptr(),
                     image_layout,
@@ -1643,7 +1646,7 @@ impl Ui {
             None => unsafe {
                 ui_toggle_img(
                     cstr.as_ptr(),
-                    active as *mut Bool32T,
+                    active_ptr,
                     image_off.as_ref().0.as_ptr(),
                     image_on.as_ref().0.as_ptr(),
                     image_layout,
@@ -1669,11 +1672,12 @@ impl Ui {
         size: impl Into<Vec2>,
     ) -> bool {
         let cstr = CString::new(id.as_ref()).unwrap();
-        let active = active as Bool32T;
+        let mut active: Bool32T = active as Bool32T;
+        let active_ptr: *mut Bool32T = &mut active;
         unsafe {
             ui_toggle_img_at(
                 cstr.as_ptr(),
-                active as *mut Bool32T,
+                active_ptr,
                 image_off.as_ref().0.as_ptr(),
                 image_on.as_ref().0.as_ptr(),
                 image_layout,
@@ -1783,9 +1787,10 @@ impl Ui {
     /// <https://stereokit.net/Pages/StereoKit/UI/Space.html>
     ///
     /// see also [`crate::ui::ui_space`]
-    pub fn space(space: f32) {
-        unsafe { ui_space(space) }
-    }
+    /// Deprecated !
+    // pub fn space(space: f32) {
+    //     unsafe { ui_space(space) }
+    // }
 
     /// adds some vertical space to the current line! All UI following elements on this line will be offset.
     /// <https://stereokit.net/Pages/StereoKit/UI/VSpace.html>
@@ -1866,10 +1871,11 @@ impl Ui {
     /// see also [`crate::ui::ui_toggle`] [`crate::ui::ui_toggle_sz`]
     pub fn toggle(id: impl AsRef<str>, value: bool, size: Option<Vec2>) -> Option<bool> {
         let cstr = CString::new(id.as_ref()).unwrap();
-        let active = value as Bool32T;
+        let mut active: Bool32T = value as Bool32T;
+        let active_ptr: *mut Bool32T = &mut active;
         let change = match size {
-            Some(size) => unsafe { ui_toggle_sz(cstr.as_ptr(), active as *mut Bool32T, size) != 0 },
-            None => unsafe { ui_toggle(cstr.as_ptr(), active as *mut Bool32T) != 0 },
+            Some(size) => unsafe { ui_toggle_sz(cstr.as_ptr(), active_ptr, size) != 0 },
+            None => unsafe { ui_toggle(cstr.as_ptr(), active_ptr) != 0 },
         };
 
         match change {
@@ -1897,13 +1903,14 @@ impl Ui {
         size: Option<Vec2>,
     ) -> Option<bool> {
         let cstr = CString::new(id.as_ref()).unwrap();
-        let active = value as Bool32T;
+        let mut active: Bool32T = value as Bool32T;
+        let active_ptr: *mut Bool32T = &mut active;
         let image_layout = image_layout.unwrap_or(UiBtnLayout::Left);
         let change = match size {
             Some(size) => unsafe {
                 ui_toggle_img_sz(
                     cstr.as_ptr(),
-                    active as *mut Bool32T,
+                    active_ptr,
                     toggle_off.as_ref().0.as_ptr(),
                     toggle_on.as_ref().0.as_ptr(),
                     image_layout,
@@ -1913,7 +1920,7 @@ impl Ui {
             None => unsafe {
                 ui_toggle_img(
                     cstr.as_ptr(),
-                    active as *mut Bool32T,
+                    active_ptr,
                     toggle_off.as_ref().0.as_ptr(),
                     toggle_on.as_ref().0.as_ptr(),
                     image_layout,
@@ -1944,7 +1951,8 @@ impl Ui {
         size: impl Into<Vec2>,
     ) -> Option<bool> {
         let cstr = CString::new(id.as_ref()).unwrap();
-        let active = value as Bool32T;
+        let mut active: Bool32T = value as Bool32T;
+        let active_ptr: *mut Bool32T = &mut active;
         let change = match image_off {
             Some(image_off) => {
                 let image_layout = image_layout.unwrap_or(UiBtnLayout::Left);
@@ -1953,7 +1961,7 @@ impl Ui {
                 unsafe {
                     ui_toggle_img_at(
                         cstr.as_ptr(),
-                        active as *mut Bool32T,
+                        active_ptr as *mut Bool32T,
                         sprite_off,
                         image_on.as_ref().0.as_ptr(),
                         image_layout,
@@ -1962,9 +1970,7 @@ impl Ui {
                     ) != 0
                 }
             }
-            None => unsafe {
-                ui_toggle_at(cstr.as_ptr(), active as *mut Bool32T, top_left_corner.into(), size.into()) != 0
-            },
+            None => unsafe { ui_toggle_at(cstr.as_ptr(), active_ptr, top_left_corner.into(), size.into()) != 0 },
         };
         match change {
             true => Some(active != 0),
