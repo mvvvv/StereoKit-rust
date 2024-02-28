@@ -19,6 +19,7 @@ include = [
 readme = "README.md"
 
 [features]
+#default = ["build-dynamic-openxr"]
 dynamic-openxr = []                       # Add openxr_loader.so in Android APK
 build-dynamic-openxr = ["dynamic-openxr"] # Build openxr_loader from Khronos OpenXR project
 
@@ -95,7 +96,11 @@ required = false
 
 [[package.metadata.android.uses_feature]]
 name = "com.oculus.experimental.enabled"
-required = false
+required = true
+
+[[package.metadata.android.uses_feature]]
+name = "com.oculus.feature.PASSTHROUGH”"
+required = true
 
 [[package.metadata.android.uses_permission]]
 name = "android.permission.INTERNET"
@@ -129,6 +134,14 @@ required = false
 
 [[package.metadata.android.uses_permission]]
 name = "com.oculus.permission.EYE_TRACKING"
+required = false
+
+[[package.metadata.android.uses_permission]]
+name = "com.oculus.permission.USE_ANCHOR_API"
+required = true
+
+[[package.metadata.android.uses_permission]]
+name = "com.oculus.permission.IMPORT_EXPORT_IOT_MAP_DATA"
 required = false
 
 [package.metadata.android.application]

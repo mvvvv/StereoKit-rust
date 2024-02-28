@@ -51,7 +51,7 @@
                     "kind": "example"
                 }
             },
-            "args": ["--test","--start", "Math1"],
+            "args": ["--test","--start", "Anchor1"],
             "cwd": "${workspaceFolder}"
         },
         {

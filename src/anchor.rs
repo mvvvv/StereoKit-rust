@@ -46,21 +46,22 @@ pub struct _AnchorT {
 }
 pub type AnchorT = *mut _AnchorT;
 
-/// This is a bit flag that describes what an anchoring system is capable of doing.
-/// <https://stereokit.net/Pages/StereoKit/AnchorCaps.html>
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-#[repr(u32)]
-pub enum AnchorCaps {
-    /// This anchor system can store/persist anchors across sessions. Anchors must still be explicitly marked as
-    /// persistent.
-    Storable = 1,
+bitflags::bitflags! {
+    /// This is a bit flag that describes what an anchoring system is capable of doing.
+    /// <https://stereokit.net/Pages/StereoKit/AnchorCaps.html>
+    #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+    #[repr(C)]
+    pub struct AnchorCaps : u32 {
+        /// This anchor system can store/persist anchors across sessions. Anchors must still be explicitly marked as
+        /// persistent.
+        const Storable = 1;
 
-    /// This anchor system will provide extra accuracy in locating the Anchor, so if the SLAM/6dof tracking drifts over
-    /// time or distance, the anchor may remain fixed in the correct physical space, instead of drifting with the
-    /// virtual content.
-    Stability = 2,
+        /// This anchor system will provide extra accuracy in locating the Anchor, so if the SLAM/6dof tracking drifts over
+        /// time or distance, the anchor may remain fixed in the correct physical space, instead of drifting with the
+        /// virtual content.
+        const Stability = 2;
+    }
 }
-
 extern "C" {
     pub fn anchor_find(asset_id_utf8: *const c_char) -> AnchorT;
     pub fn anchor_create(pose: Pose) -> AnchorT;
@@ -68,7 +69,7 @@ extern "C" {
     pub fn anchor_get_id(anchor: AnchorT) -> *const c_char;
     pub fn anchor_addref(anchor: AnchorT);
     pub fn anchor_release(anchor: AnchorT);
-    pub fn Anchor_try_set_persistent(anchor: AnchorT, persistent: Bool32T) -> Bool32T;
+    pub fn anchor_try_set_persistent(anchor: AnchorT, persistent: Bool32T) -> Bool32T;
     pub fn anchor_get_persistent(anchor: AnchorT) -> Bool32T;
     pub fn anchor_get_pose(anchor: AnchorT) -> Pose;
     pub fn anchor_get_changed(anchor: AnchorT) -> Bool32T;
@@ -107,7 +108,8 @@ impl Anchor {
     }
 
     /// Gets or sets the unique identifier of this asset resource! This can be helpful for debugging,
-    /// managing your assets, or finding them later on!
+    /// managing your assets, or finding them later on! This is StereoKit’s asset ID, and not the system’s unique Name
+    /// for the anchor.
     /// <https://stereokit.net/Pages/StereoKit/Anchor/Id.html>
     ///
     /// see also [`crate::anchor::anchor_set_id`]
@@ -117,8 +119,8 @@ impl Anchor {
         self
     }
 
-    /// Clear the Store
-    /// <https://stereokit.net/Pages/StereoKit/Anchor/ClearStore.html>
+    /// This will remove persistence from all Anchors the app knows about, even if they aren’t tracked.
+    /// <https://stereokit.net/Pages/StereoKit/Anchor/ClearStored.html>
     ///
     /// see also [`crate::anchor::anchor_clear_stored`]
     pub fn clear_store() {
@@ -141,14 +143,17 @@ impl Anchor {
         AnchorIter::new_anchors()
     }
 
-    /// <https://stereokit.net/Pages/StereoKit/Anchor/Persistent.html>
+    /// This describes the anchoring capabilities of the current XR anchoring backend. Some systems like a HoloLens can
+    /// create Anchors that provide stability, and can persist across multiple sessions. Some like SteamVR might be able
+    /// to make a persistent Anchor that’s relative to the stage, but doesn’t provide any stability benefits.
+    /// <https://stereokit.net/Pages/StereoKit/Anchor/Capabilities.html>
     ///
     /// see also [`crate::anchor::anchor_get_capabilities`]
     pub fn get_capabilities() -> AnchorCaps {
         unsafe { anchor_get_capabilities() }
     }
 
-    /// The id of this font
+    /// The id of this anchor. This is StereoKit’s asset ID, and not the system’s unique Name for the anchor.
     /// <https://stereokit.net/Pages/StereoKit/Anchor/Id.html>
     ///
     /// see also [`crate::anchor::anchor_get_id`]
@@ -156,6 +161,9 @@ impl Anchor {
         unsafe { CStr::from_ptr(anchor_get_id(self.0.as_ptr())) }.to_str().unwrap()
     }
 
+    /// The most recently identified Pose of the Anchor. While an Anchor will generally be in the same position once
+    /// discovered, it may shift slightly to compensate for drift in the device’s 6dof tracking. Anchor Poses when
+    /// tracked are more accurate than world-space positions.
     /// <https://stereokit.net/Pages/StereoKit/Anchor/Pose.html>
     ///
     /// see also [`crate::anchor::anchor_get_pose`]
@@ -163,6 +171,8 @@ impl Anchor {
         unsafe { anchor_get_pose(self.0.as_ptr()) }
     }
 
+    /// Does the device consider this Anchor to be tracked? This doesn’t require the Anchor to be visible, just that the
+    /// device knows where this Anchor is located.
     /// <https://stereokit.net/Pages/StereoKit/Anchor/Tracked.html>
     ///
     /// see also [`crate::anchor::anchor_get_tracked`]
@@ -170,6 +180,7 @@ impl Anchor {
         unsafe { anchor_get_tracked(self.0.as_ptr()) }
     }
 
+    /// Will this Anchor persist across multiple app sessions? You can use TrySetPersistent to change this value.
     /// <https://stereokit.net/Pages/StereoKit/Anchor/Persistent.html>
     ///
     /// see also [`crate::anchor::anchor_get_persistent`]
@@ -177,6 +188,8 @@ impl Anchor {
         unsafe { anchor_get_persistent(self.0.as_ptr()) != 0 }
     }
 
+    /// A unique system provided name identifying this anchor. This will be the same across sessions for persistent
+    /// Anchors.
     /// <https://stereokit.net/Pages/StereoKit/Anchor/Name.html>
     ///
     /// see also [`crate::anchor::anchor_get_name`]
@@ -200,6 +213,16 @@ impl Anchor {
         } else {
             None
         }
+    }
+
+    /// This will attempt to make or prevent this Anchor from persisting across app sessions. You may want to check if
+    /// the system is capable of persisting anchors via Anchors.Capabilities, but it’s possible for this to fail on the
+    /// OpenXR runtime’s side as well.
+    /// <https://stereokit.net/Pages/StereoKit/Anchor/TrySetPersistent.html>
+    ///
+    /// see also [`crate::anchor::anchor_try_set_persistent`]
+    pub fn try_set_persistent(&self, persistent: bool) -> bool {
+        unsafe { anchor_try_set_persistent(self.0.as_ptr(), persistent as Bool32T) != 0 }
     }
 }
 

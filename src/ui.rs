@@ -21,7 +21,7 @@ use crate::{
 #[repr(u32)]
 pub enum UiWin {
     /// No body, no head. Not really a flag, just set to this value. The Window will still be grab/movable. To prevent
-    /// it from being grabbable, combine with the UIMove.None option, or switch to UI.Push/PopSurface.
+    /// it from being grabbable, combine with the UIMove.None option, or switch to Ui::(push/pop)_surface.
     Empty = 1,
     /// Flag to include a head on the window.
     Head = 2,
@@ -43,7 +43,7 @@ pub enum UiMove {
     FaceUser = 1,
     /// This element follows the hand’s position only, completely discarding any rotation information.
     PosOnly = 2,
-    /// Do not allow user input to change the element’s pose at all! You may also be interested in UI.Push/PopSurface.
+    /// Do not allow user input to change the element’s pose at all! You may also be interested in Ui::(push/pop)_surface.
     None = 3,
 }
 
@@ -80,7 +80,7 @@ pub enum UiColor {
     Background = 2,
     /// A normal UI element color, for elements like buttons and sliders.
     Common = 3,
-    /// Not really used anywhere at the moment, maybe for the UI.Panel.
+    /// Not really used anywhere at the moment, maybe for the Ui::panel.
     Complement = 4,
     /// Text color! This should generally be really bright, and at the very least contrast-ey.
     Text = 5,
@@ -184,39 +184,39 @@ pub enum UiVisual {
     /// A default root UI element. Not a particular element, but other elements may refer to this if there is nothing
     /// more specific present.
     Default = 1,
-    /// Refers to UI.Button elements.
+    /// Refers to Ui::button elements.
     Button = 2,
-    /// Refers to UI.Toggle elements.
+    /// Refers to Ui::toggle elements.
     Toggle = 3,
-    /// Refers to UI.Input elements.
+    /// Refers to Ui::input elements.
     Input = 4,
-    /// Refers to UI.Handle/HandleBegin elements.
+    /// Refers to Ui::handle/handle_begin elements.
     Handle = 5,
-    /// Refers to UI.Window/WindowBegin body panel element, this element is used when a Window head is also present.
+    /// Refers to UI::window/window_begin body panel element, this element is used when a Window head is also present.
     WindowBody = 6,
-    /// Refers to UI.Window/WindowBegin body element, this element is used when a Window only has the body panel,
+    /// Refers to Ui::window/window_begin body element, this element is used when a Window only has the body panel,
     /// without a head.
     WindowBodyOnly = 7,
-    /// Refers to UI.Window/WindowBegin head panel element, this element is used when a Window body is also present.
+    /// Refers to Ui::window/window_begin head panel element, this element is used when a Window body is also present.
     WindowHead = 8,
-    /// Refers to UI.Window/WindowBegin head element, this element is used when a Window only has the head panel,
+    /// Refers to Ui::window/window_begin head element, this element is used when a Window only has the head panel,
     /// without a body.
     WindowHeadOnly = 9,
-    /// Refers to UI.HSeparator element.
+    /// Refers to Ui::hseparator element.
     Separator = 10,
-    /// Refers to the back line component of the UI.HSlider element for full lines.
+    /// Refers to the back line component of the Ui::hslider element for full lines.
     SliderLine = 11,
-    /// Refers to the back line component of the UI.HSlider element for the active or “full” half of the line.
+    /// Refers to the back line component of the Ui::hslider element for the active or “full” half of the line.
     SliderLineActive = 12,
-    /// Refers to the back line component of the UI.HSlider element for the inactive or “empty” half of the line.
+    /// Refers to the back line component of the Ui::hslider element for the inactive or “empty” half of the line.
     SliderLineInactive = 13,
-    /// Refers to the push button component of the UI.HSlider element when using UIConfirm.Push.
+    /// Refers to the push button component of the Ui::hslider element when using UiConfirm::Push.
     SliderPush = 14,
-    /// Refers to the pinch button component of the UI.HSlider element when using UIConfirm.Pinch.
+    /// Refers to the pinch button component of the Ui::hslider element when using UiConfirm::Pinch.
     SliderPinch = 15,
-    /// Refers to UI.ButtonRound elements.
+    /// Refers to Ui::button_round elements.
     ButtonRound = 16,
-    /// Refers to UI.PanelBegin/End elements.
+    /// Refers to Ui::panel_(begin/end) elements.
     Panel = 17,
     /// Refers to the text position indicator carat on text input elements.
     Carat = 18,
@@ -751,7 +751,7 @@ extern "C" {
 
 impl Ui {
     /// StereoKit will generate a color palette from this gamma space color, and use it to skin the UI! To explicitly
-    /// adjust individual theme colors, see UI.SetThemeColor.
+    /// adjust individual theme colors, see Ui::set_theme_color.
     ///  <https://stereokit.net/Pages/StereoKit/UI/ColorScheme.html>
     ///
     /// see also [`crate::ui::ui_set_color`]
@@ -810,7 +810,7 @@ impl Ui {
         }
     }
 
-    /// A variant of UI.Button that doesn’t use the layout system, and instead goes exactly where you put it.
+    /// A variant of Ui::button that doesn’t use the layout system, and instead goes exactly where you put it.
     /// <https://stereokit.net/Pages/StereoKit/UI/ButtonAt.html>
     /// * size - The layout size for this element in Hierarchy space.
     ///
@@ -1237,7 +1237,7 @@ impl Ui {
     /// Ui::push/pop_text_style. Can contain newlines!
     /// <https://stereokit.net/Pages/StereoKit/UI/Label.html>
     /// * size - The layout size for this element in Hierarchy space. If an axis is left as zero, it will be
-    /// auto-calculated. For X this is the remaining width of the current layout, and for Y this is UI.LineHeight.
+    /// auto-calculated. For X this is the remaining width of the current layout, and for Y this is Ui::line_height.
     ///
     /// see also [`crate::ui::ui_label`] [`crate::ui::ui_label_sz`]
     pub fn label(text: impl AsRef<str>, size: Option<Vec2>, use_padding: bool) {
@@ -1330,7 +1330,7 @@ impl Ui {
     }
 
     /// This will advance the layout to the next line. If there’s nothing on the current line, it’ll advance to the
-    /// start of the next on. But this won’t have any affect on an empty line, try UI.Space for that.
+    /// start of the next on. But this won’t have any affect on an empty line, try Ui::hspace for that.
     /// <https://stereokit.net/Pages/StereoKit/UI/NextLine.html>
     ///
     /// see also [`crate::ui::ui_nextline`]
@@ -1340,9 +1340,11 @@ impl Ui {
 
     /// If you wish to manually draw a Panel, this function will let you draw one wherever you want!
     /// <https://stereokit.net/Pages/StereoKit/UI/PanelAt.html>
+    /// * padding - If None the default value is UiPad::Outside
     ///
     /// see also [`crate::ui::ui_panel_at`]
-    pub fn panel_at(start: impl Into<Vec3>, size: impl Into<Vec2>, padding: UiPad) {
+    pub fn panel_at(start: impl Into<Vec3>, size: impl Into<Vec2>, padding: Option<UiPad>) {
+        let padding = padding.unwrap_or(UiPad::Outside);
         unsafe { ui_panel_at(start.into(), size.into(), padding) };
     }
 
@@ -1350,9 +1352,11 @@ impl Ui {
     /// is an entirely visual element, and is great for visually grouping elements together. Every Begin must have a
     /// matching End.
     /// <https://stereokit.net/Pages/StereoKit/UI/PanelBegin.html>
+    /// * padding - If None the default value is UiPad::Outside
     ///
     /// see also [`crate::ui::ui_panel_begin`]
-    pub fn panel_begin(padding: UiPad) {
+    pub fn panel_begin(padding: Option<UiPad>) {
+        let padding = padding.unwrap_or(UiPad::Outside);
         unsafe { ui_panel_begin(padding) };
     }
 
@@ -2169,7 +2173,7 @@ impl Ui {
         unsafe { ui_window_begin(cstr.as_ptr(), pose, size, window_type, move_type) }
     }
 
-    /// Finishes a window! Must be called after UI.WindowBegin() and all elements have been drawn.
+    /// Finishes a window! Must be called after Ui::window_begin() and all elements have been drawn.
     /// <https://stereokit.net/Pages/StereoKit/UI/WindowEnd.html>
     ///
     /// see also [`crate::ui::ui_window_end`]
@@ -2214,7 +2218,7 @@ impl Ui {
 
     /// These are the layout bounds of the most recently reserved layout space. The Z axis dimensions are always 0.
     /// Only UI elements that affect the surface’s layout will report their bounds here. You can reserve your own layout
-    /// space via UI.LayoutReserve, and that call will also report here.
+    /// space via Ui::layout_reserve, and that call will also report here.
     /// <https://stereokit.net/Pages/StereoKit/UI/LayoutLast.html>
     ///
     /// see also [`crate::ui::ui_layout_last`]
@@ -2257,7 +2261,7 @@ impl Ui {
         unsafe { ui_system_get_move_type() }
     }
 
-    /// This returns the TextStyle that’s on top of the UI’s stack, according to UI.Push/PopTextStyle.
+    /// This returns the TextStyle that’s on top of the UI’s stack, according to Ui::(push/pop)_text_style.
     /// <https://stereokit.net/Pages/StereoKit/UI/TextStyle.html>
     ///
     /// see also [`crate::ui::ui_get_text_style`]
