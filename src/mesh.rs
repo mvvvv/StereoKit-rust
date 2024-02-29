@@ -149,16 +149,16 @@ extern "C" {
     pub fn mesh_ray_intersect(
         mesh: MeshT,
         model_space_ray: Ray,
+        cull_mode: Cull,
         out_pt: *mut Ray,
         out_start_inds: *mut u32,
-        cull_mode: Cull,
     ) -> Bool32T;
     pub fn mesh_ray_intersect_bvh(
         mesh: MeshT,
         model_space_ray: Ray,
+        cull_mode: Cull,
         out_pt: *mut Ray,
         out_start_inds: *mut u32,
-        cull_mode: Cull,
     ) -> Bool32T;
     pub fn mesh_get_triangle(
         mesh: MeshT,
@@ -558,17 +558,12 @@ impl Mesh {
     /// space too. You can use the inverse of the mesh’s world transform matrix to bring the ray into model space,
     /// see the example in the docs!
     /// <https://stereokit.net/Pages/StereoKit/Mesh/Intersect.html>
+    /// * cull - If None has default value of Cull::Back.
     ///
     /// see also [`stereokit::mesh_ray_intersect`]
     #[inline]
-    pub fn intersect_mesh(&self, ray: Ray, cull: Cull) -> Option<Vec3> {
-        let mut out_ray = Ray::default();
-        let mut out_inds = 0;
-
-        match unsafe { mesh_ray_intersect(self.0.as_ptr(), ray, &mut out_ray, &mut out_inds, cull) != 0 } {
-            true => Some(out_ray.position),
-            false => None,
-        }
+    pub fn intersect_mesh(&self, ray: Ray, cull: Option<Cull>) -> Option<(Vec3, VindT)> {
+        ray.intersect_mesh(self, cull)
     }
 
     /// Checks the intersection point of a Ray and this Mesh with collision data stored on the CPU. A mesh without
@@ -576,12 +571,13 @@ impl Mesh {
     /// space too. You can use the inverse of the mesh’s world transform matrix to bring the ray into model space,
     /// see the example in the docs!
     /// <https://stereokit.net/Pages/StereoKit/Mesh/Intersect.html>
+    /// * cull - If None has default value of Cull::Back.
     ///
     /// see also [`stereokit::mesh_ray_intersect`]
     #[inline]
     #[allow(clippy::not_unsafe_ptr_arg_deref)]
-    pub fn intersect_mesh_to_ptr(&self, ray: Ray, out_ray: *mut Ray, out_inds: *mut u32, cull: Cull) -> bool {
-        unsafe { mesh_ray_intersect(self.0.as_ptr(), ray, out_ray, out_inds, cull) != 0 }
+    pub fn intersect_mesh_to_ptr(&self, ray: Ray, cull: Option<Cull>, out_ray: *mut Ray, out_inds: *mut u32) -> bool {
+        ray.intersect_mesh_to_ptr(self, cull, out_ray, out_inds)
     }
 
     /// A cube with dimensions of (1,1,1), this is equivalent to Mesh.GenerateCube(Vec3.One).

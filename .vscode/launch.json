@@ -51,7 +51,7 @@
                     "kind": "example"
                 }
             },
-            "args": ["--test","--start", "Anchor1"],
+            "args": ["--test","--start", "Textures"],
             "cwd": "${workspaceFolder}"
         },
         {

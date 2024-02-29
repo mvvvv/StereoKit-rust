@@ -4,7 +4,7 @@ use std::env;
 
 use demos::program::launch;
 use stereokit_rust::{
-    sk::{AppMode, DisplayMode, OriginMode, SkSettings},
+    sk::{AppMode, OriginMode, SkSettings},
     system::LogLevel,
 };
 
@@ -91,8 +91,6 @@ fn main() {
         .assets_folder("assets")
         .origin(OriginMode::Stage)
         .log_filter(LogLevel::Diagnostic)
-        .display_preference(DisplayMode::Flatscreen)
-        .disable_flatscreen_mr_sim(false)
         .no_flatscreen_fallback(true);
 
     if is_testing {

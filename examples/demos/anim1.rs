@@ -16,7 +16,6 @@ pub struct Anim1 {
     event_loop_proxy: Option<EventLoopProxy<StepperAction>>,
     mobile: Model,
     transform: Matrix,
-    pinch: bool,
     render_now: bool,
     stage: i32,
 }
@@ -62,7 +61,6 @@ impl Default for Anim1 {
         let transform =
             Matrix::trs(&(Vec3::new(0.0, 4.5, -2.0)), &Quat::from_angles(90.0, 0.0, 0.0), &(Vec3::ONE * 0.25));
 
-        let pinch = false;
         let render_now = true;
         let stage = 0;
         Self {
@@ -71,7 +69,6 @@ impl Default for Anim1 {
             event_loop_proxy: None,
             mobile,
             transform,
-            pinch,
             render_now,
             stage,
         }
@@ -111,26 +108,15 @@ impl IStepper for Anim1 {
             }
         }
         self.render_now = false;
-        match Input::hand(Handed::Right).pinch_activation.round() as i8 {
-            0 => {
-                if self.pinch {
-                    self.pinch = false;
-                    self.stage += 1;
-                    self.render_now = true;
-                    let cube = SHCubemap::get_rendered_sky();
-                    Log::info(format!(
-                        "sample : {:?} / dominent direction {}",
-                        cube.sh.get_sample(glam::Vec3::ONE),
-                        cube.sh.get_dominent_dir()
-                    ))
-                }
-            }
-            1 => {
-                if !self.pinch {
-                    self.pinch = true;
-                }
-            }
-            _ => {}
+        if Input::hand(Handed::Right).is_just_gripped() {
+            self.stage += 1;
+            self.render_now = true;
+            let cube = SHCubemap::get_rendered_sky();
+            Log::info(format!(
+                "sample : {:?} / dominent direction {}",
+                cube.sh.get_sample(glam::Vec3::ONE),
+                cube.sh.get_dominent_dir()
+            ))
         }
     }
 }

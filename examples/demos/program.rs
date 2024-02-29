@@ -7,7 +7,7 @@ use stereokit_rust::{
     mesh::Mesh,
     model::Model,
     shader::Shader,
-    sk::{AppFocus, DisplayBlend, DisplayMode, Sk, StepperAction, StepperId},
+    sk::{AppFocus, DisplayMode, Sk, StepperAction, StepperId},
     sprite::Sprite,
     system::{BtnState, Input, Key, Lines, Log, LogLevel, Projection, Renderer, Text},
     tex::{SHCubemap, Tex},
@@ -293,11 +293,9 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
             }
 
             // draw a floor if needed
-            if sk.get_system().display_type == DisplayBlend::Opaque {
-                //let transform = if World::has_bounds() { World::get_bounds_pose().to_matrix(None) } else { floor_tr };
-                floor_model.draw(floor_tr, None, None);
-                Lines::add_axis(Pose::IDENTITY, Some(0.5), None);
-            }
+            //let transform = if World::has_bounds() { World::get_bounds_pose().to_matrix(None) } else { floor_tr };
+            floor_model.draw(floor_tr, None, None);
+            Lines::add_axis(Pose::IDENTITY, Some(0.5), None);
 
             if !window_demo_show {
                 Ui::window_begin("Demos", &mut window_demo_pose, Some(Vec2::new(demo_win_width, 0.0)), None, None);

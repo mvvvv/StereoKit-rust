@@ -81,16 +81,16 @@ extern "C" {
     pub fn model_recalculate_bounds_exact(model: ModelT);
     pub fn model_set_bounds(model: ModelT, bounds: *const Bounds);
     pub fn model_get_bounds(model: ModelT) -> Bounds;
-    pub fn model_ray_intersect(model: ModelT, model_space_ray: Ray, out_pt: *mut Ray, cull_mode: Cull) -> Bool32T;
-    pub fn model_ray_intersect_bvh(model: ModelT, model_space_ray: Ray, out_pt: *mut Ray, cull_mode: Cull) -> Bool32T;
+    pub fn model_ray_intersect(model: ModelT, model_space_ray: Ray, cull_mode: Cull, out_pt: *mut Ray) -> Bool32T;
+    pub fn model_ray_intersect_bvh(model: ModelT, model_space_ray: Ray, cull_mode: Cull, out_pt: *mut Ray) -> Bool32T;
     pub fn model_ray_intersect_bvh_detailed(
         model: ModelT,
         model_space_ray: Ray,
+        cull_mode: Cull,
         out_pt: *mut Ray,
         out_mesh: *mut MeshT,
         out_matrix: *mut Matrix,
         out_start_inds: *mut u32,
-        cull_mode: Cull,
     ) -> Bool32T;
     pub fn model_step_anim(model: ModelT);
     pub fn model_play_anim(model: ModelT, animation_name: *const c_char, mode: AnimMode) -> Bool32T;
@@ -105,13 +105,13 @@ extern "C" {
     pub fn model_anim_active_completion(model: ModelT) -> f32;
     pub fn model_anim_get_name(model: ModelT, index: i32) -> *const c_char;
     pub fn model_anim_get_duration(model: ModelT, index: i32) -> f32;
-    pub fn model_get_name(model: ModelT, subset: i32) -> *const c_char;
-    pub fn model_get_material(model: ModelT, subset: i32) -> MaterialT;
-    pub fn model_get_mesh(model: ModelT, subset: i32) -> MeshT;
-    pub fn model_get_transform(model: ModelT, subset: i32) -> Matrix;
-    pub fn model_set_material(model: ModelT, subset: i32, material: MaterialT);
-    pub fn model_set_mesh(model: ModelT, subset: i32, mesh: MeshT);
-    pub fn model_set_transform(model: ModelT, subset: i32, transform: *const Matrix);
+    // Deprecated :pub fn model_get_name(model: ModelT, subset: i32) -> *const c_char;
+    // Deprecated :pub fn model_get_material(model: ModelT, subset: i32) -> MaterialT;
+    // Deprecated :pub fn model_get_mesh(model: ModelT, subset: i32) -> MeshT;
+    // Deprecated :pub fn model_get_transform(model: ModelT, subset: i32) -> Matrix;
+    // Deprecated :pub fn model_set_material(model: ModelT, subset: i32, material: MaterialT);
+    // Deprecated :pub fn model_set_mesh(model: ModelT, subset: i32, mesh: MeshT);
+    // Deprecated :pub fn model_set_transform(model: ModelT, subset: i32, transform: *const Matrix);
     // Deprecated :pub fn model_remove_subset(model: ModelT, subset: i32);
     // Deprecated :pub fn model_add_named_subset(
     //     model: ModelT,
@@ -337,28 +337,25 @@ impl Model {
     /// be in model space, intersection point will be in model space too. You can use the inverse of the mesh’s world
     /// transform matrix to bring the ray into model space, see the example in the docs!
     /// <https://stereokit.net/Pages/StereoKit/Model/Intersect.html>
+    /// * cull - If None has default value of Cull::Back.
     ///
     /// see also [`stereokit::model_ray_intersect`]
     #[inline]
-    pub fn intersect_model(&self, ray: Ray, cull: Cull) -> Option<Vec3> {
-        let mut out_ray = Ray::default();
-
-        match unsafe { model_ray_intersect(self.0.as_ptr(), ray, &mut out_ray, cull) != 0 } {
-            true => Some(out_ray.position),
-            false => None,
-        }
+    pub fn intersect_model(&self, ray: Ray, cull: Option<Cull>) -> Option<Vec3> {
+        ray.intersect_model(self, cull)
     }
 
     /// Checks the intersection point of a ray and the Solid flagged Meshes in the Model’s visual nodes. Ray must
     /// be in model space, intersection point will be in model space too. You can use the inverse of the mesh’s world
     /// transform matrix to bring the ray into model space, see the example in the docs!
     /// <https://stereokit.net/Pages/StereoKit/Model/Intersect.html>
+    /// * cull - If None has default value of Cull::Back.
     ///
     /// see also [`stereokit::model_ray_intersect`]
     #[inline]
     #[allow(clippy::not_unsafe_ptr_arg_deref)]
-    pub fn intersect_model_to_ptr(&self, ray: Ray, out_ray: *mut Ray, cull: Cull) -> bool {
-        unsafe { model_ray_intersect(self.0.as_ptr(), ray, out_ray, cull) != 0 }
+    pub fn intersect_model_to_ptr(&self, ray: Ray, cull: Option<Cull>, out_ray: *mut Ray) -> bool {
+        ray.intersect_model_to_ptr(self, cull, out_ray)
     }
 }
 

@@ -1,24 +1,27 @@
 use stereokit_rust::{
     font::Font,
-    material::{Cull, Material},
+    material::Material,
     maths::{Bounds, Matrix, Plane, Pose, Quat, Ray, Sphere, Vec3},
     mesh::Mesh,
     model::Model,
     sk::{IStepper, StepperAction, StepperId},
     system::{Handed, Input, Lines, Log, Text, TextStyle},
     ui::Ui,
-    util::named_colors::{BLACK, BLUE, GREEN, RED, WHITE, YELLOW_GREEN},
+    util::{
+        named_colors::{BLACK, BLUE, GREEN, RED, WHITE, YELLOW_GREEN},
+        Time,
+    },
 };
 use winit::event_loop::EventLoopProxy;
 
 pub const SPHERE_RADIUS: f32 = 0.4;
+pub const ROTATION_SPEED: f32 = 30.0;
 
 pub struct Math1 {
     id: StepperId,
     event_loop_proxy: Option<EventLoopProxy<StepperAction>>,
-    pub transform_model: Matrix,
     pub transform_ico_sphere: Matrix,
-    model_pose: Pose,
+    pub model_pose: Pose,
     model: Model,
     little_sphere: Mesh,
     ico_sphere: Mesh,
@@ -30,9 +33,8 @@ pub struct Math1 {
 
 impl Default for Math1 {
     fn default() -> Self {
-        let transform_model = Matrix::tr(&((Vec3::NEG_Z * 1.0) + Vec3::Y * 1.0), &Quat::from_angles(90.0, 0.0, 0.0));
         let transform_ico_sphere = Matrix::ts(Vec3::NEG_Z * 0.5 + Vec3::X + Vec3::Y * 1.5, Vec3::ONE * 0.3);
-        let model_pose = transform_model.get_pose();
+        let model_pose = Pose::new(Vec3::NEG_Z + Vec3::Y * 1.0, None);
         let transform_text = Matrix::tr(&((Vec3::NEG_Z * 2.5) + Vec3::Y * 2.0), &Quat::from_angles(0.0, 180.0, 0.0));
         let material = Material::pbr();
         let model = Model::from_mesh(Mesh::generate_sphere(SPHERE_RADIUS * 2.0, Some(16)), &material);
@@ -41,7 +43,6 @@ impl Default for Math1 {
         Self {
             id: "Math1".to_string(),
             event_loop_proxy: None,
-            transform_model,
             transform_ico_sphere,
             model_pose,
             model,
@@ -59,8 +60,6 @@ impl IStepper for Math1 {
     fn initialize(&mut self, id: StepperId, event_loop_proxy: EventLoopProxy<StepperAction>) -> bool {
         self.id = id;
         self.event_loop_proxy = Some(event_loop_proxy);
-        //--If default transform_model as been changed then new model_pose
-        self.model_pose = self.transform_model.get_pose();
         true
     }
 
@@ -127,7 +126,25 @@ impl Math1 {
         }
 
         // Add little_sphere to ico_sphere if pointed by the ray
-        let transform_ico = self.transform_ico_sphere;
+        let center = Vec3::NEG_Z * 0.5 + Vec3::X;
+        Lines::add(center, center + Vec3::Y * 2.5, RED, None, 0.1);
+        let rotation = Quat::from_angles(0.0, ROTATION_SPEED * Time::get_step_unscaledf(), 0.0);
+        let mut transform_ico = self.transform_ico_sphere;
+        let radius_circle = 0.9;
+
+        let mut pose = transform_ico.get_pose();
+        let circle_pose = Pose::new(
+            pose.get_forward() * radius_circle + pose.position,
+            Some(Quat::look_dir(-pose.get_forward()) * rotation),
+        );
+        let forward = circle_pose.get_forward() * radius_circle;
+        pose.position = forward + circle_pose.position;
+        pose.orientation *= rotation;
+
+        transform_ico = pose.to_matrix(Some(Vec3::ONE * 0.3));
+
+        self.transform_ico_sphere = transform_ico;
+
         // Reduce the ray to mesh space
         let inverse_transform_ico = transform_ico.get_inverse();
         let ray_to_bounds = Ray::new(
@@ -135,8 +152,8 @@ impl Math1 {
             inverse_transform_ico.transform_normal(ray.direction),
         );
         // add blue little sphere only
-        if let Some(out_mesh) = ray_to_bounds.intersect_mesh(&self.ico_sphere, Cull::Back) {
-            let sphere_transform = Matrix::t(transform_ico.transform_point(out_mesh));
+        if let Some(out_mesh) = ray_to_bounds.intersect_mesh(&self.ico_sphere, None) {
+            let sphere_transform = Matrix::t(transform_ico.transform_point(out_mesh.0));
             self.little_sphere.draw(&self.material, sphere_transform, Some(BLUE.into()), None);
         }
 

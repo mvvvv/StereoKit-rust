@@ -1,5 +1,6 @@
 use std::{
     ffi::{c_char, c_void, CStr, CString},
+    mem::size_of,
     path::{Path, PathBuf},
     ptr::{null_mut, NonNull},
 };
@@ -285,8 +286,7 @@ extern "C" {
     );
     pub fn tex_add_zbuffer(texture: TexT, format: TexFormat) -> TexT;
     pub fn tex_set_zbuffer(texture: TexT, depth_texture: TexT);
-    pub fn tex_get_data(texture: TexT, out_data: *mut c_void, out_data_size: usize);
-    pub fn tex_get_data_mip(texture: TexT, out_data: *mut c_void, out_data_size: usize, mip_level: i32);
+    pub fn tex_get_data(texture: TexT, out_data: *mut c_void, out_data_size: usize, mip_level: i32);
     pub fn tex_gen_color(color: Color128, width: i32, height: i32, type_: TexType, format: TexFormat) -> TexT;
     pub fn tex_gen_particle(width: i32, height: i32, roundness: f32, gradient_linear: GradientT) -> TexT;
     pub fn tex_gen_cubemap(
@@ -577,7 +577,7 @@ impl Tex {
     /// creating the Tex to avoid this.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetColors.html>
     ///
-    /// Warning, instead of [TexParam::set_colors], this call may not be done if the asset is not loaded (see [TexParam::get_asset_state]) or the size is
+    /// Warning, instead of [Tex::set_colors], this call may not be done if the asset is not loaded (see [Tex::get_asset_state]) or the size is
     /// inconsistent or the format is incompatible.
     ///
     /// see also [`crate::tex::tex_set_colors`]
@@ -587,19 +587,19 @@ impl Tex {
             Some(TexFormat::RGBA32Linear) => (),
             Some(_) => {
                 Log::err(format!(
-                    "The format of the texture {} is not compatible with TexParam::set_colors32",
+                    "The format of the texture {} is not compatible with Tex::set_colors32",
                     self.get_id()
                 ));
                 return self;
             }
             None => {
-                Log::err(format!("The texture {} is not loaded during TexParam::set_colors32", self.get_id()));
+                Log::err(format!("The texture {} is not loaded during Tex::set_colors32", self.get_id()));
                 return self;
             }
         }
         if width * height != data.len() {
             Log::err(format!(
-                "{}x{} differ from {} in TexParam::set_color32 for texture {}",
+                "{}x{} differ from {} in Tex::set_color32 for texture {}",
                 height,
                 width,
                 data.len(),
@@ -618,7 +618,7 @@ impl Tex {
     /// Calling this function can also result in building mip-maps, which has a non-zero cost: use TexType.ImageNomips when creating the Tex to avoid this.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetColors.html>
     ///
-    /// Warning, instead of [TexParam::set_colors], this call may not be done if the asset is not loaded (see [TexParam::get_asset_state]) or the size is
+    /// Warning, instead of [Tex::set_colors], this call may not be done if the asset is not loaded (see [Tex::get_asset_state]) or the size is
     /// inconsistent or the format is incompatible.
     ///
     /// see also [`crate::tex::tex_set_colors`]
@@ -627,19 +627,19 @@ impl Tex {
             Some(TexFormat::RGBA128) => (),
             Some(_) => {
                 Log::err(format!(
-                    "The format of the texture {} is not compatible with TexParam::set_colors128",
+                    "The format of the texture {} is not compatible with Tex::set_colors128",
                     self.get_id()
                 ));
                 return self;
             }
             None => {
-                Log::err(format!("The texture {} is not loaded during TexParam::set_colors128", self.get_id()));
+                Log::err(format!("The texture {} is not loaded during Tex::set_colors128", self.get_id()));
                 return self;
             }
         }
         if width * height != data.len() {
             Log::err(format!(
-                "{}x{} differ from {} for TexParam::set_color128 for texture {}",
+                "{}x{} differ from {} for Tex::set_color128 for texture {}",
                 height,
                 width,
                 data.len(),
@@ -658,7 +658,7 @@ impl Tex {
     /// can also result in building mip-maps, which has a non-zero cost: use TexType.ImageNomips when creating the Tex to avoid this.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetColors.html>
     ///
-    /// Warning, instead of [TexParam::set_colors], this call may not be done if the asset is not loaded (see [TexParam::get_asset_state]) or the size is
+    /// Warning, instead of [Tex::set_colors], this call may not be done if the asset is not loaded (see [Tex::get_asset_state]) or the size is
     /// inconsistent or the format is incompatible.
     ///
     /// see also [`crate::tex::tex_set_colors`]
@@ -667,19 +667,19 @@ impl Tex {
             Some(TexFormat::R8) => (),
             Some(_) => {
                 Log::err(format!(
-                    "The format of the texture {} is not compatible with TexParam::set_colors_r8",
+                    "The format of the texture {} is not compatible with Tex::set_colors_r8",
                     self.get_id()
                 ));
                 return self;
             }
             None => {
-                Log::err(format!("The texture {} is not loaded during TexParam::set_colors_r8", self.get_id()));
+                Log::err(format!("The texture {} is not loaded during Tex::set_colors_r8", self.get_id()));
                 return self;
             }
         }
         if width * height != data.len() {
             Log::err(format!(
-                "{}x{} differ from {} for TexParam::set_color_r8 for texture {}",
+                "{}x{} differ from {} for Tex::set_color_r8 for texture {}",
                 height,
                 width,
                 data.len(),
@@ -698,7 +698,7 @@ impl Tex {
     /// can also result in building mip-maps, which has a non-zero cost: use TexType.ImageNomips when creating the Tex to avoid this.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetColors.html>
     ///
-    /// Warning, instead of [TexParam::set_colors], this call may not be done if the asset is not loaded (see [TexParam::get_asset_state]) or the size is
+    /// Warning, instead of [Tex::set_colors], this call may not be done if the asset is not loaded (see [Tex::get_asset_state]) or the size is
     /// inconsistent or the format is incompatible.
     ///
     /// see also [`crate::tex::tex_set_colors`]
@@ -707,19 +707,19 @@ impl Tex {
             Some(TexFormat::R16f) => (),
             Some(_) => {
                 Log::err(format!(
-                    "The format of the texture {} is not compatible with TexParam::set_colors_r16",
+                    "The format of the texture {} is not compatible with Tex::set_colors_r16",
                     self.get_id()
                 ));
                 return self;
             }
             None => {
-                Log::err(format!("The texture {} is not loaded during TexParam::set_colors_r16", self.get_id()));
+                Log::err(format!("The texture {} is not loaded during Tex::set_colors_r16", self.get_id()));
                 return self;
             }
         }
         if width * height != data.len() {
             Log::err(format!(
-                "{}x{} differ from {} for TexParam::set_color_r16 for texture {}",
+                "{}x{} differ from {} for Tex::set_color_r16 for texture {}",
                 height,
                 width,
                 data.len(),
@@ -738,7 +738,7 @@ impl Tex {
     /// can also result in building mip-maps, which has a non-zero cost: use TexType.ImageNomips when creating the Tex to avoid this.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetColors.html>
     ///
-    /// Warning, instead of [TexParam::set_colors], this call may not be done if the asset is not loaded (see [TexParam::get_asset_state]) or the size is
+    /// Warning, instead of [Tex::set_colors], this call may not be done if the asset is not loaded (see [Tex::get_asset_state]) or the size is
     /// inconsistent or the format is incompatible.
     ///
     /// see also [`crate::tex::tex_set_colors`]
@@ -747,19 +747,19 @@ impl Tex {
             Some(TexFormat::R32) => (),
             Some(_) => {
                 Log::err(format!(
-                    "The format of the texture {} is not compatible with TexParam::set_colors_r32",
+                    "The format of the texture {} is not compatible with Tex::set_colors_r32",
                     self.get_id()
                 ));
                 return self;
             }
             None => {
-                Log::err(format!("The texture {} is not loaded during TexParam::set_colors_r32", self.get_id()));
+                Log::err(format!("The texture {} is not loaded during Tex::set_colors_r32", self.get_id()));
                 return self;
             }
         }
         if width * height != data.len() {
             Log::err(format!(
-                "{}x{} differ from {} for TexParam::set_color_r32 for texture {}",
+                "{}x{} differ from {} for Tex::set_color_r32 for texture {}",
                 height,
                 width,
                 data.len(),
@@ -857,7 +857,8 @@ impl Tex {
         self
     }
 
-    /// The [`TexParams::id`] of this texture
+    /// Gets the unique identifier of this asset resource! This can be helpful for debugging, managine your assets, or
+    /// finding them later on!
     /// <https://stereokit.net/Pages/StereoKit/Tex/Id.html>
     ///
     /// see also [`crate::tex::tex_get_id`]
@@ -947,7 +948,7 @@ impl Tex {
         }
 
         let deux: usize = 2;
-        if mip < 0 {
+        if mip <= 0 {
             size_test = width * height;
         } else {
             mips_test = deux.pow(mip as u32);
@@ -962,223 +963,43 @@ impl Tex {
     /// Retrieve the color data of the texture from the GPU. This can be a very slow operation,
     /// so use it cautiously. The out_data pointer must correspond to an array with the correct size.
     /// <https://stereokit.net/Pages/StereoKit/Tex/GetColorData.html>
+    /// * mip_level - Retrieves the color data for a specific mip-mapping level. This function will log a fail and
+    /// return a black array if an invalid mip-level is provided.
     ///
-    /// set mip < 0 for textures with type [TexType::IMAGE_NO_MIPS]
-    ///     the length of the array must be  width * height
-    /// Set mip from 0 to the number of mips -1
-    ///     the length of the array must be the width * height of the mip selected
-    ///
-    /// The function [`TexParam::get_data_infos`] may help you to shape the right receiver.
+    /// The function [`Tex::get_data_infos`] may help you to shape the right receiver.
     ///
     /// see also [`crate::tex::tex_get_data`][`crate::tex::tex_get_data_mip`]
-    pub fn get_colors32(&self, color_data: &[Color32], mip: i8) -> Option<bool> {
-        let (width, height, size_test) = match self.get_data_infos(mip) {
+    pub fn get_colors<T>(&self, color_data: &[T], mut mip_level: i8) -> Option<bool> {
+        let size_of_color = std::mem::size_of_val(color_data);
+        let (width, height, size_test) = match self.get_data_infos(mip_level) {
             Some(value) => value,
             None => return None,
         };
-        if size_test != color_data.len() {
+        if size_test * size_of::<T>() != size_of_color {
             Log::err(format!(
-                "Size of the Tex {} is {}x{}/mip={} when size of the given buffer is {}. Function TexParam::get_color32 failed!",
+                "Size of the Tex {} is {}x{}/mip={} when size of the given buffer is {} instead of {}. Function Tex::get_color failed!",
                 self.get_id(),
                 height,
                 width,
-                mip,
-                color_data.len()
+                mip_level,
+                size_of_color,
+                size_test,
             ));
             return None;
         }
-        if mip < 0 {
-            unsafe {
-                tex_get_data(self.0.as_ptr(), color_data.as_ptr() as *mut std::os::raw::c_void, color_data.len() * 4)
-            };
-        } else {
-            unsafe {
-                tex_get_data_mip(
-                    self.0.as_ptr(),
-                    color_data.as_ptr() as *mut std::os::raw::c_void,
-                    color_data.len() * 4,
-                    mip as i32,
-                )
-            };
-        }
-        Some(true)
-    }
 
-    /// Retrieve the color data of the texture from the GPU. This can be a very slow operation,
-    /// so use it cautiously. The out_data pointer must correspond to an array with the correct size.
-    /// <https://stereokit.net/Pages/StereoKit/Tex/GetColorData.html>
-    ///
-    /// set mip < 0 for textures with type [TexType::IMAGE_NO_MIPS]
-    ///     the length of the array must be  width * height
-    /// Set mip from 0 to the number of mips -1
-    ///     the length of the array must be the width * height of the mip selected
-    ///
-    /// The function [`TexParam::get_data_infos`] may help you to shape the right receiver.
-    ///
-    /// see also [`crate::tex::tex_get_data`][`crate::tex::tex_get_data_mip`]
-    pub fn get_colors128(&self, color_data: &[Color128], mip: i8) -> Option<bool> {
-        let (width, height, size_test) = match self.get_data_infos(mip) {
-            Some(value) => value,
-            None => return None,
+        if mip_level < 0 {
+            mip_level = 0
+        }
+        unsafe {
+            tex_get_data(
+                self.0.as_ptr(),
+                color_data.as_ptr() as *mut std::os::raw::c_void,
+                size_of_color,
+                mip_level as i32,
+            )
         };
-        if size_test != color_data.len() {
-            Log::err(format!(
-                "Size of the Tex {} is {}x{}/mip={} when size of the given buffer is {}. Function TexParam::get_color128 failed!",
-                self.get_id(),
-                height,
-                width,
-                mip,
-                color_data.len()
-            ));
-            return None;
-        }
-        if mip < 0 {
-            unsafe {
-                tex_get_data(self.0.as_ptr(), color_data.as_ptr() as *mut std::os::raw::c_void, color_data.len() * 16)
-            };
-        } else {
-            unsafe {
-                tex_get_data_mip(
-                    self.0.as_ptr(),
-                    color_data.as_ptr() as *mut std::os::raw::c_void,
-                    color_data.len() * 16,
-                    mip as i32,
-                )
-            };
-        }
-        Some(true)
-    }
 
-    /// Retrieve the color data of the texture from the GPU. This can be a very slow operation,
-    /// so use it cautiously. The out_data pointer must correspond to an array with the correct size.
-    /// <https://stereokit.net/Pages/StereoKit/Tex/GetColorData.html>
-    ///
-    /// set mip < 0 for textures with type [TexType::IMAGE_NO_MIPS]
-    ///     the length of the array must be  width * height
-    /// Set mip from 0 to the number of mips -1
-    ///     the length of the array must be the width * height of the mip selected
-    ///
-    /// The function [`TexParam::get_data_infos`] may help you to shape the right receiver.
-    ///
-    /// see also [`crate::tex::tex_get_data`][`crate::tex::tex_get_data_mip`]
-    pub fn get_colors_r8(&self, color_data: &[u8], mip: i8) -> Option<bool> {
-        let (width, height, size_test) = match self.get_data_infos(mip) {
-            Some(value) => value,
-            None => return None,
-        };
-        if size_test != color_data.len() {
-            Log::err(format!(
-                "Size of the Tex {} is {}x{}/mip={} when size of the given buffer is {}. Function TexParam::get_color_r8 failed!",
-                self.get_id(),
-                height,
-                width,
-                mip,
-                color_data.len()
-            ));
-            return None;
-        }
-        if mip < 0 {
-            unsafe { tex_get_data(self.0.as_ptr(), color_data.as_ptr() as *mut c_void, color_data.len()) };
-        } else {
-            unsafe {
-                tex_get_data_mip(
-                    self.0.as_ptr(),
-                    color_data.as_ptr() as *mut std::os::raw::c_void,
-                    color_data.len(),
-                    mip as i32,
-                )
-            };
-        }
-        Some(true)
-    }
-
-    /// Retrieve the color data of the texture from the GPU. This can be a very slow operation,
-    /// so use it cautiously. The out_data pointer must correspond to an array with the correct size.
-    /// <https://stereokit.net/Pages/StereoKit/Tex/GetColorData.html>
-    ///
-    /// set mip < 0 for textures with type [TexType::IMAGE_NO_MIPS]
-    ///     the length of the array must be  width * height
-    /// Set mip from 0 to the number of mips -1
-    ///     the length of the array must be the width * height of the mip selected
-    ///
-    /// The function [`TexParam::get_data_infos`] may help you to shape the right receiver.
-    ///
-    /// see also [`crate::tex::tex_get_data`][`crate::tex::tex_get_data_mip`]
-    pub fn get_colors_r16(&self, color_data: &[u16], mip: i8) -> Option<bool> {
-        let (width, height, size_test) = match self.get_data_infos(mip) {
-            Some(value) => value,
-            None => return None,
-        };
-        if size_test != color_data.len() {
-            Log::err(format!(
-                "Size of the Tex {} is {}x{}/mip={} when size of the given buffer is {}. Function TexParam::get_color_r16 failed!",
-                self.get_id(),
-                height,
-                width,
-                mip,
-                color_data.len()
-            ));
-            return None;
-        }
-        if mip < 0 {
-            unsafe {
-                tex_get_data(self.0.as_ptr(), color_data.as_ptr() as *mut std::os::raw::c_void, color_data.len() * 2)
-            };
-        } else {
-            unsafe {
-                tex_get_data_mip(
-                    self.0.as_ptr(),
-                    color_data.as_ptr() as *mut std::os::raw::c_void,
-                    color_data.len() * 2,
-                    mip as i32,
-                )
-            };
-        }
-        Some(true)
-    }
-
-    /// Retrieve the color data of the texture from the GPU. This can be a very slow operation,
-    /// so use it cautiously. The out_data pointer must correspond to an array with the correct size.
-    /// <https://stereokit.net/Pages/StereoKit/Tex/GetColorData.html>
-    ///
-    /// set mip < 0 for textures with type [TexType::IMAGE_NO_MIPS]
-    ///     the length of the array must be  width * height
-    /// Set mip from 0 to the number of mips -1
-    ///     the length of the array must be the width * height of the mip selected
-    ///
-    /// The function [`TexParam::get_data_infos`] may help you to shape the right receiver.
-    ///
-    /// see also [`crate::tex::tex_get_data`][`crate::tex::tex_get_data_mip`]
-    pub fn get_colors_r32(&self, color_data: &[f32], mip: i8) -> Option<bool> {
-        let (width, height, size_test) = match self.get_data_infos(mip) {
-            Some(value) => value,
-            None => return None,
-        };
-        if size_test != color_data.len() {
-            Log::err(format!(
-                "Size of the Tex {} is {}x{}/mip={} when size of the given buffer is {}. Function TexParam::get_color_r32 failed!",
-                self.get_id(),
-                height,
-                width,
-                mip,
-                color_data.len()
-            ));
-            return None;
-        }
-        if mip < 0 {
-            unsafe {
-                tex_get_data(self.0.as_ptr(), color_data.as_ptr() as *mut std::os::raw::c_void, color_data.len() * 4)
-            };
-        } else {
-            unsafe {
-                tex_get_data_mip(
-                    self.0.as_ptr(),
-                    color_data.as_ptr() as *mut std::os::raw::c_void,
-                    color_data.len() * 4,
-                    mip as i32,
-                )
-            };
-        }
         Some(true)
     }
 

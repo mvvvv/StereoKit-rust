@@ -6,7 +6,7 @@ use std::{
 
 use crate::{
     material::Cull,
-    mesh::{mesh_ray_intersect, Mesh},
+    mesh::{mesh_ray_intersect, Mesh, VindT},
     model::{model_ray_intersect, Model},
 };
 
@@ -1556,11 +1556,11 @@ extern "C" {
     pub fn matrix_inverse(a: *const Matrix, out_Matrix: *mut Matrix);
     pub fn matrix_invert(a: *const Matrix) -> Matrix;
     pub fn matrix_mul(a: *const Matrix, b: *const Matrix, out_Matrix: *mut Matrix);
-    pub fn matrix_mul_point(transform: *const Matrix, point: *const Vec3) -> Vec3;
-    pub fn matrix_mul_point4(transform: *const Matrix, point: *const Vec4) -> Vec4;
+    // Deprecated: pub fn matrix_mul_point(transform: *const Matrix, point: *const Vec3) -> Vec3;
+    // Deprecated: pub fn matrix_mul_point4(transform: *const Matrix, point: *const Vec4) -> Vec4;
     pub fn matrix_mul_direction(transform: *const Matrix, direction: *const Vec3) -> Vec3;
-    pub fn matrix_mul_rotation(transform: *const Matrix, orientation: *const Quat) -> Quat;
-    pub fn matrix_mul_pose(transform: *const Matrix, pose: *const Pose) -> Pose;
+    // Deprecated: pub fn matrix_mul_rotation(transform: *const Matrix, orientation: *const Quat) -> Quat;
+    // Deprecated: pub fn matrix_mul_pose(transform: *const Matrix, pose: *const Pose) -> Pose;
     pub fn matrix_transform_pt(transform: Matrix, point: Vec3) -> Vec3;
     pub fn matrix_transform_pt4(transform: Matrix, point: Vec4) -> Vec4;
     pub fn matrix_transform_dir(transform: Matrix, direction: Vec3) -> Vec3;
@@ -1898,7 +1898,7 @@ impl Mul<Vec3> for Matrix {
     type Output = Vec3;
 
     fn mul(self, rhs: Vec3) -> Self::Output {
-        unsafe { matrix_mul_point(&self, &rhs) }
+        unsafe { matrix_transform_pt(self, rhs) }
     }
 }
 
@@ -1910,7 +1910,7 @@ impl Mul<Vec3> for Matrix {
 /// see also [`crate::maths::matrix_mul_point`]
 impl MulAssign<Matrix> for Vec3 {
     fn mul_assign(&mut self, rhs: Matrix) {
-        let res = unsafe { matrix_mul_point(&rhs, self) };
+        let res = unsafe { matrix_transform_pt(rhs, *self) };
         self.x = res.x;
         self.y = res.y;
         self.z = res.z;
@@ -1927,7 +1927,7 @@ impl Mul<Matrix> for Vec3 {
     type Output = Vec3;
 
     fn mul(self, rhs: Matrix) -> Self::Output {
-        unsafe { matrix_mul_point(&rhs, &self) }
+        unsafe { matrix_transform_pt(rhs, self) }
     }
 }
 
@@ -1938,7 +1938,7 @@ impl Mul<Vec4> for Matrix {
     type Output = Vec4;
 
     fn mul(self, rhs: Vec4) -> Self::Output {
-        unsafe { matrix_mul_point4(&self, &rhs) }
+        unsafe { matrix_transform_pt4(self, rhs) }
     }
 }
 
@@ -1947,7 +1947,7 @@ impl Mul<Vec4> for Matrix {
 /// see also [`crate::maths::matrix_mul_point4`]
 impl MulAssign<Matrix> for Vec4 {
     fn mul_assign(&mut self, rhs: Matrix) {
-        let res = unsafe { matrix_mul_point4(&rhs, self) };
+        let res = unsafe { matrix_transform_pt4(rhs, *self) };
         self.x = res.x;
         self.y = res.y;
         self.z = res.z;
@@ -1962,7 +1962,7 @@ impl Mul<Matrix> for Vec4 {
     type Output = Vec4;
 
     fn mul(self, rhs: Matrix) -> Self::Output {
-        unsafe { matrix_mul_point4(&rhs, &self) }
+        unsafe { matrix_transform_pt4(rhs, self) }
     }
 }
 
@@ -2013,7 +2013,7 @@ impl Mul<Quat> for Matrix {
     type Output = Quat;
 
     fn mul(self, rhs: Quat) -> Self::Output {
-        unsafe { matrix_mul_rotation(&self, &rhs) }
+        unsafe { matrix_transform_quat(self, rhs) }
     }
 }
 
@@ -2024,7 +2024,7 @@ impl Mul<Quat> for Matrix {
 
 impl MulAssign<Matrix> for Quat {
     fn mul_assign(&mut self, rhs: Matrix) {
-        let res = unsafe { matrix_mul_rotation(&rhs, self) };
+        let res = unsafe { matrix_transform_quat(rhs, *self) };
         self.x = res.x;
         self.y = res.y;
         self.z = res.z;
@@ -2040,7 +2040,7 @@ impl Mul<Matrix> for Quat {
     type Output = Quat;
 
     fn mul(self, rhs: Matrix) -> Self::Output {
-        unsafe { matrix_mul_rotation(&rhs, &self) }
+        unsafe { matrix_transform_quat(rhs, self) }
     }
 }
 
@@ -2053,7 +2053,7 @@ impl Mul<Pose> for Matrix {
     type Output = Pose;
 
     fn mul(self, rhs: Pose) -> Self::Output {
-        unsafe { matrix_mul_pose(&self, &rhs) }
+        unsafe { matrix_transform_pose(self, rhs) }
     }
 }
 
@@ -2064,7 +2064,7 @@ impl Mul<Pose> for Matrix {
 /// see also [`crate::maths::matrix_mul_pose`]
 impl MulAssign<Matrix> for Pose {
     fn mul_assign(&mut self, rhs: Matrix) {
-        let res = unsafe { matrix_mul_pose(&rhs, self) };
+        let res = unsafe { matrix_transform_pose(rhs, *self) };
         self.position = res.position;
         self.orientation = res.orientation;
     }
@@ -2079,7 +2079,7 @@ impl Mul<Matrix> for Pose {
     type Output = Pose;
 
     fn mul(self, rhs: Matrix) -> Self::Output {
-        unsafe { matrix_mul_pose(&rhs, &self) }
+        unsafe { matrix_transform_pose(rhs, self) }
     }
 }
 
@@ -2800,15 +2800,17 @@ impl Ray {
     /// space too. You can use the inverse of the mesh’s world transform matrix to bring the ray into model space,
     /// see the example in the docs!
     /// <https://stereokit.net/Pages/StereoKit/Ray/Intersect.html>
+    /// * cull - If None has default value of Cull::Back.
     ///
     /// see also [`crate::maths::mesh_ray_intersect`]
     #[inline]
-    pub fn intersect_mesh(&self, mesh: &Mesh, cull: Cull) -> Option<Vec3> {
+    pub fn intersect_mesh(&self, mesh: &Mesh, cull: Option<Cull>) -> Option<(Vec3, VindT)> {
         let mut out_ray = Ray::default();
         let mut out_inds = 0;
+        let cull = cull.unwrap_or(Cull::Back);
 
-        match unsafe { mesh_ray_intersect(mesh.0.as_ptr(), *self, &mut out_ray, &mut out_inds, cull) != 0 } {
-            true => Some(out_ray.position),
+        match unsafe { mesh_ray_intersect(mesh.0.as_ptr(), *self, cull, &mut out_ray, &mut out_inds) != 0 } {
+            true => Some((out_ray.position, out_inds)),
             false => None,
         }
     }
@@ -2818,25 +2820,35 @@ impl Ray {
     /// space too. You can use the inverse of the mesh’s world transform matrix to bring the ray into model space,
     /// see the example in the docs!
     /// <https://stereokit.net/Pages/StereoKit/Ray/Intersect.html>
+    /// * cull - If None has default value of Cull::Back.
     ///
     /// see also [`crate::maths::mesh_ray_intersect`]
     #[inline]
     #[allow(clippy::not_unsafe_ptr_arg_deref)]
-    pub fn intersect_mesh_to_ptr(&self, mesh: &Mesh, out_ray: *mut Ray, out_inds: *mut u32, cull: Cull) -> bool {
-        unsafe { mesh_ray_intersect(mesh.0.as_ptr(), *self, out_ray, out_inds, cull) != 0 }
+    pub fn intersect_mesh_to_ptr(
+        &self,
+        mesh: &Mesh,
+        cull: Option<Cull>,
+        out_ray: *mut Ray,
+        out_inds: *mut u32,
+    ) -> bool {
+        let cull = cull.unwrap_or(Cull::Back);
+        unsafe { mesh_ray_intersect(mesh.0.as_ptr(), *self, cull, out_ray, out_inds) != 0 }
     }
 
     /// Checks the intersection point of this ray and the Solid flagged Meshes in the Model’s visual nodes. Ray must
     /// be in model space, intersection point will be in model space too. You can use the inverse of the mesh’s world
     /// transform matrix to bring the ray into model space, see the example in the docs!
     /// <https://stereokit.net/Pages/StereoKit/Ray/Intersect.html>
+    /// * cull - If None has default value of Cull::Back.
     ///
     /// see also [`crate::maths::model_ray_intersect`]
     #[inline]
-    pub fn intersect_model(&self, model: &Model, cull: Cull) -> Option<Vec3> {
+    pub fn intersect_model(&self, model: &Model, cull: Option<Cull>) -> Option<Vec3> {
         let mut out_ray = Ray::default();
+        let cull = cull.unwrap_or(Cull::Back);
 
-        match unsafe { model_ray_intersect(model.0.as_ptr(), *self, &mut out_ray, cull) != 0 } {
+        match unsafe { model_ray_intersect(model.0.as_ptr(), *self, cull, &mut out_ray) != 0 } {
             true => Some(out_ray.position),
             false => None,
         }
@@ -2846,12 +2858,14 @@ impl Ray {
     /// be in model space, intersection point will be in model space too. You can use the inverse of the mesh’s world
     /// transform matrix to bring the ray into model space, see the example in the docs!
     /// <https://stereokit.net/Pages/StereoKit/Ray/Intersect.html>
+    /// * cull - If None has default value of Cull::Back.
     ///
     /// see also [`crate::maths::model_ray_intersect`]
     #[inline]
     #[allow(clippy::not_unsafe_ptr_arg_deref)]
-    pub fn intersect_model_to_ptr(&self, model: &Model, out_ray: *mut Ray, cull: Cull) -> bool {
-        unsafe { model_ray_intersect(model.0.as_ptr(), *self, out_ray, cull) != 0 }
+    pub fn intersect_model_to_ptr(&self, model: &Model, cull: Option<Cull>, out_ray: *mut Ray) -> bool {
+        let cull = cull.unwrap_or(Cull::Back);
+        unsafe { model_ray_intersect(model.0.as_ptr(), *self, cull, out_ray) != 0 }
     }
 }
 impl Display for Ray {

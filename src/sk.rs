@@ -105,8 +105,6 @@ pub enum DisplayBlend {
 #[derive(Debug, Clone)]
 #[repr(C)]
 pub struct SystemInfo {
-    /// The type of display this device has.
-    pub display_type: DisplayBlend,
     /// Width of the display surface, in pixels! For a stereo display, this will be the width of a single eye.
     pub display_width: i32,
     /// Height of the display surface, in pixels! For a stereo display, this will be the height of a single eye.
@@ -217,8 +215,6 @@ pub struct SkSettings {
     /// Where to look for assets when loading files! Final path will look like ‘\[assetsFolder\]/\[file\]’, so a
     /// trailing ‘/’ is unnecessary.
     pub assets_folder: *const c_char,
-    /// Which display type should we try to load? Default is DisplayMode::MixedReality.
-    pub display_preference: DisplayMode,
     /// Which operation mode should we use for this app? Default is XR, and by default the app will fall back to
     /// Simulator if XR fails or is unavailable.
     pub mode: AppMode,
@@ -252,9 +248,6 @@ pub struct SkSettings {
     pub flatscreen_width: i32,
     /// If using Runtime.Flatscreen, the pixel size of the window on the screen.
     pub flatscreen_height: i32,
-    /// By default, StereoKit will simulate Mixed Reality input so developers can test MR spaces without being in a
-    /// headset. If You don’t want this, you can disable it with this setting!
-    pub disable_flatscreen_mr_sim: Bool32T,
     /// By default, StereoKit will open a desktop window for keyboard input due to lack of XR-native keyboard APIs on
     /// many platforms. If you don’t want this, you can disable it with this setting!
     pub disable_desktop_input_window: Bool32T,
@@ -285,7 +278,6 @@ impl Default for SkSettings {
         Self {
             app_name: DEFAULT_NAME,
             assets_folder: DEFAULT_ASSET_DIR,
-            display_preference: DisplayMode::MixedReality,
             mode: AppMode::XR,
             blend_preference: DisplayBlend::None,
             no_flatscreen_fallback: 0,
@@ -297,7 +289,6 @@ impl Default for SkSettings {
             flatscreen_pos_y: 0,
             flatscreen_width: 0,
             flatscreen_height: 0,
-            disable_flatscreen_mr_sim: 0,
             disable_desktop_input_window: 0,
             disable_unfocused_sleep: 0,
             render_scaling: 1.0,
@@ -342,13 +333,6 @@ impl SkSettings {
     pub fn assets_folder(&mut self, assets_folder: impl AsRef<Path>) -> &mut Self {
         let c_str = CString::new(assets_folder.as_ref().to_str().unwrap()).unwrap();
         self.assets_folder = c_str.into_raw();
-        self
-    }
-
-    /// Which display type should we try to load? Default is DisplayMode.MixedReality.
-    /// <https://stereokit.net/Pages/StereoKit/SKSettings/displayPreference.html>
-    pub fn display_preference(&mut self, display_preference: DisplayMode) -> &mut Self {
-        self.display_preference = display_preference;
         self
     }
 
@@ -452,14 +436,6 @@ impl SkSettings {
     pub fn flatscreen_size(&mut self, flatscreen_width: i32, flatscreen_height: i32) -> &mut Self {
         self.flatscreen_width = flatscreen_width;
         self.flatscreen_height = flatscreen_height;
-        self
-    }
-
-    /// By default, StereoKit will simulate Mixed Reality input so developers can test MR spaces without being in a
-    /// headset. If You don’t want this, you can disable it with this setting!
-    /// <https://stereokit.net/Pages/StereoKit/SKSettings/disableFlatscreenMRSim.html>
-    pub fn disable_flatscreen_mr_sim(&mut self, disable_flatscreen_mr_sim: bool) -> &mut Self {
-        self.disable_flatscreen_mr_sim = disable_flatscreen_mr_sim as Bool32T;
         self
     }
 

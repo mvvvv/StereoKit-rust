@@ -640,7 +640,7 @@ extern "C" {
     pub fn material_set_vector3(material: MaterialT, name: *const c_char, value: Vec3);
     pub fn material_set_color(material: MaterialT, name: *const c_char, color_gamma: Color128);
     pub fn material_set_vector4(material: MaterialT, name: *const c_char, value: Vec4);
-    pub fn material_set_vector(material: MaterialT, name: *const c_char, value: Vec4);
+    // Deprecated: pub fn material_set_vector(material: MaterialT, name: *const c_char, value: Vec4);
     pub fn material_set_int(material: MaterialT, name: *const c_char, value: i32);
     pub fn material_set_int2(material: MaterialT, name: *const c_char, value1: i32, value2: i32);
     pub fn material_set_int3(material: MaterialT, name: *const c_char, value1: i32, value2: i32, value3: i32);

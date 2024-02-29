@@ -80,7 +80,6 @@ pub enum AssetType {
     Font = 6,
     Sprite = 7,
     Sound = 8,
-    Solid = 9, // Deprecated. Only here because of 2 default
 }
 
 /// If you want to manage loading assets, this is the class for you!
@@ -194,7 +193,6 @@ impl AssetIter {
             AssetType::Font => Asset::Font(Font(NonNull::new(c_id as *mut _FontT).unwrap())),
             AssetType::Sprite => Asset::Sprite(Sprite(NonNull::new(c_id as *mut _SpriteT).unwrap())),
             AssetType::Sound => Asset::Sound(Sound(NonNull::new(c_id as *mut _SoundT).unwrap())),
-            AssetType::Solid => Asset::Solid(c_id),
         }
     }
 
@@ -1163,16 +1161,6 @@ impl Hand {
         unsafe { input_hand_visible(self.handed, visible as Bool32T) }
         self
     }
-
-    /// Does StereoKit register the hand with the physics system? By default, this is true. Right now this is just a
-    /// single block collider, but later will involve per-joint colliders!
-    /// <https://stereokit.net/Pages/StereoKit/Hand/Solid.html>
-    ///
-    /// see also [`crate::system::input_hand_solid`]
-    pub fn solid(&mut self, solid: bool) -> &mut Self {
-        unsafe { input_hand_solid(self.handed, solid as Bool32T) }
-        self
-    }
 }
 
 /// Represents an input from an XR headset’s controller!
@@ -1491,7 +1479,7 @@ extern "C" {
     pub fn input_text_reset();
     pub fn input_text_inject_char(character: u32);
     pub fn input_hand_visible(hand: Handed, visible: Bool32T);
-    pub fn input_hand_solid(hand: Handed, solid: Bool32T);
+    // Deprecated: pub fn input_hand_solid(hand: Handed, solid: Bool32T);
     pub fn input_hand_material(hand: Handed, material: MaterialT);
     pub fn input_hand_sim_pose_add(
         in_arr_palm_relative_hand_joints_25: *const Pose,
@@ -1608,15 +1596,6 @@ impl Input {
     /// see also [`crate::system::input_hand_sim_pose_remove`]    
     pub fn hand_sim_pose_remove(id: HandSimId) {
         unsafe { input_hand_sim_pose_remove(id) };
-    }
-
-    /// Does StereoKit register the hand with the physics system? By default, this is true. Right now this is just a
-    /// single block collider, but later will involve per-joint colliders!
-    /// <https://stereokit.net/Pages/StereoKit/Input/HandSolid.html>
-    ///
-    /// see also [`crate::system::input_hand_solid`]    
-    pub fn hand_solid(hand: Handed, solid: bool) {
-        unsafe { input_hand_solid(hand, solid as Bool32T) };
     }
 
     /// This gets the current source of the hand joints! This allows you to distinguish between fully articulated
@@ -2005,13 +1984,11 @@ extern "C" {
     pub fn log_write(level: LogLevel, text: *const c_char);
     pub fn log_set_filter(level: LogLevel);
     pub fn log_set_colors(colors: LogColors);
-    //pub fn log_subscribe(log_callback: Option<unsafe extern "C" fn(level: LogLevel, text: *const c_char)>);
-    //pub fn log_unsubscribe(log_callback: Option<unsafe extern "C" fn(level: LogLevel, text: *const c_char)>);
-    pub fn log_subscribe_data(
+    pub fn log_subscribe(
         log_callback: Option<unsafe extern "C" fn(context: *mut c_void, level: LogLevel, text: *const c_char)>,
         context: *mut c_void,
     );
-    pub fn log_unsubscribe_data(
+    pub fn log_unsubscribe(
         log_callback: Option<unsafe extern "C" fn(context: *mut c_void, level: LogLevel, text: *const c_char)>,
         context: *mut c_void,
     );
@@ -2101,7 +2078,7 @@ impl Log {
     /// see also [`crate::system::log_subscribe`]    
     pub fn subscribe<'a, F: FnMut(LogLevel, &str) + 'a>(mut on_log: F) {
         let mut closure = &mut on_log;
-        unsafe { log_subscribe_data(Some(log_trampoline::<F>), &mut closure as *mut _ as *mut c_void) }
+        unsafe { log_subscribe(Some(log_trampoline::<F>), &mut closure as *mut _ as *mut c_void) }
     }
 
     /// If you subscribed to the log callback, you can unsubscribe that callback here! This method can safely be
@@ -2111,7 +2088,7 @@ impl Log {
     /// see also [`crate::system::log_unsubscribe`]    
     pub fn unsubscribe<'a, F: FnMut(LogLevel, &str) + 'a>(mut on_log: F) {
         let mut closure = &mut on_log;
-        unsafe { log_unsubscribe_data(Some(log_trampoline::<F>), &mut closure as *mut _ as *mut c_void) }
+        unsafe { log_unsubscribe(Some(log_trampoline::<F>), &mut closure as *mut _ as *mut c_void) }
     }
 }
 
@@ -2340,15 +2317,8 @@ extern "C" {
         layer: RenderLayer,
     );
     pub fn render_blit(to_rendertarget: TexT, material: MaterialT);
+
     pub fn render_screenshot(
-        file_utf8: *const c_char,
-        from_viewpt: Vec3,
-        at: Vec3,
-        width: i32,
-        height: i32,
-        field_of_view_degrees: f32,
-    );
-    pub fn render_screenshot_pose(
         file_utf8: *const c_char,
         file_quality_100: i32,
         viewpoint: Pose,
@@ -2622,6 +2592,7 @@ impl Renderer {
     /// resolution the same size as the screen’s surface. It’ll be saved as a JPEG or PNG file depending on the filename
     /// extension provided.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/Screenshot.html>
+    /// * file_quality - should be 90 in most of the case for 90%
     /// * viewpoint - is Pose::look_at(from_point, looking_at_point)
     /// * field_of_view - If None will use default value of 90°
     ///
@@ -2637,7 +2608,7 @@ impl Renderer {
         let path = filename.as_ref();
         let c_str = CString::new(path.to_str().unwrap_or("!!!path.to_str error!!!").to_owned()).unwrap();
         let field_of_view = field_of_view.unwrap_or(90.0);
-        unsafe { render_screenshot_pose(c_str.as_ptr(), file_quality, viewpoint, width, height, field_of_view) }
+        unsafe { render_screenshot(c_str.as_ptr(), file_quality, viewpoint, width, height, field_of_view) }
     }
 
     /// Schedules a screenshot for the end of the frame! The view will be rendered from the given position at the given

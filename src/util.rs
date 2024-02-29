@@ -722,7 +722,7 @@ impl GradientKey {
 pub struct Gradient(pub NonNull<_GradientT>);
 impl Drop for Gradient {
     fn drop(&mut self) {
-        unsafe { gradient_release(self.0.as_ptr()) };
+        unsafe { gradient_destroy(self.0.as_ptr()) };
     }
 }
 impl AsRef<Gradient> for Gradient {
@@ -746,7 +746,7 @@ extern "C" {
     pub fn gradient_count(gradient: GradientT) -> i32;
     pub fn gradient_get(gradient: GradientT, at: f32) -> Color128;
     pub fn gradient_get32(gradient: GradientT, at: f32) -> Color32;
-    pub fn gradient_release(gradient: GradientT);
+    pub fn gradient_destroy(gradient: GradientT);
 }
 impl Gradient {
     /// Creates a new, completely empty gradient.
@@ -1221,15 +1221,15 @@ impl SphericalHarmonics {
 pub struct Time;
 
 extern "C" {
-    pub fn time_get_raw() -> f64;
-    pub fn time_getf_unscaled() -> f32;
-    pub fn time_get_unscaled() -> f64;
-    pub fn time_getf() -> f32;
-    pub fn time_get() -> f64;
-    pub fn time_elapsedf_unscaled() -> f32;
-    pub fn time_elapsed_unscaled() -> f64;
-    pub fn time_elapsedf() -> f32;
-    pub fn time_elapsed() -> f64;
+    // Deprecated: pub fn time_get_raw() -> f64;
+    // Deprecated: pub fn time_getf_unscaled() -> f32;
+    // Deprecated: pub fn time_get_unscaled() -> f64;
+    // Deprecated: pub fn time_getf() -> f32;
+    // Deprecated: pub fn time_get() -> f64;
+    // Deprecated: pub fn time_elapsedf_unscaled() -> f32;
+    // Deprecated: pub fn time_elapsed_unscaled() -> f64;
+    // Deprecated: pub fn time_elapsedf() -> f32;
+    // Deprecated: pub fn time_elapsed() -> f64;
     pub fn time_total_raw() -> f64;
     pub fn time_totalf_unscaled() -> f32;
     pub fn time_total_unscaled() -> f64;

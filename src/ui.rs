@@ -284,6 +284,9 @@ pub struct UiSettings {
     pub backplate_depth: f32,
     pub backplate_border: f32,
 }
+
+pub type IdHashT = u64;
+
 /// This class is a collection of user interface and interaction methods! StereoKit uses an Immediate Mode GUI system,
 /// which can be very easy to work with and modify during runtime.
 ///
@@ -339,12 +342,12 @@ extern "C" {
     pub fn ui_pop_preserve_keyboard();
     pub fn ui_push_surface(surface_pose: Pose, layout_start: Vec3, layout_dimensions: Vec2);
     pub fn ui_pop_surface();
-    pub fn ui_push_id(id: *const c_char) -> u64;
-    pub fn ui_push_id_16(id: *const c_ushort) -> u64;
-    pub fn ui_push_idi(id: i32) -> u64;
+    pub fn ui_push_id(id: *const c_char) -> IdHashT;
+    pub fn ui_push_id_16(id: *const c_ushort) -> IdHashT;
+    pub fn ui_push_idi(id: i32) -> IdHashT;
     pub fn ui_pop_id();
-    pub fn ui_stack_hash(string: *const c_char) -> u64;
-    pub fn ui_stack_hash_16(string: *const c_ushort) -> u64;
+    pub fn ui_stack_hash(string: *const c_char) -> IdHashT;
+    pub fn ui_stack_hash_16(string: *const c_ushort) -> IdHashT;
     pub fn ui_layout_area(start: Vec3, dimensions: Vec2, add_margin: Bool32T);
     pub fn ui_layout_remaining() -> Vec2;
     pub fn ui_layout_at() -> Vec3;
@@ -353,12 +356,12 @@ extern "C" {
     pub fn ui_layout_push(start: Vec3, dimensions: Vec2, add_margin: Bool32T);
     pub fn ui_layout_push_cut(cut_to: UiCut, size: f32, add_margin: Bool32T);
     pub fn ui_layout_pop();
-    /// deprecaded pub fn ui_last_element_hand_used(hand: Handed) -> BtnState;
+    /// Deprecaded: pub fn ui_last_element_hand_used(hand: Handed) -> BtnState;
     pub fn ui_last_element_hand_active(hand: Handed) -> BtnState;
     pub fn ui_last_element_hand_focused(hand: Handed) -> BtnState;
     pub fn ui_last_element_active() -> BtnState;
     pub fn ui_last_element_focused() -> BtnState;
-    pub fn ui_area_remaining() -> Vec2;
+    // Deprecated: pub fn ui_area_remaining() -> Vec2;
     pub fn ui_nextline();
     pub fn ui_sameline();
     pub fn ui_line_height() -> f32;
@@ -366,7 +369,7 @@ extern "C" {
     pub fn ui_button_behavior(
         window_relative_pos: Vec3,
         size: Vec2,
-        id: u64,
+        id: IdHashT,
         out_finger_offset: *mut f32,
         out_button_state: *mut BtnState,
         out_focus_state: *mut BtnState,
@@ -375,7 +378,7 @@ extern "C" {
     pub fn ui_button_behavior_depth(
         window_relative_pos: Vec3,
         size: Vec2,
-        id: u64,
+        id: IdHashT,
         button_depth: f32,
         button_activation_depth: f32,
         out_finger_offset: *mut f32,
@@ -383,14 +386,14 @@ extern "C" {
         out_focus_state: *mut BtnState,
         out_opt_hand: *mut i32,
     );
-    pub fn ui_volumei_at(
+    pub fn ui_volume_at(
         id: *const c_char,
         bounds: Bounds,
         interact_type: UiConfirm,
         out_opt_hand: *mut Handed,
         out_opt_focus_state: *mut BtnState,
     ) -> BtnState;
-    pub fn ui_volumei_at_16(
+    pub fn ui_volume_at_16(
         id: *const c_ushort,
         bounds: Bounds,
         interact_type: UiConfirm,
@@ -1312,8 +1315,8 @@ impl Ui {
     /// <https://stereokit.net/Pages/StereoKit/UI/LayoutReserve.html>
     ///
     /// see also [`crate::ui::ui_layout_reserve`]
-    pub fn layout_reserve(size: impl Into<Vec2>, add_margin: bool, depth: f32) -> Bounds {
-        unsafe { ui_layout_reserve(size.into(), add_margin as Bool32T, depth) }
+    pub fn layout_reserve(size: impl Into<Vec2>, add_padding: bool, depth: f32) -> Bounds {
+        unsafe { ui_layout_reserve(size.into(), add_padding as Bool32T, depth) }
     }
 
     /// This adds a non-interactive Model to the UI panel layout, and allows you to specify its size.
@@ -1786,16 +1789,6 @@ impl Ui {
         }
     }
 
-    /// Adds some space! If we’re at the start of a new line, space is added vertically, otherwise, space is added
-    /// horizontally.
-    /// <https://stereokit.net/Pages/StereoKit/UI/Space.html>
-    ///
-    /// see also [`crate::ui::ui_space`]
-    /// Deprecated !
-    // pub fn space(space: f32) {
-    //     unsafe { ui_space(space) }
-    // }
-
     /// adds some vertical space to the current line! All UI following elements on this line will be offset.
     /// <https://stereokit.net/Pages/StereoKit/UI/VSpace.html>
     ///
@@ -1817,7 +1810,7 @@ impl Ui {
     /// <https://stereokit.net/Pages/StereoKit/UI/StackHash.html>
     ///
     /// see also [`crate::ui::ui_stack_hash`]
-    pub fn stack_hash(id: impl AsRef<str>) -> u64 {
+    pub fn stack_hash(id: impl AsRef<str>) -> IdHashT {
         let cstr = CString::new(id.as_ref()).unwrap();
         unsafe { ui_stack_hash(cstr.as_ptr()) }
     }
@@ -1985,11 +1978,11 @@ impl Ui {
     /// A volume for helping to build one handed interactions. This checks for the presence of a hand inside the bounds,
     /// and if found, return that hand along with activation and focus information defined by the interactType.
     /// <https://stereokit.net/Pages/StereoKit/UI/VolumeAt.html>
-    /// * hand - This will be the last unpreoccupied hand found inside the volume, and is the hand controlling the
+    /// * out_hand - This will be the last unpreoccupied hand found inside the volume, and is the hand controlling the
     /// interaction.
-    /// focusState - The focus state tells if the element has a hand inside of the volume that qualifies for focus.
+    /// * out_focusState - The focus state tells if the element has a hand inside of the volume that qualifies for focus.
     ///
-    /// see also [`crate::ui::ui_volumei_at`]
+    /// see also [`crate::ui::ui_volume_at`]
     pub fn volume_at(
         id: impl AsRef<str>,
         bounds: impl Into<Bounds>,
@@ -2000,7 +1993,7 @@ impl Ui {
         let cstr = CString::new(id.as_ref()).unwrap();
         let hand = out_hand.unwrap_or(null_mut());
         let focus_state = out_focus_state.unwrap_or(null_mut());
-        unsafe { ui_volumei_at(cstr.as_ptr(), bounds.into(), interact_type, hand, focus_state) }
+        unsafe { ui_volume_at(cstr.as_ptr(), bounds.into(), interact_type, hand, focus_state) }
     }
 
     /// A vertical slider element! You can stick your finger in it, and slide the value up and down.
@@ -2252,7 +2245,7 @@ impl Ui {
         unsafe { ui_get_settings() }
     }
 
-    /// This is the UIMove that is provided to UI windows that StereoKit itself manages, such as the fallback
+    /// This is the UiMove that is provided to UI windows that StereoKit itself manages, such as the fallback
     /// filepicker and soft keyboard.
     /// <https://stereokit.net/Pages/StereoKit/UI/SystemMoveType.html>
     ///

@@ -5,7 +5,7 @@ use stereokit_rust::material::Material;
 use stereokit_rust::maths::{Matrix, Quat, Vec3};
 use stereokit_rust::sk::{IStepper, StepperAction, StepperId};
 use stereokit_rust::sprite::{Sprite, SpriteType};
-use stereokit_rust::system::{AssetType, Assets, Handed, Input, Lines, Log, Text, TextAlign, TextStyle};
+use stereokit_rust::system::{AssetType, Assets, Lines, Log, Text, TextAlign, TextStyle};
 use stereokit_rust::tex::Tex;
 use stereokit_rust::util::named_colors::{BLACK, BLUE, CYAN, LIGHT_BLUE, WHITE, YELLOW};
 use stereokit_rust::util::{Color128, Gradient};
@@ -27,9 +27,6 @@ pub struct Sprite1 {
     sprite3: Sprite,
     sprite4: Sprite,
     text_style: TextStyle,
-    pinch: bool,
-    render_now: bool,
-    stage: i32,
 }
 
 impl Sprite1 {
@@ -77,11 +74,6 @@ impl Default for Sprite1 {
             tex_particule1,
             tex_particule2,
             text_style,
-
-            //---- utilities
-            pinch: false,
-            render_now: true,
-            stage: 0,
         };
         this.color1.id("color mat 1").diffuse_tex(&this.tex_particule1).tex_scale(1.0);
         this.color2.id("color mat 2").diffuse_tex(&this.tex_particule2).tex_scale(1.0);
@@ -148,32 +140,6 @@ impl IStepper for Sprite1 {
         Lines::add(Vec3::Z, Vec3::X, WHITE, None, 0.03);
 
         Lines::add_axis(Matrix::t(Vec3::ONE * 2.0).get_pose(), None, None);
-
-        if self.render_now {
-            match self.stage % 2 {
-                0 => {}
-                1 => {}
-                _ => {
-                    self.stage = 0;
-                }
-            }
-        }
-        self.render_now = false;
-        match Input::hand(Handed::Right).pinch_activation.round() as i8 {
-            0 => {
-                if self.pinch {
-                    self.pinch = false;
-                    self.stage += 1;
-                    self.render_now = true;
-                }
-            }
-            1 => {
-                if !self.pinch {
-                    self.pinch = true;
-                }
-            }
-            _ => {}
-        }
     }
 
     fn shutdown(&mut self) {}

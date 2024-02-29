@@ -71,8 +71,7 @@ extern "C" {
     pub fn sprite_get_width(sprite: SpriteT) -> i32;
     pub fn sprite_get_height(sprite: SpriteT) -> i32;
     pub fn sprite_get_dimensions_normalized(sprite: SpriteT) -> Vec2;
-    pub fn sprite_draw(sprite: SpriteT, transform: *const Matrix, color: Color32);
-    pub fn sprite_draw_at(sprite: SpriteT, transform: Matrix, anchor_position: TextAlign, color: Color32);
+    pub fn sprite_draw(sprite: SpriteT, transform: Matrix, anchor_position: TextAlign, color: Color32);
 }
 
 impl IAsset for Sprite {
@@ -254,8 +253,8 @@ impl Sprite {
     ///
     /// see also [`stereokit::StereoKitDraw::sprite_draw`]
     pub fn draw(&self, transform: impl Into<Matrix>, text_align: TextAlign, color_linear: Option<Color32>) {
-        let color_linear = color_linear.unwrap_or(Color32 { r: 255, g: 255, b: 255, a: 255 });
-        unsafe { sprite_draw_at(self.0.as_ptr(), transform.into(), text_align, color_linear) };
+        let color_linear = color_linear.unwrap_or(Color32::WHITE);
+        unsafe { sprite_draw(self.0.as_ptr(), transform.into(), text_align, color_linear) };
     }
 
     /// Sets the unique identifier of this asset resource! This can be helpful for debugging,

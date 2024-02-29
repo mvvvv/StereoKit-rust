@@ -37,7 +37,6 @@ pub struct Tex1 {
     raw_dots_u32: Vec<f32>,
     base_color: Color32,
     base_color128: Color128,
-    pinch: bool,
     render_now: bool,
     stage: i8,
 }
@@ -119,17 +118,19 @@ impl Default for Tex1 {
         let color_dots128 = raw_dots128.as_slice();
 
         let mut tex_color_32a = Tex::new(TexType::Image, TexFormat::RGBA32, "tex_color");
-        tex_color_32a.set_colors(width, height, color_dots.as_ptr() as *mut std::os::raw::c_void);
+        tex_color_32a
+            .id("tex_color32a")
+            .set_colors(width, height, color_dots.as_ptr() as *mut std::os::raw::c_void);
 
         let mut tex_color_32b = Tex::gen_color(BLUE, 10, 10, TexType::Dynamic, TexFormat::RGBA32);
         tex_color_32b
-            .id("tex_color2")
+            .id("tex_color32b")
             .set_colors(width, height, color_dots.as_ptr() as *mut std::os::raw::c_void);
 
-        let tex_color_32c = Tex::from_color32(color_dots, width, height, true).unwrap();
-
-        let tex_color_32d = Tex::from_color128(color_dots128, width, height, true).unwrap();
-
+        let mut tex_color_32c = Tex::from_color32(color_dots, width, height, true).unwrap();
+        tex_color_32c.id("tex_color32c");
+        let mut tex_color_32d = Tex::from_color128(color_dots128, width, height, true).unwrap();
+        tex_color_32d.id("tex_color32d");
         let tex_vide = Tex::new(TexType::ImageNomips, TexFormat::RGBA128, "tex_vide");
         let tex_vide2 = Tex::new(TexType::ImageNomips, TexFormat::R8, "tex_vide2");
         let tex_vide3 = Tex::new(TexType::ImageNomips, TexFormat::R16f, "tex_vide3");
@@ -268,7 +269,6 @@ impl Default for Tex1 {
 
         Log::info(format!(" center : {:#?}", bounds.center));
 
-        let pinch = false;
         let render_now = true;
         let stage = 0;
 
@@ -293,7 +293,6 @@ impl Default for Tex1 {
             raw_dots_u32,
             base_color,
             base_color128,
-            pinch,
             render_now,
             stage,
         };
@@ -344,7 +343,7 @@ impl IStepper for Tex1 {
                     if let Some((w, h, size)) = self.tex_default.get_data_infos(mip) {
                         let vec = vec![self.base_color; size];
                         let array = vec.as_slice();
-                        self.tex_default.get_colors32(array, mip);
+                        self.tex_default.get_colors(array, mip);
                         self.tex_color_32a.set_colors32(w, h, array);
                         Log::info(format!(
                             "mips {:?} / anisotropy {} / size {}x{}",
@@ -362,7 +361,7 @@ impl IStepper for Tex1 {
                     if let Some((w, h, size)) = tex_i.get_data_infos(mip) {
                         let color32_buff = vec![self.base_color; size];
                         Log::info(format!("--Tex in mip {} -> {}x{} = {}", mip, w, h, color32_buff.len()));
-                        if tex_i.get_colors32(color32_buff.as_slice(), mip).is_some() {
+                        if tex_i.get_colors(color32_buff.as_slice(), mip).is_some() {
                             self.tex_color_32b.set_colors32(w, h, &color32_buff[..]);
                             Log::info(format!("--Tex out mips number {}", self.tex_color_32b.get_mips().unwrap()));
                         }
@@ -374,7 +373,7 @@ impl IStepper for Tex1 {
                     if let Some((w, h, size)) = tex_i.get_data_infos(mip) {
                         let color128_buff = vec![self.base_color128; size];
                         Log::info(format!("--Tex in mip {} -> {}x{} = {}", mip, w, h, color128_buff.len()));
-                        if tex_i.get_colors128(color128_buff.as_slice(), mip).is_some() {
+                        if tex_i.get_colors(color128_buff.as_slice(), mip).is_some() {
                             self.tex_vide.set_colors128(w, h, &color128_buff[..]);
                             Log::info(format!("--Tex out mips number {}", self.tex_vide.get_mips().unwrap()));
                         }
@@ -386,7 +385,7 @@ impl IStepper for Tex1 {
                     if let Some((w, h, size)) = tex_i.get_data_infos(mip) {
                         let color_r8_buff: Vec<u8> = vec![60; size];
                         Log::info(format!("--Tex in mip {} -> {}x{} = {}", mip, w, h, color_r8_buff.len()));
-                        if tex_i.get_colors_r8(color_r8_buff.as_slice(), mip).is_some() {
+                        if tex_i.get_colors(color_r8_buff.as_slice(), mip).is_some() {
                             self.tex_vide2.set_colors_r8(w, h, &color_r8_buff[..]);
                             Log::info(format!("--Tex out mips number {}", self.tex_vide2.get_mips().unwrap()));
                         }
@@ -398,7 +397,7 @@ impl IStepper for Tex1 {
                     if let Some((w, h, size)) = tex_i.get_data_infos(mip) {
                         let color_r16_buff: Vec<u16> = vec![60; size];
                         Log::info(format!("--Tex in mip {} -> {}x{} = {}", mip, w, h, color_r16_buff.len()));
-                        if tex_i.get_colors_r16(color_r16_buff.as_slice(), mip).is_some() {
+                        if tex_i.get_colors(color_r16_buff.as_slice(), mip).is_some() {
                             self.tex_vide3.set_colors_r16(w, h, &color_r16_buff[..]);
                             Log::info(format!("--Tex out mips number {}", self.tex_vide3.get_mips().unwrap()));
                         }
@@ -410,7 +409,7 @@ impl IStepper for Tex1 {
                     if let Some((w, h, size)) = tex_i.get_data_infos(mip) {
                         let color_r32_buff: Vec<f32> = vec![0.5; size];
                         Log::info(format!("--Tex in mip {} -> {}x{} = {}", mip, w, h, color_r32_buff.len()));
-                        if tex_i.get_colors_r32(color_r32_buff.as_slice(), mip).is_some() {
+                        if tex_i.get_colors(color_r32_buff.as_slice(), mip).is_some() {
                             self.tex_vide4.set_colors_r32(w, h, &color_r32_buff[..]);
                             Log::info(format!("--Tex out mips number {}", self.tex_vide4.get_mips().unwrap()));
                         }
@@ -423,20 +422,9 @@ impl IStepper for Tex1 {
         }
 
         self.render_now = false;
-        match Input::hand(Handed::Right).pinch_activation.round() as i8 {
-            0 => {
-                if self.pinch {
-                    self.pinch = false;
-                    self.stage += 1;
-                    self.render_now = true;
-                }
-            }
-            1 => {
-                if !self.pinch {
-                    self.pinch = true;
-                }
-            }
-            _ => {}
+        if Input::hand(Handed::Right).is_just_gripped() {
+            self.stage += 1;
+            self.render_now = true;
         }
     }
 
