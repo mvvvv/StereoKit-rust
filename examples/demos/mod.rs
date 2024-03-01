@@ -11,10 +11,12 @@ pub mod program;
 pub mod shaders1;
 pub mod sprite1;
 pub mod tex1;
+pub mod text1;
 
-use a_stepper::AStepper;
-
-use self::{anchor1::Anchor1, anim1::Anim1, math1::Math1, shaders1::Shader1, sprite1::Sprite1, tex1::Tex1};
+use self::{
+    a_stepper::AStepper, anchor1::Anchor1, anim1::Anim1, math1::Math1, shaders1::Shader1, sprite1::Sprite1, tex1::Tex1,
+    text1::Text1,
+};
 
 pub struct Test {
     pub name: String,
@@ -38,17 +40,17 @@ impl Test {
                 sk.push_action(StepperAction::add("Test B", a));
                 "Test B".to_string()
             }),
-            Test::new("Sprites", |sk| {
-                sk.push_action(StepperAction::add_default::<Sprite1>("Sprites"));
-                "Sprites".to_string()
+            Test::new("Sprite1", |sk| {
+                sk.push_action(StepperAction::add_default::<Sprite1>("Sprite1"));
+                "Sprite1".to_string()
             }),
-            Test::new("Textures", |sk| {
-                sk.push_action(StepperAction::add_default::<Tex1>("Textures"));
-                "Textures".to_string()
+            Test::new("Tex1", |sk| {
+                sk.push_action(StepperAction::add_default::<Tex1>("Tex1"));
+                "Tex1".to_string()
             }),
-            Test::new("Animation", |sk| {
-                sk.push_action(StepperAction::add_default::<Anim1>("Animation"));
-                "Animation".to_string()
+            Test::new("Anim1", |sk| {
+                sk.push_action(StepperAction::add_default::<Anim1>("Anim1"));
+                "Anim1".to_string()
             }),
             Test::new("Shader1", |sk| {
                 sk.push_action(StepperAction::add_default::<Shader1>("Shader1"));
@@ -61,6 +63,10 @@ impl Test {
             Test::new("Anchor1", |sk| {
                 sk.push_action(StepperAction::add_default::<Anchor1>("Anchor1"));
                 "Anchor1".to_string()
+            }),
+            Test::new("Text1", |sk| {
+                sk.push_action(StepperAction::add_default::<Text1>("Text1"));
+                "Text1".to_string()
             }),
         ];
         Box::new(tests)

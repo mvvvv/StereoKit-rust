@@ -51,7 +51,7 @@
                     "kind": "example"
                 }
             },
-            "args": ["--test","--start", "Textures"],
+            "args": ["--test","--start", "Text1"],
             "cwd": "${workspaceFolder}"
         },
         {

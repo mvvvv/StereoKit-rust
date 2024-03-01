@@ -116,7 +116,7 @@ pub enum Asset {
     Font(Font),
     Sprite(Sprite),
     Sound(Sound),
-    Solid(*mut c_void), //Deprecated
+    //Deprecated: Solid(*mut c_void)
 }
 
 impl fmt::Display for Asset {
@@ -131,7 +131,7 @@ impl fmt::Display for Asset {
             Asset::Font(v) => write!(f, "Font : {}", v.get_id()),
             Asset::Sprite(v) => write!(f, "Sprite : {}", v.get_id()),
             Asset::Sound(v) => write!(f, "Sound : {}", v.get_id()),
-            Asset::Solid(_) => write!(f, "Solid : ... deprecated ..."),
+            // Deprecated: Asset::Solid(_) => write!(f, "Solid : ... deprecated ..."),
         }
     }
 }
@@ -205,12 +205,12 @@ impl AssetIter {
 }
 
 impl Assets {
-    /// A list of supported model format extensions. This pairs pretty well with Platform.FilePicker when attempting to
+    /// A list of supported model format extensions. This pairs pretty well with Platform::file_picker when attempting to
     /// load a Model!
     /// <https://stereokit.net/Pages/StereoKit/Assets/ModelFormats.html>
     pub const MODEL_FORMATS: [&'static str; 5] = [".gltf", ".glb", ".obj", ".stl", ".ply"];
 
-    /// A list of supported texture format extensions. This pairs pretty well with Platform.FilePicker when attempting
+    /// A list of supported texture format extensions. This pairs pretty well with Platform::file_picker when attempting
     /// to load a Tex!
     /// <https://stereokit.net/Pages/StereoKit/Assets/TextureFormats.html>
     pub const TEXTURE_FORMATS: [&'static str; 9] =
@@ -3050,13 +3050,13 @@ bitflags::bitflags! {
 #[repr(u32)]
 pub enum TextContext {
     /// General text editing, this is the most common type of text, and would result in a ‘standard’ keyboard layout.
-    Text = 1,
+    Text = 0,
     /// Numbers and numerical values.
-    Number = 2,
+    Number = 1,
     /// This text specifically represents some kind of URL/URI address.
-    Uri = 10,
+    Uri = 2,
     /// This is a password, and should not be visible when typed!
-    Password = 18,
+    Password = 3,
 }
 
 /// A collection of functions for rendering and working with text. These are a lower level access to text rendering than

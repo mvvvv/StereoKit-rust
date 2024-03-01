@@ -1204,18 +1204,20 @@ impl Ui {
     pub fn input(
         id: impl AsRef<str>,
         initial_text: impl AsRef<str>,
-        size: impl Into<Vec2>,
-        type_: TextContext,
+        size: Option<Vec2>,
+        type_text: Option<TextContext>,
     ) -> Option<String> {
         let cstr = CString::new(id.as_ref()).unwrap();
         let c_value = CString::new(initial_text.as_ref()).unwrap();
+        let size = size.unwrap_or(Vec2::ZERO);
+        let type_text = type_text.unwrap_or(TextContext::Text);
         if unsafe {
             ui_input(
                 cstr.as_ptr(),
                 c_value.as_ptr() as *mut c_char,
                 initial_text.as_ref().len() as i32,
-                size.into(),
-                type_,
+                size,
+                type_text,
             ) != 0
         } {
             match unsafe { CStr::from_ptr(c_value.as_ptr()).to_str() } {

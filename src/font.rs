@@ -1,5 +1,5 @@
 use std::{
-    ffi::{CStr, CString},
+    ffi::{c_char, CStr, CString},
     path::Path,
     ptr::NonNull,
 };
@@ -35,17 +35,19 @@ pub struct _FontT {
 pub type FontT = *mut _FontT;
 
 extern "C" {
-    pub fn font_find(id: *const ::std::os::raw::c_char) -> FontT;
-    pub fn font_create(file_utf8: *const ::std::os::raw::c_char) -> FontT;
-    pub fn font_create_files(in_arr_files: *mut *const ::std::os::raw::c_char, file_count: i32) -> FontT;
-    pub fn font_set_id(font: FontT, id: *const ::std::os::raw::c_char);
-    pub fn font_get_id(font: FontT) -> *const ::std::os::raw::c_char;
+    pub fn font_find(id: *const c_char) -> FontT;
+    pub fn font_create(file_utf8: *const c_char) -> FontT;
+    pub fn font_create_files(in_arr_files: *mut *const c_char, file_count: i32) -> FontT;
+    pub fn font_set_id(font: FontT, id: *const c_char);
+    pub fn font_get_id(font: FontT) -> *const c_char;
     pub fn font_addref(font: FontT);
     pub fn font_release(font: FontT);
     pub fn font_get_tex(font: FontT) -> TexT;
 }
 
 impl Default for Font {
+    /// The default font used by StereoKit’s text. This varies from platform to platform, but is typically a sans-serif
+    /// general purpose font, such as Segoe UI.
     /// <https://stereokit.net/Pages/StereoKit/Font/Default.html>
     ///
     /// see also [`crate::font::font_find`]

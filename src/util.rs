@@ -884,6 +884,11 @@ extern "C" {
     pub fn platform_keyboard_set_force_fallback(force_fallback: Bool32T);
     pub fn platform_keyboard_show(visible: Bool32T, type_: TextContext);
     pub fn platform_keyboard_visible() -> Bool32T;
+    pub fn platform_keyboard_set_layout(
+        type_: TextContext,
+        keyboard_layout: *mut *mut c_char,
+        layouts_num: i32,
+    ) -> Bool32T;
 }
 
 /// File_picker trampoline
@@ -1021,6 +1026,25 @@ impl Platform {
     ///  see also [`crate::util::platform_keyboard_show`]
     pub fn keyboard_show(show: bool, input_type: TextContext) {
         unsafe { platform_keyboard_show(show as Bool32T, input_type) }
+    }
+
+    /// Replace the default keyboard type with a custom layout.
+    /// <https://stereokit.net/Pages/StereoKit/Platform/KeyboardSetLayout.html>
+    ///
+    ///  see also [`crate::util::platform_keyboard_set_layout`]
+    pub fn keyboard_set_layout(type_key: TextContext, keyboard_layouts: Vec<&str>) -> bool {
+        let mut keyboard_layouts_c = vec![];
+        for str in keyboard_layouts {
+            let c_str = CString::new(str).unwrap().into_raw();
+            keyboard_layouts_c.push(c_str);
+        }
+        unsafe {
+            platform_keyboard_set_layout(
+                type_key,
+                keyboard_layouts_c.as_mut_slice().as_mut_ptr(),
+                keyboard_layouts_c.len() as i32,
+            ) != 0
+        }
     }
 
     /// Reads the entire contents of the file as a UTF-8 string, taking advantage of any permissions that may have been
