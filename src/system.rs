@@ -3203,7 +3203,7 @@ impl Text {
     }
 
     /// Renders text at the given location! Must be called every frame you want this text to be visible.
-    /// <https://stereokit.net/Pages/StereoKit/Text/Size.html>
+    /// <https://stereokit.net/Pages/StereoKit/Text/Add.html>
     /// * text_style - if None will use the TextStyle::default()
     /// * vertex_tint_linear - if None will use Color128::WHITE
     /// * position - if None will use TextAlign::Center
@@ -3247,7 +3247,7 @@ impl Text {
     }
 
     /// Renders text at the given location! Must be called every frame you want this text to be visible.
-    /// <https://stereokit.net/Pages/StereoKit/Text/Size.html>
+    /// <https://stereokit.net/Pages/StereoKit/Text/Add.html>
     /// * text_style - if None will use the TextStyle::default()
     /// * vertex_tint_linear - if None will use Color128::WHITE
     /// * position - if None will use TextAlign::Center

@@ -1032,10 +1032,10 @@ impl Platform {
     /// <https://stereokit.net/Pages/StereoKit/Platform/KeyboardSetLayout.html>
     ///
     ///  see also [`crate::util::platform_keyboard_set_layout`]
-    pub fn keyboard_set_layout(type_key: TextContext, keyboard_layouts: Vec<&str>) -> bool {
+    pub fn keyboard_set_layout(type_key: TextContext, keyboard_layouts: &Vec<&str>) -> bool {
         let mut keyboard_layouts_c = vec![];
         for str in keyboard_layouts {
-            let c_str = CString::new(str).unwrap().into_raw();
+            let c_str = CString::new(*str).unwrap().into_raw();
             keyboard_layouts_c.push(c_str);
         }
         unsafe {

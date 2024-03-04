@@ -334,9 +334,10 @@ extern "C" {
     pub fn ui_push_text_style(style: TextStyle);
     pub fn ui_pop_text_style();
     pub fn ui_get_text_style() -> TextStyle;
+    pub fn ui_is_enabled() -> Bool32T;
     pub fn ui_push_tint(tint_gamma: Color128);
     pub fn ui_pop_tint();
-    pub fn ui_push_enabled(enabled: Bool32T);
+    pub fn ui_push_enabled(enabled: Bool32T, ignore_parent: Bool32T);
     pub fn ui_pop_enabled();
     pub fn ui_push_preserve_keyboard(preserve_keyboard: Bool32T);
     pub fn ui_pop_preserve_keyboard();
@@ -1469,13 +1470,14 @@ impl Ui {
     }
 
     /// All UI between push_enabled and its matching pop_enabled will set the UI to an enabled or disabled state,
-    /// allowing or preventing interaction with specific elements. The default state is true. This currently doesn’t
-    /// have any visual effect, so you may wish to pair it with a push_tint.
+    /// allowing or preventing interaction with specific elements. The default state is true.
     /// <https://stereokit.net/Pages/StereoKit/UI/PushEnabled.html>
+    /// * enabled - Should the following elements be enabled and interactable?
+    /// * ignore_parent - Do we want to ignore or inherit the state of the current stack? Default should be false.
     ///
     /// see also [`crate::ui::ui_push_enabled`]
-    pub fn push_enabled(enabled: bool) {
-        unsafe { ui_push_enabled(enabled as Bool32T) }
+    pub fn push_enabled(enabled: bool, ignore_parent: bool) {
+        unsafe { ui_push_enabled(enabled as Bool32T, ignore_parent as Bool32T) }
     }
 
     /// Adds a root id to the stack for the following UI elements! This id is combined when hashing any following ids,
@@ -2176,7 +2178,7 @@ impl Ui {
         unsafe { ui_window_end() }
     }
 
-    /// Enables or disables the far ray grab interaction for Handle elements like the Windows. It can be enabled and
+    /// get the flag about the far ray grab interaction for Handle elements like the Windows. It can be enabled and
     /// disabled for individual UI elements, and if this remains disabled at the start of the next frame, then the
     /// hand ray indicators will not be visible. This is enabled by default.
     /// <https://stereokit.net/Pages/StereoKit/UI/EnableFarInteract.html>
@@ -2262,5 +2264,13 @@ impl Ui {
     /// see also [`crate::ui::ui_get_text_style`]
     pub fn get_text_style() -> TextStyle {
         unsafe { ui_get_text_style() }
+    }
+
+    /// This returns the current state of the UI's enabled status stack, set by `UI.Push/PopEnabled`.
+    /// <https://stereokit.net/Pages/StereoKit/UI/Enabled.html>
+    ///
+    /// see also [`crate::ui::ui_is_enabled`]
+    pub fn get_enabled() -> bool {
+        unsafe { ui_is_enabled() != 0 }
     }
 }

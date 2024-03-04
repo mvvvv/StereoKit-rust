@@ -219,7 +219,6 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
                 },
                 HandMenuAction::Close,
             ),
-            HandRadial::item("Close", None, || {}, HandMenuAction::Close),
         ],
     ));
 

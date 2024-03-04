@@ -14,23 +14,23 @@ use stereokit_rust::{
 };
 use winit::event_loop::EventLoopProxy;
 
-pub const FR_KEY_TEXT: &str = r#"`-`-192|&-&-49|é-é-50|"-"-51|'-'-52|(-(-53|\--\--54|è-è-55|_-_-56|ç-ç-57|à-à-48|)-)-189|=-=-187|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
-Tab-\t-9-3|a-a-81|z-z-87|e-e-69|r-r-82|t-t-84|y-y-89|u-u-85|i-i-73|o-o-79|p-p-80|^-^-219|$-$-221|#-#-220
-Enter-\n-13-4|q-q-65|s-s-83|d-d-68|f-f-70|g-g-71|h-h-72|j-j-74|k-k-75|l-l-76|m-m-186|ù-ù-222|Enter-\n-13-3
-spr:sk/ui/shift--16-5-visit_1|<-<-90|w-w-88|x-x-67|c-c-86|v-v-66|b-b-78|n-n-77|,-,-188|;-;-190|:-:-191|spr:sk/ui/shift--16-2-visit_1|spr:sk/ui/arrow_up--38
-Ctrl--17-4-mod|Cmd--91-3|Alt--18-3-mod| - -32-9|Alt--18-3-mod|Ctrl--17-3-mod|spr:sk/ui/arrow_left--37|spr:sk/ui/arrow_down--40|spr:sk/ui/arrow_right--39|)"#;
+pub const FR_KEY_TEXT: &str = r#"²|&|é|"|'|(|\-|è|_|ç|à|)|=|{|}|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
+Tab-\t-9-3|a|z|e|r|t|y|u|i|o|p|^|$|[|]|\|
+Entrée-\n-13-4|q|s|d|f|g|h|j|k|l|m|ù|*|#|Entrée-\n-13-3
+spr:sk/ui/shift--16-3-go_1|<|w|x|c|v|b|n|,|;|:|!|`|@|spr:sk/ui/shift--16-2-go_1|spr:sk/ui/arrow_up--38
+Ctrl--17-4-mod|Cmd--91-3|Alt--18-3-go_2| - -32-13|Alt--18-3-go_2|Ctrl--17-3-mod|spr:sk/ui/arrow_left--37|spr:sk/ui/arrow_down--40|spr:sk/ui/arrow_right--39|"#;
 
-pub const FR_KEY_TEXT_SHIFT: &str = r#"~-~-192|1-1-49|2-2-50|3-3-51|4-4-52|5-5-53|6-6-54|7-7-55|8-8-56|9-9-57|0-0-48|\--\--189|=-=-187|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
-Tab-\t-9-3|A-A-81|Z-Z-87|E-E-69|R-R-82|T-T-84|Y-Y-89|U-U-85|I-I-73|O-O-79|P-P-80|¨-¨-219|£-£-221|\|-\|-220
-Enter-\n-13-4|A-A-65|S-S-83|D-D-68|F-F-70|G-G-71|H-H-72|J-J-74|K-K-75|L-L-76|:-:-186|"-"-222|Enter-\n-13-3
-spr:sk/ui/shift--16-5-go_0|>->-90|W-W-88|X-X-67|C-C-86|V-V-66|B-B-78|N-N-77|?-?-188|.->.190|/-/-191|spr:sk/ui/shift--16-2-go_0|spr:sk/ui/arrow_up--38
-Ctrl--17-4-mod|Cmd--91-3|Alt--18-3-mod| - -32-9|Alt--18-3-mod|Ctrl--17-3-mod|spr:sk/ui/arrow_left--37|spr:sk/ui/arrow_down--40|spr:sk/ui/arrow_right--39|"#;
+pub const FR_KEY_TEXT_SHIFT: &str = r#"@|1|2|3|4|5|6|7|8|9|0|°|+|Æ|Œ|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
+Tab-\t-9-3|A|Z|E|R|T|Y|U|I|O|P|¨|£|Ê|É|È
+Entrée-\n-13-4|Q|S|D|F|G|H|J|K|L|M|%|µ|Ç|Entrée-\n-13-3
+spr:sk/ui/shift--16-3-go_0|>|W|X|C|V|B|N|?|.|/|§|À|Ô|spr:sk/ui/shift--16-2-go_0|spr:sk/ui/arrow_up--38
+Ctrl--17-4-mod|Cmd--91-3|Alt--18-3-go_2| - -32-13|Alt--18-3-go_2|Ctrl--17-3-mod|spr:sk/ui/arrow_left--37|spr:sk/ui/arrow_down--40|spr:sk/ui/arrow_right--39|"#;
 
-pub const FR_KEY_TEXT_ALT: &str = r#"²-²-192|*-*-49|~-~-50|#-#-51|{-{-52|[-[-53||-|-54|`-`-55|\-\-56|^-^-57|@-@-48|]-]-189|}-}-187|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
-Tab-\t-9-3|A-A-81|Z-Z-87|€-€-69|R-R-82|T-T-84|Y-Y-89|µ-µ-85|I-I-73|O-O-79|P-P-80|¨-¨-219|¤-¤-221|*-*|-220
-Enter-\n-13-4|A-A-65|§-§-83|D-D-68|F-F-70|G-G-71|H-H-72|J-J-74|K-K-75|£-£-76|:-:-186|"-"-222|Enter-\n-13-3
-spr:sk/ui/shift--16-5-go_0|>->-90|W-W-88|X-X-67|C-C-86|V-V-66|B-B-78|N-N-77|?-?-188|!-!.190|/-/-191|spr:sk/ui/shift--16-2-go_0|spr:sk/ui/arrow_up--38
-Ctrl--17-4-mod|Cmd--91-3|Alt--18-3-mod| - -32-9|Alt--18-3-mod|Ctrl--17-3-mod|spr:sk/ui/arrow_left--37|spr:sk/ui/arrow_down--40|spr:sk/ui/arrow_right--39|"#;
+pub const FR_KEY_TEXT_ALT: &str = r#"*|/|~|#|{|[|\||`|\\|^|@|]|}|æ|œ|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
+Tab-\t-9-3|à|â|ä|ç|é|è|ê|ë|î|ï|ô|ö|«|»|¤
+Entrée-\n-13-4|ù|û|ü|ÿ|À|Â|Ä|Ç|É|È|Ê|Ë|%|Entrée-\n-13-3
+spr:sk/ui/shift--16-3-go_1|Î|Ï|Ô|Ö|Ù|Û|Ü|Ÿ|$|£|€|¥|✋|spr:sk/ui/shift--16-2-go_1|spr:sk/ui/arrow_up--38
+Ctrl--17-4-mod|Cmd--91-3|Alt--18-3-go_0| - -32-13|Alt--18-3-go_0|Ctrl--17-3-mod|spr:sk/ui/arrow_left--37|spr:sk/ui/arrow_down--40|spr:sk/ui/arrow_right--39|"#;
 
 pub struct Text1 {
     id: StepperId,
@@ -61,7 +61,7 @@ impl Default for Text1 {
             demo_win_width: 80.0 * CM,
             keyboard_layout_fr: false,
             show_keyboard: false,
-            text_sample: String::from("Text to modify"),
+            text_sample: String::from("😃...😃"),
             font_selected: 1,
             text_context: TextContext::Text,
             text_style_test: Text::make_style(Font::default(), 0.05, WHITE),
@@ -122,12 +122,15 @@ impl Text1 {
         Ui::same_line();
         Ui::next_line();
         if let Some(new_value) = Ui::toggle("French keyboard", self.keyboard_layout_fr, None) {
-            self.keyboard_layout_fr = new_value;
+            self.keyboard_layout_fr = true; // we can't reverse right now ^_^
             let keyboard_layouts = vec![FR_KEY_TEXT, FR_KEY_TEXT_SHIFT, FR_KEY_TEXT_ALT];
             if new_value {
                 Log::diag("Setting keyboard to french");
-                if !Platform::keyboard_set_layout(TextContext::Text, keyboard_layouts) {
-                    Log::err("Setting french keyboard failed!");
+                if !Platform::keyboard_set_layout(TextContext::Text, &keyboard_layouts) {
+                    Log::err("Setting french keyboard for Text failed!");
+                }
+                if !Platform::keyboard_set_layout(TextContext::Password, &keyboard_layouts) {
+                    Log::err("Setting french keyboard for Password failed!");
                 }
             }
         }
@@ -140,7 +143,9 @@ impl Text1 {
         Ui::hseparator();
         Ui::push_text_style(self.text_style_test);
         //Ui::push_preserve_keyboard(true);
-        if let Some(new_value) = Ui::input("Text_Sample", &self.text_sample, None, Some(self.text_context)) {
+        if let Some(new_value) =
+            Ui::input("Text_Sample", &self.text_sample, Some(Vec2::new(0.77, 0.8)), Some(self.text_context))
+        {
             self.text_sample = new_value;
         }
         // Ui::next_line();

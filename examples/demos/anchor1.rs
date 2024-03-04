@@ -86,7 +86,7 @@ impl Anchor1 {
         // add a new anchor where the line point
         let mut pose_tip = hand_pose;
         pose_tip.position += ray.direction * 0.5;
-        Ui::push_enabled(storable || stability);
+        Ui::push_enabled(storable || stability, false);
         if Ui::button("Create New", None) {
             let anchor = Anchor::from_pose(pose_tip);
             anchor.try_set_persistent(true);
