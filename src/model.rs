@@ -171,10 +171,10 @@ impl Model {
     pub fn from_memory<S: AsRef<str>>(
         file_name: S,
         memory: &[u8],
-        shader: Option<impl AsRef<Shader>>,
+        shader: Option<Shader>,
     ) -> Result<Model, StereoKitError> {
         let c_file_name = CString::new(file_name.as_ref())?;
-        let shader = shader.map(|shader| shader.as_ref().0.as_ptr()).unwrap_or(null_mut());
+        let shader = shader.map(|shader| shader.0.as_ptr()).unwrap_or(null_mut());
         match NonNull::new(unsafe {
             model_create_mem(c_file_name.as_ptr(), memory.as_ptr() as *mut c_void, memory.len(), shader)
         }) {
@@ -187,11 +187,11 @@ impl Model {
     /// <https://stereokit.net/Pages/StereoKit/Model/FromFile.html>
     ///
     /// see also [`crate::model::model_create_file`]
-    pub fn from_file(file_utf8: impl AsRef<Path>, shader: Option<impl AsRef<Shader>>) -> Result<Model, StereoKitError> {
+    pub fn from_file(file_utf8: impl AsRef<Path>, shader: Option<Shader>) -> Result<Model, StereoKitError> {
         let path = file_utf8.as_ref();
         let path_buf = path.to_path_buf();
         let c_str = CString::new(path.to_str().unwrap())?;
-        let shader = shader.map(|shader| shader.as_ref().0.as_ptr()).unwrap_or(null_mut());
+        let shader = shader.map(|shader| shader.0.as_ptr()).unwrap_or(null_mut());
         match NonNull::new(unsafe { model_create_file(c_str.as_ptr(), shader) }) {
             Some(model) => Ok(Model(model)),
             None => Err(StereoKitError::ModelFromFile(path_buf.to_owned(), "file not found!".to_owned())),

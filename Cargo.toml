@@ -27,7 +27,7 @@ build-dynamic-openxr = ["dynamic-openxr"] # Build openxr_loader from Khronos Ope
 crate-type = ["lib", "cdylib"]
 
 [[bin]]
-name = "to_sks"
+name = "cargo-compile_sks"
 
 [build-dependencies]
 cmake = "0.1.50"

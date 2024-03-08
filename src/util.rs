@@ -1224,10 +1224,10 @@ impl SphericalHarmonics {
 
     /// Returns the dominant direction of the light represented by this spherical harmonics data. The direction value is normalized.
     /// You can get the color of the light in this direction by using the struct’s Sample method: light.Sample(-light.DominantLightDirection).
-    /// <https://stereokit.net/Pages/StereoKit/SphericalHarmonics.html>
+    /// <https://stereokit.net/Pages/StereoKit/SphericalHarmonics/DominantLightDirection.html>
     ///
     ///  see also [`crate::util::sh_brightness`]
-    pub fn get_dominent_dir(&self) -> Vec3 {
+    pub fn get_dominent_light_direction(&self) -> Vec3 {
         unsafe { sh_dominant_dir(self) }
     }
 

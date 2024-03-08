@@ -115,7 +115,7 @@ impl IStepper for Anim1 {
             Log::info(format!(
                 "sample : {:?} / dominent direction {}",
                 cube.sh.get_sample(glam::Vec3::ONE),
-                cube.sh.get_dominent_dir()
+                cube.sh.get_dominent_light_direction()
             ))
         }
     }

@@ -951,11 +951,11 @@ impl ParamInfo {
         }
     }
 
-    pub fn get_texture(&self) -> Option<&Tex> {
+    pub fn get_texture(&self) -> Option<&mut Tex> {
         if self.value.is_null() || self.type_info != MaterialParam::Texture {
             None
         } else {
-            Some(unsafe { &*(self.value as *const Tex) })
+            Some(unsafe { &mut *(self.value as *mut Tex) })
         }
     }
 

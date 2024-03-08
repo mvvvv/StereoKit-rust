@@ -1,13 +1,21 @@
-use std::{ffi::OsStr, io, path::PathBuf, process::Command};
+use std::{
+    env::current_dir,
+    ffi::OsStr,
+    fs::create_dir,
+    io,
+    path::PathBuf,
+    process::{exit, Command},
+};
 
 fn main() {
     is_input_file_outdated().unwrap();
 }
 
 fn is_input_file_outdated() -> Result<bool, io::Error> {
-    let project_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let bin_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let project_dir = current_dir().unwrap();
 
-    let mut skshaderc = project_dir.clone();
+    let mut skshaderc = bin_dir.clone();
     skshaderc.push(r"StereoKit");
     skshaderc.push(r"tools");
     if cfg!(windows) {
@@ -17,11 +25,31 @@ fn is_input_file_outdated() -> Result<bool, io::Error> {
     }
     let mut shaders_source_path = project_dir.clone();
     shaders_source_path.push("shaders_src");
+
+    if !shaders_source_path.exists() || !shaders_source_path.is_dir() {
+        println!("Current directory do not contain shaders_src directory");
+        println!("Abort!");
+        exit(1);
+    }
+
     let mut shaders_path = project_dir.clone();
     shaders_path.push("assets");
+    if !shaders_path.exists() || !shaders_path.is_dir() {
+        println!("Current directory do not contain assets directory");
+        println!("Abort!");
+        exit(2);
+    }
     shaders_path.push("shaders");
+    if !shaders_path.exists() || !shaders_path.is_dir() {
+        if let Err(e) = create_dir(&shaders_path) {
+            println!("Unable to create the directory assets/shaders inside the current directory");
+            println!("Error : {:?}", e);
+            println!("Abort!");
+            exit(3);
+        }
+    }
 
-    let mut shaders_include = project_dir.clone();
+    let mut shaders_include = bin_dir.clone();
     shaders_include.push("StereoKit");
     shaders_include.push("tools");
     shaders_include.push("include");

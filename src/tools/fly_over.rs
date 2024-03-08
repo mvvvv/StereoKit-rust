@@ -46,8 +46,9 @@ impl FlyOver {
             let head_rotate = Input::get_head().get_forward();
             move_v.y = head_rotate.y;
 
-            speed_accelerator =
-                if move_ctrler.is_stick_clicked() { 3.0 * speed_accelerator } else { 1.0 * speed_accelerator };
+            if move_ctrler.is_stick_clicked() {
+                speed_accelerator *= 3.0;
+            }
 
             shift +=
                 camera_pose.orientation * move_v * Time::get_step_unscaledf() * self.move_speed * speed_accelerator;

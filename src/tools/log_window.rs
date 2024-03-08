@@ -2,6 +2,7 @@ use std::sync::Mutex;
 
 use crate::{
     font::Font,
+    material::Cull,
     maths::{units::CM, Matrix, Pose, Vec2, Vec3},
     sk::{IStepper, StepperAction, StepperId},
     system::{LogLevel, Text, TextAlign, TextFit, TextStyle},
@@ -41,7 +42,9 @@ impl<'a> LogWindow<'a> {
         let style_info = TextStyle::from_font(Font::default(), 0.012, Color128::hsv(1.0, 0.0, 1.0, 1.0));
         let style_warn = TextStyle::from_font(Font::default(), 0.012, Color128::hsv(0.17, 0.7, 1.0, 1.0));
         let style_err = TextStyle::from_font(Font::default(), 0.012, Color128::hsv(1.0, 0.7, 1.0, 1.0));
-
+        for ui_text_style in [style_diag, style_info, style_warn, style_err] {
+            ui_text_style.get_material().face_cull(Cull::Back);
+        }
         Self {
             id: "LogWindow".to_string(),
             event_loop_proxy: None,

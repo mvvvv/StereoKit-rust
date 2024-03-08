@@ -2,7 +2,7 @@ use std::sync::Mutex;
 
 use stereokit_rust::{
     framework::{HandMenuAction, HandMenuRadial, HandRadial, HandRadialLayer},
-    material::Material,
+    material::{Cull, Material},
     maths::{units::*, Matrix, Pose, Quat, Vec2, Vec3},
     mesh::Mesh,
     model::Model,
@@ -10,7 +10,7 @@ use stereokit_rust::{
     sk::{AppFocus, DisplayMode, Sk, StepperAction, StepperId},
     sprite::Sprite,
     system::{BtnState, Input, Key, Lines, Log, LogLevel, Projection, Renderer, Text},
-    tex::{SHCubemap, Tex},
+    tex::{SHCubemap, Tex, TexSample},
     tools::{
         fly_over::FlyOver,
         log_window::{LogItem, LogWindow},
@@ -77,7 +77,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
         .add(LIGHT_BLUE, 0.8)
         .add(LIGHT_CYAN, 0.9)
         .add(WHITE, 1.0);
-    let mut cube0 = SHCubemap::gen_cubemap_gradient(gradient_sky, Vec3::Y, 1024);
+    let cube0 = SHCubemap::gen_cubemap_gradient(gradient_sky, Vec3::Y, 1024);
 
     let mut gradient = Gradient::new(None);
     gradient
@@ -87,14 +87,14 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
         .add(LIGHT_BLUE, 0.4)
         .add(BLUE, 0.5)
         .add(BLACK, 0.7);
-    let mut cube1 = SHCubemap::gen_cubemap_gradient(&gradient, Vec3::NEG_Z, 1);
+    let cube1 = SHCubemap::gen_cubemap_gradient(&gradient, Vec3::NEG_Z, 1);
 
     let lights: [ShLight; 1] = [ShLight::new(Vec3::ONE, WHITE); 1];
     let sh = SphericalHarmonics::from_lights(&lights);
-    let mut cube2 = SHCubemap::gen_cubemap_sh(sh, 15, 5.0, 0.02);
+    let cube2 = SHCubemap::gen_cubemap_sh(sh, 15, 5.0, 0.02);
 
     //save the default cubemap.
-    let mut cube_default = SHCubemap::get_rendered_sky();
+    let cube_default = SHCubemap::get_rendered_sky();
 
     let mobile = Model::from_file("mobiles.gltf", Some(Shader::pbr())).unwrap();
     let tile = Material::find("mobiles.gltf/mat/Calcaire blanc").unwrap_or_default();
@@ -104,14 +104,21 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
     }
 
     let mut clean_tile = Material::copy(Material::pbr());
+    Log::diag("calcaire_blanc params:");
     for param in tile.get_all_param_info() {
         match param.get_name() {
+            "metal" => {
+                let metal_tex = param.get_texture().unwrap();
+                metal_tex.sample_mode(TexSample::Anisotropic).anisotropy(6);
+                clean_tile.metal_tex(metal_tex);
+                &mut clean_tile
+            }
             "diffuse" => clean_tile.diffuse_tex(param.get_texture().unwrap()),
-            "metal" => clean_tile.metal_tex(param.get_texture().unwrap()),
             "normal" => clean_tile.normal_tex(param.get_texture().unwrap()),
             "occlusion" => clean_tile.occlusion_tex(param.get_texture().unwrap()),
             _ => &mut clean_tile,
         };
+        Log::diag(format!(" --- {} :{}", param.get_name(), param.to_string().unwrap_or("no value".to_string())));
     }
     clean_tile
         .id("clean_tile")
@@ -240,6 +247,10 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
     Log::err(
         "======================================================================================================== !!",
     );
+
+    let ui_text_style = Ui::get_text_style();
+    ui_text_style.get_material().face_cull(Cull::Back);
+
     sk.run(
         event_loop,
         |sk| {

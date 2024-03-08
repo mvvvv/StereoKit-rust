@@ -1244,12 +1244,11 @@ impl SHCubemap {
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyTex.html>
     ///
     /// see also see also [`crate::system::Renderer`]
-    pub fn render_as_sky(&mut self) -> &mut Self {
+    pub fn render_as_sky(&self) {
         unsafe {
             render_set_skylight(&self.sh);
             render_set_skytex(self.tex.0.as_ptr());
         }
-        self
     }
 
     /// Enabled or disabled the rendering of the skytex cubemap texture
@@ -1264,7 +1263,7 @@ impl SHCubemap {
     /// Get the cubemap tuple
     ///
     /// see also [`crate::tex::Tex`] [`crate::util::SphericalHarmonics`]
-    pub fn get(self) -> (SphericalHarmonics, Tex) {
+    pub fn get(&self) -> (SphericalHarmonics, Tex) {
         (self.sh, Tex(NonNull::new(unsafe { tex_find(tex_get_id(self.tex.0.as_ptr())) }).unwrap()))
     }
 }
