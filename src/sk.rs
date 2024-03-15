@@ -174,7 +174,7 @@ extern "C" {
     pub fn sk_set_window_xam(window: *mut c_void);
     pub fn sk_shutdown();
     pub fn sk_shutdown_unsafe();
-    pub fn sk_quit();
+    pub fn sk_quit(quit_reason: QuitReason);
     pub fn sk_step(app_step: Option<unsafe extern "C" fn()>) -> Bool32T;
     pub fn sk_run(app_step: Option<unsafe extern "C" fn()>, app_shutdown: Option<unsafe extern "C" fn()>);
     pub fn sk_run_data(
@@ -190,6 +190,7 @@ extern "C" {
     pub fn sk_version_name() -> *const c_char;
     pub fn sk_version_id() -> u64;
     pub fn sk_app_focus() -> AppFocus;
+    pub fn sk_get_quit_reason() -> QuitReason;
 }
 
 /// Default name of the applications
@@ -506,6 +507,21 @@ impl SkSettings {
 //     closure(*sk);
 // }
 
+/// Provides a reason on why StereoKit has quit.
+/// <https://stereokit.net/Pages/StereoKit/QuitReason.html>
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(u32)]
+pub enum QuitReason {
+    /// Default state when SK has not quit.
+    None = 0,
+    /// User has selected to quit the application using application controls.
+    User = 1,
+    /// Runtime Error SESSION_LOST
+    SessionLost = 3,
+    /// User has closed the application from outside of the application.
+    SystemClose = 4,
+}
+
 /// This class contains functions for running the StereoKit library!
 /// <https://stereokit.net/Pages/StereoKit/SK.html>
 pub struct Sk {
@@ -638,10 +654,12 @@ impl Sk {
     /// Lets StereoKit know it should quit! It’ll finish the current frame, and after that Step will return that it
     /// wants to exit.
     /// <https://stereokit.net/Pages/StereoKit/SK/Quit.html>
+    /// * quit_reason - if None has default value of QuitReason::User
     ///
     /// see also [`crate::sk::sk_quit`]
-    pub fn quit(&mut self) {
-        unsafe { sk_quit() }
+    pub fn quit(&mut self, quit_reason: Option<QuitReason>) {
+        let quit_reason = quit_reason.unwrap_or(QuitReason::User);
+        unsafe { sk_quit(quit_reason) }
     }
 
     /// This passes application execution over to StereoKit. This continuously steps all StereoKit systems, and inserts
@@ -740,7 +758,7 @@ impl Sk {
         }
 
         if !self.steppers.step(&self.event_loop_proxy) {
-            self.quit()
+            self.quit(None)
         };
 
         while let Some(mut action) = self.actions.pop_front() {
@@ -802,6 +820,13 @@ impl Sk {
     pub fn get_version_name(&self) -> &str {
         unsafe { CStr::from_ptr(sk_version_name()) }.to_str().unwrap()
     }
+
+    /// This tells the reason why StereoKit has quit and
+    /// developer can take appropriate action to debug.
+    /// <https://stereokit.net/Pages/StereoKit/SK/QuitReason.html>
+    pub fn get_quit_reason(&self) -> QuitReason {
+        unsafe { sk_get_quit_reason() }
+    }
 }
 
 /// This is a lightweight standard interface for fire-and-forget systems that can be attached to StereoKit! This is
@@ -849,7 +874,7 @@ pub enum StepperAction {
     /// Remove the stepper identified by its StepperID
     Remove(StepperId),
     /// Quit the app,
-    Quit(StepperId),
+    Quit(StepperId, String),
     /// Event sent by a stepper for those who need it.
     /// Key -> Value  are strings.
     Event(StepperId, String, String),
@@ -867,7 +892,9 @@ impl fmt::Debug for StepperAction {
             }
             StepperAction::RemoveAll(type_id) => write!(f, "StepperAction::RemoveAll( type_id:{:?}", type_id),
             StepperAction::Remove(stepper_id) => write!(f, "StepperAction::Remove( id:{:?}", stepper_id),
-            StepperAction::Quit(stepper_id) => write!(f, "StepperAction::Quit( sent by id:{:?}", stepper_id),
+            StepperAction::Quit(stepper_id, reason) => {
+                write!(f, "StepperAction::Quit() sent by id:{:?} for reason '{}'", stepper_id, reason)
+            }
             StepperAction::Event(stepper_id, key, value) => {
                 write!(f, "StepperAction::Event( id:{:?} => {}->{}", stepper_id, key, value)
             }
@@ -970,7 +997,7 @@ impl Steppers {
                     }
                     self.steppers.retain(|i| i.id != stepper_id);
                 }
-                StepperAction::Quit(_) => return false,
+                StepperAction::Quit(_, _) => return false,
                 _ => self.event_report.push(action),
             }
         }

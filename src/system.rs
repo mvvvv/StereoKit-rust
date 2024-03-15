@@ -8,6 +8,7 @@ use std::{
 };
 
 use crate::{
+    anchor::{Anchor, _AnchorT},
     font::{Font, FontT, _FontT},
     material::{Material, MaterialT, _MaterialT},
     maths::{ray_from_mouse, Bool32T, Matrix, Pose, Quat, Ray, Rect, Vec2, Vec3},
@@ -80,6 +81,8 @@ pub enum AssetType {
     Font = 6,
     Sprite = 7,
     Sound = 8,
+    Solid = 9,
+    Anchor = 10,
 }
 
 /// If you want to manage loading assets, this is the class for you!
@@ -116,7 +119,8 @@ pub enum Asset {
     Font(Font),
     Sprite(Sprite),
     Sound(Sound),
-    //Deprecated: Solid(*mut c_void)
+    Solid(*mut c_void),
+    Anchor(Anchor),
 }
 
 impl fmt::Display for Asset {
@@ -131,7 +135,8 @@ impl fmt::Display for Asset {
             Asset::Font(v) => write!(f, "Font : {}", v.get_id()),
             Asset::Sprite(v) => write!(f, "Sprite : {}", v.get_id()),
             Asset::Sound(v) => write!(f, "Sound : {}", v.get_id()),
-            // Deprecated: Asset::Solid(_) => write!(f, "Solid : ... deprecated ..."),
+            Asset::Solid(_) => write!(f, "Solid : ... deprecated ..."),
+            Asset::Anchor(v) => write!(f, "Anchor : {}", v.get_id()),
         }
     }
 }
@@ -193,6 +198,8 @@ impl AssetIter {
             AssetType::Font => Asset::Font(Font(NonNull::new(c_id as *mut _FontT).unwrap())),
             AssetType::Sprite => Asset::Sprite(Sprite(NonNull::new(c_id as *mut _SpriteT).unwrap())),
             AssetType::Sound => Asset::Sound(Sound(NonNull::new(c_id as *mut _SoundT).unwrap())),
+            AssetType::Solid => todo!("Solids are deprecated!"),
+            AssetType::Anchor => Asset::Anchor(Anchor(NonNull::new(c_id as *mut _AnchorT).unwrap())),
         }
     }
 

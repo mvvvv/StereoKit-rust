@@ -139,6 +139,13 @@ impl Text1 {
         if Ui::button_img(format!("{:?}", self.text_context), &self.next_value, None, None, None) {
             self.text_context = unsafe { transmute(((self.text_context as u32) + 1) % 4) };
         }
+        if Ui::button("Quit Demos", None) {
+            let _ = self
+                .event_loop_proxy
+                .as_ref()
+                .unwrap()
+                .send_event(StepperAction::Quit(self.id.clone(), "Quit button test".to_string()));
+        }
         Ui::next_line();
         Ui::hseparator();
         Ui::push_text_style(self.text_style_test);

@@ -290,7 +290,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
             scene_frame += 1;
 
             if Input::key(Key::Esc) == BtnState::JustActive {
-                sk.quit()
+                sk.quit(None)
             }
 
             // Playing with projection in simulator mode
@@ -355,13 +355,13 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
                     Some(Vec2::new(0.10, 0.10)),
                     None,
                 ) {
-                    sk.quit();
+                    sk.quit(None);
                 }
                 //Ui::image(&power_button, Vec2::new(0.1, 0.1));
 
                 Ui::window_end();
             }
         },
-        |_sk| {},
+        |sk| Log::info(format!("QuitReason is {:?}", sk.get_quit_reason())),
     );
 }
