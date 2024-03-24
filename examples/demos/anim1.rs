@@ -1,19 +1,20 @@
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use stereokit_rust::material::{Cull, Material, Transparency};
 use stereokit_rust::maths::{Matrix, Quat, Vec3};
 use stereokit_rust::model::{AnimMode, Model};
 use stereokit_rust::shader::Shader;
-use stereokit_rust::sk::{IStepper, StepperAction, StepperId};
+use stereokit_rust::sk::{IStepper, SkInfo, StepperAction, StepperId};
 use stereokit_rust::system::{Handed, Input, Log};
 use stereokit_rust::tex::SHCubemap;
 use stereokit_rust::util::named_colors::{DARK_RED, WHITE};
-
-use winit::event_loop::EventLoopProxy;
 
 #[derive(Debug)]
 pub struct Anim1 {
     pub title: String,
     id: StepperId,
-    event_loop_proxy: Option<EventLoopProxy<StepperAction>>,
+    sk_info: Option<Rc<RefCell<SkInfo>>>,
     mobile: Model,
     transform: Matrix,
     render_now: bool,
@@ -66,7 +67,7 @@ impl Default for Anim1 {
         Self {
             title: "Stereokit Sprites".to_owned(),
             id: "Sprite 1".to_string(),
-            event_loop_proxy: None,
+            sk_info: None,
             mobile,
             transform,
             render_now,
@@ -76,9 +77,9 @@ impl Default for Anim1 {
 }
 
 impl IStepper for Anim1 {
-    fn initialize(&mut self, id: StepperId, event_loop_proxy: EventLoopProxy<StepperAction>) -> bool {
+    fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
         self.id = id;
-        self.event_loop_proxy = Some(event_loop_proxy);
+        self.sk_info = Some(sk_info);
         true
     }
 

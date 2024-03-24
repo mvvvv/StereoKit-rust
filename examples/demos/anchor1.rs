@@ -1,19 +1,20 @@
+use std::{cell::RefCell, rc::Rc};
+
 use stereokit_rust::{
     anchor::{Anchor, AnchorCaps},
     font::Font,
     material::Material,
     maths::{Matrix, Pose, Quat, Ray, Vec3},
     mesh::Mesh,
-    sk::{IStepper, StepperAction, StepperId},
+    sk::{IStepper, SkInfo, StepperAction, StepperId},
     system::{Handed, Input, Lines, Log, Text, TextStyle},
     ui::{Ui, UiCut},
     util::named_colors::{RED, WHITE},
 };
-use winit::event_loop::EventLoopProxy;
 
 pub struct Anchor1 {
     id: StepperId,
-    event_loop_proxy: Option<EventLoopProxy<StepperAction>>,
+    sk: Option<Rc<RefCell<SkInfo>>>,
     pub transform: Matrix,
     pub window_pose: Pose,
     anchors: Vec<Anchor>,
@@ -26,7 +27,7 @@ impl Default for Anchor1 {
     fn default() -> Self {
         Self {
             id: "Anchor1".to_string(),
-            event_loop_proxy: None,
+            sk: None,
             transform: Matrix::tr(&((Vec3::NEG_Z * 2.5) + Vec3::Y), &Quat::from_angles(0.0, 180.0, 0.0)),
             window_pose: Pose::new(Vec3::NEG_Z * 0.1 + Vec3::Y * 1.5, Some(Quat::from_angles(0.0, 180.0, 0.0))),
             anchors: vec![],
@@ -38,9 +39,9 @@ impl Default for Anchor1 {
 }
 
 impl IStepper for Anchor1 {
-    fn initialize(&mut self, id: StepperId, event_loop_proxy: EventLoopProxy<StepperAction>) -> bool {
+    fn initialize(&mut self, id: StepperId, sk: Rc<RefCell<SkInfo>>) -> bool {
         self.id = id;
-        self.event_loop_proxy = Some(event_loop_proxy);
+        self.sk = Some(sk);
         self.anchors = Anchor::anchors().collect();
         true
     }

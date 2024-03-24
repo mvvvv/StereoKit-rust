@@ -37,7 +37,7 @@ cmake = "0.1.50"
 winit = { version = "0.29", features = [ "android-native-activity" ] }
 thiserror = "1.0"
 bitflags = "2.4"
-glam = "0.25"
+glam = "0.26.0"
 
 [target.'cfg(target_os = "android")'.dependencies]
 log = "0.4"
@@ -66,7 +66,7 @@ assets = "./assets"
 
 [package.metadata.android.sdk]
 min_sdk_version = 29
-target_sdk_version = 29
+target_sdk_version = 32
 max_sdk_version = 32
 
 
@@ -119,6 +119,9 @@ name = "android.permission.WRITE_EXTERNAL_STORAGE"
 
 [[package.metadata.android.uses_permission]]
 name = "android.permission.READ_EXTERNAL_STORAGE"
+
+[[package.metadata.android.uses_permission]]
+name = "android.permission.MANAGE_EXTERNAL_STORAGE"
 
 [[package.metadata.android.uses_permission]]
 name = "com.oculus.permission.HAND_TRACKING"

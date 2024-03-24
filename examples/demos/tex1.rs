@@ -1,7 +1,7 @@
 use stereokit_rust::material::{Cull, Material};
 use stereokit_rust::mesh::Mesh;
 use stereokit_rust::model::Model;
-use stereokit_rust::sk::{IStepper, StepperAction, StepperId};
+use stereokit_rust::sk::{IStepper, SkInfo, StepperAction, StepperId};
 use stereokit_rust::system::{Handed, Input, Log};
 use stereokit_rust::tex::{Tex, TexFormat, TexType};
 use stereokit_rust::util::{
@@ -10,16 +10,17 @@ use stereokit_rust::util::{
 };
 
 use glam::{Mat4, Quat, Vec3};
-use winit::event_loop::EventLoopProxy;
 
+use std::cell::RefCell;
 use std::f32::consts::PI;
 use std::ops::Mul;
+use std::rc::Rc;
 
 #[derive(Debug)]
 pub struct Tex1 {
     pub title: String,
     id: StepperId,
-    event_loop_proxy: Option<EventLoopProxy<StepperAction>>,
+    sk_info: Option<Rc<RefCell<SkInfo>>>,
     panels: Model,
     tex_vide: Tex,
     tex_vide2: Tex,
@@ -275,7 +276,7 @@ impl Default for Tex1 {
         let this = Self {
             title: "Tex1".to_owned(),
             id: "Tex1".to_owned(),
-            event_loop_proxy: None,
+            sk_info: None,
             panels,
             tex_vide,
             tex_vide2,
@@ -304,9 +305,9 @@ impl Default for Tex1 {
 }
 
 impl IStepper for Tex1 {
-    fn initialize(&mut self, id: StepperId, event_loop_proxy: EventLoopProxy<StepperAction>) -> bool {
+    fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
         self.id = id;
-        self.event_loop_proxy = Some(event_loop_proxy);
+        self.sk_info = Some(sk_info);
 
         true
     }

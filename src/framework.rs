@@ -1,12 +1,10 @@
 use std::{cell::RefCell, collections::VecDeque, rc::Rc};
 
-use winit::event_loop::EventLoopProxy;
-
 use crate::{
     material::Material,
     maths::{lerp, units::CM, Matrix, Plane, Pose, Quat, Vec3},
     mesh::{Inds, Mesh, Vertex},
-    sk::{IStepper, StepperAction, StepperId},
+    sk::{IStepper, SkInfo, StepperAction, StepperId},
     sound::Sound,
     sprite::Sprite,
     system::{
@@ -322,7 +320,7 @@ pub enum HandMenuAction {
 /// <https://stereokit.net/Pages/StereoKit.Framework/HandMenuRadial.html>
 pub struct HandMenuRadial {
     id: StepperId,
-    event_loop_proxy: Option<EventLoopProxy<StepperAction>>,
+    sk_info: Option<Rc<RefCell<SkInfo>>>,
     menu_pose: Pose,
     dest_pose: Pose,
     root: Rc<HandRadial>,
@@ -344,9 +342,9 @@ pub struct HandMenuRadial {
 impl IStepper for HandMenuRadial {
     /// Part of IStepper, you shouldn’t be calling this yourself.
     /// <https://stereokit.net/Pages/StereoKit.Framework/HandMenuRadial/Initialize.html>
-    fn initialize(&mut self, id: StepperId, event_loop_proxy: EventLoopProxy<StepperAction>) -> bool {
+    fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
         self.id = id;
-        self.event_loop_proxy = Some(event_loop_proxy);
+        self.sk_info = Some(sk_info);
         true
     }
 
@@ -409,7 +407,7 @@ impl HandMenuRadial {
             activation_ring,
             child_indicator,
             id: "HandleMenuRadial".to_string(),
-            event_loop_proxy: None,
+            sk_info: None,
         }
     }
 

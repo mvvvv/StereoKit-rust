@@ -1,7 +1,9 @@
 use std::{ffi::NulError, path::PathBuf};
 use thiserror::Error;
 
+pub mod anchor;
 pub mod font;
+pub mod framework;
 pub mod material;
 pub mod maths;
 pub mod mesh;
@@ -12,11 +14,9 @@ pub mod sound;
 pub mod sprite;
 pub mod system;
 pub mod tex;
-pub mod anchor;
+pub mod tools;
 pub mod ui;
 pub mod util;
-pub mod framework;
-pub mod tools;
 
 #[derive(Error, Debug)]
 pub enum StereoKitError {
@@ -28,8 +28,8 @@ pub enum StereoKitError {
     ModelFromMem(String, String),
     #[error("failed to create model {0} from file for reason {1}")]
     ModelFromFile(PathBuf, String),
-	#[error("failed to generate mesh {0}")]
-	MeshGen(String),
+    #[error("failed to generate mesh {0}")]
+    MeshGen(String),
     #[error("failed to find mesh {0}")]
     MeshFind(String),
     #[error("failed to convert to CString {0} in mesh_find")]
@@ -82,10 +82,8 @@ pub enum StereoKitError {
     CStrError(String),
     #[error("failed to read a file {0}")]
     ReadFileError(String),
+    #[error("Directory {0} do not exist or is not a directory")]
+    DirectoryError(String),
     #[error(transparent)]
     Other(#[from] NulError),
-
 }
-
-
-

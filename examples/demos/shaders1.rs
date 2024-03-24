@@ -1,4 +1,4 @@
-use std::os::raw::c_void;
+use std::{cell::RefCell, os::raw::c_void, rc::Rc};
 
 use stereokit_rust::{
     font::Font,
@@ -6,7 +6,7 @@ use stereokit_rust::{
     maths::{Matrix, Quat, Vec2, Vec3},
     mesh::{Mesh, Vertex},
     shader::Shader,
-    sk::{IStepper, StepperAction, StepperId},
+    sk::{IStepper, SkInfo, StepperAction, StepperId},
     system::{Text, TextStyle},
     tex::Tex,
     util::{
@@ -14,11 +14,10 @@ use stereokit_rust::{
         Time,
     },
 };
-use winit::event_loop::EventLoopProxy;
 
 pub struct Shader1 {
     id: StepperId,
-    event_loop_proxy: Option<EventLoopProxy<StepperAction>>,
+    sk_info: Option<Rc<RefCell<SkInfo>>>,
     pub transform_mesh: Matrix,
     pub transform_plane: Matrix,
     material_red: Material,
@@ -75,7 +74,7 @@ impl Default for Shader1 {
 
         Self {
             id: "Shader1".to_string(),
-            event_loop_proxy: None,
+            sk_info: None,
             transform_mesh,
             transform_plane,
             material_red: blinker_material,
@@ -91,9 +90,9 @@ impl Default for Shader1 {
 }
 
 impl IStepper for Shader1 {
-    fn initialize(&mut self, id: StepperId, event_loop_proxy: EventLoopProxy<StepperAction>) -> bool {
+    fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
         self.id = id;
-        self.event_loop_proxy = Some(event_loop_proxy);
+        self.sk_info = Some(sk_info);
         true
     }
 

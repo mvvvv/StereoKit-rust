@@ -244,7 +244,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
             }
         }
     }
-    Log::err(
+    Log::diag(
         "======================================================================================================== !!",
     );
 

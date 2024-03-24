@@ -1,14 +1,13 @@
-use std::sync::Mutex;
+use std::{cell::RefCell, rc::Rc, sync::Mutex};
 
 use crate::{
     maths::{units::CM, Pose, Quat, Vec2, Vec3},
-    sk::{IStepper, StepperAction, StepperId},
+    sk::{IStepper, SkInfo, StepperAction, StepperId},
     system::{Assets, Log, Renderer},
     tex::{Tex, TexFormat, TexType},
     ui::Ui,
     util::{Color128, PickerMode, Platform},
 };
-use winit::event_loop::EventLoopProxy;
 
 use crate::sprite::Sprite;
 
@@ -17,7 +16,7 @@ static FILE_NAME: Mutex<String> = Mutex::new(String::new());
 
 pub struct ScreenshotViewer {
     id: StepperId,
-    event_loop_proxy: Option<EventLoopProxy<StepperAction>>,
+    sk_info: Option<Rc<RefCell<SkInfo>>>,
     enabled: bool,
     pub pose: Pose,
     tex: Tex,
@@ -30,7 +29,7 @@ impl Default for ScreenshotViewer {
         tex.id("ScreenshotTex");
         Self {
             id: "ScreenshotStepper".to_string(),
-            event_loop_proxy: None,
+            sk_info: None,
             enabled: false,
             pose: Pose::new(Vec3::new(-0.7, 1.0, -0.3), Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0)))),
             tex,
@@ -129,9 +128,9 @@ impl IStepper for ScreenshotViewer {
         self.enabled
     }
 
-    fn initialize(&mut self, id: StepperId, event_loop_proxy: EventLoopProxy<StepperAction>) -> bool {
+    fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
         self.id = id;
-        self.event_loop_proxy = Some(event_loop_proxy);
+        self.sk_info = Some(sk_info);
 
         true
     }

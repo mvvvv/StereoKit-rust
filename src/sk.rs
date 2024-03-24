@@ -1,10 +1,12 @@
 use std::{
     any::{Any, TypeId},
+    cell::RefCell,
     collections::VecDeque,
     ffi::{c_char, c_void, CStr, CString},
     fmt::{self, Formatter},
     path::Path,
     ptr::null_mut,
+    rc::Rc,
 };
 
 use winit::{
@@ -105,28 +107,70 @@ pub enum DisplayBlend {
 #[derive(Debug, Clone)]
 #[repr(C)]
 pub struct SystemInfo {
+    display_width: i32,
+    display_height: i32,
+    spatial_bridge_present: Bool32T,
+    perception_bridge_present: Bool32T,
+    eye_tracking_present: Bool32T,
+    overlay_app: Bool32T,
+    world_occlusion_present: Bool32T,
+    world_raycast_present: Bool32T,
+}
+
+impl SystemInfo {
     /// Width of the display surface, in pixels! For a stereo display, this will be the width of a single eye.
-    pub display_width: i32,
+    /// <https://stereokit.net/Pages/StereoKit/SystemInfo/displayWidth.html>
+    pub fn get_display_width(&self) -> i32 {
+        self.display_width
+    }
+
     /// Height of the display surface, in pixels! For a stereo display, this will be the height of a single eye.
-    pub display_height: i32,
+    /// <https://stereokit.net/Pages/StereoKit/SystemInfo/displayHeight.html>
+    pub fn get_display_height(&self) -> i32 {
+        self.display_height
+    }
+
     /// Does the device we’re currently on have the spatial graph bridge extension? The extension is provided through
     /// the function World.FromSpatialNode. This allows OpenXR to talk with certain windows APIs, such as the QR code
     /// API that provides Graph Node GUIDs for the pose.
-    pub spatial_bridge_present: Bool32T,
+    /// <https://stereokit.net/Pages/StereoKit/SystemInfo/spatialBridgePresent.html>
+    pub fn get_spatial_bridge_present(&self) -> bool {
+        self.spatial_bridge_present != 0
+    }
+
     /// Can the device work with externally provided spatial anchors, like UWP’s Windows.Perception.Spatial.SpatialAnchor
-    pub perception_bridge_present: Bool32T,
+    /// <https://stereokit.net/Pages/StereoKit/SystemInfo/perceptionBridgePresent.html>
+    pub fn get_perception_bridge_present(&self) -> bool {
+        self.perception_bridge_present != 0
+    }
+
     /// Does the device we’re on have eye tracking support present? This is not an indicator that the user has given
     /// the application permission to access this information. See Input.Gaze for how to use this data.
-    pub eye_tracking_present: Bool32T,
+    /// <https://stereokit.net/Pages/StereoKit/SystemInfo/eyeTrackingPresent.html>
+    pub fn get_eye_tracking_present(&self) -> bool {
+        self.eye_tracking_present != 0
+    }
+
     /// This tells if the app was successfully started as an overlay application. If this is true, then expect this
     /// application to be composited with other content below it!
-    pub overlay_app: Bool32T,
+    /// <https://stereokit.net/Pages/StereoKit/SystemInfo/overlayApp.html>
+    pub fn get_overlay_app(&self) -> bool {
+        self.overlay_app != 0
+    }
+
     /// Does this device support world occlusion of digital objects? If this is true, then World.OcclusionEnabled can
     /// be set to true, and World.OcclusionMaterial can be modified.
-    pub world_occlusion_present: Bool32T,
+    /// <https://stereokit.net/Pages/StereoKit/SystemInfo/worldOcclusionPresent.html>
+    pub fn get_world_occlusion_present(&self) -> bool {
+        self.world_occlusion_present != 0
+    }
+
     /// Can this device get ray intersections from the environment? If this is true, then World.RaycastEnabled can be
     /// set to true, and World.Raycast can be used.
-    pub world_raycast_present: Bool32T,
+    /// <https://stereokit.net/Pages/StereoKit/SystemInfo/worldRaycastPresent.html>
+    pub fn get_world_raycast_present(&self) -> bool {
+        self.world_raycast_present != 0
+    }
 }
 
 /// This describes where the origin of the application should be. While these origins map closely to OpenXR features,
@@ -210,66 +254,24 @@ pub const DEFAULT_ASSET_DIR: *const c_char = {
 #[derive(Debug, Clone)]
 #[repr(C)]
 pub struct SkSettings {
-    /// Name of the application, this shows up an the top of the Win32 window, and is submitted to OpenXR. OpenXR caps
-    /// this at 128 characters.
     pub app_name: *const c_char,
-    /// Where to look for assets when loading files! Final path will look like ‘\[assetsFolder\]/\[file\]’, so a
-    /// trailing ‘/’ is unnecessary.
     pub assets_folder: *const c_char,
-    /// Which operation mode should we use for this app? Default is XR, and by default the app will fall back to
-    /// Simulator if XR fails or is unavailable.
     pub mode: AppMode,
-    /// What type of background blend mode do we prefer for this application? Are you trying to build an
-    /// Opaque/Immersive/VR app, or would you like the display to be AnyTransparent, so the world will show up behind
-    /// your content, if that’s an option? Note that this is a preference only, and if it’s not available on this
-    /// device, the app will fall back to the runtime’s preference instead! By default, (DisplayBlend.None) this uses
-    /// the runtime’s preference.
     pub blend_preference: DisplayBlend,
-    ///If the preferred display fails, should we avoid falling back to flatscreen and just crash out? Default is false.
     pub no_flatscreen_fallback: Bool32T,
-    /// /// What kind of depth buffer should StereoKit use? A fast one, a detailed one, one that uses stencils? By
-    /// default, StereoKit uses a balanced mix depending on platform, prioritizing speed but opening up when there’s
-    /// headroom.
     pub depth_mode: DepthMode,
-    /// The default log filtering level. This can be changed at runtime, but this allows you to set the log filter
-    /// before Initialization occurs, so you can choose to get information from that. Default is LogLevel.Info.
     pub log_filter: LogLevel,
-    /// If the runtime supports it, should this application run as an overlay above existing applications? Check
-    /// Sk.System.overlay_app after initialization to see if the runtime could comply with this flag. This will always
-    /// force StereoKit to work in a blend compositing mode.
     pub overlay_app: Bool32T,
-    /// For overlay applications, this is the order in which apps should be composited together. 0 means first, bottom
-    /// of the stack, and uint.MaxValue is last, on top of the stack.
     pub overlay_priority: u32,
-    /// If using Runtime.Flatscreen, the pixel position of the window on the screen.
     pub flatscreen_pos_x: i32,
-    /// If using Runtime.Flatscreen, the pixel position of the window on the screen.
     pub flatscreen_pos_y: i32,
-    /// If using Runtime.Flatscreen, the pixel size of the window on the screen.
     pub flatscreen_width: i32,
-    /// If using Runtime.Flatscreen, the pixel size of the window on the screen.
     pub flatscreen_height: i32,
-    /// By default, StereoKit will open a desktop window for keyboard input due to lack of XR-native keyboard APIs on
-    /// many platforms. If you don’t want this, you can disable it with this setting!
     pub disable_desktop_input_window: Bool32T,
-    /// By default, StereoKit will slow down when the application is out of focus. This is useful for saving processing
-    /// power while the app is out-of-focus, but may not always be desired. In particular, running multiple copies of a
-    /// SK app for testing networking code may benefit from this setting.
     pub disable_unfocused_sleep: Bool32T,
-    /// If you know in advance that you need this feature, this setting allows you to set `Renderer.Scaling` before
-    /// initialization. This avoids creating and discarding a large and unnecessary swapchain object. Default value is 1.
     pub render_scaling: f32,
-    /// If you know in advance that you need this feature, this setting allows you to set `Renderer.Multisample` before
-    /// initialization. This avoids creating and discarding a large and unnecessary swapchain object. Default value is 1.
     pub render_multisample: i32,
-    /// Set the behavior of StereoKit's initial origin. Default behavior is OriginMode.Local, which is the most
-    /// universally supported origin mode. Different origin modes have varying levels of support on different XR
-    /// runtimes, and StereoKit will provide reasonable fallbacks for each. NOTE that when falling back, StereoKit will
-    /// use a different root origin mode plus an offset. You can check World.OriginMode and World.OriginOffset to
-    /// inspect what StereoKit actually landed on.
     pub origin: OriginMode,
-    ///If there's nothing to draw, add an option to skip submitting projection layers to OpenXR. This can be a nice
-    /// optimization for overlay applications that may want to idle without showing anything until they're needed.
     pub omit_empty_frames: Bool32T,
     pub android_java_vm: *mut c_void,
     pub android_activity: *mut c_void,
@@ -301,11 +303,13 @@ impl Default for SkSettings {
         }
     }
 }
+
 impl fmt::Display for SkSettings {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}", self)
     }
 }
+
 impl SkSettings {
     /// Initialise Sk with the given settings parameter (here for android which needs an AndroidApp)
     #[cfg(target_os = "android")]
@@ -486,9 +490,7 @@ impl SkSettings {
         self
     }
 
-    ///If there's nothing to draw, add an option to skip submitting projection layers to OpenXR. This can be a nice
-    /// optimization for overlay applications that may want to idle without showing anything until they're needed.
-    /// <https://stereokit.net/Pages/StereoKit/SKSettings.html>
+    /// If StereoKit has nothing to render for this frame, it skips submitting a proojection layer to OpenXR entirely.
     /// <https://stereokit.net/Pages/StereoKit/SKSettings/omitEmptyFrames.html>
     pub fn omit_empty_frames(&mut self, origin_mode: bool) -> &mut Self {
         self.omit_empty_frames = origin_mode as Bool32T;
@@ -522,34 +524,66 @@ pub enum QuitReason {
     SystemClose = 4,
 }
 
-/// This class contains functions for running the StereoKit library!
-/// <https://stereokit.net/Pages/StereoKit/SK.html>
-pub struct Sk {
+/// Non canonical structure whose purpose is to expose infos for ISteppers
+/// Android version
+#[allow(dead_code)]
+#[cfg(target_os = "android")]
+#[derive(Debug)]
+pub struct SkInfo {
     settings: SkSettings,
     system_info: SystemInfo,
     event_loop_proxy: EventLoopProxy<StepperAction>,
-    steppers: Steppers,
-    actions: VecDeque<Box<dyn FnMut()>>,
+    android_app: AndroidApp,
 }
 
-impl Sk {
-    /// This will queue up some code to be run on StereoKit’s main thread! Immediately after StereoKit’s Step, all
-    /// callbacks registered here will execute, and then removed from the list.
-    /// <https://stereokit.net/Pages/StereoKit/SK/ExecuteOnMain.html>
-    pub fn execute_on_main<F: FnMut() + 'static>(&mut self, action: F) {
-        self.actions.push_back(Box::new(action))
-    }
+/// Non canonical structure whose purpose is to expose infos for ISteppers
+/// Non android version
+#[allow(dead_code)]
+#[cfg(not(target_os = "android"))]
+#[derive(Debug)]
+pub struct SkInfo {
+    settings: SkSettings,
+    system_info: SystemInfo,
+    event_loop_proxy: EventLoopProxy<StepperAction>,
+}
 
-    /// convenient way to push some Add steppers action
-    pub fn push_action(&mut self, action: StepperAction) {
-        self.steppers.push_action(action)
-    }
-
+impl SkInfo {
     /// Get an event_loop_proxy clone to send events
     pub fn get_event_loop_proxy(&self) -> EventLoopProxy<StepperAction> {
         self.event_loop_proxy.clone()
     }
 
+    /// This is a copy of the settings that StereoKit was initialized with, so you can refer back to them a little
+    /// easier. These are read only, and keep in mind that some settings are only requests! Check Sk.system and other
+    /// properties for the current state of StereoKit.
+    /// <https://stereokit.net/Pages/StereoKit/SK/Settings.html>
+    pub fn get_settings(&self) -> SkSettings {
+        self.settings.clone()
+    }
+
+    /// This structure contains information about the current system and its capabilities. There’s a lot of different MR
+    /// devices, so it’s nice to have code for systems with particular characteristics!
+    /// <https://stereokit.net/Pages/StereoKit/SK/System.html>
+    pub fn get_system(&self) -> SystemInfo {
+        self.system_info.clone()
+    }
+
+    /// Non canonical function to get the rust ndk AndroidApp
+    #[cfg(target_os = "android")]
+    pub fn get_android_app(&mut self) -> &AndroidApp {
+        &self.android_app
+    }
+}
+
+/// This class contains functions for running the StereoKit library!
+/// <https://stereokit.net/Pages/StereoKit/SK.html>
+pub struct Sk {
+    sk_info: Rc<RefCell<SkInfo>>,
+    steppers: Steppers,
+    actions: VecDeque<Box<dyn FnMut()>>,
+}
+
+impl Sk {
     /// Initializes StereoKit window, default resources, systems, etc.
     /// Android Plaforms only
     /// <https://stereokit.net/Pages/StereoKit/SK/Initialize.html>
@@ -594,22 +628,23 @@ impl Sk {
         Log::diag(format!("sk_init : context: {:?} / jvm: {:?}", vm_pointer, jobject_pointer));
 
         match unsafe {
-            Log::info("Before init");
-
+            Log::info("Before init >>>");
             let val = sk_init(settings.clone()) != 0;
-            Log::info("After init");
+            Log::info("<<< After init");
             val
         } {
-            true => Ok((
-                Sk {
+            true => {
+                let sk_info = Rc::new(RefCell::new(SkInfo {
                     settings: settings.clone(),
                     system_info: unsafe { sk_system_info() },
-                    event_loop_proxy,
-                    steppers: Steppers::new(),
-                    actions: VecDeque::new(),
-                },
-                event_loop,
-            )),
+                    event_loop_proxy: event_loop_proxy,
+                    android_app: app,
+                }));
+                Ok((
+                    Sk { sk_info: sk_info.clone(), steppers: Steppers::new(sk_info.clone()), actions: VecDeque::new() },
+                    event_loop,
+                ))
+            }
             false => Err(StereoKitError::SkInit(settings.to_string())),
         }
     }
@@ -622,7 +657,7 @@ impl Sk {
     #[cfg(not(target_os = "android"))]
     pub fn initialize(settings: &mut SkSettings) -> Result<(Sk, EventLoop<StepperAction>), StereoKitError> {
         let event_loop = EventLoopBuilder::<StepperAction>::with_user_event().build()?;
-        let event_proxy = event_loop.create_proxy();
+        let event_loop_proxy = event_loop.create_proxy();
         let (vm_pointer, jobject_pointer) = (null_mut::<c_void>(), null_mut::<c_void>());
 
         settings.android_java_vm = vm_pointer;
@@ -631,24 +666,47 @@ impl Sk {
         Log::info(format!("SK_INIT ::: context {:?}/jvm : {:?}", vm_pointer, jobject_pointer));
 
         match unsafe {
-            Log::info("Before init");
-
+            Log::info("Before init >>>");
             let val = sk_init(settings.clone()) != 0;
-            Log::info("After init");
+            Log::info("<<< After init");
             val
         } {
-            true => Ok((
-                Sk {
+            true => {
+                let sk_info = Rc::new(RefCell::new(SkInfo {
                     settings: settings.clone(),
                     system_info: unsafe { sk_system_info() },
-                    event_loop_proxy: event_proxy,
-                    steppers: Steppers::new(),
-                    actions: VecDeque::new(),
-                },
-                event_loop,
-            )),
+                    event_loop_proxy,
+                }));
+                Ok((
+                    Sk { sk_info: sk_info.clone(), steppers: Steppers::new(sk_info.clone()), actions: VecDeque::new() },
+                    event_loop,
+                ))
+            }
             false => Err(StereoKitError::SkInit(settings.to_string())),
         }
+    }
+
+    /// This is a non canonical function that let you change all the steppers
+    /// https://stereokit.net/Pages/StereoKit.Framework/IStepper.html
+    pub fn change_steppers(&mut self, steppers: Steppers) {
+        self.steppers = steppers;
+    }
+
+    /// This will queue up some code to be run on StereoKit’s main thread! Immediately after StereoKit’s Step, all
+    /// callbacks registered here will execute, and then removed from the list.
+    /// <https://stereokit.net/Pages/StereoKit/SK/ExecuteOnMain.html>
+    pub fn execute_on_main<F: FnMut() + 'static>(&mut self, action: F) {
+        self.actions.push_back(Box::new(action))
+    }
+
+    /// convenient way to push some Add steppers action
+    pub fn push_action(&mut self, action: StepperAction) {
+        self.steppers.push_action(action);
+    }
+
+    /// Get an event_loop_proxy clone to send events
+    pub fn get_event_loop_proxy(&self) -> EventLoopProxy<StepperAction> {
+        self.sk_info.borrow().get_event_loop_proxy()
     }
 
     /// Lets StereoKit know it should quit! It’ll finish the current frame, and after that Step will return that it
@@ -671,7 +729,7 @@ impl Sk {
     ///
     /// see also [`crate::sk::sk_run_data`]
     pub fn run<U: FnMut(&mut Sk), S: FnMut(&mut Sk)>(
-        mut self,
+        &mut self,
         event_loop: EventLoop<StepperAction>,
         mut on_step: U,
         mut on_shutdown: S,
@@ -688,7 +746,7 @@ impl Sk {
                 }
                 Event::UserEvent(action) => {
                     Log::diag(format!("UserEvent {:?}", action));
-                    self.steppers.push_action(action);
+                    self.push_action(action);
                 }
                 Event::Suspended => Log::info("Suspended !!"),
                 Event::Resumed => Log::info("Resumed !!"),
@@ -699,7 +757,7 @@ impl Sk {
                 }
                 Event::LoopExiting => {
                     Log::info("LoopExiting !!");
-                    on_shutdown(&mut self);
+                    on_shutdown(self);
                     self.shutdown();
                 }
                 Event::MemoryWarning => Log::warn("MemoryWarning !!"),
@@ -757,7 +815,7 @@ impl Sk {
             return false;
         }
 
-        if !self.steppers.step(&self.event_loop_proxy) {
+        if !self.steppers.step() {
             self.quit(None)
         };
 
@@ -793,15 +851,15 @@ impl Sk {
     /// easier. These are read only, and keep in mind that some settings are only requests! Check Sk.system and other
     /// properties for the current state of StereoKit.
     /// <https://stereokit.net/Pages/StereoKit/SK/Settings.html>
-    pub fn get_settings(&self) -> &SkSettings {
-        &self.settings
+    pub fn get_settings(&self) -> SkSettings {
+        self.sk_info.borrow().get_settings()
     }
 
     /// This structure contains information about the current system and its capabilities. There’s a lot of different MR
     /// devices, so it’s nice to have code for systems with particular characteristics!
     /// <https://stereokit.net/Pages/StereoKit/SK/System.html>
-    pub fn get_system(&self) -> &SystemInfo {
-        &self.system_info
+    pub fn get_system(&self) -> SystemInfo {
+        self.sk_info.borrow().get_system()
     }
 
     /// An integer version Id! This is defined using a hex value with this format: 0xMMMMiiiiPPPPrrrr in order of
@@ -845,7 +903,7 @@ pub trait IStepper {
     /// This is called by StereoKit at the start of the next frame, and on the main thread. This happens before
     /// StereoKit’s main Step callback, and always after Sk.initialize.
     /// <https://stereokit.net/Pages/StereoKit.Framework/IStepper/Initialize.html>
-    fn initialize(&mut self, id: StepperId, event_loop_proxy: EventLoopProxy<StepperAction>) -> bool;
+    fn initialize(&mut self, id: StepperId, sk: Rc<RefCell<SkInfo>>) -> bool;
 
     /// Is this IStepper enabled? When false, StereoKit will not call Step. This can be a good way to temporarily
     /// disable the IStepper without removing or shutting it down.
@@ -955,30 +1013,33 @@ struct StepperHandler {
 /// A lazy way to identify IStepper instances
 pub type StepperId = String;
 
-/// Steppers manager
-struct Steppers {
+/// Steppers manager. Non canonical way you can create a scene with all the Steppers you need
+/// <https://stereokit.net/Pages/StereoKit.Framework/IStepper.html<
+pub struct Steppers {
+    sk: Rc<RefCell<SkInfo>>,
     steppers: Vec<StepperHandler>,
-    actions: VecDeque<StepperAction>,
+    stepper_actions: VecDeque<StepperAction>,
     event_report: Vec<StepperAction>,
 }
 
 impl Steppers {
-    pub fn new() -> Self {
-        Self { steppers: vec![], actions: VecDeque::new(), event_report: vec![] }
+    // the only way to create a Steppers manager
+    pub fn new(sk: Rc<RefCell<SkInfo>>) -> Self {
+        Self { sk, steppers: vec![], stepper_actions: VecDeque::new(), event_report: vec![] }
     }
 
     /// push an action to consumme befor next frame
     pub fn push_action(&mut self, action: StepperAction) {
-        self.actions.push_back(action);
+        self.stepper_actions.push_back(action);
     }
 
     /// Deque all the actions, create the frame event report, execute all the stepper if quit hasn't be asked
     /// return false if sk_quit must be triggered.
-    pub fn step(&mut self, event_loop_proxy: &EventLoopProxy<StepperAction>) -> bool {
-        while let Some(action) = self.actions.pop_front() {
+    pub fn step(&mut self) -> bool {
+        while let Some(action) = self.stepper_actions.pop_front() {
             match action {
                 StepperAction::Add(mut stepper, type_id, stepper_id) => {
-                    if stepper.initialize(stepper_id.clone(), event_loop_proxy.clone()) {
+                    if stepper.initialize(stepper_id.clone(), self.sk.clone()) {
                         let stepper_h = StepperHandler { id: stepper_id, type_id, stepper };
                         self.steppers.push(stepper_h);
                     } else {
@@ -1012,7 +1073,7 @@ impl Steppers {
     }
 
     pub fn shutdown(&mut self) {
-        self.actions.clear();
+        self.stepper_actions.clear();
         for stepper_h in self.steppers.iter_mut() {
             stepper_h.stepper.shutdown()
         }

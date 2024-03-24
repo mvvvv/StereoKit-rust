@@ -1,17 +1,18 @@
+use std::{cell::RefCell, rc::Rc};
+
 use stereokit_rust::{
     font::Font,
     material::Material,
     maths::{Matrix, Quat, Vec3},
     mesh::Mesh,
-    sk::{IStepper, StepperAction, StepperId},
+    sk::{IStepper, SkInfo, StepperAction, StepperId},
     system::{Renderer, Text, TextStyle},
     util::named_colors::RED,
 };
-use winit::event_loop::EventLoopProxy;
 
 pub struct AStepper {
     id: StepperId,
-    event_loop_proxy: Option<EventLoopProxy<StepperAction>>,
+    sk: Option<Rc<RefCell<SkInfo>>>,
     pub transform: Matrix,
     round_cube: Mesh,
     text: String,
@@ -22,7 +23,7 @@ impl Default for AStepper {
     fn default() -> Self {
         Self {
             id: "AStepper".to_string(),
-            event_loop_proxy: None,
+            sk: None,
             transform: Matrix::tr(&((Vec3::NEG_Z * 2.5) + Vec3::Y), &Quat::from_angles(0.0, 180.0, 0.0)),
             round_cube: Mesh::generate_rounded_cube(Vec3::ONE / 5.0, 0.2, Some(16)),
             text: "Stepper A".to_owned(),
@@ -32,9 +33,9 @@ impl Default for AStepper {
 }
 
 impl IStepper for AStepper {
-    fn initialize(&mut self, id: StepperId, event_loop_proxy: EventLoopProxy<StepperAction>) -> bool {
+    fn initialize(&mut self, id: StepperId, sk: Rc<RefCell<SkInfo>>) -> bool {
         self.id = id;
-        self.event_loop_proxy = Some(event_loop_proxy);
+        self.sk = Some(sk);
         true
     }
 

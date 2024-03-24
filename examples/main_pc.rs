@@ -89,7 +89,7 @@ fn main() {
     settings
         .app_name("stereokit-rust")
         .assets_folder("assets")
-        .origin(OriginMode::Stage)
+        .origin(OriginMode::Floor)
         .log_filter(LogLevel::Diagnostic)
         .no_flatscreen_fallback(true);
 

@@ -1,29 +1,29 @@
+use std::{cell::RefCell, rc::Rc};
+
 use crate::{
     maths::{Matrix, Quat, Vec2, Vec3},
-    sk::{IStepper, StepperAction, StepperId},
+    sk::{IStepper, SkInfo, StepperAction, StepperId},
     system::{Handed, Input, Renderer},
     util::Time,
 };
 
-use winit::event_loop::EventLoopProxy;
-
 pub struct FlyOver {
     id: StepperId,
-    event_loop_proxy: Option<EventLoopProxy<StepperAction>>,
+    sk_info: Option<Rc<RefCell<SkInfo>>>,
     pub move_speed: f32,
     pub rotate_speed: f32,
 }
 
 impl Default for FlyOver {
     fn default() -> Self {
-        Self { id: "FlyOver".to_string(), event_loop_proxy: None, move_speed: 2.0, rotate_speed: 90.0 }
+        Self { id: "FlyOver".to_string(), sk_info: None, move_speed: 2.0, rotate_speed: 90.0 }
     }
 }
 
 impl IStepper for FlyOver {
-    fn initialize(&mut self, id: StepperId, event_loop_proxy: EventLoopProxy<StepperAction>) -> bool {
+    fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
         self.id = id;
-        self.event_loop_proxy = Some(event_loop_proxy);
+        self.sk_info = Some(sk_info);
         true
     }
 

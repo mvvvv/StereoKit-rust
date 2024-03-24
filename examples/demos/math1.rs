@@ -1,10 +1,12 @@
+use std::{cell::RefCell, rc::Rc};
+
 use stereokit_rust::{
     font::Font,
     material::Material,
     maths::{Bounds, Matrix, Plane, Pose, Quat, Ray, Sphere, Vec3},
     mesh::Mesh,
     model::Model,
-    sk::{IStepper, StepperAction, StepperId},
+    sk::{IStepper, SkInfo, StepperAction, StepperId},
     system::{Handed, Input, Lines, Log, Text, TextStyle},
     ui::Ui,
     util::{
@@ -12,14 +14,13 @@ use stereokit_rust::{
         Time,
     },
 };
-use winit::event_loop::EventLoopProxy;
 
 pub const SPHERE_RADIUS: f32 = 0.4;
 pub const ROTATION_SPEED: f32 = 30.0;
 
 pub struct Math1 {
     id: StepperId,
-    event_loop_proxy: Option<EventLoopProxy<StepperAction>>,
+    sk_info: Option<Rc<RefCell<SkInfo>>>,
     pub transform_ico_sphere: Matrix,
     pub model_pose: Pose,
     model: Model,
@@ -42,7 +43,7 @@ impl Default for Math1 {
         let ico_sphere = Mesh::find("mobiles.gltf/mesh/0_0_Icosphere").unwrap();
         Self {
             id: "Math1".to_string(),
-            event_loop_proxy: None,
+            sk_info: None,
             transform_ico_sphere,
             model_pose,
             model,
@@ -57,9 +58,9 @@ impl Default for Math1 {
 }
 
 impl IStepper for Math1 {
-    fn initialize(&mut self, id: StepperId, event_loop_proxy: EventLoopProxy<StepperAction>) -> bool {
+    fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
         self.id = id;
-        self.event_loop_proxy = Some(event_loop_proxy);
+        self.sk_info = Some(sk_info);
         true
     }
 

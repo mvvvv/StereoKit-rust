@@ -1,16 +1,14 @@
-use std::sync::Mutex;
+use std::{cell::RefCell, rc::Rc, sync::Mutex};
 
 use crate::{
     font::Font,
     material::Cull,
     maths::{units::CM, Matrix, Pose, Vec2, Vec3},
-    sk::{IStepper, StepperAction, StepperId},
+    sk::{IStepper, SkInfo, StepperAction, StepperId},
     system::{LogLevel, Text, TextAlign, TextFit, TextStyle},
     ui::{Ui, UiCut},
     util::Color128,
 };
-
-use winit::event_loop::EventLoopProxy;
 
 #[derive(Debug, Clone)]
 pub struct LogItem {
@@ -21,7 +19,7 @@ pub struct LogItem {
 
 pub struct LogWindow<'a> {
     id: StepperId,
-    event_loop_proxy: Option<EventLoopProxy<StepperAction>>,
+    sk_info: Option<Rc<RefCell<SkInfo>>>,
     pub enabled: bool,
     pub pose: Pose,
     style_diag: TextStyle,
@@ -47,7 +45,7 @@ impl<'a> LogWindow<'a> {
         }
         Self {
             id: "LogWindow".to_string(),
-            event_loop_proxy: None,
+            sk_info: None,
             enabled,
             pose,
             style_diag,
@@ -159,9 +157,9 @@ impl<'a> IStepper for LogWindow<'a> {
         self.enabled
     }
 
-    fn initialize(&mut self, id: StepperId, event_loop_proxy: EventLoopProxy<StepperAction>) -> bool {
+    fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
         self.id = id;
-        self.event_loop_proxy = Some(event_loop_proxy);
+        self.sk_info = Some(sk_info);
 
         true
     }

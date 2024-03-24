@@ -1,9 +1,9 @@
-use std::mem::transmute;
+use std::{cell::RefCell, mem::transmute, rc::Rc};
 
 use stereokit_rust::{
     font::Font,
     maths::{units::CM, Matrix, Pose, Quat, Vec2, Vec3},
-    sk::{IStepper, StepperAction, StepperId},
+    sk::{IStepper, SkInfo, StepperAction, StepperId},
     sprite::Sprite,
     system::{Log, Text, TextContext, TextStyle},
     ui::{Ui, UiBtnLayout},
@@ -12,7 +12,6 @@ use stereokit_rust::{
         Platform,
     },
 };
-use winit::event_loop::EventLoopProxy;
 
 pub const FR_KEY_TEXT: &str = r#"²|&|é|"|'|(|\-|è|_|ç|à|)|=|{|}|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
 Tab-\t-9-3|a|z|e|r|t|y|u|i|o|p|^|$|[|]|\|
@@ -34,7 +33,7 @@ Ctrl--17-4-mod|Cmd--91-3|Alt--18-3-go_0| - -32-13|Alt--18-3-go_0|Ctrl--17-3-mod|
 
 pub struct Text1 {
     id: StepperId,
-    event_loop_proxy: Option<EventLoopProxy<StepperAction>>,
+    sk_info: Option<Rc<RefCell<SkInfo>>>,
     pub transform: Matrix,
     pub window_demo_pose: Pose,
     pub demo_win_width: f32,
@@ -55,7 +54,7 @@ impl Default for Text1 {
     fn default() -> Self {
         Self {
             id: "Text1".to_string(),
-            event_loop_proxy: None,
+            sk_info: None,
             transform: Matrix::tr(&((Vec3::NEG_Z * 2.5) + Vec3::Y), &Quat::from_angles(0.0, 180.0, 0.0)),
             window_demo_pose: Pose::new(Vec3::new(0.0, 1.5, -0.3), Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0)))),
             demo_win_width: 80.0 * CM,
@@ -75,9 +74,9 @@ impl Default for Text1 {
 }
 
 impl IStepper for Text1 {
-    fn initialize(&mut self, id: StepperId, event_loop_proxy: EventLoopProxy<StepperAction>) -> bool {
+    fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
         self.id = id;
-        self.event_loop_proxy = Some(event_loop_proxy);
+        self.sk_info = Some(sk_info);
         true
     }
 
@@ -140,11 +139,10 @@ impl Text1 {
             self.text_context = unsafe { transmute(((self.text_context as u32) + 1) % 4) };
         }
         if Ui::button("Quit Demos", None) {
-            let _ = self
-                .event_loop_proxy
-                .as_ref()
-                .unwrap()
-                .send_event(StepperAction::Quit(self.id.clone(), "Quit button test".to_string()));
+            let rc_sk = self.sk_info.as_ref().unwrap();
+            let sk = rc_sk.as_ref();
+            let event_loop_proxy = sk.borrow().get_event_loop_proxy();
+            let _ = event_loop_proxy.send_event(StepperAction::Quit(self.id.clone(), "Quit button test".to_string()));
         }
         Ui::next_line();
         Ui::hseparator();

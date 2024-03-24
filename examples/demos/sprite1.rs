@@ -1,9 +1,11 @@
+use std::cell::RefCell;
 use std::f32::consts::PI;
+use std::rc::Rc;
 
 use stereokit_rust::font::Font;
 use stereokit_rust::material::Material;
 use stereokit_rust::maths::{Matrix, Quat, Vec3};
-use stereokit_rust::sk::{IStepper, StepperAction, StepperId};
+use stereokit_rust::sk::{IStepper, SkInfo, StepperAction, StepperId};
 use stereokit_rust::sprite::{Sprite, SpriteType};
 use stereokit_rust::system::{AssetType, Assets, Lines, Log, Text, TextAlign, TextStyle};
 use stereokit_rust::tex::Tex;
@@ -11,13 +13,12 @@ use stereokit_rust::util::named_colors::{BLACK, BLUE, CYAN, LIGHT_BLUE, WHITE, Y
 use stereokit_rust::util::{Color128, Gradient};
 
 use glam::Mat4;
-use winit::event_loop::EventLoopProxy;
 
 #[derive(Debug)]
 pub struct Sprite1 {
     pub title: String,
     id: StepperId,
-    event_loop_proxy: Option<EventLoopProxy<StepperAction>>,
+    sk_info: Option<Rc<RefCell<SkInfo>>>,
     tex_particule1: Tex,
     tex_particule2: Tex,
     color1: Material,
@@ -60,7 +61,7 @@ impl Default for Sprite1 {
         let mut this = Self {
             title: "Stereokit Sprites".to_owned(),
             id: "Sprite 1".to_string(),
-            event_loop_proxy: None,
+            sk_info: None,
 
             //----- Materials
             color1: Material::copy(Material::pbr_clip()),
@@ -84,9 +85,9 @@ impl Default for Sprite1 {
 }
 
 impl IStepper for Sprite1 {
-    fn initialize(&mut self, id: StepperId, event_loop_proxy: EventLoopProxy<StepperAction>) -> bool {
+    fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
         self.id = id;
-        self.event_loop_proxy = Some(event_loop_proxy);
+        self.sk_info = Some(sk_info);
 
         // ---Some logs
         for sprite in [&self.sprite1, &self.sprite_ico] {
