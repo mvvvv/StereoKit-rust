@@ -1560,8 +1560,8 @@ impl Ui {
         unsafe { ui_quadrant_size_verts(verts.as_ptr() as *mut Vertex, verts.len() as i32, overflow_percent) }
     }
 
-    /// A nice flexible mesh generator for [`quadrantified button meshes`](<https://playdeck.net/blog/quadrant-sizing-efficient-ui-rendering>).
-    /// This allows you to define a button by specifying a "lathe" outline.
+    /// This generates a quadrantified mesh meant for UI buttons by sweeping a lathe over the rounded corners of a
+    /// rectangle! Note that this mesh is quadrantified, so it requires special shaders to draw properly!
     /// <https://stereokit.net/Pages/StereoKit/UI/GenQuadrantMesh.html>
     ///
     /// see also [`crate::ui::ui_gen_quadrant_mesh`]

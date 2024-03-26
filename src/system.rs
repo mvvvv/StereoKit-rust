@@ -4,7 +4,7 @@ use std::{
     fmt,
     mem::size_of,
     path::Path,
-    ptr::{null, NonNull},
+    ptr::{null, null_mut, NonNull},
 };
 
 use crate::{
@@ -1475,6 +1475,8 @@ extern "C" {
     pub fn input_hand_source(hand: Handed) -> HandSource;
     pub fn input_controller(hand: Handed) -> *const Controller;
     pub fn input_controller_menu() -> BtnState;
+    pub fn input_controller_model_set(hand: Handed, model: ModelT);
+    pub fn input_controller_model_get(hand: Handed) -> ModelT;
     pub fn input_head() -> *const Pose;
     pub fn input_eyes() -> *const Pose;
     pub fn input_eyes_tracked() -> BtnState;
@@ -1515,6 +1517,21 @@ extern "C" {
 }
 
 impl Input {
+    /// When StereoKit is rendering the input source, this allows you to override the controller Model SK uses. The
+    /// Model SK uses by default may be provided from the OpenXR runtime depending on extension support, but if not, SK
+    /// does have a default Model.
+    /// Setting this to null will restore SK's default.
+    /// <https://stereokit.net/Pages/StereoKit/Input.html>
+    /// * handed - The hand to assign the Model to.
+    /// * model - The Model to use to represent the controller.
+    /// None is valid, and will restore SK's default model.
+    pub fn set_controller_model(handed: Handed, model: Option<Model>) {
+        match model {
+            Some(model) => unsafe { input_controller_model_set(handed, model.0.as_ptr()) },
+            None => unsafe { input_controller_model_set(handed, null_mut()) },
+        }
+    }
+
     /// Gets raw controller input data from the system. Note that not all buttons provided here are guaranteed to be
     /// present on the user’s physical controller. Controllers are also not guaranteed to be available on the system,
     /// and are never simulated.
@@ -1568,10 +1585,14 @@ impl Input {
     /// Set the Material used to render the hand! The default material uses an offset of 10 to ensure it gets drawn
     /// overtop of other elements.
     /// <https://stereokit.net/Pages/StereoKit/Input/HandMaterial.html>
+    /// * material - If None, will reset to the default value
     ///
     /// see also [`crate::system::input_hand_material`]    
-    pub fn hand_material(hand: Handed, material: impl AsRef<Material>) {
-        unsafe { input_hand_material(hand, material.as_ref().0.as_ptr()) };
+    pub fn hand_material(hand: Handed, material: Option<Material>) {
+        match material {
+            Some(material) => unsafe { input_hand_material(hand, material.0.as_ptr()) },
+            None => unsafe { input_hand_material(hand, null_mut()) },
+        }
     }
 
     /// StereoKit will use controller inputs to simulate an articulated hand. This function allows you to add new
@@ -1753,6 +1774,20 @@ impl Input {
         cb: Option<unsafe extern "C" fn(source: InputSource, input_event: BtnState, in_pointer: *const Pointer)>,
     ) {
         unsafe { input_unsubscribe(event_source, event_types, cb) }
+    }
+
+    /// This retreives the Model currently in use by StereoKit to represent the controller input source. By default,
+    /// this will be a Model provided by OpenXR, or SK's fallback Model. This will never be null while SK is
+    /// initialized.
+    /// <https://stereokit.net/Pages/StereoKit/Input.html>
+    /// * handed - The hand of the controller Model to retreive.
+    /// Returns the current controller Model. By default, his will be a Model provided by OpenXR, or SK's fallback
+    /// Model. This will never be null while SK is initialized.
+    pub fn get_controller_model(handed: Handed) -> Model {
+        match NonNull::new(unsafe { input_controller_model_get(handed) }) {
+            Some(model) => Model(model),
+            None => Model::new(),
+        }
     }
 
     /// This is the state of the controller’s menu button, this is not attached to any particular hand, so it’s

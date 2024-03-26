@@ -524,8 +524,8 @@ pub enum QuitReason {
     SystemClose = 4,
 }
 
-/// Non canonical structure whose purpose is to expose infos for ISteppers
-/// Android version
+/// Non canonical structure whose purpose is to expose infos for ISteppers.
+/// This one is the Android version
 #[allow(dead_code)]
 #[cfg(target_os = "android")]
 #[derive(Debug)]
@@ -536,8 +536,8 @@ pub struct SkInfo {
     android_app: AndroidApp,
 }
 
-/// Non canonical structure whose purpose is to expose infos for ISteppers
-/// Non android version
+/// Non canonical structure whose purpose is to expose infos for ISteppers.
+/// This one is the non android version
 #[allow(dead_code)]
 #[cfg(not(target_os = "android"))]
 #[derive(Debug)]

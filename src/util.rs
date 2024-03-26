@@ -886,7 +886,7 @@ extern "C" {
     pub fn platform_keyboard_visible() -> Bool32T;
     pub fn platform_keyboard_set_layout(
         type_: TextContext,
-        keyboard_layout: *mut *mut c_char,
+        keyboard_layout: *const *const c_char,
         layouts_num: i32,
     ) -> Bool32T;
 }
@@ -1035,13 +1035,13 @@ impl Platform {
     pub fn keyboard_set_layout(type_key: TextContext, keyboard_layouts: &Vec<&str>) -> bool {
         let mut keyboard_layouts_c = vec![];
         for str in keyboard_layouts {
-            let c_str = CString::new(*str).unwrap().into_raw();
+            let c_str = CString::new(*str).unwrap().into_raw() as *const c_char;
             keyboard_layouts_c.push(c_str);
         }
         unsafe {
             platform_keyboard_set_layout(
                 type_key,
-                keyboard_layouts_c.as_mut_slice().as_mut_ptr(),
+                keyboard_layouts_c.as_slice().as_ptr(),
                 keyboard_layouts_c.len() as i32,
             ) != 0
         }

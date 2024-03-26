@@ -1,11 +1,12 @@
 use std::{cell::RefCell, ffi::OsString, rc::Rc};
 use stereokit_rust::{
     font::Font,
+    material::Material,
     maths::{Matrix, Pose, Quat, Vec2, Vec3},
     model::{AnimMode, Model},
     sk::{IStepper, SkInfo, StepperAction, StepperId},
     sprite::Sprite,
-    system::{Log, Renderer, Text, TextStyle},
+    system::{Handed, Input, Log, Renderer, Text, TextStyle},
     ui::{Ui, UiBtnLayout},
     util::named_colors::RED,
 };
@@ -86,6 +87,15 @@ impl IStepper for Model1 {
         self.id = id;
         self.gltf_dir = get_gltf_files(sk.clone());
         self.sk_info = Some(sk);
+
+        // Some test about hand meshes
+        let left_hand = Input::get_controller_model(Handed::Left);
+        let right_hand = Input::get_controller_model(Handed::Right);
+        Input::set_controller_model(Handed::Left, Some(left_hand));
+        Input::set_controller_model(Handed::Right, Some(right_hand));
+        let material_hand = Material::unlit();
+        Input::hand_material(Handed::Right, Some(material_hand));
+
         true
     }
 
@@ -123,6 +133,17 @@ impl Model1 {
                         anims.play_anim_idx(0, AnimMode::Loop);
                     }
                     self.model = Some(model);
+                    // Platform::file_picker_sz(
+                    //     PickerMode::Open,
+                    //     |ok, file_name| {
+                    //         if ok {
+                    //             if let Ok(new_model) = Model::from_file(file_name, None) {
+                    //                 self.model = Some(new_model);
+                    //             }
+                    //         };
+                    //     },
+                    //     &["*.gltf", "*.glb"],
+                    // );
                 } else {
                     Log::err(format!("Unable to load model {:?} !!", file_name));
                 };
@@ -135,17 +156,6 @@ impl Model1 {
         }
 
         Ui::window_end();
-
-        // Platform::file_picker(
-        //     PickerMode::Open,
-        //     |file| {
-        //         if let Ok(new_model) = Model::from_file(file, None) {
-        //             self.model = Some(new_model);
-        //         };
-        //     },
-        //     || {},
-        //     &["*.gltf", "*.glb"],
-        // );
 
         Text::add_at(&self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
     }
