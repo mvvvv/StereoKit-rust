@@ -1,3 +1,6 @@
+[workspace]
+members = ["macros"]
+
 [package]
 name = "stereokit-rust"
 version = "0.1.0"
@@ -37,7 +40,8 @@ cmake = "0.1.50"
 winit = { version = "0.29", features = [ "android-native-activity" ] }
 thiserror = "1.0"
 bitflags = "2.4"
-glam = "0.26.0"
+glam = "0.27"
+macros = {path = "macros"}
 
 [target.'cfg(target_os = "android")'.dependencies]
 log = "0.4"
@@ -165,7 +169,7 @@ value = "true"
 
 [[package.metadata.android.application.meta_data]]
 name = "com.oculus.supportedDevices"
-value = "quest|quest2|cambria"
+value = "quest2|questpro|quest3"
 
 [[package.metadata.android.application.meta_data]]
 name = "com.oculus.intent.category.VR"

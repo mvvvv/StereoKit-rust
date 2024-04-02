@@ -33,6 +33,9 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
         "======================================================================================================== !!",
     );
 
+    Renderer::scaling(1.5);
+    Renderer::multisample(4);
+
     let mut window_demo_pose = Pose::new(Vec3::new(-0.7, 1.5, -0.3), Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0))));
     let window_demo_show = false;
 

@@ -60,7 +60,7 @@ extern "C" {
     pub fn model_create_mesh(mesh: MeshT, material: MaterialT) -> ModelT;
     pub fn model_create_mem(
         filename_utf8: *const c_char,
-        data: *mut c_void,
+        data: *const c_void,
         data_size: usize,
         shader: ShaderT,
     ) -> ModelT;
@@ -176,7 +176,7 @@ impl Model {
         let c_file_name = CString::new(file_name.as_ref())?;
         let shader = shader.map(|shader| shader.0.as_ptr()).unwrap_or(null_mut());
         match NonNull::new(unsafe {
-            model_create_mem(c_file_name.as_ptr(), memory.as_ptr() as *mut c_void, memory.len(), shader)
+            model_create_mem(c_file_name.as_ptr(), memory.as_ptr() as *const c_void, memory.len(), shader)
         }) {
             Some(model) => Ok(Model(model)),
             None => Err(StereoKitError::ModelFromMem(file_name.as_ref().to_owned(), "file not found!".to_owned())),

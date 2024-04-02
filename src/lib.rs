@@ -1,6 +1,6 @@
+pub use macros::include_asset_tree;
 use std::{ffi::NulError, path::PathBuf};
 use thiserror::Error;
-
 pub mod anchor;
 pub mod font;
 pub mod framework;

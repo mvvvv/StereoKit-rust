@@ -1,15 +1,19 @@
-use std::{cell::RefCell, ffi::OsString, rc::Rc};
+use std::{cell::RefCell, path::PathBuf, rc::Rc};
 use stereokit_rust::{
     font::Font,
+    include_asset_tree,
     material::Material,
     maths::{Matrix, Pose, Quat, Vec2, Vec3},
     model::{AnimMode, Model},
     sk::{IStepper, SkInfo, StepperAction, StepperId},
     sprite::Sprite,
     system::{Handed, Input, Log, Renderer, Text, TextStyle},
+    tools::os_api::{get_assets, PathEntry},
     ui::{Ui, UiBtnLayout},
     util::named_colors::RED,
 };
+
+const ASSET_DIR: &[&str] = include_asset_tree!("assets");
 
 pub struct Model1 {
     id: StepperId,
@@ -18,7 +22,9 @@ pub struct Model1 {
     pub model_pose: Pose,
     pub model_scale: Vec3,
     model: Option<Model>,
-    gltf_dir: Vec<OsString>,
+    asset_files: Vec<PathEntry>,
+    asset_sub_dir: PathBuf,
+    exts: Vec<String>,
     pub window_model_pose: Pose,
     model_selected: u32,
     radio_off: Sprite,
@@ -36,7 +42,9 @@ impl Default for Model1 {
             model_pose: Pose::new(Vec3::new(0.0, 1.3, -0.3), None),
             model_scale: Vec3::ONE * 0.02,
             model: None,
-            gltf_dir: vec![],
+            asset_files: vec![],
+            asset_sub_dir: PathBuf::new(),
+            exts: vec![],
             window_model_pose: Pose::new(Vec3::new(0.5, 1.5, -0.5), Some(Quat::from_angles(0.0, 180.0, 0.0))),
             model_selected: 0,
             radio_off: Sprite::radio_off(),
@@ -47,45 +55,10 @@ impl Default for Model1 {
     }
 }
 
-#[cfg(target_os = "android")]
-pub fn get_gltf_files(sk_info: Rc<RefCell<SkInfo>>) -> Vec<OsString> {
-    use std::ffi::CString;
-
-    let mut sk_i = sk_info.borrow_mut();
-    let app = sk_i.get_android_app();
-    let mut vec = vec![];
-    let cstr = CString::new("").unwrap();
-    if let Some(asset_dir) = app.asset_manager().open_dir(cstr.as_c_str()) {
-        for entry in asset_dir {
-            if let Ok(entry_string) = entry.into_string() {
-                vec.push(OsString::from(entry_string))
-            }
-        }
-    }
-    vec
-}
-
-#[cfg(not(target_os = "android"))]
-pub fn get_gltf_files(_sk: Rc<RefCell<SkInfo>>) -> Vec<OsString> {
-    use std::{fs::read_dir, path::Path};
-
-    let path_text = env!("CARGO_MANIFEST_DIR").to_owned() + "/assets";
-    let path_asset = Path::new(path_text.as_str());
-    let mut vec = vec![];
-    if path_asset.exists() && path_asset.is_dir() {
-        if let Ok(read_dir) = read_dir(path_asset) {
-            for file in read_dir.flatten().filter(|name| name.path().is_file()) {
-                vec.push(file.file_name())
-            }
-        }
-    }
-    vec
-}
-
 impl IStepper for Model1 {
     fn initialize(&mut self, id: StepperId, sk: Rc<RefCell<SkInfo>>) -> bool {
         self.id = id;
-        self.gltf_dir = get_gltf_files(sk.clone());
+        self.asset_files = get_assets(sk.clone(), self.asset_sub_dir.clone(), &self.exts);
         self.sk_info = Some(sk);
 
         // Some test about hand meshes
@@ -95,6 +68,8 @@ impl IStepper for Model1 {
         Input::set_controller_model(Handed::Right, Some(right_hand));
         let material_hand = Material::unlit();
         Input::hand_material(Handed::Right, Some(material_hand));
+
+        Log::diag(format!("{:?}", ASSET_DIR));
 
         true
     }
@@ -113,48 +88,88 @@ impl Model1 {
             Renderer::add_model(model, model_transform, None, None);
         }
 
-        // The window to select existing model in this crate
-        Ui::window_begin("Model files", &mut self.window_model_pose, Some(Vec2::new(0.5, 0.0)), None, None);
-        let mut i = 0;
-        for file_name in &self.gltf_dir {
-            i += 1;
-            let file_name_str = file_name.to_str().unwrap_or("OsString error!!");
-            if Ui::radio_img(
-                file_name_str,
-                self.model_selected == i,
-                &self.radio_off,
-                &self.radio_on,
-                UiBtnLayout::Left,
-                None,
-            ) {
-                if let Ok(model) = Model::from_file(file_name, None) {
-                    let mut anims = model.get_anims();
-                    if anims.get_count() > 0 {
-                        anims.play_anim_idx(0, AnimMode::Loop);
-                    }
-                    self.model = Some(model);
-                    // Platform::file_picker_sz(
-                    //     PickerMode::Open,
-                    //     |ok, file_name| {
-                    //         if ok {
-                    //             if let Ok(new_model) = Model::from_file(file_name, None) {
-                    //                 self.model = Some(new_model);
-                    //             }
-                    //         };
-                    //     },
-                    //     &["*.gltf", "*.glb"],
-                    // );
-                } else {
-                    Log::err(format!("Unable to load model {:?} !!", file_name));
-                };
-                self.model_selected = i;
-            }
+        let mut new_asset_file = None;
 
-            if i % 3 != 0 {
+        // The window to select existing model in this crate
+        Ui::window_begin(
+            format!("Asset files {:?}", self.asset_sub_dir),
+            &mut self.window_model_pose,
+            Some(Vec2::new(0.5, 0.0)),
+            None,
+            None,
+        );
+
+        let mut i = 0;
+        for file_name in &self.asset_files {
+            i += 1;
+
+            if let PathEntry::File(name) = file_name {
+                let file_name_str = name.to_str().unwrap_or("OsString error!!");
                 Ui::same_line();
+                if Ui::radio_img(
+                    file_name_str,
+                    self.model_selected == i,
+                    &self.radio_off,
+                    &self.radio_on,
+                    UiBtnLayout::Left,
+                    None,
+                ) {
+                    if let Ok(model) = Model::from_file(name, None) {
+                        let mut anims = model.get_anims();
+                        if anims.get_count() > 0 {
+                            anims.play_anim_idx(0, AnimMode::Loop);
+                        }
+                        self.model = Some(model);
+                    } else {
+                        Log::err(format!("Unable to load model {:?} !!", file_name_str));
+                    };
+                    self.model_selected = i;
+                }
+            }
+        }
+        Ui::next_line();
+        if let Some(sub_dir_name) = self.asset_sub_dir.to_str() {
+            if !sub_dir_name.is_empty() {
+                //---back button
+                if Ui::button("..", None) {
+                    self.asset_sub_dir.pop();
+                    new_asset_file = Some(get_assets(
+                        self.sk_info.as_ref().unwrap().clone(),
+                        self.asset_sub_dir.clone(),
+                        &self.exts,
+                    ));
+                }
+            }
+        }
+        let cur_dir = self.asset_sub_dir.clone();
+        // we add the dir at the end
+        let mut sub_dir: String = cur_dir.to_string_lossy().to_string();
+        if !sub_dir.is_empty() {
+            sub_dir += "/";
+        }
+        let sub_asset_dir = "assets/".to_string() + &sub_dir;
+        for dir_name_str in ASSET_DIR {
+            if dir_name_str.starts_with(&sub_asset_dir) && dir_name_str.len() > sub_asset_dir.len() + 1 {
+                let split_pos =
+                    dir_name_str.char_indices().nth_back(dir_name_str.len() - sub_asset_dir.len() - 1).unwrap().0;
+                let name = &dir_name_str[split_pos..];
+                if !name.contains('/') {
+                    Ui::same_line();
+                    if Ui::button(name, None) {
+                        self.asset_sub_dir.push(name);
+                        new_asset_file = Some(get_assets(
+                            self.sk_info.as_ref().unwrap().clone(),
+                            self.asset_sub_dir.clone(),
+                            &self.exts,
+                        ));
+                    }
+                }
             }
         }
 
+        if let Some(new_value) = new_asset_file {
+            self.asset_files = new_value;
+        }
         Ui::window_end();
 
         Text::add_at(&self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);

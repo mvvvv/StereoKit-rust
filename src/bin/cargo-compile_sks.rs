@@ -15,9 +15,29 @@ fn is_input_file_outdated() -> Result<bool, io::Error> {
     let bin_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let project_dir = current_dir().unwrap();
 
+    let target_os = if cfg!(target_os = "linux") {
+        "linux"
+    } else if cfg!(target_os = "windows") {
+        "windows"
+    } else if cfg!(target_os = "macos") {
+        "mac"
+    } else {
+        ""
+    };
+    let target_arch = if cfg!(target_arch = "x86_64") {
+        "x64"
+    } else if cfg!(target_arch = "aarch64") {
+        "arm64"
+    } else {
+        ""
+    };
+    let exe_type = target_os.to_string() + "_" + target_arch;
+
     let mut skshaderc = bin_dir.clone();
     skshaderc.push(r"StereoKit");
     skshaderc.push(r"tools");
+    skshaderc.push(r"skshaderc");
+    skshaderc.push(exe_type);
     if cfg!(windows) {
         skshaderc.push("skshaderc.exe");
     } else {
@@ -54,7 +74,8 @@ fn is_input_file_outdated() -> Result<bool, io::Error> {
     shaders_include.push("tools");
     shaders_include.push("include");
 
-    println!("Shaders path {:?}", &shaders_path);
+    println!("skshaderc executable used :  {:?}", &skshaderc);
+    println!("Shaders compiled there : {:?}", &shaders_path);
 
     let command = OsStr::new(skshaderc.as_os_str());
     let excluded_extensions = [OsStr::new("hlsli"), OsStr::new("sks"), OsStr::new("txt"), OsStr::new("md")];
@@ -64,7 +85,7 @@ fn is_input_file_outdated() -> Result<bool, io::Error> {
             if file.is_file() {
                 if let Some(extension) = file.extension() {
                     if !excluded_extensions.contains(&extension) {
-                        println!("shader file : {:?}", file);
+                        //println!("shader file : {:?}", file);
                         let output = Command::new(command)
                             .arg(file)
                             .arg("-i")
