@@ -96,6 +96,9 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
     let sh = SphericalHarmonics::from_lights(&lights);
     let cube2 = SHCubemap::gen_cubemap_sh(sh, 15, 5.0, 0.02);
 
+    let cube3 = SHCubemap::from_cubemap_equirectangular("textures/hdri/sky_dawn.hdr", true, 0)
+        .unwrap_or(SHCubemap::get_rendered_sky());
+
     //save the default cubemap.
     let cube_default = SHCubemap::get_rendered_sky();
 
@@ -198,6 +201,14 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
                         None,
                         move || {
                             cube2.render_as_sky();
+                        },
+                        HandMenuAction::Back,
+                    ),
+                    HandRadial::item(
+                        "HDRI dawn",
+                        None,
+                        move || {
+                            cube3.render_as_sky();
                         },
                         HandMenuAction::Back,
                     ),

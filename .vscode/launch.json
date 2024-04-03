@@ -51,7 +51,7 @@
                     "kind": "example"
                 }
             },
-            "args": ["--test","--start", "Model1"],
+            "args": ["--test","--start", "Asset1"],
             "cwd": "${workspaceFolder}"
         },
         {

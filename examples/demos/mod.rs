@@ -9,14 +9,14 @@ pub mod program;
 pub mod text1;
 
 pub mod anim1;
+pub mod asset1;
 pub mod math1;
-pub mod model1;
 pub mod shaders1;
 pub mod sprite1;
 pub mod tex1;
 
 use self::{
-    a_stepper::AStepper, anchor1::Anchor1, anim1::Anim1, math1::Math1, model1::Model1, shaders1::Shader1,
+    a_stepper::AStepper, anchor1::Anchor1, anim1::Anim1, asset1::Asset1, math1::Math1, shaders1::Shader1,
     sprite1::Sprite1, tex1::Tex1, text1::Text1,
 };
 
@@ -70,9 +70,9 @@ impl Test {
                 sk.push_action(StepperAction::add_default::<Math1>("Math1"));
                 "Math1".to_string()
             }),
-            Test::new("Model1", |sk| {
-                sk.push_action(StepperAction::add_default::<Model1>("Model1"));
-                "Model1".to_string()
+            Test::new("Asset1", |sk| {
+                sk.push_action(StepperAction::add_default::<Asset1>("Asset1"));
+                "Asset1".to_string()
             }),
         ];
         Box::new(tests)

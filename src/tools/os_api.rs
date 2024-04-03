@@ -19,6 +19,7 @@ pub fn get_assets(sk_info: Rc<RefCell<SkInfo>>, sub_dir: PathBuf, file_extension
     let app = sk_i.get_android_app();
     let mut exts = vec![];
     for extension in file_extensions {
+        let extension = extension[1..].to_string();
         exts.push(OsString::from(extension));
     }
     let mut vec = vec![];
@@ -27,15 +28,18 @@ pub fn get_assets(sk_info: Rc<RefCell<SkInfo>>, sub_dir: PathBuf, file_extension
             for entry in asset_dir {
                 if let Ok(entry_string) = entry.into_string() {
                     let path = PathBuf::from(entry_string.clone());
-                    if let Ok(cstring) = CString::new(entry_string.as_str()) {
-                        Log::diag(entry_string);
-                        if let Some(_) = app.asset_manager().open(cstring.as_c_str()) {
-                            if exts.is_empty() {
-                                vec.push(PathEntry::File(path.into_os_string()))
-                            } else if let Some(extension) = path.extension() {
-                                if exts.contains(&extension.to_os_string()) {
-                                    vec.push(PathEntry::File(path.into_os_string()))
-                                }
+
+                    if exts.is_empty() {
+                        if let Some(file_name) = path.file_name() {
+                            Log::diag(file_name.to_str().unwrap());
+                            vec.push(PathEntry::File(file_name.into()))
+                        } else {
+                            Log::diag("NONO");
+                        }
+                    } else if let Some(extension) = path.extension() {
+                        if exts.contains(&extension.to_os_string()) {
+                            if let Some(file_name) = path.file_name() {
+                                vec.push(PathEntry::File(file_name.into()))
                             }
                         }
                     }
@@ -53,6 +57,7 @@ pub fn get_assets(_sk_info: Rc<RefCell<SkInfo>>, sub_dir: PathBuf, file_extensio
     let sub_dir = sub_dir.to_str().unwrap_or("");
     let mut exts = vec![];
     for extension in file_extensions {
+        let extension = extension[1..].to_string();
         exts.push(OsString::from(extension));
     }
     let path_text = env!("CARGO_MANIFEST_DIR").to_owned() + "/assets";
