@@ -11,13 +11,14 @@ pub mod text1;
 pub mod anim1;
 pub mod asset1;
 pub mod math1;
+pub mod render_list1;
 pub mod shaders1;
 pub mod sprite1;
 pub mod tex1;
 
 use self::{
-    a_stepper::AStepper, anchor1::Anchor1, anim1::Anim1, asset1::Asset1, math1::Math1, shaders1::Shader1,
-    sprite1::Sprite1, tex1::Tex1, text1::Text1,
+    a_stepper::AStepper, anchor1::Anchor1, anim1::Anim1, asset1::Asset1, math1::Math1, render_list1::RenderList1,
+    shaders1::Shader1, sprite1::Sprite1, tex1::Tex1, text1::Text1,
 };
 
 pub struct Test {
@@ -73,6 +74,10 @@ impl Test {
             Test::new("Asset1", |sk| {
                 sk.push_action(StepperAction::add_default::<Asset1>("Asset1"));
                 "Asset1".to_string()
+            }),
+            Test::new("RenderList1", |sk| {
+                sk.push_action(StepperAction::add_default::<RenderList1>("RenderList1"));
+                "RenderList1".to_string()
             }),
         ];
         Box::new(tests)

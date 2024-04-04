@@ -199,22 +199,6 @@ pub struct _TexT {
 }
 pub type TexT = *mut _TexT;
 
-impl IAsset for Tex {
-    // fn id(&mut self, id: impl AsRef<str>) {
-    //     self.id(id);
-    // }
-
-    fn get_id(&self) -> &str {
-        self.get_id()
-    }
-}
-
-/// A Default texture is asked when a Tex creation or find returned an error.
-impl Default for Tex {
-    fn default() -> Self {
-        Self::error()
-    }
-}
 extern "C" {
     pub fn tex_find(id: *const c_char) -> TexT;
     pub fn tex_create(type_: TexType, format: TexFormat) -> TexT;
@@ -314,6 +298,23 @@ extern "C" {
     pub fn tex_set_loading_fallback(loading_texture: TexT);
     pub fn tex_set_error_fallback(error_texture: TexT);
     pub fn tex_get_cubemap_lighting(cubemap_texture: TexT) -> SphericalHarmonics;
+}
+
+impl IAsset for Tex {
+    // fn id(&mut self, id: impl AsRef<str>) {
+    //     self.id(id);
+    // }
+
+    fn get_id(&self) -> &str {
+        self.get_id()
+    }
+}
+
+/// A Default texture is asked when a Tex creation or find returned an error.
+impl Default for Tex {
+    fn default() -> Self {
+        Self::error()
+    }
 }
 
 impl Tex {

@@ -8,6 +8,7 @@ pub mod material;
 pub mod maths;
 pub mod mesh;
 pub mod model;
+pub mod render_list;
 pub mod shader;
 pub mod sk;
 pub mod sound;

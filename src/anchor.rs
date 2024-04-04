@@ -5,7 +5,7 @@ use std::{
 
 use crate::{
     maths::{Bool32T, Pose},
-    system::{BtnState, Log},
+    system::{BtnState, IAsset, Log},
     StereoKitError,
 };
 
@@ -83,6 +83,16 @@ extern "C" {
     pub fn anchor_get_new_index(index: i32) -> AnchorT;
     pub fn anchor_get_perception_anchor(anchor: AnchorT, perception_spatial_anchor: *mut *mut c_void) -> Bool32T; //TODO: Check this
 
+}
+
+impl IAsset for Anchor {
+    // fn id(&mut self, id: impl AsRef<str>) {
+    //     self.id(id);
+    // }
+
+    fn get_id(&self) -> &str {
+        self.get_id()
+    }
 }
 
 impl Anchor {

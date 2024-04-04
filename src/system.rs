@@ -14,6 +14,7 @@ use crate::{
     maths::{ray_from_mouse, Bool32T, Matrix, Pose, Quat, Ray, Rect, Vec2, Vec3},
     mesh::{Mesh, MeshT, _MeshT},
     model::{Model, ModelT, _ModelT},
+    render_list::{RenderList, _RenderListT},
     shader::{Shader, ShaderT, _ShaderT},
     sk::OriginMode,
     sound::{Sound, SoundT, _SoundT},
@@ -83,6 +84,7 @@ pub enum AssetType {
     Sound = 8,
     Solid = 9,
     Anchor = 10,
+    RenderList = 11,
 }
 
 /// If you want to manage loading assets, this is the class for you!
@@ -121,6 +123,7 @@ pub enum Asset {
     Sound(Sound),
     Solid(*mut c_void),
     Anchor(Anchor),
+    RenderList(RenderList),
 }
 
 impl fmt::Display for Asset {
@@ -137,6 +140,7 @@ impl fmt::Display for Asset {
             Asset::Sound(v) => write!(f, "Sound : {}", v.get_id()),
             Asset::Solid(_) => write!(f, "Solid : ... deprecated ..."),
             Asset::Anchor(v) => write!(f, "Anchor : {}", v.get_id()),
+            Asset::RenderList(v) => write!(f, "RenderList : {}/{}", v.get_count(), v.get_prev_count()),
         }
     }
 }
@@ -200,6 +204,7 @@ impl AssetIter {
             AssetType::Sound => Asset::Sound(Sound(NonNull::new(c_id as *mut _SoundT).unwrap())),
             AssetType::Solid => todo!("Solids are deprecated!"),
             AssetType::Anchor => Asset::Anchor(Anchor(NonNull::new(c_id as *mut _AnchorT).unwrap())),
+            AssetType::RenderList => Asset::RenderList(RenderList(NonNull::new(c_id as *mut _RenderListT).unwrap())),
         }
     }
 
@@ -2401,6 +2406,7 @@ extern "C" {
         clear: RenderClear,
         viewport: Rect,
     );
+
     pub fn render_MaterialTo(
         to_rendertarget: TexT,
         override_material: MaterialT,

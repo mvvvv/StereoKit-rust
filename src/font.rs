@@ -4,7 +4,7 @@ use std::{
     ptr::NonNull,
 };
 
-use crate::{tex::TexT, StereoKitError};
+use crate::{system::IAsset, tex::TexT, StereoKitError};
 
 /// This class represents a text font asset! On the back-end, this asset is composed of a texture with font characters
 /// rendered to it, and a list of data about where, and how large those characters are on the texture.
@@ -43,6 +43,16 @@ extern "C" {
     pub fn font_addref(font: FontT);
     pub fn font_release(font: FontT);
     pub fn font_get_tex(font: FontT) -> TexT;
+}
+
+impl IAsset for Font {
+    // fn id(&mut self, id: impl AsRef<str>) {
+    //     self.id(id);
+    // }
+
+    fn get_id(&self) -> &str {
+        self.get_id()
+    }
 }
 
 impl Default for Font {

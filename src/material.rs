@@ -5,7 +5,7 @@ use std::ptr::NonNull;
 
 use crate::maths::{Bool32T, Matrix, Vec2, Vec3, Vec4};
 use crate::shader::{Shader, ShaderT};
-use crate::system::Log;
+use crate::system::{IAsset, Log};
 use crate::tex::{Tex, TexT};
 use crate::util::Color128;
 use crate::StereoKitError;
@@ -125,6 +125,16 @@ extern "C" {
     pub fn material_get_chain(material: MaterialT) -> MaterialT;
     pub fn material_set_shader(material: MaterialT, shader: ShaderT);
     pub fn material_get_shader(material: MaterialT) -> ShaderT;
+}
+
+impl IAsset for Material {
+    // fn id(&mut self, id: impl AsRef<str>) {
+    //     self.id(id);
+    // }
+
+    fn get_id(&self) -> &str {
+        self.get_id()
+    }
 }
 
 impl Default for Material {
