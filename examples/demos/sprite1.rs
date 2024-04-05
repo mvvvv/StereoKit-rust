@@ -37,6 +37,8 @@ impl Sprite1 {
     }
 }
 
+unsafe impl Send for Sprite1 {}
+
 impl Default for Sprite1 {
     fn default() -> Self {
         //---- Textures

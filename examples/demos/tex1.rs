@@ -42,6 +42,8 @@ pub struct Tex1 {
     stage: i8,
 }
 
+unsafe impl Send for Tex1 {}
+
 impl Tex1 {
     /// Change the default title.
     pub fn new(title: String) -> Self {

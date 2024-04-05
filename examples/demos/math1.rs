@@ -32,6 +32,8 @@ pub struct Math1 {
     text_style: TextStyle,
 }
 
+unsafe impl Send for Math1 {}
+
 impl Default for Math1 {
     fn default() -> Self {
         let transform_ico_sphere = Matrix::ts(Vec3::NEG_Z * 0.5 + Vec3::X + Vec3::Y * 1.5, Vec3::ONE * 0.3);

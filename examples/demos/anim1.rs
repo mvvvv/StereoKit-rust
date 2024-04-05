@@ -20,6 +20,9 @@ pub struct Anim1 {
     render_now: bool,
     stage: i32,
 }
+
+unsafe impl Send for Anim1 {}
+
 impl Default for Anim1 {
     fn default() -> Self {
         let calcaire = Material::find("clean_tile").unwrap_or_default();

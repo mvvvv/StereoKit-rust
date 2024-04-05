@@ -30,6 +30,8 @@ pub struct Shader1 {
     fps: f64,
 }
 
+unsafe impl Send for Shader1 {}
+
 impl Default for Shader1 {
     fn default() -> Self {
         //------ Materials

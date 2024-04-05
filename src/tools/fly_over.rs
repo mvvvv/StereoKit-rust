@@ -14,6 +14,8 @@ pub struct FlyOver {
     pub rotate_speed: f32,
 }
 
+unsafe impl Send for FlyOver {}
+
 impl Default for FlyOver {
     fn default() -> Self {
         Self { id: "FlyOver".to_string(), sk_info: None, move_speed: 2.0, rotate_speed: 90.0 }

@@ -339,6 +339,8 @@ pub struct HandMenuRadial {
     child_indicator: Mesh,
 }
 
+unsafe impl Send for HandMenuRadial {}
+
 impl IStepper for HandMenuRadial {
     /// Part of IStepper, you shouldn’t be calling this yourself.
     /// <https://stereokit.net/Pages/StereoKit.Framework/HandMenuRadial/Initialize.html>

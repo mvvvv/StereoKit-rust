@@ -39,6 +39,8 @@ pub struct Asset1 {
     text_style: TextStyle,
 }
 
+unsafe impl Send for Asset1 {}
+
 impl Default for Asset1 {
     fn default() -> Self {
         Self {
@@ -55,7 +57,7 @@ impl Default for Asset1 {
             asset_selected: 0,
             radio_off: Sprite::radio_off(),
             radio_on: Sprite::radio_on(),
-            text: "Model1".to_owned(),
+            text: "Asset1".to_owned(),
             text_style: Text::make_style(Font::default(), 0.3, RED),
         }
     }

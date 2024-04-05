@@ -23,6 +23,8 @@ pub struct Anchor1 {
     text_style: TextStyle,
 }
 
+unsafe impl Send for Anchor1 {}
+
 impl Default for Anchor1 {
     fn default() -> Self {
         Self {

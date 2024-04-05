@@ -926,7 +926,7 @@ pub trait IStepper {
 /// List of action on steppers. This is the user events
 pub enum StepperAction {
     /// Add a new stepper of TypeID,  identified by its StepperID
-    Add(Box<dyn IStepper + 'static>, TypeId, StepperId),
+    Add(Box<dyn IStepper + Send + 'static>, TypeId, StepperId),
     /// Remove all steppers of TypeID
     RemoveAll(TypeId),
     /// Remove the stepper identified by its StepperID
@@ -968,7 +968,7 @@ impl StepperAction {
     /// to do before Sk.initialize is called, the constructor is called right away, and Initialize is called right after
     /// Sk.initialize, or at the start of the next frame before the next main Step callback if SK is already initialized.
     /// <https://stereokit.net/Pages/StereoKit/SK/AddStepper.html>
-    pub fn add_default<T: IStepper + Default + 'static>(stepper_id: impl AsRef<str>) -> Self {
+    pub fn add_default<T: IStepper + Send + Default + 'static>(stepper_id: impl AsRef<str>) -> Self {
         let stepper = <T>::default();
         let stepper_type = stepper.type_id();
         StepperAction::Add(Box::new(stepper), stepper_type, stepper_id.as_ref().to_owned())
@@ -979,7 +979,7 @@ impl StepperAction {
     /// to do before Sk.initialize is called, the constructor is called right away, and Initialize is called right after
     /// Sk.initialize, or at the start of the next frame before the next main Step callback if SK is already initialized.
     /// <https://stereokit.net/Pages/StereoKit/SK/AddStepper.html>
-    pub fn add<T: IStepper + 'static>(stepper_id: impl AsRef<str>, stepper: T) -> Self {
+    pub fn add<T: IStepper + Send + 'static>(stepper_id: impl AsRef<str>, stepper: T) -> Self {
         let stepper_type = stepper.type_id();
         StepperAction::Add(Box::new(stepper), stepper_type, stepper_id.as_ref().to_string())
     }

@@ -12,18 +12,20 @@ use stereokit_rust::{
 
 pub struct AStepper {
     id: StepperId,
-    sk: Option<Rc<RefCell<SkInfo>>>,
+    sk_info: Option<Rc<RefCell<SkInfo>>>,
     pub transform: Matrix,
     round_cube: Mesh,
-    text: String,
+    pub text: String,
     text_style: TextStyle,
 }
+
+unsafe impl Send for AStepper {}
 
 impl Default for AStepper {
     fn default() -> Self {
         Self {
             id: "AStepper".to_string(),
-            sk: None,
+            sk_info: None,
             transform: Matrix::tr(&((Vec3::NEG_Z * 2.5) + Vec3::Y), &Quat::from_angles(0.0, 180.0, 0.0)),
             round_cube: Mesh::generate_rounded_cube(Vec3::ONE / 5.0, 0.2, Some(16)),
             text: "Stepper A".to_owned(),
@@ -33,9 +35,9 @@ impl Default for AStepper {
 }
 
 impl IStepper for AStepper {
-    fn initialize(&mut self, id: StepperId, sk: Rc<RefCell<SkInfo>>) -> bool {
+    fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
         self.id = id;
-        self.sk = Some(sk);
+        self.sk_info = Some(sk_info);
         true
     }
 

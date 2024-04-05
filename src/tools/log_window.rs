@@ -31,6 +31,8 @@ pub struct LogWindow<'a> {
     items_size: usize,
 }
 
+unsafe impl<'a> Send for LogWindow<'a> {}
+
 impl<'a> LogWindow<'a> {
     pub fn new(log_log: &'a Mutex<Vec<LogItem>>) -> Self {
         let enabled = false;

@@ -50,6 +50,8 @@ pub struct Text1 {
     radio_off: Sprite,
 }
 
+unsafe impl Send for Text1 {}
+
 impl Default for Text1 {
     fn default() -> Self {
         Self {

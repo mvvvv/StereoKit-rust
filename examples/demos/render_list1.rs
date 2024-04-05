@@ -12,7 +12,7 @@ use stereokit_rust::{
 
 pub struct RenderList1 {
     id: StepperId,
-    sk: Option<Rc<RefCell<SkInfo>>>,
+    sk_info: Option<Rc<RefCell<SkInfo>>>,
     pub window_pose: Pose,
     primary: RenderList,
     clear_primary: bool,
@@ -25,21 +25,23 @@ impl Default for RenderList1 {
     fn default() -> Self {
         Self {
             id: "RenderList1".to_string(),
-            sk: None,
+            sk_info: None,
             window_pose: Pose::new(Vec3::new(0.5, 1.5, -0.5), Some(Quat::from_angles(0.0, 180.0, 0.0))),
             primary: RenderList::primary(),
             clear_primary: false,
             transform: Matrix::tr(&((Vec3::NEG_Z * 2.5) + Vec3::Y), &Quat::from_angles(0.0, 180.0, 0.0)),
-            text: "Stepper A".to_owned(),
+            text: "RenderList1".to_owned(),
             text_style: Text::make_style(Font::default(), 0.3, RED),
         }
     }
 }
 
+unsafe impl Send for RenderList1 {}
+
 impl IStepper for RenderList1 {
-    fn initialize(&mut self, id: StepperId, sk: Rc<RefCell<SkInfo>>) -> bool {
+    fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
         self.id = id;
-        self.sk = Some(sk);
+        self.sk_info = Some(sk_info);
         true
     }
 

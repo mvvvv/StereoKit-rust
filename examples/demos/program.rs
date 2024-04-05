@@ -39,7 +39,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
     let mut window_demo_pose = Pose::new(Vec3::new(-0.7, 1.5, -0.3), Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0))));
     let window_demo_show = false;
 
-    let demo_win_width = 50.0 * CM;
+    let demo_win_width = 55.0 * CM;
 
     let mut last_focus = AppFocus::Hidden;
 

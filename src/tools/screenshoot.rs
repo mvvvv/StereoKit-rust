@@ -23,6 +23,8 @@ pub struct ScreenshotViewer {
     screen: Option<Sprite>,
 }
 
+unsafe impl Send for ScreenshotViewer {}
+
 impl Default for ScreenshotViewer {
     fn default() -> Self {
         let mut tex = Tex::gen_color(Color128::WHITE, 800, 600, TexType::Image, TexFormat::RGBA32Linear);
