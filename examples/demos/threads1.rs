@@ -6,8 +6,7 @@ use std::{
         atomic::{AtomicBool, Ordering},
         Arc,
     },
-    thread::{self, JoinHandle},
-    time,
+    thread, time,
 };
 
 use stereokit_rust::{
@@ -24,7 +23,6 @@ pub struct Threads1 {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
     run_for_ever: Arc<AtomicBool>,
-    thread_remove: Option<JoinHandle<()>>,
     pub transform: Matrix,
     text: String,
     text_style: TextStyle,
@@ -38,7 +36,6 @@ impl Default for Threads1 {
             id: "Threads1".into(),
             sk_info: None,
             run_for_ever: Arc::new(AtomicBool::new(true)),
-            thread_remove: None,
             transform: Matrix::tr(&((Vec3::NEG_Z * 3.5) + Vec3::Y), &Quat::from_angles(0.0, 180.0, 0.0)),
             text: "Threads 1".into(),
             text_style: Text::make_style(Font::default(), 0.3, GREEN_YELLOW),
@@ -76,7 +73,7 @@ impl IStepper for Threads1 {
                 thread::sleep(time::Duration::from_millis(500));
             }
         });
-        self.thread_remove = Some(thread::spawn(move || {
+        thread::spawn(move || {
             while run_for_ever2.load(Ordering::Relaxed) {
                 if let Err(error) = event_loop_proxy2.send_event(StepperAction::remove_all(TypeId::of::<AStepper>())) {
                     Log::err(format!("Thread1, Can't send_event remove_all AStepper: {}", error));
@@ -90,7 +87,7 @@ impl IStepper for Threads1 {
             {
                 Log::err(format!("Thread1, can't send_event final remove_all AStepper: {:?}", error));
             }
-        }));
+        });
         true
     }
 
