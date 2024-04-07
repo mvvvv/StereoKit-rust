@@ -30,7 +30,7 @@ pub struct Threads2 {
     sk_info: Option<Rc<RefCell<SkInfo>>>,
     model: Model,
     run_for_ever: Arc<AtomicBool>,
-    thread_remove: Option<JoinHandle<()>>,
+    thread_blinker: Option<JoinHandle<()>>,
     pub transform_model: Matrix,
     pub transform: Matrix,
     text: String,
@@ -46,7 +46,7 @@ impl Default for Threads2 {
             sk_info: None,
             model: Model::new(),
             run_for_ever: Arc::new(AtomicBool::new(true)),
-            thread_remove: None,
+            thread_blinker: None,
             transform_model: Matrix::t(Vec3::new(0.0, 1.0, -0.6)),
             transform: Matrix::tr(&((Vec3::NEG_Z * 3.5) + Vec3::Y), &Quat::from_angles(0.0, 180.0, 0.0)),
             text: "Threads2".into(),
@@ -86,7 +86,7 @@ impl IStepper for Threads2 {
             }
             Log::diag("close thread_add");
         });
-        self.thread_remove = Some(thread::spawn(move || {
+        self.thread_blinker = Some(thread::spawn(move || {
             let model = Model::find(MODEL_ID).unwrap();
             let blinker = Shader::from_file("shaders/blinker.hlsl.sks").unwrap();
             while run_for_ever2.load(Ordering::Relaxed) {
@@ -101,7 +101,7 @@ impl IStepper for Threads2 {
             if let Err(error) = thread_add.join() {
                 Log::err(format!("Thread1, thread_add panic  : {:?}", error));
             }
-            Log::diag("close thread_remove");
+            Log::diag("close thread_blinker");
         }));
         true
     }
@@ -112,7 +112,7 @@ impl IStepper for Threads2 {
 
     fn shutdown(&mut self) {
         self.run_for_ever.store(false, Ordering::SeqCst);
-        if let Some(thread) = self.thread_remove.take() {
+        if let Some(thread) = self.thread_blinker.take() {
             if let Err(error) = thread.join() {
                 Log::err(format!("Thread1, thread_add panic  : {:?}", error));
             }
