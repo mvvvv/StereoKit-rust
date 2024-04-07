@@ -3,7 +3,7 @@ use std::{cell::RefCell, mem::transmute, rc::Rc};
 use stereokit_rust::{
     font::Font,
     maths::{units::CM, Matrix, Pose, Quat, Vec2, Vec3},
-    sk::{IStepper, SkInfo, StepperAction, StepperId},
+    sk::{IStepper, MainThreadToken, SkInfo, StepperAction, StepperId},
     sprite::Sprite,
     system::{Log, Text, TextContext, TextStyle},
     ui::{Ui, UiBtnLayout},
@@ -82,13 +82,13 @@ impl IStepper for Text1 {
         true
     }
 
-    fn step(&mut self, _event_report: &[StepperAction]) {
-        self.draw()
+    fn step(&mut self, token: &MainThreadToken) {
+        self.draw(token)
     }
 }
 
 impl Text1 {
-    fn draw(&mut self) {
+    fn draw(&mut self, token: &MainThreadToken) {
         Ui::window_begin(
             "Text options",
             &mut self.window_demo_pose,
@@ -162,6 +162,6 @@ impl Text1 {
 
         Ui::window_end();
 
-        Text::add_at(&self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
+        Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
     }
 }

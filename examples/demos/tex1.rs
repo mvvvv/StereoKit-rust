@@ -1,7 +1,7 @@
 use stereokit_rust::material::{Cull, Material};
 use stereokit_rust::mesh::Mesh;
 use stereokit_rust::model::Model;
-use stereokit_rust::sk::{IStepper, SkInfo, StepperAction, StepperId};
+use stereokit_rust::sk::{IStepper, MainThreadToken, SkInfo, StepperId};
 use stereokit_rust::system::{Handed, Input, Log};
 use stereokit_rust::tex::{Tex, TexFormat, TexType};
 use stereokit_rust::util::{
@@ -314,8 +314,9 @@ impl IStepper for Tex1 {
         true
     }
 
-    fn step(&mut self, _event_report: &[StepperAction]) {
+    fn step(&mut self, token: &MainThreadToken) {
         self.panels.draw(
+            token,
             Mat4::IDENTITY.mul(Mat4::from_scale_rotation_translation(
                 Vec3::ONE * 0.25,
                 Quat::from_rotation_y(0.0),

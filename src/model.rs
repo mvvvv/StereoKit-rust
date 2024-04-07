@@ -1,4 +1,5 @@
 use crate::maths::{Bool32T, Matrix};
+use crate::sk::MainThreadToken;
 use crate::{
     material::{Cull, Material, MaterialT},
     maths::{Bounds, Ray, Vec3},
@@ -244,7 +245,13 @@ impl Model {
     /// * layer - if None has default value of Layer0
     ///
     /// see also [`stereokit::StereoKitDraw::model_draw`]
-    pub fn draw(&self, transform: impl Into<Matrix>, color_linear: Option<Color128>, layer: Option<RenderLayer>) {
+    pub fn draw(
+        &self,
+        _token: &MainThreadToken,
+        transform: impl Into<Matrix>,
+        color_linear: Option<Color128>,
+        layer: Option<RenderLayer>,
+    ) {
         let color_linear = match color_linear {
             Some(c) => c,
             None => Color128::WHITE,
@@ -262,6 +269,7 @@ impl Model {
     /// see also [`stereokit::StereoKitDraw::model_draw`]
     pub fn draw_with_material<M: AsRef<Material>>(
         &self,
+        _token: &MainThreadToken,
         material_override: M,
         transform: impl Into<Matrix>,
         color_linear: Option<Color128>,

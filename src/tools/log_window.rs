@@ -4,7 +4,7 @@ use crate::{
     font::Font,
     material::Cull,
     maths::{units::CM, Matrix, Pose, Vec2, Vec3},
-    sk::{IStepper, SkInfo, StepperAction, StepperId},
+    sk::{IStepper, MainThreadToken, SkInfo, StepperAction, StepperId},
     system::{LogLevel, Text, TextAlign, TextFit, TextStyle},
     ui::{Ui, UiCut},
     util::Color128,
@@ -64,18 +64,18 @@ impl<'a> LogWindow<'a> {
         self.enabled = value;
     }
 
-    fn draw(&mut self) {
+    fn draw(&mut self, token: &MainThreadToken) {
         if !self.enabled {
             return;
         };
 
         Ui::window_begin("Log", &mut self.pose, Some(Vec2::new(140.0, 0.0) * CM), None, None);
-        self.draw_logs();
+        self.draw_logs(token);
         Ui::hseparator();
         Ui::window_end();
     }
 
-    fn draw_logs(&mut self) {
+    fn draw_logs(&mut self, token: &MainThreadToken) {
         let text_size = Vec2::new(Ui::get_layout_remaining().x, 0.024);
         const COUNT_F: f32 = 15.0;
         let items = self.log_log.lock().unwrap();
@@ -120,6 +120,7 @@ impl<'a> LogWindow<'a> {
 
                 let y = (i - index) as f32 * -text_size.y;
                 Text::add_in(
+                    token,
                     item.text.trim(),
                     Matrix::t(start + Vec3::new(0.0, y, -0.004)),
                     text_size,
@@ -136,6 +137,7 @@ impl<'a> LogWindow<'a> {
                 if item.count > 1 {
                     let at = Vec3::new(start.x - text_size.x, start.y + y, start.z - 0.014);
                     Text::add_in(
+                        token,
                         item.count.to_string(),
                         Matrix::t(at),
                         Vec2::new(text_size.x + 0.22, text_size.y),
@@ -166,8 +168,8 @@ impl<'a> IStepper for LogWindow<'a> {
         true
     }
 
-    fn step(&mut self, event_report: &[StepperAction]) {
-        for e in event_report.iter() {
+    fn step(&mut self, token: &MainThreadToken) {
+        for e in token.get_event_report().iter() {
             if let StepperAction::Event(_, key, _) = e {
                 if key.eq("ShowLogWindow") {
                     self.enabled = !self.enabled
@@ -175,7 +177,7 @@ impl<'a> IStepper for LogWindow<'a> {
             }
         }
 
-        self.draw()
+        self.draw(token)
     }
 
     fn shutdown(&mut self) {}

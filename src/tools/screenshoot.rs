@@ -2,7 +2,7 @@ use std::{cell::RefCell, rc::Rc, sync::Mutex};
 
 use crate::{
     maths::{units::CM, Pose, Quat, Vec2, Vec3},
-    sk::{IStepper, SkInfo, StepperAction, StepperId},
+    sk::{IStepper, MainThreadToken, SkInfo, StepperAction, StepperId},
     system::{Assets, Log, Renderer},
     tex::{Tex, TexFormat, TexType},
     ui::Ui,
@@ -45,7 +45,7 @@ impl ScreenshotViewer {
         self.enabled = value;
     }
 
-    fn draw(&mut self) {
+    fn draw(&mut self, token: &MainThreadToken) {
         if !self.enabled {
             return;
         };
@@ -89,6 +89,7 @@ impl ScreenshotViewer {
             camera_at.orientation = Quat::look_dir(camera_at.get_forward() * -1.0);
 
             Renderer::screenshot_capture(
+                token,
                 |dots, width, height| {
                     Log::info(format!("data lenght {} -> size {}/{}", dots.len(), width, height));
                     let tex = Tex::find("ScreenshotTex").ok();
@@ -137,14 +138,14 @@ impl IStepper for ScreenshotViewer {
         true
     }
 
-    fn step(&mut self, event_report: &[StepperAction]) {
-        for e in event_report.iter() {
+    fn step(&mut self, token: &MainThreadToken) {
+        for e in token.get_event_report().iter() {
             if let StepperAction::Event(_, key, _) = e {
                 if key.eq("ShowScreenshotWindow") {
                     self.enabled = !self.enabled
                 }
             }
         }
-        self.draw()
+        self.draw(token)
     }
 }

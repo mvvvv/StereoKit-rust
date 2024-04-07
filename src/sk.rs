@@ -575,6 +575,18 @@ impl SkInfo {
     }
 }
 
+/// A token you only find on the main thread. It is required to call rendering functions
+pub struct MainThreadToken {
+    event_report: Vec<StepperAction>,
+}
+
+impl MainThreadToken {
+    /// Get the event_report of this step
+    pub fn get_event_report(&self) -> &Vec<StepperAction> {
+        &self.event_report
+    }
+}
+
 /// This class contains functions for running the StereoKit library!
 /// <https://stereokit.net/Pages/StereoKit/SK.html>
 pub struct Sk {
@@ -706,7 +718,8 @@ impl Sk {
 
     /// Get an event_loop_proxy clone to send events
     pub fn get_event_loop_proxy(&self) -> EventLoopProxy<StepperAction> {
-        self.sk_info.borrow().get_event_loop_proxy()
+        let sk = self.sk_info.as_ref();
+        sk.borrow().get_event_loop_proxy().clone()
     }
 
     /// Lets StereoKit know it should quit! It’ll finish the current frame, and after that Step will return that it
@@ -728,12 +741,13 @@ impl Sk {
     /// <https://stereokit.net/Pages/StereoKit/SK/Run.html>
     ///
     /// see also [`crate::sk::sk_run_data`]
-    pub fn run<U: FnMut(&mut Sk), S: FnMut(&mut Sk)>(
+    pub fn run<U: FnMut(&mut Sk, &MainThreadToken), S: FnMut(&mut Sk)>(
         &mut self,
         event_loop: EventLoop<StepperAction>,
         mut on_step: U,
         mut on_shutdown: S,
     ) {
+        let mut token = MainThreadToken { event_report: vec![] };
         event_loop.set_control_flow(ControlFlow::Poll);
         event_loop
             .run(move |event, elwt| match event {
@@ -751,7 +765,7 @@ impl Sk {
                 Event::Suspended => Log::info("Suspended !!"),
                 Event::Resumed => Log::info("Resumed !!"),
                 Event::AboutToWait => {
-                    if !&self.step(&mut on_step) {
+                    if !&self.step(&mut on_step, &mut token) {
                         elwt.exit()
                     }
                 }
@@ -810,12 +824,11 @@ impl Sk {
     /// <https://stereokit.net/Pages/StereoKit/SK/Step.html>
     ///
     /// see also [`crate::sk::sk_step`]
-    pub fn step<F: FnMut(&mut Sk)>(&mut self, on_step: &mut F) -> bool {
+    pub fn step<F: FnMut(&mut Sk, &MainThreadToken)>(&mut self, on_step: &mut F, token: &mut MainThreadToken) -> bool {
         if unsafe { sk_step(None) } == 0 {
             return false;
         }
-
-        if !self.steppers.step() {
+        if !self.steppers.step(token) {
             self.quit(None)
         };
 
@@ -823,7 +836,7 @@ impl Sk {
             action();
         }
 
-        on_step(self);
+        on_step(self, token);
 
         true
     }
@@ -852,14 +865,16 @@ impl Sk {
     /// properties for the current state of StereoKit.
     /// <https://stereokit.net/Pages/StereoKit/SK/Settings.html>
     pub fn get_settings(&self) -> SkSettings {
-        self.sk_info.borrow().get_settings()
+        let sk = self.sk_info.as_ref();
+        sk.borrow().get_settings()
     }
 
     /// This structure contains information about the current system and its capabilities. There’s a lot of different MR
     /// devices, so it’s nice to have code for systems with particular characteristics!
     /// <https://stereokit.net/Pages/StereoKit/SK/System.html>
     pub fn get_system(&self) -> SystemInfo {
-        self.sk_info.borrow().get_system()
+        let sk = self.sk_info.as_ref();
+        sk.borrow().get_system()
     }
 
     /// An integer version Id! This is defined using a hex value with this format: 0xMMMMiiiiPPPPrrrr in order of
@@ -915,7 +930,7 @@ pub trait IStepper {
     /// This Step method will be called every frame of the application, as long as Enabled is true. This happens
     /// immediately before the main application’s Step callback.
     /// <https://stereokit.net/Pages/StereoKit.Framework/IStepper/Step.html>
-    fn step(&mut self, event_report: &[StepperAction]);
+    fn step(&mut self, token: &MainThreadToken);
 
     /// This is called when the IStepper is removed, or the application shuts down. This is always called on the main
     /// thread, and happens at the start of the next frame, before the main application’s Step callback.
@@ -1019,13 +1034,12 @@ pub struct Steppers {
     sk: Rc<RefCell<SkInfo>>,
     steppers: Vec<StepperHandler>,
     stepper_actions: VecDeque<StepperAction>,
-    event_report: Vec<StepperAction>,
 }
 
 impl Steppers {
     // the only way to create a Steppers manager
     pub fn new(sk: Rc<RefCell<SkInfo>>) -> Self {
-        Self { sk, steppers: vec![], stepper_actions: VecDeque::new(), event_report: vec![] }
+        Self { sk, steppers: vec![], stepper_actions: VecDeque::new() }
     }
 
     /// push an action to consumme befor next frame
@@ -1035,7 +1049,7 @@ impl Steppers {
 
     /// Deque all the actions, create the frame event report, execute all the stepper if quit hasn't be asked
     /// return false if sk_quit must be triggered.
-    pub fn step(&mut self) -> bool {
+    pub fn step(&mut self, token: &mut MainThreadToken) -> bool {
         while let Some(action) = self.stepper_actions.pop_front() {
             match action {
                 StepperAction::Add(mut stepper, type_id, stepper_id) => {
@@ -1059,15 +1073,15 @@ impl Steppers {
                     self.steppers.retain(|i| i.id != stepper_id);
                 }
                 StepperAction::Quit(_, _) => return false,
-                _ => self.event_report.push(action),
+                _ => token.event_report.push(action),
             }
         }
 
         for stepper_h in &mut self.steppers {
-            stepper_h.stepper.step(&self.event_report)
+            stepper_h.stepper.step(token)
         }
 
-        self.event_report.clear();
+        token.event_report.clear();
 
         true
     }

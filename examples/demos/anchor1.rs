@@ -6,7 +6,7 @@ use stereokit_rust::{
     material::Material,
     maths::{Matrix, Pose, Quat, Ray, Vec3},
     mesh::Mesh,
-    sk::{IStepper, SkInfo, StepperAction, StepperId},
+    sk::{IStepper, MainThreadToken, SkInfo, StepperId},
     system::{Handed, Input, Lines, Log, Text, TextStyle},
     ui::{Ui, UiCut},
     util::named_colors::{RED, WHITE},
@@ -48,13 +48,13 @@ impl IStepper for Anchor1 {
         true
     }
 
-    fn step(&mut self, _event_report: &[StepperAction]) {
-        self.draw()
+    fn step(&mut self, token: &MainThreadToken) {
+        self.draw(token)
     }
 }
 
 impl Anchor1 {
-    fn draw(&mut self) {
+    fn draw(&mut self, token: &MainThreadToken) {
         // we need a pointer
         let right_hand = Input::hand(Handed::Right);
         let hand_pose = right_hand.palm;
@@ -62,7 +62,7 @@ impl Anchor1 {
         if right_hand.is_just_pinched() {
             Log::diag(format!("{:?}", ray));
         }
-        Lines::add(ray.position, ray.position + ray.direction * 0.5, WHITE, None, 0.01);
+        Lines::add(token, ray.position, ray.position + ray.direction * 0.5, WHITE, None, 0.01);
 
         // window for working with the anchors
         Ui::window_begin("Anchors", &mut self.window_pose, None, None, None);
@@ -102,7 +102,7 @@ impl Anchor1 {
         let mut selected: Option<&Anchor> = None;
         for anchor in self.anchors.iter() {
             let a_pose = anchor.get_pose();
-            Lines::add_axis(a_pose, Some(0.1), None);
+            Lines::add_axis(token, a_pose, Some(0.1), None);
             if a_pose.position.in_radius(pose_tip.position, 0.05) {
                 selected = Some(anchor);
             }
@@ -111,6 +111,7 @@ impl Anchor1 {
         // outline the one pointed
         if let Some(anchor_selected) = selected {
             Mesh::cube().draw(
+                token,
                 &self.ui_box_material,
                 anchor_selected.get_pose().to_matrix(Some(Vec3::ONE * 0.1)),
                 None,
@@ -122,6 +123,6 @@ impl Anchor1 {
         for anchor in Anchor::new_anchors() {
             Log::info(format!("New anchor : {}", anchor.get_name()));
         }
-        Text::add_at(&self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
+        Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
     }
 }

@@ -4,7 +4,7 @@ use stereokit_rust::{
     font::Font,
     maths::{Matrix, Pose, Quat, Vec3},
     render_list::RenderList,
-    sk::{IStepper, SkInfo, StepperAction, StepperId},
+    sk::{IStepper, MainThreadToken, SkInfo, StepperId},
     system::{Text, TextStyle},
     ui::Ui,
     util::named_colors::RED,
@@ -45,13 +45,13 @@ impl IStepper for RenderList1 {
         true
     }
 
-    fn step(&mut self, _event_report: &[StepperAction]) {
-        self.draw()
+    fn step(&mut self, token: &MainThreadToken) {
+        self.draw(token)
     }
 }
 
 impl RenderList1 {
-    fn draw(&mut self) {
+    fn draw(&mut self, token: &MainThreadToken) {
         if self.clear_primary {
             self.primary.clear()
         };
@@ -63,6 +63,6 @@ impl RenderList1 {
         };
         Ui::window_end();
 
-        Text::add_at(&self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
+        Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
     }
 }

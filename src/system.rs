@@ -16,7 +16,7 @@ use crate::{
     model::{Model, ModelT, _ModelT},
     render_list::{RenderList, _RenderListT},
     shader::{Shader, ShaderT, _ShaderT},
-    sk::OriginMode,
+    sk::{MainThreadToken, OriginMode},
     sound::{Sound, SoundT, _SoundT},
     sprite::{Sprite, _SpriteT},
     tex::{Tex, TexFormat, TexT, _TexT},
@@ -708,7 +708,7 @@ impl Hierarchy {
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/Enabled.html>
     ///
     /// see also [crate::system::hierarchy_set_enabled]
-    pub fn enabled(enable: bool) {
+    pub fn enabled(_token: &MainThreadToken, enable: bool) {
         unsafe { hierarchy_set_enabled(enable as Bool32T) }
     }
 
@@ -717,7 +717,7 @@ impl Hierarchy {
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/Enabled.html>
     ///
     /// see also [crate::system::hierarchy_is_enabled]
-    pub fn is_enabled() -> bool {
+    pub fn is_enabled(_token: &MainThreadToken) -> bool {
         unsafe { hierarchy_is_enabled() != 0 }
     }
 
@@ -725,7 +725,7 @@ impl Hierarchy {
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/Pop.html>
     ///
     /// see also [crate::system::hierarchy_pop]
-    pub fn pop() {
+    pub fn pop(_token: &MainThreadToken) {
         unsafe { hierarchy_pop() }
     }
 
@@ -735,7 +735,7 @@ impl Hierarchy {
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/Push.html>
     ///
     /// see also [crate::system::hierarchy_pop]
-    pub fn push<M: Into<Matrix>>(transform: M) {
+    pub fn push<M: Into<Matrix>>(_token: &MainThreadToken, transform: M) {
         unsafe { hierarchy_push(&transform.into()) }
     }
 
@@ -743,7 +743,7 @@ impl Hierarchy {
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/ToLocal.html>
     ///
     /// see also [crate::system::hierarchy_to_local_point]
-    pub fn to_local_point<V: Into<Vec3>>(world_point: V) -> Vec3 {
+    pub fn to_local_point<V: Into<Vec3>>(_token: &MainThreadToken, world_point: V) -> Vec3 {
         unsafe { hierarchy_to_local_point(&world_point.into()) }
     }
 
@@ -751,7 +751,7 @@ impl Hierarchy {
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/ToLocal.html>
     ///
     /// see also [crate::system::hierarchy_to_local_rotation]
-    pub fn to_local_rotation<Q: Into<Quat>>(world_orientation: Q) -> Quat {
+    pub fn to_local_rotation<Q: Into<Quat>>(_token: &MainThreadToken, world_orientation: Q) -> Quat {
         unsafe { hierarchy_to_local_rotation(&world_orientation.into()) }
     }
 
@@ -759,7 +759,7 @@ impl Hierarchy {
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/ToLocal.html>
     ///
     /// see also [crate::system::hierarchy_to_local_pose]
-    pub fn to_local_pose<P: Into<Pose>>(world_pose: P) -> Pose {
+    pub fn to_local_pose<P: Into<Pose>>(_token: &MainThreadToken, world_pose: P) -> Pose {
         unsafe { hierarchy_to_local_pose(&world_pose.into()) }
     }
 
@@ -768,7 +768,7 @@ impl Hierarchy {
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/ToLocalDirection.html>
     ///
     /// see also [crate::system::hierarchy_to_local_direction]
-    pub fn to_local_direction<V: Into<Vec3>>(world_direction: V) -> Vec3 {
+    pub fn to_local_direction<V: Into<Vec3>>(_token: &MainThreadToken, world_direction: V) -> Vec3 {
         unsafe { hierarchy_to_local_direction(&world_direction.into()) }
     }
 
@@ -776,7 +776,7 @@ impl Hierarchy {
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/ToWorld.html>
     ///
     /// see also [crate::system::hierarchy_to_world_point]
-    pub fn to_world_point<V: Into<Vec3>>(local_point: V) -> Vec3 {
+    pub fn to_world_point<V: Into<Vec3>>(_token: &MainThreadToken, local_point: V) -> Vec3 {
         unsafe { hierarchy_to_world_point(&local_point.into()) }
     }
 
@@ -784,7 +784,7 @@ impl Hierarchy {
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/ToWorld.html>
     ///
     /// see also [crate::system::hierarchy_to_world_rotation]
-    pub fn to_world_rotation<Q: Into<Quat>>(local_orientation: Q) -> Quat {
+    pub fn to_world_rotation<Q: Into<Quat>>(_token: &MainThreadToken, local_orientation: Q) -> Quat {
         unsafe { hierarchy_to_world_rotation(&local_orientation.into()) }
     }
 
@@ -792,7 +792,7 @@ impl Hierarchy {
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/ToWorld.html>
     ///
     /// see also [crate::system::hierarchy_to_world_pose]
-    pub fn to_world_pose<P: Into<Pose>>(local_pose: P) -> Pose {
+    pub fn to_world_pose<P: Into<Pose>>(_token: &MainThreadToken, local_pose: P) -> Pose {
         unsafe { hierarchy_to_world_pose(&local_pose.into()) }
     }
 
@@ -801,7 +801,7 @@ impl Hierarchy {
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/ToWorldDirection.html>
     ///
     /// see also [crate::system::hierarchy_to_world_direction]
-    pub fn to_world_direction<V: Into<Vec3>>(local_direction: V) -> Vec3 {
+    pub fn to_world_direction<V: Into<Vec3>>(_token: &MainThreadToken, local_direction: V) -> Vec3 {
         unsafe { hierarchy_to_world_direction(&local_direction.into()) }
     }
 }
@@ -1884,7 +1884,14 @@ impl Lines {
     /// * color_end - If None, uses color_start.
     ///
     /// see also [crate::system::line_add]
-    pub fn add<V: Into<Vec3>>(start: V, end: V, color_start: Color32, color_end: Option<Color32>, thickness: f32) {
+    pub fn add<V: Into<Vec3>>(
+        _token: &MainThreadToken,
+        start: V,
+        end: V,
+        color_start: Color32,
+        color_end: Option<Color32>,
+        thickness: f32,
+    ) {
         let color_end = color_end.unwrap_or(color_start);
         unsafe { line_add(start.into(), end.into(), color_start, color_end, thickness) }
     }
@@ -1895,6 +1902,7 @@ impl Lines {
     ///
     /// see also [crate::system::line_add]
     pub fn add_ray<R: Into<Ray>>(
+        _token: &MainThreadToken,
         ray: R,
         lenght: f32,
         color_start: Color32,
@@ -1912,7 +1920,7 @@ impl Lines {
     /// * color_end - If None, uses color_start.
     ///
     /// see also [crate::system::line_add]
-    pub fn add_many(points: &[LinePoint]) {
+    pub fn add_list(_token: &MainThreadToken, points: &[LinePoint]) {
         unsafe { line_add_listv(points.as_ptr(), points.len() as i32) }
     }
 
@@ -1924,12 +1932,13 @@ impl Lines {
     /// * thickness - If None, will use a faster renderer with a thickness of one tenth of the size.
     ///
     /// see also [crate::system::line_add]
-    pub fn add_axis<P: Into<Pose>>(at_pose: P, size: Option<f32>, thickness: Option<f32>) {
+    pub fn add_axis<P: Into<Pose>>(token: &MainThreadToken, at_pose: P, size: Option<f32>, thickness: Option<f32>) {
         let at_pose: Pose = at_pose.into();
         let size = size.unwrap_or(0.01);
         match thickness {
             Some(thickness) => {
                 Self::add(
+                    token,
                     at_pose.position,
                     at_pose.orientation.mul_vec3(at_pose.position + Vec3::X) * size,
                     Color32::new(255, 0, 0, 255),
@@ -1937,6 +1946,7 @@ impl Lines {
                     thickness,
                 );
                 Self::add(
+                    token,
                     at_pose.position,
                     at_pose.orientation.mul_vec3(at_pose.position + Vec3::Y) * size,
                     Color32::new(0, 255, 0, 255),
@@ -1944,6 +1954,7 @@ impl Lines {
                     thickness,
                 );
                 Self::add(
+                    token,
                     at_pose.position,
                     at_pose.orientation.mul_vec3(at_pose.position + Vec3::Z) * size,
                     Color32::new(0, 0, 255, 255),
@@ -1951,6 +1962,7 @@ impl Lines {
                     thickness,
                 );
                 Self::add(
+                    token,
                     at_pose.position,
                     at_pose.orientation.mul_vec3(at_pose.position + Vec3::FORWARD) * size * 0.5,
                     Color32::new(255, 255, 255, 255),
@@ -2551,6 +2563,7 @@ impl Renderer {
     ///
     /// see also [`crate::system::render_add_mesh`]
     pub fn add_mesh(
+        _token: &MainThreadToken,
         mesh: impl AsRef<Mesh>,
         material: impl AsRef<Material>,
         transform: impl Into<Matrix>,
@@ -2572,6 +2585,7 @@ impl Renderer {
     ///
     /// see also [`crate::system::render_add_model`]
     pub fn add_model(
+        _token: &MainThreadToken,
         model: impl AsRef<Model>,
         transform: impl Into<Matrix>,
         color: Option<Color128>,
@@ -2587,7 +2601,7 @@ impl Renderer {
     /// <https://stereokit.net/Pages/StereoKit/Renderer/Blit.html>
     ///
     /// see also [`crate::system::render_blit`]
-    pub fn blit(tex: impl AsRef<Tex>, material: impl AsRef<Material>) {
+    pub fn blit(_token: &MainThreadToken, tex: impl AsRef<Tex>, material: impl AsRef<Material>) {
         unsafe { render_blit(tex.as_ref().0.as_ptr(), material.as_ref().0.as_ptr()) }
     }
 
@@ -2613,6 +2627,7 @@ impl Renderer {
     ///
     /// see also [`crate::system::render_to`]
     pub fn render_to<M: Into<Matrix>>(
+        _token: &MainThreadToken,
         to_render_target: impl AsRef<Tex>,
         camera: M,
         projection: M,
@@ -2646,6 +2661,7 @@ impl Renderer {
     ///
     /// see also [`crate::system::render_screenshot_pose`]
     pub fn screenshot(
+        _token: &MainThreadToken,
         filename: impl AsRef<Path>,
         file_quality: i32,
         viewpoint: Pose,
@@ -2671,6 +2687,7 @@ impl Renderer {
     ///
     /// see also [`crate::system::render_screenshot_pose`]
     pub fn screenshot_capture<F: FnMut(&[Color32], usize, usize)>(
+        _token: &MainThreadToken,
         mut on_screenshot: F,
         viewpoint: Pose,
         width: i32,
@@ -2703,6 +2720,7 @@ impl Renderer {
     /// see also [`crate::system::render_screenshot_pose`]
     #[allow(clippy::too_many_arguments)]
     pub fn screenshot_viewpoint<M: Into<Matrix>, F: FnMut(&[Color32], usize, usize)>(
+        _token: &MainThreadToken,
         mut on_screenshot: F,
         camera: M,
         projection: M,
@@ -3261,6 +3279,7 @@ impl Text {
     /// see also [`crate::system::text_add_at`]
     #[allow(clippy::too_many_arguments)]
     pub fn add_at(
+        _token: &MainThreadToken,
         text: impl AsRef<str>,
         transform: impl Into<Matrix>,
         text_style: Option<TextStyle>,
@@ -3306,6 +3325,7 @@ impl Text {
     /// see also [`crate::system::text_add_in`]
     #[allow(clippy::too_many_arguments)]
     pub fn add_in(
+        _token: &MainThreadToken,
         text: impl AsRef<str>,
         transform: impl Into<Matrix>,
         size: impl Into<Vec2>,

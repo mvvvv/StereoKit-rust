@@ -2,7 +2,7 @@ use std::{cell::RefCell, rc::Rc};
 
 use crate::{
     maths::{Matrix, Quat, Vec2, Vec3},
-    sk::{IStepper, SkInfo, StepperAction, StepperId},
+    sk::{IStepper, MainThreadToken, SkInfo, StepperId},
     system::{Handed, Input, Renderer},
     util::Time,
 };
@@ -29,13 +29,13 @@ impl IStepper for FlyOver {
         true
     }
 
-    fn step(&mut self, _event_report: &[StepperAction]) {
-        self.draw()
+    fn step(&mut self, token: &MainThreadToken) {
+        self.draw(token)
     }
 }
 
 impl FlyOver {
-    fn draw(&mut self) {
+    fn draw(&mut self, _token: &MainThreadToken) {
         //----- move
         let camera_pose = Renderer::get_camera_root().get_pose();
         let move_ctrler = Input::controller(Handed::Left);

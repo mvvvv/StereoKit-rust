@@ -5,7 +5,7 @@ use stereokit_rust::material::{Cull, Material, Transparency};
 use stereokit_rust::maths::{Matrix, Quat, Vec3};
 use stereokit_rust::model::{AnimMode, Model};
 use stereokit_rust::shader::Shader;
-use stereokit_rust::sk::{IStepper, SkInfo, StepperAction, StepperId};
+use stereokit_rust::sk::{IStepper, MainThreadToken, SkInfo, StepperId};
 use stereokit_rust::system::{Handed, Input, Log};
 use stereokit_rust::tex::SHCubemap;
 use stereokit_rust::util::named_colors::{DARK_RED, WHITE};
@@ -86,8 +86,8 @@ impl IStepper for Anim1 {
         true
     }
 
-    fn step(&mut self, _event_report: &[StepperAction]) {
-        self.mobile.draw(self.transform, None, None);
+    fn step(&mut self, token: &MainThreadToken) {
+        self.mobile.draw(token, self.transform, None, None);
 
         if self.render_now {
             match self.stage % 3 {

@@ -1,5 +1,6 @@
 use crate::{
     maths::{Matrix, Vec2},
+    sk::MainThreadToken,
     system::{IAsset, TextAlign},
     tex::{Tex, TexT},
     util::Color32,
@@ -252,7 +253,13 @@ impl Sprite {
     /// * color_linear - if None has default value of WHITE
     ///
     /// see also [`stereokit::StereoKitDraw::sprite_draw`]
-    pub fn draw(&self, transform: impl Into<Matrix>, text_align: TextAlign, color_linear: Option<Color32>) {
+    pub fn draw(
+        &self,
+        _token: &MainThreadToken,
+        transform: impl Into<Matrix>,
+        text_align: TextAlign,
+        color_linear: Option<Color32>,
+    ) {
         let color_linear = color_linear.unwrap_or(Color32::WHITE);
         unsafe { sprite_draw(self.0.as_ptr(), transform.into(), text_align, color_linear) };
     }

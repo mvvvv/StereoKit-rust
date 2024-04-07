@@ -5,8 +5,8 @@ use std::{
 
 use crate::{
     material::{Cull, Material, MaterialT},
-    maths::{Bool32T, Matrix, Vec2, Vec3, Vec4},
-    maths::{Bounds, Ray},
+    maths::{Bool32T, Bounds, Matrix, Ray, Vec2, Vec3, Vec4},
+    sk::MainThreadToken,
     system::{IAsset, RenderLayer},
     util::{Color128, Color32},
     StereoKitError,
@@ -439,6 +439,7 @@ impl Mesh {
     /// see also [`stereokit::StereoKitDraw::mesh_draw`]
     pub fn draw(
         &self,
+        _token: &MainThreadToken,
         material: impl AsRef<Material>,
         transform: impl Into<Matrix>,
         color_linear: Option<Color128>,

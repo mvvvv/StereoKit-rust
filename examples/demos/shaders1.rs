@@ -6,7 +6,7 @@ use stereokit_rust::{
     maths::{Matrix, Quat, Vec2, Vec3},
     mesh::{Mesh, Vertex},
     shader::Shader,
-    sk::{IStepper, SkInfo, StepperAction, StepperId},
+    sk::{IStepper, MainThreadToken, SkInfo, StepperId},
     system::{Text, TextStyle},
     tex::Tex,
     util::{
@@ -98,23 +98,24 @@ impl IStepper for Shader1 {
         true
     }
 
-    fn step(&mut self, _event_report: &[StepperAction]) {
-        self.draw()
+    fn step(&mut self, token: &MainThreadToken) {
+        self.draw(token)
     }
 }
 
 impl Shader1 {
-    fn draw(&mut self) {
-        self.mesh.draw(&self.material_red, self.transform_mesh, None, None);
+    fn draw(&mut self, token: &MainThreadToken) {
+        self.mesh.draw(token, &self.material_red, self.transform_mesh, None, None);
 
         let mut tex_scale = (Time::get_totalf() % 360.0).to_radians().sin().abs() * 2.0;
         let ptr: *mut c_void = &mut tex_scale as *mut _ as *mut c_void;
         self.material_green.get_all_param_info().set_data("tex_scale", MaterialParam::Float, ptr);
-        self.plane.draw(&self.material_green, self.transform_plane, None, None);
+        self.plane.draw(token, &self.material_green, self.transform_plane, None, None);
 
         self.fps = ((1.0 / Time::get_step()) + self.fps) / 2.0;
 
         Text::add_at(
+            token,
             format!("{}\n{:?} FPS", &self.text, self.fps as i16),
             self.transform_text,
             Some(self.text_style),

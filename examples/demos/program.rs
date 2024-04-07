@@ -152,7 +152,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
     // }
 
     // Open or close the log window
-    let event_loop_proxy = sk.get_event_loop_proxy().clone();
+    let event_loop_proxy = sk.get_event_loop_proxy();
     let send_event_show_log = move || {
         let _ = &event_loop_proxy.send_event(StepperAction::event("main".to_string(), "ShowLogWindow", "1"));
     };
@@ -267,7 +267,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
 
     sk.run(
         event_loop,
-        |sk| {
+        |sk, token| {
             if last_focus != sk.get_app_focus() {
                 last_focus = sk.get_app_focus();
                 Log::info(format!("App focus changed to : {:?}", last_focus));
@@ -318,8 +318,8 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
 
             // draw a floor if needed
             //let transform = if World::has_bounds() { World::get_bounds_pose().to_matrix(None) } else { floor_tr };
-            floor_model.draw(floor_tr, None, None);
-            Lines::add_axis(Pose::IDENTITY, Some(0.5), None);
+            floor_model.draw(token, floor_tr, None, None);
+            Lines::add_axis(token, Pose::IDENTITY, Some(0.5), None);
 
             if !window_demo_show {
                 Ui::window_begin("Demos", &mut window_demo_pose, Some(Vec2::new(demo_win_width, 0.0)), None, None);

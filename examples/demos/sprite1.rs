@@ -5,7 +5,7 @@ use std::rc::Rc;
 use stereokit_rust::font::Font;
 use stereokit_rust::material::Material;
 use stereokit_rust::maths::{Matrix, Quat, Vec3};
-use stereokit_rust::sk::{IStepper, SkInfo, StepperAction, StepperId};
+use stereokit_rust::sk::{IStepper, MainThreadToken, SkInfo, StepperId};
 use stereokit_rust::sprite::{Sprite, SpriteType};
 use stereokit_rust::system::{AssetType, Assets, Lines, Log, Text, TextAlign, TextStyle};
 use stereokit_rust::tex::Tex;
@@ -115,20 +115,25 @@ impl IStepper for Sprite1 {
         true
     }
 
-    fn step(&mut self, _event_report: &[StepperAction]) {
-        self.sprite1.draw(Mat4::from_translation(glam::Vec3::new(-2.5, 1.5, -2.5)), TextAlign::Center, None);
+    fn step(&mut self, token: &MainThreadToken) {
+        self.sprite1
+            .draw(token, Mat4::from_translation(glam::Vec3::new(-2.5, 1.5, -2.5)), TextAlign::Center, None);
 
         self.sprite_ico.draw(
+            token,
             Mat4::from_rotation_translation(glam::Quat::from_rotation_y(PI), glam::Vec3::new(0.0, 1.5, -2.5)),
             TextAlign::BottomCenter,
             None,
         );
 
-        self.sprite3.draw(Mat4::from_translation(glam::Vec3::new(2.5, 1.5, -2.5)), TextAlign::YTop, None);
+        self.sprite3
+            .draw(token, Mat4::from_translation(glam::Vec3::new(2.5, 1.5, -2.5)), TextAlign::YTop, None);
 
-        self.sprite4.draw(Mat4::from_translation(glam::Vec3::new(0.0, 3.5, -2.5)), TextAlign::YTop, None);
+        self.sprite4
+            .draw(token, Mat4::from_translation(glam::Vec3::new(0.0, 3.5, -2.5)), TextAlign::YTop, None);
 
         Text::add_at(
+            token,
             &self.title,
             Matrix::tr(&Vec3::new(0.0, 1.0, -4.0), &Quat::from_angles(0.0, 180.0, 0.0)),
             Some(self.text_style),
@@ -140,9 +145,9 @@ impl IStepper for Sprite1 {
             None,
         );
 
-        Lines::add(Vec3::Z, Vec3::X, WHITE, None, 0.03);
+        Lines::add(token, Vec3::Z, Vec3::X, WHITE, None, 0.03);
 
-        Lines::add_axis(Matrix::t(Vec3::ONE * 2.0).get_pose(), None, None);
+        Lines::add_axis(token, Matrix::t(Vec3::ONE * 2.0).get_pose(), None, None);
     }
 
     fn shutdown(&mut self) {}

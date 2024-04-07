@@ -4,7 +4,7 @@ use crate::{
     material::Material,
     maths::{lerp, units::CM, Matrix, Plane, Pose, Quat, Vec3},
     mesh::{Inds, Mesh, Vertex},
-    sk::{IStepper, SkInfo, StepperAction, StepperId},
+    sk::{IStepper, MainThreadToken, SkInfo, StepperId},
     sound::Sound,
     sprite::Sprite,
     system::{
@@ -38,7 +38,7 @@ impl HandMenuItem {
 
     /// This draws the menu item on the radial menu!
     /// <https://stereokit.net/Pages/StereoKit.Framework/HandMenuItem/Draw.html
-    pub fn draw(&self, at: Vec3, _arc_length: f32, _angle: f32, focused: bool) {
+    pub fn draw(&self, token: &MainThreadToken, at: Vec3, _arc_length: f32, _angle: f32, focused: bool) {
         match &self.image {
             Some(sprite) => {
                 let height = TextStyle::default().get_char_height();
@@ -47,9 +47,10 @@ impl HandMenuItem {
                     true => Vec3::ONE * 1.2,
                     false => Vec3::ONE * 1.0,
                 };
-                Hierarchy::push(Matrix::ts(at, scale));
-                sprite.draw(Matrix::ts(offset, height * Vec3::ONE), TextAlign::Center, None);
+                Hierarchy::push(token, Matrix::ts(at, scale));
+                sprite.draw(token, Matrix::ts(offset, height * Vec3::ONE), TextAlign::Center, None);
                 Text::add_at(
+                    token,
                     &self.name,
                     Matrix::ts(at, Vec3::ONE * 0.5),
                     None,
@@ -60,7 +61,7 @@ impl HandMenuItem {
                     None,
                     None,
                 );
-                Hierarchy::pop();
+                Hierarchy::pop(token);
             }
             None => {
                 let scale = match focused {
@@ -68,6 +69,7 @@ impl HandMenuItem {
                     false => Vec3::ONE * 0.5,
                 };
                 Text::add_at(
+                    token,
                     &self.name,
                     Matrix::ts(at, scale),
                     None,
@@ -352,13 +354,13 @@ impl IStepper for HandMenuRadial {
 
     /// Part of IStepper, you shouldn’t be calling this yourself.
     /// <https://stereokit.net/Pages/StereoKit.Framework/HandMenuRadial/Step.html>
-    fn step(&mut self, _event_report: &[StepperAction]) {
+    fn step(&mut self, token: &MainThreadToken) {
         if self.active_hand == Handed::Max {
             for hand in [Handed::Left, Handed::Right] {
-                self.step_menu_indicator(hand);
+                self.step_menu_indicator(token, hand);
             }
         } else {
-            self.step_menu(Input::hand(self.active_hand));
+            self.step_menu(token, Input::hand(self.active_hand));
         }
     }
 
@@ -456,7 +458,7 @@ impl HandMenuRadial {
         }
     }
 
-    fn step_menu_indicator(&mut self, handed: Handed) {
+    fn step_menu_indicator(&mut self, token: &MainThreadToken, handed: Handed) {
         let hand = Input::hand(handed);
         if !hand.is_tracked() {
             return;
@@ -492,9 +494,11 @@ impl HandMenuRadial {
 
         self.menu_pose = hand.palm;
 
-        self.activation_ring.draw(Material::ui(), self.menu_pose.to_matrix(None), Some(color_primary), None);
+        self.activation_ring
+            .draw(token, Material::ui(), self.menu_pose.to_matrix(None), Some(color_primary), None);
         self.menu_pose.position += (1.0 - hand.grip_activation) * self.menu_pose.get_forward() * CM * 2.0;
         self.activation_button.draw(
+            token,
             Material::ui(),
             self.menu_pose.to_matrix(None),
             Some(Color128::lerp(
@@ -505,7 +509,7 @@ impl HandMenuRadial {
             None,
         );
         self.activation_hamburger
-            .draw(Material::ui(), self.menu_pose.to_matrix(None), Some(color_text), None);
+            .draw(token, Material::ui(), self.menu_pose.to_matrix(None), Some(color_text), None);
 
         if facing < Self::ACTIVATION_ANGLE {
             return;
@@ -516,7 +520,7 @@ impl HandMenuRadial {
         }
     }
 
-    fn step_menu(&mut self, hand: Hand) {
+    fn step_menu(&mut self, token: &MainThreadToken, hand: Hand) {
         // animate the menu a bit
         let time = f32::min(1.0, Time::get_step_unscaledf() * 24.0);
         self.menu_pose.position = Vec3::lerp(self.menu_pose.position, self.dest_pose.position, time);
@@ -532,7 +536,7 @@ impl HandMenuRadial {
 
         // Push the Menu's pose onto the stack, so we can draw, and work
         // in local space.
-        Hierarchy::push(self.menu_pose.to_matrix(Some(self.menu_scale * Vec3::ONE)));
+        Hierarchy::push(token, self.menu_pose.to_matrix(Some(self.menu_scale * Vec3::ONE)));
 
         // Calculate the status of the menu!
         let tip_world = hand.get(FingerId::Index, JointId::Tip).position;
@@ -551,7 +555,7 @@ impl HandMenuRadial {
             finger_angle += 360.0;
         }
         let angle_id = (finger_angle / step).trunc() as usize;
-        Lines::add(Vec3::new(0.0, 0.0, -0.008), Vec3::new(tip_local.x, tip_local.y, -0.008), WHITE, None, 0.006);
+        Lines::add(token, Vec3::new(0.0, 0.0, -0.008), Vec3::new(tip_local.x, tip_local.y, -0.008), WHITE, None, 0.006);
 
         // Now draw each of the menu items !
         let color_primary = Ui::get_theme_color(UiColor::Primary, None).to_linear();
@@ -564,9 +568,15 @@ impl HandMenuRadial {
             at.z = depth;
 
             let r = Matrix::tr(&Vec3::new(0.0, 0.0, depth), &Quat::from_angles(0.0, 0.0, curr_angle));
-            self.background
-                .draw(Material::ui(), r, Some(color_common * (if highlight { 2.0 } else { 1.0 })), None);
+            self.background.draw(
+                token,
+                Material::ui(),
+                r,
+                Some(color_common * (if highlight { 2.0 } else { 1.0 })),
+                None,
+            );
             self.background_edge.draw(
+                token,
                 Material::ui(),
                 r,
                 Some(color_primary * (if highlight { 2.0 } else { 1.0 })),
@@ -589,16 +599,17 @@ impl HandMenuRadial {
             };
             if child_indicator {
                 self.child_indicator.draw(
+                    token,
                     Material::ui(),
                     Matrix::tr(&Vec3::new(0.0, 0.0, depth), &Quat::from_angles(0.0, 0.0, curr_angle + half_step)),
                     None,
                     None,
                 );
             }
-            item_to_draw.draw(at, arc_length, curr_angle + half_step, highlight);
+            item_to_draw.draw(token, at, arc_length, curr_angle + half_step, highlight);
         }
         // Done with local work
-        Hierarchy::pop();
+        Hierarchy::pop(token);
 
         if self.activation < 0.99 {
             return;

@@ -5,7 +5,7 @@ use stereokit_rust::{
     material::Material,
     maths::{Matrix, Quat, Vec3},
     mesh::Mesh,
-    sk::{IStepper, SkInfo, StepperAction, StepperId},
+    sk::{IStepper, MainThreadToken, SkInfo, StepperId},
     system::{Renderer, Text, TextStyle},
     util::named_colors::RED,
 };
@@ -41,14 +41,14 @@ impl IStepper for AStepper {
         true
     }
 
-    fn step(&mut self, _event_report: &[StepperAction]) {
-        self.draw()
+    fn step(&mut self, token: &MainThreadToken) {
+        self.draw(token)
     }
 }
 
 impl AStepper {
-    fn draw(&mut self) {
-        Renderer::add_mesh(&self.round_cube, Material::pbr(), self.transform, Some(RED.into()), None);
-        Text::add_at(&self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
+    fn draw(&mut self, token: &MainThreadToken) {
+        Renderer::add_mesh(token, &self.round_cube, Material::pbr(), self.transform, Some(RED.into()), None);
+        Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
     }
 }

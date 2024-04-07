@@ -10,7 +10,7 @@ use stereokit_rust::{
     maths::{Matrix, Pose, Quat, Vec2, Vec3},
     mesh::Mesh,
     model::{AnimMode, Model},
-    sk::{IStepper, SkInfo, StepperAction, StepperId},
+    sk::{IStepper, MainThreadToken, SkInfo, StepperId},
     sprite::Sprite,
     system::{Assets, Handed, Input, Log, Renderer, Text, TextStyle},
     tex::Tex,
@@ -82,18 +82,18 @@ impl IStepper for Asset1 {
         true
     }
 
-    fn step(&mut self, _event_report: &[StepperAction]) {
-        self.draw()
+    fn step(&mut self, token: &MainThreadToken) {
+        self.draw(token)
     }
 }
 
 impl Asset1 {
-    fn draw(&mut self) {
+    fn draw(&mut self, token: &MainThreadToken) {
         // If a model has been selected, we draw it
         if let Some(model) = &self.model_to_show {
             Ui::handle("Model1", &mut self.asset_pose, model.get_bounds() * self.asset_scale, false, None, None);
             let model_transform = self.asset_pose.to_matrix(Some(self.asset_scale));
-            Renderer::add_model(model, model_transform, None, None);
+            Renderer::add_model(token, model, model_transform, None, None);
         } else {
             self.asset_selected = 0;
         }
@@ -174,7 +174,7 @@ impl Asset1 {
         }
         Ui::window_end();
 
-        Text::add_at(&self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
+        Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
     }
 }
 

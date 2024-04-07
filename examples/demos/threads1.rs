@@ -12,7 +12,7 @@ use std::{
 use stereokit_rust::{
     font::Font,
     maths::{Matrix, Quat, Vec3},
-    sk::{IStepper, SkInfo, StepperAction, StepperId},
+    sk::{IStepper, MainThreadToken, SkInfo, StepperAction, StepperId},
     system::{Log, Text, TextStyle},
     util::{named_colors::GREEN_YELLOW, Time},
 };
@@ -37,7 +37,7 @@ impl Default for Threads1 {
             sk_info: None,
             run_for_ever: Arc::new(AtomicBool::new(true)),
             transform: Matrix::tr(&((Vec3::NEG_Z * 3.5) + Vec3::Y), &Quat::from_angles(0.0, 180.0, 0.0)),
-            text: "Threads 1".into(),
+            text: "Threads1".into(),
             text_style: Text::make_style(Font::default(), 0.3, GREEN_YELLOW),
         }
     }
@@ -91,8 +91,8 @@ impl IStepper for Threads1 {
         true
     }
 
-    fn step(&mut self, _event_report: &[StepperAction]) {
-        self.draw()
+    fn step(&mut self, token: &MainThreadToken) {
+        self.draw(token)
     }
 
     fn shutdown(&mut self) {
@@ -101,7 +101,7 @@ impl IStepper for Threads1 {
 }
 
 impl Threads1 {
-    fn draw(&mut self) {
-        Text::add_at(&self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
+    fn draw(&mut self, token: &MainThreadToken) {
+        Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
     }
 }

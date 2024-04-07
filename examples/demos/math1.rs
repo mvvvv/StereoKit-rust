@@ -6,7 +6,7 @@ use stereokit_rust::{
     maths::{Bounds, Matrix, Plane, Pose, Quat, Ray, Sphere, Vec3},
     mesh::Mesh,
     model::Model,
-    sk::{IStepper, SkInfo, StepperAction, StepperId},
+    sk::{IStepper, MainThreadToken, SkInfo, StepperId},
     system::{Handed, Input, Lines, Log, Text, TextStyle},
     ui::Ui,
     util::{
@@ -66,13 +66,13 @@ impl IStepper for Math1 {
         true
     }
 
-    fn step(&mut self, _event_report: &[StepperAction]) {
-        self.draw()
+    fn step(&mut self, token: &MainThreadToken) {
+        self.draw(token)
     }
 }
 
 impl Math1 {
-    fn draw(&mut self) {
+    fn draw(&mut self, token: &MainThreadToken) {
         Ui::handle("Math1_Cube", &mut self.model_pose, self.model.get_bounds(), false, None, None);
 
         let right_hand = Input::hand(Handed::Right);
@@ -85,7 +85,7 @@ impl Math1 {
         }
 
         // Draw a line for the ray
-        Lines::add(ray.position, ray.position + ray.direction * 0.5, WHITE, None, 0.01);
+        Lines::add(token, ray.position, ray.position + ray.direction * 0.5, WHITE, None, 0.01);
 
         let transform = self.model_pose.to_matrix(None);
 
@@ -102,12 +102,12 @@ impl Math1 {
             color = RED; // changed from WHITE
             let out_bounds = transform.transform_point(out_bounds_inverse);
             let sphere_transform = Matrix::t(out_bounds);
-            self.little_sphere.draw(&self.material, sphere_transform, Some(GREEN.into()), None);
+            self.little_sphere.draw(token, &self.material, sphere_transform, Some(GREEN.into()), None);
 
             let sphere_form = Sphere::new(self.model_pose.position, SPHERE_RADIUS);
             if let Some(out_sphere) = ray.intersect_sphere(sphere_form) {
                 let sphere_transform = Matrix::t(out_sphere);
-                self.little_sphere.draw(&self.material, sphere_transform, Some(BLUE.into()), None);
+                self.little_sphere.draw(token, &self.material, sphere_transform, Some(BLUE.into()), None);
 
                 let sphere_ctrl = Sphere::new(out_sphere, 0.01);
                 if sphere_ctrl.contains(out_bounds) {
@@ -125,12 +125,12 @@ impl Math1 {
         let plane = Plane::new(Vec3::Y, 0.0);
         if let Some(out_plane) = ray.intersect(plane) {
             let sphere_transform = Matrix::ts(out_plane, Vec3::ONE * 8.0);
-            self.little_sphere.draw(&self.material, sphere_transform, Some(WHITE.into()), None);
+            self.little_sphere.draw(token, &self.material, sphere_transform, Some(WHITE.into()), None);
         }
 
         // Add little_sphere to ico_sphere if pointed by the ray
         let center = Vec3::NEG_Z * 0.5 + Vec3::X;
-        Lines::add(center, center + Vec3::Y * 2.5, RED, None, 0.1);
+        Lines::add(token, center, center + Vec3::Y * 2.5, RED, None, 0.1);
         let rotation = Quat::from_angles(0.0, ROTATION_SPEED * Time::get_step_unscaledf(), 0.0);
         let mut transform_ico = self.transform_ico_sphere;
         let radius_circle = 0.9;
@@ -157,11 +157,11 @@ impl Math1 {
         // add blue little sphere only
         if let Some(out_mesh) = ray_to_bounds.intersect_mesh(&self.ico_sphere, None) {
             let sphere_transform = Matrix::t(transform_ico.transform_point(out_mesh.0));
-            self.little_sphere.draw(&self.material, sphere_transform, Some(BLUE.into()), None);
+            self.little_sphere.draw(token, &self.material, sphere_transform, Some(BLUE.into()), None);
         }
 
-        self.model.draw(transform, Some(color.into()), None);
-        self.ico_sphere.draw(&self.material, transform_ico, Some(YELLOW_GREEN.into()), None);
-        Text::add_at(&self.text, self.transform_text, Some(self.text_style), None, None, None, None, None, None);
+        self.model.draw(token, transform, Some(color.into()), None);
+        self.ico_sphere.draw(token, &self.material, transform_ico, Some(YELLOW_GREEN.into()), None);
+        Text::add_at(token, &self.text, self.transform_text, Some(self.text_style), None, None, None, None, None, None);
     }
 }
