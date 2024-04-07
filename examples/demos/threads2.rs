@@ -84,6 +84,7 @@ impl IStepper for Threads2 {
                 model.get_nodes().add(name, local_transform, mesh, &material, true);
                 thread::sleep(time::Duration::from_millis(500));
             }
+            Log::diag("close thread_add");
         });
         self.thread_remove = Some(thread::spawn(move || {
             let model = Model::find(MODEL_ID).unwrap();
@@ -100,6 +101,7 @@ impl IStepper for Threads2 {
             if let Err(error) = thread_add.join() {
                 Log::err(format!("Thread1, thread_add panic  : {:?}", error));
             }
+            Log::diag("close thread_remove");
         }));
         true
     }
@@ -115,6 +117,7 @@ impl IStepper for Threads2 {
                 Log::err(format!("Thread1, thread_add panic  : {:?}", error));
             }
         }
+        Log::diag("close Thread2 Demo");
     }
 }
 
