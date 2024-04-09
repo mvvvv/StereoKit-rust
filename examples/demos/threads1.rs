@@ -58,7 +58,7 @@ impl IStepper for Threads1 {
             while run_for_ever1.load(Ordering::Relaxed) {
                 id += 1;
                 let mut a = AStepper::default();
-                let random = ((Time::get_totalf() * 20.0) % 5.0) / 6.0;
+                let random = ((Time::get_totalf() * 100.0) % 1000.0) / 600.0;
                 let id_str = "Test ".to_string() + &id.to_string();
                 a.text = id_str.clone();
                 a.transform = Matrix::trs(
