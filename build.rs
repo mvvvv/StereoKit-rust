@@ -16,7 +16,7 @@ fn main() {
     cmake_config.define("SK_BUILD_TESTS", "OFF");
     cmake_config.define("SK_PHYSICS", "OFF");
     if target_os == "android" {
-        cmake_config.define("CMAKE_ANDROID_API", "29");
+        cmake_config.define("CMAKE_ANDROID_API", "32");
         cmake_config.define("CMAKE_INSTALL_INCLUDEDIR", "install");
         cmake_config.define("CMAKE_INSTALL_LIBDIR", "install");
         if cfg!(feature = "build-dynamic-openxr") {
@@ -34,6 +34,7 @@ fn main() {
     println!("cargo:rustc-link-search=native={}/lib", dst.display());
     println!("cargo:rustc-link-search=native={}/lib64", dst.display());
     println!("cargo:rustc-link-search=native={}/build", dst.display());
+    println!("cargo:rustc-link-search=native={}/install", dst.display());
     cargo_link!("static=StereoKitC");
     match target_family.as_str() {
         "windows" => {
@@ -42,6 +43,7 @@ fn main() {
             } else {
                 cargo_link!("static=openxr_loader");
             }
+            cargo_link!("meshoptimizer");
             cargo_link!("windowsapp");
             cargo_link!("user32");
             cargo_link!("comdlg32");
@@ -56,6 +58,7 @@ fn main() {
             }
             cargo_link!("stdc++");
             cargo_link!("openxr_loader");
+            cargo_link!("meshoptimizer");
             if target_os == "android" {
                 cargo_link!("android");
                 cargo_link!("EGL");
