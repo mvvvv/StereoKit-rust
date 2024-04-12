@@ -46,7 +46,11 @@ impl Default for Shader1 {
             .color_tint(WHITE);
 
         let mut material_green = Material::copy(&blinker_material);
-        material_green.id("green_material").tex_transform(Vec4::new(0.0, 0.0, 2.0, 2.0)).color_tint(GREEN);
+        material_green
+            .id("green_material")
+            .tex_transform(Vec4::new(0.0, 0.0, 2.0, 2.0))
+            .color_tint(GREEN)
+            .time(10.0);
 
         //---- Transform Matrices.
         let transform_mesh = Matrix::trs(
@@ -107,9 +111,10 @@ impl Shader1 {
     fn draw(&mut self, token: &MainThreadToken) {
         self.mesh.draw(token, &self.material_red, self.transform_mesh, None, None);
 
-        let mut tex_scale = (Time::get_totalf() % 360.0).to_radians().sin().abs() * 2.0;
-        let ptr: *mut c_void = &mut tex_scale as *mut _ as *mut c_void;
-        self.material_green.get_all_param_info().set_data("tex_scale", MaterialParam::Float, ptr);
+        let tex_scale = (Time::get_totalf() % 360.0).to_radians().sin().abs() * 2.0;
+        let mut tex_transform = Vec4::new(0.0, 0.0, tex_scale, tex_scale);
+        let ptr: *mut c_void = &mut tex_transform as *mut _ as *mut c_void;
+        self.material_green.get_all_param_info().set_data("tex_trans", MaterialParam::Vec4, ptr);
         self.plane.draw(token, &self.material_green, self.transform_plane, None, None);
 
         self.fps = ((1.0 / Time::get_step()) + self.fps) / 2.0;
