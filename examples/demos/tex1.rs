@@ -1,4 +1,5 @@
 use stereokit_rust::material::{Cull, Material};
+use stereokit_rust::maths::Vec4;
 use stereokit_rust::mesh::Mesh;
 use stereokit_rust::model::Model;
 use stereokit_rust::sk::{IStepper, MainThreadToken, SkInfo, StepperId};
@@ -155,16 +156,16 @@ impl Default for Tex1 {
             .id("color mat")
             .diffuse_tex(&tex_color_32a)
             //.color_tint(RED)
-            .tex_scale(2.0);
+            .tex_transform(Vec4::new(0.0, 0.0, 2.0, 2.0));
 
         let mut color2 = Material::copy(&basic_material);
-        color2.id("color2 mat").diffuse_tex(&tex_color_32b).tex_scale(1.0);
+        color2.id("color2 mat").diffuse_tex(&tex_color_32b).tex_transform(Vec4::new(0.0, 0.0, 1.0, 1.0));
 
         let mut color3 = Material::copy(&basic_material);
-        color3.id("color3 mat").diffuse_tex(&tex_color_32c).tex_scale(8.0);
+        color3.id("color3 mat").diffuse_tex(&tex_color_32c).tex_transform(Vec4::new(0.0, 0.0, 8.0, 8.0));
 
         let mut color4 = Material::copy(&basic_material);
-        color4.id("color4 mat").diffuse_tex(&tex_color_32d).tex_scale(16.0);
+        color4.id("color4 mat").diffuse_tex(&tex_color_32d).tex_transform(Vec4::new(0.0, 0.0, 16.0, 16.0));
 
         let mut vide = Material::copy(&basic_material);
         vide.id("vide mat").diffuse_tex(&tex_vide);
@@ -173,16 +174,16 @@ impl Default for Tex1 {
         particule.id("particule mat").diffuse_tex(&tex_particule);
 
         let mut vide2 = Material::copy(&basic_material);
-        vide2.id("vide mat2").diffuse_tex(&tex_vide2).tex_scale(2.0);
+        vide2.id("vide mat2").diffuse_tex(&tex_vide2).tex_transform(Vec4::new(0.0, 0.0, 2.0, 2.0));
 
         let mut vide3 = Material::copy(&basic_material);
-        vide3.id("vide mat3").diffuse_tex(&tex_vide3).tex_scale(2.0);
+        vide3.id("vide mat3").diffuse_tex(&tex_vide3).tex_transform(Vec4::new(0.0, 0.0, 2.0, 2.0));
 
         let mut vide4 = Material::copy(&basic_material);
-        vide4.id("vide mat4").diffuse_tex(&tex_vide4).tex_scale(2.0);
+        vide4.id("vide mat4").diffuse_tex(&tex_vide4).tex_transform(Vec4::new(0.0, 0.0, 2.0, 2.0));
 
         let mut zarbi = Material::copy(&basic_material);
-        zarbi.id("zarbi").diffuse_tex(&tex_zarbi).tex_scale(2.0);
+        zarbi.id("zarbi").diffuse_tex(&tex_zarbi).tex_transform(Vec4::new(0.0, 0.0, 2.0, 2.0));
 
         let panels = Model::new();
         let mut nodes = panels.get_nodes();

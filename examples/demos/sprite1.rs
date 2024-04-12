@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use stereokit_rust::font::Font;
 use stereokit_rust::material::Material;
-use stereokit_rust::maths::{Matrix, Quat, Vec3};
+use stereokit_rust::maths::{Matrix, Quat, Vec3, Vec4};
 use stereokit_rust::sk::{IStepper, MainThreadToken, SkInfo, StepperId};
 use stereokit_rust::sprite::{Sprite, SpriteType};
 use stereokit_rust::system::{AssetType, Assets, Lines, Log, Text, TextAlign, TextStyle};
@@ -78,8 +78,14 @@ impl Default for Sprite1 {
             tex_particule2,
             text_style,
         };
-        this.color1.id("color mat 1").diffuse_tex(&this.tex_particule1).tex_scale(1.0);
-        this.color2.id("color mat 2").diffuse_tex(&this.tex_particule2).tex_scale(1.0);
+        this.color1
+            .id("color mat 1")
+            .diffuse_tex(&this.tex_particule1)
+            .tex_transform(Vec4::new(0.0, 0.0, 1.0, 1.0));
+        this.color2
+            .id("color mat 2")
+            .diffuse_tex(&this.tex_particule2)
+            .tex_transform(Vec4::new(0.0, 0.0, 1.0, 1.0));
         this.sprite1.id("basic1");
         this.sprite_ico.id("basic2");
         this

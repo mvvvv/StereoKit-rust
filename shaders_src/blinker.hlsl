@@ -1,7 +1,7 @@
 #include "stereokit.hlsli"
 
 //--color:color = 1, 0, 0, 1
-//--tex_scale   = 1
+//--tex_trans   = 0,0,1,1
 //--diffuse     = white
 
 float4 color;

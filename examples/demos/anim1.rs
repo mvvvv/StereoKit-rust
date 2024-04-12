@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use stereokit_rust::material::{Cull, Material, Transparency};
-use stereokit_rust::maths::{Matrix, Quat, Vec3};
+use stereokit_rust::maths::{Matrix, Quat, Vec3, Vec4};
 use stereokit_rust::model::{AnimMode, Model};
 use stereokit_rust::shader::Shader;
 use stereokit_rust::sk::{IStepper, MainThreadToken, SkInfo, StepperId};
@@ -31,7 +31,7 @@ impl Default for Anim1 {
         brick_wall
             .roughness_amount(0.7)
             .color_tint(DARK_RED)
-            .tex_scale(5.0)
+            .tex_transform(Vec4::new(0.0, 0.0, 5.0, 5.0))
             .transparency(Transparency::None)
             .face_cull(Cull::None);
         // The nodes stay alive and keep Material alive so, no id .id("brick_wall");
@@ -53,7 +53,6 @@ impl Default for Anim1 {
 
         let mut anims = mobile.get_anims();
         anims.play_anim("flyRotate", AnimMode::Loop);
-        anims.anim_time(1.0);
 
         Log::info(format!("model <~GRN>node count<~clr> : <~RED>{}<~clr> !!!", &mobile.get_nodes().get_count()));
         for n in mobile.get_nodes().all() {
@@ -94,17 +93,14 @@ impl IStepper for Anim1 {
                 0 => {
                     let mut anims = self.mobile.get_anims();
                     anims.play_anim("flyRotate", AnimMode::Loop);
-                    anims.anim_time(1.0);
                 }
                 1 => {
                     let mut anims = self.mobile.get_anims();
                     anims.play_anim("fly", AnimMode::Loop);
-                    anims.anim_time(1.0);
                 }
                 2 => {
                     let mut anims = self.mobile.get_anims();
                     anims.play_anim("rotate", AnimMode::Loop);
-                    anims.anim_time(1.0);
                 }
                 _ => {
                     self.stage = 0;

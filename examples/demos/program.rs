@@ -3,7 +3,7 @@ use std::sync::Mutex;
 use stereokit_rust::{
     framework::{HandMenuAction, HandMenuRadial, HandRadial, HandRadialLayer},
     material::{Cull, Material},
-    maths::{units::*, Matrix, Pose, Quat, Vec2, Vec3},
+    maths::{units::*, Matrix, Pose, Quat, Vec2, Vec3, Vec4},
     mesh::Mesh,
     model::Model,
     shader::Shader,
@@ -96,8 +96,8 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
     let sh = SphericalHarmonics::from_lights(&lights);
     let cube2 = SHCubemap::gen_cubemap_sh(sh, 15, 5.0, 0.02);
 
-    let cube3 = SHCubemap::from_cubemap_equirectangular("textures/hdri/sky_dawn.hdr", true, 0)
-        .unwrap_or(SHCubemap::get_rendered_sky());
+    let cube3 =
+        SHCubemap::from_cubemap_equirectangular("hdri/sky_dawn.hdr", true, 0).unwrap_or(SHCubemap::get_rendered_sky());
 
     //save the default cubemap.
     let cube_default = SHCubemap::get_rendered_sky();
@@ -128,7 +128,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
     }
     clean_tile
         .id("clean_tile")
-        .tex_scale(3.0)
+        .tex_transform(Vec4::new(0.0, 0.0, 3.0, 3.0))
         .roughness_amount(0.7)
         .color_tint(BLACK)
         //.transparency(Transparency::Add)

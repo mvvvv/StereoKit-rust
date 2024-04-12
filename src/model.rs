@@ -377,6 +377,7 @@ pub struct Anims<'a> {
 }
 
 /// Describes how an animation is played back, and what to do when the animation hits the end.
+/// <https://stereokit.net/Pages/StereoKit/AnimMode.html>
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
 pub enum AnimMode {
@@ -384,7 +385,8 @@ pub enum AnimMode {
     Loop = 0,
     /// When the animation reaches the end, it will freeze in-place.
     Once = 1,
-    /// The animation will not progress on its own, and instead must be driven by providing information to the model’s AnimTime or AnimCompletion properties.
+    /// The animation will not progress on its own, and instead must be driven by providing information to the model’s
+    /// AnimTime or AnimCompletion properties.
     Manual = 2,
 }
 
@@ -410,7 +412,8 @@ impl<'a> Iterator for Anims<'a> {
     }
 }
 
-/// Anim of a model
+/// A link to a Model’s animation! You can use this to get some basic information about the animation, or store it for
+/// reference. This maintains a link to the Model asset, and will keep it alive as long as this object lives.
 /// <https://stereokit.net/Pages/StereoKit/Anim.html>
 #[derive(Debug, Clone, PartialEq)]
 pub struct Anim {
@@ -433,8 +436,10 @@ impl<'a> Anims<'a> {
         unsafe { model_anim_get_duration(self.model.0.as_ptr(), index) }
     }
 
-    /// Calling Draw will automatically step the Model’s animation, but if you don’t draw the Model, or need access to the animated nodes before drawing,
-    /// then you can step the animation early manually via this method. Animation will only ever be stepped once per frame, so it’s okay to call this multiple times,
+    /// Calling Draw will automatically step the Model’s animation, but if you don’t draw the Model, or need access to
+    /// the animated nodes before drawing,
+    /// then you can step the animation early manually via this method. Animation will only ever be stepped once per
+    /// frame, so it’s okay to call this multiple times,
     /// or in addition to Draw.
     /// <https://stereokit.net/Pages/StereoKit/Model/StepAnim.html>
     ///
@@ -444,7 +449,8 @@ impl<'a> Anims<'a> {
         self
     }
 
-    /// Searches for an animation with the given name, and if it’s found, sets it up as the active animation and begins playing it with the animation mode.
+    /// Searches for an animation with the given name, and if it’s found, sets it up as the active animation and begins
+    /// laying it with the animation mode.
     /// <https://stereokit.net/Pages/StereoKit/Model/PlayAnim.html>
     ///
     /// see also [`crate::model::model_step_anim`][`crate::model::model_play_anim`]
@@ -463,7 +469,9 @@ impl<'a> Anims<'a> {
         self
     }
 
-    /// Set anim time multiplier ???
+    /// This is the current time of the active animation in seconds, from the start of the animation. If no animation is
+    /// active, this will be zero. This will always be a value between zero and the active animation’s Duration. For a
+    /// percentage of completion, see AnimCompletion instead.
     /// <https://stereokit.net/Pages/StereoKit/Model/AnimTime.html>
     ///
     /// see also [`crate::model::model_set_anim_time`][`crate::model::model_play_anim`]
@@ -472,7 +480,8 @@ impl<'a> Anims<'a> {
         self
     }
 
-    /// Set anim completion ???
+    /// This is the percentage of completion of the active animation. This will always be a value between 0-1. If no
+    /// animation is active, this will be zero.
     /// <https://stereokit.net/Pages/StereoKit/Model/AnimCompletion.html>
     ///
     /// see also [`crate::model::model_set_anim_completion`][`crate::model::model_play_anim`]
@@ -498,7 +507,7 @@ impl<'a> Anims<'a> {
         }
     }
 
-    /// Get the number of animation
+    /// Get the number of animations
     /// <https://stereokit.net/Pages/StereoKit/Model/ModelAnimCollection.html>
     ///
     /// see also [`crate::model::model_anim_count`]

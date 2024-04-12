@@ -3,7 +3,7 @@ use std::{cell::RefCell, os::raw::c_void, rc::Rc};
 use stereokit_rust::{
     font::Font,
     material::{Material, MaterialParam},
-    maths::{Matrix, Quat, Vec2, Vec3},
+    maths::{Matrix, Quat, Vec2, Vec3, Vec4},
     mesh::{Mesh, Vertex},
     shader::Shader,
     sk::{IStepper, MainThreadToken, SkInfo, StepperId},
@@ -42,11 +42,11 @@ impl Default for Shader1 {
             Material::from_file("shaders/blinker.hlsl.sks", Some("red_material")).unwrap_or_default();
         blinker_material
             .diffuse_tex(Tex::from_file("textures/open_gltf.jpeg", true, None).unwrap_or_default())
-            .tex_scale(4.0)
+            .tex_transform(Vec4::new(0.0, 0.0, 4.0, 4.0))
             .color_tint(WHITE);
 
         let mut material_green = Material::copy(&blinker_material);
-        material_green.id("green_material").tex_scale(2.0).color_tint(GREEN);
+        material_green.id("green_material").tex_transform(Vec4::new(0.0, 0.0, 2.0, 2.0)).color_tint(GREEN);
 
         //---- Transform Matrices.
         let transform_mesh = Matrix::trs(

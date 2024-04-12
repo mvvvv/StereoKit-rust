@@ -400,10 +400,40 @@ impl Material {
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
     /// see also [`crate::material::material_set_param`]
+    #[deprecated(since = "0.40.0", note = "please use `tex_transform` instead")]
     pub fn tex_scale(&mut self, scale: f32) -> &mut Self {
         let ptr: *const f32 = &scale;
         unsafe {
             let cstr = &CString::new("tex_scale").unwrap();
+            material_set_param(self.0.as_ptr(), cstr.as_ptr(), MaterialParam::Float, ptr as *const c_void);
+        }
+        self
+    }
+
+    /// Non canonical shader parameter to indicate a time multiplier if the shader have one (water, blinker ...)
+    /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
+    ///
+    /// see also [`crate::material::material_set_param`]
+    pub fn time(&mut self, time: f32) -> &mut Self {
+        let ptr: *const f32 = &time;
+        unsafe {
+            let cstr = &CString::new("time").unwrap();
+            material_set_param(self.0.as_ptr(), cstr.as_ptr(), MaterialParam::Float, ptr as *const c_void);
+        }
+        self
+    }
+
+    /// Not necessarily present in all shaders, this transforms the UV coordinates of the mesh, so that the texture can
+    /// repeat and scroll. XY components are offset, and ZW components are scale.
+    ///  
+    /// This represents the float param 'tex_trans'.
+    /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
+    ///
+    /// see also [`crate::material::material_set_param`]
+    pub fn tex_transform(&mut self, transform: impl Into<Vec4>) -> &mut Self {
+        let ptr: *const Vec4 = &transform.into();
+        unsafe {
+            let cstr = &CString::new("tex_trans").unwrap();
             material_set_param(self.0.as_ptr(), cstr.as_ptr(), MaterialParam::Float, ptr as *const c_void);
         }
         self
