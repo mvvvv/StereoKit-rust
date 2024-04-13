@@ -1,8 +1,8 @@
-use std::{cell::RefCell, os::raw::c_void, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
 
 use stereokit_rust::{
     font::Font,
-    material::{Material, MaterialParam},
+    material::Material,
     maths::{Matrix, Quat, Vec2, Vec3, Vec4},
     mesh::{Mesh, Vertex},
     shader::Shader,
@@ -111,10 +111,13 @@ impl Shader1 {
     fn draw(&mut self, token: &MainThreadToken) {
         self.mesh.draw(token, &self.material_red, self.transform_mesh, None, None);
 
-        let tex_scale = (Time::get_totalf() % 360.0).to_radians().sin().abs() * 2.0;
-        let mut tex_transform = Vec4::new(0.0, 0.0, tex_scale, tex_scale);
-        let ptr: *mut c_void = &mut tex_transform as *mut _ as *mut c_void;
-        self.material_green.get_all_param_info().set_data("tex_trans", MaterialParam::Vec4, ptr);
+        let total_scale = (Time::get_totalf() % 360.0).to_radians().sin().abs() * 2.0;
+        let tex_transform = Vec4::new(0.0, 0.0, total_scale, total_scale);
+        let mut param_info = self.material_green.get_all_param_info();
+        param_info
+            .set_vec4("tex_trans", tex_transform)
+            .set_int("do_not_exist", &[1, 3, 5, 6])
+            .set_float("time", total_scale);
         self.plane.draw(token, &self.material_green, self.transform_plane, None, None);
 
         self.fps = ((1.0 / Time::get_step()) + self.fps) / 2.0;

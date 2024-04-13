@@ -814,12 +814,20 @@ impl<'a> ParamInfos<'a> {
         ParamInfos { material, index: -1 }
     }
 
-    /// Add an info value to the shader of this material. Be sure of using a pointer 'value' corresponding to the right type 'type_info'
+    /// This allows you to set more complex shader data types such as structs. Note the SK doesn’t guard against setting
+    /// data of the wrong size here, so pay extra attention to the size of your data here, and ensure it matched up with
+    /// the shader!
     /// <https://stereokit.net/Pages/StereoKit/Material/SetData.html>
     ///
     /// see also [`crate::material::material_set_param`]
-    #[allow(clippy::not_unsafe_ptr_arg_deref)]
-    pub fn set_data<S: AsRef<str>>(&mut self, name: S, type_info: MaterialParam, value: *mut c_void) -> &mut Self {
+    ///    # Safety
+    ///    Be sure of the data you want to modify this way.
+    pub unsafe fn set_data<S: AsRef<str>>(
+        &mut self,
+        name: S,
+        type_info: MaterialParam,
+        value: *mut c_void,
+    ) -> &mut Self {
         unsafe {
             let cstr = &CString::new(name.as_ref()).unwrap();
             material_set_param(self.material.0.as_ptr(), cstr.as_ptr(), type_info, value)
@@ -827,18 +835,184 @@ impl<'a> ParamInfos<'a> {
         self
     }
 
-    /// Add an info value (identified with an id) to the shader of this material. Be sure of using a pointer 'value' corresponding to the right type 'type_info'
+    /// Add an info value (identified with an id) to the shader of this material. Be sure of using a pointer 'value'
+    /// corresponding to the right type 'type_info'
     /// <https://stereokit.net/Pages/StereoKit/Material/SetData.html>
     ///
     /// see also [`ParamInfo`][`crate::material::material_set_param_id`]
-    #[allow(clippy::not_unsafe_ptr_arg_deref)]
-    pub fn set_data_with_id<S: AsRef<str>>(
+    ///    # Safety
+    ///    Be sure of the data you want to modify this way.
+    pub unsafe fn set_data_with_id<S: AsRef<str>>(
         &mut self,
         id: u64,
         type_info: MaterialParam,
         value: *mut c_void,
     ) -> &mut Self {
         unsafe { material_set_param_id(self.material.0.as_ptr(), id, type_info, value) };
+        self
+    }
+
+    /// Sets a shader parameter with the given name to the provided value. If no parameter is found, nothing happens,
+    /// and the value is not set!
+    /// <https://stereokit.net/Pages/StereoKit/Material/SetBool.html>
+    ///
+    /// see also [`crate::material::material_set_bool`]
+    pub fn set_bool<S: AsRef<str>>(&mut self, name: S, value: bool) -> &mut Self {
+        unsafe {
+            let cstr = &CString::new(name.as_ref()).unwrap();
+            material_set_bool(self.material.0.as_ptr(), cstr.as_ptr(), value as Bool32T)
+        };
+        self
+    }
+
+    /// Sets a shader parameter with the given name to the provided value. If no parameter is found, nothing happens,
+    /// and the value is not set!
+    /// <https://stereokit.net/Pages/StereoKit/Material/SetColor.html>
+    ///
+    /// see also [`crate::material::material_set_color`]
+    pub fn set_color<S: AsRef<str>>(&mut self, name: S, value: impl Into<Color128>) -> &mut Self {
+        unsafe {
+            let cstr = &CString::new(name.as_ref()).unwrap();
+            material_set_color(self.material.0.as_ptr(), cstr.as_ptr(), value.into())
+        };
+        self
+    }
+
+    /// Sets a shader parameter with the given name to the provided value. If no parameter is found, nothing happens,
+    /// and the value is not set!
+    /// <https://stereokit.net/Pages/StereoKit/Material/SetFloat.html>
+    ///
+    /// see also [`crate::material::material_set_float`]
+    pub fn set_float<S: AsRef<str>>(&mut self, name: S, value: f32) -> &mut Self {
+        unsafe {
+            let cstr = &CString::new(name.as_ref()).unwrap();
+            material_set_float(self.material.0.as_ptr(), cstr.as_ptr(), value)
+        };
+        self
+    }
+
+    /// Sets a shader parameter with the given name to the provided value. If no parameter is found, nothing happens,
+    /// and the value is not set!
+    /// <https://stereokit.net/Pages/StereoKit/Material/SetInt.html>
+    /// * value : up to 4 integer values
+    ///
+    /// see also [`crate::material::material_set_int`]
+    /// see also [`crate::material::material_set_int2`]
+    /// see also [`crate::material::material_set_int3`]
+    /// see also [`crate::material::material_set_int4`]
+    pub fn set_int<S: AsRef<str>>(&mut self, name: S, values: &[i32]) -> &mut Self {
+        unsafe {
+            let cstr = &CString::new(name.as_ref()).unwrap();
+            match values.len() {
+                1 => material_set_int(self.material.0.as_ptr(), cstr.as_ptr(), values[0]),
+                2 => material_set_int2(self.material.0.as_ptr(), cstr.as_ptr(), values[0], values[1]),
+                3 => material_set_int3(self.material.0.as_ptr(), cstr.as_ptr(), values[0], values[1], values[2]),
+                4 => material_set_int4(
+                    self.material.0.as_ptr(),
+                    cstr.as_ptr(),
+                    values[0],
+                    values[1],
+                    values[2],
+                    values[3],
+                ),
+                _ => {}
+            }
+        };
+        self
+    }
+
+    /// Sets a shader parameter with the given name to the provided value. If no parameter is found, nothing happens,
+    /// and the value is not set!
+    /// <https://stereokit.net/Pages/StereoKit/Material/SetUInt.html>
+    /// * value : up to 4 integer values
+    ///
+    /// see also [`crate::material::material_set_uint`]
+    /// see also [`crate::material::material_set_uint2`]
+    /// see also [`crate::material::material_set_uint3`]
+    /// see also [`crate::material::material_set_uint4`]
+    pub fn set_uint<S: AsRef<str>>(&mut self, name: S, values: &[u32]) -> &mut Self {
+        unsafe {
+            let cstr = &CString::new(name.as_ref()).unwrap();
+            match values.len() {
+                1 => material_set_uint(self.material.0.as_ptr(), cstr.as_ptr(), values[0]),
+                2 => material_set_uint2(self.material.0.as_ptr(), cstr.as_ptr(), values[0], values[1]),
+                3 => material_set_uint3(self.material.0.as_ptr(), cstr.as_ptr(), values[0], values[1], values[2]),
+                4 => material_set_uint4(
+                    self.material.0.as_ptr(),
+                    cstr.as_ptr(),
+                    values[0],
+                    values[1],
+                    values[2],
+                    values[3],
+                ),
+                _ => {}
+            }
+        };
+        self
+    }
+
+    /// Sets a shader parameter with the given name to the provided value. If no parameter is found, nothing happens,
+    /// and the value is not set!
+    /// <https://stereokit.net/Pages/StereoKit/Material/SetMatrix.html>
+    ///
+    /// see also [`crate::material::material_set_matrix`]
+    pub fn set_matrix<S: AsRef<str>>(&mut self, name: S, value: impl Into<Matrix>) -> &mut Self {
+        unsafe {
+            let cstr = &CString::new(name.as_ref()).unwrap();
+            material_set_matrix(self.material.0.as_ptr(), cstr.as_ptr(), value.into())
+        };
+        self
+    }
+
+    /// Sets a shader parameter with the given name to the provided value. If no parameter is found, nothing happens,
+    /// and the value is not set!
+    /// <https://stereokit.net/Pages/StereoKit/Material/SetTexture.html>
+    ///
+    /// see also [`crate::material::material_set_texture`]
+    pub fn set_texture<S: AsRef<str>>(&mut self, name: S, value: impl AsRef<Tex>) -> &mut Self {
+        unsafe {
+            let cstr = &CString::new(name.as_ref()).unwrap();
+            material_set_texture(self.material.0.as_ptr(), cstr.as_ptr(), value.as_ref().0.as_ptr())
+        };
+        self
+    }
+
+    /// Sets a shader parameter with the given name to the provided value. If no parameter is found, nothing happens,
+    /// and the value is not set!
+    /// <https://stereokit.net/Pages/StereoKit/Material/SetVector.html>
+    ///
+    /// see also [`crate::material::material_set_vector2`]
+    pub fn set_vec2<S: AsRef<str>>(&mut self, name: S, value: impl Into<Vec2>) -> &mut Self {
+        unsafe {
+            let cstr = &CString::new(name.as_ref()).unwrap();
+            material_set_vector2(self.material.0.as_ptr(), cstr.as_ptr(), value.into())
+        };
+        self
+    }
+
+    /// Sets a shader parameter with the given name to the provided value. If no parameter is found, nothing happens,
+    /// and the value is not set!
+    /// <https://stereokit.net/Pages/StereoKit/Material/SetVector.html>
+    ///
+    /// see also [`crate::material::material_set_vector3`]
+    pub fn set_vec3<S: AsRef<str>>(&mut self, name: S, value: impl Into<Vec3>) -> &mut Self {
+        unsafe {
+            let cstr = &CString::new(name.as_ref()).unwrap();
+            material_set_vector3(self.material.0.as_ptr(), cstr.as_ptr(), value.into())
+        };
+        self
+    }
+
+    /// Sets a shader parameter with the given name to the provided value. If no parameter is found, nothing happens,
+    /// and the value is not set!
+    /// <https://stereokit.net/Pages/StereoKit/Material/SetVector.html>
+    ///
+    /// see also [`crate::material::material_set_vector4`]
+    pub fn set_vec4<S: AsRef<str>>(&mut self, name: S, value: impl Into<Vec4>) -> &mut Self {
+        unsafe {
+            let cstr = &CString::new(name.as_ref()).unwrap();
+            material_set_vector4(self.material.0.as_ptr(), cstr.as_ptr(), value.into())
+        };
         self
     }
 
@@ -1052,7 +1226,8 @@ impl<T> AsRef<MaterialBuffer_<T>> for MaterialBuffer_<T> {
 }
 
 impl<T> MaterialBuffer_<T> {
-    /// Create a new global MaterialBuffer bound to the register slot id. All shaders will have access to the data provided via this instance’s Set.
+    /// Create a new global MaterialBuffer bound to the register slot id. All shaders will have access to the data
+    /// provided via this instance’s Set.
     /// <https://stereokit.net/Pages/StereoKit/MaterialBuffer/MaterialBuffer.html>
     ///
     /// see also [`crate::material::material_buffer_create`]
@@ -1062,6 +1237,7 @@ impl<T> MaterialBuffer_<T> {
         MaterialBuffer_ { material_buffer: mat_buffer, phantom: PhantomData }
     }
 
+    /// This will upload your data to the GPU for shaders to use.
     /// <https://stereokit.net/Pages/StereoKit/MaterialBuffer/Set.html>
     ///
     /// see also [`crate::material::material_buffer_set_data`]
