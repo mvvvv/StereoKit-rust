@@ -51,7 +51,7 @@
                     "kind": "example"
                 }
             },
-            "args": ["--test","--start", "Asset1"],
+            "args": ["--test","--start", "Plane1"],
             "cwd": "${workspaceFolder}"
         },
         {

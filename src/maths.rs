@@ -190,7 +190,7 @@ impl Vec2 {
     /// vector has a length of zero.
     /// <https://stereokit.net/Pages/StereoKit/Vec2/Normalized.html>
     #[inline]
-    pub fn normalized(&self) -> Self {
+    pub fn get_normalized(&self) -> Self {
         *self * (self.length().recip())
     }
 
@@ -228,7 +228,7 @@ impl Vec2 {
     /// <https://stereokit.net/Pages/StereoKit/Vec2/Direction.html>
     #[inline]
     pub fn direction(to: Self, from: Self) -> Self {
-        (to - from).normalized()
+        (to - from).get_normalized()
     }
 
     /// Calculates the distance between two points in space! Make sure they’re in the same coordinate space! Uses a Sqrt,
@@ -601,7 +601,7 @@ impl Vec3 {
     /// vector has a length of zero.
     /// <https://stereokit.net/Pages/StereoKit/Vec3/Normalized.html>
     #[inline]
-    pub fn normalized(&self) -> Self {
+    pub fn get_normalized(&self) -> Self {
         *self * (self.length().recip())
     }
 
@@ -677,7 +677,7 @@ impl Vec3 {
     /// <https://stereokit.net/Pages/StereoKit/Vec3/Direction.html>
     #[inline]
     pub fn direction(to: Self, from: Self) -> Self {
-        (to - from).normalized()
+        (to - from).get_normalized()
     }
 
     /// Calculates the distance between two points in space! Make sure they’re in the same coordinate space! Uses a
@@ -2440,7 +2440,7 @@ impl Plane {
         let p3 = point_on_plane3.into();
         let dir1 = p2 - p1;
         let dir2 = p2 - p3;
-        let normal = Vec3::cross(dir1, dir2).normalized();
+        let normal = Vec3::cross(dir1, dir2).get_normalized();
         //let plane0 = Plane { normal, d: 0.0 };
         //let p0 = plane0.closest(p2);
         //Plane { normal, d: Vec3::distance(p0, p2) }

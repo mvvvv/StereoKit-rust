@@ -91,7 +91,7 @@ impl Sound {
     /// <https://stereokit.net/Pages/StereoKit/Sound/FromFile.html>
     ///
     /// see also [`crate::sound::sound_create`]
-    pub fn from_file<S: AsRef<str>>(file_utf8: impl AsRef<Path>) -> Result<Sound, StereoKitError> {
+    pub fn from_file(file_utf8: impl AsRef<Path>) -> Result<Sound, StereoKitError> {
         let path_buf = file_utf8.as_ref().to_path_buf();
         let c_str = CString::new(path_buf.clone().to_str().ok_or(StereoKitError::SoundFile(path_buf.clone()))?)?;
 

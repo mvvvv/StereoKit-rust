@@ -1057,6 +1057,10 @@ pub struct Hand {
     /// root (metacarpal) bone. For orientation, Forward is the direction the flat of the palm is facing, “Iron Man”
     /// style. X+ is to the outside of the right hand, and to the inside of the left hand.
     pub palm: Pose,
+    /// A pose an orientation representing where the hand is pointing to. This may be provided by the OpenXR runtime, or
+    /// be a fallback provided by StereoKit. Typically this starts and the index finger's primary knuckle, and points in
+    /// the same direction as a line drawn from the shoulder to the knuckle.</summary>
+    pub aim: Pose,
     /// This is an approximation of where the center of a ‘pinch’ gesture occurs, and is used internally by StereoKit
     /// for some tasks, such as UI. For simulated hands, this position will give you the most stable pinch location
     /// possible. For real hands, it’ll be pretty close to the stablest point you’ll get. This is especially important
@@ -1071,6 +1075,9 @@ pub struct Hand {
     pub pinch: BtnState,
     /// Is the hand making a grip gesture right now? Fingers next to the palm.
     pub grip: BtnState,
+    /// This is a filter state for when the hand is ready to interact with something at a distance. This often factors
+    /// into account palm direction, as well as distance from the body, and the current pinch and tracked state.
+    pub aim_ready: BtnState,
     /// This is the size of the hand, calculated by measuring the length of the middle finger! This is calculated by
     /// adding the distances between each joint, then adding the joint radius of the root and tip. This value is
     /// recalculated at relatively frequent intervals, and can vary by as much as a centimeter.

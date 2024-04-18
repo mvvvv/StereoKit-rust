@@ -473,7 +473,7 @@ impl HandMenuRadial {
         }
 
         let head_fwd = Input::get_head().get_forward();
-        let hand_dir = (hand.palm.position - Input::get_head().position).normalized();
+        let hand_dir = (hand.palm.position - Input::get_head().position).get_normalized();
         let in_view = Vec3::dot(head_fwd, hand_dir) > Self::OUT_OF_VIEW_ANGLE;
 
         if !in_view {

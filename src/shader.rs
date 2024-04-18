@@ -131,9 +131,14 @@ impl Shader {
         unsafe { CStr::from_ptr(shader_get_name(self.0.as_ptr())) }.to_str().unwrap()
     }
 
-    /// <https://stereokit.net/Pages/StereoKit/Shader.html>
+    /// <https://stereokit.net/Pages/StereoKit/Shader/Blit.html>
     pub fn blit() -> Self {
         Self::find("default/shader_blit").unwrap()
+    }
+
+    /// <https://stereokit.net/Pages/StereoKit/Shader/LightMap.html>
+    pub fn light_map() -> Self {
+        Self::find("default/shader_lightmap").unwrap()
     }
 
     /// Sometimes lighting just gets in the way! This is an extremely simple and fast shader that uses a ‘diffuse’
