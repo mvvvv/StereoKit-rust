@@ -228,6 +228,9 @@ impl Assets {
     pub const TEXTURE_FORMATS: [&'static str; 10] =
         [".jpg", ".jpeg", ".png", ".hdr", ".tga", ".bmp", ".psd", ".pic", ".qoi", ".gif"];
 
+    /// supported sound format by asset Sound <https://stereokit.net/Pages/StereoKit/Sound.html>
+    pub const SOUND_FORMATS: [&'static str; 2] = [".wav", ".mp3"];
+
     /// This is an iterator upon all assets loaded by StereoKit at the current moment.
     /// <https://stereokit.net/Pages/StereoKit/Assets/All.html>
     pub fn all() -> AssetIter {

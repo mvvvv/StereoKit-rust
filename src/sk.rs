@@ -860,6 +860,12 @@ impl Sk {
         unsafe { sk_app_focus() }
     }
 
+    /// Return a clone of SkInfo smart pointer
+    /// <https://stereokit.net/Pages/StereoKit/SK.html>
+    pub fn get_sk_info_clone(&self) -> Rc<RefCell<SkInfo>> {
+        self.sk_info.clone()
+    }
+
     /// This is a copy of the settings that StereoKit was initialized with, so you can refer back to them a little
     /// easier. These are read only, and keep in mind that some settings are only requests! Check Sk.system and other
     /// properties for the current state of StereoKit.

@@ -11,6 +11,7 @@ use stereokit_rust::{
     mesh::Mesh,
     model::{AnimMode, Model},
     sk::{IStepper, MainThreadToken, SkInfo, StepperId},
+    sound::{Sound, SoundInst},
     sprite::Sprite,
     system::{Assets, Handed, Input, Log, Renderer, Text, TextStyle},
     tex::Tex,
@@ -28,6 +29,7 @@ pub struct Asset1 {
     pub asset_pose: Pose,
     pub asset_scale: Vec3,
     model_to_show: Option<Model>,
+    sound_to_play: Option<SoundInst>,
     asset_files: Vec<PathEntry>,
     asset_sub_dir: PathBuf,
     exts: Vec<String>,
@@ -50,9 +52,10 @@ impl Default for Asset1 {
             asset_pose: Pose::new(Vec3::new(0.0, 1.3, -0.3), None),
             asset_scale: Vec3::ONE * 0.02,
             model_to_show: None,
+            sound_to_play: None,
             asset_files: vec![],
             asset_sub_dir: PathBuf::new(),
-            exts: vec![".sks".into(), ".jpeg".into(), ".hdr".into(), ".glb".into(), ".gltf".into()],
+            exts: vec![".sks".into(), ".jpeg".into(), ".hdr".into(), ".glb".into(), ".gltf".into(), ".mp3".into()],
             window_pose: Pose::new(Vec3::new(0.5, 1.5, -0.5), Some(Quat::from_angles(0.0, 180.0, 0.0))),
             asset_selected: 0,
             radio_off: Sprite::radio_off(),
@@ -91,7 +94,11 @@ impl Asset1 {
     fn draw(&mut self, token: &MainThreadToken) {
         // If a model has been selected, we draw it
         if let Some(model) = &self.model_to_show {
-            Ui::handle("Model1", &mut self.asset_pose, model.get_bounds() * self.asset_scale, false, None, None);
+            if Ui::handle("Model1", &mut self.asset_pose, model.get_bounds() * self.asset_scale, false, None, None) {
+                if let Some(mut sound) = self.sound_to_play {
+                    sound.position(self.asset_pose.position);
+                }
+            }
             let model_transform = self.asset_pose.to_matrix(Some(self.asset_scale));
             Renderer::add_model(token, model, model_transform, None, None);
         } else {
@@ -123,7 +130,16 @@ impl Asset1 {
                     UiBtnLayout::Left,
                     None,
                 ) {
-                    self.model_to_show = open_asset(name, &self.asset_sub_dir, file_name_str);
+                    if let Some(sound_inst) = self.sound_to_play {
+                        sound_inst.stop();
+                    }
+                    if let Some(asset_to_show) = self.load_asset(name, &self.asset_sub_dir, file_name_str) {
+                        self.model_to_show = Some(asset_to_show.model);
+                        self.sound_to_play = asset_to_show.sound_inst;
+                    } else {
+                        self.model_to_show = None;
+                        self.sound_to_play = None;
+                    }
                     self.asset_selected = i;
                 }
             }
@@ -176,47 +192,76 @@ impl Asset1 {
 
         Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
     }
-}
 
-/// Open asset regarding its extension
-fn open_asset(name: &std::ffi::OsString, asset_sub_dir: &Path, file_name_str: &str) -> Option<Model> {
-    let file_path = asset_sub_dir.join(name);
-    if let Some(ext) = file_path.extension() {
-        let ext = ".".to_string() + ext.to_str().unwrap_or("!!ERROR!!");
-        if Assets::MODEL_FORMATS.contains(&ext.as_str()) {
-            if let Ok(model) = Model::from_file(name, None) {
-                let mut anims = model.get_anims();
-                if anims.get_count() > 0 {
-                    anims.play_anim_idx(0, AnimMode::Loop);
+    /// Open asset regarding its extension
+    fn load_asset(&self, name: &std::ffi::OsString, asset_sub_dir: &Path, file_name_str: &str) -> Option<AssetToShow> {
+        let file_path = asset_sub_dir.join(name);
+        if let Some(ext) = file_path.extension() {
+            let ext = ".".to_string() + ext.to_str().unwrap_or("!!ERROR!!");
+            if Assets::MODEL_FORMATS.contains(&ext.as_str()) {
+                if let Ok(model) = Model::from_file(name, None) {
+                    let mut anims = model.get_anims();
+                    if anims.get_count() > 0 {
+                        anims.play_anim_idx(0, AnimMode::Loop);
+                    }
+                    Some(AssetToShow::model(model))
+                } else {
+                    Log::err(format!("Unable to load model {:?} !!", file_name_str));
+                    None
                 }
-                Some(model)
-            } else {
-                Log::err(format!("Unable to load model {:?} !!", file_name_str));
-                None
-            }
-        } else if Assets::TEXTURE_FORMATS.contains(&ext.as_str()) {
-            let model = Model::new();
-            let mesh = Mesh::generate_plane_up(Vec2::ONE * 6.0, None, true);
-            let tex = Tex::from_file(file_path, true, None).unwrap_or_default();
-            let mut material = Material::default_copy();
-            material.diffuse_tex(tex);
-            model.get_nodes().add("tex_plane", Matrix::IDENTITY, mesh, material, true);
-            Some(model)
-        } else if ext == ".sks" {
-            let model = Model::new();
-            let mesh = Mesh::generate_plane_up(Vec2::ONE * 6.0, None, true);
-            let tex = Tex::from_file("textures/open_gltf.jpeg", true, None).unwrap_or_default();
-            if let Ok(mut material) = Material::from_file(&file_path, None) {
+            } else if Assets::TEXTURE_FORMATS.contains(&ext.as_str()) {
+                let model = Model::new();
+                let mesh = Mesh::generate_plane_up(Vec2::ONE * 6.0, None, true);
+                let tex = Tex::from_file(file_path, true, None).unwrap_or_default();
+                let mut material = Material::default_copy();
                 material.diffuse_tex(tex);
                 model.get_nodes().add("tex_plane", Matrix::IDENTITY, mesh, material, true);
-                Some(model)
+                Some(AssetToShow::model(model))
+            } else if ext == ".sks" {
+                let model = Model::new();
+                let mesh = Mesh::generate_plane_up(Vec2::ONE * 6.0, None, true);
+                let tex = Tex::from_file("textures/open_gltf.jpeg", true, None).unwrap_or_default();
+                if let Ok(mut material) = Material::from_file(&file_path, None) {
+                    material.diffuse_tex(tex);
+                    model.get_nodes().add("tex_plane", Matrix::IDENTITY, mesh, material, true);
+                    Some(AssetToShow::model(model))
+                } else {
+                    None
+                }
+            } else if Assets::SOUND_FORMATS.contains(&ext.as_str()) {
+                let model = Model::new();
+                let mesh = Mesh::generate_cube(Vec3::ONE * 4.0, None);
+                let tex = Tex::from_file("textures/sound.jpeg", true, None).unwrap_or_default();
+
+                if let Ok(sound) = Sound::from_file(file_path) {
+                    let sound_inst = sound.play(self.asset_pose.position, None);
+
+                    let mut material = Material::default_copy();
+                    material.diffuse_tex(tex);
+                    model.get_nodes().add("tex_sound", Matrix::IDENTITY, mesh, material, true);
+                    Some(AssetToShow::sound(model, sound_inst))
+                } else {
+                    None
+                }
             } else {
                 None
             }
         } else {
             None
         }
-    } else {
-        None
+    }
+}
+
+struct AssetToShow {
+    model: Model,
+    sound_inst: Option<SoundInst>,
+}
+
+impl AssetToShow {
+    fn model(model: Model) -> Self {
+        AssetToShow { model, sound_inst: None }
+    }
+    fn sound(model: Model, sound_inst: SoundInst) -> Self {
+        AssetToShow { model, sound_inst: Some(sound_inst) }
     }
 }

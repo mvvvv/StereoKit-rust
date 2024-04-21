@@ -478,6 +478,18 @@ impl From<Vec3> for glam::Vec3 {
     }
 }
 
+impl From<[f32; 3]> for Vec3 {
+    fn from(val: [f32; 3]) -> Self {
+        Vec3 { x: val[0], y: val[1], z: val[2] }
+    }
+}
+
+impl From<Vec3> for [f32; 3] {
+    fn from(val: Vec3) -> Self {
+        [val.x, val.y, val.z]
+    }
+}
+
 extern "C" {
     pub fn vec3_cross(a: *const Vec3, b: *const Vec3) -> Vec3;
 }
@@ -743,6 +755,12 @@ impl Vec3 {
     #[inline]
     pub fn abs(&self) -> Self {
         Self { x: self.x.abs(), y: self.y.abs(), z: self.z.abs() }
+    }
+
+    /// get an array
+    #[inline]
+    pub const fn to_array(&self) -> [f32; 3] {
+        [self.x, self.y, self.z]
     }
 }
 
@@ -1454,6 +1472,12 @@ impl Quat {
     #[inline]
     pub fn mul_vec3(&self, rhs: Vec3) -> Vec3 {
         unsafe { quat_mul_vec(self, &rhs) }
+    }
+
+    /// get an array
+    #[inline]
+    pub const fn to_array(&self) -> [f32; 4] {
+        [self.x, self.y, self.z, self.w]
     }
 }
 
