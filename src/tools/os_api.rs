@@ -84,6 +84,34 @@ pub fn get_assets(_sk_info: Rc<RefCell<SkInfo>>, sub_dir: PathBuf, file_extensio
     vec
 }
 
+/// Get the path to internal data directory for Android
+#[cfg(target_os = "android")]
+pub fn get_internal_path(sk_info: Rc<RefCell<SkInfo>>) -> Option<PathBuf> {
+    let mut sk_i = sk_info.borrow_mut();
+    let app = sk_i.get_android_app();
+    app.internal_data_path()
+}
+
+/// Get the path to internal data directory for non android
+#[cfg(not(target_os = "android"))]
+pub fn get_internal_path(_sk_info: Rc<RefCell<SkInfo>>) -> Option<PathBuf> {
+    None
+}
+
+/// Get the path to external data directory for Android
+#[cfg(target_os = "android")]
+pub fn get_external_path(sk_info: Rc<RefCell<SkInfo>>) -> Option<PathBuf> {
+    let mut sk_i = sk_info.borrow_mut();
+    let app = sk_i.get_android_app();
+    app.external_data_path()
+}
+
+/// Get the path to internal data directory for non android
+#[cfg(not(target_os = "android"))]
+pub fn get_external_path(_sk_info: Rc<RefCell<SkInfo>>) -> Option<PathBuf> {
+    None
+}
+
 /// Open an asset like a file
 #[cfg(target_os = "android")]
 pub fn open_asset(sk_info: Rc<RefCell<SkInfo>>, asset_path: impl AsRef<Path>) -> Option<File> {
