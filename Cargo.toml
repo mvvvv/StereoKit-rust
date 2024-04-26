@@ -62,11 +62,13 @@ crate-type = ["cdylib"]
 
 [package.metadata.android]
 package ="com.stereokit.rust_binding_demo"
-apk_label = "Stereokit-rust"
+build_targets = [ "aarch64-linux-android" ]
+apk_label = "Stereokit-rust-demos"
+assets = "./assets"
+resources ="./res"
 fullscreen = true
 runtime_libs = "./target/runtime_libs"   #---the way to build and add Khronos libopenxr_loader.so for feature build-dynamic-openxr
 #runtime_libs = "./quest_lib"            #---the way to add existing libopenxr_loader.so for feature dynamic-openxr
-assets = "./assets"
 
 [package.metadata.android.sdk]
 min_sdk_version = 29
@@ -153,7 +155,8 @@ required = false
 
 [package.metadata.android.application]
 debuggable = true
-label = "Stereokit-rust"
+label = "Stereokit-rust-demos"
+icon = "@mipmap/app_icon"
 theme = "@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen"
 extract_native_libs = true
 has_code = false

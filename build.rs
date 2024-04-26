@@ -5,6 +5,7 @@ macro_rules! cargo_link {
         println!("cargo:rustc-link-lib={}", $feature);
     };
 }
+
 fn main() {
     let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap();
     let target_family = env::var("CARGO_CFG_TARGET_FAMILY").unwrap();
@@ -16,6 +17,14 @@ fn main() {
     cmake_config.define("SK_BUILD_TESTS", "OFF");
     cmake_config.define("SK_PHYSICS", "OFF");
     if target_os == "android" {
+        // cmake_config.define("ANDROID_ABI", "arm64-v8a");
+        // cmake_config.define("ANDROID_PLATFORM", "android-32");
+        // cmake_config.define("CMAKE_ANDROID_ARCH_ABI", "arm64-v8a");
+        // cmake_config.define("CMAKE_ANDROID_NDK", "");
+        // cmake_config.define("CMAKE_BUILD_TYPE=", "Release");
+        // cmake_config.define("CMAKE_SYSTEM_NAME", "Android");
+        // cmake_config.define("CMAKE_SYSTEM_VERSION", "32");
+
         cmake_config.define("CMAKE_ANDROID_API", "32");
         cmake_config.define("CMAKE_INSTALL_INCLUDEDIR", "install");
         cmake_config.define("CMAKE_INSTALL_LIBDIR", "install");
@@ -35,7 +44,7 @@ fn main() {
     println!("cargo:rustc-link-search=native={}/lib64", dst.display());
     println!("cargo:rustc-link-search=native={}/build", dst.display());
     println!("cargo:rustc-link-search=native={}/install", dst.display());
-    cargo_link!("static=StereoKitC");
+    cargo_link!("StereoKitC");
     match target_family.as_str() {
         "windows" => {
             if cfg!(debug_assertions) {

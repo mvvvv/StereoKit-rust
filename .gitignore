@@ -8,3 +8,4 @@ quest_lib/arm64-v8a/libopenxr_loader.so
 anchors.txt
 log.txt
 
+build_preset.rs
