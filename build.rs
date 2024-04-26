@@ -17,14 +17,6 @@ fn main() {
     cmake_config.define("SK_BUILD_TESTS", "OFF");
     cmake_config.define("SK_PHYSICS", "OFF");
     if target_os == "android" {
-        // cmake_config.define("ANDROID_ABI", "arm64-v8a");
-        // cmake_config.define("ANDROID_PLATFORM", "android-32");
-        // cmake_config.define("CMAKE_ANDROID_ARCH_ABI", "arm64-v8a");
-        // cmake_config.define("CMAKE_ANDROID_NDK", "");
-        // cmake_config.define("CMAKE_BUILD_TYPE=", "Release");
-        // cmake_config.define("CMAKE_SYSTEM_NAME", "Android");
-        // cmake_config.define("CMAKE_SYSTEM_VERSION", "32");
-
         cmake_config.define("CMAKE_ANDROID_API", "32");
         cmake_config.define("CMAKE_INSTALL_INCLUDEDIR", "install");
         cmake_config.define("CMAKE_INSTALL_LIBDIR", "install");
