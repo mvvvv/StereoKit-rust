@@ -21,8 +21,8 @@ use crate::{
 };
 
 #[cfg(target_os = "android")]
-//use winit::platform::android::activity::AndroidApp;
-use android_activity::AndroidApp;
+//use android_activity::AndroidApp;
+use winit::platform::android::activity::AndroidApp;
 
 /// Specifies a type of display mode StereoKit uses, like Mixed Reality headset display vs. a PC display, or even just
 /// rendering to an offscreen surface, or not rendering at all!
@@ -606,7 +606,8 @@ impl Sk {
         settings: &mut SkSettings,
         app: AndroidApp,
     ) -> Result<(Sk, EventLoop<StepperAction>), StereoKitError> {
-        use android_activity::{MainEvent, PollEvent};
+        use winit::platform::android::activity::{MainEvent, PollEvent};
+        //use android_activity::{MainEvent, PollEvent};
         use winit::platform::android::EventLoopBuilderExtAndroid;
         // OpenXR won't leave IDLE state if we do not purge the first events :
         // PostSessionStateChange: XR_SESSION_STATE_IDLE -> XR_SESSION_STATE_READY

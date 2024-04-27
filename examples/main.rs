@@ -1,8 +1,9 @@
 pub mod demos;
 
 #[cfg(target_os = "android")]
-//use winit::platform::android::activity::AndroidApp;
-use android_activity::AndroidApp;
+//use android_activity::AndroidApp;
+use winit::platform::android::activity::AndroidApp;
+
 use demos::program::launch;
 use stereokit_rust::sk::{Sk, StepperAction};
 use stereokit_rust::system::Log;
