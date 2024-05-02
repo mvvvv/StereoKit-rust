@@ -9,6 +9,7 @@ use stereokit_rust::sk::{Sk, StepperAction};
 use stereokit_rust::system::Log;
 use stereokit_rust::{
     sk::{OriginMode, SkSettings},
+    system::BackendOpenXR,
     system::LogLevel,
 };
 use winit::event_loop::EventLoop;
@@ -28,6 +29,8 @@ fn android_main(app: AndroidApp) {
 
     android_logger::init_once(android_logger::Config::default().with_max_level(log::LevelFilter::Debug));
 
+    BackendOpenXR::request_ext("XR_FB_passthrough");
+
     let (sk, event_loop) = settings.init(app).unwrap();
 
     _main(sk, event_loop);
@@ -46,6 +49,8 @@ fn main() {
         .log_filter(LogLevel::Diagnostic)
         .no_flatscreen_fallback(true)
         .mode(AppMode::Simulator);
+
+    BackendOpenXR::request_ext("XR_FB_passthrough");
 
     let (sk, event_loop) = settings.init().unwrap();
 

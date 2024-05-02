@@ -10,8 +10,10 @@ use std::{
 };
 
 use winit::{
-    event::Event,
-    event_loop::{ControlFlow, EventLoop, EventLoopBuilder, EventLoopProxy},
+    application::ApplicationHandler,
+    event::{DeviceEvent, DeviceId, Event, WindowEvent},
+    event_loop::{ActiveEventLoop, ControlFlow, EventLoop, EventLoopProxy},
+    window::WindowId,
 };
 
 use crate::{
@@ -607,7 +609,6 @@ impl Sk {
         app: AndroidApp,
     ) -> Result<(Sk, EventLoop<StepperAction>), StereoKitError> {
         use winit::platform::android::activity::{MainEvent, PollEvent};
-        //use android_activity::{MainEvent, PollEvent};
         use winit::platform::android::EventLoopBuilderExtAndroid;
         // OpenXR won't leave IDLE state if we do not purge the first events :
         // PostSessionStateChange: XR_SESSION_STATE_IDLE -> XR_SESSION_STATE_READY
@@ -626,7 +627,7 @@ impl Sk {
                 otherwise => Log::diag(format!("PollEvent {:?} ", otherwise)),
             })
         }
-        let event_loop = EventLoopBuilder::<StepperAction>::with_user_event().with_android_app(app.clone()).build()?;
+        let event_loop = EventLoop::<StepperAction>::with_user_event().with_android_app(app.clone()).build()?;
         let event_loop_proxy = event_loop.create_proxy();
 
         let (vm_pointer, jobject_pointer) = {
@@ -669,7 +670,7 @@ impl Sk {
     /// see also [`crate::sk::sk_init`]
     #[cfg(not(target_os = "android"))]
     pub fn initialize(settings: &mut SkSettings) -> Result<(Sk, EventLoop<StepperAction>), StereoKitError> {
-        let event_loop = EventLoopBuilder::<StepperAction>::with_user_event().build()?;
+        let event_loop = EventLoop::<StepperAction>::with_user_event().build()?;
         let event_loop_proxy = event_loop.create_proxy();
         let (vm_pointer, jobject_pointer) = (null_mut::<c_void>(), null_mut::<c_void>());
 
@@ -742,6 +743,7 @@ impl Sk {
     /// <https://stereokit.net/Pages/StereoKit/SK/Run.html>
     ///
     /// see also [`crate::sk::sk_run_data`]
+    #[deprecated(since = "0.40.0", note = "see SkClosure::run_app() instead")]
     pub fn run<U: FnMut(&mut Sk, &MainThreadToken), S: FnMut(&mut Sk)>(
         &mut self,
         event_loop: EventLoop<StepperAction>,
@@ -750,6 +752,7 @@ impl Sk {
     ) {
         let mut token = MainThreadToken { event_report: vec![] };
         event_loop.set_control_flow(ControlFlow::Poll);
+        #[allow(deprecated)]
         event_loop
             .run(move |event, elwt| match event {
                 Event::NewEvents(_start_cause) => {} // Quest flood this : Log::diag(format!("NewEvents {:?}", start_cause)),
@@ -825,6 +828,7 @@ impl Sk {
     /// <https://stereokit.net/Pages/StereoKit/SK/Step.html>
     ///
     /// see also [`crate::sk::sk_step`]
+    #[deprecated(since = "0.40.0", note = "see SkClosure::about_to_wait() instead")]
     pub fn step<F: FnMut(&mut Sk, &MainThreadToken)>(&mut self, on_step: &mut F, token: &mut MainThreadToken) -> bool {
         if unsafe { sk_step(None) } == 0 {
             return false;
@@ -909,6 +913,111 @@ impl Sk {
     }
 }
 
+type Type<'a> = Box<dyn FnMut(&mut Sk, &MainThreadToken) + 'a>;
+
+/// What winit v0.30 want is : run_app()
+///
+pub struct SkClosures<'a> {
+    sk: Sk,
+    token: MainThreadToken,
+    on_step: Type<'a>,
+    shutdown: Box<dyn FnMut(&mut Sk) + 'a>,
+    window_id: Option<WindowId>,
+}
+
+impl ApplicationHandler<StepperAction> for SkClosures<'_> {
+    fn user_event(&mut self, _event_loop: &ActiveEventLoop, user_event: StepperAction) {
+        Log::diag(format!("UserEvent {:?}", user_event));
+        self.sk.push_action(user_event);
+    }
+
+    fn resumed(&mut self, _event_loop: &ActiveEventLoop) {
+        Log::info("Resumed !!");
+    }
+
+    fn window_event(&mut self, event_loop: &ActiveEventLoop, window_id: WindowId, event: WindowEvent) {
+        if event == WindowEvent::Destroyed {
+            println!(" Window {:?} Destroyed !!!", window_id);
+            return;
+        }
+
+        match event {
+            WindowEvent::RedrawRequested => {}
+            WindowEvent::Focused(_value) => {
+                self.window_id = Some(window_id);
+            }
+            WindowEvent::CloseRequested => {
+                Log::info("LoopExiting !!");
+                (self.shutdown)(&mut self.sk);
+                self.sk.shutdown();
+                event_loop.exit();
+            }
+            _ => (),
+        }
+
+        Log::diag(format!("WindowEvent {:?} -> {:?}", window_id, event));
+    }
+
+    fn device_event(&mut self, _event_loop: &ActiveEventLoop, device_id: DeviceId, event: DeviceEvent) {
+        Log::diag(format!("DeviceEvent {:?} -> {:?}", device_id, event));
+    }
+
+    fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
+        if unsafe { sk_step(None) } == 0 {
+            self.window_event(
+                event_loop,
+                self.window_id.unwrap_or(unsafe { WindowId::dummy() }),
+                WindowEvent::CloseRequested,
+            );
+            return;
+        }
+        if !self.sk.steppers.step(&mut self.token) {
+            self.sk.quit(None)
+        };
+
+        while let Some(mut action) = self.sk.actions.pop_front() {
+            action();
+        }
+
+        (self.on_step)(&mut self.sk, &self.token);
+    }
+
+    // fn new_events(&mut self, _event_loop: &ActiveEventLoop, cause: winit::event::StartCause) {
+    //     Log::info(format!("New events :{:?}", cause));
+    // }
+
+    fn suspended(&mut self, _event_loop: &ActiveEventLoop) {
+        Log::info("Suspended !!");
+    }
+
+    fn exiting(&mut self, _event_loop: &ActiveEventLoop) {
+        Log::info("Exiting !!");
+    }
+
+    fn memory_warning(&mut self, _event_loop: &ActiveEventLoop) {
+        Log::warn("Memory Warning !!");
+    }
+}
+
+impl<'a> SkClosures<'a> {
+    pub fn run_app<U: FnMut(&mut Sk, &MainThreadToken) + 'a, S: FnMut(&mut Sk) + 'a>(
+        sk: Sk,
+        event_loop: EventLoop<StepperAction>,
+        step: U,
+        shutdown: S,
+    ) {
+        let mut this = Self {
+            sk,
+            on_step: Box::new(step),
+            shutdown: Box::new(shutdown),
+            token: MainThreadToken { event_report: vec![] },
+            window_id: None,
+        };
+        event_loop.set_control_flow(ControlFlow::Poll);
+        let _ = event_loop.run_app(&mut this);
+    }
+}
+
 /// This is a lightweight standard interface for fire-and-forget systems that can be attached to StereoKit! This is
 /// particularly handy for extensions/plugins that need to run in the background of your application, or even for
 /// managing some of your own simpler systems.
@@ -948,7 +1057,7 @@ pub trait IStepper {
 /// List of action on steppers. This is the user events
 pub enum StepperAction {
     /// Add a new stepper of TypeID,  identified by its StepperID
-    Add(Box<dyn IStepper + Send + 'static>, TypeId, StepperId),
+    Add(Box<dyn for<'a> IStepper + Send + 'static>, TypeId, StepperId),
     /// Remove all steppers of TypeID
     RemoveAll(TypeId),
     /// Remove the stepper identified by its StepperID
@@ -1099,5 +1208,44 @@ impl Steppers {
             stepper_h.stepper.shutdown()
         }
         self.steppers.clear();
+    }
+}
+
+/// Helper to create the whole code of a Stepper in method IStepper::initialize() while avoiding multiple fields.
+/// See Demo b_stepper.rs::BStepper
+/// Non canonical structure
+pub struct StepperClosures<'a> {
+    on_step: Box<dyn FnMut(&MainThreadToken) + 'a>,
+    shutdown: Box<dyn FnMut() + 'a>,
+}
+
+/// create an empty struct to fulfill with fn ClosureStepper::fn(&self)
+impl Default for StepperClosures<'_> {
+    fn default() -> Self {
+        Self { on_step: Box::new(|_token| {}), shutdown: Box::new(|| {}) }
+    }
+}
+
+impl<'a> StepperClosures<'a> {
+    pub fn new() -> Self {
+        Self { ..Default::default() }
+    }
+
+    pub fn set<U: FnMut(&MainThreadToken) + 'static, S: FnMut() + 'static>(
+        &mut self,
+        on_step: U,
+        shutdown: S,
+    ) -> &mut Self {
+        self.on_step = Box::new(on_step);
+        self.shutdown = Box::new(shutdown);
+        self
+    }
+
+    pub fn step(&mut self, token: &MainThreadToken) {
+        (self.on_step)(token)
+    }
+
+    pub fn shutdown(&mut self) {
+        (self.shutdown)()
     }
 }

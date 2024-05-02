@@ -1,8 +1,7 @@
 use std::{
-    char,
     ffi::{c_char, c_ushort, c_void, CStr, CString},
     fmt,
-    mem::size_of,
+    mem::{size_of, transmute_copy},
     path::Path,
     ptr::{null, null_mut, NonNull},
 };
@@ -338,9 +337,13 @@ pub enum BackendGraphics {
 
 pub type OpenXRHandleT = u64;
 
-///  <https://stereokit.net/Pages/StereoKit/Backend.html>
+/// This class exposes some of StereoKit’s backend functionality. This allows for tighter integration with certain
+/// platforms, but also means your code becomes less portable. Everything in this class should be guarded by
+/// availability checks.
+///  
+/// <https://stereokit.net/Pages/StereoKit/Backend.html>
 pub struct Backend;
-
+pub type VoidFunction = unsafe extern "system" fn();
 extern "C" {
     pub fn backend_xr_get_type() -> BackendXRType;
     pub fn backend_openxr_get_instance() -> OpenXRHandleT;
@@ -349,7 +352,7 @@ extern "C" {
     pub fn backend_openxr_get_space() -> OpenXRHandleT;
     pub fn backend_openxr_get_time() -> i64;
     pub fn backend_openxr_get_eyes_sample_time() -> i64;
-    pub fn backend_openxr_get_function(function_name: *const c_char) -> *mut c_void;
+    pub fn backend_openxr_get_function(function_name: *const c_char) -> Option<VoidFunction>;
     pub fn backend_openxr_ext_enabled(extension_name: *const c_char) -> Bool32T;
     pub fn backend_openxr_ext_request(extension_name: *const c_char);
     pub fn backend_openxr_ext_exclude(extension_name: *const c_char);
@@ -545,8 +548,12 @@ impl BackendOpenXR {
     ///
     /// see also [crate::system::backend_openxr_ext_enabled]
     pub fn ext_enabled(extension_name: impl AsRef<str>) -> bool {
-        let c_str = CString::new(extension_name.as_ref()).unwrap();
-        unsafe { backend_openxr_ext_enabled(c_str.as_ptr()) != 0 }
+        if Backend::xr_type() == BackendXRType::OpenXR {
+            let c_str = CString::new(extension_name.as_ref()).unwrap();
+            unsafe { backend_openxr_ext_enabled(c_str.as_ptr()) != 0 }
+        } else {
+            false
+        }
     }
 
     /// This is basically xrGetInstanceProcAddr from OpenXR, you can use this to get and call functions from an
@@ -555,9 +562,21 @@ impl BackendOpenXR {
     /// <https://stereokit.net/Pages/StereoKit/Backend.OpenXR/GetFunctionPtr.html>
     ///
     /// see also [crate::system::backend_openxr_get_function]
-    pub fn get_function_ptr(function_name: impl AsRef<str>) -> *mut c_void {
+    pub fn get_function_ptr(function_name: impl AsRef<str>) -> Option<VoidFunction> {
         let c_str = CString::new(function_name.as_ref()).unwrap();
         unsafe { backend_openxr_get_function(c_str.as_ptr()) }
+    }
+
+    /// This is basically xrGetInstanceProcAddr from OpenXR, you can use this to get and call functions from an
+    /// extension you’ve loaded. You can use Marshal.GetDelegateForFunctionPointer to turn the result into a delegate
+    /// that you can call.
+    /// <https://stereokit.net/Pages/StereoKit/Backend.OpenXR/GetFunctionPtr.html>
+    ///
+    /// see also [crate::system::backend_openxr_get_function]
+    pub fn get_function<T>(function_name: impl AsRef<str>) -> Option<T> {
+        let c_str = CString::new(function_name.as_ref()).unwrap();
+        let function = unsafe { backend_openxr_get_function(c_str.as_ptr()) };
+        unsafe { transmute_copy(&function) }
     }
 
     /// This sets a scaling value for joints provided by the articulated hand extension. Some systems just don’t seem to

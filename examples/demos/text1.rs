@@ -120,7 +120,6 @@ impl Text1 {
             self.text_style_test = Text::make_style(font, 0.05, WHITE);
             self.font_selected = 3;
         }
-        Ui::same_line();
         Ui::next_line();
         if let Some(new_value) = Ui::toggle("French keyboard", self.keyboard_layout_fr, None) {
             self.keyboard_layout_fr = true; // we can't reverse right now ^_^

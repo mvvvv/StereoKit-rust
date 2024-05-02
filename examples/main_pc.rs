@@ -30,6 +30,8 @@ pub const USAGE: &str = r#"Usage : program [OPTION]
 #[allow(dead_code)]
 #[cfg(not(target_os = "android"))]
 fn main() {
+    use stereokit_rust::system::BackendOpenXR;
+
     let mut headless = false;
     let mut is_testing = false;
     let mut start_test = "".to_string();
@@ -101,6 +103,8 @@ fn main() {
         }
         settings.disable_unfocused_sleep(true);
     }
+
+    BackendOpenXR::request_ext("XR_FB_passthrough");
 
     let (sk, event_loop) = settings.init().unwrap();
     launch(sk, event_loop, is_testing, start_test);

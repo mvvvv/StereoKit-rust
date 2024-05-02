@@ -7,13 +7,14 @@ use stereokit_rust::{
     mesh::Mesh,
     model::Model,
     shader::Shader,
-    sk::{AppFocus, DisplayMode, Sk, StepperAction, StepperId},
+    sk::{AppFocus, DisplayMode, Sk, SkClosures, StepperAction, StepperId},
     sprite::Sprite,
-    system::{BtnState, Input, Key, Lines, Log, LogLevel, Projection, Renderer, Text},
+    system::{BackendOpenXR, BtnState, Input, Key, Lines, Log, LogLevel, Projection, Renderer, Text},
     tex::{SHCubemap, Tex, TexSample},
     tools::{
         fly_over::FlyOver,
         log_window::{LogItem, LogWindow},
+        passthrough_fb_ext::{PassthroughFbExt, PASSTHROUGH_FLIP},
         screenshoot::ScreenshotViewer,
     },
     ui::{Ui, UiBtnLayout},
@@ -247,7 +248,15 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
     sk.push_action(StepperAction::add("LogWindow", log_window));
     sk.push_action(StepperAction::add_default::<ScreenshotViewer>("Screenshoot"));
     sk.push_action(StepperAction::add_default::<FlyOver>("FlyOver"));
-
+    let mut passthrough = false;
+    let passthrough_enabled = BackendOpenXR::ext_enabled("XR_FB_passthrough");
+    if passthrough_enabled {
+        passthrough = false;
+        sk.push_action(StepperAction::add_default::<PassthroughFbExt>("PassthroughFbExt"));
+        Log::diag("Passthrough Enabled !!")
+    } else {
+        Log::diag("No Passthrough !!")
+    }
     let tests = Test::get_tests();
 
     if !start_test.is_empty() {
@@ -258,6 +267,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
             }
         }
     }
+
     Log::diag(
         "======================================================================================================== !!",
     );
@@ -265,7 +275,8 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
     let ui_text_style = Ui::get_text_style();
     ui_text_style.get_material().face_cull(Cull::Back);
 
-    sk.run(
+    SkClosures::run_app(
+        sk,
         event_loop,
         |sk, token| {
             if last_focus != sk.get_app_focus() {
@@ -318,7 +329,9 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
 
             // draw a floor if needed
             //let transform = if World::has_bounds() { World::get_bounds_pose().to_matrix(None) } else { floor_tr };
-            floor_model.draw(token, floor_tr, None, None);
+            if !passthrough {
+                floor_model.draw(token, floor_tr, None, None);
+            }
             Lines::add_axis(token, Pose::IDENTITY, Some(0.5), None);
 
             if !window_demo_show {
@@ -371,8 +384,20 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
                 ) {
                     sk.quit(None);
                 }
-                //Ui::image(&power_button, Vec2::new(0.1, 0.1));
-
+                Ui::same_line();
+                if passthrough_enabled {
+                    if let Some(new_value) = Ui::toggle("Passthrough MR", passthrough, None) {
+                        passthrough = new_value;
+                        let mut string_value = "0";
+                        if new_value {
+                            Log::diag("Activate passthrough");
+                            string_value = "1";
+                        } else {
+                            Log::diag("deactivate passthrough");
+                        }
+                        sk.push_action(StepperAction::event("main".into(), PASSTHROUGH_FLIP, string_value))
+                    }
+                }
                 Ui::window_end();
             }
         },
