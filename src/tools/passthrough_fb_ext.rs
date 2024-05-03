@@ -21,18 +21,40 @@ use std::{cell::RefCell, ptr::null_mut, rc::Rc};
 ///
 ///
 
+/// The StepperAction to trigger with the value "0"/"1" to Deactivate/Activate the passthrough.
 pub const PASSTHROUGH_FLIP: &str = "PassthroughFlip";
 
 /// Use PassthroughFbExt::new(true) instead of Default if you want to have it at start up.
 ///
 ///
-/// ```no_run
-///     // the folowing lines must be added ...
-///     if BackendOpenXR::ext_enabled("XR_FB_passthrough") {
-///         BackendOpenXR::request_ext("XR_FB_passthrough");
-///     }
-///     // ... before initializing sk
-///     let (sk, event_loop) = settings.init().unwrap();
+/// ```ignore
+/// // The folowing line must be added before initializing sk:
+/// BackendOpenXR::request_ext("XR_FB_passthrough");
+/// let (sk, event_loop) = settings.init().unwrap();
+///
+/// // Launch the stepper as follow :
+/// let mut passthrough = false;
+/// let passthrough_enabled = BackendOpenXR::ext_enabled("XR_FB_passthrough");
+/// if passthrough_enabled {
+///      sk.push_action(StepperAction::add_default::<PassthroughFbExt>("PassthroughFbExt"));
+///      Log::diag("Passthrough Disabled !!")
+///  } else {
+///      Log::diag("No Passthrough !!")
+///  }
+///
+///  // Activate/Deactivate the stepper as follow :
+///  if passthrough_enabled && passthrough != new_passthrough_value {
+///      passthrough = new_passthrough_value;
+///          let mut string_value = "0";
+///          if passthrough {
+///              Log::diag("Activate passthrough");
+///              string_value = "1";
+///          } else {
+///              Log::diag("Deactivate passthrough");
+///          }
+///          sk.push_action(StepperAction::event("main".into(), PASSTHROUGH_FLIP, string_value))
+///      }
+///  }
 /// ```
 
 pub struct PassthroughFbExt {
