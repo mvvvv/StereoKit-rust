@@ -48,6 +48,8 @@ android_logger = "0.13"
 #android-activity = { version = "0.6", features = [ "native-activity" ] }
 ndk-context = "0.1.1"
 ndk = "0.9.0"
+ndk-sys = "0.6"
+jni = "0.21"
 
 [[example]]
 #---For PC only (vscode launcher)
@@ -98,6 +100,10 @@ required = false
 [[package.metadata.android.uses_feature]]
 name = "oculus.software.eye_tracking"
 required = false
+
+[[package.metadata.android.uses_feature]]
+name = "oculus.software.overlay_keyboard"
+required = true
 
 [[package.metadata.android.uses_feature]]
 name = "com.oculus.experimental.enabled"
@@ -184,7 +190,6 @@ config_changes = "density|keyboard|keyboardHidden|navigation|orientation|screenL
 launch_mode = "singleTask"
 orientation = "landscape"
 resizeable_activity = false
-
 
 [[package.metadata.android.application.activity.intent_filter]]
 actions = ["android.intent.action.MAIN"]

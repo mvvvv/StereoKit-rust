@@ -63,8 +63,8 @@ pub struct PassthroughFbExt {
     ext_available: bool,
     enabled: bool,
     enable_on_init: bool,
-    active_passtrough: *mut PassthroughFB,
-    active_layer: *mut PassthroughLayerFB,
+    active_passtrough: PassthroughFB,
+    active_layer: PassthroughLayerFB,
     old_color: Color128,
     old_sky: bool,
     xr_create_passthrough_fb: Option<CreatePassthroughFB>,
@@ -82,16 +82,14 @@ unsafe impl Send for PassthroughFbExt {}
 
 impl Default for PassthroughFbExt {
     fn default() -> Self {
-        let mut passthrough = PassthroughFB::from_raw(0);
-        let mut layer = PassthroughLayerFB::from_raw(0);
         Self {
             id: "PassthroughFbExt".to_string(),
             sk_info: None,
             ext_available: false,
             enabled: false,
             enable_on_init: false,
-            active_passtrough: &mut passthrough,
-            active_layer: &mut layer,
+            active_passtrough: PassthroughFB::from_raw(0),
+            active_layer: PassthroughLayerFB::from_raw(0),
             old_color: Color128::WHITE,
             old_sky: false,
             xr_create_passthrough_fb: BackendOpenXR::get_function::<CreatePassthroughFB>("xrCreatePassthroughFB"),
@@ -128,7 +126,7 @@ impl IStepper for PassthroughFbExt {
             && self.load_binding()
             && self.init_passthrough();
 
-        true
+        self.ext_available
     }
 
     fn enabled(&self) -> bool {
@@ -154,7 +152,7 @@ impl IStepper for PassthroughFbExt {
                 next: null_mut(),
                 space: Space::from_raw(0),
                 flags: CompositionLayerFlags::BLEND_TEXTURE_SOURCE_ALPHA,
-                layer_handle: unsafe { *self.active_layer },
+                layer_handle: self.active_layer,
             };
             BackendOpenXR::add_composition_layer(&mut layer, -1);
         }
@@ -164,8 +162,8 @@ impl IStepper for PassthroughFbExt {
         if self.enabled {
             self.enable(false);
             if self.ext_available {
-                unsafe { self.xr_destroy_passthrough_layer_fb.unwrap()(*self.active_layer) };
-                unsafe { self.xr_destroy_passthrough_fb.unwrap()(*self.active_passtrough) };
+                unsafe { self.xr_destroy_passthrough_layer_fb.unwrap()(self.active_layer) };
+                unsafe { self.xr_destroy_passthrough_fb.unwrap()(self.active_passtrough) };
             }
         };
     }
@@ -199,7 +197,7 @@ impl PassthroughFbExt {
             self.xr_create_passthrough_fb.unwrap()(
                 Session::from_raw(BackendOpenXR::session()),
                 &PassthroughCreateInfoFB { ty: StructureType::PASSTHROUGH_CREATE_INFO_FB, next: null_mut(), flags },
-                self.active_passtrough,
+                &mut self.active_passtrough,
             )
         } {
             Result::SUCCESS => {}
@@ -215,11 +213,11 @@ impl PassthroughFbExt {
                 &PassthroughLayerCreateInfoFB {
                     ty: StructureType::PASSTHROUGH_LAYER_CREATE_INFO_FB,
                     next: null_mut(),
-                    passthrough: *self.active_passtrough,
+                    passthrough: self.active_passtrough,
                     flags,
                     purpose: PassthroughLayerPurposeFB::RECONSTRUCTION,
                 },
-                self.active_layer,
+                &mut self.active_layer,
             )
         } {
             Result::SUCCESS => {}
@@ -236,7 +234,7 @@ impl PassthroughFbExt {
     }
 
     fn start_passthrough(&mut self) -> bool {
-        match unsafe { self.xr_passthrough_start_fb.unwrap()(*self.active_passtrough) } {
+        match unsafe { self.xr_passthrough_start_fb.unwrap()(self.active_passtrough) } {
             Result::SUCCESS => {}
             otherwise => {
                 Log::err(format!("xrPassthroughStartFB failed: {otherwise}"));
@@ -244,7 +242,7 @@ impl PassthroughFbExt {
             }
         }
 
-        match unsafe { self.xr_passthrough_layer_resume_fb.unwrap()(*self.active_layer) } {
+        match unsafe { self.xr_passthrough_layer_resume_fb.unwrap()(self.active_layer) } {
             Result::SUCCESS => {}
             otherwise => {
                 Log::err(format!("xrPassthroughLayerResumeFB failed: {otherwise}"));
@@ -264,7 +262,7 @@ impl PassthroughFbExt {
     }
 
     fn pause_passthrough(&mut self) {
-        match unsafe { self.xr_passthrough_layer_pause_fb.unwrap()(*self.active_layer) } {
+        match unsafe { self.xr_passthrough_layer_pause_fb.unwrap()(self.active_layer) } {
             Result::SUCCESS => {}
             otherwise => {
                 Log::err(format!("xrPassthroughLayerPauseFB failed: {otherwise}"));
@@ -272,7 +270,7 @@ impl PassthroughFbExt {
             }
         }
 
-        match unsafe { self.xr_passthrough_pause_fb.unwrap()(*self.active_passtrough) } {
+        match unsafe { self.xr_passthrough_pause_fb.unwrap()(self.active_passtrough) } {
             Result::SUCCESS => {}
             otherwise => {
                 Log::err(format!("xrPassthroughPauseFB failed: {otherwise}"));

@@ -29,8 +29,9 @@ fn android_main(app: AndroidApp) {
 
     android_logger::init_once(android_logger::Config::default().with_max_level(log::LevelFilter::Debug));
 
+    BackendOpenXR::request_ext("XR_FB_display_refresh_rate");
     BackendOpenXR::request_ext("XR_FB_passthrough");
-
+    BackendOpenXR::request_ext("XR_META_virtual_keyboard");
     let (sk, event_loop) = settings.init(app).unwrap();
 
     _main(sk, event_loop);
@@ -50,8 +51,9 @@ fn main() {
         .no_flatscreen_fallback(true)
         .mode(AppMode::Simulator);
 
+    BackendOpenXR::request_ext("XR_FB_display_refresh_rate");
     BackendOpenXR::request_ext("XR_FB_passthrough");
-
+    BackendOpenXR::request_ext("XR_META_virtual_keyboard");
     let (sk, event_loop) = settings.init().unwrap();
 
     _main(sk, event_loop);

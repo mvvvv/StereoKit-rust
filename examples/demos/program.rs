@@ -14,8 +14,10 @@ use stereokit_rust::{
     tools::{
         fly_over::FlyOver,
         log_window::{LogItem, LogWindow},
+        os_api::{get_display_refresh_rate, set_display_refresh_rate},
         passthrough_fb_ext::{PassthroughFbExt, PASSTHROUGH_FLIP},
         screenshoot::ScreenshotViewer,
+        virtual_kbd_meta::VirtualKbdMETA,
     },
     ui::{Ui, UiBtnLayout},
     util::{
@@ -31,7 +33,7 @@ static LOG_LOG: Mutex<Vec<LogItem>> = Mutex::new(vec![]);
 use super::Test;
 pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool, start_test: String) {
     Log::diag(
-        "======================================================================================================== !!",
+        "======================================================================================================================== !!",
     );
 
     Renderer::scaling(1.5);
@@ -55,14 +57,24 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
 
     let fn_mut = |level: LogLevel, log_text: &str| {
         let mut items = LOG_LOG.lock().unwrap();
+
         for line_text in log_text.lines() {
-            if let Some(item) = items.last_mut() {
-                if item.text.eq(line_text) {
-                    item.count += 1;
-                    return;
-                }
+            let subs = line_text.as_bytes().chunks(120);
+            for (pos, sub_line) in subs.enumerate() {
+                if let Ok(mut sub_string) = String::from_utf8(sub_line.to_vec()) {
+                    if pos > 0 {
+                        sub_string.insert_str(0, "‣‣‣‣");
+                    }
+                    if let Some(item) = items.last_mut() {
+                        if item.text == sub_string {
+                            item.count += 1;
+                            continue;
+                        }
+                    }
+
+                    items.push(LogItem { level, text: sub_string.to_owned(), count: 1 });
+                };
             }
-            items.push(LogItem { level, text: line_text.to_owned(), count: 1 });
         }
     };
     Log::subscribe(fn_mut);
@@ -132,8 +144,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
         .tex_transform(Vec4::new(0.0, 0.0, 3.0, 3.0))
         .roughness_amount(0.7)
         .color_tint(BLACK)
-        //.transparency(Transparency::Add)
-        .queue_offset(-11);
+        .queue_offset(11);
 
     let floor_model =
         Model::from_mesh(Mesh::generate_plane(Vec2::new(40.0, 40.0), Vec3::UP, Vec3::FORWARD, None, true), clean_tile);
@@ -146,24 +157,11 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
             Err(_) => Sprite::from_tex(&tex_particule, None, None).unwrap(),
         };
 
-    // if is_testing {
-    //     Ui::enable_far_interact(false);
-    // } else {
-    //     //sk.add_stepper<DebugToolWindow>(None);
-    // }
-
     // Open or close the log window
     let event_loop_proxy = sk.get_event_loop_proxy();
     let send_event_show_log = move || {
         let _ = &event_loop_proxy.send_event(StepperAction::event("main".to_string(), "ShowLogWindow", "1"));
     };
-
-    // Take a screenshot closure
-    // let take_screenshot = move || {
-    //     let camera_at = Input::get_head();
-    //     let file_name = "Screenshot.png";
-    //     Renderer::screenshot(file_name, 90, camera_at, 800, 600, None)
-    // };
 
     let event_loop_proxy = sk.get_event_loop_proxy().clone();
     let send_event_show_screenshot = move || {
@@ -256,6 +254,18 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
     } else {
         Log::diag("No Passthrough !!")
     }
+    let virtual_kbd_enabled = BackendOpenXR::ext_enabled("XR_META_virtual_keyboard");
+    if virtual_kbd_enabled {
+        sk.push_action(StepperAction::add_default::<VirtualKbdMETA>("VirtualKbdMETA"));
+        Log::diag("XR_META_virtual_keyboard Ready !!")
+    } else {
+        Log::diag("No XR_META_virtual_keyboard !!")
+    }
+    let refresh_rate_editable = BackendOpenXR::ext_enabled("XR_FB_display_refresh_rate");
+    let next_refresh_rate_image = Sprite::arrow_right();
+    let refresh_rates = [60.0, 72.0, 90.0, 120.0];
+    let mut current_refresh_rate = get_display_refresh_rate().unwrap_or(0.0);
+
     let tests = Test::get_tests();
 
     if !start_test.is_empty() {
@@ -268,7 +278,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
     }
 
     Log::diag(
-        "======================================================================================================== !!",
+        "===================================================================================================================== !!",
     );
 
     let ui_text_style = Ui::get_text_style();
@@ -397,6 +407,32 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
                         sk.push_action(StepperAction::event("main".into(), PASSTHROUGH_FLIP, string_value))
                     }
                 }
+                Ui::same_line();
+                if refresh_rate_editable
+                    && Ui::button_img(
+                        format!("Up to {:?} fps", current_refresh_rate as u32),
+                        &next_refresh_rate_image,
+                        None,
+                        None,
+                        None,
+                    )
+                {
+                    let mut restart = true;
+                    for i in refresh_rates {
+                        if i > current_refresh_rate {
+                            current_refresh_rate = i;
+                            restart = false;
+                            break;
+                        }
+                    }
+                    if restart {
+                        current_refresh_rate = refresh_rates[0]
+                    }
+                    if !set_display_refresh_rate(current_refresh_rate) {
+                        current_refresh_rate = 0.0;
+                    }
+                }
+
                 Ui::window_end();
             }
         },

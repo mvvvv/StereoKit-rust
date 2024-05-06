@@ -22,6 +22,8 @@ pub struct LogWindow<'a> {
     sk_info: Option<Rc<RefCell<SkInfo>>>,
     pub enabled: bool,
     pub pose: Pose,
+    pub x_len: f32,
+    pub y_len: f32,
     style_diag: TextStyle,
     style_info: TextStyle,
     style_warn: TextStyle,
@@ -37,19 +39,23 @@ impl<'a> LogWindow<'a> {
     pub fn new(log_log: &'a Mutex<Vec<LogItem>>) -> Self {
         let enabled = false;
         let pose = Pose::IDENTITY;
+        let x_len = 120.0;
+        let y_len = 15.0;
 
         let style_diag = TextStyle::from_font(Font::default(), 0.012, Color128::hsv(1.0, 0.0, 0.7, 1.0));
         let style_info = TextStyle::from_font(Font::default(), 0.012, Color128::hsv(1.0, 0.0, 1.0, 1.0));
         let style_warn = TextStyle::from_font(Font::default(), 0.012, Color128::hsv(0.17, 0.7, 1.0, 1.0));
-        let style_err = TextStyle::from_font(Font::default(), 0.012, Color128::hsv(1.0, 0.7, 1.0, 1.0));
+        let style_err = TextStyle::from_font(Font::default(), 0.012, Color128::hsv(1.0, 0.17, 0.17, 1.0));
         for ui_text_style in [style_diag, style_info, style_warn, style_err] {
-            ui_text_style.get_material().face_cull(Cull::Back);
+            ui_text_style.get_material().face_cull(Cull::Back); //.depth_test(DepthTest::Less).depth_write(true);
         }
         Self {
             id: "LogWindow".to_string(),
             sk_info: None,
             enabled,
             pose,
+            x_len,
+            y_len,
             style_diag,
             style_info,
             style_warn,
@@ -69,7 +75,7 @@ impl<'a> LogWindow<'a> {
             return;
         };
 
-        Ui::window_begin("Log", &mut self.pose, Some(Vec2::new(140.0, 0.0) * CM), None, None);
+        Ui::window_begin("Log", &mut self.pose, Some(Vec2::new(self.x_len, 0.0) * CM), None, None);
         self.draw_logs(token);
         Ui::hseparator();
         Ui::window_end();
@@ -77,17 +83,16 @@ impl<'a> LogWindow<'a> {
 
     fn draw_logs(&mut self, token: &MainThreadToken) {
         let text_size = Vec2::new(Ui::get_layout_remaining().x, 0.024);
-        const COUNT_F: f32 = 15.0;
         let items = self.log_log.lock().unwrap();
 
-        Ui::layout_push_cut(UiCut::Top, text_size.y * COUNT_F, false);
+        Ui::layout_push_cut(UiCut::Top, text_size.y * self.y_len, false);
         Ui::layout_push_cut(UiCut::Right, Ui::get_line_height() * 0.6, false);
 
         if self.items_size < items.len() {
             self.items_size = items.len();
             self.log_index = items.len() as f32;
 
-            // if self.log_index < COUNT_F {
+            // if self.log_index < self.y_len {
             //     self.log_index = 0.0;
             // }
         }
@@ -100,13 +105,13 @@ impl<'a> LogWindow<'a> {
         Ui::layout_pop();
 
         let start = Ui::get_layout_at();
-        Ui::layout_reserve(Vec2::new(text_size.x, text_size.y * COUNT_F), true, 0.0);
+        Ui::layout_reserve(Vec2::new(text_size.x, text_size.y * self.y_len), true, 0.0);
 
-        let mut index = (self.log_index - COUNT_F) as i32;
+        let mut index = (self.log_index - self.y_len) as i32;
         let mut last_item_printed = self.log_index as i32;
         if index < 0 {
             index = 0;
-            last_item_printed = COUNT_F as i32;
+            last_item_printed = self.y_len as i32;
         }
         for i in index..last_item_printed {
             if let Some(item) = items.get(i as usize) {

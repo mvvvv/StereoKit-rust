@@ -5,7 +5,8 @@ use stereokit_rust::{
     maths::{units::CM, Matrix, Pose, Quat, Vec2, Vec3},
     sk::{IStepper, MainThreadToken, SkInfo, StepperAction, StepperId},
     sprite::Sprite,
-    system::{Log, Text, TextContext, TextStyle},
+    system::{Input, Key, Log, Text, TextContext, TextStyle},
+    tools::os_api::show_soft_input,
     ui::{Ui, UiBtnLayout},
     util::{
         named_colors::{RED, WHITE},
@@ -37,6 +38,7 @@ pub struct Text1 {
     pub transform: Matrix,
     pub window_demo_pose: Pose,
     pub demo_win_width: f32,
+    pub android_keyboard: bool,
     pub keyboard_layout_fr: bool,
     pub show_keyboard: bool,
     pub text_sample: String,
@@ -60,6 +62,7 @@ impl Default for Text1 {
             transform: Matrix::tr(&((Vec3::NEG_Z * 2.5) + Vec3::Y), &Quat::from_angles(0.0, 180.0, 0.0)),
             window_demo_pose: Pose::new(Vec3::new(0.0, 1.5, -0.3), Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0)))),
             demo_win_width: 80.0 * CM,
+            android_keyboard: false,
             keyboard_layout_fr: false,
             show_keyboard: false,
             text_sample: String::from("😃...😃"),
@@ -121,6 +124,25 @@ impl Text1 {
             self.font_selected = 3;
         }
         Ui::next_line();
+
+        if cfg!(target_os = "android") {
+            if let Some(new_value) = Ui::toggle("Android Keyboard", self.android_keyboard, None) {
+                self.android_keyboard = new_value;
+                if new_value {
+                    Platform::force_fallback_keyboard(false);
+                } else {
+                    Platform::force_fallback_keyboard(true);
+                }
+            }
+
+            if self.android_keyboard && Platform::get_keyboard_visible() {
+                Platform::keyboard_show(false, TextContext::Text);
+                Input::key_inject_press(Key::Left);
+                Input::key_inject_release(Key::Left);
+                show_soft_input(true);
+            }
+        }
+        Ui::same_line();
         if let Some(new_value) = Ui::toggle("French keyboard", self.keyboard_layout_fr, None) {
             self.keyboard_layout_fr = true; // we can't reverse right now ^_^
             let keyboard_layouts = vec![FR_KEY_TEXT, FR_KEY_TEXT_SHIFT, FR_KEY_TEXT_ALT];

@@ -18,7 +18,7 @@ use winit::{
 
 use crate::{
     maths::Bool32T,
-    system::{Log, LogLevel},
+    system::{Input, Log, LogLevel},
     StereoKitError,
 };
 
@@ -951,6 +951,17 @@ impl ApplicationHandler<StepperAction> for SkClosures<'_> {
                 (self.shutdown)(&mut self.sk);
                 self.sk.shutdown();
                 event_loop.exit();
+            }
+            WindowEvent::KeyboardInput { device_id: _, event, is_synthetic: _ } => {
+                match &event.state {
+                    winit::event::ElementState::Pressed => {}
+                    winit::event::ElementState::Released => {
+                        Input::text_inject_chars(event.logical_key.to_text().unwrap_or("?"));
+                    }
+                }
+                // no keyboard spy log so ...
+                Log::diag(format!("WindowEvent {:?} -> {:?}", window_id, event));
+                return;
             }
             _ => (),
         }
