@@ -1,13 +1,5 @@
 pub mod demos;
 
-use std::env;
-
-use demos::program::launch;
-use stereokit_rust::{
-    sk::{AppMode, OriginMode, SkSettings},
-    system::LogLevel,
-};
-
 pub const _USAGE: &str = r#"Usage : program [OPTION] 
 launch Stereokit tests and demos
 
@@ -30,7 +22,14 @@ pub const USAGE: &str = r#"Usage : program [OPTION]
 #[allow(dead_code)]
 #[cfg(not(target_os = "android"))]
 fn main() {
+    use std::env;
+
+    use demos::program::launch;
     use stereokit_rust::system::BackendOpenXR;
+    use stereokit_rust::{
+        sk::{AppMode, OriginMode, SkSettings},
+        system::LogLevel,
+    };
 
     let mut headless = false;
     let mut is_testing = false;
@@ -110,3 +109,8 @@ fn main() {
     let (sk, event_loop) = settings.init().unwrap();
     launch(sk, event_loop, is_testing, start_test);
 }
+
+/// Fake main for android
+#[allow(dead_code)]
+#[cfg(target_os = "android")]
+fn main() {}

@@ -621,7 +621,9 @@ impl Sk {
                         MainEvent::RedrawNeeded { .. } => {
                             ready_to_go = true;
                         }
-                        _ => {}
+                        _ => {
+                            ready_to_go = false;
+                        }
                     }
                 }
                 otherwise => Log::diag(format!("PollEvent {:?} ", otherwise)),
@@ -651,7 +653,7 @@ impl Sk {
                 let sk_info = Rc::new(RefCell::new(SkInfo {
                     settings: settings.clone(),
                     system_info: unsafe { sk_system_info() },
-                    event_loop_proxy: event_loop_proxy,
+                    event_loop_proxy,
                     android_app: app,
                 }));
                 Ok((

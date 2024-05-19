@@ -13,7 +13,7 @@ use stereokit_rust::{
 };
 
 /// The plane1 stepper a flying plane
-pub struct Plane1 {
+pub struct Biplane1 {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
     plane_pose: Pose,
@@ -31,10 +31,10 @@ pub struct Plane1 {
     text_style: Option<TextStyle>,
 }
 
-unsafe impl Send for Plane1 {}
+unsafe impl Send for Biplane1 {}
 
 /// This code may be called in main thread
-impl Default for Plane1 {
+impl Default for Biplane1 {
     fn default() -> Self {
         let model = Model::from_file("plane.glb", None).unwrap_or_default();
         let nodes = model.get_nodes();
@@ -62,14 +62,14 @@ impl Default for Plane1 {
             plane_sound_inst: None,
             material: Material::pbr(),
             transform: Matrix::tr(&((Vec3::NEG_Z * 2.5) + Vec3::Y), &Quat::from_angles(0.0, 180.0, 0.0)),
-            text: "Plane1".to_owned(),
+            text: "Biplane1".to_owned(),
             text_style: None,
         }
     }
 }
 
 /// All the code here run in the main thread
-impl IStepper for Plane1 {
+impl IStepper for Biplane1 {
     fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
         self.id = id;
         self.sk_info = Some(sk_info);
@@ -91,7 +91,7 @@ impl IStepper for Plane1 {
     }
 }
 
-impl Plane1 {
+impl Biplane1 {
     fn draw(&mut self, token: &MainThreadToken) {
         self.animate_plane(token);
 

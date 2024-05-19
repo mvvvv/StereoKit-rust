@@ -12,7 +12,7 @@ Its purpose is to improve the previous rust project <https://github.com/MalekiRe
 This project is at an early stage so try it carefully. Right now, the only way to get the project is to get the source code from github.
 
 ### Download the source project:
-* git clone https://github.com/mvvvv/StereoKit-rust/
+* git clone --recursive https://github.com/mvvvv/StereoKit-rust/
 * On linux get the following dev libraries : clang-12 lld-12 ninja-build libx11-dev libxfixes-dev libegl-dev libgbm-dev libfontconfig-dev
 
 

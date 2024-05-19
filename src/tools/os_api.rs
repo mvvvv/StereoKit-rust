@@ -189,7 +189,7 @@ pub fn get_files(
 /// Read all the assets of a given assets sub directory
 #[cfg(target_os = "android")]
 pub fn show_soft_input(show: bool) -> bool {
-    use jni::objects::{JObject, JValue};
+    use jni::objects::JValue;
 
     let ctx = ndk_context::android_context();
     let vm = match unsafe { jni::JavaVM::from_raw(ctx.vm() as _) } {
@@ -252,12 +252,7 @@ pub fn show_soft_input(show: bool) -> bool {
 
     if show {
         let result = env
-            .call_method(
-                im_manager,
-                "showSoftInput",
-                "(Landroid/view/View;I)Z",
-                &[JValue::Object(&JObject::from(view)), 0i32.into()],
-            )
+            .call_method(im_manager, "showSoftInput", "(Landroid/view/View;I)Z", &[JValue::Object(&view), 0i32.into()])
             .unwrap()
             .z()
             .unwrap();
@@ -279,10 +274,11 @@ pub fn show_soft_input(show: bool) -> bool {
         result
     }
 }
+
 /// Open an asset like a file
 #[cfg(not(target_os = "android"))]
 pub fn show_soft_input(_show: bool) -> bool {
-    true
+    false
 }
 
 /// Log the display refresh rate of the device.

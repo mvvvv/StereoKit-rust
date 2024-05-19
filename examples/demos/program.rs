@@ -277,12 +277,12 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
         }
     }
 
+    let ui_text_style = Ui::get_text_style();
+    ui_text_style.get_material().face_cull(Cull::Back);
+
     Log::diag(
         "===================================================================================================================== !!",
     );
-
-    let ui_text_style = Ui::get_text_style();
-    ui_text_style.get_material().face_cull(Cull::Back);
 
     SkClosures::run_app(
         sk,
@@ -322,10 +322,6 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
                 next_scene = None;
             }
             scene_frame += 1;
-
-            if Input::key(Key::Esc) == BtnState::JustActive {
-                sk.quit(None)
-            }
 
             // Playing with projection in simulator mode
             if sk.get_active_display_mode() == DisplayMode::Flatscreen && Input::key(Key::P) == BtnState::JustActive {

@@ -235,6 +235,8 @@ extern "C" {
         width: i32,
         height: i32,
         surface_count: i32,
+        multisample: i32,
+        framebuffer_multisample: i32,
         owned: Bool32T,
     );
     pub fn tex_get_surface(texture: TexT) -> *mut c_void;
@@ -801,6 +803,8 @@ impl Tex {
                 width,
                 height,
                 surface_count,
+                1,
+                1,
                 owned as Bool32T,
             )
         };
@@ -888,6 +892,16 @@ impl Tex {
             _ => return None,
         }
         Some(unsafe { tex_get_format(self.0.as_ptr()) })
+    }
+
+    /// This will return the texture’s native resource for use with external libraries. For D3D, this will be an
+    /// ID3D11Texture2D*, and for GL, this will be a uint32_t from a glGenTexture call, coerced into the IntPtr. This
+    /// call will block execution until the texture is loaded, if it is not already.
+    /// <https://stereokit.net/Pages/StereoKit/Tex/GetNativeSurface.html>
+    ///
+    /// see also [`crate::tex::tex_get_surface`]
+    pub fn get_native_surface(&self) -> *mut c_void {
+        unsafe { tex_get_surface(self.0.as_ptr()) }
     }
 
     /// The width of the texture, in pixels. This will be a blocking call if AssetState is less than LoadedMeta so None will be return instead

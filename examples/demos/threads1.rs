@@ -60,7 +60,7 @@ impl IStepper for Threads1 {
                 let mut a = AStepper::default();
                 let random = ((Time::get_totalf() * 100.0) % 1000.0) / 600.0;
                 let id_str = "Test ".to_string() + &id.to_string();
-                a.text = id_str.clone();
+                a.text.clone_from(&id_str);
                 a.transform = Matrix::trs(
                     &Vec3::new(random, 1.0 + random, -1.0 - random),
                     &Quat::from_angles(0.0, 180.0, 0.0),
