@@ -56,15 +56,15 @@ pub fn get_assets(sk_info: Rc<RefCell<SkInfo>>, sub_dir: PathBuf, file_extension
 /// Read all the assets of a given assets sub directory
 #[cfg(not(target_os = "android"))]
 pub fn get_assets(_sk_info: Rc<RefCell<SkInfo>>, sub_dir: PathBuf, file_extensions: &Vec<String>) -> Vec<PathEntry> {
-    use std::fs::read_dir;
+    use std::{env, fs::read_dir};
     let sub_dir = sub_dir.to_str().unwrap_or("");
     let mut exts = vec![];
     for extension in file_extensions {
         let extension = extension[1..].to_string();
         exts.push(OsString::from(extension));
     }
-    let path_text = env!("CARGO_MANIFEST_DIR").to_owned() + "/assets";
-    let path_asset = Path::new(path_text.as_str()).join(sub_dir);
+    let path_text = env::current_dir().unwrap().to_owned().join("assets");
+    let path_asset = path_text.join(sub_dir);
     let mut vec = vec![];
 
     if path_asset.exists() && path_asset.is_dir() {
@@ -113,7 +113,10 @@ pub fn get_external_path(sk_info: Rc<RefCell<SkInfo>>) -> Option<PathBuf> {
 /// Get the path to internal data directory for non android
 #[cfg(not(target_os = "android"))]
 pub fn get_external_path(_sk_info: Rc<RefCell<SkInfo>>) -> Option<PathBuf> {
-    None
+    use std::env;
+
+    let path_assets = env::current_dir().unwrap().join("assets");
+    Some(path_assets)
 }
 
 /// Open an asset like a file
@@ -145,8 +148,10 @@ pub fn open_asset(sk_info: Rc<RefCell<SkInfo>>, asset_path: impl AsRef<Path>) ->
 /// Open an asset like a file
 #[cfg(not(target_os = "android"))]
 pub fn open_asset(_sk_info: Rc<RefCell<SkInfo>>, asset_path: impl AsRef<Path>) -> Option<File> {
-    let path_text = env!("CARGO_MANIFEST_DIR").to_owned() + "/assets";
-    let path_asset = Path::new(path_text.as_str()).join(asset_path);
+    use std::env;
+
+    let path_assets = env::current_dir().unwrap().join("assets");
+    let path_asset = path_assets.join(asset_path);
     File::open(path_asset).ok()
 }
 

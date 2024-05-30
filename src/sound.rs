@@ -41,6 +41,9 @@ pub struct _SoundT {
 }
 pub type SoundT = *mut _SoundT;
 
+unsafe impl Send for Sound {}
+unsafe impl Sync for Sound {}
+
 extern "C" {
     pub fn sound_find(id: *const ::std::os::raw::c_char) -> SoundT;
     pub fn sound_set_id(sound: SoundT, id: *const ::std::os::raw::c_char);

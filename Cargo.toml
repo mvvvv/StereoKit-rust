@@ -12,7 +12,6 @@ license = "MIT"
 links = "StereoKitC"
 repository = "https://github.com/mvvvv/StereoKit-rust"
 
-
 include = [
   "StereoKit/tools/include",
   "/README.md",

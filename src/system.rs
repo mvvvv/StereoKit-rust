@@ -650,9 +650,9 @@ impl BackendD3D11 {
 /// doing advanced rendering tasks. This is Windows only, and requires gloabally defining SKG_FORCE_OPENGL when building
 /// the core StereoKitC library.
 /// <https://stereokit.net/Pages/StereoKit/Backend.OpenGL_WGL.html>
-pub struct OpenGLWGL;
+pub struct BackendOpenGLWGL;
 
-impl OpenGLWGL {
+impl BackendOpenGLWGL {
     /// This is the Handle to Device Context HDC StereoKit uses with wglMakeCurrent.
     /// <https://stereokit.net/Pages/StereoKit/Backend.OpenGL_WGL/HDC.html>
     ///
@@ -674,9 +674,9 @@ impl OpenGLWGL {
 /// doing advanced rendering tasks. This is the default rendering backend for Android, and Linux builds can be
 /// configured to use this with the SK_LINUX_EGL cmake option when building the core StereoKitC library.
 /// <https://stereokit.net/Pages/StereoKit/Backend.OpenGLES_EGL.html>
-pub struct OpenGLESEGL;
+pub struct BackendOpenGLESEGL;
 
-impl OpenGLESEGL {
+impl BackendOpenGLESEGL {
     /// This is the EGLContext StereoKit receives from eglCreateContext.
     /// <https://stereokit.net/Pages/StereoKit/Backend.OpenGLES_EGL/Context.html>
     ///
