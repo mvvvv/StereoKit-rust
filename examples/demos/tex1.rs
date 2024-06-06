@@ -338,9 +338,10 @@ impl IStepper for Tex1 {
                     self.tex_vide3.set_colors_r16(self.width, self.height, self.raw_dots_u16.as_slice());
                     self.tex_vide4.set_colors_r32(self.width, self.height, self.raw_dots_u32.as_slice());
                     Log::info(format!(
-                        "R8 height width : {}x{}",
-                        self.tex_vide2.get_height().unwrap(),
-                        self.tex_vide2.get_width().unwrap()
+                        "R8 height width : {:?}x{:?} / asset_state {:?}",
+                        self.tex_vide2.get_height(),
+                        self.tex_vide2.get_width(),
+                        self.tex_vide2.get_asset_state(),
                     ));
 
                     // test with anisotropy using stage value
@@ -348,7 +349,7 @@ impl IStepper for Tex1 {
                     if let Some((w, h, size)) = self.tex_default.get_data_infos(mip) {
                         let vec = vec![self.base_color; size];
                         let array = vec.as_slice();
-                        self.tex_default.get_colors(array, mip);
+                        self.tex_default.get_color_data(array, mip);
                         self.tex_color_32a.set_colors32(w, h, array);
                         Log::info(format!(
                             "mips {:?} / anisotropy {} / size {}x{}",
@@ -366,57 +367,57 @@ impl IStepper for Tex1 {
                     if let Some((w, h, size)) = tex_i.get_data_infos(mip) {
                         let color32_buff = vec![self.base_color; size];
                         Log::info(format!("--Tex in mip {} -> {}x{} = {}", mip, w, h, color32_buff.len()));
-                        if tex_i.get_colors(color32_buff.as_slice(), mip).is_some() {
+                        if tex_i.get_color_data(color32_buff.as_slice(), mip).is_some() {
                             self.tex_color_32b.set_colors32(w, h, &color32_buff[..]);
-                            Log::info(format!("--Tex out mips number {}", self.tex_color_32b.get_mips().unwrap()));
+                            Log::info(format!("--Tex out mips number {:?}", self.tex_color_32b.get_mips()));
                         }
                     }
 
                     let tex_i = &self.tex_vide;
-                    Log::info(format!("Tex in format {:?}", tex_i.get_format().unwrap()));
+                    Log::info(format!("Tex in format {:?}", tex_i.get_format()));
                     let mip = -1;
                     if let Some((w, h, size)) = tex_i.get_data_infos(mip) {
                         let color128_buff = vec![self.base_color128; size];
                         Log::info(format!("--Tex in mip {} -> {}x{} = {}", mip, w, h, color128_buff.len()));
-                        if tex_i.get_colors(color128_buff.as_slice(), mip).is_some() {
+                        if tex_i.get_color_data(color128_buff.as_slice(), mip).is_some() {
                             self.tex_vide.set_colors128(w, h, &color128_buff[..]);
-                            Log::info(format!("--Tex out mips number {}", self.tex_vide.get_mips().unwrap()));
+                            Log::info(format!("--Tex out mips number {:?}", self.tex_vide.get_mips()));
                         }
                     }
 
                     let tex_i = &self.tex_vide2;
-                    Log::info(format!("Tex in format {:?}", tex_i.get_format().unwrap()));
+                    Log::info(format!("Tex in format {:?}", tex_i.get_format()));
                     let mip = -1;
                     if let Some((w, h, size)) = tex_i.get_data_infos(mip) {
                         let color_r8_buff: Vec<u8> = vec![60; size];
                         Log::info(format!("--Tex in mip {} -> {}x{} = {}", mip, w, h, color_r8_buff.len()));
-                        if tex_i.get_colors(color_r8_buff.as_slice(), mip).is_some() {
+                        if tex_i.get_color_data(color_r8_buff.as_slice(), mip).is_some() {
                             self.tex_vide2.set_colors_r8(w, h, &color_r8_buff[..]);
-                            Log::info(format!("--Tex out mips number {}", self.tex_vide2.get_mips().unwrap()));
+                            Log::info(format!("--Tex out mips number {:?}", self.tex_vide2.get_mips()));
                         }
                     }
 
                     let tex_i = &self.tex_vide3;
-                    Log::info(format!("Tex in format {:?}", tex_i.get_format().unwrap()));
+                    Log::info(format!("Tex in format {:?}", tex_i.get_format()));
                     let mip = -1;
                     if let Some((w, h, size)) = tex_i.get_data_infos(mip) {
                         let color_r16_buff: Vec<u16> = vec![60; size];
                         Log::info(format!("--Tex in mip {} -> {}x{} = {}", mip, w, h, color_r16_buff.len()));
-                        if tex_i.get_colors(color_r16_buff.as_slice(), mip).is_some() {
+                        if tex_i.get_color_data(color_r16_buff.as_slice(), mip).is_some() {
                             self.tex_vide3.set_colors_r16(w, h, &color_r16_buff[..]);
-                            Log::info(format!("--Tex out mips number {}", self.tex_vide3.get_mips().unwrap()));
+                            Log::info(format!("--Tex out mips number {:?}", self.tex_vide3.get_mips()));
                         }
                     }
 
                     let tex_i = &self.tex_vide4;
-                    Log::info(format!("Tex in format {:?}", tex_i.get_format().unwrap()));
+                    Log::info(format!("Tex in format {:?}", tex_i.get_format()));
                     let mip = -1;
                     if let Some((w, h, size)) = tex_i.get_data_infos(mip) {
                         let color_r32_buff: Vec<f32> = vec![0.5; size];
                         Log::info(format!("--Tex in mip {} -> {}x{} = {}", mip, w, h, color_r32_buff.len()));
-                        if tex_i.get_colors(color_r32_buff.as_slice(), mip).is_some() {
+                        if tex_i.get_color_data(color_r32_buff.as_slice(), mip).is_some() {
                             self.tex_vide4.set_colors_r32(w, h, &color_r32_buff[..]);
-                            Log::info(format!("--Tex out mips number {}", self.tex_vide4.get_mips().unwrap()));
+                            Log::info(format!("--Tex out mips number {:?}", self.tex_vide4.get_mips()));
                         }
                     }
                 }

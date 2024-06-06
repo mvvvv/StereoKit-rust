@@ -3209,7 +3209,9 @@ extern "C" {
         vertex_tint_linear: Color128,
     ) -> f32;
     pub fn text_size(text_utf8: *const c_char, style: TextStyle) -> Vec2;
+    pub fn text_size_constrained(text_utf8: *const c_char, style: TextStyle, max_width: f32) -> Vec2;
     pub fn text_size_16(text_utf16: *const c_ushort, style: TextStyle) -> Vec2;
+    pub fn text_size_constrained_16(text_utf16: *const c_ushort, style: TextStyle, max_width: f32) -> Vec2;
     pub fn text_char_at(
         text_utf8: *const c_char,
         style: TextStyle,
@@ -3396,13 +3398,18 @@ impl Text {
     /// using the indicated style!
     /// <https://stereokit.net/Pages/StereoKit/Text/Size.html>
     /// * text_style - if None will use the TextStyle::default()
+    /// * max_width - Width of the available space in meters.
     /// Returns size of the text in meters
     ///
     /// see also [`crate::system::text_size`]
-    pub fn size(text: impl AsRef<str>, text_style: Option<TextStyle>) -> Vec2 {
+    pub fn size(text: impl AsRef<str>, text_style: Option<TextStyle>, max_width: Option<f32>) -> Vec2 {
         let c_str = CString::new(text.as_ref()).unwrap();
         let style = text_style.unwrap_or_default();
-        unsafe { text_size(c_str.as_ptr(), style) }
+        if let Some(max_width) = max_width {
+            unsafe { text_size_constrained(c_str.as_ptr(), style, max_width) }
+        } else {
+            unsafe { text_size(c_str.as_ptr(), style) }
+        }
     }
 }
 

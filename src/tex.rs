@@ -892,6 +892,7 @@ impl Tex {
         match self.get_asset_state() {
             AssetState::Loaded => (),
             AssetState::LoadedMeta => (),
+            AssetState::None => (),
             _ => return None,
         }
         Some(unsafe { tex_get_format(self.0.as_ptr()) })
@@ -915,6 +916,7 @@ impl Tex {
         match self.get_asset_state() {
             AssetState::Loaded => (),
             AssetState::LoadedMeta => (),
+            AssetState::None => (),
             _ => return None,
         }
         Some(unsafe { tex_get_width(self.0.as_ptr()) } as usize)
@@ -928,6 +930,7 @@ impl Tex {
         match self.get_asset_state() {
             AssetState::Loaded => (),
             AssetState::LoadedMeta => (),
+            AssetState::None => (),
             _ => return None,
         }
         Some(unsafe { tex_get_height(self.0.as_ptr()) } as usize)
@@ -945,6 +948,7 @@ impl Tex {
         match self.get_asset_state() {
             AssetState::Loaded => (),
             AssetState::LoadedMeta => (),
+            AssetState::None => (),
             _ => {
                 Log::err(format!("Texture {} not loaded. Function tex_get_data_info failed!", self.get_id()));
                 return None;
@@ -987,7 +991,7 @@ impl Tex {
     /// The function [`Tex::get_data_infos`] may help you to shape the right receiver.
     ///
     /// see also [`crate::tex::tex_get_data`][`crate::tex::tex_get_data_mip`]
-    pub fn get_colors<T>(&self, color_data: &[T], mut mip_level: i8) -> Option<bool> {
+    pub fn get_color_data<T>(&self, color_data: &[T], mut mip_level: i8) -> Option<bool> {
         let size_of_color = std::mem::size_of_val(color_data);
         let (width, height, size_test) = match self.get_data_infos(mip_level) {
             Some(value) => value,
@@ -1057,6 +1061,7 @@ impl Tex {
         match self.get_asset_state() {
             AssetState::Loaded => (),
             AssetState::LoadedMeta => (),
+            AssetState::None => (),
             _ => return None,
         }
         Some(unsafe { tex_get_mips(self.0.as_ptr()) })
