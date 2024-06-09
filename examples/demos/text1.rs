@@ -1,9 +1,10 @@
 use std::{cell::RefCell, mem::transmute, rc::Rc};
 
 use stereokit_rust::{
+    event_loop::{IStepper, StepperAction, StepperId},
     font::Font,
     maths::{units::CM, Matrix, Pose, Quat, Vec2, Vec3},
-    sk::{IStepper, MainThreadToken, SkInfo, StepperAction, StepperId},
+    sk::{MainThreadToken, SkInfo},
     sprite::Sprite,
     system::{Input, Key, Log, Text, TextContext, TextStyle},
     tools::os_api::show_soft_input,
@@ -164,7 +165,7 @@ impl Text1 {
         if Ui::button("Quit Demos", None) {
             let rc_sk = self.sk_info.as_ref().unwrap();
             let sk = rc_sk.as_ref();
-            let event_loop_proxy = sk.borrow().get_event_loop_proxy();
+            let event_loop_proxy = sk.borrow().get_event_loop_proxy().unwrap();
             let _ = event_loop_proxy.send_event(StepperAction::Quit(self.id.clone(), "Quit button test".to_string()));
         }
         Ui::next_line();

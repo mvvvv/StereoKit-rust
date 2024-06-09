@@ -2,7 +2,10 @@ pub use macros::include_asset_tree;
 use std::{ffi::NulError, path::PathBuf};
 use thiserror::Error;
 pub mod anchor;
+#[cfg(feature = "event-loop")]
+pub mod event_loop;
 pub mod font;
+#[cfg(feature = "event-loop")]
 pub mod framework;
 pub mod material;
 pub mod maths;
@@ -15,6 +18,7 @@ pub mod sound;
 pub mod sprite;
 pub mod system;
 pub mod tex;
+#[cfg(feature = "event-loop")]
 pub mod tools;
 pub mod ui;
 pub mod util;

@@ -1,8 +1,9 @@
 use std::{cell::RefCell, rc::Rc, sync::Mutex};
 
 use crate::{
+    event_loop::{IStepper, StepperAction, StepperId},
     maths::{units::CM, Pose, Quat, Vec2, Vec3},
-    sk::{IStepper, MainThreadToken, SkInfo, StepperAction, StepperId},
+    sk::{MainThreadToken, SkInfo},
     system::{Assets, Log, Renderer},
     tex::{Tex, TexFormat, TexType},
     ui::Ui,

@@ -1,15 +1,16 @@
 use std::cell::RefCell;
 use std::rc::Rc;
-
-use stereokit_rust::material::{Cull, Material, Transparency};
-use stereokit_rust::maths::{Matrix, Quat, Vec3, Vec4};
-use stereokit_rust::model::{AnimMode, Model};
-use stereokit_rust::shader::Shader;
-use stereokit_rust::sk::{IStepper, MainThreadToken, SkInfo, StepperId};
-use stereokit_rust::system::{Handed, Input, Log};
-use stereokit_rust::tex::SHCubemap;
-use stereokit_rust::util::named_colors::{DARK_RED, WHITE};
-
+use stereokit_rust::{
+    event_loop::{IStepper, StepperId},
+    material::{Cull, Material, Transparency},
+    maths::{Matrix, Quat, Vec3, Vec4},
+    model::{AnimMode, Model},
+    shader::Shader,
+    sk::{MainThreadToken, SkInfo},
+    system::{Handed, Input, Log},
+    tex::SHCubemap,
+    util::named_colors::{DARK_RED, WHITE},
+};
 #[derive(Debug)]
 pub struct Anim1 {
     pub title: String,

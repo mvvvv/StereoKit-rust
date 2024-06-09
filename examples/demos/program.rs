@@ -1,13 +1,14 @@
 use std::sync::Mutex;
 
 use stereokit_rust::{
+    event_loop::{SkClosures, StepperAction, StepperId},
     framework::{HandMenuAction, HandMenuRadial, HandRadial, HandRadialLayer},
     material::{Cull, Material},
     maths::{units::*, Matrix, Pose, Quat, Vec2, Vec3, Vec4},
     mesh::Mesh,
     model::Model,
     shader::Shader,
-    sk::{AppFocus, DisplayMode, Sk, SkClosures, StepperAction, StepperId},
+    sk::{AppFocus, DisplayMode, Sk},
     sprite::Sprite,
     system::{BackendOpenXR, BtnState, Input, Key, Lines, Log, LogLevel, Projection, Renderer, Text},
     tex::{SHCubemap, Tex, TexSample},
@@ -158,12 +159,12 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
         };
 
     // Open or close the log window
-    let event_loop_proxy = sk.get_event_loop_proxy();
+    let event_loop_proxy = sk.get_event_loop_proxy().unwrap();
     let send_event_show_log = move || {
         let _ = &event_loop_proxy.send_event(StepperAction::event("main".to_string(), "ShowLogWindow", "1"));
     };
 
-    let event_loop_proxy = sk.get_event_loop_proxy().clone();
+    let event_loop_proxy = sk.get_event_loop_proxy().clone().unwrap();
     let send_event_show_screenshot = move || {
         let _ = &event_loop_proxy.send_event(StepperAction::event("main".to_string(), "ShowScreenshotWindow", "1"));
     };

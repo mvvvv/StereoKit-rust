@@ -1,13 +1,16 @@
-use stereokit_rust::material::{Cull, Material};
-use stereokit_rust::maths::Vec4;
-use stereokit_rust::mesh::Mesh;
-use stereokit_rust::model::Model;
-use stereokit_rust::sk::{IStepper, MainThreadToken, SkInfo, StepperId};
-use stereokit_rust::system::{Handed, Input, Log};
-use stereokit_rust::tex::{Tex, TexFormat, TexType};
-use stereokit_rust::util::{
-    named_colors::{BLACK, BLUE, LIGHT_BLUE, RED, YELLOW},
-    Color128, Color32, Gradient,
+use stereokit_rust::{
+    event_loop::{IStepper, StepperId},
+    material::{Cull, Material},
+    maths::Vec4,
+    mesh::Mesh,
+    model::Model,
+    sk::{MainThreadToken, SkInfo},
+    system::{Handed, Input, Log},
+    tex::{Tex, TexFormat, TexType},
+    util::{
+        named_colors::{BLACK, BLUE, LIGHT_BLUE, RED, YELLOW},
+        Color128, Color32, Gradient,
+    },
 };
 
 use glam::{Mat4, Quat, Vec3};

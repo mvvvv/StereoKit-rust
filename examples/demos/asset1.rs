@@ -4,13 +4,14 @@ use std::{
     rc::Rc,
 };
 use stereokit_rust::{
+    event_loop::{IStepper, StepperId},
     font::Font,
     include_asset_tree,
     material::Material,
     maths::{Matrix, Pose, Quat, Vec2, Vec3},
     mesh::Mesh,
     model::{AnimMode, Model},
-    sk::{IStepper, MainThreadToken, SkInfo, StepperId},
+    sk::{MainThreadToken, SkInfo},
     sound::{Sound, SoundInst},
     sprite::Sprite,
     system::{Assets, Handed, Input, Log, Renderer, Text, TextStyle},

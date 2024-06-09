@@ -10,9 +10,10 @@ use std::{
 };
 
 use stereokit_rust::{
+    event_loop::{IStepper, StepperAction, StepperId},
     font::Font,
     maths::{Matrix, Quat, Vec3},
-    sk::{IStepper, MainThreadToken, SkInfo, StepperAction, StepperId},
+    sk::{MainThreadToken, SkInfo},
     system::{Log, Text, TextStyle},
     util::{named_colors::GREEN_YELLOW, Time},
 };
@@ -49,7 +50,7 @@ impl IStepper for Threads1 {
         self.sk_info = Some(sk_info);
         let rc_sk = self.sk_info.as_ref().unwrap();
         let sk = rc_sk.as_ref();
-        let event_loop_proxy1 = sk.borrow().get_event_loop_proxy().clone();
+        let event_loop_proxy1 = sk.borrow().get_event_loop_proxy().clone().unwrap();
         let event_loop_proxy2 = event_loop_proxy1.clone();
         let run_for_ever1 = self.run_for_ever.clone();
         let run_for_ever2 = self.run_for_ever.clone();
