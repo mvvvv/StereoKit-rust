@@ -81,6 +81,7 @@ pub enum StereoKitError {
     AnchorFind(String, String),
     #[error("failed to init stereokit with settings {0}")]
     SkInit(String),
+    #[cfg(feature = "event-loop")]
     #[error("failed to init stereokit event_loop")]
     SkInitEventLoop(#[from] winit::error::EventLoopError),
     #[error("failed to get a string from native C {0}")]

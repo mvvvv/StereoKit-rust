@@ -21,7 +21,7 @@ dynamic-openxr = [] # Add openxr_loader.so in Android APK
 build-dynamic-openxr = [
   "dynamic-openxr",
 ] # Build openxr_loader from Khronos OpenXR project
-event-loop = []
+event-loop = ["dep:winit"]
 
 [lib]
 crate-type = ["lib", "cdylib"]
@@ -34,7 +34,9 @@ cmake = "0.1.50"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
-winit = { version = "0.30", features = ["android-native-activity"] }
+winit = { version = "0.30", features = [
+  "android-native-activity",
+], optional = true }
 thiserror = "1.0"
 bitflags = "2.4"
 glam = "0.27"
