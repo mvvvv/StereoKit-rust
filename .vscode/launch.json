@@ -71,6 +71,23 @@
             "args": [],
             "cwd": "${workspaceFolder}"
         },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug 'manual' example (without winit)",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=manual",
+                ],
+                "filter": {
+                    "name": "manual",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
 
     ]
 }

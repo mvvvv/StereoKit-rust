@@ -1,5 +1,5 @@
 [workspace]
-members = ["macros"]
+members = ["stereokit-macros"]
 
 [package]
 name = "stereokit-rust"
@@ -41,7 +41,7 @@ thiserror = "1.0"
 bitflags = "2.4"
 glam = "0.27"
 openxr-sys = "0.10"
-macros = { path = "macros" }
+stereokit-macros = { path = "stereokit-macros" }
 
 [target.'cfg(target_os = "android")'.dependencies]
 log = "0.4"
@@ -55,6 +55,11 @@ jni = "0.21"
 [[example]]
 #---For PC only (vscode launcher)
 name = "main_pc"
+crate-type = ["bin"]
+
+[[example]]
+#---For PC only (vscode launcher)
+name = "manual"
 crate-type = ["bin"]
 
 [[example]]

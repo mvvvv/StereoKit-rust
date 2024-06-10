@@ -1,4 +1,4 @@
-pub use macros::include_asset_tree;
+pub use stereokit_macros::include_asset_tree;
 use std::{ffi::NulError, path::PathBuf};
 use thiserror::Error;
 pub mod anchor;

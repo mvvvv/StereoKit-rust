@@ -8,6 +8,8 @@ use std::{
     ptr::null_mut,
     rc::Rc,
 };
+#[cfg(target_os = "android")]
+use winit::platform::android::activity::AndroidApp;
 
 #[cfg(feature = "event-loop")]
 use crate::event_loop::{StepperAction, Steppers};
@@ -489,7 +491,7 @@ impl SkSettings {
     /// Initialise Sk with the given settings parameter (here for android which needs an AndroidApp)
     #[cfg(target_os = "android")]
     pub fn init_with_event_loop(&mut self, app: AndroidApp) -> Result<(Sk, EventLoop<StepperAction>), StereoKitError> {
-        Sk::initialize(self, app)
+        Sk::init_with_event_loop(self, app)
     }
 
     /// Initialise Sk with the given settings parameter (here for non android platform)
@@ -600,8 +602,9 @@ pub struct Sk {
 }
 impl Sk {
     #[cfg(target_os = "android")]
-    pub fn init(settings: &SkSettings, app: AndroidApp) -> Result<Sk, StereoKitError> {
-        Sk::init(self, app)
+    pub fn init(_settings: &SkSettings, _app: AndroidApp) -> Result<Sk, StereoKitError> {
+        // Sk::init(self, app)
+        todo!("Only init_with_event_loop is avaiable for android !!")
     }
 
     #[cfg(not(target_os = "android"))]
@@ -791,7 +794,7 @@ impl Sk {
                 let sk_info = Rc::new(RefCell::new(SkInfo {
                     settings: settings.clone(),
                     system_info: unsafe { sk_system_info() },
-                    event_loop_proxy,
+                    event_loop_proxy:Some(event_loop_proxy),
                     android_app: app,
                 }));
                 Ok((

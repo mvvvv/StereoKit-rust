@@ -1,5 +1,5 @@
 {
     "rust-analyzer.linkedProjects": [
-        "./macros/Cargo.toml"
+        "./stereokit-macros/Cargo.toml"
     ]
 }
