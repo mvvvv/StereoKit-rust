@@ -2,17 +2,21 @@ use std::cell::RefCell;
 use std::f32::consts::PI;
 use std::rc::Rc;
 
-use stereokit_rust::font::Font;
-use stereokit_rust::material::Material;
-use stereokit_rust::maths::{Matrix, Quat, Vec3, Vec4};
-use stereokit_rust::sk::{IStepper, MainThreadToken, SkInfo, StepperId};
-use stereokit_rust::sprite::{Sprite, SpriteType};
-use stereokit_rust::system::{AssetType, Assets, Lines, Log, Text, TextAlign, TextStyle};
-use stereokit_rust::tex::Tex;
-use stereokit_rust::util::named_colors::{BLACK, BLUE, CYAN, LIGHT_BLUE, WHITE, YELLOW};
-use stereokit_rust::util::{Color128, Gradient};
-
 use glam::Mat4;
+use stereokit_rust::{
+    event_loop::{IStepper, StepperId},
+    font::Font,
+    material::Material,
+    maths::{Matrix, Quat, Vec3, Vec4},
+    sk::{MainThreadToken, SkInfo},
+    sprite::{Sprite, SpriteType},
+    system::{AssetType, Assets, Lines, Log, Text, TextAlign, TextStyle},
+    tex::Tex,
+    util::{
+        named_colors::{BLACK, BLUE, CYAN, LIGHT_BLUE, WHITE, YELLOW},
+        Color128, Gradient,
+    },
+};
 
 #[derive(Debug)]
 pub struct Sprite1 {

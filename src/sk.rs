@@ -1,7 +1,7 @@
+use crate::{maths::Bool32T, system::LogLevel};
+use crate::{system::Log, StereoKitError};
 use std::{
-    any::{Any, TypeId},
     cell::RefCell,
-    collections::VecDeque,
     ffi::{c_char, c_void, CStr, CString},
     fmt::{self, Formatter},
     path::Path,
@@ -9,22 +9,15 @@ use std::{
     rc::Rc,
 };
 
+#[cfg(feature = "event-loop")]
+use crate::event_loop::{StepperAction, Steppers};
+#[cfg(feature = "event-loop")]
+use std::collections::VecDeque;
+#[cfg(feature = "event-loop")]
 use winit::{
-    application::ApplicationHandler,
-    event::{DeviceEvent, DeviceId, Event, WindowEvent},
-    event_loop::{ActiveEventLoop, ControlFlow, EventLoop, EventLoopProxy},
-    window::WindowId,
+    event::Event,
+    event_loop::{ControlFlow, EventLoop, EventLoopProxy},
 };
-
-use crate::{
-    maths::Bool32T,
-    system::{Input, Log, LogLevel},
-    StereoKitError,
-};
-
-#[cfg(target_os = "android")]
-//use android_activity::AndroidApp;
-use winit::platform::android::activity::AndroidApp;
 
 /// Specifies a type of display mode StereoKit uses, like Mixed Reality headset display vs. a PC display, or even just
 /// rendering to an offscreen surface, or not rendering at all!
@@ -313,18 +306,6 @@ impl fmt::Display for SkSettings {
 }
 
 impl SkSettings {
-    /// Initialise Sk with the given settings parameter (here for android which needs an AndroidApp)
-    #[cfg(target_os = "android")]
-    pub fn init(&mut self, app: AndroidApp) -> Result<(Sk, EventLoop<StepperAction>), StereoKitError> {
-        Sk::initialize(self, app)
-    }
-
-    /// Initialise Sk with the given settings parameter (here for non android platform)
-    #[cfg(not(target_os = "android"))]
-    pub fn init(&mut self) -> Result<(Sk, EventLoop<StepperAction>), StereoKitError> {
-        Sk::initialize(self)
-    }
-
     /// Name of the application, this shows up an the top of the Win32 window, and is submitted to OpenXR. OpenXR caps
     /// this at 128 characters. Default is "StereoKitApp"
     /// <https://stereokit.net/Pages/StereoKit/SKSettings/appName.html>
@@ -503,6 +484,31 @@ impl SkSettings {
     //     unsafe { CStr::from_ptr(self.app_name) }.to_str().unwrap().to_string()
     // }
 }
+#[cfg(feature = "event-loop")]
+impl SkSettings {
+    /// Initialise Sk with the given settings parameter (here for android which needs an AndroidApp)
+    #[cfg(target_os = "android")]
+    pub fn init_with_event_loop(&mut self, app: AndroidApp) -> Result<(Sk, EventLoop<StepperAction>), StereoKitError> {
+        Sk::initialize(self, app)
+    }
+
+    /// Initialise Sk with the given settings parameter (here for non android platform)
+    #[cfg(not(target_os = "android"))]
+    pub fn init_with_event_loop(&mut self) -> Result<(Sk, EventLoop<StepperAction>), StereoKitError> {
+        Sk::init_with_event_loop(self)
+    }
+}
+impl SkSettings {
+    #[cfg(target_os = "android")]
+    pub fn init(&mut self, app: AndroidApp) -> Result<Sk, StereoKitError> {
+        Sk::init(self, app)
+    }
+
+    #[cfg(not(target_os = "android"))]
+    pub fn init(&mut self) -> Result<Sk, StereoKitError> {
+        Sk::init(self)
+    }
+}
 
 /// Trampoline for Sk.run closures
 // unsafe extern "C" fn sk_trampoline<F: FnMut(&mut Sk)>(context: *mut c_void) {
@@ -529,29 +535,20 @@ pub enum QuitReason {
 /// Non canonical structure whose purpose is to expose infos for ISteppers.
 /// This one is the Android version
 #[allow(dead_code)]
-#[cfg(target_os = "android")]
 #[derive(Debug)]
 pub struct SkInfo {
     settings: SkSettings,
     system_info: SystemInfo,
-    event_loop_proxy: EventLoopProxy<StepperAction>,
+    #[cfg(feature = "event-loop")]
+    event_loop_proxy: Option<EventLoopProxy<StepperAction>>,
+    #[cfg(target_os = "android")]
     android_app: AndroidApp,
-}
-
-/// Non canonical structure whose purpose is to expose infos for ISteppers.
-/// This one is the non android version
-#[allow(dead_code)]
-#[cfg(not(target_os = "android"))]
-#[derive(Debug)]
-pub struct SkInfo {
-    settings: SkSettings,
-    system_info: SystemInfo,
-    event_loop_proxy: EventLoopProxy<StepperAction>,
 }
 
 impl SkInfo {
     /// Get an event_loop_proxy clone to send events
-    pub fn get_event_loop_proxy(&self) -> EventLoopProxy<StepperAction> {
+    #[cfg(feature = "event-loop")]
+    pub fn get_event_loop_proxy(&self) -> Option<EventLoopProxy<StepperAction>> {
         self.event_loop_proxy.clone()
     }
 
@@ -579,9 +576,11 @@ impl SkInfo {
 
 /// A token you only find on the main thread. It is required to call rendering functions
 pub struct MainThreadToken {
-    event_report: Vec<StepperAction>,
+    #[cfg(feature = "event-loop")]
+    pub(crate) event_report: Vec<StepperAction>,
 }
 
+#[cfg(feature = "event-loop")]
 impl MainThreadToken {
     /// Get the event_report of this step
     pub fn get_event_report(&self) -> &Vec<StepperAction> {
@@ -593,94 +592,20 @@ impl MainThreadToken {
 /// <https://stereokit.net/Pages/StereoKit/SK.html>
 pub struct Sk {
     sk_info: Rc<RefCell<SkInfo>>,
-    steppers: Steppers,
-    actions: VecDeque<Box<dyn FnMut()>>,
+    token: MainThreadToken,
+    #[cfg(feature = "event-loop")]
+    pub(crate) steppers: Steppers,
+    #[cfg(feature = "event-loop")]
+    pub(crate) actions: VecDeque<Box<dyn FnMut()>>,
 }
-
 impl Sk {
-    /// Initializes StereoKit window, default resources, systems, etc.
-    /// Android Plaforms only
-    /// <https://stereokit.net/Pages/StereoKit/SK/Initialize.html>
-    ///
-    /// see also [`crate::sk::sk_init`]
     #[cfg(target_os = "android")]
-    pub fn initialize(
-        settings: &mut SkSettings,
-        app: AndroidApp,
-    ) -> Result<(Sk, EventLoop<StepperAction>), StereoKitError> {
-        use winit::platform::android::activity::{MainEvent, PollEvent};
-        use winit::platform::android::EventLoopBuilderExtAndroid;
-        // OpenXR won't leave IDLE state if we do not purge the first events :
-        // PostSessionStateChange: XR_SESSION_STATE_IDLE -> XR_SESSION_STATE_READY
-        let mut ready_to_go = false;
-        while !ready_to_go {
-            app.poll_events(None, |event| match event {
-                PollEvent::Main(main_event) => {
-                    Log::diag(format!("MainEvent {:?} ", main_event));
-                    match main_event {
-                        MainEvent::RedrawNeeded { .. } => {
-                            ready_to_go = true;
-                        }
-                        _ => {
-                            ready_to_go = false;
-                        }
-                    }
-                }
-                otherwise => Log::diag(format!("PollEvent {:?} ", otherwise)),
-            })
-        }
-        let event_loop = EventLoop::<StepperAction>::with_user_event().with_android_app(app.clone()).build()?;
-        let event_loop_proxy = event_loop.create_proxy();
-
-        let (vm_pointer, jobject_pointer) = {
-            {
-                let context = ndk_context::android_context();
-                (context.vm(), context.context())
-            }
-        };
-        settings.android_java_vm = vm_pointer;
-        settings.android_activity = jobject_pointer;
-
-        Log::diag(format!("sk_init : context: {:?} / jvm: {:?}", vm_pointer, jobject_pointer));
-
-        match unsafe {
-            Log::info("Before init >>>");
-            let val = sk_init(settings.clone()) != 0;
-            Log::info("<<< After init");
-            val
-        } {
-            true => {
-                let sk_info = Rc::new(RefCell::new(SkInfo {
-                    settings: settings.clone(),
-                    system_info: unsafe { sk_system_info() },
-                    event_loop_proxy,
-                    android_app: app,
-                }));
-                Ok((
-                    Sk { sk_info: sk_info.clone(), steppers: Steppers::new(sk_info.clone()), actions: VecDeque::new() },
-                    event_loop,
-                ))
-            }
-            false => Err(StereoKitError::SkInit(settings.to_string())),
-        }
+    pub fn init(settings: &SkSettings, app: AndroidApp) -> Result<Sk, StereoKitError> {
+        Sk::init(self, app)
     }
 
-    /// Initializes StereoKit window, default resources, systems, etc.
-    /// Non Android platforms !!
-    /// <https://stereokit.net/Pages/StereoKit/SK/Initialize.html>
-    ///
-    /// see also [`crate::sk::sk_init`]
     #[cfg(not(target_os = "android"))]
-    pub fn initialize(settings: &mut SkSettings) -> Result<(Sk, EventLoop<StepperAction>), StereoKitError> {
-        let event_loop = EventLoop::<StepperAction>::with_user_event().build()?;
-        let event_loop_proxy = event_loop.create_proxy();
-        let (vm_pointer, jobject_pointer) = (null_mut::<c_void>(), null_mut::<c_void>());
-
-        settings.android_java_vm = vm_pointer;
-        settings.android_activity = jobject_pointer;
-
-        Log::info(format!("SK_INIT ::: context {:?}/jvm : {:?}", vm_pointer, jobject_pointer));
-
+    pub fn init(settings: &SkSettings) -> Result<Sk, StereoKitError> {
         match unsafe {
             Log::info("Before init >>>");
             let val = sk_init(settings.clone()) != 0;
@@ -691,161 +616,38 @@ impl Sk {
                 let sk_info = Rc::new(RefCell::new(SkInfo {
                     settings: settings.clone(),
                     system_info: unsafe { sk_system_info() },
-                    event_loop_proxy,
+                    #[cfg(feature = "event-loop")]
+                    event_loop_proxy: None,
                 }));
-                Ok((
-                    Sk { sk_info: sk_info.clone(), steppers: Steppers::new(sk_info.clone()), actions: VecDeque::new() },
-                    event_loop,
-                ))
+                Ok(Sk {
+                    sk_info: sk_info.clone(),
+                    token: MainThreadToken {
+                        #[cfg(feature = "event-loop")]
+                        event_report: vec![],
+                    },
+                    #[cfg(feature = "event-loop")]
+                    steppers: Steppers::new(sk_info.clone()),
+                    #[cfg(feature = "event-loop")]
+                    actions: VecDeque::new(),
+                })
             }
             false => Err(StereoKitError::SkInit(settings.to_string())),
         }
     }
 
-    /// This is a non canonical function that let you change all the steppers
-    /// https://stereokit.net/Pages/StereoKit.Framework/IStepper.html
-    pub fn change_steppers(&mut self, steppers: Steppers) {
-        self.steppers = steppers;
-    }
-
-    /// This will queue up some code to be run on StereoKit’s main thread! Immediately after StereoKit’s Step, all
-    /// callbacks registered here will execute, and then removed from the list.
-    /// <https://stereokit.net/Pages/StereoKit/SK/ExecuteOnMain.html>
-    pub fn execute_on_main<F: FnMut() + 'static>(&mut self, action: F) {
-        self.actions.push_back(Box::new(action))
-    }
-
-    /// convenient way to push some Add steppers action
-    pub fn push_action(&mut self, action: StepperAction) {
-        self.steppers.push_action(action);
-    }
-
-    /// Get an event_loop_proxy clone to send events
-    pub fn get_event_loop_proxy(&self) -> EventLoopProxy<StepperAction> {
-        let sk = self.sk_info.as_ref();
-        sk.borrow().get_event_loop_proxy().clone()
-    }
-
-    /// Lets StereoKit know it should quit! It’ll finish the current frame, and after that Step will return that it
-    /// wants to exit.
-    /// <https://stereokit.net/Pages/StereoKit/SK/Quit.html>
-    /// * quit_reason - if None has default value of QuitReason::User
-    ///
-    /// see also [`crate::sk::sk_quit`]
-    pub fn quit(&mut self, quit_reason: Option<QuitReason>) {
-        let quit_reason = quit_reason.unwrap_or(QuitReason::User);
-        unsafe { sk_quit(quit_reason) }
-    }
-
-    /// This passes application execution over to StereoKit. This continuously steps all StereoKit systems, and inserts
-    /// user code via callback between the appropriate system updates. Once execution completes, or SK.Quit is called,
-    /// it properly calls the shutdown callback and shuts down StereoKit for you.
-    ///
-    /// This method is a basic way to handle event_loop. You can, instead, implement this loop in your main thread.
-    /// <https://stereokit.net/Pages/StereoKit/SK/Run.html>
-    ///
-    /// see also [`crate::sk::sk_run_data`]
-    #[deprecated(since = "0.40.0", note = "see SkClosure::run_app() instead")]
-    pub fn run<U: FnMut(&mut Sk, &MainThreadToken), S: FnMut(&mut Sk)>(
-        &mut self,
-        event_loop: EventLoop<StepperAction>,
-        mut on_step: U,
-        mut on_shutdown: S,
-    ) {
-        let mut token = MainThreadToken { event_report: vec![] };
-        event_loop.set_control_flow(ControlFlow::Poll);
-        #[allow(deprecated)]
-        event_loop
-            .run(move |event, elwt| match event {
-                Event::NewEvents(_start_cause) => {} // Quest flood this : Log::diag(format!("NewEvents {:?}", start_cause)),
-                Event::WindowEvent { window_id, event } => {
-                    Log::diag(format!("WindowEvent {:?} -> {:?}", window_id, event))
-                }
-                Event::DeviceEvent { device_id, event } => {
-                    Log::diag(format!("DeviceEvent {:?} -> {:?}", device_id, event))
-                }
-                Event::UserEvent(action) => {
-                    Log::diag(format!("UserEvent {:?}", action));
-                    self.push_action(action);
-                }
-                Event::Suspended => Log::info("Suspended !!"),
-                Event::Resumed => Log::info("Resumed !!"),
-                Event::AboutToWait => {
-                    if !&self.step(&mut on_step, &mut token) {
-                        elwt.exit()
-                    }
-                }
-                Event::LoopExiting => {
-                    Log::info("LoopExiting !!");
-                    on_shutdown(self);
-                    self.shutdown();
-                }
-                Event::MemoryWarning => Log::warn("MemoryWarning !!"),
-            })
-            .unwrap_or_else(|e| {
-                Log::err(format!("!!!event_loop error closing!! : {}", e));
-            });
-    }
-
-    /// A way to execute without event_loop frame. This can be use only for PC programs
-    /// or android ones having a _main() derived with #ndk-glue (warning ndk-glue is deprecated)
-    /// <https://stereokit.net/Pages/StereoKit/SK/Run.html>
-    ///
-    /// see also [`crate::sk::sk_run_data`]
-    // pub fn run_raw<U: FnMut(&mut Sk), S: FnMut(&mut Sk)>(mut self, mut on_step: U, mut on_shutdown: S) {
-    //     while self.step(&mut on_step) {}
-    //     on_shutdown(&mut self);
-    //     self.shutdown();
-    // }
-
-    /// An alternative and basic way to execute a stereokit without ISteppers. This can be use only for PC programs
-    /// or android ones having a _main() derived with #ndk-glue (warning ndk-glue is deprecated)
-    /// <https://stereokit.net/Pages/StereoKit/SK.html>
-    ///
-    /// see also [`crate::sk::sk_run_data`]
-    // pub fn run_basic<U: FnMut(&mut Sk), S: FnMut(&mut Sk)>(mut self, mut on_update: U, mut on_shutdown: S) {
-    //     let mut update_ref: (&mut U, &mut &mut Sk) = (&mut on_update, &mut &mut self);
-    //     let update_raw = &mut update_ref as *mut (&mut U, &mut &mut Sk) as *mut c_void;
-
-    //     let mut shutdown_ref: (&mut S, &mut &mut Sk) = (&mut on_shutdown, &mut &mut self);
-    //     let shutdown_raw = &mut shutdown_ref as *mut (&mut S, &mut &mut Sk) as *mut c_void;
-
-    //     unsafe {
-    //         sk_run_data(Some(sk_trampoline::<U>), update_raw, Some(sk_trampoline::<S>), shutdown_raw);
-    //     }
-    // }
-
-    /// Cleans up all StereoKit initialized systems. Release your own StereoKit created assets before calling this.
-    /// This is for cleanup only, and should not be used to exit the application, use Sk.quit for that instead.
-    /// Calling this function is unnecessary if using Sk.run, as it is called automatically there.
-    /// <https://stereokit.net/Pages/StereoKit/SK/Shutdown.html>
-    ///
-    /// see also [`crate::sk::sk_shutdown`]
-    pub fn shutdown(&mut self) {
-        self.steppers.shutdown();
-        unsafe { sk_shutdown() }
-    }
-
-    /// Steps all StereoKit systems, and inserts user code via callback between the appropriate system updates.
-    /// <https://stereokit.net/Pages/StereoKit/SK/Step.html>
+    /// Steps all StereoKit systems
     ///
     /// see also [`crate::sk::sk_step`]
-    #[deprecated(since = "0.40.0", note = "see SkClosure::about_to_wait() instead")]
-    pub fn step<F: FnMut(&mut Sk, &MainThreadToken)>(&mut self, on_step: &mut F, token: &mut MainThreadToken) -> bool {
+    pub fn step(&self) -> Option<&MainThreadToken> {
         if unsafe { sk_step(None) } == 0 {
-            return false;
-        }
-        if !self.steppers.step(token) {
-            self.quit(None)
-        };
-
-        while let Some(mut action) = self.actions.pop_front() {
-            action();
+            return None;
         }
 
-        on_step(self, token);
+        Some(&self.token)
+    }
 
-        true
+    pub fn main_thread_token(&mut self) -> &MainThreadToken {
+        &self.token
     }
 
     /// Since we can fallback to a different DisplayMode, this lets you check to see which Runtime was successfully
@@ -907,6 +709,17 @@ impl Sk {
         unsafe { CStr::from_ptr(sk_version_name()) }.to_str().unwrap()
     }
 
+    /// Lets StereoKit know it should quit! It’ll finish the current frame, and after that Step will return that it
+    /// wants to exit.
+    /// <https://stereokit.net/Pages/StereoKit/SK/Quit.html>
+    /// * quit_reason - if None has default value of QuitReason::User
+    ///
+    /// see also [`crate::sk::sk_quit`]
+    pub fn quit(&self, quit_reason: Option<QuitReason>) {
+        let quit_reason = quit_reason.unwrap_or(QuitReason::User);
+        unsafe { sk_quit(quit_reason) }
+    }
+
     /// This tells the reason why StereoKit has quit and
     /// developer can take appropriate action to debug.
     /// <https://stereokit.net/Pages/StereoKit/SK/QuitReason.html>
@@ -914,351 +727,249 @@ impl Sk {
         unsafe { sk_get_quit_reason() }
     }
 }
-
-type Type<'a> = Box<dyn FnMut(&mut Sk, &MainThreadToken) + 'a>;
-
-/// What winit v0.30 want is : run_app()
-///
-pub struct SkClosures<'a> {
-    sk: Sk,
-    token: MainThreadToken,
-    on_step: Type<'a>,
-    shutdown: Box<dyn FnMut(&mut Sk) + 'a>,
-    window_id: Option<WindowId>,
+impl Drop for Sk {
+    fn drop(&mut self) {
+        #[cfg(feature = "event-loop")]
+        self.steppers.shutdown();
+        unsafe { sk_shutdown() }
+    }
 }
-
-impl ApplicationHandler<StepperAction> for SkClosures<'_> {
-    fn user_event(&mut self, _event_loop: &ActiveEventLoop, user_event: StepperAction) {
-        Log::diag(format!("UserEvent {:?}", user_event));
-        self.sk.push_action(user_event);
-    }
-
-    fn resumed(&mut self, _event_loop: &ActiveEventLoop) {
-        Log::info("Resumed !!");
-    }
-
-    fn window_event(&mut self, event_loop: &ActiveEventLoop, window_id: WindowId, event: WindowEvent) {
-        if event == WindowEvent::Destroyed {
-            println!(" Window {:?} Destroyed !!!", window_id);
-            return;
-        }
-
-        match event {
-            WindowEvent::RedrawRequested => {}
-            WindowEvent::Focused(_value) => {
-                self.window_id = Some(window_id);
-            }
-            WindowEvent::CloseRequested => {
-                Log::info("LoopExiting !!");
-                (self.shutdown)(&mut self.sk);
-                self.sk.shutdown();
-                event_loop.exit();
-            }
-            WindowEvent::KeyboardInput { device_id: _, event, is_synthetic: _ } => {
-                match &event.state {
-                    winit::event::ElementState::Pressed => {}
-                    winit::event::ElementState::Released => {
-                        Input::text_inject_chars(event.logical_key.to_text().unwrap_or("?"));
+#[cfg(feature = "event-loop")]
+impl Sk {
+    /// Initializes StereoKit window, default resources, systems, etc.
+    /// Android Plaforms only
+    /// <https://stereokit.net/Pages/StereoKit/SK/Initialize.html>
+    ///
+    /// see also [`crate::sk::sk_init`]
+    #[cfg(target_os = "android")]
+    pub fn init_with_event_loop(
+        settings: &mut SkSettings,
+        app: AndroidApp,
+    ) -> Result<(Sk, EventLoop<StepperAction>), StereoKitError> {
+        use winit::platform::android::activity::{MainEvent, PollEvent};
+        use winit::platform::android::EventLoopBuilderExtAndroid;
+        // OpenXR won't leave IDLE state if we do not purge the first events :
+        // PostSessionStateChange: XR_SESSION_STATE_IDLE -> XR_SESSION_STATE_READY
+        let mut ready_to_go = false;
+        while !ready_to_go {
+            app.poll_events(None, |event| match event {
+                PollEvent::Main(main_event) => {
+                    Log::diag(format!("MainEvent {:?} ", main_event));
+                    match main_event {
+                        MainEvent::RedrawNeeded { .. } => {
+                            ready_to_go = true;
+                        }
+                        _ => {
+                            ready_to_go = false;
+                        }
                     }
                 }
-                // no keyboard spy log so ...
-                Log::diag(format!("WindowEvent {:?} -> {:?}", window_id, event));
-                return;
+                otherwise => Log::diag(format!("PollEvent {:?} ", otherwise)),
+            })
+        }
+        let event_loop = EventLoop::<StepperAction>::with_user_event().with_android_app(app.clone()).build()?;
+        let event_loop_proxy = event_loop.create_proxy();
+
+        let (vm_pointer, jobject_pointer) = {
+            {
+                let context = ndk_context::android_context();
+                (context.vm(), context.context())
             }
-            _ => (),
+        };
+        settings.android_java_vm = vm_pointer;
+        settings.android_activity = jobject_pointer;
+
+        Log::diag(format!("sk_init : context: {:?} / jvm: {:?}", vm_pointer, jobject_pointer));
+
+        match unsafe {
+            Log::info("Before init >>>");
+            let val = sk_init(settings.clone()) != 0;
+            Log::info("<<< After init");
+            val
+        } {
+            true => {
+                let sk_info = Rc::new(RefCell::new(SkInfo {
+                    settings: settings.clone(),
+                    system_info: unsafe { sk_system_info() },
+                    event_loop_proxy,
+                    android_app: app,
+                }));
+                Ok((
+                    Sk {
+                        sk_info: sk_info.clone(),
+                        token: MainThreadToken { event_report: vec![] },
+                        steppers: Steppers::new(sk_info.clone()),
+                        actions: VecDeque::new(),
+                    },
+                    event_loop,
+                ))
+            }
+            false => Err(StereoKitError::SkInit(settings.to_string())),
         }
-
-        Log::diag(format!("WindowEvent {:?} -> {:?}", window_id, event));
     }
 
-    fn device_event(&mut self, _event_loop: &ActiveEventLoop, device_id: DeviceId, event: DeviceEvent) {
-        Log::diag(format!("DeviceEvent {:?} -> {:?}", device_id, event));
+    /// Initializes StereoKit window, default resources, systems, etc.
+    /// Non Android platforms !!
+    /// <https://stereokit.net/Pages/StereoKit/SK/Initialize.html>
+    ///
+    /// see also [`crate::sk::sk_init`]
+    #[cfg(not(target_os = "android"))]
+    pub fn init_with_event_loop(settings: &mut SkSettings) -> Result<(Sk, EventLoop<StepperAction>), StereoKitError> {
+        let event_loop = EventLoop::<StepperAction>::with_user_event().build()?;
+        let event_loop_proxy = event_loop.create_proxy();
+        let (vm_pointer, jobject_pointer) = (null_mut::<c_void>(), null_mut::<c_void>());
+
+        settings.android_java_vm = vm_pointer;
+        settings.android_activity = jobject_pointer;
+
+        Log::info(format!("SK_INIT ::: context {:?}/jvm : {:?}", vm_pointer, jobject_pointer));
+
+        match unsafe {
+            Log::info("Before init >>>");
+            let val = sk_init(settings.clone()) != 0;
+            Log::info("<<< After init");
+            val
+        } {
+            true => {
+                let sk_info = Rc::new(RefCell::new(SkInfo {
+                    settings: settings.clone(),
+                    system_info: unsafe { sk_system_info() },
+                    event_loop_proxy: Some(event_loop_proxy),
+                }));
+                Ok((
+                    Sk {
+                        sk_info: sk_info.clone(),
+                        token: MainThreadToken { event_report: vec![] },
+                        steppers: Steppers::new(sk_info.clone()),
+                        actions: VecDeque::new(),
+                    },
+                    event_loop,
+                ))
+            }
+            false => Err(StereoKitError::SkInit(settings.to_string())),
+        }
     }
 
-    fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
+    /// This is a non canonical function that let you change all the steppers
+    /// https://stereokit.net/Pages/StereoKit.Framework/IStepper.html
+    pub fn change_steppers(&mut self, steppers: Steppers) {
+        self.steppers = steppers;
+    }
+
+    /// This will queue up some code to be run on StereoKit’s main thread! Immediately after StereoKit’s Step, all
+    /// callbacks registered here will execute, and then removed from the list.
+    /// <https://stereokit.net/Pages/StereoKit/SK/ExecuteOnMain.html>
+    pub fn execute_on_main<F: FnMut() + 'static>(&mut self, action: F) {
+        self.actions.push_back(Box::new(action))
+    }
+
+    /// convenient way to push some Add steppers action
+    pub fn push_action(&mut self, action: StepperAction) {
+        self.steppers.push_action(action);
+    }
+
+    /// Get an event_loop_proxy clone to send events
+    pub fn get_event_loop_proxy(&self) -> Option<EventLoopProxy<StepperAction>> {
+        let sk = self.sk_info.as_ref();
+        sk.borrow().get_event_loop_proxy().clone()
+    }
+
+    /// Steps all StereoKit systems, and inserts user code via callback between the appropriate system updates.
+    /// <https://stereokit.net/Pages/StereoKit/SK/Step.html>
+    ///
+    /// see also [`crate::sk::sk_step`]
+    #[deprecated(since = "0.40.0", note = "see SkClosure::about_to_wait() instead")]
+    pub fn step_looped<F: FnMut(&mut Sk)>(&mut self, on_step: &mut F) -> bool {
         if unsafe { sk_step(None) } == 0 {
-            self.window_event(
-                event_loop,
-                self.window_id.unwrap_or(unsafe { WindowId::dummy() }),
-                WindowEvent::CloseRequested,
-            );
-            return;
+            return false;
         }
-        if !self.sk.steppers.step(&mut self.token) {
-            self.sk.quit(None)
+        if !self.steppers.step(&mut self.token) {
+            self.quit(None)
         };
 
-        while let Some(mut action) = self.sk.actions.pop_front() {
+        while let Some(mut action) = self.actions.pop_front() {
             action();
         }
 
-        (self.on_step)(&mut self.sk, &self.token);
+        on_step(self);
+
+        true
     }
 
-    // fn new_events(&mut self, _event_loop: &ActiveEventLoop, cause: winit::event::StartCause) {
-    //     Log::info(format!("New events :{:?}", cause));
+    /// A way to execute without event_loop frame. This can be use only for PC programs
+    /// or android ones having a _main() derived with #ndk-glue (warning ndk-glue is deprecated)
+    /// <https://stereokit.net/Pages/StereoKit/SK/Run.html>
+    ///
+    /// see also [`crate::sk::sk_run_data`]
+    // pub fn run_raw<U: FnMut(&mut Sk), S: FnMut(&mut Sk)>(mut self, mut on_step: U, mut on_shutdown: S) {
+    //     while self.step(&mut on_step) {}
+    //     on_shutdown(&mut self);
+    //     self.shutdown();
     // }
 
-    fn suspended(&mut self, _event_loop: &ActiveEventLoop) {
-        Log::info("Suspended !!");
-    }
+    /// An alternative and basic way to execute a stereokit without ISteppers. This can be use only for PC programs
+    /// or android ones having a _main() derived with #ndk-glue (warning ndk-glue is deprecated)
+    /// <https://stereokit.net/Pages/StereoKit/SK.html>
+    ///
+    /// see also [`crate::sk::sk_run_data`]
 
-    fn exiting(&mut self, _event_loop: &ActiveEventLoop) {
-        Log::info("Exiting !!");
-    }
+    // pub fn run_basic<U: FnMut(&mut Sk), S: FnMut(&mut Sk)>(mut self, mut on_update: U, mut on_shutdown: S) {
+    //     let mut update_ref: (&mut U, &mut &mut Sk) = (&mut on_update, &mut &mut self);
+    //     let update_raw = &mut update_ref as *mut (&mut U, &mut &mut Sk) as *mut c_void;
 
-    fn memory_warning(&mut self, _event_loop: &ActiveEventLoop) {
-        Log::warn("Memory Warning !!");
-    }
-}
+    //     let mut shutdown_ref: (&mut S, &mut &mut Sk) = (&mut on_shutdown, &mut &mut self);
+    //     let shutdown_raw = &mut shutdown_ref as *mut (&mut S, &mut &mut Sk) as *mut c_void;
 
-impl<'a> SkClosures<'a> {
-    pub fn run_app<U: FnMut(&mut Sk, &MainThreadToken) + 'a, S: FnMut(&mut Sk) + 'a>(
-        sk: Sk,
+    //     unsafe {
+    //         sk_run_data(Some(sk_trampoline::<U>), update_raw, Some(sk_trampoline::<S>), shutdown_raw);
+    //     }
+    // }
+
+    /// This passes application execution over to StereoKit. This continuously steps all StereoKit systems, and inserts
+    /// user code via callback between the appropriate system updates. Once execution completes, or SK.Quit is called,
+    /// it properly calls the shutdown callback and shuts down StereoKit for you.
+    ///
+    /// This method is a basic way to handle event_loop. You can, instead, implement this loop in your main thread.
+    /// <https://stereokit.net/Pages/StereoKit/SK/Run.html>
+    ///
+    /// see also [`crate::sk::sk_run_data`]
+    #[deprecated(since = "0.40.0", note = "see SkClosure::run_app() instead")]
+    pub fn run<U: FnMut(&mut Sk), S: FnMut(&mut Sk)>(
+        mut self,
         event_loop: EventLoop<StepperAction>,
-        step: U,
-        shutdown: S,
+        mut on_step: U,
+        mut on_shutdown: S,
     ) {
-        let mut this = Self {
-            sk,
-            on_step: Box::new(step),
-            shutdown: Box::new(shutdown),
-            token: MainThreadToken { event_report: vec![] },
-            window_id: None,
-        };
         event_loop.set_control_flow(ControlFlow::Poll);
-        let _ = event_loop.run_app(&mut this);
-    }
-}
-
-/// This is a lightweight standard interface for fire-and-forget systems that can be attached to StereoKit! This is
-/// particularly handy for extensions/plugins that need to run in the background of your application, or even for
-/// managing some of your own simpler systems.
-///
-/// ISteppers can be added before or after the call to Sk.initialize, and this does affect when the IStepper.initialize
-/// call will be made! IStepper.initialize is always called after Sk.initialize. This can be important to note when
-/// writing code that uses SK functions that are dependant on initialization, you’ll want to avoid putting this code in
-/// the constructor, and add them to Initialize instead.
-///
-/// ISteppers also pay attention to threading! Initialize and Step always happen on the main thread, even if the
-/// constructor is called on a different one.
-/// <https://stereokit.net/Pages/StereoKit.Framework/IStepper.html>
-pub trait IStepper {
-    /// This is called by StereoKit at the start of the next frame, and on the main thread. This happens before
-    /// StereoKit’s main Step callback, and always after Sk.initialize.
-    /// <https://stereokit.net/Pages/StereoKit.Framework/IStepper/Initialize.html>
-    fn initialize(&mut self, id: StepperId, sk: Rc<RefCell<SkInfo>>) -> bool;
-
-    /// Is this IStepper enabled? When false, StereoKit will not call Step. This can be a good way to temporarily
-    /// disable the IStepper without removing or shutting it down.
-    /// <https://stereokit.net/Pages/StereoKit.Framework/IStepper/Enabled.html>
-    fn enabled(&self) -> bool {
-        true
-    }
-
-    /// This Step method will be called every frame of the application, as long as Enabled is true. This happens
-    /// immediately before the main application’s Step callback.
-    /// <https://stereokit.net/Pages/StereoKit.Framework/IStepper/Step.html>
-    fn step(&mut self, token: &MainThreadToken);
-
-    /// This is called when the IStepper is removed, or the application shuts down. This is always called on the main
-    /// thread, and happens at the start of the next frame, before the main application’s Step callback.
-    /// <https://stereokit.net/Pages/StereoKit.Framework/IStepper/Shutdown.html>
-    fn shutdown(&mut self) {}
-}
-
-/// List of action on steppers. This is the user events
-pub enum StepperAction {
-    /// Add a new stepper of TypeID,  identified by its StepperID
-    Add(Box<dyn for<'a> IStepper + Send + 'static>, TypeId, StepperId),
-    /// Remove all steppers of TypeID
-    RemoveAll(TypeId),
-    /// Remove the stepper identified by its StepperID
-    Remove(StepperId),
-    /// Quit the app,
-    Quit(StepperId, String),
-    /// Event sent by a stepper for those who need it.
-    /// Key -> Value  are strings.
-    Event(StepperId, String, String),
-    /// Suspended
-    Suspended,
-    /// Resume
-    Resumed,
-}
-
-impl fmt::Debug for StepperAction {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            StepperAction::Add(_stepper, id, stepper_id) => {
-                write!(f, "StepperAction::Add(..., id:{:?}, type_id:{:?}", id, stepper_id)
-            }
-            StepperAction::RemoveAll(type_id) => write!(f, "StepperAction::RemoveAll( type_id:{:?}", type_id),
-            StepperAction::Remove(stepper_id) => write!(f, "StepperAction::Remove( id:{:?}", stepper_id),
-            StepperAction::Quit(stepper_id, reason) => {
-                write!(f, "StepperAction::Quit() sent by id:{:?} for reason '{}'", stepper_id, reason)
-            }
-            StepperAction::Event(stepper_id, key, value) => {
-                write!(f, "StepperAction::Event( id:{:?} => {}->{}", stepper_id, key, value)
-            }
-            StepperAction::Suspended => write!(f, "StepperAction::Suspended"),
-            StepperAction::Resumed => write!(f, "StepperAction::Resumed"),
-        }
-    }
-}
-
-impl StepperAction {
-    /// This instantiates and registers an instance of the IStepper type provided as the generic parameter. SK will hold
-    /// onto it, Initialize it, Step it every frame, and call Shutdown when the application ends. This is generally safe
-    /// to do before Sk.initialize is called, the constructor is called right away, and Initialize is called right after
-    /// Sk.initialize, or at the start of the next frame before the next main Step callback if SK is already initialized.
-    /// <https://stereokit.net/Pages/StereoKit/SK/AddStepper.html>
-    pub fn add_default<T: IStepper + Send + Default + 'static>(stepper_id: impl AsRef<str>) -> Self {
-        let stepper = <T>::default();
-        let stepper_type = stepper.type_id();
-        StepperAction::Add(Box::new(stepper), stepper_type, stepper_id.as_ref().to_owned())
-    }
-
-    /// This instantiates and registers an instance of the IStepper type provided as the generic parameter. SK will hold
-    /// onto it, Initialize it, Step it every frame, and call Shutdown when the application ends. This is generally safe
-    /// to do before Sk.initialize is called, the constructor is called right away, and Initialize is called right after
-    /// Sk.initialize, or at the start of the next frame before the next main Step callback if SK is already initialized.
-    /// <https://stereokit.net/Pages/StereoKit/SK/AddStepper.html>
-    pub fn add<T: IStepper + Send + 'static>(stepper_id: impl AsRef<str>, stepper: T) -> Self {
-        let stepper_type = stepper.type_id();
-        StepperAction::Add(Box::new(stepper), stepper_type, stepper_id.as_ref().to_string())
-    }
-
-    /// This removes all IStepper instances that are assignable to the generic type specified. This will call the
-    /// IStepper’s Shutdown method on each removed instance before returning.
-    /// <https://stereokit.net/Pages/StereoKit/SK/RemoveStepper.html>
-    pub fn remove_all(type_id: TypeId) -> Self {
-        StepperAction::RemoveAll(type_id)
-    }
-
-    /// This removes one or all IStepper instances that are assignable to the generic type specified. This will call the
-    /// IStepper’s Shutdown method on each removed instance before returning.
-    /// <https://stereokit.net/Pages/StereoKit/SK/RemoveStepper.html>
-    pub fn remove(stepper_id: impl AsRef<str>) -> Self {
-        StepperAction::Remove(stepper_id.as_ref().to_string())
-    }
-
-    pub fn event<S: AsRef<str>>(stepper_id: StepperId, key: S, value: S) -> Self {
-        StepperAction::Event(stepper_id, key.as_ref().to_owned(), value.as_ref().to_owned())
-    }
-}
-
-/// All you need to step a Stepper, then remove it
-struct StepperHandler {
-    id: StepperId,
-    type_id: TypeId,
-    stepper: Box<dyn IStepper>,
-}
-
-/// A lazy way to identify IStepper instances
-pub type StepperId = String;
-
-/// Steppers manager. Non canonical way you can create a scene with all the Steppers you need
-/// <https://stereokit.net/Pages/StereoKit.Framework/IStepper.html<
-pub struct Steppers {
-    sk: Rc<RefCell<SkInfo>>,
-    steppers: Vec<StepperHandler>,
-    stepper_actions: VecDeque<StepperAction>,
-}
-
-impl Steppers {
-    // the only way to create a Steppers manager
-    pub fn new(sk: Rc<RefCell<SkInfo>>) -> Self {
-        Self { sk, steppers: vec![], stepper_actions: VecDeque::new() }
-    }
-
-    /// push an action to consumme befor next frame
-    pub fn push_action(&mut self, action: StepperAction) {
-        self.stepper_actions.push_back(action);
-    }
-
-    /// Deque all the actions, create the frame event report, execute all the stepper if quit hasn't be asked
-    /// return false if sk_quit must be triggered.
-    pub fn step(&mut self, token: &mut MainThreadToken) -> bool {
-        while let Some(action) = self.stepper_actions.pop_front() {
-            match action {
-                StepperAction::Add(mut stepper, type_id, stepper_id) => {
-                    if stepper.initialize(stepper_id.clone(), self.sk.clone()) {
-                        let stepper_h = StepperHandler { id: stepper_id, type_id, stepper };
-                        self.steppers.push(stepper_h);
-                    } else {
-                        Log::warn(format!("Stepper {} did not initialize", stepper_id))
+        #[allow(deprecated)]
+        event_loop
+            .run(move |event, elwt| match event {
+                Event::NewEvents(_start_cause) => {} // Quest flood this : Log::diag(format!("NewEvents {:?}", start_cause)),
+                Event::WindowEvent { window_id, event } => {
+                    Log::diag(format!("WindowEvent {:?} -> {:?}", window_id, event))
+                }
+                Event::DeviceEvent { device_id, event } => {
+                    Log::diag(format!("DeviceEvent {:?} -> {:?}", device_id, event))
+                }
+                Event::UserEvent(action) => {
+                    Log::diag(format!("UserEvent {:?}", action));
+                    self.push_action(action);
+                }
+                Event::Suspended => Log::info("Suspended !!"),
+                Event::Resumed => Log::info("Resumed !!"),
+                Event::AboutToWait => {
+                    if !&self.step_looped(&mut on_step) {
+                        elwt.exit()
                     }
                 }
-                StepperAction::RemoveAll(stepper_type) => {
-                    for stepper_h in self.steppers.iter_mut().filter(|stepper_h| stepper_h.type_id == stepper_type) {
-                        stepper_h.stepper.shutdown();
-                    }
-                    self.steppers.retain(|stepper_h| stepper_h.type_id != stepper_type);
+                Event::LoopExiting => {
+                    Log::info("LoopExiting !!");
+                    on_shutdown(&mut self);
                 }
-                StepperAction::Remove(stepper_id) => {
-                    for stepper_h in self.steppers.iter_mut().filter(|stepper_h| stepper_h.id == stepper_id) {
-                        stepper_h.stepper.shutdown()
-                    }
-                    self.steppers.retain(|i| i.id != stepper_id);
-                }
-                StepperAction::Quit(_, _) => return false,
-                _ => token.event_report.push(action),
-            }
-        }
-
-        for stepper_h in &mut self.steppers {
-            stepper_h.stepper.step(token)
-        }
-
-        token.event_report.clear();
-
-        true
-    }
-
-    pub fn shutdown(&mut self) {
-        self.stepper_actions.clear();
-        for stepper_h in self.steppers.iter_mut() {
-            stepper_h.stepper.shutdown()
-        }
-        self.steppers.clear();
-    }
-}
-
-/// Helper to create the whole code of a Stepper in method IStepper::initialize() while avoiding multiple fields.
-/// See Demo b_stepper.rs::BStepper
-/// Non canonical structure
-pub struct StepperClosures<'a> {
-    on_step: Box<dyn FnMut(&MainThreadToken) + 'a>,
-    shutdown: Box<dyn FnMut() + 'a>,
-}
-
-/// create an empty struct to fulfill with fn ClosureStepper::fn(&self)
-impl Default for StepperClosures<'_> {
-    fn default() -> Self {
-        Self { on_step: Box::new(|_token| {}), shutdown: Box::new(|| {}) }
-    }
-}
-
-impl<'a> StepperClosures<'a> {
-    pub fn new() -> Self {
-        Self { ..Default::default() }
-    }
-
-    pub fn set<U: FnMut(&MainThreadToken) + 'static, S: FnMut() + 'static>(
-        &mut self,
-        on_step: U,
-        shutdown: S,
-    ) -> &mut Self {
-        self.on_step = Box::new(on_step);
-        self.shutdown = Box::new(shutdown);
-        self
-    }
-
-    pub fn step(&mut self, token: &MainThreadToken) {
-        (self.on_step)(token)
-    }
-
-    pub fn shutdown(&mut self) {
-        (self.shutdown)()
+                Event::MemoryWarning => Log::warn("MemoryWarning !!"),
+            })
+            .unwrap_or_else(|e| {
+                Log::err(format!("!!!event_loop error closing!! : {}", e));
+            });
     }
 }

@@ -1,10 +1,11 @@
 use std::{cell::RefCell, collections::VecDeque, rc::Rc};
 
 use crate::{
+    event_loop::{IStepper, StepperId},
     material::Material,
     maths::{lerp, units::CM, Matrix, Plane, Pose, Quat, Vec3},
     mesh::{Inds, Mesh, Vertex},
-    sk::{IStepper, MainThreadToken, SkInfo, StepperId},
+    sk::{MainThreadToken, SkInfo},
     sound::Sound,
     sprite::Sprite,
     system::{

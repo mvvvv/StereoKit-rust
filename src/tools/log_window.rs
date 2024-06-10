@@ -1,10 +1,11 @@
 use std::{cell::RefCell, rc::Rc, sync::Mutex};
 
 use crate::{
+    event_loop::{IStepper, StepperAction, StepperId},
     font::Font,
     material::Cull,
     maths::{units::CM, Matrix, Pose, Vec2, Vec3},
-    sk::{IStepper, MainThreadToken, SkInfo, StepperAction, StepperId},
+    sk::{MainThreadToken, SkInfo},
     system::{LogLevel, Text, TextAlign, TextFit, TextStyle},
     ui::{Ui, UiCut},
     util::Color128,
@@ -161,6 +162,7 @@ impl<'a> LogWindow<'a> {
         Ui::layout_pop();
     }
 }
+
 impl<'a> IStepper for LogWindow<'a> {
     fn enabled(&self) -> bool {
         self.enabled

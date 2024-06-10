@@ -1,4 +1,7 @@
-use stereokit_rust::sk::{Sk, StepperAction, StepperId};
+use stereokit_rust::{
+    event_loop::{StepperAction, StepperId},
+    sk::Sk,
+};
 
 pub mod a_stepper;
 pub mod anchor1;

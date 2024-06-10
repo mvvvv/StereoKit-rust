@@ -12,7 +12,8 @@ use openxr_sys::{
 };
 
 use crate::{
-    sk::{IStepper, MainThreadToken, SkInfo, StepperAction, StepperId},
+    event_loop::{IStepper, StepperAction, StepperId},
+    sk::{MainThreadToken, SkInfo},
     system::{Backend, BackendOpenXR, BackendXRType, Log},
 };
 use std::{cell::RefCell, ffi::c_void, ptr::null_mut, rc::Rc};
@@ -128,6 +129,7 @@ impl Default for VirtualKbdMETA {
 }
 
 /// All the code here run in the main thread
+
 impl IStepper for VirtualKbdMETA {
     fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
         self.id = id;

@@ -9,7 +9,8 @@ use openxr_sys::{
 };
 
 use crate::{
-    sk::{IStepper, MainThreadToken, SkInfo, StepperAction, StepperId},
+    event_loop::{IStepper, StepperAction, StepperId},
+    sk::{MainThreadToken, SkInfo},
     system::{Backend, BackendOpenXR, BackendXRType, Log, Renderer},
     util::Color128,
 };

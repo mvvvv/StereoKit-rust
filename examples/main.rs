@@ -1,11 +1,12 @@
 pub mod demos;
 
+use stereokit_rust::event_loop::StepperAction;
 #[cfg(target_os = "android")]
 //use android_activity::AndroidApp;
 use winit::platform::android::activity::AndroidApp;
 
 use demos::program::launch;
-use stereokit_rust::sk::{Sk, StepperAction};
+use stereokit_rust::sk::Sk;
 use stereokit_rust::system::Log;
 use stereokit_rust::{
     sk::{OriginMode, SkSettings},
@@ -54,7 +55,7 @@ fn main() {
     BackendOpenXR::request_ext("XR_FB_display_refresh_rate");
     BackendOpenXR::request_ext("XR_FB_passthrough");
     BackendOpenXR::request_ext("XR_META_virtual_keyboard");
-    let (sk, event_loop) = settings.init().unwrap();
+    let (sk, event_loop) = settings.init_with_event_loop().unwrap();
 
     _main(sk, event_loop);
 }

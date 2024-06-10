@@ -1,11 +1,12 @@
 use std::{cell::RefCell, rc::Rc};
 
 use stereokit_rust::{
+    event_loop::{IStepper, StepperClosures, StepperId},
     font::Font,
     material::Material,
     maths::{Matrix, Quat, Vec3},
     mesh::Mesh,
-    sk::{IStepper, MainThreadToken, SkInfo, StepperClosures, StepperId},
+    sk::{MainThreadToken, SkInfo},
     system::{Log, Renderer, Text},
     util::{named_colors::RED, Time},
 };

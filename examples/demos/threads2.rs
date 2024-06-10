@@ -10,12 +10,13 @@ use std::{
 };
 
 use stereokit_rust::{
+    event_loop::{IStepper, StepperId},
     font::Font,
     material::Material,
     maths::{Matrix, Quat, Vec3},
     model::Model,
     shader::Shader,
-    sk::{IStepper, MainThreadToken, SkInfo, StepperId},
+    sk::{MainThreadToken, SkInfo},
     system::{Log, Text, TextStyle},
     util::{named_colors::GREEN_YELLOW, Color128},
 };

@@ -12,16 +12,16 @@ license = "MIT"
 links = "StereoKitC"
 repository = "https://github.com/mvvvv/StereoKit-rust"
 
-include = [
-  "StereoKit/tools/include",
-  "/README.md",
-]
+include = ["StereoKit/tools/include", "/README.md"]
 readme = "README.md"
 
 [features]
-#default = ["build-dynamic-openxr"]
-dynamic-openxr = []                       # Add openxr_loader.so in Android APK
-build-dynamic-openxr = ["dynamic-openxr"] # Build openxr_loader from Khronos OpenXR project
+default = ["event-loop"]
+dynamic-openxr = [] # Add openxr_loader.so in Android APK
+build-dynamic-openxr = [
+  "dynamic-openxr",
+] # Build openxr_loader from Khronos OpenXR project
+event-loop = ["dep:winit"]
 
 [lib]
 crate-type = ["lib", "cdylib"]
@@ -34,19 +34,21 @@ cmake = "0.1.50"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
-winit = { version = "0.30", features = [ "android-native-activity" ] }
+winit = { version = "0.30", features = [
+  "android-native-activity",
+], optional = true }
 thiserror = "1.0"
 bitflags = "2.4"
 glam = "0.27"
 openxr-sys = "0.10"
-macros = {path = "macros"}
+macros = { path = "macros" }
 
 [target.'cfg(target_os = "android")'.dependencies]
 log = "0.4"
 android_logger = "0.13"
 #android-activity = { version = "0.6", features = [ "native-activity" ] }
 ndk-context = "0.1.1"
-ndk = { version = "0.9.0", features = ["all"]}
+ndk = { version = "0.9.0", features = ["all"] }
 ndk-sys = "0.6"
 jni = "0.21"
 
@@ -61,13 +63,13 @@ name = "main"
 crate-type = ["cdylib"]
 
 [package.metadata.android]
-package ="com.stereokit.rust_binding_demo"
-build_targets = [ "aarch64-linux-android" ]
+package = "com.stereokit.rust_binding_demo"
+build_targets = ["aarch64-linux-android"]
 apk_label = "Stereokit-rust-demos"
 assets = "./assets"
-resources ="./res"
+resources = "./res"
 fullscreen = true
-runtime_libs = "./target/runtime_libs"   #---the way to build and add Khronos libopenxr_loader.so for feature build-dynamic-openxr
+runtime_libs = "./target/runtime_libs"      #---the way to build and add Khronos libopenxr_loader.so for feature build-dynamic-openxr
 #runtime_libs = "./quest_lib"            #---the way to add existing libopenxr_loader.so for feature dynamic-openxr
 
 [package.metadata.android.sdk]
@@ -184,7 +186,7 @@ value = "vr_only"
 
 [package.metadata.android.application.activity]
 #name = ".MainActivity"
-theme="@android:style/Theme.Black.NoTitleBar.Fullscreen"
+theme = "@android:style/Theme.Black.NoTitleBar.Fullscreen"
 config_changes = "density|keyboard|keyboardHidden|navigation|orientation|screenLayout|screenSize|uiMode"
 launch_mode = "singleTask"
 orientation = "landscape"
@@ -192,11 +194,11 @@ resizeable_activity = false
 
 [[package.metadata.android.application.activity.intent_filter]]
 actions = ["android.intent.action.MAIN"]
-categories = ["com.oculus.intent.category.VR", "android.intent.category.LAUNCHER"]
+categories = [
+  "com.oculus.intent.category.VR",
+  "android.intent.category.LAUNCHER",
+]
 
 [[package.metadata.android.application.activity.meta_data]]
 name = "com.oculus.vr.focusaware"
 value = "true"
-
-
-

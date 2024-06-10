@@ -2,7 +2,10 @@ pub use macros::include_asset_tree;
 use std::{ffi::NulError, path::PathBuf};
 use thiserror::Error;
 pub mod anchor;
+#[cfg(feature = "event-loop")]
+pub mod event_loop;
 pub mod font;
+#[cfg(feature = "event-loop")]
 pub mod framework;
 pub mod material;
 pub mod maths;
@@ -15,6 +18,7 @@ pub mod sound;
 pub mod sprite;
 pub mod system;
 pub mod tex;
+#[cfg(feature = "event-loop")]
 pub mod tools;
 pub mod ui;
 pub mod util;
@@ -77,6 +81,7 @@ pub enum StereoKitError {
     AnchorFind(String, String),
     #[error("failed to init stereokit with settings {0}")]
     SkInit(String),
+    #[cfg(feature = "event-loop")]
     #[error("failed to init stereokit event_loop")]
     SkInitEventLoop(#[from] winit::error::EventLoopError),
     #[error("failed to get a string from native C {0}")]
