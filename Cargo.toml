@@ -39,7 +39,7 @@ winit = { version = "0.30", features = [
 ], optional = true }
 thiserror = "1.0"
 bitflags = "2.4"
-glam = "0.27"
+glam = "0.28"
 openxr-sys = "0.10"
 stereokit-macros = { path = "stereokit-macros" }
 
