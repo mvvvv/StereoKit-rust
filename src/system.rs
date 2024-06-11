@@ -3125,6 +3125,8 @@ bitflags::bitflags! {
     #[derive(Debug, Copy, Clone, PartialEq, Eq)]
     #[repr(C)]
     pub struct TextFit: u32 {
+        /// No particularly special behavior.
+        const None = 0;
         /// The text will wrap around to the next line down when it reaches the end of the space on the X axis.
         const Wrap = 1;
         /// When the text reaches the end, it is simply truncated and no longer visible.

@@ -37,8 +37,8 @@ This project is at an early stage so try it carefully. Right now, the only way t
 * If you don't clone the template project in the same directory than the StereoKit-rust project, you'll have to modify the path of the Stereokit-rust dependency.
 
 ### Use your own event manager (PC only)
-The demo and template above, are using [winit](https://github.com/rust-windowing/winit) as an event manager and interface with the OS. If you want to use your own loop and event manager, have a look to [manuel.rs](https://github.com/mvvvv/StereoKit-rust/blob/master/examples/manual.rs).
-This is the shortest way to launch your first PCVR/PCMR program[^1]: `cargo run --example manuel`
+The demo and template above, are using [winit](https://github.com/rust-windowing/winit) as an event manager and interface with the OS. If you want to use your own loop and event manager, have a look to [manual.rs](https://github.com/mvvvv/StereoKit-rust/blob/master/examples/manual.rs).
+This is the shortest way to launch your first PCVR/PCMR program[^1]: `cargo run --example manual`
 
 ## Troubleshooting
 Submit bugs on the [Issues tab](https://github.com/mvvvv/StereoKit-rust/issues), and ask questions in the [Discussions tab](https://github.com/mvvvv/StereoKit-rust/discussions)!

@@ -794,7 +794,7 @@ impl Sk {
                 let sk_info = Rc::new(RefCell::new(SkInfo {
                     settings: settings.clone(),
                     system_info: unsafe { sk_system_info() },
-                    event_loop_proxy:Some(event_loop_proxy),
+                    event_loop_proxy: Some(event_loop_proxy),
                     android_app: app,
                 }));
                 Ok((
@@ -874,7 +874,7 @@ impl Sk {
     /// Get an event_loop_proxy clone to send events
     pub fn get_event_loop_proxy(&self) -> Option<EventLoopProxy<StepperAction>> {
         let sk = self.sk_info.as_ref();
-        sk.borrow().get_event_loop_proxy().clone()
+        sk.borrow().get_event_loop_proxy()
     }
 
     /// Steps all StereoKit systems, and inserts user code via callback between the appropriate system updates.
