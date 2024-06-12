@@ -231,7 +231,7 @@ bitflags::bitflags! {
 /// <https://stereokit.net/Pages/StereoKit/UICorner.html>
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(C)]
-pub struct UICorner : u32
+pub struct UiCorner : u32
 {
     /// No corners at all.
     const None        = 0;
@@ -255,12 +255,34 @@ pub struct UICorner : u32
     const Right  = Self::TopRight.bits()   | Self::BottomRight.bits();
 }
 }
+
+bitflags::bitflags! {
+/// This describes how UI elements with scrollable regions scroll
+/// around or use scroll bars! This allows you to enable or disable
+/// vertical and horizontal scrolling.
+/// <https://stereokit.net/Pages/StereoKit/UIScroll.html>
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(C)]
+pub struct UiScroll : u32
+{
+        /// No scroll bars or scrolling.</summary>
+        const None       = 0;
+        /// This will enable vertical scroll bars or scrolling.
+        const Vertical   = 1 << 0;
+        /// This will enable horizontal scroll bars or scrolling.
+        const Horizontal = 1 << 1;
+        /// This will enable both vertical and horizontal scroll bars
+        /// or scrolling.
+        const Both = Self::Vertical.bits() | Self::Horizontal.bits();
+}
+}
+
 /// A point on a lathe for a mesh generation algorithm. This is the 'silhouette' of the mesh, or the shape the mesh
 /// would take if you spun this line of points in a cylinder.
 /// <https://stereokit.net/Pages/StereoKit/UILathePt.html>
 #[derive(Debug, Copy, Clone)]
 #[repr(C)]
-pub struct UILathePt {
+pub struct UiLathePt {
     /// Lathe point 'location', where 'x' is a percentage of the lathe radius alnong the current surface normal, and Y
     /// is the absolute Z axis value.
     pub pt: Vec2,
@@ -301,11 +323,11 @@ extern "C" {
     pub fn ui_quadrant_size_verts(ref_vertices: *mut Vertex, vertex_count: i32, overflow_percent: f32);
     pub fn ui_quadrant_size_mesh(ref_mesh: MeshT, overflow_percent: f32);
     pub fn ui_gen_quadrant_mesh(
-        rounded_corners: UICorner,
+        rounded_corners: UiCorner,
         corner_radius: f32,
         corner_resolution: u32,
         delete_flat_sides: Bool32T,
-        lathe_pts: *const UILathePt,
+        lathe_pts: *const UiLathePt,
         lathe_pt_count: i32,
     ) -> MeshT;
     pub fn ui_show_volumes(show: Bool32T);
@@ -408,13 +430,49 @@ extern "C" {
     pub fn ui_label_16(text: *const c_ushort, use_padding: Bool32T);
     pub fn ui_label_sz(text: *const c_char, size: Vec2, use_padding: Bool32T);
     pub fn ui_label_sz_16(text: *const c_ushort, size: Vec2, use_padding: Bool32T);
-    pub fn ui_text(text: *const c_char, text_align: TextAlign);
-    pub fn ui_text_16(text: *const c_ushort, text_align: TextAlign);
-    pub fn ui_text_sz(text: *const c_char, text_align: TextAlign, fit: TextFit, size: Vec2);
-    pub fn ui_text_sz_16(text: *const c_ushort, text_align: TextAlign, fit: TextFit, size: Vec2);
-    pub fn ui_text_at(text: *const c_char, text_align: TextAlign, fit: TextFit, window_relative_pos: Vec3, size: Vec2);
+    pub fn ui_text(
+        text: *const c_char,
+        scroll: *mut Vec2,
+        scroll_direction: UiScroll,
+        height: f32,
+        text_align: TextAlign,
+    );
+    pub fn ui_text_16(
+        text: *const c_ushort,
+        scroll: *mut Vec2,
+        scroll_direction: UiScroll,
+        height: f32,
+        text_align: TextAlign,
+    );
+    pub fn ui_text_sz(
+        text: *const c_char,
+        scroll: *mut Vec2,
+        scroll_direction: UiScroll,
+        size: Vec2,
+        text_align: TextAlign,
+        fit: TextFit,
+    );
+    pub fn ui_text_sz_16(
+        text: *const c_ushort,
+        scroll: *mut Vec2,
+        scroll_direction: UiScroll,
+        size: Vec2,
+        text_align: TextAlign,
+        fit: TextFit,
+    );
+    pub fn ui_text_at(
+        text: *const c_char,
+        scroll: *mut Vec2,
+        scroll_direction: UiScroll,
+        text_align: TextAlign,
+        fit: TextFit,
+        window_relative_pos: Vec3,
+        size: Vec2,
+    );
     pub fn ui_text_at_16(
         text: *const c_ushort,
+        scroll: *mut Vec2,
+        scroll_direction: UiScroll,
         text_align: TextAlign,
         fit: TextFit,
         window_relative_pos: Vec3,
@@ -1566,11 +1624,11 @@ impl Ui {
     ///
     /// see also [`crate::ui::ui_gen_quadrant_mesh`]
     pub fn gen_quadrant_mesh(
-        rounded_corner: UICorner,
+        rounded_corner: UiCorner,
         corner_radius: f32,
         corner_resolution: u32,
         delete_flat_sides: bool,
-        lathe_pts: &[UILathePt],
+        lathe_pts: &[UiLathePt],
     ) -> Result<Mesh, StereoKitError> {
         match NonNull::new(unsafe {
             ui_gen_quadrant_mesh(
@@ -1823,21 +1881,41 @@ impl Ui {
     /// wrap once it fills the entire layout! Text uses the UI’s current font settings, which can be changed with
     /// Ui::push/pop_text_style.
     /// <https://stereokit.net/Pages/StereoKit/UI/Text.html>
+    /// * scroll - This is the current scroll value of the text, in meters, _not_ percent.
+    /// * scrollDirection - What scroll bars are allowed to show on this text? Vertical, horizontal, both?
+    /// * height - The vertical height of this Text element.
+    /// * width - if not specified it will automatically take the remainder of the current layout.
     /// * text_align - Where should the text position itself within its bounds? Default is TextAlign.TopLeft is how most
     /// european language are aligned.
     /// * fit - Describe how the text should behave when one of its size dimensions conflicts with the provided ‘size’
     /// parameter. Ui::text uses TextFit.Wrap by default.
-    /// * size - The layout size for this element in Hierarchy space. If an axis is left as zero, it will be
-    /// auto-calculated. For X this is the remaining width of the current layout, and for Y this is UI::line_height.
     ///
     /// see also [`crate::ui::ui_text`]
-    pub fn text(text: impl AsRef<str>, text_align: Option<TextAlign>, fit: Option<TextFit>, size: Option<Vec2>) {
+    pub fn text(
+        text: impl AsRef<str>,
+        scroll: Option<&mut Vec2>,
+        scroll_direction: Option<UiScroll>,
+        height: Option<f32>,
+        width: Option<f32>,
+        text_align: Option<TextAlign>,
+        fit: Option<TextFit>,
+    ) {
+        let scroll_direction = scroll_direction.unwrap_or(UiScroll::None);
+        let fit = fit.unwrap_or(TextFit::Wrap);
+        let height = height.unwrap_or(0.0);
         let text_align = text_align.unwrap_or(TextAlign::TopLeft);
         let cstr = CString::new(text.as_ref()).unwrap();
-        let fit = fit.unwrap_or(TextFit::Wrap);
-        match size {
-            Some(size) => unsafe { ui_text_sz(cstr.as_ptr(), text_align, fit, size) },
-            None => unsafe { ui_text(cstr.as_ptr(), text_align) },
+        if let Some(width) = width {
+            let size = Vec2::new(width, height);
+            match scroll {
+                Some(scroll) => unsafe { ui_text_sz(cstr.as_ptr(), scroll, scroll_direction, size, text_align, fit) },
+                None => unsafe { ui_text_sz(cstr.as_ptr(), null_mut(), UiScroll::None, size, text_align, fit) },
+            }
+        } else {
+            match scroll {
+                Some(scroll) => unsafe { ui_text(cstr.as_ptr(), scroll, scroll_direction, height, text_align) },
+                None => unsafe { ui_text(cstr.as_ptr(), null_mut(), UiScroll::None, 0.0, text_align) },
+            }
         }
     }
 
@@ -1854,13 +1932,39 @@ impl Ui {
     /// see also [`crate::ui::ui_text_at`]
     pub fn text_at(
         text: impl AsRef<str>,
+        scroll: Option<&mut Vec2>,
+        scroll_direction: Option<UiScroll>,
         text_align: TextAlign,
         fit: TextFit,
         top_left_corner: impl Into<Vec3>,
         size: impl Into<Vec2>,
     ) {
+        let scroll_direction = scroll_direction.unwrap_or(UiScroll::None);
         let cstr = CString::new(text.as_ref()).unwrap();
-        unsafe { ui_text_at(cstr.as_ptr(), text_align, fit, top_left_corner.into(), size.into()) }
+        match scroll {
+            Some(scroll) => unsafe {
+                ui_text_at(
+                    cstr.as_ptr(),
+                    scroll,
+                    scroll_direction,
+                    text_align,
+                    fit,
+                    top_left_corner.into(),
+                    size.into(),
+                )
+            },
+            None => unsafe {
+                ui_text_at(
+                    cstr.as_ptr(),
+                    null_mut(),
+                    UiScroll::None,
+                    text_align,
+                    fit,
+                    top_left_corner.into(),
+                    size.into(),
+                )
+            },
+        }
     }
 
     /// A toggleable button! A button will expand to fit the text provided to it, vertically and horizontally. Text is
