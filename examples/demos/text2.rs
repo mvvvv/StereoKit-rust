@@ -12,7 +12,6 @@ use stereokit_rust::{
 };
 
 pub const TEXTY: &str = r#"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"#;
-pub const TEXTY2: &str = r#"AbCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"#;
 pub const TEXTO: &str = r#"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789
 abcdefghijklmnopqrstuvwxyz=)àç_è-('"é&
 αβγδϵζηθικλμνξοπρστυϕχψω
@@ -111,15 +110,38 @@ impl Text2 {
         Ui::push_text_style(self.text_style_test);
         Ui::next_line();
         Ui::hseparator();
+        Ui::push_id("A");
         Ui::text(TEXTY, None, None, None, None, None, None);
+        Ui::pop_id();
         Ui::next_line();
         Ui::hseparator();
-        Ui::text(TEXTY2, Some(&mut self.scroll1), Some(UiScroll::Horizontal), Some(0.08), None, None, None);
+        Ui::push_id("B");
+        Ui::text(
+            TEXTY,
+            Some(&mut self.scroll1),
+            Some(UiScroll::Horizontal),
+            Some(0.08),
+            Some(0.36),
+            None,
+            Some(TextFit::Overflow),
+        );
+        Ui::pop_id();
         Ui::next_line();
         Ui::hseparator();
-        Ui::text(TEXTY, Some(&mut self.scroll2), Some(UiScroll::Horizontal), Some(0.08), None, None, None);
+        Ui::push_id("C");
+        Ui::text(
+            TEXTY,
+            Some(&mut self.scroll2),
+            Some(UiScroll::Horizontal),
+            Some(0.08),
+            Some(0.36),
+            None,
+            Some(TextFit::Squeeze),
+        );
+        Ui::pop_id();
         Ui::next_line();
         Ui::hseparator();
+        Ui::push_id("D");
         Ui::text(
             TEXTO,
             Some(&mut self.scroll3),
@@ -129,19 +151,19 @@ impl Text2 {
             None,
             Some(TextFit::Overflow),
         );
+        Ui::pop_id();
         Ui::same_line();
+        Ui::push_id("E");
         Ui::text_at(
             TEXTO,
             Some(&mut self.scroll4),
             Some(UiScroll::Both),
             TextAlign::TopLeft,
             TextFit::Overflow,
-            Vec3::new(-0.06, -0.36, -0.01),
-            Vec2::new(0.1, 0.1),
+            Vec3::new(0.016, -0.40, -0.03),
+            Vec2::new(0.18, 0.1),
         );
-        // Ui::next_line();
-        // Ui::push_preserve_keyboard(true);
-        // Ui::text(&self.text_sample, None, None, None);
+        Ui::pop_id();
         Ui::pop_text_style();
 
         Ui::window_end();

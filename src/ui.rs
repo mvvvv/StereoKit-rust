@@ -1900,11 +1900,11 @@ impl Ui {
         text_align: Option<TextAlign>,
         fit: Option<TextFit>,
     ) {
+        let cstr = CString::new(text.as_ref()).unwrap();
         let scroll_direction = scroll_direction.unwrap_or(UiScroll::None);
-        let fit = fit.unwrap_or(TextFit::Wrap);
         let height = height.unwrap_or(0.0);
         let text_align = text_align.unwrap_or(TextAlign::TopLeft);
-        let cstr = CString::new(text.as_ref()).unwrap();
+        let fit = fit.unwrap_or(TextFit::Wrap);
         if let Some(width) = width {
             let size = Vec2::new(width, height);
             match scroll {
