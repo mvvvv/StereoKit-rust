@@ -694,6 +694,22 @@ impl BackendOpenGLESEGL {
     }
 }
 
+/// When used with a hierarchy modifying function that will push/pop items onto a
+/// stack, this can be used to change the behavior of how parent hierarchy items
+/// will affect the item being added to the top of the stack.
+/// <https://stereokit.net/Pages/StereoKit/HierarchyParent.html>
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(u32)]
+pub enum HierarchyParent {
+    /// Inheriting is generally the default behavior of a hierarchy stack, the
+    /// current item will inherit the properties of the parent stack item in some
+    /// form or another.
+    Inherit = 0,
+    /// Ignoring the parent hierarchy stack item will let you skip inheriting
+    /// anything from the parent item. The new item remains exactly as provided.
+    Ignore = 1,
+}
+
 /// This class represents a stack of transform matrices that build up a transform hierarchy! This can be used like an
 /// object-less parent-child system, where you push a parent’s transform onto the stack, render child objects relative
 /// to that parent transform and then pop it off the stack.
@@ -706,7 +722,7 @@ impl BackendOpenGLESEGL {
 pub struct Hierarchy;
 
 extern "C" {
-    pub fn hierarchy_push(transform: *const Matrix);
+    pub fn hierarchy_push(transform: *const Matrix, parent_behavior: HierarchyParent);
     pub fn hierarchy_pop();
     pub fn hierarchy_set_enabled(enabled: Bool32T);
     pub fn hierarchy_is_enabled() -> Bool32T;
@@ -755,10 +771,14 @@ impl Hierarchy {
     /// will now be combined with this Matrix to make it relative to the current hierarchy. Use Hierarchy.pop to remove
     /// it from the Hierarchy stack! All Push calls must have an accompanying Pop call.
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/Push.html>
-    ///
-    /// see also [crate::system::hierarchy_pop]
-    pub fn push<M: Into<Matrix>>(_token: &MainThreadToken, transform: M) {
-        unsafe { hierarchy_push(&transform.into()) }
+    /// * parent_behavior - This determines how this matrix combines with the parent matrix below it. Normal behavior
+    /// is to "inherit" the parent matrix, but there are cases where you may wish to entirely ignore the parent
+    /// transform. For example, if you're in UI space, and wish to do some world space rendering. If None, has default
+    /// value "Inherit"
+    /// see also [crate::system::hierarchy_push]
+    pub fn push<M: Into<Matrix>>(_token: &MainThreadToken, transform: M, parent_behavior: Option<HierarchyParent>) {
+        let parent_behavior = parent_behavior.unwrap_or(HierarchyParent::Inherit);
+        unsafe { hierarchy_push(&transform.into(), parent_behavior) }
     }
 
     /// Converts a world space point into the local space of the current Hierarchy stack!

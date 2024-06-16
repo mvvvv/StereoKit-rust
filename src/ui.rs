@@ -10,7 +10,7 @@ use crate::{
     model::{Model, ModelT},
     sound::{Sound, SoundT},
     sprite::{Sprite, SpriteT},
-    system::{BtnState, Handed, TextAlign, TextContext, TextFit, TextStyle},
+    system::{BtnState, Handed, HierarchyParent, TextAlign, TextContext, TextFit, TextStyle},
     util::{Color128, Color32},
     StereoKitError,
 };
@@ -359,7 +359,7 @@ extern "C" {
     pub fn ui_is_enabled() -> Bool32T;
     pub fn ui_push_tint(tint_gamma: Color128);
     pub fn ui_pop_tint();
-    pub fn ui_push_enabled(enabled: Bool32T, ignore_parent: Bool32T);
+    pub fn ui_push_enabled(enabled: Bool32T, parent_behavior: HierarchyParent);
     pub fn ui_pop_enabled();
     pub fn ui_push_preserve_keyboard(preserve_keyboard: Bool32T);
     pub fn ui_pop_preserve_keyboard();
@@ -1531,11 +1531,13 @@ impl Ui {
     /// allowing or preventing interaction with specific elements. The default state is true.
     /// <https://stereokit.net/Pages/StereoKit/UI/PushEnabled.html>
     /// * enabled - Should the following elements be enabled and interactable?
-    /// * ignore_parent - Do we want to ignore or inherit the state of the current stack? Default should be false.
+    /// * parent_behavior - Do we want to ignore or inherit the state of the current stack? Default should be false.
+    /// if None, has default value Inherit
     ///
     /// see also [`crate::ui::ui_push_enabled`]
-    pub fn push_enabled(enabled: bool, ignore_parent: bool) {
-        unsafe { ui_push_enabled(enabled as Bool32T, ignore_parent as Bool32T) }
+    pub fn push_enabled(enabled: bool, parent_behavior: Option<HierarchyParent>) {
+        let parent_behavior = parent_behavior.unwrap_or(HierarchyParent::Inherit);
+        unsafe { ui_push_enabled(enabled as Bool32T, parent_behavior) }
     }
 
     /// Adds a root id to the stack for the following UI elements! This id is combined when hashing any following ids,

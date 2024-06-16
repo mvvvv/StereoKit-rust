@@ -9,8 +9,8 @@ use crate::{
     sound::Sound,
     sprite::Sprite,
     system::{
-        Backend, BackendXRType, FingerId, Hand, Handed, Hierarchy, Input, JointId, Key, Lines, Log, Text, TextAlign,
-        TextStyle,
+        Backend, BackendXRType, FingerId, Hand, Handed, Hierarchy, HierarchyParent, Input, JointId, Key, Lines, Log,
+        Text, TextAlign, TextStyle,
     },
     ui::{Ui, UiColor},
     util::{named_colors::WHITE, Color128, Time},
@@ -48,7 +48,7 @@ impl HandMenuItem {
                     true => Vec3::ONE * 1.2,
                     false => Vec3::ONE * 1.0,
                 };
-                Hierarchy::push(token, Matrix::ts(at, scale));
+                Hierarchy::push(token, Matrix::ts(at, scale), Some(HierarchyParent::Inherit));
                 sprite.draw(token, Matrix::ts(offset, height * Vec3::ONE), TextAlign::Center, None);
                 Text::add_at(
                     token,
@@ -537,7 +537,7 @@ impl HandMenuRadial {
 
         // Push the Menu's pose onto the stack, so we can draw, and work
         // in local space.
-        Hierarchy::push(token, self.menu_pose.to_matrix(Some(self.menu_scale * Vec3::ONE)));
+        Hierarchy::push(token, self.menu_pose.to_matrix(Some(self.menu_scale * Vec3::ONE)), None);
 
         // Calculate the status of the menu!
         let tip_world = hand.get(FingerId::Index, JointId::Tip).position;
