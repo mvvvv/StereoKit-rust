@@ -205,6 +205,13 @@ unsafe impl Sync for Tex {}
 extern "C" {
     pub fn tex_find(id: *const c_char) -> TexT;
     pub fn tex_create(type_: TexType, format: TexFormat) -> TexT;
+    pub fn tex_create_rendertarget(
+        width: i32,
+        height: i32,
+        msaa: i32,
+        color_format: TexFormat,
+        depth_format: TexFormat,
+    ) -> TexT;
     pub fn tex_create_color32(in_arr_data: *mut Color32, width: i32, height: i32, srgb_data: Bool32T) -> TexT;
     pub fn tex_create_color128(in_arr_data: *mut Color128, width: i32, height: i32, srgb_data: Bool32T) -> TexT;
     pub fn tex_create_mem(data: *mut c_void, data_size: usize, srgb_data: Bool32T, priority: i32) -> TexT;
@@ -460,6 +467,38 @@ impl Tex {
         .ok_or(StereoKitError::TexColor(
             format!("{}x{}", height, width),
             "tex_create_color128 failed".to_string(),
+        ))?))
+    }
+
+    /// This will assemble a texture ready for rendering to! It creates a render target texture with no mip maps and a
+    /// depth buffer attached.
+    /// <https://stereokit.net/Pages/StereoKit/Tex/RenderTarget.html>
+    /// * width - in pixels
+    /// * height - in pixels
+    /// * multisample - Multisample level, or MSAA. This should be 1, 2, 4, 8, or 16. The results will have moother
+    /// edges with higher values, but will cost more RAM and time to render. Note that GL platforms cannot trivially
+    /// draw a multisample > 1 texture in a shader.
+    /// * color_format - The format of the color surface.
+    /// * depth _format - The format of the depth buffer. If this is None, no depth buffer will be attached to this
+    /// rendertarget.
+    ///
+    ///  see also [`crate::tex::tex_create_rendertarget()`]
+    pub fn render_target(
+        width: usize,
+        height: usize,
+        multisample: Option<i32>,
+        color_format: Option<TexFormat>,
+        depth_format: Option<TexFormat>,
+    ) -> Result<Tex, StereoKitError> {
+        let multisample = multisample.unwrap_or(1);
+        let color_format = color_format.unwrap_or(TexFormat::RGBA32);
+        let depth_format = depth_format.unwrap_or(TexFormat::Depth16);
+        Ok(Tex(NonNull::new(unsafe {
+            tex_create_rendertarget(width as i32, height as i32, multisample, color_format, depth_format)
+        })
+        .ok_or(StereoKitError::TexRenderTarget(
+            format!("{}x{}", height, width),
+            "tex_create_rendertarget failed".to_string(),
         ))?))
     }
 

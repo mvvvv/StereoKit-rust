@@ -505,7 +505,7 @@ impl HandMenuRadial {
             Some(Color128::lerp(
                 color_common,
                 color_primary,
-                f32::max(0.0, f32::min(1.0, (facing - (Self::ACTIVATION_ANGLE - 0.01)) / 0.001)),
+                ((facing - (Self::ACTIVATION_ANGLE - 0.01)) / 0.001).clamp(0.0, 1.0),
             )),
             None,
         );

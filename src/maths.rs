@@ -534,14 +534,6 @@ impl Vec3 {
     /// This is the same as Forward!
     pub const NEG_Z: Self = Self::new(0.0, 0.0, -1.0);
 
-    /// This returns a Vec3 that has been flattened to 0 on the Y axis. No other changes are made.
-    /// <https://stereokit.net/Pages/StereoKit/Vec3/X0Z.html>
-    pub const X0Z: Self = Self::new(1.0, 0.0, 1.0);
-
-    /// This returns a Vec3 that has been flattened to 0 on the Z axis. No other changes are made.
-    /// <https://stereokit.net/Pages/StereoKit/Vec3/XY0.html>
-    pub const XY0: Self = Self::new(1.0, 1.0, 0.0);
-
     /// A vector representing the up axis. In StereoKit, this is the same as new Vec3(0,1,0).
     /// <https://stereokit.net/Pages/StereoKit/Vec3/Up.html>
     pub const UP: Self = Self::Y;
@@ -629,6 +621,13 @@ impl Vec3 {
     #[inline]
     pub fn xy0(&self) -> Self {
         Self { x: self.x, y: self.y, z: 0.0 }
+    }
+
+    /// This returns a Vec3 that has been set to 1 on the Z axis. No other changes are made
+    /// <https://stereokit.net/Pages/StereoKit/Vec3/XY1.html>
+    #[inline]
+    pub fn xy1(&self) -> Self {
+        Self { x: self.x, y: self.y, z: 1.0 }
     }
 
     /// This extracts the Vec2 from the X and Y axes.
@@ -2326,6 +2325,22 @@ impl Bounds {
     #[inline]
     pub fn transformed(&self, transform: impl Into<Matrix>) -> Self {
         unsafe { bounds_transform(*self, transform.into()) }
+    }
+
+    /// From the front, this is the Top (Y+), Left (X+), Center
+    /// (Z0) of the bounds. Useful when working with UI layout bounds.
+    /// <https://stereokit.net/Pages/StereoKit/Bounds/TLC.html>
+    #[inline]
+    pub fn tlc(&self) -> Vec3 {
+        self.center + self.dimensions.xy0() / 2.0
+    }
+
+    /// From the front, this is the Top (Y+), Left (X+), Back (Z+)
+    /// of the bounds. Useful when working with UI layout bounds.
+    /// <https://stereokit.net/Pages/StereoKit/Bounds/TLB.html>
+    #[inline]
+    pub fn tlb(&self) -> Vec3 {
+        self.center + self.dimensions / 2.0
     }
 }
 

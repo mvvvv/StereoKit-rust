@@ -20,7 +20,6 @@ use std::f32::consts::PI;
 use std::ops::Mul;
 use std::rc::Rc;
 
-#[derive(Debug)]
 pub struct Tex1 {
     pub title: String,
     id: StepperId,
@@ -152,40 +151,40 @@ impl Default for Tex1 {
         let tex_particule = Tex::gen_particle(128, 128, 0.2, Some(gradient));
 
         //----- Materials
-        let mut basic_material = Material::copy(Material::unlit());
+        let mut basic_material = Material::unlit().copy();
         basic_material.face_cull(Cull::None);
-        let mut color = Material::copy(&basic_material);
+        let mut color = basic_material.copy();
         color
             .id("color mat")
             .diffuse_tex(&tex_color_32a)
             //.color_tint(RED)
             .tex_transform(Vec4::new(0.0, 0.0, 2.0, 2.0));
 
-        let mut color2 = Material::copy(&basic_material);
+        let mut color2 = basic_material.copy();
         color2.id("color2 mat").diffuse_tex(&tex_color_32b).tex_transform(Vec4::new(0.0, 0.0, 1.0, 1.0));
 
-        let mut color3 = Material::copy(&basic_material);
+        let mut color3 = basic_material.copy();
         color3.id("color3 mat").diffuse_tex(&tex_color_32c).tex_transform(Vec4::new(0.0, 0.0, 8.0, 8.0));
 
-        let mut color4 = Material::copy(&basic_material);
+        let mut color4 = basic_material.copy();
         color4.id("color4 mat").diffuse_tex(&tex_color_32d).tex_transform(Vec4::new(0.0, 0.0, 16.0, 16.0));
 
-        let mut vide = Material::copy(&basic_material);
+        let mut vide = basic_material.copy();
         vide.id("vide mat").diffuse_tex(&tex_vide);
 
-        let mut particule = Material::copy(&basic_material);
+        let mut particule = basic_material.copy();
         particule.id("particule mat").diffuse_tex(&tex_particule);
 
-        let mut vide2 = Material::copy(&basic_material);
+        let mut vide2 = basic_material.copy();
         vide2.id("vide mat2").diffuse_tex(&tex_vide2).tex_transform(Vec4::new(0.0, 0.0, 2.0, 2.0));
 
-        let mut vide3 = Material::copy(&basic_material);
+        let mut vide3 = basic_material.copy();
         vide3.id("vide mat3").diffuse_tex(&tex_vide3).tex_transform(Vec4::new(0.0, 0.0, 2.0, 2.0));
 
-        let mut vide4 = Material::copy(&basic_material);
+        let mut vide4 = basic_material.copy();
         vide4.id("vide mat4").diffuse_tex(&tex_vide4).tex_transform(Vec4::new(0.0, 0.0, 2.0, 2.0));
 
-        let mut zarbi = Material::copy(&basic_material);
+        let mut zarbi = basic_material.copy();
         zarbi.id("zarbi").diffuse_tex(&tex_zarbi).tex_transform(Vec4::new(0.0, 0.0, 2.0, 2.0));
 
         let panels = Model::new();

@@ -38,6 +38,7 @@ extern "C" {
     pub fn font_find(id: *const c_char) -> FontT;
     pub fn font_create(file_utf8: *const c_char) -> FontT;
     pub fn font_create_files(in_arr_files: *mut *const c_char, file_count: i32) -> FontT;
+    pub fn font_create_family(font_family: *const c_char) -> FontT;
     pub fn font_set_id(font: FontT, id: *const c_char);
     pub fn font_get_id(font: FontT) -> *const c_char;
     pub fn font_addref(font: FontT);
@@ -109,6 +110,21 @@ impl Font {
 
         Ok(Font(NonNull::new(unsafe { font_create_files(in_arr_files_cstr, files_utf8.len() as i32) }).ok_or(
             StereoKitError::FontFiles("many files".to_owned(), "font_create_files failed".to_string()),
+        )?))
+    }
+    /// Loads font from a specified list of font family names.
+    /// Returns a font from the given font family names, Most of the OS provide fallback fonts, hence there will always
+    /// be a set of fonts.
+    /// <https://stereokit.net/Pages/StereoKit/Font/FromFamily.html>
+    /// * font_family - List of font family names separated by comma(,) similar to a list of names css allows.
+    ///
+    /// see also [`crate::font::font_create_family`]
+    pub fn from_family(font_family: impl AsRef<str>) -> Result<Font, StereoKitError> {
+        let c_str = CString::new(font_family.as_ref()).map_err(|_| {
+            StereoKitError::FontFamily(font_family.as_ref().into(), "CString conversion error".to_string())
+        })?;
+        Ok(Font(NonNull::new(unsafe { font_create_family(c_str.as_ptr()) }).ok_or(
+            StereoKitError::FontFamily(font_family.as_ref().into(), "font_create_family failed".to_string()),
         )?))
     }
 

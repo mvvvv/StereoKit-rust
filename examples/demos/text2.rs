@@ -83,6 +83,8 @@ impl Text2 {
             None,
             None,
         );
+        //Bug #1020 to solve
+        Ui::push_enabled(false, None);
         if Ui::radio_img(
             "Default Font",
             self.font_selected == 1,
@@ -97,16 +99,17 @@ impl Text2 {
         }
         Ui::same_line();
         if Ui::radio_img("Font 1", self.font_selected == 2, &self.radio_off, &self.radio_on, UiBtnLayout::Left, None) {
-            let font = Font::from_file("fonts/Courier Prime.ttf").unwrap_or_default();
+            let font = Font::from_family("Courier").unwrap_or_default();
             self.text_style_test = Text::make_style(font, self.text_size, WHITE);
             self.font_selected = 2;
         }
         Ui::same_line();
         if Ui::radio_img("Font 2", self.font_selected == 3, &self.radio_off, &self.radio_on, UiBtnLayout::Left, None) {
-            let font = Font::from_file("fonts/Courier Prime Italic.ttf").unwrap_or_default();
+            let font = Font::from_family("Arial").unwrap_or_default();
             self.text_style_test = Text::make_style(font, self.text_size, WHITE);
             self.font_selected = 3;
         }
+        Ui::pop_enabled();
         Ui::push_text_style(self.text_style_test);
         Ui::next_line();
         Ui::hseparator();

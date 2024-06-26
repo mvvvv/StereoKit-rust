@@ -350,6 +350,18 @@ extern "C" {
     pub fn ui_set_element_sound(element_visual: UiVisual, activate: SoundT, deactivate: SoundT);
     pub fn ui_has_keyboard_focus() -> Bool32T;
     pub fn ui_popup_pose(shift: Vec3) -> Pose;
+
+    pub fn ui_draw_element(element_visual: UiVisual, start: Vec3, size: Vec3, focus: f32);
+    pub fn ui_draw_element_color(
+        element_visual: UiVisual,
+        element_color: UiVisual,
+        start: Vec3,
+        size: Vec3,
+        focus: f32,
+    );
+    pub fn ui_get_element_color(element_visual: UiVisual, focus: f32) -> Color128;
+    pub fn ui_get_anim_focus(id: u64, focus_state: BtnState, activation_state: BtnState) -> f32;
+
     pub fn ui_push_grab_aura(enabled: Bool32T);
     pub fn ui_pop_grab_aura();
     pub fn ui_grab_aura_enabled() -> Bool32T;
@@ -764,10 +776,26 @@ extern "C" {
         size: Vec2,
         type_: TextContext,
     ) -> Bool32T;
+    pub fn ui_input_at(
+        id: *const c_char,
+        buffer: *mut c_char,
+        buffer_size: i32,
+        window_relative_pos: Vec3,
+        size: Vec2,
+        type_: TextContext,
+    ) -> Bool32T;
     pub fn ui_input_16(
         id: *const c_ushort,
         buffer: *mut c_ushort,
         buffer_size: i32,
+        size: Vec2,
+        type_: TextContext,
+    ) -> Bool32T;
+    pub fn ui_input_at_16(
+        id: *const c_ushort,
+        buffer: *mut c_ushort,
+        buffer_size: i32,
+        window_relative_pos: Vec3,
         size: Vec2,
         type_: TextContext,
     ) -> Bool32T;
@@ -1258,6 +1286,11 @@ impl Ui {
     /// This is an input field where users can input text to the app! Selecting it will spawn a virtual keyboard, or act
     /// as the keyboard focus. Hitting escape or enter, or focusing another UI element will remove focus from this Input.
     /// <https://stereokit.net/Pages/StereoKit/UI/Input.html>
+    /// * id - An id for tracking element state. MUST be unique within current hierarchy.</param>
+    /// * value - The string that will store the Input's content in.
+    /// * size - The layout size for this element in Hierarchy space.
+    /// * type_text - What category of text this Input represents. This may affect what kind of soft keyboard will
+    /// be displayed, if one is shown to the user.</param>
     ///
     /// see also [`crate::ui::ui_input`]
     pub fn input(
@@ -1275,6 +1308,47 @@ impl Ui {
                 cstr.as_ptr(),
                 c_value.as_ptr() as *mut c_char,
                 initial_text.as_ref().len() as i32,
+                size,
+                type_text,
+            ) != 0
+        } {
+            match unsafe { CStr::from_ptr(c_value.as_ptr()).to_str() } {
+                Ok(result) => Some(result.to_owned()),
+                Err(_) => None,
+            }
+        } else {
+            None
+        }
+    }
+
+    /// This is an input field where users can input text to the app! Selecting it will spawn a virtual keyboard, or act
+    ///  as the keyboard focus. Hitting escape or enter, or focusing another UI element will remove focus from this Input.
+    /// <https://stereokit.net/Pages/StereoKit/UI/InputAt.html>
+    /// * id - An id for tracking element state. MUST be unique within current hierarchy.</param>
+    /// * value - The string that will store the Input's content in.
+    /// * top_left_corner - This is the top left corner of the UI element relative to the current Hierarchy.
+    /// * size - The layout size for this element in Hierarchy space.
+    /// * type_text - What category of text this Input represents. This may affect what kind of soft keyboard will
+    /// be displayed, if one is shown to the user.</param>
+    ///
+    /// see also [`crate::ui::ui_input_at`]
+    pub fn input_at(
+        id: impl AsRef<str>,
+        initial_text: impl AsRef<str>,
+        top_left_corner: impl Into<Vec3>,
+        size: Option<Vec2>,
+        type_text: Option<TextContext>,
+    ) -> Option<String> {
+        let cstr = CString::new(id.as_ref()).unwrap();
+        let c_value = CString::new(initial_text.as_ref()).unwrap();
+        let size = size.unwrap_or(Vec2::ZERO);
+        let type_text = type_text.unwrap_or(TextContext::Text);
+        if unsafe {
+            ui_input_at(
+                cstr.as_ptr(),
+                c_value.as_ptr() as *mut c_char,
+                initial_text.as_ref().len() as i32,
+                top_left_corner.into(),
                 size,
                 type_text,
             ) != 0
@@ -1374,7 +1448,11 @@ impl Ui {
     /// to fill the current surface horizontally, and fill a single line_height vertically. Returns the Hierarchy local
     /// bounds of the space that was reserved, with a Z axis dimension of 0.
     /// <https://stereokit.net/Pages/StereoKit/UI/LayoutReserve.html>
-    ///
+    /// * add_padding - If true, this will add the current padding value to the total final dimensions of the space that
+    /// is reserved.
+    /// * depth - This allows you to quickly insert a depth into the Bounds you’re receiving. This will offset on the
+    /// Z axis in addition to increasing the dimensions, so that the bounds still remain sitting on the surface of the
+    /// UI. This depth value will not be reflected in the bounds provided by LayouLast.
     /// see also [`crate::ui::ui_layout_reserve`]
     pub fn layout_reserve(size: impl Into<Vec2>, add_padding: bool, depth: f32) -> Bounds {
         unsafe { ui_layout_reserve(size.into(), add_padding as Bool32T, depth) }
@@ -1820,6 +1898,58 @@ impl Ui {
             None => null_mut(),
         };
         unsafe { ui_set_element_sound(visual, activate, deactivate) };
+    }
+
+    /// This will draw a visual element from StereoKit's theming system, while paying attention to certain factors
+    /// such as enabled/disabled, tinting and more.
+    /// <https://stereokit.net/Pages/StereoKit/UI/DrawElement.html>
+    /// * element_visual - The element type to draw.
+    /// * element_color - If you wish to use the coloring from a different element, you can use this to override the
+    /// theme color used when drawing.
+    /// * start - This is the top left corner of the UI element relative to the current Hierarchy.
+    /// * size - The layout size for this element in Hierarchy space.
+    /// * focus - The amount of visual focus this element currently has, where 0 is unfocused, and 1 is active. You
+    /// can acquire a good focus value from `UI.GetAnimFocus`.
+    ///
+    /// see also [`crate::ui::ui_draw_element`] [`crate::ui::ui_draw_element_color`]
+    pub fn draw_element(
+        element_visual: UiVisual,
+        element_color: Option<UiVisual>,
+        start: Vec3,
+        size: Vec3,
+        focus: f32,
+    ) {
+        match element_color {
+            Some(element_color) => unsafe { ui_draw_element_color(element_visual, element_color, start, size, focus) },
+            None => unsafe { ui_draw_element(element_visual, start, size, focus) },
+        }
+    }
+
+    /// This will get a final linear draw color for a particular UI element type with a particular focus value. This
+    /// obeys the current hierarchy of tinting and enabled states.
+    /// <https://stereokit.net/Pages/StereoKit/UI/GetElementColor.html>
+    /// * element_visual - Get the color from this element type.
+    /// * focus - The amount of visual focus this element currently has, where 0 is unfocused, and 1 is active. You
+    /// can acquire a good focus value from `UI.GetAnimFocus`
+    ///
+    /// Returns a linear color good for tinting UI meshes.
+    /// see also [`crate::ui::ui_get_element_color`]
+    pub fn get_element_color(element_visual: UiVisual, focus: f32) -> Color128 {
+        unsafe { ui_get_element_color(element_visual, focus) }
+    }
+
+    /// This resolves a UI element with an ID and its current
+    /// states into a nicely animated focus value.
+    /// <https://stereokit.net/Pages/StereoKit/UI/GetAnimFocus.html>
+    /// * id - The hierarchical id of the UI element we're checking the focus of, this can be created with
+    /// `Ui::StackHash`.
+    /// * focus_state - The current focus state of the UI element.
+    /// * activationState - The current activation status of the/ UI element.
+    ///
+    /// Returns a focus value in the realm of 0-1, where 0 is unfocused, and 1 is active.
+    /// see also [`crate::ui::ui_get_anim_focus`]
+    pub fn get_anim_focus(id: u64, focus_state: BtnState, activation_state: BtnState) -> f32 {
+        unsafe { ui_get_anim_focus(id, focus_state, activation_state) }
     }
 
     /// This allows you to explicitly set a theme color, for finer grained control over the UI appearance. Each theme

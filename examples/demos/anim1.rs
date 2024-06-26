@@ -28,7 +28,7 @@ impl Default for Anim1 {
     fn default() -> Self {
         let calcaire = Material::find("clean_tile").unwrap_or_default();
         let mobile = Model::from_file("mobiles.gltf", Some(Shader::pbr())).unwrap();
-        let mut brick_wall = Material::copy(calcaire);
+        let mut brick_wall = calcaire.copy();
         brick_wall
             .roughness_amount(0.7)
             .color_tint(DARK_RED)
@@ -36,7 +36,7 @@ impl Default for Anim1 {
             .transparency(Transparency::None)
             .face_cull(Cull::None);
         // The nodes stay alive and keep Material alive so, no id .id("brick_wall");
-        let mut ico_material = Material::copy(&brick_wall);
+        let mut ico_material = brick_wall.copy();
         ico_material.face_cull(Cull::Back).color_tint(WHITE);
         let nodes = &mobile.get_nodes();
         nodes

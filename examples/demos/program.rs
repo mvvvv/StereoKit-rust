@@ -123,7 +123,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
         Log::diag(format!("{:?}", iter.get_mesh().unwrap().get_id()));
     }
 
-    let mut clean_tile = Material::copy(Material::pbr());
+    let mut clean_tile = Material::pbr().copy();
     Log::diag("calcaire_blanc params:");
     for param in tile.get_all_param_info() {
         match param.get_name() {

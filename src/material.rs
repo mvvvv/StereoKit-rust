@@ -190,18 +190,20 @@ impl Material {
     ///
     /// see also [`crate::material::material_copy`]
     pub fn default_copy() -> Material {
-        Material::copy(Material::default())
+        Material::default().copy()
     }
 
-    /// Creates a new Material asset with the same shader and properties! Draw calls with the new Material will not batch together with this one.
+    /// Creates a new Material asset with the same shader and properties! Draw calls with the new Material will not
+    /// batch together with this one.
     /// <https://stereokit.net/Pages/StereoKit/Material/Copy.html>
     ///
     /// see also [`crate::material::material_copy()`]
-    pub fn copy(material: impl AsRef<Material>) -> Material {
-        Material(NonNull::new(unsafe { material_copy(material.as_ref().0.as_ptr()) }).unwrap())
+    pub fn copy(&self) -> Material {
+        Material(NonNull::new(unsafe { material_copy(self.0.as_ptr()) }).unwrap())
     }
 
-    /// Creates a new Material asset with the same shader and properties! Draw calls with the new Material will not batch together with this one.
+    /// Creates a new Material asset with the same shader and properties! Draw calls with the new Material will not
+    /// batch together with this one.
     /// <https://stereokit.net/Pages/StereoKit/Material/Copy.html>
     ///
     /// see also [`crate::material::material_copy_id`]

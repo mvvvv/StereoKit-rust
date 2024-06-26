@@ -3,7 +3,7 @@
 fn main() {
     use stereokit_rust::{
         maths::{Pose, Quat, Vec3},
-        sk::{OriginMode, SkSettings},
+        sk::{OriginMode, Sk, SkSettings},
         system::LogLevel,
         ui::Ui,
     };
@@ -24,6 +24,7 @@ fn main() {
         }
         Ui::window_end();
     }
+    Sk::shutdown();
 }
 
 /// Fake main for android

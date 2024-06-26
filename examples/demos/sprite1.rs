@@ -70,8 +70,8 @@ impl Default for Sprite1 {
             sk_info: None,
 
             //----- Materials
-            color1: Material::copy(Material::pbr_clip()),
-            color2: Material::copy(Material::pbr_clip()),
+            color1: Material::pbr_clip().copy(),
+            color2: Material::pbr_clip().copy(),
 
             //----- Sprites
             sprite1: Sprite::from_tex(&tex_particule1, None, None).unwrap(),

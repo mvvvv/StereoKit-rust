@@ -734,7 +734,7 @@ impl Drop for Sk {
     fn drop(&mut self) {
         #[cfg(feature = "event-loop")]
         self.steppers.shutdown();
-        unsafe { sk_shutdown() }
+        //unsafe { sk_shutdown() }
     }
 }
 #[cfg(feature = "event-loop")]
@@ -974,5 +974,15 @@ impl Sk {
             .unwrap_or_else(|e| {
                 Log::err(format!("!!!event_loop error closing!! : {}", e));
             });
+    }
+
+    /// Cleans up all StereoKit initialized systems. Release your own StereoKit created assets before calling this. This
+    /// is for cleanup only, and should not be used to exit the application, use SK.Quit for that instead. Calling this
+    /// function is unnecessary if using SK.Run, as it is called automatically there.
+    /// <https://stereokit.net/Pages/StereoKit/SK/Shutdown.html>
+    ///
+    /// see also [`crate::sk::sk_shutdown`]
+    pub fn shutdown() {
+        unsafe { sk_shutdown() }
     }
 }

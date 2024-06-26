@@ -25,6 +25,7 @@ fn main() {
     use std::env;
 
     use demos::program::launch;
+    use stereokit_rust::sk::Sk;
     use stereokit_rust::system::BackendOpenXR;
     use stereokit_rust::{
         sk::{AppMode, OriginMode, SkSettings},
@@ -108,6 +109,7 @@ fn main() {
     BackendOpenXR::request_ext("XR_META_virtual_keyboard");
     let (sk, event_loop) = settings.init_with_event_loop().unwrap();
     launch(sk, event_loop, is_testing, start_test);
+    Sk::shutdown();
 }
 
 /// Fake main for android

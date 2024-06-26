@@ -2,7 +2,6 @@ use stereokit_rust::{
     event_loop::{StepperAction, StepperId},
     sk::Sk,
 };
-use text2::Text2;
 
 pub mod a_stepper;
 pub mod anchor1;
@@ -20,11 +19,12 @@ pub mod text1;
 pub mod text2;
 pub mod threads1;
 pub mod threads2;
+pub mod ui1;
 
 use self::{
     a_stepper::AStepper, anchor1::Anchor1, anim1::Anim1, asset1::Asset1, b_stepper::BStepper, biplane1::Biplane1,
     math1::Math1, render_list1::RenderList1, shaders1::Shader1, sprite1::Sprite1, tex1::Tex1, text1::Text1,
-    threads1::Threads1, threads2::Threads2,
+    text2::Text2, threads1::Threads1, threads2::Threads2, ui1::Ui1,
 };
 
 pub struct Test {
@@ -74,6 +74,10 @@ impl Test {
             Test::new("Tex1", |sk| {
                 sk.push_action(StepperAction::add_default::<Tex1>("Tex1"));
                 "Tex1".to_string()
+            }),
+            Test::new("Ui1", |sk| {
+                sk.push_action(StepperAction::add_default::<Ui1>("Ui1"));
+                "Ui1".to_string()
             }),
             Test::new("Anim1", |sk| {
                 sk.push_action(StepperAction::add_default::<Anim1>("Anim1"));

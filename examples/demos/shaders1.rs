@@ -46,7 +46,7 @@ impl Default for Shader1 {
             .tex_transform(Vec4::new(0.0, 0.0, 4.0, 4.0))
             .color_tint(WHITE);
 
-        let mut material_green = Material::copy(&blinker_material);
+        let mut material_green = blinker_material.copy();
         material_green
             .id("green_material")
             .tex_transform(Vec4::new(0.0, 0.0, 2.0, 2.0))

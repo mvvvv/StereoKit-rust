@@ -160,7 +160,8 @@ impl Text1 {
 
         Ui::same_line();
         if Ui::button_img(format!("{:?}", self.text_context), &self.next_value, None, None, None) {
-            self.text_context = unsafe { transmute(((self.text_context as u32) + 1) % 4) };
+            self.text_context =
+                unsafe { transmute::<u32, stereokit_rust::system::TextContext>(((self.text_context as u32) + 1) % 4) };
         }
         if Ui::button("Quit Demos", None) {
             let rc_sk = self.sk_info.as_ref().unwrap();

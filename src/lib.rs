@@ -1,5 +1,5 @@
-pub use stereokit_macros::include_asset_tree;
 use std::{ffi::NulError, path::PathBuf};
+pub use stereokit_macros::include_asset_tree;
 use thiserror::Error;
 pub mod anchor;
 #[cfg(feature = "event-loop")]
@@ -51,12 +51,16 @@ pub enum StereoKitError {
     TexFiles(PathBuf, String),
     #[error("failed to create a tex from color {0} for reason {1}")]
     TexColor(String, String),
+    #[error("failed to create a tex rendertarget {0} for reason {1}")]
+    TexRenderTarget(String, String),
     #[error("failed to find font {0} for reason {1}")]
     FontFind(String, String),
     #[error("failed to create font from file {0} for reason {1}")]
     FontFile(PathBuf, String),
     #[error("failed to create font from multiple files {0} for reason {1}")]
     FontFiles(String, String),
+    #[error("failed to create font family {0} for reason {1}")]
+    FontFamily(String, String),
     #[error("failed to find shader {0} for reason {1}")]
     ShaderFind(String, String),
     #[error("failed to create shader from file {0} for reason {1}")]
