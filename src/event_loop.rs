@@ -42,7 +42,7 @@ impl ApplicationHandler<StepperAction> for SkClosures<'_> {
 
     fn window_event(&mut self, event_loop: &ActiveEventLoop, window_id: WindowId, event: WindowEvent) {
         if event == WindowEvent::Destroyed {
-            println!(" Window {:?} Destroyed !!!", window_id);
+            Log::info(format!("SkClosure Window {:?} Destroyed !!!", window_id));
             return;
         }
 
@@ -52,7 +52,7 @@ impl ApplicationHandler<StepperAction> for SkClosures<'_> {
                 self.window_id = Some(window_id);
             }
             WindowEvent::CloseRequested => {
-                Log::info("LoopExiting !!");
+                Log::info("SkClosure LoopExiting !!");
                 (self.shutdown)(&mut self.sk);
                 event_loop.exit();
             }
@@ -64,17 +64,17 @@ impl ApplicationHandler<StepperAction> for SkClosures<'_> {
                     }
                 }
                 // no keyboard spy log so ...
-                Log::diag(format!("WindowEvent {:?} -> {:?}", window_id, event));
+                //Log::diag(format!("SkClosure WindowEvent {:?} -> {:?}", window_id, event));
                 return;
             }
             _ => (),
         }
 
-        Log::diag(format!("WindowEvent {:?} -> {:?}", window_id, event));
+        Log::diag(format!("SkClosure WindowEvent {:?} -> {:?}", window_id, event));
     }
 
     fn device_event(&mut self, _event_loop: &ActiveEventLoop, device_id: DeviceId, event: DeviceEvent) {
-        Log::diag(format!("DeviceEvent {:?} -> {:?}", device_id, event));
+        Log::diag(format!("SkClosure DeviceEvent {:?} -> {:?}", device_id, event));
     }
 
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
@@ -102,15 +102,15 @@ impl ApplicationHandler<StepperAction> for SkClosures<'_> {
     // }
 
     fn suspended(&mut self, _event_loop: &ActiveEventLoop) {
-        Log::info("Suspended !!");
+        Log::info("SkClosure Suspended !!");
     }
 
     fn exiting(&mut self, _event_loop: &ActiveEventLoop) {
-        Log::info("Exiting !!");
+        Log::info("SkClosure Exiting !!");
     }
 
     fn memory_warning(&mut self, _event_loop: &ActiveEventLoop) {
-        Log::warn("Memory Warning !!");
+        Log::warn("SkClosure Memory Warning !!");
     }
 }
 

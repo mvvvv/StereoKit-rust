@@ -8,9 +8,33 @@ use stereokit_rust::{
     mesh::Mesh,
     sk::{MainThreadToken, SkInfo},
     system::{BtnState, Text, TextAlign, TextStyle},
-    ui::{Ui, UiVisual},
-    util::{named_colors::RED, Color128},
+    ui::{Ui, UiCorner, UiLathePt, UiVisual},
+    util::{
+        named_colors::{CYAN, DARK_BLUE, RED},
+        Color128, Color32, Time,
+    },
 };
+
+const LATHE_BUTTON: [UiLathePt; 6] = [
+    UiLathePt { pt: Vec2::new(0.0, -0.5), normal: Vec2::new(0.0, 1.0), color: CYAN, connect_next: 1, flip_face: 0 },
+    UiLathePt { pt: Vec2::new(0.95, -0.5), normal: Vec2::new(0.0, 1.0), color: CYAN, connect_next: 1, flip_face: 0 },
+    UiLathePt { pt: Vec2::new(1.0, -0.45), normal: Vec2::new(1.0, 0.0), color: CYAN, connect_next: 1, flip_face: 0 },
+    UiLathePt { pt: Vec2::new(1.0, -0.1), normal: Vec2::new(1.0, 0.0), color: CYAN, connect_next: 0, flip_face: 0 },
+    UiLathePt {
+        pt: Vec2::new(1.2, 0.49),
+        normal: Vec2::new(0.0, 1.0),
+        color: DARK_BLUE,
+        connect_next: 1,
+        flip_face: 1,
+    },
+    UiLathePt {
+        pt: Vec2::new(0.0, 0.49),
+        normal: Vec2::new(0.0, 1.0),
+        color: Color32::new(0, 0, 139, 200),
+        connect_next: 1,
+        flip_face: 1,
+    },
+];
 
 /// Copycat of the example https://github.com/StereoKit/StereoKit/blob/develop/Examples/StereoKitTest/Tests/TestCustomButton.cs
 pub struct Ui1 {
@@ -75,6 +99,22 @@ impl Ui1 {
         Ui::push_tint(Color128::hsv(0.0, 0.2, 0.7, 1.0));
         self.custom_button_element(token, "Custom Button Tinted");
         Ui::pop_tint();
+
+        Ui::hseparator();
+
+        let corner_radius = 0.005 * Time::get_totalf().sin().abs();
+        if let Ok(mesh) = Ui::gen_quadrant_mesh(
+            UiCorner::TopLeft & UiCorner::BottomRight,
+            corner_radius,
+            8,
+            true,
+            true,
+            &LATHE_BUTTON,
+        ) {
+            Ui::set_element_visual(UiVisual::Toggle, mesh, None, None);
+            Ui::toggle("my button style", true, None);
+        }
+
         Ui::window_end();
 
         Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);

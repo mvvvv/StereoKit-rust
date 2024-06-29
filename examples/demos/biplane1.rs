@@ -47,7 +47,8 @@ impl Default for Biplane1 {
             _ => Mesh::cube(),
         };
         let plane_pose = Pose::new(Vec3::NEG_Z + Vec3::Y * 1.5, None);
-        let plane_sound = Sound::from_file("sounds/plane_engine.mp3").unwrap();
+        let mut plane_sound = Sound::from_file("sounds/plane_engine.mp3").unwrap();
+        plane_sound.id("sound_plane");
 
         Self {
             id: "Plane1".to_string(),

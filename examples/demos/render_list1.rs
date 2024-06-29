@@ -104,7 +104,7 @@ impl RenderList1 {
             None,
         );
 
-        Ui::window_begin("Render Lists", &mut self.window_pose, None, None, None);
+        Ui::window_begin("Render Lists", &mut self.window_pose, Some(Vec2::new(0.23, 0.35)), None, None);
         Ui::label(format!("Render items: {}/{}", self.primary.get_count(), self.primary.get_prev_count()), None, true);
         if let Some(value) = Ui::toggle("Clear", self.clear_primary, None) {
             self.clear_primary = value
@@ -114,7 +114,7 @@ impl RenderList1 {
         self.quad.draw(
             token,
             &self.render_mat,
-            Matrix::ts(b.center + Vec3::FORWARD * 0.004, b.dimensions.xy1()),
+            Matrix::ts(b.center + Vec3::new(-0.05, -0.05, -0.004), b.dimensions.xy1()),
             None,
             None,
         );

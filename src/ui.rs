@@ -293,6 +293,8 @@ pub struct UiLathePt {
     /// Will there be triangles connecting this lathe point to the next in the list, or is this a jump without
     /// triangles?
     pub connect_next: Bool32T,
+    /// Should the triangles attaching this point to the next be ordered backwards?
+    pub flip_face: Bool32T,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -327,6 +329,7 @@ extern "C" {
         corner_radius: f32,
         corner_resolution: u32,
         delete_flat_sides: Bool32T,
+        quadrantify: Bool32T,
         lathe_pts: *const UiLathePt,
         lathe_pt_count: i32,
     ) -> MeshT;
@@ -1701,21 +1704,34 @@ impl Ui {
     /// This generates a quadrantified mesh meant for UI buttons by sweeping a lathe over the rounded corners of a
     /// rectangle! Note that this mesh is quadrantified, so it requires special shaders to draw properly!
     /// <https://stereokit.net/Pages/StereoKit/UI/GenQuadrantMesh.html>
+    /// * rounded_corners - A bit-flag indicating which corners should be rounded, and which should be sharp!
+    /// * corner_radius - The radius of each rounded corner.
+    /// * corner_resolution - How many slices/verts go into each corner? More is smoother, but more expensive to render.
+    /// * delete_flat_sides - If two adjacent corners are sharp, should we skip connecting them with triangles? If this
+    /// edge will always be covered, then deleting these faces may save you some performance.
+    /// * quadrantify - Does this generate a mesh compatible with StereoKit's quadrant shader system, or is this just a
+    /// traditional mesh? In most cases, this should be true, but UI elements such as the rounded button may be
+    /// exceptions.
+    /// * lathe_pts" - The lathe points to sweep around the edge.
+    ///
+    /// Returns the final Mesh, ready for use in SK's theming system.
     ///
     /// see also [`crate::ui::ui_gen_quadrant_mesh`]
     pub fn gen_quadrant_mesh(
-        rounded_corner: UiCorner,
+        rounded_corners: UiCorner,
         corner_radius: f32,
         corner_resolution: u32,
         delete_flat_sides: bool,
+        quadrantify: bool,
         lathe_pts: &[UiLathePt],
     ) -> Result<Mesh, StereoKitError> {
         match NonNull::new(unsafe {
             ui_gen_quadrant_mesh(
-                rounded_corner,
+                rounded_corners,
                 corner_radius,
                 corner_resolution,
                 delete_flat_sides as Bool32T,
+                quadrantify as Bool32T,
                 lathe_pts.as_ptr(),
                 lathe_pts.len() as i32,
             )
