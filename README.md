@@ -13,7 +13,7 @@ This project is at an early stage so try it carefully. Right now, the only way t
 
 ### Download the source project:
 * `git clone --recursive https://github.com/mvvvv/StereoKit-rust/`
-* On linux get the following dev libraries : clang-12 lld-12 ninja-build libx11-dev libxfixes-dev libegl-dev libgbm-dev libfontconfig-dev.
+* On linux get the following dev libraries : clang-18 lld-18 ninja-build libx11-dev libxfixes-dev libegl-dev libgbm-dev libfontconfig-dev.
 
 
 ### Run the project's demo on your PC's headset :
@@ -24,9 +24,8 @@ This project is at an early stage so try it carefully. Right now, the only way t
 * Launch[^1]: `cargo run  --example main_pc -- --test`
 
 
-### Run the project's demo on your Android headset:
-
-* Install [sdkmanager](https://developer.android.com/studio/command-line/sdkmanager)  (or Android Studio if you intend to use it)
+### Run the project's demo on your Android headset (from a PC running Windows, Mac or Linux):
+* Install [sdkmanager](https://developer.android.com/studio/command-line/sdkmanager)  (or Android Studio if you intend to use it). Set ANDROID_HOME environment variable to its path (this path contains the `build_tools` directory)
 * Check that `adb` is connecting to your headset then set a valid NDK path into ANDROID_NDK_ROOT environment variable.
 * Install: `cargo install cargo-apk` (cargo-xbuild has not been tested yet).
 * Download: `rustup target add aarch64-linux-android` for most of the existing android headsets.
