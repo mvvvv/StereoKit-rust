@@ -265,15 +265,15 @@ bitflags::bitflags! {
 #[repr(C)]
 pub struct UiScroll : u32
 {
-        /// No scroll bars or scrolling.</summary>
-        const None       = 0;
-        /// This will enable vertical scroll bars or scrolling.
-        const Vertical   = 1 << 0;
-        /// This will enable horizontal scroll bars or scrolling.
-        const Horizontal = 1 << 1;
-        /// This will enable both vertical and horizontal scroll bars
-        /// or scrolling.
-        const Both = Self::Vertical.bits() | Self::Horizontal.bits();
+    /// No scroll bars or scrolling.</summary>
+    const None       = 0;
+    /// This will enable vertical scroll bars or scrolling.
+    const Vertical   = 1 << 0;
+    /// This will enable horizontal scroll bars or scrolling.
+    const Horizontal = 1 << 1;
+    /// This will enable both vertical and horizontal scroll bars
+    /// or scrolling.
+    const Both = Self::Vertical.bits() | Self::Horizontal.bits();
 }
 }
 
@@ -299,13 +299,22 @@ pub struct UiLathePt {
 
 #[derive(Debug, Copy, Clone)]
 #[repr(C)]
+/// Visual properties and spacing of the UI system.
+/// <https://stereokit.net/Pages/StereoKit/UISettings.html>
 pub struct UiSettings {
+    /// The margin is the space between a window and its contents. In meters.
     pub margin: f32,
+    /// Spacing between an item and its parent, in meters.
     pub padding: f32,
+    /// Spacing between sibling items, in meters.
     pub gutter: f32,
+    /// The Z depth of 3D UI elements, in meters.
     pub depth: f32,
+    /// Radius of the UI element corners, in meters.
     pub rounding: f32,
+    /// How far up does the white back-border go on UI elements? This is a 0-1 percentage of the depth value.
     pub backplate_depth: f32,
+    // How wide is the back-border around the UI elements? In meters.
     pub backplate_border: f32,
 }
 
