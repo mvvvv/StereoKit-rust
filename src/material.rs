@@ -22,10 +22,10 @@ pub enum Transparency {
     None = 1,
     /// This will blend with the pixels behind it. This is transparent! You may not want to write to the z-buffer, and
     /// it’s slower than opaque materials.
-    Blend = 2,
+    Blend = 3,
     /// This will straight up add the pixel color to the color buffer! This usually looks -really- glowy, so it makes
     /// for good particles or lighting effects.
-    Add = 3,
+    Add = 4,
 }
 
 /// Depth test describes how this material looks at and responds to depth information in the zbuffer! The default is

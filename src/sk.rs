@@ -475,7 +475,7 @@ impl SkSettings {
         self
     }
 
-    /// If StereoKit has nothing to render for this frame, it skips submitting a proojection layer to OpenXR entirely.
+    /// If StereoKit has nothing to render for this frame, it skips submitting a projection layer to OpenXR entirely.
     /// <https://stereokit.net/Pages/StereoKit/SKSettings/omitEmptyFrames.html>
     pub fn omit_empty_frames(&mut self, origin_mode: bool) -> &mut Self {
         self.omit_empty_frames = origin_mode as Bool32T;
