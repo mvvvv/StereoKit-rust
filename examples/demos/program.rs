@@ -267,6 +267,10 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
     let refresh_rates = [60.0, 72.0, 90.0, 120.0];
     let mut current_refresh_rate = get_display_refresh_rate().unwrap_or(0.0);
 
+    let mut viewport_scaling = Renderer::get_viewport_scaling();
+    // let mut multisample = Renderer::get_multisample() as f32;
+    let mut fps = 72.0;
+
     let tests = Test::get_tests();
 
     if !start_test.is_empty() {
@@ -392,6 +396,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
                     sk.quit(None);
                 }
                 Ui::same_line();
+                Ui::panel_begin(None);
                 if passthrough_enabled {
                     if let Some(new_value) = Ui::toggle("Passthrough MR", passthrough, None) {
                         passthrough = new_value;
@@ -404,11 +409,16 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
                         }
                         sk.push_action(StepperAction::event("main".into(), PASSTHROUGH_FLIP, string_value))
                     }
+                    Ui::same_line();
                 }
+
+                fps = ((1.0 / Time::get_step()) + fps) / 2.0;
+                Ui::label(format!("FPS: {:.0}", fps), None, true);
                 Ui::same_line();
+
                 if refresh_rate_editable
                     && Ui::button_img(
-                        format!("Up to {:?} fps", current_refresh_rate as u32),
+                        format!("Up to {:?} FPS", current_refresh_rate as u32),
                         &next_refresh_rate_image,
                         None,
                         None,
@@ -430,6 +440,29 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
                         current_refresh_rate = 0.0;
                     }
                 }
+
+                Ui::next_line();
+                Ui::label("Viewport scaling:", None, true);
+                Ui::same_line();
+                Ui::label(format!("{:.2}", viewport_scaling), None, true);
+                Ui::same_line();
+                if let Some(new_value) =
+                    Ui::hslider("scaling", &mut viewport_scaling, 0.1, 2.0, Some(0.05), None, None, None)
+                {
+                    Renderer::viewport_scaling(new_value);
+                    viewport_scaling = new_value;
+                }
+
+                // Ui::label("MSAA:", None, true);
+                // Ui::same_line();
+                // Ui::label(format!("{:.0}", multisample), None, true);
+                // Ui::same_line();
+                // if let Some(new_value) = Ui::hslider("msaa", &mut multisample, 0.1, 8.0, Some(1.0), None, None, None) {
+                //     Renderer::multisample(new_value as i32);
+                //     multisample = new_value;
+                // }
+
+                Ui::panel_end();
 
                 Ui::window_end();
             }

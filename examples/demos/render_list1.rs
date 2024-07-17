@@ -51,8 +51,6 @@ impl Default for RenderList1 {
         render_mat.diffuse_tex(&render_tex);
         render_mat.face_cull(stereokit_rust::material::Cull::None);
 
-        //render_mat.diffuse_tex(Tex::gen_color(BLUE_VIOLET, 1024, 1024, TexType::Image, TexFormat::RGBA32));
-
         Self {
             id: "RenderList1".to_string(),
             sk_info: None,
@@ -77,11 +75,16 @@ impl IStepper for RenderList1 {
     fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
         self.id = id;
         self.sk_info = Some(sk_info);
+
+        Renderer::clear_color(Color128::hsv(0.4, 0.3, 0.5, 1.0));
         true
     }
 
     fn step(&mut self, token: &MainThreadToken) {
         self.draw(token)
+    }
+    fn shutdown(&mut self) {
+        Renderer::clear_color(Color128::BLACK_TRANSPARENT);
     }
 }
 
@@ -91,7 +94,6 @@ impl RenderList1 {
             self.primary.clear()
         };
 
-        Renderer::clear_color(Color128::hsv(0.4, 0.3, 0.5, 1.0));
         self.list.draw_now(
             &self.render_tex,
             Matrix::tr(

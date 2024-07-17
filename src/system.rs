@@ -2398,6 +2398,8 @@ extern "C" {
     pub fn render_get_filter() -> RenderLayer;
     pub fn render_set_scaling(display_tex_scale: f32);
     pub fn render_get_scaling() -> f32;
+    pub fn render_set_viewport_scaling(viewport_rect_scale: f32);
+    pub fn render_get_viewport_scaling() -> f32;
     pub fn render_set_multisample(display_tex_multisample: i32);
     pub fn render_get_multisample() -> i32;
     pub fn render_override_capture_filter(use_override_filter: Bool32T, layer_filter: RenderLayer);
@@ -2559,11 +2561,22 @@ impl Renderer {
     /// OpenXR has a recommended default for the main render surface, this value allows you to set SK’s surface to a
     /// multiple of the recommended size. Note that the final resolution may also be clamped or quantized. Only works in
     /// XR mode. If known in advance, set this via SKSettings in initialization. This is a very costly change to make.
+    /// Consider if Viewport_scaling will work for you instead, and prefer that.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/Scaling.html>
     ///
     /// see also [`crate::system::render_set_scaling`]
     pub fn scaling(scaling: f32) {
         unsafe { render_set_scaling(scaling) }
+    }
+
+    /// This allows you to trivially scale down the area of the swapchain that StereoKit renders to! This can be used
+    /// to boost performance in situations where full resolution is not needed, or to reduce GPU time. This value is
+    /// locked to the 0-1 range
+    /// <https://stereokit.net/Pages/StereoKit/Renderer/ViewportScaling.html>
+    ///
+    /// see also [`crate::system::render_set_viewport_scaling`]
+    pub fn viewport_scaling(scaling: f32) {
+        unsafe { render_set_viewport_scaling(scaling) }
     }
 
     /// Sets the lighting information for the scene! You can build one through SphericalHarmonics.FromLights, or grab
@@ -2930,11 +2943,23 @@ impl Renderer {
     /// OpenXR has a recommended default for the main render surface, this value allows you to set SK’s surface to a
     /// multiple of the recommended size. Note that the final resolution may also be clamped or quantized. Only works in
     /// XR mode. If known in advance, set this via SKSettings in initialization. This is a very costly change to make.
+    /// Consider if viewport_caling will work for you
+    /// instead, and prefer that.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/Scaling.html>
     ///
     /// see also [`crate::system::render_get_scaling`]
     pub fn get_scaling() -> f32 {
         unsafe { render_get_scaling() }
+    }
+
+    /// This allows you to trivially scale down the area of the swapchain that StereoKit renders to! This can be used to
+    /// boost performance in situations where full resolution is not needed, or to reduce GPU time. This value is
+    /// locked to the 0-1 range
+    /// <https://stereokit.net/Pages/StereoKit/Renderer/ViewportScaling.html>
+    ///
+    /// see also [`crate::system::render_get_viewport_scaling`]
+    pub fn get_viewport_scaling() -> f32 {
+        unsafe { render_get_viewport_scaling() }
     }
 
     /// Gets the lighting information for the scene! You can build one through SphericalHarmonics.FromLights, or grab
