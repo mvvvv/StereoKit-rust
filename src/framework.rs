@@ -1,28 +1,31 @@
-use std::{cell::RefCell, collections::VecDeque, rc::Rc};
+use std::{borrow::BorrowMut, cell::RefCell, collections::VecDeque, rc::Rc};
 
 use crate::{
     event_loop::{IStepper, StepperId},
     material::Material,
-    maths::{lerp, units::CM, Matrix, Plane, Pose, Quat, Vec3},
+    maths::{lerp, units::CM, Matrix, Plane, Pose, Quat, Vec2, Vec3},
     mesh::{Inds, Mesh, Vertex},
     sk::{MainThreadToken, SkInfo},
     sound::Sound,
-    sprite::Sprite,
     system::{
-        Backend, BackendXRType, FingerId, Hand, Handed, Hierarchy, HierarchyParent, Input, JointId, Key, Lines, Log,
-        Text, TextAlign, TextStyle,
+        Backend, BackendXRType, FingerId, Hand, Handed, Hierarchy, Input, JointId, Key, Lines, Log, Text, TextAlign,
+        TextStyle,
     },
+    tex::Tex,
     ui::{Ui, UiColor},
-    util::{named_colors::WHITE, Color128, Time},
+    util::{
+        named_colors::{GREEN, RED, WHITE},
+        Color128, Time,
+    },
 };
 
 /// StereoKit initialization settings! Setup SkSettings with your data before calling SkSetting.Init().
 /// <https://stereokit.net/Pages/StereoKit.Framework/HandMenuItem.html
 pub struct HandMenuItem {
     pub name: String,
-    pub image: Option<Sprite>,
-    pub action: HandMenuAction,
-    pub callback: Box<RefCell<dyn FnMut()>>,
+    pub image: Option<Material>,
+    pub action: RefCell<HandMenuAction>,
+    pub callback: RefCell<Box<dyn FnMut()>>,
 }
 
 impl HandMenuItem {
@@ -30,59 +33,37 @@ impl HandMenuItem {
     /// <https://stereokit.net/Pages/StereoKit.Framework/HandMenuItem/HandMenuItem.html
     pub fn new<C: FnMut() + 'static>(
         name: impl AsRef<str>,
-        image: Option<Sprite>,
+        image: Option<Material>,
         callback: C,
         action: HandMenuAction,
     ) -> Self {
-        Self { name: name.as_ref().to_owned(), image, callback: Box::new(RefCell::new(callback)), action }
+        Self {
+            name: name.as_ref().to_owned(),
+            image,
+            callback: RefCell::new(Box::new(callback)),
+            action: RefCell::<HandMenuAction>::new(action),
+        }
     }
 
     /// This draws the menu item on the radial menu!
     /// <https://stereokit.net/Pages/StereoKit.Framework/HandMenuItem/Draw.html
-    pub fn draw(&self, token: &MainThreadToken, at: Vec3, _arc_length: f32, _angle: f32, focused: bool) {
-        match &self.image {
-            Some(sprite) => {
-                let height = TextStyle::default().get_char_height();
-                let offset = Vec3::new(0.0, height * 0.75, 0.0);
-                let scale = match focused {
-                    true => Vec3::ONE * 1.2,
-                    false => Vec3::ONE * 1.0,
-                };
-                Hierarchy::push(token, Matrix::ts(at, scale), Some(HierarchyParent::Inherit));
-                sprite.draw(token, Matrix::ts(offset, height * Vec3::ONE), TextAlign::Center, None);
-                Text::add_at(
-                    token,
-                    &self.name,
-                    Matrix::ts(at, Vec3::ONE * 0.5),
-                    None,
-                    None,
-                    None,
-                    Some(TextAlign::BottomCenter),
-                    None,
-                    None,
-                    None,
-                );
-                Hierarchy::pop(token);
-            }
-            None => {
-                let scale = match focused {
-                    true => Vec3::ONE * 0.6,
-                    false => Vec3::ONE * 0.5,
-                };
-                Text::add_at(
-                    token,
-                    &self.name,
-                    Matrix::ts(at, scale),
-                    None,
-                    None,
-                    None,
-                    Some(TextAlign::BottomCenter),
-                    None,
-                    None,
-                    None,
-                );
-            }
-        }
+    pub fn draw_basic(&self, token: &MainThreadToken, at: Vec3, focused: bool) {
+        let scale = match focused {
+            true => Vec3::ONE * 0.6,
+            false => Vec3::ONE * 0.5,
+        };
+        Text::add_at(
+            token,
+            &self.name,
+            Matrix::ts(at, scale),
+            None,
+            None,
+            None,
+            Some(TextAlign::BottomCenter),
+            None,
+            None,
+            None,
+        );
     }
 }
 
@@ -94,7 +75,7 @@ pub enum HandRadial {
 impl HandRadial {
     pub fn item<C: FnMut() + 'static>(
         name: impl AsRef<str>,
-        image: Option<Sprite>,
+        image: Option<Material>,
         callback: C,
         action: HandMenuAction,
     ) -> Self {
@@ -103,7 +84,7 @@ impl HandRadial {
 
     pub fn layer(
         name: impl AsRef<str>,
-        image: Option<Sprite>,
+        image: Option<Material>,
         start_angle: Option<f32>,
         items: Vec<HandRadial>,
     ) -> Self {
@@ -126,7 +107,30 @@ impl HandRadial {
 
     pub fn is_back_action(&self) -> bool {
         match self {
-            HandRadial::Item(item) => item.action == HandMenuAction::Back,
+            HandRadial::Item(item) => {
+                let value = item.action.borrow();
+                *value == HandMenuAction::Back
+            }
+            HandRadial::Layer(_) => false,
+        }
+    }
+
+    pub fn is_checked_action(&self) -> bool {
+        match self {
+            HandRadial::Item(item) => {
+                let value = item.action.borrow();
+                *value == HandMenuAction::Checked
+            }
+            HandRadial::Layer(_) => false,
+        }
+    }
+
+    pub fn is_unchecked_action(&self) -> bool {
+        match self {
+            HandRadial::Item(item) => {
+                let value = item.action.borrow();
+                *value == HandMenuAction::Unchecked
+            }
             HandRadial::Layer(_) => false,
         }
     }
@@ -170,7 +174,7 @@ pub struct HandRadialLayer {
 impl HandRadialLayer {
     pub fn new(
         name: impl AsRef<str>,
-        image: Option<Sprite>,
+        image: Option<Material>,
         start_angle_opt: Option<f32>,
         items_in: Vec<HandRadial>,
     ) -> Self {
@@ -312,6 +316,12 @@ pub enum HandMenuAction {
     Back,
     /// Close the hand menu entirely! We're finished here.
     Close,
+    /// Execute the callback only and stay open (Warning ! this will send multiple time the callback)
+    /// Mark the Item as checked (could be changed to Unchecked)
+    Checked,
+    /// Execute the callback only and stay open (Warning ! this will send multiple time the callback)
+    /// Mark the Item as unchecked (could be changed to Checked)
+    Unchecked,
 }
 
 /// A menu that shows up in circle around the user’s hand! Selecting an item can perform an action, or even spawn a
@@ -340,6 +350,9 @@ pub struct HandMenuRadial {
     activation_hamburger: Mesh,
     activation_ring: Mesh,
     child_indicator: Mesh,
+    img_frame: Mesh,
+    pub checked_material: Material,
+    pub text_style: TextStyle,
 }
 
 unsafe impl Send for HandMenuRadial {}
@@ -373,12 +386,12 @@ impl IStepper for HandMenuRadial {
 impl HandMenuRadial {
     /// When using the Simulator, this key will activate the menu on the current hand, regardless of which direction it
     /// is facing.
-    pub const SIMULATOR_KEY: Key = Key::Backtick;
+    pub const SIMULATOR_KEY: Key = Key::F1;
     pub const MIN_DIST: f32 = 0.03;
     pub const MID_DIST: f32 = 0.065;
     pub const MAX_DIST: f32 = 0.1;
     pub const MIN_SCALE: f32 = 0.05;
-    pub const SLICE_GAP: f32 = 0.02;
+    pub const SLICE_GAP: f32 = 0.002;
     pub const OUT_OF_VIEW_ANGLE: f32 = 0.866;
     pub const ACTIVATION_ANGLE: f32 = 0.978;
 
@@ -395,6 +408,12 @@ impl HandMenuRadial {
         let mut activation_ring = Mesh::new();
         generate_slice_mesh(360.0, activation_btn_radius, activation_btn_radius + 0.005, 0.0, &mut activation_ring);
         let child_indicator = generate_child_indicator(Self::MAX_DIST - 0.008, 0.004);
+        let img_frame = generate_img_frame(Self::MIN_DIST + 0.013, 0.012);
+        let tex_checked = Tex::from_file("icons/radio.png", true, None).unwrap_or_default();
+        let mut checked_material = Material::pbr_clip().copy();
+        checked_material.diffuse_tex(tex_checked).clip_cutoff(0.1);
+        let mut text_style = TextStyle::default();
+        text_style.char_height(0.016);
         Self {
             menu_pose: Pose::default(),
             dest_pose: Pose::default(),
@@ -411,6 +430,9 @@ impl HandMenuRadial {
             activation_hamburger,
             activation_ring,
             child_indicator,
+            img_frame,
+            text_style,
+            checked_material,
             id: "HandleMenuRadial".to_string(),
             sk_info: None,
         }
@@ -465,11 +487,17 @@ impl HandMenuRadial {
             return;
         };
 
+        let mut show_menu = false;
         if Backend::xr_type() == BackendXRType::Simulator {
             if Input::key(Self::SIMULATOR_KEY).is_just_active() {
-                self.menu_pose = hand.palm;
-                self.show(hand.get(FingerId::Index, JointId::Tip).position, handed);
+                show_menu = true
             }
+        } else if (Input::get_controller_menu_button().is_just_active()) && handed == Handed::Left {
+            show_menu = true;
+        }
+        if show_menu {
+            self.menu_pose = hand.palm;
+            self.show(hand.get(FingerId::Index, JointId::Tip).position, handed);
             return;
         }
 
@@ -547,7 +575,7 @@ impl HandMenuRadial {
         let focused = on_menu && mag_sq > Self::MIN_DIST.powi(2);
         let selected = on_menu && mag_sq > Self::MID_DIST.powi(2);
         let cancel = mag_sq > Self::MAX_DIST.powi(2);
-        let arc_length = (Self::MIN_DIST * f32::min(90.0, step)).to_radians();
+        //let arc_length = (Self::MIN_DIST * f32::min(90.0, step)).to_radians();
 
         // Find where our finger is pointing to, and draw that
         let mut finger_angle =
@@ -583,31 +611,66 @@ impl HandMenuRadial {
                 Some(color_primary * (if highlight { 2.0 } else { 1.0 })),
                 None,
             );
+            let mut add_offset = 1.0;
             let item_to_draw: &HandMenuItem;
-            let child_indicator = match line.as_ref() {
+            match line.as_ref() {
                 HandRadial::Item(item) => {
                     item_to_draw = item;
-                    match item.action {
-                        HandMenuAction::Back => true,
-                        HandMenuAction::Close => false,
-                        HandMenuAction::Callback => false,
-                    }
+                    match *item.action.borrow() {
+                        HandMenuAction::Back => self.child_indicator.draw(
+                            token,
+                            Material::ui(),
+                            Matrix::tr(
+                                &Vec3::new(0.0, 0.0, depth),
+                                &Quat::from_angles(0.0, 0.0, curr_angle + half_step),
+                            ),
+                            None,
+                            None,
+                        ),
+                        HandMenuAction::Close => (),
+                        HandMenuAction::Callback => (),
+                        HandMenuAction::Checked => {
+                            self.img_frame.draw(
+                                token,
+                                &self.checked_material,
+                                Matrix::tr(
+                                    &Vec3::new(0.0, 0.0, depth),
+                                    &Quat::from_angles(0.0, 0.0, curr_angle + half_step),
+                                ),
+                                None,
+                                None,
+                            );
+                            add_offset = 1.2;
+                        }
+                        HandMenuAction::Unchecked => (),
+                    };
                 }
                 HandRadial::Layer(layer) => {
                     item_to_draw = &layer.layer_item;
-                    true
+                    self.child_indicator.draw(
+                        token,
+                        Material::ui(),
+                        Matrix::tr(&Vec3::new(0.0, 0.0, depth), &Quat::from_angles(0.0, 0.0, curr_angle + half_step)),
+                        None,
+                        None,
+                    );
                 }
             };
-            if child_indicator {
-                self.child_indicator.draw(
+
+            if let Some(image_material) = &item_to_draw.image {
+                self.img_frame.draw(
                     token,
-                    Material::ui(),
+                    image_material,
                     Matrix::tr(&Vec3::new(0.0, 0.0, depth), &Quat::from_angles(0.0, 0.0, curr_angle + half_step)),
                     None,
                     None,
                 );
+                add_offset = 1.2;
             }
-            item_to_draw.draw(token, at, arc_length, curr_angle + half_step, highlight);
+
+            Ui::push_text_style(self.text_style);
+            item_to_draw.draw_basic(token, at * add_offset, highlight);
+            Ui::pop_text_style();
         }
         // Done with local work
         Hierarchy::pop(token);
@@ -617,6 +680,24 @@ impl HandMenuRadial {
         }
         if selected {
             if let Some(item_selected) = layer.items().get(angle_id) {
+                if item_selected.as_ref().is_unchecked_action() {
+                    for line in layer.items().iter() {
+                        if line.as_ref().is_checked_action() {
+                            let mut to_reverse = line.as_ref();
+                            let to_to_reverse = to_reverse.borrow_mut();
+
+                            if let HandRadial::Item(menu_item) = to_to_reverse {
+                                menu_item.action.replace(HandMenuAction::Unchecked);
+                            }
+                        }
+                    }
+                    let mut to_reverse = item_selected.as_ref();
+                    let to_to_reverse = to_reverse.borrow_mut();
+                    if let HandRadial::Item(menu_item) = to_to_reverse {
+                        menu_item.action.replace(HandMenuAction::Checked);
+                    }
+                }
+
                 self.select_item(item_selected.clone(), tip_world, ((angle_id as f32) + 0.5) * step)
             } else {
                 Log::err(format!("HandMenuRadial : Placement error for index {}", angle_id));
@@ -625,6 +706,17 @@ impl HandMenuRadial {
         if cancel {
             self.close()
         };
+        let mut close_menu = false;
+        if Backend::xr_type() == BackendXRType::Simulator {
+            if Input::key(Self::SIMULATOR_KEY).is_just_active() {
+                close_menu = true
+            }
+        } else if Input::get_controller_menu_button().is_just_active() {
+            close_menu = true;
+        }
+        if close_menu {
+            self.close()
+        }
     }
 
     fn select_layer(&mut self, new_layer_rc: Rc<HandRadial>) {
@@ -671,15 +763,18 @@ impl HandMenuRadial {
     fn select_item(&mut self, line: Rc<HandRadial>, at: Vec3, from_angle: f32) {
         match line.as_ref() {
             HandRadial::Item(item) => {
-                match item.action {
+                match *item.action.borrow() {
                     HandMenuAction::Close => self.close(),
                     HandMenuAction::Callback => {}
+                    HandMenuAction::Checked => {}
+                    HandMenuAction::Unchecked => {}
                     HandMenuAction::Back => {
                         self.back();
                         self.reposition(at, from_angle)
                     }
                 };
-                (item.callback.borrow_mut())();
+                let mut callback = item.callback.borrow_mut();
+                callback()
             }
             HandRadial::Layer(layer) => {
                 Log::diag(format!("HandRadialMenu : open Layer {}", layer.layer_name));
@@ -712,11 +807,11 @@ impl HandMenuRadial {
 fn generate_slice_mesh(angle: f32, min_dist: f32, max_dist: f32, gap: f32, mesh: &mut Mesh) {
     let count = angle * 0.25;
 
-    let inner_start_angle = gap / (min_dist.to_radians());
+    let inner_start_angle = gap / min_dist.to_radians();
     let inner_angle = angle - inner_start_angle * 2.0;
     let inner_step = inner_angle / (count - 1.0);
 
-    let outer_start_angle = gap / (max_dist.to_radians());
+    let outer_start_angle = gap / max_dist.to_radians();
     let outer_angle = angle - outer_start_angle * 2.0;
     let outer_step = outer_angle / (count - 1.0);
 
@@ -728,7 +823,7 @@ fn generate_slice_mesh(angle: f32, min_dist: f32, max_dist: f32, gap: f32, mesh:
         let inner_dir = Vec3::angle_xy(inner_start_angle + (i as f32) * inner_step, 0.005);
         let outer_dir = Vec3::angle_xy(outer_start_angle + (i as f32) * outer_step, 0.005);
         verts.push(Vertex::new(inner_dir * min_dist, Vec3::FORWARD, None, None));
-        verts.push(Vertex::new(outer_dir * min_dist, Vec3::FORWARD, None, None));
+        verts.push(Vertex::new(outer_dir * max_dist, Vec3::FORWARD, None, None));
 
         if i != icount - 1 {
             inds.push((i + 1) * 2 + 1);
@@ -759,7 +854,7 @@ fn generate_activation_button(radius: f32) -> Mesh {
         ))
     }
 
-    for i in 0..spokes - 2 {
+    for i in 0..(spokes - 2) {
         let half = i / 2;
 
         if i % 2 == 0 {
@@ -767,9 +862,9 @@ fn generate_activation_button(radius: f32) -> Mesh {
             inds.push(half + 1);
             inds.push((spokes - half) % spokes);
         } else {
-            inds.push(half + 2);
-            inds.push(spokes - half + 1);
             inds.push(half + 1);
+            inds.push(spokes - (half + 1));
+            inds.push(half + 2);
         }
     }
 
@@ -828,6 +923,49 @@ fn generate_child_indicator(distance: f32, radius: f32) -> Mesh {
     inds.push(0);
     inds.push(1);
     inds.push(2);
+
+    let mut mesh = Mesh::new();
+    mesh.set_inds(inds.as_slice());
+    mesh.set_verts(verts.as_slice(), true);
+
+    mesh
+}
+
+fn generate_img_frame(distance: f32, radius: f32) -> Mesh {
+    let mut verts: Vec<Vertex> = vec![];
+    let mut inds: Vec<Inds> = vec![];
+
+    verts.push(Vertex::new(
+        Vec3::new(distance + radius, -radius, 0.0),
+        Vec3::FORWARD,
+        Some(Vec2::new(0.0, 0.0)),
+        None,
+    ));
+    verts.push(Vertex::new(
+        Vec3::new(distance + radius, radius, 0.0),
+        Vec3::FORWARD,
+        Some(Vec2::new(1.0, 0.0)),
+        None,
+    ));
+    verts.push(Vertex::new(
+        Vec3::new(distance - radius, -radius, 0.0),
+        Vec3::FORWARD,
+        Some(Vec2::new(0.0, 1.0)),
+        None,
+    ));
+    verts.push(Vertex::new(
+        Vec3::new(distance - radius, radius, 0.0),
+        Vec3::FORWARD,
+        Some(Vec2::new(1.0, 1.0)),
+        None,
+    ));
+
+    inds.push(0);
+    inds.push(2);
+    inds.push(1);
+    inds.push(1);
+    inds.push(2);
+    inds.push(3);
 
     let mut mesh = Mesh::new();
     mesh.set_inds(inds.as_slice());

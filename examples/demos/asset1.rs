@@ -56,7 +56,15 @@ impl Default for Asset1 {
             sound_to_play: None,
             asset_files: vec![],
             asset_sub_dir: PathBuf::new(),
-            exts: vec![".sks".into(), ".jpeg".into(), ".hdr".into(), ".glb".into(), ".gltf".into(), ".mp3".into()],
+            exts: vec![
+                ".sks".into(),
+                ".jpeg".into(),
+                ".png".into(),
+                ".hdr".into(),
+                ".glb".into(),
+                ".gltf".into(),
+                ".mp3".into(),
+            ],
             window_pose: Pose::new(Vec3::new(0.5, 1.5, -0.5), Some(Quat::from_angles(0.0, 180.0, 0.0))),
             asset_selected: 0,
             radio_off: Sprite::radio_off(),
@@ -214,8 +222,8 @@ impl Asset1 {
                 let model = Model::new();
                 let mesh = Mesh::generate_plane_up(Vec2::ONE * 6.0, None, true);
                 let tex = Tex::from_file(file_path, true, None).unwrap_or_default();
-                let mut material = Material::default_copy();
-                material.diffuse_tex(tex);
+                let mut material = Material::pbr_clip().copy();
+                material.diffuse_tex(tex).clip_cutoff(0.1);
                 model.get_nodes().add("tex_plane", Matrix::IDENTITY, mesh, material, true);
                 Some(AssetToShow::model(model))
             } else if ext == ".sks" {

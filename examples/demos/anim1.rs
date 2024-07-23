@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 use stereokit_rust::{
-    event_loop::{IStepper, StepperId},
+    event_loop::{IStepper, StepperAction, StepperId},
     material::{Cull, Material, Transparency},
     maths::{Matrix, Quat, Vec3, Vec4},
     model::{AnimMode, Model},
@@ -9,6 +9,7 @@ use stereokit_rust::{
     sk::{MainThreadToken, SkInfo},
     system::{Handed, Input, Log},
     tex::SHCubemap,
+    tools::notif::HudNotification,
     util::named_colors::{DARK_RED, WHITE},
 };
 #[derive(Debug)]
@@ -83,6 +84,14 @@ impl IStepper for Anim1 {
     fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
         self.id = id;
         self.sk_info = Some(sk_info);
+        let mut notif = HudNotification::default();
+        notif.position = Vec3::new(0.0, 0.3, -0.2);
+        notif.text = "Close right hand to change animation".into();
+
+        let rc_sk = self.sk_info.as_ref().unwrap();
+        let sk = rc_sk.as_ref();
+        let event_loop_proxy = sk.borrow().get_event_loop_proxy().unwrap();
+        let _ = event_loop_proxy.send_event(StepperAction::add("HudNotifAnim1", notif));
         true
     }
 

@@ -278,8 +278,9 @@ impl VirtualKbdMETA {
         }
 
         self.enable(self.enable_on_init);
-        // !!!!!! true
-        todo!("Success !!! we can move on about virtual_kbd");
+        // !!!!!! TODO : we have a keyboard
+        Log::err("Success !!! we can move on about virtual_kbd");
+        true
     }
 
     /// Check if all the binded functions are ready.

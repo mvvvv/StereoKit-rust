@@ -1,6 +1,6 @@
 #include "stereokit.hlsli"
 
-//--color:color = 1, 1 , 1, 0.5
+//--color:color = 1, 1 , 1, 1
 //--diffuse     = white
 
 float4       color;

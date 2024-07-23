@@ -1,4 +1,4 @@
-use std::sync::Mutex;
+use std::{process, sync::Mutex, thread};
 
 use stereokit_rust::{
     event_loop::{SkClosures, StepperAction, StepperId},
@@ -10,11 +10,14 @@ use stereokit_rust::{
     shader::Shader,
     sk::{AppFocus, DisplayMode, Sk},
     sprite::Sprite,
-    system::{BackendOpenXR, BtnState, Input, Key, Lines, Log, LogLevel, Projection, Renderer, Text},
+    system::{
+        Backend, BackendOpenXR, BackendXRType, BtnState, Input, Key, Lines, Log, LogLevel, Projection, Renderer, Text,
+    },
     tex::{SHCubemap, Tex, TexSample},
     tools::{
         fly_over::FlyOver,
         log_window::{LogItem, LogWindow},
+        notif::HudNotification,
         os_api::{get_display_refresh_rate, set_display_refresh_rate},
         passthrough_fb_ext::{PassthroughFbExt, PASSTHROUGH_FLIP},
         screenshoot::ScreenshotViewer,
@@ -169,6 +172,14 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
         let _ = &event_loop_proxy.send_event(StepperAction::event("main".to_string(), "ShowScreenshotWindow", "1"));
     };
 
+    let mut menu_ico = Material::pbr_clip().copy();
+    let tex = Tex::from_file("icons/hamburger.png", true, None).unwrap_or_default();
+    menu_ico.diffuse_tex(tex).clip_cutoff(0.1);
+
+    let mut screenshot_ico = Material::pbr_clip().copy();
+    let tex = Tex::from_file("icons/screenshot.png", true, None).unwrap_or_default();
+    screenshot_ico.diffuse_tex(tex).clip_cutoff(0.1);
+
     //---Load hand menu
     let hand_menu_stepper = HandMenuRadial::new(HandRadialLayer::new(
         "root",
@@ -177,7 +188,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
         vec![
             HandRadial::layer(
                 "Sky dome",
-                None,
+                Some(menu_ico),
                 None,
                 vec![
                     HandRadial::item(
@@ -186,7 +197,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
                         move || {
                             cube0.render_as_sky();
                         },
-                        HandMenuAction::Back,
+                        HandMenuAction::Unchecked,
                     ),
                     HandRadial::item(
                         "Sunset",
@@ -194,23 +205,23 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
                         move || {
                             cube1.render_as_sky();
                         },
-                        HandMenuAction::Back,
+                        HandMenuAction::Unchecked,
                     ),
                     HandRadial::item(
-                        "Blacklight",
+                        "Black\nlight",
                         None,
                         move || {
                             cube2.render_as_sky();
                         },
-                        HandMenuAction::Back,
+                        HandMenuAction::Unchecked,
                     ),
                     HandRadial::item(
-                        "HDRI dawn",
+                        "HDRI\ndawn",
                         None,
                         move || {
                             cube3.render_as_sky();
                         },
-                        HandMenuAction::Back,
+                        HandMenuAction::Unchecked,
                     ),
                     HandRadial::item(
                         "Default",
@@ -218,7 +229,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
                         move || {
                             cube_default.render_as_sky();
                         },
-                        HandMenuAction::Back,
+                        HandMenuAction::Checked,
                     ),
                     HandRadial::item("Back", None, || {}, HandMenuAction::Back),
                     HandRadial::item("Close", None, || {}, HandMenuAction::Close),
@@ -226,7 +237,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
             ),
             HandRadial::item(
                 "Screenshot",
-                None,
+                Some(screenshot_ico),
                 move || {
                     send_event_show_screenshot();
                 },
@@ -240,8 +251,17 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
                 },
                 HandMenuAction::Close,
             ),
+            HandRadial::item("Close", None, || {}, HandMenuAction::Close),
         ],
     ));
+
+    let mut notif = HudNotification::default();
+    if Backend::xr_type() == BackendXRType::Simulator {
+        notif.text = "Press [F1] key to open the hand menu".into();
+    } else {
+        notif.text = "Press menu button to open the hand menu".into();
+    }
+    sk.push_action(StepperAction::add("HudNotif1", notif));
 
     sk.push_action(StepperAction::add("HandMenuStepper", hand_menu_stepper));
     sk.push_action(StepperAction::add("LogWindow", log_window));
@@ -288,6 +308,8 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
     Log::diag(
         "===================================================================================================================== !!",
     );
+    Log::diag(format!("Thread id : {:?} / {:?} ", thread::current().name(), thread::current().id()));
+    Log::diag(format!("Process id : {:?} / {:?} ", thread::current().name(), process::id()));
 
     SkClosures::run_app(
         sk,
@@ -393,6 +415,12 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
                     Some(Vec2::new(0.10, 0.10)),
                     None,
                 ) {
+                    Log::diag(format!(
+                        "Closure Thread id : {:?} / {:?} ",
+                        thread::current().name(),
+                        thread::current().id()
+                    ));
+                    Log::diag(format!("Closure Process id : {:?} / {:?} ", thread::current().name(), process::id()));
                     sk.quit(None);
                 }
                 Ui::same_line();

@@ -251,17 +251,18 @@ impl Sprite {
     ///  you’re specifying the transform of.
     /// <https://stereokit.net/Pages/StereoKit/Sprite/Draw.html>
     /// * color_linear - if None has default value of WHITE
+    /// * text_align - indicate how
     ///
     /// see also [`stereokit::StereoKitDraw::sprite_draw`]
     pub fn draw(
         &self,
         _token: &MainThreadToken,
         transform: impl Into<Matrix>,
-        text_align: TextAlign,
+        anchor_position: TextAlign,
         color_linear: Option<Color32>,
     ) {
         let color_linear = color_linear.unwrap_or(Color32::WHITE);
-        unsafe { sprite_draw(self.0.as_ptr(), transform.into(), text_align, color_linear) };
+        unsafe { sprite_draw(self.0.as_ptr(), transform.into(), anchor_position, color_linear) };
     }
 
     /// Sets the unique identifier of this asset resource! This can be helpful for debugging,

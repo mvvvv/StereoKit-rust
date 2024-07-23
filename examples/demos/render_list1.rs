@@ -26,6 +26,7 @@ pub struct RenderList1 {
     list: RenderList,
     render_mat: Material,
     render_tex: Tex,
+    old_clear_color: Color128,
     at: Vec3,
     quad: Mesh,
     clear_primary: bool,
@@ -60,6 +61,7 @@ impl Default for RenderList1 {
             clear_primary: false,
             render_mat,
             render_tex,
+            old_clear_color: Color128::BLACK_TRANSPARENT,
             at,
             quad,
             transform: Matrix::tr(&((Vec3::NEG_Z * 2.5) + Vec3::Y), &Quat::from_angles(0.0, 180.0, 0.0)),
@@ -76,6 +78,7 @@ impl IStepper for RenderList1 {
         self.id = id;
         self.sk_info = Some(sk_info);
 
+        self.old_clear_color = Renderer::get_clear_color();
         Renderer::clear_color(Color128::hsv(0.4, 0.3, 0.5, 1.0));
         true
     }
@@ -84,7 +87,7 @@ impl IStepper for RenderList1 {
         self.draw(token)
     }
     fn shutdown(&mut self) {
-        Renderer::clear_color(Color128::BLACK_TRANSPARENT);
+        Renderer::clear_color(self.old_clear_color);
     }
 }
 
