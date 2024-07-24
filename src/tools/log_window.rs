@@ -46,7 +46,7 @@ impl<'a> LogWindow<'a> {
         let style_diag = TextStyle::from_font(Font::default(), 0.012, Color128::hsv(1.0, 0.0, 0.7, 1.0));
         let style_info = TextStyle::from_font(Font::default(), 0.012, Color128::hsv(1.0, 0.0, 1.0, 1.0));
         let style_warn = TextStyle::from_font(Font::default(), 0.012, Color128::hsv(0.17, 0.7, 1.0, 1.0));
-        let style_err = TextStyle::from_font(Font::default(), 0.012, Color128::hsv(1.0, 0.17, 0.17, 1.0));
+        let style_err = TextStyle::from_font(Font::default(), 0.012, Color128::hsv(1.0, 0.7, 0.7, 1.0));
         for ui_text_style in [style_diag, style_info, style_warn, style_err] {
             ui_text_style.get_material().face_cull(Cull::Back); //.depth_test(DepthTest::Less).depth_write(true);
         }

@@ -66,7 +66,7 @@ fn main() {
 pub fn _main(sk: Sk, event_loop: EventLoop<StepperAction>) {
     let is_testing = false;
     let start_test = "".to_string();
-    Log::err("Go go go !!!");
+    Log::warn("Go go go !!!");
     launch(sk, event_loop, is_testing, start_test);
     Sk::shutdown();
 }

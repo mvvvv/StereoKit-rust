@@ -191,7 +191,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
         Some(0.0),
         vec![
             HandRadial::layer(
-                "Sky dome",
+                "\nSkydome",
                 Some(menu_ico),
                 None,
                 vec![

@@ -717,9 +717,15 @@ impl Sk {
     /// * quit_reason - if None has default value of QuitReason::User
     ///
     /// see also [`crate::sk::sk_quit`]
+    #[cfg(not(target_os = "android"))]
     pub fn quit(&self, quit_reason: Option<QuitReason>) {
         let quit_reason = quit_reason.unwrap_or(QuitReason::User);
         unsafe { sk_quit(quit_reason) }
+    }
+
+    #[cfg(target_os = "android")]
+    pub fn quit(&self, _quit_reason: Option<QuitReason>) {
+        Log::warn("Quit cannot be used safely for the moment - Close the app using the main menu please.")
     }
 
     /// This tells the reason why StereoKit has quit and

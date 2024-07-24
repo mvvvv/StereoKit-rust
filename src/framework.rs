@@ -459,7 +459,7 @@ impl HandMenuRadial {
         );
         generate_slice_mesh(
             360.0 / (self.root.items_count() as f32),
-            Self::MIN_DIST,
+            Self::MAX_DIST,
             Self::MAX_DIST + 0.005,
             Self::SLICE_GAP,
             &mut self.background_edge,

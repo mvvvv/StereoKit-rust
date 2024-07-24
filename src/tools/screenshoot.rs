@@ -28,7 +28,8 @@ unsafe impl Send for ScreenshotViewer {}
 
 impl Default for ScreenshotViewer {
     fn default() -> Self {
-        let mut tex = Tex::gen_color(Color128::WHITE, 800, 600, TexType::Image, TexFormat::RGBA32Linear);
+        let mut tex = Tex::gen_color(Color128::WHITE, 800, 600, TexType::Image, TexFormat::RGBA32);
+        //let mut tex = Tex::render_target(800, 600, None, Some(TexFormat::RGBA32), Some(TexFormat::Depth32)).unwrap();
         tex.id("ScreenshotTex");
         Self {
             id: "ScreenshotStepper".to_string(),
@@ -103,7 +104,7 @@ impl ScreenshotViewer {
                 800,
                 600,
                 Some(90.0),
-                Some(TexFormat::RGBA32Linear),
+                Some(TexFormat::RGBA32),
             );
 
             self.screen = Sprite::from_tex(&self.tex, None, None).ok();
