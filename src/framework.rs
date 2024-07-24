@@ -13,10 +13,7 @@ use crate::{
     },
     tex::Tex,
     ui::{Ui, UiColor},
-    util::{
-        named_colors::{GREEN, RED, WHITE},
-        Color128, Time,
-    },
+    util::{named_colors::WHITE, Color128, Time},
 };
 
 /// StereoKit initialization settings! Setup SkSettings with your data before calling SkSetting.Init().

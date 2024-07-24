@@ -180,6 +180,10 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
     let tex = Tex::from_file("icons/screenshot.png", true, None).unwrap_or_default();
     screenshot_ico.diffuse_tex(tex).clip_cutoff(0.1);
 
+    let mut log_ico = Material::pbr_clip().copy();
+    let tex = Tex::from_file("icons/log_viewer.png", true, None).unwrap_or_default();
+    log_ico.diffuse_tex(tex).clip_cutoff(0.1);
+
     //---Load hand menu
     let hand_menu_stepper = HandMenuRadial::new(HandRadialLayer::new(
         "root",
@@ -245,7 +249,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
             ),
             HandRadial::item(
                 "Log",
-                None,
+                Some(log_ico),
                 move || {
                     send_event_show_log();
                 },

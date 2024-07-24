@@ -138,6 +138,10 @@ name = "android.permission.WRITE_EXTERNAL_STORAGE"
 [[package.metadata.android.uses_permission]]
 name = "android.permission.READ_EXTERNAL_STORAGE"
 
+#[[package.metadata.android.uses_permission]]
+#name = "android.permission.READ_DEVICE_CONFIG"
+#required = true
+
 [[package.metadata.android.uses_permission]]
 name = "android.permission.MANAGE_EXTERNAL_STORAGE"
 
