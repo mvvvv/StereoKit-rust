@@ -19,6 +19,8 @@ use winit::event_loop::EventLoop;
 #[cfg(target_os = "android")]
 #[no_mangle]
 fn android_main(app: AndroidApp) {
+    use stereokit_rust::sk::DepthMode;
+
     let mut settings = SkSettings::default();
     settings
         .app_name("stereokit-rust")
@@ -26,6 +28,7 @@ fn android_main(app: AndroidApp) {
         .origin(OriginMode::Floor)
         .render_multisample(4)
         .render_scaling(2.0)
+        .depth_mode(DepthMode::Stencil)
         .log_filter(LogLevel::Diagnostic);
 
     android_logger::init_once(android_logger::Config::default().with_max_level(log::LevelFilter::Debug));

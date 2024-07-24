@@ -429,9 +429,8 @@ impl SkSettings {
         self
     }
 
-    /// By default, StereoKit will slow down when the application is out of focus. This is useful for saving processing
-    /// power while the app is out-of-focus, but may not always be desired. In particular, running multiple copies of a
-    /// SK app for testing networking code may benefit from this setting.
+    /// By default, StereoKit will open a desktop window for keyboard input due to lack of XR-native keyboard APIs on
+    /// many platforms. If you don’t want this, you can disable it with this setting!
     /// <https://stereokit.net/Pages/StereoKit/SKSettings/disableDesktopInputWindow.html>
     pub fn disable_desktop_input_window(&mut self, disabled_desktop_input_window: bool) -> &mut Self {
         self.disable_desktop_input_window = disabled_desktop_input_window as Bool32T;
