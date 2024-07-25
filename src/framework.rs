@@ -13,7 +13,10 @@ use crate::{
     },
     tex::Tex,
     ui::{Ui, UiColor},
-    util::{named_colors::WHITE, Color128, Time},
+    util::{
+        named_colors::{GREEN, WHITE},
+        Color128, Time,
+    },
 };
 
 /// StereoKit initialization settings! Setup SkSettings with your data before calling SkSetting.Init().
@@ -112,23 +115,31 @@ impl HandRadial {
         }
     }
 
-    pub fn is_checked_action(&self) -> bool {
+    pub fn is_checked_action(&self) -> Option<u8> {
         match self {
             HandRadial::Item(item) => {
                 let value = item.action.borrow();
-                *value == HandMenuAction::Checked
+                if let HandMenuAction::Checked(group) = *value {
+                    Some(group)
+                } else {
+                    None
+                }
             }
-            HandRadial::Layer(_) => false,
+            HandRadial::Layer(_) => None,
         }
     }
 
-    pub fn is_unchecked_action(&self) -> bool {
+    pub fn is_unchecked_action(&self) -> Option<u8> {
         match self {
             HandRadial::Item(item) => {
                 let value = item.action.borrow();
-                *value == HandMenuAction::Unchecked
+                if let HandMenuAction::Unchecked(group) = *value {
+                    Some(group)
+                } else {
+                    None
+                }
             }
-            HandRadial::Layer(_) => false,
+            HandRadial::Layer(_) => None,
         }
     }
 
@@ -315,10 +326,10 @@ pub enum HandMenuAction {
     Close,
     /// Execute the callback only and stay open (Warning ! this will send multiple time the callback)
     /// Mark the Item as checked (could be changed to Unchecked)
-    Checked,
+    Checked(u8),
     /// Execute the callback only and stay open (Warning ! this will send multiple time the callback)
     /// Mark the Item as unchecked (could be changed to Checked)
-    Unchecked,
+    Unchecked(u8),
 }
 
 /// A menu that shows up in circle around the user’s hand! Selecting an item can perform an action, or even spawn a
@@ -335,6 +346,8 @@ pub struct HandMenuRadial {
     dest_pose: Pose,
     root: Rc<HandRadial>,
     active_layer: Rc<HandRadial>,
+    last_selected: Rc<HandRadial>,
+    last_selected_time: f32,
     nav_stack: VecDeque<Rc<HandRadial>>,
     active_hand: Handed,
     activation: f32,
@@ -349,6 +362,7 @@ pub struct HandMenuRadial {
     child_indicator: Mesh,
     img_frame: Mesh,
     pub checked_material: Material,
+    pub on_checked_material: Material,
     pub text_style: TextStyle,
 }
 
@@ -399,6 +413,8 @@ impl HandMenuRadial {
     pub fn new(root_layer: HandRadialLayer) -> Self {
         let root = Rc::new(HandRadial::Layer(root_layer));
         let active_layer = root.clone();
+        let last_selected = root.clone();
+        let last_selected_time = Time::get_total_unscaledf();
         let activation_btn_radius = 1.0 * CM;
         let activation_button = generate_activation_button(activation_btn_radius);
         let activation_hamburger = generate_activation_hamburger(activation_btn_radius);
@@ -409,6 +425,9 @@ impl HandMenuRadial {
         let tex_checked = Tex::from_file("icons/radio.png", true, None).unwrap_or_default();
         let mut checked_material = Material::pbr_clip().copy();
         checked_material.diffuse_tex(tex_checked).clip_cutoff(0.1);
+        let tex_on_checked = Tex::from_file("icons/checked.png", true, None).unwrap_or_default();
+        let mut on_checked_material = Material::pbr_clip().copy();
+        on_checked_material.diffuse_tex(tex_on_checked).clip_cutoff(0.1).color_tint(GREEN);
         let mut text_style = TextStyle::default();
         text_style.char_height(0.016);
         Self {
@@ -416,6 +435,8 @@ impl HandMenuRadial {
             dest_pose: Pose::default(),
             root,
             active_layer,
+            last_selected,
+            last_selected_time,
             nav_stack: VecDeque::new(),
             active_hand: Handed::Max,
             activation: 0.0,
@@ -430,6 +451,7 @@ impl HandMenuRadial {
             img_frame,
             text_style,
             checked_material,
+            on_checked_material,
             id: "HandleMenuRadial".to_string(),
             sk_info: None,
         }
@@ -610,6 +632,7 @@ impl HandMenuRadial {
             );
             let mut add_offset = 1.0;
             let item_to_draw: &HandMenuItem;
+
             match line.as_ref() {
                 HandRadial::Item(item) => {
                     item_to_draw = item;
@@ -626,12 +649,17 @@ impl HandMenuRadial {
                         ),
                         HandMenuAction::Close => (),
                         HandMenuAction::Callback => (),
-                        HandMenuAction::Checked => {
+                        HandMenuAction::Checked(_group) => {
+                            let checked_material = if item_to_draw.image.is_none() {
+                                &self.checked_material
+                            } else {
+                                &self.on_checked_material
+                            };
                             self.img_frame.draw(
                                 token,
-                                &self.checked_material,
+                                checked_material,
                                 Matrix::tr(
-                                    &Vec3::new(0.0, 0.0, depth),
+                                    &Vec3::new(0.0, 0.0, depth - 0.01),
                                     &Quat::from_angles(0.0, 0.0, curr_angle + half_step),
                                 ),
                                 None,
@@ -639,7 +667,7 @@ impl HandMenuRadial {
                             );
                             add_offset = 1.2;
                         }
-                        HandMenuAction::Unchecked => (),
+                        HandMenuAction::Unchecked(_group) => (),
                     };
                 }
                 HandRadial::Layer(layer) => {
@@ -653,7 +681,6 @@ impl HandMenuRadial {
                     );
                 }
             };
-
             if let Some(image_material) = &item_to_draw.image {
                 self.img_frame.draw(
                     token,
@@ -677,21 +704,52 @@ impl HandMenuRadial {
         }
         if selected {
             if let Some(item_selected) = layer.items().get(angle_id) {
-                if item_selected.as_ref().is_unchecked_action() {
-                    for line in layer.items().iter() {
-                        if line.as_ref().is_checked_action() {
-                            let mut to_reverse = line.as_ref();
-                            let to_to_reverse = to_reverse.borrow_mut();
+                if Rc::ptr_eq(item_selected, &self.last_selected)
+                    && Time::get_total_unscaledf() - self.last_selected_time < 1.5
+                {
+                    return;
+                };
+                self.last_selected = item_selected.clone();
+                self.last_selected_time = Time::get_total_unscaledf();
 
-                            if let HandRadial::Item(menu_item) = to_to_reverse {
-                                menu_item.action.replace(HandMenuAction::Unchecked);
+                if let Some(group_to_change) = item_selected.as_ref().is_unchecked_action() {
+                    for line in layer.items().iter() {
+                        if let Some(group) = line.as_ref().is_checked_action() {
+                            if group == group_to_change {
+                                let mut to_reverse = line.as_ref();
+                                let to_to_reverse = to_reverse.borrow_mut();
+
+                                if let HandRadial::Item(menu_item) = to_to_reverse {
+                                    menu_item.action.replace(HandMenuAction::Unchecked(group));
+                                }
                             }
                         }
                     }
                     let mut to_reverse = item_selected.as_ref();
                     let to_to_reverse = to_reverse.borrow_mut();
                     if let HandRadial::Item(menu_item) = to_to_reverse {
-                        menu_item.action.replace(HandMenuAction::Checked);
+                        menu_item.action.replace(HandMenuAction::Checked(group_to_change));
+                    }
+                } else if let Some(group_to_change) = item_selected.as_ref().is_checked_action() {
+                    // If there is only one of this group this is a toggle button
+                    let mut cpt = 0;
+                    for line in layer.items().iter() {
+                        if let Some(group) = line.as_ref().is_checked_action() {
+                            if group_to_change == group {
+                                cpt += 1
+                            }
+                        } else if let Some(group) = line.as_ref().is_unchecked_action() {
+                            if group_to_change == group {
+                                cpt += 1
+                            }
+                        }
+                    }
+                    if cpt == 1 {
+                        let mut to_reverse = item_selected.as_ref();
+                        let to_to_reverse = to_reverse.borrow_mut();
+                        if let HandRadial::Item(menu_item) = to_to_reverse {
+                            menu_item.action.replace(HandMenuAction::Unchecked(group_to_change));
+                        }
                     }
                 }
 
@@ -763,8 +821,8 @@ impl HandMenuRadial {
                 match *item.action.borrow() {
                     HandMenuAction::Close => self.close(),
                     HandMenuAction::Callback => {}
-                    HandMenuAction::Checked => {}
-                    HandMenuAction::Unchecked => {}
+                    HandMenuAction::Checked(_) => {}
+                    HandMenuAction::Unchecked(_) => {}
                     HandMenuAction::Back => {
                         self.back();
                         self.reposition(at, from_angle)

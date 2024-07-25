@@ -201,7 +201,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
                         move || {
                             cube0.render_as_sky();
                         },
-                        HandMenuAction::Unchecked,
+                        HandMenuAction::Unchecked(1),
                     ),
                     HandRadial::item(
                         "Sunset",
@@ -209,7 +209,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
                         move || {
                             cube1.render_as_sky();
                         },
-                        HandMenuAction::Unchecked,
+                        HandMenuAction::Unchecked(1),
                     ),
                     HandRadial::item(
                         "Black\nlight",
@@ -217,7 +217,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
                         move || {
                             cube2.render_as_sky();
                         },
-                        HandMenuAction::Unchecked,
+                        HandMenuAction::Unchecked(1),
                     ),
                     HandRadial::item(
                         "HDRI\ndawn",
@@ -225,7 +225,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
                         move || {
                             cube3.render_as_sky();
                         },
-                        HandMenuAction::Unchecked,
+                        HandMenuAction::Unchecked(1),
                     ),
                     HandRadial::item(
                         "Default",
@@ -233,7 +233,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
                         move || {
                             cube_default.render_as_sky();
                         },
-                        HandMenuAction::Checked,
+                        HandMenuAction::Checked(1),
                     ),
                     HandRadial::item("Back", None, || {}, HandMenuAction::Back),
                     HandRadial::item("Close", None, || {}, HandMenuAction::Close),
@@ -245,7 +245,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
                 move || {
                     send_event_show_screenshot();
                 },
-                HandMenuAction::Close,
+                HandMenuAction::Unchecked(2),
             ),
             HandRadial::item(
                 "Log",
@@ -253,7 +253,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
                 move || {
                     send_event_show_log();
                 },
-                HandMenuAction::Close,
+                HandMenuAction::Checked(3),
             ),
             HandRadial::item("Close", None, || {}, HandMenuAction::Close),
         ],
