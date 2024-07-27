@@ -13,7 +13,7 @@ pub use winit;
 
 use winit::{
     application::ApplicationHandler,
-    event::{DeviceEvent, DeviceId, WindowEvent},
+    event::WindowEvent,
     event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
     window::WindowId,
 };
@@ -73,9 +73,9 @@ impl ApplicationHandler<StepperAction> for SkClosures<'_> {
         Log::diag(format!("SkClosure WindowEvent {:?} -> {:?}", window_id, event));
     }
 
-    fn device_event(&mut self, _event_loop: &ActiveEventLoop, device_id: DeviceId, event: DeviceEvent) {
-        Log::diag(format!("SkClosure DeviceEvent {:?} -> {:?}", device_id, event));
-    }
+    // fn device_event(&mut self, _event_loop: &ActiveEventLoop, device_id: DeviceId, event: DeviceEvent) {
+    //     Log::diag(format!("SkClosure DeviceEvent {:?} -> {:?}", device_id, event));
+    // }
 
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
         if unsafe { sk_step(None) } == 0 {
