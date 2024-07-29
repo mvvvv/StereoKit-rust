@@ -41,7 +41,7 @@ winit = { version = "0.30", features = [
 thiserror = "1.0"
 bitflags = "2.4"
 glam = "0.28"
-openxr-sys = "0.10"
+openxr-sys = "0.11"
 stereokit-macros = { path = "stereokit-macros" }
 
 [target.'cfg(target_os = "android")'.dependencies]
