@@ -10,6 +10,11 @@ fn main() {
     let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap();
     let target_family = env::var("CARGO_CFG_TARGET_FAMILY").unwrap();
 
+    if target_os == "macos" {
+        println!("cargo:warning=You seem to be building for MacOS! We still enable builds so that rust-analyzer works, but this won't actually build StereoKit so it'll be pretty non-functional.");
+        return;
+    }
+
     // Build StereoKit, and tell rustc to link it.
     let mut cmake_config = cmake::Config::new("StereoKit");
 
