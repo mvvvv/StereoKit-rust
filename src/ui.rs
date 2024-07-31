@@ -265,7 +265,7 @@ bitflags::bitflags! {
 #[repr(C)]
 pub struct UiScroll : u32
 {
-    /// No scroll bars or scrolling.</summary>
+    /// No scroll bars or scrolling.
     const None       = 0;
     /// This will enable vertical scroll bars or scrolling.
     const Vertical   = 1 << 0;
@@ -901,7 +901,7 @@ impl Ui {
     /// re-used as the id. Will return true only on the first frame it is pressed!
     /// <https://stereokit.net/Pages/StereoKit/UI/Button.html>
     /// * size - The layout size for this element in Hierarchy space. If an axis is left as zero, it will be
-    /// auto-calculated. For X this is the remaining width of the current layout, and for Y this is Ui::line_height.
+    ///   auto-calculated. For X this is the remaining width of the current layout, and for Y this is Ui::line_height.
     ///
     /// see also [`crate::ui::ui_button`] [`crate::ui::ui_button_sz`]
     pub fn button(id: impl AsRef<str>, size: Option<Vec2>) -> bool {
@@ -1002,7 +1002,7 @@ impl Ui {
     /// <https://stereokit.net/Pages/StereoKit/UI/ButtonImg.html>
     /// * image_layout - If None will have default value of UiBtnLayout::Left
     /// * size - The layout size for this element in Hierarchy space. If an axis is left as zero, it will be
-    /// auto-calculated. For X this is the remaining width of the current layout, and for Y this is Ui::line_height.
+    ///   auto-calculated. For X this is the remaining width of the current layout, and for Y this is Ui::line_height.
     ///
     /// see also [`crate::ui::ui_button_img`] [`crate::ui::ui_button_img_sz`]
     pub fn button_img(
@@ -1146,10 +1146,10 @@ impl Ui {
     /// A vertical slider element! You can stick your finger in it, and slide the value up and down.
     /// <https://stereokit.net/Pages/StereoKit/UI/HSlider.html>
     /// * step - Locks the value to increments of step. Starts at min, and increments by step. Default 0 is valid,
-    /// and means "don't lock to increments".
+    ///   and means "don't lock to increments".
     /// * width - Physical width of the slider on the window. Default 0 will fill the remaining amount of window space.
     /// * confirmMethod - How should the slider be activated? Default Push will be a push-button the user must press
-    /// first, and pinch will be a tab that the user must pinch and drag around.
+    ///   first, and pinch will be a tab that the user must pinch and drag around.
     /// * notifyOn - Allows you to modify the behavior of the return value. Default is UiNotify::Change
     ///
     /// see also [`crate::ui::ui_vslider`]
@@ -1178,10 +1178,10 @@ impl Ui {
     /// A vertical slider element! You can stick your finger in it, and slide the value up and down.
     /// <https://stereokit.net/Pages/StereoKit/UI/HSlider.html>
     /// * step - Locks the value to increments of step. Starts at min, and increments by step. Default 0 is valid,
-    /// and means "don't lock to increments".
+    ///   and means "don't lock to increments".
     /// * width - Physical width of the slider on the window. Default 0 will fill the remaining amount of window space.
     /// * confirmMethod - How should the slider be activated? Default Push will be a push-button the user must press
-    /// first, and pinch will be a tab that the user must pinch and drag around.
+    ///   first, and pinch will be a tab that the user must pinch and drag around.
     /// * notifyOn - Allows you to modify the behavior of the return value. Default is UiNotify::Change
     ///
     /// see also [`crate::ui::ui_hslider_f64`]
@@ -1210,7 +1210,7 @@ impl Ui {
     /// A vertical slider element! You can stick your finger in it, and slide the value up and down.
     /// <https://stereokit.net/Pages/StereoKit/UI/HSliderAt.html>
     /// * confirmMethod - How should the slider be activated? Default Push will be a push-button the user must press
-    /// first, and pinch will be a tab that the user must pinch and drag around.
+    ///   first, and pinch will be a tab that the user must pinch and drag around.
     /// * notifyOn - Allows you to modify the behavior of the return value. Default is UiNotify::Change
     ///
     /// see also [`crate::ui::ui_hslider_at`]
@@ -1250,7 +1250,7 @@ impl Ui {
     /// A vertical slider element! You can stick your finger in it, and slide the value up and down.
     /// <https://stereokit.net/Pages/StereoKit/UI/HSliderAt.html>
     /// * confirmMethod - How should the slider be activated? Default Push will be a push-button the user must press
-    /// first, and pinch will be a tab that the user must pinch and drag around.
+    ///   first, and pinch will be a tab that the user must pinch and drag around.
     /// * notifyOn - Allows you to modify the behavior of the return value. Default is UiNotify::Change
     ///
     /// see also [`crate::ui::ui_hslider_at_f64`]
@@ -1298,11 +1298,11 @@ impl Ui {
     /// This is an input field where users can input text to the app! Selecting it will spawn a virtual keyboard, or act
     /// as the keyboard focus. Hitting escape or enter, or focusing another UI element will remove focus from this Input.
     /// <https://stereokit.net/Pages/StereoKit/UI/Input.html>
-    /// * id - An id for tracking element state. MUST be unique within current hierarchy.</param>
+    /// * id - An id for tracking element state. MUST be unique within current hierarchy.
     /// * value - The string that will store the Input's content in.
     /// * size - The layout size for this element in Hierarchy space.
     /// * type_text - What category of text this Input represents. This may affect what kind of soft keyboard will
-    /// be displayed, if one is shown to the user.</param>
+    ///   be displayed, if one is shown to the user.
     ///
     /// see also [`crate::ui::ui_input`]
     pub fn input(
@@ -1336,12 +1336,12 @@ impl Ui {
     /// This is an input field where users can input text to the app! Selecting it will spawn a virtual keyboard, or act
     ///  as the keyboard focus. Hitting escape or enter, or focusing another UI element will remove focus from this Input.
     /// <https://stereokit.net/Pages/StereoKit/UI/InputAt.html>
-    /// * id - An id for tracking element state. MUST be unique within current hierarchy.</param>
+    /// * id - An id for tracking element state. MUST be unique within current hierarchy.
     /// * value - The string that will store the Input's content in.
     /// * top_left_corner - This is the top left corner of the UI element relative to the current Hierarchy.
     /// * size - The layout size for this element in Hierarchy space.
     /// * type_text - What category of text this Input represents. This may affect what kind of soft keyboard will
-    /// be displayed, if one is shown to the user.</param>
+    ///   be displayed, if one is shown to the user.
     ///
     /// see also [`crate::ui::ui_input_at`]
     pub fn input_at(
@@ -1387,7 +1387,7 @@ impl Ui {
     /// Ui::push/pop_text_style. Can contain newlines!
     /// <https://stereokit.net/Pages/StereoKit/UI/Label.html>
     /// * size - The layout size for this element in Hierarchy space. If an axis is left as zero, it will be
-    /// auto-calculated. For X this is the remaining width of the current layout, and for Y this is Ui::line_height.
+    ///   auto-calculated. For X this is the remaining width of the current layout, and for Y this is Ui::line_height.
     ///
     /// see also [`crate::ui::ui_label`] [`crate::ui::ui_label_sz`]
     pub fn label(text: impl AsRef<str>, size: Option<Vec2>, use_padding: bool) {
@@ -1461,10 +1461,11 @@ impl Ui {
     /// bounds of the space that was reserved, with a Z axis dimension of 0.
     /// <https://stereokit.net/Pages/StereoKit/UI/LayoutReserve.html>
     /// * add_padding - If true, this will add the current padding value to the total final dimensions of the space that
-    /// is reserved.
+    ///   is reserved.
     /// * depth - This allows you to quickly insert a depth into the Bounds you’re receiving. This will offset on the
-    /// Z axis in addition to increasing the dimensions, so that the bounds still remain sitting on the surface of the
-    /// UI. This depth value will not be reflected in the bounds provided by LayouLast.
+    ///   Z axis in addition to increasing the dimensions, so that the bounds still remain sitting on the surface of the
+    ///   UI. This depth value will not be reflected in the bounds provided by LayouLast.
+    ///
     /// see also [`crate::ui::ui_layout_reserve`]
     pub fn layout_reserve(size: impl Into<Vec2>, add_padding: bool, depth: f32) -> Bounds {
         unsafe { ui_layout_reserve(size.into(), add_padding as Bool32T, depth) }
@@ -1474,7 +1475,7 @@ impl Ui {
     /// <https://stereokit.net/Pages/StereoKit/UI/Model.html>
     /// * size - The size this element should take from the layout.
     /// * model_scale - 0 will auto-scale the model to fit the layout space, but you can specify a different scale in
-    /// case you’d like a different size.
+    ///   case you’d like a different size.
     ///
     /// see also [`crate::ui::ui_model`]
     pub fn model(model: impl AsRef<Model>, ui_size: Option<Vec2>, model_scale: Option<f32>) {
@@ -1622,7 +1623,7 @@ impl Ui {
     /// <https://stereokit.net/Pages/StereoKit/UI/PushEnabled.html>
     /// * enabled - Should the following elements be enabled and interactable?
     /// * parent_behavior - Do we want to ignore or inherit the state of the current stack? Default should be false.
-    /// if None, has default value Inherit
+    ///   if None, has default value Inherit
     ///
     /// see also [`crate::ui::ui_push_enabled`]
     pub fn push_enabled(enabled: bool, parent_behavior: Option<HierarchyParent>) {
@@ -1717,10 +1718,10 @@ impl Ui {
     /// * corner_radius - The radius of each rounded corner.
     /// * corner_resolution - How many slices/verts go into each corner? More is smoother, but more expensive to render.
     /// * delete_flat_sides - If two adjacent corners are sharp, should we skip connecting them with triangles? If this
-    /// edge will always be covered, then deleting these faces may save you some performance.
+    ///   edge will always be covered, then deleting these faces may save you some performance.
     /// * quadrantify - Does this generate a mesh compatible with StereoKit's quadrant shader system, or is this just a
-    /// traditional mesh? In most cases, this should be true, but UI elements such as the rounded button may be
-    /// exceptions.
+    ///   traditional mesh? In most cases, this should be true, but UI elements such as the rounded button may be
+    ///   exceptions.
     /// * lathe_pts" - The lathe points to sweep around the edge.
     ///
     /// Returns the final Mesh, ready for use in SK's theming system.
@@ -1755,7 +1756,7 @@ impl Ui {
     /// switch to that enum value if Radio returns true.
     /// <https://stereokit.net/Pages/StereoKit/UI/Radio.html>
     /// * size - The layout size for this element in Hierarchy space. If an axis is left as zero, it will be
-    /// auto-calculated. For X this is the remaining width of the current layout, and for Y this is Ui::line_height.
+    ///   auto-calculated. For X this is the remaining width of the current layout, and for Y this is Ui::line_height.
     ///
     /// see also [`crate::ui::ui_radio`] [`crate::ui::ui_radio_sz`]
     #[deprecated(since = "0.0.1", note = "Performence issues, use radio_img instead")]
@@ -1792,7 +1793,7 @@ impl Ui {
     /// This version allows you to override the images used by the Radio.
     /// <https://stereokit.net/Pages/StereoKit/UI/Radio.html>
     /// * size - The layout size for this element in Hierarchy space. If an axis is left as zero, it will be
-    /// auto-calculated. For X this is the remaining width of the current layout, and for Y this is Ui::line_height.
+    ///   auto-calculated. For X this is the remaining width of the current layout, and for Y this is Ui::line_height.
     ///
     /// see also [`crate::ui::ui_toggle_img`] [`crate::ui::ui_toggle_img_sz`]
     pub fn radio_img(
@@ -1896,7 +1897,8 @@ impl Ui {
     ///
     /// * visual - The UI element type to set the color category of.
     /// * color_category - The category of color to assign to this UI element. Use Ui::set_theme_color in combination
-    /// with this to assign a specific color.
+    ///   with this to assign a specific color.
+    ///
     /// <https://stereokit.net/Pages/StereoKit/UI/SetElementColor.html>
     ///
     /// see also [`crate::ui::ui_set_element_color`]
@@ -1910,6 +1912,7 @@ impl Ui {
     /// * visual - The UI element to apply the sounds to.
     /// * activate - The sound made when the interaction begins. A null sound will fall back to the default sound.
     /// * deactivate - The sound made when the interaction ends. A null sound will fall back to the default sound.
+    ///
     /// <https://stereokit.net/Pages/StereoKit/UI/SetElementSound.html>
     ///
     /// see also [`crate::ui::ui_set_element_sound`]
@@ -1930,11 +1933,11 @@ impl Ui {
     /// <https://stereokit.net/Pages/StereoKit/UI/DrawElement.html>
     /// * element_visual - The element type to draw.
     /// * element_color - If you wish to use the coloring from a different element, you can use this to override the
-    /// theme color used when drawing.
+    ///   theme color used when drawing.
     /// * start - This is the top left corner of the UI element relative to the current Hierarchy.
     /// * size - The layout size for this element in Hierarchy space.
     /// * focus - The amount of visual focus this element currently has, where 0 is unfocused, and 1 is active. You
-    /// can acquire a good focus value from `UI.GetAnimFocus`.
+    ///   can acquire a good focus value from `Ui::get_anim_focus`.
     ///
     /// see also [`crate::ui::ui_draw_element`] [`crate::ui::ui_draw_element_color`]
     pub fn draw_element(
@@ -1955,7 +1958,7 @@ impl Ui {
     /// <https://stereokit.net/Pages/StereoKit/UI/GetElementColor.html>
     /// * element_visual - Get the color from this element type.
     /// * focus - The amount of visual focus this element currently has, where 0 is unfocused, and 1 is active. You
-    /// can acquire a good focus value from `UI.GetAnimFocus`
+    ///   can acquire a good focus value from `Ui::get_anim_focus`
     ///
     /// Returns a linear color good for tinting UI meshes.
     /// see also [`crate::ui::ui_get_element_color`]
@@ -1967,7 +1970,7 @@ impl Ui {
     /// states into a nicely animated focus value.
     /// <https://stereokit.net/Pages/StereoKit/UI/GetAnimFocus.html>
     /// * id - The hierarchical id of the UI element we're checking the focus of, this can be created with
-    /// `Ui::StackHash`.
+    ///   `Ui::stack_hash`.
     /// * focus_state - The current focus state of the UI element.
     /// * activationState - The current activation status of the/ UI element.
     ///
@@ -1979,7 +1982,8 @@ impl Ui {
 
     /// This allows you to explicitly set a theme color, for finer grained control over the UI appearance. Each theme
     /// type is still used by many different UI elements. This will automatically generate colors for different UI
-    /// element states.<https://stereokit.net/Pages/StereoKit/UI/SetThemeColor.html>
+    /// element states.
+    /// <https://stereokit.net/Pages/StereoKit/UI/SetThemeColor.html>
     /// * color_state : This applies specifically to one state of this color category, and does not modify the others.
     ///
     /// see also [`crate::ui::ui_set_theme_color`] [`crate::ui::ui_set_theme_color_state`]
@@ -2042,10 +2046,10 @@ impl Ui {
     /// * scrollDirection - What scroll bars are allowed to show on this text? Vertical, horizontal, both?
     /// * height - The vertical height of this Text element.
     /// * width - if not specified it will automatically take the remainder of the current layout.
-    /// * text_align - Where should the text position itself within its bounds? Default is TextAlign.TopLeft is how most
-    /// european language are aligned.
+    /// * text_align - Where should the text position itself within its bounds? Default is TextAlign::TopLeft is how most
+    ///   european language are aligned.
     /// * fit - Describe how the text should behave when one of its size dimensions conflicts with the provided ‘size’
-    /// parameter. Ui::text uses TextFit.Wrap by default.
+    ///   parameter. Ui::text uses TextFit::Wrap by default.
     ///
     /// see also [`crate::ui::ui_text`]
     pub fn text(
@@ -2080,10 +2084,10 @@ impl Ui {
     /// wrap once it fills the entire layout! Text uses the UI’s current font settings, which can be changed with
     /// Ui::push/pop_text_style.
     /// <https://stereokit.net/Pages/StereoKit/UI/TextAt.html>
-    /// * text_align - Where should the text position itself within its bounds? TextAlign.TopLeft is how most
-    /// european language are aligned.
+    /// * text_align - Where should the text position itself within its bounds? TextAlign::TopLeft is how most
+    ///   european language are aligned.
     /// * fit - Describe how the text should behave when one of its size dimensions conflicts with the provided ‘size’
-    /// parameter. Ui::text uses TextFit.Wrap by default.
+    ///   parameter. Ui::text uses TextFit::Wrap by default.
     /// * size - The layout size for this element in Hierarchy space.
     ///
     /// see also [`crate::ui::ui_text_at`]
@@ -2128,7 +2132,7 @@ impl Ui {
     /// re-used as the id. Will return the toggle value any time the toggle value changes or None if no change occurs
     /// <https://stereokit.net/Pages/StereoKit/UI/Toggle.html>
     /// * size - The layout size for this element in Hierarchy space. If an axis is left as zero, it will be
-    /// auto-calculated. For X this is the remaining width of the current layout, and for Y this is Ui::line_height.
+    ///   auto-calculated. For X this is the remaining width of the current layout, and for Y this is Ui::line_height.
     ///
     /// see also [`crate::ui::ui_toggle`] [`crate::ui::ui_toggle_sz`]
     pub fn toggle(id: impl AsRef<str>, value: bool, size: Option<Vec2>) -> Option<bool> {
@@ -2150,10 +2154,10 @@ impl Ui {
     /// re-used as the id. Will return the toggle value any time the toggle value changes or None if no change occurs
     /// <https://stereokit.net/Pages/StereoKit/UI/Toggle.html>
     /// * image_layout - This enum specifies how the text and
-    /// image should be laid out on the button. Default `UiBtnLayout.Left`
-    /// will have the image on the left, and text on the right.
+    ///   image should be laid out on the button. Default `UiBtnLayout::Left`
+    ///   will have the image on the left, and text on the right.
     /// * size - The layout size for this element in Hierarchy space. If an axis is left as zero, it will be
-    /// auto-calculated. For X this is the remaining width of the current layout, and for Y this is Ui::line_height.
+    ///   auto-calculated. For X this is the remaining width of the current layout, and for Y this is Ui::line_height.
     ///
     /// see also [`crate::ui::ui_toggle_img`] [`crate::ui::ui_toggle_img_sz`]
     pub fn toggle_img(
@@ -2200,7 +2204,7 @@ impl Ui {
     /// * toggle-off- Image to use when the toggle value is false or when no toggle-on image is specified
     /// * toggle-on - Image to use when the toggle value is true and toggle-off has been specified.
     /// * imageLayout - This enum specifies how the text and image should be laid out on the button.
-    /// Default is UiBtnLayout.Left will have the image on the left, and text on the right.
+    ///   Default is UiBtnLayout::Left will have the image on the left, and text on the right.
     ///
     /// see also [`crate::ui::ui_toggle_img_at`] [`crate::ui::ui_toggle_at`]
     pub fn toggle_at(
@@ -2244,7 +2248,7 @@ impl Ui {
     /// and if found, return that hand along with activation and focus information defined by the interactType.
     /// <https://stereokit.net/Pages/StereoKit/UI/VolumeAt.html>
     /// * out_hand - This will be the last unpreoccupied hand found inside the volume, and is the hand controlling the
-    /// interaction.
+    ///   interaction.
     /// * out_focusState - The focus state tells if the element has a hand inside of the volume that qualifies for focus.
     ///
     /// see also [`crate::ui::ui_volume_at`]
@@ -2264,10 +2268,10 @@ impl Ui {
     /// A vertical slider element! You can stick your finger in it, and slide the value up and down.
     /// <https://stereokit.net/Pages/StereoKit/UI/VSlider.html>
     /// * step - Locks the value to increments of step. Starts at min, and increments by step. Default 0 is valid,
-    /// and means "don't lock to increments".
+    ///   and means "don't lock to increments".
     /// * height - Physical height of the slider on the window. Default 0 will fill the remaining amount of window space.
     /// * confirmMethod - How should the slider be activated? Default Push will be a push-button the user must press
-    /// first, and pinch will be a tab that the user must pinch and drag around.
+    ///   first, and pinch will be a tab that the user must pinch and drag around.
     /// * notifyOn - Allows you to modify the behavior of the return value. Default is UiNotify::Change
     ///
     /// see also [`crate::ui::ui_vslider`]
@@ -2296,10 +2300,10 @@ impl Ui {
     /// A vertical slider element! You can stick your finger in it, and slide the value up and down.
     /// <https://stereokit.net/Pages/StereoKit/UI/VSlider.html>
     /// * step - Locks the value to increments of step. Starts at min, and increments by step. Default 0 is valid,
-    /// and means "don't lock to increments".
+    ///   and means "don't lock to increments".
     /// * height - Physical height of the slider on the window. Default 0 will fill the remaining amount of window space.
     /// * confirmMethod - How should the slider be activated? Default Push will be a push-button the user must press
-    /// first, and pinch will be a tab that the user must pinch and drag around.
+    ///   first, and pinch will be a tab that the user must pinch and drag around.
     /// * notifyOn - Allows you to modify the behavior of the return value. Default is UiNotify::Change
     ///
     /// see also [`crate::ui::ui_vslider_f64`]
@@ -2328,7 +2332,7 @@ impl Ui {
     /// A vertical slider element! You can stick your finger in it, and slide the value up and down.
     /// <https://stereokit.net/Pages/StereoKit/UI/VSliderAt.html>
     /// * confirmMethod - How should the slider be activated? Default Push will be a push-button the user must press
-    /// first, and pinch will be a tab that the user must pinch and drag around.
+    ///   first, and pinch will be a tab that the user must pinch and drag around.
     /// * notifyOn - Allows you to modify the behavior of the return value. Default is UiNotify::Change
     ///
     /// see also [`crate::ui::ui_vslider_at`]
@@ -2368,7 +2372,7 @@ impl Ui {
     /// A vertical slider element! You can stick your finger in it, and slide the value up and down.
     /// <https://stereokit.net/Pages/StereoKit/UI/VSliderAt.html>
     /// * confirmMethod - How should the slider be activated? Default Push will be a push-button the user must press
-    /// first, and pinch will be a tab that the user must pinch and drag around.
+    ///   first, and pinch will be a tab that the user must pinch and drag around.
     /// * notifyOn - Allows you to modify the behavior of the return value. Default is UiNotify::Change
     ///
     /// see also [`crate::ui::ui_vslider_at_f64`]
@@ -2411,9 +2415,9 @@ impl Ui {
     /// If size is None the size will be auto-calculated based on the content provided during the previous frame.
     /// <https://stereokit.net/Pages/StereoKit/UI/WindowBegin.html>
     /// * size - Physical size of the window! If None, then the size on that axis will be auto-
-    /// calculated based on the content provided during the previous frame.
+    ///   calculated based on the content provided during the previous frame.
     /// * windowType - Describes how the window should be drawn, use a header, a body, neither, or both? None is
-    /// UiWin::Normal
+    ///   UiWin::Normal
     /// * moveType - Describes how the window will move when dragged around. None is UiMove::FaceUser
     ///
     /// see also [`crate::ui::ui_window_begin`]
@@ -2527,7 +2531,7 @@ impl Ui {
         unsafe { ui_get_text_style() }
     }
 
-    /// This returns the current state of the UI's enabled status stack, set by `UI.Push/PopEnabled`.
+    /// This returns the current state of the UI's enabled status stack, set by `Ui::(push/pop)_enabled`.
     /// <https://stereokit.net/Pages/StereoKit/UI/Enabled.html>
     ///
     /// see also [`crate::ui::ui_is_enabled`]

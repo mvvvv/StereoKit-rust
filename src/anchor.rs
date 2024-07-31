@@ -24,6 +24,7 @@ use crate::{
 /// * A QR code is not an Anchor (it’s physical)
 /// * That spot around where your coffee usually sits can be an Anchor
 /// * A semantically labeled floor plane is not an Anchor (it’s physical)
+///
 /// <https://stereokit.net/Pages/StereoKit/Anchor.html>
 ///
 #[repr(C)]
@@ -211,8 +212,9 @@ impl Anchor {
     /// for platforms using Microsoft spatial anchors.
     /// <https://stereokit.net/Pages/StereoKit/Anchor/TryGetPerceptionAnchor.html>
     /// * "<T>" - The type of the spatial anchor. Must corresponds to the the Windows API type
-    /// of Windows.Perception.Spatial.SpatialAnchor.
+    ///   of Windows.Perception.Spatial.SpatialAnchor.
     /// * spatial_anchor - The spatial anchor.
+    ///
     /// returns Some(anchor) if the perception spatial anchor was successfully obtained, false otherwise.
     ///
     /// see also [`crate::anchor::anchor_get_name`]

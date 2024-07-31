@@ -128,11 +128,11 @@ impl RenderList {
     /// * material - A Material to apply to the Mesh.
     /// * transform - A transformation Matrix relative to the current Hierarchy.
     /// * colorLinear - A per-instance linear space color value to pass into the shader! Normally this gets used like a
-    /// material tint. If you're  adventurous and don't need per-instance colors, this is a great spot to pack in extra
-    /// per-instance data for the shader!
+    ///   material tint. If you're  adventurous and don't need per-instance colors, this is a great spot to pack in extra
+    ///   per-instance data for the shader!
     /// * layer - All visuals are rendered using a layer bit-flag. By default, all layers are rendered, but this can be
-    /// useful for filtering out objects for different rendering purposes! For example: rendering a mesh over the user's
-    /// head from a 3rd person perspective, but filtering it out from the 1st person perspective.
+    ///   useful for filtering out objects for different rendering purposes! For example: rendering a mesh over the user's
+    ///   head from a 3rd person perspective, but filtering it out from the 1st person perspective.
     ///
     /// see also [`crate::render_list::render_list_add_mesh`]
     pub fn add_mesh(
@@ -162,11 +162,11 @@ impl RenderList {
     /// * material - Allows you to override the Material.
     /// * transform - A transformation Matrix relative to the current Hierarchy.
     /// * colorLinear - A per-instance linear space color value to pass into the shader! Normally this gets used like a
-    /// material tint. If you're  adventurous and don't need per-instance colors, this is a great spot to pack in extra
-    /// per-instance data for the shader!
+    ///   material tint. If you're  adventurous and don't need per-instance colors, this is a great spot to pack in extra
+    ///   per-instance data for the shader!
     /// * layer - All visuals are rendered using a layer bit-flag. By default, all layers are rendered, but this can be
-    /// useful for filtering out objects for different rendering purposes! For example: rendering a mesh over the user's
-    /// head from a 3rd person perspective, but filtering it out from the 1st person perspective.
+    ///   useful for filtering out objects for different rendering purposes! For example: rendering a mesh over the user's
+    ///   head from a 3rd person perspective, but filtering it out from the 1st person perspective.
     ///
     /// see also [`crate::render_list::render_list_add_model`] [`crate::render_list::render_list_add_model_mat`]
     pub fn add_model(
@@ -205,16 +205,16 @@ impl RenderList {
     /// <https://stereokit.net/Pages/StereoKit/RenderList/DrawNow.html>
     /// * to_render_target - The rendertarget texture to draw to.
     /// * camera - A TRS matrix representing the location and orientation of the camera. This matrix gets inverted
-    /// later on, so no need to do it yourself.
+    ///   later on, so no need to do it yourself.
     /// * projection - The projection matrix describes how the geometry is flattened onto the draw surface. Normally,
-    /// you'd use Matrix.Perspective, and occasionally Matrix.Orthographic might be helpful as well.
+    ///   you'd use Matrix.Perspective, and occasionally Matrix.Orthographic might be helpful as well.
     /// * viewport - Allows you to specify a region of the rendertarget to draw to! This is in normalized
-    /// coordinates, 0-1. If the width of this value is zero, then this will render to the entire texture.
+    ///   coordinates, 0-1. If the width of this value is zero, then this will render to the entire texture.
     /// * layerFilter - This is a bit flag that allows you to change which layers StereoKit renders for this
-    /// particular render viewpoint. To change what layers a visual is on, use a Draw method that includes a
-    /// RenderLayer as a parameter.
+    ///   particular render viewpoint. To change what layers a visual is on, use a Draw method that includes a
+    ///   RenderLayer as a parameter.
     /// * clear - Describes if and how the rendertarget should be cleared before rendering. Note that clearing the
-    /// target is unaffected by the viewport, so this will clean the entire surface!
+    ///   target is unaffected by the viewport, so this will clean the entire surface!
     ///
     /// see also [`crate::render_list::render_list_draw_now`]
     pub fn draw_now(

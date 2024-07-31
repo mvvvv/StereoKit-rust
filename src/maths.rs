@@ -15,22 +15,22 @@ pub type Bool32T = i32;
 
 /// Blends (Linear Interpolation) between two scalars, based
 /// on a 'blend' value, where 0 is a, and 1 is b. Doesn't clamp
-/// percent for you.</summary>
+/// percent for you.
 /// <https://stereokit.net/Pages/SKMath/Lerp.html>
-/// * a - First item in the blend, or '0.0' blend.</param>
-/// * b - Second item in the blend, or '1.0' blend.</param>
-/// * t - A blend value between 0 and 1. Can be outside
-/// this range, it'll just interpolate outside of the a, b range.
+/// * a - First item in the blend, or '0.0' blend.
+/// * b - Second item in the blend, or '1.0' blend.
+/// * t - A blend value between 0 and 1. Can be outside   this range, it'll just interpolate outside of the a, b range.
 pub fn lerp(a: f32, b: f32, t: f32) -> f32 {
     a + (b - a) * t
 }
 
 /// Calculates the minimum angle 'distance' between two
 /// angles. This covers wraparound cases like: the minimum distance
-/// between 10 and 350 is 20.</summary>
+/// between 10 and 350 is 20.
 /// <https://stereokit.net/Pages/SKMath/AngleDist.html>
-/// * a - First angle, in degrees.</param>
-/// * b - Second angle, in degrees.</param>
+/// * a - First angle, in degrees.
+/// * b - Second angle, in degrees.
+///   
 /// returns : Degrees 0-180, the minimum angle between a and b.
 
 pub fn angle_dist(a: f32, b: f32) -> f32 {
@@ -41,32 +41,32 @@ pub fn angle_dist(a: f32, b: f32) -> f32 {
 pub mod units {
     /// Converts centimeters to meters. There are 100cm in 1m. In StereoKit
     /// 1 unit is also 1 meter, so `25 * Units.cm2m == 0.25`, 25 centimeters is .25
-    /// meters/units. </summary>
+    /// meters/units.
     pub const CM2M: f32 = 0.01;
     /// Converts millimeters to meters. There are 1000mm in 1m. In StereoKit
     /// 1 unit is 1 meter, so `250 * Units.mm2m == 0.25`, 250 millimeters is .25
-    /// meters/units. </summary>
+    /// meters/units.
     pub const MM2M: f32 = 0.001;
     ///Converts meters to centimeters. There are 100cm in 1m, so this just
-    /// multiplies by 100.</summary>
+    /// multiplies by 100.
     pub const M2CM: f32 = 100.0;
     ///Converts meters to millimeters. There are 1000mm in 1m, so this just
-    /// multiplies by 1000.</summary>
+    /// multiplies by 1000.
     pub const M2MM: f32 = 1000.0;
 
     /// Converts centimeters to meters. There are 100cm in 1m. In StereoKit
     /// 1 unit is also 1 meter, so `25 * U.cm == 0.25`, 25 centimeters is .25
-    /// meters/units. </summary>
+    /// meters/units.
     pub const CM: f32 = 0.01;
     /// Converts millimeters to meters. There are 1000mm in 1m. In StereoKit
     /// 1 unit is 1 meter, so `250 * Units.mm2m == 0.25`, 250 millimeters is .25
-    /// meters/units. </summary>
+    /// meters/units.
     pub const MM: f32 = 0.001;
     /// StereoKit's default unit is meters, but sometimes it's
-    /// nice to be explicit!</summary>
+    /// nice to be explicit!
     pub const M: f32 = 1.0;
     /// Converts meters to kilometers. There are 1000m in 1km,
-    /// so this just multiplies by 1000.</summary>
+    /// so this just multiplies by 1000.
     pub const KM: f32 = 1000.0;
 }
 

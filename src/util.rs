@@ -988,8 +988,8 @@ impl Platform {
     /// and [`Platform.read_file`] for manually reading and writing files in a cross-platfom manner.
     /// <https://stereokit.net/Pages/StereoKit/Platform/FilePicker.html>
     /// * on_complete - This action will be called when the file picker has finished, either via a cancel event, or from
-    /// a confirm event. First parameter is a bool, where true indicates the presence of a valid filename, and false
-    /// indicates a failure or cancel event.
+    ///   a confirm event. First parameter is a bool, where true indicates the presence of a valid filename, and false
+    ///   indicates a failure or cancel event.
     ///
     ///  see also [`platform_file_picker_sz`]
     pub fn file_picker_sz<F: FnMut(bool, &str)>(mode: PickerMode, mut on_complete: F, filters: &[impl AsRef<str>]) {

@@ -79,11 +79,7 @@ impl ApplicationHandler<StepperAction> for SkClosures<'_> {
 
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
         if unsafe { sk_step(None) } == 0 {
-            self.window_event(
-                event_loop,
-                self.window_id.unwrap_or(unsafe { WindowId::dummy() }),
-                WindowEvent::CloseRequested,
-            );
+            self.window_event(event_loop, self.window_id.unwrap_or(WindowId::dummy()), WindowEvent::CloseRequested);
             return;
         }
         if !self.sk.steppers.step(&mut self.token) {

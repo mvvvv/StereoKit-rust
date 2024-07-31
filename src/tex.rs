@@ -476,11 +476,11 @@ impl Tex {
     /// * width - in pixels
     /// * height - in pixels
     /// * multisample - Multisample level, or MSAA. This should be 1, 2, 4, 8, or 16. The results will have moother
-    /// edges with higher values, but will cost more RAM and time to render. Note that GL platforms cannot trivially
-    /// draw a multisample > 1 texture in a shader.
+    ///   edges with higher values, but will cost more RAM and time to render. Note that GL platforms cannot trivially
+    ///   draw a multisample > 1 texture in a shader.
     /// * color_format - The format of the color surface.
     /// * depth _format - The format of the depth buffer. If this is None, no depth buffer will be attached to this
-    /// rendertarget.
+    ///   rendertarget.
     ///
     ///  see also [`crate::tex::tex_create_rendertarget()`]
     pub fn render_target(
@@ -516,7 +516,7 @@ impl Tex {
     /// but this can be configured by providing a Gradient of your own.
     /// <https://stereokit.net/Pages/StereoKit/Tex/GenParticle.html>
     /// * gradient_linear : A color gradient that starts with the background/outside at 0, and progresses to the center
-    /// at 1. If None, use a white gradient.
+    ///   at 1. If None, use a white gradient.
     ///
     ///  see also [`crate::tex::tex_gen_particle`]
     pub fn gen_particle(width: i32, height: i32, roundness: f32, gradient_linear: Option<Gradient>) -> Tex {
@@ -1025,7 +1025,7 @@ impl Tex {
     /// so use it cautiously. The out_data pointer must correspond to an array with the correct size.
     /// <https://stereokit.net/Pages/StereoKit/Tex/GetColorData.html>
     /// * mip_level - Retrieves the color data for a specific mip-mapping level. This function will log a fail and
-    /// return a black array if an invalid mip-level is provided.
+    ///   return a black array if an invalid mip-level is provided.
     ///
     /// The function [`Tex::get_data_infos`] may help you to shape the right receiver.
     ///

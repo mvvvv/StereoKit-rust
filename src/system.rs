@@ -772,9 +772,10 @@ impl Hierarchy {
     /// it from the Hierarchy stack! All Push calls must have an accompanying Pop call.
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/Push.html>
     /// * parent_behavior - This determines how this matrix combines with the parent matrix below it. Normal behavior
-    /// is to "inherit" the parent matrix, but there are cases where you may wish to entirely ignore the parent
-    /// transform. For example, if you're in UI space, and wish to do some world space rendering. If None, has default
-    /// value "Inherit"
+    ///   is to "inherit" the parent matrix, but there are cases where you may wish to entirely ignore the parent
+    ///   transform. For example, if you're in UI space, and wish to do some world space rendering. If None, has default
+    ///   value "Inherit"
+    ///
     /// see also [crate::system::hierarchy_push]
     pub fn push<M: Into<Matrix>>(_token: &MainThreadToken, transform: M, parent_behavior: Option<HierarchyParent>) {
         let parent_behavior = parent_behavior.unwrap_or(HierarchyParent::Inherit);
@@ -1101,7 +1102,7 @@ pub struct Hand {
     pub palm: Pose,
     /// A pose an orientation representing where the hand is pointing to. This may be provided by the OpenXR runtime, or
     /// be a fallback provided by StereoKit. Typically this starts and the index finger's primary knuckle, and points in
-    /// the same direction as a line drawn from the shoulder to the knuckle.</summary>
+    /// the same direction as a line drawn from the shoulder to the knuckle.
     pub aim: Pose,
     /// This is an approximation of where the center of a ‘pinch’ gesture occurs, and is used internally by StereoKit
     /// for some tasks, such as UI. For simulated hands, this position will give you the most stable pinch location
@@ -1578,7 +1579,7 @@ impl Input {
     /// <https://stereokit.net/Pages/StereoKit/Input.html>
     /// * handed - The hand to assign the Model to.
     /// * model - The Model to use to represent the controller.
-    /// None is valid, and will restore SK's default model.
+    ///   None is valid, and will restore SK's default model.
     pub fn set_controller_model(handed: Handed, model: Option<Model>) {
         match model {
             Some(model) => unsafe { input_controller_model_set(handed, model.0.as_ptr()) },
@@ -1835,6 +1836,7 @@ impl Input {
     /// initialized.
     /// <https://stereokit.net/Pages/StereoKit/Input.html>
     /// * handed - The hand of the controller Model to retreive.
+    ///
     /// Returns the current controller Model. By default, his will be a Model provided by OpenXR, or SK's fallback
     /// Model. This will never be null while SK is initialized.
     pub fn get_controller_model(handed: Handed) -> Model {
@@ -1875,10 +1877,11 @@ impl Input {
     ///
     /// Permissions:
     /// * For UWP apps, permissions for eye tracking can be found in the project’s .appxmanifest file under
-    /// Capabilities->Gaze Input.
+    ///   Capabilities->Gaze Input.
     /// * For Xamarin apps, you may need to add an entry to your AndroidManifest.xml, refer to your device’s
-    /// documentation for specifics.
-    /// <https://stereokit.net/Pages/StereoKit/Input/EyesTracked.html>
+    ///   documentation for specifics.
+    ///
+    ///  <https://stereokit.net/Pages/StereoKit/Input/EyesTracked.html>
     ///
     /// see also [`crate::system::input_eyes_tracked`]    
     pub fn get_eyes_tracked() -> BtnState {
@@ -2609,7 +2612,8 @@ impl Renderer {
     /// Recommended Material settings would be:
     /// - DepthWrite: false
     /// - DepthTest: LessOrEq
-    /// - QueueOffset: 100</summary>
+    /// - QueueOffset: 100
+    ///
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyMaterial.html>
     ///
     /// see also [`crate::system::render_set_skymaterial`]
@@ -2992,7 +2996,8 @@ impl Renderer {
     /// Recommended Material settings would be:
     /// - DepthWrite: false
     /// - DepthTest: LessOrEq
-    /// - QueueOffset: 100</summary>
+    /// - QueueOffset: 100
+    ///
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyMaterial.html>
     ///
     /// see also [`crate::system::render_get_skymaterial`]
@@ -3398,6 +3403,7 @@ impl Text {
     /// * position - if None will use TextAlign::Center
     /// * align - if None will use TextAlign::Center
     /// * off_? - if None will use 0.0
+    ///
     /// Returns the vertical space used by this text.
     ///
     /// see also [`crate::system::text_add_in`]
@@ -3446,6 +3452,7 @@ impl Text {
     /// <https://stereokit.net/Pages/StereoKit/Text/Size.html>
     /// * text_style - if None will use the TextStyle::default()
     /// * max_width - Width of the available space in meters.
+    ///
     /// Returns size of the text in meters
     ///
     /// see also [`crate::system::text_size`]
