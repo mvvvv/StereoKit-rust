@@ -275,7 +275,12 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
     let passthrough_enabled = BackendOpenXR::ext_enabled("XR_FB_passthrough");
     if passthrough_enabled {
         sk.push_action(StepperAction::add_default::<PassthroughFbExt>("PassthroughFbExt"));
-        Log::diag("Passthrough Disabled !!")
+        if passthrough {
+            sk.push_action(StepperAction::event("main".into(), PASSTHROUGH_FLIP, "1"));
+            Log::diag("Passthrough Activated at start !!");
+        } else {
+            Log::diag("Passthrough Deactived at start !!");
+        }
     } else {
         Log::diag("No Passthrough !!")
     }
