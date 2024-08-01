@@ -63,7 +63,7 @@ impl ApplicationHandler<StepperAction> for SkClosures<'_> {
                         Input::text_inject_chars(event.logical_key.to_text().unwrap_or("?"));
                     }
                 }
-                // no keyboard spy log so ...
+                // commented due to indiscretion
                 //Log::diag(format!("SkClosure WindowEvent {:?} -> {:?}", window_id, event));
                 return;
             }
@@ -73,6 +73,7 @@ impl ApplicationHandler<StepperAction> for SkClosures<'_> {
         Log::diag(format!("SkClosure WindowEvent {:?} -> {:?}", window_id, event));
     }
 
+    // commented due to indiscretion
     // fn device_event(&mut self, _event_loop: &ActiveEventLoop, device_id: DeviceId, event: DeviceEvent) {
     //     Log::diag(format!("SkClosure DeviceEvent {:?} -> {:?}", device_id, event));
     // }
@@ -93,8 +94,9 @@ impl ApplicationHandler<StepperAction> for SkClosures<'_> {
         (self.on_step)(&mut self.sk, &self.token);
     }
 
+    // commented because it floods the log
     // fn new_events(&mut self, _event_loop: &ActiveEventLoop, cause: winit::event::StartCause) {
-    //     Log::info(format!("New events :{:?}", cause));
+    //     Log::diag(format!("New events :{:?}", cause));
     // }
 
     fn suspended(&mut self, _event_loop: &ActiveEventLoop) {
