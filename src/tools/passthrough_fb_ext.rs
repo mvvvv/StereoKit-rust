@@ -30,18 +30,29 @@ pub const PASSTHROUGH_FLIP: &str = "PassthroughFlip";
 ///
 /// ```ignore
 /// // The folowing line must be added before initializing sk:
-/// BackendOpenXR::request_ext("XR_FB_passthrough");
-/// let (sk, event_loop) = settings.init().unwrap();
+/// stereokit_rust::system::BackendOpenXR::request_ext("XR_FB_passthrough");
+/// let (sk, event_loop) = settings.init_with_event_loop(app).unwrap();
 ///
 /// // Launch the stepper as follow :
-/// let mut passthrough = false;
-/// let passthrough_enabled = BackendOpenXR::ext_enabled("XR_FB_passthrough");
+/// let passthrough = true;
+/// let passthrough_enabled = stereokit_rust::system::BackendOpenXR::ext_enabled("XR_FB_passthrough");
 /// if passthrough_enabled {
-///      sk.push_action(StepperAction::add_default::<PassthroughFbExt>("PassthroughFbExt"));
-///      Log::diag("Passthrough Disabled !!")
-///  } else {
-///      Log::diag("No Passthrough !!")
-///  }
+///    sk.push_action(StepperAction::add_default::<PassthroughFbExt>(
+///        "PassthroughFbExt",
+///    ));
+///    if passthrough {
+///        sk.push_action(StepperAction::event(
+///            "main".into(),
+///            PASSTHROUGH_FLIP,
+///            "1",
+///        ));
+///        Log::diag("Passthrough Activated at start !!");
+///    } else {
+///        Log::diag("Passthrough Deactived at start !!");
+///    }
+/// } else {
+///    Log::diag("No Passthrough !!")
+/// }
 ///
 ///  // Activate/Deactivate the stepper as follow :
 ///  if passthrough_enabled && passthrough != new_passthrough_value {
