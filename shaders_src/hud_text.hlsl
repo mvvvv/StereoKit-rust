@@ -2,9 +2,11 @@
 
 //--color:color = 1, 1 , 1, 0.5
 //--diffuse     = white
+//--cutoff      = 0.35
 
 float4       color;
 Texture2D    diffuse   : register(t0);
+float        cutoff;
 SamplerState diffuse_s : register(s0);
 
 
@@ -41,7 +43,7 @@ psIn vs(vsIn input, uint id : SV_InstanceID) {
 float4 ps(psIn input, out float out_depth : SV_DepthGreaterEqual) : SV_TARGET {
     float4 col     = diffuse.Sample(diffuse_s, input.uv);
     out_depth = 0;
-    if (col.r < 0.35) discard;
+    if (col.r < cutoff) discard;
 
     return input.color;
 }

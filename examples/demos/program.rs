@@ -411,6 +411,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
                     let curr_width = Text::size(&test.name, Some(style), None).x + ui_settings.padding * 2.0;
 
                     if Ui::button(&test.name, Some(Vec2::new(curr_width, 0.0))) {
+                        Log::info(format!("Starting scene: {}", &test.name.to_string()));
                         next_scene = Some(test);
                     }
                     Ui::same_line();

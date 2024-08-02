@@ -14,7 +14,7 @@ This project is at an early stage so try it carefully. Right now, the only way t
 ### Download the source project:
 * `git clone --recursive https://github.com/mvvvv/StereoKit-rust/`
 * On linux get the following dev libraries : clang-18 lld-18 ninja-build libx11-dev libxfixes-dev libegl-dev libgbm-dev libfontconfig-dev.
-
+* If you want to launch the demos then compile the shaders : cargo run --bin cargo-compile_sks
 
 ### Run the project's demo on your PC's headset :
 * Make sure you have [OpenXR installed](https://www.khronos.org/openxr/) with an active runtine.
