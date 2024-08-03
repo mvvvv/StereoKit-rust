@@ -14,7 +14,7 @@ This project is at an early stage so try it carefully. Right now, the only way t
 ### Download the source project:
 * `git clone --recursive https://github.com/mvvvv/StereoKit-rust/`
 * On linux get the following dev libraries : clang-18 lld-18 ninja-build libx11-dev libxfixes-dev libegl-dev libgbm-dev libfontconfig-dev.
-* If you want to launch the demos then compile the shaders : cargo run --bin cargo-compile_sks
+* If you want to launch the demos then compile the shaders. From StereoKit-rust directory launch `cargo run --bin cargo-compile_sks`
 
 ### Run the project's demo on your PC's headset :
 * Make sure you have [OpenXR installed](https://www.khronos.org/openxr/) with an active runtine.
@@ -44,5 +44,17 @@ Submit bugs on the [Issues tab](https://github.com/mvvvv/StereoKit-rust/issues),
 
 The project <https://github.com/StereoKit/StereoKit/> will give you many useful links (Discord/Twitter/Blog).
 
+
+## Dependencies
+
+This project was made possible thanks to the work of many talents on the following projects:
+* [StereoKit](https://github.com/StereoKit/StereoKit/tree/cb6717aa8bc853e039bf3e0751cf4bff24c94910?tab=readme-ov-file#dependencies) which itself is based on valuable projects.
+* [rust_mobile](https://github.com/rust-mobile) used for the android specific code.
+* [winit](https://github.com/rust-windowing/winit) used for cross-platform management. 
+* [openxrs](https://github.com/Ralith/openxrs) nice binding of OpenXR.
+* bitflags.
+* android_logger.
+* this_error & anyerror.
+* ... many others, more discreet, without which nothing would be possible.
 
 [^1]: If you're using VsCode you'll see a corresponding launcher in launch.json to debug the app.
