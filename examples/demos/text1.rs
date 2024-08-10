@@ -5,6 +5,7 @@ use stereokit_rust::{
     font::Font,
     maths::{units::CM, Matrix, Pose, Quat, Vec2, Vec3},
     sk::{MainThreadToken, SkInfo},
+    sound::{Sound, SoundInst},
     sprite::Sprite,
     system::{Input, Key, Log, Text, TextContext, TextStyle},
     tools::os_api::show_soft_input,
@@ -41,6 +42,7 @@ pub struct Text1 {
     pub demo_win_width: f32,
     pub android_keyboard: bool,
     pub keyboard_layout_fr: bool,
+    inst_play: Option<SoundInst>,
     pub show_keyboard: bool,
     pub text_sample: String,
     font_selected: u8,
@@ -65,6 +67,7 @@ impl Default for Text1 {
             demo_win_width: 80.0 * CM,
             android_keyboard: false,
             keyboard_layout_fr: false,
+            inst_play: None,
             show_keyboard: false,
             text_sample: String::from("😃...😃"),
             font_selected: 1,
@@ -155,6 +158,10 @@ impl Text1 {
                 if !Platform::keyboard_set_layout(TextContext::Password, &keyboard_layouts) {
                     Log::err("Setting french keyboard for Password failed!");
                 }
+            } else {
+                let no = Sound::from_file("sounds/no.wav").unwrap();
+                self.inst_play = Some(no.play(Vec3::ONE, None));
+                Log::warn("Choosing the French keyboard is irrevocable!!");
             }
         }
 

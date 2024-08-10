@@ -9,6 +9,7 @@ pub mod anim1;
 pub mod asset1;
 pub mod b_stepper;
 pub mod biplane1;
+pub mod hand_menu_radial1;
 pub mod math1;
 pub mod program;
 pub mod render_list1;

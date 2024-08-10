@@ -60,6 +60,7 @@ impl Default for Asset1 {
                 ".sks".into(),
                 ".jpeg".into(),
                 ".png".into(),
+                ".ktx2".into(),
                 ".hdr".into(),
                 ".glb".into(),
                 ".gltf".into(),

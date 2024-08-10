@@ -3,7 +3,7 @@ use std::{cell::RefCell, rc::Rc};
 use stereokit_rust::{
     event_loop::{IStepper, StepperId},
     font::Font,
-    material::Material,
+    material::{Cull, Material},
     maths::{Matrix, Quat, Vec2, Vec3, Vec4},
     mesh::{Mesh, Vertex},
     shader::Shader,
@@ -11,7 +11,7 @@ use stereokit_rust::{
     system::{Text, TextStyle},
     tex::Tex,
     util::{
-        named_colors::{BLUE, GREEN, RED, WHITE},
+        named_colors::{BLUE, GREEN, LIGHT_BLUE, RED, WHITE},
         Time,
     },
 };
@@ -23,9 +23,11 @@ pub struct Shader1 {
     pub transform_plane: Matrix,
     material_red: Material,
     material_green: Material,
+    water2: Material,
     mesh: Mesh,
     plane: Mesh,
     pub transform_text: Matrix,
+    pub transform_water2: Matrix,
     text: String,
     text_style: TextStyle,
     fps: f64,
@@ -49,9 +51,23 @@ impl Default for Shader1 {
         let mut material_green = blinker_material.copy();
         material_green
             .id("green_material")
-            .tex_transform(Vec4::new(0.0, 0.0, 2.0, 2.0))
+            .tex_transform(Vec4::new(0.0, 0.0, 4.0, 4.0))
             .color_tint(GREEN)
             .time(10.0);
+
+        // fresh water
+        let bump_tex = Tex::from_file("textures/water/bump_large.ktx2", true, None).unwrap();
+
+        let mut water2 =
+            Material::from_file("shaders/water_pbr2.hlsl.sks", "water_pbr2_s".into()).unwrap_or_default().copy();
+        water2
+            .normal_tex(&bump_tex)
+            .tex_transform(Vec4::new(0.0, 0.0, 2.0, 2.0))
+            .roughness_amount(0.4)
+            .metallic_amount(0.6)
+            .face_cull(Cull::Back)
+            .color_tint(LIGHT_BLUE)
+            .time(5.0);
 
         //---- Transform Matrices.
         let transform_mesh = Matrix::trs(
@@ -62,6 +78,9 @@ impl Default for Shader1 {
 
         let transform_plane =
             Matrix::tr(&((Vec3::NEG_Z * 1.0) + Vec3::X * 0.2 + Vec3::Y * 1.2), &Quat::from_angles(90.0, 0.0, 0.0));
+
+        let transform_water2 =
+            Matrix::tr(&((Vec3::NEG_Z * 1.0) + Vec3::X * 0.2 + Vec3::Y * 0.2), &Quat::from_angles(0.0, 180.0, 0.0));
 
         let transform_text = Matrix::tr(&(Vec3::ONE * -0.2), &Quat::from_angles(0.0, 180.0, 0.0));
 
@@ -84,8 +103,10 @@ impl Default for Shader1 {
             sk_info: None,
             transform_mesh,
             transform_plane,
+            transform_water2,
             material_red: blinker_material,
             material_green,
+            water2,
             mesh,
             plane,
             transform_text,
@@ -120,6 +141,8 @@ impl Shader1 {
             .set_int("do_not_exist", &[1, 3, 5, 6])
             .set_float("time", total_scale);
         self.plane.draw(token, &self.material_green, self.transform_plane, None, None);
+
+        self.mesh.draw(token, &self.water2, self.transform_water2, None, None);
 
         self.fps = ((1.0 / Time::get_step()) + self.fps) / 2.0;
 

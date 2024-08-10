@@ -15,6 +15,8 @@ use crate::sprite::Sprite;
 /// Somewhere to store the selected filename
 static FILE_NAME: Mutex<String> = Mutex::new(String::new());
 
+pub const SHOW_SCREENSHOT_WINDOW: &str = "ShowScreenshotWindow";
+
 pub struct ScreenshotViewer {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
@@ -39,6 +41,30 @@ impl Default for ScreenshotViewer {
             tex,
             screen: None,
         }
+    }
+}
+
+impl IStepper for ScreenshotViewer {
+    fn enabled(&self) -> bool {
+        self.enabled
+    }
+
+    fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
+        self.id = id;
+        self.sk_info = Some(sk_info);
+
+        true
+    }
+
+    fn step(&mut self, token: &MainThreadToken) {
+        for e in token.get_event_report().iter() {
+            if let StepperAction::Event(_, key, value) = e {
+                if key.eq(SHOW_SCREENSHOT_WINDOW) {
+                    self.enabled = value.parse().unwrap_or(false)
+                }
+            }
+        }
+        self.draw(token)
     }
 }
 
@@ -125,29 +151,5 @@ impl ScreenshotViewer {
         }
 
         Ui::window_end();
-    }
-}
-
-impl IStepper for ScreenshotViewer {
-    fn enabled(&self) -> bool {
-        self.enabled
-    }
-
-    fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
-        self.id = id;
-        self.sk_info = Some(sk_info);
-
-        true
-    }
-
-    fn step(&mut self, token: &MainThreadToken) {
-        for e in token.get_event_report().iter() {
-            if let StepperAction::Event(_, key, _) = e {
-                if key.eq("ShowScreenshotWindow") {
-                    self.enabled = !self.enabled
-                }
-            }
-        }
-        self.draw(token)
     }
 }

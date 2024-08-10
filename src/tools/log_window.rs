@@ -18,6 +18,8 @@ pub struct LogItem {
     pub count: i32,
 }
 
+pub const SHOW_LOG_WINDOW: &str = "ShowLogWindow";
+
 pub struct LogWindow<'a> {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
@@ -35,6 +37,33 @@ pub struct LogWindow<'a> {
 }
 
 unsafe impl<'a> Send for LogWindow<'a> {}
+
+impl<'a> IStepper for LogWindow<'a> {
+    fn enabled(&self) -> bool {
+        self.enabled
+    }
+
+    fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
+        self.id = id;
+        self.sk_info = Some(sk_info);
+
+        true
+    }
+
+    fn step(&mut self, token: &MainThreadToken) {
+        for e in token.get_event_report().iter() {
+            if let StepperAction::Event(_, key, value) = e {
+                if key.eq(SHOW_LOG_WINDOW) {
+                    self.enabled = value.parse().unwrap_or(false)
+                }
+            }
+        }
+
+        self.draw(token)
+    }
+
+    fn shutdown(&mut self) {}
+}
 
 impl<'a> LogWindow<'a> {
     pub fn new(log_log: &'a Mutex<Vec<LogItem>>) -> Self {
@@ -161,31 +190,4 @@ impl<'a> LogWindow<'a> {
         }
         Ui::layout_pop();
     }
-}
-
-impl<'a> IStepper for LogWindow<'a> {
-    fn enabled(&self) -> bool {
-        self.enabled
-    }
-
-    fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
-        self.id = id;
-        self.sk_info = Some(sk_info);
-
-        true
-    }
-
-    fn step(&mut self, token: &MainThreadToken) {
-        for e in token.get_event_report().iter() {
-            if let StepperAction::Event(_, key, _) = e {
-                if key.eq("ShowLogWindow") {
-                    self.enabled = !self.enabled
-                }
-            }
-        }
-
-        self.draw(token)
-    }
-
-    fn shutdown(&mut self) {}
 }

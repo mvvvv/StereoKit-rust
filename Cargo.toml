@@ -69,7 +69,7 @@ name = "main"
 crate-type = ["cdylib"]
 
 [package.metadata.android]
-package = "com.stereokit.rust_binding_demo"
+package = "com.stereokit.rust_binding.demos"
 build_targets = ["aarch64-linux-android"]
 apk_label = "Stereokit-rust-demos"
 assets = "./assets"
@@ -171,7 +171,7 @@ required = false
 
 [package.metadata.android.application]
 debuggable = true
-label = "Stereokit-rust-demos"
+label = "StereoKit rust demos"
 icon = "@mipmap/app_icon"
 theme = "@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen"
 extract_native_libs = true

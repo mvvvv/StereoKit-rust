@@ -224,8 +224,8 @@ impl Assets {
     /// A list of supported texture format extensions. This pairs pretty well with Platform::file_picker when attempting
     /// to load a Tex!
     /// <https://stereokit.net/Pages/StereoKit/Assets/TextureFormats.html>
-    pub const TEXTURE_FORMATS: [&'static str; 10] =
-        [".jpg", ".jpeg", ".png", ".hdr", ".tga", ".bmp", ".psd", ".pic", ".qoi", ".gif"];
+    pub const TEXTURE_FORMATS: [&'static str; 11] =
+        [".jpg", ".jpeg", ".png", ".hdr", ".tga", ".bmp", ".psd", ".pic", ".qoi", ".gif", ".ktx2"];
 
     /// supported sound format by asset Sound <https://stereokit.net/Pages/StereoKit/Sound.html>
     pub const SOUND_FORMATS: [&'static str; 2] = [".wav", ".mp3"];

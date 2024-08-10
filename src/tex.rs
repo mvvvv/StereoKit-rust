@@ -174,9 +174,8 @@ pub enum TexAddress {
 }
 
 /// This is the texture asset class! This encapsulates 2D images, texture arrays, cubemaps, and rendertargets! It can
-/// load any image format that stb_image can, (jpg, png, tga, bmp, psd, gif, hdr, pic) plus more later on, and you can
-/// also create textures procedurally.
-/// Tex Builder
+/// load any image format that stb_image can, (jpg, png, tga, bmp, psd, gif, hdr, pic, ktx2) plus more later on, and you
+/// can also create textures procedurally.
 /// <https://stereokit.net/Pages/StereoKit/Tex.html>
 
 #[repr(C)]
@@ -341,7 +340,8 @@ impl Tex {
         tex
     }
 
-    /// Loads an image file stored in memory directly into a texture! Supported formats are: jpg, png, tga, bmp, psd, gif, hdr, pic.
+    /// Loads an image file stored in memory directly into a texture! Supported formats are: jpg, png, tga, bmp, psd,
+    /// gif, hdr, pic, ktx2.
     /// Asset Id will be the same as the filename.
     /// <https://stereokit.net/Pages/StereoKit/Tex/FromMemory.html>
     /// * priority - If None will be set to 10
@@ -355,7 +355,7 @@ impl Tex {
         .ok_or(StereoKitError::TexMemory)?))
     }
 
-    /// Loads an image file directly into a texture! Supported formats are: jpg, png, tga, bmp, psd, gif, hdr, pic.
+    /// Loads an image file directly into a texture! Supported formats are: jpg, png, tga, bmp, psd, gif, hdr, pic, ktx2.
     /// Asset Id will be the same as the filename.
     /// <https://stereokit.net/Pages/StereoKit/Tex/FromFile.html>
     /// * priority - If None will be set to 10
@@ -378,9 +378,10 @@ impl Tex {
             .ok_or(StereoKitError::TexFile(path_buf, "tex_create failed".to_string()))?))
     }
 
-    /// Loads an array of image files directly into a single array texture! Array textures are often useful for shader effects,
-    /// layering, material merging, weird stuff, and will generally need a specific shader to support it. Supported formats
-    /// are: jpg, png, tga, bmp, psd, gif, hdr, pic. Asset Id will be the hash of all the filenames merged consecutively.
+    /// Loads an array of image files directly into a single array texture! Array textures are often useful for shader
+    /// effects, layering, material merging, weird stuff, and will generally need a specific shader to support it.
+    /// Supported formats are: jpg, png, tga, bmp, psd, gif, hdr, pic, ktx2. Asset Id will be the hash of all the
+    /// filenames merged consecutively.
     /// <https://stereokit.net/Pages/StereoKit/Tex/FromFiles.html>
     /// * priority - If None will be set to 10
     ///
@@ -442,8 +443,8 @@ impl Tex {
 
     /// Creates a texture and sets the texture’s pixels using a color array! Color values are converted to 32 bit colors,
     /// so this means a memory allocation and conversion. Prefer the Color32 overload for performance, or create an empty
-    /// Texture and use SetColors for more flexibility. This will be an image of type TexType.Image, and a format of TexFormat.
-    /// Rgba32 or TexFormat.Rgba32Linear depending on the value of the sRGBData parameter.
+    /// Texture and use SetColors for more flexibility. This will be an image of type TexType.Image, and a format of
+    /// TexFormat. Rgba32 or TexFormat.Rgba32Linear depending on the value of the sRGBData parameter.
     /// <https://stereokit.net/Pages/StereoKit/Tex/FromColors.html>
     ///
     /// The color conversion from 128 to 32 may crash if the data do not contains color128.
@@ -542,8 +543,8 @@ impl Tex {
         unsafe { tex_set_loading_fallback(fallback.as_ref().0.as_ptr()) };
     }
 
-    /// This is the texture that all Tex objects with errors will fall back to. Assigning a texture here that isn’t fully loaded will cause the
-    /// app to block until it is loaded.
+    /// This is the texture that all Tex objects with errors will fall back to. Assigning a texture here that isn’t
+    /// fully loaded will cause the app to block until it is loaded.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetErrorFallback.html>
     ///
     ///  see also [`crate::tex::tex_set_error_fallback`]
@@ -572,7 +573,8 @@ impl Tex {
         self
     }
 
-    /// Only applicable if this texture is a rendertarget! This creates and attaches a zbuffer surface to the texture for use when rendering to it.
+    /// Only applicable if this texture is a rendertarget! This creates and attaches a zbuffer surface to the texture
+    /// for use when rendering to it.
     /// <https://stereokit.net/Pages/StereoKit/Tex/AddZBuffer.html>
     ///
     /// see also [`crate::tex::tex_add_zbuffer`]
@@ -582,7 +584,7 @@ impl Tex {
     }
 
     /// Loads an image file stored in memory directly into the created texture! Supported formats are: jpg, png, tga, bmp, psd, gif,
-    /// hdr, pic. This method introduces a blocking boolean parameter, which allows you to specify whether this method blocks until
+    /// hdr, pic, ktx2. This method introduces a blocking boolean parameter, which allows you to specify whether this method blocks until
     /// the image fully loads! The default case is to have it as part of the asynchronous asset pipeline, in which the Asset Id will
     /// be the same as the filename.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetMemory.html>
@@ -602,10 +604,11 @@ impl Tex {
         self
     }
 
-    /// Set the texture’s pixels using a pointer to a chunk of memory! This is great if you’re pulling in some color data from native code,
-    /// and don’t want to pay the cost of trying to marshal that data around.
+    /// Set the texture’s pixels using a pointer to a chunk of memory! This is great if you’re pulling in some color
+    /// data from native code, and don’t want to pay the cost of trying to marshal that data around.
     /// The data should contains width*height*(TextureFormat size) bytes.
-    /// Warning: The check width*height*(TextureFormat size) upon the size of the data values must be done before calling this function.
+    /// Warning: The check width*height*(TextureFormat size) upon the size of the data values must be done before
+    /// calling this function.
     /// Warning: The color data type must be compliant with the format of the texture.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetColors.html>
     ///
@@ -616,13 +619,14 @@ impl Tex {
         self
     }
 
-    /// Set the texture’s pixels using a color array! This function should only be called on textures with a format of Rgba32 or Rgba32Linear.
-    /// You can call this as many times as you’d like, even with different widths and heights. Calling this multiple times will mark it as dynamic
-    /// on the graphics card. Calling this function can also result in building mip-maps, which has a non-zero cost: use TexType.ImageNomips when
-    /// creating the Tex to avoid this.
+    /// Set the texture’s pixels using a color array! This function should only be called on textures with a format of
+    /// Rgba32 or Rgba32Linear. You can call this as many times as you’d like, even with different widths and heights.
+    /// Calling this multiple times will mark it as dynamic on the graphics card. Calling this function can also result
+    /// in building mip-maps, which has a non-zero cost: use TexType.ImageNomips when creating the Tex to avoid this.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetColors.html>
     ///
-    /// Warning, instead of [Tex::set_colors], this call may not be done if the asset is not loaded (see [Tex::get_asset_state]) or the size is
+    /// Warning, instead of [Tex::set_colors], this call may not be done if the asset is not loaded
+    /// (see [Tex::get_asset_state]) or the size is
     /// inconsistent or the format is incompatible.
     ///
     /// see also [`crate::tex::tex_set_colors`]
@@ -658,13 +662,15 @@ impl Tex {
         self
     }
 
-    /// Set the texture’s pixels using a color array! This function should only be called on textures with a format of Rgba128. You can call this
-    /// as many times as you’d like, even with different widths and heights. Calling this multiple times will mark it as dynamic on the graphics card.
-    /// Calling this function can also result in building mip-maps, which has a non-zero cost: use TexType.ImageNomips when creating the Tex to avoid this.
+    /// Set the texture’s pixels using a color array! This function should only be called on textures with a format of
+    /// Rgba128. You can call this as many times as you’d like, even with different widths and heights. Calling this
+    /// multiple times will mark it as dynamic on the graphics card.
+    /// Calling this function can also result in building mip-maps, which has a non-zero cost: use TexType.ImageNomips
+    /// when creating the Tex to avoid this.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetColors.html>
     ///
-    /// Warning, instead of [Tex::set_colors], this call may not be done if the asset is not loaded (see [Tex::get_asset_state]) or the size is
-    /// inconsistent or the format is incompatible.
+    /// Warning, instead of [Tex::set_colors], this call may not be done if the asset is not loaded
+    /// (see [Tex::get_asset_state]) or the size is inconsistent or the format is incompatible.
     ///
     /// see also [`crate::tex::tex_set_colors`]
     pub fn set_colors128(&mut self, width: usize, height: usize, data: &[Color128]) -> &mut Self {
@@ -698,12 +704,14 @@ impl Tex {
         self
     }
 
-    /// Set the texture’s pixels using a scalar array for channel R !  This function should only be called on textures with a format of R8. You can call this as many times
-    /// as you’d like, even with different widths and heights. Calling this multiple times will mark it as dynamic on the graphics card. Calling this function
-    /// can also result in building mip-maps, which has a non-zero cost: use TexType.ImageNomips when creating the Tex to avoid this.
+    /// Set the texture’s pixels using a scalar array for channel R !  This function should only be called on textures
+    /// with a format of R8. You can call this as many times as you’d like, even with different widths and heights.
+    /// Calling this multiple times will mark it as dynamic on the graphics card. Calling this function can also result
+    /// in building mip-maps, which has a non-zero cost: use TexType.ImageNomips when creating the Tex to avoid this.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetColors.html>
     ///
-    /// Warning, instead of [Tex::set_colors], this call may not be done if the asset is not loaded (see [Tex::get_asset_state]) or the size is
+    /// Warning, instead of [Tex::set_colors], this call may not be done if the asset is not loaded
+    /// (see [Tex::get_asset_state]) or the size is
     /// inconsistent or the format is incompatible.
     ///
     /// see also [`crate::tex::tex_set_colors`]
@@ -738,13 +746,14 @@ impl Tex {
         self
     }
 
-    /// Set the texture’s pixels using a scalar array for channel R ! This function should only be called on textures with a format of R16. You can call this as many times
-    /// as you’d like, even with different widths and heights. Calling this multiple times will mark it as dynamic on the graphics card. Calling this function
-    /// can also result in building mip-maps, which has a non-zero cost: use TexType.ImageNomips when creating the Tex to avoid this.
+    /// Set the texture’s pixels using a scalar array for channel R ! This function should only be called on textures
+    /// with a format of R16. You can call this as many times as you’d like, even with different widths and heights.
+    /// Calling this multiple times will mark it as dynamic on the graphics card. Calling this function can also result
+    /// in building mip-maps, which has a non-zero cost: use TexType.ImageNomips when creating the Tex to avoid this.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetColors.html>
     ///
-    /// Warning, instead of [Tex::set_colors], this call may not be done if the asset is not loaded (see [Tex::get_asset_state]) or the size is
-    /// inconsistent or the format is incompatible.
+    /// Warning, instead of [Tex::set_colors], this call may not be done if the asset is not loaded
+    /// (see [Tex::get_asset_state]) or the size is inconsistent or the format is incompatible.
     ///
     /// see also [`crate::tex::tex_set_colors`]
     pub fn set_colors_r16(&mut self, width: usize, height: usize, data: &[u16]) -> &mut Self {
@@ -778,13 +787,14 @@ impl Tex {
         self
     }
 
-    /// Set the texture’s pixels using a scalar array! This function should only be called on textures with a format of R32. You can call this as many times
-    /// as you’d like, even with different widths and heights. Calling this multiple times will mark it as dynamic on the graphics card. Calling this function
-    /// can also result in building mip-maps, which has a non-zero cost: use TexType.ImageNomips when creating the Tex to avoid this.
+    /// Set the texture’s pixels using a scalar array! This function should only be called on textures with a format of
+    /// R32. You can call this as many times as you’d like, even with different widths and heights. Calling this
+    /// multiple times will mark it as dynamic on the graphics card. Calling this function can also result in building
+    /// mip-maps, which has a non-zero cost: use TexType.ImageNomips when creating the Tex to avoid this.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetColors.html>
     ///
-    /// Warning, instead of [Tex::set_colors], this call may not be done if the asset is not loaded (see [Tex::get_asset_state]) or the size is
-    /// inconsistent or the format is incompatible.
+    /// Warning, instead of [Tex::set_colors], this call may not be done if the asset is not loaded
+    /// (see [Tex::get_asset_state]) or the size is inconsistent or the format is incompatible.
     ///
     /// see also [`crate::tex::tex_set_colors`]
     pub fn set_colors_r32(&mut self, width: usize, height: usize, data: &[f32]) -> &mut Self {
@@ -853,8 +863,9 @@ impl Tex {
         self
     }
 
-    /// Set the texture’s size without providing any color data. In most cases, you should probably just call SetColors instead,
-    /// but this can be useful if you’re adding color data some other way, such as when blitting or rendering to it.
+    /// Set the texture’s size without providing any color data. In most cases, you should probably just call SetColors
+    /// instead, but this can be useful if you’re adding color data some other way, such as when blitting or rendering
+    /// to it.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetSize.html>
     ///
     /// see also [`crate::tex::tex_set_size`]
@@ -863,8 +874,9 @@ impl Tex {
         self
     }
 
-    /// This will override the default fallback texture that gets used before the Tex has finished loading. This is useful for textures
-    /// with a specific purpose where the normal fallback texture would appear strange, such as a metal/rough map.
+    /// This will override the default fallback texture that gets used before the Tex has finished loading. This is
+    /// useful for textures with a specific purpose where the normal fallback texture would appear strange, such as a
+    /// metal/rough map.
     /// <https://stereokit.net/Pages/StereoKit/Tex/FallbackOverride.html>
     ///
     ///  see also [`crate::tex::tex_set_fallback`]
@@ -873,8 +885,8 @@ impl Tex {
         self
     }
 
-    /// When sampling a texture that’s stretched, or shrunk beyond its screen size, how do we handle figuring out which color to grab from
-    /// the texture? Default is Linear.
+    /// When sampling a texture that’s stretched, or shrunk beyond its screen size, how do we handle figuring out which
+    /// color to grab from the texture? Default is Linear.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SampleMode.html>
     ///
     ///  see also [`crate::tex::tex_set_sample`]
@@ -913,8 +925,8 @@ impl Tex {
         unsafe { CStr::from_ptr(tex_get_id(self.0.as_ptr())) }.to_str().unwrap()
     }
 
-    /// Textures are loaded asyncronously, so this tells you the current state of this texture! This also can tell if an error occured,
-    /// and what type of error it may have been.
+    /// Textures are loaded asyncronously, so this tells you the current state of this texture! This also can tell if
+    /// an error occured, and what type of error it may have been.
     /// <https://stereokit.net/Pages/StereoKit/Tex/AssetState.html>
     ///
     /// see also [`crate::tex::tex_asset_state`]
@@ -922,8 +934,8 @@ impl Tex {
         unsafe { tex_asset_state(self.0.as_ptr()) }
     }
 
-    /// The StereoKit format this texture was initialized with. This will be a blocking call if AssetState is less than LoadedMeta
-    /// so None will be return instead
+    /// The StereoKit format this texture was initialized with. This will be a blocking call if AssetState is less than
+    /// LoadedMeta so None will be return instead
     /// <https://stereokit.net/Pages/StereoKit/Tex/Format.html>
     ///
     /// see also [`crate::tex::tex_get_format`]
@@ -947,7 +959,8 @@ impl Tex {
         unsafe { tex_get_surface(self.0.as_ptr()) }
     }
 
-    /// The width of the texture, in pixels. This will be a blocking call if AssetState is less than LoadedMeta so None will be return instead
+    /// The width of the texture, in pixels. This will be a blocking call if AssetState is less than LoadedMeta so None
+    /// will be return instead
     /// <https://stereokit.net/Pages/StereoKit/Tex/Width.html>
     ///
     /// see also [`crate::tex::tex_get_width`]
@@ -961,7 +974,8 @@ impl Tex {
         Some(unsafe { tex_get_width(self.0.as_ptr()) } as usize)
     }
 
-    /// The height of the texture, in pixels. This will be a blocking call if AssetState is less than LoadedMeta so None will be return instead
+    /// The height of the texture, in pixels. This will be a blocking call if AssetState is less than LoadedMeta so None
+    /// will be return instead
     /// <https://stereokit.net/Pages/StereoKit/Tex/Height.html>
     ///
     /// see also [`crate::tex::tex_get_height`]
@@ -1064,8 +1078,8 @@ impl Tex {
         Some(true)
     }
 
-    /// When sampling a texture that’s stretched, or shrunk beyond its screen size, how do we handle figuring out which color to grab from the texture?
-    /// Default is Linear.
+    /// When sampling a texture that’s stretched, or shrunk beyond its screen size, how do we handle figuring out which
+    /// color to grab from the texture? Default is Linear.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SampleMode.html>
     ///
     /// see also [`crate::tex::tex_get_sample`]
@@ -1073,8 +1087,9 @@ impl Tex {
         unsafe { tex_get_sample(self.0.as_ptr()) }
     }
 
-    /// When looking at a UV texture coordinate on this texture, how do we handle values larger than 1, or less than zero? Do we Wrap to the other side?
-    /// Clamp it between 0-1, or just keep Mirroring back and forth? Wrap is the default.
+    /// When looking at a UV texture coordinate on this texture, how do we handle values larger than 1, or less than
+    /// zero? Do we Wrap to the other side? Clamp it between 0-1, or just keep Mirroring back and forth? Wrap is the
+    /// default.
     /// <https://stereokit.net/Pages/StereoKit/Tex/AddressMode.html>
     ///
     /// see also [`crate::tex::tex_get_address`]
@@ -1082,7 +1097,8 @@ impl Tex {
         unsafe { tex_get_address(self.0.as_ptr()) }
     }
 
-    /// When SampleMode is set to Anisotropic, this is the number of samples the GPU takes to figure out the correct color. Default is 4, and 16 is pretty high.
+    /// When SampleMode is set to Anisotropic, this is the number of samples the GPU takes to figure out the correct
+    /// color. Default is 4, and 16 is pretty high.
     /// <https://stereokit.net/Pages/StereoKit/Tex/Anisoptropy.html>
     /// <https://stereokit.net/Pages/StereoKit/Tex/Anisotropy.html>
     ///
@@ -1182,9 +1198,9 @@ pub struct SHCubemap {
 }
 
 impl SHCubemap {
-    /// Creates a cubemap texture from a single equirectangular image! You know, the ones that look like an unwrapped globe with the
-    /// poles all stretched out. It uses some fancy shaders and texture blitting to create 6 faces from the equirectangular image.e
-    /// with the poles all stretched out. It uses some fancy shaders and texture blitting to create 6 faces from the equirectangular image.
+    /// Creates a cubemap texture from a single equirectangular image! You know, the ones that look like an unwrapped
+    /// globe with the poles all stretched out. It uses some fancy shaders and texture blitting to create 6 faces from
+    /// the equirectangular image.
     /// <https://stereokit.net/Pages/StereoKit/Tex/FromCubemapEquirectangular.html>
     ///
     /// see also [`crate::tex::tex_create_cubemap_file`]
@@ -1205,8 +1221,8 @@ impl SHCubemap {
         Ok(SHCubemap { sh, tex })
     }
 
-    /// Creates a cubemap texture from 6 different image files! If you have a single equirectangular image, use Tex.FromEquirectangular
-    /// instead. Asset Id will be the first filename.
+    /// Creates a cubemap texture from 6 different image files! If you have a single equirectangular image, use
+    /// Tex.FromEquirectangular instead. Asset Id will be the first filename.
     /// order of the file names is +X -X +Y -Y +Z -Z
     /// <https://stereokit.net/Pages/StereoKit/Tex/FromCubemapFile.html>
     ///
@@ -1241,8 +1257,8 @@ impl SHCubemap {
         Ok(SHCubemap { sh, tex })
     }
 
-    /// Generates a cubemap texture from a gradient and a direction! These are entirely suitable for skyboxes, which you can set via
-    /// Renderer.SkyTex.
+    /// Generates a cubemap texture from a gradient and a direction! These are entirely suitable for skyboxes, which
+    /// you can set via Renderer.SkyTex.
     /// <https://stereokit.net/Pages/StereoKit/Tex/GenCubemap.html>
     ///
     /// see also [`crate::tex::tex_gen_cubemap`]

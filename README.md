@@ -52,6 +52,8 @@ This project was made possible thanks to the work of many talents on the followi
 * [rust_mobile](https://github.com/rust-mobile) used for the android specific code.
 * [winit](https://github.com/rust-windowing/winit) used for cross-platform management. 
 * [openxrs](https://github.com/Ralith/openxrs) nice binding of OpenXR.
+* [blender](https://www.blender.org/) for gltf files, HDRI, models and demo animations
+* [gimp](https://www.gimp.org/) for icons files.
 * bitflags.
 * android_logger.
 * this_error & anyerror.

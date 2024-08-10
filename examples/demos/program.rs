@@ -2,18 +2,15 @@ use std::{process, sync::Mutex, thread};
 
 use stereokit_rust::{
     event_loop::{SkClosures, StepperAction, StepperId},
-    framework::{HandMenuAction, HandMenuRadial, HandRadial, HandRadialLayer},
-    material::{Cull, Material},
-    maths::{units::*, Matrix, Pose, Quat, Vec2, Vec3, Vec4},
-    mesh::Mesh,
-    model::Model,
-    shader::Shader,
+    material::Cull,
+    maths::{units::*, Pose, Quat, Vec2, Vec3},
     sk::{AppFocus, DisplayMode, Sk},
+    sound::{Sound, SoundInst},
     sprite::Sprite,
     system::{
         Backend, BackendOpenXR, BackendXRType, BtnState, Input, Key, Lines, Log, LogLevel, Projection, Renderer, Text,
     },
-    tex::{SHCubemap, Tex, TexSample},
+    tex::Tex,
     tools::{
         fly_over::FlyOver,
         log_window::{LogItem, LogWindow},
@@ -24,17 +21,17 @@ use stereokit_rust::{
         virtual_kbd_meta::VirtualKbdMETA,
     },
     ui::{Ui, UiBtnLayout},
-    util::{
-        named_colors::{BLACK, BLUE, LIGHT_BLUE, LIGHT_CYAN, RED, WHITE, YELLOW},
-        Color128, Gradient, ShLight, SphericalHarmonics, Time,
-    },
+    util::Time,
 };
 use winit::event_loop::EventLoop;
 
 /// Somewhere to copy the log
 static LOG_LOG: Mutex<Vec<LogItem>> = Mutex::new(vec![]);
 
-use super::Test;
+use super::{
+    hand_menu_radial1::{HandMenuRadial1, SHOW_FLOOR},
+    Test,
+};
 pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool, start_test: String) {
     Log::diag(
         "======================================================================================================================== !!",
@@ -89,175 +86,12 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
 
     log_window.show(true);
 
-    //---- Sky domes and floor
-    let mut gradient_sky = Gradient::new(None);
-    gradient_sky
-        .add(Color128::BLACK, 0.0)
-        .add(BLUE, 0.4)
-        .add(LIGHT_BLUE, 0.8)
-        .add(LIGHT_CYAN, 0.9)
-        .add(WHITE, 1.0);
-    let cube0 = SHCubemap::gen_cubemap_gradient(gradient_sky, Vec3::Y, 1024);
-
-    let mut gradient = Gradient::new(None);
-    gradient
-        .add(RED, 0.01)
-        .add(YELLOW, 0.1)
-        .add(LIGHT_CYAN, 0.3)
-        .add(LIGHT_BLUE, 0.4)
-        .add(BLUE, 0.5)
-        .add(BLACK, 0.7);
-    let cube1 = SHCubemap::gen_cubemap_gradient(&gradient, Vec3::NEG_Z, 1);
-
-    let lights: [ShLight; 1] = [ShLight::new(Vec3::ONE, WHITE); 1];
-    let sh = SphericalHarmonics::from_lights(&lights);
-    let cube2 = SHCubemap::gen_cubemap_sh(sh, 15, 5.0, 0.02);
-
-    let cube3 =
-        SHCubemap::from_cubemap_equirectangular("hdri/sky_dawn.hdr", true, 0).unwrap_or(SHCubemap::get_rendered_sky());
-
-    //save the default cubemap.
-    let cube_default = SHCubemap::get_rendered_sky();
-
-    let mobile = Model::from_file("mobiles.gltf", Some(Shader::pbr())).unwrap();
-    let tile = Material::find("mobiles.gltf/mat/Calcaire blanc").unwrap_or_default();
-    Log::diag(format!("{:?}", mobile.get_id()));
-    for iter in mobile.get_nodes().visuals() {
-        Log::diag(format!("{:?}", iter.get_mesh().unwrap().get_id()));
-    }
-
-    let mut clean_tile = Material::pbr().copy();
-    Log::diag("calcaire_blanc params:");
-    for param in tile.get_all_param_info() {
-        match param.get_name() {
-            "metal" => {
-                let metal_tex = param.get_texture().unwrap();
-                metal_tex.sample_mode(TexSample::Anisotropic).anisotropy(6);
-                clean_tile.metal_tex(metal_tex);
-                &mut clean_tile
-            }
-            "diffuse" => clean_tile.diffuse_tex(param.get_texture().unwrap()),
-            "normal" => clean_tile.normal_tex(param.get_texture().unwrap()),
-            "occlusion" => clean_tile.occlusion_tex(param.get_texture().unwrap()),
-            _ => &mut clean_tile,
-        };
-        Log::diag(format!(" --- {} :{}", param.get_name(), param.to_string().unwrap_or("no value".to_string())));
-    }
-    clean_tile
-        .id("clean_tile")
-        .tex_transform(Vec4::new(0.0, 0.0, 3.0, 3.0))
-        .roughness_amount(0.7)
-        .color_tint(BLACK)
-        .queue_offset(11);
-
-    let floor_model =
-        Model::from_mesh(Mesh::generate_plane(Vec2::new(40.0, 40.0), Vec3::UP, Vec3::FORWARD, None, true), clean_tile);
-    let floor_tr = Matrix::tr(&Vec3::new(0.0, 0.0, 0.0), &Quat::IDENTITY);
-
     let tex_particule = Tex::gen_particle(128, 128, 0.9, None);
     let exit_button =
         match Sprite::from_tex(Tex::from_file("textures/exit.jpeg", true, None).unwrap_or_default(), None, None) {
             Ok(sprite) => sprite,
             Err(_) => Sprite::from_tex(&tex_particule, None, None).unwrap(),
         };
-
-    // Open or close the log window
-    let event_loop_proxy = sk.get_event_loop_proxy().unwrap();
-    let send_event_show_log = move || {
-        let _ = &event_loop_proxy.send_event(StepperAction::event("main".to_string(), "ShowLogWindow", "1"));
-    };
-
-    let event_loop_proxy = sk.get_event_loop_proxy().clone().unwrap();
-    let send_event_show_screenshot = move || {
-        let _ = &event_loop_proxy.send_event(StepperAction::event("main".to_string(), "ShowScreenshotWindow", "1"));
-    };
-
-    let mut menu_ico = Material::pbr_clip().copy();
-    let tex = Tex::from_file("icons/hamburger.png", true, None).unwrap_or_default();
-    menu_ico.diffuse_tex(tex).clip_cutoff(0.1);
-
-    let mut screenshot_ico = Material::pbr_clip().copy();
-    let tex = Tex::from_file("icons/screenshot.png", true, None).unwrap_or_default();
-    screenshot_ico.diffuse_tex(tex).clip_cutoff(0.1);
-
-    let mut log_ico = Material::pbr_clip().copy();
-    let tex = Tex::from_file("icons/log_viewer.png", true, None).unwrap_or_default();
-    log_ico.diffuse_tex(tex).clip_cutoff(0.1);
-
-    //---Load hand menu
-    let hand_menu_stepper = HandMenuRadial::new(HandRadialLayer::new(
-        "root",
-        None,
-        Some(0.0),
-        vec![
-            HandRadial::layer(
-                "\nSkydome",
-                Some(menu_ico),
-                None,
-                vec![
-                    HandRadial::item(
-                        "Day",
-                        None,
-                        move || {
-                            cube0.render_as_sky();
-                        },
-                        HandMenuAction::Unchecked(1),
-                    ),
-                    HandRadial::item(
-                        "Sunset",
-                        None,
-                        move || {
-                            cube1.render_as_sky();
-                        },
-                        HandMenuAction::Unchecked(1),
-                    ),
-                    HandRadial::item(
-                        "Black\nlight",
-                        None,
-                        move || {
-                            cube2.render_as_sky();
-                        },
-                        HandMenuAction::Unchecked(1),
-                    ),
-                    HandRadial::item(
-                        "HDRI\ndawn",
-                        None,
-                        move || {
-                            cube3.render_as_sky();
-                        },
-                        HandMenuAction::Unchecked(1),
-                    ),
-                    HandRadial::item(
-                        "Default",
-                        None,
-                        move || {
-                            cube_default.render_as_sky();
-                        },
-                        HandMenuAction::Checked(1),
-                    ),
-                    HandRadial::item("Back", None, || {}, HandMenuAction::Back),
-                    HandRadial::item("Close", None, || {}, HandMenuAction::Close),
-                ],
-            ),
-            HandRadial::item(
-                "Screenshot",
-                Some(screenshot_ico),
-                move || {
-                    send_event_show_screenshot();
-                },
-                HandMenuAction::Unchecked(2),
-            ),
-            HandRadial::item(
-                "Log",
-                Some(log_ico),
-                move || {
-                    send_event_show_log();
-                },
-                HandMenuAction::Checked(3),
-            ),
-            HandRadial::item("Close", None, || {}, HandMenuAction::Close),
-        ],
-    ));
 
     let mut notif = HudNotification::default();
     if Backend::xr_type() == BackendXRType::Simulator {
@@ -267,7 +101,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
     }
     sk.push_action(StepperAction::add("HudNotif1", notif));
 
-    sk.push_action(StepperAction::add("HandMenuStepper", hand_menu_stepper));
+    sk.push_action(StepperAction::add_default::<HandMenuRadial1>("HandMenuRadial1"));
     sk.push_action(StepperAction::add("LogWindow", log_window));
     sk.push_action(StepperAction::add_default::<ScreenshotViewer>("Screenshoot"));
     sk.push_action(StepperAction::add_default::<FlyOver>("FlyOver"));
@@ -277,6 +111,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
         sk.push_action(StepperAction::add_default::<PassthroughFbExt>("PassthroughFbExt"));
         if passthrough {
             sk.push_action(StepperAction::event("main".into(), PASSTHROUGH_FLIP, "1"));
+            sk.push_action(StepperAction::event("main".into(), SHOW_FLOOR, "false"));
             Log::diag("Passthrough Activated at start !!");
         } else {
             Log::diag("Passthrough Deactived at start !!");
@@ -313,6 +148,8 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
 
     let ui_text_style = Ui::get_text_style();
     ui_text_style.get_material().face_cull(Cull::Back);
+
+    let mut inst_play: Option<SoundInst> = None;
 
     Log::diag(
         "===================================================================================================================== !!",
@@ -368,11 +205,6 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
                 }
             }
 
-            // draw a floor if needed
-            //let transform = if World::has_bounds() { World::get_bounds_pose().to_matrix(None) } else { floor_tr };
-            if !passthrough {
-                floor_model.draw(token, floor_tr, None, None);
-            }
             Lines::add_axis(token, Pose::IDENTITY, Some(0.5), None);
 
             if !window_demo_show {
@@ -432,6 +264,10 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
                     ));
                     Log::diag(format!("Closure Process id : {:?} / {:?} ", thread::current().name(), process::id()));
                     sk.quit(None);
+                    if cfg!(target_os = "android") {
+                        let no = Sound::from_file("sounds/no.wav").unwrap();
+                        inst_play = Some(no.play(Vec3::ONE, None));
+                    }
                 }
                 Ui::same_line();
                 Ui::panel_begin(None);
@@ -441,9 +277,11 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
                         let mut string_value = "0";
                         if new_value {
                             Log::diag("Activate passthrough");
+                            sk.push_action(StepperAction::event("main".into(), SHOW_FLOOR, "false"));
                             string_value = "1";
                         } else {
                             Log::diag("Deactivate passthrough");
+                            sk.push_action(StepperAction::event("main".into(), SHOW_FLOOR, "true"));
                         }
                         sk.push_action(StepperAction::event("main".into(), PASSTHROUGH_FLIP, string_value))
                     }
