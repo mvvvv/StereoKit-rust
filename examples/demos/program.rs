@@ -4,6 +4,8 @@ use stereokit_rust::{
     event_loop::{SkClosures, StepperAction, StepperId},
     material::Cull,
     maths::{units::*, Pose, Quat, Vec2, Vec3},
+    model::Model,
+    shader::Shader,
     sk::{AppFocus, DisplayMode, Sk},
     sound::{Sound, SoundInst},
     sprite::Sprite,
@@ -100,6 +102,12 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
         notif.text = "Press menu button to open the hand menu".into();
     }
     sk.push_action(StepperAction::add("HudNotif1", notif));
+
+    let mobile = Model::from_file("mobiles.gltf", Some(Shader::pbr())).unwrap();
+    Log::diag(format!("{:?}", mobile.get_id()));
+    for iter in mobile.get_nodes().visuals() {
+        Log::diag(format!("{:?}", iter.get_mesh().unwrap().get_id()));
+    }
 
     sk.push_action(StepperAction::add_default::<HandMenuRadial1>("HandMenuRadial1"));
     sk.push_action(StepperAction::add("LogWindow", log_window));

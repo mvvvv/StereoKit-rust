@@ -7,7 +7,6 @@ use stereokit_rust::{
     maths::{Matrix, Quat, Vec2, Vec3, Vec4},
     mesh::Mesh,
     model::Model,
-    shader::Shader,
     sk::{MainThreadToken, SkInfo},
     system::Log,
     tex::{SHCubemap, Tex, TexSample},
@@ -41,14 +40,8 @@ unsafe impl Send for HandMenuRadial1 {}
 /// This code may be called in some threads, so no StereoKit code
 impl Default for HandMenuRadial1 {
     fn default() -> Self {
-        let mobile = Model::from_file("mobiles.gltf", Some(Shader::pbr())).unwrap();
-        let tile = Material::find("mobiles.gltf/mat/Calcaire blanc").unwrap_or_default();
-        Log::diag(format!("{:?}", mobile.get_id()));
-        for iter in mobile.get_nodes().visuals() {
-            Log::diag(format!("{:?}", iter.get_mesh().unwrap().get_id()));
-        }
-
         // black paving
+        let tile = Material::find("mobiles.gltf/mat/Calcaire blanc").unwrap_or_default();
         let mut clean_tile = Material::pbr().copy();
         Log::diag("calcaire_blanc params:");
         for param in tile.get_all_param_info() {
