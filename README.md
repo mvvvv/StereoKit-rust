@@ -32,7 +32,7 @@ This project is at an early stage so try it carefully. Right now, the only way t
 * Launch: `cargo apk run  --example main`
 
 ### Templates to create your own project:
-There is 3 templates used to build android versions. The default choice, branch `main`, will use cargo-apk (like the demos). The branch `gradle` will let you use gradle with winit. Then the branch `gradle-no-event-loop` will use gradle without winit.
+There is 3 templates used to build android versions. The default choice, branch `main`, will use cargo-apk (like demos). The branch `gradle` will let you use gradle with winit. Then the branch `gradle-no-event-loop` will use gradle without winit.
 * `git clone -b $branch https://github.com/mvvvv/stereokit-template/`
 * If you don't clone the template project in the same directory than the StereoKit-rust project, you'll have to modify the path of the Stereokit-rust dependency.
 
