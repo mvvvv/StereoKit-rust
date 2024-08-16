@@ -9,7 +9,12 @@ use std::{
     rc::Rc,
 };
 #[cfg(target_os = "android")]
+#[cfg(feature = "event-loop")]
 use winit::platform::android::activity::AndroidApp;
+
+#[cfg(target_os = "android")]
+#[cfg(feature = "no-event-loop")]
+use android_activity::AndroidApp;
 
 #[cfg(feature = "event-loop")]
 use crate::event_loop::{StepperAction, Steppers};

@@ -18,7 +18,6 @@ include = ["StereoKit/tools/include", "/README.md"]
 readme = "README.md"
 
 [features]
-default = ["event-loop"]
 dynamic-openxr = [] # Add openxr_loader.so in Android APK
 build-dynamic-openxr = [ "dynamic-openxr",] # Build openxr_loader from Khronos OpenXR project
 event-loop = ["dep:winit"]

@@ -44,6 +44,7 @@
             "cargo": {
                 "args": [
                     "build",
+                    "--features", "event-loop",
                     "--example=main_pc",
                 ],
                 "filter": {
@@ -61,6 +62,7 @@
             "cargo": {
                 "args": [
                     "build",
+                    "--features", "event-loop",
                     "--example=main_pc",
                 ],
                 "filter": {
@@ -78,6 +80,7 @@
             "cargo": {
                 "args": [
                     "build",
+                    "--features", "no-event-loop",
                     "--example=manual",
                 ],
                 "filter": {

@@ -18,10 +18,10 @@ This project is at an early stage so try it carefully. Right now, the only way t
 
 ### Run the project's demo on your PC's headset :
 * Make sure you have [OpenXR installed](https://www.khronos.org/openxr/) with an active runtine.
-* Launch[^1]: `cargo run  --example main_pc`
+* Launch[^1]: `cargo run --features event-loop  --example main_pc`
 
 ### Run the project's demo on your PC using the [simulator](https://stereokit.net/Pages/Guides/Using-The-Simulator.html) 
-* Launch[^1]: `cargo run  --example main_pc -- --test`
+* Launch[^1]: `cargo run --features event-loop  --example main_pc -- --test`
 
 
 ### Run the project's demo on your Android headset (from a PC running Windows, Mac or Linux):
@@ -29,16 +29,18 @@ This project is at an early stage so try it carefully. Right now, the only way t
 * Check that `adb` is connecting to your headset then set a valid NDK path into ANDROID_NDK_ROOT environment variable.
 * Install: `cargo install cargo-apk` (cargo-xbuild has not been tested yet).
 * Download: `rustup target add aarch64-linux-android` for most of the existing android headsets.
-* Launch: `cargo apk run  --example main`
+* Launch: `cargo apk run --features event-loop  --example main`
 
-### Templates to create your own project:
-There is 3 templates used to build android versions. The default choice, branch `main`, will use cargo-apk (like demos). The branch `gradle` will let you use gradle with winit. Then the branch `gradle-no-event-loop` will use gradle without winit.
+### Use your own event manager (PC only - see gradle templates for an android build)
+The demos above, are using [winit](https://github.com/rust-windowing/winit) as an event manager and interface with the OS. If you want to use your own loop and event manager, have a look to [manual.rs](https://github.com/mvvvv/StereoKit-rust/blob/master/examples/manual.rs).
+This is the shortest way to launch your first PCVR/PCMR program[^1]: `cargo run --features no-event-loop --example manual`
+
+
+## Templates to create your own project:
+There is 3 templates used to build android versions. The default choice, branch `main`, will use cargo-apk (like demos above). The branch `gradle` will let you use gradle with winit. Then the branch `gradle-no-event-loop` will use gradle without winit.
 * `git clone -b $branch https://github.com/mvvvv/stereokit-template/`
 * If you don't clone the template project in the same directory than the StereoKit-rust project, you'll have to modify the path of the Stereokit-rust dependency.
 
-### Use your own event manager (PC only)
-The demo and template above, are using [winit](https://github.com/rust-windowing/winit) as an event manager and interface with the OS. If you want to use your own loop and event manager, have a look to [manual.rs](https://github.com/mvvvv/StereoKit-rust/blob/master/examples/manual.rs).
-This is the shortest way to launch your first PCVR/PCMR program[^1]: `cargo run --example manual`
 
 ## Troubleshooting
 Submit bugs on the [Issues tab](https://github.com/mvvvv/StereoKit-rust/issues), and ask questions in the [Discussions tab](https://github.com/mvvvv/StereoKit-rust/discussions)!
