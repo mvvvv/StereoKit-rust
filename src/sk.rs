@@ -499,6 +499,7 @@ impl SkSettings {
         Sk::init_with_event_loop(self)
     }
 }
+#[cfg(feature = "no-event-loop")]
 impl SkSettings {
     #[cfg(target_os = "android")]
     pub fn init(&mut self, app: AndroidApp) -> Result<Sk, StereoKitError> {
@@ -599,11 +600,75 @@ pub struct Sk {
     #[cfg(feature = "event-loop")]
     pub(crate) actions: VecDeque<Box<dyn FnMut()>>,
 }
+impl Drop for Sk {
+    fn drop(&mut self) {
+        #[cfg(feature = "event-loop")]
+        self.steppers.shutdown();
+        //unsafe { sk_shutdown() }
+    }
+}
 impl Sk {
+    #[cfg(feature = "no-event-loop")]
     #[cfg(target_os = "android")]
-    pub fn init(_settings: &SkSettings, _app: AndroidApp) -> Result<Sk, StereoKitError> {
-        // Sk::init(self, app)
-        todo!("Only init_with_event_loop is avaiable for android !!")
+    pub fn init(settings: &mut SkSettings, app: AndroidApp) -> Result<Sk, StereoKitError> {
+        use android_activity::{MainEvent, PollEvent};
+        let mut ready_to_go = false;
+        while !ready_to_go {
+            app.poll_events(None, |event| match event {
+                PollEvent::Main(main_event) => {
+                    Log::diag(format!("MainEvent {:?} ", main_event));
+                    match main_event {
+                        MainEvent::RedrawNeeded { .. } => {
+                            ready_to_go = true;
+                        }
+                        _ => {
+                            ready_to_go = false;
+                        }
+                    }
+                }
+                otherwise => Log::diag(format!("PollEvent {:?} ", otherwise)),
+            })
+        }
+
+        let (vm_pointer, jobject_pointer) = {
+            {
+                let context = ndk_context::android_context();
+                (context.vm(), context.context())
+            }
+        };
+        settings.android_java_vm = vm_pointer;
+        settings.android_activity = jobject_pointer;
+
+        Log::diag(format!("sk_init : context: {:?} / jvm: {:?}", vm_pointer, jobject_pointer));
+
+        match unsafe {
+            Log::info("Before init >>>");
+            let val = sk_init(settings.clone()) != 0;
+            Log::info("<<< After init");
+            val
+        } {
+            true => {
+                let sk_info = Rc::new(RefCell::new(SkInfo {
+                    android_app: app,
+                    settings: settings.clone(),
+                    system_info: unsafe { sk_system_info() },
+                    #[cfg(feature = "event-loop")]
+                    event_loop_proxy: None,
+                }));
+                Ok(Sk {
+                    sk_info: sk_info.clone(),
+                    token: MainThreadToken {
+                        #[cfg(feature = "event-loop")]
+                        event_report: vec![],
+                    },
+                    #[cfg(feature = "event-loop")]
+                    steppers: Steppers::new(sk_info.clone()),
+                    #[cfg(feature = "event-loop")]
+                    actions: VecDeque::new(),
+                })
+            }
+            false => Err(StereoKitError::SkInit(settings.to_string())),
+        }
     }
 
     #[cfg(not(target_os = "android"))]
@@ -724,8 +789,10 @@ impl Sk {
     }
 
     #[cfg(target_os = "android")]
-    pub fn quit(&self, _quit_reason: Option<QuitReason>) {
-        Log::warn("Quit cannot be used safely for the moment - Close the app using the main menu please.")
+    pub fn quit(&self, quit_reason: Option<QuitReason>) {
+        //Log::warn("Quit cannot be used safely for the moment - Close the app using the main menu please.");
+        let quit_reason = quit_reason.unwrap_or(QuitReason::User);
+        unsafe { sk_quit(quit_reason) }
     }
 
     /// This tells the reason why StereoKit has quit and
@@ -734,14 +801,21 @@ impl Sk {
     pub fn get_quit_reason(&self) -> QuitReason {
         unsafe { sk_get_quit_reason() }
     }
-}
-impl Drop for Sk {
-    fn drop(&mut self) {
-        #[cfg(feature = "event-loop")]
-        self.steppers.shutdown();
-        //unsafe { sk_shutdown() }
+
+    /// Cleans up all StereoKit initialized systems. Release your own StereoKit created assets before calling this. This
+    /// is for cleanup only, and should not be used to exit the application, use SK.Quit for that instead. Calling this
+    /// function is unnecessary if using SK.Run, as it is called automatically there.
+    /// <https://stereokit.net/Pages/StereoKit/SK/Shutdown.html>
+    ///
+    /// see also [`crate::sk::sk_shutdown`]
+    pub fn shutdown() {
+        unsafe { sk_shutdown() }
+        if cfg!(target_os = "android") {
+            std::process::exit(0);
+        }
     }
 }
+
 #[cfg(feature = "event-loop")]
 impl Sk {
     /// Initializes StereoKit window, default resources, systems, etc.
@@ -979,15 +1053,5 @@ impl Sk {
             .unwrap_or_else(|e| {
                 Log::err(format!("!!!event_loop error closing!! : {}", e));
             });
-    }
-
-    /// Cleans up all StereoKit initialized systems. Release your own StereoKit created assets before calling this. This
-    /// is for cleanup only, and should not be used to exit the application, use SK.Quit for that instead. Calling this
-    /// function is unnecessary if using SK.Run, as it is called automatically there.
-    /// <https://stereokit.net/Pages/StereoKit/SK/Shutdown.html>
-    ///
-    /// see also [`crate::sk::sk_shutdown`]
-    pub fn shutdown() {
-        unsafe { sk_shutdown() }
     }
 }

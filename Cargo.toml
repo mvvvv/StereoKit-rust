@@ -4,6 +4,7 @@ members = ["stereokit-macros"]
 [package]
 name = "stereokit-rust"
 version = "0.1.0"
+resolver = "2"
 edition = "2021"
 #rust-version = "1.79"
 description = "High-Level Rust bindings around the StereoKitC library for XR"
@@ -19,10 +20,9 @@ readme = "README.md"
 [features]
 default = ["event-loop"]
 dynamic-openxr = [] # Add openxr_loader.so in Android APK
-build-dynamic-openxr = [
-  "dynamic-openxr",
-] # Build openxr_loader from Khronos OpenXR project
+build-dynamic-openxr = [ "dynamic-openxr",] # Build openxr_loader from Khronos OpenXR project
 event-loop = ["dep:winit"]
+no-event-loop = ["dep:android-activity"]
 
 [lib]
 crate-type = ["lib", "cdylib"]
@@ -47,7 +47,7 @@ stereokit-macros = { path = "stereokit-macros" }
 [target.'cfg(target_os = "android")'.dependencies]
 log = "0.4"
 android_logger = "0.14"
-#android-activity = { version = "0.6", features = [ "native-activity" ] }
+android-activity = { version = "0.6", features = [ "native-activity" ], optional = true  }
 ndk-context = "0.1.1"
 ndk = { version = "0.9.0", features = ["all"] }
 ndk-sys = "0.6"
