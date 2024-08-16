@@ -1,5 +1,8 @@
 {
     "rust-analyzer.linkedProjects": [
         "./stereokit-macros/Cargo.toml"
+    ],
+    "rust-analyzer.cargo.features": [
+        "event-loop"
     ]
 }
