@@ -36,4 +36,6 @@ fn main() {}
 /// Fake main for event-loop  (rust-analyzer problem as event-loop is the defaut feature )
 #[allow(dead_code)]
 #[cfg(feature = "event-loop")]
-fn main() {}
+fn main() {
+    panic!("This example works with feature `no_event_loop`!");
+}
