@@ -22,6 +22,7 @@ dynamic-openxr = [] # Add openxr_loader.so in Android APK
 build-dynamic-openxr = [ "dynamic-openxr",] # Build openxr_loader from Khronos OpenXR project
 event-loop = ["dep:winit"]
 no-event-loop = ["dep:android-activity"]
+force-local-deps = ["openxr-sys/linked"]
 
 [lib]
 crate-type = ["lib", "cdylib"]
