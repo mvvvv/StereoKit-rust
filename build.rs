@@ -1,5 +1,5 @@
-use std::{env, fs, path::Path};
 use cmake::Config;
+use std::{env, fs, path::Path};
 
 macro_rules! cargo_link {
     ($feature:expr) => {
@@ -19,10 +19,10 @@ fn main() {
     // Build StereoKit, and tell rustc to link it.
     let mut cmake_config = Config::new("StereoKit");
 
-    if cfg!(feature = "force-local-deps") && var("FORCE_LOCAL_DEPS").ok().is_some() {
+    if cfg!(feature = "force-local-deps") && var("FORCE_LOCAL_DEPS").is_ok() {
         // Helper function to define optional dependencies
         fn define_if_exists(var_name: &str, cmake_var: &str, config: &mut Config) {
-            if let Some(value) = var(var_name).ok() {
+            if let Ok(value) = var(var_name) {
                 config.define(cmake_var, value);
             }
         }
@@ -42,9 +42,14 @@ fn main() {
         cmake_config.define("CMAKE_INSTALL_INCLUDEDIR", "install");
         cmake_config.define("CMAKE_INSTALL_LIBDIR", "install");
     }
-    cmake_config.define("SK_DYNAMIC_OPENXR", if cfg!(feature = "dynamic-openxr") { "ON" } else { "OFF" });
-    cmake_config.define("SK_BUILD_OPENXR_LOADER", if cfg!(feature = "build-dynamic-openxr") { "ON" } else { "OFF" });
-    cmake_config.define("SK_BUILD_SHARED_LIBS", "OFF");
+    if cfg!(feature = "build-dynamic-openxr") {
+        // When you need to build and use Khronos openxr loader use this feature:
+        cmake_config.define("SK_DYNAMIC_OPENXR", "ON");
+        cmake_config.define("SK_BUILD_OPENXR_LOADER", "ON");
+    } else if cfg!(feature = "dynamic-openxr") {
+        // When you need to ship your own openxr loader use this feature:
+        cmake_config.define("SK_DYNAMIC_OPENXR", "ON");
+    }
 
     let dst = cmake_config.build();
 
@@ -110,7 +115,8 @@ fn main() {
                 if cfg!(feature = "build-dynamic-openxr") {
                     let file_so = dst.join("lib/libopenxr_loader.so");
                     let _lib_o = fs::copy(file_so, dest_file_so).unwrap();
-                } else if let Err(_e) = fs::remove_file(dest_file_so) {}
+                } else if let Err(_e) = fs::remove_file(dest_file_so) {
+                }
             } else {
                 cargo_link!("X11");
                 cargo_link!("Xfixes");

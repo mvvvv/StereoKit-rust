@@ -20,7 +20,7 @@ use stereokit_rust::{
         os_api::{get_display_refresh_rate, set_display_refresh_rate},
         passthrough_fb_ext::{PassthroughFbExt, PASSTHROUGH_FLIP},
         screenshoot::ScreenshotViewer,
-        virtual_kbd_meta::VirtualKbdMETA,
+        //virtual_kbd_meta::VirtualKbdMETA,
     },
     ui::{Ui, UiBtnLayout},
     util::Time,
@@ -127,13 +127,13 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
     } else {
         Log::diag("No Passthrough !!")
     }
-    let virtual_kbd_enabled = BackendOpenXR::ext_enabled("XR_META_virtual_keyboard");
-    if virtual_kbd_enabled {
-        sk.push_action(StepperAction::add_default::<VirtualKbdMETA>("VirtualKbdMETA"));
-        Log::diag("XR_META_virtual_keyboard Ready !!")
-    } else {
-        Log::diag("No XR_META_virtual_keyboard !!")
-    }
+    // let virtual_kbd_enabled = BackendOpenXR::ext_enabled("XR_META_virtual_keyboard");
+    // if virtual_kbd_enabled {
+    //     sk.push_action(StepperAction::add_default::<VirtualKbdMETA>("VirtualKbdMETA"));
+    //     Log::diag("XR_META_virtual_keyboard Ready !!")
+    // } else {
+    //     Log::diag("No XR_META_virtual_keyboard !!")
+    // }
     let refresh_rate_editable = BackendOpenXR::ext_enabled("XR_FB_display_refresh_rate");
     let next_refresh_rate_image = Sprite::arrow_right();
     let refresh_rates = [60.0, 72.0, 90.0, 120.0];

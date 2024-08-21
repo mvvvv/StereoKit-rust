@@ -23,15 +23,18 @@ fn android_main(app: AndroidApp) {
 
     let mut settings = SkSettings::default();
     settings
-        .app_name("stereokit-rust")
+        .app_name("rust Demos")
         .assets_folder("assets")
         .origin(OriginMode::Floor)
         .render_multisample(4)
         .render_scaling(2.0)
         .depth_mode(DepthMode::Stencil)
+        .omit_empty_frames(true)
         .log_filter(LogLevel::Diagnostic);
 
-    android_logger::init_once(android_logger::Config::default().with_max_level(log::LevelFilter::Debug));
+    android_logger::init_once(
+        android_logger::Config::default().with_max_level(log::LevelFilter::Debug).with_tag("STKit-rs"),
+    );
 
     BackendOpenXR::request_ext("XR_FB_display_refresh_rate");
     BackendOpenXR::request_ext("XR_FB_passthrough");
@@ -48,7 +51,7 @@ fn main() {
 
     let mut settings = SkSettings::default();
     settings
-        .app_name("stereokit-rust")
+        .app_name("rust Demos")
         .assets_folder("assets")
         .origin(OriginMode::Stage)
         .log_filter(LogLevel::Diagnostic)

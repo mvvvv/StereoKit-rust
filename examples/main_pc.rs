@@ -89,7 +89,7 @@ fn main() {
     }
     let mut settings = SkSettings::default();
     settings
-        .app_name("stereokit-rust")
+        .app_name("rust Demos")
         .assets_folder("assets")
         .origin(OriginMode::Floor)
         .log_filter(LogLevel::Diagnostic)

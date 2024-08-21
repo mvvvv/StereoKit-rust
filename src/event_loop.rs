@@ -1,5 +1,5 @@
 use crate::{
-    sk::{sk_step, MainThreadToken, Sk, SkInfo},
+    sk::{sk_step, AppFocus, MainThreadToken, Sk, SkInfo},
     system::{Input, Log},
 };
 use std::{
@@ -20,6 +20,13 @@ use winit::{
 
 type Type<'a> = Box<dyn FnMut(&mut Sk, &MainThreadToken) + 'a>;
 
+#[derive(PartialEq)]
+enum SleepPhase {
+    Sleeping,
+    WakingUp,
+    WokeUp,
+}
+
 /// What winit v0.30 want is : run_app()
 ///
 pub struct SkClosures<'a> {
@@ -28,6 +35,7 @@ pub struct SkClosures<'a> {
     on_step: Type<'a>,
     shutdown: Box<dyn FnMut(&mut Sk) + 'a>,
     window_id: Option<WindowId>,
+    sleeping: SleepPhase,
 }
 
 impl ApplicationHandler<StepperAction> for SkClosures<'_> {
@@ -47,7 +55,10 @@ impl ApplicationHandler<StepperAction> for SkClosures<'_> {
         }
 
         match event {
-            WindowEvent::RedrawRequested => {}
+            WindowEvent::RedrawRequested => {
+                Log::diag("Time to wake up");
+                self.sleeping = SleepPhase::WakingUp;
+            }
             WindowEvent::Focused(_value) => {
                 self.window_id = Some(window_id);
             }
@@ -56,21 +67,14 @@ impl ApplicationHandler<StepperAction> for SkClosures<'_> {
                 (self.shutdown)(&mut self.sk);
                 event_loop.exit();
             }
-            WindowEvent::KeyboardInput { device_id: _, event, is_synthetic: _ } => {
-                match &event.state {
-                    winit::event::ElementState::Pressed => {}
-                    winit::event::ElementState::Released => {
-                        Input::text_inject_chars(event.logical_key.to_text().unwrap_or("?"));
-                    }
+            WindowEvent::KeyboardInput { device_id: _, event, is_synthetic: _ } => match &event.state {
+                winit::event::ElementState::Pressed => {}
+                winit::event::ElementState::Released => {
+                    Input::text_inject_chars(event.logical_key.to_text().unwrap_or("?"));
                 }
-                // commented due to indiscretion
-                //Log::diag(format!("SkClosure WindowEvent {:?} -> {:?}", window_id, event));
-                return;
-            }
+            },
             _ => (),
         }
-
-        Log::diag(format!("SkClosure WindowEvent {:?} -> {:?}", window_id, event));
     }
 
     // commented due to indiscretion
@@ -79,19 +83,26 @@ impl ApplicationHandler<StepperAction> for SkClosures<'_> {
     // }
 
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
-        if unsafe { sk_step(None) } == 0 {
-            self.window_event(event_loop, self.window_id.unwrap_or(WindowId::dummy()), WindowEvent::CloseRequested);
-            return;
+        if self.sk.get_app_focus() == AppFocus::Hidden && self.sleeping == SleepPhase::WokeUp {
+            self.sleeping = SleepPhase::Sleeping;
+            Log::diag("Time to sleep")
         }
-        if !self.sk.steppers.step(&mut self.token) {
-            self.sk.quit(None)
-        };
+        if self.sleeping != SleepPhase::Sleeping {
+            self.sleeping = SleepPhase::WokeUp;
+            if unsafe { sk_step(None) } == 0 {
+                self.window_event(event_loop, self.window_id.unwrap_or(WindowId::dummy()), WindowEvent::CloseRequested);
+                return;
+            }
+            if !self.sk.steppers.step(&mut self.token) {
+                self.sk.quit(None)
+            };
 
-        while let Some(mut action) = self.sk.actions.pop_front() {
-            action();
+            while let Some(mut action) = self.sk.actions.pop_front() {
+                action();
+            }
+
+            (self.on_step)(&mut self.sk, &self.token);
         }
-
-        (self.on_step)(&mut self.sk, &self.token);
     }
 
     // commented because it floods the log
@@ -128,6 +139,7 @@ impl<'a> SkClosures<'a> {
                 event_report: vec![],
             },
             window_id: None,
+            sleeping: SleepPhase::WokeUp,
         };
         event_loop.set_control_flow(ControlFlow::Poll);
         let _ = event_loop.run_app(&mut this);
