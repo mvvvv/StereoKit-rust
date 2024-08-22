@@ -8,6 +8,8 @@ use std::{
     collections::VecDeque,
     fmt,
     rc::Rc,
+    thread::sleep,
+    time::Duration,
 };
 pub use winit;
 
@@ -18,7 +20,7 @@ use winit::{
     window::WindowId,
 };
 
-type Type<'a> = Box<dyn FnMut(&mut Sk, &MainThreadToken) + 'a>;
+type OnStepClosure<'a> = Box<dyn FnMut(&mut Sk, &MainThreadToken) + 'a>;
 
 #[derive(PartialEq)]
 enum SleepPhase {
@@ -32,7 +34,8 @@ enum SleepPhase {
 pub struct SkClosures<'a> {
     sk: Sk,
     token: MainThreadToken,
-    on_step: Type<'a>,
+    on_step: OnStepClosure<'a>,
+    on_sleeping_step: OnStepClosure<'a>,
     shutdown: Box<dyn FnMut(&mut Sk) + 'a>,
     window_id: Option<WindowId>,
     sleeping: SleepPhase,
@@ -56,11 +59,15 @@ impl ApplicationHandler<StepperAction> for SkClosures<'_> {
 
         match event {
             WindowEvent::RedrawRequested => {
-                Log::diag("Time to wake up");
+                Log::diag("RedrawRequested: Time to wake up");
                 self.sleeping = SleepPhase::WakingUp;
             }
-            WindowEvent::Focused(_value) => {
+            WindowEvent::Focused(value) => {
                 self.window_id = Some(window_id);
+                if value {
+                    Log::diag("GainedFocus: Time to wake up");
+                    self.sleeping = SleepPhase::WakingUp;
+                }
             }
             WindowEvent::CloseRequested => {
                 Log::info("SkClosure LoopExiting !!");
@@ -87,21 +94,21 @@ impl ApplicationHandler<StepperAction> for SkClosures<'_> {
             self.sleeping = SleepPhase::Sleeping;
             Log::diag("Time to sleep")
         }
-        if self.sleeping != SleepPhase::Sleeping {
-            self.sleeping = SleepPhase::WokeUp;
-            if unsafe { sk_step(None) } == 0 {
-                self.window_event(event_loop, self.window_id.unwrap_or(WindowId::dummy()), WindowEvent::CloseRequested);
-                return;
+        match self.sleeping {
+            SleepPhase::WokeUp => {
+                self.step(event_loop);
             }
-            if !self.sk.steppers.step(&mut self.token) {
-                self.sk.quit(None)
-            };
-
-            while let Some(mut action) = self.sk.actions.pop_front() {
-                action();
+            SleepPhase::WakingUp => {
+                self.step(event_loop);
+                if self.sk.get_app_focus() != AppFocus::Hidden {
+                    self.sleeping = SleepPhase::WokeUp;
+                    Log::diag("WokeUp");
+                }
             }
-
-            (self.on_step)(&mut self.sk, &self.token);
+            SleepPhase::Sleeping => {
+                sleep(Duration::from_millis(200));
+                (self.on_sleeping_step)(&mut self.sk, &self.token);
+            }
         }
     }
 
@@ -124,6 +131,21 @@ impl ApplicationHandler<StepperAction> for SkClosures<'_> {
 }
 
 impl<'a> SkClosures<'a> {
+    fn step(&mut self, event_loop: &ActiveEventLoop) {
+        if unsafe { sk_step(None) } == 0 {
+            self.window_event(event_loop, self.window_id.unwrap_or(WindowId::dummy()), WindowEvent::CloseRequested);
+        }
+        if !self.sk.steppers.step(&mut self.token) {
+            self.sk.quit(None)
+        };
+        while let Some(mut action) = self.sk.actions.pop_front() {
+            action();
+        }
+        (self.on_step)(&mut self.sk, &self.token);
+    }
+
+    /// Common way to run the loop with step and shutdown
+    /// If you need a process when the headset is going to sleep use new(..).on_hidden_step().run()
     pub fn run_app<U: FnMut(&mut Sk, &MainThreadToken) + 'a, S: FnMut(&mut Sk) + 'a>(
         sk: Sk,
         event_loop: EventLoop<StepperAction>,
@@ -133,16 +155,51 @@ impl<'a> SkClosures<'a> {
         let mut this = Self {
             sk,
             on_step: Box::new(step),
+            on_sleeping_step: Box::new(|_sk, _main_thread| {}),
             shutdown: Box::new(shutdown),
             token: MainThreadToken {
                 #[cfg(feature = "event-loop")]
                 event_report: vec![],
             },
             window_id: None,
-            sleeping: SleepPhase::WokeUp,
+            sleeping: SleepPhase::WakingUp,
         };
         event_loop.set_control_flow(ControlFlow::Poll);
-        let _ = event_loop.run_app(&mut this);
+        if let Err(err) = event_loop.run_app(&mut this) {
+            Log::err(format!("event_loop.run_app returned with an error : {:?}", err));
+        }
+    }
+
+    pub fn new<U: FnMut(&mut Sk, &MainThreadToken) + 'a>(sk: Sk, step: U) -> Self {
+        Self {
+            sk,
+            on_step: Box::new(step),
+            on_sleeping_step: Box::new(|_sk, _main_thread| {}),
+            shutdown: Box::new(|_sk| {}),
+            token: MainThreadToken {
+                #[cfg(feature = "event-loop")]
+                event_report: vec![],
+            },
+            window_id: None,
+            sleeping: SleepPhase::WakingUp,
+        }
+    }
+
+    pub fn on_sleeping_step<U: FnMut(&mut Sk, &MainThreadToken) + 'a>(&mut self, on_sleeping_step: U) -> &mut Self {
+        self.on_sleeping_step = Box::new(on_sleeping_step);
+        self
+    }
+
+    pub fn shutdown<S: FnMut(&mut Sk) + 'a>(&mut self, shutdown: S) -> &mut Self {
+        self.shutdown = Box::new(shutdown);
+        self
+    }
+
+    pub fn run(&mut self, event_loop: EventLoop<StepperAction>) {
+        event_loop.set_control_flow(ControlFlow::Poll);
+        if let Err(err) = event_loop.run_app(self) {
+            Log::err(format!("event_loop.run_app returned with an error : {:?}", err));
+        }
     }
 }
 

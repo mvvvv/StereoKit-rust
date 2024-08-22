@@ -623,7 +623,7 @@ impl Sk {
                 PollEvent::Main(main_event) => {
                     Log::diag(format!("MainEvent {:?} ", main_event));
                     match main_event {
-                        MainEvent::RedrawNeeded { .. } => {
+                        MainEvent::GainedFocus { .. } => {
                             ready_to_go = true;
                         }
                         _ => {
@@ -843,7 +843,7 @@ impl Sk {
                 PollEvent::Main(main_event) => {
                     Log::diag(format!("MainEvent {:?} ", main_event));
                     match main_event {
-                        MainEvent::RedrawNeeded { .. } => {
+                        MainEvent::GainedFocus { .. } => {
                             ready_to_go = true;
                         }
                         _ => {

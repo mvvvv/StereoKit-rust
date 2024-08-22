@@ -102,7 +102,7 @@ pub enum UiColorState {
 }
 
 /// Used with StereoKit’s UI, and determines the interaction confirmation behavior for certain elements, such as the
-/// Ui::h_slider!
+/// Ui::hslider!
 /// <https://stereokit.net/Pages/StereoKit/UIConfirm.html>
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u32)]
@@ -224,6 +224,17 @@ pub enum UiVisual {
     Aura = 19,
     /// A maximum enum value to allow for iterating through enum values.
     Max = 20,
+}
+
+/// For UI elements that can be oriented horizontally or vertically, this specifies that orientation.
+/// <https://stereokit.net/Pages/StereoKit/UIDir.html>
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u32)]
+pub enum UiDir {
+    /// The element should be layed out along the horizontal axis.
+    Horizontal,
+    /// The element should be layed out along the vertical axis.
+    Vertical,
 }
 
 bitflags::bitflags! {
@@ -814,8 +825,15 @@ extern "C" {
     pub fn ui_image(image: SpriteT, size: Vec2);
     pub fn ui_model(model: ModelT, ui_size: Vec2, model_scale: f32);
     pub fn ui_model_at(model: ModelT, start: Vec3, size: Vec3, color: Color128);
-    pub fn ui_progress_bar(percent: f32, width: f32);
-    pub fn ui_progress_bar_at(percent: f32, window_relative_pos: Vec3, size: Vec2);
+    pub fn ui_hprogress_bar(percent: f32, width: f32, flip_fil_dir: Bool32T);
+    pub fn ui_vprogress_bar(percent: f32, height: f32, flip_fil_dir: Bool32T);
+    pub fn ui_progress_bar_at(
+        percent: f32,
+        window_relative_pos: Vec3,
+        size: Vec2,
+        bar_direction: UiDir,
+        flip_fil_dir: Bool32T,
+    );
     pub fn ui_hseparator();
     // Deprecated : pub fn ui_space(space: f32);
     pub fn ui_hspace(horizontal_space: f32);
@@ -1600,22 +1618,63 @@ impl Ui {
         unsafe { ui_popup_pose(shift.into()) }
     }
 
-    /// This is a simple horizontal progress indicator bar. This is used by the HSlider to draw the slider bar beneath
+    /// This is a simple horizontal progress indicator bar. This is used by the hslider to draw the slider bar beneath
     /// the interactive element. Does not include any text or label.
     /// <https://stereokit.net/Pages/StereoKit/UI/ProgressBar.html>
     ///
-    /// see also [`crate::ui::ui_progress_bar`]
+    /// see also [`crate::ui::ui_hprogress_bar`]
+    #[deprecated(since = "0.0.1", note = "Use HProgressBar instead")]
     pub fn progress_bar(percent: f32, width: f32) {
-        unsafe { ui_progress_bar(percent, width) }
+        unsafe { ui_hprogress_bar(percent, width, 0) }
     }
 
-    /// This is a simple horizontal progress indicator bar. This is used by the HSlider to draw the slider bar beneath
+    /// This is a simple horizontal progress indicator bar. This is used by the hslider to draw the slider bar beneath
+    /// the interactive element. Does not include any text or label.
+    /// <https://stereokit.net/Pages/StereoKit/UI/HProgressBar.html>
+    /// * percent - A value between 0 and 1 indicating progress from 0% to 100%.
+    /// * width - Physical width of the slider on the window. 0 will fill the remaining amount of window space.
+    /// * flip_fill_direction - By default, this fills from left to right. This allows you to flip the fill direction to
+    ///   right to left.
+    ///
+    /// see also [`crate::ui::ui_hprogress_bar`]
+    pub fn hprogress_bar(percent: f32, width: f32, flip_fill_direction: bool) {
+        unsafe { ui_hprogress_bar(percent, width, flip_fill_direction as Bool32T) }
+    }
+
+    /// This is a simple vertical progress indicator bar. This is used by the vslider to draw the slider bar beneath
+    /// the interactive element. Does not include any text or label.
+    /// <https://stereokit.net/Pages/StereoKit/UI/VProgressBar.html>
+    /// * percent - A value between 0 and 1 indicating progress from 0% to 100%.
+    /// * width - Physical width of the slider on the window. 0 will fill the remaining amount of window space.
+    /// * flip_fill_direction - By default, this fills from top to bottom. This allows you to flip the fill direction to
+    ///   bottom to top.
+    ///
+    /// see also [`crate::ui::ui_vprogress_bar`]
+    pub fn vprogress_bar(percent: f32, height: f32, flip_fill_direction: bool) {
+        unsafe { ui_vprogress_bar(percent, height, flip_fill_direction as Bool32T) }
+    }
+
+    /// This is a simple horizontal progress indicator bar. This is used by the hslider to draw the slider bar beneath
     /// the interactive element. Does not include any text or label.
     /// <https://stereokit.net/Pages/StereoKit/UI/ProgressBarAt.html>
     ///
     /// see also [`crate::ui::ui_progress_bar_at`]
-    pub fn progress_bar_at(percent: f32, top_left_corner: impl Into<Vec3>, size: impl Into<Vec2>) {
-        unsafe { ui_progress_bar_at(percent, top_left_corner.into(), size.into()) }
+    pub fn progress_bar_at(
+        percent: f32,
+        top_left_corner: impl Into<Vec3>,
+        size: impl Into<Vec2>,
+        bar_direction: UiDir,
+        flip_fill_direction: bool,
+    ) {
+        unsafe {
+            ui_progress_bar_at(
+                percent,
+                top_left_corner.into(),
+                size.into(),
+                bar_direction,
+                flip_fill_direction as Bool32T,
+            )
+        }
     }
 
     /// All UI between push_enabled and its matching pop_enabled will set the UI to an enabled or disabled state,

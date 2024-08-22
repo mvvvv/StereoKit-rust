@@ -4,12 +4,13 @@ use stereokit_rust::{
     event_loop::{IStepper, StepperId},
     font::Font,
     material::{Cull, Material},
-    maths::{Matrix, Quat, Vec2, Vec3, Vec4},
+    maths::{Matrix, Pose, Quat, Vec2, Vec3, Vec4},
     mesh::{Mesh, Vertex},
     shader::Shader,
     sk::{MainThreadToken, SkInfo},
     system::{Text, TextStyle},
     tex::Tex,
+    ui::{Ui, UiMove, UiWin},
     util::{
         named_colors::{BLUE, GREEN, LIGHT_BLUE, RED, WHITE},
         Time,
@@ -21,6 +22,7 @@ pub struct Shader1 {
     sk_info: Option<Rc<RefCell<SkInfo>>>,
     pub transform_mesh: Matrix,
     pub transform_plane: Matrix,
+    pub pose_progress: Pose,
     material_red: Material,
     material_green: Material,
     water2: Material,
@@ -76,8 +78,8 @@ impl Default for Shader1 {
             &(Vec3::ONE * 0.3),
         );
 
-        let transform_plane =
-            Matrix::tr(&((Vec3::NEG_Z * 1.0) + Vec3::X * 0.2 + Vec3::Y * 1.2), &Quat::from_angles(90.0, 0.0, 0.0));
+        let transform_plane = Matrix::tr(&(Vec3::new(0.2, 1.2, -1.0)), &Quat::from_angles(90.0, 0.0, 0.0));
+        let pose_progress = Pose::new(Vec3::new(0.1, 1.5, -1.0), Some(Quat::from_angles(0.0, 180.0, 0.0)));
 
         let transform_water2 =
             Matrix::tr(&((Vec3::NEG_Z * 1.0) + Vec3::X * 0.2 + Vec3::Y * 0.2), &Quat::from_angles(0.0, 180.0, 0.0));
@@ -103,6 +105,7 @@ impl Default for Shader1 {
             sk_info: None,
             transform_mesh,
             transform_plane,
+            pose_progress,
             transform_water2,
             material_red: blinker_material,
             material_green,
@@ -142,6 +145,17 @@ impl Shader1 {
             .set_float("time", total_scale);
         self.plane.draw(token, &self.material_green, self.transform_plane, None, None);
 
+        Ui::window_begin(
+            "progress",
+            &mut self.pose_progress,
+            Some(Vec2::new(0.41, 0.1)),
+            Some(UiWin::Empty),
+            Some(UiMove::None),
+        );
+        //Ui::progress_bar_at(total_scale / 2.0, Vec3::new(0.0, 0.0, 0.0), Vec2::new(0.4, 0.1), UiDir::Horizontal, false);
+        Ui::hprogress_bar(total_scale / 2.0, 0.54, false);
+        Ui::vprogress_bar(total_scale / 2.0, 0.50, false);
+        Ui::window_end();
         self.mesh.draw(token, &self.water2, self.transform_water2, None, None);
 
         self.fps = ((1.0 / Time::get_step()) + self.fps) / 2.0;
