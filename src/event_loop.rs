@@ -261,11 +261,11 @@ pub enum StepperAction {
 impl fmt::Debug for StepperAction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            StepperAction::Add(_stepper, id, stepper_id) => {
-                write!(f, "StepperAction::Add(..., id:{:?}, type_id:{:?}", id, stepper_id)
+            StepperAction::Add(_stepper, _id, stepper_id) => {
+                write!(f, "StepperAction::Add(..., type_id: ... , stepper_id:{:?} )", stepper_id)
             }
-            StepperAction::RemoveAll(type_id) => write!(f, "StepperAction::RemoveAll( type_id:{:?}", type_id),
-            StepperAction::Remove(stepper_id) => write!(f, "StepperAction::Remove( id:{:?}", stepper_id),
+            StepperAction::RemoveAll(type_id) => write!(f, "StepperAction::RemoveAll( type_id:{:?} )", type_id),
+            StepperAction::Remove(stepper_id) => write!(f, "StepperAction::Remove( id:{:?} )", stepper_id),
             StepperAction::Quit(stepper_id, reason) => {
                 write!(f, "StepperAction::Quit() sent by id:{:?} for reason '{}'", stepper_id, reason)
             }

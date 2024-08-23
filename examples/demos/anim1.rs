@@ -129,4 +129,11 @@ impl IStepper for Anim1 {
             ))
         }
     }
+
+    fn shutdown(&mut self) {
+        let rc_sk = self.sk_info.as_ref().unwrap();
+        let sk = rc_sk.as_ref();
+        let event_loop_proxy = sk.borrow().get_event_loop_proxy().unwrap();
+        let _ = event_loop_proxy.send_event(StepperAction::remove("HudNotifAnim1"));
+    }
 }
