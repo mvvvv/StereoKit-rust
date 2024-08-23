@@ -270,7 +270,7 @@ impl fmt::Debug for StepperAction {
                 write!(f, "StepperAction::Quit() sent by id:{:?} for reason '{}'", stepper_id, reason)
             }
             StepperAction::Event(stepper_id, key, value) => {
-                write!(f, "StepperAction::Event( id:{:?} => {}->{}", stepper_id, key, value)
+                write!(f, "StepperAction::Event( id:{:?} => {}->{} )", stepper_id, key, value)
             }
             StepperAction::Suspended => write!(f, "StepperAction::Suspended"),
             StepperAction::Resumed => write!(f, "StepperAction::Resumed"),

@@ -3,6 +3,9 @@
         "./stereokit-macros/Cargo.toml"
     ],
     "rust-analyzer.cargo.features": [
+    
         "event-loop"
-    ]
+    ],
+    "!!!rust-analyzer.cargo.target": "aarch64-linux-android",
+    "!!!rust-analyzer.cargo.buildScripts.enable": false,
 }
