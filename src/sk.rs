@@ -1,5 +1,8 @@
 use crate::{maths::Bool32T, system::LogLevel};
 use crate::{system::Log, StereoKitError};
+#[cfg(target_os = "android")]
+#[cfg(feature = "no-event-loop")]
+use android_activity::{AndroidApp, MainEvent, PollEvent};
 use std::{
     cell::RefCell,
     ffi::{c_char, c_void, CStr, CString},
@@ -10,11 +13,10 @@ use std::{
 };
 #[cfg(target_os = "android")]
 #[cfg(feature = "event-loop")]
-use winit::platform::android::activity::AndroidApp;
-
-#[cfg(target_os = "android")]
-#[cfg(feature = "no-event-loop")]
-use android_activity::AndroidApp;
+use winit::platform::android::{
+    activity::{AndroidApp, MainEvent, PollEvent},
+    EventLoopBuilderExtAndroid,
+};
 
 #[cfg(feature = "event-loop")]
 use crate::event_loop::{StepperAction, Steppers};
@@ -605,18 +607,14 @@ pub struct Sk {
     #[cfg(feature = "event-loop")]
     pub(crate) actions: VecDeque<Box<dyn FnMut()>>,
 }
-impl Drop for Sk {
-    fn drop(&mut self) {
-        #[cfg(feature = "event-loop")]
-        self.steppers.shutdown();
-        //unsafe { sk_shutdown() }
-    }
-}
+
 impl Sk {
-    #[cfg(feature = "no-event-loop")]
+    /// OpenXR won't leave IDLE state if we do not purge the first events :
+    /// PostSessionStateChange: XR_SESSION_STATE_IDLE -> XR_SESSION_STATE_READY
+    ///
+    /// This must be done in the main thread
     #[cfg(target_os = "android")]
-    pub fn init(settings: &mut SkSettings, app: AndroidApp) -> Result<Sk, StereoKitError> {
-        use android_activity::{MainEvent, PollEvent};
+    pub fn poll_first_events(app: &AndroidApp) {
         let mut ready_to_go = false;
         while !ready_to_go {
             app.poll_events(None, |event| match event {
@@ -634,7 +632,13 @@ impl Sk {
                 otherwise => Log::diag(format!("PollEvent {:?} ", otherwise)),
             })
         }
+    }
 
+    /// This should be done in a secondary thread after Sk::poll_first_event(...) has been called in the main thread
+    #[cfg(feature = "no-event-loop")]
+    #[cfg(target_os = "android")]
+    pub fn init(settings: &mut SkSettings, app: AndroidApp) -> Result<Sk, StereoKitError> {
+        // this must be done in the main thread : Sk::poll_first_events(&app);
         let (vm_pointer, jobject_pointer) = {
             {
                 let context = ndk_context::android_context();
@@ -833,27 +837,8 @@ impl Sk {
         settings: &mut SkSettings,
         app: AndroidApp,
     ) -> Result<(Sk, EventLoop<StepperAction>), StereoKitError> {
-        use winit::platform::android::activity::{MainEvent, PollEvent};
-        use winit::platform::android::EventLoopBuilderExtAndroid;
-        // OpenXR won't leave IDLE state if we do not purge the first events :
-        // PostSessionStateChange: XR_SESSION_STATE_IDLE -> XR_SESSION_STATE_READY
-        let mut ready_to_go = false;
-        while !ready_to_go {
-            app.poll_events(None, |event| match event {
-                PollEvent::Main(main_event) => {
-                    Log::diag(format!("MainEvent {:?} ", main_event));
-                    match main_event {
-                        MainEvent::GainedFocus { .. } => {
-                            ready_to_go = true;
-                        }
-                        _ => {
-                            ready_to_go = false;
-                        }
-                    }
-                }
-                otherwise => Log::diag(format!("PollEvent {:?} ", otherwise)),
-            })
-        }
+        Sk::poll_first_events(&app);
+
         let event_loop = EventLoop::<StepperAction>::with_user_event().with_android_app(app.clone()).build()?;
         let event_loop_proxy = event_loop.create_proxy();
 
