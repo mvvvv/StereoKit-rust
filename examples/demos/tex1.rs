@@ -377,7 +377,7 @@ impl IStepper for Tex1 {
                     if let Some((w, h, size)) = tex_i.get_data_infos(mip) {
                         let color32_buff = vec![self.base_color; size];
                         Log::info(format!("--Tex in mip {} -> {}x{} = {}", mip, w, h, color32_buff.len()));
-                        if tex_i.get_color_data(color32_buff.as_slice(), mip).is_some() {
+                        if tex_i.get_color_data(color32_buff.as_slice(), mip) {
                             self.tex_color_32b.set_colors32(w, h, &color32_buff[..]);
                             Log::info(format!("--Tex out mips number {:?}", self.tex_color_32b.get_mips()));
                         }
@@ -389,7 +389,7 @@ impl IStepper for Tex1 {
                     if let Some((w, h, size)) = tex_i.get_data_infos(mip) {
                         let color128_buff = vec![self.base_color128; size];
                         Log::info(format!("--Tex in mip {} -> {}x{} = {}", mip, w, h, color128_buff.len()));
-                        if tex_i.get_color_data(color128_buff.as_slice(), mip).is_some() {
+                        if tex_i.get_color_data(color128_buff.as_slice(), mip) {
                             self.tex_vide.set_colors128(w, h, &color128_buff[..]);
                             Log::info(format!("--Tex out mips number {:?}", self.tex_vide.get_mips()));
                         }
@@ -401,7 +401,7 @@ impl IStepper for Tex1 {
                     if let Some((w, h, size)) = tex_i.get_data_infos(mip) {
                         let color_r8_buff: Vec<u8> = vec![60; size];
                         Log::info(format!("--Tex in mip {} -> {}x{} = {}", mip, w, h, color_r8_buff.len()));
-                        if tex_i.get_color_data(color_r8_buff.as_slice(), mip).is_some() {
+                        if tex_i.get_color_data(color_r8_buff.as_slice(), mip) {
                             self.tex_vide2.set_colors_r8(w, h, &color_r8_buff[..]);
                             Log::info(format!("--Tex out mips number {:?}", self.tex_vide2.get_mips()));
                         }
@@ -413,7 +413,7 @@ impl IStepper for Tex1 {
                     if let Some((w, h, size)) = tex_i.get_data_infos(mip) {
                         let color_r16_buff: Vec<u16> = vec![60; size];
                         Log::info(format!("--Tex in mip {} -> {}x{} = {}", mip, w, h, color_r16_buff.len()));
-                        if tex_i.get_color_data(color_r16_buff.as_slice(), mip).is_some() {
+                        if tex_i.get_color_data(color_r16_buff.as_slice(), mip) {
                             self.tex_vide3.set_colors_r16(w, h, &color_r16_buff[..]);
                             Log::info(format!("--Tex out mips number {:?}", self.tex_vide3.get_mips()));
                         }
@@ -425,7 +425,7 @@ impl IStepper for Tex1 {
                     if let Some((w, h, size)) = tex_i.get_data_infos(mip) {
                         let color_r32_buff: Vec<f32> = vec![0.5; size];
                         Log::info(format!("--Tex in mip {} -> {}x{} = {}", mip, w, h, color_r32_buff.len()));
-                        if tex_i.get_color_data(color_r32_buff.as_slice(), mip).is_some() {
+                        if tex_i.get_color_data(color_r32_buff.as_slice(), mip) {
                             self.tex_vide4.set_colors_r32(w, h, &color_r32_buff[..]);
                             Log::info(format!("--Tex out mips number {:?}", self.tex_vide4.get_mips()));
                         }

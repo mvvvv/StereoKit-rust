@@ -19,7 +19,7 @@ use stereokit_rust::{
         notif::HudNotification,
         os_api::{get_display_refresh_rate, set_display_refresh_rate},
         passthrough_fb_ext::{PassthroughFbExt, PASSTHROUGH_FLIP},
-        screenshoot::ScreenshotViewer,
+        screenshot::ScreenshotViewer,
         //virtual_kbd_meta::VirtualKbdMETA,
     },
     ui::{Ui, UiBtnLayout},

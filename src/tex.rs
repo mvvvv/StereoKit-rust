@@ -746,6 +746,37 @@ impl Tex {
         self
     }
 
+    /// Non canonical function !!
+    /// Set the texture’s pixels using an u8 array !  This function should only be called for all textures format
+    /// with a format of R8. You can call this as many times as you’d like, even with different widths and heights.
+    /// Calling this multiple times will mark it as dynamic on the graphics card. Calling this function can also result
+    /// in building mip-maps, which has a non-zero cost: use TexType.ImageNomips when creating the Tex to avoid this.
+    /// <https://stereokit.net/Pages/StereoKit/Tex/SetColors.html>
+    /// * color_size - number of byte for a pixel used by the format of this texture
+    ///
+    /// Warning, instead of [Tex::set_colors], this call may not be done if the asset is not loaded
+    /// (see [Tex::get_asset_state]) or the size is
+    /// inconsistent or the format is incompatible.
+    ///
+    /// see also [`crate::tex::tex_set_colors`]
+    pub fn set_colors_u8(&mut self, width: usize, height: usize, data: &[u8], color_size: usize) -> &mut Self {
+        if width * height * color_size != data.len() {
+            Log::err(format!(
+                "{}x{}x{} differ from {} for Tex::set_color_u8 for texture {}",
+                height,
+                width,
+                color_size,
+                data.len(),
+                self.get_id()
+            ));
+            return self;
+        }
+        unsafe {
+            tex_set_colors(self.0.as_ptr(), width as i32, height as i32, data.as_ptr() as *mut std::os::raw::c_void)
+        };
+        self
+    }
+
     /// Set the texture’s pixels using a scalar array for channel R ! This function should only be called on textures
     /// with a format of R16. You can call this as many times as you’d like, even with different widths and heights.
     /// Calling this multiple times will mark it as dynamic on the graphics card. Calling this function can also result
@@ -1044,11 +1075,11 @@ impl Tex {
     /// The function [`Tex::get_data_infos`] may help you to shape the right receiver.
     ///
     /// see also [`crate::tex::tex_get_data`][`crate::tex::tex_get_data_mip`]
-    pub fn get_color_data<T>(&self, color_data: &[T], mut mip_level: i8) -> Option<bool> {
+    pub fn get_color_data<T>(&self, color_data: &[T], mut mip_level: i8) -> bool {
         let size_of_color = std::mem::size_of_val(color_data);
         let (width, height, size_test) = match self.get_data_infos(mip_level) {
             Some(value) => value,
-            None => return None,
+            None => return false,
         };
         if size_test * size_of::<T>() != size_of_color {
             Log::err(format!(
@@ -1058,9 +1089,9 @@ impl Tex {
                 width,
                 mip_level,
                 size_of_color,
-                size_test,
+                size_test * size_of::<T>(),
             ));
-            return None;
+            return false;
         }
 
         if mip_level < 0 {
@@ -1075,7 +1106,53 @@ impl Tex {
             )
         };
 
-        Some(true)
+        true
+    }
+
+    /// Non canonical function!
+    /// Retrieve the color data of the texture from the GPU. This can be a very slow operation,
+    /// so use it cautiously. The out_data pointer must correspond to an u8 array with the correct size.
+    /// <https://stereokit.net/Pages/StereoKit/Tex/GetColorData.html>
+    /// * color_size: number of bytes of the color (Color32: 4, Color128: 16 ...)
+    /// * mip_level - Retrieves the color data for a specific mip-mapping level. This function will log a fail and
+    ///   return a black array if an invalid mip-level is provided.
+    ///
+    /// The function [`Tex::get_data_infos`] may help you to shape the right receiver.
+    ///
+    /// see also [`crate::tex::tex_get_data`][`crate::tex::tex_get_data_mip`]
+    pub fn get_u8_color_data(&self, color_data: &[u8], color_size: usize, mut mip_level: i8) -> bool {
+        let size_of_color = std::mem::size_of_val(color_data);
+        let (width, height, size_test) = match self.get_data_infos(mip_level) {
+            Some(value) => value,
+            None => return false,
+        };
+
+        if size_test * color_size != size_of_color {
+            Log::err(format!(
+                "Size of the Tex {} is {}x{}/mip={} when size of the given buffer is {} instead of {}. Function Tex::get_u8_color failed!",
+                self.get_id(),
+                height,
+                width,
+                mip_level,
+                size_of_color,
+                size_test * color_size,
+            ));
+            return false;
+        }
+
+        if mip_level < 0 {
+            mip_level = 0
+        }
+        unsafe {
+            tex_get_data(
+                self.0.as_ptr(),
+                color_data.as_ptr() as *mut std::os::raw::c_void,
+                size_of_color,
+                mip_level as i32,
+            )
+        };
+
+        true
     }
 
     /// When sampling a texture that’s stretched, or shrunk beyond its screen size, how do we handle figuring out which

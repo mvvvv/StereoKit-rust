@@ -10,7 +10,7 @@ use stereokit_rust::{
     sk::{MainThreadToken, SkInfo},
     system::Log,
     tex::{SHCubemap, Tex, TexSample},
-    tools::{log_window::SHOW_LOG_WINDOW, screenshoot::SHOW_SCREENSHOT_WINDOW},
+    tools::{log_window::SHOW_LOG_WINDOW, screenshot::SHOW_SCREENSHOT_WINDOW},
     util::{
         named_colors::{BLACK, BLUE, BURLY_WOOD, LIGHT_BLUE, LIGHT_CYAN, RED, SEA_GREEN, STEEL_BLUE, WHITE, YELLOW},
         Color128, Gradient, ShLight, SphericalHarmonics,
@@ -210,7 +210,7 @@ impl IStepper for HandMenuRadial1 {
         let hand_menu_stepper = HandMenuRadial::new(HandRadialLayer::new(
             "root",
             None,
-            Some(0.0),
+            Some(100.0),
             vec![
                 HandRadial::layer(
                     "\nSkydome",
@@ -262,7 +262,7 @@ impl IStepper for HandMenuRadial1 {
                     ],
                 ),
                 HandRadial::layer(
-                    "\nFloor",
+                    "Floor",
                     Some(menu_ico),
                     None,
                     vec![

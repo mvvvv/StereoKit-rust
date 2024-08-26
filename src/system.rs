@@ -1956,14 +1956,14 @@ impl Lines {
     pub fn add_ray<R: Into<Ray>>(
         _token: &MainThreadToken,
         ray: R,
-        lenght: f32,
+        length: f32,
         color_start: Color32,
         color_end: Option<Color32>,
         thickness: f32,
     ) {
         let color_end = color_end.unwrap_or(color_start);
         let ray: Ray = ray.into();
-        unsafe { line_add(ray.position, ray.get_at(lenght), color_start, color_end, thickness) }
+        unsafe { line_add(ray.position, ray.get_at(length), color_start, color_end, thickness) }
     }
 
     /// Adds a line from a list of line points to the environment. This does not close the path, so if you want it
