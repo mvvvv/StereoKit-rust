@@ -891,7 +891,9 @@ fn generate_slice_mesh(angle: f32, min_dist: f32, max_dist: f32, gap: f32, mesh:
         }
 
         mesh.set_verts(verts.as_slice(), true);
-        mesh.set_inds(inds.as_slice());
+        if i < icount - 1 {
+            mesh.set_inds(inds.as_slice());
+        }
     }
 }
 

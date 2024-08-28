@@ -3,7 +3,7 @@ use std::{cell::RefCell, rc::Rc};
 use stereokit_rust::{
     event_loop::{IStepper, StepperAction, StepperId},
     framework::{HandMenuAction, HandMenuRadial, HandRadial, HandRadialLayer},
-    material::{Cull, Material},
+    material::{Cull, Material, Transparency},
     maths::{Matrix, Quat, Vec2, Vec3, Vec4},
     mesh::Mesh,
     model::Model,
@@ -69,21 +69,24 @@ impl Default for HandMenuRadial1 {
         // old parquet
         let parquet_img = Tex::from_file("textures/parquet2/parquet2.ktx2", true, None).unwrap();
         let parquetao = Tex::from_file("textures/parquet2/parquet2ao.ktx2", true, None).unwrap();
-        //let parquetroughness = Tex::from_file("textures/parquet2/parquet2roughness.ktx2", true, None).unwrap();
+        let parquetroughness = Tex::from_file("textures/parquet2/parquet2roughness.ktx2", true, None).unwrap();
         let parquetmetal = Tex::from_file("textures/parquet2/parquet2metal.ktx2", true, None).unwrap();
         let bump_tex = Tex::from_file("textures/water/bump_large.ktx2", true, None).unwrap();
         let bump_tile_tex = Tex::from_file("textures/water/bump_large_tiles.ktx2", true, None).unwrap();
         let bump_inverse_tex = Tex::from_file("textures/water/bump_large_inverse.ktx2", true, None).unwrap();
-        let mut parquet = Material::pbr().copy();
+        //let mut parquet = Material::pbr().copy();
+        let mut parquet =
+            Material::from_file("shaders/large_tile_pbr.hlsl.sks", "parquet_pbr".into()).unwrap_or_default();
         parquet
             .diffuse_tex(&parquet_img)
             .color_tint(BURLY_WOOD)
             .occlusion_tex(&parquetao)
-            //.normal_tex(parquetroughness)
+            .normal_tex(parquetroughness)
             .metal_tex(parquetmetal)
             .tex_transform(Vec4::new(0.0, 0.0, 12.0, 12.0))
             .roughness_amount(0.7)
             .metallic_amount(0.5)
+            .transparency(Transparency::Blend)
             .face_cull(Cull::Back);
 
         // fresh water
@@ -95,6 +98,7 @@ impl Default for HandMenuRadial1 {
             .metallic_amount(0.6)
             .face_cull(Cull::Back)
             .color_tint(SEA_GREEN)
+            .transparency(Transparency::MSAA)
             .time(5.0);
 
         // fresh water2
@@ -107,6 +111,7 @@ impl Default for HandMenuRadial1 {
             .metallic_amount(0.6)
             .face_cull(Cull::Back)
             .color_tint(STEEL_BLUE)
+            .transparency(Transparency::Blend)
             .time(5.0);
 
         let floor_model = Model::from_mesh(
