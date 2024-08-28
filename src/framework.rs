@@ -889,12 +889,10 @@ fn generate_slice_mesh(angle: f32, min_dist: f32, max_dist: f32, gap: f32, mesh:
             inds.push((i + 1) * 2 + 1);
             inds.push(i * 2);
         }
-
-        mesh.set_verts(verts.as_slice(), true);
-        if i < icount - 1 {
-            mesh.set_inds(inds.as_slice());
-        }
     }
+
+    mesh.set_verts(verts.as_slice(), true);
+    mesh.set_inds(inds.as_slice());
 }
 
 fn generate_activation_button(radius: f32) -> Mesh {
