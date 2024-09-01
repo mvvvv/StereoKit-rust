@@ -320,7 +320,7 @@ impl StepperAction {
 }
 
 /// All you need to step a Stepper, then remove it
-struct StepperHandler {
+pub struct StepperHandler {
     id: StepperId,
     type_id: TypeId,
     stepper: Box<dyn IStepper>,
@@ -334,7 +334,7 @@ pub type StepperId = String;
 #[cfg(feature = "event-loop")]
 pub struct Steppers {
     sk: Rc<RefCell<SkInfo>>,
-    steppers: Vec<StepperHandler>,
+    stepper_handlers: Vec<StepperHandler>,
     stepper_actions: VecDeque<StepperAction>,
 }
 
@@ -342,7 +342,7 @@ pub struct Steppers {
 impl Steppers {
     // the only way to create a Steppers manager
     pub fn new(sk: Rc<RefCell<SkInfo>>) -> Self {
-        Self { sk, steppers: vec![], stepper_actions: VecDeque::new() }
+        Self { sk, stepper_handlers: vec![], stepper_actions: VecDeque::new() }
     }
 
     /// push an action to consumme befor next frame
@@ -358,29 +358,31 @@ impl Steppers {
                 StepperAction::Add(mut stepper, type_id, stepper_id) => {
                     if stepper.initialize(stepper_id.clone(), self.sk.clone()) {
                         let stepper_h = StepperHandler { id: stepper_id, type_id, stepper };
-                        self.steppers.push(stepper_h);
+                        self.stepper_handlers.push(stepper_h);
                     } else {
                         Log::warn(format!("Stepper {} did not initialize", stepper_id))
                     }
                 }
                 StepperAction::RemoveAll(stepper_type) => {
-                    for stepper_h in self.steppers.iter_mut().filter(|stepper_h| stepper_h.type_id == stepper_type) {
+                    for stepper_h in
+                        self.stepper_handlers.iter_mut().filter(|stepper_h| stepper_h.type_id == stepper_type)
+                    {
                         stepper_h.stepper.shutdown();
                     }
-                    self.steppers.retain(|stepper_h| stepper_h.type_id != stepper_type);
+                    self.stepper_handlers.retain(|stepper_h| stepper_h.type_id != stepper_type);
                 }
                 StepperAction::Remove(stepper_id) => {
-                    for stepper_h in self.steppers.iter_mut().filter(|stepper_h| stepper_h.id == stepper_id) {
+                    for stepper_h in self.stepper_handlers.iter_mut().filter(|stepper_h| stepper_h.id == stepper_id) {
                         stepper_h.stepper.shutdown()
                     }
-                    self.steppers.retain(|i| i.id != stepper_id);
+                    self.stepper_handlers.retain(|i| i.id != stepper_id);
                 }
                 StepperAction::Quit(_, _) => return false,
                 _ => token.event_report.push(action),
             }
         }
 
-        for stepper_h in &mut self.steppers {
+        for stepper_h in &mut self.stepper_handlers {
             stepper_h.stepper.step(token)
         }
 
@@ -389,12 +391,19 @@ impl Steppers {
         true
     }
 
+    /// An enumerable list of all currently active ISteppers registered with StereoKit. This does not include Steppers
+    /// that have been added, but are not yet initialized. Stepper initialization happens at the beginning of the frame,
+    /// before the app's Step.
+    pub fn get_stepper_handlers(&self) -> &[StepperHandler] {
+        self.stepper_handlers.as_slice()
+    }
+
     pub fn shutdown(&mut self) {
         self.stepper_actions.clear();
-        for stepper_h in self.steppers.iter_mut() {
+        for stepper_h in self.stepper_handlers.iter_mut() {
             stepper_h.stepper.shutdown()
         }
-        self.steppers.clear();
+        self.stepper_handlers.clear();
     }
 }
 

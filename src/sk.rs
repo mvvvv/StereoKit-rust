@@ -1,5 +1,8 @@
-use crate::{maths::Bool32T, system::LogLevel};
-use crate::{system::Log, StereoKitError};
+use crate::{
+    maths::Bool32T,
+    system::{Log, LogLevel},
+    StereoKitError,
+};
 #[cfg(target_os = "android")]
 #[cfg(feature = "no-event-loop")]
 use android_activity::{AndroidApp, MainEvent, PollEvent};
@@ -938,6 +941,13 @@ impl Sk {
     /// convenient way to push some Add steppers action
     pub fn push_action(&mut self, action: StepperAction) {
         self.steppers.push_action(action);
+    }
+
+    /// An enumerable list of all currently active ISteppers registered with StereoKit. This does not include Steppers
+    /// that have been added, but are not yet initialized. Stepper initialization happens at the beginning of the frame,
+    /// before the app's Step.
+    pub fn get_setters(&mut self) -> &Steppers {
+        &self.steppers
     }
 
     /// Get an event_loop_proxy clone to send events
