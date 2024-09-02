@@ -171,6 +171,10 @@ name = "com.oculus.permission.EYE_TRACKING"
 required = false
 
 [[package.metadata.android.uses_permission]]
+name = "com.oculus.permission.RENDER_MODEL"
+required = true
+
+[[package.metadata.android.uses_permission]]
 name = "com.oculus.permission.USE_ANCHOR_API"
 required = true
 
