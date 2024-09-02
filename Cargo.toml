@@ -96,9 +96,6 @@ required = true
 name = "oculus.software.handtracking"
 required = false
 
-[[package.metadata.android.uses_feature]]
-name = "oculus.software.body_tracking"
-required = false
 
 [[package.metadata.android.uses_feature]]
 name = "oculus.software.face_tracking"
@@ -110,7 +107,15 @@ required = false
 
 [[package.metadata.android.uses_feature]]
 name = "oculus.software.overlay_keyboard"
-required = true
+required = false
+
+[[package.metadata.android.uses_feature]]
+name = "oculus.software.trackedkeyboard"
+required = false
+
+[[package.metadata.android.uses_feature]]
+name = "com.oculus.software.body_tracking"
+required = false
 
 [[package.metadata.android.uses_feature]]
 name = "com.oculus.experimental.enabled"
@@ -118,6 +123,10 @@ required = true
 
 [[package.metadata.android.uses_feature]]
 name = "com.oculus.feature.PASSTHROUGH"
+required = true
+
+[[package.metadata.android.uses_feature]]
+name = "com.oculus.feature.RENDER_MODEL"
 required = true
 
 [[package.metadata.android.uses_permission]]
@@ -163,6 +172,14 @@ required = false
 
 [[package.metadata.android.uses_permission]]
 name = "com.oculus.permission.USE_ANCHOR_API"
+required = true
+
+[[package.metadata.android.uses_permission]]
+name = "com.oculus.permission.USE_SCENE"
+required = true
+
+[[package.metadata.android.uses_permission]]
+name = "com.oculus.permission.BOUNDARY_VISIBILITY"
 required = true
 
 [[package.metadata.android.uses_permission]]
