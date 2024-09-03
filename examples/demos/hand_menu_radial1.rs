@@ -93,7 +93,8 @@ impl Default for HandMenuRadial1 {
         let mut sea = Material::from_file("shaders/water_pbr.hlsl.sks", "water_pbr".into()).unwrap_or_default();
         sea.diffuse_tex(&bump_inverse_tex)
             .normal_tex(&bump_tex)
-            .tex_transform(Vec4::new(0.0, 0.0, 12.0, 12.0))
+            .occlusion_tex(&bump_inverse_tex)
+            .tex_transform(Vec4::new(0.0, 0.0, 6.0, 6.0))
             .roughness_amount(0.4)
             .metallic_amount(0.6)
             .face_cull(Cull::Back)
@@ -105,8 +106,9 @@ impl Default for HandMenuRadial1 {
         let mut water2 = Material::from_file("shaders/water_pbr2.hlsl.sks", "water_pbr2".into()).unwrap_or_default();
         water2
             .diffuse_tex(&bump_tile_tex)
+            .occlusion_tex(&bump_inverse_tex)
             .normal_tex(&bump_tex)
-            .tex_transform(Vec4::new(0.0, 0.0, 12.0, 12.0))
+            .tex_transform(Vec4::new(0.0, 0.0, 5.0, 5.0))
             .roughness_amount(0.4)
             .metallic_amount(0.6)
             .face_cull(Cull::Back)

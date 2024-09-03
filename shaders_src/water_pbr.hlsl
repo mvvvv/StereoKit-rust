@@ -72,8 +72,8 @@ float4 ps(psIn input) : SV_TARGET {
     uv.x += offset;
     uv.y += offset;
     float3 emissive     = emission .Sample(emission_s, uv).rgb * emission_factor.rgb;
-	float2 metal_rough  = metal    .Sample(metal_s,    uv).gb; // rough is g, b is metallic
-	float  ao           = occlusion.Sample(occlusion_s,uv).r;  // occlusion is sometimes part of the metal tex, uses r channel
+	float2 metal_rough  = metal    .Sample(metal_s,    uv * 0.2 ).gb; // rough is g, b is metallic
+	float  ao           = occlusion.Sample(occlusion_s,uv * 0.6 ).r;  // occlusion is sometimes part of the metal tex, uses r channel
 
 	float metallic_final = metal_rough.y * metallic;
 	float rough_final    = metal_rough.x * roughness;
