@@ -279,8 +279,9 @@ extern "C" {
         blocking: Bool32T,
         priority: i32,
     );
-    pub fn tex_add_zbuffer(texture: TexT, format: TexFormat) -> TexT;
+    pub fn tex_add_zbuffer(texture: TexT, format: TexFormat);
     pub fn tex_set_zbuffer(texture: TexT, depth_texture: TexT);
+    pub fn tex_get_zbuffer(texture: TexT) -> TexT;
     pub fn tex_get_data(texture: TexT, out_data: *mut c_void, out_data_size: usize, mip_level: i32);
     pub fn tex_gen_color(color: Color128, width: i32, height: i32, type_: TexType, format: TexFormat) -> TexT;
     pub fn tex_gen_particle(width: i32, height: i32, roundness: f32, gradient_linear: GradientT) -> TexT;
@@ -859,6 +860,21 @@ impl Tex {
         self
     }
 
+    /// This allows you to attach a z/depth buffer from a rendertarget texture. This texture _must_ be a
+    /// rendertarget to set this, and the zbuffer texture _must_ be a depth format (or null). For no-rendertarget
+    /// textures, this will always be null.
+    /// <https://stereokit.net/Pages/StereoKit/Tex/SetZBuffer.html>
+    ///
+    /// see also [`crate::tex::tex_set_zbuffer`]
+    pub fn set_zbuffer(&mut self, tex: Option<Tex>) -> &mut Self {
+        if let Some(tex) = tex {
+            unsafe { tex_set_zbuffer(self.0.as_ptr(), tex.0.as_ptr()) }
+        } else {
+            unsafe { tex_set_zbuffer(self.0.as_ptr(), null_mut()) }
+        }
+        self
+    }
+
     /// This function is dependent on the graphics backend! It will take a texture resource for the current graphics
     /// backend (D3D or GL) and wrap it in a StereoKit texture for use within StereoKit. This is a bit of an advanced
     /// feature.
@@ -978,6 +994,16 @@ impl Tex {
             _ => return None,
         }
         Some(unsafe { tex_get_format(self.0.as_ptr()) })
+    }
+
+    /// This allows you to retreive a z/depth buffer from a rendertarget texture. This texture _must_ be a
+    /// rendertarget to set this, and the zbuffer texture _must_ be a depth format (or null). For no-rendertarget
+    /// textures, this will always be null.
+    /// <https://stereokit.net/Pages/StereoKit/Tex/GetZBuffer.html>
+    ///
+    /// see also [`crate::tex::tex_get_zbuffer`]
+    pub fn get_zbuffer(&mut self) -> Option<Tex> {
+        NonNull::new(unsafe { tex_get_zbuffer(self.0.as_ptr()) }).map(Tex)
     }
 
     /// This will return the texture’s native resource for use with external libraries. For D3D, this will be an

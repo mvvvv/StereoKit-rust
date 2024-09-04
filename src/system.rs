@@ -2717,6 +2717,23 @@ impl Renderer {
         }
     }
 
+    /// This attaches a texture resource globally across all shaders. StereoKit uses this to attach the sky cubemap for
+    /// use in reflections across all materials (register 11). It can be used for things like shadowmaps, wind data, etc.
+    ///  Prefer a higher registers (11+) to prevent conflicting with normal Material textures.
+    /// <https://stereokit.net/Pages/StereoKit/Renderer/SetGlobalTexture.html>
+    /// * texture_register - The texture resource register the texture will bind to. SK uses register 11 already, so
+    ///   values above that should be fine.
+    /// * tex - The texture to assign globally. Setting None here will clear any texture that is currently bound.
+    ///
+    /// see also [`crate::system::render_global_texture`]
+    pub fn set_global_texture<M: Into<Matrix>>(_token: &MainThreadToken, texture_register: i32, tex: Option<Tex>) {
+        if let Some(tex) = tex {
+            unsafe { render_global_texture(texture_register, tex.0.as_ptr()) }
+        } else {
+            unsafe { render_global_texture(texture_register, null_mut()) }
+        }
+    }
+
     /// Schedules a screenshot for the end of the frame! The view will be rendered from the given pose, with a
     /// resolution the same size as the screen’s surface. It’ll be saved as a JPEG or PNG file depending on the filename
     /// extension provided.
