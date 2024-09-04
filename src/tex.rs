@@ -1002,7 +1002,7 @@ impl Tex {
     /// <https://stereokit.net/Pages/StereoKit/Tex/GetZBuffer.html>
     ///
     /// see also [`crate::tex::tex_get_zbuffer`]
-    pub fn get_zbuffer(&mut self) -> Option<Tex> {
+    pub fn get_zbuffer(&self) -> Option<Tex> {
         NonNull::new(unsafe { tex_get_zbuffer(self.0.as_ptr()) }).map(Tex)
     }
 
