@@ -3034,22 +3034,26 @@ pub struct TextStyle {
 }
 
 extern "C" {
-    pub fn text_make_style(font: FontT, character_height: f32, color_gamma: Color128) -> TextStyle;
-    pub fn text_make_style_shader(
-        font: FontT,
-        character_height: f32,
-        shader: ShaderT,
-        color_gamma: Color128,
-    ) -> TextStyle;
+    pub fn text_make_style(font: FontT, layout_height: f32, color_gamma: Color128) -> TextStyle;
+    pub fn text_make_style_shader(font: FontT, layout_height: f32, shader: ShaderT, color_gamma: Color128)
+        -> TextStyle;
     pub fn text_make_style_mat(
         font: FontT,
-        character_height: f32,
+        layout_height: f32,
         material: MaterialT,
         color_gamma: Color128,
     ) -> TextStyle;
+    pub fn text_style_get_line_height_pct(style: TextStyle) -> f32;
+    pub fn text_style_set_line_height_pct(style: TextStyle, height_percent: f32);
+    pub fn text_style_get_layout_height(style: TextStyle) -> f32;
+    pub fn text_style_set_layout_height(style: TextStyle, height_meters: f32);
+    pub fn text_style_get_total_height(style: TextStyle) -> f32;
+    pub fn text_style_set_total_height(style: TextStyle, height_meters: f32);
     pub fn text_style_get_material(style: TextStyle) -> MaterialT;
-    pub fn text_style_get_char_height(style: TextStyle) -> f32;
-    pub fn text_style_set_char_height(style: TextStyle, height_meters: f32);
+    pub fn text_style_get_ascender(style: TextStyle) -> f32;
+    pub fn text_style_get_descender(style: TextStyle) -> f32;
+    pub fn text_style_get_cap_height(style: TextStyle) -> f32;
+    pub fn text_style_get_baseline(style: TextStyle) -> f32;
 }
 
 impl Default for TextStyle {
@@ -3067,10 +3071,14 @@ impl TextStyle {
     ///
     /// This fn will create an unique Material for this style based on Default.ShaderFont.
     /// <https://stereokit.net/Pages/StereoKit/TextStyle/FromFont.html>
+    /// * font - Font asset you want attached to this style.
+    /// * layout_height_meters - Height of a text glyph in meters. StereoKit currently bases this on CapHeight.
+    /// * color_gamma - The gamma space color of the text style. This will be embedded in the vertex color of the
+    ///   text mesh.
     ///
     /// see also [`crate::system::text_make_style`]
-    pub fn from_font(font: impl AsRef<Font>, character_height_meters: f32, color_gamma: impl Into<Color128>) -> Self {
-        unsafe { text_make_style(font.as_ref().0.as_ptr(), character_height_meters, color_gamma.into()) }
+    pub fn from_font(font: impl AsRef<Font>, layout_height_meters: f32, color_gamma: impl Into<Color128>) -> Self {
+        unsafe { text_make_style(font.as_ref().0.as_ptr(), layout_height_meters, color_gamma.into()) }
     }
 
     /// Create a text style for use with other text functions! A text style is a font plus size/color/material
@@ -3079,18 +3087,23 @@ impl TextStyle {
     ///
     /// This function will create an unique Material for this style based on the provided Shader.
     /// <https://stereokit.net/Pages/StereoKit/TextStyle/FromFont.html>
+    /// * font - Font asset you want attached to this style.
+    /// * layout_height_meters - Height of a text glyph in meters. StereoKit currently bases this on CapHeight.
+    /// * shader - This style will create and use a unique/ Material based on the Shader that you provide here.
+    /// * color_gamma - The gamma space color of the text style. This will be embedded in the vertex color of the
+    ///   text mesh.
     ///
     /// see also [`crate::system::text_make_style_shader`]
     pub fn from_font_and_shader(
         font: impl AsRef<Font>,
-        character_height_meters: f32,
+        layout_height_meters: f32,
         shader: impl AsRef<Shader>,
         color_gamma: impl Into<Color128>,
     ) -> Self {
         unsafe {
             text_make_style_shader(
                 font.as_ref().0.as_ptr(),
-                character_height_meters,
+                layout_height_meters,
                 shader.as_ref().0.as_ptr(),
                 color_gamma.into(),
             )
@@ -3105,18 +3118,26 @@ impl TextStyle {
     /// similar enough to re-use the material and save on draw calls. If you don’t know what that means, then prefer
     /// using the overload that takes a Shader, or takes neither a Shader nor a Material!
     /// <https://stereokit.net/Pages/StereoKit/TextStyle/FromFont.html>
+    /// * font - Font asset you want attached to this style.
+    /// * layout_height_meters - Height of a text glyph in meters. StereoKit currently bases this on CapHeight.
+    /// * material - Which material should be used to render the text with? Note that this does NOT duplicate the
+    ///   material, so the text with? Note that this does NOT duplicate the material, so some parameters of this
+    ///   Material instance will get overwritten, like the texture used for the glyph atlas. You should either use a new
+    ///   Material, or a Material that was already used with this same font.
+    /// * color_gamma - The gamma space color of the text style. This will be embedded in the vertex color of the
+    ///   text mesh.
     ///
     /// see also [`crate::system::text_make_style_mat`]
     pub fn from_font_and_material(
         font: impl AsRef<Font>,
-        character_height_meters: f32,
+        layout_height_meters: f32,
         material: impl AsRef<Material>,
         color_gamma: impl Into<Color128>,
     ) -> Self {
         unsafe {
             text_make_style_mat(
                 font.as_ref().0.as_ptr(),
-                character_height_meters,
+                layout_height_meters,
                 material.as_ref().0.as_ptr(),
                 color_gamma.into(),
             )
@@ -3127,16 +3148,38 @@ impl TextStyle {
     /// <https://stereokit.net/Pages/StereoKit/TextStyle/CharHeight.html>
     ///
     /// see also [`crate::system::text_style_set_char_height`]
+    #[deprecated(since = "0.40.0", note = "please use layout_height")]
     pub fn char_height(&mut self, char_height: f32) {
-        unsafe { text_style_set_char_height(*self, char_height) }
+        unsafe { text_style_set_layout_height(*self, char_height) }
     }
 
-    /// Returns the maximum height of a text character using this style, in meters.
-    /// <https://stereokit.net/Pages/StereoKit/TextStyle/CharHeight.html>
+    /// (meters) Layout height is the height of the font's CapHeight, which is used for calculating the vertical height
+    /// of the text when doing text layouts. This does _not_ include the height of the descender , nor
+    /// does it represent the maximum possible height a glyph may extend upwards (use Text::size_render).
+    /// <https://stereokit.net/Pages/StereoKit/TextStyle/LayoutHeight.html>
     ///
-    /// see also [`crate::system::text_style_get_char_height`]
-    pub fn get_char_height(&self) -> f32 {
-        unsafe { text_style_get_char_height(*self) }
+    /// see also [`crate::system::text_style_set_layout_height`]
+    pub fn layout_height(&mut self, height_meters: f32) {
+        unsafe { text_style_set_layout_height(*self, height_meters) }
+    }
+
+    /// (meters) Height from the layout descender to the layout ascender. This is most equivalent to the 'font-size' in
+    /// CSS or other text layout tools. Since ascender and descenders can vary a lot, using layout_height in many cases
+    /// can lead to more consistency in the long run.
+    /// <https://stereokit.net/Pages/StereoKit/TextStyle/TotalHeight.html>
+    ///
+    /// see also [`crate::system::text_style_set_total_height`]
+    pub fn total_height(&mut self, height_meters: f32) {
+        unsafe { text_style_set_total_height(*self, height_meters) }
+    }
+
+    /// This is the space a full line of text takes, from baseline to baseline, as a 0-1 percentage of the font's
+    /// character height. This is similar to CSS line-height, a value of 1.0 means the line takes _only_
+    /// <https://stereokit.net/Pages/StereoKit/TextStyle/LineHeightPct.html>
+    ///
+    /// see also [`crate::system::text_style_set_line_height_pct`]
+    pub fn line_height_pct(&mut self, height_percent: f32) {
+        unsafe { text_style_set_line_height_pct(*self, height_percent) }
     }
 
     /// This provides a reference to the Material used by this style, so you can override certain features! Note that if
@@ -3146,6 +3189,70 @@ impl TextStyle {
     /// see also [`crate::system::text_style_get_material`]
     pub fn get_material(&self) -> Material {
         Material(NonNull::new(unsafe { text_style_get_material(*self) }).unwrap())
+    }
+
+    /// Returns the maximum height of a text character using this style, in meters.
+    /// <https://stereokit.net/Pages/StereoKit/TextStyle/CharHeight.html>
+    ///
+    /// see also [`crate::system::text_style_get_char_height`]
+    #[deprecated(since = "0.40.0", note = "please use get_layout_height")]
+    pub fn get_char_height(&self) -> f32 {
+        unsafe { text_style_get_layout_height(*self) }
+    }
+
+    /// (meters) Layout height is the height of the font's ascender, which is used for calculating the vertical height
+    /// of the text when doing text layouts. This does _not_ include the height of the descender (use total_height), nor
+    /// does it represent the maximum possible height a glyph may extend upwards (use Text::size_render).
+    /// <https://stereokit.net/Pages/StereoKit/TextStyle/LayoutHeight.html>
+    ///
+    /// see also [`crate::system::text_style_get_layout_height`]
+    pub fn get_layout_height(&self) -> f32 {
+        unsafe { text_style_get_layout_height(*self) }
+    }
+
+    /// (meters) Height from the layout descender to the layout ascender. This is most equivalent to the 'font-size' in
+    /// CSS or other text layout tools. Since ascender and descenders can vary a lot, using layout_height in many cases
+    /// can lead to more consistency in the long run.
+    /// <https://stereokit.net/Pages/StereoKit/TextStyle/TotalHeight.html>
+    ///
+    /// see also [`crate::system::text_style_get_total_height`]
+    pub fn get_total_height(&self) -> f32 {
+        unsafe { text_style_get_total_height(*self) }
+    }
+
+    /// This is the space a full line of text takes, from baseline to baseline, as a 0-1 percentage of the font's
+    /// character height. This is similar to CSS line-height, a value of 1.0 means the line takes _only_
+    /// <https://stereokit.net/Pages/StereoKit/TextStyle/LineHeightPct.html>
+    ///
+    /// see also [`crate::system::text_style_get_line_height_pct`]
+    pub fn get_line_height_pct(&self) -> f32 {
+        unsafe { text_style_get_line_height_pct(*self) }
+    }
+    /// (meters) The height of a standard captial letter, such as 'H' or 'T'
+    /// <https://stereokit.net/Pages/StereoKit/TextStyle/CapHeight.html>
+    ///
+    /// see also [`crate::system::text_style_get_cap_height`]
+    pub fn get_cap_height(&self) -> f32 {
+        unsafe { text_style_get_cap_height(*self) }
+    }
+
+    /// (meters) The layout ascender of the font, this is the height of the "tallest" glyphs as far as layout is
+    /// concerned. Characters such as 'l' typically rise above the CapHeight, and this value usually matches this height.
+    /// Some glyphs such as those with hats or umlauts will almost always be taller than this height
+    /// (see Text::size_render), but this is not used when laying out characters.
+    /// <https://stereokit.net/Pages/StereoKit/TextStyle/Ascender.html>
+    ///
+    /// see also [`crate::system::text_style_get_ascender`]
+    pub fn get_ascender(&self) -> f32 {
+        unsafe { text_style_get_ascender(*self) }
+    }
+
+    /// (meters) The layout descender of the font, this is the positive height below the baseline
+    /// <https://stereokit.net/Pages/StereoKit/TextStyle/Descender.html>
+    ///
+    /// see also [`crate::system::text_style_get_descender`]
+    pub fn get_descender(&self) -> f32 {
+        unsafe { text_style_get_descender(*self) }
     }
 }
 
@@ -3277,10 +3384,11 @@ extern "C" {
         off_z: f32,
         vertex_tint_linear: Color128,
     ) -> f32;
-    pub fn text_size(text_utf8: *const c_char, style: TextStyle) -> Vec2;
-    pub fn text_size_constrained(text_utf8: *const c_char, style: TextStyle, max_width: f32) -> Vec2;
-    pub fn text_size_16(text_utf16: *const c_ushort, style: TextStyle) -> Vec2;
-    pub fn text_size_constrained_16(text_utf16: *const c_ushort, style: TextStyle, max_width: f32) -> Vec2;
+    pub fn text_size_layout(text_utf8: *const c_char, style: TextStyle) -> Vec2;
+    pub fn text_size_layout_constrained(text_utf8: *const c_char, style: TextStyle, max_width: f32) -> Vec2;
+    pub fn text_size_layout_16(text_utf16: *const c_ushort, style: TextStyle) -> Vec2;
+    pub fn text_size_layout_constrained_16(text_utf16: *const c_ushort, style: TextStyle, max_width: f32) -> Vec2;
+    pub fn text_size_render(layout_size: Vec2, style: TextStyle, y_offset: *mut f32) -> Vec2;
     pub fn text_char_at(
         text_utf8: *const c_char,
         style: TextStyle,
@@ -3308,14 +3416,20 @@ impl Text {
     ///
     /// This fn will create an unique Material for this style based on Default.ShaderFont.
     /// <https://stereokit.net/Pages/StereoKit/Text/MakeStyle.html>
+    /// * font - Font asset you want attached to this style.
+    /// * layout_height_meters- Height of a text glyph in meters. StereoKit currently bases this on CapHeight.
+    /// * color_gamma - The gamma space color of the text style. This will be embedded in the vertex color of the
+    ///   text mesh.
+    ///
+    /// Returns a text style id for use with text rendering functions.
     ///
     /// see also [`crate::system::text_make_style`]
     pub fn make_style(
         font: impl AsRef<Font>,
-        character_height_meters: f32,
+        layout_height_meters: f32,
         color_gamma: impl Into<Color128>,
     ) -> TextStyle {
-        unsafe { text_make_style(font.as_ref().0.as_ptr(), character_height_meters, color_gamma.into()) }
+        unsafe { text_make_style(font.as_ref().0.as_ptr(), layout_height_meters, color_gamma.into()) }
     }
 
     /// Create a text style for use with other text functions! A text style is a font plus size/color/material
@@ -3324,18 +3438,25 @@ impl Text {
     ///
     /// This function will create an unique Material for this style based on the provided Shader.
     /// <https://stereokit.net/Pages/StereoKit/Text/MakeStyle.html>
+    /// * font - Font asset you want attached to this style.
+    /// * layout_height_meters- Height of a text glyph in meters. StereoKit currently bases this on CapHeight.
+    /// * shader - This style will create and use a unique Material based on the Shader that you provide here
+    /// * color_gamma - The gamma space color of the text style. This will be embedded in the vertex color of the
+    ///   text mesh.
+    ///
+    /// Returns a text style id for use with text rendering functions.
     ///
     /// see also [`crate::system::text_make_style_shader`]
     pub fn make_style_with_shader(
         font: impl AsRef<Font>,
-        character_height_meters: f32,
+        layout_height_meters: f32,
         shader: impl AsRef<Shader>,
         color_gamma: impl Into<Color128>,
     ) -> TextStyle {
         unsafe {
             text_make_style_shader(
                 font.as_ref().0.as_ptr(),
-                character_height_meters,
+                layout_height_meters,
                 shader.as_ref().0.as_ptr(),
                 color_gamma.into(),
             )
@@ -3350,18 +3471,27 @@ impl Text {
     /// similar enough to re-use the material and save on draw calls. If you don’t know what that means, then prefer
     /// using the overload that takes a Shader, or takes neither a Shader nor a Material!
     /// <https://stereokit.net/Pages/StereoKit/Text/MakeStyle.html>
+    /// * font - Font asset you want attached to this style.
+    /// * layout_height_meters- Height of a text glyph in meters. StereoKit currently bases this on CapHeight.
+    /// * material - Which material should be used to render the text with? Note that this does NOT duplicate the
+    ///   material, so some parameters of this Material instance will get overwritten, like the texture used for the
+    ///   glyph atlas. You should either use a new Material, or a Material that was already used with this same font.
+    /// * color_gamma - The gamma space color of the text style. This will be embedded in the vertex color of the
+    ///   text mesh.
+    ///
+    /// Returns a text style id for use with text rendering functions.
     ///
     /// see also [`crate::system::text_make_mat`]
     pub fn make_style_with_material(
         font: impl AsRef<Font>,
-        character_height_meters: f32,
+        layout_height_meters: f32,
         material: impl AsRef<Material>,
         color_gamma: impl Into<Color128>,
     ) -> TextStyle {
         unsafe {
             text_make_style_mat(
                 font.as_ref().0.as_ptr(),
-                character_height_meters,
+                layout_height_meters,
                 material.as_ref().0.as_ptr(),
                 color_gamma.into(),
             )
@@ -3472,15 +3602,52 @@ impl Text {
     ///
     /// Returns size of the text in meters
     ///
-    /// see also [`crate::system::text_size`]
+    /// see also [`crate::system::text_size_layout`] [`crate::system::text_size_layout_constrained`]
+    #[deprecated(since = "0.40.0", note = "please use size_layout")]
     pub fn size(text: impl AsRef<str>, text_style: Option<TextStyle>, max_width: Option<f32>) -> Vec2 {
         let c_str = CString::new(text.as_ref()).unwrap();
         let style = text_style.unwrap_or_default();
         if let Some(max_width) = max_width {
-            unsafe { text_size_constrained(c_str.as_ptr(), style, max_width) }
+            unsafe { text_size_layout_constrained(c_str.as_ptr(), style, max_width) }
         } else {
-            unsafe { text_size(c_str.as_ptr(), style) }
+            unsafe { text_size_layout(c_str.as_ptr(), style) }
         }
+    }
+
+    /// Sometimes you just need to know how much room some text takes up! This finds the layout size of the text in
+    /// meters when using the indicated style!  This does not include ascender and descender size, so rendering using
+    /// this as a clipping size will result in ascenders and descenders getting clipped.
+    /// <https://stereokit.net/Pages/StereoKit/Text/SizeLayout.html>
+    /// * text - Text you want to find the size of.
+    /// * text_style - if None will use the TextStyle::default()
+    /// * max_width - Width of the available space in meters if you need to know how much layout space text will take
+    ///   when constrained to a certain width? This will find it using the indicated text style!
+    ///
+    /// Returns size of the text in meters
+    ///
+    /// see also [`crate::system::text_size_layout`] [`crate::system::text_size_layout_constrained`]
+    pub fn size_layout(text: impl AsRef<str>, text_style: Option<TextStyle>, max_width: Option<f32>) -> Vec2 {
+        let c_str = CString::new(text.as_ref()).unwrap();
+        let style = text_style.unwrap_or_default();
+        if let Some(max_width) = max_width {
+            unsafe { text_size_layout_constrained(c_str.as_ptr(), style, max_width) }
+        } else {
+            unsafe { text_size_layout(c_str.as_ptr(), style) }
+        }
+    }
+
+    /// This modifies a text layout size with information related
+    /// <https://stereokit.net/Pages/StereoKit/Text/SizeRender.html>
+    /// * size_layout - the layout.
+    /// * text_style - if None will use the TextStyle::default()
+    /// * y_offset - out calculated offset.
+    ///
+    /// Returns size of the text in meters
+    ///
+    /// see also [`crate::system::text_size_layout`] [`crate::system::text_size_layout_constrained`]
+    pub fn size_render(size_layout: impl Into<Vec2>, text_style: Option<TextStyle>, y_offset: &mut f32) -> Vec2 {
+        let style = text_style.unwrap_or_default();
+        unsafe { text_size_render(size_layout.into(), style, y_offset) }
     }
 }
 

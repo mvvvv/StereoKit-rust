@@ -122,7 +122,7 @@ impl Ui1 {
 
     pub fn custom_button_mesh(&mut self, token: &MainThreadToken, text: &str) -> bool {
         let id = Ui::stack_hash(text);
-        let size = Text::size(text, Some(Ui::get_text_style()), None) * 2.0;
+        let size = Text::size_layout(text, Some(Ui::get_text_style()), None) * 2.0;
         let mut layout = Ui::layout_reserve(size, false, 0.0);
         let mut out_finger_offset: f32 = 0.0;
         let mut out_button_state: BtnState = BtnState::empty();
@@ -163,7 +163,7 @@ impl Ui1 {
 
     pub fn custom_button_element(&mut self, token: &MainThreadToken, text: &str) -> bool {
         let id = Ui::stack_hash(text);
-        let size = Text::size(text, Some(Ui::get_text_style()), None) * 2.0;
+        let size = Text::size_layout(text, Some(Ui::get_text_style()), None) * 2.0;
         let mut layout = Ui::layout_reserve(size, false, 0.0);
         let mut out_finger_offset: f32 = 0.0;
         let mut out_button_state: BtnState = BtnState::empty();

@@ -8,15 +8,15 @@ use stereokit_rust::{
     mesh::Mesh,
     model::Model,
     sk::{MainThreadToken, SkInfo},
-    system::Log,
-    tex::{SHCubemap, Tex, TexSample},
+    system::{Log, Renderer},
+    tex::{SHCubemap, Tex, TexFormat, TexSample},
     tools::{log_window::SHOW_LOG_WINDOW, screenshot::SHOW_SCREENSHOT_WINDOW},
     util::{
         named_colors::{BLACK, BLUE, BURLY_WOOD, LIGHT_BLUE, LIGHT_CYAN, RED, SEA_GREEN, STEEL_BLUE, WHITE, YELLOW},
         Color128, Gradient, ShLight, SphericalHarmonics,
     },
 };
-
+pub const SHOW_SHADOWS: &str = "ShowShadows";
 pub const SHOW_FLOOR: &str = "ShowFloor";
 pub const CHANGE_FLOOR: &str = "ChangeFlor";
 
@@ -29,9 +29,12 @@ pub struct HandMenuRadial1 {
     parquet: Material,
     water: Material,
     water2: Material,
+    test_material: Material,
     floor_model: Model,
+    shadow_depth: Tex,
     pub floor_transform: Matrix,
     pub show_floor: bool,
+    pub show_shadows: bool,
     pub floor: u8,
 }
 
@@ -116,6 +119,13 @@ impl Default for HandMenuRadial1 {
             .transparency(Transparency::Blend)
             .time(5.0);
 
+        let shadow_depth = Tex::render_target(1024, 1024, Some(1), Some(TexFormat::RGBA32), Some(TexFormat::Depth16))
+            .unwrap_or_default();
+        let mut test_material = Material::unlit().copy();
+        test_material.diffuse_tex(shadow_depth.get_zbuffer().unwrap_or_default());
+        //test_material.diffuse_tex(&shadow_depth);
+        //Renderer::clear_color(Color128::hsv(0.4, 0.3, 0.5, 1.0));
+
         let floor_model = Model::from_mesh(
             Mesh::generate_plane(Vec2::new(40.0, 40.0), Vec3::UP, Vec3::FORWARD, None, true),
             &clean_tile,
@@ -130,9 +140,12 @@ impl Default for HandMenuRadial1 {
             parquet,
             water: sea,
             water2,
+            test_material,
             floor_model,
             floor_transform,
+            shadow_depth,
             show_floor: true,
+            show_shadows: true,
             floor: 0,
         }
     }
@@ -170,6 +183,7 @@ impl IStepper for HandMenuRadial1 {
         let change_floor2 = change_floor.clone();
         let change_floor3 = change_floor.clone();
         let change_floor4 = change_floor.clone();
+        let change_floor5 = change_floor.clone();
 
         let mut menu_ico = Material::pbr_clip().copy();
         let tex = Tex::from_file("icons/hamburger.png", true, None).unwrap_or_default();
@@ -313,6 +327,14 @@ impl IStepper for HandMenuRadial1 {
                             },
                             if self.floor == 4 { HandMenuAction::Checked(1) } else { HandMenuAction::Unchecked(1) },
                         ),
+                        HandRadial::item(
+                            "test",
+                            None,
+                            move || {
+                                change_floor5.clone()("5".into());
+                            },
+                            if self.floor == 5 { HandMenuAction::Checked(1) } else { HandMenuAction::Unchecked(1) },
+                        ),
                         HandRadial::item("Back", None, || {}, HandMenuAction::Back),
                         HandRadial::item("Close", None, || {}, HandMenuAction::Close),
                     ],
@@ -354,6 +376,8 @@ impl IStepper for HandMenuRadial1 {
                     self.floor = value.parse().unwrap_or(0);
                 } else if key.eq(SHOW_FLOOR) {
                     self.show_floor = value.parse().unwrap_or(true);
+                } else if key.eq(SHOW_SHADOWS) {
+                    self.show_shadows = value.parse().unwrap_or(true);
                 }
             }
         }
@@ -370,11 +394,38 @@ impl HandMenuRadial1 {
     fn draw(&mut self, token: &MainThreadToken) {
         // draw a floor if needed
         if self.show_floor {
+            if self.show_shadows && self.floor == 5 {
+                let light_pos = Renderer::get_skylight().get_dominent_light_direction() * -500.0;
+                let camera = Matrix::tr(&light_pos, &Quat::look_at(light_pos, Vec3::ZERO, None));
+                //Log::diag(format!("Camera at {:}", &light_pos));
+
+                // let mut list = RenderList::primary();
+                // list.draw_now(
+                //     &self.shadow_depth,
+                //     camera,
+                //     Matrix::perspective(90.0, 1.0, 10.01, 1010.0),
+                //     Rect::new(0.0, 0.0, 1.0, 1.0),
+                //     None,
+                //     None,
+                // );
+
+                Renderer::render_to(
+                    token,
+                    &self.shadow_depth,
+                    camera,
+                    Matrix::perspective(90.0, 1.0, 10.01, 1010.0),
+                    None,
+                    None,
+                    None,
+                );
+            }
             match self.floor {
                 0 => self.floor_model.draw_with_material(token, &self.clean_tile, self.floor_transform, None, None),
                 1 => self.floor_model.draw_with_material(token, &self.parquet, self.floor_transform, None, None),
                 2 => self.floor_model.draw_with_material(token, &self.water, self.floor_transform, None, None),
                 3 => self.floor_model.draw_with_material(token, &self.water2, self.floor_transform, None, None),
+                4 => (),
+                5 => self.floor_model.draw_with_material(token, &self.test_material, self.floor_transform, None, None),
                 _ => (),
             }
         }

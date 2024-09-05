@@ -429,7 +429,7 @@ impl HandMenuRadial {
         let mut on_checked_material = Material::pbr_clip().copy();
         on_checked_material.diffuse_tex(tex_on_checked).clip_cutoff(0.1).color_tint(GREEN);
         let mut text_style = TextStyle::default();
-        text_style.char_height(0.016);
+        text_style.layout_height(0.016);
         Self {
             menu_pose: Pose::default(),
             dest_pose: Pose::default(),

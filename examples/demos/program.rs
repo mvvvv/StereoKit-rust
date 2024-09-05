@@ -223,14 +223,15 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
             let mut i = 0;
             for test in tests.iter() {
                 i += 1;
-                let width = Text::size(&test.name, Some(style), None).x + ui_settings.padding * 2.0;
+                let width = Text::size_layout(&test.name, Some(style), None).x + ui_settings.padding * 2.0;
                 if curr_width_total + width + ui_settings.gutter > demo_win_width {
                     let inflate =
                         (demo_win_width - (curr_width_total - ui_settings.gutter + 0.0001)) / ((i - start) as f32);
                     for t in start..i {
                         let test_in_line = &tests[t];
-                        let curr_width =
-                            Text::size(&test_in_line.name, Some(style), None).x + ui_settings.padding * 2.0 + inflate;
+                        let curr_width = Text::size_layout(&test_in_line.name, Some(style), None).x
+                            + ui_settings.padding * 2.0
+                            + inflate;
                         if Ui::button(&test_in_line.name, Some(Vec2::new(curr_width, 0.0))) {
                             Log::info(format!("Starting scene: {}", &test_in_line.name.to_string()));
                             next_scene = Some(test_in_line);
@@ -246,7 +247,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
             }
             for t in start..tests.len() {
                 let test = tests.get(t).unwrap();
-                let curr_width = Text::size(&test.name, Some(style), None).x + ui_settings.padding * 2.0;
+                let curr_width = Text::size_layout(&test.name, Some(style), None).x + ui_settings.padding * 2.0;
 
                 if Ui::button(&test.name, Some(Vec2::new(curr_width, 0.0))) {
                     Log::info(format!("Starting scene: {}", &test.name.to_string()));
