@@ -2720,7 +2720,7 @@ impl Display for Sphere {
 }
 /// A pretty straightforward 2D rectangle, defined by the top left corner of the rectangle, and its width/height.
 /// <https://stereokit.net/Pages/StereoKit/Rect.html>
-#[derive(Debug, Default, Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 #[repr(C)]
 pub struct Rect {
     /// The X axis position of the top left corner of the rectangle.
@@ -2731,6 +2731,12 @@ pub struct Rect {
     pub width: f32,
     /// The height of the rectangle.
     pub height: f32,
+}
+
+impl Default for Rect {
+    fn default() -> Self {
+        Self { x: 0.0, y: 0.0, width: 1.0, height: 1.0 }
+    }
 }
 
 impl Rect {
