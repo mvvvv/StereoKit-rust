@@ -1,5 +1,5 @@
 use crate::{
-    sk::{sk_step, AppFocus, MainThreadToken, Sk, SkInfo},
+    sk::{sk_quit, sk_step, AppFocus, MainThreadToken, QuitReason, Sk, SkInfo},
     system::{Input, Log},
 };
 use std::{
@@ -136,7 +136,9 @@ impl<'a> SkClosures<'a> {
             self.window_event(event_loop, self.window_id.unwrap_or(WindowId::dummy()), WindowEvent::CloseRequested);
         }
         if !self.sk.steppers.step(&mut self.token) {
-            self.sk.quit(None)
+            self.sk.steppers.shutdown();
+            unsafe { sk_quit(QuitReason::User) }
+            // see WindowEvent::CloseRequested for  (self.shutdown)(&mut self.sk);
         };
         while let Some(mut action) = self.sk.actions.pop_front() {
             action();
@@ -377,7 +379,10 @@ impl Steppers {
                     }
                     self.stepper_handlers.retain(|i| i.id != stepper_id);
                 }
-                StepperAction::Quit(_, _) => return false,
+                StepperAction::Quit(from, reason) => {
+                    Log::info(format!("Quit sent by {} for reason: {}", from, reason));
+                    return false;
+                }
                 _ => token.event_report.push(action),
             }
         }
@@ -398,9 +403,12 @@ impl Steppers {
         self.stepper_handlers.as_slice()
     }
 
+    /// Run the shutdown code for all active Steppers.
+    /// This is called when pushing StepperAction::Quit( origin , reason)
     pub fn shutdown(&mut self) {
         self.stepper_actions.clear();
         for stepper_h in self.stepper_handlers.iter_mut() {
+            Log::diag(format!("Closing {}", stepper_h.id));
             stepper_h.stepper.shutdown()
         }
         self.stepper_handlers.clear();

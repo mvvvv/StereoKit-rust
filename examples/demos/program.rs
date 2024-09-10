@@ -265,7 +265,8 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
                     thread::current().id()
                 ));
                 Log::diag(format!("Closure Process id : {:?} / {:?} ", thread::current().name(), process::id()));
-                sk.quit(None);
+                // sk.quit(None); // is too harsh we want to shutdown our steppers
+                sk.push_action(StepperAction::Quit("main".into(), "Main program call quit".into()));
                 if cfg!(target_os = "android") {
                     let no = Sound::from_file("sounds/no.wav").unwrap();
                     inst_play = Some(no.play(Vec3::ONE, None));
