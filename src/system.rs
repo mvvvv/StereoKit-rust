@@ -3148,7 +3148,7 @@ impl TextStyle {
     /// <https://stereokit.net/Pages/StereoKit/TextStyle/CharHeight.html>
     ///
     /// see also [`crate::system::text_style_set_char_height`]
-    #[deprecated(since = "0.40.0", note = "please use layout_height")]
+    #[deprecated(since = "0.40.0", note = "please use TextStyle::layout_height")]
     pub fn char_height(&mut self, char_height: f32) {
         unsafe { text_style_set_layout_height(*self, char_height) }
     }
@@ -3603,7 +3603,7 @@ impl Text {
     /// Returns size of the text in meters
     ///
     /// see also [`crate::system::text_size_layout`] [`crate::system::text_size_layout_constrained`]
-    #[deprecated(since = "0.40.0", note = "please use size_layout")]
+    #[deprecated(since = "0.40.0", note = "please Text::use size_layout")]
     pub fn size(text: impl AsRef<str>, text_style: Option<TextStyle>, max_width: Option<f32>) -> Vec2 {
         let c_str = CString::new(text.as_ref()).unwrap();
         let style = text_style.unwrap_or_default();
