@@ -8,9 +8,9 @@ use stereokit_rust::{
     mesh::Mesh,
     sk::{MainThreadToken, SkInfo},
     system::{BtnState, Text, TextAlign, TextStyle},
-    ui::{Ui, UiCorner, UiLathePt, UiVisual},
+    ui::{Ui, UiColor, UiCorner, UiLathePt, UiVisual},
     util::{
-        named_colors::{CYAN, DARK_BLUE, RED},
+        named_colors::{CYAN, DARK_BLUE, ORCHID, RED, YELLOW},
         Color128, Color32, Time,
     },
 };
@@ -70,6 +70,12 @@ impl IStepper for Ui1 {
     fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
         self.id = id;
         self.sk_info = Some(sk_info);
+
+        //create extra slots
+        Ui::set_theme_color(UiColor::ExtraSlot01, None, ORCHID);
+        Ui::set_theme_color(UiColor::ExtraSlot02, None, YELLOW);
+        Ui::set_element_color(UiVisual::ExtraSlot01, UiColor::ExtraSlot01);
+        Ui::set_element_color(UiVisual::ExtraSlot02, UiColor::ExtraSlot02);
         true
     }
 
@@ -80,28 +86,6 @@ impl IStepper for Ui1 {
 
 impl Ui1 {
     fn draw(&mut self, token: &MainThreadToken) {
-        Ui::window_begin(
-            "Ui elements",
-            &mut self.window_demo_pose,
-            Some(Vec2::new(self.demo_win_width, 0.0)),
-            None,
-            None,
-        );
-
-        self.custom_button_mesh(token, "Custom Button Mesh");
-        self.custom_button_element(token, "Custom Button Element");
-        Ui::button("Standard Button", None);
-
-        Ui::push_enabled(false, None);
-        self.custom_button_mesh(token, "Custom Button Disabled");
-        Ui::pop_enabled();
-
-        Ui::push_tint(Color128::hsv(0.0, 0.2, 0.7, 1.0));
-        self.custom_button_element(token, "Custom Button Tinted");
-        Ui::pop_tint();
-
-        Ui::hseparator();
-
         let corner_radius = 0.005 * Time::get_totalf().sin().abs();
         if let Ok(mesh) = Ui::gen_quadrant_mesh(
             UiCorner::TopLeft & UiCorner::BottomRight,
@@ -111,18 +95,39 @@ impl Ui1 {
             true,
             &LATHE_BUTTON,
         ) {
-            Ui::set_element_visual(UiVisual::Toggle, mesh, None, None);
-            Ui::toggle("my button style", true, None);
+            Ui::set_element_visual(UiVisual::ExtraSlot03, mesh, None, None);
         }
+
+        Ui::window_begin(
+            "Ui elements",
+            &mut self.window_demo_pose,
+            Some(Vec2::new(self.demo_win_width, 0.0)),
+            None,
+            None,
+        );
+
+        self.custom_button_mesh(token, "Custom Button Mesh", UiVisual::ExtraSlot02);
+        self.custom_button_element(token, "Custom Button Element");
+        Ui::button("Standard Button", None);
+
+        Ui::push_enabled(false, None);
+        self.custom_button_mesh(token, "Custom Button Mesh Disabled", UiVisual::ExtraSlot01);
+        Ui::pop_enabled();
+
+        Ui::push_tint(Color128::hsv(0.0, 0.2, 0.7, 1.0));
+        self.custom_button_element(token, "Custom Button Element Tinted");
+        Ui::pop_tint();
+
+        Ui::hseparator();
 
         Ui::window_end();
 
         Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
     }
 
-    pub fn custom_button_mesh(&mut self, token: &MainThreadToken, text: &str) -> bool {
+    pub fn custom_button_mesh(&mut self, token: &MainThreadToken, text: &str, slot: UiVisual) -> bool {
         let id = Ui::stack_hash(text);
-        let size = Text::size_layout(text, Some(Ui::get_text_style()), None) * 2.0;
+        let size = Text::size_layout(text, Some(Ui::get_text_style()), None) * 1.7;
         let mut layout = Ui::layout_reserve(size, false, 0.0);
         let mut out_finger_offset: f32 = 0.0;
         let mut out_button_state: BtnState = BtnState::empty();
@@ -143,7 +148,7 @@ impl Ui1 {
             token,
             &self.ui_material,
             Matrix::ts(layout.center, layout.dimensions),
-            Some(Ui::get_element_color(UiVisual::Button, Ui::get_anim_focus(id, out_focus_state, out_button_state))),
+            Some(Ui::get_element_color(slot, Ui::get_anim_focus(id, out_focus_state, out_button_state))),
             None,
         );
         Text::add_at(
@@ -163,7 +168,7 @@ impl Ui1 {
 
     pub fn custom_button_element(&mut self, token: &MainThreadToken, text: &str) -> bool {
         let id = Ui::stack_hash(text);
-        let size = Text::size_layout(text, Some(Ui::get_text_style()), None) * 2.0;
+        let size = Text::size_layout(text, Some(Ui::get_text_style()), None) * 1.7;
         let mut layout = Ui::layout_reserve(size, false, 0.0);
         let mut out_finger_offset: f32 = 0.0;
         let mut out_button_state: BtnState = BtnState::empty();
@@ -181,7 +186,7 @@ impl Ui1 {
         layout.center.z -= out_finger_offset / 2.0;
         layout.dimensions.z = out_finger_offset;
         Ui::draw_element(
-            UiVisual::Button,
+            UiVisual::ExtraSlot03,
             None,
             layout.tlb(),
             layout.dimensions,

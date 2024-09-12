@@ -10,7 +10,7 @@ use crate::{
     model::{Model, ModelT},
     sound::{Sound, SoundT},
     sprite::{Sprite, SpriteT},
-    system::{BtnState, Handed, HierarchyParent, TextAlign, TextContext, TextFit, TextStyle},
+    system::{BtnState, Handed, HierarchyParent, Log, TextAlign, TextContext, TextFit, TextStyle},
     util::{Color128, Color32},
     StereoKitError,
 };
@@ -67,6 +67,8 @@ pub enum UiCut {
 }
 
 /// Theme color categories to pair with Ui::set_theme_color.
+/// The total lenght is [u32,u32] where the fist u32 is the enum and the second is the ExtraSlot value
+/// native C function should convert this to UiColorT
 /// <https://stereokit.net/Pages/StereoKit/UIColor.html>
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u32)]
@@ -86,6 +88,23 @@ pub enum UiColor {
     Text = 5,
     /// A maximum enum value to allow for iterating through enum values.
     Max = 6,
+    /// All the extra color slots
+    ExtraSlot01,
+    ExtraSlot02,
+    ExtraSlot03,
+    ExtraSlot04,
+    ExtraSlot05,
+    ExtraSlot06,
+    ExtraSlot07,
+    ExtraSlot08,
+    ExtraSlot09,
+    ExtraSlot10,
+    ExtraSlot11,
+    ExtraSlot12,
+    ExtraSlot13,
+    ExtraSlot14,
+    ExtraSlot15,
+    ExtraSlot16,
 }
 
 /// Indicates the state of a UI theme color.
@@ -224,6 +243,23 @@ pub enum UiVisual {
     Aura = 19,
     /// A maximum enum value to allow for iterating through enum values.
     Max = 20,
+    /// All the extra color slots
+    ExtraSlot01,
+    ExtraSlot02,
+    ExtraSlot03,
+    ExtraSlot04,
+    ExtraSlot05,
+    ExtraSlot06,
+    ExtraSlot07,
+    ExtraSlot08,
+    ExtraSlot09,
+    ExtraSlot10,
+    ExtraSlot11,
+    ExtraSlot12,
+    ExtraSlot13,
+    ExtraSlot14,
+    ExtraSlot15,
+    ExtraSlot16,
 }
 
 /// For UI elements that can be oriented horizontally or vertically, this specifies that orientation.
@@ -1936,19 +1972,27 @@ impl Ui {
     /// more about the technique here : <https://playdeck.net/blog/quadrant-sizing-efficient-ui-rendering>
     /// You may also find Ui::quadrant_size_verts and Ui::quadrant_size_mesh to be helpful.
     /// <https://stereokit.net/Pages/StereoKit/UI/SetElementVisual.html>
+    /// * visual - Which UI visual element to override. Use UiVisual::ExtraSlotXX if you need extra
+    ///   UIVisual slots for your own custom UI elements.
+    /// * mesh - The Mesh to use for the UI element's visual component. The Mesh will be scaled to match the dimensions
+    ///   of the UI element.
+    /// * material - The Material to use when rendering the UI element. The default Material is specifically designed
+    ///   to work with quadrant sizing formatted meshes.
+    /// * min_size - For some meshes, such as quadrant sized meshes, there's a minimum size where the mesh turns inside
+    ///   out. This lets UI elements to accommodate for this minimum size, and behave somewhat more appropriately.
     ///
     /// see also [`crate::ui::ui_set_element_visual`]
     pub fn set_element_visual(
         visual: UiVisual,
         mesh: impl AsRef<Mesh>,
         material: Option<Material>,
-        size: Option<Vec2>,
+        min_size: Option<Vec2>,
     ) {
         let material = match material {
             Some(mat) => mat.0.as_ptr(),
             None => null_mut(),
         };
-        let min_size = size.unwrap_or_default();
+        let min_size = min_size.unwrap_or_default();
         unsafe { ui_set_element_visual(visual, mesh.as_ref().0.as_ptr(), material, min_size) };
     }
 
@@ -1956,7 +2000,8 @@ impl Ui {
     ///
     /// * visual - The UI element type to set the color category of.
     /// * color_category - The category of color to assign to this UI element. Use Ui::set_theme_color in combination
-    ///   with this to assign a specific color.
+    ///   with this to assign a specific color. Use UiColor::ExtraSlotXX if you need extra UIColor slots
+    ///   for your own custom UI elements.
     ///
     /// <https://stereokit.net/Pages/StereoKit/UI/SetElementColor.html>
     ///
@@ -1968,7 +2013,8 @@ impl Ui {
     /// This sets the sound that a particulat UI element will make when you interact with it. One sound when the
     /// interaction starts, and one when it ends.
     ///
-    /// * visual - The UI element to apply the sounds to.
+    /// * visual - The UI element to apply the sounds to. Use UiVisual::ExtraSlotXX if you need extra
+    ///   UIVisual slots
     /// * activate - The sound made when the interaction begins. A null sound will fall back to the default sound.
     /// * deactivate - The sound made when the interaction ends. A null sound will fall back to the default sound.
     ///
@@ -1990,9 +2036,11 @@ impl Ui {
     /// This will draw a visual element from StereoKit's theming system, while paying attention to certain factors
     /// such as enabled/disabled, tinting and more.
     /// <https://stereokit.net/Pages/StereoKit/UI/DrawElement.html>
-    /// * element_visual - The element type to draw.
+    /// * element_visual - The element type to draw. Use UiVisual::ExtraSlotXX to use extra UiVisual
+    ///   slots for your own custom UI elements. If these slots are empty, SK will fall back to UiVisual::Default
     /// * element_color - If you wish to use the coloring from a different element, you can use this to override the
-    ///   theme color used when drawing.
+    ///   theme color used when drawing. Use UiVisual::ExtraSlotXX to use extra UiVisual slots for your
+    ///   own custom UI elements. If these slots are empty, SK will fall back to UiVisual::Default.
     /// * start - This is the top left corner of the UI element relative to the current Hierarchy.
     /// * size - The layout size for this element in Hierarchy space.
     /// * focus - The amount of visual focus this element currently has, where 0 is unfocused, and 1 is active. You
@@ -2015,7 +2063,9 @@ impl Ui {
     /// This will get a final linear draw color for a particular UI element type with a particular focus value. This
     /// obeys the current hierarchy of tinting and enabled states.
     /// <https://stereokit.net/Pages/StereoKit/UI/GetElementColor.html>
-    /// * element_visual - Get the color from this element type.
+    /// * element_visual - Get the color from this element type.  Use UiVisual::ExtraSlotXX to use extra
+    ///   UiVisual slots for your own custom UI elements. If these slots are empty, SK will fall back to
+    ///   UiVisual::Default.
     /// * focus - The amount of visual focus this element currently has, where 0 is unfocused, and 1 is active. You
     ///   can acquire a good focus value from `Ui::get_anim_focus`
     ///
@@ -2043,7 +2093,12 @@ impl Ui {
     /// type is still used by many different UI elements. This will automatically generate colors for different UI
     /// element states.
     /// <https://stereokit.net/Pages/StereoKit/UI/SetThemeColor.html>
-    /// * color_state : This applies specifically to one state of this color category, and does not modify the others.
+    /// * color_category - The category of UI elements that are affected by this theme color. Use UiColor::ExtraSlotXX
+    ///   if you need extra UiColor slots for your own custom UI elements.
+    /// * color_state - The state of the UI element this color should apply to. If None has the value
+    ///   UiColorState::Normal
+    /// * color_gama : the gamma corrected color that should be applied to this theme color category in its normal
+    ///   resting state. Active and disabled colors will be generated based on this color.
     ///
     /// see also [`crate::ui::ui_set_theme_color`] [`crate::ui::ui_set_theme_color_state`]
     pub fn set_theme_color(
@@ -2051,6 +2106,7 @@ impl Ui {
         color_state: Option<UiColorState>,
         color_gamma: impl Into<Color128>,
     ) {
+        Log::diag(format!("u32 value is : {:?}", unsafe { std::mem::transmute::<UiColor, u32>(color_category) }));
         match color_state {
             Some(color_state) => unsafe { ui_set_theme_color_state(color_category, color_state, color_gamma.into()) },
             None => unsafe { ui_set_theme_color(color_category, color_gamma.into()) },
@@ -2061,8 +2117,12 @@ impl Ui {
     /// color with Ui::color_scheme, or without specifying a state, this may be a generated color, and not necessarily
     /// the color that was provided there.
     /// <https://stereokit.net/Pages/StereoKit/UI/GetThemeColor.html>
-    /// * color_state : The state of the UI element this color applies to.
+    /// * color_category - The category of UI elements that are affected by this theme color. Use UiColor::ExtraSlotXX
+    ///   if you need extra UiColor slots for your own custom UI elements.
+    ///   If the theme slot is empty, the color will be pulled from UiColor::None
+    /// * color_state : The state of the UI element this color applies to. If None has the value UiColorState::Normal
     ///
+    /// Returns the gamma space color for the theme color category in the indicated state.
     /// see also [`crate::ui::ui_get_theme_color`] [`crate::ui::ui_get_theme_color_state`]
     pub fn get_theme_color(color_category: UiColor, color_state: Option<UiColorState>) -> Color128 {
         match color_state {
