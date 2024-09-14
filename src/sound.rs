@@ -76,11 +76,20 @@ impl IAsset for Sound {
     }
 }
 
+// Default is click
+impl Default for Sound {
+    fn default() -> Self {
+        Sound::click()
+    }
+}
+
 impl Sound {
     /// Create a sound used for streaming audio in or out! This is useful for things like reading from a microphone
     /// stream, or playing audio from a source streaming over the network, or even procedural sounds that are generated on the fly!
     /// Use stream sounds with the WriteSamples and ReadSamples functions.
     /// <https://stereokit.net/Pages/StereoKit/Sound/CreateStream.html>
+    /// * stream_buffer_duration - How much audio time should this stream be able to hold without writing back over
+    ///   itself?
     ///
     /// see also [`crate::sound::sound_create_stream`]
     pub fn create_stream(stream_buffer_duration: f32) -> Result<Sound, StereoKitError> {
