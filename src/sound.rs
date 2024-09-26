@@ -60,6 +60,8 @@ extern "C" {
     pub fn sound_unread_samples(sound: SoundT) -> u64;
     pub fn sound_total_samples(sound: SoundT) -> u64;
     pub fn sound_cursor_samples(sound: SoundT) -> u64;
+    pub fn sound_get_decibels(sound: SoundT) -> f32;
+    pub fn sound_set_decibels(sound: SoundT, decibels: f32);
     pub fn sound_play(sound: SoundT, at: Vec3, volume: f32) -> SoundInst;
     pub fn sound_duration(sound: SoundT) -> f32;
     pub fn sound_addref(sound: SoundT);
@@ -193,6 +195,13 @@ impl Sound {
         unsafe { sound_play(self.0.as_ptr(), at.into(), volume) }
     }
 
+    /// <https://stereokit.net/Pages/StereoKit/Sound/Decibels.html>
+    ///
+    /// see also [`crate::sound::sound_set_decibels`]
+    pub fn decibels(&self, decibels: f32) {
+        unsafe { sound_set_decibels(self.0.as_ptr(), decibels) }
+    }
+
     /// This will read samples from the sound stream, starting from the first unread sample. Check UnreadSamples for how
     /// many samples are available to read.
     /// <https://stereokit.net/Pages/StereoKit/Sound/ReadSamples.html>
@@ -254,6 +263,13 @@ impl Sound {
         unsafe { sound_duration(self.0.as_ptr()) }
     }
 
+    /// <https://stereokit.net/Pages/StereoKit/Sound/Decibels.html>
+    ///
+    /// see also [`crate::sound::sound_get_decibels`]
+    pub fn get_decibels(&self) -> f32 {
+        unsafe { sound_get_decibels(self.0.as_ptr()) }
+    }
+
     /// This will return the total number of audio samples used by the sound! StereoKit currently uses 48,000 samples
     /// per second for all audio.
     /// <https://stereokit.net/Pages/StereoKit/Sound/TotalSamples.html>
@@ -281,6 +297,7 @@ extern "C" {
     pub fn sound_inst_get_pos(sound_inst: SoundInst) -> Vec3;
     pub fn sound_inst_set_volume(sound_inst: SoundInst, volume: f32);
     pub fn sound_inst_get_volume(sound_inst: SoundInst) -> f32;
+    pub fn sound_inst_get_intensity(sound_inst: SoundInst) -> f32;
 }
 
 #[repr(C)]
@@ -333,6 +350,13 @@ impl SoundInst {
     /// see also [`crate::sound::sound_inst_get_volume`]
     pub fn get_volume(&self) -> f32 {
         unsafe { sound_inst_get_volume(*self) }
+    }
+
+    /// <https://stereokit.net/Pages/StereoKit/SoundInst/Intensity.html>
+    ///
+    /// see also [`crate::sound::sound_inst_get_intensity`]
+    pub fn get_intensity(&self) -> f32 {
+        unsafe { sound_inst_get_intensity(*self) }
     }
 
     /// Is this Sound instance currently playing? For streaming assets, this will be true even if they don’t have any
