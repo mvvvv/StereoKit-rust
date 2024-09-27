@@ -2,9 +2,9 @@ use std::{cell::RefCell, rc::Rc};
 
 use crate::{
     event_loop::{IStepper, StepperId},
-    maths::{Matrix, Quat, Vec2, Vec3},
-    sk::{MainThreadToken, SkInfo},
-    system::{Handed, Input, Renderer},
+    maths::{Matrix, Pose, Quat, Vec2, Vec3},
+    sk::{AppMode, MainThreadToken, OriginMode, SkInfo},
+    system::{Handed, Input, Log, Renderer, World},
     util::Time,
 };
 
@@ -13,13 +13,14 @@ pub struct FlyOver {
     sk_info: Option<Rc<RefCell<SkInfo>>>,
     pub move_speed: f32,
     pub rotate_speed: f32,
+    reverse: f32,
 }
 
 unsafe impl Send for FlyOver {}
 
 impl Default for FlyOver {
     fn default() -> Self {
-        Self { id: "FlyOver".to_string(), sk_info: None, move_speed: 2.0, rotate_speed: 90.0 }
+        Self { id: "FlyOver".to_string(), sk_info: None, move_speed: 2.0, rotate_speed: 90.0, reverse: 1.0 }
     }
 }
 
@@ -27,6 +28,19 @@ impl IStepper for FlyOver {
     fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
         self.id = id;
         self.sk_info = Some(sk_info);
+        let rc_sk = self.sk_info.as_ref().unwrap();
+        let sk = rc_sk.as_ref();
+        let sk_settings = sk.borrow().get_settings();
+        if sk_settings.mode != AppMode::Simulator {
+            let origin_mode = World::get_origin_mode();
+            Log::diag(format!("Fly_Over: OriginMode is {:?} ", origin_mode));
+            if origin_mode == OriginMode::Stage {
+                Log::diag("Stage origin reversion");
+                self.reverse *= -1.0;
+            } else {
+                World::origin_offset(Pose::IDENTITY);
+            }
+        }
         true
     }
 
@@ -47,14 +61,13 @@ impl FlyOver {
         let mut rotate = camera_pose.orientation;
         if move_v != Vec3::ZERO {
             let head_rotate = Input::get_head().get_forward();
-            move_v.y = head_rotate.y;
+            move_v.y = head_rotate.y * self.reverse;
 
             if move_ctrler.is_stick_clicked() {
                 speed_accelerator *= 3.0;
             }
 
-            shift +=
-                camera_pose.orientation * move_v * Time::get_step_unscaledf() * self.move_speed * speed_accelerator;
+            shift += camera_pose.orientation * move_v * Time::get_step_unscaledf() * speed_accelerator * self.reverse;
             apply = true
         }
 
