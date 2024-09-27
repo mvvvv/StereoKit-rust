@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style type="text/css">
+body {background-color: black;}
+pre {
+	font-weight: normal;
+	color: #bbb;
+	white-space: -moz-pre-wrap;
+	white-space: -o-pre-wrap;
+	white-space: -pre-wrap;
+	white-space: pre-wrap;
+	word-wrap: break-word;
+	overflow-wrap: break-word;
+}
+b {font-weight: normal}
+b.BOLD {color: #fff}
+b.ITA {font-style: italic}
+b.UND {text-decoration: underline}
+b.STR {text-decoration: line-through}
+b.UNDSTR {text-decoration: underline line-through}
+b.BLK {color: #000000}
+b.RED {color: #aa0000}
+b.GRN {color: #00aa00}
+b.YEL {color: #aa5500}
+b.BLU {color: #0000aa}
+b.MAG {color: #aa00aa}
+b.CYN {color: #00aaaa}
+b.WHI {color: #aaaaaa}
+b.HIK {color: #555555}
+b.HIR {color: #ff5555}
+b.HIG {color: #55ff55}
+b.HIY {color: #ffff55}
+b.HIB {color: #5555ff}
+b.HIM {color: #ff55ff}
+b.HIC {color: #55ffff}
+b.HIW {color: #ffffff}
+b.BBLK {background-color: #000000}
+b.BRED {background-color: #aa0000}
+b.BGRN {background-color: #00aa00}
+b.BYEL {background-color: #aa5500}
+b.BBLU {background-color: #0000aa}
+b.BMAG {background-color: #aa00aa}
+b.BCYN {background-color: #00aaaa}
+b.BWHI {background-color: #aaaaaa}
+</style>
+</head>
+<body>
+<pre>Using package `stereokit-rust` in `/home/mv/dvlt/abacaba/stereokit-rust/Cargo.toml`
+ 'lib/arm64-v8a/libc++_shared.so'...
+ 'lib/arm64-v8a/libopenxr_loader.so'...
+ 'lib/arm64-v8a/libmain.so'...
+Verifying alignment of /home/mv/dvlt/abacaba/stereokit-rust/target/debug/apk/examples/main.apk (4)...
+      49 AndroidManifest.xml (OK - compressed)
+    1972 assets/center.glb (OK)
+   31236 assets/cuve.glb (OK)
+  211768 assets/fonts/Courier Prime Italic.ttf (OK)
+  308024 assets/fonts/Courier Prime.ttf (OK)
+  406232 assets/fonts/OFL.txt (OK)
+  410804 assets/fonts/Read me.txt (OK)
+  412392 assets/hdri/sky_dawn.hdr (OK)
+33966944 assets/icons/checked.png (OK)
+33971912 assets/icons/hamburger.png (OK)
+33980280 assets/icons/log_viewer.png (OK)
+33995372 assets/icons/radio.png (OK)
+34001400 assets/icons/screenshot.png (OK)
+34016884 assets/mobiles.gltf (OK)
+37311580 assets/plane.glb (OK)
+37398400 assets/shaders/blinker.hlsl.sks (OK)
+37414940 assets/shaders/hud.hlsl.sks (OK)
+37429616 assets/shaders/hud_text.hlsl.sks (OK)
+37445456 assets/shaders/large_tile_pbr.hlsl.sks (OK)
+37483112 assets/shaders/water_pbr.hlsl.sks (OK)
+37523696 assets/shaders/water_pbr2.hlsl.sks (OK)
+37562648 assets/sounds/no.wav (OK)
+37628156 assets/sounds/plane_engine.mp3 (OK)
+38260492 assets/sounds/plane_engine2.mp3 (OK)
+38890208 assets/textures/exit.jpeg (OK)
+38959712 assets/textures/log_viewer.jpeg (OK)
+39036772 assets/textures/open_gltf.jpeg (OK)
+39146920 assets/textures/parquet2/parquet2.ktx2 (OK)
+44739888 assets/textures/parquet2/parquet2ao.ktx2 (OK)
+50332860 assets/textures/parquet2/parquet2metal.ktx2 (OK)
+55925836 assets/textures/parquet2/parquet2roughness.ktx2 (OK)
+61518788 assets/textures/readme.md (OK)
+61518920 assets/textures/screenshot.jpeg (OK)
+61588760 assets/textures/sound.jpeg (OK)
+61667004 assets/textures/water/bump_large.ktx2 (OK)
+67259976 assets/textures/water/bump_large_inverse.ktx2 (OK)
+72852952 assets/textures/water/bump_large_limestone.ktx2 (OK)
+78445924 assets/textures/water/bump_large_tiles.ktx2 (OK)
+84038872 assets/vr_splash.png (OK)
+84266592 res/mipmap-hdpi-v4/app_icon.png (OK)
+84273976 res/mipmap-ldpi-v4/app_icon.png (OK)
+84276500 res/mipmap-mdpi-v4/app_icon.png (OK)
+84280356 res/mipmap-xhdpi-v4/app_icon.png (OK)
+84291952 res/mipmap-xxhdpi-v4/app_icon.png (OK)
+84313752 res/mipmap-xxxhdpi-v4/app_icon.png (OK)
+84345644 resources.arsc (OK)
+84347024 lib/arm64-v8a/libc++_shared.so (OK)
+86141864 lib/arm64-v8a/libopenxr_loader.so (OK)
+88410000 lib/arm64-v8a/libmain.so (OK)
+Verification succesful
+Signing `/home/mv/dvlt/abacaba/stereokit-rust/target/debug/apk/examples/main.apk` with keystore `/home/mv/.android/debug.keystore`
+Serving...
+Performing Incremental Install
+Success
+Install command complete in 2694 ms
+Starting: Intent { act=android.intent.action.MAIN cmp=com.stereokit.rust_binding.demos/android.app.NativeActivity }
+Status: ok
+LaunchState: COLD
+Activity: com.stereokit.rust_binding.demos/android.app.NativeActivity
+TotalTime: 336
+WaitTime: 356
+Complete
+Launched with PID 21416
+--------- beginning of main
+<b class=GRN>09-27 14:01:35.052 21416 21416 I t_binding.demo: Late-enabling -Xcheck:jni</b>
+<b class=BLU>09-27 14:01:35.111 21416 21416 D CompatibilityChangeReporter: Compat change id reported: 171979766; UID 10153; state: ENABLED</b>
+<b class=YEL>09-27 14:01:35.132 21416 21416 W System  : ClassLoader referenced unknown path: </b>
+09-27 14:01:35.144 21416 21416 V GraphicsEnvironment: Lazy GPU memory allocation for 'com.stereokit.rust_binding.demos': false
+09-27 14:01:35.145 21416 21416 V GraphicsEnvironment: ANGLE Developer option for 'com.stereokit.rust_binding.demos' set to: 'default'
+09-27 14:01:35.145 21416 21416 V GraphicsEnvironment: ANGLE GameManagerService for com.stereokit.rust_binding.demos: false
+09-27 14:01:35.145 21416 21416 V GraphicsEnvironment: Neither updatable production driver nor prerelease driver is supported.
+<b class=BLU>09-27 14:01:35.146 21416 21416 D CompatibilityChangeReporter: Compat change id reported: 175409949; UID 10153; state: DISABLED</b>
+<b class=BLU>09-27 14:01:35.146 21416 21416 D CompatibilityChangeReporter: Compat change id reported: 175409951; UID 10153; state: ENABLED</b>
+<b class=BLU>09-27 14:01:35.146 21416 21416 D CompatibilityChangeReporter: Compat change id reported: 175409956; UID 10153; state: DISABLED</b>
+<b class=BLU>09-27 14:01:35.147 21416 21416 D CompatibilityChangeReporter: Compat change id reported: 175409950; UID 10153; state: DISABLED</b>
+<b class=BLU>09-27 14:01:35.147 21416 21416 D NetworkSecurityConfig: No Network Security Config specified, using platform default</b>
+<b class=BLU>09-27 14:01:35.147 21416 21416 D CompatibilityChangeReporter: Compat change id reported: 175409952; UID 10153; state: DISABLED</b>
+<b class=BLU>09-27 14:01:35.148 21416 21416 D NetworkSecurityConfig: No Network Security Config specified, using platform default</b>
+<b class=GRN>09-27 14:01:35.156 21416 21416 I VrosSpatialAudio: init with null</b>
+<b class=BLU>09-27 14:01:35.176 21416 21416 D STKit-rs: android_activity::activity_impl::glue: Start: 0xb4000078d23c6780</b>
+<b class=BLU>09-27 14:01:35.176 21416 21439 D StereoKit: MainEvent Start </b>
+<b class=BLU>09-27 14:01:35.178 21416 21416 D STKit-rs: android_activity::activity_impl::glue: Resume: 0xb4000078d23c6780</b>
+<b class=BLU>09-27 14:01:35.179 21416 21439 D StereoKit: MainEvent Resume { loader: StateLoader { app: AndroidAppInner { jvm: CloneJavaVM { jvm: JavaVM(0xb4000078d2243380) }, native_activity: NativeActivityGlue { inner: WaitableNativeActivityState { activity: 0xb4000078d23c6780, mutex: Mutex { data: NativeActivityState { msg_read: 60, msg_write: 61, config: Configuration { mcc: 0, mnc: None, lang: Some("fr"), country: Some("FR"), orientation: Land, touchscreen: NoTouch, density: Some(290), keyboard: NoKeys, navigation: NoNav, keys_hidden: Soft, nav_hidden: Any, sdk_version: 32, screen_size: XLarge, screen_long: Yes, ui_mode_type: Normal, ui_mode_night: Yes }, saved_state: [], input_queue: 0x0, window: None, content_rect: ARect { left: 0, top: 0, right: 0, bottom: 0 }, activity_state: Resume, destroy_requested: false, thread_state: Running, app_has_saved_state: false, destroyed: false, redraw_needed: false, pending_input_queue: 0x0, pending_window: None }, poisoned: false, .. }, cond: Condvar { .. } } }, looper: Looper { ptr: 0xb4000078d223cd40 }, key_map_binding: </b>
+<b class=BLU>09-27 14:01:35.184 21416 21416 D CompatibilityChangeReporter: Compat change id reported: 175409955; UID 10153; state: DISABLED</b>
+<b class=BLU>09-27 14:01:35.185 21416 21416 D CompatibilityChangeReporter: Compat change id reported: 175409954; UID 10153; state: DISABLED</b>
+<b class=BLU>09-27 14:01:35.202 21416 21416 D STKit-rs: android_activity::activity_impl::glue: InputQueueCreated: 0xb4000078d23c6780 -- 0xb4000078d23e9200</b>
+<b class=BLU>09-27 14:01:35.211 21416 21416 D STKit-rs: android_activity::activity_impl::glue: NativeWindowCreated: 0xb4000078d23c6780 -- 0xb4000078b3496810</b>
+<b class=BLU>09-27 14:01:35.211 21416 21416 D STKit-rs: android_activity::activity_impl::glue: NativeWindowResized: 0xb4000078d23c6780 -- 0xb4000078b3496810</b>
+<b class=BLU>09-27 14:01:35.211 21416 21439 D StereoKit: MainEvent InitWindow </b>
+<b class=BLU>09-27 14:01:35.211 21416 21439 D StereoKit: MainEvent WindowResized </b>
+<b class=BLU>09-27 14:01:35.211 21416 21416 D STKit-rs: android_activity::activity_impl::glue: ContentRectChanged: 0xb4000078d23c6780 -- 0x7ff9b14498</b>
+<b class=BLU>09-27 14:01:35.211 21416 21439 D StereoKit: MainEvent ContentRectChanged </b>
+<b class=BLU>09-27 14:01:35.212 21416 21416 D STKit-rs: android_activity::activity_impl::glue: NativeWindowRedrawNeeded: 0xb4000078d23c6780 -- 0xb4000078b3496810</b>
+<b class=BLU>09-27 14:01:35.212 21416 21439 D StereoKit: MainEvent RedrawNeeded </b>
+<b class=BLU>09-27 14:01:35.271 21416 21416 D STKit-rs: android_activity::activity_impl::glue: WindowFocusChanged: 0xb4000078d23c6780 -- 1</b>
+<b class=BLU>09-27 14:01:35.271 21416 21439 D StereoKit: MainEvent GainedFocus </b>
+<b class=BLU>09-27 14:01:35.271 21416 21439 D StereoKit: sk_init : context: 0xb4000078d2243380 / jvm: 0x1276</b>
+<b class=GRN>09-27 14:01:35.271 21416 21439 I StereoKit: Before init &gt;&gt;&gt;</b>
+<b class=BLU>09-27 14:01:35.271 21416 21439 D SK_rust_Demos: Initializing StereoKit v0.4.0 Android ARM64...</b>
+<b class=BLU>09-27 14:01:35.271 21416 21439 D SK_rust_Demos: Initializing Assets</b>
+<b class=BLU>09-27 14:01:35.351 21416 21439 D SK_rust_Demos: Initializing Platform</b>
+<b class=GRN>09-27 14:01:35.351 21416 21439 I AdrenoGLES-0: QUALCOMM build                   : 152ee662e2, I2cc3c1a376</b>
+<b class=GRN>09-27 14:01:35.351 21416 21439 I AdrenoGLES-0: Build Date                       : 08/05/24</b>
+<b class=GRN>09-27 14:01:35.351 21416 21439 I AdrenoGLES-0: OpenGL ES Shader Compiler Version: E031.47.01.00</b>
+<b class=GRN>09-27 14:01:35.351 21416 21439 I AdrenoGLES-0: Local Branch                     : </b>
+<b class=GRN>09-27 14:01:35.351 21416 21439 I AdrenoGLES-0: Remote Branch                    : refs/tags/AU_LINUX_ANDROID_LA.UM.9.12.1.11.00.00.890.145</b>
+<b class=GRN>09-27 14:01:35.351 21416 21439 I AdrenoGLES-0: Remote Branch                    : NONE</b>
+<b class=GRN>09-27 14:01:35.351 21416 21439 I AdrenoGLES-0: Reconstruct Branch               : NOTHING</b>
+<b class=GRN>09-27 14:01:35.351 21416 21439 I AdrenoGLES-0: Build Config                     : S P 10.0.7 AArch64</b>
+<b class=GRN>09-27 14:01:35.351 21416 21439 I AdrenoGLES-0: Driver Path                      : /vendor/lib64/egl/libGLESv2_adreno.so</b>
+<b class=GRN>09-27 14:01:35.351 21416 21439 I AdrenoGLES-0: Driver Version                   : 0786.0</b>
+<b class=GRN>09-27 14:01:35.351 21416 21439 I AdrenoGLES-0: Process Name                     : com.stereokit.rust_binding.demos</b>
+<b class=GRN>09-27 14:01:35.372 21416 21439 I AdrenoGLES-0: PFP: 0x016dd112, ME: 0x00000000</b>
+<b class=BLU>09-27 14:01:35.378 21416 21439 D SK_rust_Demos: [sk_gpu] EGL version 1.5</b>
+<b class=BLU>09-27 14:01:35.379 21416 21439 D SK_rust_Demos: [sk_gpu] Couldn't load gl function glPolygonMode</b>
+<b class=BLU>09-27 14:01:35.381 21416 21439 D SK_rust_Demos: [sk_gpu] Couldn't load gl function glGetTexImage</b>
+<b class=BLU>09-27 14:01:35.382 21416 21439 D SK_rust_Demos: [sk_gpu] Using OpenGL: OpenGL ES 3.2 V@0786.0 (GIT@152ee662e2, I2cc3c1a376, 1722802028) (Date:08/05/24)</b>
+<b class=BLU>09-27 14:01:35.382 21416 21439 D SK_rust_Demos: [sk_gpu] Device: Adreno (TM) 650</b>
+<b class=BLU>09-27 14:01:35.382 21416 21439 D SK_rust_Demos: [sk_gpu] Debug info enabled.</b>
+<b class=BLU>09-27 14:01:35.382 21416 21439 D SK_rust_Demos: Starting a XR mode app</b>
+09-27 14:01:35.382 21416 21439 V OpenXR-Loader: Verbose [GENERAL | xrInitializeLoaderKHR | OpenXR-Loader] : Entering loader trampoline
+09-27 14:01:35.383 21416 21439 V OpenXR-Loader: Verbose [GENERAL | xrEnumerateInstanceExtensionProperties | OpenXR-Loader] : Entering loader trampoline
+<b class=GRN>09-27 14:01:35.383 21416 21439 I OpenXR-Loader: getActiveRuntimeCursor: Querying URI: content://org.khronos.openxr.runtime_broker/openxr/1/abi/arm64-v8a/runtimes/active</b>
+<b class=YEL>09-27 14:01:35.389 21416 21439 W OpenXR-Loader: Null cursor when querying installable content resolver.</b>
+<b class=GRN>09-27 14:01:35.389 21416 21439 I OpenXR-Loader: getActiveRuntimeCursor: Querying URI: content://org.khronos.openxr.system_runtime_broker/openxr/1/abi/arm64-v8a/runtimes/active</b>
+<b class=YEL>09-27 14:01:35.391 21416 21439 W OpenXR-Loader: Null cursor when querying system content resolver.</b>
+<b class=RED>09-27 14:01:35.391 21416 21439 E OpenXR-Loader: Could access neither the installable nor system runtime broker.</b>
+<b class=GRN>09-27 14:01:35.391 21416 21439 I OpenXR-Loader: Info [GENERAL | xrEnumerateInstanceExtensionProperties | OpenXR-Loader] : RuntimeManifestFile::FindManifestFiles - using global runtime file /system/etc/openxr/1/active_runtime.aarch64.json</b>
+<b class=GRN>09-27 14:01:35.391 21416 21439 I OpenXR-Loader: Info [GENERAL |  | OpenXR-Loader] : RuntimeManifestFile::CreateIfValid - attempting to load /system/etc/openxr/1/active_runtime.aarch64.json</b>
+<b class=GRN>09-27 14:01:35.395 21416 21439 I OpenXR-Loader: Info [GENERAL | xrEnumerateInstanceExtensionProperties | OpenXR-Loader] : RuntimeInterface::LoadRuntime forwarding xrInitializeLoaderKHR call to runtime before calling xrNegotiateLoaderRuntimeInterface.</b>
+09-27 14:01:35.395 21416 21439 V OpenXR  : OpenXRForwardLoader::xrInitializeLoaderKHR [start]
+<b class=BLU>09-27 14:01:35.401 21416 21439 D ApplicationLoaders: Returning zygote-cached class loader: /system/framework/android.test.base.jar</b>
+<b class=BLU>09-27 14:01:35.401 21416 21439 D ApplicationLoaders: Returning zygote-cached class loader: /system/framework/android.hidl.manager-V1.0-java.jar</b>
+<b class=BLU>09-27 14:01:35.401 21416 21439 D ApplicationLoaders: Returning zygote-cached class loader: /system/framework/android.hidl.base-V1.0-java.jar</b>
+<b class=GRN>09-27 14:01:35.412 21416 21439 I OpenXR  : Loading 64-bit Runtime.</b>
+<b class=BLU>09-27 14:01:35.422 21416 21439 D vulkan  : searching for layers in '/data/app/~~VTm5wzJMuHtvpimg1b9TYw==/com.stereokit.rust_binding.demos-EVIvYHTKMBFaivv-7ym-mA==/lib/arm64'</b>
+<b class=BLU>09-27 14:01:35.422 21416 21439 D vulkan  : searching for layers in '/data/app/~~VTm5wzJMuHtvpimg1b9TYw==/com.stereokit.rust_binding.demos-EVIvYHTKMBFaivv-7ym-mA==/base.apk!/lib/arm64-v8a'</b>
+<b class=BLU>09-27 14:01:35.423 21416 21439 D OsSdkLoader: OSSDK loading module 'libossdk.oculus.so'</b>
+<b class=GRN>09-27 14:01:35.455 21416 21439 I DriverLoader: Calling into SetLegacyVrApiEntryPointOverride</b>
+<b class=GRN>09-27 14:01:35.456 21416 21439 I VrApi_DriverLoader: SetLegacyVrApiEntryPointOverride: calling sprintf</b>
+<b class=GRN>09-27 14:01:35.456 21416 21439 I VrApi_DriverLoader: SetLegacyVrApiEntryPointOverride: env buffer is '0x78548694fc'</b>
+<b class=GRN>09-27 14:01:35.456 21416 21439 I VrApi_DriverLoader: SetLegacyVrApiEntryPointOverride: calling setenv</b>
+<b class=GRN>09-27 14:01:35.456 21416 21439 I DriverLoader: Creating Temp JNIEnv</b>
+<b class=GRN>09-27 14:01:35.456 21416 21439 I DriverLoader: Calling FindClass</b>
+<b class=GRN>09-27 14:01:35.456 21416 21439 I DriverLoader: Calling RegisterNativeVrApiLoaderMethods</b>
+<b class=GRN>09-27 14:01:35.456 21416 21439 I VrApi_DriverLoader: RegisterNativeVrApiLoaderMethods: calling RegisterNatives</b>
+<b class=GRN>09-27 14:01:35.456 21416 21439 I DriverLoader: Calling RegisterNativeXrLoaderMethods</b>
+<b class=GRN>09-27 14:01:35.456 21416 21439 I OpenXR_DriverLoader: RegisterNativeVrApiLoaderMethods: calling RegisterNatives</b>
+<b class=GRN>09-27 14:01:35.456 21416 21439 I DriverLoader: Exiting JNI_OnLoad</b>
+<b class=GRN>09-27 14:01:35.456 21416 21439 I OpenXR_ClientState: OpenXRClientState::create - from xrInitializeLoaderKHR</b>
+<b class=GRN>09-27 14:01:35.456 21416 21439 I XrRuntimeSharedClientState: SharedClientState::create called from 'OpenXRClientState::init'</b>
+<b class=GRN>09-27 14:01:35.456 21416 21439 I ipcLoader [RUNTIMEIPC]: RuntimeIPC: Loader: IPC Service API Loader Version: 69 Jul 11 2024 23:22:42</b>
+<b class=GRN>09-27 14:01:35.456 21416 21439 I ipcLoader [RUNTIMEIPC]: RuntimeIPC: Using android_get_exported_namespace: libripcclient.oculus.so</b>
+<b class=GRN>09-27 14:01:35.457 21416 21439 I ipcLoader [RUNTIMEIPC]: RuntimeIPC: android_get_exported_namespace SUCCESS: libripcclient.oculus.so</b>
+<b class=GRN>09-27 14:01:35.458 21416 21439 I MultiInstanceDetector [RUNTIMEIPC]: Multiple instances check passed. Socket name: INSTANCE_DETECTOR:21416</b>
+<b class=BLU>09-27 14:01:35.458 21416 21439 D OsSdkLoader: OSSDK loading module 'libossdk.oculus.so'</b>
+<b class=GRN>09-27 14:01:35.459 21416 21439 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: DLObserver, currentState: STATE_STOPPED, newState: STATE_STARTING</b>
+<b class=GRN>09-27 14:01:35.459 21416 21457 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: DLObserver, currentState: STATE_STARTING, newState: STATE_RUNNING</b>
+<b class=GRN>09-27 14:01:35.459 21416 21457 I DeadlockObserver [RUNTIMEIPC]: MainLoop starting</b>
+<b class=GRN>09-27 14:01:35.459 21416 21439 I DeadlockObserver [RUNTIMEIPC]: DeadlockObserver Init SUCCESS with defaultKillThreshold: 30.000000</b>
+<b class=YEL>09-27 14:01:35.459 21416 21439 W RuntimeIPCSystem [RUNTIMEIPC]: Init: Java VM is null</b>
+<b class=GRN>09-27 14:01:35.469 21416 21439 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: IpcDCReqHandler, currentState: STATE_STOPPED, newState: STATE_STARTING</b>
+<b class=GRN>09-27 14:01:35.469 21416 21459 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: IpcDCReqHandler, currentState: STATE_STARTING, newState: STATE_RUNNING</b>
+<b class=BLU>09-27 14:01:35.469 21416 21459 D IPCDataChannelServer [RUNTIMEIPC]: Connected: 1, broker_package:broker_process:0</b>
+<b class=GRN>09-27 14:01:35.469 21416 21439 I BrokerRPC [RUNTIMEIPC]: InitRPCToServiceInternal: Success</b>
+<b class=GRN>09-27 14:01:35.469 21416 21439 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: RIPCSystem, currentState: STATE_STOPPED, newState: STATE_STARTING</b>
+<b class=GRN>09-27 14:01:35.469 21416 21460 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: RIPCSystem, currentState: STATE_STARTING, newState: STATE_RUNNING</b>
+<b class=GRN>09-27 14:01:35.469 21416 21439 I RuntimeIPCSystem [RUNTIMEIPC]: RuntimeIPCSystem: Init SUCCESS</b>
+<b class=GRN>09-27 14:01:35.473 21416 21439 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STOPPED, newState: STATE_STARTING</b>
+<b class=GRN>09-27 14:01:35.473 21416 21461 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STARTING, newState: STATE_RUNNING</b>
+<b class=GRN>09-27 14:01:35.473 21416 21439 I ClientProcessConnector [RUNTIMEIPC]: GetProcessConnection: com.oculus.systemdriver:com.oculus.vrruntimeservice</b>
+<b class=GRN>09-27 14:01:35.474 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: Event buffer size (client): 8192</b>
+<b class=GRN>09-27 14:01:35.474 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: TryToGetIPCResourcesFromServer: RPC_CONNECTOR_CONNECT_TO_SERVER SUCCESS: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (gkcache)</b>
+<b class=GRN>09-27 14:01:35.474 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: EnsureServerConnection: SUCCESS. Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (gkcache)</b>
+<b class=GRN>09-27 14:01:35.474 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: ConnectToServer: SUCCESS: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (gkcache)</b>
+<b class=GRN>09-27 14:01:35.475 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: InitServerStateBuffer: SUCCESS. 0, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (gkcache)</b>
+<b class=GRN>09-27 14:01:35.475 21416 21439 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: RIPCNotifThread, currentState: STATE_STOPPED, newState: STATE_STARTING</b>
+<b class=GRN>09-27 14:01:35.475 21416 21463 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: RIPCNotifThread, currentState: STATE_STARTING, newState: STATE_RUNNING</b>
+<b class=GRN>09-27 14:01:35.475 21416 21439 I OpenXR_ClientState: Client state creation succeeded.</b>
+09-27 14:01:35.475 21416 21439 V OpenXR  : OpenXRForwardLoader::xrInitializeLoaderKHR [end]
+09-27 14:01:35.475 21416 21439 V OpenXR  : OpenXRForwardLoader::xrNegotiateLoaderRuntimeInterface [start]
+09-27 14:01:35.476 21416 21439 V OpenXR  : OpenXRForwardLoader::xrNegotiateLoaderRuntimeInterface [end]
+<b class=GRN>09-27 14:01:35.476 21416 21439 I OpenXR-Loader: Info [GENERAL | xrEnumerateInstanceExtensionProperties | OpenXR-Loader] : RuntimeInterface::LoadRuntime succeeded loading runtime defined in manifest file /system/etc/openxr/1/active_runtime.aarch64.json using interface version 1 and OpenXR API version 1.0</b>
+<b class=GRN>09-27 14:01:35.478 21416 21439 I OpenXR  : IsFirstParty 0</b>
+<b class=YEL>09-27 14:01:35.479 21416 21439 W t_binding.demo: Accessing hidden method Landroid/content/pm/ApplicationInfo;-&gt;isPrivilegedApp()Z (blocked,test-api, reflection, denied)</b>
+<b class=YEL>09-27 14:01:35.479 21416 21439 W t_binding.demo: If this is a platform test consider enabling VMRuntime.ALLOW_TEST_API_ACCESS change id for this package.</b>
+<b class=GRN>09-27 14:01:35.479 21416 21439 I OpenXR  : IsPrivileged 0</b>
+<b class=GRN>09-27 14:01:35.479 21416 21439 I OpenXR  : Is_X_PartnerGateKeeper</b>
+<b class=GRN>09-27 14:01:35.479 21416 21439 I OpenXR  : PGK Status: exp = 0, dc = false</b>
+<b class=GRN>09-27 14:01:35.479 21416 21439 I OpenXR  : oculus_first_access = false</b>
+<b class=GRN>09-27 14:01:35.479 21416 21439 I OpenXR  : Extension status: P</b>
+<b class=GRN>09-27 14:01:35.480 21416 21439 I OpenXR  : IsFirstParty 0</b>
+<b class=GRN>09-27 14:01:35.480 21416 21439 I OpenXR  : IsSystem 0</b>
+<b class=YEL>09-27 14:01:35.489 21416 21439 W libc    : Access denied finding property "ro.vendor.product.model_extended"</b>
+<b class=YEL>09-27 14:01:35.490 21416 21439 W GkCacheQuerierClient: getGkValue: Query result for 'oculus_xrruntime:oculus_trex_body_full_killsw' not successful: 4</b>
+<b class=YEL>09-27 14:01:35.490 21416 21439 W GkHelper: GkHelper: query failed, result code: 4</b>
+<b class=GRN>09-27 14:01:35.490 21416 21439 I OpenXR  : checkTrexKillswitchGk 'oculus_trex_body_full_killsw' = false</b>
+<b class=GRN>09-27 14:01:35.490 21416 21439 I OpenXR  : PassesGKKillswitch 1</b>
+<b class=GRN>09-27 14:01:35.490 21416 21439 I OpenXR  : xrEnumerateInstanceExtensionProperties: skipping extension=`XR_FB_keyboard_tracking` due to: missing uses-permission string `com.oculus.permission.TRACKED_KEYBOARD` from AndroidManifest in package `com.stereokit.rust_binding.demos`</b>
+<b class=GRN>09-27 14:01:35.490 21416 21439 I OpenXR  : xrEnumerateInstanceExtensionProperties: skipping extension=`XR_FBX1_spatial_entity` due to: Tier=40 extState=P deviceIsExpEnabled=false expManifestSet=true isFirstPartyApp=false isSystemApp=false</b>
+<b class=GRN>09-27 14:01:35.490 21416 21439 I OpenXR  : xrEnumerateInstanceExtensionProperties: skipping extension=`XR_FBX2_spatial_entity` due to: Tier=40 extState=P deviceIsExpEnabled=false expManifestSet=true isFirstPartyApp=false isSystemApp=false</b>
+<b class=GRN>09-27 14:01:35.491 21416 21439 I OpenXR  : checkTrexKillswitchGk 'oculus_trex_insightsdk_killsw' = false</b>
+<b class=GRN>09-27 14:01:35.491 21416 21439 I OpenXR  : PassesGKKillswitch 1</b>
+<b class=GRN>09-27 14:01:35.491 21416 21439 I OpenXR  : checkTrexKillswitchGk 'oculus_trex_insightsdk_killsw' = false</b>
+<b class=GRN>09-27 14:01:35.491 21416 21439 I OpenXR  : PassesGKKillswitch 1</b>
+<b class=GRN>09-27 14:01:35.491 21416 21439 I OpenXR  : xrEnumerateInstanceExtensionProperties: skipping extension=`XR_METAX1_passthrough_color_lut` due to: Tier=40 extState=P deviceIsExpEnabled=false expManifestSet=true isFirstPartyApp=false isSystemApp=false</b>
+<b class=GRN>09-27 14:01:35.491 21416 21439 I OpenXR  : checkTrexKillswitchGk 'oculus_trex_insightsdk_killsw' = false</b>
+<b class=GRN>09-27 14:01:35.491 21416 21439 I OpenXR  : PassesGKKillswitch 1</b>
+<b class=GRN>09-27 14:01:35.491 21416 21439 I OpenXR  : checkTrexKillswitchGk 'oculus_trex_render_model_killsw' = false</b>
+<b class=GRN>09-27 14:01:35.491 21416 21439 I OpenXR  : PassesGKKillswitch 1</b>
+<b class=GRN>09-27 14:01:35.491 21416 21439 I OpenXR  : xrEnumerateInstanceExtensionProperties: skipping extension=`XR_FBX1_spatial_entity_query` due to: Tier=40 extState=P deviceIsExpEnabled=false expManifestSet=true isFirstPartyApp=false isSystemApp=false</b>
+<b class=GRN>09-27 14:01:35.491 21416 21439 I OpenXR  : xrEnumerateInstanceExtensionProperties: skipping extension=`XR_FBX2_spatial_entity_query` due to: Tier=40 extState=P deviceIsExpEnabled=false expManifestSet=true isFirstPartyApp=false isSystemApp=false</b>
+<b class=YEL>09-27 14:01:35.491 21416 21439 W GkCacheQuerierClient: getGkValue: Query result for 'oculus_xrruntime:oculus_trex_anchor_persistence_discovery_killsw' not successful: 4</b>
+<b class=YEL>09-27 14:01:35.491 21416 21439 W GkHelper: GkHelper: query failed, result code: 4</b>
+<b class=GRN>09-27 14:01:35.491 21416 21439 I OpenXR  : checkTrexKillswitchGk 'oculus_trex_anchor_persistence_discovery_killsw' = false</b>
+<b class=GRN>09-27 14:01:35.491 21416 21439 I OpenXR  : PassesGKKillswitch 1</b>
+<b class=YEL>09-27 14:01:35.491 21416 21439 W GkCacheQuerierClient: getGkValue: Query result for 'oculus_xrruntime:oculus_trex_anchor_persistence_discovery_killsw' not successful: 4</b>
+<b class=YEL>09-27 14:01:35.491 21416 21439 W GkHelper: GkHelper: query failed, result code: 4</b>
+<b class=GRN>09-27 14:01:35.491 21416 21439 I OpenXR  : checkTrexKillswitchGk 'oculus_trex_anchor_persistence_discovery_killsw' = false</b>
+<b class=GRN>09-27 14:01:35.491 21416 21439 I OpenXR  : PassesGKKillswitch 1</b>
+<b class=GRN>09-27 14:01:35.491 21416 21439 I OpenXR  : xrEnumerateInstanceExtensionProperties: skipping extension=`XR_FBX1_touch_controller_extras` due to: Tier=40 extState=P deviceIsExpEnabled=false expManifestSet=true isFirstPartyApp=false isSystemApp=false</b>
+<b class=GRN>09-27 14:01:35.491 21416 21439 I OpenXR  : xrEnumerateInstanceExtensionProperties: skipping extension=`XR_FBX1_spatial_entity_storage` due to: Tier=40 extState=P deviceIsExpEnabled=false expManifestSet=true isFirstPartyApp=false isSystemApp=false</b>
+<b class=GRN>09-27 14:01:35.491 21416 21439 I OpenXR  : xrEnumerateInstanceExtensionProperties: skipping extension=`XR_FBX2_spatial_entity_storage` due to: Tier=40 extState=P deviceIsExpEnabled=false expManifestSet=true isFirstPartyApp=false isSystemApp=false</b>
+<b class=GRN>09-27 14:01:35.492 21416 21439 I OpenXR  : xrEnumerateInstanceExtensionProperties: skipping extension 'XR_META_local_dimming' as device requirements requirements (16) are not met.</b>
+<b class=GRN>09-27 14:01:35.492 21416 21439 I OpenXR  : xrEnumerateInstanceExtensionProperties: skipping extension 'XR_META_foveation_eye_tracked' as feature requirements (1) are not met.</b>
+<b class=GRN>09-27 14:01:35.492 21416 21439 I OpenXR  : xrEnumerateInstanceExtensionProperties: skipping extension 'XR_FB_eye_tracking_social' as feature requirements (1) are not met.</b>
+<b class=GRN>09-27 14:01:35.492 21416 21439 I OpenXR  : checkTrexKillswitchGk 'oculus_trex_insightsdk_killsw' = false</b>
+<b class=GRN>09-27 14:01:35.492 21416 21439 I OpenXR  : PassesGKKillswitch 1</b>
+<b class=GRN>09-27 14:01:35.492 21416 21439 I OpenXR  : xrEnumerateInstanceExtensionProperties: skipping extension=`XR_FBX1_composition_layer_settings` due to: Tier=40 extState=P deviceIsExpEnabled=false expManifestSet=true isFirstPartyApp=false isSystemApp=false</b>
+<b class=GRN>09-27 14:01:35.492 21416 21439 I OpenXR  : xrEnumerateInstanceExtensionProperties: skipping extension=`XR_FBX1_composition_layer_depth_test` due to: Tier=40 extState=P deviceIsExpEnabled=false expManifestSet=true isFirstPartyApp=false isSystemApp=false</b>
+<b class=GRN>09-27 14:01:35.492 21416 21439 I OpenXR  : xrEnumerateInstanceExtensionProperties: skipping extension 'XR_EXT_eye_gaze_interaction' as feature requirements (1) are not met.</b>
+<b class=GRN>09-27 14:01:35.492 21416 21439 I OpenXR  : xrEnumerateInstanceExtensionProperties: skipping extension 'XR_META_hand_tracking_wide_motion_mode' as device requirements requirements (33) are not met.</b>
+<b class=GRN>09-27 14:01:35.492 21416 21439 I OpenXR  : xrEnumerateInstanceExtensionProperties: skipping extension=`XR_EXTX1_hand_tracking_data_source` due to: Tier=40 extState=P deviceIsExpEnabled=false expManifestSet=true isFirstPartyApp=false isSystemApp=false</b>
+<b class=GRN>09-27 14:01:35.492 21416 21439 I OpenXR  : xrEnumerateInstanceExtensionProperties: skipping extension=`XR_METAX1_performance_metrics` due to: Tier=40 extState=P deviceIsExpEnabled=false expManifestSet=true isFirstPartyApp=false isSystemApp=false</b>
+<b class=GRN>09-27 14:01:35.492 21416 21439 I OpenXR  : xrEnumerateInstanceExtensionProperties: skipping extension=`XR_METAX1_virtual_keyboard` due to: Tier=40 extState=P deviceIsExpEnabled=false expManifestSet=true isFirstPartyApp=false isSystemApp=false</b>
+<b class=GRN>09-27 14:01:35.492 21416 21439 I OpenXR  : xrEnumerateInstanceExtensionProperties: skipping extension=`XR_METAX2_virtual_keyboard` due to: Tier=40 extState=P deviceIsExpEnabled=false expManifestSet=true isFirstPartyApp=false isSystemApp=false</b>
+<b class=GRN>09-27 14:01:35.492 21416 21439 I OpenXR  : xrEnumerateInstanceExtensionProperties: skipping extension=`XR_EXTX1_event_channel` due to: Tier=40 extState=P deviceIsExpEnabled=false expManifestSet=true isFirstPartyApp=false isSystemApp=false</b>
+<b class=GRN>09-27 14:01:35.492 21416 21439 I OpenXR  : xrEnumerateInstanceExtensionProperties: skipping extension=`XR_METAX1_environment_depth` due to: Tier=40 extState=P deviceIsExpEnabled=false expManifestSet=true isFirstPartyApp=false isSystemApp=false</b>
+<b class=GRN>09-27 14:01:35.492 21416 21439 I OpenXR  : xrEnumerateInstanceExtensionProperties: skipping extension=`XR_METAX2_environment_depth` due to: Tier=40 extState=P deviceIsExpEnabled=false expManifestSet=true isFirstPartyApp=false isSystemApp=false</b>
+<b class=YEL>09-27 14:01:35.493 21416 21439 W GkCacheQuerierClient: getGkValue: Query result for 'oculus_xrruntime:oculus_trex_environment_depth_tier3_killsw' not successful: 4</b>
+<b class=YEL>09-27 14:01:35.493 21416 21439 W GkHelper: GkHelper: query failed, result code: 4</b>
+<b class=GRN>09-27 14:01:35.493 21416 21439 I OpenXR  : checkTrexKillswitchGk 'oculus_trex_environment_depth_tier3_killsw' = false</b>
+<b class=GRN>09-27 14:01:35.493 21416 21439 I OpenXR  : PassesGKKillswitch 1</b>
+<b class=GRN>09-27 14:01:35.493 21416 21439 I OpenXR  : xrEnumerateInstanceExtensionProperties: skipping extension 'XR_META_environment_depth' as device requirements requirements (33) are not met.</b>
+<b class=GRN>09-27 14:01:35.493 21416 21439 I OpenXR  : xrEnumerateInstanceExtensionProperties: skipping extension=`XR_EXT_palm_pose` due to: Tier=40 extState=P deviceIsExpEnabled=false expManifestSet=true isFirstPartyApp=false isSystemApp=false</b>
+<b class=YEL>09-27 14:01:35.493 21416 21439 W GkCacheQuerierClient: getGkValue: Query result for 'oculus_xrruntime:oculus_trex_body_fidelity_killsw' not successful: 4</b>
+<b class=YEL>09-27 14:01:35.493 21416 21439 W GkHelper: GkHelper: query failed, result code: 4</b>
+<b class=GRN>09-27 14:01:35.493 21416 21439 I OpenXR  : checkTrexKillswitchGk 'oculus_trex_body_fidelity_killsw' = false</b>
+<b class=GRN>09-27 14:01:35.493 21416 21439 I OpenXR  : PassesGKKillswitch 1</b>
+<b class=YEL>09-27 14:01:35.493 21416 21439 W GkCacheQuerierClient: getGkValue: Query result for 'oculus_xrruntime:oculus_trex_body_calibration_killsw' not successful: 4</b>
+<b class=YEL>09-27 14:01:35.493 21416 21439 W GkHelper: GkHelper: query failed, result code: 4</b>
+<b class=GRN>09-27 14:01:35.493 21416 21439 I OpenXR  : checkTrexKillswitchGk 'oculus_trex_body_calibration_killsw' = false</b>
+<b class=GRN>09-27 14:01:35.493 21416 21439 I OpenXR  : PassesGKKillswitch 1</b>
+09-27 14:01:35.493 21416 21439 V OpenXR-Loader: Verbose [GENERAL | xrEnumerateInstanceExtensionProperties | OpenXR-Loader] : Completed loader trampoline
+09-27 14:01:35.493 21416 21439 V OpenXR-Loader: Verbose [GENERAL | xrEnumerateInstanceExtensionProperties | OpenXR-Loader] : Entering loader trampoline
+09-27 14:01:35.494 21416 21439 V OpenXR-Loader: Verbose [GENERAL | xrEnumerateInstanceExtensionProperties | OpenXR-Loader] : Completed loader trampoline
+09-27 14:01:35.494 21416 21439 V OpenXR-Loader: Verbose [GENERAL | xrEnumerateApiLayerProperties | OpenXR-Loader] : Entering loader trampoline
+09-27 14:01:35.494 21416 21439 V OpenXR-Loader: Verbose [GENERAL | xrEnumerateApiLayerProperties | OpenXR-Loader] : Entering loader trampoline
+09-27 14:01:35.495 21416 21439 V OpenXR-Loader: Verbose [GENERAL | xrCreateInstance | OpenXR-Loader] : Entering loader trampoline
+09-27 14:01:35.496 21416 21439 V OpenXR-Loader: Verbose [GENERAL | xrCreateInstance | OpenXR-Loader] : Entering LoaderInstance::CreateInstance
+09-27 14:01:35.496 21416 21439 V OpenXR-Loader: Verbose [GENERAL | xrCreateInstance | OpenXR-Loader] : Entering loader terminator
+<b class=GRN>09-27 14:01:35.496 21416 21439 I OpenXR  : ----------- xrCreateInstance [start] ----------</b>
+<b class=GRN>09-27 14:01:35.496 21416 21439 I VersionGater: App OpenXR version is 1.0.41</b>
+<b class=GRN>09-27 14:01:35.496 21416 21439 I VersionGater: Version gate state: 1111 1111 1111 111</b>
+<b class=GRN>09-27 14:01:35.498 21416 21439 I TREX    : Initializing TREX for client 18ea821728541b12...</b>
+<b class=GRN>09-27 14:01:35.498 21416 21439 I TREX    : Initializing system...</b>
+<b class=GRN>09-27 14:01:35.498 21416 21439 I XrRuntimeSystem_Client: BodyPoweredHands checkSysPropForBodyAPIOverride 0</b>
+<b class=GRN>09-27 14:01:35.498 21416 21439 I TREXLoadPolicy: RenderModelPlugin: all features matched!</b>
+<b class=GRN>09-27 14:01:35.498 21416 21439 I TREXLoadPolicy: RenderModelPlugin: all permissions matched!</b>
+<b class=GRN>09-27 14:01:35.499 21416 21439 I TREX    : Created plugin package context for com.oculus.systemdriver</b>
+<b class=GRN>09-27 14:01:35.500 21416 21439 I PTKService: PTKServiceClient Init</b>
+<b class=GRN>09-27 14:01:35.502 21416 21439 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STOPPED, newState: STATE_STARTING</b>
+<b class=GRN>09-27 14:01:35.502 21416 21465 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STARTING, newState: STATE_RUNNING</b>
+<b class=GRN>09-27 14:01:35.503 21416 21439 I ClientProcessConnector [RUNTIMEIPC]: GetProcessConnection: com.oculus.vrshell:com.oculus.vrshell</b>
+<b class=GRN>09-27 14:01:35.504 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: Event buffer size (client): 8192</b>
+<b class=GRN>09-27 14:01:35.504 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: TryToGetIPCResourcesFromServer: RPC_CONNECTOR_CONNECT_TO_SERVER SUCCESS: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.vrshell:com.oculus.vrshell (ptkserviceserver)</b>
+<b class=GRN>09-27 14:01:35.504 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: EnsureServerConnection: SUCCESS. Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.vrshell:com.oculus.vrshell (ptkserviceserver)</b>
+<b class=GRN>09-27 14:01:35.504 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: ConnectToServer: SUCCESS: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.vrshell:com.oculus.vrshell (ptkserviceserver)</b>
+<b class=GRN>09-27 14:01:35.512 21416 21439 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STOPPED, newState: STATE_STARTING</b>
+<b class=GRN>09-27 14:01:35.512 21416 21467 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STARTING, newState: STATE_RUNNING</b>
+<b class=GRN>09-27 14:01:35.513 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: Event buffer size (client): 8192</b>
+<b class=GRN>09-27 14:01:35.513 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: TryToGetIPCResourcesFromServer: RPC_CONNECTOR_CONNECT_TO_SERVER SUCCESS: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (RenderModelServer)</b>
+<b class=GRN>09-27 14:01:35.513 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: EnsureServerConnection: SUCCESS. Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (RenderModelServer)</b>
+<b class=GRN>09-27 14:01:35.513 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: ConnectToServer: SUCCESS: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (RenderModelServer)</b>
+<b class=GRN>09-27 14:01:35.513 21416 21439 I TREXLoadPolicy: KeyboardTrackingPlugin: all features matched!</b>
+<b class=GRN>09-27 14:01:35.513 21416 21439 I TREXLoadPolicy: Plugin 'com.oculus.mrservice:': GK killswitch is enabled! Plugin will be skipped!</b>
+<b class=GRN>09-27 14:01:35.514 21416 21439 I TREX    : Created plugin package context for com.oculus.systemdriver</b>
+<b class=GRN>09-27 14:01:35.517 21416 21439 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STOPPED, newState: STATE_STARTING</b>
+<b class=GRN>09-27 14:01:35.517 21416 21470 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STARTING, newState: STATE_RUNNING</b>
+<b class=GRN>09-27 14:01:35.518 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: Event buffer size (client): 8192</b>
+<b class=GRN>09-27 14:01:35.518 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: TryToGetIPCResourcesFromServer: RPC_CONNECTOR_CONNECT_TO_SERVER SUCCESS: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (HapticsServer)</b>
+<b class=GRN>09-27 14:01:35.518 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: EnsureServerConnection: SUCCESS. Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (HapticsServer)</b>
+<b class=GRN>09-27 14:01:35.518 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: ConnectToServer: SUCCESS: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (HapticsServer)</b>
+<b class=GRN>09-27 14:01:35.518 21416 21439 I TREX    : Loading EMGSDK Client Plugin</b>
+<b class=GRN>09-27 14:01:35.519 21416 21439 I TREX    : Created plugin package context for com.oculus.systemdriver</b>
+<b class=GRN>09-27 14:01:35.521 21416 21439 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STOPPED, newState: STATE_STARTING</b>
+<b class=GRN>09-27 14:01:35.521 21416 21472 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STARTING, newState: STATE_RUNNING</b>
+<b class=GRN>09-27 14:01:35.522 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: Event buffer size (client): 8192</b>
+<b class=GRN>09-27 14:01:35.522 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: TryToGetIPCResourcesFromServer: RPC_CONNECTOR_CONNECT_TO_SERVER SUCCESS: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (HandInputDataServer)</b>
+<b class=GRN>09-27 14:01:35.522 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: EnsureServerConnection: SUCCESS. Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (HandInputDataServer)</b>
+<b class=GRN>09-27 14:01:35.522 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: ConnectToServer: SUCCESS: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (HandInputDataServer)</b>
+<b class=RED>09-27 14:01:35.525 21416 21439 E TREX    : Loaded HandInputDataClientPlugin</b>
+<b class=GRN>09-27 14:01:35.526 21416 21439 I TREX    : Created plugin package context for com.oculus.systemdriver</b>
+<b class=GRN>09-27 14:01:35.528 21416 21439 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STOPPED, newState: STATE_STARTING</b>
+<b class=GRN>09-27 14:01:35.528 21416 21474 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STARTING, newState: STATE_RUNNING</b>
+<b class=GRN>09-27 14:01:35.530 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: Event buffer size (client): 8192</b>
+<b class=GRN>09-27 14:01:35.530 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: TryToGetIPCResourcesFromServer: RPC_CONNECTOR_CONNECT_TO_SERVER SUCCESS: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (ControllerIPCServer)</b>
+<b class=GRN>09-27 14:01:35.530 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: EnsureServerConnection: SUCCESS. Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (ControllerIPCServer)</b>
+<b class=GRN>09-27 14:01:35.530 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: ConnectToServer: SUCCESS: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (ControllerIPCServer)</b>
+<b class=GRN>09-27 14:01:35.530 21416 21439 I TrexControllerClientPlugin: ControllerClientBase::Initialize success</b>
+<b class=GRN>09-27 14:01:35.530 21416 21439 I TREXLoadPolicy: BodyApiClientPlugin: all features matched!</b>
+<b class=GRN>09-27 14:01:35.530 21416 21439 I TREX    : Loading plugin com.oculus.bodyapiservice:libbodyapiplugin.so</b>
+<b class=BLU>09-27 14:01:35.534 21416 21439 D AndroidLibraryResolver: Loading 'libbodyapiplugin.so' from package 'com.oculus.bodyapiservice'</b>
+<b class=BLU>09-27 14:01:35.537 21416 21439 D ApplicationLoaders: Returning zygote-cached class loader: /system/framework/android.test.base.jar</b>
+<b class=GRN>09-27 14:01:35.545 21416 21439 I AndroidLibraryResolver: Attempting to find getAPIFunction64</b>
+09-27 14:01:35.545 21416 21439 V LibLoaderImpl: Loading 64-bit LibLoaderImpl.
+09-27 14:01:35.545 21416 21439 V LibLoaderImpl: internalGetAPIFunction: loadLibrary 'loaderimpl'
+09-27 14:01:35.545 21416 21439 V LibLoaderImpl: Using System.loadLibrary
+<b class=GRN>09-27 14:01:35.547 21416 21439 I libloaderimpl: nativeSetClassLoader:0x1496</b>
+09-27 14:01:35.547 21416 21439 V LibLoaderImpl: internalGetAPIFunction: calling nativeGetAPIFunction
+<b class=GRN>09-27 14:01:35.547 21416 21439 I libloaderimpl: LibLoaderImpl nativeGetAPIFunction.</b>
+<b class=GRN>09-27 14:01:35.547 21416 21439 I libloaderimpl: LibLoaderHandle SUCCESS</b>
+<b class=GRN>09-27 14:01:35.547 21416 21439 I libloaderimpl: LibLoaderImpl GetAPIFunction. libName: libbodyapiplugin.so, funcName: trex_GetPluginInfo</b>
+<b class=GRN>09-27 14:01:35.548 21416 21439 I libloaderimpl: LibLoaderImpl GetAPIFunction. libName: libbodyapiplugin.so, funcName: trex_Initialize</b>
+<b class=GRN>09-27 14:01:35.548 21416 21439 I libloaderimpl: LibLoaderImpl GetAPIFunction. libName: libbodyapiplugin.so, funcName: trex_Shutdown</b>
+<b class=GRN>09-27 14:01:35.549 21416 21439 I TREX    : Created plugin package context for com.oculus.bodyapiservice</b>
+<b class=GRN>09-27 14:01:35.550 21416 21439 I [CT]    : BodyApiPlugin: BodyApiClientInterface7 initialized.</b>
+<b class=GRN>09-27 14:01:35.550 21416 21439 I ipcLoader [RUNTIMEIPC]: RuntimeIPC: Loader: IPC Service API Loader Version: 69 Jul 11 2024 23:55:17</b>
+<b class=GRN>09-27 14:01:35.550 21416 21439 I ipcLoader [RUNTIMEIPC]: RuntimeIPC: Using android_get_exported_namespace: libripcclient.oculus.so</b>
+<b class=GRN>09-27 14:01:35.551 21416 21439 I ipcLoader [RUNTIMEIPC]: RuntimeIPC: android_get_exported_namespace SUCCESS: libripcclient.oculus.so</b>
+<b class=GRN>09-27 14:01:35.557 21416 21439 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STOPPED, newState: STATE_STARTING</b>
+<b class=GRN>09-27 14:01:35.558 21416 21476 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STARTING, newState: STATE_RUNNING</b>
+<b class=BLU>09-27 14:01:35.559 21416 21439 D RuntimeIPCClient [RUNTIMEIPC]: TryToGetIPCResourcesFromServer: Failed to get process connection : Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.bodyapiservice:com.oculus.bodyapiservice (BodyApiServiceServer)</b>
+<b class=YEL>09-27 14:01:35.559 21416 21439 W RuntimeIPCClient [RUNTIMEIPC]: TryToGetIPCResourcesFromServer FAILED in 0.707187 ms</b>
+<b class=GRN>09-27 14:01:35.559 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: EnsureServerConnection: TryToGetIPCResourcesFromServer FAILED, allowOfflineInitialization=true, isReconnecting=false: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.bodyapiservice:com.oculus.bodyapiservice (BodyApiServiceServer)</b>
+<b class=YEL>09-27 14:01:35.559 21416 21439 W RuntimeIPCClient [RUNTIMEIPC]: ConnectToServer: EnsureServerConnection FAILED: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.bodyapiservice:com.oculus.bodyapiservice (BodyApiServiceServer), allowOfflineInitialization=true</b>
+<b class=GRN>09-27 14:01:35.559 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: ConnectToServer: initialized offline: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.bodyapiservice:com.oculus.bodyapiservice (BodyApiServiceServer)</b>
+<b class=GRN>09-27 14:01:35.560 21416 21439 I TREXLoadPolicy: SpatialPersistenceClientPlugin: all permissions matched!</b>
+<b class=GRN>09-27 14:01:35.560 21416 21439 I TREX    : Loading plugin com.facebook.spatial_persistence_service:libplugin.so</b>
+<b class=BLU>09-27 14:01:35.561 21416 21439 D AndroidLibraryResolver: Loading 'libplugin.so' from package 'com.facebook.spatial_persistence_service'</b>
+<b class=BLU>09-27 14:01:35.564 21416 21439 D ApplicationLoaders: Returning zygote-cached class loader: /system/framework/android.test.base.jar</b>
+<b class=GRN>09-27 14:01:35.572 21416 21439 I AndroidLibraryResolver: Attempting to find getAPIFunction64</b>
+09-27 14:01:35.572 21416 21439 V LibLoaderImpl: Loading 64-bit LibLoaderImpl.
+09-27 14:01:35.572 21416 21439 V LibLoaderImpl: internalGetAPIFunction: loadLibrary 'loaderimpl'
+09-27 14:01:35.572 21416 21439 V LibLoaderImpl: Using System.loadLibrary
+<b class=GRN>09-27 14:01:35.574 21416 21439 I libloaderimpl: nativeSetClassLoader:0x14b6</b>
+09-27 14:01:35.574 21416 21439 V LibLoaderImpl: internalGetAPIFunction: calling nativeGetAPIFunction
+<b class=GRN>09-27 14:01:35.574 21416 21439 I libloaderimpl: LibLoaderImpl nativeGetAPIFunction.</b>
+<b class=GRN>09-27 14:01:35.574 21416 21439 I libloaderimpl: LibLoaderHandle SUCCESS</b>
+<b class=GRN>09-27 14:01:35.574 21416 21439 I libloaderimpl: LibLoaderImpl GetAPIFunction. libName: libplugin.so, funcName: trex_GetPluginInfo</b>
+<b class=RED>09-27 14:01:35.576 21416 21439 E QuickPerformanceLoggerImpl: [WARNING] QPL unimplemented, call QplMrProvider::initialize() first</b>
+<b class=GRN>09-27 14:01:35.576 21416 21439 I libloaderimpl: LibLoaderImpl GetAPIFunction. libName: libplugin.so, funcName: trex_Initialize</b>
+<b class=GRN>09-27 14:01:35.576 21416 21439 I libloaderimpl: LibLoaderImpl GetAPIFunction. libName: libplugin.so, funcName: trex_Shutdown</b>
+<b class=GRN>09-27 14:01:35.577 21416 21439 I TREX    : Created plugin package context for com.facebook.spatial_persistence_service</b>
+<b class=GRN>09-27 14:01:35.578 21416 21439 I [CT]    : SP:TREX:SpatialPersistencePlugin: SpatialPersistencePlugin::trex_Initialize called for client 1795390437433023250.</b>
+<b class=GRN>09-27 14:01:35.578 21416 21439 I [CT]    : Anchor:LogLevelHelper: setGlobalLogLevelFromSysprop: Set log level to info: 3</b>
+<b class=GRN>09-27 14:01:35.579 21416 21439 I [CT]    : SP:AF:AnchorFramework: Creating CPUThreadPoolScheduler AnchorFramework Scheduler</b>
+<b class=YEL>09-27 14:01:35.579 21416 21477 W [CT]    : VIPER: No callback registered to set thread properties for type 'Foreground' with name 'SP:AF:InsightAnchorApi'</b>
+<b class=YEL>09-27 14:01:35.593 21416 21439 W [CT]    : SP:DeviceConfig: Failed to query device config param: name=oculus_plane_freespace_integration</b>
+<b class=GRN>09-27 14:01:35.593 21416 21439 I [CT]    : SP:SpatialAnchorConfig: ensureInitialized: Gatekeeper Name: oculus_plane_freespace_integration is set to false</b>
+<b class=GRN>09-27 14:01:35.594 21416 21439 I ipcLoader [RUNTIMEIPC]: RuntimeIPC: Loader: IPC Service API Loader Version: 69 Jul 11 2024 23:14:42</b>
+<b class=GRN>09-27 14:01:35.594 21416 21439 I ipcLoader [RUNTIMEIPC]: RuntimeIPC: Using android_get_exported_namespace: libripcclient.oculus.so</b>
+<b class=GRN>09-27 14:01:35.594 21416 21439 I ipcLoader [RUNTIMEIPC]: RuntimeIPC: android_get_exported_namespace SUCCESS: libripcclient.oculus.so</b>
+<b class=GRN>09-27 14:01:35.597 21416 21439 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STOPPED, newState: STATE_STARTING</b>
+<b class=GRN>09-27 14:01:35.597 21416 21480 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STARTING, newState: STATE_RUNNING</b>
+<b class=GRN>09-27 14:01:35.599 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: Event buffer size (client): 8192</b>
+<b class=GRN>09-27 14:01:35.599 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: TryToGetIPCResourcesFromServer: RPC_CONNECTOR_CONNECT_TO_SERVER SUCCESS: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (DynamicObjectTrackingServer)</b>
+<b class=GRN>09-27 14:01:35.599 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: EnsureServerConnection: SUCCESS. Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (DynamicObjectTrackingServer)</b>
+<b class=GRN>09-27 14:01:35.599 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: ConnectToServer: SUCCESS: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (DynamicObjectTrackingServer)</b>
+<b class=GRN>09-27 14:01:35.600 21416 21439 I [CT]    : SP:AF:AnchorFramework: Using TrackingService</b>
+<b class=GRN>09-27 14:01:35.600 21416 21439 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STOPPED, newState: STATE_STARTING</b>
+<b class=GRN>09-27 14:01:35.600 21416 21482 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STARTING, newState: STATE_RUNNING</b>
+<b class=GRN>09-27 14:01:35.601 21416 21439 I ClientProcessConnector [RUNTIMEIPC]: GetProcessConnection: native_process.system:/system_ext/bin/trackingservice</b>
+<b class=GRN>09-27 14:01:35.604 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: Event buffer size (client): 8192</b>
+<b class=GRN>09-27 14:01:35.604 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: TryToGetIPCResourcesFromServer: RPC_CONNECTOR_CONNECT_TO_SERVER SUCCESS: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: native_process.system:/system_ext/bin/trackingservice (SlamAnchorServer)</b>
+<b class=GRN>09-27 14:01:35.604 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: EnsureServerConnection: SUCCESS. Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: native_process.system:/system_ext/bin/trackingservice (SlamAnchorServer)</b>
+<b class=GRN>09-27 14:01:35.604 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: ConnectToServer: SUCCESS: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: native_process.system:/system_ext/bin/trackingservice (SlamAnchorServer)</b>
+<b class=BLU>09-27 14:01:35.604 21416 21439 D OsSdkLoader: OSSDK loading module 'libheadtracker.oculus.so'</b>
+<b class=BLU>09-27 14:01:35.605 21416 21439 D t_binding.demo: memorybroker::ClientConnection ctor</b>
+<b class=BLU>09-27 14:01:35.605 21416 21439 D OsSdkLoader: OSSDK loading module 'libossdk.oculus.so'</b>
+<b class=GRN>09-27 14:01:35.606 21416 21439 I [CT]    : SP:AF:AnchorFramework: Creating CPUThreadPoolScheduler AnchorFramework Scheduler</b>
+<b class=YEL>09-27 14:01:35.606 21416 21484 W [CT]    : VIPER: No callback registered to set thread properties for type 'Foreground' with name 'AnchorFrameworkVROS'</b>
+<b class=GRN>09-27 14:01:35.607 21416 21439 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: RIPCNotifThread, currentState: STATE_STOPPED, newState: STATE_STARTING</b>
+<b class=GRN>09-27 14:01:35.607 21416 21486 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: RIPCNotifThread, currentState: STATE_STARTING, newState: STATE_RUNNING</b>
+<b class=YEL>09-27 14:01:35.607 21416 21487 W [CT]    : VIPER: No callback registered to set thread properties for type 'Foreground' with name 'SlamAnchorPersistenceRuntimeIpcClient'</b>
+<b class=GRN>09-27 14:01:35.612 21416 21439 I [CT]    : SP:SpatialAnchorConfig: ensureInitialized: Gatekeeper Name: xr_scene_anchor_deviation_telemetry is set to true</b>
+<b class=GRN>09-27 14:01:35.618 21416 21439 I [CT]    : SP:SpatialAnchorConfig: ensureInitialized: Gatekeeper Name: oculus_enable_rigid_scene is set to true</b>
+<b class=GRN>09-27 14:01:35.621 21416 21439 I [CT]    : SP:SpatialAnchorConfig: ensureInitialized: Gatekeeper Name: oculus_rigid_scene_telemetry is set to true</b>
+<b class=GRN>09-27 14:01:35.621 21416 21439 I [CT]    : SP:AF:AnchorFrameworkTelemetryHelper: Device information acquired: deviceFlavor: hollywood-user</b>
+<b class=YEL>09-27 14:01:35.621 21416 21500 W [CT]    : VIPER: No callback registered to set thread properties for type 'Foreground' with name 'AnchorFrameworkInstrumented'</b>
+<b class=GRN>09-27 14:01:35.622 21416 21439 I [CT]    : SP:AF:AnchorFrameworkTelemetryHelper: Device information acquired: deviceFlavor: hollywood-user</b>
+<b class=GRN>09-27 14:01:35.628 21416 21439 I [CT]    : SP:AF:AnchorFramework: AnchorFrameworkExperimentEnabled = false</b>
+<b class=GRN>09-27 14:01:35.628 21416 21439 I TREXLoadPolicy: InsightSdk: all features matched!</b>
+<b class=GRN>09-27 14:01:35.628 21416 21439 I TREX    : Loading plugin com.oculus.mrservice:libmrservice_plugin.so</b>
+<b class=BLU>09-27 14:01:35.629 21416 21439 D AndroidLibraryResolver: Loading 'libmrservice_plugin.so' from package 'com.oculus.mrservice'</b>
+<b class=BLU>09-27 14:01:35.632 21416 21439 D ApplicationLoaders: Returning zygote-cached class loader: /system/framework/android.test.base.jar</b>
+<b class=BLU>09-27 14:01:35.632 21416 21439 D ApplicationLoaders: Returning zygote-cached class loader: /system/framework/android.hidl.manager-V1.0-java.jar</b>
+<b class=BLU>09-27 14:01:35.632 21416 21439 D ApplicationLoaders: Returning zygote-cached class loader: /system/framework/android.hidl.base-V1.0-java.jar</b>
+<b class=GRN>09-27 14:01:35.639 21416 21439 I AndroidLibraryResolver: Attempting to find getAPIFunction64</b>
+09-27 14:01:35.639 21416 21439 V LibLoaderImpl: Loading 64-bit LibLoaderImpl.
+09-27 14:01:35.639 21416 21439 V LibLoaderImpl: internalGetAPIFunction: loadLibrary 'loaderimpl'
+09-27 14:01:35.639 21416 21439 V LibLoaderImpl: Using System.loadLibrary
+<b class=GRN>09-27 14:01:35.643 21416 21439 I libloaderimpl: nativeSetClassLoader:0x1566</b>
+09-27 14:01:35.643 21416 21439 V LibLoaderImpl: internalGetAPIFunction: calling nativeGetAPIFunction
+<b class=GRN>09-27 14:01:35.643 21416 21439 I libloaderimpl: LibLoaderImpl nativeGetAPIFunction.</b>
+<b class=GRN>09-27 14:01:35.643 21416 21439 I libloaderimpl: LibLoaderHandle SUCCESS</b>
+<b class=GRN>09-27 14:01:35.643 21416 21439 I libloaderimpl: LibLoaderImpl GetAPIFunction. libName: libmrservice_plugin.so, funcName: trex_GetPluginInfo</b>
+<b class=GRN>09-27 14:01:35.644 21416 21439 I libloaderimpl: LibLoaderImpl GetAPIFunction. libName: libmrservice_plugin.so, funcName: trex_Initialize</b>
+<b class=GRN>09-27 14:01:35.645 21416 21439 I libloaderimpl: LibLoaderImpl GetAPIFunction. libName: libmrservice_plugin.so, funcName: trex_Shutdown</b>
+<b class=GRN>09-27 14:01:35.646 21416 21439 I TREX    : Created plugin package context for com.oculus.mrservice</b>
+<b class=GRN>09-27 14:01:35.647 21416 21439 I TREX    : Loading plugin com.oculus.wearableinputservice:libtrex_emgwristband_client_plugin.so</b>
+<b class=GRN>09-27 14:01:35.647 21416 21439 I TREX    : package 'com.oculus.wearableinputservice' not found, skipping</b>
+<b class=GRN>09-27 14:01:35.647 21416 21439 I TREX    : Plugin 'com.oculus.wearableinputservice:libtrex_emgwristband_client_plugin.so' not loaded.</b>
+<b class=GRN>09-27 14:01:35.647 21416 21439 I PerformanceManagerInterface_Impl: PerformanceManagerInterface_Impl_V1: feature: 2: oculus.software.handtracking</b>
+<b class=GRN>09-27 14:01:35.647 21416 21439 I PerformanceManagerInterface_Impl: PerformanceManagerInterface_Impl_V1: feature: 3: oculus.software.face_tracking</b>
+<b class=GRN>09-27 14:01:35.647 21416 21439 I PerformanceManagerInterface_Impl: PerformanceManagerInterface_Impl_V1: feature: 4: oculus.software.eye_tracking</b>
+<b class=GRN>09-27 14:01:35.647 21416 21439 I PerformanceManagerInterface_Impl: PerformanceManagerInterface_Impl_V1: feature: 6: oculus.software.trackedkeyboard</b>
+<b class=GRN>09-27 14:01:35.647 21416 21439 I PerformanceManagerInterface_Impl: PerformanceManagerInterface_Impl_V1: feature: 7: com.oculus.software.body_tracking</b>
+<b class=RED>09-27 14:01:35.647 21416 21439 E TREX    : Interface 'WristbandClientInterface', version 6 was not found. Check debug build for more information.</b>
+<b class=YEL>09-27 14:01:35.648 21416 21439 W t_binding.demo: Accessing hidden method Landroid/app/Activity;-&gt;isResumed()Z (unsupported, reflection, allowed)</b>
+<b class=GRN>09-27 14:01:35.649 21416 21502 I OpenXR  : nativeOnActivityReady</b>
+<b class=GRN>09-27 14:01:35.650 21416 21439 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STOPPED, newState: STATE_STARTING</b>
+<b class=GRN>09-27 14:01:35.650 21416 21503 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STARTING, newState: STATE_RUNNING</b>
+<b class=GRN>09-27 14:01:35.651 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: Event buffer size (client): 8192</b>
+<b class=GRN>09-27 14:01:35.651 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: TryToGetIPCResourcesFromServer: RPC_CONNECTOR_CONNECT_TO_SERVER SUCCESS: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (RuntimeServiceDevice)</b>
+<b class=GRN>09-27 14:01:35.651 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: EnsureServerConnection: SUCCESS. Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (RuntimeServiceDevice)</b>
+<b class=GRN>09-27 14:01:35.651 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: ConnectToServer: SUCCESS: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (RuntimeServiceDevice)</b>
+<b class=GRN>09-27 14:01:35.652 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: Shutdown: 1, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (RuntimeServiceDevice)</b>
+<b class=GRN>09-27 14:01:35.652 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: ReleaseRef: Remaining refs: 0, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (RuntimeServiceDevice)</b>
+<b class=GRN>09-27 14:01:35.652 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: DisconnectFromServer: 0, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (RuntimeServiceDevice)</b>
+<b class=GRN>09-27 14:01:35.652 21416 21503 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STOPPING, newState: STATE_STOPPED</b>
+<b class=GRN>09-27 14:01:35.652 21416 21439 I Distortion: Initializing Mesh Decenter Correction</b>
+<b class=GRN>09-27 14:01:35.654 21416 21439 I Distortion: SetLensPositions - iad=0.06485, left offset=0.000542816,-0.00139587, right offset=-0.000906337,-0.00141104</b>
+<b class=GRN>09-27 14:01:35.654 21416 21439 I VrRuntimeDeviceClient: DevicesSupported : 4 devices, quest2|questpro|quest3</b>
+<b class=GRN>09-27 14:01:35.654 21416 21439 I OpenXR  : IsSystem 0</b>
+<b class=GRN>09-27 14:01:35.654 21416 21439 I Distortion: Initializing Mesh Decenter Correction</b>
+<b class=GRN>09-27 14:01:35.656 21416 21439 I Distortion: SetLensPositions - iad=0.06485, left offset=0.000542816,-0.00139587, right offset=-0.000906337,-0.00141104</b>
+<b class=GRN>09-27 14:01:35.656 21416 21439 I OpenXR  : ----------- xrCreateInstance [end] ----------</b>
+09-27 14:01:35.656 21416 21439 V OpenXR-Loader: Verbose [GENERAL | xrCreateInstance | OpenXR-Loader] : Completed loader terminator
+<b class=GRN>09-27 14:01:35.656 21416 21439 I OpenXR-Loader: Info [GENERAL | xrCreateInstance | OpenXR-Loader] : LoaderInstance::CreateInstance succeeded with 0 layers enabled and runtime interface - created instance = 0x0100000000000001</b>
+09-27 14:01:35.656 21416 21439 V OpenXR-Loader: Verbose [GENERAL | xrCreateInstance | OpenXR-Loader] : Completed loader trampoline
+<b class=BLU>09-27 14:01:35.656 21416 21439 D SK_rust_Demos: OpenXR API:     1.0.41</b>
+<b class=BLU>09-27 14:01:35.656 21416 21439 D SK_rust_Demos: OpenXR runtime: Oculus 69.623.0</b>
+<b class=BLU>09-27 14:01:35.656 21416 21439 D SK_rust_Demos: OpenXR extensions:</b>
+<b class=BLU>09-27 14:01:35.656 21416 21439 D SK_rust_Demos: ___________________________________</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |     Usage | Extension</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |-----------|----------------------</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_EXT_active_action_set_priority</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_EXT_hand_joints_motion_range</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_EXT_performance_settings</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_EXT_user_presence</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_FB_android_surface_swapchain_create</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_FB_body_tracking</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_FB_common_events</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_FB_composition_layer_alpha_blend</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_FB_composition_layer_depth_test</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_FB_composition_layer_image_layout</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_FB_composition_layer_secure_content</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_FB_composition_layer_settings</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_FB_face_tracking</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_FB_face_tracking2</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_FB_foveation</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_FB_foveation_configuration</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_FB_foveation_vulkan</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_FB_hand_tracking_aim</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_FB_hand_tracking_capsules</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_FB_hand_tracking_mesh</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_FB_haptic_amplitude_envelope</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_FB_haptic_pcm</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_FB_passthrough_keyboard_hands</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_FB_render_model</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_FB_scene</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_FB_scene_capture</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_FB_space_warp</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_FB_spatial_entity_container</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_FB_spatial_entity_query</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_FB_spatial_entity_sharing</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_FB_spatial_entity_storage</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_FB_spatial_entity_storage_batch</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_FB_spatial_entity_user</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_FB_swapchain_update_state</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_FB_swapchain_update_state_android_surface</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_FB_swapchain_update_state_opengl_es</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_FB_swapchain_update_state_vulkan</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_FB_touch_controller_pro</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_FB_touch_controller_proximity</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_FB_triangle_mesh</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_KHR_android_surface_swapchain</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_KHR_composition_layer_color_scale_bias</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_KHR_composition_layer_cube</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_KHR_composition_layer_cylinder</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_KHR_composition_layer_equirect2</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_KHR_visibility_mask</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_KHR_vulkan_enable</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_KHR_vulkan_enable2</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_LOGITECH_mx_ink_stylus_interaction</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_META_automatic_layer_filter</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_META_body_tracking_calibration</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_META_body_tracking_fidelity</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_META_body_tracking_full_body</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_META_boundary_visibility</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_META_detached_controllers</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_META_feature_fidelity</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_META_headset_id</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_META_passthrough_color_lut</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_META_passthrough_layer_resumed_event</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_META_passthrough_preferences</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_META_performance_metrics</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_META_recommended_layer_resolution</b>
+<b class=BLU>09-27 14:01:35.657 21416 21439 D SK_rust_Demos: |   present | XR_META_simultaneous_hands_and_controllers</b>
+<b class=BLU>09-27 14:01:35.658 21416 21439 D SK_rust_Demos: |   present | XR_META_spatial_entity_discovery</b>
+<b class=BLU>09-27 14:01:35.658 21416 21439 D SK_rust_Demos: |   present | XR_META_spatial_entity_mesh</b>
+<b class=BLU>09-27 14:01:35.658 21416 21439 D SK_rust_Demos: |   present | XR_META_spatial_entity_persistence</b>
+<b class=BLU>09-27 14:01:35.658 21416 21439 D SK_rust_Demos: |   present | XR_META_touch_controller_plus</b>
+<b class=BLU>09-27 14:01:35.658 21416 21439 D SK_rust_Demos: |   present | XR_META_vulkan_swapchain_create_info</b>
+<b class=BLU>09-27 14:01:35.658 21416 21439 D SK_rust_Demos: |   present | XR_OCULUS_common_reference_spaces</b>
+<b class=BLU>09-27 14:01:35.658 21416 21439 D SK_rust_Demos: | ACTIVATED | XR_EXT_debug_utils</b>
+<b class=BLU>09-27 14:01:35.658 21416 21439 D SK_rust_Demos: | ACTIVATED | XR_EXT_hand_tracking</b>
+<b class=BLU>09-27 14:01:35.658 21416 21439 D SK_rust_Demos: | ACTIVATED | XR_EXT_hand_tracking_data_source</b>
+<b class=BLU>09-27 14:01:35.658 21416 21439 D SK_rust_Demos: | ACTIVATED | XR_EXT_local_floor</b>
+<b class=BLU>09-27 14:01:35.658 21416 21439 D SK_rust_Demos: | ACTIVATED | XR_FB_color_space</b>
+<b class=BLU>09-27 14:01:35.658 21416 21439 D SK_rust_Demos: | ACTIVATED | XR_FB_display_refresh_rate</b>
+<b class=BLU>09-27 14:01:35.658 21416 21439 D SK_rust_Demos: | ACTIVATED | XR_FB_passthrough</b>
+<b class=BLU>09-27 14:01:35.658 21416 21439 D SK_rust_Demos: | ACTIVATED | XR_FB_spatial_entity</b>
+<b class=BLU>09-27 14:01:35.658 21416 21439 D SK_rust_Demos: | ACTIVATED | XR_KHR_android_create_instance</b>
+<b class=BLU>09-27 14:01:35.658 21416 21439 D SK_rust_Demos: | ACTIVATED | XR_KHR_android_thread_settings</b>
+<b class=BLU>09-27 14:01:35.658 21416 21439 D SK_rust_Demos: | ACTIVATED | XR_KHR_composition_layer_depth</b>
+<b class=BLU>09-27 14:01:35.658 21416 21439 D SK_rust_Demos: | ACTIVATED | XR_KHR_convert_timespec_time</b>
+<b class=BLU>09-27 14:01:35.658 21416 21439 D SK_rust_Demos: | ACTIVATED | XR_KHR_opengl_es_enable</b>
+<b class=BLU>09-27 14:01:35.658 21416 21439 D SK_rust_Demos: | ACTIVATED | XR_META_virtual_keyboard</b>
+<b class=BLU>09-27 14:01:35.658 21416 21439 D SK_rust_Demos: | ACTIVATED | XR_MSFT_hand_interaction</b>
+<b class=BLU>09-27 14:01:35.658 21416 21439 D SK_rust_Demos: |___________|______________________</b>
+09-27 14:01:35.658 21416 21439 V OpenXR-Loader: Verbose [GENERAL | xrCreateDebugUtilsMessengerEXT | OpenXR-Loader] : Entering loader trampoline
+09-27 14:01:35.658 21416 21439 V OpenXR-Loader: Verbose [GENERAL | xrCreateDebugUtilsMessengerEXT | OpenXR-Loader] : Entering loader terminator
+09-27 14:01:35.658 21416 21439 V OpenXR-Loader: Verbose [GENERAL | xrCreateDebugUtilsMessengerEXT | OpenXR-Loader] : Completed loader terminator
+09-27 14:01:35.658 21416 21439 V OpenXR-Loader: Verbose [GENERAL | xrCreateDebugUtilsMessengerEXT | OpenXR-Loader] : Completed loader trampoline
+<b class=BLU>09-27 14:01:35.658 21416 21439 D SK_rust_Demos: OpenXR requires GLES v3.0.0 - v3.2.0</b>
+<b class=GRN>09-27 14:01:35.658 21416 21439 I OpenXR  : ------------ xrCreateSession [start] -----------</b>
+<b class=GRN>09-27 14:01:35.665 21416 21439 I VrRuntimeClient: s-&gt;gRuntimeServiceSDKClient.InitClient</b>
+<b class=GRN>09-27 14:01:35.669 21416 21439 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STOPPED, newState: STATE_STARTING</b>
+<b class=GRN>09-27 14:01:35.669 21416 21507 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STARTING, newState: STATE_RUNNING</b>
+<b class=GRN>09-27 14:01:35.672 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: Event buffer size (client): 8192</b>
+<b class=GRN>09-27 14:01:35.672 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: TryToGetIPCResourcesFromServer: RPC_CONNECTOR_CONNECT_TO_SERVER SUCCESS: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (RuntimeServiceServer)</b>
+<b class=GRN>09-27 14:01:35.672 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: EnsureServerConnection: SUCCESS. Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (RuntimeServiceServer)</b>
+<b class=GRN>09-27 14:01:35.672 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: ConnectToServer: SUCCESS: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (RuntimeServiceServer)</b>
+<b class=GRN>09-27 14:01:35.672 21416 21507 I VrRuntimeClient: s-&gt;gRuntimeServiceSDKClient.Connected: com.oculus.systemdriver:com.oculus.vrruntimeservice</b>
+<b class=GRN>09-27 14:01:35.672 21416 21507 I VrRuntimeClient: RegisterClient RequestDescriptor com.stereokit.rust_binding.demos:21416 clientType 0 clientFlags 0 clientSessionPlacement 0 clientLaunchId </b>
+<b class=GRN>09-27 14:01:35.678 21416 21507 I VrRuntimeClient: RegisterClient success </b>
+<b class=GRN>09-27 14:01:35.679 21416 21507 I VrRuntimeClient: RuntimeIPC: ServiceConnected: SharedMemoryDebug: publicReadOnly SharedMemorySize=192 (com.stereokit.rust_binding.demos) sizeof(s-&gt;sharedMemoryPublicReadOnly)=216</b>
+<b class=GRN>09-27 14:01:35.679 21416 21507 I VrRuntimeClient: RuntimeIPC: ServiceConnected: SharedMemoryDebug: privateReadWrite SharedMemorySize=114408 (com.stereokit.rust_binding.demos) sizeof(privateSharedMemorySize)=8</b>
+<b class=GRN>09-27 14:01:35.679 21416 21507 I VrRuntimeClient: nativeRuntimeServiceConnected: SharedMemoryDebug: publicReadOnlyFd=159, privateReadWriteFd=160 (com.stereokit.rust_binding.demos)</b>
+<b class=GRN>09-27 14:01:35.685 21416 21439 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STOPPED, newState: STATE_STARTING</b>
+<b class=GRN>09-27 14:01:35.686 21416 21509 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STARTING, newState: STATE_RUNNING</b>
+<b class=GRN>09-27 14:01:35.686 21416 21439 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: RIPCNotifThread, currentState: STATE_STOPPED, newState: STATE_STARTING</b>
+<b class=GRN>09-27 14:01:35.686 21416 21510 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: RIPCNotifThread, currentState: STATE_STARTING, newState: STATE_RUNNING</b>
+<b class=GRN>09-27 14:01:35.686 21416 21439 I VrRuntimeClient: s-&gt;gRuntimeServiceSDKClient.InitClient SUCCESS. Version: 5.0, Custom: 1.0</b>
+<b class=GRN>09-27 14:01:35.686 21416 21439 I RuntimeIPCClientMgr [RUNTIMEIPC]: GetClientOptions</b>
+<b class=GRN>09-27 14:01:35.686 21416 21439 I VrRuntimeClient: Connected to VrRuntimeService on attempt 0</b>
+<b class=GRN>09-27 14:01:35.686 21416 21439 I OpenXR  : xrCreateSession: Connected to VrRuntimeService after 0.026702s</b>
+<b class=GRN>09-27 14:01:35.694 21416 21439 I VrRuntimeClient: SetPhaseSyncMode 1</b>
+<b class=GRN>09-27 14:01:35.694 21416 21439 I VrRuntimeClient: SetPhaseSyncMode 1</b>
+<b class=GRN>09-27 14:01:35.694 21416 21439 I OpenXR  : PhaseSync Mode: PHASE_SYNC</b>
+<b class=GRN>09-27 14:01:35.694 21416 21439 I VrRuntimeClient: VrRuntimeClient: Init</b>
+<b class=GRN>09-27 14:01:35.694 21416 21439 I PTKService: PTKServiceClient Init</b>
+<b class=GRN>09-27 14:01:35.695 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: ConnectToServer: already connected: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.vrshell:com.oculus.vrshell (ptkserviceserver)</b>
+<b class=GRN>09-27 14:01:35.696 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: InitServerStateBuffer: SUCCESS. 0, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.vrshell:com.oculus.vrshell (ptkserviceserver)</b>
+<b class=YEL>09-27 14:01:35.696 21416 21439 W ServerStateBuffer [RUNTIMEIPC]: IPCService: GetDataBegin: entryIndex &lt; 0 || entryIndex &gt;= numEntries_ || entryIndex &gt;= trustedMaxEntries: 1, 3, 0</b>
+<b class=YEL>09-27 14:01:35.696 21416 21439 W ServerStateBuffer [RUNTIMEIPC]: IPCService: GetDataBegin: entryIndex &lt; 0 || entryIndex &gt;= numEntries_ || entryIndex &gt;= trustedMaxEntries: 2, 3, 0</b>
+09-27 14:01:35.696 21416 21439 V OVR::Capture: Failed to open trace_marker ATrace file!
+<b class=GRN>09-27 14:01:35.697 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: InitServerStateBuffer: SUCCESS. 0, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (RuntimeServiceServer)</b>
+<b class=GRN>09-27 14:01:35.697 21416 21439 I AudioCapture: AudioCapture::Init</b>
+<b class=GRN>09-27 14:01:35.697 21416 21439 I AudioCapture: AudioCapture::Init -&gt; Initializing audio capture using direct OS Callbacks</b>
+<b class=GRN>09-27 14:01:35.697 21416 21439 I AudioCapture: AudioCapture::Init COMPLETE</b>
+<b class=GRN>09-27 14:01:35.698 21416 21439 I Foveation: Vulkan foveation tile offset enabled: 0</b>
+<b class=GRN>09-27 14:01:35.698 21416 21439 I Foveation: Vulkan foveation tile turn off enabled: 1</b>
+<b class=GRN>09-27 14:01:35.700 21416 21439 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STOPPED, newState: STATE_STARTING</b>
+<b class=GRN>09-27 14:01:35.700 21416 21512 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STARTING, newState: STATE_RUNNING</b>
+<b class=GRN>09-27 14:01:35.701 21416 21439 I ClientProcessConnector [RUNTIMEIPC]: GetProcessConnection: com.oculus.guardian:com.oculus.vrguardianservice</b>
+<b class=GRN>09-27 14:01:35.702 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: Event buffer size (client): 8192</b>
+<b class=GRN>09-27 14:01:35.702 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: TryToGetIPCResourcesFromServer: RPC_CONNECTOR_CONNECT_TO_SERVER SUCCESS: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.guardian:com.oculus.vrguardianservice (guardianserver)</b>
+<b class=GRN>09-27 14:01:35.702 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: EnsureServerConnection: SUCCESS. Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.guardian:com.oculus.vrguardianservice (guardianserver)</b>
+<b class=GRN>09-27 14:01:35.702 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: ConnectToServer: SUCCESS: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.guardian:com.oculus.vrguardianservice (guardianserver)</b>
+<b class=GRN>09-27 14:01:35.710 21416 21439 I VrGuardianClient: guardianSDKClient_ connected.</b>
+<b class=GRN>09-27 14:01:35.741 21416 21439 I VrRuntimeClient: Is120HzSupported: 1</b>
+<b class=GRN>09-27 14:01:35.741 21416 21439 I FaceEyeTrackingClientManager: [FaceEyeTrackingManager] Initializing FaceEyeTrackingClientManager...</b>
+<b class=GRN>09-27 14:01:35.746 21416 21439 I LogTimer: CPUTIME: VrRuntimeClient_Init took 52.6159 ms</b>
+<b class=GRN>09-27 14:01:35.746 21416 21439 I Distortion: Initializing Mesh Decenter Correction</b>
+<b class=GRN>09-27 14:01:35.748 21416 21439 I Distortion: SetLensPositions - iad=0.06485, left offset=0.000542816,-0.00139587, right offset=-0.000906337,-0.00141104</b>
+<b class=GRN>09-27 14:01:35.748 21416 21439 I Distortion: Initializing Mesh Decenter Correction</b>
+<b class=GRN>09-27 14:01:35.750 21416 21439 I Distortion: SetLensPositions - iad=0.06485, left offset=0.000542816,-0.00139587, right offset=-0.000906337,-0.00141104</b>
+<b class=GRN>09-27 14:01:35.750 21416 21439 I Colorspace: Quest 2 default OpenXR color space: P3 (new behavior)</b>
+<b class=GRN>09-27 14:01:35.751 21416 21439 I ClientInputSettings: SYSTEMBUTTONSPACE GKS freeze '1' </b>
+<b class=GRN>09-27 14:01:35.751 21416 21439 I ClientInputSettings: SYSTEMBUTTONSPACE 'com.stereokit.rust_binding.demos' Freeze input '1' on home button down</b>
+<b class=GRN>09-27 14:01:35.751 21416 21439 I ClientInputSettings: HANDTRACKING: Hands V2.0 enforced.</b>
+<b class=GRN>09-27 14:01:35.751 21416 21439 I ClientInputSettings: HANDTRACKING: YES, in the GK oculus_mobile_enable_hand_tracking_frequency_inter</b>
+<b class=GRN>09-27 14:01:35.751 21416 21439 I ClientInputInterface: HANDTRACKING sethandtrackingfrequency 1</b>
+<b class=GRN>09-27 14:01:35.752 21416 21439 I ClientInputSettings: HANDTRACKING: YES, in the GK oculus_mobile_30hz_handtracking_downclocking</b>
+<b class=GRN>09-27 14:01:35.752 21416 21439 I ClientInputInterface: Set30HzHandtrackingDownclockingGKFlag 1</b>
+<b class=GRN>09-27 14:01:35.752 21416 21439 I ClientInputSettings: HANDTRACKING: NO, not in the GK oculus_mobile_enable_hand_emulation_of_controllers</b>
+<b class=GRN>09-27 14:01:35.752 21416 21439 I ClientInputInterface: HANDTRACKING SetHandTrackingControllerEmulationGkFlag 0</b>
+<b class=GRN>09-27 14:01:35.752 21416 21439 I InputHooks: InitializeInputHooks</b>
+<b class=GRN>09-27 14:01:35.752 21416 21439 I InputHooks: InitializeInputHooks create</b>
+<b class=GRN>09-27 14:01:35.752 21416 21439 I OpenXR  : xrCreateSession: Activity is already in the ready state.</b>
+<b class=GRN>09-27 14:01:35.752 21416 21439 I XrRuntimeUtils: XrRuntimeUtils::CreateSession</b>
+<b class=GRN>09-27 14:01:35.752 21416 21439 I OpenXR_Aperture: ------------ ovrCreateApertureMETAX1 -----------</b>
+<b class=GRN>09-27 14:01:35.752 21416 21439 I OpenXR  : ------------ xrCreateSession [end] -----------</b>
+<b class=BLU>09-27 14:01:35.753 21416 21439 D SK_rust_Demos: System name: Oculus Quest2</b>
+<b class=BLU>09-27 14:01:35.753 21416 21439 D SK_rust_Demos: XR_MSFT_hand_interaction - Rejected - Hides menu button events on Quest.</b>
+<b class=BLU>09-27 14:01:35.753 21416 21439 D SK_rust_Demos: XR_EXT_hand_tracking - Ready.</b>
+<b class=BLU>09-27 14:01:35.753 21416 21439 D SK_rust_Demos: Set color space to XR_COLOR_SPACE_REC709_FB</b>
+<b class=BLU>09-27 14:01:35.753 21416 21439 D SK_rust_Demos: Creating view: PrimaryStereo color:rgba32_sRGB depth:depth24_stencil8 blend:Opaque</b>
+<b class=GRN>09-27 14:01:35.753 21416 21439 I OpenXR_Space: xrCreateReferenceSpace: Spaces info</b>
+<b class=GRN>09-27 14:01:35.753 21416 21439 I OpenXR_Space: xrCreateReferenceSpace: Local version=28</b>
+<b class=GRN>09-27 14:01:35.753 21416 21439 I OpenXR_Space: xrCreateReferenceSpace: RawFromLocal       = (-0.000, -0.418, -0.000, 0.908), (-0.18, 0.65, 0.87)</b>
+<b class=GRN>09-27 14:01:35.753 21416 21439 I OpenXR_Space: xrCreateReferenceSpace: RawFromLocalTilted = (-0.062, -0.419, -0.063, 0.904), (-0.18, 0.65, 0.87)</b>
+<b class=GRN>09-27 14:01:35.753 21416 21439 I OpenXR_Space: xrCreateReferenceSpace: Stage IsValid=true</b>
+<b class=GRN>09-27 14:01:35.753 21416 21439 I OpenXR_Space: xrCreateReferenceSpace: Stage HasActiveGuardian=true</b>
+<b class=GRN>09-27 14:01:35.753 21416 21439 I OpenXR_Space: xrCreateReferenceSpace: Stage Width=3.776310, Depth=3.793584</b>
+<b class=GRN>09-27 14:01:35.753 21416 21439 I OpenXR_Space: xrCreateReferenceSpace: RawFromStage       = (0.000, 0.549, 0.000, 0.836), (0.43, -0.46, -0.24)</b>
+<b class=GRN>09-27 14:01:35.788 21416 21439 I VrRuntimeClient: UpdateEvents: Detected stage reference space update. Sending reference space update event</b>
+<b class=GRN>09-27 14:01:35.788 21416 21439 I Deque   : AddEventToQueue called. eventInfo.type: 40, eventInfo.next: 1</b>
+<b class=BLU>09-27 14:01:35.789 21416 21439 D RuntimeIPCClient [RUNTIMEIPC]: TryToGetIPCResourcesFromServer: Failed to get process connection : Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.bodyapiservice:com.oculus.bodyapiservice (BodyApiServiceServer)</b>
+<b class=YEL>09-27 14:01:35.789 21416 21439 W RuntimeIPCClient [RUNTIMEIPC]: TryToGetIPCResourcesFromServer FAILED in 0.165104 ms</b>
+<b class=YEL>09-27 14:01:35.789 21416 21439 W RuntimeIPCClient [RUNTIMEIPC]: EnsureServerConnection: TryToGetIPCResourcesFromServer FAILED: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.bodyapiservice:com.oculus.bodyapiservice (BodyApiServiceServer)</b>
+<b class=YEL>09-27 14:01:35.789 21416 21439 W RuntimeIPCClientMgr [RUNTIMEIPC]: VALIDATE_AND_GET_CLIENT: PollClientEvent2: EnsureServerConnection FAILED: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.bodyapiservice:com.oculus.bodyapiservice (BodyApiServiceServer)</b>
+<b class=GRN>09-27 14:01:35.789 21416 21439 I OpenXR  : PostSessionStateChange:[pid: 21416] XR_SESSION_STATE_UNKNOWN -&gt; XR_SESSION_STATE_IDLE</b>
+<b class=GRN>09-27 14:01:35.789 21416 21439 I Deque   : AddEventToQueue called. eventInfo.type: 18, eventInfo.next: 1</b>
+<b class=GRN>09-27 14:01:35.789 21416 21439 I OpenXR  : PostSessionStateChange:[pid: 21416] XR_SESSION_STATE_IDLE -&gt; XR_SESSION_STATE_READY</b>
+<b class=GRN>09-27 14:01:35.790 21416 21439 I Deque   : AddEventToQueue called. eventInfo.type: 18, eventInfo.next: 1</b>
+<b class=BLU>09-27 14:01:35.790 21416 21439 D SK_rust_Demos: Created local floor app space at an offset of (0,0,0) (0,0,0,1)</b>
+<b class=BLU>09-27 14:01:35.790 21416 21439 D SK_rust_Demos: Bounds updated: 3.8x3.8 at (-0.4,-9e-08,-1) (0,0.85,0,0.53)</b>
+<b class=BLU>09-27 14:01:35.790 21416 21439 D RuntimeIPCClient [RUNTIMEIPC]: TryToGetIPCResourcesFromServer: Failed to get process connection : Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.bodyapiservice:com.oculus.bodyapiservice (BodyApiServiceServer)</b>
+<b class=YEL>09-27 14:01:35.790 21416 21439 W RuntimeIPCClient [RUNTIMEIPC]: TryToGetIPCResourcesFromServer FAILED in 0.131979 ms</b>
+<b class=YEL>09-27 14:01:35.790 21416 21439 W RuntimeIPCClient [RUNTIMEIPC]: EnsureServerConnection: TryToGetIPCResourcesFromServer FAILED: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.bodyapiservice:com.oculus.bodyapiservice (BodyApiServiceServer)</b>
+<b class=YEL>09-27 14:01:35.790 21416 21439 W RuntimeIPCClientMgr [RUNTIMEIPC]: VALIDATE_AND_GET_CLIENT: PollClientEvent2: EnsureServerConnection FAILED: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.bodyapiservice:com.oculus.bodyapiservice (BodyApiServiceServer)</b>
+<b class=BLU>09-27 14:01:35.790 21416 21439 D SK_rust_Demos: OpenXR state: unknown -&gt; idle</b>
+<b class=BLU>09-27 14:01:35.790 21416 21439 D RuntimeIPCClient [RUNTIMEIPC]: TryToGetIPCResourcesFromServer: Failed to get process connection : Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.bodyapiservice:com.oculus.bodyapiservice (BodyApiServiceServer)</b>
+<b class=YEL>09-27 14:01:35.790 21416 21439 W RuntimeIPCClient [RUNTIMEIPC]: TryToGetIPCResourcesFromServer FAILED in 0.111354 ms</b>
+<b class=YEL>09-27 14:01:35.790 21416 21439 W RuntimeIPCClient [RUNTIMEIPC]: EnsureServerConnection: TryToGetIPCResourcesFromServer FAILED: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.bodyapiservice:com.oculus.bodyapiservice (BodyApiServiceServer)</b>
+<b class=YEL>09-27 14:01:35.791 21416 21439 W RuntimeIPCClientMgr [RUNTIMEIPC]: VALIDATE_AND_GET_CLIENT: PollClientEvent2: EnsureServerConnection FAILED: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.bodyapiservice:com.oculus.bodyapiservice (BodyApiServiceServer)</b>
+<b class=BLU>09-27 14:01:35.791 21416 21439 D SK_rust_Demos: OpenXR state: idle -&gt; ready</b>
+<b class=GRN>09-27 14:01:35.791 21416 21439 I OpenXR  : ------------ xrBeginSession [start] -----------</b>
+<b class=GRN>09-27 14:01:35.791 21416 21439 I DRR     : DRR is supported: 1</b>
+<b class=GRN>09-27 14:01:35.791 21416 21439 I DRR     : DRR is enabled: 0</b>
+<b class=BLU>09-27 14:01:35.791 21416 21439 D OsSdkLoader: OSSDK loading module 'libheadtracker.oculus.so'</b>
+<b class=GRN>09-27 14:01:35.791 21416 21439 I Sensor  : OSSDKTRACKING Initializing controller tracking</b>
+<b class=GRN>09-27 14:01:35.791 21416 21439 I Sensor  : OSSDKTRACKING Controller tracker != nullpointer 0xb4000078d23d6dd0, 1</b>
+<b class=GRN>09-27 14:01:35.798 21416 21439 I DeviceStatus: nativeHeadsetEvent(0)</b>
+<b class=GRN>09-27 14:01:35.799 21416 21439 I VrRuntimeClient: SetCompositorClientFeatureFlag ClientFeatureFlag 0 </b>
+<b class=GRN>09-27 14:01:35.800 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: InitServerStateBuffer: SUCCESS. 0, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.guardian:com.oculus.vrguardianservice (guardianserver)</b>
+<b class=GRN>09-27 14:01:35.800 21416 21439 I VrRuntimeClient: Mounted state at BeginSession: True</b>
+<b class=GRN>09-27 14:01:35.800 21416 21439 I AppLoadTimeTelemetryCommon: App load time recorded [packageName=com.stereokit.rust_binding.demos, time=0.702022, method="BeginSession", launchType="Launch"]</b>
+<b class=GRN>09-27 14:01:35.800 21416 21439 I LogTimer: CPUTIME: VrRuntimeClient_BeginSession took 8.9828 ms</b>
+<b class=BLU>09-27 14:01:35.800 21416 21439 D t_binding.demo: memorybroker::ClientConnection registered</b>
+<b class=GRN>09-27 14:01:35.805 21416 21439 I Distortion: Initializing Mesh Decenter Correction</b>
+<b class=GRN>09-27 14:01:35.807 21416 21439 I Distortion: SetLensPositions - iad=0.0681392, left offset=0.00214849,-0.00139587, right offset=-0.00258985,-0.00141104</b>
+<b class=GRN>09-27 14:01:35.807 21416 21439 I Distortion: Initializing Mesh Decenter Correction</b>
+<b class=GRN>09-27 14:01:35.809 21416 21439 I Distortion: SetLensPositions - iad=0.0681392, left offset=0.00214849,-0.00139587, right offset=-0.00258985,-0.00141104</b>
+<b class=GRN>09-27 14:01:35.811 21416 21439 I ClientInputSettings: HANDTRACKING: enabled input settings, setting hand mode control settings to ControllersOnly</b>
+<b class=GRN>09-27 14:01:35.811 21416 21439 I ClientInputSettings: HANDTRACKING package name is com.stereokit.rust_binding.demos</b>
+<b class=GRN>09-27 14:01:35.811 21416 21439 I ClientInputSettings: HANDTRACKING: Manifest Permission request for com.stereokit.rust_binding.demos</b>
+<b class=GRN>09-27 14:01:35.812 21416 21439 I ClientInputSettings: HANDTRACKING:  'com.stereokit.rust_binding.demos' Is hands or controller.</b>
+<b class=GRN>09-27 14:01:35.812 21416 21439 I ClientInputSettings: HANDTRACKING: feature flag set to 2</b>
+<b class=GRN>09-27 14:01:35.812 21416 21439 I ClientInputInterface: HANDTRACKING sethandmanifest 2</b>
+<b class=GRN>09-27 14:01:35.812 21416 21439 I InputHooks_Internal: Enabling Native Input Hooks</b>
+<b class=YEL>09-27 14:01:35.815 21416 21439 W t_binding.demo: Accessing hidden method Landroid/content/Context;-&gt;startServiceAsUser(Landroid/content/Intent;Landroid/os/UserHandle;)Landroid/content/ComponentName; (unsupported, reflection, allowed)</b>
+<b class=YEL>09-27 14:01:35.815 21416 21439 W t_binding.demo: Accessing hidden method Landroid/content/Context;-&gt;registerReceiverAsUser(Landroid/content/BroadcastReceiver;Landroid/os/UserHandle;Landroid/content/IntentFilter;Ljava/lang/String;Landroid/os/Handler;)Landroid/content/Intent; (unsupported, reflection, allowed)</b>
+<b class=GRN>09-27 14:01:35.815 21416 21439 I InputDeviceManager: ovrInputDeviceManager::Initialize</b>
+<b class=GRN>09-27 14:01:35.816 21416 21439 I [CT]    : HandPosePrediction: Set sampler config enum for v59 30 Hz</b>
+<b class=GRN>09-27 14:01:35.816 21416 21439 I [CT]    : HandPosePrediction: Set sampler config enum for v59 30 Hz</b>
+<b class=GRN>09-27 14:01:35.817 21416 21439 I InputDevice_Hand: BodyPoweredHands checkSysPropForBodyAPIOverride 0</b>
+<b class=GRN>09-27 14:01:35.817 21416 21439 I InputDevice_Hand: BodyPoweredHands checkSysPropForBodyAPIOverride 0</b>
+<b class=YEL>09-27 14:01:35.817 21416 21439 W InputDevice_TrackedRemote: Did not pass RIPC GK, fetching controller input data from shared memory</b>
+<b class=GRN>09-27 14:01:35.817 21416 21439 I InputDeviceManager: HANDTRACKING Root pose filter profile changed for freq to 17 from 0  inf: 1</b>
+<b class=GRN>09-27 14:01:35.822 21416 21439 I GL_Utils: egl = 1.5</b>
+<b class=GRN>09-27 14:01:35.822 21416 21439 I GL_Utils: es3 = TRUE</b>
+<b class=GRN>09-27 14:01:35.822 21416 21439 I GL_Utils: Found: GL_OES_vertex_array_object</b>
+<b class=GRN>09-27 14:01:35.822 21416 21439 I GL_Utils: Found: GL_QCOM_tiled_rendering</b>
+<b class=GRN>09-27 14:01:35.822 21416 21439 I GL_Utils: Found: GL_EXT_sRGB</b>
+<b class=GRN>09-27 14:01:35.822 21416 21439 I GL_Utils: Found: GL_EXT_sRGB_write_control</b>
+<b class=GRN>09-27 14:01:35.822 21416 21439 I GL_Utils: Found: GL_EXT_disjoint_timer_query</b>
+<b class=GRN>09-27 14:01:35.822 21416 21439 I GL_Utils: Found: GL_EXT_buffer_storage</b>
+<b class=GRN>09-27 14:01:35.822 21416 21439 I GL_Utils: Found: GL_EXT_memory_object</b>
+<b class=GRN>09-27 14:01:35.823 21416 21439 I GL_Utils: Found: GL_EXT_memory_object_fd</b>
+<b class=GRN>09-27 14:01:35.823 21416 21439 I GL_Utils: Found: GL_QCOM_texture_foveated</b>
+<b class=GRN>09-27 14:01:35.823 21416 21439 I GL_Utils: Found: GL_KHR_debug</b>
+<b class=GRN>09-27 14:01:35.823 21416 21439 I GL_Utils: Found: GL_OES_EGL_image</b>
+<b class=GRN>09-27 14:01:35.823 21416 21439 I GL_Utils: Found: GL_EXT_texture_border_clamp</b>
+<b class=GRN>09-27 14:01:35.823 21416 21439 I GL_Utils: Found: GL_EXT_texture_filter_anisotropic</b>
+<b class=GRN>09-27 14:01:35.823 21416 21439 I GL_Utils: Found: GL_OES_texture_view</b>
+<b class=GRN>09-27 14:01:35.823 21416 21439 I GL_Utils: Found: GL_EXT_texture_format_sRGB_override</b>
+<b class=GRN>09-27 14:01:35.823 21416 21439 I GL_Utils: Found: GL_IMG_texture_filter_cubic</b>
+<b class=GRN>09-27 14:01:35.823 21416 21439 I GL_Utils: Found: GL_EXT_clip_cull_distance</b>
+<b class=GRN>09-27 14:01:35.823 21416 21439 I GL_Utils: Found: GL_EXT_blend_func_extended</b>
+<b class=GRN>09-27 14:01:35.823 21416 21439 I PhaseSync: PhaseSync::PhaseSync PaddingLowerLimit 0.350000 StandardDeviations 2.000000 PaddingUpperLimit 0.750000 on instance 0</b>
+<b class=GRN>09-27 14:01:35.823 21416 21439 I FrameSync: FrameSync Initialized Instance 1</b>
+<b class=GRN>09-27 14:01:35.823 21416 21439 I VrRuntimeClient: PhaseSync Instance created</b>
+<b class=BLU>09-27 14:01:35.831 21416 21439 D CompatibilityChangeReporter: Compat change id reported: 160794467; UID 10153; state: ENABLED</b>
+<b class=YEL>09-27 14:01:35.831 21416 21439 W ServerStateBuffer [RUNTIMEIPC]: IPCService: GetDataBegin: entryIndex &lt; 0 || entryIndex &gt;= numEntries_ || entryIndex &gt;= trustedMaxEntries: 5, 18, 0</b>
+<b class=GRN>09-27 14:01:35.832 21416 21439 I XrRuntimeUtils: XrRuntimeUtils::BeginSession</b>
+<b class=GRN>09-27 14:01:35.832 21416 21439 I XrRuntimeSystem_Client: BeginSession</b>
+<b class=GRN>09-27 14:01:35.832 21416 21439 I [CT]    : BodyApiPlugin: BeginSession called for BodyApi Plugin</b>
+<b class=GRN>09-27 14:01:35.832 21416 21439 I OpenXR  : usesManifestForCpuBoost:0</b>
+<b class=GRN>09-27 14:01:35.832 21416 21439 I OpenXR  : ------------ xrBeginSession [end] -----------</b>
+<b class=BLU>09-27 14:01:35.832 21416 21439 D SK_rust_Demos: OpenXR session began.</b>
+<b class=BLU>09-27 14:01:35.832 21416 21439 D RuntimeIPCClient [RUNTIMEIPC]: TryToGetIPCResourcesFromServer: Failed to get process connection : Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.bodyapiservice:com.oculus.bodyapiservice (BodyApiServiceServer)</b>
+<b class=YEL>09-27 14:01:35.832 21416 21439 W RuntimeIPCClient [RUNTIMEIPC]: TryToGetIPCResourcesFromServer FAILED in 0.096042 ms</b>
+<b class=YEL>09-27 14:01:35.832 21416 21439 W RuntimeIPCClient [RUNTIMEIPC]: EnsureServerConnection: TryToGetIPCResourcesFromServer FAILED: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.bodyapiservice:com.oculus.bodyapiservice (BodyApiServiceServer)</b>
+<b class=YEL>09-27 14:01:35.833 21416 21439 W RuntimeIPCClientMgr [RUNTIMEIPC]: VALIDATE_AND_GET_CLIENT: PollClientEvent2: EnsureServerConnection FAILED: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.bodyapiservice:com.oculus.bodyapiservice (BodyApiServiceServer)</b>
+<b class=GRN>09-27 14:01:35.837 21416 21529 I JniUtils: ovr_GetCurrentPackageSignature </b>
+<b class=GRN>09-27 14:01:35.837 21416 21529 I Metrics : device model = Quest 2</b>
+<b class=GRN>09-27 14:01:35.838 21416 21529 I Telemetry: Aligning telemetry thread time, will wait for: 162 ms...</b>
+<b class=YEL>09-27 14:01:35.839 21416 21439 W ServerStateBuffer [RUNTIMEIPC]: IPCService: GetDataBegin: entryIndex &lt; 0 || entryIndex &gt;= numEntries_ || entryIndex &gt;= trustedMaxEntries: 16, 18, 0</b>
+<b class=YEL>09-27 14:01:35.839 21416 21439 W ServerStateBuffer [RUNTIMEIPC]: IPCService: GetDataBegin: entryIndex &lt; 0 || entryIndex &gt;= numEntries_ || entryIndex &gt;= trustedMaxEntries: 14, 18, 0</b>
+<b class=GRN>09-27 14:01:35.839 21416 21439 I AudioCapture: AudioCapture::PauseAudioCapture</b>
+<b class=GRN>09-27 14:01:35.839 21416 21439 I OpenXR  : Opaque frame needs background layer.</b>
+<b class=GRN>09-27 14:01:35.839 21416 21532 I FenceChecker: FenceChecker::MainLoop - started</b>
+<b class=YEL>09-27 14:01:35.842 21416 21439 W ServerStateBuffer [RUNTIMEIPC]: IPCService: GetDataBegin: entryIndex &lt; 0 || entryIndex &gt;= numEntries_ || entryIndex &gt;= trustedMaxEntries: 4, 18, 0</b>
+<b class=BLU>09-27 14:01:35.842 21416 21439 D RuntimeIPCClient [RUNTIMEIPC]: TryToGetIPCResourcesFromServer: Failed to get process connection : Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.bodyapiservice:com.oculus.bodyapiservice (BodyApiServiceServer)</b>
+<b class=YEL>09-27 14:01:35.842 21416 21439 W RuntimeIPCClient [RUNTIMEIPC]: TryToGetIPCResourcesFromServer FAILED in 0.138386 ms</b>
+<b class=YEL>09-27 14:01:35.842 21416 21439 W RuntimeIPCClient [RUNTIMEIPC]: EnsureServerConnection: TryToGetIPCResourcesFromServer FAILED: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.bodyapiservice:com.oculus.bodyapiservice (BodyApiServiceServer)</b>
+<b class=YEL>09-27 14:01:35.842 21416 21439 W RuntimeIPCClientMgr [RUNTIMEIPC]: VALIDATE_AND_GET_CLIENT: PollClientEvent2: EnsureServerConnection FAILED: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.bodyapiservice:com.oculus.bodyapiservice (BodyApiServiceServer)</b>
+<b class=GRN>09-27 14:01:35.842 21416 21439 I OpenXR  : PostSessionStateChange:[pid: 21416] XR_SESSION_STATE_READY -&gt; XR_SESSION_STATE_SYNCHRONIZED</b>
+<b class=GRN>09-27 14:01:35.842 21416 21439 I Deque   : AddEventToQueue called. eventInfo.type: 18, eventInfo.next: 1</b>
+<b class=BLU>09-27 14:01:35.842 21416 21439 D SK_rust_Demos: OpenXR state: ready -&gt; synchronized</b>
+<b class=BLU>09-27 14:01:35.843 21416 21439 D RuntimeIPCClient [RUNTIMEIPC]: TryToGetIPCResourcesFromServer: Failed to get process connection : Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.bodyapiservice:com.oculus.bodyapiservice (BodyApiServiceServer)</b>
+<b class=YEL>09-27 14:01:35.843 21416 21439 W RuntimeIPCClient [RUNTIMEIPC]: TryToGetIPCResourcesFromServer FAILED in 0.127656 ms</b>
+<b class=YEL>09-27 14:01:35.843 21416 21439 W RuntimeIPCClient [RUNTIMEIPC]: EnsureServerConnection: TryToGetIPCResourcesFromServer FAILED: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.bodyapiservice:com.oculus.bodyapiservice (BodyApiServiceServer)</b>
+<b class=YEL>09-27 14:01:35.843 21416 21439 W RuntimeIPCClientMgr [RUNTIMEIPC]: VALIDATE_AND_GET_CLIENT: PollClientEvent2: EnsureServerConnection FAILED: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.bodyapiservice:com.oculus.bodyapiservice (BodyApiServiceServer)</b>
+<b class=GRN>09-27 14:01:35.843 21416 21439 I OpenXR  : PostSessionStateChange:[pid: 21416] XR_SESSION_STATE_SYNCHRONIZED -&gt; XR_SESSION_STATE_VISIBLE</b>
+<b class=GRN>09-27 14:01:35.844 21416 21439 I Deque   : AddEventToQueue called. eventInfo.type: 18, eventInfo.next: 1</b>
+<b class=GRN>09-27 14:01:35.844 21416 21439 I OpenXR  : PostSessionStateChange:[pid: 21416] XR_SESSION_STATE_VISIBLE -&gt; XR_SESSION_STATE_FOCUSED</b>
+<b class=GRN>09-27 14:01:35.844 21416 21439 I Deque   : AddEventToQueue called. eventInfo.type: 18, eventInfo.next: 1</b>
+<b class=BLU>09-27 14:01:35.844 21416 21439 D SK_rust_Demos: OpenXR state: synchronized -&gt; visible</b>
+<b class=BLU>09-27 14:01:35.853 21416 21439 D RuntimeIPCClient [RUNTIMEIPC]: TryToGetIPCResourcesFromServer: Failed to get process connection : Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.bodyapiservice:com.oculus.bodyapiservice (BodyApiServiceServer)</b>
+<b class=YEL>09-27 14:01:35.853 21416 21439 W RuntimeIPCClient [RUNTIMEIPC]: TryToGetIPCResourcesFromServer FAILED in 8.268281 ms</b>
+<b class=YEL>09-27 14:01:35.853 21416 21439 W RuntimeIPCClient [RUNTIMEIPC]: EnsureServerConnection: TryToGetIPCResourcesFromServer FAILED: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.bodyapiservice:com.oculus.bodyapiservice (BodyApiServiceServer)</b>
+<b class=YEL>09-27 14:01:35.853 21416 21439 W RuntimeIPCClientMgr [RUNTIMEIPC]: VALIDATE_AND_GET_CLIENT: PollClientEvent2: EnsureServerConnection FAILED: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.bodyapiservice:com.oculus.bodyapiservice (BodyApiServiceServer)</b>
+<b class=BLU>09-27 14:01:35.853 21416 21439 D SK_rust_Demos: OpenXR state: visible -&gt; focused</b>
+<b class=BLU>09-27 14:01:35.854 21416 21439 D RuntimeIPCClient [RUNTIMEIPC]: TryToGetIPCResourcesFromServer: Failed to get process connection : Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.bodyapiservice:com.oculus.bodyapiservice (BodyApiServiceServer)</b>
+<b class=YEL>09-27 14:01:35.854 21416 21439 W RuntimeIPCClient [RUNTIMEIPC]: TryToGetIPCResourcesFromServer FAILED in 0.164635 ms</b>
+<b class=YEL>09-27 14:01:35.854 21416 21439 W RuntimeIPCClient [RUNTIMEIPC]: EnsureServerConnection: TryToGetIPCResourcesFromServer FAILED: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.bodyapiservice:com.oculus.bodyapiservice (BodyApiServiceServer)</b>
+<b class=YEL>09-27 14:01:35.854 21416 21439 W RuntimeIPCClientMgr [RUNTIMEIPC]: VALIDATE_AND_GET_CLIENT: PollClientEvent2: EnsureServerConnection FAILED: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.bodyapiservice:com.oculus.bodyapiservice (BodyApiServiceServer)</b>
+<b class=BLU>09-27 14:01:35.854 21416 21439 D SK_rust_Demos: Created local floor app space at an offset of (0,0,0) (0,0,0,1)</b>
+09-27 14:01:35.854 21416 21439 V OpenXR_Actions: -- xrSuggestInteractionProfileBindings -
+09-27 14:01:35.855 21416 21439 V OpenXR_Actions: -- xrSuggestInteractionProfileBindings -
+09-27 14:01:35.856 21416 21439 V OpenXR_Actions: -- xrSuggestInteractionProfileBindings -
+09-27 14:01:35.857 21416 21439 V OpenXR_Actions: -- xrSuggestInteractionProfileBindings -
+09-27 14:01:35.858 21416 21439 V OpenXR_Actions: xrSuggestInteractionProfileBindings: adding binding actionPathBinding=19, action=grip_pose, subactionMask=1, pathActionType=4
+09-27 14:01:35.858 21416 21439 V OpenXR_Actions: xrSuggestInteractionProfileBindings: adding binding actionPathBinding=35, action=grip_pose, subactionMask=2, pathActionType=4
+09-27 14:01:35.858 21416 21439 V OpenXR_Actions: xrSuggestInteractionProfileBindings: adding binding actionPathBinding=18, action=aim_pose, subactionMask=1, pathActionType=4
+09-27 14:01:35.858 21416 21439 V OpenXR_Actions: xrSuggestInteractionProfileBindings: adding binding actionPathBinding=34, action=aim_pose, subactionMask=2, pathActionType=4
+09-27 14:01:35.858 21416 21439 V OpenXR_Actions: xrSuggestInteractionProfileBindings: adding binding actionPathBinding=10, action=trigger, subactionMask=1, pathActionType=2
+09-27 14:01:35.858 21416 21439 V OpenXR_Actions: xrSuggestInteractionProfileBindings: adding binding actionPathBinding=26, action=trigger, subactionMask=2, pathActionType=2
+09-27 14:01:35.858 21416 21439 V OpenXR_Actions: xrSuggestInteractionProfileBindings: adding binding actionPathBinding=9, action=grip, subactionMask=1, pathActionType=2
+09-27 14:01:35.858 21416 21439 V OpenXR_Actions: xrSuggestInteractionProfileBindings: adding binding actionPathBinding=25, action=grip, subactionMask=2, pathActionType=2
+09-27 14:01:35.858 21416 21439 V OpenXR_Actions: xrSuggestInteractionProfileBindings: adding binding actionPathBinding=54, action=stick_xy, subactionMask=1, pathActionType=3
+09-27 14:01:35.858 21416 21439 V OpenXR_Actions: xrSuggestInteractionProfileBindings: adding binding actionPathBinding=55, action=stick_xy, subactionMask=2, pathActionType=3
+09-27 14:01:35.858 21416 21439 V OpenXR_Actions: xrSuggestInteractionProfileBindings: adding binding actionPathBinding=14, action=stick_click, subactionMask=1, pathActionType=1
+09-27 14:01:35.858 21416 21439 V OpenXR_Actions: xrSuggestInteractionProfileBindings: adding binding actionPathBinding=30, action=stick_click, subactionMask=2, pathActionType=1
+09-27 14:01:35.858 21416 21439 V OpenXR_Actions: xrSuggestInteractionProfileBindings: adding binding actionPathBinding=8, action=menu, subactionMask=1, pathActionType=1
+09-27 14:01:35.858 21416 21439 V OpenXR_Actions: xrSuggestInteractionProfileBindings: adding binding actionPathBinding=4, action=button_x1, subactionMask=1, pathActionType=1
+09-27 14:01:35.858 21416 21439 V OpenXR_Actions: xrSuggestInteractionProfileBindings: adding binding actionPathBinding=20, action=button_x1, subactionMask=2, pathActionType=1
+09-27 14:01:35.858 21416 21439 V OpenXR_Actions: xrSuggestInteractionProfileBindings: adding binding actionPathBinding=6, action=button_x2, subactionMask=1, pathActionType=1
+09-27 14:01:35.858 21416 21439 V OpenXR_Actions: xrSuggestInteractionProfileBindings: adding binding actionPathBinding=22, action=button_x2, subactionMask=2, pathActionType=1
+09-27 14:01:35.858 21416 21439 V OpenXR_Actions: -- xrSuggestInteractionProfileBindings -
+09-27 14:01:35.859 21416 21439 V OpenXR_Actions: xrSuggestInteractionProfileBindings: adding binding actionPathBinding=19, action=grip_pose, subactionMask=1, pathActionType=4
+09-27 14:01:35.859 21416 21439 V OpenXR_Actions: xrSuggestInteractionProfileBindings: adding binding actionPathBinding=35, action=grip_pose, subactionMask=2, pathActionType=4
+09-27 14:01:35.859 21416 21439 V OpenXR_Actions: xrSuggestInteractionProfileBindings: adding binding actionPathBinding=18, action=aim_pose, subactionMask=1, pathActionType=4
+09-27 14:01:35.859 21416 21439 V OpenXR_Actions: xrSuggestInteractionProfileBindings: adding binding actionPathBinding=34, action=aim_pose, subactionMask=2, pathActionType=4
+09-27 14:01:35.859 21416 21439 V OpenXR_Actions: xrSuggestInteractionProfileBindings: adding binding actionPathBinding=49, action=trigger, subactionMask=1, pathActionType=1
+09-27 14:01:35.859 21416 21439 V OpenXR_Actions: xrSuggestInteractionProfileBindings: adding binding actionPathBinding=50, action=trigger, subactionMask=2, pathActionType=1
+09-27 14:01:35.859 21416 21439 V OpenXR_Actions: xrSuggestInteractionProfileBindings: adding binding actionPathBinding=8, action=menu, subactionMask=1, pathActionType=1
+09-27 14:01:35.859 21416 21439 V OpenXR_Actions: xrSuggestInteractionProfileBindings: adding binding actionPathBinding=51, action=menu, subactionMask=2, pathActionType=1
+<b class=BLU>09-27 14:01:35.859 21416 21439 D SK_rust_Demos: Bounds updated: 3.8x3.8 at (-0.4,-9e-08,-1) (0,0.85,0,0.53)</b>
+<b class=BLU>09-27 14:01:35.859 21416 21439 D SK_rust_Demos: Initializing Audio</b>
+<b class=GRN>09-27 14:01:35.860 21416 21439 I AAudio  : AAudioStreamBuilder_openStream() called ----------------------------------------</b>
+<b class=GRN>09-27 14:01:35.860 21416 21439 I AudioStreamBuilder: rate   =  48000, channels  = 2, channelMask = 0x80000003, format   = 5, sharing = SH, dir = OUTPUT</b>
+<b class=GRN>09-27 14:01:35.860 21416 21439 I AudioStreamBuilder: device =      0, sessionId = -1, perfMode = 12, callback: ON with frames = 480</b>
+<b class=GRN>09-27 14:01:35.860 21416 21439 I AudioStreamBuilder: usage  =      0, contentType = 0, inputPreset = 0, allowedCapturePolicy = 0</b>
+<b class=GRN>09-27 14:01:35.860 21416 21439 I AudioStreamBuilder: privacy sensitive = false</b>
+<b class=GRN>09-27 14:01:35.860 21416 21439 I AudioStreamBuilder: opPackageName = (null)</b>
+<b class=GRN>09-27 14:01:35.860 21416 21439 I AudioStreamBuilder: attributionTag = (null)</b>
+<b class=BLU>09-27 14:01:35.860 21416 21439 D AudioStreamBuilder: build() disable aaudio output mmap via gk</b>
+<b class=BLU>09-27 14:01:35.860 21416 21439 D t_binding.demo: PlayerBase::PlayerBase()</b>
+<b class=BLU>09-27 14:01:35.868 21416 21439 D AudioStreamTrack: open(), request notificationFrames = 0, frameCount = 1440</b>
+<b class=GRN>09-27 14:01:35.880 21416 21459 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STOPPED, newState: STATE_STARTING</b>
+<b class=GRN>09-27 14:01:35.880 21416 21540 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STARTING, newState: STATE_RUNNING</b>
+<b class=GRN>09-27 14:01:35.880 21416 21540 I RuntimeIPCClientMgr [RUNTIMEIPC]: UpdateServerConnectivity: Received server connectivity notification. Connected servers: [BodyApiServiceServer], disconnected servers: []</b>
+<b class=GRN>09-27 14:01:35.881 21416 21540 I ClientProcessConnector [RUNTIMEIPC]: GetProcessConnection: com.oculus.bodyapiservice:com.oculus.bodyapiservice</b>
+<b class=GRN>09-27 14:01:35.882 21416 21540 I RuntimeIPCClient [RUNTIMEIPC]: Event buffer size (client): 8192</b>
+<b class=GRN>09-27 14:01:35.882 21416 21540 I RuntimeIPCClient [RUNTIMEIPC]: TryToGetIPCResourcesFromServer: RPC_CONNECTOR_CONNECT_TO_SERVER SUCCESS: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.bodyapiservice:com.oculus.bodyapiservice (BodyApiServiceServer)</b>
+<b class=GRN>09-27 14:01:35.882 21416 21540 I RuntimeIPCClient [RUNTIMEIPC]: EnsureServerConnection: SUCCESS. Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.bodyapiservice:com.oculus.bodyapiservice (BodyApiServiceServer)</b>
+<b class=GRN>09-27 14:01:35.882 21416 21540 I RuntimeIPCClientMgr [RUNTIMEIPC]: UpdateServerConnectivity: EnsureServerConnection SUCCESS: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.bodyapiservice:com.oculus.bodyapiservice (BodyApiServiceServer), attempt 1</b>
+<b class=GRN>09-27 14:01:35.892 21416 21439 I AudioTrack: createTrack_l(7209055): AUDIO_OUTPUT_FLAG_FAST successful; frameCount 1440 -&gt; 1440</b>
+<b class=GRN>09-27 14:01:35.892 21416 21439 I AudioTrack: registerVolumetricWindowToken_l session=561 token=0x0</b>
+<b class=BLU>09-27 14:01:35.895 21416 21439 D AAudioStream: setState(s#1) from 0 to 2</b>
+<b class=BLU>09-27 14:01:35.897 21416 21439 D AudioStreamTrack: open() flags changed from 0x00000104 to 0x00000004</b>
+<b class=YEL>09-27 14:01:35.897 21416 21439 W libaudiotapper: connection to audiotapper service failed: not enabled</b>
+<b class=GRN>09-27 14:01:35.897 21416 21439 I AAudio  : AAudioStreamBuilder_openStream() returns 0 = AAUDIO_OK for s#1 ----------------</b>
+<b class=BLU>09-27 14:01:35.897 21416 21439 D AAudio  : AAudioStream_requestStart(s#1) called --------------</b>
+<b class=BLU>09-27 14:01:35.897 21416 21439 D AAudioStream: setState(s#1) from 2 to 3</b>
+<b class=BLU>09-27 14:01:35.913 21416 21439 D AAudio  : AAudioStream_requestStart(s#1) returned 0 ---------</b>
+<b class=BLU>09-27 14:01:35.925 21416 21441 D AudioStreamLegacy: onAudioDeviceUpdate(deviceId = 2)</b>
+<b class=BLU>09-27 14:01:35.931 21416 21536 D AAudioStream: setState(s#1) from 3 to 4</b>
+<b class=GRN>09-27 14:01:35.933 21416 21439 I SK_rust_Demos: Using audio backend: AAudio</b>
+<b class=BLU>09-27 14:01:35.933 21416 21439 D SK_rust_Demos: Initializing Defaults</b>
+<b class=GRN>09-27 14:01:36.000 21416 21529 I Telemetry: Time aligned, interrupted: 0</b>
+<b class=GRN>09-27 14:01:36.392 21416 21523 I RuntimeIPCClient [RUNTIMEIPC]: InitServerStateBuffer: SUCCESS. 1, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.bodyapiservice:com.oculus.bodyapiservice (BodyApiServiceServer)</b>
+<b class=BLU>09-27 14:01:36.526 21416 21439 D SK_rust_Demos: Initializing Sprites</b>
+<b class=BLU>09-27 14:01:36.526 21416 21439 D SK_rust_Demos: Initializing Lines</b>
+<b class=BLU>09-27 14:01:36.526 21416 21439 D SK_rust_Demos: Initializing UI</b>
+<b class=BLU>09-27 14:01:36.540 21416 21439 D SK_rust_Demos: Initializing Tools</b>
+<b class=BLU>09-27 14:01:36.540 21416 21439 D SK_rust_Demos: Initializing Renderer</b>
+<b class=BLU>09-27 14:01:36.541 21416 21439 D SK_rust_Demos: Initializing World</b>
+<b class=BLU>09-27 14:01:36.541 21416 21439 D SK_rust_Demos: Bounds updated: 3.8x3.8 at (-0.4,-9e-08,-1) (0,0.85,0,0.53)</b>
+<b class=BLU>09-27 14:01:36.541 21416 21439 D SK_rust_Demos: Initializing Input</b>
+<b class=GRN>09-27 14:01:36.541 21416 21439 I OpenXR_Hands: ------------ xrCreateHandTrackerEXT -----------</b>
+<b class=GRN>09-27 14:01:36.541 21416 21439 I OpenXR_Hands: ------------ xrCreateHandTrackerEXT -----------</b>
+<b class=GRN>09-27 14:01:36.541 21416 21439 I SK_rust_Demos: Initialization successful</b>
+<b class=GRN>09-27 14:01:36.541 21416 21439 I SK_rust_Demos: &lt;&lt;&lt; After init</b>
+<b class=YEL>09-27 14:01:36.541 21416 21439 W SK_rust_Demos: Go go go !!!</b>
+<b class=BLU>09-27 14:01:36.541 21416 21439 D SK_rust_Demos: ======================================================================================================================== !!</b>
+<b class=BLU>09-27 14:01:36.544 21416 21439 D SK_rust_Demos: sprite_create: Atlased sprites not implemented yet! All atlased sprites will be switched to single.</b>
+<b class=BLU>09-27 14:01:36.708 21416 21439 D SK_rust_Demos: "mobiles.gltf"</b>
+<b class=BLU>09-27 14:01:36.708 21416 21439 D SK_rust_Demos: "mobiles.gltf/mesh/0_0_Icosphere"</b>
+<b class=BLU>09-27 14:01:36.708 21416 21439 D SK_rust_Demos: "mobiles.gltf/mesh/1_0_Plane"</b>
+<b class=BLU>09-27 14:01:36.708 21416 21439 D SK_rust_Demos: "mobiles.gltf/mesh/2_0_Icosphere.003"</b>
+<b class=BLU>09-27 14:01:36.708 21416 21439 D SK_rust_Demos: "mobiles.gltf/mesh/3_0_Icosphere.004"</b>
+<b class=BLU>09-27 14:01:36.708 21416 21439 D SK_rust_Demos: calcaire_blanc params:</b>
+<b class=BLU>09-27 14:01:36.708 21416 21439 D SK_rust_Demos:  --- color :RGBA : 1.0/1.0/7.317312e28 : 1.0000136</b>
+<b class=BLU>09-27 14:01:36.708 21416 21439 D SK_rust_Demos:  --- emission_factor :RGBA : 0.0/0.0/0.0 : 0.0</b>
+<b class=BLU>09-27 14:01:36.708 21416 21439 D SK_rust_Demos:  --- tex_trans :[x:0, y:0, z:0.0000000006783744, w:0.000950339]</b>
+<b class=BLU>09-27 14:01:36.708 21416 21439 D SK_rust_Demos:  --- metallic :0</b>
+<b class=BLU>09-27 14:01:36.708 21416 21439 D SK_rust_Demos:  --- roughness :0.20000008</b>
+<b class=BLU>09-27 14:01:36.708 21416 21439 D SK_rust_Demos:  --- sk_cubemap :default/tex</b>
+<b class=BLU>09-27 14:01:36.708 21416 21439 D SK_rust_Demos:  --- diffuse :default/tex</b>
+<b class=BLU>09-27 14:01:36.708 21416 21439 D SK_rust_Demos:  --- emission :default/tex</b>
+<b class=BLU>09-27 14:01:36.708 21416 21439 D SK_rust_Demos:  --- metal :mobiles.gltf/tex/1</b>
+<b class=BLU>09-27 14:01:36.708 21416 21439 D SK_rust_Demos:  --- occlusion :default/tex</b>
+<b class=GRN>09-27 14:01:37.009 21416 21529 I ClientSharedTelemetryStats: App memory usage: PSS=128 MiB, PrivateDirty=106 MiB, PrivateClean=13 MiB, GPU=3.5/3.5 MiB (100% allocated)</b>
+<b class=GRN>09-27 14:01:37.009 21416 21529 I VrApi   : FPS=0/72,Prd=0ms,Tear=0,Early=0,Stale=0,Stale2/5/10/max=0/0/0/0,VSnc=1,Lat=0,Fov=0,CPU4/GPU=5/4,2419/525MHz,OC=FF,TA=0/0/70,SP=N/N/N,Mem=2092MHz,Free=2730MB,PLS=0,Temp=25.0C/0.0C,TW=0.00ms,App=0.00ms,GD=0.00ms,CPU&amp;GPU=0.00ms,LCnt=0(DR0,LM0),GPU%=0.66,CPU%=0.97(W1.00),DSF=1.00,CFL=0.00/0.00,ICFLp95=0.00,LD=0,SF=0.00,LP=0,DVFS=0</b>
+<b class=BLU>09-27 14:01:37.620 21416 21439 D SK_rust_Demos: Passthrough Deactived at start !!</b>
+<b class=BLU>09-27 14:01:37.622 21416 21439 D SK_rust_Demos: ===================================================================================================================== !!</b>
+<b class=BLU>09-27 14:01:37.622 21416 21439 D SK_rust_Demos: Thread id : None / ThreadId(2) </b>
+<b class=BLU>09-27 14:01:37.622 21416 21439 D SK_rust_Demos: Process id : None / 21416 </b>
+<b class=GRN>09-27 14:01:37.624 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: InitServerStateBuffer: SUCCESS. 3, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (HandInputDataServer)</b>
+<b class=GRN>09-27 14:01:37.625 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: InitServerStateBuffer: SUCCESS. 4, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (HandInputDataServer)</b>
+<b class=GRN>09-27 14:01:37.625 21416 21439 I Deque   : AddEventToQueue called. eventInfo.type: 52, eventInfo.next: 1</b>
+<b class=YEL>09-27 14:01:37.625 21416 21439 W OsSdk   : Requested historical tracking state too far in the past; oldest: 6957.235400s, requested: 6955.554248s</b>
+<b class=GRN>09-27 14:01:38.000 21416 21529 I VrApi   : FPS=0/72,Prd=0ms,Tear=0,Early=0,Stale=0,Stale2/5/10/max=0/0/0/0,VSnc=1,Lat=0,Fov=0,CPU4/GPU=5/4,2419/525MHz,OC=FF,TA=0/0/70,SP=N/N/N,Mem=2092MHz,Free=2730MB,PLS=0,Temp=25.0C/0.0C,TW=0.00ms,App=0.00ms,GD=0.00ms,CPU&amp;GPU=0.00ms,LCnt=0(DR0,LM0),GPU%=0.66,CPU%=0.97(W1.00),DSF=1.00,CFL=0.00/0.00,ICFLp95=0.00,LD=0,SF=0.00,LP=0,DVFS=0</b>
+<b class=GRN>09-27 14:01:38.299 21416 21439 I OpenXR_Passthrough: ------------ xrCreatePassthroughFB -----------</b>
+<b class=GRN>09-27 14:01:38.299 21416 21439 I ipcLoader [RUNTIMEIPC]: RuntimeIPC: Loader: IPC Service API Loader Version: 69 Jul 11 2024 23:23:48</b>
+<b class=GRN>09-27 14:01:38.299 21416 21439 I ipcLoader [RUNTIMEIPC]: RuntimeIPC: Using android_get_exported_namespace: libripcclient.oculus.so</b>
+<b class=GRN>09-27 14:01:38.300 21416 21439 I ipcLoader [RUNTIMEIPC]: RuntimeIPC: android_get_exported_namespace SUCCESS: libripcclient.oculus.so</b>
+<b class=YEL>09-27 14:01:38.301 21416 21439 W libc    : Access denied finding property "ro.vendor.hw.device_config"</b>
+<b class=YEL>09-27 14:01:38.291 21416 21416 W SK_rust_Demos: type=1400 audit(0.0:548): avc: denied { read } for name="u:object_r:gatekeeper_prop:s0" dev="tmpfs" ino=12353 scontext=u:r:untrusted_app:s0:c153,c256,c512,c768 tcontext=u:object_r:gatekeeper_prop:s0 tclass=file permissive=0 app=com.stereokit.rust_binding.demos</b>
+<b class=YEL>09-27 14:01:38.301 21416 21439 W libc    : Access denied finding property "persist.gk.xrs.enable_camera_encoding"</b>
+<b class=GRN>09-27 14:01:38.303 21416 21439 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STOPPED, newState: STATE_STARTING</b>
+<b class=GRN>09-27 14:01:38.303 21416 21641 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STARTING, newState: STATE_RUNNING</b>
+<b class=GRN>09-27 14:01:38.304 21416 21439 I ClientProcessConnector [RUNTIMEIPC]: GetProcessConnection: :</b>
+<b class=GRN>09-27 14:01:38.306 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: Event buffer size (client): 8192</b>
+<b class=GRN>09-27 14:01:38.306 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: TryToGetIPCResourcesFromServer: RPC_CONNECTOR_CONNECT_TO_SERVER SUCCESS: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: : (MrServiceIPCServer)</b>
+<b class=GRN>09-27 14:01:38.306 21416 21439 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: RIPCNotifThread, currentState: STATE_STOPPED, newState: STATE_STARTING</b>
+<b class=GRN>09-27 14:01:38.306 21416 21643 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: RIPCNotifThread, currentState: STATE_STARTING, newState: STATE_RUNNING</b>
+<b class=GRN>09-27 14:01:38.306 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: EnsureServerConnection: SUCCESS. Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: : (MrServiceIPCServer)</b>
+<b class=GRN>09-27 14:01:38.306 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: ConnectToServer: SUCCESS: Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: : (MrServiceIPCServer)</b>
+<b class=GRN>09-27 14:01:38.309 21416 21439 I OpenXR_Passthrough: xrCreatePassthroughFB: Created Insight MR Passthrough feature</b>
+<b class=GRN>09-27 14:01:38.309 21416 21439 I OpenXR_Passthrough: ------------ xrCreatePassthroughLayerFB -----------</b>
+<b class=GRN>09-27 14:01:38.309 21416 21439 I OpenXR_Passthrough: xrCreatePassthroughLayerFB: Created Insight MR layer</b>
+<b class=GRN>09-27 14:01:38.310 21416 21439 I SK_rust_Demos: App focus changed to : Active</b>
+<b class=BLU>09-27 14:01:38.311 21416 21439 D SK_rust_Demos: WokeUp</b>
+<b class=BLU>09-27 14:01:38.311 21416 21439 D SK_rust_Demos: UserEvent StepperAction::Add(..., type_id: ... , stepper_id:"HandMenuStepper1" )</b>
+<b class=GRN>09-27 14:01:38.357 21416 21439 I OpenXR_GPUMemTrace: OpenXR GPU memory tracing is enabled on heap(oculus.OpenXR) with id(2)</b>
+<b class=GRN>09-27 14:01:38.357 21416 21439 I OpenXR_GPUMemTrace: Swapchain creation, id=304, idx=0, MemoryAllocationSize: 40725 KB</b>
+<b class=GRN>09-27 14:01:38.357 21416 21439 I OpenXR_GPUMemTrace: Swapchain creation, id=304, idx=1, MemoryAllocationSize: 40725 KB</b>
+<b class=GRN>09-27 14:01:38.357 21416 21439 I OpenXR_GPUMemTrace: Swapchain creation, id=304, idx=2, MemoryAllocationSize: 40725 KB</b>
+<b class=GRN>09-27 14:01:38.404 21416 21439 I OpenXR_GPUMemTrace: Swapchain creation, id=305, idx=0, MemoryAllocationSize: 40725 KB</b>
+<b class=GRN>09-27 14:01:38.404 21416 21439 I OpenXR_GPUMemTrace: Swapchain creation, id=305, idx=1, MemoryAllocationSize: 40725 KB</b>
+<b class=GRN>09-27 14:01:38.404 21416 21439 I OpenXR_GPUMemTrace: Swapchain creation, id=305, idx=2, MemoryAllocationSize: 40725 KB</b>
+<b class=BLU>09-27 14:01:38.404 21416 21439 D SK_rust_Demos: Set swapchain: PrimaryStereo to 4320x2376</b>
+<b class=GRN>09-27 14:01:38.406 21416 21439 I AppLoadTimeTelemetryCommon: App load time recorded [packageName=com.stereokit.rust_binding.demos, time=3.308646, method="BeginFrame (1)", launchType="Launch"]</b>
+<b class=BLU>09-27 14:01:38.422 21416 21439 D SK_rust_Demos: Switched left controller profile to khr/simple_controller</b>
+<b class=BLU>09-27 14:01:38.422 21416 21439 D SK_rust_Demos: Switched right controller profile to khr/simple_controller</b>
+<b class=YEL>09-27 14:01:38.515 21416 21439 W [CT]    : HandPoseSampler: Detected non-incrementing timestamp: 6958.466276857001. Skip contribution to prediction filter and use previous pose</b>
+<b class=GRN>09-27 14:01:39.000 21416 21529 I VrApi   : FPS=1/72,Prd=0ms,Tear=0,Early=0,Stale=90,Stale2/5/10/max=0/0/0/0,VSnc=1,Lat=-1,Fov=0,CPU4/GPU=5/2,1862/441MHz,OC=FF,TA=0/0/70,SP=N/N/F,Mem=2092MHz,Free=2730MB,PLS=0,Temp=25.0C/0.0C,TW=2.64ms,App=831456.25ms,GD=0.00ms,CPU&amp;GPU=0.00ms,LCnt=8(DR0,LM0),GPU%=0.36,CPU%=0.90(W0.90),DSF=1.00,CFL=12.68/19.39,ICFLp95=15.64,LD=0,SF=0.00,LP=0,DVFS=0,ShrpLCnt=0,ShrpR=0.000,SSLCnt=0/7</b>
+<b class=GRN>09-27 14:01:40.000 21416 21529 I VrApi   : FPS=1/72,Prd=0ms,Tear=0,Early=18,Stale=43,Stale2/5/10/max=1/0/1/592,VSnc=1,Lat=-1,Fov=0,CPU4/GPU=5/4,1478/525MHz,OC=FF,TA=0/0/70,SP=N/N/F,Mem=1353MHz,Free=2730MB,PLS=0,Temp=25.0C/0.0C,TW=2.44ms,App=0.00ms,GD=0.00ms,CPU&amp;GPU=0.00ms,LCnt=3(DR0,LM2),GPU%=0.92,CPU%=0.13(W0.27),DSF=1.00,CFL=13.52/22.00,ICFLp95=18.42,LD=0,SF=0.00,LP=0,DVFS=0</b>
+<b class=BLU>09-27 14:01:40.286 21416 21439 D SK_rust_Demos: UserEvent StepperAction::Remove( id:"HudNotif1" )</b>
+<b class=GRN>09-27 14:01:41.001 21416 21529 I VrApi   : FPS=57/72,Prd=50ms,Tear=0,Early=5,Stale=5,Stale2/5/10/max=0/0/0/1,VSnc=1,Lat=-1,Fov=0,CPU4/GPU=3/4,1382/525MHz,OC=FF,TA=0/0/70,SP=N/N/F,Mem=1555MHz,Free=2730MB,PLS=0,Temp=25.0C/0.0C,TW=1.70ms,App=10.57ms,GD=0.00ms,CPU&amp;GPU=17.62ms,LCnt=2(DR43,LM2),GPU%=0.95,CPU%=0.16(W0.25),DSF=1.00,CFL=13.95/19.50,ICFLp95=17.66,LD=0,SF=1.50,LP=0,DVFS=0</b>
+<b class=GRN>09-27 14:01:42.001 21416 21529 I VrApi   : FPS=71/72,Prd=43ms,Tear=0,Early=38,Stale=0,Stale2/5/10/max=0/0/0/0,VSnc=1,Lat=-1,Fov=0,CPU4/GPU=2/4,1171/525MHz,OC=FF,TA=0/0/70,SP=N/N/F,Mem=1555MHz,Free=2730MB,PLS=0,Temp=25.0C/0.0C,TW=1.75ms,App=11.29ms,GD=0.00ms,CPU&amp;GPU=13.84ms,LCnt=2(DR72,LM2),GPU%=0.96,CPU%=0.16(W0.30),DSF=1.00,CFL=13.20/18.86,ICFLp95=16.46,LD=0,SF=1.50,LP=0,DVFS=0</b>
+<b class=GRN>09-27 14:01:43.001 21416 21529 I VrApi   : FPS=72/72,Prd=42ms,Tear=0,Early=0,Stale=0,Stale2/5/10/max=0/0/0/0,VSnc=1,Lat=-1,Fov=0,CPU4/GPU=2/4,1171/525MHz,OC=FF,TA=0/0/70,SP=N/N/F,Mem=1555MHz,Free=2730MB,PLS=0,Temp=25.0C/0.0C,TW=1.73ms,App=11.50ms,GD=0.00ms,CPU&amp;GPU=13.93ms,LCnt=2(DR72,LM2),GPU%=0.97,CPU%=0.14(W0.32),DSF=1.00,CFL=12.43/17.65,ICFLp95=15.57,LD=0,SF=1.50,LP=0,DVFS=0</b>
+<b class=GRN>09-27 14:01:44.001 21416 21529 I VrApi   : FPS=72/72,Prd=40ms,Tear=0,Early=0,Stale=0,Stale2/5/10/max=0/0/0/0,VSnc=1,Lat=-1,Fov=0,CPU4/GPU=2/4,1171/525MHz,OC=FF,TA=0/0/70,SP=N/N/F,Mem=1555MHz,Free=2730MB,PLS=0,Temp=25.0C/0.0C,TW=1.69ms,App=11.43ms,GD=0.00ms,CPU&amp;GPU=14.62ms,LCnt=2(DR72,LM2),GPU%=0.96,CPU%=0.17(W0.36),DSF=1.00,CFL=12.14/17.45,ICFLp95=15.22,LD=0,SF=1.50,LP=0,DVFS=0</b>
+<b class=GRN>09-27 14:01:45.001 21416 21529 I VrApi   : FPS=72/72,Prd=39ms,Tear=0,Early=0,Stale=5,Stale2/5/10/max=0/1/0/5,VSnc=1,Lat=-1,Fov=0,CPU4/GPU=2/4,1171/525MHz,OC=FF,TA=0/0/70,SP=N/N/F,Mem=1555MHz,Free=2730MB,PLS=0,Temp=25.2C/0.0C,TW=1.67ms,App=13.00ms,GD=0.00ms,CPU&amp;GPU=14.79ms,LCnt=2(DR72,LM2),GPU%=0.99,CPU%=0.14(W0.32),DSF=1.00,CFL=11.86/17.09,ICFLp95=14.97,LD=0,SF=1.50,LP=0,DVFS=0</b>
+<b class=RED>09-27 14:01:45.652 21416 21439 E TREX    : Interface 'MrLightingEstimationInterface', version 1 was not found. Check debug build for more information.</b>
+<b class=GRN>09-27 14:01:45.663 21416 21439 I AppLoadTimeTelemetryCommon: App load time recorded [packageName=com.stereokit.rust_binding.demos, time=10.565600, method="BeginFrame (500)", launchType="Launch"]</b>
+<b class=GRN>09-27 14:01:46.001 21416 21529 I VrApi   : FPS=69/72,Prd=38ms,Tear=0,Early=0,Stale=3,Stale2/5/10/max=0/0/0/1,VSnc=1,Lat=-1,Fov=0,CPU4/GPU=2/4,1171/525MHz,OC=FF,TA=0/0/70,SP=N/N/F,Mem=1555MHz,Free=2730MB,PLS=0,Temp=25.2C/0.0C,TW=1.66ms,App=11.75ms,GD=0.00ms,CPU&amp;GPU=16.49ms,LCnt=2(DR72,LM2),GPU%=0.99,CPU%=0.15(W0.33),DSF=1.00,CFL=11.90/16.98,ICFLp95=14.92,LD=0,SF=1.50,LP=0,DVFS=0</b>
+<b class=GRN>09-27 14:01:46.468 21416 21416 I OpenXR  : nativeOnActivityPaused</b>
+<b class=BLU>09-27 14:01:46.468 21416 21416 D STKit-rs: android_activity::activity_impl::glue: Pause: 0xb4000078d23c6780</b>
+<b class=GRN>09-27 14:01:46.474 21416 21439 I OpenXR  : PostSessionStateChange:[pid: 21416] XR_SESSION_STATE_FOCUSED -&gt; XR_SESSION_STATE_VISIBLE</b>
+<b class=GRN>09-27 14:01:46.476 21416 21439 I Deque   : AddEventToQueue called. eventInfo.type: 18, eventInfo.next: 1</b>
+<b class=GRN>09-27 14:01:46.476 21416 21439 I OpenXR  : PostSessionStateChange:[pid: 21416] XR_SESSION_STATE_VISIBLE -&gt; XR_SESSION_STATE_SYNCHRONIZED</b>
+<b class=GRN>09-27 14:01:46.476 21416 21439 I Deque   : AddEventToQueue called. eventInfo.type: 18, eventInfo.next: 1</b>
+<b class=GRN>09-27 14:01:46.476 21416 21439 I OpenXR  : PostSessionStateChange:[pid: 21416] XR_SESSION_STATE_SYNCHRONIZED -&gt; XR_SESSION_STATE_STOPPING</b>
+<b class=GRN>09-27 14:01:46.589 21416 21439 I Deque   : AddEventToQueue called. eventInfo.type: 18, eventInfo.next: 1</b>
+<b class=BLU>09-27 14:01:46.589 21416 21439 D SK_rust_Demos: OpenXR state: focused -&gt; visible</b>
+<b class=BLU>09-27 14:01:46.589 21416 21439 D SK_rust_Demos: OpenXR state: visible -&gt; synchronized</b>
+<b class=BLU>09-27 14:01:46.589 21416 21439 D SK_rust_Demos: OpenXR state: synchronized -&gt; stopping</b>
+<b class=GRN>09-27 14:01:46.589 21416 21439 I OpenXR  : ------------ xrEndSession [start] -----------</b>
+<b class=GRN>09-27 14:01:46.589 21416 21439 I XrRuntimeUtils: XrRuntimeUtils::EndSession</b>
+<b class=GRN>09-27 14:01:46.590 21416 21439 I [CT]    : BodyApiPlugin: EndSession called for BodyApi Plugin</b>
+<b class=GRN>09-27 14:01:46.590 21416 21439 I [CT]    : MIXEDREALITY: TREX: Suspending Insight MR session.</b>
+<b class=GRN>09-27 14:01:46.595 21416 21439 I Sensor  : OSSDKTRACKING Shutdown tracking</b>
+<b class=GRN>09-27 14:01:46.595 21416 21439 I VrRuntimeClient: EndSession. Restore the audio capture policy to default value</b>
+<b class=YEL>09-27 14:01:46.596 21416 21439 W ScreenCaptureHelper: setInhibitAudioCapture: Restore audio capture. Init policy: 1</b>
+<b class=GRN>09-27 14:01:46.602 21416 21439 I LogTimer: CPUTIME: VrRuntimeClient_EndSession took 7.3452 ms</b>
+<b class=GRN>09-27 14:01:46.602 21416 21439 I InputDeviceManager: ovrInputDeviceManager::~ovrInputDeviceManager</b>
+<b class=GRN>09-27 14:01:46.602 21416 21439 I OSHandDataQuerier: OSSDKTRACKING shutting down handsTracker_</b>
+<b class=GRN>09-27 14:01:46.603 21416 21439 I OSHandDataQuerier: OSSDKTRACKING shutting down handsTracker_</b>
+<b class=GRN>09-27 14:01:46.603 21416 21439 I InputHooks_Internal: Disabling Native Input Hooks</b>
+<b class=GRN>09-27 14:01:46.614 21416 21523 I ClientInputThread_Internal: InputThreadRun ShutdownRequest received</b>
+<b class=GRN>09-27 14:01:46.614 21416 21439 I ClientInputTrackedKeyboardManager: TRACKEDKEYBOARD ClearTrackedObjectManager called on client</b>
+<b class=GRN>09-27 14:01:46.626 21416 21532 I FenceChecker: FenceChecker::MainLoop - ended</b>
+<b class=GRN>09-27 14:01:46.626 21416 21439 I VrRuntimeClient: PhaseSync Instance deleted</b>
+<b class=GRN>09-27 14:01:46.626 21416 21439 I OpenXR  : PostSessionStateChange:[pid: 21416] XR_SESSION_STATE_STOPPING -&gt; XR_SESSION_STATE_IDLE</b>
+<b class=GRN>09-27 14:01:46.627 21416 21439 I Deque   : AddEventToQueue called. eventInfo.type: 18, eventInfo.next: 1</b>
+<b class=GRN>09-27 14:01:46.627 21416 21439 I OpenXR  : ------------ xrEndSession [end] -----------</b>
+<b class=GRN>09-27 14:01:46.627 21416 21439 I VrRuntimeClient: Client has gained focus.</b>
+<b class=BLU>09-27 14:01:46.627 21416 21439 D SK_rust_Demos: OpenXR state: stopping -&gt; idle</b>
+<b class=GRN>09-27 14:01:46.628 21416 21439 I SK_rust_Demos: App focus changed to : Hidden</b>
+<b class=BLU>09-27 14:01:46.629 21416 21439 D SK_rust_Demos: Time to sleep</b>
+<b class=BLU>09-27 14:01:46.639 21416 21416 D STKit-rs: android_activity::activity_impl::glue: NativeWindowDestroyed: 0xb4000078d23c6780 -- 0xb4000078b3496810</b>
+<b class=GRN>09-27 14:01:46.829 21416 21439 I SK_rust_Demos: SkClosure Suspended !!</b>
+<b class=GRN>09-27 14:01:46.923 21416 21486 I [CT]    : SlamAnchorClientRuntimeIPC: Handling rebase for 9 anchors.</b>
+<b class=BLU>09-27 14:01:47.065 21416 21416 D STKit-rs: android_activity::activity_impl::glue: Stop: 0xb4000078d23c6780</b>
+<b class=BLU>09-27 14:01:47.305 21416 21416 D STKit-rs: android_activity::activity_impl::glue: SaveInstanceState: 0xb4000078d23c6780</b>
+<b class=BLU>09-27 14:01:47.784 21416 21416 D STKit-rs: android_activity::activity_impl::glue: Saved state = 0x0, len = 0</b>
+<b class=GRN>09-27 14:01:47.787 21416 21416 I Choreographer: Skipped 136 frames!  The application may be doing too much work on its main thread.</b>
+<b class=BLU>09-27 14:01:47.792 21416 21416 D STKit-rs: android_activity::activity_impl::glue: WindowFocusChanged: 0xb4000078d23c6780 -- 0</b>
+<b class=GRN>09-27 14:01:52.570 21416 21439 I SK_rust_Demos: HIDDEN STEP -------&gt; Dreaming </b>
+<b class=GRN>09-27 14:02:08.614 21416 21439 I SK_rust_Demos: HIDDEN STEP -------&gt; Dreaming </b>
+<b class=GRN>09-27 14:02:24.624 21416 21439 I SK_rust_Demos: HIDDEN STEP -------&gt; Dreaming </b>
+<b class=BLU>09-27 14:02:26.561 21416 21416 D STKit-rs: android_activity::activity_impl::glue: Start: 0xb4000078d23c6780</b>
+<b class=BLU>09-27 14:02:26.749 21416 21416 D STKit-rs: android_activity::activity_impl::glue: Resume: 0xb4000078d23c6780</b>
+<b class=GRN>09-27 14:02:26.750 21416 21502 I OpenXR  : nativeOnActivityReady</b>
+<b class=GRN>09-27 14:02:26.950 21416 21416 I Choreographer: Skipped 45 frames!  The application may be doing too much work on its main thread.</b>
+<b class=BLU>09-27 14:02:26.958 21416 21416 D STKit-rs: android_activity::activity_impl::glue: NativeWindowCreated: 0xb4000078d23c6780 -- 0xb4000078b3496810</b>
+<b class=BLU>09-27 14:02:27.148 21416 21416 D STKit-rs: android_activity::activity_impl::glue: NativeWindowResized: 0xb4000078d23c6780 -- 0xb4000078b3496810</b>
+<b class=GRN>09-27 14:02:27.148 21416 21439 I SK_rust_Demos: Resumed !!</b>
+<b class=BLU>09-27 14:02:27.148 21416 21416 D STKit-rs: android_activity::activity_impl::glue: NativeWindowRedrawNeeded: 0xb4000078d23c6780 -- 0xb4000078b3496810</b>
+<b class=BLU>09-27 14:02:27.151 21416 21416 D STKit-rs: android_activity::activity_impl::glue: WindowFocusChanged: 0xb4000078d23c6780 -- 1</b>
+<b class=GRN>09-27 14:02:27.183 21416 21486 I [CT]    : SlamAnchorClientRuntimeIPC: Handling rebase for 9 anchors.</b>
+<b class=BLU>09-27 14:02:27.548 21416 21439 D SK_rust_Demos: RedrawRequested: Time to wake up</b>
+<b class=BLU>09-27 14:02:27.581 21416 21439 D SK_rust_Demos: Sleeping until OpenXR session wakes</b>
+<b class=YEL>09-27 14:02:27.581 21416 21439 W Telemetry: [OpenXR] Unsupported threadType; 2</b>
+<b class=GRN>09-27 14:02:27.682 21416 21439 I VrRuntimeClient: UpdateEvents: Detected local reference space update. Sending reference space update event</b>
+<b class=GRN>09-27 14:02:27.682 21416 21439 I Deque   : AddEventToQueue called. eventInfo.type: 40, eventInfo.next: 1</b>
+<b class=RED>09-27 14:02:27.682 21416 21439 E TREX    : Interface 'MrLightingEstimationInterface', version 1 was not found. Check debug build for more information.</b>
+<b class=GRN>09-27 14:02:27.682 21416 21439 I OpenXR  : PostSessionStateChange:[pid: 21416] XR_SESSION_STATE_IDLE -&gt; XR_SESSION_STATE_READY</b>
+<b class=GRN>09-27 14:02:27.682 21416 21439 I Deque   : AddEventToQueue called. eventInfo.type: 18, eventInfo.next: 1</b>
+<b class=BLU>09-27 14:02:27.682 21416 21439 D SK_rust_Demos: Created local floor app space at an offset of (0,0,0) (0,0,0,1)</b>
+<b class=BLU>09-27 14:02:27.682 21416 21439 D SK_rust_Demos: Bounds updated: 3.8x3.8 at (-0.6,0,-1) (0,0.88,0,0.48)</b>
+<b class=BLU>09-27 14:02:27.682 21416 21439 D SK_rust_Demos: OpenXR state: idle -&gt; ready</b>
+<b class=GRN>09-27 14:02:27.682 21416 21439 I OpenXR  : ------------ xrBeginSession [start] -----------</b>
+<b class=GRN>09-27 14:02:27.682 21416 21439 I DRR     : DRR is supported: 1</b>
+<b class=GRN>09-27 14:02:27.682 21416 21439 I DRR     : DRR is enabled: 0</b>
+<b class=GRN>09-27 14:02:27.682 21416 21439 I Sensor  : OSSDKTRACKING Initializing controller tracking</b>
+<b class=GRN>09-27 14:02:27.682 21416 21439 I Sensor  : OSSDKTRACKING Controller tracker != nullpointer 0xb4000078587e0000, 1</b>
+<b class=GRN>09-27 14:02:27.684 21416 21439 I DeviceStatus: nativeHeadsetEvent(0)</b>
+<b class=GRN>09-27 14:02:27.685 21416 21439 I VrRuntimeClient: SetCompositorClientFeatureFlag ClientFeatureFlag 0 </b>
+<b class=GRN>09-27 14:02:27.685 21416 21439 I VrRuntimeClient: Mounted state at BeginSession: True</b>
+<b class=GRN>09-27 14:02:27.685 21416 21439 I LogTimer: CPUTIME: VrRuntimeClient_BeginSession took 3.0041 ms</b>
+<b class=GRN>09-27 14:02:27.685 21416 21439 I Distortion: Initializing Mesh Decenter Correction</b>
+<b class=GRN>09-27 14:02:27.686 21416 21439 I Distortion: SetLensPositions - iad=0.0681392, left offset=0.00214849,-0.00139587, right offset=-0.00258985,-0.00141104</b>
+<b class=GRN>09-27 14:02:27.686 21416 21439 I Distortion: Initializing Mesh Decenter Correction</b>
+<b class=GRN>09-27 14:02:27.687 21416 21439 I Distortion: SetLensPositions - iad=0.0681392, left offset=0.00214849,-0.00139587, right offset=-0.00258985,-0.00141104</b>
+<b class=GRN>09-27 14:02:27.688 21416 21439 I ClientInputSettings: HANDTRACKING: enabled input settings, setting hand mode control settings to ControllersOnly</b>
+<b class=GRN>09-27 14:02:27.688 21416 21439 I ClientInputSettings: HANDTRACKING package name is com.stereokit.rust_binding.demos</b>
+<b class=GRN>09-27 14:02:27.688 21416 21439 I ClientInputSettings: HANDTRACKING: Manifest Permission request for com.stereokit.rust_binding.demos</b>
+<b class=GRN>09-27 14:02:27.689 21416 21439 I ClientInputSettings: HANDTRACKING:  'com.stereokit.rust_binding.demos' Is hands or controller.</b>
+<b class=GRN>09-27 14:02:27.689 21416 21439 I ClientInputSettings: HANDTRACKING: feature flag set to 2</b>
+<b class=GRN>09-27 14:02:27.689 21416 21439 I ClientInputInterface: HANDTRACKING sethandmanifest 2</b>
+<b class=GRN>09-27 14:02:27.689 21416 21439 I InputHooks_Internal: Enabling Native Input Hooks</b>
+<b class=GRN>09-27 14:02:27.689 21416 21439 I InputDeviceManager: ovrInputDeviceManager::Initialize</b>
+<b class=GRN>09-27 14:02:27.690 21416 21439 I [CT]    : HandPosePrediction: Set sampler config enum for v59 30 Hz</b>
+<b class=GRN>09-27 14:02:27.690 21416 21439 I [CT]    : HandPosePrediction: Set sampler config enum for v59 30 Hz</b>
+<b class=GRN>09-27 14:02:27.692 21416 21439 I InputDevice_Hand: BodyPoweredHands checkSysPropForBodyAPIOverride 0</b>
+<b class=GRN>09-27 14:02:27.692 21416 21439 I InputDevice_Hand: BodyPoweredHands checkSysPropForBodyAPIOverride 0</b>
+<b class=GRN>09-27 14:02:27.693 21416 21439 I InputDeviceManager: HANDTRACKING Root pose filter profile changed for freq to 17 from 0  inf: 1</b>
+<b class=GRN>09-27 14:02:27.693 21416 21439 I PhaseSync: PhaseSync::PhaseSync PaddingLowerLimit 0.350000 StandardDeviations 2.000000 PaddingUpperLimit 0.750000 on instance 2</b>
+<b class=GRN>09-27 14:02:27.693 21416 21439 I FrameSync: FrameSync Initialized Instance 3</b>
+<b class=GRN>09-27 14:02:27.693 21416 21439 I VrRuntimeClient: PhaseSync Instance created</b>
+<b class=GRN>09-27 14:02:27.700 21416 21439 I XrRuntimeUtils: XrRuntimeUtils::BeginSession</b>
+<b class=GRN>09-27 14:02:27.700 21416 21439 I XrRuntimeSystem_Client: BeginSession</b>
+<b class=GRN>09-27 14:02:27.700 21416 21439 I [CT]    : BodyApiPlugin: BeginSession called for BodyApi Plugin</b>
+<b class=GRN>09-27 14:02:27.700 21416 21439 I [CT]    : MIXEDREALITY: TREX: Resuming Insight MR session.</b>
+<b class=GRN>09-27 14:02:27.702 21416 21439 I OpenXR  : usesManifestForCpuBoost:0</b>
+<b class=GRN>09-27 14:02:27.702 21416 21439 I OpenXR  : ------------ xrBeginSession [end] -----------</b>
+<b class=BLU>09-27 14:02:27.702 21416 21439 D SK_rust_Demos: OpenXR session began.</b>
+<b class=YEL>09-27 14:02:27.702 21416 21439 W OsSdk   : Requested historical tracking state too far in the past; oldest: 7007.314745s, requested: 6966.402641s</b>
+<b class=BLU>09-27 14:02:27.702 21416 21439 D SK_rust_Demos: Resuming from sleep</b>
+<b class=GRN>09-27 14:02:27.703 21416 21873 I JniUtils: ovr_GetCurrentPackageSignature </b>
+<b class=BLU>09-27 14:02:27.704 21416 21439 D SK_rust_Demos: GainedFocus: Time to wake up</b>
+<b class=GRN>09-27 14:02:27.704 21416 21873 I Metrics : device model = Quest 2</b>
+<b class=GRN>09-27 14:02:27.704 21416 21873 I Telemetry: Aligning telemetry thread time, will wait for: 296 ms...</b>
+<b class=GRN>09-27 14:02:27.713 21416 21875 I FenceChecker: FenceChecker::MainLoop - started</b>
+<b class=GRN>09-27 14:02:27.715 21416 21439 I OpenXR  : PostSessionStateChange:[pid: 21416] XR_SESSION_STATE_READY -&gt; XR_SESSION_STATE_SYNCHRONIZED</b>
+<b class=GRN>09-27 14:02:27.716 21416 21439 I Deque   : AddEventToQueue called. eventInfo.type: 18, eventInfo.next: 1</b>
+<b class=BLU>09-27 14:02:27.716 21416 21439 D SK_rust_Demos: OpenXR state: ready -&gt; synchronized</b>
+<b class=GRN>09-27 14:02:27.716 21416 21439 I OpenXR  : PostSessionStateChange:[pid: 21416] XR_SESSION_STATE_SYNCHRONIZED -&gt; XR_SESSION_STATE_VISIBLE</b>
+<b class=GRN>09-27 14:02:27.719 21416 21439 I Deque   : AddEventToQueue called. eventInfo.type: 18, eventInfo.next: 1</b>
+<b class=GRN>09-27 14:02:27.719 21416 21439 I OpenXR  : PostSessionStateChange:[pid: 21416] XR_SESSION_STATE_VISIBLE -&gt; XR_SESSION_STATE_FOCUSED</b>
+<b class=GRN>09-27 14:02:27.719 21416 21439 I Deque   : AddEventToQueue called. eventInfo.type: 18, eventInfo.next: 1</b>
+<b class=BLU>09-27 14:02:27.719 21416 21439 D SK_rust_Demos: OpenXR state: synchronized -&gt; visible</b>
+<b class=BLU>09-27 14:02:27.719 21416 21439 D SK_rust_Demos: OpenXR state: visible -&gt; focused</b>
+<b class=GRN>09-27 14:02:27.720 21416 21439 I SK_rust_Demos: App focus changed to : Active</b>
+<b class=BLU>09-27 14:02:27.721 21416 21439 D SK_rust_Demos: WokeUp</b>
+<b class=GRN>09-27 14:02:27.721 21416 21439 I AppLoadTimeTelemetryCommon: App load time recorded [packageName=com.stereokit.rust_binding.demos, time=0.698298, method="BeginFrame (1)", launchType="Resume"]</b>
+<b class=RED>09-27 14:02:27.846 21416 21439 E t_binding.demo: error getting shared memory region, memory type: HAND_TRACKER, failed with requested HAND_TRACKER data without runtime permissions</b>
+<b class=GRN>09-27 14:02:27.847 21416 21439 I Deque   : AddEventToQueue called. eventInfo.type: 52, eventInfo.next: 1</b>
+<b class=BLU>09-27 14:02:27.848 21416 21439 D SK_rust_Demos: Switched left controller profile to oculus/touch_controller</b>
+<b class=GRN>09-27 14:02:27.849 21416 21439 I Deque   : AddEventToQueue called. eventInfo.type: 52, eventInfo.next: 1</b>
+<b class=BLU>09-27 14:02:27.874 21416 21416 D STKit-rs: android_activity::activity_impl::glue: WindowFocusChanged: 0xb4000078d23c6780 -- 0</b>
+<b class=GRN>09-27 14:02:27.885 21416 21439 I VrRuntimeClient: Client has lost focus.</b>
+<b class=GRN>09-27 14:02:27.885 21416 21416 I OpenXR  : nativeOnActivityPaused</b>
+<b class=BLU>09-27 14:02:27.885 21416 21416 D STKit-rs: android_activity::activity_impl::glue: Pause: 0xb4000078d23c6780</b>
+<b class=GRN>09-27 14:02:27.886 21416 21439 I OpenXR  : PostSessionStateChange:[pid: 21416] XR_SESSION_STATE_FOCUSED -&gt; XR_SESSION_STATE_VISIBLE</b>
+<b class=GRN>09-27 14:02:27.887 21416 21439 I Deque   : AddEventToQueue called. eventInfo.type: 18, eventInfo.next: 1</b>
+<b class=GRN>09-27 14:02:27.887 21416 21439 I OpenXR  : PostSessionStateChange:[pid: 21416] XR_SESSION_STATE_VISIBLE -&gt; XR_SESSION_STATE_SYNCHRONIZED</b>
+<b class=GRN>09-27 14:02:27.888 21416 21439 I Deque   : AddEventToQueue called. eventInfo.type: 18, eventInfo.next: 1</b>
+<b class=GRN>09-27 14:02:27.888 21416 21439 I OpenXR  : PostSessionStateChange:[pid: 21416] XR_SESSION_STATE_SYNCHRONIZED -&gt; XR_SESSION_STATE_STOPPING</b>
+<b class=GRN>09-27 14:02:27.889 21416 21439 I Deque   : AddEventToQueue called. eventInfo.type: 18, eventInfo.next: 1</b>
+<b class=BLU>09-27 14:02:27.889 21416 21439 D SK_rust_Demos: OpenXR state: focused -&gt; visible</b>
+<b class=BLU>09-27 14:02:27.889 21416 21439 D SK_rust_Demos: OpenXR state: visible -&gt; synchronized</b>
+<b class=BLU>09-27 14:02:27.889 21416 21439 D SK_rust_Demos: OpenXR state: synchronized -&gt; stopping</b>
+<b class=GRN>09-27 14:02:27.889 21416 21439 I OpenXR  : ------------ xrEndSession [start] -----------</b>
+<b class=GRN>09-27 14:02:27.889 21416 21439 I XrRuntimeUtils: XrRuntimeUtils::EndSession</b>
+<b class=GRN>09-27 14:02:27.889 21416 21439 I [CT]    : BodyApiPlugin: EndSession called for BodyApi Plugin</b>
+<b class=GRN>09-27 14:02:27.889 21416 21439 I [CT]    : MIXEDREALITY: TREX: Suspending Insight MR session.</b>
+<b class=GRN>09-27 14:02:27.900 21416 21439 I Sensor  : OSSDKTRACKING Shutdown tracking</b>
+<b class=GRN>09-27 14:02:27.900 21416 21439 I VrRuntimeClient: EndSession. Restore the audio capture policy to default value</b>
+<b class=GRN>09-27 14:02:27.900 21416 21439 I LogTimer: CPUTIME: VrRuntimeClient_EndSession took 0.6073 ms</b>
+<b class=GRN>09-27 14:02:27.900 21416 21873 I Telemetry: Time aligned, interrupted: 1</b>
+<b class=GRN>09-27 14:02:27.900 21416 21439 I InputDeviceManager: ovrInputDeviceManager::~ovrInputDeviceManager</b>
+<b class=GRN>09-27 14:02:27.900 21416 21439 I OSHandDataQuerier: OSSDKTRACKING shutting down handsTracker_</b>
+<b class=GRN>09-27 14:02:27.900 21416 21439 I OSHandDataQuerier: OSSDKTRACKING shutting down handsTracker_</b>
+<b class=GRN>09-27 14:02:27.900 21416 21439 I InputHooks_Internal: Disabling Native Input Hooks</b>
+<b class=GRN>09-27 14:02:27.902 21416 21872 I ClientInputThread_Internal: InputThreadRun ShutdownRequest received</b>
+<b class=GRN>09-27 14:02:27.902 21416 21439 I ClientInputTrackedKeyboardManager: TRACKEDKEYBOARD ClearTrackedObjectManager called on client</b>
+<b class=GRN>09-27 14:02:27.916 21416 21875 I FenceChecker: FenceChecker::MainLoop - ended</b>
+<b class=GRN>09-27 14:02:27.916 21416 21439 I VrRuntimeClient: PhaseSync Instance deleted</b>
+<b class=GRN>09-27 14:02:27.916 21416 21439 I OpenXR  : PostSessionStateChange:[pid: 21416] XR_SESSION_STATE_STOPPING -&gt; XR_SESSION_STATE_IDLE</b>
+<b class=GRN>09-27 14:02:27.917 21416 21439 I Deque   : AddEventToQueue called. eventInfo.type: 18, eventInfo.next: 1</b>
+<b class=GRN>09-27 14:02:27.917 21416 21439 I OpenXR  : ------------ xrEndSession [end] -----------</b>
+<b class=BLU>09-27 14:02:27.917 21416 21439 D SK_rust_Demos: OpenXR state: stopping -&gt; idle</b>
+<b class=GRN>09-27 14:02:27.918 21416 21439 I SK_rust_Demos: App focus changed to : Hidden</b>
+<b class=BLU>09-27 14:02:27.918 21416 21439 D SK_rust_Demos: Time to sleep</b>
+<b class=BLU>09-27 14:02:28.400 21416 21416 D STKit-rs: android_activity::activity_impl::glue: Resume: 0xb4000078d23c6780</b>
+<b class=GRN>09-27 14:02:28.400 21416 21502 I OpenXR  : nativeOnActivityReady</b>
+<b class=BLU>09-27 14:02:28.519 21416 21416 D STKit-rs: android_activity::activity_impl::glue: WindowFocusChanged: 0xb4000078d23c6780 -- 1</b>
+<b class=BLU>09-27 14:02:28.719 21416 21439 D SK_rust_Demos: GainedFocus: Time to wake up</b>
+<b class=BLU>09-27 14:02:28.752 21416 21439 D SK_rust_Demos: Sleeping until OpenXR session wakes</b>
+<b class=YEL>09-27 14:02:28.752 21416 21439 W Telemetry: [OpenXR] Unsupported threadType; 2</b>
+<b class=GRN>09-27 14:02:28.852 21416 21439 I VrRuntimeClient: UpdateEvents: Detected stage reference space update. Sending reference space update event</b>
+<b class=GRN>09-27 14:02:28.852 21416 21439 I Deque   : AddEventToQueue called. eventInfo.type: 40, eventInfo.next: 1</b>
+<b class=GRN>09-27 14:02:28.852 21416 21439 I OpenXR  : PostSessionStateChange:[pid: 21416] XR_SESSION_STATE_IDLE -&gt; XR_SESSION_STATE_READY</b>
+<b class=GRN>09-27 14:02:28.852 21416 21439 I Deque   : AddEventToQueue called. eventInfo.type: 18, eventInfo.next: 1</b>
+<b class=BLU>09-27 14:02:28.853 21416 21439 D SK_rust_Demos: Created local floor app space at an offset of (0,0,0) (0,0,0,1)</b>
+<b class=BLU>09-27 14:02:28.853 21416 21439 D SK_rust_Demos: Bounds updated: 3.8x3.8 at (-0.6,6e-08,-1) (0,0.88,0,0.48)</b>
+<b class=BLU>09-27 14:02:28.853 21416 21439 D SK_rust_Demos: OpenXR state: idle -&gt; ready</b>
+<b class=GRN>09-27 14:02:28.853 21416 21439 I OpenXR  : ------------ xrBeginSession [start] -----------</b>
+<b class=GRN>09-27 14:02:28.853 21416 21439 I DRR     : DRR is supported: 1</b>
+<b class=GRN>09-27 14:02:28.853 21416 21439 I DRR     : DRR is enabled: 0</b>
+<b class=GRN>09-27 14:02:28.853 21416 21439 I Sensor  : OSSDKTRACKING Initializing controller tracking</b>
+<b class=GRN>09-27 14:02:28.853 21416 21439 I Sensor  : OSSDKTRACKING Controller tracker != nullpointer 0xb4000078587e0000, 1</b>
+<b class=GRN>09-27 14:02:28.855 21416 21439 I DeviceStatus: nativeHeadsetEvent(0)</b>
+<b class=GRN>09-27 14:02:28.855 21416 21439 I VrRuntimeClient: SetCompositorClientFeatureFlag ClientFeatureFlag 0 </b>
+<b class=GRN>09-27 14:02:28.856 21416 21439 I VrRuntimeClient: Mounted state at BeginSession: True</b>
+<b class=GRN>09-27 14:02:28.856 21416 21439 I LogTimer: CPUTIME: VrRuntimeClient_BeginSession took 3.0155 ms</b>
+<b class=GRN>09-27 14:02:28.856 21416 21439 I Distortion: Initializing Mesh Decenter Correction</b>
+<b class=GRN>09-27 14:02:28.857 21416 21439 I Distortion: SetLensPositions - iad=0.0681392, left offset=0.00214849,-0.00139587, right offset=-0.00258985,-0.00141104</b>
+<b class=GRN>09-27 14:02:28.857 21416 21439 I Distortion: Initializing Mesh Decenter Correction</b>
+<b class=GRN>09-27 14:02:28.858 21416 21439 I Distortion: SetLensPositions - iad=0.0681392, left offset=0.00214849,-0.00139587, right offset=-0.00258985,-0.00141104</b>
+<b class=GRN>09-27 14:02:28.858 21416 21439 I ClientInputSettings: HANDTRACKING: enabled input settings, setting hand mode control settings to ControllersOnly</b>
+<b class=GRN>09-27 14:02:28.858 21416 21439 I ClientInputSettings: HANDTRACKING package name is com.stereokit.rust_binding.demos</b>
+<b class=GRN>09-27 14:02:28.859 21416 21439 I ClientInputSettings: HANDTRACKING: Manifest Permission request for com.stereokit.rust_binding.demos</b>
+<b class=GRN>09-27 14:02:28.859 21416 21439 I ClientInputSettings: HANDTRACKING:  'com.stereokit.rust_binding.demos' Is hands or controller.</b>
+<b class=GRN>09-27 14:02:28.859 21416 21439 I ClientInputSettings: HANDTRACKING: feature flag set to 2</b>
+<b class=GRN>09-27 14:02:28.859 21416 21439 I ClientInputInterface: HANDTRACKING sethandmanifest 2</b>
+<b class=GRN>09-27 14:02:28.859 21416 21439 I InputHooks_Internal: Enabling Native Input Hooks</b>
+<b class=GRN>09-27 14:02:28.859 21416 21439 I InputDeviceManager: ovrInputDeviceManager::Initialize</b>
+<b class=GRN>09-27 14:02:28.859 21416 21439 I [CT]    : HandPosePrediction: Set sampler config enum for v59 30 Hz</b>
+<b class=GRN>09-27 14:02:28.859 21416 21439 I [CT]    : HandPosePrediction: Set sampler config enum for v59 30 Hz</b>
+<b class=GRN>09-27 14:02:28.860 21416 21439 I InputDevice_Hand: BodyPoweredHands checkSysPropForBodyAPIOverride 0</b>
+<b class=GRN>09-27 14:02:28.860 21416 21439 I InputDevice_Hand: BodyPoweredHands checkSysPropForBodyAPIOverride 0</b>
+<b class=GRN>09-27 14:02:28.860 21416 21439 I InputDeviceManager: HANDTRACKING Root pose filter profile changed for freq to 17 from 0  inf: 1</b>
+<b class=GRN>09-27 14:02:28.860 21416 21439 I PhaseSync: PhaseSync::PhaseSync PaddingLowerLimit 0.350000 StandardDeviations 2.000000 PaddingUpperLimit 0.750000 on instance 4</b>
+<b class=GRN>09-27 14:02:28.860 21416 21439 I FrameSync: FrameSync Initialized Instance 5</b>
+<b class=GRN>09-27 14:02:28.860 21416 21439 I VrRuntimeClient: PhaseSync Instance created</b>
+<b class=GRN>09-27 14:02:28.865 21416 21439 I XrRuntimeUtils: XrRuntimeUtils::BeginSession</b>
+<b class=GRN>09-27 14:02:28.865 21416 21439 I XrRuntimeSystem_Client: BeginSession</b>
+<b class=GRN>09-27 14:02:28.865 21416 21439 I [CT]    : BodyApiPlugin: BeginSession called for BodyApi Plugin</b>
+<b class=GRN>09-27 14:02:28.865 21416 21439 I [CT]    : MIXEDREALITY: TREX: Resuming Insight MR session.</b>
+<b class=GRN>09-27 14:02:28.866 21416 21439 I OpenXR  : usesManifestForCpuBoost:0</b>
+<b class=GRN>09-27 14:02:28.866 21416 21439 I OpenXR  : ------------ xrBeginSession [end] -----------</b>
+<b class=BLU>09-27 14:02:28.866 21416 21439 D SK_rust_Demos: OpenXR session began.</b>
+<b class=BLU>09-27 14:02:28.866 21416 21439 D SK_rust_Demos: Resuming from sleep</b>
+<b class=GRN>09-27 14:02:28.867 21416 21889 I JniUtils: ovr_GetCurrentPackageSignature </b>
+<b class=GRN>09-27 14:02:28.868 21416 21889 I Metrics : device model = Quest 2</b>
+<b class=GRN>09-27 14:02:28.868 21416 21889 I Telemetry: Aligning telemetry thread time, will wait for: 132 ms...</b>
+<b class=GRN>09-27 14:02:28.869 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: InitServerStateBuffer: SUCCESS. 3, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (HandInputDataServer)</b>
+<b class=GRN>09-27 14:02:28.869 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: InitServerStateBuffer: SUCCESS. 4, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (HandInputDataServer)</b>
+<b class=GRN>09-27 14:02:28.882 21416 21891 I FenceChecker: FenceChecker::MainLoop - started</b>
+<b class=GRN>09-27 14:02:28.884 21416 21439 I OpenXR  : PostSessionStateChange:[pid: 21416] XR_SESSION_STATE_READY -&gt; XR_SESSION_STATE_SYNCHRONIZED</b>
+<b class=GRN>09-27 14:02:28.885 21416 21439 I Deque   : AddEventToQueue called. eventInfo.type: 18, eventInfo.next: 1</b>
+<b class=BLU>09-27 14:02:28.885 21416 21439 D SK_rust_Demos: OpenXR state: ready -&gt; synchronized</b>
+<b class=GRN>09-27 14:02:28.885 21416 21439 I OpenXR  : PostSessionStateChange:[pid: 21416] XR_SESSION_STATE_SYNCHRONIZED -&gt; XR_SESSION_STATE_VISIBLE</b>
+<b class=GRN>09-27 14:02:28.886 21416 21439 I Deque   : AddEventToQueue called. eventInfo.type: 18, eventInfo.next: 1</b>
+<b class=GRN>09-27 14:02:28.886 21416 21439 I OpenXR  : PostSessionStateChange:[pid: 21416] XR_SESSION_STATE_VISIBLE -&gt; XR_SESSION_STATE_FOCUSED</b>
+<b class=GRN>09-27 14:02:28.886 21416 21439 I Deque   : AddEventToQueue called. eventInfo.type: 18, eventInfo.next: 1</b>
+<b class=BLU>09-27 14:02:28.886 21416 21439 D SK_rust_Demos: OpenXR state: synchronized -&gt; visible</b>
+<b class=BLU>09-27 14:02:28.886 21416 21439 D SK_rust_Demos: OpenXR state: visible -&gt; focused</b>
+<b class=GRN>09-27 14:02:28.887 21416 21439 I Deque   : AddEventToQueue called. eventInfo.type: 52, eventInfo.next: 1</b>
+<b class=GRN>09-27 14:02:28.888 21416 21439 I SK_rust_Demos: App focus changed to : Active</b>
+<b class=BLU>09-27 14:02:28.888 21416 21439 D SK_rust_Demos: WokeUp</b>
+<b class=BLU>09-27 14:02:28.893 21416 21439 D SK_rust_Demos: Switched left controller profile to khr/simple_controller</b>
+<b class=BLU>09-27 14:02:28.893 21416 21439 D SK_rust_Demos: Switched right controller profile to khr/simple_controller</b>
+<b class=GRN>09-27 14:02:28.930 21416 21888 I RuntimeIPCClient [RUNTIMEIPC]: InitServerStateBuffer: SUCCESS. 1, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.bodyapiservice:com.oculus.bodyapiservice (BodyApiServiceServer)</b>
+<b class=GRN>09-27 14:02:29.000 21416 21889 I Telemetry: Time aligned, interrupted: 0</b>
+<b class=GRN>09-27 14:02:30.009 21416 21889 I ClientSharedTelemetryStats: App memory usage: PSS=550 MiB, PrivateDirty=527 MiB, PrivateClean=13 MiB, GPU=357.0/357.2 MiB (100% allocated)</b>
+<b class=GRN>09-27 14:02:30.009 21416 21889 I VrApi   : FPS=15/72,Prd=32ms,Tear=0,Early=0,Stale=14,Stale2/5/10/max=0/0/0/0,VSnc=1,Lat=-1,Fov=0,CPU4/GPU=5/4,1478/490MHz,OC=FF,TA=0/0/70,SP=N/N/F,Mem=2092MHz,Free=2223MB,PLS=0,Temp=25.0C/0.0C,TW=1.83ms,App=5.85ms,GD=0.00ms,CPU&amp;GPU=0.00ms,LCnt=4(DR57,LM4),GPU%=0.71,CPU%=0.11(W0.17),DSF=1.00,CFL=13.58/19.74,ICFLp95=17.91,LD=0,SF=1.50,LP=0,DVFS=0</b>
+<b class=YEL>09-27 14:02:30.009 21416 21889 W Telemetry: [OpenXR] Unsupported threadType; 2</b>
+<b class=GRN>09-27 14:02:31.000 21416 21889 I VrApi   : FPS=65/72,Prd=47ms,Tear=0,Early=10,Stale=9,Stale2/5/10/max=0/0/1/307,VSnc=1,Lat=-1,Fov=0,CPU4/GPU=3/4,1478/525MHz,OC=FF,TA=0/0/70,SP=N/N/F,Mem=2092MHz,Free=2223MB,PLS=0,Temp=25.0C/0.0C,TW=2.37ms,App=12.74ms,GD=0.00ms,CPU&amp;GPU=18.55ms,LCnt=4(DR70,LM4),GPU%=0.97,CPU%=0.10(W0.25),DSF=1.00,CFL=14.37/19.90,ICFLp95=17.92,LD=0,SF=1.50,LP=0,DVFS=0</b>
+<b class=GRN>09-27 14:02:32.000 21416 21889 I VrApi   : FPS=66/72,Prd=41ms,Tear=0,Early=0,Stale=7,Stale2/5/10/max=1/0/0/2,VSnc=1,Lat=-1,Fov=0,CPU4/GPU=2/4,1478/525MHz,OC=FF,TA=0/0/70,SP=N/N/F,Mem=2092MHz,Free=2223MB,PLS=0,Temp=25.0C/0.0C,TW=2.29ms,App=12.42ms,GD=0.47ms,CPU&amp;GPU=16.80ms,LCnt=4(DR67,LM4),GPU%=0.99,CPU%=0.08(W0.16),DSF=1.00,CFL=13.38/21.44,ICFLp95=17.84,LD=0,SF=1.50,LP=0,DVFS=0</b>
+<b class=GRN>09-27 14:02:33.000 21416 21889 I VrApi   : FPS=61/72,Prd=43ms,Tear=0,Early=0,Stale=15,Stale2/5/10/max=1/0/0/3,VSnc=1,Lat=-1,Fov=0,CPU4/GPU=2/4,1478/525MHz,OC=FF,TA=0/0/70,SP=N/N/F,Mem=2092MHz,Free=2223MB,PLS=0,Temp=25.0C/0.0C,TW=2.46ms,App=12.79ms,GD=0.47ms,CPU&amp;GPU=17.87ms,LCnt=3(DR70,LM3),GPU%=0.95,CPU%=0.13(W0.24),DSF=1.00,CFL=13.92/20.06,ICFLp95=17.68,LD=0,SF=1.50,LP=0,DVFS=0</b>
+<b class=GRN>09-27 14:02:34.000 21416 21889 I VrApi   : FPS=68/72,Prd=40ms,Tear=0,Early=1,Stale=2,Stale2/5/10/max=0/0/0/1,VSnc=1,Lat=-1,Fov=0,CPU4/GPU=2/4,1171/525MHz,OC=FF,TA=0/0/70,SP=N/N/F,Mem=1804MHz,Free=2223MB,PLS=0,Temp=25.0C/0.0C,TW=2.21ms,App=10.56ms,GD=0.47ms,CPU&amp;GPU=16.02ms,LCnt=3(DR70,LM3),GPU%=0.99,CPU%=0.14(W0.33),DSF=1.00,CFL=13.64/19.54,ICFLp95=17.64,LD=0,SF=1.50,LP=0,DVFS=0</b>
+<b class=GRN>09-27 14:02:35.000 21416 21889 I VrApi   : FPS=73/72,Prd=42ms,Tear=0,Early=0,Stale=0,Stale2/5/10/max=0/0/0/0,VSnc=1,Lat=-1,Fov=0,CPU4/GPU=2/4,1171/525MHz,OC=FF,TA=0/0/70,SP=N/N/F,Mem=1804MHz,Free=2223MB,PLS=0,Temp=25.0C/0.0C,TW=2.23ms,App=11.12ms,GD=0.45ms,CPU&amp;GPU=16.98ms,LCnt=3(DR72,LM3),GPU%=1.00,CPU%=0.12(W0.32),DSF=1.00,CFL=12.93/18.33,ICFLp95=16.22,LD=0,SF=1.50,LP=0,DVFS=0</b>
+<b class=GRN>09-27 14:02:36.000 21416 21889 I VrApi   : FPS=72/72,Prd=41ms,Tear=0,Early=0,Stale=0,Stale2/5/10/max=0/0/0/0,VSnc=1,Lat=-1,Fov=0,CPU4/GPU=2/4,1171/525MHz,OC=FF,TA=0/0/70,SP=N/N/F,Mem=1804MHz,Free=2223MB,PLS=0,Temp=25.0C/0.0C,TW=2.02ms,App=10.76ms,GD=0.31ms,CPU&amp;GPU=15.14ms,LCnt=2(DR72,LM2),GPU%=0.94,CPU%=0.15(W0.30),DSF=1.00,CFL=12.62/19.63,ICFLp95=17.10,LD=0,SF=1.50,LP=0,DVFS=0</b>
+<b class=GRN>09-27 14:02:36.044 21416 21439 I AppLoadTimeTelemetryCommon: App load time recorded [packageName=com.stereokit.rust_binding.demos, time=9.021123, method="BeginFrame (500)", launchType="Resume"]</b>
+<b class=GRN>09-27 14:02:37.000 21416 21889 I VrApi   : FPS=72/72,Prd=40ms,Tear=0,Early=0,Stale=0,Stale2/5/10/max=0/0/0/0,VSnc=1,Lat=-1,Fov=0,CPU4/GPU=2/4,1171/525MHz,OC=FF,TA=0/0/70,SP=N/N/F,Mem=1804MHz,Free=2223MB,PLS=0,Temp=25.0C/0.0C,TW=1.75ms,App=11.03ms,GD=0.00ms,CPU&amp;GPU=14.86ms,LCnt=2(DR72,LM2),GPU%=0.93,CPU%=0.19(W0.38),DSF=1.00,CFL=13.33/19.16,ICFLp95=17.06,LD=0,SF=1.50,LP=0,DVFS=0</b>
+<b class=RED>09-27 14:02:37.691 21416 21439 E TREX    : Interface 'MrLightingEstimationInterface', version 1 was not found. Check debug build for more information.</b>
+<b class=BLU>09-27 14:02:37.902 21416 21439 D SK_rust_Demos: Closure Thread id : None / ThreadId(2) </b>
+<b class=BLU>09-27 14:02:37.903 21416 21439 D SK_rust_Demos: Closure Process id : None / 21416 </b>
+<b class=GRN>09-27 14:02:37.915 21416 21439 I SK_rust_Demos: Quit sent by main for reason: Main program call quit</b>
+<b class=BLU>09-27 14:02:37.915 21416 21439 D SK_rust_Demos: Closing HandMenuRadial1</b>
+<b class=BLU>09-27 14:02:37.915 21416 21439 D SK_rust_Demos: Closing LogWindow</b>
+<b class=BLU>09-27 14:02:37.915 21416 21439 D SK_rust_Demos: Closing Screenshoot</b>
+<b class=BLU>09-27 14:02:37.915 21416 21439 D SK_rust_Demos: Closing FlyOver</b>
+<b class=BLU>09-27 14:02:37.915 21416 21439 D SK_rust_Demos: Closing PassthroughFbExt</b>
+<b class=BLU>09-27 14:02:37.915 21416 21439 D SK_rust_Demos: Closing HandMenuStepper1</b>
+<b class=BLU>09-27 14:02:37.917 21416 21439 D SK_rust_Demos: UserEvent StepperAction::Remove( id:"HandMenuStepper1" )</b>
+<b class=BLU>09-27 14:02:37.917 21416 21439 D SK_rust_Demos: UserEvent StepperAction::Remove( id:"Screenshoot_file_browser" )</b>
+<b class=GRN>09-27 14:02:37.928 21416 21439 I SK_rust_Demos: SkClosure LoopExiting !!</b>
+<b class=GRN>09-27 14:02:37.928 21416 21439 I SK_rust_Demos: QuitReason is User</b>
+<b class=GRN>09-27 14:02:37.929 21416 21439 I SK_rust_Demos: SkClosure Exiting !!</b>
+<b class=GRN>09-27 14:02:37.930 21416 21439 I OpenXR_Hands: ------------ xrDestroyHandTrackerEXT -----------</b>
+<b class=GRN>09-27 14:02:37.930 21416 21439 I OpenXR_Hands: ------------ xrDestroyHandTrackerEXT -----------</b>
+<b class=BLU>09-27 14:02:37.932 21416 21439 D AAudio  : AAudioStream_close(s#1) called ---------------</b>
+<b class=BLU>09-27 14:02:37.932 21416 21439 D AAudioStream: setState(s#1) from 4 to 11</b>
+<b class=BLU>09-27 14:02:37.932 21416 21439 D AudioTrack: stop(68): called with 1246944 frames delivered</b>
+<b class=BLU>09-27 14:02:37.932 21416 21439 D AAudioStream: setState(s#1) from 11 to 12</b>
+<b class=BLU>09-27 14:02:37.933 21416 21439 D AAudioStream: ~AudioStream(s#1) mPlayerBase strongCount = 2</b>
+<b class=BLU>09-27 14:02:37.933 21416 21439 D AAudio  : AAudioStream_close(s#1) returned 0 ---------</b>
+<b class=GRN>09-27 14:02:37.940 21416 21439 I OpenXR_GPUMemTrace: Swapchain deletion destroy id=304, idx=0</b>
+<b class=GRN>09-27 14:02:37.940 21416 21439 I OpenXR_GPUMemTrace: Swapchain deletion destroy id=304, idx=1</b>
+<b class=GRN>09-27 14:02:37.940 21416 21439 I OpenXR_GPUMemTrace: Swapchain deletion destroy id=304, idx=2</b>
+<b class=GRN>09-27 14:02:37.941 21416 21439 I OpenXR_GPUMemTrace: Swapchain deletion destroy id=305, idx=0</b>
+<b class=GRN>09-27 14:02:37.941 21416 21439 I OpenXR_GPUMemTrace: Swapchain deletion destroy id=305, idx=1</b>
+<b class=GRN>09-27 14:02:37.941 21416 21439 I OpenXR_GPUMemTrace: Swapchain deletion destroy id=305, idx=2</b>
+09-27 14:02:37.942 21416 21439 V OpenXR-Loader: Verbose [GENERAL | xrDestroyDebugUtilsMessengerEXT | OpenXR-Loader] : Entering loader trampoline
+09-27 14:02:37.942 21416 21439 V OpenXR-Loader: Verbose [GENERAL | xrDestroyDebugUtilsMessengerEXT | OpenXR-Loader] : Entering loader terminator
+09-27 14:02:37.942 21416 21439 V OpenXR-Loader: Verbose [GENERAL | xrDestroyDebugUtilsMessengerEXT | OpenXR-Loader] : Completed loader terminator
+09-27 14:02:37.942 21416 21439 V OpenXR-Loader: Verbose [GENERAL | xrDestroyDebugUtilsMessengerEXT | OpenXR-Loader] : Completed loader trampoline
+<b class=GRN>09-27 14:02:37.942 21416 21439 I OpenXR  : ------------ xrDestroySession [start] -----------</b>
+<b class=YEL>09-27 14:02:37.942 21416 21439 W Telemetry: [OpenXR] xrDestroySession: Session is in running state.; </b>
+<b class=GRN>09-27 14:02:37.942 21416 21439 I XrRuntimeUtils: XrRuntimeUtils::EndSession</b>
+<b class=GRN>09-27 14:02:37.942 21416 21439 I [CT]    : BodyApiPlugin: EndSession called for BodyApi Plugin</b>
+<b class=GRN>09-27 14:02:37.942 21416 21439 I [CT]    : MIXEDREALITY: TREX: Suspending Insight MR session.</b>
+<b class=GRN>09-27 14:02:37.944 21416 21439 I Sensor  : OSSDKTRACKING Shutdown tracking</b>
+<b class=GRN>09-27 14:02:37.944 21416 21439 I VrRuntimeClient: EndSession. Restore the audio capture policy to default value</b>
+<b class=GRN>09-27 14:02:37.944 21416 21439 I LogTimer: CPUTIME: VrRuntimeClient_EndSession took 1.0633 ms</b>
+<b class=GRN>09-27 14:02:37.944 21416 21439 I InputDeviceManager: ovrInputDeviceManager::~ovrInputDeviceManager</b>
+<b class=GRN>09-27 14:02:37.944 21416 21439 I OSHandDataQuerier: OSSDKTRACKING shutting down handsTracker_</b>
+<b class=GRN>09-27 14:02:37.944 21416 21439 I OSHandDataQuerier: OSSDKTRACKING shutting down handsTracker_</b>
+<b class=GRN>09-27 14:02:37.944 21416 21439 I InputHooks_Internal: Disabling Native Input Hooks</b>
+<b class=GRN>09-27 14:02:37.958 21416 21888 I ClientInputThread_Internal: InputThreadRun ShutdownRequest received</b>
+<b class=GRN>09-27 14:02:37.958 21416 21439 I ClientInputTrackedKeyboardManager: TRACKEDKEYBOARD ClearTrackedObjectManager called on client</b>
+<b class=GRN>09-27 14:02:37.969 21416 21891 I FenceChecker: FenceChecker::MainLoop - ended</b>
+<b class=GRN>09-27 14:02:37.969 21416 21439 I VrRuntimeClient: PhaseSync Instance deleted</b>
+<b class=GRN>09-27 14:02:37.969 21416 21439 I XrRuntimeUtils: XrRuntimeUtils::DestroySession</b>
+<b class=GRN>09-27 14:02:37.970 21416 21439 I VulkanLoaderAndroid: ovrVulkanLoader::Unload</b>
+<b class=GRN>09-27 14:02:37.970 21416 21439 I AudioCapture: AudioCapture::Shutdown</b>
+<b class=GRN>09-27 14:02:37.970 21416 21439 I AudioCapture: AudioCapture::StopAudioConsumerThread</b>
+<b class=GRN>09-27 14:02:37.970 21416 21439 I AudioCapture: AudioCapture::StopAudioConsumerThread COMPLETE</b>
+<b class=GRN>09-27 14:02:37.970 21416 21439 I AudioCapture: AudioCapture::Shutdown COMPLETE</b>
+<b class=GRN>09-27 14:02:37.970 21416 21439 I VrGuardianClient: Shutdown</b>
+<b class=GRN>09-27 14:02:37.970 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: Shutdown: 1, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.guardian:com.oculus.vrguardianservice (guardianserver)</b>
+<b class=GRN>09-27 14:02:37.970 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: ReleaseRef: Remaining refs: 0, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.guardian:com.oculus.vrguardianservice (guardianserver)</b>
+<b class=GRN>09-27 14:02:37.970 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: DisconnectFromServer: 0, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.guardian:com.oculus.vrguardianservice (guardianserver)</b>
+<b class=GRN>09-27 14:02:37.971 21416 21512 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STOPPING, newState: STATE_STOPPED</b>
+<b class=GRN>09-27 14:02:37.971 21416 21439 I FaceEyeTrackingClientManager: [FaceEyeTrackingManager] FaceEyeTrackingClientManager Shutdown.</b>
+<b class=GRN>09-27 14:02:37.971 21416 21439 I VrRuntimeClient: Restore the audio capture policy to default value</b>
+<b class=GRN>09-27 14:02:37.971 21416 21439 I LogTimer: CPUTIME: VrRuntimeClient_Shutdown took 1.0828 ms</b>
+<b class=GRN>09-27 14:02:37.971 21416 21439 I VrRuntimeClient: ServiceDisconnected</b>
+<b class=GRN>09-27 14:02:37.971 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: Shutdown: 1, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (RuntimeServiceServer)</b>
+<b class=GRN>09-27 14:02:37.971 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: ReleaseRef: Remaining refs: 0, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (RuntimeServiceServer)</b>
+<b class=GRN>09-27 14:02:37.971 21416 21510 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: RIPCNotifThread, currentState: STATE_STOPPING, newState: STATE_STOPPED</b>
+<b class=GRN>09-27 14:02:37.971 21416 21509 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STOPPING, newState: STATE_STOPPED</b>
+<b class=GRN>09-27 14:02:37.971 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: DisconnectFromServer: 0, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (RuntimeServiceServer)</b>
+<b class=GRN>09-27 14:02:37.972 21416 21507 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STOPPING, newState: STATE_STOPPED</b>
+<b class=GRN>09-27 14:02:37.972 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: Shutdown: 2, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.vrshell:com.oculus.vrshell (ptkserviceserver)</b>
+<b class=GRN>09-27 14:02:37.972 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: ReleaseRef: Remaining refs: 1, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.vrshell:com.oculus.vrshell (ptkserviceserver)</b>
+<b class=GRN>09-27 14:02:37.972 21416 21439 I OpenXR_Passthrough: Destroying Insight MR feature via parent scope.</b>
+<b class=GRN>09-27 14:02:37.976 21416 21439 I OpenXR_Passthrough: Destroying Insight MR layer via parent scope.</b>
+<b class=RED>09-27 14:02:37.976 21416 21439 E [CT]    : MIXEDREALITY: TREX-PT: Failed to get session from passthrough feature</b>
+<b class=GRN>09-27 14:02:37.976 21416 21439 I OpenXR  : ------------ xrDestroySession [end] -----------</b>
+09-27 14:02:37.976 21416 21439 V OpenXR-Loader: Verbose [GENERAL | xrDestroyInstance | OpenXR-Loader] : Entering loader trampoline
+09-27 14:02:37.977 21416 21439 V OpenXR-Loader: Verbose [GENERAL | xrDestroyInstance | OpenXR-Loader] : Entering loader terminator
+<b class=GRN>09-27 14:02:37.977 21416 21439 I OpenXR  : ------------ xrDestroyInstance [start] -----------</b>
+<b class=GRN>09-27 14:02:37.977 21416 21439 I TREX    : Shutting down system...</b>
+<b class=GRN>09-27 14:02:37.977 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: Shutdown: 1, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.vrshell:com.oculus.vrshell (ptkserviceserver)</b>
+<b class=GRN>09-27 14:02:37.977 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: ReleaseRef: Remaining refs: 0, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.vrshell:com.oculus.vrshell (ptkserviceserver)</b>
+<b class=GRN>09-27 14:02:37.977 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: DisconnectFromServer: 0, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.vrshell:com.oculus.vrshell (ptkserviceserver)</b>
+<b class=GRN>09-27 14:02:37.978 21416 21465 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STOPPING, newState: STATE_STOPPED</b>
+<b class=GRN>09-27 14:02:37.978 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: Shutdown: 1, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (RenderModelServer)</b>
+<b class=GRN>09-27 14:02:37.978 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: ReleaseRef: Remaining refs: 0, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (RenderModelServer)</b>
+<b class=GRN>09-27 14:02:37.978 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: DisconnectFromServer: 0, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (RenderModelServer)</b>
+<b class=GRN>09-27 14:02:37.978 21416 21467 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STOPPING, newState: STATE_STOPPED</b>
+<b class=GRN>09-27 14:02:37.978 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: Shutdown: 1, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (HapticsServer)</b>
+<b class=GRN>09-27 14:02:37.978 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: ReleaseRef: Remaining refs: 0, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (HapticsServer)</b>
+<b class=GRN>09-27 14:02:37.978 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: DisconnectFromServer: 0, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (HapticsServer)</b>
+<b class=GRN>09-27 14:02:37.979 21416 21470 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STOPPING, newState: STATE_STOPPED</b>
+<b class=GRN>09-27 14:02:37.979 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: Shutdown: 1, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (HandInputDataServer)</b>
+<b class=GRN>09-27 14:02:37.979 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: ReleaseRef: Remaining refs: 0, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (HandInputDataServer)</b>
+<b class=GRN>09-27 14:02:37.979 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: DisconnectFromServer: 0, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (HandInputDataServer)</b>
+<b class=GRN>09-27 14:02:37.979 21416 21472 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STOPPING, newState: STATE_STOPPED</b>
+<b class=GRN>09-27 14:02:37.979 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: Shutdown: 1, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (ControllerIPCServer)</b>
+<b class=GRN>09-27 14:02:37.979 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: ReleaseRef: Remaining refs: 0, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (ControllerIPCServer)</b>
+<b class=GRN>09-27 14:02:37.979 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: DisconnectFromServer: 0, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (ControllerIPCServer)</b>
+<b class=GRN>09-27 14:02:37.980 21416 21474 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STOPPING, newState: STATE_STOPPED</b>
+<b class=GRN>09-27 14:02:37.980 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: Shutdown: 1, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.bodyapiservice:com.oculus.bodyapiservice (BodyApiServiceServer)</b>
+<b class=GRN>09-27 14:02:37.980 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: ReleaseRef: Remaining refs: 0, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.bodyapiservice:com.oculus.bodyapiservice (BodyApiServiceServer)</b>
+<b class=GRN>09-27 14:02:37.980 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: DisconnectFromServer: 0, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.bodyapiservice:com.oculus.bodyapiservice (BodyApiServiceServer)</b>
+<b class=GRN>09-27 14:02:37.980 21416 21476 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STOPPING, newState: STATE_STOPPED</b>
+<b class=GRN>09-27 14:02:37.980 21416 21439 I [CT]    : SP:TREX:SpatialPersistencePlugin: SpatialPersistencePlugin::trex_Shutdown called for client 1795390437433023250.</b>
+<b class=GRN>09-27 14:02:37.980 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: Shutdown: 1, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: native_process.system:/system_ext/bin/trackingservice (SlamAnchorServer)</b>
+<b class=GRN>09-27 14:02:37.980 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: ReleaseRef: Remaining refs: 0, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: native_process.system:/system_ext/bin/trackingservice (SlamAnchorServer)</b>
+<b class=GRN>09-27 14:02:37.980 21416 21439 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STOPPED, newState: STATE_STARTING</b>
+<b class=GRN>09-27 14:02:37.981 21416 21918 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STARTING, newState: STATE_RUNNING</b>
+<b class=GRN>09-27 14:02:37.981 21416 21486 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: RIPCNotifThread, currentState: STATE_STOPPING, newState: STATE_STOPPED</b>
+<b class=GRN>09-27 14:02:37.981 21416 21918 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STOPPING, newState: STATE_STOPPED</b>
+<b class=GRN>09-27 14:02:37.981 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: DisconnectFromServer: 0, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: native_process.system:/system_ext/bin/trackingservice (SlamAnchorServer)</b>
+<b class=GRN>09-27 14:02:37.981 21416 21482 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STOPPING, newState: STATE_STOPPED</b>
+<b class=GRN>09-27 14:02:37.982 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: Shutdown: 1, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (DynamicObjectTrackingServer)</b>
+<b class=GRN>09-27 14:02:37.982 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: ReleaseRef: Remaining refs: 0, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (DynamicObjectTrackingServer)</b>
+<b class=GRN>09-27 14:02:37.982 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: DisconnectFromServer: 0, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: com.oculus.systemdriver:com.oculus.vrruntimeservice (DynamicObjectTrackingServer)</b>
+<b class=GRN>09-27 14:02:37.982 21416 21480 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STOPPING, newState: STATE_STOPPED</b>
+<b class=BLU>09-27 14:02:37.982 21416 21439 D t_binding.demo: memorybroker::ClientConnection dtor</b>
+<b class=BLU>09-27 14:02:37.983 21416 21439 D t_binding.demo: memorybroker::ClientConnection unregistered</b>
+<b class=RED>09-27 14:02:37.983 21416 21439 E [CT]    : SP:AF:InsightAnchorApi: DestroySession session is invalid.</b>
+<b class=GRN>09-27 14:02:37.983 21416 21439 I [CT]    : MIXEDREALITY: TREX: Shutting down Insight MR plugin.</b>
+<b class=GRN>09-27 14:02:37.983 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: Shutdown: 1, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: : (MrServiceIPCServer)</b>
+<b class=GRN>09-27 14:02:37.983 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: ReleaseRef: Remaining refs: 0, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: : (MrServiceIPCServer)</b>
+<b class=GRN>09-27 14:02:37.983 21416 21439 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STOPPED, newState: STATE_STARTING</b>
+<b class=GRN>09-27 14:02:37.984 21416 21919 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STARTING, newState: STATE_RUNNING</b>
+<b class=GRN>09-27 14:02:37.984 21416 21643 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: RIPCNotifThread, currentState: STATE_STOPPING, newState: STATE_STOPPED</b>
+<b class=GRN>09-27 14:02:37.984 21416 21919 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STOPPING, newState: STATE_STOPPED</b>
+<b class=GRN>09-27 14:02:37.984 21416 21439 I RuntimeIPCClient [RUNTIMEIPC]: DisconnectFromServer: 0, Client: com.stereokit.rust_binding.demos:com.stereokit.rust_binding.demos:21416, Server: : (MrServiceIPCServer)</b>
+<b class=GRN>09-27 14:02:37.984 21416 21641 I ThreadHelpers [RUNTIMEIPC]: RuntimeIPC::ThreadHelpers::SetState: threadName: JobPoolWorker, currentState: STATE_STOPPING, newState: STATE_STOPPED</b>
+<b class=GRN>09-27 14:02:37.984 21416 21439 I TREX    : Shutting down interface manager.</b>
+<b class=GRN>09-27 14:02:37.985 21416 21439 I OpenXR  : ------------ xrDestroyInstance [end]-----------</b>
+09-27 14:02:37.985 21416 21439 V OpenXR-Loader: Verbose [GENERAL | xrDestroyInstance | OpenXR-Loader] : Completed loader terminator
+<b class=GRN>09-27 14:02:37.985 21416 21439 I OpenXR-Loader: Info [GENERAL | xrDestroyInstance | OpenXR-Loader] : Destroying LoaderInstance = 0xb4000078d239b700</b>
+09-27 14:02:37.985 21416 21439 V OpenXR-Loader: Verbose [GENERAL | xrDestroyInstance | OpenXR-Loader] : Completed loader trampoline
+<b class=GRN>09-27 14:02:37.985 21416 21439 I OpenXR-Loader: Info [GENERAL | xrDestroyInstance | OpenXR-Loader] : RuntimeInterface::UnloadRuntime - Unloading RuntimeInterface</b>
+<b class=GRN>09-27 14:02:37.985 21416 21439 I OpenXR-Loader: Info [GENERAL |  | OpenXR-Loader] : RuntimeInterface being destroyed.</b>
+<b class=GRN>09-27 14:02:38.032 21416 21439 I SK_rust_Demos: Session Performance Report:</b>
+<b class=GRN>09-27 14:02:38.032 21416 21439 I SK_rust_Demos: ______________________________________________________</b>
+<b class=GRN>09-27 14:02:38.032 21416 21439 I SK_rust_Demos: |         System | Initialize |     Step |  Shutdown |</b>
+<b class=GRN>09-27 14:02:38.032 21416 21439 I SK_rust_Demos: |________________|____________|__________|___________|</b>
+<b class=GRN>09-27 14:02:38.032 21416 21439 I SK_rust_Demos: |       Defaults |   593.47ms |          |    1.08ms |</b>
+<b class=GRN>09-27 14:02:38.032 21416 21439 I SK_rust_Demos: |     FrameBegin |            |  0.581ms |           |</b>
+<b class=GRN>09-27 14:02:38.032 21416 21439 I SK_rust_Demos: |          Input |     0.34ms |          |    0.11ms |</b>
+<b class=GRN>09-27 14:02:38.032 21416 21439 I SK_rust_Demos: |       Renderer |     0.11ms |  0.002ms |    0.14ms |</b>
+<b class=GRN>09-27 14:02:38.032 21416 21439 I SK_rust_Demos: |             UI |    13.47ms |  0.036ms |    0.22ms |</b>
+<b class=GRN>09-27 14:02:38.032 21416 21439 I SK_rust_Demos: |       Platform |   508.15ms |          |   91.87ms |</b>
+<b class=GRN>09-27 14:02:38.032 21416 21439 I SK_rust_Demos: |            App |  1080.66ms | 37.152ms |           |</b>
+<b class=GRN>09-27 14:02:38.032 21416 21439 I SK_rust_Demos: |      Animation |            |  0.001ms |    0.00ms |</b>
+<b class=GRN>09-27 14:02:38.032 21416 21439 I SK_rust_Demos: |          Tools |     0.30ms |  0.002ms |    0.13ms |</b>
+<b class=GRN>09-27 14:02:38.032 21416 21439 I SK_rust_Demos: |          Lines |     0.03ms |  0.043ms |    0.02ms |</b>
+<b class=GRN>09-27 14:02:38.032 21416 21439 I SK_rust_Demos: |        Sprites |     0.07ms |  0.000ms |    0.01ms |</b>
+<b class=GRN>09-27 14:02:38.032 21416 21439 I SK_rust_Demos: |           Text |            |  0.039ms |    0.20ms |</b>
+<b class=GRN>09-27 14:02:38.032 21416 21439 I SK_rust_Demos: |         UILate |            |  0.006ms |           |</b>
+<b class=GRN>09-27 14:02:38.032 21416 21439 I SK_rust_Demos: |          World |     0.09ms |  0.001ms |    0.01ms |</b>
+<b class=GRN>09-27 14:02:38.032 21416 21439 I SK_rust_Demos: |    FrameRender |            |  2.800ms |           |</b>
+<b class=GRN>09-27 14:02:38.032 21416 21439 I SK_rust_Demos: |         Assets |    79.26ms |  0.002ms |    0.21ms |</b>
+<b class=GRN>09-27 14:02:38.033 21416 21439 I SK_rust_Demos: |          Audio |    73.94ms |  0.012ms |    7.95ms |</b>
+<b class=GRN>09-27 14:02:38.033 21416 21439 I SK_rust_Demos: |________________|____________|__________|___________|</b>
+<b class=GRN>09-27 14:02:38.047 21416 21439 I VulkanLoaderAndroid: ovrVulkanLoader::Unload</b>
+<b class=GRN>09-27 14:02:38.060 21416 21439 I BpBinder: onLastStrongRef automatically unlinking death recipients: &lt;uncached descriptor&gt;</b>
+<b class=GRN>09-27 14:02:38.060 21416 21439 I BpBinder: onLastStrongRef automatically unlinking death recipients: &lt;uncached descriptor&gt;</b>
+<b class=GRN>09-27 14:02:38.061 21416 21439 I BpBinder: onLastStrongRef automatically unlinking death recipients: &lt;uncached descriptor&gt;</b>
+</pre>
+</body>
+</html>
