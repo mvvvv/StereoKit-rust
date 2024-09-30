@@ -10,6 +10,7 @@ macro_rules! cargo_link {
 fn main() {
     let target_os = var("CARGO_CFG_TARGET_OS").unwrap();
     let target_family = var("CARGO_CFG_TARGET_FAMILY").unwrap();
+    let profile = var("PROFILE").unwrap();
 
     if target_os == "macos" {
         println!("cargo:warning=You seem to be building for MacOS! We still enable builds so that rust-analyzer works, but this won't actually build StereoKit so it'll be pretty non-functional.");
@@ -33,10 +34,12 @@ fn main() {
         define_if_exists("DEP_SK_GPU_SOURCE", "CPM_sk_gpu_SOURCE", &mut cmake_config);
     }
 
-    cmake_config
-        .define("SK_BUILD_SHARED_LIBS", "OFF")
-        .define("SK_BUILD_TESTS", "OFF")
-        .define("SK_PHYSICS", "OFF");
+    if target_family.as_str() == "windows" {
+        cmake_config.define("SK_BUILD_SHARED_LIBS", "ON");
+    } else {
+        cmake_config.define("SK_BUILD_SHARED_LIBS", "OFF");
+    }
+    cmake_config.define("SK_BUILD_TESTS", "OFF").define("SK_PHYSICS", "OFF");
     if target_os == "android" {
         cmake_config.define("CMAKE_ANDROID_API", "32");
         cmake_config.define("CMAKE_INSTALL_INCLUDEDIR", "install");
@@ -53,13 +56,19 @@ fn main() {
 
     let dst = cmake_config.build();
 
-    println!("cargo:rustc-link-search=native={}/lib", dst.display());
-    println!("cargo:rustc-link-search=native={}/lib64", dst.display());
-    println!("cargo:rustc-link-search=native={}/build", dst.display());
-    println!("cargo:rustc-link-search=native={}/install", dst.display());
-    cargo_link!("static=StereoKitC");
     match target_family.as_str() {
         "windows" => {
+            println!("cargo:rustc-link-search=native={}/lib", dst.display());
+            let mut profile_chars = profile.chars();
+            println!(
+                "cargo:rustc-link-search=native={}/build/{}{}",
+                dst.display(),
+                profile_chars.next().unwrap().to_uppercase(),
+                profile_chars.as_str()
+            );
+
+            cargo_link!("StereoKitC");
+
             if cfg!(debug_assertions) {
                 cargo_link!("static=openxr_loaderd");
             } else {
@@ -75,9 +84,13 @@ fn main() {
             unimplemented!("sorry wasm isn't implemented yet");
         }
         "unix" => {
-            if target_os == "macos" {
-                panic!("Sorry, macos is not supported for stereokit.");
-            }
+            println!("cargo:rustc-link-search=native={}/lib", dst.display());
+            println!("cargo:rustc-link-search=native={}/lib64", dst.display());
+            println!("cargo:rustc-link-search=native={}/build", dst.display());
+            println!("cargo:rustc-link-search=native={}/install", dst.display());
+
+            cargo_link!("static=StereoKitC");
+
             cargo_link!("stdc++");
             cargo_link!("openxr_loader");
             cargo_link!("static=meshoptimizer");
