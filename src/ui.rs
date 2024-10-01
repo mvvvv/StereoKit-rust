@@ -367,6 +367,18 @@ pub struct UiSettings {
 
 pub type IdHashT = u64;
 
+#[derive(Default, Debug, Copy, Clone)]
+#[repr(C)]
+/// Visual properties of a slider behavior.
+/// <https://stereokit.net/Pages/StereoKit/UISliderData.html>
+pub struct UiSliderData {
+    pub button_center: Vec2,
+    pub finger_offset: f32,
+    pub focus_state: BtnState,
+    pub active_state: BtnState,
+    pub interactor: i32,
+}
+
 /// This class is a collection of user interface and interaction methods! StereoKit uses an Immediate Mode GUI system,
 /// which can be very easy to work with and modify during runtime.
 ///
@@ -419,7 +431,7 @@ extern "C" {
         focus: f32,
     );
     pub fn ui_get_element_color(element_visual: UiVisual, focus: f32) -> Color128;
-    pub fn ui_get_anim_focus(id: u64, focus_state: BtnState, activation_state: BtnState) -> f32;
+    pub fn ui_get_anim_focus(id: IdHashT, focus_state: BtnState, activation_state: BtnState) -> f32;
 
     pub fn ui_push_grab_aura(enabled: Bool32T);
     pub fn ui_pop_grab_aura();
@@ -479,6 +491,20 @@ extern "C" {
         out_button_state: *mut BtnState,
         out_focus_state: *mut BtnState,
         out_opt_hand: *mut i32,
+    );
+    pub fn ui_slider_behavior(
+        window_relative_pos: Vec3,
+        size: Vec2,
+        id: IdHashT,
+        value: *mut Vec2,
+        min: Vec2,
+        max: Vec2,
+        step: Vec2,
+
+        button_size_visual: Vec2,
+        button_size_interact: Vec2,
+        confirm_method: UiConfirm,
+        data: *mut UiSliderData,
     );
     pub fn ui_volume_at(
         id: *const c_char,
@@ -981,26 +1007,25 @@ impl Ui {
     /// create your own pressable UI elements, or do more extreme customization of the look and feel of UI elements,
     /// then this function will provide a lot of complex pressing functionality for you!
     /// <https://stereokit.net/Pages/StereoKit/UI/ButtonBehavior.html>
-    /// * hand - Id of the hand that interacted with the button. This will be -1 if no interaction has occurred.
+    /// * out_hand - Id of the hand that interacted with the button. This will be -1 if no interaction has occurred.
     ///
     /// see also [`crate::ui::ui_button_behavior`]
     pub fn button_behavior(
-        top_left_corner: impl Into<Vec3>,
+        window_relative_pos: impl Into<Vec3>,
         size: impl Into<Vec2>,
         id: impl AsRef<str>,
         out_finger_offset: &mut f32,
         out_button_state: &mut BtnState,
         out_focus_state: &mut BtnState,
-        out_opt_hand: Option<&mut i32>,
+        out_hand: Option<&mut i32>,
     ) {
-        let cstr = CString::new(id.as_ref()).unwrap();
-        let id_hash = unsafe { ui_stack_hash(cstr.as_ptr()) };
+        let id_hash = Ui::stack_hash(id);
         let mut nevermind = 0;
-        let out_opt_hand = out_opt_hand.unwrap_or(&mut nevermind);
+        let out_opt_hand = out_hand.unwrap_or(&mut nevermind);
 
         unsafe {
             ui_button_behavior(
-                top_left_corner.into(),
+                window_relative_pos.into(),
                 size.into(),
                 id_hash,
                 out_finger_offset,
@@ -1011,6 +1036,59 @@ impl Ui {
         }
     }
 
+    /// This is the core functionality of StereoKit's slider elements, without any of the rendering parts! If you're
+    /// trying to create your own sliding UI elements, or do more extreme customization of the look and feel of slider
+    /// UI elements, then this function will provide a lot of complex pressing functionality for you
+    /// <https://stereokit.net/Pages/StereoKit/UI/SliderBehavior.html>
+    /// * window_relative_pos - The layout position of the pressable area.
+    /// * size - The size of the pressable area.
+    /// * id - The id for this pressable element to track its state with.
+    /// * value - The value that the slider will store slider state in.
+    /// * min - The minimum value the slider can set, left side of the slider.
+    /// * max - The maximum value the slider can set, right side of the slider.
+    /// * step - Locks the value to increments of step. Starts at min, and increments by step. 0 is valid, and means
+    ///   "don't lock to increments".
+    /// * button_size_visual - This is the visual size of the element representing the touchable area of the slider.
+    ///   This is used to calculate the center of the button's placement without going outside the provided bounds.
+    /// * button_size_interact - The size of the interactive touch element of the slider. Set this to zero to use the
+    ///   entire area as a touchable surface.
+    /// * confirm_method - How should the slider be activated? Default Push will be a push-button the user must press
+    ///   first, and pinch will be a tab that the user must pinch and drag around.
+    /// * data - This is data about the slider interaction, you can use this for visualizing the slider behavior, or
+    ///   reacting to its events.
+    ///
+    /// see also [`crate::ui::ui_slider_behavior`]
+    #[allow(clippy::too_many_arguments)]
+    pub fn slider_behavior(
+        window_relative_pos: impl Into<Vec3>,
+        size: impl Into<Vec2>,
+        id: IdHashT,
+        value: &mut Vec2,
+        min: impl Into<Vec2>,
+        max: impl Into<Vec2>,
+        step: impl Into<Vec2>,
+        button_size_visual: impl Into<Vec2>,
+        button_size_interact: impl Into<Vec2>,
+        confirm_method: Option<UiConfirm>,
+        data: &mut UiSliderData,
+    ) {
+        let confirm_method = confirm_method.unwrap_or(UiConfirm::Push);
+        unsafe {
+            ui_slider_behavior(
+                window_relative_pos.into(),
+                size.into(),
+                id,
+                value,
+                min.into(),
+                max.into(),
+                step.into(),
+                button_size_visual.into(),
+                button_size_interact.into(),
+                confirm_method,
+                data,
+            );
+        }
+    }
     /// This is the core functionality of StereoKit’s buttons, without any of the rendering parts! If you’re trying to
     /// create your own pressable UI elements, or do more extreme customization of the look and feel of UI elements,
     /// then this function will provide a lot of complex pressing functionality for you! This overload allows for
@@ -1031,8 +1109,7 @@ impl Ui {
         out_focus_state: &mut BtnState,
         out_opt_hand: Option<&mut i32>,
     ) {
-        let cstr = CString::new(id.as_ref()).unwrap();
-        let id_hash = unsafe { ui_stack_hash(cstr.as_ptr()) };
+        let id_hash = Ui::stack_hash(id);
         let mut nevermind = 0;
         let out_opt_hand = out_opt_hand.unwrap_or(&mut nevermind);
 
@@ -1202,9 +1279,9 @@ impl Ui {
     /// * step - Locks the value to increments of step. Starts at min, and increments by step. Default 0 is valid,
     ///   and means "don't lock to increments".
     /// * width - Physical width of the slider on the window. Default 0 will fill the remaining amount of window space.
-    /// * confirmMethod - How should the slider be activated? Default Push will be a push-button the user must press
+    /// * confirm_method - How should the slider be activated? Default Push will be a push-button the user must press
     ///   first, and pinch will be a tab that the user must pinch and drag around.
-    /// * notifyOn - Allows you to modify the behavior of the return value. Default is UiNotify::Change
+    /// * notify_on - Allows you to modify the behavior of the return value. Default is UiNotify::Change
     ///
     /// see also [`crate::ui::ui_vslider`]
     #[allow(clippy::too_many_arguments)]
@@ -1234,9 +1311,9 @@ impl Ui {
     /// * step - Locks the value to increments of step. Starts at min, and increments by step. Default 0 is valid,
     ///   and means "don't lock to increments".
     /// * width - Physical width of the slider on the window. Default 0 will fill the remaining amount of window space.
-    /// * confirmMethod - How should the slider be activated? Default Push will be a push-button the user must press
+    /// * confirm_method - How should the slider be activated? Default Push will be a push-button the user must press
     ///   first, and pinch will be a tab that the user must pinch and drag around.
-    /// * notifyOn - Allows you to modify the behavior of the return value. Default is UiNotify::Change
+    /// * notify_on - Allows you to modify the behavior of the return value. Default is UiNotify::Change
     ///
     /// see also [`crate::ui::ui_hslider_f64`]
     #[allow(clippy::too_many_arguments)]
@@ -1263,9 +1340,9 @@ impl Ui {
 
     /// A vertical slider element! You can stick your finger in it, and slide the value up and down.
     /// <https://stereokit.net/Pages/StereoKit/UI/HSliderAt.html>
-    /// * confirmMethod - How should the slider be activated? Default Push will be a push-button the user must press
+    /// * confirm_method - How should the slider be activated? Default Push will be a push-button the user must press
     ///   first, and pinch will be a tab that the user must pinch and drag around.
-    /// * notifyOn - Allows you to modify the behavior of the return value. Default is UiNotify::Change
+    /// * notify_on - Allows you to modify the behavior of the return value. Default is UiNotify::Change
     ///
     /// see also [`crate::ui::ui_hslider_at`]
     #[allow(clippy::too_many_arguments)]
@@ -1303,9 +1380,9 @@ impl Ui {
 
     /// A vertical slider element! You can stick your finger in it, and slide the value up and down.
     /// <https://stereokit.net/Pages/StereoKit/UI/HSliderAt.html>
-    /// * confirmMethod - How should the slider be activated? Default Push will be a push-button the user must press
+    /// * confirm_method - How should the slider be activated? Default Push will be a push-button the user must press
     ///   first, and pinch will be a tab that the user must pinch and drag around.
-    /// * notifyOn - Allows you to modify the behavior of the return value. Default is UiNotify::Change
+    /// * notify_on - Allows you to modify the behavior of the return value. Default is UiNotify::Change
     ///
     /// see also [`crate::ui::ui_hslider_at_f64`]
     #[allow(clippy::too_many_arguments)]
@@ -2085,7 +2162,7 @@ impl Ui {
     ///
     /// Returns a focus value in the realm of 0-1, where 0 is unfocused, and 1 is active.
     /// see also [`crate::ui::ui_get_anim_focus`]
-    pub fn get_anim_focus(id: u64, focus_state: BtnState, activation_state: BtnState) -> f32 {
+    pub fn get_anim_focus(id: IdHashT, focus_state: BtnState, activation_state: BtnState) -> f32 {
         unsafe { ui_get_anim_focus(id, focus_state, activation_state) }
     }
 
@@ -2389,9 +2466,9 @@ impl Ui {
     /// * step - Locks the value to increments of step. Starts at min, and increments by step. Default 0 is valid,
     ///   and means "don't lock to increments".
     /// * height - Physical height of the slider on the window. Default 0 will fill the remaining amount of window space.
-    /// * confirmMethod - How should the slider be activated? Default Push will be a push-button the user must press
+    /// * confirm_method - How should the slider be activated? Default Push will be a push-button the user must press
     ///   first, and pinch will be a tab that the user must pinch and drag around.
-    /// * notifyOn - Allows you to modify the behavior of the return value. Default is UiNotify::Change
+    /// * notify_on - Allows you to modify the behavior of the return value. Default is UiNotify::Change
     ///
     /// see also [`crate::ui::ui_vslider`]
     #[allow(clippy::too_many_arguments)]
@@ -2421,9 +2498,9 @@ impl Ui {
     /// * step - Locks the value to increments of step. Starts at min, and increments by step. Default 0 is valid,
     ///   and means "don't lock to increments".
     /// * height - Physical height of the slider on the window. Default 0 will fill the remaining amount of window space.
-    /// * confirmMethod - How should the slider be activated? Default Push will be a push-button the user must press
+    /// * confirm_method - How should the slider be activated? Default Push will be a push-button the user must press
     ///   first, and pinch will be a tab that the user must pinch and drag around.
-    /// * notifyOn - Allows you to modify the behavior of the return value. Default is UiNotify::Change
+    /// * notify_on - Allows you to modify the behavior of the return value. Default is UiNotify::Change
     ///
     /// see also [`crate::ui::ui_vslider_f64`]
     #[allow(clippy::too_many_arguments)]
@@ -2450,9 +2527,9 @@ impl Ui {
 
     /// A vertical slider element! You can stick your finger in it, and slide the value up and down.
     /// <https://stereokit.net/Pages/StereoKit/UI/VSliderAt.html>
-    /// * confirmMethod - How should the slider be activated? Default Push will be a push-button the user must press
+    /// * confirm_method - How should the slider be activated? Default Push will be a push-button the user must press
     ///   first, and pinch will be a tab that the user must pinch and drag around.
-    /// * notifyOn - Allows you to modify the behavior of the return value. Default is UiNotify::Change
+    /// * notify_on - Allows you to modify the behavior of the return value. Default is UiNotify::Change
     ///
     /// see also [`crate::ui::ui_vslider_at`]
     #[allow(clippy::too_many_arguments)]
@@ -2490,9 +2567,9 @@ impl Ui {
 
     /// A vertical slider element! You can stick your finger in it, and slide the value up and down.
     /// <https://stereokit.net/Pages/StereoKit/UI/VSliderAt.html>
-    /// * confirmMethod - How should the slider be activated? Default Push will be a push-button the user must press
+    /// * confirm_method - How should the slider be activated? Default Push will be a push-button the user must press
     ///   first, and pinch will be a tab that the user must pinch and drag around.
-    /// * notifyOn - Allows you to modify the behavior of the return value. Default is UiNotify::Change
+    /// * notify_on - Allows you to modify the behavior of the return value. Default is UiNotify::Change
     ///
     /// see also [`crate::ui::ui_vslider_at_f64`]
     #[allow(clippy::too_many_arguments)]

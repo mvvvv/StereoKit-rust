@@ -8,7 +8,7 @@ use stereokit_rust::{
     mesh::Mesh,
     sk::{MainThreadToken, SkInfo},
     system::{BtnState, Text, TextAlign, TextStyle},
-    ui::{Ui, UiColor, UiCorner, UiLathePt, UiVisual},
+    ui::{IdHashT, Ui, UiColor, UiCorner, UiLathePt, UiSliderData, UiVisual},
     util::{
         named_colors::{CYAN, DARK_BLUE, ORCHID, RED, YELLOW},
         Color128, Color32, Time,
@@ -43,6 +43,9 @@ pub struct Ui1 {
     pub window_demo_pose: Pose,
     pub demo_win_width: f32,
     pub ui_material: Material,
+    pub id_slider: String,
+    id_slider_hash: IdHashT,
+    slider_pt: Vec2,
 
     pub text: String,
     pub text_style: TextStyle,
@@ -53,6 +56,7 @@ unsafe impl Send for Ui1 {}
 
 impl Default for Ui1 {
     fn default() -> Self {
+        let id_slider = "touch panel".into();
         Self {
             id: "Ui1".to_string(),
             sk_info: None,
@@ -60,6 +64,9 @@ impl Default for Ui1 {
             window_demo_pose: Pose::new(Vec3::new(0.0, 1.5, -0.3), Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0)))),
             demo_win_width: 36.0 * CM,
             ui_material: Material::ui().copy(),
+            id_slider_hash: Ui::stack_hash(&id_slider),
+            id_slider,
+            slider_pt: Vec2::ONE * 0.5,
             text: "Ui1".to_owned(),
             text_style: Text::make_style(Font::default(), 0.3, RED),
         }
@@ -71,6 +78,7 @@ impl IStepper for Ui1 {
         self.id = id;
         self.sk_info = Some(sk_info);
 
+        self.id_slider_hash = Ui::stack_hash(&self.id_slider);
         //create extra slots
         Ui::set_theme_color(UiColor::ExtraSlot01, None, ORCHID);
         Ui::set_theme_color(UiColor::ExtraSlot02, None, YELLOW);
@@ -117,6 +125,13 @@ impl Ui1 {
         Ui::push_tint(Color128::hsv(0.0, 0.2, 0.7, 1.0));
         self.custom_button_element(token, "Custom Button Element Tinted");
         Ui::pop_tint();
+
+        Ui::hseparator();
+
+        //Slider behavior
+        let size = Vec2::ONE * Ui::get_layout_remaining().x;
+        self.ui_touch_panel(size);
+        Ui::label(format!("{}x{}", self.slider_pt.x * 100.0, self.slider_pt.y * 100.0), None, true);
 
         Ui::hseparator();
 
@@ -206,5 +221,45 @@ impl Ui1 {
         );
 
         out_button_state.is_just_inactive()
+    }
+
+    /// Copycat from https://github.com/StereoKit/StereoKit/blob/develop/Examples/StereoKitTest/Docs/DocSliderBehavior.cs
+    pub fn ui_touch_panel(&mut self, size: Vec2) -> bool {
+        let depth = Ui::get_settings().depth;
+        let bounds = Ui::layout_reserve(size, false, depth);
+        let btn_height = Ui::get_line_height() * 0.75;
+        let btn_size = Vec3::new(btn_height, btn_height, depth);
+
+        let prev = self.slider_pt;
+        let mut slider = UiSliderData::default();
+        Ui::slider_behavior(
+            bounds.tlb(),
+            bounds.dimensions.xy(),
+            self.id_slider_hash,
+            &mut self.slider_pt,
+            Vec2::ZERO,
+            Vec2::ONE,
+            Vec2::ZERO,
+            btn_size.xy(),
+            Vec2::ZERO,
+            None,
+            &mut slider,
+        );
+        let focus = Ui::get_anim_focus(self.id_slider_hash, slider.focus_state, slider.active_state);
+        Ui::draw_element(
+            UiVisual::SliderLine,
+            None,
+            bounds.tlb(),
+            Vec3::new(bounds.dimensions.x, bounds.dimensions.y, depth * 0.1),
+            if slider.focus_state.is_active() { 0.5 } else { 0.0 },
+        );
+        Ui::draw_element(
+            UiVisual::SliderPush,
+            None,
+            slider.button_center.xy0() + btn_size.xy0() / 2.0,
+            btn_size,
+            focus,
+        );
+        prev.x != self.slider_pt.x || prev.y != self.slider_pt.y
     }
 }

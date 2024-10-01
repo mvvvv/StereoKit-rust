@@ -784,6 +784,9 @@ impl Hierarchy {
 
     /// Converts a world space point into the local space of the current Hierarchy stack!
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/ToLocal.html>
+    /// * world_point - A point in world space.
+    ///
+    /// Returns the provided point now in local hierarchy space
     ///
     /// see also [crate::system::hierarchy_to_local_point]
     pub fn to_local_point<V: Into<Vec3>>(_token: &MainThreadToken, world_point: V) -> Vec3 {
@@ -792,6 +795,9 @@ impl Hierarchy {
 
     /// Converts a world space rotation into the local space of the current Hierarchy stack!
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/ToLocal.html>
+    /// * world_orientation - A rotation in world space
+    ///
+    /// Returns the provided rotation now in local hierarchy space
     ///
     /// see also [crate::system::hierarchy_to_local_rotation]
     pub fn to_local_rotation<Q: Into<Quat>>(_token: &MainThreadToken, world_orientation: Q) -> Quat {
@@ -800,15 +806,32 @@ impl Hierarchy {
 
     /// Converts a world pose relative to the current hierarchy stack into local space!
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/ToLocal.html>
+    /// * world_pose - A pose in world space.
+    ///
+    /// Returns the provided pose now in local hierarchy space!
     ///
     /// see also [crate::system::hierarchy_to_local_pose]
     pub fn to_local_pose<P: Into<Pose>>(_token: &MainThreadToken, world_pose: P) -> Pose {
         unsafe { hierarchy_to_local_pose(&world_pose.into()) }
     }
 
+    /// Converts a world ray relative to the current hierarchy stack into local space!
+    /// <https://stereokit.net/Pages/StereoKit/Hierarchy/ToLocal.html>
+    /// * world_ray - A ray in world space
+    ///
+    /// Returns the provided ray now in local hierarchy space
+    ///
+    /// see also [crate::system::hierarchy_to_local_ray]
+    pub fn to_local_ray<R: Into<Ray>>(_token: &MainThreadToken, world_ray: R) -> Ray {
+        unsafe { hierarchy_to_local_ray(world_ray.into()) }
+    }
+
     /// Converts a world space direction into the local space of the current Hierarchy stack! This excludes the
     /// translation component normally applied to vectors, so it’s still a valid direction.
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/ToLocalDirection.html>
+    /// * world_direction - A direction in world space
+    ///
+    /// Returns the provided direction now in local hierarchy space
     ///
     /// see also [crate::system::hierarchy_to_local_direction]
     pub fn to_local_direction<V: Into<Vec3>>(_token: &MainThreadToken, world_direction: V) -> Vec3 {
@@ -817,6 +840,9 @@ impl Hierarchy {
 
     /// Converts a local point relative to the current hierarchy stack into world space!
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/ToWorld.html>
+    /// * local_point - A point in local space
+    ///
+    /// Returns the provided point now in world space
     ///
     /// see also [crate::system::hierarchy_to_world_point]
     pub fn to_world_point<V: Into<Vec3>>(_token: &MainThreadToken, local_point: V) -> Vec3 {
@@ -825,6 +851,9 @@ impl Hierarchy {
 
     /// Converts a local rotation relative to the current hierarchy stack into world space!
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/ToWorld.html>
+    /// * local_orientaion - A rotation in local space
+    ///
+    /// Returns the provided rotation now in world space
     ///
     /// see also [crate::system::hierarchy_to_world_rotation]
     pub fn to_world_rotation<Q: Into<Quat>>(_token: &MainThreadToken, local_orientation: Q) -> Quat {
@@ -833,15 +862,32 @@ impl Hierarchy {
 
     /// Converts a local pose relative to the current hierarchy stack into world space!
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/ToWorld.html>
+    /// * local_pose - A pose in local space
+    ///
+    /// Returns the provided pose now in world space
     ///
     /// see also [crate::system::hierarchy_to_world_pose]
     pub fn to_world_pose<P: Into<Pose>>(_token: &MainThreadToken, local_pose: P) -> Pose {
         unsafe { hierarchy_to_world_pose(&local_pose.into()) }
     }
 
+    /// Converts a local ray relative to the current hierarchy stack into world space!
+    /// <https://stereokit.net/Pages/StereoKit/Hierarchy/ToWorld.html>
+    /// * local_ray - A ray in local space
+    ///
+    /// Returns the provided ray now in world space
+    ///
+    /// see also [crate::system::hierarchy_to_world_ray]
+    pub fn to_world_ray<P: Into<Ray>>(_token: &MainThreadToken, local_ray: P) -> Ray {
+        unsafe { hierarchy_to_world_ray(local_ray.into()) }
+    }
+
     /// Converts a local direction relative to the current hierarchy stack into world space! This excludes the
     /// translation component normally applied to vectors, so it’s still a valid direction.
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/ToWorldDirection.html>
+    /// * local_direction - A direction in local space
+    ///
+    /// Returns the provided direction now in world space
     ///
     /// see also [crate::system::hierarchy_to_world_direction]
     pub fn to_world_direction<V: Into<Vec3>>(_token: &MainThreadToken, local_direction: V) -> Vec3 {
@@ -892,7 +938,7 @@ pub enum Handed {
 bitflags::bitflags! {
     /// A bit-flag for the current state of a button input.
     /// <https://stereokit.net/Pages/StereoKit/BtnState.html>
-    #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd)]
+    #[derive(Default, Debug, Copy, Clone, PartialEq, Eq, PartialOrd)]
     #[repr(C)]
     pub struct BtnState: u32 {
         /// Is the button currently up, unpressed?
