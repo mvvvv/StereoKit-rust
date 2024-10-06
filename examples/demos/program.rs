@@ -17,7 +17,9 @@ use stereokit_rust::{
         fly_over::FlyOver,
         log_window::{LogItem, LogWindow},
         notif::HudNotification,
-        os_api::{get_display_refresh_rate, set_display_refresh_rate},
+        os_api::{
+            get_all_display_refresh_rates, get_display_refresh_rate, log_display_refresh_rate, set_display_refresh_rate,
+        },
         passthrough_fb_ext::{PassthroughFbExt, PASSTHROUGH_FLIP},
         screenshot::ScreenshotViewer,
         //virtual_kbd_meta::VirtualKbdMETA,
@@ -100,8 +102,10 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
     let mut notif = HudNotification::default();
     if Backend::xr_type() == BackendXRType::Simulator {
         notif.text = "Press [F1] key to open the hand menu".into();
-    } else {
+    } else if cfg!(target_os = "android") {
         notif.text = "Press menu button to open the hand menu".into();
+    } else {
+        notif.text = "Look at your wrist then grip when icons are\n aligned to open the hand menu".into();
     }
     sk.push_action(StepperAction::add("HudNotif1", notif));
 
@@ -136,10 +140,18 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
     // } else {
     //     Log::diag("No XR_META_virtual_keyboard !!")
     // }
-    let refresh_rate_editable = BackendOpenXR::ext_enabled("XR_FB_display_refresh_rate");
     let next_refresh_rate_image = Sprite::arrow_right();
-    let refresh_rates = [60.0, 72.0, 90.0, 120.0];
     let mut current_refresh_rate = get_display_refresh_rate().unwrap_or(0.0);
+    let mut refresh_rates = vec![];
+    let refresh_rate_editable = BackendOpenXR::ext_enabled("XR_FB_display_refresh_rate");
+    if refresh_rate_editable {
+        refresh_rates = get_all_display_refresh_rates();
+        log_display_refresh_rate();
+        Log::info(format!("Initial display rate is {:?}", current_refresh_rate));
+        Log::info(format!("Availaible rates are {:?}", refresh_rates));
+    } else {
+        Log::info("No editable refresh rate !");
+    }
 
     let mut viewport_scaling = Renderer::get_viewport_scaling();
     // let mut multisample = Renderer::get_multisample() as f32;
@@ -306,9 +318,9 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
                 )
             {
                 let mut restart = true;
-                for i in refresh_rates {
-                    if i > current_refresh_rate {
-                        current_refresh_rate = i;
+                for i in &refresh_rates {
+                    if *i > current_refresh_rate {
+                        current_refresh_rate = *i;
                         restart = false;
                         break;
                     }
@@ -316,7 +328,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
                 if restart {
                     current_refresh_rate = refresh_rates[0]
                 }
-                if !set_display_refresh_rate(current_refresh_rate) {
+                if !set_display_refresh_rate(current_refresh_rate, true) {
                     current_refresh_rate = 0.0;
                 }
             }

@@ -34,9 +34,11 @@ impl IStepper for FlyOver {
         if sk_settings.mode != AppMode::Simulator {
             let origin_mode = World::get_origin_mode();
             Log::diag(format!("Fly_Over: OriginMode is {:?} ", origin_mode));
-            if origin_mode == OriginMode::Stage {
-                Log::diag("Stage origin reversion");
-                self.reverse *= -1.0;
+            if cfg!(target_os = "android") {
+                if origin_mode == OriginMode::Stage {
+                    Log::diag("Stage origin reversion");
+                    self.reverse *= -1.0;
+                }
             } else {
                 World::origin_offset(Pose::IDENTITY);
             }

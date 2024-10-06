@@ -25,7 +25,7 @@ fn main() {
     use std::env;
 
     use demos::program::launch;
-    use stereokit_rust::sk::Sk;
+    use stereokit_rust::sk::{DepthMode, Sk};
     use stereokit_rust::system::BackendOpenXR;
     use stereokit_rust::{
         sk::{AppMode, OriginMode, SkSettings},
@@ -91,7 +91,11 @@ fn main() {
     settings
         .app_name("rust Demos")
         .assets_folder("assets")
-        .origin(OriginMode::Floor)
+        .origin(OriginMode::Stage)
+        .render_multisample(4)
+        .render_scaling(2.0)
+        .depth_mode(DepthMode::D32)
+        .omit_empty_frames(true)
         .log_filter(LogLevel::Diagnostic)
         .no_flatscreen_fallback(true);
 

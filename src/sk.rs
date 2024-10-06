@@ -1,11 +1,12 @@
 use crate::{
     maths::Bool32T,
-    system::{Log, LogLevel},
+    system::{BackendOpenXR, Log, LogLevel},
     StereoKitError,
 };
 #[cfg(target_os = "android")]
 #[cfg(feature = "no-event-loop")]
 use android_activity::{AndroidApp, MainEvent, PollEvent};
+use openxr_sys::pfn::DestroyInstance;
 use std::{
     cell::RefCell,
     ffi::{c_char, c_void, CStr, CString},
@@ -813,9 +814,27 @@ impl Sk {
     ///
     /// see also [`crate::sk::sk_shutdown`]
     pub fn shutdown() {
-        unsafe { sk_shutdown() }
-        if cfg!(target_os = "android") {
+        if cfg!(target_os = "none") {
+            // TODO : THIS DOESN'T HELP Neither for WiVRn nor for SteamVRLinux WE CAN'T LEAVE!!!! FOR EVER STUCK IN VR XR MR !!!
+            Log::diag(format!("Destroy Instance {}", BackendOpenXR::instance()));
+            let instance = BackendOpenXR::instance();
+            if let Some(destroyer) = BackendOpenXR::get_function::<DestroyInstance>("xrDestroyInstance") {
+                match unsafe { destroyer(openxr_sys::Instance::from_raw(instance)) } {
+                    openxr_sys::Result::SUCCESS => {}
+                    otherwise => {
+                        Log::err(format!("xrDestroyInstance failed: {otherwise}"));
+                    }
+                }
+            } else {
+                Log::err("No xrDestroyInstance found !");
+            }
+            unsafe { sk_shutdown() }
             std::process::exit(0);
+        } else {
+            unsafe { sk_shutdown() }
+            if cfg!(target_os = "android") {
+                std::process::exit(0);
+            }
         }
     }
 }

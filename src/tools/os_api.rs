@@ -286,6 +286,8 @@ pub fn show_soft_input(_show: bool) -> bool {
     false
 }
 
+const USUAL_FPS_SUSPECTS: [i32; 12] = [30, 60, 72, 80, 90, 100, 110, 120, 144, 165, 240, 360];
+
 /// Log the display refresh rate of the device.
 /// Not working on Quest 2, says there is 5 values but display an empty array.
 pub fn log_display_refresh_rate() {
@@ -317,6 +319,21 @@ pub fn log_display_refresh_rate() {
     }
 }
 
+/// Get the display rates available from the USUAL_FPS_SUSPECT
+pub fn get_all_display_refresh_rates() -> Vec<f32> {
+    let default_refresh_rate = get_display_refresh_rate();
+    let mut available_rates = vec![];
+    for rate in USUAL_FPS_SUSPECTS {
+        if set_display_refresh_rate(rate as f32, false) {
+            available_rates.push(rate as f32);
+        }
+    }
+    if let Some(rate) = default_refresh_rate {
+        set_display_refresh_rate(rate, true);
+    }
+    available_rates
+}
+
 /// Get the current display rate if possible
 pub fn get_display_refresh_rate() -> Option<f32> {
     if BackendOpenXR::ext_enabled("XR_FB_display_refresh_rate") {
@@ -343,7 +360,7 @@ pub fn get_display_refresh_rate() -> Option<f32> {
 /// set the current display rate if possible.
 /// Possible values on Quest are 60 - 72 - 90 - 120
 /// returns true if the given value was accepted
-pub fn set_display_refresh_rate(rate: f32) -> bool {
+pub fn set_display_refresh_rate(rate: f32, with_log: bool) -> bool {
     if BackendOpenXR::ext_enabled("XR_FB_display_refresh_rate") {
         //>>>>>>>>>>> Set the value
         if let Some(set_new_rate) =
@@ -352,7 +369,9 @@ pub fn set_display_refresh_rate(rate: f32) -> bool {
             match unsafe { set_new_rate(Session::from_raw(BackendOpenXR::session()), rate) } {
                 Result::SUCCESS => true,
                 otherwise => {
-                    Log::err(format!("xrRequestDisplayRefreshRateFB failed: {otherwise}"));
+                    if with_log {
+                        Log::err(format!("xrRequestDisplayRefreshRateFB failed: {otherwise}"));
+                    }
                     false
                 }
             }

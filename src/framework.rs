@@ -542,9 +542,7 @@ impl HandMenuRadial {
 
         self.menu_pose = hand.palm;
 
-        self.activation_ring
-            .draw(token, Material::ui(), self.menu_pose.to_matrix(None), Some(color_primary), None);
-        self.menu_pose.position += (1.0 - hand.grip_activation) * self.menu_pose.get_forward() * CM * 2.0;
+        self.menu_pose.position += (1.0 - hand.grip_activation) * self.menu_pose.get_forward() * CM * 4.5;
         self.activation_button.draw(
             token,
             Material::ui(),
@@ -558,6 +556,9 @@ impl HandMenuRadial {
         );
         self.activation_hamburger
             .draw(token, Material::ui(), self.menu_pose.to_matrix(None), Some(color_text), None);
+        self.menu_pose.position += (1.0 - hand.grip_activation) * self.menu_pose.get_forward() * CM * 2.0;
+        self.activation_ring
+            .draw(token, Material::ui(), self.menu_pose.to_matrix(None), Some(color_primary), None);
 
         if facing < Self::ACTIVATION_ANGLE {
             return;

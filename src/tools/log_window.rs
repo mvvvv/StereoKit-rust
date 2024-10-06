@@ -69,7 +69,7 @@ impl<'a> LogWindow<'a> {
     pub fn new(log_log: &'a Mutex<Vec<LogItem>>) -> Self {
         let enabled = false;
         let pose = Pose::IDENTITY;
-        let x_len = 100.0;
+        let x_len = 110.0;
         let y_len = 15.0;
 
         let style_diag = TextStyle::from_font(Font::default(), 0.012, Color128::hsv(1.0, 0.0, 0.7, 1.0));
