@@ -70,14 +70,14 @@ float4 ps(psIn input) : SV_TARGET {
     
     uv.x += offset;
     uv.y += offset;
-    float3 normal       = normal   .Sample(normal_samp,   uv).rgb * input.normal;
+    float3 normal_cal   = normal   .Sample(normal_samp,   uv).rgb * input.normal;
 	float2 metal_rough  = metal    .Sample(metal_samp,    uv * 0.2).gb; // rough is g, b is metallic
 	float  ao           = occlusion.Sample(occlusion_samp,uv * 0.6).r;  // occlusion is sometimes part of the metal tex, uses r channel
 
 	float metallic_final = metal_rough.y * metallic;
 	float rough_final    = metal_rough.x * roughness;
 
-    float4 color = sk_pbr_shade(albedo, input.irradiance, ao, metallic_final, rough_final, input.view_dir, normal);
+    float4 color = sk_pbr_shade(albedo, input.irradiance, ao, metallic_final, rough_final, input.view_dir, normal_cal);
 
     return color;
 }
