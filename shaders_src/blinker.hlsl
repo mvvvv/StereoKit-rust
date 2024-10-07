@@ -21,7 +21,6 @@ struct psIn {
     float4 pos       : SV_Position;
     float2 uv        : TEXCOORD0;
     float3 world     : TEXCOORD1;
-    float3 normal    : NORMAL0;
     float4 color     : COLOR0;
     uint view_id     : SV_RenderTargetArrayIndex;
 };
