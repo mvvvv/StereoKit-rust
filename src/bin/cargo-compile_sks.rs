@@ -75,6 +75,7 @@ fn is_input_file_outdated() -> Result<bool, io::Error> {
     shaders_include.push("include");
 
     println!("skshaderc executable used :  {:?}", &skshaderc);
+    println!("Shaders sources are here : {:?}", &shaders_source_path);
     println!("Shaders compiled there : {:?}", &shaders_path);
 
     let command = OsStr::new(skshaderc.as_os_str());
