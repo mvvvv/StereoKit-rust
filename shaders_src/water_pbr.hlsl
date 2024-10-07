@@ -20,14 +20,14 @@ float        roughness;
 //--emission  = white
 //--metal     = white
 //--occlusion = white
-Texture2D    diffuse     : register(t0);
-SamplerState diffuse_s   : register(s0);
-Texture2D    emission    : register(t1);
-SamplerState emission_s  : register(s1);
-Texture2D    metal       : register(t2);
-SamplerState metal_s     : register(s2);
-Texture2D    occlusion   : register(t3);
-SamplerState occlusion_s : register(s3);
+Texture2D    diffuse        : register(t0);
+SamplerState diffuse_samp   : register(s0);
+Texture2D    emission       : register(t1);
+SamplerState emission_samp  : register(s1);
+Texture2D    metal          : register(t2);
+SamplerState metal_samp     : register(s2);
+Texture2D    occlusion      : register(t3);
+SamplerState occlusion_samp : register(s3);
 struct vsIn {
     float4 pos    : SV_Position;
     float3 normal : NORMAL0;
@@ -67,13 +67,13 @@ float4 ps(psIn input) : SV_TARGET {
     float offset = time* sk_time/100;
     uv.x += sin (sk_time * time+ (uv.x + uv.y) * 25) * 0.01;
     uv.y += cos (sk_time * time+ (uv.x - uv.y) * 25) * 0.01;
-    float4 albedo       = diffuse.  Sample(diffuse_s,  uv) * input.color;
+    float4 albedo       = diffuse.  Sample(diffuse_samp,  uv) * input.color;
     
     uv.x += offset;
     uv.y += offset;
-    float3 emissive     = emission .Sample(emission_s, uv).rgb * emission_factor.rgb;
-	float2 metal_rough  = metal    .Sample(metal_s,    uv * 0.2 ).gb; // rough is g, b is metallic
-	float  ao           = occlusion.Sample(occlusion_s,uv * 0.6 ).r;  // occlusion is sometimes part of the metal tex, uses r channel
+    float3 emissive     = emission .Sample(emission_samp, uv).rgb * emission_factor.rgb;
+	float2 metal_rough  = metal    .Sample(metal_samp,    uv * 0.2 ).gb; // rough is g, b is metallic
+	float  ao           = occlusion.Sample(occlusion_samp,uv * 0.6 ).r;  // occlusion is sometimes part of the metal tex, uses r channel
 
 	float metallic_final = metal_rough.y * metallic;
 	float rough_final    = metal_rough.x * roughness;

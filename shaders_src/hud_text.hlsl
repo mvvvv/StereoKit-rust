@@ -12,7 +12,6 @@ SamplerState diffuse_s : register(s0);
 
 struct vsIn {
     float4 pos    : SV_Position;
-    float3 normal : NORMAL0;
     float2 uv     : TEXCOORD0;
     float4 col    : COLOR0;
 };

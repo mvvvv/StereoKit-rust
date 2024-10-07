@@ -78,26 +78,26 @@ fn is_input_file_outdated() -> Result<bool, io::Error> {
     println!("Shaders sources are here : {:?}", &shaders_source_path);
     println!("Shaders compiled there : {:?}", &shaders_path);
 
-    let command = OsStr::new(skshaderc.as_os_str());
     let excluded_extensions = [OsStr::new("hlsli"), OsStr::new("sks"), OsStr::new("txt"), OsStr::new("md")];
     if let Ok(entries) = shaders_source_path.read_dir() {
         for entry in entries {
             let file = entry?.path();
+            println!("File : {:?}", &file);
             if file.is_file() {
                 if let Some(extension) = file.extension() {
                     if !excluded_extensions.contains(&extension) {
-                        //println!("shader file : {:?}", file);
-                        let output = Command::new(command)
-                            .arg(file)
-                            .arg("-i")
-                            .arg(&shaders_path)
+                        let output = Command::new(OsStr::new(skshaderc.to_str().unwrap_or("NOPE")))
                             .arg("-i")
                             .arg(&shaders_include)
                             .arg("-o")
                             .arg(&shaders_path)
+                            .arg(file)
                             .output()
                             .expect("failed to run shader compiler");
-                        println!("{}", String::from_utf8(output.clone().stdout).unwrap_or(format!("{:#?}", output)));
+                        println!(
+                            "Output: <{}>",
+                            String::from_utf8(output.clone().stdout).unwrap_or(format!("{:#?}", output))
+                        );
                     }
                 }
             }
