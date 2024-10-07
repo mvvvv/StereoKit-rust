@@ -18,7 +18,7 @@ fn is_input_file_outdated() -> Result<bool, io::Error> {
     let target_os = if cfg!(target_os = "linux") {
         "linux"
     } else if cfg!(target_os = "windows") {
-        "windows"
+        "win"
     } else if cfg!(target_os = "macos") {
         "mac"
     } else {
