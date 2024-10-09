@@ -35,7 +35,10 @@
                 }
             },
             "args": [],
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            // For Windows only, we have to find the dll >>>>>
+            "env":{"PATH": "${workspaceFolder}/target/debug/deps;${workspaceFolder}/StereoKit/bin/distribute/bin/Win32/x64/Debug;${env:PATH}"},
+
         },
         {
             "type": "lldb",
@@ -53,7 +56,10 @@
                 }
             },
             "args": ["--test","--start", "Tex1"],
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            // For Windows only, we have to find the dll >>>>>
+           "env":{"PATH": "${workspaceFolder}/target/debug/deps;${workspaceFolder}/StereoKit/bin/distribute/bin/Win32/x64/Debug;${env:PATH}"},
+
         },
         {
             "type": "lldb",
@@ -71,7 +77,9 @@
                 }
             },
             "args": [],
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            // For Windows only, we have to find the dll >>>>>
+            "env":{"PATH": "${workspaceFolder}/target/debug/deps;${workspaceFolder}/StereoKit/bin/distribute/bin/Win32/x64/Debug;${env:PATH}"},
         },
         {
             "type": "lldb",
@@ -89,7 +97,9 @@
                 }
             },
             "args": [],
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            // For Windows only, we have to find the dll >>>>>
+            "env":{"PATH": "${workspaceFolder}/target/debug/deps;${workspaceFolder}/StereoKit/bin/distribute/bin/Win32/x64/Debug;${env:PATH}"},
         },
 
     ]
