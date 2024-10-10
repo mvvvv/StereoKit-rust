@@ -79,6 +79,19 @@ fn main() {
             cargo_link!("user32");
             cargo_link!("comdlg32");
             println!("cargo:rustc-link-search=native={}", dst.display());
+
+            //---- We have to extract the DLL i.e. ".\target\debug\build\stereokit-rust-be362d37871b9048\out\build\Debug\StereoKitC.dll"
+            //---- and copy it to ".\target\debug\deps\
+            let deuleuleu = "StereoKitC.dll";
+            let out_dir = env::var("OUT_DIR").unwrap(); //---must be equal to dst
+            let target_dir = Path::new(&out_dir).parent().unwrap().parent().unwrap().parent().unwrap();
+            let deps_libs = target_dir.join("deps");
+            println!("dst --> {:?}", dst);
+            let dest_file_dll = deps_libs.join(deuleuleu);
+            let file_dll = dst.join("build").join(profile).join(deuleuleu);
+            println!("StereoKitC.dll is copied from here --> {:?}", file_dll);
+            println!("                           to here --> {:?}", dest_file_dll);
+            let _lib_dll = fs::copy(file_dll, dest_file_dll).unwrap();
         }
         "wasm" => {
             unimplemented!("sorry wasm isn't implemented yet");

@@ -15,7 +15,9 @@ This project is at an early stage so try it carefully. Right now, the only way t
 * `git clone --recursive https://github.com/mvvvv/StereoKit-rust/`
 * On Linux get the following tools and dev libraries : clang cmake libx11-dev libxfixes-dev libegl-dev libgbm-dev libfontconfig-dev.
 * On Window get the following tools and dev libraries : "CMake", "Visual Studio Build Tools 2022(Developpment Desktop C++)" and "DotNet SDK v8+" 
-* If you want to launch the demos then compile the shaders. From StereoKit-rust directory launch `cargo run --bin cargo-compile_sks`
+* If you want to launch the demos then: 
+  - compile the shaders. From StereoKit-rust directory launch `cargo run --bin cargo-compile_sks` 
+  - for Windows only and if you don't use VSCode launchers, add to the PATH environment variable the directory `./target/debug/deps`
 
 ### Run the project's demo on your PC's headset :
 * Make sure you have [OpenXR installed](https://www.khronos.org/openxr/) with an active runtine.
