@@ -32,9 +32,10 @@ This project is at an early stage so try it carefully. Right now, the only way t
 * Using sdkmanager, install platform-tools(v32), latest build-tools and the latest ndk. 
 * Set ANDROID_HOME environment variable to its path (this path contains the `build_tools` directory). 
 * Set the NDK path (which ends with it's version number) into ANDROID_NDK_ROOT environment variable.
-* Check that `adb` ($ANDROID-HOME/platform_tools/adb) is connecting to your headset.
+* Install [Ninja](https://ninja-build.org/) 
+* Check that `adb` ($ANDROID_HOME/platform_tools/adb) is connecting to your headset.
 * Install: `cargo install cargo-apk` (cargo-xbuild has not been tested yet).
-* Download: `rustup target add aarch64-linux-android` for most of the existing android headsets.
+* Download the target: `rustup target add aarch64-linux-android` for most of the existing android headsets.
 * Launch: `cargo apk run --features event-loop  --example main`
 
 ### Use your own event manager (PC only - see gradle templates for an android build)

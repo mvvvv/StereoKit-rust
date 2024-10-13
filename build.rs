@@ -44,6 +44,7 @@ fn main() {
         cmake_config.define("CMAKE_ANDROID_API", "32");
         cmake_config.define("CMAKE_INSTALL_INCLUDEDIR", "install");
         cmake_config.define("CMAKE_INSTALL_LIBDIR", "install");
+        cmake_config.define("CMAKE_GENERATOR", "Ninja");
     }
     if cfg!(feature = "build-dynamic-openxr") {
         // When you need to build and use Khronos openxr loader use this feature:
