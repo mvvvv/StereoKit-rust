@@ -103,11 +103,11 @@ fn main() {
             println!("cargo:rustc-link-search=native={}/build", dst.display());
             println!("cargo:rustc-link-search=native={}/install", dst.display());
 
-            cargo_link!("static=StereoKitC");
+            cargo_link!("StereoKitC");
 
             cargo_link!("stdc++");
             cargo_link!("openxr_loader");
-            cargo_link!("static=meshoptimizer");
+            cargo_link!("meshoptimizer");
             if target_os == "android" {
                 cargo_link!("android");
                 cargo_link!("EGL");
