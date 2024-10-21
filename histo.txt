@@ -1,0 +1,18 @@
+ #------A bunch of commands you'll use here
+ #---- installing
+ cargo install --path .
+ cargo compile_sks
+ cargo install cargo-apk
+ rustup target add aarch64-linux-android
+ rustup target add x86_64-pc-windows-gnu
+ 
+#---- building for pc
+cargo run --features event-loop  --example main_pc`
+cargo run --features event-loop  --example main_pc -- --test`
+cargo build_sk_rs --example main_pc --shaders assets/shaders --features event-loop ../sk_builds/SK_demo_linux/
+cargo build_sk_rs  --x64-win-gnu ../x64-mingw-libs/  --example main_pc  --features event-loop ../sk_builds/SK_demo_win_gnu/
+cargo build_sk_rs  --x64-win-gnu-gl ../x64-mingw-libs/  --example main_pc  --features event-loop ../sk_builds/SK_demo_win_gnu/
+
+#---- building for android
+cargo apk run --features event-loop  --example main
+cargo apk build --release --features event-loop  --example main

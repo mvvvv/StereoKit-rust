@@ -11,12 +11,23 @@ Its purpose is to improve the previous rust project <https://github.com/MalekiRe
 
 This project is at an early stage so try it carefully. Right now, the only way to get the project is to get the source code from github.
 
+#### Regarding your working OS, here are the target architectures you can build for:
+
+| Target: | Windows x86_64| Linux x86_64       | Meta Quest |
+|:-------:|:-------------:|:------------------:|:----------:|
+| Windows x86_64 | **X**  | with SteamVR Proton|     **X**  |
+| Linux  x86_64  | in progress |            **X**   |     **X**  |
+| MacOs          |        |                    |     **X**  |
+Let us know if you have launched the demos on an architecture not tested here. Arm64 should be usable.
+
+
 ### Download the source project:
 * `git clone --recursive https://github.com/mvvvv/StereoKit-rust/`
 * On Linux get the following tools and dev libraries : clang cmake libx11-dev libxfixes-dev libegl-dev libgbm-dev libfontconfig-dev.
 * On Window get the following tools and dev libraries : "CMake", "Visual Studio Build Tools 2022(Developpment Desktop C++)" and "DotNet SDK v8+" 
+* Install the project's tools from the project directory `cargo install --path .`
 * If you want to launch the demos then: 
-  - compile the shaders. From StereoKit-rust directory launch `cargo run --bin cargo-compile_sks` 
+  - compile the shaders. From StereoKit-rust directory launch `cargo compile_sks` 
   - for Windows only and if you don't use VSCode launchers, add to the PATH environment variable the directory `./target/debug/deps`
 
 ### Run the project's demo on your PC's headset :
@@ -26,6 +37,8 @@ This project is at an early stage so try it carefully. Right now, the only way t
 ### Run the project's demo on your PC using the [simulator](https://stereokit.net/Pages/Guides/Using-The-Simulator.html) 
 * Launch[^1]: `cargo run --features event-loop  --example main_pc -- --test`
 
+### Build and create an exportable repository of project's demo for your PC
+`cargo build_sk_rs --example main_pc --features event-loop <the path of your exportable repository>`
 
 ### Run the project's demo on your Android headset (from a PC running Windows, Mac or Linux):
 * Install [sdkmanager](https://developer.android.com/studio/command-line/sdkmanager)  (or Android Studio if you intend to use it). You'll need a Java JDK (v17 is fine).
@@ -44,7 +57,7 @@ This is the shortest way to launch your first PCVR/PCMR program[^1]: `cargo run 
 
 
 ## Templates to create your own project:
-There is 3 templates used to build android versions. The default choice, branch `main`, will use cargo-apk (like demos above). The branch `gradle` will let you use gradle with winit. Then the branch `gradle-no-event-loop` will use gradle without winit.
+There is 3 templates used to build android versions (they can also create a PCVR executable). The default choice, branch `main`, will use cargo-apk (like demos above). The branch `gradle` will let you use gradle with winit. Then the branch `gradle-no-event-loop` will use gradle without winit.
 * `git clone -b $branch https://github.com/mvvvv/stereokit-template/`
 * If you don't clone the template project in the same directory than the StereoKit-rust project, you'll have to modify the path of the Stereokit-rust dependency.
 

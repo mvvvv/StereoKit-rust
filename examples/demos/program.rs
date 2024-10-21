@@ -190,16 +190,13 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
         }
 
         if let Some(next_s) = &next_scene {
-            match &active_scene {
-                Some(active_stepper) => {
-                    sk.push_action(StepperAction::remove(active_stepper.clone()));
-                    active_scene = None;
-                    // As we can relaunch the same IStepper, we have to be sure the previous is closed so we leave
-                    // this frame here to execute the StepperAction::remove before launching next IStepper.
-                    // So 2 frames without any IStepper.
-                    return;
-                }
-                None => {}
+            if let Some(active_stepper) = &active_scene {
+                sk.push_action(StepperAction::remove(active_stepper.clone()));
+                active_scene = None;
+                // As we can relaunch the same IStepper, we have to be sure the previous is closed so we leave
+                // this frame here to execute the StepperAction::remove before launching next IStepper.
+                // So 2 frames without any IStepper.
+                return;
             }
             // if is_testing {
             //     Time::set_time(0.0, 0.0);

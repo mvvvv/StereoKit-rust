@@ -18,7 +18,6 @@ pub mod sound;
 pub mod sprite;
 pub mod system;
 pub mod tex;
-#[cfg(feature = "event-loop")]
 pub mod tools;
 pub mod ui;
 pub mod util;
