@@ -2183,7 +2183,9 @@ impl Ui {
         color_state: Option<UiColorState>,
         color_gamma: impl Into<Color128>,
     ) {
-        Log::diag(format!("u32 value is : {:?}", unsafe { std::mem::transmute::<UiColor, u32>(color_category) }));
+        Log::diag(format!("set_theme_color for category: {:?}", unsafe {
+            std::mem::transmute::<UiColor, u32>(color_category)
+        }));
         match color_state {
             Some(color_state) => unsafe { ui_set_theme_color_state(color_category, color_state, color_gamma.into()) },
             None => unsafe { ui_set_theme_color(color_category, color_gamma.into()) },

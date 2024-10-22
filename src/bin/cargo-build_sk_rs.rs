@@ -47,7 +47,7 @@ fn main() {
         match &arg[..] {
             "build_sk_rs" => {}
             "--debug" => {
-                profile = "--debug".to_string();
+                profile = "".to_string(); //--debug is the default
             }
             "--x64-win-gnu" | "--x64-win-gnu-gl" => {
                 if let Some(arg_config) = args.next() {
