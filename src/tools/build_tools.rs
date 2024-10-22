@@ -41,7 +41,10 @@ pub fn get_skshaderc(bin_dir: PathBuf) -> PathBuf {
 
 /// compile hsls file to sks
 pub fn compile_hlsl(project_dir: PathBuf, target_dir: Option<PathBuf>, options: &[&str]) -> Result<bool, io::Error> {
-    let skshaderc = get_skshaderc(project_dir.clone());
+    //we get the dir from StereoKit-rust (not from here)
+    let bin_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+
+    let skshaderc = get_skshaderc(bin_dir.clone());
 
     let mut shaders_source_path = project_dir.clone();
     shaders_source_path.push("shaders_src");
@@ -68,7 +71,7 @@ pub fn compile_hlsl(project_dir: PathBuf, target_dir: Option<PathBuf>, options: 
         }
     };
 
-    let mut shaders_include = project_dir.clone();
+    let mut shaders_include = bin_dir.clone();
     shaders_include.push("StereoKit");
     shaders_include.push("tools");
     shaders_include.push("include");

@@ -253,7 +253,13 @@ fn main() {
     // 3 - the shaders
     let target_shaders_dir = output_path.join("assets").join("shaders");
     if shaders_path_name.is_empty() {
-        let target = if windows_exe.is_empty() { "ge" } else { "x" };
+        let target = if windows_exe.is_empty() {
+            "e"
+        } else if with_gl {
+            "g"
+        } else {
+            "x"
+        };
         compile_hlsl(current_dir().unwrap(), Some(target_shaders_dir), &["-f", "-t", target, "-sw"]).unwrap();
     } else {
         let shaders_path = PathBuf::from(shaders_path_name);

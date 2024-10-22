@@ -1,3 +1,5 @@
+use std::env::{args, current_dir};
+
 use stereokit_rust::tools::build_tools::compile_hlsl;
 
 pub const USAGE: &str = r#"Usage : cargo compile_sks [Options] <Output_path>
@@ -8,13 +10,11 @@ pub const USAGE: &str = r#"Usage : cargo compile_sks [Options] <Output_path>
         -h|--help      : Display help"#;
 
 fn main() {
-    use std::{env, path::PathBuf};
-
     //----First the command line
     let mut with_option = false;
     let mut options = vec![];
 
-    let args = env::args().skip(1);
+    let args = args().skip(1);
 
     for arg in args {
         match &arg[..] {
@@ -39,7 +39,7 @@ fn main() {
         }
     }
 
-    let project_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let project_dir = current_dir().unwrap();
 
     let options_str = Vec::from_iter(options.iter().map(String::as_str));
 
