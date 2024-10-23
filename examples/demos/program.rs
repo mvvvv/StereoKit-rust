@@ -154,9 +154,10 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
     }
 
     let mut viewport_scaling = Renderer::get_viewport_scaling();
+    let mut reduce_to = viewport_scaling;
     if cfg!(target_os = "windows") {
         //---Above this value, there is distortion on steam proton (and maybe on windows)
-        viewport_scaling = 0.85;
+        reduce_to = 0.85;
     }
     // let mut multisample = Renderer::get_multisample() as f32;
     let mut fps = 72.0;
@@ -344,6 +345,11 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
             {
                 Renderer::viewport_scaling(new_value);
                 viewport_scaling = new_value;
+            }
+
+            if reduce_to < viewport_scaling {
+                viewport_scaling = reduce_to;
+                Renderer::viewport_scaling(viewport_scaling);
             }
 
             // Ui::label("MSAA:", None, true);

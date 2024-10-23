@@ -43,7 +43,7 @@ pub fn include_asset_tree(body: TokenStream) -> TokenStream {
 fn get_sub_dirs(path_assets: PathBuf, sub_path: &Path) -> Vec<String> {
     let mut vec_path = vec![];
     if path_assets.exists() && path_assets.is_dir() {
-        vec_path.push(sub_path.to_string_lossy().to_string());
+        vec_path.push(sub_path.to_string_lossy().to_string().replace("\\", "/"));
         if let Ok(read_dir) = read_dir(path_assets) {
             for file in read_dir.flatten() {
                 let path_sub_assets = file.path();
