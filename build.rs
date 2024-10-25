@@ -14,7 +14,7 @@ fn main() {
     let target_env = var("CARGO_CFG_TARGET_ENV").unwrap();
 
     let win_gnu_libs = var("SK_RUST_WIN_GNU_LIBS").unwrap_or_default();
-    let win_gnu_gl_libs = var("SK_RUST_WIN_GNU_GL_LIBS").unwrap_or_default();
+    let win_gl = !var("SK_RUST_WINDOWS_GL").unwrap_or_default().is_empty();
 
     println!("Compiling with {} for {}/{} with profile {}", target_env, target_os, target_family, profile);
 
@@ -27,12 +27,20 @@ fn main() {
     let mut cmake_config = Config::new("StereoKit");
 
     if !win_gnu_libs.is_empty() {
-        cmake_config.define("SK_WINDOWS_GL", "OFF");
-        cmake_config.define("WINDOWS_LIBS", "comdlg32;dxgi;d3d11");
-    } else if !win_gnu_gl_libs.is_empty() {
-        cmake_config.cxxflag("-Wl,-allow-multiple-definition");
+        if win_gl {
+            cmake_config.cxxflag("-Wl,-allow-multiple-definition");
+            cmake_config.define("__MINGW32__", "ON");
+            cmake_config.define("WINDOWS_LIBS", "comdlg32;opengl32");
+        } else {
+            cmake_config.define("SK_WINDOWS_GL", "OFF");
+            cmake_config.define("__MINGW32__", "ON");
+            cmake_config.define("PAL_STDCPP_COMPAT", "");
+            cmake_config.define("WINDOWS_LIBS", "comdlg32;dxgi;d3d11");
+        }
+    }
+
+    if win_gl {
         cmake_config.define("SK_WINDOWS_GL", "ON");
-        cmake_config.define("WINDOWS_LIBS", "comdlg32;opengl32");
     }
 
     if cfg!(feature = "force-local-deps") && var("FORCE_LOCAL_DEPS").is_ok() {

@@ -22,8 +22,8 @@ fn main() {
             "--options" => {
                 with_option = true;
             }
-            "-h" => println!("{}", USAGE),
-            "--help" => println!("{}", USAGE),
+            "-h" => panic!("{}", USAGE),
+            "--help" => panic!("{}", USAGE),
             _ => {
                 if with_option {
                     if arg == "-o" {

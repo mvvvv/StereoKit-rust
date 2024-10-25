@@ -10,9 +10,8 @@ pub const USAGE: &str = r#"Usage : cargo build_sk_rs [Options] <Output_path>
         --x64-win-gnu    <path_to_libs> : x86_64-pc-windows-gnu DirectX11 build using 
                                           path_to_libs where some libraries must be 
                                           set (work in progress ...).
-        --x64-win-gnu-gl <path_to_libs> : x86_64-pc-windows-gnu OPENGL build using 
-                                          path_to_libs where some libraries must be 
-                                          set (work in progress ...).
+        --gl                            : for windows build will use OPENGL instead of 
+                                          D3D11.
         --features <feat1, feat2 ...>   : Features of the project to turn on.
         --example  <exe_name>           : If the project has an examples directory, 
                                           will execute the program <exe_name>.
@@ -49,14 +48,11 @@ fn main() {
             "--debug" => {
                 profile = "".to_string(); //--debug is the default
             }
-            "--x64-win-gnu" | "--x64-win-gnu-gl" => {
+            "--x64-win-gnu" => {
                 if let Some(arg_config) = args.next() {
                     if !arg_config.starts_with('-') {
                         build_target = Target::X86_64WinGnu;
                         win_libs_path_name = arg_config;
-                        if arg.ends_with("-gl") {
-                            with_gl = true;
-                        }
                     } else {
                         println!("Value specified for --x64-win-gnu must be the path of a directory.");
                         panic!("{}", USAGE);
@@ -65,6 +61,9 @@ fn main() {
                     println!("No value specified for parameter --x64-win-gnu.");
                     panic!("{}", USAGE);
                 }
+            }
+            "--gl" => {
+                with_gl = true;
             }
             "--features" => {
                 features = "--features".to_string();
@@ -106,8 +105,8 @@ fn main() {
                     panic!("{}", USAGE);
                 }
             }
-            "-h" => println!("{}", USAGE),
-            "--help" => println!("{}", USAGE),
+            "-h" => panic!("{}", USAGE),
+            "--help" => panic!("{}", USAGE),
             _ => {
                 if arg.starts_with('-') {
                     println!("Unkown argument {}", arg);
@@ -154,11 +153,11 @@ fn main() {
                 cmd.arg("--target=x86_64-pc-windows-gnu");
             }
         };
-        if with_gl {
-            cmd.env("SK_RUST_WIN_GNU_GL_LIBS", &win_libs_path_name);
-        } else {
-            cmd.env("SK_RUST_WIN_GNU_LIBS", &win_libs_path_name);
-        }
+        cmd.env("SK_RUST_WIN_GNU_LIBS", &win_libs_path_name);
+    }
+
+    if with_gl {
+        cmd.env("SK_RUST_WINDOWS_GL", "ON");
     }
 
     cmd.arg(&profile);
