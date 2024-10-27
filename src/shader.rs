@@ -51,7 +51,8 @@ impl IAsset for Shader {
 }
 
 /// This is a fast, general purpose shader. It uses a texture for ‘diffuse’, a ‘color’ property for tinting the
-/// material, and a ‘tex_scale’ for scaling the UV coordinates. For lighting, it just uses a lookup from the current cubemap.
+/// material, and a ‘tex_scale’ for scaling the UV coordinates. For lighting, it just uses a lookup from the current
+/// cubemap.
 /// <https://stereokit.net/Pages/StereoKit/Shader/Default.html>
 impl Default for Shader {
     fn default() -> Self {
@@ -59,7 +60,8 @@ impl Default for Shader {
     }
 }
 impl Shader {
-    /// Loads an image file stored in memory directly into a texture! Supported formats are: jpg, png, tga, bmp, psd, gif, hdr, pic.
+    /// Loads an image file stored in memory directly into a texture! Supported formats are: jpg, png, tga, bmp, psd,
+    /// gif, hdr, pic.
     /// Asset Id will be the same as the filename.
     /// <https://stereokit.net/Pages/StereoKit/Shader/FromMemory.html>
     ///
@@ -71,9 +73,8 @@ impl Shader {
         ))
     }
 
-    /// Loads a shader from a precompiled StereoKit Shader (.sks) file! HLSL files can be compiled using the skshaderc tool included
-    /// in the NuGet package. This should be taken care of by MsBuild automatically, but you may need to ensure your HLSL file is a item type
-    /// in the .csproj for this to work. You can also compile with the command line app manually if you’re compiling/distributing a shader some other way!
+    /// Loads a shader from a precompiled StereoKit Shader (.sks) file! HLSL files can be compiled using the skshaderc
+    /// tool called with `cargo compile_sks` or `cargo build_sk_rs`.
     /// <https://stereokit.net/Pages/StereoKit/Shader/FromFile.html>
     ///
     /// see also [`stereokit::StereoKitMultiThread::shader_create_file`]
@@ -148,7 +149,8 @@ impl Shader {
         Self::find("default/shader_unlit").unwrap()
     }
 
-    /// Sometimes lighting just gets in the way! This is an extremely simple and fast shader that uses a ‘diffuse’ texture and a ‘color’ tint property to
+    /// Sometimes lighting just gets in the way! This is an extremely simple and fast shader that uses a ‘diffuse’
+    /// texture and a ‘color’ tint property to
     /// draw a model without any lighting at all! This shader will also discard pixels with an alpha of zero.
     /// <https://stereokit.net/Pages/StereoKit/Shader/UnlitClip.html>
     pub fn unlit_clip() -> Self {
@@ -165,16 +167,17 @@ impl Shader {
         Self::find("default/shader_equirect").unwrap()
     }
 
-    /// A shader for UI or interactable elements, this’ll be the same as the Shader, but with an additional finger ‘shadow’ and
-    /// distance circle effect that helps indicate finger distance from the surface of the object.
+    /// A shader for UI or interactable elements, this’ll be the same as the Shader, but with an additional finger
+    /// ‘shadow’ and distance circle effect that helps indicate finger distance from the surface of the object.
     /// <https://stereokit.net/Pages/StereoKit/Shader/UI.html>
     pub fn ui() -> Self {
         Self::find("default/shader_ui").unwrap()
     }
 
-    /// A shader for indicating interaction volumes! It renders a border around the edges of the UV coordinates that will ‘grow’ on proximity
-    /// to the user’s finger. It will discard pixels outside of that border, but will also show the finger shadow. This is meant to be an opaque shader,
-    /// so it works well for depth LSR. This shader works best on cube-like meshes where each face has UV coordinates from 0-1.
+    /// A shader for indicating interaction volumes! It renders a border around the edges of the UV coordinates that
+    /// will ‘grow’ on proximity to the user’s finger. It will discard pixels outside of that border, but will also show
+    /// the finger shadow. This is meant to be an opaque shader, so it works well for depth LSR. This shader works best
+    /// on cube-like meshes where each face has UV coordinates from 0-1.
     /// Shader Parameters: color - color border_size - meters border_size_grow - meters border_affect_radius - meters
     /// <https://stereokit.net/Pages/StereoKit/Shader/UIBox.html>
     pub fn ui_box() -> Self {

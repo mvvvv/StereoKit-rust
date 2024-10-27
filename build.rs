@@ -16,7 +16,11 @@ fn main() {
     let win_gnu_libs = var("SK_RUST_WIN_GNU_LIBS").unwrap_or_default();
     let win_gl = !var("SK_RUST_WINDOWS_GL").unwrap_or_default().is_empty();
 
-    println!("Compiling with {} for {}/{} with profile {}", target_env, target_os, target_family, profile);
+    if win_gl {
+        println!("Compiling with {} for {}/opengl with profile {}", target_env, target_os, profile);
+    } else {
+        println!("Compiling with {} for {} with profile {}", target_env, target_os, profile);
+    }
 
     if target_os == "macos" {
         println!("cargo:warning=You seem to be building for MacOS! We still enable builds so that rust-analyzer works, but this won't actually build StereoKit so it'll be pretty non-functional.");
@@ -30,12 +34,10 @@ fn main() {
         if win_gl {
             cmake_config.cxxflag("-Wl,-allow-multiple-definition");
             cmake_config.define("__MINGW32__", "ON");
-            cmake_config.define("WINDOWS_LIBS", "comdlg32;opengl32");
+            cmake_config.define("WINDOWS_LIBS", "comdlg32;opengl32;");
         } else {
-            cmake_config.define("SK_WINDOWS_GL", "OFF");
             cmake_config.define("__MINGW32__", "ON");
-            cmake_config.define("PAL_STDCPP_COMPAT", "");
-            cmake_config.define("WINDOWS_LIBS", "comdlg32;dxgi;d3d11");
+            cmake_config.define("WINDOWS_LIBS", "comdlg32;dxgi;d3d11;");
         }
     }
 
@@ -104,6 +106,7 @@ fn main() {
             println!("cargo:rustc-link-search=native={}", dst.display());
             if target_env == "gnu" {
                 println!("cargo:rustc-link-search=native={}/build", dst.display());
+                println!("cargo:rustc-link-search=native={}", win_gnu_libs);
                 //---- We have to extract the DLL i.e. ".\target\x86_64-pc-windows-gnu\debug\build\stereokit-rust-be362d37871b9048\out\build\StereoKitC.dll"
                 //---- and copy it to ".\target\x86_64-pc-windows-gnu\debug\deps\
                 let deuleuleu = "libStereoKitC.dll";
