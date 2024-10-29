@@ -15,4 +15,5 @@ cargo build_sk_rs  --x64-win-gnu ../x64-mingw-libs/ --gl --example main_pc  --fe
 
 #---- building for android
 cargo apk run --features event-loop  --example main
+cargo compile_sks --options -f -t e
 cargo apk build --release --features event-loop  --example main
