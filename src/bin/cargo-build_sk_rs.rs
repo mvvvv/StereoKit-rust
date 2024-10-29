@@ -1,4 +1,4 @@
-use std::{env::current_dir, ffi::OsStr};
+use std::{env::current_dir, ffi::OsStr, process::Stdio};
 
 use stereokit_rust::tools::build_tools::{compile_hlsl, copy_tree, get_cargo_name};
 
@@ -143,7 +143,7 @@ fn main() {
     let mut windows_exe = if cfg!(target_os = "windows") { ".exe" } else { "" };
 
     let mut cmd = Command::new("cargo");
-    cmd.arg("build");
+    cmd.stdout(Stdio::piped()).arg("build");
 
     if !win_libs_path_name.is_empty() {
         match build_target {
@@ -173,7 +173,8 @@ fn main() {
         cmd.arg(&example).arg(&example_exe);
     }
 
-    let output = cmd.output().expect("failed to run cargo build");
+    let child = cmd.spawn().expect("failed to run cargo build");
+    let output = child.wait_with_output().expect("failed to wait on child");
     println!("{}", String::from_utf8(output.clone().stdout).unwrap_or(format!("{:#?}", output)));
     println!("{}", String::from_utf8(output.clone().stderr).unwrap_or(format!("{:#?}", output)));
 
