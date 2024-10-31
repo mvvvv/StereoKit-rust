@@ -46,7 +46,7 @@ fn main() {
         match &arg[..] {
             "build_sk_rs" => {}
             "--debug" => {
-                profile = "".to_string(); //--debug is the default
+                profile = "--debug".to_string(); //--debug is the default
             }
             "--x64-win-gnu" => {
                 if let Some(arg_config) = args.next() {
@@ -160,7 +160,9 @@ fn main() {
         cmd.env("SK_RUST_WINDOWS_GL", "ON");
     }
 
-    cmd.arg(&profile);
+    if profile != "--debug" {
+        cmd.arg(&profile);
+    }
 
     if !features.is_empty() {
         cmd.arg(&features);
