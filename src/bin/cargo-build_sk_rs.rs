@@ -9,8 +9,10 @@ pub const USAGE: &str = r#"Usage : cargo build_sk_rs [Options] <Output_path>
         --debug                         : Build a debug instead of a release.
         --x64-win-gnu    <path_to_libs> : x86_64-pc-windows-gnu DirectX11 build using 
                                           path_to_libs where some libraries must be 
-                                          set (work in progress ...).
-        --gl                            : for windows build will use OPENGL instead of 
+                                          set (libgcc_eh.a).
+        --x64-linux                     : On Linux, x86_64-unknown-linux-gnu build
+        --aarch64-linux                 : On Linux, aarch64-unknown-linux-gnu build
+        --gl                            : For windows, build will use OPENGL instead of 
                                           D3D11.
         --features <feat1, feat2 ...>   : Features of the project to turn on.
         --example  <exe_name>           : If the project has an examples directory, 
@@ -23,6 +25,8 @@ pub const USAGE: &str = r#"Usage : cargo build_sk_rs [Options] <Output_path>
 enum Target {
     Default,
     X86_64WinGnu,
+    X86_64Linux,
+    Aarch64Linux,
 }
 fn main() {
     use std::{env, fs, path::PathBuf, process::Command};
@@ -46,7 +50,7 @@ fn main() {
         match &arg[..] {
             "build_sk_rs" => {}
             "--debug" => {
-                profile = "--debug".to_string(); //--debug is the default
+                profile = "--debug".to_string();
             }
             "--x64-win-gnu" => {
                 if let Some(arg_config) = args.next() {
@@ -62,6 +66,13 @@ fn main() {
                     panic!("{}", USAGE);
                 }
             }
+            "--x64-linux" => {
+                build_target = Target::X86_64Linux;
+            }
+            "--aarch64-linux" => {
+                build_target = Target::Aarch64Linux;
+            }
+
             "--gl" => {
                 with_gl = true;
             }
@@ -145,16 +156,20 @@ fn main() {
     let mut cmd = Command::new("cargo");
     cmd.stdout(Stdio::piped()).arg("build");
 
-    if !win_libs_path_name.is_empty() {
-        match build_target {
-            Target::Default => panic!("Not possible"),
-            Target::X86_64WinGnu => {
-                windows_exe = ".exe";
-                cmd.arg("--target=x86_64-pc-windows-gnu");
-            }
-        };
-        cmd.env("SK_RUST_WIN_GNU_LIBS", &win_libs_path_name);
-    }
+    match build_target {
+        Target::Default => {}
+        Target::X86_64WinGnu => {
+            cmd.env("SK_RUST_WIN_GNU_LIBS", &win_libs_path_name);
+            windows_exe = ".exe";
+            cmd.arg("--target=x86_64-pc-windows-gnu");
+        }
+        Target::X86_64Linux => {
+            cmd.arg("--target=x86_64-unknown-linux-gnu");
+        }
+        Target::Aarch64Linux => {
+            cmd.arg("--target=aarch64-unknown-linux-gnu");
+        }
+    };
 
     if with_gl {
         cmd.env("SK_RUST_WINDOWS_GL", "ON");
@@ -192,12 +207,12 @@ fn main() {
 
     let mut built_files = PathBuf::from("target");
 
-    if !win_libs_path_name.is_empty() {
-        match build_target {
-            Target::Default => panic!("Again Impossible!!"),
-            Target::X86_64WinGnu => built_files = built_files.join("x86_64-pc-windows-gnu"),
-        };
-    }
+    match build_target {
+        Target::Default => {}
+        Target::X86_64WinGnu => built_files = built_files.join("x86_64-pc-windows-gnu"),
+        Target::X86_64Linux => built_files = built_files.join("x86_64-unknown-linux-gnu"),
+        Target::Aarch64Linux => built_files = built_files.join("aarch64-unknown-linux-gnu"),
+    };
     built_files = built_files.join(profile.strip_prefix("--").unwrap_or_default());
 
     // 1 - the executable
@@ -231,7 +246,7 @@ fn main() {
         let copy_extensions = [OsStr::new("dll")];
         if !win_libs_path_name.is_empty() {
             // 1-2 - the dlls mingw ask for
-            let libs_path = PathBuf::from(win_libs_path_name);
+            let libs_path = PathBuf::from(win_libs_path_name.clone());
             for entry in libs_path.read_dir().expect("Libs path is not a valid directory!").flatten() {
                 let file = entry.path();
                 if file.is_file() {
@@ -253,6 +268,7 @@ fn main() {
     copy_tree(from_assets, to_asset).unwrap();
 
     // 3 - the shaders
+    let mut with_wine = false;
     let target_shaders_dir = output_path.join("assets").join("shaders");
     if shaders_path_name.is_empty() {
         let target = if windows_exe.is_empty() {
@@ -260,9 +276,13 @@ fn main() {
         } else if with_gl {
             "g"
         } else {
+            if !win_libs_path_name.is_empty() {
+                with_wine = true;
+            }
             "x"
         };
-        compile_hlsl(current_dir().unwrap(), Some(target_shaders_dir), &["-f", "-t", target, "-sw"]).unwrap();
+        compile_hlsl(current_dir().unwrap(), Some(target_shaders_dir), &["-f", "-t", target, "-sw"], with_wine)
+            .unwrap();
     } else {
         let shaders_path = PathBuf::from(shaders_path_name);
         for entry in shaders_path.read_dir().expect("shaders_path is not a valid directory!").flatten() {

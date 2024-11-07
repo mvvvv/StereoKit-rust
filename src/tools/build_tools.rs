@@ -7,8 +7,10 @@ use std::{
 };
 
 /// Reaching the skshaderc of this platform
-pub fn get_skshaderc(bin_dir: PathBuf) -> PathBuf {
-    let target_os = if cfg!(target_os = "linux") {
+pub fn get_skshaderc(bin_dir: PathBuf, with_wine: bool) -> PathBuf {
+    let target_os = if with_wine {
+        "win32"
+    } else if cfg!(target_os = "linux") {
         "linux"
     } else if cfg!(target_os = "windows") {
         "win32"
@@ -31,7 +33,7 @@ pub fn get_skshaderc(bin_dir: PathBuf) -> PathBuf {
     skshaderc.push(r"tools");
     skshaderc.push(r"skshaderc");
     skshaderc.push(exe_type);
-    if cfg!(windows) {
+    if cfg!(windows) || with_wine {
         skshaderc.push("skshaderc.exe");
     } else {
         skshaderc.push("skshaderc");
@@ -40,11 +42,16 @@ pub fn get_skshaderc(bin_dir: PathBuf) -> PathBuf {
 }
 
 /// compile hsls file to sks
-pub fn compile_hlsl(project_dir: PathBuf, target_dir: Option<PathBuf>, options: &[&str]) -> Result<bool, io::Error> {
+pub fn compile_hlsl(
+    project_dir: PathBuf,
+    target_dir: Option<PathBuf>,
+    options: &[&str],
+    with_wine: bool,
+) -> Result<bool, io::Error> {
     //we get the dir from StereoKit-rust (not from here)
     let bin_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-    let skshaderc = get_skshaderc(bin_dir.clone());
+    let skshaderc = get_skshaderc(bin_dir.clone(), with_wine);
 
     let mut shaders_source_path = project_dir.clone();
     shaders_source_path.push("shaders_src");
@@ -88,7 +95,13 @@ pub fn compile_hlsl(project_dir: PathBuf, target_dir: Option<PathBuf>, options: 
             if file.is_file() {
                 if let Some(extension) = file.extension() {
                     if !excluded_extensions.contains(&extension) {
-                        let mut cmd = Command::new(OsStr::new(skshaderc.to_str().unwrap_or("NOPE")));
+                        let mut cmd = if with_wine {
+                            let mut c = Command::new("wine");
+                            c.arg(skshaderc.clone());
+                            c
+                        } else {
+                            Command::new(OsStr::new(skshaderc.to_str().unwrap_or("NOPE")))
+                        };
                         cmd.arg("-i").arg(&shaders_include).arg("-o").arg(&shaders_path);
                         for arg in options {
                             cmd.arg(arg);

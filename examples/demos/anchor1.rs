@@ -58,7 +58,10 @@ impl Anchor1 {
     fn draw(&mut self, token: &MainThreadToken) {
         // we need a pointer
         let right_hand = Input::hand(Handed::Right);
-        let hand_pose = right_hand.palm;
+        let mut hand_pose = right_hand.palm;
+        if hand_pose.position == Vec3::ZERO {
+            hand_pose = Input::controller(Handed::Right).pose;
+        }
         let ray = Ray::new(hand_pose.position, hand_pose.get_up());
         if right_hand.is_just_pinched() {
             Log::diag(format!("{:?}", ray));

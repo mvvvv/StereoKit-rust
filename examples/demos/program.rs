@@ -25,7 +25,7 @@ use stereokit_rust::{
         //virtual_kbd_meta::VirtualKbdMETA,
     },
     ui::{Ui, UiBtnLayout},
-    util::Time,
+    util::{Device, Time},
 };
 use winit::event_loop::EventLoop;
 
@@ -70,7 +70,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
             for (pos, sub_line) in subs.enumerate() {
                 if let Ok(mut sub_string) = String::from_utf8(sub_line.to_vec()) {
                     if pos > 0 {
-                        sub_string.insert_str(0, "‣‣‣‣");
+                        sub_string.insert_str(0, "»»»»");
                     }
                     if let Some(item) = items.last_mut() {
                         if item.text == sub_string {
@@ -99,10 +99,15 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
             Err(_) => Sprite::from_tex(&tex_particule, None, None).unwrap(),
         };
 
+    Log::diag(format!(
+        "Runtime {} / Device {}",
+        Device::get_runtime().unwrap_or("???"),
+        Device::get_name().unwrap_or("???")
+    ));
     let mut notif = HudNotification::default();
     if Backend::xr_type() == BackendXRType::Simulator {
         notif.text = "Press [F1] key to open the hand menu".into();
-    } else if cfg!(target_os = "android") {
+    } else if cfg!(target_os = "android") || Device::get_runtime().unwrap_or_default().starts_with(" 'v") {
         notif.text = "Press menu button to open the hand menu".into();
     } else {
         notif.text = "Look at your wrist then grip when icons are\n aligned to open the hand menu".into();

@@ -13,12 +13,13 @@ This project is at an early stage so try it carefully. Right now, the only way t
 
 #### Regarding your working OS, here are the target architectures you can build for:
 
-| Target: | Windows x86_64| Linux x86_64       | Meta Quest |
-|:-------:|:-------------:|:------------------:|:----------:|
-| Windows x86_64 | **X**  | with SteamVR Proton|     **X**  |
-| Linux  x86_64  | in progress |            **X**   |     **X**  |
-| MacOs          |        |                    |     **X**  |
-Let us know if you have launched the demos on an architecture not tested here. Arm64 should be usable.
+| Target: | Windows x86_64| Linux x86_64       | Meta Quest |  Linux AArch64     | 
+|:-------:|:-------------:|:------------------:|:----------:|:------------------:|
+| Windows x86_64 | **X**  | with Steam Proton  |     **X**  |  |
+| Linux  x86_64  | **X**  |            **X**   |     **X**  |  **X**             |
+| Linux  AArch64 |  ?     |         ?          |       ?    |  **X**             |
+| MacOs          |        |                    |     **X**  |  |  
+Let us know if you have launched the demos on an architecture not tested here.
 
 
 ### Download the source project:
@@ -40,7 +41,7 @@ Let us know if you have launched the demos on an architecture not tested here. A
 ### Build and create an exportable repository of project's demo for your PC
 `cargo build_sk_rs --example main_pc --features event-loop <the path of your exportable repository>`
 
-### Run the project's demo on your Android headset (from a PC running Windows, Mac or Linux):
+### (Soon) Run the project's demo on your Android headset (from a PC running Windows, Mac or Linux):
 * Install [sdkmanager](https://developer.android.com/studio/command-line/sdkmanager)  (or Android Studio if you intend to use it). You'll need a Java JDK (v17 is fine).
 * Using sdkmanager, install platform-tools(v32), latest build-tools and the latest ndk. 
 * Set ANDROID_HOME environment variable to its path (this path contains the `build_tools` directory). 
@@ -61,6 +62,31 @@ There is 3 templates used to build android versions (they can also create a PCVR
 * `git clone -b $branch https://github.com/mvvvv/stereokit-template/`
 * If you don't clone the template project in the same directory than the StereoKit-rust project, you'll have to modify the path of the Stereokit-rust dependency.
 
+
+## Build the project's demo for Windows_x64 using GNU from Linux (and Windows and probably Mac)
+* Install mingw64-w64 (MSYS2 on windows)
+* Add the rust target gnu for windows:`rustup target add x86_64-pc-windows-gnu`
+* Temporary, we need wine to compile the shaders
+  - Install wine and winetricks.
+  - Install needed tools and libs: `winetricks corefonts d3dx9 d3dcompiler_47`
+* Create a directory where necessary libs will be stored (i.e. ../x64-mingw-libs/) then add a link to the DLLs or static libs(*.a) the build will need after or during its creation. Example on Ubuntu 24.XX:
+  - `ln -s /usr/lib/gcc/x86_64-w64-mingw32/13-win32/libgcc_s_seh-1.dll ../x64-mingw-libs/ && ln -s /usr/lib/gcc/x86_64-w64-mingw32/13-win32/libstdc++-6.dll ../x64-mingw-libs/`
+  - or `ln -s /usr/lib/gcc/x86_64-w64-mingw32/13-win32/libgcc.a ../x64-mingw-libs/libgcc_eh.a`
+* Launch: `cargo build_sk_rs --x64-win-gnu ../x64-mingw-libs/  --example main_pc --features event-loop <the path of your exportable repository>`
+* To run main_pc.exe on Linux:
+  - Add a non-steam game to your library then launch it when WiVRn or SteamVR are started.
+  - If you only need the simulator: `wine main_pc.exe --test`
+
+## Build the project's demo for Linux aarch64 from Linux x86_64
+* Install g++-aarch64-linux-gnu
+* Get the libraries libx11-dev:arm64 libxfixes-dev:arm64 libegl-dev:arm64 libgbm-dev:arm64 libfontconfig-dev:arm64. On Ubuntu 24:XX this can be done by adding a foreign architecture `dpkg --add-architecture arm64` with depot `http://ports.ubuntu.com/ubuntu-ports`. To avoid errors during `apt update` you'll have to precise the architectures of all depots in `/etc/apt/sources.list.d/ubuntu.sources`
+* Add the rust target aarch64 for linux:`rustup target add aarch64-unknown-linux-gnu`
+* Add a section `[target.aarch64-unknown-linux-gnu]` in your config.toml for setting `linker = "aarch64-linux-gnu-gcc"`
+* Launch `cargo build_sk_rs --example main_pc --features event-loop --aarch64-linux <the path of your exportable repository>`
+
+## Build the project's demo for Linux x86_64 from Linux aarch64 (Not Tested)
+* The logic should be the same than previous one.
+* Launch `cargo build_sk_rs --example main_pc --features event-loop --x64-linux <the path of your exportable repository>`.
 
 ## Troubleshooting
 Submit bugs on the [Issues tab](https://github.com/mvvvv/StereoKit-rust/issues), and ask questions in the [Discussions tab](https://github.com/mvvvv/StereoKit-rust/discussions)!

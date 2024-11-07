@@ -31,6 +31,7 @@ fn main() {
     let mut cmake_config = Config::new("StereoKit");
 
     if !win_gnu_libs.is_empty() {
+        cmake_config.define("CMAKE_SYSTEM_NAME", "Windows");
         if win_gl {
             cmake_config.cxxflag("-Wl,-allow-multiple-definition");
             cmake_config.define("__MINGW32__", "ON");

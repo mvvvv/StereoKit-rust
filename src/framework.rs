@@ -468,7 +468,7 @@ impl HandMenuRadial {
         Sound::click().play(*at_pos, None);
         self.dest_pose.position = *at_pos;
         self.dest_pose.orientation = Quat::look_at(*at_pos, Input::get_head().position, None);
-        Log::info(format!("dest_pose at show{}", self.dest_pose));
+        Log::diag(format!("dest_pose at show{}", self.dest_pose));
         self.active_layer = self.root.clone();
         self.active_hand = hand;
 
@@ -516,19 +516,37 @@ impl HandMenuRadial {
         }
         if show_menu {
             self.menu_pose = hand.palm;
-            self.show(hand.get(FingerId::Index, JointId::Tip).position, handed);
+            let mut at = hand.get(FingerId::Index, JointId::Tip).position;
+            if at == Vec3::ZERO {
+                self.menu_pose = Input::controller(handed).aim;
+                at = self.menu_pose.position
+            }
+            self.show(at, handed);
             return;
         }
 
         let head_fwd = Input::get_head().get_forward();
-        let hand_dir = (hand.palm.position - Input::get_head().position).get_normalized();
+        let mut at = hand.palm.position;
+        if at == Vec3::ZERO {
+            at = Input::controller(hand.handed).pose.position;
+        }
+        let hand_dir = (at - Input::get_head().position).get_normalized();
+
         let in_view = Vec3::dot(head_fwd, hand_dir) > Self::OUT_OF_VIEW_ANGLE;
 
         if !in_view {
             return;
         }
 
-        let palm_direction = hand.palm.get_forward();
+        let mut palm_direction = hand.palm.get_forward();
+        if palm_direction == Vec3::ZERO {
+            let menu_pose = Input::controller(hand.handed).pose;
+            let direction = menu_pose.get_up();
+            self.menu_pose = Pose::look_at(menu_pose.position, direction);
+            palm_direction = self.menu_pose.get_forward();
+        } else {
+            self.menu_pose = hand.palm;
+        }
         let direction_to_head = -hand_dir;
         let facing = Vec3::dot(palm_direction, direction_to_head);
 
@@ -540,9 +558,7 @@ impl HandMenuRadial {
         let color_common = Ui::get_theme_color(UiColor::Background, None).to_linear();
         let color_text = Ui::get_theme_color(UiColor::Text, None).to_linear();
 
-        self.menu_pose = hand.palm;
-
-        self.menu_pose.position += (1.0 - hand.grip_activation) * self.menu_pose.get_forward() * CM * 4.5;
+        self.menu_pose.position += (1.0 - hand.grip_activation) * palm_direction * CM * 4.5;
         self.activation_button.draw(
             token,
             Material::ui(),
@@ -556,7 +572,7 @@ impl HandMenuRadial {
         );
         self.activation_hamburger
             .draw(token, Material::ui(), self.menu_pose.to_matrix(None), Some(color_text), None);
-        self.menu_pose.position += (1.0 - hand.grip_activation) * self.menu_pose.get_forward() * CM * 2.0;
+        self.menu_pose.position += (1.0 - hand.grip_activation) * palm_direction * CM * 2.0;
         self.activation_ring
             .draw(token, Material::ui(), self.menu_pose.to_matrix(None), Some(color_primary), None);
 
@@ -565,7 +581,11 @@ impl HandMenuRadial {
         }
 
         if hand.is_just_gripped() {
-            self.show(hand.get(FingerId::Index, JointId::Tip).position, handed);
+            let mut at = hand.get(FingerId::Index, JointId::Tip).position;
+            if at == Vec3::ZERO {
+                at = Input::controller(hand.handed).aim.position
+            }
+            self.show(at, handed);
         }
     }
 
@@ -588,7 +608,10 @@ impl HandMenuRadial {
         Hierarchy::push(token, self.menu_pose.to_matrix(Some(self.menu_scale * Vec3::ONE)), None);
 
         // Calculate the status of the menu!
-        let tip_world = hand.get(FingerId::Index, JointId::Tip).position;
+        let mut tip_world = hand.get(FingerId::Index, JointId::Tip).position;
+        if tip_world == Vec3::ZERO {
+            tip_world = Input::controller(hand.handed).aim.position
+        }
         let tip_local = self.dest_pose.to_matrix(None).get_inverse().transform_point(tip_world);
         let mag_sq = tip_local.magnitude_squared();
         let on_menu = tip_local.z > -0.02 && tip_local.z < 0.02;

@@ -78,9 +78,14 @@ impl Math1 {
 
         let right_hand = Input::hand(Handed::Right);
 
-        let hand_pose = right_hand.palm;
-        let ray = Ray::new(hand_pose.position, hand_pose.get_up());
-
+        let mut hand_pose = right_hand.palm;
+        let ray;
+        if hand_pose.position == Vec3::ZERO {
+            hand_pose = Input::controller(Handed::Right).pose;
+            ray = Ray::new(hand_pose.position, hand_pose.get_up() * -1.0);
+        } else {
+            ray = Ray::new(hand_pose.position, hand_pose.get_up());
+        }
         if right_hand.is_just_pinched() {
             Log::diag(format!("{:?}", ray));
         }

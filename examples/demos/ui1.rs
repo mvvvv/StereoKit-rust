@@ -129,10 +129,11 @@ impl Ui1 {
         Ui::hseparator();
 
         //Slider behavior
-        let size = Vec2::ONE * Ui::get_layout_remaining().x;
-        self.ui_touch_panel(size);
-        Ui::label(format!("{}x{}", self.slider_pt.x * 100.0, self.slider_pt.y * 100.0), None, true);
-
+        if !cfg!(target_os = "windows") {
+            let size = Vec2::ONE * Ui::get_layout_remaining().x;
+            self.ui_touch_panel(size);
+            Ui::label(format!("{}x{}", self.slider_pt.x * 100.0, self.slider_pt.y * 100.0), None, true);
+        }
         Ui::hseparator();
 
         Ui::window_end();
