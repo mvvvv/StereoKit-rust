@@ -541,7 +541,10 @@ impl HandMenuRadial {
         let mut palm_direction = hand.palm.get_forward();
         if palm_direction == Vec3::ZERO {
             let menu_pose = Input::controller(hand.handed).pose;
-            let direction = menu_pose.get_up();
+            let direction = match hand.handed {
+                Handed::Right => (menu_pose.get_right() * -1.0 + menu_pose.get_forward()).get_normalized(),
+                _ => (menu_pose.get_right() + menu_pose.get_forward()).get_normalized(),
+            };
             self.menu_pose = Pose::look_at(menu_pose.position, direction);
             palm_direction = self.menu_pose.get_forward();
         } else {

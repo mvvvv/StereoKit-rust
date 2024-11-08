@@ -7,8 +7,8 @@
  rustup target add x86_64-pc-windows-gnu
  
 #---- building for pc
-cargo run --features event-loop  --example main_pc`
-cargo run --features event-loop  --example main_pc -- --test`
+cargo run --features event-loop  --example main_pc
+cargo run --features event-loop  --example main_pc -- --test
 cargo build_sk_rs --example main_pc --features event-loop ../sk_builds/SK_demo_linux/
 cargo build_sk_rs --example main_pc --features event-loop --x64-linux ../sk_builds/SK_demo_linux_x64/  #same as above on x86_64 linux PC
 cargo build_sk_rs --example main_pc --features event-loop --aarch64-linux ../sk_builds/SK_demo_linux_aarch64/
