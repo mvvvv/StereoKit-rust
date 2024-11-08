@@ -41,7 +41,7 @@ Let us know if you have launched the demos on an architecture not tested here.
 ### Build and create an exportable repository of project's demo for your PC
 `cargo build_sk_rs --example main_pc --features event-loop <the path of your exportable repository>`
 
-### (Soon) Run the project's demo on your Android headset (from a PC running Windows, Mac or Linux):
+### Run the project's demo on your Android headset (from a PC running Windows, Mac or Linux):
 * Install [sdkmanager](https://developer.android.com/studio/command-line/sdkmanager)  (or Android Studio if you intend to use it). You'll need a Java JDK (v17 is fine).
 * Using sdkmanager, install platform-tools(v32), latest build-tools and the latest ndk. 
 * Set ANDROID_HOME environment variable to its path (this path contains the `build_tools` directory). 
@@ -63,7 +63,7 @@ There is 3 templates used to build android versions (they can also create a PCVR
 * If you don't clone the template project in the same directory than the StereoKit-rust project, you'll have to modify the path of the Stereokit-rust dependency.
 
 
-## Build the project's demo for Windows_x64 using GNU from Linux (and Windows and probably Mac)
+## (Work with some stereokit's hacks) Build the project's demo for Windows_x64 using GNU from Linux (and Windows and probably Mac)
 * Install mingw64-w64 (MSYS2 on windows)
 * Add the rust target gnu for windows:`rustup target add x86_64-pc-windows-gnu`
 * Temporary, we need wine to compile the shaders
