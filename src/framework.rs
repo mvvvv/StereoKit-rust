@@ -526,9 +526,10 @@ impl HandMenuRadial {
         }
 
         let head_fwd = Input::get_head().get_forward();
-        let mut at = hand.palm.position;
+        let at = hand.palm.position;
         if at == Vec3::ZERO {
-            at = Input::controller(hand.handed).pose.position;
+            //No way we get a palm pose equivalent, we do not show the hamburguer
+            return;
         }
         let hand_dir = (at - Input::get_head().position).get_normalized();
 
@@ -538,18 +539,9 @@ impl HandMenuRadial {
             return;
         }
 
-        let mut palm_direction = hand.palm.get_forward();
-        if palm_direction == Vec3::ZERO {
-            let menu_pose = Input::controller(hand.handed).pose;
-            let direction = match hand.handed {
-                Handed::Right => (menu_pose.get_right() * -1.0 + menu_pose.get_forward()).get_normalized(),
-                _ => (menu_pose.get_right() + menu_pose.get_forward()).get_normalized(),
-            };
-            self.menu_pose = Pose::look_at(menu_pose.position, direction);
-            palm_direction = self.menu_pose.get_forward();
-        } else {
-            self.menu_pose = hand.palm;
-        }
+        let palm_direction = hand.palm.get_forward();
+        self.menu_pose = hand.palm;
+
         let direction_to_head = -hand_dir;
         let facing = Vec3::dot(palm_direction, direction_to_head);
 

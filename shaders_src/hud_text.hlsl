@@ -26,14 +26,14 @@ struct psIn {
 psIn vs(vsIn input, uint id : SV_InstanceID) {
     psIn o;
     o.view_id = id % sk_view_count;
-    id        = id / sk_view_count;
+    uint id2 = id / sk_view_count;
 
-    float4x4 world_mat = sk_inst[id].world;
+    float4x4 world_mat = sk_inst[id2].world;
         
 
     o.pos       = mul(float4(input.pos.xyz, 1), world_mat);
     o.uv        = input.uv;
-    o.color     = input.col * color * sk_inst[id].color;
+    o.color     = input.col * color * sk_inst[id2].color;
     return o;
 }
 
