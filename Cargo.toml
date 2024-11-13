@@ -38,7 +38,7 @@ cmake = "0.1"
 winit = { version = "0.30", features = [
   "android-native-activity",
 ], optional = true }
-thiserror = "1.0"
+thiserror = "2.0"
 bitflags = "2.4"
 glam = "0.29"
 openxr-sys = "0.11"

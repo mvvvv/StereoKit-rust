@@ -336,7 +336,7 @@ impl Model {
     /// Get the anims
     /// <https://stereokit.net/Pages/StereoKit/ModelAnimCollection.html>
     ///
-    /// see also [Nodes]
+    /// see also [Anims]
     pub fn get_anims(&self) -> Anims {
         Anims::from(self)
     }

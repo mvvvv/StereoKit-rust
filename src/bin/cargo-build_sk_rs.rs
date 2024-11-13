@@ -225,7 +225,7 @@ fn main() {
     };
     let dest_file_exe = output_path.join(exe_file.file_name().unwrap_or_default());
     println!("Executable is copied from here --> {:?}", exe_file);
-    println!("                       to here --> {:?}", dest_file_exe);
+    println!("                      to there --> {:?}", dest_file_exe);
     let _lib_exe = fs::copy(exe_file, dest_file_exe).unwrap();
 
     if !windows_exe.is_empty() {
@@ -233,14 +233,14 @@ fn main() {
         let dll_file = built_files.join("deps").join("stereokit_rust.dll");
         let dest_file_dll = output_path.join(dll_file.file_name().unwrap_or_default());
         println!("DLL is copied from here --> {:?}", dll_file);
-        println!("                to here --> {:?}", dest_file_dll);
+        println!("               to there --> {:?}", dest_file_dll);
         let _lib_dll = fs::copy(dll_file, dest_file_dll).unwrap();
 
         let c_dll = if !win_libs_path_name.is_empty() { "libStereoKitC.dll" } else { "StereoKitC.dll" };
         let dll_file = built_files.join("deps").join(c_dll);
         let dest_file_dll = output_path.join(dll_file.file_name().unwrap_or_default());
         println!("DLL is copied from here --> {:?}", dll_file);
-        println!("                to here --> {:?}", dest_file_dll);
+        println!("               to there --> {:?}", dest_file_dll);
         let _lib_dll = fs::copy(dll_file, dest_file_dll).unwrap();
 
         let copy_extensions = [OsStr::new("dll")];

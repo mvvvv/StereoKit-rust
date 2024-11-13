@@ -221,8 +221,20 @@ impl IStepper for HandMenuRadial1 {
         let sh = SphericalHarmonics::from_lights(&lights);
         let cube2 = SHCubemap::gen_cubemap_sh(sh, 15, 5.0, 0.02);
 
-        let cube3 = SHCubemap::from_cubemap_equirectangular("hdri/sky_dawn.hdr", true, 0)
-            .unwrap_or(SHCubemap::get_rendered_sky());
+        let cube3 = SHCubemap::from_cubemap("hdri/sky_dawn.hdr", true, 0).unwrap_or(SHCubemap::get_rendered_sky());
+
+        // let cubemap_files = [
+        //     "hdri/giza/right.png",
+        //     "hdri/giza/left.png",
+        //     "hdri/giza/top.png",
+        //     "hdri/giza/bottom.png",
+        //     "hdri/giza/front.png",
+        //     "hdri/giza/back.png",
+        // ];
+        //let cube4 = SHCubemap::from_cubemap_files(&cubemap_files, true, 0).unwrap_or(SHCubemap::get_rendered_sky());
+
+        let cube4 =
+            SHCubemap::from_cubemap("hdri/giza/cubemap_rgba32.ktx2", true, 0).unwrap_or(SHCubemap::get_rendered_sky());
 
         //save the default cubemap.
         let cube_default = SHCubemap::get_rendered_sky();
@@ -267,6 +279,14 @@ impl IStepper for HandMenuRadial1 {
                             None,
                             move || {
                                 cube3.render_as_sky();
+                            },
+                            HandMenuAction::Unchecked(1),
+                        ),
+                        HandRadial::item(
+                            "Gizah",
+                            None,
+                            move || {
+                                cube4.render_as_sky();
                             },
                             HandMenuAction::Unchecked(1),
                         ),

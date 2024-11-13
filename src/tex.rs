@@ -213,25 +213,19 @@ extern "C" {
     ) -> TexT;
     pub fn tex_create_color32(in_arr_data: *mut Color32, width: i32, height: i32, srgb_data: Bool32T) -> TexT;
     pub fn tex_create_color128(in_arr_data: *mut Color128, width: i32, height: i32, srgb_data: Bool32T) -> TexT;
-    pub fn tex_create_mem(data: *mut c_void, data_size: usize, srgb_data: Bool32T, priority: i32) -> TexT;
-    pub fn tex_create_file(file_utf8: *const c_char, srgb_data: Bool32T, priority: i32) -> TexT;
+    pub fn tex_create_mem(data: *mut c_void, data_size: usize, srgb_data: Bool32T, load_priority: i32) -> TexT;
+    pub fn tex_create_file(file_utf8: *const c_char, srgb_data: Bool32T, load_priority: i32) -> TexT;
     pub fn tex_create_file_arr(
         in_arr_files: *mut *const c_char,
         file_count: i32,
         srgb_data: Bool32T,
-        priority: i32,
+        load_priority: i32,
     ) -> TexT;
-    pub fn tex_create_cubemap_file(
-        equirectangular_file_utf8: *const c_char,
-        srgb_data: Bool32T,
-        out_sh_lighting_info: *mut SphericalHarmonics,
-        priority: i32,
-    ) -> TexT;
+    pub fn tex_create_cubemap_file(cubemap_file: *const c_char, srgb_data: Bool32T, load_priority: i32) -> TexT;
     pub fn tex_create_cubemap_files(
         in_arr_cube_face_file_xxyyzz: *mut *const c_char,
         srgb_data: Bool32T,
-        out_sh_lighting_info: *mut SphericalHarmonics,
-        priority: i32,
+        load_priority: i32,
     ) -> TexT;
     pub fn tex_set_id(texture: TexT, id: *const c_char);
     pub fn tex_get_id(texture: TexT) -> *const c_char;
@@ -1307,35 +1301,67 @@ impl SHCubemap {
     /// <https://stereokit.net/Pages/StereoKit/Tex/FromCubemapEquirectangular.html>
     ///
     /// see also [`crate::tex::tex_create_cubemap_file`]
+    #[deprecated(since = "0.40.0", note = "please use `from_cubemap` instead")]
     pub fn from_cubemap_equirectangular(
         equirectangular_file_utf8: impl AsRef<Path>,
         srgb_data: bool,
         priority: i32,
     ) -> Result<SHCubemap, StereoKitError> {
-        let path = equirectangular_file_utf8.as_ref();
-        let path_buf = path.to_path_buf();
-        let mut sh = SphericalHarmonics::default();
-        let c_str = CString::new(path.to_str().ok_or(StereoKitError::TexCString(path.to_str().unwrap().to_owned()))?)?;
-        let tex = Tex(NonNull::new(unsafe {
-            tex_create_cubemap_file(c_str.as_ptr(), srgb_data as Bool32T, &mut sh, priority)
-        })
-        .ok_or(StereoKitError::TexFile(path_buf.clone(), "tex_create_cubemap_file failed".to_string()))?);
+        Self::from_cubemap(equirectangular_file_utf8, srgb_data, priority)
+    }
 
-        Ok(SHCubemap { sh, tex })
+    /// Creates a cubemap texture from a single file! This will load KTX2 files with 6 surfaces, or convert
+    /// equirectangular images into cubemap images. KTX2 files are the _fastest_ way to load a cubemap, but
+    /// equirectangular images can be acquired quite easily!
+    ///
+    /// Equirectangular images look like an unwrapped globe with the poles all stretched out, and are sometimes referred
+    /// to as HDRIs.
+    /// <https://stereokit.net/Pages/StereoKit/Tex/FromCubemap.html>
+    /// * cubemap_file - Filename of the cubemap image.
+    /// * srgb_data - Is this image color data in sRGB format, or is it normal/metal/rough/data that's not for direct
+    ///   display? sRGB colors get converted to linear color space on the graphics card, so getting this right can have
+    ///   a big impact on visuals.
+    /// * load_priority - The priority sort order for this asset in the async loading system. Lower values mean loading
+    ///   sooner.
+    ///
+    /// Returns a [SHCubemap]
+    ///
+    /// see also [`crate::tex::tex_create_cubemap_file`]
+    pub fn from_cubemap(
+        cubemap_file: impl AsRef<Path>,
+        srgb_data: bool,
+        load_priority: i32,
+    ) -> Result<SHCubemap, StereoKitError> {
+        let path = cubemap_file.as_ref();
+        let path_buf = path.to_path_buf();
+        let c_str = CString::new(path.to_str().ok_or(StereoKitError::TexCString(path.to_str().unwrap().to_owned()))?)?;
+        let tex =
+            Tex(
+                NonNull::new(unsafe { tex_create_cubemap_file(c_str.as_ptr(), srgb_data as Bool32T, load_priority) })
+                    .ok_or(StereoKitError::TexFile(path_buf.clone(), "tex_create_cubemap_file failed".to_string()))?,
+            );
+
+        Ok(Tex::get_cubemap_lighting(&tex))
     }
 
     /// Creates a cubemap texture from 6 different image files! If you have a single equirectangular image, use
     /// Tex.FromEquirectangular instead. Asset Id will be the first filename.
     /// order of the file names is +X -X +Y -Y +Z -Z
     /// <https://stereokit.net/Pages/StereoKit/Tex/FromCubemapFile.html>
+    /// * files_utf8 - 6 image filenames, in order of/ +X, -X, +Y, -Y, +Z, -Z.
+    /// * srgb_data - Is this image color data in sRGB format, or is it normal/metal/rough/data that's not for direct
+    ///   display? sRGB colors get converted to linear color space on the graphics card, so getting this right can have a
+    ///   big impact on visuals.
+    /// * load_priority - The priority sort order for this asset in the async loading system. Lower values mean loading
+    ///   sooner.
     ///
+    /// Returns a SHCubemap from the given files, or Err if any failed to load.
     /// see also [`crate::tex::tex_create_cubemap_files`]
     pub fn from_cubemap_files<P: AsRef<Path>>(
         files_utf8: &[P; 6],
         srgb_data: bool,
-        priority: i32,
+        load_priority: i32,
     ) -> Result<SHCubemap, StereoKitError> {
-        let mut sh = SphericalHarmonics::default();
         let mut c_files = Vec::new();
         for path in files_utf8 {
             let path = path.as_ref();
@@ -1350,14 +1376,14 @@ impl SHCubemap {
         }
         let in_arr_cube_face_file_xxyyzz = c_files_ptr.as_mut_slice().as_mut_ptr();
         let tex = Tex(NonNull::new(unsafe {
-            tex_create_cubemap_files(in_arr_cube_face_file_xxyyzz, srgb_data as Bool32T, &mut sh, priority)
+            tex_create_cubemap_files(in_arr_cube_face_file_xxyyzz, srgb_data as Bool32T, load_priority)
         })
         .ok_or(StereoKitError::TexFiles(
             PathBuf::from(r"one_of_6_files"),
             "tex_create_cubemap_files failed".to_string(),
         ))?);
 
-        Ok(SHCubemap { sh, tex })
+        Ok(Tex::get_cubemap_lighting(&tex))
     }
 
     /// Generates a cubemap texture from a gradient and a direction! These are entirely suitable for skyboxes, which
