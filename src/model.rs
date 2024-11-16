@@ -218,6 +218,15 @@ impl Model {
         }
     }
 
+    /// Creates a clone of the same reference. Basically, the new variable is the same asset. This is what you get by
+    /// calling find() method.
+    /// <https://stereokit.net/Pages/StereoKit/Model/Find.html>
+    ///
+    /// see also [`crate::model::model_find()`]
+    pub fn clone_ref(&self) -> Model {
+        Model(NonNull::new(unsafe { model_find(model_get_id(self.0.as_ptr())) }).expect("<asset>::clone_ref failed!"))
+    }
+
     //-----------------Modify Model :
     /// Set a new id to the model.
     /// <https://stereokit.net/Pages/StereoKit/Model/Id.html>

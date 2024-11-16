@@ -149,6 +149,88 @@ impl Sprite {
         ))
     }
 
+    /// Creates a clone of the same reference. Basically, the new variable is the same asset. This is what you get by
+    /// calling find() method.
+    /// <https://stereokit.net/Pages/StereoKit/Sprite/Find.html>
+    ///
+    /// see also [`crate::sprite::sprite_find()`]
+    pub fn clone_ref(&self) -> Sprite {
+        Sprite(
+            NonNull::new(unsafe { sprite_find(sprite_get_id(self.0.as_ptr())) }).expect("<asset>::clone_ref failed!"),
+        )
+    }
+
+    /// Sets the unique identifier of this asset resource! This can be helpful for debugging,
+    /// managing your assets, or finding them later on!
+    ///<https://stereokit.net/Pages/StereoKit/Sprite/Id.html>
+    ///
+    /// see also [`crate::sprite::sprite_set_id`]
+    pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
+        let cstr_id = CString::new(id.as_ref()).unwrap();
+        unsafe { sprite_set_id(self.0.as_ptr(), cstr_id.as_ptr()) };
+        self
+    }
+
+    /// Draws the sprite at the location specified by the transform matrix. A sprite is always sized in model space as 1 x Aspect
+    /// meters on the x and y axes respectively, so scale appropriately. The ‘position’ attribute describes what corner of the sprite
+    ///  you’re specifying the transform of.
+    /// <https://stereokit.net/Pages/StereoKit/Sprite/Draw.html>
+    /// * color_linear - if None has default value of WHITE
+    /// * text_align - indicate how
+    ///
+    /// see also [`stereokit::StereoKitDraw::sprite_draw`]
+    pub fn draw(
+        &self,
+        _token: &MainThreadToken,
+        transform: impl Into<Matrix>,
+        anchor_position: TextAlign,
+        color_linear: Option<Color32>,
+    ) {
+        let color_linear = color_linear.unwrap_or(Color32::WHITE);
+        unsafe { sprite_draw(self.0.as_ptr(), transform.into(), anchor_position, color_linear) };
+    }
+
+    /// The id of this sprite
+    /// <https://stereokit.net/Pages/StereoKit/Sprite/Id.html>
+    ///
+    /// see also [`crate::sprite::sprite_get_id`]
+    pub fn get_id(&self) -> &str {
+        unsafe { CStr::from_ptr(sprite_get_id(self.0.as_ptr())) }.to_str().unwrap()
+    }
+
+    /// The aspect ratio of the sprite! This is width/height. You may also be interested in the NormalizedDimensions property,
+    /// which are normalized to the 0-1 range.
+    /// <https://stereokit.net/Pages/StereoKit/Sprite/Aspect.html>
+    ///
+    /// see also [`crate::sprite::sprite_get_aspect`]
+    pub fn get_aspect(&self) -> f32 {
+        unsafe { sprite_get_aspect(self.0.as_ptr()) }
+    }
+
+    /// Get the height in pixel
+    /// <https://stereokit.net/Pages/StereoKit/Sprite/Height.html>
+    ///
+    /// see also [`crate::sprite::sprite_get_height`]
+    pub fn get_height(&self) -> i32 {
+        unsafe { sprite_get_height(self.0.as_ptr()) }
+    }
+
+    /// Get the width in pixel
+    /// <https://stereokit.net/Pages/StereoKit/Sprite/Width.html>
+    ///
+    /// see also [`crate::sprite::sprite_get_width`]
+    pub fn get_width(&self) -> i32 {
+        unsafe { sprite_get_width(self.0.as_ptr()) }
+    }
+
+    /// Get the width and height of the sprite, normalized so the maximum value is 1.
+    /// <https://stereokit.net/Pages/StereoKit/Sprite/NormalizedDimensions.html>
+    ///
+    /// see also [`crate::sprite::sprite_get_dimensions_normalized`]
+    pub fn get_normalized_dimensions(&self) -> Vec2 {
+        unsafe { sprite_get_dimensions_normalized(self.0.as_ptr()) }
+    }
+
     /// This is a 64x64 image of a filled hole. This is common iconography for radio buttons which use an empty hole to
     /// indicate an un-selected radio, and a filled hole for a selected radio. This is used by the UI for radio buttons!
     /// <https://stereokit.net/Pages/StereoKit/Sprite/RadioOn.html>
@@ -244,76 +326,5 @@ impl Sprite {
     pub fn grid() -> Self {
         let cstr_id = CString::new("sk/ui/grid").unwrap();
         Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).unwrap())
-    }
-
-    /// Draws the sprite at the location specified by the transform matrix. A sprite is always sized in model space as 1 x Aspect
-    /// meters on the x and y axes respectively, so scale appropriately. The ‘position’ attribute describes what corner of the sprite
-    ///  you’re specifying the transform of.
-    /// <https://stereokit.net/Pages/StereoKit/Sprite/Draw.html>
-    /// * color_linear - if None has default value of WHITE
-    /// * text_align - indicate how
-    ///
-    /// see also [`stereokit::StereoKitDraw::sprite_draw`]
-    pub fn draw(
-        &self,
-        _token: &MainThreadToken,
-        transform: impl Into<Matrix>,
-        anchor_position: TextAlign,
-        color_linear: Option<Color32>,
-    ) {
-        let color_linear = color_linear.unwrap_or(Color32::WHITE);
-        unsafe { sprite_draw(self.0.as_ptr(), transform.into(), anchor_position, color_linear) };
-    }
-
-    /// Sets the unique identifier of this asset resource! This can be helpful for debugging,
-    /// managing your assets, or finding them later on!
-    ///<https://stereokit.net/Pages/StereoKit/Sprite/Id.html>
-    ///
-    /// see also [`crate::sprite::sprite_set_id`]
-    pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
-        let cstr_id = CString::new(id.as_ref()).unwrap();
-        unsafe { sprite_set_id(self.0.as_ptr(), cstr_id.as_ptr()) };
-        self
-    }
-
-    /// The id of this sprite
-    /// <https://stereokit.net/Pages/StereoKit/Sprite/Id.html>
-    ///
-    /// see also [`crate::sprite::sprite_get_id`]
-    pub fn get_id(&self) -> &str {
-        unsafe { CStr::from_ptr(sprite_get_id(self.0.as_ptr())) }.to_str().unwrap()
-    }
-
-    /// The aspect ratio of the sprite! This is width/height. You may also be interested in the NormalizedDimensions property,
-    /// which are normalized to the 0-1 range.
-    /// <https://stereokit.net/Pages/StereoKit/Sprite/Aspect.html>
-    ///
-    /// see also [`crate::sprite::sprite_get_aspect`]
-    pub fn get_aspect(&self) -> f32 {
-        unsafe { sprite_get_aspect(self.0.as_ptr()) }
-    }
-
-    /// Get the height in pixel
-    /// <https://stereokit.net/Pages/StereoKit/Sprite/Height.html>
-    ///
-    /// see also [`crate::sprite::sprite_get_height`]
-    pub fn get_height(&self) -> i32 {
-        unsafe { sprite_get_height(self.0.as_ptr()) }
-    }
-
-    /// Get the width in pixel
-    /// <https://stereokit.net/Pages/StereoKit/Sprite/Width.html>
-    ///
-    /// see also [`crate::sprite::sprite_get_width`]
-    pub fn get_width(&self) -> i32 {
-        unsafe { sprite_get_width(self.0.as_ptr()) }
-    }
-
-    /// Get the width and height of the sprite, normalized so the maximum value is 1.
-    /// <https://stereokit.net/Pages/StereoKit/Sprite/NormalizedDimensions.html>
-    ///
-    /// see also [`crate::sprite::sprite_get_dimensions_normalized`]
-    pub fn get_normalized_dimensions(&self) -> Vec2 {
-        unsafe { sprite_get_dimensions_normalized(self.0.as_ptr()) }
     }
 }

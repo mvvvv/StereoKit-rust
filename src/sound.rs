@@ -152,34 +152,24 @@ impl Sound {
         ))
     }
 
-    /// A default click sound that lasts for 300ms. It’s a procedurally generated sound based on a mouse press, with
-    /// extra low frequencies in it.
-    /// <https://stereokit.net/Pages/StereoKit/Sound/Click.html>
-    pub fn click() -> Self {
-        let cstr_id = CString::new("default/sound_click").unwrap();
-        Sound(NonNull::new(unsafe { sound_find(cstr_id.as_ptr()) }).unwrap())
+    /// Creates a clone of the same reference. Basically, the new variable is the same asset. This is what you get by
+    /// calling find() method.
+    /// <https://stereokit.net/Pages/StereoKit/Sound/Find.html>
+    ///
+    /// see also [`crate::sound::sound_find()`]
+    pub fn clone_ref(&self) -> Sound {
+        Sound(NonNull::new(unsafe { sound_find(sound_get_id(self.0.as_ptr())) }).expect("<asset>::clone_ref failed!"))
     }
 
-    /// A default unclick sound that lasts for 300ms. It’s a procedurally generated sound based on a mouse press, with
-    /// extra low frequencies in it.
-    /// <https://stereokit.net/Pages/StereoKit/Sound/Unclick.html>
-    pub fn unclick() -> Self {
-        let cstr_id = CString::new("default/sound_unclick").unwrap();
-        Sound(NonNull::new(unsafe { sound_find(cstr_id.as_ptr()) }).unwrap())
-    }
-
-    /// A default grab sound
-    /// <https://stereokit.net/Pages/StereoKit/Sound.html>
-    pub fn grab() -> Self {
-        let cstr_id = CString::new("default/sound_grab").unwrap();
-        Sound(NonNull::new(unsafe { sound_find(cstr_id.as_ptr()) }).unwrap())
-    }
-
-    /// A default ungrab sound
-    /// <https://stereokit.net/Pages/StereoKit/Sound.html>
-    pub fn ungrab() -> Self {
-        let cstr_id = CString::new("default/sound_ungrab").unwrap();
-        Sound(NonNull::new(unsafe { sound_find(cstr_id.as_ptr()) }).unwrap())
+    /// sets the unique identifier of this asset resource! This can be helpful for debugging,
+    /// managing your assets, or finding them later on!
+    ///<https://stereokit.net/Pages/StereoKit/Sound/Id.html>
+    ///
+    /// see also [`crate::sound::sound_set_id`]
+    pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
+        let cstr_id = CString::new(id.as_ref()).unwrap();
+        unsafe { sound_set_id(self.0.as_ptr(), cstr_id.as_ptr()) };
+        self
     }
 
     /// Plays the sound at the 3D location specified, using the volume parameter as an additional volume control option!
@@ -226,17 +216,6 @@ impl Sound {
     #[allow(clippy::not_unsafe_ptr_arg_deref)]
     pub fn write_samples(&self, in_arr_samples: *const f32, sample_count: u64) {
         unsafe { sound_write_samples(self.0.as_ptr(), in_arr_samples, sample_count) };
-    }
-
-    /// sets the unique identifier of this asset resource! This can be helpful for debugging,
-    /// managing your assets, or finding them later on!
-    ///<https://stereokit.net/Pages/StereoKit/Sound/Id.html>
-    ///
-    /// see also [`crate::sound::sound_set_id`]
-    pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
-        let cstr_id = CString::new(id.as_ref()).unwrap();
-        unsafe { sound_set_id(self.0.as_ptr(), cstr_id.as_ptr()) };
-        self
     }
 
     /// The id of this sound
@@ -287,6 +266,36 @@ impl Sound {
     /// see also [`crate::sound::sound_unread_samples`]
     pub fn get_unread_samples(&self) -> u64 {
         unsafe { sound_unread_samples(self.0.as_ptr()) }
+    }
+
+    /// A default click sound that lasts for 300ms. It’s a procedurally generated sound based on a mouse press, with
+    /// extra low frequencies in it.
+    /// <https://stereokit.net/Pages/StereoKit/Sound/Click.html>
+    pub fn click() -> Self {
+        let cstr_id = CString::new("default/sound_click").unwrap();
+        Sound(NonNull::new(unsafe { sound_find(cstr_id.as_ptr()) }).unwrap())
+    }
+
+    /// A default unclick sound that lasts for 300ms. It’s a procedurally generated sound based on a mouse press, with
+    /// extra low frequencies in it.
+    /// <https://stereokit.net/Pages/StereoKit/Sound/Unclick.html>
+    pub fn unclick() -> Self {
+        let cstr_id = CString::new("default/sound_unclick").unwrap();
+        Sound(NonNull::new(unsafe { sound_find(cstr_id.as_ptr()) }).unwrap())
+    }
+
+    /// A default grab sound
+    /// <https://stereokit.net/Pages/StereoKit/Sound.html>
+    pub fn grab() -> Self {
+        let cstr_id = CString::new("default/sound_grab").unwrap();
+        Sound(NonNull::new(unsafe { sound_find(cstr_id.as_ptr()) }).unwrap())
+    }
+
+    /// A default ungrab sound
+    /// <https://stereokit.net/Pages/StereoKit/Sound.html>
+    pub fn ungrab() -> Self {
+        let cstr_id = CString::new("default/sound_ungrab").unwrap();
+        Sound(NonNull::new(unsafe { sound_find(cstr_id.as_ptr()) }).unwrap())
     }
 }
 

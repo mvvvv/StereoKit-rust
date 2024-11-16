@@ -18,7 +18,7 @@ use stereokit_rust::{
     tex::Tex,
     tools::os_api::{get_assets, PathEntry},
     ui::{Ui, UiBtnLayout},
-    util::named_colors::RED,
+    util::named_colors::{RED, YELLOW},
 };
 
 const ASSET_DIR: &[&str] = include_asset_tree!("assets");
@@ -40,6 +40,7 @@ pub struct Asset1 {
     radio_on: Sprite,
     text: String,
     text_style: TextStyle,
+    hand_material: Material,
 }
 
 unsafe impl Send for Asset1 {}
@@ -72,6 +73,7 @@ impl Default for Asset1 {
             radio_on: Sprite::radio_on(),
             text: "Asset1".to_owned(),
             text_style: Text::make_style(Font::default(), 0.3, RED),
+            hand_material: Material::hand(),
         }
     }
 }
@@ -87,8 +89,9 @@ impl IStepper for Asset1 {
         let right_hand = Input::get_controller_model(Handed::Right);
         Input::set_controller_model(Handed::Left, Some(left_hand));
         Input::set_controller_model(Handed::Right, Some(right_hand));
-        let material_hand = Material::unlit();
-        Input::hand_material(Handed::Right, Some(material_hand));
+        let mut new_material_hand = self.hand_material.copy();
+        new_material_hand.color_tint(YELLOW);
+        Input::hand_material(Handed::Right, Some(new_material_hand));
 
         Log::diag(format!("{:?}", ASSET_DIR));
 
@@ -97,6 +100,13 @@ impl IStepper for Asset1 {
 
     fn step(&mut self, token: &MainThreadToken) {
         self.draw(token)
+    }
+
+    fn shutdown(&mut self) {
+        Input::hand_material(Handed::Right, Some(self.hand_material.clone_ref()));
+        if let Some(sound_inst) = self.sound_to_play {
+            sound_inst.stop();
+        }
     }
 }
 

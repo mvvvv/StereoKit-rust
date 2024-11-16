@@ -558,6 +558,15 @@ impl Tex {
         ))
     }
 
+    /// Creates a clone of the same reference. Basically, the new variable is the same asset. This is what you get by
+    /// calling find() method.
+    /// <https://stereokit.net/Pages/StereoKit/Tex/Find.html>
+    ///
+    /// see also [`crate::tex::tex_find()`]
+    pub fn clone_ref(&self) -> Tex {
+        Tex(NonNull::new(unsafe { tex_find(tex_get_id(self.0.as_ptr())) }).expect("<asset>::clone_ref failed!"))
+    }
+
     /// Set a new id to the texture.
     /// <https://stereokit.net/Pages/StereoKit/Tex/Id.html>
     ///
@@ -1383,7 +1392,8 @@ impl SHCubemap {
             "tex_create_cubemap_files failed".to_string(),
         ))?);
 
-        Ok(Tex::get_cubemap_lighting(&tex))
+        //Ok(Tex::get_cubemap_lighting(&tex))
+        Ok(SHCubemap { sh: SphericalHarmonics::default(), tex })
     }
 
     /// Generates a cubemap texture from a gradient and a direction! These are entirely suitable for skyboxes, which

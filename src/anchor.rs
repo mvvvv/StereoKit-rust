@@ -110,6 +110,17 @@ impl Anchor {
         ))
     }
 
+    /// Creates a clone of the same reference. Basically, the new variable is the same asset. This is what you get by
+    /// calling find() method.
+    /// <https://stereokit.net/Pages/StereoKit/Anchor/Find.html>
+    ///
+    /// see also [`crate::anchor::anchor_find()`]
+    pub fn clone_ref(&self) -> Anchor {
+        Anchor(
+            NonNull::new(unsafe { anchor_find(anchor_get_id(self.0.as_ptr())) }).expect("<asset>::clone_ref failed!"),
+        )
+    }
+
     /// This creates a new Anchor from a world space pose.
     /// <https://stereokit.net/Pages/StereoKit/Anchor/FromPose.html>
     ///

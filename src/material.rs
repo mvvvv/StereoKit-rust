@@ -234,6 +234,18 @@ impl Material {
         }
     }
 
+    /// Creates a clone of the same reference. Basically, the new variable is the same asset. This is what you get by
+    /// calling find() method.
+    /// <https://stereokit.net/Pages/StereoKit/Material/Find.html>
+    ///
+    /// see also [`crate::material::material_find()`]
+    pub fn clone_ref(&self) -> Material {
+        Material(
+            NonNull::new(unsafe { material_find(material_get_id(self.0.as_ptr())) })
+                .expect("<asset>::clone_ref failed!"),
+        )
+    }
+
     /// Overrides the Shader this material uses.
     /// <https://stereokit.net/Pages/StereoKit/Material/Shader.html>
     ///
@@ -646,6 +658,24 @@ impl Material {
         Self::find("default/material_unlit_clip").unwrap()
     }
 
+    /// The material used by cubemap
+    /// <https://stereokit.net/Pages/StereoKit/Material.html>
+    pub fn equirect() -> Self {
+        Self::find("default/material_equirect").unwrap()
+    }
+
+    /// The material used by font
+    /// <https://stereokit.net/Pages/StereoKit/Material.html>
+    pub fn font() -> Self {
+        Self::find("default/material_font").unwrap()
+    }
+
+    /// The material used for hands
+    /// <https://stereokit.net/Pages/StereoKit/Material.html>
+    pub fn hand() -> Self {
+        Self::find("default/material_hand").unwrap()
+    }
+
     /// The material used by the UI! By default, it uses a shader that creates a ‘finger shadow’ that shows how close
     /// the finger
     /// is to the UI.
@@ -669,6 +699,13 @@ impl Material {
     /// <https://stereokit.net/Pages/StereoKit/Material.html>
     pub fn ui_quadrant() -> Self {
         Self::find("default/material_ui_quadrant").unwrap()
+    }
+
+    /// The material used by the UI for Aura, an extra space and visual element that goes around Window elements to make
+    /// them easier to grab
+    /// <https://stereokit.net/Pages/StereoKit/Material.html>
+    pub fn ui_aura() -> Self {
+        Self::find("default/material_ui_aura").unwrap()
     }
 }
 

@@ -361,6 +361,15 @@ impl Mesh {
         }
     }
 
+    /// Creates a clone of the same reference. Basically, the new variable is the same asset. This is what you get by
+    /// calling find() method.
+    /// <https://stereokit.net/Pages/StereoKit/Mesh/Find.html>
+    ///
+    /// see also [`crate::mesh::mesh_find()`]
+    pub fn clone_ref(&self) -> Mesh {
+        Mesh(NonNull::new(unsafe { mesh_find(mesh_get_id(self.0.as_ptr())) }).expect("<asset>::clone_ref failed!"))
+    }
+
     /// Sets the unique identifier of this asset resource! This can be helpful for debugging,
     /// managing your assets, or finding them later on!
     /// <https://stereokit.net/Pages/StereoKit/Mesh/Id.html>

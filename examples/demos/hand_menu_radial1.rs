@@ -231,8 +231,11 @@ impl IStepper for HandMenuRadial1 {
         //     "hdri/giza/front.png",
         //     "hdri/giza/back.png",
         // ];
-        //let cube4 = SHCubemap::from_cubemap_files(&cubemap_files, true, 0).unwrap_or(SHCubemap::get_rendered_sky());
+        // let cube4 = SHCubemap::from_cubemap_files(&cubemap_files, true, 0).unwrap_or(SHCubemap::get_rendered_sky());
 
+        // You can also zip the files:
+        // ktx create --cubemap --encode uastc  --format R8G8B8A8_UNORM  --assign-oetf linear --assign-primaries bt709
+        //            --generate-mipmap right.png left.png top.png bottom.png front.png back.png cubemap_rgba32.ktx2
         let cube4 =
             SHCubemap::from_cubemap("hdri/giza/cubemap_rgba32.ktx2", true, 0).unwrap_or(SHCubemap::get_rendered_sky());
 

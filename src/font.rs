@@ -141,6 +141,15 @@ impl Font {
         ))
     }
 
+    /// Creates a clone of the same reference. Basically, the new variable is the same asset. This is what you get by
+    /// calling find() method.
+    /// <https://stereokit.net/Pages/StereoKit/Font/Find.html>
+    ///
+    /// see also [`crate::font::font_find()`]
+    pub fn clone_ref(&self) -> Font {
+        Font(NonNull::new(unsafe { font_find(font_get_id(self.0.as_ptr())) }).expect("<asset>::clone_ref failed!"))
+    }
+
     /// Gets or sets the unique identifier of this asset resource! This can be helpful for debugging,
     /// managing your assets, or finding them later on!
     /// <https://stereokit.net/Pages/StereoKit/Font/Id.html>

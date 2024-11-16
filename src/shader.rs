@@ -105,6 +105,17 @@ impl Shader {
         ))
     }
 
+    /// Creates a clone of the same reference. Basically, the new variable is the same asset. This is what you get by
+    /// calling find() method.
+    /// <https://stereokit.net/Pages/StereoKit/Shader/Find.html>
+    ///
+    /// see also [`crate::shader::shader_find()`]
+    pub fn clone_ref(&self) -> Shader {
+        Shader(
+            NonNull::new(unsafe { shader_find(shader_get_id(self.0.as_ptr())) }).expect("<asset>::clone_ref failed!"),
+        )
+    }
+
     /// Gets or sets the unique identifier of this asset resource! This can be helpful for debugging,
     /// managing your assets, or finding them later on!
     /// <https://stereokit.net/Pages/StereoKit/Shader/Id.html>
