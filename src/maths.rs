@@ -75,7 +75,7 @@ pub mod units {
 /// <https://stereokit.net/Pages/StereoKit/Vec2.html>
 ///
 /// see also [`glam::Vec2`]
-#[derive(Debug, Default, Copy, Clone)]
+#[derive(Debug, Default, Copy, Clone, PartialEq)]
 #[repr(C)]
 pub struct Vec2 {
     pub x: f32,

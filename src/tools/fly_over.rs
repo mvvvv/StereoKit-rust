@@ -2,9 +2,9 @@ use std::{cell::RefCell, rc::Rc};
 
 use crate::{
     event_loop::{IStepper, StepperId},
-    maths::{Matrix, Pose, Quat, Vec2, Vec3},
+    maths::{Matrix, Quat, Vec2, Vec3},
     sk::{AppMode, MainThreadToken, OriginMode, SkInfo},
-    system::{Handed, Input, Log, Renderer, World},
+    system::{Handed, Input, Key, Log, Renderer, World},
     util::Time,
 };
 
@@ -40,7 +40,7 @@ impl IStepper for FlyOver {
                     self.reverse *= -1.0;
                 }
             } else {
-                World::origin_offset(Pose::IDENTITY);
+                Log::diag("--");
             }
         }
         true
@@ -54,37 +54,53 @@ impl IStepper for FlyOver {
 impl FlyOver {
     fn draw(&mut self, _token: &MainThreadToken) {
         //----- move
-        let camera_pose = Renderer::get_camera_root().get_pose();
+        let mut camera_root = Renderer::get_camera_root();
+        let head = Input::get_head();
+
         let move_ctrler = Input::controller(Handed::Left);
         let mut move_v = -move_ctrler.stick.x0y();
+
+        if cfg!(debug_assertions) {
+            if Input::key(Key::Up).is_just_active() {
+                move_v.z = -1.0;
+            }
+            if Input::key(Key::Down).is_just_active() {
+                move_v.z = 1.0;
+            }
+            if Input::key(Key::Right).is_just_active() {
+                move_v.x = 1.0;
+            }
+            if Input::key(Key::Left).is_just_active() {
+                move_v.x = -1.0;
+            }
+        }
         let mut speed_accelerator = self.move_speed;
-        let mut apply = false;
-        let mut shift = camera_pose.position;
-        let mut rotate = camera_pose.orientation;
         if move_v != Vec3::ZERO {
-            let head_rotate = Input::get_head().get_forward();
-            move_v.y = head_rotate.y * self.reverse;
+            let camera_pose = camera_root.get_pose();
+            let head_forward = head.get_forward();
+            move_v.y = head_forward.y * self.reverse;
+            let mut shift = camera_pose.position;
 
             if move_ctrler.is_stick_clicked() {
                 speed_accelerator *= 3.0;
             }
 
-            shift += camera_pose.orientation * move_v * Time::get_step_unscaledf() * speed_accelerator * self.reverse;
-            apply = true
+            shift += head.orientation * move_v * Time::get_step_unscaledf() * speed_accelerator * self.reverse;
+            camera_root = Matrix::tr(&shift, &camera_pose.orientation);
+            Renderer::camera_root(camera_root);
         }
 
         //----- rotate
+
         let rotate_stick = Input::controller(Handed::Right).stick;
         let rotate_val = Vec2::dot(rotate_stick, Vec2::X);
 
+        // Credit to Cazzola: https://discord.com/channels/805160376529715210/805160377130156124/1307293861680255067
         if rotate_val != 0.0 {
             let delta_rotate = Quat::from_angles(0.0, rotate_val * self.rotate_speed * Time::get_step_unscaledf(), 0.0);
-            rotate *= delta_rotate;
-            apply = true;
-        }
-
-        if apply {
-            Renderer::camera_root(Matrix::tr(&shift, &rotate));
+            let camera_in_head_space = camera_root * Matrix::t(head.position).get_inverse();
+            let rotated = camera_in_head_space * Matrix::r(delta_rotate);
+            Renderer::camera_root(rotated * Matrix::t(head.position));
         }
     }
 }
