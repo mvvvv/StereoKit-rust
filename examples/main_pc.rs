@@ -25,7 +25,7 @@ fn main() {
     use std::env;
 
     use demos::program::launch;
-    use stereokit_rust::sk::{DepthMode, Sk};
+    use stereokit_rust::sk::{DepthMode, Sk, StandbyMode};
     use stereokit_rust::system::BackendOpenXR;
     use stereokit_rust::{
         sk::{AppMode, OriginMode, SkSettings},
@@ -105,8 +105,8 @@ fn main() {
         } else {
             settings.mode(AppMode::Simulator);
         }
-        settings.disable_unfocused_sleep(true);
     }
+    settings.standby_mode(StandbyMode::Slow);
 
     BackendOpenXR::request_ext("XR_FB_display_refresh_rate");
     BackendOpenXR::request_ext("XR_FB_passthrough");

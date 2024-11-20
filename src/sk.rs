@@ -220,6 +220,30 @@ pub enum AppFocus {
     Hidden = 2,
 }
 
+/// When the device StereoKit is running on goes into standby mode, how should StereoKit react? Typically the app should
+/// pause, stop playing sound, and consume as little power as possible, but some scenarios such as multiplayer games may
+/// need the app to continue running.
+/// <https://stereokit.net/Pages/StereoKit/StandbyMode.html>
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(C)]
+pub enum StandbyMode {
+    /// This will let StereoKit pick a mode based on its own preferences. On v0.3 and lower, this will be Slow, and on
+    /// v0.4 and higher, this will be Pause.
+    Default = 0,
+    /// The entire main thread will pause, and wait until the device has come out of standby. This is the most power
+    /// efficient mode for the device to take when the device is in standby, and is recommended for the vast majority
+    /// of apps. This will also disable sound.
+    Pause = 1,
+    /// The main thread will continue to execute, but with 100ms sleeps each frame. This allows the app to continue
+    /// polling and processing, but reduces power consumption by throttling a bit. This will not disable sound. In the
+    /// Simulator, this will behave as Slow.
+    Slow = 2,
+    /// The main thread will continue to execute, but with a very short sleep each frame. This allows the app to
+    /// continue polling and processing, but without flooding the CPU with polling work while vsync is no longer the
+    /// throttle. This will not disable sound.
+    None = 3,
+}
+
 extern "C" {
     pub fn sk_init(settings: SkSettings) -> Bool32T;
     pub fn sk_set_window(window: *mut c_void);
@@ -281,6 +305,7 @@ pub struct SkSettings {
     pub render_multisample: i32,
     pub origin: OriginMode,
     pub omit_empty_frames: Bool32T,
+    pub standby_mode: StandbyMode,
     pub android_java_vm: *mut c_void,
     pub android_activity: *mut c_void,
 }
@@ -306,6 +331,7 @@ impl Default for SkSettings {
             render_multisample: 1,
             origin: OriginMode::Local,
             omit_empty_frames: 0,
+            standby_mode: StandbyMode::Default,
             android_java_vm: null_mut(),
             android_activity: null_mut(),
         }
@@ -452,6 +478,7 @@ impl SkSettings {
     /// power while the app is out-of-focus, but may not always be desired. In particular, running multiple copies of a
     /// SK app for testing networking code may benefit from this setting.
     /// <https://stereokit.net/Pages/StereoKit/SKSettings/disableUnfocusedSleep.html>
+    #[deprecated(since = "0.40.0", note = "please use `standby_mode = StandbyMode::None` instead")]
     pub fn disable_unfocused_sleep(&mut self, disable_unfocused_sleep: bool) -> &mut Self {
         self.disable_unfocused_sleep = disable_unfocused_sleep as Bool32T;
         self
@@ -489,6 +516,14 @@ impl SkSettings {
     /// <https://stereokit.net/Pages/StereoKit/SKSettings/omitEmptyFrames.html>
     pub fn omit_empty_frames(&mut self, origin_mode: bool) -> &mut Self {
         self.omit_empty_frames = origin_mode as Bool32T;
+        self
+    }
+
+    /// Configures StereoKit's behavior during device standby. By default in v0.4, SK will completely pause the main
+    /// thread and disable audio. In v0.3, SK will continue to execute at a throttled pace, and audio will remain on.
+    /// <https://stereokit.net/Pages/StereoKit/SKSettings/omitEmptyFrames.html>
+    pub fn standby_mode(&mut self, mode: StandbyMode) -> &mut Self {
+        self.standby_mode = mode;
         self
     }
 
