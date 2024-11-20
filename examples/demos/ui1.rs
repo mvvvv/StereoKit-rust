@@ -129,11 +129,11 @@ impl Ui1 {
         Ui::hseparator();
 
         //Slider behavior
-        if !cfg!(target_os = "windows") {
-            let size = Vec2::ONE * Ui::get_layout_remaining().x;
-            self.ui_touch_panel(size);
-            Ui::label(format!("{}x{}", self.slider_pt.x * 100.0, self.slider_pt.y * 100.0), None, true);
-        }
+
+        let size = Vec2::ONE * Ui::get_layout_remaining().x;
+        self.ui_touch_panel(size);
+        Ui::label(format!("{}x{}", self.slider_pt.x * 100.0, self.slider_pt.y * 100.0), None, true);
+
         Ui::hseparator();
 
         Ui::window_end();
@@ -233,8 +233,9 @@ impl Ui1 {
 
         let prev = self.slider_pt;
         let mut slider = UiSliderData::default();
+        let tlb = bounds.tlb();
         Ui::slider_behavior(
-            bounds.tlb(),
+            tlb,
             bounds.dimensions.xy(),
             self.id_slider_hash,
             &mut self.slider_pt,
@@ -242,7 +243,6 @@ impl Ui1 {
             Vec2::ONE,
             Vec2::ZERO,
             btn_size.xy(),
-            Vec2::ZERO,
             None,
             &mut slider,
         );
@@ -250,7 +250,7 @@ impl Ui1 {
         Ui::draw_element(
             UiVisual::SliderLine,
             None,
-            bounds.tlb(),
+            tlb,
             Vec3::new(bounds.dimensions.x, bounds.dimensions.y, depth * 0.1),
             if slider.focus_state.is_active() { 0.5 } else { 0.0 },
         );

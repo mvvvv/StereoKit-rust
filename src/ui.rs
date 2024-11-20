@@ -499,8 +499,6 @@ extern "C" {
         value: *mut Vec2,
         min: Vec2,
         max: Vec2,
-        step: Vec2,
-
         button_size_visual: Vec2,
         button_size_interact: Vec2,
         confirm_method: UiConfirm,
@@ -1046,8 +1044,6 @@ impl Ui {
     /// * value - The value that the slider will store slider state in.
     /// * min - The minimum value the slider can set, left side of the slider.
     /// * max - The maximum value the slider can set, right side of the slider.
-    /// * step - Locks the value to increments of step. Starts at min, and increments by step. 0 is valid, and means
-    ///   "don't lock to increments".
     /// * button_size_visual - This is the visual size of the element representing the touchable area of the slider.
     ///   This is used to calculate the center of the button's placement without going outside the provided bounds.
     /// * button_size_interact - The size of the interactive touch element of the slider. Set this to zero to use the
@@ -1066,7 +1062,6 @@ impl Ui {
         value: &mut Vec2,
         min: impl Into<Vec2>,
         max: impl Into<Vec2>,
-        step: impl Into<Vec2>,
         button_size_visual: impl Into<Vec2>,
         button_size_interact: impl Into<Vec2>,
         confirm_method: Option<UiConfirm>,
@@ -1081,7 +1076,6 @@ impl Ui {
                 value,
                 min.into(),
                 max.into(),
-                step.into(),
                 button_size_visual.into(),
                 button_size_interact.into(),
                 confirm_method,
