@@ -1,4 +1,4 @@
-use std::{env::current_dir, ffi::OsStr, process::Stdio};
+use std::{env::current_dir, ffi::OsStr, fs::create_dir, process::Stdio};
 
 use stereokit_rust::tools::build_tools::{compile_hlsl, copy_tree, get_cargo_name};
 
@@ -20,7 +20,10 @@ pub const USAGE: &str = r#"Usage : cargo build_sk_rs [Options] <Output_path>
         --shaders <path_to_shaders>     : Use sks shaders from path_to_shaders.
                                           By default, shaders are optimized for
                                           the target platform.
-        -h|--help                       : Display help"#;
+        -h|--help                       : Display help
+        
+        
+    If you want DLL instead of static link set variable SKC_IN_DLL=ON"#;
 
 enum Target {
     Default,
@@ -226,35 +229,62 @@ fn main() {
     let dest_file_exe = output_path.join(exe_file.file_name().unwrap_or_default());
     println!("Executable is copied from here --> {:?}", exe_file);
     println!("                      to there --> {:?}", dest_file_exe);
-    let _lib_exe = fs::copy(exe_file, dest_file_exe).unwrap();
+    let _lib_exe = fs::copy(&exe_file, dest_file_exe).unwrap();
 
     if !windows_exe.is_empty() {
+        let pdb_file_name: String = exe_file
+            .to_str()
+            .expect("exe str name problem!!")
+            .strip_suffix(".exe")
+            .expect("exe name doesn't finish with .exe")
+            .to_string()
+            + ".pdb";
+        let pdb_file = PathBuf::from(&pdb_file_name);
+        if pdb_file.is_file() {
+            let dest_file_pdb = output_path.join(pdb_file.file_name().expect("No filename for PDB"));
+            println!("Exe's PDB  is copied from here --> {:?}", pdb_file);
+            println!("                      to there --> {:?}", dest_file_pdb);
+            let _lib_pdb = fs::copy(pdb_file, dest_file_pdb).unwrap();
+        }
         // 1-1 - the dlls created
-        let dll_file = built_files.join("deps").join("stereokit_rust.dll");
-        let dest_file_dll = output_path.join(dll_file.file_name().unwrap_or_default());
-        println!("DLL is copied from here --> {:?}", dll_file);
-        println!("               to there --> {:?}", dest_file_dll);
-        let _lib_dll = fs::copy(dll_file, dest_file_dll).unwrap();
-
         let c_dll = if !win_libs_path_name.is_empty() { "libStereoKitC.dll" } else { "StereoKitC.dll" };
         let dll_file = built_files.join("deps").join(c_dll);
-        let dest_file_dll = output_path.join(dll_file.file_name().unwrap_or_default());
-        println!("DLL is copied from here --> {:?}", dll_file);
-        println!("               to there --> {:?}", dest_file_dll);
-        let _lib_dll = fs::copy(dll_file, dest_file_dll).unwrap();
+        if dll_file.is_file() {
+            let dest_file_dll = output_path.join(dll_file.file_name().unwrap_or_default());
+            println!("DLL is copied from here --> {:?}", dll_file);
+            println!("               to there --> {:?}", dest_file_dll);
+            let _lib_dll = fs::copy(dll_file, dest_file_dll).unwrap();
 
-        let copy_extensions = [OsStr::new("dll")];
-        if !win_libs_path_name.is_empty() {
-            // 1-2 - the dlls mingw ask for
-            let libs_path = PathBuf::from(win_libs_path_name.clone());
-            for entry in libs_path.read_dir().expect("Libs path is not a valid directory!").flatten() {
-                let file = entry.path();
-                if file.is_file() {
-                    if let Some(extension) = file.extension() {
-                        if copy_extensions.contains(&extension) {
-                            println!("Mingw Dll to copy {:?}", file);
-                            let dest_file_dll = output_path.join(file.file_name().unwrap_or_default());
-                            let _lib_dll = fs::copy(file, dest_file_dll).unwrap();
+            let c_pdb = if !win_libs_path_name.is_empty() { "libStereoKitC.pdb" } else { "StereoKitC.pdb" };
+            let pdb_file = built_files.join("deps").join(c_pdb);
+            if pdb_file.is_file() {
+                let dest_file_pdb = output_path.join(pdb_file.file_name().unwrap_or_default());
+                println!("PDB is copied from here --> {:?}", pdb_file);
+                println!("               to there --> {:?}", dest_file_pdb);
+                let _lib_pdb = fs::copy(pdb_file, dest_file_pdb).unwrap();
+            }
+
+            // let dll_file = built_files.join("deps").join("stereokit_rust.dll");
+            // if dll_file.is_file() {
+            //     let dest_file_dll = output_path.join(dll_file.file_name().unwrap_or_default());
+            //     println!("DLL is copied from here --> {:?}", dll_file);
+            //     println!("               to there --> {:?}", dest_file_dll);
+            //     let _lib_dll = fs::copy(dll_file, dest_file_dll).unwrap();
+            // }
+
+            let copy_extensions = [OsStr::new("dll")];
+            if !win_libs_path_name.is_empty() {
+                // 1-2 - the dlls mingw ask for
+                let libs_path = PathBuf::from(win_libs_path_name.clone());
+                for entry in libs_path.read_dir().expect("Libs path is not a valid directory!").flatten() {
+                    let file = entry.path();
+                    if file.is_file() {
+                        if let Some(extension) = file.extension() {
+                            if copy_extensions.contains(&extension) {
+                                println!("Mingw Dll to copy {:?}", file);
+                                let dest_file_dll = output_path.join(file.file_name().unwrap_or_default());
+                                let _lib_dll = fs::copy(file, dest_file_dll).unwrap();
+                            }
                         }
                     }
                 }
@@ -270,19 +300,21 @@ fn main() {
     // 3 - the shaders
     let mut with_wine = false;
     let target_shaders_dir = output_path.join("assets").join("shaders");
+    if !target_shaders_dir.exists() {
+        create_dir(&target_shaders_dir).expect("Unable to create shaders directory");
+    }
     if shaders_path_name.is_empty() {
         let target = if windows_exe.is_empty() {
             "e"
         } else if with_gl {
             "g"
         } else {
-            if !win_libs_path_name.is_empty() {
+            if !cfg!(windows) && !win_libs_path_name.is_empty() {
                 with_wine = true;
             }
             "x"
         };
-        compile_hlsl(current_dir().unwrap(), Some(target_shaders_dir), &["-f", "-t", target, "-sw"], with_wine)
-            .unwrap();
+        compile_hlsl(current_dir().unwrap(), Some(target_shaders_dir), &["-t", target, "-sw"], with_wine).unwrap();
     } else {
         let shaders_path = PathBuf::from(shaders_path_name);
         for entry in shaders_path.read_dir().expect("shaders_path is not a valid directory!").flatten() {

@@ -15,6 +15,7 @@ fn main() {
 
     let win_gnu_libs = var("SK_RUST_WIN_GNU_LIBS").unwrap_or_default();
     let win_gl = !var("SK_RUST_WINDOWS_GL").unwrap_or_default().is_empty();
+    let no_skc_in_dll = var("SKC_IN_DLL").unwrap_or_default().is_empty();
 
     if win_gl {
         println!("Compiling with {} for {}/opengl with profile {}", target_env, target_os, profile);
@@ -61,7 +62,11 @@ fn main() {
     }
 
     if target_family.as_str() == "windows" {
-        cmake_config.define("SK_BUILD_SHARED_LIBS", "ON");
+        if no_skc_in_dll {
+            cmake_config.define("SK_BUILD_SHARED_LIBS", "OFF");
+        } else {
+            cmake_config.define("SK_BUILD_SHARED_LIBS", "ON");
+        }
     } else {
         cmake_config.define("SK_BUILD_SHARED_LIBS", "OFF");
     }
@@ -97,42 +102,74 @@ fn main() {
             cargo_link!("StereoKitC");
 
             if cfg!(debug_assertions) {
-                cargo_link!("static=openxr_loaderd");
+                cargo_link!("openxr_loaderd");
             } else {
-                cargo_link!("static=openxr_loader");
+                cargo_link!("openxr_loader");
             }
             cargo_link!("meshoptimizer");
             cargo_link!("windowsapp");
             cargo_link!("user32");
             println!("cargo:rustc-link-search=native={}", dst.display());
             if target_env == "gnu" {
-                println!("cargo:rustc-link-search=native={}/build", dst.display());
-                println!("cargo:rustc-link-search=native={}", win_gnu_libs);
-                //---- We have to extract the DLL i.e. ".\target\x86_64-pc-windows-gnu\debug\build\stereokit-rust-be362d37871b9048\out\build\StereoKitC.dll"
-                //---- and copy it to ".\target\x86_64-pc-windows-gnu\debug\deps\
-                let deuleuleu = "libStereoKitC.dll";
-                let out_dir = env::var("OUT_DIR").unwrap(); //---must be equal to dst
-                let target_dir = Path::new(&out_dir).parent().unwrap().parent().unwrap().parent().unwrap();
-                let deps_libs = target_dir.join("deps");
-                println!("dst --> {:?}", dst);
-                let dest_file_dll = deps_libs.join(deuleuleu);
-                let file_dll = dst.join("build").join(deuleuleu);
-                println!("libStereoKitC.dll is copied from here --> {:?}", file_dll);
-                println!("                              to here --> {:?}", dest_file_dll);
-                let _lib_dll = fs::copy(file_dll, dest_file_dll).unwrap();
+                if no_skc_in_dll {
+                    println!("cargo:rustc-link-search=native={}/build", dst.display());
+                    println!("cargo:rustc-link-search=native={}/lib", dst.display());
+                    println!("cargo:rustc-link-search=native={}", win_gnu_libs);
+                    cargo_link!("gcc_eh");
+                    cargo_link!("stdc++");
+                    cargo_link!("meshoptimizer");
+                } else {
+                    //---- We have to extract the DLL i.e. ".\target\x86_64-pc-windows-gnu\debug\build\stereokit-rust-be362d37871b9048\out\build\StereoKitC.dll"
+                    //---- and copy it to ".\target\x86_64-pc-windows-gnu\debug\deps\
+                    //println!("cargo:rustc-link-search=native={}/build", dst.display());
+                    println!("cargo:rustc-link-search=native={}", win_gnu_libs);
+                    let deuleuleu = "libStereoKitC.dll";
+                    let out_dir = env::var("OUT_DIR").unwrap(); //---must be equal to dst
+                    let target_dir = Path::new(&out_dir).parent().unwrap().parent().unwrap().parent().unwrap();
+                    let deps_libs = target_dir.join("deps");
+                    println!("cargo:rustc-link-search=native={}", deps_libs.to_str().unwrap());
+                    println!("dst --> {:?}", dst);
+                    let dest_file_dll = deps_libs.join(deuleuleu);
+                    let file_dll = dst.join("build").join(deuleuleu);
+                    println!("{} is copied from here --> {:?}", deuleuleu, file_dll);
+                    println!("                             to there --> {:?}", dest_file_dll);
+                    let _lib_dll = fs::copy(file_dll, dest_file_dll).unwrap();
+                }
             } else {
                 //---- We have to extract the DLL i.e. ".\target\debug\build\stereokit-rust-be362d37871b9048\out\build\Debug\StereoKitC.dll"
                 //---- and copy it to ".\target\debug\deps\
-                let deuleuleu = "StereoKitC.dll";
+                let lib: String = "StereoKitC".into();
+                let deuleuleu = lib.clone() + ".dll";
+                let lib_lib = lib.clone() + ".lib";
+                let lib_pdb = lib.clone() + ".pdb";
                 let out_dir = env::var("OUT_DIR").unwrap(); //---must be equal to dst
                 let target_dir = Path::new(&out_dir).parent().unwrap().parent().unwrap().parent().unwrap();
                 let deps_libs = target_dir.join("deps");
                 println!("dst --> {:?}", dst);
-                let dest_file_dll = deps_libs.join(deuleuleu);
-                let file_dll = dst.join("build").join(profile).join(deuleuleu);
-                println!("StereoKitC.dll is copied from here --> {:?}", file_dll);
-                println!("                           to here --> {:?}", dest_file_dll);
-                let _lib_dll = fs::copy(file_dll, dest_file_dll).unwrap();
+                //---Do we have a .dll ?
+                let file_dll = dst.join("build").join(&profile).join(&deuleuleu);
+                if file_dll.is_file() {
+                    let dest_file_dll = deps_libs.join(&deuleuleu);
+                    println!("StereoKitC.dll is copied from here --> {:?}", file_dll);
+                    println!("                          to there --> {:?}", dest_file_dll);
+                    let _lib_dll = fs::copy(file_dll, dest_file_dll).unwrap();
+                }
+                //---Do we have a .lib ?
+                let file_lib = dst.join("build").join(&profile).join(&lib_lib);
+                if file_lib.is_file() {
+                    let dest_file_lib = deps_libs.join(&lib_lib);
+                    println!("StereoKitC.lib is copied from here --> {:?}", file_lib);
+                    println!("                          to there --> {:?}", dest_file_lib);
+                    let _lib_dll = fs::copy(file_lib, dest_file_lib).unwrap();
+                }
+                //---Do we have a .pdb ?
+                let file_pdb = dst.join("build").join(&profile).join(&lib_lib);
+                if file_pdb.is_file() {
+                    let dest_file_pdb = deps_libs.join(&lib_pdb);
+                    println!("StereoKitC.pdb is copied from here --> {:?}", file_pdb);
+                    println!("                          to there --> {:?}", dest_file_pdb);
+                    let _lib_dll = fs::copy(file_pdb, dest_file_pdb).unwrap();
+                }
             }
         }
         "wasm" => {

@@ -129,7 +129,9 @@ pub fn copy_tree(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> std::io::Resul
     for entry in fs::read_dir(src)?.flatten() {
         let path_type = entry.file_type()?;
         if path_type.is_dir() {
-            copy_tree(entry.path(), dst.as_ref().join(entry.file_name()))?;
+            if entry.file_name() != "shaders" {
+                copy_tree(entry.path(), dst.as_ref().join(entry.file_name()))?;
+            }
         } else {
             fs::copy(entry.path(), dst.as_ref().join(entry.file_name()))?;
         }

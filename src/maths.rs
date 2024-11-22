@@ -1233,7 +1233,7 @@ impl Neg for Vec4 {
 ///
 ///  see also [`glam::Quat`]
 #[repr(C)]
-#[derive(Debug, Default, Copy, Clone)]
+#[derive(Debug, Default, Copy, Clone, PartialEq)]
 pub struct Quat {
     pub x: f32,
     pub y: f32,
@@ -2545,7 +2545,7 @@ impl Display for Plane {
 /// Pose.Identity .
 /// <https://stereokit.net/Pages/StereoKit/Pose.html>
 #[repr(C)]
-#[derive(Default, Debug, Copy, Clone)]
+#[derive(Default, Debug, Copy, Clone, PartialEq)]
 pub struct Pose {
     pub position: Vec3,
     pub orientation: Quat,
