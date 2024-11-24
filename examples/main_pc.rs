@@ -91,7 +91,7 @@ fn main() {
     settings
         .app_name("rust Demos")
         .assets_folder("assets")
-        .origin(OriginMode::Stage)
+        .origin(OriginMode::Floor)
         .render_multisample(4)
         .render_scaling(2.0)
         .depth_mode(DepthMode::D32)
