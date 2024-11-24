@@ -1,12 +1,13 @@
 use std::{process, sync::Mutex, thread};
 
+use openxr_sys::EnvironmentBlendMode;
 use stereokit_rust::{
     event_loop::{SkClosures, StepperAction, StepperId},
     material::Cull,
     maths::{units::*, Pose, Quat, Vec2, Vec3},
     model::Model,
     shader::Shader,
-    sk::{AppFocus, DisplayMode, Sk},
+    sk::{AppFocus, DisplayBlend, DisplayMode, Sk},
     sound::{Sound, SoundInst},
     sprite::Sprite,
     system::{
@@ -18,7 +19,7 @@ use stereokit_rust::{
         log_window::{LogItem, LogWindow},
         notif::HudNotification,
         os_api::{
-            get_all_display_refresh_rates, get_display_refresh_rate, log_display_refresh_rate, set_display_refresh_rate,
+            get_all_display_refresh_rates, get_display_refresh_rate, get_env_blend_modes, set_display_refresh_rate,
         },
         passthrough_fb_ext::{PassthroughFbExt, PASSTHROUGH_FLIP},
         screenshot::ScreenshotViewer,
@@ -125,8 +126,9 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
     sk.push_action(StepperAction::add_default::<ScreenshotViewer>("Screenshoot"));
     sk.push_action(StepperAction::add_default::<FlyOver>("FlyOver"));
     let mut passthrough = false;
-    let passthrough_enabled = BackendOpenXR::ext_enabled("XR_FB_passthrough");
-    if passthrough_enabled {
+    let mut passthough_blend_enabled = false;
+    let passthrough_fb_enabled = BackendOpenXR::ext_enabled("XR_FB_passthrough");
+    if passthrough_fb_enabled {
         sk.push_action(StepperAction::add_default::<PassthroughFbExt>("PassthroughFbExt"));
         if passthrough {
             sk.push_action(StepperAction::event("main".into(), PASSTHROUGH_FLIP, "1"));
@@ -136,7 +138,20 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
             Log::diag("Passthrough Deactived at start !!");
         }
     } else {
-        Log::diag("No Passthrough !!")
+        let blend_modes = get_env_blend_modes(true);
+        if blend_modes.contains(&EnvironmentBlendMode::ADDITIVE)
+            || blend_modes.contains(&EnvironmentBlendMode::ALPHA_BLEND)
+        {
+            passthough_blend_enabled = true;
+            if passthrough {
+                Device::display_blend(DisplayBlend::AnyTransparent);
+                Log::diag("Passthrough Activated at start !!");
+            } else {
+                Log::diag("Passthrough Deactived at start !!");
+            }
+        } else {
+            Log::diag("No Passthrough !!")
+        }
     }
     // let virtual_kbd_enabled = BackendOpenXR::ext_enabled("XR_META_virtual_keyboard");
     // if virtual_kbd_enabled {
@@ -150,10 +165,8 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
     let mut refresh_rates = vec![];
     let refresh_rate_editable = BackendOpenXR::ext_enabled("XR_FB_display_refresh_rate");
     if refresh_rate_editable {
-        refresh_rates = get_all_display_refresh_rates();
-        log_display_refresh_rate();
+        refresh_rates = get_all_display_refresh_rates(true);
         Log::info(format!("Initial display rate is {:?}", current_refresh_rate));
-        Log::info(format!("Availaible rates are {:?}", refresh_rates));
     } else {
         Log::info("No editable refresh rate !");
     }
@@ -293,9 +306,8 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
             }
             Ui::same_line();
             Ui::panel_begin(None);
-            if passthrough_enabled {
+            if passthrough_fb_enabled || passthough_blend_enabled {
                 if let Some(new_value) = Ui::toggle("Passthrough MR", passthrough, None) {
-                    Log::diag(format!("{}", Time::get_total_unscaledf()));
                     passthrough = new_value;
                     let mut string_value = "0";
                     if new_value {
@@ -306,7 +318,13 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
                         Log::diag("Deactivate passthrough");
                         sk.push_action(StepperAction::event("main".into(), SHOW_FLOOR, "true"));
                     }
-                    sk.push_action(StepperAction::event("main".into(), PASSTHROUGH_FLIP, string_value))
+                    if passthrough_fb_enabled {
+                        sk.push_action(StepperAction::event("main".into(), PASSTHROUGH_FLIP, string_value));
+                    } else if string_value == "1" {
+                        Device::display_blend(DisplayBlend::AnyTransparent);
+                    } else {
+                        Device::display_blend(DisplayBlend::Opaque);
+                    }
                 }
                 Ui::same_line();
             }
@@ -355,6 +373,8 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
             if reduce_to < viewport_scaling {
                 viewport_scaling = reduce_to;
                 Renderer::viewport_scaling(viewport_scaling);
+            } else {
+                reduce_to = 1.0
             }
 
             // Ui::label("MSAA:", None, true);

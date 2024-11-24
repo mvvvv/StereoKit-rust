@@ -1,5 +1,8 @@
-use openxr_sys::pfn::{EnumerateDisplayRefreshRatesFB, GetDisplayRefreshRateFB, RequestDisplayRefreshRateFB};
-use openxr_sys::{Result, Session};
+use openxr_sys::pfn::{
+    EnumerateDisplayRefreshRatesFB, EnumerateEnvironmentBlendModes, GetDisplayRefreshRateFB,
+    RequestDisplayRefreshRateFB,
+};
+use openxr_sys::{EnvironmentBlendMode, Instance, Result, Session, SystemId, ViewConfigurationType};
 
 use crate::sk::SkInfo;
 use crate::system::{BackendOpenXR, Log};
@@ -298,27 +301,40 @@ pub fn show_soft_input(_show: bool) -> bool {
     false
 }
 
-const USUAL_FPS_SUSPECTS: [i32; 12] = [30, 60, 72, 80, 90, 100, 110, 120, 144, 165, 240, 360];
+pub const USUAL_FPS_SUSPECTS: [i32; 12] = [30, 60, 72, 80, 90, 100, 110, 120, 144, 165, 240, 360];
 
-/// Log the display refresh rate of the device.
-/// Not working on Quest 2, says there is 5 values but display an empty array.
-pub fn log_display_refresh_rate() {
+/// Return and maybe Log all the display refresh rates available.
+pub fn get_all_display_refresh_rates(with_log: bool) -> Vec<f32> {
+    let mut array = [0.0; 40];
+    let mut count = 5u32;
     if BackendOpenXR::ext_enabled("XR_FB_display_refresh_rate") {
         if let Some(rate_display) =
             BackendOpenXR::get_function::<EnumerateDisplayRefreshRatesFB>("xrEnumerateDisplayRefreshRatesFB")
         {
-            let input = 0u32;
-            let mut output = 5u32;
-            let mut array = Vec::with_capacity(10usize);
             match unsafe {
-                rate_display(Session::from_raw(BackendOpenXR::session()), input, &mut output, array.as_mut_ptr())
+                rate_display(Session::from_raw(BackendOpenXR::session()), 0, &mut count, array.as_mut_ptr())
             } {
                 Result::SUCCESS => {
-                    Log::diag(format!("display rate count {} ", output));
-                    Log::diag(format!("display rate array {:?} ", array));
-                    //let array = unsafe { slice::from_raw_parts(array_ptr, output as usize) };
-                    for (i, rate) in array.iter().enumerate() {
-                        Log::diag(format!("display rate {} : {}", i, rate))
+                    if count > 40 {
+                        count = 40
+                    }
+                    match unsafe {
+                        rate_display(Session::from_raw(BackendOpenXR::session()), count, &mut count, array.as_mut_ptr())
+                    } {
+                        Result::SUCCESS => {
+                            if with_log {
+                                Log::info(format!("There is {} display rate:", count));
+                                for (i, iter) in array.iter().enumerate() {
+                                    if i >= count as usize {
+                                        break;
+                                    }
+                                    Log::info(format!("   {:?} ", iter));
+                                }
+                            }
+                        }
+                        otherwise => {
+                            Log::err(format!("xrEnumerateDisplayRefreshRatesFB failed: {otherwise}"));
+                        }
                     }
                 }
                 otherwise => {
@@ -329,20 +345,29 @@ pub fn log_display_refresh_rate() {
             Log::err("xrEnumerateDisplayRefreshRatesFB binding function error !")
         }
     }
+    array[0..(count as usize)].into()
 }
 
-/// Get the display rates available from the USUAL_FPS_SUSPECT
-pub fn get_all_display_refresh_rates() -> Vec<f32> {
+/// Get the display rates available from the given list
+/// (see also USUAL_FPS_SUSPECT)
+pub fn get_display_refresh_rates(fps_to_get: &[i32], with_log: bool) -> Vec<f32> {
     let default_refresh_rate = get_display_refresh_rate();
     let mut available_rates = vec![];
-    for rate in USUAL_FPS_SUSPECTS {
-        if set_display_refresh_rate(rate as f32, false) {
-            available_rates.push(rate as f32);
+    for rate in fps_to_get {
+        if set_display_refresh_rate(*rate as f32, false) {
+            available_rates.push(*rate as f32);
         }
     }
     if let Some(rate) = default_refresh_rate {
-        set_display_refresh_rate(rate, true);
+        set_display_refresh_rate(rate, with_log);
     }
+    if with_log {
+        Log::info(format!("There is {} display rate from the given selection:", available_rates.len()));
+        for iter in &available_rates {
+            Log::info(format!("   {:?} ", iter));
+        }
+    }
+
     available_rates
 }
 
@@ -370,7 +395,7 @@ pub fn get_display_refresh_rate() -> Option<f32> {
 }
 
 /// set the current display rate if possible.
-/// Possible values on Quest are 60 - 72 - 90 - 120
+/// Possible values on Quest are 60 - 80 - 72 - 90 - 120
 /// returns true if the given value was accepted
 pub fn set_display_refresh_rate(rate: f32, with_log: bool) -> bool {
     if BackendOpenXR::ext_enabled("XR_FB_display_refresh_rate") {
@@ -394,4 +419,68 @@ pub fn set_display_refresh_rate(rate: f32, with_log: bool) -> bool {
     } else {
         false
     }
+}
+/// Get the list of environnement blend_modes available on this device
+/// see also [`crate::system::Device::valid_blend()`]
+pub fn get_env_blend_modes(with_log: bool) -> Vec<EnvironmentBlendMode> {
+    //>>>>>>>>>>> Get the env blend mode
+    let mut count = 0u32;
+    let mut modes = [EnvironmentBlendMode::OPAQUE; 20];
+    if let Some(get_modes) =
+        BackendOpenXR::get_function::<EnumerateEnvironmentBlendModes>("xrEnumerateEnvironmentBlendModes")
+    {
+        match unsafe {
+            get_modes(
+                Instance::from_raw(BackendOpenXR::instance()),
+                SystemId::from_raw(BackendOpenXR::system_id()),
+                ViewConfigurationType::PRIMARY_STEREO,
+                0,
+                &mut count,
+                modes.as_mut_ptr(),
+            )
+        } {
+            Result::SUCCESS => {
+                if with_log {
+                    if count > 20 {
+                        count = 20
+                    }
+                    match unsafe {
+                        get_modes(
+                            Instance::from_raw(BackendOpenXR::instance()),
+                            SystemId::from_raw(BackendOpenXR::system_id()),
+                            ViewConfigurationType::PRIMARY_STEREO,
+                            count,
+                            &mut count,
+                            modes.as_mut_ptr(),
+                        )
+                    } {
+                        Result::SUCCESS => {
+                            if with_log {
+                                Log::info(format!("There is {} env blend modes:", count));
+                                for (i, iter) in modes.iter().enumerate() {
+                                    if i >= count as usize {
+                                        break;
+                                    }
+                                    Log::info(format!("   {:?} ", iter));
+                                }
+                            }
+                        }
+                        otherwise => {
+                            if with_log {
+                                Log::err(format!("xrEnumerateEnvironmentBlendModes failed: {otherwise}"));
+                            }
+                        }
+                    }
+                }
+            }
+            otherwise => {
+                if with_log {
+                    Log::err(format!("xrEnumerateEnvironmentBlendModes failed: {otherwise}"));
+                }
+            }
+        }
+    } else {
+        Log::err("xrEnumerateEnvironmentBlendModes binding function error !");
+    }
+    modes[0..(count as usize)].into()
 }
