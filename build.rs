@@ -163,7 +163,7 @@ fn main() {
                     let _lib_dll = fs::copy(file_lib, dest_file_lib).unwrap();
                 }
                 //---Do we have a .pdb ?
-                let file_pdb = dst.join("build").join(&profile).join(&lib_lib);
+                let file_pdb = dst.join("build").join(&profile).join(&lib_pdb);
                 if file_pdb.is_file() {
                     let dest_file_pdb = deps_libs.join(&lib_pdb);
                     println!("StereoKitC.pdb is copied from here --> {:?}", file_pdb);
