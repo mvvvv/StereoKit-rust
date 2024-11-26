@@ -63,10 +63,10 @@ There is 3 templates used to build android versions (they can also create a PCVR
 * If you don't clone the template project in the same directory than the StereoKit-rust project, you'll have to modify the path of the Stereokit-rust dependency.
 
 
-## (Work with some stereokit's hacks) Build the project's demo for Windows_x64 using GNU from Linux (and Windows and probably Mac)
+## (Temporary needs some stereokit/sk_gpu hacks on linux) Build the project's demo for Windows_x64 using GNU from Linux (and Windows and probably Mac)
 * Install mingw64-w64 (MSYS2 on windows)
 * Add the rust target gnu for windows:`rustup target add x86_64-pc-windows-gnu`
-* Temporary, we need wine to compile the shaders
+* Temporary unavailable for linux: we need wine to compile the shaders
   - Install wine and winetricks.
   - Install needed tools and libs: `winetricks corefonts d3dx9 d3dcompiler_47`
 * Create a directory where necessary libs will be stored (i.e. ../x64-mingw-libs/) then add a link to the DLLs or static libs(*.a) the build will need after or during its creation. Example on Ubuntu 24.XX:
