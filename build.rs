@@ -15,7 +15,7 @@ fn main() {
 
     let win_gnu_libs = var("SK_RUST_WIN_GNU_LIBS").unwrap_or_default();
     let win_gl = !var("SK_RUST_WINDOWS_GL").unwrap_or_default().is_empty();
-    let no_skc_in_dll = var("SKC_IN_DLL").unwrap_or_default().is_empty();
+    let skc_in_dll = cfg!(feature = "skc-in-dll");
 
     if win_gl {
         println!("Compiling with {} for {}/opengl with profile {}", target_env, target_os, profile);
@@ -30,6 +30,13 @@ fn main() {
 
     // Build StereoKit, and tell rustc to link it.
     let mut cmake_config = Config::new("StereoKit");
+
+    let profile_upper = if profile == "debug" {
+        cmake_config.define("CMAKE_BUILD_TYPE", "Debug");
+        "Debug"
+    } else {
+        "Release"
+    };
 
     if !win_gnu_libs.is_empty() {
         cmake_config.define("CMAKE_SYSTEM_NAME", "Windows");
@@ -62,10 +69,10 @@ fn main() {
     }
 
     if target_family.as_str() == "windows" {
-        if no_skc_in_dll {
-            cmake_config.define("SK_BUILD_SHARED_LIBS", "OFF");
-        } else {
+        if skc_in_dll {
             cmake_config.define("SK_BUILD_SHARED_LIBS", "ON");
+        } else {
+            cmake_config.define("SK_BUILD_SHARED_LIBS", "OFF");
         }
     } else {
         cmake_config.define("SK_BUILD_SHARED_LIBS", "OFF");
@@ -91,13 +98,7 @@ fn main() {
     match target_family.as_str() {
         "windows" => {
             println!("cargo:rustc-link-search=native={}/lib", dst.display());
-            let mut profile_chars = profile.chars();
-            println!(
-                "cargo:rustc-link-search=native={}/build/{}{}",
-                dst.display(),
-                profile_chars.next().unwrap().to_uppercase(),
-                profile_chars.as_str()
-            );
+            println!("cargo:rustc-link-search=native={}/build/{}", dst.display(), profile_upper);
 
             cargo_link!("StereoKitC");
 
@@ -111,7 +112,7 @@ fn main() {
             cargo_link!("user32");
             println!("cargo:rustc-link-search=native={}", dst.display());
             if target_env == "gnu" {
-                if no_skc_in_dll {
+                if !skc_in_dll {
                     println!("cargo:rustc-link-search=native={}/build", dst.display());
                     println!("cargo:rustc-link-search=native={}/lib", dst.display());
                     println!("cargo:rustc-link-search=native={}", win_gnu_libs);

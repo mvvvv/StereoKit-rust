@@ -97,7 +97,7 @@
       "name": "GDB Attach",
       "type": "cppdbg",
       "request": "attach",
-      "processId": "${command:pickProcess}",
+      "processId": "${input:pickExampleProcess}",
       "program": "${workspaceFolder}/../sk_builds/SK_demo_win_gnu/main_pc.exe",
       "MIMode": "gdb",
       "setupCommands": [
@@ -117,7 +117,7 @@
       "name": "GDB Attach from external build",
       "type": "cppdbg",
       "request": "attach",
-      "processId": "${command:pickProcess}",
+      "processId": "${input:pickExampleProcess}",
       "program": "${workspaceFolder}/../PartageWinLin/StereoKit-rust-exe/main_pc.exe",
       "MIMode": "gdb",
       "sourceFileMap": { "c:/Users/mvida/dvlt/StereoKit-rust": "${workspaceFolder}" },
@@ -134,5 +134,17 @@
           }
       ]
     },
+  ],
+  "inputs": [
+    {
+      "id": "pickExampleProcess",
+      "type": "command",
+      "command": "lldb.pickProcess",
+      "args": {
+        "initCommands": [ ], // Eg., platform select/connect commands.
+        "filter": "main_pc" // RegExp to filter processes to.
+      }
+    }
   ]
+
 }

@@ -23,6 +23,7 @@ build-dynamic-openxr = [ "dynamic-openxr",] # Build openxr_loader from Khronos O
 event-loop = ["dep:winit"]
 no-event-loop = ["dep:android-activity"]
 force-local-deps = ["openxr-sys/linked"]
+skc-in-dll = [] # Create and use StereoKitC as a DLL when building for windows (MSVC & GNU)
 
 [lib]
 crate-type = ["lib", "cdylib"]
