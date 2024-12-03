@@ -819,7 +819,7 @@ pub enum MaterialParam {
     UInt4 = 15,
 }
 
-impl<'a> Iterator for ParamInfos<'a> {
+impl Iterator for ParamInfos<'_> {
     type Item = ParamInfo;
 
     /// get all the param info

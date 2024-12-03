@@ -16,15 +16,14 @@ use crate::{
 };
 use std::{cell::RefCell, ptr::null_mut, rc::Rc};
 
+/// The StepperAction to trigger with the value "0"/"1" to Deactivate/Activate the passthrough.
+pub const PASSTHROUGH_FLIP: &str = "PassthroughFlip";
+
 ///
 ///
 ///  This is a rust copycat of https://github.com/StereoKit/StereoKit/blob/master/Examples/StereoKitTest/Tools/PassthroughFBExt.cs
 ///
 ///
-
-/// The StepperAction to trigger with the value "0"/"1" to Deactivate/Activate the passthrough.
-pub const PASSTHROUGH_FLIP: &str = "PassthroughFlip";
-
 /// Use PassthroughFbExt::new(true) instead of Default if you want to have it at start up.
 ///
 ///
@@ -68,7 +67,6 @@ pub const PASSTHROUGH_FLIP: &str = "PassthroughFlip";
 ///      }
 ///  }
 /// ```
-
 pub struct PassthroughFbExt {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,

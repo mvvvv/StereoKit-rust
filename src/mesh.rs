@@ -603,8 +603,8 @@ impl Mesh {
         Mesh::find("default/mesh_screen_quad").unwrap()
     }
 
-    /// see screen_quad instead ! TODO: Why this ?
-    /// <https://stereokit.net/Pages/StereoKit/Mesh/Quad.html>
+    // see screen_quad instead ! TODO: Why this ?
+    // <https://stereokit.net/Pages/StereoKit/Mesh/Quad.html>
     // pub fn quad() -> Self {
     //     Mesh::find("default/mesh_quad").unwrap()
     // }

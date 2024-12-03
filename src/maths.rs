@@ -32,7 +32,6 @@ pub fn lerp(a: f32, b: f32, t: f32) -> f32 {
 /// * b - Second angle, in degrees.
 ///   
 /// returns : Degrees 0-180, the minimum angle between a and b.
-
 pub fn angle_dist(a: f32, b: f32) -> f32 {
     let delta = (b - a + 180.0) % 360.0 - 180.0;
     (if delta < -180.0 { delta + 360.0 } else { delta }).abs()
@@ -1619,7 +1618,14 @@ impl Matrix {
     /// This creates a matrix used for projecting 3D geometry onto a 2D surface for rasterization. Orthographic
     /// projection matrices will preserve parallel lines. This is great for 2D scenes or content.
     /// <https://stereokit.net/Pages/StereoKit/Matrix/Orthographic.html>
+    /// * width - in meters, of the area that will  be projected.
+    /// * height - The height, in meters, of the area that will be projected
+    /// * near_clip - Anything closer than this distance (in meters) will be discarded. Must not be zero, and if you
+    ///   make this too small, you may experience glitching in your depth buffer.
+    /// * far_clip - Anything further than this distance (in meters) will be discarded. For low resolution depth
+    ///   buffers, this should not be too far away, or you'll see bad z-fighting artifacts.    
     ///
+    /// Returns the final orthographic Matrix.
     /// see also [`crate::maths::matrix_orthographic`]
     #[inline]
     pub fn ortographic(width: f32, height: f32, near_clip: f32, far_clip: f32) -> Self {
@@ -1630,11 +1636,68 @@ impl Matrix {
     /// projection matrices will cause parallel lines to converge at the horizon. This is great for normal looking
     /// content.
     /// <https://stereokit.net/Pages/StereoKit/Matrix/Perspective.html>
+    /// * fov_degrees - This is the vertical field of view of the perspective matrix, units are in degrees.
+    /// * aspect_ratio - The projection surface's width/height.
+    /// * near_clip - Anything closer than this distance (in meters) will be discarded. Must not be zero, and if you
+    ///   make this too small, you may experience glitching in your depth buffer.
+    /// * far_clip - Anything further than this distance (in meters) will be discarded. For low resolution depth
+    ///   buffers, this should not be too far away, or you'll see bad z-fighting artifacts.    
     ///
+    /// Returns the final perspective matrix.
     /// see also [`crate::maths::matrix_perspective`]
     #[inline]
     pub fn perspective(fov_degrees: f32, aspect_ratio: f32, near_clip: f32, far_clip: f32) -> Self {
         unsafe { matrix_perspective(fov_degrees.to_radians(), aspect_ratio, near_clip, far_clip) }
+    }
+
+    /// This creates a matrix used for projecting 3D geometry onto a 2D surface for rasterization. With the known camera
+    /// intrinsics, you can replicate its perspective!
+    /// <https://stereokit.net/Pages/StereoKit/Matrix/Perspective.html>
+    /// * image_resolution - The resolution of the image. This should be the image's width and height in pixels.
+    /// * focal_length_px - The focal length of camera in pixels, with image coordinates +X (pointing right) and +Y
+    ///   (pointing up).
+    /// * near_clip - Anything closer than this distance (in meters) will be discarded. Must not be zero, and if you
+    ///   make this too small, you may experience glitching in your depth buffer.
+    /// * far_clip - Anything further than this distance (in meters) will be discarded. For low resolution depth
+    ///   buffers, this should not be too far away, or you'll see bad z-fighting artifacts.
+    ///
+    /// Returns the final perspective matrix.
+    /// Remarks: Think of the optical axis as an imaginary line that passes through the camera lens. In front of the
+    /// camera lens, there's an image plane, perpendicular to the optical axis, where the image of the scene being
+    /// captured is formed. Its distance is equal to the focal length of the camera from the center of the lens. Here,
+    /// we find the ratio between the size of the image plane and distance from the camera in one unit distance and
+    /// multiply it by the near clip distance to find a near plane that is parallel.
+    ///
+    /// see also [`crate::maths::matrix_perspective`]
+    pub fn perspective_focal(image_resolution: Vec2, focal_length_px: f32, near_clip: f32, far_clip: f32) -> Self {
+        let near_plane_dimensions = image_resolution / focal_length_px * near_clip;
+
+        let two_near = near_clip + near_clip;
+        let f_range = far_clip / (near_clip - far_clip);
+
+        let mut this = Self::IDENTITY;
+        unsafe {
+            this.m[0] = two_near / near_plane_dimensions.x;
+            this.m[1] = 0.0;
+            this.m[2] = 0.0;
+            this.m[3] = 0.0;
+
+            this.m[4] = 0.0;
+            this.m[5] = two_near / near_plane_dimensions.y;
+            this.m[6] = 0.0;
+            this.m[7] = 0.0;
+
+            this.m[8] = 0.0;
+            this.m[9] = 0.0;
+            this.m[10] = f_range;
+            this.m[11] = -1.0;
+
+            this.m[12] = 0.0;
+            this.m[13] = 0.0;
+            this.m[14] = f_range * near_clip;
+            this.m[15] = 0.0;
+        }
+        this
     }
 
     /// Create a rotation matrix from a Quaternion.
@@ -1701,17 +1764,10 @@ impl Matrix {
         unsafe { matrix_trs_out(out_result, translation, rotation, scale) }
     }
 
-    /// <https://stereokit.net/Pages/StereoKit/Matrix/Perspective.html>
-    ///
-    /// see also [`crate::maths::matrix_perspective`]
-    // pub fn perspective_to_image(image_resolution: Vec2, focal_length_px: f32, near_clip: f32, far_clip: f32) -> Self {
-    //     todo!();
-    // }
-
     /// Inverts this Matrix! If the matrix takes a point from a -> b, then its inverse takes the point from b -> a.
     /// The Matrix is modified so use get_inverse* for performance gains
     /// <https://stereokit.net/Pages/StereoKit/Matrix/Invert.html>
-    /// TODO check the modif
+    ///
     /// see also [`Matrix::get_inverse`] [`crate::maths::matrix_invert`]
     #[inline]
     pub fn invert(&mut self) -> &mut Self {
@@ -2044,7 +2100,6 @@ impl Mul<Quat> for Matrix {
 /// <https://stereokit.net/Pages/StereoKit/Matrix/op_Multiply.html>
 ///
 /// see also [`crate::maths::matrix_mul_rotation`]
-
 impl MulAssign<Matrix> for Quat {
     fn mul_assign(&mut self, rhs: Matrix) {
         let res = unsafe { matrix_transform_quat(rhs, *self) };

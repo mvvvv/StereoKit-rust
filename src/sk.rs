@@ -558,10 +558,9 @@ impl SkSettings {
     }
 }
 
-/// Trampoline for Sk.run closures
+// Trampoline for Sk.run closures
 // unsafe extern "C" fn sk_trampoline<F: FnMut(&mut Sk)>(context: *mut c_void) {
 //     let (closure, sk) = &mut *(context as *mut (&mut F, &mut Sk));
-
 //     closure(*sk);
 // }
 
@@ -1024,30 +1023,27 @@ impl Sk {
         true
     }
 
-    /// A way to execute without event_loop frame. This can be use only for PC programs
-    /// or android ones having a _main() derived with #ndk-glue (warning ndk-glue is deprecated)
-    /// <https://stereokit.net/Pages/StereoKit/SK/Run.html>
-    ///
-    /// see also [`crate::sk::sk_run_data`]
+    // A way to execute without event_loop frame. This can be use only for PC programs
+    // or android ones having a _main() derived with #ndk-glue (warning ndk-glue is deprecated)
+    // <https://stereokit.net/Pages/StereoKit/SK/Run.html>
+    //
+    // see also [`crate::sk::sk_run_data`]
     // pub fn run_raw<U: FnMut(&mut Sk), S: FnMut(&mut Sk)>(mut self, mut on_step: U, mut on_shutdown: S) {
     //     while self.step(&mut on_step) {}
     //     on_shutdown(&mut self);
     //     self.shutdown();
     // }
 
-    /// An alternative and basic way to execute a stereokit without ISteppers. This can be use only for PC programs
-    /// or android ones having a _main() derived with #ndk-glue (warning ndk-glue is deprecated)
-    /// <https://stereokit.net/Pages/StereoKit/SK.html>
-    ///
-    /// see also [`crate::sk::sk_run_data`]
-
+    // An alternative and basic way to execute a stereokit without ISteppers. This can be use only for PC programs
+    // or android ones having a _main() derived with #ndk-glue (warning ndk-glue is deprecated)
+    // <https://stereokit.net/Pages/StereoKit/SK.html>
+    //
+    // see also [`crate::sk::sk_run_data`]
     // pub fn run_basic<U: FnMut(&mut Sk), S: FnMut(&mut Sk)>(mut self, mut on_update: U, mut on_shutdown: S) {
     //     let mut update_ref: (&mut U, &mut &mut Sk) = (&mut on_update, &mut &mut self);
     //     let update_raw = &mut update_ref as *mut (&mut U, &mut &mut Sk) as *mut c_void;
-
     //     let mut shutdown_ref: (&mut S, &mut &mut Sk) = (&mut on_shutdown, &mut &mut self);
     //     let shutdown_raw = &mut shutdown_ref as *mut (&mut S, &mut &mut Sk) as *mut c_void;
-
     //     unsafe {
     //         sk_run_data(Some(sk_trampoline::<U>), update_raw, Some(sk_trampoline::<S>), shutdown_raw);
     //     }

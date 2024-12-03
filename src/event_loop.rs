@@ -436,7 +436,7 @@ impl Default for StepperClosures<'_> {
     }
 }
 
-impl<'a> StepperClosures<'a> {
+impl StepperClosures<'_> {
     pub fn new() -> Self {
         Self { ..Default::default() }
     }

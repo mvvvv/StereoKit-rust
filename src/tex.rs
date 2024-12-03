@@ -177,7 +177,6 @@ pub enum TexAddress {
 /// load any image format that stb_image can, (jpg, png, tga, bmp, psd, gif, hdr, pic, ktx2) plus more later on, and you
 /// can also create textures procedurally.
 /// <https://stereokit.net/Pages/StereoKit/Tex.html>
-
 #[repr(C)]
 #[derive(Debug)]
 pub struct Tex(pub NonNull<_TexT>);
@@ -1438,10 +1437,10 @@ impl SHCubemap {
     ///
     /// see also [`crate::tex::tex_gen_cubemap_sh`]
     pub fn get_cubemap_lighting(cubemap_texture: impl AsRef<Tex>) -> SHCubemap {
-        return SHCubemap {
+        SHCubemap {
             sh: unsafe { tex_get_cubemap_lighting(cubemap_texture.as_ref().0.as_ptr()) },
             tex: Tex(NonNull::new(unsafe { tex_find(tex_get_id(cubemap_texture.as_ref().0.as_ptr())) }).unwrap()),
-        };
+        }
     }
 
     /// Get the cubemap texture and SH light of the the current skylight

@@ -36,9 +36,9 @@ pub struct LogWindow<'a> {
     items_size: usize,
 }
 
-unsafe impl<'a> Send for LogWindow<'a> {}
+unsafe impl Send for LogWindow<'_> {}
 
-impl<'a> IStepper for LogWindow<'a> {
+impl IStepper for LogWindow<'_> {
     fn enabled(&self) -> bool {
         self.enabled
     }

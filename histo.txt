@@ -17,7 +17,7 @@ cargo build_sk_rs --example main_pc --debug --features event-loop --x64-win-gnu 
 #---- building for android
 cargo apk run --features event-loop  --example main
 cargo compile_sks --options -f -t e
-cargo apk build --release --features event-loop  --example main
+cargo apk build --features event-loop  --example main
 
 #---- build ktx2 compressed texture_compression
 ktx create --cubemap --encode uastc  --format R8G8B8A8_UNORM  --assign-oetf linear --assign-primaries bt709  --generate-mipmap right.png left.png top.png bottom.png front.png back.png cubemap_rgba32.ktx2

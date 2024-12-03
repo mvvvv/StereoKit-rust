@@ -11,9 +11,6 @@ use crate::{system::IAsset, tex::TexT, StereoKitError};
 ///
 /// This asset is used anywhere that text shows up, like in the UI or Text classes!
 /// <https://stereokit.net/Pages/StereoKit/Font.html>
-/// ## Examples
-///
-
 #[repr(C)]
 #[derive(Debug)]
 pub struct Font(pub NonNull<_FontT>);

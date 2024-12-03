@@ -18,48 +18,11 @@ use crate::{
 };
 use std::{cell::RefCell, ffi::c_void, ptr::null_mut, rc::Rc};
 
-///
-///
-///  This is a rust copycat of https://github.com/StereoKit/StereoKit/blob/master/Examples/StereoKitTest/Tools/PassthroughFBExt.cs
-///
-///
-
 /// The StepperAction to trigger with the value "0"/"1" to Show/Hide the keyboard.
 pub const KEYBOARD_SHOW: &str = "KeyboardShow";
 
-/// Use PassthroughFbExt::new(true) instead of Default if you want to have it at start up.
+/// TODO:
 ///
-///
-/// ```ignore
-/// // The folowing line must be added before initializing sk:
-/// BackendOpenXR::request_ext("XR_FB_passthrough");
-/// let (sk, event_loop) = settings.init().unwrap();
-///
-/// // Launch the stepper as follow :
-/// let mut passthrough = false;
-/// let passthrough_enabled = BackendOpenXR::ext_enabled("XR_FB_passthrough");
-/// if passthrough_enabled {
-///      sk.push_action(StepperAction::add_default::<PassthroughFbExt>("PassthroughFbExt"));
-///      Log::diag("Passthrough Disabled !!")
-///  } else {
-///      Log::diag("No Passthrough !!")
-///  }
-///
-///  // Activate/Deactivate the stepper as follow :
-///  if passthrough_enabled && passthrough != new_passthrough_value {
-///      passthrough = new_passthrough_value;
-///          let mut string_value = "0";
-///          if passthrough {
-///              Log::diag("Activate passthrough");
-///              string_value = "1";
-///          } else {
-///              Log::diag("Deactivate passthrough");
-///          }
-///          sk.push_action(StepperAction::event("main".into(), PASSTHROUGH_FLIP, string_value))
-///      }
-///  }
-/// ```
-
 pub struct VirtualKbdMETA {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
@@ -129,7 +92,6 @@ impl Default for VirtualKbdMETA {
 }
 
 /// All the code here run in the main thread
-
 impl IStepper for VirtualKbdMETA {
     fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
         self.id = id;

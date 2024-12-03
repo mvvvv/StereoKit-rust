@@ -35,10 +35,8 @@ pub enum SpriteType {
 /// Since rendering is atlas based, you also have only one material per atlas. So this is why you might wish to put a
 /// sprite in one atlas or another, so you can apply different
 /// <https://stereokit.net/Pages/StereoKit/Sprite.html>
-/// ## Examples
 ///
 /// see also [`stereokit::Sprite`]
-
 #[repr(C)]
 #[derive(Debug)]
 pub struct Sprite(pub NonNull<_SpriteT>);

@@ -399,13 +399,13 @@ pub enum AnimMode {
     Manual = 2,
 }
 
-impl<'a> Iterator for Anims<'a> {
+impl Iterator for Anims<'_> {
     type Item = Anim;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.curr += 1;
         if self.curr < self.get_count() {
-            return Some(Anim {
+            Some(Anim {
                 name: match self.get_name_at_index(self.curr) {
                     Some(name) => name.to_string(),
                     None => {
@@ -414,7 +414,7 @@ impl<'a> Iterator for Anims<'a> {
                     }
                 },
                 duration: self.get_duration_at_index(self.curr),
-            });
+            })
         } else {
             None
         }
@@ -815,7 +815,7 @@ pub struct ModelNode<'a> {
 }
 pub type ModelNodeId = i32;
 
-impl<'a> ModelNode<'a> {
+impl ModelNode<'_> {
     /// Set the name of the node
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/Name.html>
     ///
@@ -1053,7 +1053,7 @@ pub struct Infos<'a> {
     curr: i32,
 }
 
-impl<'a> Iterator for Infos<'a> {
+impl Iterator for Infos<'_> {
     type Item = Info;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -1140,7 +1140,7 @@ impl<'a> Infos<'a> {
     pub fn get_info<S: AsRef<str>>(&self, info_key_utf8: S) -> Option<&str> {
         let c_str = CString::new(info_key_utf8.as_ref()).unwrap();
         match NonNull::new(unsafe { model_node_info_get(self.model.0.as_ptr(), self.node_id, c_str.as_ptr()) }) {
-            Some(non_null) => return unsafe { CStr::from_ptr(non_null.as_ref()).to_str().ok() },
+            Some(non_null) => unsafe { CStr::from_ptr(non_null.as_ref()).to_str().ok() },
             None => None,
         }
     }

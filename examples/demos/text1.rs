@@ -69,7 +69,7 @@ impl Default for Text1 {
             keyboard_layout_fr: false,
             inst_play: None,
             show_keyboard: false,
-            text_sample: String::from("😃...😃"),
+            text_sample: String::from("😃‣‣‣‣😃"),
             font_selected: 1,
             text_context: TextContext::Text,
             text_style_test: Text::make_style(Font::default(), 0.05, WHITE),
@@ -116,14 +116,28 @@ impl Text1 {
             self.font_selected = 1;
         }
         Ui::same_line();
-        if Ui::radio_img("Font 1", self.font_selected == 2, &self.radio_off, &self.radio_on, UiBtnLayout::Left, None) {
-            let font = Font::from_file("fonts/Courier Prime.ttf").unwrap_or_default();
+        if Ui::radio_img(
+            "Font Noto Emoji",
+            self.font_selected == 2,
+            &self.radio_off,
+            &self.radio_on,
+            UiBtnLayout::Left,
+            None,
+        ) {
+            let font = Font::from_file("fonts/Noto_Emoji/NotoEmoji-VariableFont_wght.ttf").unwrap_or_default();
             self.text_style_test = Text::make_style(font, 0.05, WHITE);
             self.font_selected = 2;
         }
         Ui::same_line();
-        if Ui::radio_img("Font 2", self.font_selected == 3, &self.radio_off, &self.radio_on, UiBtnLayout::Left, None) {
-            let font = Font::from_file("fonts/Courier Prime Italic.ttf").unwrap_or_default();
+        if Ui::radio_img(
+            "Font Inter",
+            self.font_selected == 3,
+            &self.radio_off,
+            &self.radio_on,
+            UiBtnLayout::Left,
+            None,
+        ) {
+            let font = Font::from_file("fonts/Inter/Inter-VariableFont_opsz,wght.ttf").unwrap_or_default();
             self.text_style_test = Text::make_style(font, 0.05, WHITE);
             self.font_selected = 3;
         }

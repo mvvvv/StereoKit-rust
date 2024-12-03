@@ -27,9 +27,9 @@ use crate::{
 /// particularly useful when working with Assets at a high level with the Assets class.
 /// <https://stereokit.net/Pages/StereoKit/IAsset.html>
 pub trait IAsset {
-    /// sets the unique identifier of this asset resource! This can be helpful for debugging, managine your assets, or
-    /// finding them later on!
-    /// <https://stereokit.net/Pages/StereoKit/IAsset/Id.html>
+    // sets the unique identifier of this asset resource! This can be helpful for debugging, managine your assets, or
+    // finding them later on!
+    // <https://stereokit.net/Pages/StereoKit/IAsset/Id.html>
     //fn id(&mut self, id: impl AsRef<str>);
 
     /// gets the unique identifier of this asset resource! This can be helpful for debugging, managine your assets, or
@@ -3860,7 +3860,7 @@ impl World {
             None
         }
     }
-    /// TODO : Ask for the non try version
+    // TODO : Ask for the non try version
 
     /// Converts a Windows Mirage spatial node GUID into a Pose based on its current position and rotation! Check
     /// Sk::System::spatial_bridge_present to see if this is available to use. Currently only on HoloLens, good for use
