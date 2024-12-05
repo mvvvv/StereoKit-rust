@@ -361,6 +361,8 @@ impl SoundInst {
         unsafe { sound_inst_get_volume(*self) }
     }
 
+    /// The maximum intensity of the sound data since the last frame, as a value from 0-1. This is unaffected by its 3d
+    /// position or volume settings, and is straight from the audio file's data.
     /// <https://stereokit.net/Pages/StereoKit/SoundInst/Intensity.html>
     ///
     /// see also [`crate::sound::sound_inst_get_intensity`]

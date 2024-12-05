@@ -29,6 +29,7 @@ pub struct RenderList1 {
     old_clear_color: Color128,
     at: Vec3,
     quad: Mesh,
+    perspective: Matrix,
     clear_primary: bool,
     pub transform: Matrix,
     text: String,
@@ -52,6 +53,7 @@ impl Default for RenderList1 {
         render_mat.diffuse_tex(&render_tex);
         render_mat.face_cull(stereokit_rust::material::Cull::None);
 
+        let perspective = Matrix::perspective(90.0, 1.0, 0.01, 1010.0);
         Self {
             id: "RenderList1".to_string(),
             sk_info: None,
@@ -64,6 +66,7 @@ impl Default for RenderList1 {
             old_clear_color: Color128::BLACK_TRANSPARENT,
             at,
             quad,
+            perspective,
             transform: Matrix::tr(&((Vec3::NEG_Z * 2.5) + Vec3::Y), &Quat::from_angles(0.0, 180.0, 0.0)),
             text: "RenderList1".to_owned(),
             text_style: Text::make_style(Font::default(), 0.3, RED),
@@ -99,11 +102,8 @@ impl RenderList1 {
 
         self.list.draw_now(
             &self.render_tex,
-            Matrix::tr(
-                &(self.at * -1.0),
-                &Quat::look_at(self.at, Vec3::ZERO, Some(Vec3::new(1.0, Time::get_totalf().sin(), 1.0))),
-            ),
-            Matrix::perspective(90.0, 1.0, 0.01, 1010.0),
+            Matrix::look_at(self.at, Vec3::ZERO, Some(Vec3::new(1.0, Time::get_totalf().sin(), 1.0))),
+            self.perspective,
             Rect::new(0.0, 0.0, 1.0, 1.0),
             None,
             None,
@@ -112,7 +112,12 @@ impl RenderList1 {
         Ui::window_begin("Render Lists", &mut self.window_pose, Some(Vec2::new(0.23, 0.35)), None, None);
         Ui::label(format!("Render items: {}/{}", self.primary.get_count(), self.primary.get_prev_count()), None, true);
         if let Some(value) = Ui::toggle("Clear", self.clear_primary, None) {
-            self.clear_primary = value
+            self.clear_primary = value;
+            if value {
+                self.perspective = Matrix::perspective_focal(Vec2::ONE * 2048.0, 100000.0, 0.01, 1010.0)
+            } else {
+                self.perspective = Matrix::perspective(90.0, 1.0, 0.01, 1010.0)
+            }
         };
         Ui::label("Offscreen List:", None, true);
         let b = Ui::layout_reserve(Vec2::new(0.1, 0.1), false, 0.0);

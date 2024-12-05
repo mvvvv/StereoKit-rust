@@ -144,7 +144,7 @@ impl Vec2 {
     }
 
     /// Turns this vector into a normalized vector (vector with a length of 1) from the current vector. Will not work
-    /// properly if the vector has a length of zero. Vec2::normalize is faster.
+    /// properly if the vector has a length of zero. Vec2::get_normalized is faster.
     /// <https://stereokit.net/Pages/StereoKit/Vec2/Normalize.html>
     #[inline]
     pub fn normalize(&mut self) {
@@ -558,7 +558,7 @@ impl Vec3 {
     }
 
     /// Turns this vector into a normalized vector (vector with a length of 1) from the current vector. Will not work
-    /// properly if the vector has a length of zero. Vec3::normalize is faster.
+    /// properly if the vector has a length of zero. Vec3::get_normalized is faster.
     /// <https://stereokit.net/Pages/StereoKit/Vec3/Normalize.html>
     #[inline]
     pub fn normalize(&mut self) {
@@ -1675,29 +1675,70 @@ impl Matrix {
         let two_near = near_clip + near_clip;
         let f_range = far_clip / (near_clip - far_clip);
 
-        let mut this = Self::IDENTITY;
-        unsafe {
-            this.m[0] = two_near / near_plane_dimensions.x;
-            this.m[1] = 0.0;
-            this.m[2] = 0.0;
-            this.m[3] = 0.0;
-
-            this.m[4] = 0.0;
-            this.m[5] = two_near / near_plane_dimensions.y;
-            this.m[6] = 0.0;
-            this.m[7] = 0.0;
-
-            this.m[8] = 0.0;
-            this.m[9] = 0.0;
-            this.m[10] = f_range;
-            this.m[11] = -1.0;
-
-            this.m[12] = 0.0;
-            this.m[13] = 0.0;
-            this.m[14] = f_range * near_clip;
-            this.m[15] = 0.0;
+        Self {
+            m: [
+                two_near / near_plane_dimensions.x,
+                0.0,
+                0.0,
+                0.0,
+                //
+                0.0,
+                two_near / near_plane_dimensions.y,
+                0.0,
+                0.0,
+                //
+                0.0,
+                0.0,
+                f_range,
+                -1.0,
+                //
+                0.0,
+                0.0,
+                f_range * near_clip,
+                0.0,
+            ],
         }
-        this
+    }
+
+    /// <https://stereokit.net/Pages/StereoKit/Matrix/LookAt.html>
+    ///
+    /// see also [`crate::maths::matrix_r`]
+    #[inline]
+    pub fn look_at(from: Vec3, at: Vec3, up: Option<Vec3>) -> Self {
+        let up = up.unwrap_or(Vec3::UP);
+        let forward = (from - at).get_normalized();
+        let right_v = Vec3::perpendicular_right(forward, up).get_normalized();
+        let up_v = Vec3::perpendicular_right(right_v, forward).get_normalized();
+        Self {
+            m: [
+                right_v.x,
+                up_v.x,
+                forward.x,
+                0.0,
+                //
+                right_v.y,
+                up_v.y,
+                forward.y,
+                0.0,
+                //
+                right_v.z,
+                up_v.z,
+                forward.z,
+                0.0,
+                //
+                -Vec3::dot(from, right_v),
+                -Vec3::dot(from, up_v),
+                -Vec3::dot(from, forward),
+                1.0,
+            ],
+        }
+
+        // Self::from_cols(
+        //     Vec4::new(right_v.x, up_v.x, -f.x, 0.0),
+        //     Vec4::new(right_v.y, up_v.y, -f.y, 0.0),
+        //     Vec4::new(right_v.z, up_v.z, -f.z, 0.0),
+        //     Vec4::new(-eye.dot(right_v), -eye.dot(up_v), eye.dot(f), 1.0),
+        // )
     }
 
     /// Create a rotation matrix from a Quaternion.

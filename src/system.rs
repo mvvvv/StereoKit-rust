@@ -3682,13 +3682,15 @@ impl Text {
         }
     }
 
-    /// This modifies a text layout size with information related
+    /// This modifies a text layout size to include the tallest and lowest possible values for the glyphs in this font.
+    /// This is for when you need to be careful about avoiding clipping that would happen if you only used the layout size.
     /// <https://stereokit.net/Pages/StereoKit/Text/SizeRender.html>
-    /// * size_layout - the layout.
-    /// * text_style - if None will use the TextStyle::default()
-    /// * y_offset - out calculated offset.
+    /// * size_layout - A size previously calculated using `Text.SizeLayout`.
+    /// * text_style -The same style as used for calculating the sizeLayout. If None will use the TextStyle::default()
+    /// * y_offset - Since the render size will ascend from the initial position, this will be the offset from the
+    ///   initial position upwards. You should add it to your Y position.
     ///
-    /// Returns size of the text in meters
+    /// Returns the sizeLayout modified to account for the size of the most extreme glyphs.
     ///
     /// see also [`crate::system::text_size_layout`] [`crate::system::text_size_layout_constrained`]
     pub fn size_render(size_layout: impl Into<Vec2>, text_style: Option<TextStyle>, y_offset: &mut f32) -> Vec2 {

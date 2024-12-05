@@ -372,10 +372,15 @@ pub type IdHashT = u64;
 /// Visual properties of a slider behavior.
 /// <https://stereokit.net/Pages/StereoKit/UISliderData.html>
 pub struct UiSliderData {
+    /// The center location of where the slider's interactionelement is.
     pub button_center: Vec2,
+    /// The current distance of the finger, within the pressable volume of the slider, from the bottom of the slider
     pub finger_offset: f32,
+    /// This is the current frame's "focus" state for the button.
     pub focus_state: BtnState,
+    /// This is the current frame's "active" state for the button.
     pub active_state: BtnState,
+    /// The interactor that is currently driving the activity or focus of the slider. Or -1 if there is no interaction.
     pub interactor: i32,
 }
 
@@ -531,14 +536,14 @@ extern "C" {
         scroll_direction: UiScroll,
         height: f32,
         text_align: TextAlign,
-    );
+    ) -> Bool32T;
     pub fn ui_text_16(
         text: *const c_ushort,
         scroll: *mut Vec2,
         scroll_direction: UiScroll,
         height: f32,
         text_align: TextAlign,
-    );
+    ) -> Bool32T;
     pub fn ui_text_sz(
         text: *const c_char,
         scroll: *mut Vec2,
@@ -546,7 +551,7 @@ extern "C" {
         size: Vec2,
         text_align: TextAlign,
         fit: TextFit,
-    );
+    ) -> Bool32T;
     pub fn ui_text_sz_16(
         text: *const c_ushort,
         scroll: *mut Vec2,
@@ -554,7 +559,7 @@ extern "C" {
         size: Vec2,
         text_align: TextAlign,
         fit: TextFit,
-    );
+    ) -> Bool32T;
     pub fn ui_text_at(
         text: *const c_char,
         scroll: *mut Vec2,
@@ -563,7 +568,7 @@ extern "C" {
         fit: TextFit,
         window_relative_pos: Vec3,
         size: Vec2,
-    );
+    ) -> Bool32T;
     pub fn ui_text_at_16(
         text: *const c_ushort,
         scroll: *mut Vec2,
@@ -572,7 +577,7 @@ extern "C" {
         fit: TextFit,
         window_relative_pos: Vec3,
         size: Vec2,
-    );
+    ) -> Bool32T;
     pub fn ui_button(text: *const c_char) -> Bool32T;
     pub fn ui_button_16(text: *const c_ushort) -> Bool32T;
     pub fn ui_button_sz(text: *const c_char, size: Vec2) -> Bool32T;
@@ -2230,10 +2235,12 @@ impl Ui {
         unsafe { ui_stack_hash(cstr.as_ptr()) }
     }
 
-    /// Displays a large chunk of text on the current layout. This can include new lines and spaces, and will properly
-    /// wrap once it fills the entire layout! Text uses the UI’s current font settings, which can be changed with
-    /// Ui::push/pop_text_style.
+    /// A scrolling text element! This is for reading large chunks of text that may be too long to fit in the available
+    /// space when scroll is Some(size). It requires a height, as well as a place to store the current scroll value.
+    /// Text uses the UI's current font settings, which can be changed with UI.Push/PopTextStyle.
     /// <https://stereokit.net/Pages/StereoKit/UI/Text.html>
+    /// * text - The text you wish to display, there's no additional parsing done to this text, so put it in as you want
+    ///   to see it!
     /// * scroll - This is the current scroll value of the text, in meters, _not_ percent.
     /// * scrollDirection - What scroll bars are allowed to show on this text? Vertical, horizontal, both?
     /// * height - The vertical height of this Text element.
@@ -2241,8 +2248,10 @@ impl Ui {
     /// * text_align - Where should the text position itself within its bounds? Default is TextAlign::TopLeft is how most
     ///   european language are aligned.
     /// * fit - Describe how the text should behave when one of its size dimensions conflicts with the provided ‘size’
-    ///   parameter. Ui::text uses TextFit::Wrap by default.
+    ///   parameter. Ui::text uses TextFit::Wrap by default and this scrolling overload will always add `TextFit.Clip`
+    ///   internally.
     ///
+    /// Returns true if any of the scroll bars have changed this frame.
     /// see also [`crate::ui::ui_text`]
     pub fn text(
         text: impl AsRef<str>,
@@ -2252,7 +2261,7 @@ impl Ui {
         width: Option<f32>,
         text_align: Option<TextAlign>,
         fit: Option<TextFit>,
-    ) {
+    ) -> bool {
         let cstr = CString::new(text.as_ref()).unwrap();
         let scroll_direction = scroll_direction.unwrap_or(UiScroll::None);
         let height = height.unwrap_or(0.0);
@@ -2261,13 +2270,15 @@ impl Ui {
         if let Some(width) = width {
             let size = Vec2::new(width, height);
             match scroll {
-                Some(scroll) => unsafe { ui_text_sz(cstr.as_ptr(), scroll, scroll_direction, size, text_align, fit) },
-                None => unsafe { ui_text_sz(cstr.as_ptr(), null_mut(), UiScroll::None, size, text_align, fit) },
+                Some(scroll) => unsafe {
+                    ui_text_sz(cstr.as_ptr(), scroll, scroll_direction, size, text_align, fit) != 0
+                },
+                None => unsafe { ui_text_sz(cstr.as_ptr(), null_mut(), UiScroll::None, size, text_align, fit) != 0 },
             }
         } else {
             match scroll {
-                Some(scroll) => unsafe { ui_text(cstr.as_ptr(), scroll, scroll_direction, height, text_align) },
-                None => unsafe { ui_text(cstr.as_ptr(), null_mut(), UiScroll::None, 0.0, text_align) },
+                Some(scroll) => unsafe { ui_text(cstr.as_ptr(), scroll, scroll_direction, height, text_align) != 0 },
+                None => unsafe { ui_text(cstr.as_ptr(), null_mut(), UiScroll::None, 0.0, text_align) != 0 },
             }
         }
     }
@@ -2282,6 +2293,7 @@ impl Ui {
     ///   parameter. Ui::text uses TextFit::Wrap by default.
     /// * size - The layout size for this element in Hierarchy space.
     ///
+    /// Returns true if any of the scroll bars have changed this frame.
     /// see also [`crate::ui::ui_text_at`]
     pub fn text_at(
         text: impl AsRef<str>,
@@ -2291,7 +2303,7 @@ impl Ui {
         fit: TextFit,
         top_left_corner: impl Into<Vec3>,
         size: impl Into<Vec2>,
-    ) {
+    ) -> bool {
         let scroll_direction = scroll_direction.unwrap_or(UiScroll::None);
         let cstr = CString::new(text.as_ref()).unwrap();
         match scroll {
@@ -2304,7 +2316,7 @@ impl Ui {
                     fit,
                     top_left_corner.into(),
                     size.into(),
-                )
+                ) != 0
             },
             None => unsafe {
                 ui_text_at(
@@ -2315,7 +2327,7 @@ impl Ui {
                     fit,
                     top_left_corner.into(),
                     size.into(),
-                )
+                ) != 0
             },
         }
     }
