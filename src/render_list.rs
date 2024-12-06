@@ -1,13 +1,18 @@
-use std::{self, ffi::c_void, ptr::NonNull};
+use std::{
+    self,
+    ffi::{c_char, c_void, CStr, CString},
+    ptr::NonNull,
+};
 
 use crate::{
     material::{Material, MaterialT},
     maths::{Matrix, Rect},
     mesh::{Mesh, MeshT},
     model::{Model, ModelT},
-    system::{assets_releaseref_threadsafe, RenderClear, RenderLayer},
+    system::{assets_releaseref_threadsafe, IAsset, RenderClear, RenderLayer},
     tex::{Tex, TexT},
     util::Color128,
+    StereoKitError,
 };
 
 /// A RenderList is a collection of Draw commands that can be submitted to various surfaces. RenderList.Primary is
@@ -37,6 +42,9 @@ pub struct _RenderListT {
 pub type RenderListT = *mut _RenderListT;
 
 extern "C" {
+    pub fn render_list_find(id: *const c_char) -> RenderListT;
+    pub fn render_list_set_id(render_list: RenderListT, id: *const c_char);
+    pub fn render_list_get_id(render_list: RenderListT) -> *const c_char;
     pub fn render_get_primary_list() -> RenderListT;
     pub fn render_list_create() -> RenderListT;
     pub fn render_list_addref(list: RenderListT);
@@ -87,6 +95,16 @@ impl Default for RenderList {
     }
 }
 
+impl IAsset for RenderList {
+    // fn id(&mut self, id: impl AsRef<str>) {
+    //     self.id(id);
+    // }
+
+    fn get_id(&self) -> &str {
+        self.get_id()
+    }
+}
+
 impl RenderList {
     /// Creates a new empty RenderList.
     /// <https://stereokit.net/Pages/StereoKit/RenderList/RenderList.html>
@@ -94,6 +112,50 @@ impl RenderList {
     /// see also [`crate::render_list::render_list_create`]
     pub fn new() -> Self {
         RenderList(NonNull::new(unsafe { render_list_create() }).unwrap())
+    }
+
+    /// Looks for a RenderList matching the given id!
+    /// <https://stereokit.net/Pages/StereoKit/RenderList/Find.html>
+    ///
+    /// see also [`crate::render_list::render_list_find`]
+    pub fn find<S: AsRef<str>>(id: S) -> Result<RenderList, StereoKitError> {
+        let c_str = CString::new(id.as_ref())?;
+        let render_list = NonNull::new(unsafe { render_list_find(c_str.as_ptr()) });
+        match render_list {
+            Some(render_list) => Ok(RenderList(render_list)),
+            None => Err(StereoKitError::RenderListFind(id.as_ref().to_owned(), "not found".to_owned())),
+        }
+    }
+
+    /// Creates a clone of the same reference. Basically, the new variable is the same asset. This is what you get by
+    /// calling find() method.
+    /// <https://stereokit.net/Pages/StereoKit/RenderList/Find.html>
+    ///
+    /// see also [`crate::render_list::render_list_find()`]
+    pub fn clone_ref(&self) -> RenderList {
+        RenderList(
+            NonNull::new(unsafe { render_list_find(render_list_get_id(self.0.as_ptr())) })
+                .expect("<asset>::clone_ref failed!"),
+        )
+    }
+
+    /// sets the unique identifier of this asset resource! This can be helpful for debugging,
+    /// managing your assets, or finding them later on!
+    ///<https://stereokit.net/Pages/StereoKit/RenderList/Id.html>
+    ///
+    /// see also [`crate::render_list::render_list_set_id`]
+    pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
+        let cstr_id = CString::new(id.as_ref()).unwrap();
+        unsafe { render_list_set_id(self.0.as_ptr(), cstr_id.as_ptr()) };
+        self
+    }
+
+    /// The id of this render list
+    /// <https://stereokit.net/Pages/StereoKit/RenderList/Id.html>
+    ///
+    /// see also [`crate::render_list::render_list_get_id`]
+    pub fn get_id(&self) -> &str {
+        unsafe { CStr::from_ptr(render_list_get_id(self.0.as_ptr())) }.to_str().unwrap()
     }
 
     /// The number of Mesh/Material pairs that have been submitted to the render list so far this frame.

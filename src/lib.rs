@@ -74,8 +74,10 @@ pub enum StereoKitError {
     SpriteFile(PathBuf),
     #[error("failed to find sprite {0} for reason {1}")]
     SpriteFind(String, String),
-    #[error("failed to find sound {0}")]
-    SoundFind(String),
+    #[error("failed to find sound {0} for reason {1}")]
+    SoundFind(String, String),
+    #[error("failed to find render list {0} for reason {1}")]
+    RenderListFind(String, String),
     #[error("failed to create sound from file {0}")]
     SoundFile(PathBuf),
     #[error("failed to create sound streaming {0}")]

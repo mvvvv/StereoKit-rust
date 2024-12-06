@@ -95,7 +95,7 @@ impl Default for Shader1 {
         let indices = [0, 1, 2, 2, 1, 0];
 
         let mut mesh = Mesh::new();
-        mesh.id("mesh1").keep_data(true).set_data(&vertices, &indices, None);
+        mesh.id("mesh1").keep_data(true).set_data(&vertices, &indices, true);
 
         let mut plane = Mesh::generate_plane_up(Vec2::new(0.5, 0.5), None, true);
         plane.id("plane1");

@@ -965,7 +965,7 @@ impl Tex {
         self
     }
 
-    /// Gets the unique identifier of this asset resource! This can be helpful for debugging, managine your assets, or
+    /// Gets the unique identifier of this asset resource! This can be helpful for debugging, managing your assets, or
     /// finding them later on!
     /// <https://stereokit.net/Pages/StereoKit/Tex/Id.html>
     ///

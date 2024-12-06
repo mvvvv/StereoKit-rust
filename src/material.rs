@@ -246,6 +246,16 @@ impl Material {
         )
     }
 
+    /// Set a new id to the material.
+    /// <https://stereokit.net/Pages/StereoKit/Material/Id.html>
+    ///
+    /// see also [`crate::material::material_set_id`]
+    pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
+        let c_str = CString::new(id.as_ref()).unwrap();
+        unsafe { material_set_id(self.0.as_ptr(), c_str.as_ptr()) };
+        self
+    }
+
     /// Overrides the Shader this material uses.
     /// <https://stereokit.net/Pages/StereoKit/Material/Shader.html>
     ///
@@ -530,16 +540,6 @@ impl Material {
     /// see also [`crate::material::material_set_chain`]
     pub fn chain(&mut self, chained_material: &Material) -> &mut Self {
         unsafe { material_set_chain(self.0.as_ptr(), chained_material.0.as_ptr()) };
-        self
-    }
-
-    /// Set a new id to the material.
-    /// <https://stereokit.net/Pages/StereoKit/Material/Id.html>
-    ///
-    /// see also [`crate::material::material_set_id`]
-    pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
-        let c_str = CString::new(id.as_ref()).unwrap();
-        unsafe { material_set_id(self.0.as_ptr(), c_str.as_ptr()) };
         self
     }
 

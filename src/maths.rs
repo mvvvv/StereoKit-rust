@@ -2382,7 +2382,9 @@ impl Bounds {
     /// Calculate the intersection between a Ray, and these bounds. Returns false if no intersection occurred, and ‘at’
     /// will contain the nearest intersection point to the start of the ray if an intersection is found!
     /// <https://stereokit.net/Pages/StereoKit/Bounds/Intersect.html>
+    /// * ray - Any Ray in the same coordinate space as the Bounds
     ///
+    /// Returns the closest intersection point to the origin of the ray or None if there isn't an instersection
     /// see also [`crate::maths::bounds_ray_intersect`]
     #[inline]
     pub fn intersect(&self, ray: Ray) -> Option<Vec3> {
@@ -2606,7 +2608,9 @@ impl Plane {
 
     /// Checks the intersection of a ray with this plane!
     /// <https://stereokit.net/Pages/StereoKit/Plane/Intersect.html>
+    /// * ray - The ray we're checking with.
     ///
+    /// Returns the intersection point or None if there isn't an instersection
     /// see also [`crate::maths::plane_ray_intersect`]
     #[inline]
     pub fn intersect(&self, ray: Ray) -> Option<Vec3> {
@@ -2619,7 +2623,10 @@ impl Plane {
 
     /// Checks the intersection of a line with this plane!
     /// <https://stereokit.net/Pages/StereoKit/Plane/Intersect.html>
+    /// * line_start - Start of the line.
+    /// * line_end - End of the line.
     ///
+    /// Returns the intersection point or None if there isn't an instersection
     /// see also [`crate::maths::plane_line_intersect`]
     #[inline]
     pub fn intersect_line<V: Into<Vec3>>(&self, line_start: V, line_end: V) -> Option<Vec3> {
@@ -2797,7 +2804,9 @@ impl Sphere {
     /// Intersects a ray with this sphere, and finds if they intersect, and if so, where that intersection is!
     /// This only finds the closest intersection point to the origin of the ray.
     /// <https://stereokit.net/Pages/StereoKit/Sphere/Intersect.html>
+    /// * ray - A ray to intersect with
     ///
+    /// Returns the closest intersection point to the ray's origin. Or None it there is no intersection.
     /// see also [`crate::maths::sphere_ray_intersect`]
     #[inline]
     pub fn intersect(&self, ray: Ray) -> Option<Vec3> {
@@ -2843,17 +2852,16 @@ impl Rect {
     }
 }
 
-/// A position and a direction indicating a ray through space!
-/// This is a great tool for intersection testing with geometrical
-/// shapes.
+/// A position and a direction indicating a ray through space! This is a great tool for intersection testing with
+/// geometrical shapes.
+/// <https://stereokit.net/Pages/StereoKit/Ray.html>
 ///
 #[derive(Debug, Copy, Clone, Default)]
 #[repr(C)]
 pub struct Ray {
     /// The position or origin point of the Ray.
     pub position: Vec3,
-    /// The direction the ray is facing, typically does not
-    /// require being a unit vector, or normalized direction.
+    /// The direction the ray is facing, typically does not require being a unit vector, or normalized direction.
     pub direction: Vec3,
 }
 
@@ -2864,6 +2872,11 @@ extern "C" {
 }
 
 impl Ray {
+    /// Basic initialization constructor! Just copies the parameters into the fields.
+    /// <https://stereokit.net/Pages/StereoKit/Ray/Ray.html>
+    /// * position - The position or origin point of the Ray.
+    /// * direction - The direction the ray is facing, typically does not require being a unit vector, or normalized
+    ///   direction.
     #[inline]
     pub fn new<V: Into<Vec3>>(pos: V, dir: V) -> Self {
         Self { position: pos.into(), direction: dir.into() }
@@ -2871,6 +2884,10 @@ impl Ray {
 
     /// A convenience function that creates a ray from point a, towards point b. Resulting direction is not normalized.
     /// <https://stereokit.net/Pages/StereoKit/Ray/FromTo.html>
+    /// * a - Ray starting point.
+    /// * b - Location the ray is pointing towards.
+    ///
+    /// Returns a ray from point a to point b. Not normalized.
     #[inline]
     pub fn from_to<V: Into<Vec3>>(&self, a: V, b: V) -> Ray {
         let position = a.into();
@@ -2882,6 +2899,10 @@ impl Ray {
     /// normalized, then percent is functionally distance, and can be used to find the point a certain distance
     /// out along the ray.
     /// <https://stereokit.net/Pages/StereoKit/Ray/At.html>
+    /// * percent - How far along the ray should we get the  point at? This is in multiples of self.direction's
+    ///   magnitude. If self.direction is normalized, this is functionally the distance.
+    ///
+    /// Returns the point at position + direction*percent
     #[inline]
     pub fn get_at(&self, percent: f32) -> Vec3 {
         self.position + self.direction * percent
@@ -2890,7 +2911,9 @@ impl Ray {
     /// Calculates the point on the Ray that’s closest to the given point! This can be in front of, or behind the
     /// ray’s starting position.
     /// <https://stereokit.net/Pages/StereoKit/Ray/Closest.html>
+    /// * to - Any point in the same coordinate space as the  Ray.
     ///
+    /// Returns the point on the ray that's closest to the given point.
     /// see also [`crate::maths::ray_point_closest`]
     #[inline]
     pub fn closest<V: Into<Vec3>>(&self, to: V) -> Vec3 {
@@ -2899,7 +2922,9 @@ impl Ray {
 
     /// Checks the intersection of this ray with a plane!
     /// <https://stereokit.net/Pages/StereoKit/Ray/Intersect.html>
+    /// * plane - Any plane you want to intersect with.
     ///
+    /// Returns intersection point if there's an intersection information or None if there's no intersection
     /// see also [`crate::maths::plane_ray_intersect`]
     #[inline]
     pub fn intersect(&self, plane: Plane) -> Option<Vec3> {
@@ -2912,7 +2937,10 @@ impl Ray {
 
     /// Checks the intersection of this ray with a sphere!
     /// <https://stereokit.net/Pages/StereoKit/Ray/Intersect.html>
+    /// * sphere - Any sphere you want to intersect with.
     ///
+    /// Returns the closest intersection point to the ray origin if there's an intersection information or None if
+    /// there's no intersection
     /// see also [`crate::maths::sphere_ray_intersect`]
     #[inline]
     pub fn intersect_sphere(&self, sphere: Sphere) -> Option<Vec3> {
@@ -2925,7 +2953,10 @@ impl Ray {
 
     /// Checks the intersection of this ray with a bounding box!
     /// <https://stereokit.net/Pages/StereoKit/Ray/Intersect.html>
+    /// * bounds - Any bounds you want to intersect with.
     ///
+    /// Returns the closest intersection point to the ray origin if there's an intersection information or None if
+    /// there's no intersection
     /// see also [`crate::maths::bounds_ray_intersect`]
     #[inline]
     pub fn intersect_bound(&self, bounds: Bounds) -> Option<Vec3> {
@@ -2941,9 +2972,15 @@ impl Ray {
     /// space too. You can use the inverse of the mesh’s world transform matrix to bring the ray into model space,
     /// see the example in the docs!
     /// <https://stereokit.net/Pages/StereoKit/Ray/Intersect.html>
+    /// * mesh - A mesh containing collision data on the CPU. You can check this with mesh.get_keep_data().
     /// * cull - If None has default value of Cull::Back.
     ///
-    /// see also [`crate::maths::mesh_ray_intersect`]
+    /// Returns a tuple with
+    /// - The intersection point of the ray and the mesh, if an intersection occurs. This is in model space, and must be
+    ///   transformed back into world space later.
+    /// - The indice of the mesh where the intersection occurs.
+    ///
+    /// see also [`stereokit::mesh_ray_intersect`]    
     #[inline]
     pub fn intersect_mesh(&self, mesh: &Mesh, cull: Option<Cull>) -> Option<(Vec3, VindT)> {
         let mut out_ray = Ray::default();
@@ -2961,8 +2998,16 @@ impl Ray {
     /// space too. You can use the inverse of the mesh’s world transform matrix to bring the ray into model space,
     /// see the example in the docs!
     /// <https://stereokit.net/Pages/StereoKit/Ray/Intersect.html>
-    /// * cull - If None has default value of Cull::Back.
+    /// * mesh - A mesh containing collision data on the CPU. You can check this with mesh.get_keep_data()
+    /// * out_model_space_at - The intersection point and surface direction of the ray and the mesh, if an intersection
+    ///   occurs. This is in model space, and must be transformed back into world space later. Direction is not
+    ///   guaranteed to be normalized, especially if your own model->world transform contains scale/skew in it.
+    /// * out_start_inds - The index of the first index of the triangle that was hit
+    /// * cull - How should intersection work with respect to the direction the triangles are facing? Should we skip
+    ///   triangles that are facing away from the ray, or don't skip anything? A good default would be Cull.Back.
+    ///   If None has default value of Cull::Back.
     ///
+    /// Returns true if an intersection occurs, false otherwise!
     /// see also [`crate::maths::mesh_ray_intersect`]
     #[inline]
     #[allow(clippy::not_unsafe_ptr_arg_deref)]
@@ -2970,19 +3015,22 @@ impl Ray {
         &self,
         mesh: &Mesh,
         cull: Option<Cull>,
-        out_ray: *mut Ray,
-        out_inds: *mut u32,
+        out_model_space_at: *mut Ray,
+        out_start_inds: *mut u32,
     ) -> bool {
         let cull = cull.unwrap_or(Cull::Back);
-        unsafe { mesh_ray_intersect(mesh.0.as_ptr(), *self, cull, out_ray, out_inds) != 0 }
+        unsafe { mesh_ray_intersect(mesh.0.as_ptr(), *self, cull, out_model_space_at, out_start_inds) != 0 }
     }
 
     /// Checks the intersection point of this ray and the Solid flagged Meshes in the Model’s visual nodes. Ray must
     /// be in model space, intersection point will be in model space too. You can use the inverse of the mesh’s world
     /// transform matrix to bring the ray into model space, see the example in the docs!
     /// <https://stereokit.net/Pages/StereoKit/Ray/Intersect.html>
+    /// * model - Any Model that may or may not contain Solid flagged nodes, and Meshes with collision data.
     /// * cull - If None has default value of Cull::Back.
     ///
+    /// Returns the intersection point of the ray and the model, if an intersection occurs. This is in model space, and
+    /// must be transformed back into world space later.
     /// see also [`crate::maths::model_ray_intersect`]
     #[inline]
     pub fn intersect_model(&self, model: &Model, cull: Option<Cull>) -> Option<Vec3> {
@@ -2999,16 +3047,22 @@ impl Ray {
     /// be in model space, intersection point will be in model space too. You can use the inverse of the mesh’s world
     /// transform matrix to bring the ray into model space, see the example in the docs!
     /// <https://stereokit.net/Pages/StereoKit/Ray/Intersect.html>
+    /// * model - Any Model that may or may not contain Solid flagged nodes, and Meshes with collision data.
     /// * cull - If None has default value of Cull::Back.
+    /// * out_model_space_at  - The intersection point and surface direction of the ray and the model, if an intersection
+    ///   occurs. This is in model space, and must be transformed back into world space later. Direction is not
+    ///   guaranteed to be normalized, especially if your own model->world transform contains scale/skew in it.
     ///
+    /// Returns - true if an intersection occurs, false otherwise!
     /// see also [`crate::maths::model_ray_intersect`]
     #[inline]
     #[allow(clippy::not_unsafe_ptr_arg_deref)]
-    pub fn intersect_model_to_ptr(&self, model: &Model, cull: Option<Cull>, out_ray: *mut Ray) -> bool {
+    pub fn intersect_model_to_ptr(&self, model: &Model, cull: Option<Cull>, out_model_space_at: *mut Ray) -> bool {
         let cull = cull.unwrap_or(Cull::Back);
-        unsafe { model_ray_intersect(model.0.as_ptr(), *self, cull, out_ray) != 0 }
+        unsafe { model_ray_intersect(model.0.as_ptr(), *self, cull, out_model_space_at) != 0 }
     }
 }
+
 impl Display for Ray {
     /// Creates a text description of the Ray, in the format of “[position:X direction:X]”
     /// <https://stereokit.net/Pages/StereoKit/Ray/ToString.html>

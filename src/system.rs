@@ -27,12 +27,12 @@ use crate::{
 /// particularly useful when working with Assets at a high level with the Assets class.
 /// <https://stereokit.net/Pages/StereoKit/IAsset.html>
 pub trait IAsset {
-    // sets the unique identifier of this asset resource! This can be helpful for debugging, managine your assets, or
+    // sets the unique identifier of this asset resource! This can be helpful for debugging, managing your assets, or
     // finding them later on!
     // <https://stereokit.net/Pages/StereoKit/IAsset/Id.html>
     //fn id(&mut self, id: impl AsRef<str>);
 
-    /// gets the unique identifier of this asset resource! This can be helpful for debugging, managine your assets, or
+    /// gets the unique identifier of this asset resource! This can be helpful for debugging, managing your assets, or
     /// finding them later on!
     /// <https://stereokit.net/Pages/StereoKit/IAsset/Id.html>
     fn get_id(&self) -> &str;
@@ -139,7 +139,7 @@ impl fmt::Display for Asset {
             Asset::Sound(v) => write!(f, "Sound : {}", v.get_id()),
             Asset::Solid(_) => write!(f, "Solid : ... deprecated ..."),
             Asset::Anchor(v) => write!(f, "Anchor : {}", v.get_id()),
-            Asset::RenderList(v) => write!(f, "RenderList : {}/{}", v.get_count(), v.get_prev_count()),
+            Asset::RenderList(v) => write!(f, "RenderList : {}", v.get_id()),
         }
     }
 }

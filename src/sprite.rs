@@ -134,8 +134,9 @@ impl Sprite {
         ))
     }
 
-    /// Finds a sprite that matches the given id! Check out the DefaultIds static class for some built-in ids. Sprites will auto-id
-    /// themselves using this pattern if single sprites: {Tex.Id}/spr, and this pattern if atlased sprites: atlas_spr/{atlas}/{Tex.Id}.
+    /// Finds a sprite that matches the given id! Check out the DefaultIds static class for some built-in ids. Sprites
+    /// will auto-id themselves using this pattern if single sprites: {Tex.Id}/sprite, and this pattern if atlased
+    /// sprites: {Tex.Id}/sprite/atlas/{atlasId}.
     /// <https://stereokit.net/Pages/StereoKit/Sprite/Find.html>
     ///
     /// see also [`crate::sprite::sprite_find`]

@@ -148,7 +148,7 @@ impl Sound {
         let cstr_id = CString::new(id.as_ref())?;
         Ok(Sound(
             NonNull::new(unsafe { sound_find(cstr_id.as_ptr()) })
-                .ok_or(StereoKitError::SoundFind(id.as_ref().to_string()))?,
+                .ok_or(StereoKitError::SoundFind(id.as_ref().to_string(), "not found".to_owned()))?,
         ))
     }
 
