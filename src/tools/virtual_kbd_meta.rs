@@ -158,16 +158,36 @@ impl VirtualKbdMETA {
     }
 
     fn init_kbd(&mut self) -> bool {
+        let instance = Instance::from_raw(BackendOpenXR::instance());
+        let system_id = SystemId::from_raw(BackendOpenXR::system_id());
+
         let mut virtual_kbd_props = SystemVirtualKeyboardPropertiesMETA {
             ty: StructureType::SYSTEM_VIRTUAL_KEYBOARD_PROPERTIES_META,
             next: null_mut(),
             supports_virtual_keyboard: Bool32::from_raw(1),
         };
 
+        // let mut sys_prop = SystemProperties { ty: SystemProperties::TYPE, ..unsafe { mem::zeroed() } };
+
+        // match unsafe { self.xr_get_system_properties.unwrap()(instance, system_id, &mut sys_prop) } {
+        //     Result::SUCCESS => {
+        //         if virtual_kbd_props.supports_virtual_keyboard == FALSE {
+        //             Log::err("xrGetSystemProperties returns that supports_virtual_keybord is XrFalse");
+        //             return false;
+        //         } else {
+        //             Log::diag("support_virtual_keyboard");
+        //         }
+        //     }
+        //     otherwise => {
+        //         Log::err(format!("xrGetSystemProperties failed: {otherwise}"));
+        //         return false;
+        //     }
+        // }
+
         let mut system_properties = SystemProperties {
             ty: StructureType::SYSTEM_PROPERTIES,
             next: &mut virtual_kbd_props as *mut _ as *mut c_void,
-            system_id: SystemId::NULL,
+            system_id,
             vendor_id: 0,
             system_name: [0; MAX_SYSTEM_NAME_SIZE],
             graphics_properties: SystemGraphicsProperties {
@@ -181,13 +201,7 @@ impl VirtualKbdMETA {
             },
         };
 
-        match unsafe {
-            self.xr_get_system_properties.unwrap()(
-                Instance::from_raw(BackendOpenXR::instance()),
-                SystemId::from_raw(BackendOpenXR::system_id()),
-                &mut system_properties,
-            )
-        } {
+        match unsafe { self.xr_get_system_properties.unwrap()(instance, system_id, &mut system_properties) } {
             Result::SUCCESS => {
                 if virtual_kbd_props.supports_virtual_keyboard == FALSE {
                     Log::err("xrGetSystemProperties returns that supports_virtual_keybord is XrFalse");

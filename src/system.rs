@@ -557,8 +557,7 @@ impl BackendOpenXR {
     }
 
     /// This is basically xrGetInstanceProcAddr from OpenXR, you can use this to get and call functions from an
-    /// extension you’ve loaded. You can use Marshal.GetDelegateForFunctionPointer to turn the result into a delegate
-    /// that you can call.
+    /// extension you’ve loaded.
     /// <https://stereokit.net/Pages/StereoKit/Backend.OpenXR/GetFunctionPtr.html>
     ///
     /// see also [crate::system::backend_openxr_get_function]
@@ -568,8 +567,7 @@ impl BackendOpenXR {
     }
 
     /// This is basically xrGetInstanceProcAddr from OpenXR, you can use this to get and call functions from an
-    /// extension you’ve loaded. You can use Marshal.GetDelegateForFunctionPointer to turn the result into a delegate
-    /// that you can call.
+    /// extension you’ve loaded.
     /// <https://stereokit.net/Pages/StereoKit/Backend.OpenXR/GetFunctionPtr.html>
     ///
     /// see also [crate::system::backend_openxr_get_function]

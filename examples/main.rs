@@ -38,6 +38,7 @@ fn android_main(app: AndroidApp) {
 
     BackendOpenXR::request_ext("XR_FB_display_refresh_rate");
     BackendOpenXR::request_ext("XR_FB_passthrough");
+    BackendOpenXR::request_ext("XR_FB_render_model");
     BackendOpenXR::request_ext("XR_META_virtual_keyboard");
     let (sk, event_loop) = settings.init_with_event_loop(app).unwrap();
 
@@ -60,7 +61,6 @@ fn main() {
 
     BackendOpenXR::request_ext("XR_FB_display_refresh_rate");
     BackendOpenXR::request_ext("XR_FB_passthrough");
-    BackendOpenXR::request_ext("XR_META_virtual_keyboard");
     let (sk, event_loop) = settings.init_with_event_loop().unwrap();
 
     _main(sk, event_loop);

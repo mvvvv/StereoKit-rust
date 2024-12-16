@@ -5,7 +5,7 @@ use openxr_sys::pfn::{
 use openxr_sys::{EnvironmentBlendMode, Instance, Result, Session, SystemId, ViewConfigurationType};
 
 use crate::sk::SkInfo;
-use crate::system::{BackendOpenXR, Log};
+use crate::system::{Backend, BackendOpenXR, BackendXRType, Log};
 use std::ffi::OsString;
 use std::fs::File;
 use std::path::Path;
@@ -426,6 +426,9 @@ pub fn get_env_blend_modes(with_log: bool) -> Vec<EnvironmentBlendMode> {
     //>>>>>>>>>>> Get the env blend mode
     let mut count = 0u32;
     let mut modes = [EnvironmentBlendMode::OPAQUE; 20];
+    if Backend::xr_type() != BackendXRType::OpenXR {
+        return vec![];
+    }
     if let Some(get_modes) =
         BackendOpenXR::get_function::<EnumerateEnvironmentBlendModes>("xrEnumerateEnvironmentBlendModes")
     {

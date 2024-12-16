@@ -191,6 +191,14 @@ required = true
 name = "com.oculus.permission.IMPORT_EXPORT_IOT_MAP_DATA"
 required = false
 
+[[package.metadata.android.uses_permission]]
+name = "com.oculus.permission.TRACKED_KEYBOARD"
+required = false
+
+[[package.metadata.android.uses_permission]]
+name = "com.oculus.permission.USE_COLOCATION_DISCOVERY_API"
+required = false
+
 [package.metadata.android.application]
 debuggable = true
 label = "StereoKit rust demos"
