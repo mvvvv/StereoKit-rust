@@ -18,9 +18,9 @@ fn main() {
     let skc_in_dll = cfg!(feature = "skc-in-dll");
 
     if win_gl {
-        println!("Compiling with {} for {}/opengl with profile {}", target_env, target_os, profile);
+        println!("cargo:warning=Compiling with {} for {}/opengl with profile {}", target_env, target_os, profile);
     } else {
-        println!("Compiling with {} for {} with profile {}", target_env, target_os, profile);
+        println!("cargo:warning=Compiling with {} for {} with profile {}", target_env, target_os, profile);
     }
 
     if target_os == "macos" {
@@ -55,6 +55,7 @@ fn main() {
     }
 
     if cfg!(feature = "force-local-deps") && var("FORCE_LOCAL_DEPS").is_ok() {
+        println!("cargo:warning=Force local deps !!");
         // Helper function to define optional dependencies
         fn define_if_exists(var_name: &str, cmake_var: &str, config: &mut Config) {
             if let Ok(value) = var(var_name) {
@@ -95,6 +96,8 @@ fn main() {
 
     let dst = cmake_config.build();
 
+    let out_dir = env::var("OUT_DIR").unwrap(); //---must be equal to dst
+
     match target_family.as_str() {
         "windows" => {
             println!("cargo:rustc-link-search=native={}/lib", dst.display());
@@ -103,10 +106,12 @@ fn main() {
             cargo_link!("StereoKitC");
 
             if cfg!(debug_assertions) {
+                // openxr-sys/linked wants libopenxr_loader so it asks for -Wl -lopenxr_loader in final ld
                 cargo_link!("openxr_loaderd");
             } else {
                 cargo_link!("openxr_loader");
             }
+
             cargo_link!("meshoptimizer");
             cargo_link!("windowsapp");
             cargo_link!("user32");
@@ -125,15 +130,14 @@ fn main() {
                     //println!("cargo:rustc-link-search=native={}/build", dst.display());
                     println!("cargo:rustc-link-search=native={}", win_gnu_libs);
                     let deuleuleu = "libStereoKitC.dll";
-                    let out_dir = env::var("OUT_DIR").unwrap(); //---must be equal to dst
                     let target_dir = Path::new(&out_dir).parent().unwrap().parent().unwrap().parent().unwrap();
                     let deps_libs = target_dir.join("deps");
                     println!("cargo:rustc-link-search=native={}", deps_libs.to_str().unwrap());
-                    println!("dst --> {:?}", dst);
+                    println!("cargo:warning=dst --> {:?}", dst);
                     let dest_file_dll = deps_libs.join(deuleuleu);
                     let file_dll = dst.join("build").join(deuleuleu);
-                    println!("{} is copied from here --> {:?}", deuleuleu, file_dll);
-                    println!("                             to there --> {:?}", dest_file_dll);
+                    println!("cargo:warning={} is copied from here --> {:?}", deuleuleu, file_dll);
+                    println!("cargo:warning=                             to there --> {:?}", dest_file_dll);
                     let _lib_dll = fs::copy(file_dll, dest_file_dll).unwrap();
                 }
             } else {
@@ -143,32 +147,31 @@ fn main() {
                 let deuleuleu = lib.clone() + ".dll";
                 let lib_lib = lib.clone() + ".lib";
                 let lib_pdb = lib.clone() + ".pdb";
-                let out_dir = env::var("OUT_DIR").unwrap(); //---must be equal to dst
                 let target_dir = Path::new(&out_dir).parent().unwrap().parent().unwrap().parent().unwrap();
                 let deps_libs = target_dir.join("deps");
-                println!("dst --> {:?}", dst);
+                println!("cargo:warning=dst --> {:?}", dst);
                 //---Do we have a .dll ?
                 let file_dll = dst.join("build").join(&profile).join(&deuleuleu);
                 if file_dll.is_file() {
                     let dest_file_dll = deps_libs.join(&deuleuleu);
-                    println!("StereoKitC.dll is copied from here --> {:?}", file_dll);
-                    println!("                          to there --> {:?}", dest_file_dll);
+                    println!("cargo:warning=StereoKitC.dll is copied from here --> {:?}", file_dll);
+                    println!("cargo:warning=                          to there --> {:?}", dest_file_dll);
                     let _lib_dll = fs::copy(file_dll, dest_file_dll).unwrap();
                 }
                 //---Do we have a .lib ?
                 let file_lib = dst.join("build").join(&profile).join(&lib_lib);
                 if file_lib.is_file() {
                     let dest_file_lib = deps_libs.join(&lib_lib);
-                    println!("StereoKitC.lib is copied from here --> {:?}", file_lib);
-                    println!("                          to there --> {:?}", dest_file_lib);
+                    println!("cargo:warning=StereoKitC.lib is copied from here --> {:?}", file_lib);
+                    println!("cargo:warning=                          to there --> {:?}", dest_file_lib);
                     let _lib_dll = fs::copy(file_lib, dest_file_lib).unwrap();
                 }
                 //---Do we have a .pdb ?
                 let file_pdb = dst.join("build").join(&profile).join(&lib_pdb);
                 if file_pdb.is_file() {
                     let dest_file_pdb = deps_libs.join(&lib_pdb);
-                    println!("StereoKitC.pdb is copied from here --> {:?}", file_pdb);
-                    println!("                          to there --> {:?}", dest_file_pdb);
+                    println!("cargo:warning=StereoKitC.pdb is copied from here --> {:?}", file_pdb);
+                    println!("cargo:warning=                          to there --> {:?}", dest_file_pdb);
                     let _lib_dll = fs::copy(file_pdb, dest_file_pdb).unwrap();
                 }
             }
@@ -198,7 +201,6 @@ fn main() {
                 //---- A directory whose content is only used during the production of the APK (no need for DEBUG/RELEASE sub directory)
                 //---- Copying from ./target/aarch64-linux-android/debug/build/stereokit-rust-1d044aba61d6313d/out/lib/libopenxr_loader.so
                 //---- to   ./target/runtime_libs/
-                let out_dir = env::var("OUT_DIR").unwrap(); //---must be equal to dst
                 let target_dir = Path::new(&out_dir)
                     .parent()
                     .unwrap()
@@ -211,8 +213,8 @@ fn main() {
                     .parent()
                     .unwrap();
                 let mut runtime_libs = target_dir.join("runtime_libs");
-                println!("dst --> {:?}", dst);
-                println!("Android runtime_libs are copied here --> {:?}", runtime_libs);
+                println!("cargo:warning=dst --> {:?}", dst);
+                println!("cargo:warning=Android runtime_libs are copied here --> {:?}", runtime_libs);
                 assert!(target_dir.ends_with("target"));
                 if let Err(_e) = fs::create_dir(&runtime_libs) {};
                 runtime_libs = runtime_libs.join(&abi);

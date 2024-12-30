@@ -63,7 +63,14 @@ impl ApplicationHandler<StepperAction> for SkClosures<'_> {
                 self.sleeping = SleepPhase::WakingUp;
             }
             WindowEvent::Focused(value) => {
-                self.window_id = Some(window_id);
+                Log::diag(format!("!!!Window {:?} focused: {:?}", window_id, value));
+                if self.window_id != Some(window_id) {
+                    if self.window_id.is_none() {
+                        self.window_id = Some(window_id);
+                    } else {
+                        Log::warn(format!("There are more than 1 windows: {:?} & {:?}", self.window_id, window_id));
+                    }
+                }
                 if value {
                     Log::diag("GainedFocus: Time to wake up");
                     self.sleeping = SleepPhase::WakingUp;
@@ -227,7 +234,20 @@ pub trait IStepper {
     /// This is called by StereoKit at the start of the next frame, and on the main thread. This happens before
     /// StereoKit’s main Step callback, and always after Sk.initialize.
     /// <https://stereokit.net/Pages/StereoKit.Framework/IStepper/Initialize.html>
+    /// id : The id of the stepper
+    /// sk : The SkInfo of the runnin Sk instance.
+    ///
+    /// Return true if the initiaization was succesfull or need to run on many steps and/or in another thread
+    /// (see [`IStepper::initialize_done`])
     fn initialize(&mut self, id: StepperId, sk: Rc<RefCell<SkInfo>>) -> bool;
+
+    /// If initialization is to be performed in multiple steps, with or without threads and in order to avoid black or
+    /// frozen screens, write the on going initialization here
+    ///
+    /// Return false as long as the initialization must keep going then true when the stepper has to be drawn.
+    fn initialize_done(&mut self) -> bool {
+        true
+    }
 
     /// Is this IStepper enabled? When false, StereoKit will not call Step. This can be a good way to temporarily
     /// disable the IStepper without removing or shutting it down.
@@ -245,6 +265,14 @@ pub trait IStepper {
     /// thread, and happens at the start of the next frame, before the main application’s Step callback.
     /// <https://stereokit.net/Pages/StereoKit.Framework/IStepper/Shutdown.html>
     fn shutdown(&mut self) {}
+
+    /// If shutdown is to be performed in multiple steps, with or without threads and in order to avoid black or
+    /// frozen screens, write the on going shutdown here
+    ///
+    /// Return false as long as the shutdown must keep going then true when the stepper can be remove.
+    fn shutdown_done(&mut self) -> bool {
+        true
+    }
 }
 
 /// List of action on steppers. This is the user events
@@ -327,11 +355,20 @@ impl StepperAction {
     }
 }
 
+/// State of the stepper
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum StepperState {
+    Initializing,
+    Running,
+    Closing,
+}
+
 /// All you need to step a Stepper, then remove it
 pub struct StepperHandler {
     id: StepperId,
     type_id: TypeId,
     stepper: Box<dyn IStepper>,
+    state: StepperState,
 }
 
 /// A lazy way to identify IStepper instances
@@ -342,7 +379,7 @@ pub type StepperId = String;
 #[cfg(feature = "event-loop")]
 pub struct Steppers {
     sk: Rc<RefCell<SkInfo>>,
-    stepper_handlers: Vec<StepperHandler>,
+    running_steppers: Vec<StepperHandler>,
     stepper_actions: VecDeque<StepperAction>,
 }
 
@@ -350,7 +387,7 @@ pub struct Steppers {
 impl Steppers {
     // the only way to create a Steppers manager
     pub fn new(sk: Rc<RefCell<SkInfo>>) -> Self {
-        Self { sk, stepper_handlers: vec![], stepper_actions: VecDeque::new() }
+        Self { sk, running_steppers: vec![], stepper_actions: VecDeque::new() }
     }
 
     /// push an action to consumme befor next frame
@@ -365,25 +402,26 @@ impl Steppers {
             match action {
                 StepperAction::Add(mut stepper, type_id, stepper_id) => {
                     if stepper.initialize(stepper_id.clone(), self.sk.clone()) {
-                        let stepper_h = StepperHandler { id: stepper_id, type_id, stepper };
-                        self.stepper_handlers.push(stepper_h);
+                        let stepper_h =
+                            StepperHandler { id: stepper_id, type_id, stepper, state: StepperState::Initializing };
+                        self.running_steppers.push(stepper_h);
                     } else {
                         Log::warn(format!("Stepper {} did not initialize", stepper_id))
                     }
                 }
                 StepperAction::RemoveAll(stepper_type) => {
                     for stepper_h in
-                        self.stepper_handlers.iter_mut().filter(|stepper_h| stepper_h.type_id == stepper_type)
+                        self.running_steppers.iter_mut().filter(|stepper_h| stepper_h.type_id == stepper_type)
                     {
                         stepper_h.stepper.shutdown();
+                        stepper_h.state = StepperState::Closing;
                     }
-                    self.stepper_handlers.retain(|stepper_h| stepper_h.type_id != stepper_type);
                 }
                 StepperAction::Remove(stepper_id) => {
-                    for stepper_h in self.stepper_handlers.iter_mut().filter(|stepper_h| stepper_h.id == stepper_id) {
-                        stepper_h.stepper.shutdown()
+                    for stepper_h in self.running_steppers.iter_mut().filter(|stepper_h| stepper_h.id == stepper_id) {
+                        stepper_h.stepper.shutdown();
+                        stepper_h.state = StepperState::Closing;
                     }
-                    self.stepper_handlers.retain(|i| i.id != stepper_id);
                 }
                 StepperAction::Quit(from, reason) => {
                     Log::info(format!("Quit sent by {} for reason: {}", from, reason));
@@ -393,7 +431,37 @@ impl Steppers {
             }
         }
 
-        for stepper_h in &mut self.stepper_handlers {
+        // 1 - Managing the not running steppers.
+        let mut removed_steppers = vec![];
+        for stepper_h in &mut self.running_steppers {
+            match stepper_h.state {
+                StepperState::Initializing => {
+                    if stepper_h.stepper.initialize_done() {
+                        Log::info(format!("Stepper {} is initialized.", &stepper_h.id));
+                        stepper_h.state = StepperState::Running;
+                    }
+                }
+                StepperState::Running => (),
+                StepperState::Closing => {
+                    if stepper_h.stepper.shutdown_done() {
+                        removed_steppers.push(stepper_h.id.clone());
+                    }
+                }
+            }
+        }
+        self.running_steppers.retain(|stepper_h| {
+            if removed_steppers.contains(&stepper_h.id) {
+                Log::info(format!("Stepper {} is removed.", &stepper_h.id));
+                false
+            } else {
+                true
+            }
+        });
+
+        // 2 - Running the Running steppers
+        for stepper_h in
+            &mut self.running_steppers.iter_mut().filter(|stepper_h| stepper_h.state == StepperState::Running)
+        {
             stepper_h.stepper.step(token)
         }
 
@@ -406,18 +474,42 @@ impl Steppers {
     /// that have been added, but are not yet initialized. Stepper initialization happens at the beginning of the frame,
     /// before the app's Step.
     pub fn get_stepper_handlers(&self) -> &[StepperHandler] {
-        self.stepper_handlers.as_slice()
+        self.running_steppers.as_slice()
     }
 
     /// Run the shutdown code for all active Steppers.
     /// This is called when pushing StepperAction::Quit( origin , reason)
     pub fn shutdown(&mut self) {
         self.stepper_actions.clear();
-        for stepper_h in self.stepper_handlers.iter_mut() {
+        for stepper_h in self.running_steppers.iter_mut() {
             Log::diag(format!("Closing {}", stepper_h.id));
-            stepper_h.stepper.shutdown()
+            stepper_h.stepper.shutdown();
+            stepper_h.state = StepperState::Closing;
         }
-        self.stepper_handlers.clear();
+        // 2 - Waiting for the shutdowns
+        for _iter in 0..50 {
+            let mut removed_steppers = vec![];
+            for stepper_h in
+                &mut self.running_steppers.iter_mut().filter(|stepper_h| stepper_h.state == StepperState::Closing)
+            {
+                if stepper_h.stepper.shutdown_done() {
+                    removed_steppers.push(stepper_h.id.clone());
+                }
+            }
+            self.running_steppers.retain(|stepper_h| {
+                if removed_steppers.contains(&stepper_h.id) {
+                    Log::info(format!("Stepper {} is removed.", &stepper_h.id));
+                    false
+                } else {
+                    true
+                }
+            });
+            if self.running_steppers.is_empty() {
+                break;
+            }
+            sleep(Duration::from_millis(100));
+        }
+        self.running_steppers.clear();
     }
 }
 

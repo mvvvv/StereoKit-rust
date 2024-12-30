@@ -41,6 +41,7 @@ pub struct Text1 {
     pub window_demo_pose: Pose,
     pub demo_win_width: f32,
     pub android_keyboard: bool,
+    pub android_keyboard_ime: bool,
     pub keyboard_layout_fr: bool,
     inst_play: Option<SoundInst>,
     pub show_keyboard: bool,
@@ -62,10 +63,11 @@ impl Default for Text1 {
         Self {
             id: "Text1".to_string(),
             sk_info: None,
-            transform: Matrix::tr(&((Vec3::NEG_Z * 2.5) + Vec3::Y), &Quat::from_angles(0.0, 180.0, 0.0)),
-            window_demo_pose: Pose::new(Vec3::new(0.0, 1.5, -0.3), Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0)))),
+            transform: Matrix::tr(&((Vec3::NEG_Z * -2.5) + Vec3::Y), &Quat::from_angles(0.0, 180.0, 0.0)),
+            window_demo_pose: Pose::new(Vec3::new(0.0, 1.5, -1.3), Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0)))),
             demo_win_width: 80.0 * CM,
             android_keyboard: false,
+            android_keyboard_ime: false,
             keyboard_layout_fr: false,
             inst_play: None,
             show_keyboard: false,
@@ -157,8 +159,26 @@ impl Text1 {
                 Platform::keyboard_show(false, TextContext::Text);
                 Input::key_inject_press(Key::Left);
                 Input::key_inject_release(Key::Left);
+
                 show_soft_input(true);
             }
+
+            // Ui::same_line();
+            // if let Some(new_value) = Ui::toggle("Winit IME Keyboard", self.android_keyboard_ime, None) {
+            //     self.android_keyboard_ime = new_value;
+            //     if new_value {
+            //         Platform::force_fallback_keyboard(false);
+            //     } else {
+            //         Platform::force_fallback_keyboard(true);
+            //     }
+            // }
+
+            // if self.android_keyboard_ime && Platform::get_keyboard_visible() {
+            //     Platform::keyboard_show(false, TextContext::Text);
+            //     Input::key_inject_press(Key::Left);
+            //     Input::key_inject_release(Key::Left);
+            //     show_soft_input_ime(self.sk_info.as_ref().unwrap().clone(), true);
+            // }
         }
         Ui::same_line();
         if let Some(new_value) = Ui::toggle("French keyboard", self.keyboard_layout_fr, None) {

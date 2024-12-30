@@ -125,7 +125,7 @@ pub fn get_external_path(sk_info: Rc<RefCell<SkInfo>>) -> Option<PathBuf> {
     app.external_data_path()
 }
 
-/// Get the path to internal data directory for non android
+/// Get the path to internal data directory for non android (assets)
 #[cfg(not(target_os = "android"))]
 pub fn get_external_path(_sk_info: Rc<RefCell<SkInfo>>) -> Option<PathBuf> {
     use std::env;
@@ -206,7 +206,25 @@ pub fn get_files(
     vec
 }
 
-/// Read all the assets of a given assets sub directory
+/// Open winit IME keyboard
+#[cfg(target_os = "android")]
+pub fn show_soft_input_ime(sk_info: Rc<RefCell<SkInfo>>, show: bool) -> bool {
+    let mut sk_i = sk_info.borrow_mut();
+    let app = sk_i.get_android_app();
+    if show {
+        app.show_soft_input(false);
+    } else {
+        app.hide_soft_input(false);
+    }
+    true
+}
+/// Open nothing has we don't have a winit IME keyboard
+#[cfg(not(target_os = "android"))]
+pub fn show_soft_input_ime(_sk_info: Rc<RefCell<SkInfo>>, _show: bool) -> bool {
+    false
+}
+
+/// Open Android IMS keyboard
 #[cfg(target_os = "android")]
 pub fn show_soft_input(show: bool) -> bool {
     use jni::objects::JValue;
@@ -262,6 +280,7 @@ pub fn show_soft_input(show: bool) -> bool {
             return false;
         }
     };
+
     let view = match env.call_method(jni_window, "getDecorView", "()Landroid/view/View;", &[]).unwrap().l() {
         Ok(value) => value,
         Err(e) => {
@@ -295,7 +314,7 @@ pub fn show_soft_input(show: bool) -> bool {
     }
 }
 
-/// Open an asset like a file
+/// Open nothing has we don't have a virtual keyboard
 #[cfg(not(target_os = "android"))]
 pub fn show_soft_input(_show: bool) -> bool {
     false
