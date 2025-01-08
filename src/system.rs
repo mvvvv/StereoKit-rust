@@ -1589,6 +1589,8 @@ extern "C" {
     pub fn input_hand_visible(hand: Handed, visible: Bool32T);
     // Deprecated: pub fn input_hand_solid(hand: Handed, solid: Bool32T);
     pub fn input_hand_material(hand: Handed, material: MaterialT);
+    pub fn input_get_finger_glow() -> Bool32T;
+    pub fn input_set_finger_glow(visible: Bool32T);
     pub fn input_hand_sim_pose_add(
         in_arr_palm_relative_hand_joints_25: *const Pose,
         button1: ControllerKey,
@@ -1624,6 +1626,8 @@ impl Input {
     /// * handed - The hand to assign the Model to.
     /// * model - The Model to use to represent the controller.
     ///   None is valid, and will restore SK's default model.
+    ///
+    ///  see also [`crate::system::input_controller_model_set`]    
     pub fn set_controller_model(handed: Handed, model: Option<Model>) {
         match model {
             Some(model) => unsafe { input_controller_model_set(handed, model.0.as_ptr()) },
@@ -1635,15 +1639,20 @@ impl Input {
     /// present on the user’s physical controller. Controllers are also not guaranteed to be available on the system,
     /// and are never simulated.
     /// <https://stereokit.net/Pages/StereoKit/Input/Controller.html>
+    /// * handed - The handedness of the controller to get the state of.
     ///
+    /// Returns a reference to a class that contains state information  about the indicated controller.
     /// see also [`crate::system::input_controller`]    
-    pub fn controller(hand: Handed) -> Controller {
-        unsafe { *input_controller(hand) }
+    pub fn controller(handed: Handed) -> Controller {
+        unsafe { *input_controller(handed) }
     }
 
     /// This function allows you to artifically insert an input event, simulating any device source and event type you
     /// want.
     /// <https://stereokit.net/Pages/StereoKit/Input/FireEvent.html>
+    /// * event_source -The event source to simulate, this is a bit flag.
+    /// * event_ types - The event type to simulate, this is a bit flag.
+    /// * pointer - The pointer data to pass along with this simulated input event.
     ///
     /// see also [`crate::system::input_fire_event`]    
     pub fn fire_event(event_source: InputSource, event_types: BtnState, pointer: &Pointer) {
@@ -1657,14 +1666,17 @@ impl Input {
     /// it once and keep it around for the frame, or at least function, rather than asking for it again and again each
     /// time you want to touch something.
     /// <https://stereokit.net/Pages/StereoKit/Input/Hand.html>
+    /// * handed - Do you want the left or the right hand? 0 is left, and 1 is right.
     ///
+    /// Returns a copy of the entire set of hand data!
     /// see also [`crate::system::input_hand`]    
-    pub fn hand(hand: Handed) -> Hand {
-        unsafe { *input_hand(hand) }
+    pub fn hand(handed: Handed) -> Hand {
+        unsafe { *input_hand(handed) }
     }
 
     /// Clear out the override status from Input::hand_override, and restore the user’s control over it again.
     /// <https://stereokit.net/Pages/StereoKit/Input/HandClearOverride.html>
+    /// * hand - Which hand are we clearing the override on?
     ///
     /// see also [`crate::system::input_hand_override`]    
     pub fn hand_clear_override(hand: Handed) {
@@ -1675,6 +1687,9 @@ impl Input {
     /// so this is great for simulating input for testing purposes. It will remain overridden until you call
     /// Input::hand_clear_override.
     /// <https://stereokit.net/Pages/StereoKit/Input/HandOverride.html>
+    /// * hand - Which hand should be overridden?
+    /// * joints - A 2D array of 25 joints that should be used as StereoKit's hand information. See `Hand.fingers`
+    ///   for more information.
     ///
     /// see also [`crate::system::input_hand_override`]    
     pub fn hand_override(hand: Handed, joints: &[HandJoint]) {
@@ -1684,7 +1699,8 @@ impl Input {
     /// Set the Material used to render the hand! The default material uses an offset of 10 to ensure it gets drawn
     /// overtop of other elements.
     /// <https://stereokit.net/Pages/StereoKit/Input/HandMaterial.html>
-    /// * material - If None, will reset to the default value
+    /// * hand - The hand to assign the Material to. If Handed::Max, this will set the value for both hands.
+    /// * material - The new material. If None, will reset to the default value
     ///
     /// see also [`crate::system::input_hand_material`]    
     pub fn hand_material(hand: Handed, material: Option<Material>) {
@@ -1697,16 +1713,33 @@ impl Input {
     /// StereoKit will use controller inputs to simulate an articulated hand. This function allows you to add new
     /// simulated poses to different controller or keyboard buttons!
     /// <https://stereokit.net/Pages/StereoKit/Input/HandSimPoseAdd.html>
+    /// * hand_joints_palm_relative_25 - 25 joint poses, thumb to pinky, and root to tip with two duplicate poses for
+    ///   the thumb root joint. These should be right handed, and relative to the palm joint.
+    /// * button1 - Controller button to activate this pose, can/ be None if this is a keyboard only pose.
+    /// * and_button2 - Second controller button required to activate this pose. First must also be pressed. Can be
+    ///   None if it's only a single button pose.
+    /// * or_hotkey1 - Keyboard key to activate this pose, can be None if this is a controller only pose.
+    /// * and_hotkey2 - Second keyboard key required to activatethis pose. First must also be pressed. Can be None if
+    ///   it's only a single key pose.
     ///
+    /// Returns the id of the hand sim pose, so it can be removed later.
     /// see also [`crate::system::input_hand_sim_pose_add`]    
     pub fn hand_sim_pose_add(
-        hand_joints_25: &[Pose],
+        hand_joints_palm_relative_25: &[Pose],
         button1: ControllerKey,
         and_button2: ControllerKey,
         or_hotkey1: Key,
         and_hotkey2: Key,
     ) -> HandSimId {
-        unsafe { input_hand_sim_pose_add(hand_joints_25.as_ptr(), button1, and_button2, or_hotkey1, and_hotkey2) }
+        unsafe {
+            input_hand_sim_pose_add(
+                hand_joints_palm_relative_25.as_ptr(),
+                button1,
+                and_button2,
+                or_hotkey1,
+                and_hotkey2,
+            )
+        }
     }
 
     /// This clears all registered hand simulation poses, including the ones that StereoKit registers by default!
@@ -1719,6 +1752,7 @@ impl Input {
 
     /// Lets you remove an existing hand pose.
     /// <https://stereokit.net/Pages/StereoKit/Input/HandSimPoseRemove.html>
+    /// * id - Any valid or invalid hand sim pose id.
     ///
     /// see also [`crate::system::input_hand_sim_pose_remove`]    
     pub fn hand_sim_pose_remove(id: HandSimId) {
@@ -1729,7 +1763,9 @@ impl Input {
     /// joints, and simulated hand joints that may not have the same range of mobility. Note that this may change during
     /// a session, the user may put down their controllers, automatically switching to hands, or visa versa.
     /// <https://stereokit.net/Pages/StereoKit/Input/HandSource.html>
+    /// * hand - Do  you want the left or right hand? 0 is left, and 1 is right.
     ///
+    /// Returns information about hand tracking data source.
     /// see also [`crate::system::input_hand_source`]    
     pub fn hand_source(hand: Handed) -> HandSource {
         unsafe { input_hand_source(hand) }
@@ -1738,16 +1774,32 @@ impl Input {
     /// Sets whether or not StereoKit should render the hand for you. Turn this to false if you’re going to render your
     /// own, or don’t need the hand itself to be visible.
     /// <https://stereokit.net/Pages/StereoKit/Input/HandVisible.html>
+    /// * hand - If Handed.Max, this will set the value for  both hands.
+    /// * visible - True, StereoKit renders this. False, it doesn't.
     ///
     /// see also [`crate::system::input_hand_visible`]    
     pub fn hand_visible(hand: Handed, visible: bool) {
         unsafe { input_hand_visible(hand, visible as Bool32T) };
     }
 
+    /// This controls the visibility of StereoKit's finger glow effect on the UI. When true, SK will fill out global
+    /// shader variable `sk_fingertip[2]` with the location of the pointer finger's tips. When false, or the hand is
+    /// untracked, the location will be set to an unlikely faraway position.
+    /// <https://stereokit.net/Pages/StereoKit/Input/FingerGlow.html>
+    /// * visible - True, StereoKit renders this. False, it doesn't.
+    ///
+    /// see also [`crate::system::input_set_finger_glow`]    
+    pub fn finger_glow(visible: bool) {
+        unsafe { input_set_finger_glow(visible as Bool32T) };
+    }
+
     /// Keyboard key state! On desktop this is super handy, but even standalone MR devices can have bluetooth keyboards,
     /// or even just holographic system keyboards!
     /// <https://stereokit.net/Pages/StereoKit/Input/Key.html>
+    /// * key - The key to get the state of. Any key!
     ///
+    /// Returns a BtnState with a number of different bits of info about whether or not the key was pressed or released
+    /// this frame.
     /// see also [`crate::system::input_key`]    
     pub fn key(key: Key) -> BtnState {
         unsafe { input_key(key) }
@@ -1759,6 +1811,7 @@ impl Input {
     /// This will not submit text to StereoKit’s text queue, and will not show up in places like UI.Input. For that, you
     /// must submit a TextInjectChar call.
     /// <https://stereokit.net/Pages/StereoKit/Input/KeyInjectPress.html>
+    /// * key - The key to press.
     ///
     /// see also [`crate::system::input_key_inject_press`]    
     pub fn key_inject_press(key: Key) {
@@ -1772,6 +1825,7 @@ impl Input {
     /// This will not submit text to StereoKit’s text queue, and will not show up in places like UI.Input. For that, you
     /// must submit a TextInjectChar call.
     /// <https://stereokit.net/Pages/StereoKit/Input/KeyInjectRelease.html>
+    /// * key - The key to release.
     ///
     /// see also [`crate::system::input_key_inject_release`]    
     pub fn key_inject_release(key: Key) {
@@ -1780,8 +1834,10 @@ impl Input {
 
     /// This gets the pointer by filter based index.
     /// <https://stereokit.net/Pages/StereoKit/Input/Pointer.html>
-    /// * filter - If None has default value of ANY
+    /// * index - Index of the Pointer.
+    /// * filter - Filter used to search for the Pointer. If None has default value of ANY.
     ///
+    /// Returns the Pointer data.
     /// see also [`crate::system::input_pointer`]    
     pub fn pointer(index: i32, filter: Option<InputSource>) -> Pointer {
         let filter = filter.unwrap_or(InputSource::Any);
@@ -1790,8 +1846,9 @@ impl Input {
 
     /// The number of Pointer inputs that StereoKit is tracking that match the given filter.
     /// <https://stereokit.net/Pages/StereoKit/Input/PointerCount.html>
-    /// * filter - If None has default value of ANY
+    /// * filter - You can filter input sources using this bit flat. If None has default value of ANY
     ///
+    /// Returns the number of Pointers StereoKit knows about that matches the given filter.
     /// see also [`crate::system::input_pointer_count`]    
     pub fn pointer_count(filter: Option<InputSource>) -> i32 {
         let filter = filter.unwrap_or(InputSource::Any);
@@ -1806,6 +1863,7 @@ impl Input {
     /// Input::text_reset.
     /// <https://stereokit.net/Pages/StereoKit/Input/TextConsume.html>
     ///
+    /// Returns the next character in this frame's list, or '\0' if none remain
     /// see also [`crate::system::input_text_consume`]    
     pub fn text_consume() -> Option<char> {
         char::from_u32(unsafe { input_text_consume() })
@@ -1841,6 +1899,7 @@ impl Input {
     /// This will not submit key press/release events to StereoKit’s input queue, use key_inject_press/_release
     /// for that.
     /// <https://stereokit.net/Pages/StereoKit/Input/TextInjectChar.html>
+    /// * chars - A collection of characters to submit as text input.
     ///
     /// see also [`crate::system::input_text_inject_char`]    
     pub fn text_inject_chars(str: impl AsRef<str>) {
@@ -1853,26 +1912,32 @@ impl Input {
     /// Pointer that matches the position of that pointer at the moment the event occurred. This can be more accurate
     /// than polling for input data, since polling happens specifically at frame start.
     /// <https://stereokit.net/Pages/StereoKit/Input/Subscribe.html>
+    /// * event_source - What input sources do we want to listen for. This is a bit flag.
+    /// * event_types - What events do we want to listen for. This is a bit flag.
+    /// * on_event - The callback to call when the event occurs!
     ///
     /// see also [`crate::system::input_subscribe`]    
     pub fn subscribe(
         event_source: InputSource,
         event_types: BtnState,
-        cb: Option<unsafe extern "C" fn(source: InputSource, input_event: BtnState, in_pointer: *const Pointer)>,
+        on_event: Option<unsafe extern "C" fn(source: InputSource, input_event: BtnState, in_pointer: *const Pointer)>,
     ) {
-        unsafe { input_subscribe(event_source, event_types, cb) }
+        unsafe { input_subscribe(event_source, event_types, on_event) }
     }
 
     /// Unsubscribes a listener from input events.
     /// <https://stereokit.net/Pages/StereoKit/Input/Unsubscribe.html>
+    /// * event_source - The sources this listener was originally registered for.
+    /// * event_types - The events this listener was originally registered for.
+    /// * on_event - The callback this lisener originally used.
     ///
     /// see also [`crate::system::input_unsubscribe`]    
     pub fn unsubscribe(
         event_source: InputSource,
         event_types: BtnState,
-        cb: Option<unsafe extern "C" fn(source: InputSource, input_event: BtnState, in_pointer: *const Pointer)>,
+        on_event: Option<unsafe extern "C" fn(source: InputSource, input_event: BtnState, in_pointer: *const Pointer)>,
     ) {
-        unsafe { input_unsubscribe(event_source, event_types, cb) }
+        unsafe { input_unsubscribe(event_source, event_types, on_event) }
     }
 
     /// This retreives the Model currently in use by StereoKit to represent the controller input source. By default,
@@ -1920,9 +1985,7 @@ impl Input {
     /// Alt key.
     ///
     /// Permissions:
-    /// * For UWP apps, permissions for eye tracking can be found in the project’s .appxmanifest file under
-    ///   Capabilities->Gaze Input.
-    /// * For Xamarin apps, you may need to add an entry to your AndroidManifest.xml, refer to your device’s
+    /// * You may need to add an entry to your AndroidManifest.xml (or Cargo.toml), refer to your device’s
     ///   documentation for specifics.
     ///
     ///  <https://stereokit.net/Pages/StereoKit/Input/EyesTracked.html>
@@ -1947,6 +2010,17 @@ impl Input {
     /// see also [`crate::system::input_mouse`]    
     pub fn get_mouse() -> Mouse {
         unsafe { *input_mouse() }
+    }
+
+    /// This controls the visibility of StereoKit's finger glow effect on the UI. When true, SK will fill out global
+    /// shader variable `sk_fingertip[2]` with the location of the pointer finger's tips. When false, or the hand is
+    /// untracked, the location will be set to an unlikely faraway position.
+    /// <https://stereokit.net/Pages/StereoKit/Input/FingerGlow.html>
+    ///
+    /// Returns true if StereoKit renders this. False, it doesn't.
+    /// see also [`crate::system::input_set_finger_glow`]  
+    pub fn get_finger_glow() -> bool {
+        unsafe { input_get_finger_glow() != 0 }
     }
 }
 

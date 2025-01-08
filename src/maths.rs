@@ -220,7 +220,7 @@ impl Vec2 {
     /// <https://stereokit.net/Pages/StereoKit/Vec2/AngleBetween.html>
     #[inline]
     pub fn angle_between(a: Self, b: Self) -> f32 {
-        (Self::dot(a, b) / (a.length_sq() * b.length_sq()).sqrt()).acos()
+        (Self::dot(a, b) / (a.length_sq() * b.length_sq()).sqrt()).acos().to_degrees()
     }
 
     /// Creates a normalized delta vector that points out from an origin point to a target point!
@@ -655,7 +655,7 @@ impl Vec3 {
     /// <https://stereokit.net/Pages/StereoKit/Vec3/AngleBetween.html>
     #[inline]
     pub fn angle_between(a: Self, b: Self) -> f32 {
-        (Self::dot(a, b) / (a.length_sq() * b.length_sq()).sqrt()).acos()
+        (Self::dot(a, b) / (a.length_sq() * b.length_sq()).sqrt()).acos().to_degrees()
     }
 
     /// Creates a vector that points out at the given 2D angle! This creates the vector on the XY plane, and allows you
