@@ -78,6 +78,8 @@ impl ApplicationHandler<StepperAction> for SkClosures<'_> {
             }
             WindowEvent::CloseRequested => {
                 Log::info("SkClosure LoopExiting !!");
+                // may be the second time we call this
+                self.sk.steppers.shutdown();
                 (self.shutdown)(&mut self.sk);
                 event_loop.exit();
             }

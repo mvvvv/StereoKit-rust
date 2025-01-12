@@ -9,7 +9,7 @@ use stereokit_rust::{
     model::Model,
     render_list::RenderList,
     sk::{MainThreadToken, SkInfo},
-    system::{Assets, Renderer, Text, TextStyle},
+    system::{Assets, RenderClear, Renderer, Text, TextStyle},
     tex::{Tex, TexFormat, TexType},
     ui::Ui,
     util::{
@@ -105,8 +105,9 @@ impl RenderList1 {
             &self.render_tex,
             Matrix::look_at(self.at, Vec3::ZERO, Some(Vec3::new(1.0, Time::get_totalf().sin(), 1.0))),
             self.perspective,
+            Some(Color128::new(0.4, 0.3, 0.2, 0.5)),
+            Some(RenderClear::Color),
             Rect::new(0.0, 0.0, 1.0, 1.0),
-            None,
             None,
         );
 

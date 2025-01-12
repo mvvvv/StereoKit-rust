@@ -80,9 +80,10 @@ extern "C" {
         to_rendertarget: TexT,
         camera: Matrix,
         projection: Matrix,
-        viewport_px: Rect,
-        layer_filter: RenderLayer,
+        clear_color: Color128,
         clear: RenderClear,
+        viewport_pct: Rect,
+        layer_filter: RenderLayer,
     );
     pub fn render_list_push(list: RenderListT);
     pub fn render_list_pop();
@@ -270,7 +271,11 @@ impl RenderList {
     ///   later on, so no need to do it yourself.
     /// * projection - The projection matrix describes how the geometry is flattened onto the draw surface. Normally,
     ///   you'd use Matrix.Perspective, and occasionally Matrix.Orthographic might be helpful as well.
-    /// * viewport - Allows you to specify a region of the rendertarget to draw to! This is in normalized
+    /// * clear_color * If the `clear` parameter is set to clear the color of `to_render_target`, then this is the color
+    ///   it will clear to. `default` would be a transparent black.
+    /// * clear - Describes if and how the render_target should be cleared before rendering. Note that clearing the
+    ///   target is unaffected by the viewport, so this will clean the entire surface!
+    /// * viewport_pct - Allows you to specify a region of the rendertarget to draw to! This is in normalized
     ///   coordinates, 0-1. If the width of this value is zero, then this will render to the entire texture.
     /// * layerFilter - This is a bit flag that allows you to change which layers StereoKit renders for this
     ///   particular render viewpoint. To change what layers a visual is on, use a Draw method that includes a
@@ -279,26 +284,30 @@ impl RenderList {
     ///   target is unaffected by the viewport, so this will clean the entire surface!
     ///
     /// see also [`crate::render_list::render_list_draw_now`]
+    #[allow(clippy::too_many_arguments)]
     pub fn draw_now(
         &mut self,
         to_rendertarget: impl AsRef<Tex>,
         camera: impl Into<Matrix>,
         projection: impl Into<Matrix>,
-        viewport_px: Rect,
-        layer_filter: Option<RenderLayer>,
+        clear_color: Option<Color128>,
         clear: Option<RenderClear>,
+        viewport_pct: Rect,
+        layer_filter: Option<RenderLayer>,
     ) {
         let layer_filter = layer_filter.unwrap_or(RenderLayer::all());
         let clear = clear.unwrap_or(RenderClear::All);
+        let clear_color = clear_color.unwrap_or_default();
         unsafe {
             render_list_draw_now(
                 self.0.as_ptr(),
                 to_rendertarget.as_ref().0.as_ptr(),
                 camera.into(),
                 projection.into(),
-                viewport_px,
-                layer_filter,
+                clear_color,
                 clear,
+                viewport_pct,
+                layer_filter,
             )
         }
     }
