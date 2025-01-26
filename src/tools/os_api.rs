@@ -17,6 +17,21 @@ pub enum PathEntry {
     Dir(OsString),
 }
 
+/// For bin tools only
+pub fn get_shaders_source_dir() -> String {
+    std::env::var("SK_RUST_SHADERS_SOURCE_DIR").unwrap_or("shaders_src".into())
+}
+
+/// Where sks shaders are store under assets dir. For bin tools and none android exe. For Android use app.asset_manager()
+pub fn get_shaders_sks_dir() -> String {
+    std::env::var("SK_RUST_SHADERS_SKS_DIR").unwrap_or("shaders".into())
+}
+
+/// For bin tools and non android exe. For Android use app.asset_manager()
+pub fn get_assets_dir() -> String {
+    std::env::var("SK_RUST_ASSETS_DIR").unwrap_or("assets".into())
+}
+
 /// Read all the assets of a given assets sub directory
 #[cfg(target_os = "android")]
 pub fn get_assets(sk_info: Rc<RefCell<SkInfo>>, sub_dir: PathBuf, file_extensions: &Vec<String>) -> Vec<PathEntry> {
@@ -67,7 +82,7 @@ pub fn get_assets(_sk_info: Rc<RefCell<SkInfo>>, sub_dir: PathBuf, file_extensio
         exts.push(OsString::from(extension));
     }
 
-    let path_text = env::current_dir().unwrap().to_owned().join("assets");
+    let path_text = env::current_dir().unwrap().to_owned().join(get_assets_dir());
     let path_asset = path_text.join(sub_dir);
     let mut vec = vec![];
 
@@ -130,7 +145,7 @@ pub fn get_external_path(sk_info: Rc<RefCell<SkInfo>>) -> Option<PathBuf> {
 pub fn get_external_path(_sk_info: Rc<RefCell<SkInfo>>) -> Option<PathBuf> {
     use std::env;
 
-    let path_assets = env::current_dir().unwrap().join("assets");
+    let path_assets = env::current_dir().unwrap().join(get_assets_dir());
     Some(path_assets)
 }
 
@@ -165,7 +180,7 @@ pub fn open_asset(sk_info: Rc<RefCell<SkInfo>>, asset_path: impl AsRef<Path>) ->
 pub fn open_asset(_sk_info: Rc<RefCell<SkInfo>>, asset_path: impl AsRef<Path>) -> Option<File> {
     use std::env;
 
-    let path_assets = env::current_dir().unwrap().join("assets");
+    let path_assets = env::current_dir().unwrap().join(get_assets_dir());
     let path_asset = path_assets.join(asset_path);
     File::open(path_asset).ok()
 }

@@ -90,7 +90,6 @@ fn main() {
     let mut settings = SkSettings::default();
     settings
         .app_name("rust Demos")
-        .assets_folder("assets")
         .origin(OriginMode::Floor)
         .render_multisample(4)
         .render_scaling(2.0)

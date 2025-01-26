@@ -16,9 +16,7 @@ pub fn include_asset_tree(body: TokenStream) -> TokenStream {
     let path_cargo = Path::new(&cargo_dir);
     if let Some(TokenTree::Literal(dir)) = body.into_iter().next() {
         let mut sub_dir = dir.to_string();
-        while !sub_dir.is_empty() && !sub_dir.starts_with("assets") {
-            sub_dir.remove(0);
-        }
+        sub_dir.remove(0);
         sub_dir.pop();
         let path_assets = path_cargo.join(&sub_dir);
         if path_assets.is_dir() {

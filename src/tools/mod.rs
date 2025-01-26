@@ -1,6 +1,4 @@
 pub mod build_tools;
-
-#[cfg(feature = "event-loop")]
 pub mod os_api;
 
 #[cfg(feature = "event-loop")]

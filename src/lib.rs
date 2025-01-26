@@ -42,6 +42,8 @@ pub enum StereoKitError {
     TexCString(String),
     #[error("failed to find tex {0}")]
     TexFind(String),
+    #[error("failed to copy tex {0}")]
+    TexCopy(String),
     #[error("failed to create a tex from raw memory")]
     TexMemory,
     #[error("failed to create a tex from file {0} for reason {1}")]

@@ -1,6 +1,9 @@
 use std::{env::current_dir, ffi::OsStr, fs::create_dir, process::Stdio};
 
-use stereokit_rust::tools::build_tools::{compile_hlsl, copy_tree, get_cargo_name};
+use stereokit_rust::tools::{
+    build_tools::{compile_hlsl, copy_tree, get_cargo_name},
+    os_api::{get_assets_dir, get_shaders_sks_dir},
+};
 
 pub const USAGE: &str = r#"Usage : cargo build_sk_rs [Options] <Output_path>
     Build the project then copy files to <Output_path>
@@ -293,13 +296,13 @@ fn main() {
     }
 
     // 2 - the assets
-    let from_assets = PathBuf::from("assets");
-    let to_asset = output_path.join("assets");
-    copy_tree(from_assets, to_asset).unwrap();
+    let from_assets = PathBuf::from(get_assets_dir());
+    let to_asset = output_path.join(get_assets_dir());
+    copy_tree(from_assets, to_asset.clone()).unwrap();
 
     // 3 - the shaders
     let mut with_wine = false;
-    let target_shaders_dir = output_path.join("assets").join("shaders");
+    let target_shaders_dir = to_asset.join(get_shaders_sks_dir());
     if !target_shaders_dir.exists() {
         create_dir(&target_shaders_dir).expect("Unable to create shaders directory");
     }

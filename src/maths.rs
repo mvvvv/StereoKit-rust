@@ -1732,13 +1732,6 @@ impl Matrix {
                 1.0,
             ],
         }
-
-        // Self::from_cols(
-        //     Vec4::new(right_v.x, up_v.x, -f.x, 0.0),
-        //     Vec4::new(right_v.y, up_v.y, -f.y, 0.0),
-        //     Vec4::new(right_v.z, up_v.z, -f.z, 0.0),
-        //     Vec4::new(-eye.dot(right_v), -eye.dot(up_v), eye.dot(f), 1.0),
-        // )
     }
 
     /// Create a rotation matrix from a Quaternion.

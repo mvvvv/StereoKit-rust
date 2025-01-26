@@ -11,7 +11,6 @@ fn main() {
 
     let sk = SkSettings::default()
         .app_name("stereokit-rust (manual)")
-        .assets_folder("assets")
         .origin(OriginMode::Floor)
         .log_filter(LogLevel::Diagnostic)
         .init()

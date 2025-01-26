@@ -83,6 +83,13 @@ impl IAsset for Sprite {
     }
 }
 
+/// A Default sprite is asked when a Sprite creation or find returned an error. (close is the default sprite)
+impl Default for Sprite {
+    fn default() -> Self {
+        Self::close()
+    }
+}
+
 impl Sprite {
     /// Create a sprite from a texture.
     /// <https://stereokit.net/Pages/StereoKit/Sprite/FromTex.html>

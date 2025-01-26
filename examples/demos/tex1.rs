@@ -174,7 +174,7 @@ impl Default for Tex1 {
         vide.id("vide mat").diffuse_tex(&tex_vide);
 
         let mut particule = basic_material.copy();
-        particule.id("particule mat").diffuse_tex(&tex_particule);
+        particule.id("particule mat").diffuse_tex(tex_particule.copy(None, None).unwrap());
 
         let mut vide2 = basic_material.copy();
         vide2.id("vide mat2").diffuse_tex(&tex_vide2).tex_transform(Vec4::new(0.0, 0.0, 2.0, 2.0));

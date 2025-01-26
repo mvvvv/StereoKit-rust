@@ -66,9 +66,25 @@ impl Color128 {
     }
 
     /// Try hsv instead! But if you really need to create a color from RGB values, I suppose you’re in the right
+    /// place. All parameter values are generally in the range of 0-1.
+    /// <https://stereokit.net/Pages/StereoKit/Color/Color.html>
+    pub const fn rgba(r: f32, g: f32, b: f32, a: f32) -> Self {
+        Self { r, g, b, a }
+    }
+
+    /// Try hsv instead! But if you really need to create a color from RGB values, I suppose you’re in the right
     /// place. All parameter values are generally in the range of 0-1. Alpha will be set to 1.0
     /// <https://stereokit.net/Pages/StereoKit/Color/Color.html>
+    #[deprecated = "Use Color128::rgb instead"]
     pub const fn new_rgb(r: f32, g: f32, b: f32) -> Self {
+        Self::new(r, g, b, 1.0)
+    }
+
+    /// Try hsv instead! But if you really need to create a color from RGB values, I suppose you’re in the right
+    /// place. All parameter values are generally in the range of 0-1. Alpha will be set to 1.0
+    /// <https://stereokit.net/Pages/StereoKit/Color/Color.html>
+    #[deprecated = "Use Color128::rgb instead"]
+    pub const fn rgb(r: f32, g: f32, b: f32) -> Self {
         Self::new(r, g, b, 1.0)
     }
 
@@ -339,15 +355,28 @@ impl Color32 {
     pub const BLACK_TRANSPARENT: Color32 = Color32 { r: 0, g: 0, b: 0, a: 0 };
     pub const WHITE: Color32 = Color32 { r: 255, g: 255, b: 255, a: 255 };
 
-    /// Constructs a 32-bit color from bytes! You may also be interested in Color32.Hex.
+    /// Constructs a 32-bit color from bytes! You may also be interested in Color32::hex.
     /// <https://stereokit.net/Pages/StereoKit/Color32/Color32.html>
     pub const fn new(r: u8, g: u8, b: u8, a: u8) -> Self {
         Self { r, g, b, a }
     }
 
-    /// Constructs a 32-bit color from bytes! You may also be interested in Color32.Hex.
+    /// Constructs a 32-bit color from bytes! You may also be interested in Color32::hex.
+    /// <https://stereokit.net/Pages/StereoKit/Color32/Color32.html>
+    pub const fn rgba(r: u8, g: u8, b: u8, a: u8) -> Self {
+        Self { r, g, b, a }
+    }
+
+    /// Constructs a 32-bit color from bytes! You may also be interested in Color32::hex.
+    /// <https://stereokit.net/Pages/StereoKit/Color32/Color32.html>
+    pub const fn rgb(r: u8, g: u8, b: u8) -> Self {
+        Self { r, g, b, a: 255 }
+    }
+
+    /// Constructs a 32-bit color from bytes! You may also be interested in Color32::hex.
     /// a is set to 255 !
     /// <https://stereokit.net/Pages/StereoKit/Color32/Color32.html>
+    #[deprecated = "Use Color32::rgb instead"]
     pub const fn new_rgb(r: u8, g: u8, b: u8) -> Self {
         Self { r, g, b, a: 255 }
     }

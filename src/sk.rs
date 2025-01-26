@@ -1,6 +1,7 @@
 use crate::{
     maths::Bool32T,
     system::{BackendOpenXR, Log, LogLevel},
+    tools::os_api::get_assets_dir,
     StereoKitError,
 };
 #[cfg(target_os = "android")]
@@ -275,12 +276,6 @@ pub const DEFAULT_NAME: *const c_char = {
     BYTES.as_ptr().cast()
 };
 
-/// Default path of the asset directory
-pub const DEFAULT_ASSET_DIR: *const c_char = {
-    const BYTES: &[u8] = b"\0";
-    BYTES.as_ptr().cast()
-};
-
 /// StereoKit initialization settings! Setup SkSettings with your data before calling SkSetting.Init().
 /// <https://stereokit.net/Pages/StereoKit/SKSettings.html>
 #[derive(Debug, Clone)]
@@ -313,12 +308,12 @@ impl Default for SkSettings {
     fn default() -> Self {
         Self {
             app_name: DEFAULT_NAME,
-            assets_folder: DEFAULT_ASSET_DIR,
+            assets_folder: Self::assets_folder(get_assets_dir()),
             mode: AppMode::XR,
             blend_preference: DisplayBlend::None,
             no_flatscreen_fallback: 0,
             depth_mode: DepthMode::Balanced,
-            log_filter: LogLevel::Inform,
+            log_filter: LogLevel::None,
             overlay_app: 0,
             overlay_priority: 0,
             flatscreen_pos_x: 0,
@@ -357,10 +352,11 @@ impl SkSettings {
     /// Where to look for assets when loading files! Final path will look like ‘\[assetsFolder\]/\[file\]’, so a
     /// trailing ‘/’ is unnecessary. Default is ""
     /// <https://stereokit.net/Pages/StereoKit/SKSettings/assetsFolder.html>
-    pub fn assets_folder(&mut self, assets_folder: impl AsRef<Path>) -> &mut Self {
+    ///
+    /// Not pub anymore, please change variable SK_RUST_ASSET_DIR in config.toml [env]
+    fn assets_folder(assets_folder: impl AsRef<Path>) -> *mut c_char {
         let c_str = CString::new(assets_folder.as_ref().to_str().unwrap()).unwrap();
-        self.assets_folder = c_str.into_raw();
-        self
+        c_str.into_raw()
     }
 
     /// Which operation mode should we use for this app? Default is XR, and by default the app will fall back to
@@ -398,7 +394,7 @@ impl SkSettings {
     }
 
     //// The default log filtering level. This can be changed at runtime, but this allows you to set the log filter
-    /// before Initialization occurs, so you can choose to get information from that. Default is LogLevel.Info.
+    /// before Initialization occurs, so you can choose to get information from that. Default is LogLevel.Diagnostic.
     /// <https://stereokit.net/Pages/StereoKit/SKSettings/logFilter.html>
     pub fn log_filter(&mut self, log_filter: LogLevel) -> &mut Self {
         self.log_filter = log_filter;
@@ -571,12 +567,14 @@ impl SkSettings {
 pub enum QuitReason {
     /// Default state when SK has not quit.
     None = 0,
-    /// User has selected to quit the application using application controls.
+    /// The user (or possibly the OS) has explicitly asked to exit the application under normal circumstances.
     User = 1,
-    /// Runtime Error SESSION_LOST
-    SessionLost = 3,
-    /// User has closed the application from outside of the application.
-    SystemClose = 4,
+    /// Some runtime error occurred, causing the application to quit gracefully.
+    Error = 2,
+    /// If initialization failed, StereoKit won't run to begin with!
+    InitializationFailed = 3,
+    /// The runtime under StereoKit has encountered an issue and has been lost.
+    SessionLost = 4,
 }
 
 /// Non canonical structure whose purpose is to expose infos for ISteppers.
@@ -600,8 +598,9 @@ impl SkInfo {
     }
 
     /// This is a copy of the settings that StereoKit was initialized with, so you can refer back to them a little
-    /// easier. These are read only, and keep in mind that some settings are only requests! Check Sk.system and other
-    /// properties for the current state of StereoKit.
+    /// easier.  Some of these values will be different than provided, as StereoKit will resolve some default values
+    /// based on the platform capabilities or internal preference. These are read only, and keep in mind that some
+    /// settings are only requests! Check SK.System and other properties for the current state of StereoKit.
     /// <https://stereokit.net/Pages/StereoKit/SK/Settings.html>
     pub fn get_settings(&self) -> SkSettings {
         self.settings.clone()
@@ -697,7 +696,7 @@ impl Sk {
             true => {
                 let sk_info = Rc::new(RefCell::new(SkInfo {
                     android_app: app,
-                    settings: settings.clone(),
+                    settings: unsafe { sk_get_settings() },
                     system_info: unsafe { sk_system_info() },
                     #[cfg(feature = "event-loop")]
                     event_loop_proxy: None,
@@ -728,7 +727,7 @@ impl Sk {
         } {
             true => {
                 let sk_info = Rc::new(RefCell::new(SkInfo {
-                    settings: settings.clone(),
+                    settings: unsafe { sk_get_settings() },
                     system_info: unsafe { sk_system_info() },
                     #[cfg(feature = "event-loop")]
                     event_loop_proxy: None,
@@ -790,20 +789,19 @@ impl Sk {
     }
 
     /// This is a copy of the settings that StereoKit was initialized with, so you can refer back to them a little
-    /// easier. These are read only, and keep in mind that some settings are only requests! Check Sk.system and other
-    /// properties for the current state of StereoKit.
+    /// easier.  Some of these values will be different than provided, as StereoKit will resolve some default values
+    /// based on the platform capabilities or internal preference. These are read only, and keep in mind that some
+    /// settings are only requests! Check SK.System and other properties for the current state of StereoKit.
     /// <https://stereokit.net/Pages/StereoKit/SK/Settings.html>
     pub fn get_settings(&self) -> SkSettings {
-        let sk = self.sk_info.as_ref();
-        sk.borrow().get_settings()
+        unsafe { sk_get_settings() }
     }
 
     /// This structure contains information about the current system and its capabilities. There’s a lot of different MR
     /// devices, so it’s nice to have code for systems with particular characteristics!
     /// <https://stereokit.net/Pages/StereoKit/SK/System.html>
     pub fn get_system(&self) -> SystemInfo {
-        let sk = self.sk_info.as_ref();
-        sk.borrow().get_system()
+        unsafe { sk_system_info() }
     }
 
     /// An integer version Id! This is defined using a hex value with this format: 0xMMMMiiiiPPPPrrrr in order of

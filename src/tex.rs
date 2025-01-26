@@ -226,6 +226,8 @@ extern "C" {
         srgb_data: Bool32T,
         load_priority: i32,
     ) -> TexT;
+    pub fn tex_copy(texture: TexT, type_: TexType, format: TexFormat) -> TexT;
+    pub fn tex_gen_mips(texture: TexT) -> Bool32T;
     pub fn tex_set_id(texture: TexT, id: *const c_char);
     pub fn tex_get_id(texture: TexT) -> *const c_char;
     pub fn tex_set_fallback(texture: TexT, fallback: TexT);
@@ -555,6 +557,20 @@ impl Tex {
         Ok(Tex(
             NonNull::new(unsafe { tex_find(c_str.as_ptr()) }).ok_or(StereoKitError::TexFind(id.as_ref().into()))?
         ))
+    }
+
+    /// Get a copy of the texture
+    /// <https://stereokit.net/Pages/StereoKit/Tex/Copy.html>
+    /// * tex_type - Type of the copy. If None has default value of TexType::Image.
+    /// * tex_format - Format of the copy - If None has default value of TexFormat::None.
+    ///
+    /// Returns the copie of this texture if successful
+    ///  see also [`crate::tex::tex_copy`]
+    pub fn copy(&self, tex_type: Option<TexType>, tex_format: Option<TexFormat>) -> Result<Tex, StereoKitError> {
+        let type_ = tex_type.unwrap_or(TexType::Image);
+        let format = tex_format.unwrap_or(TexFormat::None);
+        Ok(Tex(NonNull::new(unsafe { tex_copy(self.0.as_ptr(), type_, format) })
+            .ok_or(StereoKitError::TexCopy(self.get_id().into()))?))
     }
 
     /// Creates a clone of the same reference. Basically, the new variable is the same asset. This is what you get by

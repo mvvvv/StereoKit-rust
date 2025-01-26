@@ -34,6 +34,27 @@ impl Vertex {
     /// <https://stereokit.net/Pages/StereoKit/Vertex/Vertex.html>
     /// * texture_coordinate - If None, set the value to Vec2::ZERO
     /// * color - If None, set the value to Color32::WHITE
+    ///
+    /// # Examples
+    /// ```
+    /// use stereokit_rust::{maths::{Vec3, Vec2}, util::Color32, mesh::Vertex};
+    ///
+    /// // Creating a vertex with all fields specified
+    /// let vertex1 = Vertex::new(
+    ///     Vec3::new(1.0, 2.0, 3.0),
+    ///     Vec3::new(0.0, 1.0, 0.0),
+    ///     Some(Vec2::new(0.5, 0.5)),
+    ///     Some(Color32::rgba(255, 0, 0))
+    /// );
+    ///
+    /// // Creating a vertex with default values for texture coordinate and color
+    /// let vertex2 = Vertex::new(
+    ///     Vec3::new(-1.0, -2.0, -3.0),
+    ///     Vec3::new(0.0, 0.0, 1.0),
+    ///     None,
+    ///     None
+    /// );
+    /// ```
     pub fn new<V: Into<Vec3>>(
         position: V,
         normal: V,

@@ -1,0 +1,5 @@
+[env]
+# Set ENV_VAR_NAME=value for any process run by Cargo
+SK_RUST_ASSETS_DIR = "assets"
+SK_RUST_SHADERS_SOURCE_DIR = "shaders_src"
+SK_RUST_SHADERS_SKS_DIR = "shaders"

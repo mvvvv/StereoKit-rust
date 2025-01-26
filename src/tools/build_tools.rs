@@ -6,6 +6,8 @@ use std::{
     process::{exit, Command},
 };
 
+use crate::tools::os_api::{get_assets_dir, get_shaders_sks_dir, get_shaders_source_dir};
+
 /// Reaching the skshaderc of this platform
 pub fn get_skshaderc(bin_dir: PathBuf, with_wine: bool) -> PathBuf {
     let target_os = if with_wine {
@@ -54,27 +56,35 @@ pub fn compile_hlsl(
     let skshaderc = get_skshaderc(bin_dir.clone(), with_wine);
 
     let mut shaders_source_path = project_dir.clone();
-    shaders_source_path.push("shaders_src");
+
+    shaders_source_path.push(get_shaders_source_dir());
 
     if !shaders_source_path.exists() || !shaders_source_path.is_dir() {
-        println!("Current directory do not contain shaders_src directory");
+        println!(
+            "Current directory do not see {:?} directory. The value may be change in config.toml [env]",
+            shaders_source_path
+        );
         println!("Abort!");
         exit(1);
     }
 
     let shaders_path = match target_dir {
-        Some(path) => path,
+        Some(path) => String::from(path.to_str().expect("shader_path can't be a &str!")) + "/",
         None => {
             let mut shaders_path = project_dir.clone();
-            shaders_path.push("assets");
+            shaders_path.push(get_assets_dir());
             if !shaders_path.exists() || !shaders_path.is_dir() {
-                return Err(Error::new(io::ErrorKind::Other, "Current directory do not contain assets directory"));
+                return Err(Error::new(
+                    io::ErrorKind::Other,
+                    format!("Current directory do not see {:?} directory", shaders_path),
+                ));
             }
-            shaders_path.push("shaders");
+
+            shaders_path.push(get_shaders_sks_dir());
             if !shaders_path.exists() || !shaders_path.is_dir() {
                 create_dir(&shaders_path)?
             }
-            shaders_path
+            String::from(shaders_path.to_str().expect("shader_path can't be a &str!")) + "/"
         }
     };
 
@@ -102,7 +112,7 @@ pub fn compile_hlsl(
                         } else {
                             Command::new(OsStr::new(skshaderc.to_str().unwrap_or("NOPE")))
                         };
-                        cmd.arg("-i").arg(&shaders_include).arg("-o").arg(&shaders_path);
+                        cmd.arg("-f").arg("-e").arg("-i").arg(&shaders_include).arg("-o").arg(&shaders_path);
                         for arg in options {
                             cmd.arg(arg);
                         }
@@ -129,9 +139,7 @@ pub fn copy_tree(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> std::io::Resul
     for entry in fs::read_dir(src)?.flatten() {
         let path_type = entry.file_type()?;
         if path_type.is_dir() {
-            if entry.file_name() != "shaders" {
-                copy_tree(entry.path(), dst.as_ref().join(entry.file_name()))?;
-            }
+            copy_tree(entry.path(), dst.as_ref().join(entry.file_name()))?;
         } else {
             fs::copy(entry.path(), dst.as_ref().join(entry.file_name()))?;
         }

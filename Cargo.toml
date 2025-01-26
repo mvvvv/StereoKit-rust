@@ -6,7 +6,7 @@ name = "stereokit-rust"
 version = "0.1.0"
 resolver = "2"
 edition = "2021"
-#rust-version = "1.79"
+#rust-version = "1.84"
 description = "High-Level Rust bindings around the StereoKitC library for XR"
 homepage = "https://stereokit.net/"
 keywords = ["stereokit", "XR", "VR", "AR", "sys"]
@@ -40,7 +40,7 @@ winit = { version = "0.30", features = [
   "android-native-activity",
 ], optional = true }
 thiserror = "2.0"
-bitflags = "2.7"
+bitflags = "2.8"
 glam = "0.29"
 openxr-sys = "0.11"
 stereokit-macros = { path = "stereokit-macros" }
@@ -84,7 +84,7 @@ min_sdk_version = 29
 target_sdk_version = 32
 max_sdk_version = 32
 
-
+#---Android features (Horizon OS and AndroidXR)
 [[package.metadata.android.uses_feature]]
 name = "android.hardware.vulkan.level"
 required = true
@@ -130,6 +130,7 @@ required = true
 name = "com.oculus.feature.RENDER_MODEL"
 required = true
 
+#---Android permission (Horizon OS and AndroidXR)
 [[package.metadata.android.uses_permission]]
 name = "android.permission.INTERNET"
 
@@ -155,6 +156,7 @@ name = "android.permission.READ_EXTERNAL_STORAGE"
 [[package.metadata.android.uses_permission]]
 name = "android.permission.MANAGE_EXTERNAL_STORAGE"
 
+#---Android permission for Horizon OS
 [[package.metadata.android.uses_permission]]
 name = "com.oculus.permission.HAND_TRACKING"
 required = false
@@ -199,6 +201,21 @@ required = false
 name = "com.oculus.permission.USE_COLOCATION_DISCOVERY_API"
 required = false
 
+#---Android permission AndroidXR
+[[package.metadata.android.uses_permission]]
+name = "android.permission.SCENE_UNDERSTANDING"
+required = false
+
+[[package.metadata.android.uses_permission]]
+name = "android.permission.HAND_TRACKING"
+required = false
+
+[[package.metadata.android.uses_permission]]
+name = "android.permission.EYE_TRACKING_FINE"
+required = false
+
+
+#---Android Application
 [package.metadata.android.application]
 debuggable = true
 label = "StereoKit rust demos"

@@ -21,7 +21,7 @@ use stereokit_rust::{
     util::named_colors::{RED, YELLOW},
 };
 
-const ASSET_DIR: &[&str] = include_asset_tree!("assets");
+const ASSET_DIR: &[&str] = include_asset_tree!("assets"); // you can't use get_assets_dir() here
 
 pub struct Asset1 {
     id: StepperId,

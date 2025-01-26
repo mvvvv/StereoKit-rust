@@ -2162,6 +2162,7 @@ pub enum LogColors {
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
 pub enum LogLevel {
+    /// Default value (= to Diagnostic)
     None = 0,
     /// This is for diagnostic information, where you need to know details about what -exactly- is going on in the
     /// system. This info doesn’t surface by default.
