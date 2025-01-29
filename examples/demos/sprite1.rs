@@ -3,8 +3,9 @@ use std::f32::consts::PI;
 use std::rc::Rc;
 
 use glam::Mat4;
+use stereokit_macros::IStepper;
 use stereokit_rust::{
-    event_loop::{IStepper, StepperId},
+    event_loop::{IStepper, StepperAction, StepperId},
     font::Font,
     material::Material,
     maths::{Matrix, Quat, Vec3, Vec4},
@@ -18,10 +19,11 @@ use stereokit_rust::{
     },
 };
 
-#[derive(Debug)]
+#[derive(IStepper)]
 pub struct Sprite1 {
     pub title: String,
     id: StepperId,
+
     sk_info: Option<Rc<RefCell<SkInfo>>>,
     tex_particule1: Tex,
     tex_particule2: Tex,
@@ -96,11 +98,9 @@ impl Default for Sprite1 {
     }
 }
 
-impl IStepper for Sprite1 {
-    fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
-        self.id = id;
-        self.sk_info = Some(sk_info);
-
+impl Sprite1 {
+    /// Called from IStepper::initialize here you can abort the initialization by returning false
+    fn start(&mut self) -> bool {
         // ---Some logs
         for sprite in [&self.sprite1, &self.sprite_ico] {
             Log::diag(format!(
@@ -125,7 +125,11 @@ impl IStepper for Sprite1 {
         true
     }
 
-    fn step(&mut self, token: &MainThreadToken) {
+    /// Called from IStepper::step, here you can check the event report
+    fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
+
+    /// Called from IStepper::step after check_event, here you can draw your UI
+    fn draw(&mut self, token: &MainThreadToken) {
         self.sprite1
             .draw(token, Mat4::from_translation(glam::Vec3::new(-2.5, 1.5, -2.5)), TextAlign::Center, None);
 
@@ -159,6 +163,4 @@ impl IStepper for Sprite1 {
 
         Lines::add_axis(token, Matrix::t(Vec3::ONE * 2.0).get_pose(), None, None);
     }
-
-    fn shutdown(&mut self) {}
 }

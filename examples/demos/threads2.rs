@@ -9,8 +9,9 @@ use std::{
     time,
 };
 
+use stereokit_macros::IStepper;
 use stereokit_rust::{
-    event_loop::{IStepper, StepperId},
+    event_loop::{IStepper, StepperAction, StepperId},
     font::Font,
     material::Material,
     maths::{Matrix, Quat, Vec3},
@@ -21,9 +22,12 @@ use stereokit_rust::{
     util::{named_colors::GREEN_YELLOW, Color128},
 };
 
+#[derive(IStepper)]
 pub struct Threads2 {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
+    shutdown_completed: bool,
+
     model: Model,
     run_for_ever1: Arc<AtomicBool>,
     run_for_ever2: Arc<AtomicBool>,
@@ -43,6 +47,8 @@ impl Default for Threads2 {
         Self {
             id: "Threads2".into(),
             sk_info: None,
+            shutdown_completed: false,
+
             model: Model::new(),
             run_for_ever1,
             run_for_ever2,
@@ -56,10 +62,9 @@ impl Default for Threads2 {
 }
 const MODEL_ID: &str = "Threads2/model";
 
-impl IStepper for Threads2 {
-    fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
-        self.id = id;
-        self.sk_info = Some(sk_info);
+impl Threads2 {
+    /// Called from IStepper::initialize here you can abort the initialization by returning false
+    fn start(&mut self) -> bool {
         self.model.id(MODEL_ID);
 
         let run_for_ever1 = self.run_for_ever1.clone();
@@ -127,33 +132,33 @@ impl IStepper for Threads2 {
         true
     }
 
-    fn step(&mut self, token: &MainThreadToken) {
-        self.draw(token)
-    }
+    /// Called from IStepper::step, here you can check the event report
+    fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
-    fn shutdown(&mut self) {
-        Log::diag("Closing Thread2 Demo ...");
-        self.run_for_ever1.store(false, Ordering::Release);
-        self.run_for_ever2.store(false, Ordering::Release);
-        // this may hang if thread_blinker is the first to stop its loop ...
-
-        match self.thread_blinker.take().map(JoinHandle::join) {
-            Some(Err(error)) => {
-                Log::err(format!("Thread2, thread panic  : {:?}", error));
-            }
-            Some(Ok(_)) => (),
-            None => {
-                Log::err("Thread2, thread was not set");
-            }
-        }
-
-        Log::diag("... Thread2 Demo closed");
-    }
-}
-
-impl Threads2 {
+    /// Called from IStepper::step after check_event, here you can draw your UI and scene
     fn draw(&mut self, token: &MainThreadToken) {
         self.model.draw(token, self.transform_model, None, None);
         Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
+    }
+
+    /// Called from IStepper::shutdown(triggering) then IStepper::shutdown_done(waiting for true response),
+    /// here you can close your resources
+    fn close(&mut self, triggering: bool) -> bool {
+        if triggering {
+            Log::diag("Closing Thread2 Demo ...");
+            self.run_for_ever1.store(false, Ordering::SeqCst);
+            self.run_for_ever2.store(false, Ordering::SeqCst);
+            self.shutdown_completed = false;
+        } else if let Some(join_handle) = self.thread_blinker.take() {
+            if join_handle.is_finished() {
+                if let Err(error) = join_handle.join() {
+                    Log::err(format!("Thread2, join_handle panic  : {:?}", error));
+                }
+                self.shutdown_completed = true;
+            } else {
+                self.thread_blinker = Some(join_handle);
+            }
+        }
+        self.shutdown_completed
     }
 }

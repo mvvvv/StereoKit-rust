@@ -1,7 +1,8 @@
 use std::{cell::RefCell, rc::Rc};
 
+use stereokit_macros::IStepper;
 use stereokit_rust::{
-    event_loop::{IStepper, StepperId},
+    event_loop::{IStepper, StepperAction, StepperId},
     font::Font,
     material::{Cull, Material},
     maths::{Matrix, Pose, Quat, Vec2, Vec3, Vec4},
@@ -17,6 +18,8 @@ use stereokit_rust::{
     },
 };
 
+/// IStepper implementation for Shader1
+#[derive(IStepper)]
 pub struct Shader1 {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
@@ -120,19 +123,16 @@ impl Default for Shader1 {
     }
 }
 
-impl IStepper for Shader1 {
-    fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
-        self.id = id;
-        self.sk_info = Some(sk_info);
+impl Shader1 {
+    /// Called from IStepper::initialize here you can abort the initialization by returning false
+    fn start(&mut self) -> bool {
         true
     }
 
-    fn step(&mut self, token: &MainThreadToken) {
-        self.draw(token)
-    }
-}
+    /// Called from IStepper::step, here you can check the event report
+    fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
-impl Shader1 {
+    /// Called from IStepper::step after check_event, here you can draw your UI
     fn draw(&mut self, token: &MainThreadToken) {
         self.mesh.draw(token, &self.material_red, self.transform_mesh, None, None);
 

@@ -7,6 +7,117 @@ use std::{
 //use proc_macro::{Delimiter, Group, Literal, Punct, Spacing, TokenStream, TokenTree};
 use proc_macro::{TokenStream, TokenTree};
 
+use quote::quote;
+use syn::{parse_macro_input, Data, DeriveInput, Fields};
+
+// Check if the struct has a field named field_name
+fn has_field(field_name: &str, input: &DeriveInput) -> bool {
+    match input.data {
+        Data::Struct(ref data_struct) => match &data_struct.fields {
+            Fields::Named(fields_named) => fields_named.named.iter().any(|f| f.ident.as_ref().unwrap() == field_name),
+            _ => false,
+        },
+        _ => false,
+    }
+}
+
+/// Derive the IStepper trait for a struct which must implement:
+/// * Fields:     
+///   - **id**: StepperId,
+///   - **sk_info**: Option<Rc<RefCell<SkInfo>>>,
+///   - *Optional* when the stepper should initialize on more than one step : **initialize_completed**: bool
+///   - *Optional* when you want to implement an active/inactive flag: **enabled**: bool
+///   - *Optional* when the stepper should shutdown some stuffs : **shutdown_completed**: bool
+/// * Functions:
+///   - IStepper::initialize calls **fn start(&mut self) -> bool** where you can abort the initialization by returning false:
+///   - *Optional* if field **initialize_completed** is present IStepper::initialize_done calls
+///     **fn start_completed(&mut self) -> bool** where you can tell the initialization is done:
+///   - IStepper::step calls  **fn check_event(&mut self, _key: &str, _value: &str)** where you can check the event report:
+///   - IStepper::step calls **fn draw(&mut self, token: &MainThreadToken)** after check_event where you can draw your UI:
+///   - *Optional* if field **shutdown_completed** is present IStepper::shutdown and IStepper::shutdown_done call
+///     **fn close(&mut self, triggering:bool) -> bool**
+///     where you can close your resources.
+///     
+///
+/// see the example CStepper in the examples/demos/c_stepper.rs
+#[proc_macro_derive(IStepper)]
+pub fn derive_istepper(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    let name = &input.ident;
+    let generics = &input.generics;
+
+    let init_completed = if has_field("initialize_completed", &input) {
+        quote! {
+            fn initialize_done(&mut self) -> bool {
+                self.start_completed()
+            }
+        }
+    } else {
+        quote! {}
+    };
+
+    let enabled_fn = if has_field("enabled", &input) {
+        quote! {
+            fn enabled(&self) -> bool {
+                self.enabled
+            }
+        }
+    } else {
+        quote! {}
+    };
+
+    let close_fn = if has_field("shutdown_completed", &input) {
+        quote! {
+
+            fn shutdown(&mut self) {
+                self.close(true);
+            }
+
+            fn shutdown_done(&mut self) -> bool {
+                self.close(false)
+            }
+        }
+    } else {
+        quote! {}
+    };
+
+    let expanded = quote! {
+        impl #generics IStepper for #name #generics {
+
+            #init_completed
+
+            #enabled_fn
+
+            fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
+                self.id = id;
+                self.sk_info = Some(sk_info);
+
+                self.start()
+            }
+
+            fn step(&mut self, token: &MainThreadToken) {
+
+                for e in token.get_event_report().iter() {
+                    if let StepperAction::Event(id, key, value) = e {
+                        self.check_event(id, key, value);
+                    }
+                }
+
+                if !self.enabled() {
+                    return;
+                };
+
+                self.draw(token)
+            }
+
+            #close_fn
+
+        }
+    };
+
+    TokenStream::from(expanded)
+}
+
 /// Embed the tree of the assets sub-directories in your crate.
 /// useful if you want to browse some assets
 #[proc_macro]

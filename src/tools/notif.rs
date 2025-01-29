@@ -1,5 +1,7 @@
 use std::{cell::RefCell, rc::Rc};
 
+use stereokit_macros::IStepper;
+
 use crate::{
     event_loop::{IStepper, StepperAction, StepperId},
     font::Font,
@@ -10,9 +12,12 @@ use crate::{
     util::{named_colors::BLACK, Time},
 };
 
+/// A simple notification to display a text for a given duration in second.
+#[derive(IStepper)]
 pub struct HudNotification {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
+
     pub text: String,
     pub duration: f32,
     pub position: Vec3,
@@ -33,6 +38,7 @@ impl Default for HudNotification {
         Self {
             id: "HudNotification".to_string(),
             sk_info: None,
+
             text,
             duration: 5.0,
             position,
@@ -42,29 +48,23 @@ impl Default for HudNotification {
     }
 }
 
-impl IStepper for HudNotification {
-    fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
-        self.id = id;
-        self.sk_info = Some(sk_info);
+impl HudNotification {
+    /// Called from IStepper::initialize here you can abort the initialization by returning false
+    fn start(&mut self) -> bool {
         self.transform_text = Matrix::tr(&self.position, &Quat::from_angles(0.0, 180.0, 0.0));
         true
     }
 
-    fn step(&mut self, token: &MainThreadToken) {
-        self.draw(token)
-    }
-}
+    /// Called from IStepper::step, here you can check the event report
+    fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
-impl HudNotification {
+    /// Called from IStepper::step after check_event, here you can draw your UI and scene
     fn draw(&mut self, token: &MainThreadToken) {
         Text::add_at(token, &self.text, self.transform_text, Some(self.text_style), None, None, None, None, None, None);
 
         self.duration -= Time::get_stepf();
         if self.duration < 0.0 {
-            let rc_sk = self.sk_info.as_ref().unwrap();
-            let sk = rc_sk.as_ref();
-            let event_loop_proxy = sk.borrow().get_event_loop_proxy().unwrap();
-            let _ = event_loop_proxy.send_event(StepperAction::Remove(self.id.clone()));
+            SkInfo::send_message(&self.sk_info, StepperAction::Remove(self.id.clone()));
         }
     }
 }

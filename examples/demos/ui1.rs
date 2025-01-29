@@ -1,7 +1,8 @@
 use std::{cell::RefCell, rc::Rc};
 
+use stereokit_macros::IStepper;
 use stereokit_rust::{
-    event_loop::{IStepper, StepperId},
+    event_loop::{IStepper, StepperAction, StepperId},
     font::Font,
     material::Material,
     maths::{units::CM, Matrix, Pose, Quat, Vec2, Vec3},
@@ -37,6 +38,8 @@ const LATHE_BUTTON: [UiLathePt; 6] = [
 ];
 
 /// Copycat of the example https://github.com/StereoKit/StereoKit/blob/develop/Examples/StereoKitTest/Tests/TestCustomButton.cs
+
+#[derive(IStepper)]
 pub struct Ui1 {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
@@ -60,8 +63,14 @@ impl Default for Ui1 {
         Self {
             id: "Ui1".to_string(),
             sk_info: None,
-            transform: Matrix::tr(&((Vec3::NEG_Z * 2.5) + Vec3::Y), &Quat::from_angles(0.0, 180.0, 0.0)),
-            window_demo_pose: Pose::new(Vec3::new(0.0, 1.5, -0.3), Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0)))),
+            transform: Matrix::tr(
+                &((Vec3::NEG_Z * 2.5) + Vec3::Y), //
+                &Quat::from_angles(0.0, 180.0, 0.0),
+            ),
+            window_demo_pose: Pose::new(
+                Vec3::new(0.0, 1.5, -1.3), //
+                Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0))),
+            ),
             demo_win_width: 36.0 * CM,
             ui_material: Material::ui().copy(),
             id_slider_hash: Ui::stack_hash(&id_slider),
@@ -73,11 +82,9 @@ impl Default for Ui1 {
     }
 }
 
-impl IStepper for Ui1 {
-    fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
-        self.id = id;
-        self.sk_info = Some(sk_info);
-
+impl Ui1 {
+    /// Called from IStepper::initialize here you can abort the initialization by returning false
+    fn start(&mut self) -> bool {
         self.id_slider_hash = Ui::stack_hash(&self.id_slider);
         //create extra slots
         Ui::set_theme_color(UiColor::ExtraSlot01, None, ORCHID);
@@ -87,12 +94,10 @@ impl IStepper for Ui1 {
         true
     }
 
-    fn step(&mut self, token: &MainThreadToken) {
-        self.draw(token)
-    }
-}
+    /// Called from IStepper::step, here you can check the event report
+    fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
-impl Ui1 {
+    /// Called from IStepper::step after check_event, here you can draw your UI and scene
     fn draw(&mut self, token: &MainThreadToken) {
         let corner_radius = 0.005 * Time::get_totalf().sin().abs();
         if let Ok(mesh) = Ui::gen_quadrant_mesh(

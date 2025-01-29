@@ -1,7 +1,8 @@
 use std::{cell::RefCell, rc::Rc};
 
+use stereokit_macros::IStepper;
 use stereokit_rust::{
-    event_loop::{IStepper, StepperId},
+    event_loop::{IStepper, StepperAction, StepperId},
     font::Font,
     material::Material,
     maths::{Matrix, Pose, Quat, Rect, Vec2, Vec3},
@@ -18,9 +19,13 @@ use stereokit_rust::{
     },
 };
 
+/// The RenderList1 stepper
+#[derive(IStepper)]
 pub struct RenderList1 {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
+    shutdown_completed: bool,
+
     pub window_pose: Pose,
     primary: RenderList,
     list: RenderList,
@@ -58,6 +63,8 @@ impl Default for RenderList1 {
         Self {
             id: "RenderList1".to_string(),
             sk_info: None,
+            shutdown_completed: false,
+
             window_pose: Pose::new(Vec3::new(0.5, 1.5, -0.5), Some(Quat::from_angles(0.0, 180.0, 0.0))),
             primary: RenderList::primary(),
             list,
@@ -77,25 +84,18 @@ impl Default for RenderList1 {
 
 unsafe impl Send for RenderList1 {}
 
-impl IStepper for RenderList1 {
-    fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
-        self.id = id;
-        self.sk_info = Some(sk_info);
-
+impl RenderList1 {
+    /// Called from IStepper::initialize here you can abort the initialization by returning false
+    fn start(&mut self) -> bool {
         self.old_clear_color = Renderer::get_clear_color();
         Renderer::clear_color(Color128::hsv(0.4, 0.3, 0.5, 1.0));
         true
     }
 
-    fn step(&mut self, token: &MainThreadToken) {
-        self.draw(token)
-    }
-    fn shutdown(&mut self) {
-        Renderer::clear_color(self.old_clear_color);
-    }
-}
+    /// Called from IStepper::step, here you can check the event report
+    fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
-impl RenderList1 {
+    /// Called from IStepper::step after check_event, here you can draw your UI
     fn draw(&mut self, token: &MainThreadToken) {
         if self.clear_primary {
             self.primary.clear()
@@ -133,5 +133,17 @@ impl RenderList1 {
         Ui::window_end();
 
         Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
+    }
+
+    /// Called from IStepper::shutdown(triggering) then IStepper::shutdown_done(waiting for true response),
+    /// here you can close your resources
+    fn close(&mut self, triggering: bool) -> bool {
+        if triggering {
+            Renderer::clear_color(self.old_clear_color);
+            self.shutdown_completed = true;
+            true
+        } else {
+            self.shutdown_completed
+        }
     }
 }

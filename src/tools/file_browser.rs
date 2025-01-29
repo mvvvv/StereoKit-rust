@@ -1,3 +1,5 @@
+use stereokit_macros::IStepper;
+
 use crate::{
     event_loop::{IStepper, StepperAction, StepperId},
     maths::{Pose, Quat, Vec2, Vec3},
@@ -15,9 +17,12 @@ pub const FILE_BROWSER_OPEN: &str = "File_Browser_open";
 
 /// A basic file browser to open existing file on PC and Android. Must be launched by an other stepper which has to be
 /// set in caller.
+
+#[derive(IStepper)]
 pub struct FileBrowser {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
+
     pub dir: PathBuf,
     files_of_dir: Vec<PathEntry>,
     pub exts: Vec<String>,
@@ -54,11 +59,10 @@ impl Default for FileBrowser {
     }
 }
 
-impl IStepper for FileBrowser {
-    fn initialize(&mut self, id: StepperId, sk: Rc<RefCell<SkInfo>>) -> bool {
-        self.id = id;
-        self.files_of_dir = get_files(sk.clone(), self.dir.clone(), &self.exts, true);
-        self.sk_info = Some(sk);
+impl FileBrowser {
+    /// Called from IStepper::initialize here you can abort the initialization by returning false
+    fn start(&mut self) -> bool {
+        self.files_of_dir = get_files(&self.sk_info, self.dir.clone(), &self.exts, true);
 
         if self.caller.is_empty() {
             Log::err("FileBrowser must be called by an other stepper (FileBrowser::caller) it will notify of the selected file ");
@@ -70,12 +74,10 @@ impl IStepper for FileBrowser {
         true
     }
 
-    fn step(&mut self, token: &MainThreadToken) {
-        self.draw(token)
-    }
-}
+    /// Called from IStepper::step, here you can check the event report
+    fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
-impl FileBrowser {
+    /// Called from IStepper::step after check_event, here you can draw your UI and scene
     fn draw(&mut self, _token: &MainThreadToken) {
         let mut dir_selected = None;
 
@@ -117,14 +119,14 @@ impl FileBrowser {
 
                     let file = self.dir.join(file_name_str);
 
-                    let rc_sk = self.sk_info.as_ref().unwrap();
-                    let sk = rc_sk.as_ref();
-                    let event_loop_proxy = sk.borrow().get_event_loop_proxy().unwrap();
-                    let _ = event_loop_proxy.send_event(StepperAction::event(
-                        self.caller.clone(),
-                        FILE_BROWSER_OPEN,
-                        file.to_str().unwrap_or("problemo!!"),
-                    ));
+                    SkInfo::send_message(
+                        &self.sk_info,
+                        StepperAction::event(
+                            self.caller.clone(),
+                            FILE_BROWSER_OPEN,
+                            file.to_str().unwrap_or("problemo!!"),
+                        ),
+                    );
 
                     if self.close_on_select {
                         self.close_me()
@@ -138,8 +140,7 @@ impl FileBrowser {
                 //---back button
                 if Ui::button("..", None) {
                     self.dir.pop();
-                    dir_selected =
-                        Some(get_files(self.sk_info.as_ref().unwrap().clone(), self.dir.clone(), &self.exts, true));
+                    dir_selected = Some(get_files(&self.sk_info, self.dir.clone(), &self.exts, true));
                 }
             }
         }
@@ -155,8 +156,7 @@ impl FileBrowser {
                 Ui::same_line();
                 if Ui::button(dir_name, None) {
                     self.dir.push(dir_name);
-                    dir_selected =
-                        Some(get_files(self.sk_info.as_ref().unwrap().clone(), self.dir.clone(), &self.exts, true));
+                    dir_selected = Some(get_files(&self.sk_info, self.dir.clone(), &self.exts, true));
                 }
             }
         }
@@ -169,10 +169,6 @@ impl FileBrowser {
     }
 
     fn close_me(&self) {
-        let rc_sk = self.sk_info.as_ref().unwrap();
-        let sk = rc_sk.as_ref();
-        let event_loop_proxy = sk.borrow().get_event_loop_proxy().unwrap();
-
-        let _ = event_loop_proxy.send_event(StepperAction::remove(self.id.clone()));
+        SkInfo::send_message(&self.sk_info, StepperAction::remove(self.id.clone()));
     }
 }

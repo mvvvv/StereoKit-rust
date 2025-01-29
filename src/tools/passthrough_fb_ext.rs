@@ -7,6 +7,7 @@ use openxr_sys::{
     CompositionLayerFlags, CompositionLayerPassthroughFB, PassthroughCreateInfoFB, PassthroughFB, PassthroughFlagsFB,
     PassthroughLayerCreateInfoFB, PassthroughLayerFB, PassthroughLayerPurposeFB, Result, Session, Space, StructureType,
 };
+use stereokit_macros::IStepper;
 
 use crate::{
     event_loop::{IStepper, StepperAction, StepperId},
@@ -67,11 +68,15 @@ pub const PASSTHROUGH_FLIP: &str = "PassthroughFlip";
 ///      }
 ///  }
 /// ```
+
+#[derive(IStepper)]
 pub struct PassthroughFbExt {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
-    ext_available: bool,
     enabled: bool,
+    shutdown_completed: bool,
+
+    ext_available: bool,
     enable_on_init: bool,
     active_passtrough: PassthroughFB,
     active_layer: PassthroughLayerFB,
@@ -95,8 +100,10 @@ impl Default for PassthroughFbExt {
         Self {
             id: "PassthroughFbExt".to_string(),
             sk_info: None,
-            ext_available: false,
             enabled: false,
+            shutdown_completed: false,
+
+            ext_available: false,
             enable_on_init: false,
             active_passtrough: PassthroughFB::from_raw(0),
             active_layer: PassthroughLayerFB::from_raw(0),
@@ -126,11 +133,14 @@ impl Default for PassthroughFbExt {
 }
 
 /// All the code here run in the main thread
-impl IStepper for PassthroughFbExt {
-    fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
-        self.id = id;
-        self.sk_info = Some(sk_info);
+impl PassthroughFbExt {
+    /// Use this if you don't want passthrough at init.
+    pub fn new(enabled: bool) -> Self {
+        Self { enable_on_init: enabled, ..Default::default() }
+    }
 
+    /// Called from IStepper::initialize here you can abort the initialization by returning false
+    fn start(&mut self) -> bool {
         self.ext_available = Backend::xr_type() == BackendXRType::OpenXR
             && BackendOpenXR::ext_enabled("XR_FB_passthrough")
             && self.load_binding()
@@ -138,24 +148,19 @@ impl IStepper for PassthroughFbExt {
 
         self.ext_available
     }
-
-    fn enabled(&self) -> bool {
-        self.enabled
-    }
-
-    fn step(&mut self, token: &MainThreadToken) {
-        // Here with enable/disable the passthrough
-        for e in token.get_event_report().iter() {
-            if let StepperAction::Event(_, key, value) = e {
-                if key.eq(PASSTHROUGH_FLIP) {
-                    if value == "0" {
-                        self.enable(false)
-                    } else {
-                        self.enable(true)
-                    }
-                }
+    /// Called from IStepper::step, here you can check the event report
+    fn check_event(&mut self, _id: &StepperId, key: &str, value: &str) {
+        // Here we enable/disable the passthrough
+        if key.eq(PASSTHROUGH_FLIP) {
+            if value == "0" {
+                self.enable(false)
+            } else {
+                self.enable(true)
             }
         }
+    }
+    /// Called from IStepper::step after check_event, here you can draw your UI and scene
+    fn draw(&mut self, _token: &MainThreadToken) {
         if self.enabled() {
             let mut layer = CompositionLayerPassthroughFB {
                 ty: StructureType::COMPOSITION_LAYER_PASSTHROUGH_FB,
@@ -166,23 +171,6 @@ impl IStepper for PassthroughFbExt {
             };
             BackendOpenXR::add_composition_layer(&mut layer, -1);
         }
-    }
-
-    fn shutdown(&mut self) {
-        if self.enabled {
-            self.enable(false);
-            if self.ext_available {
-                unsafe { self.xr_destroy_passthrough_layer_fb.unwrap()(self.active_layer) };
-                unsafe { self.xr_destroy_passthrough_fb.unwrap()(self.active_passtrough) };
-            }
-        };
-    }
-}
-
-impl PassthroughFbExt {
-    /// Use this if you don't want passthrough at init.
-    pub fn new(enabled: bool) -> Self {
-        Self { enable_on_init: enabled, ..Default::default() }
     }
 
     pub fn enable(&mut self, value: bool) {
@@ -302,5 +290,21 @@ impl PassthroughFbExt {
             && self.xr_passthrough_layer_pause_fb.is_some()
             && self.xr_passthrough_layer_resume_fb.is_some()
             && self.xr_passthrough_layer_set_style_fb.is_some()
+    }
+
+    /// Called from IStepper::shutdown(triggering) then IStepper::shutdown_done(waiting for true response),
+    /// here you can close your resources.
+    fn close(&mut self, triggering: bool) -> bool {
+        if triggering {
+            if self.enabled {
+                self.enable(false);
+                if self.ext_available {
+                    unsafe { self.xr_destroy_passthrough_layer_fb.unwrap()(self.active_layer) };
+                    unsafe { self.xr_destroy_passthrough_fb.unwrap()(self.active_passtrough) };
+                }
+            }
+            self.shutdown_completed = true;
+        }
+        self.shutdown_completed
     }
 }

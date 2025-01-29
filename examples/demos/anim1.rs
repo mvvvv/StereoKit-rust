@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::rc::Rc;
+use stereokit_macros::IStepper;
 use stereokit_rust::{
     event_loop::{IStepper, StepperAction, StepperId},
     material::{Cull, Material, Transparency},
@@ -12,11 +13,14 @@ use stereokit_rust::{
     tools::notif::HudNotification,
     util::named_colors::{DARK_RED, WHITE},
 };
-#[derive(Debug)]
+
+#[derive(IStepper)]
 pub struct Anim1 {
-    pub title: String,
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
+    shutdown_completed: bool,
+
+    pub title: String,
     mobile: Model,
     transform: Matrix,
     render_now: bool,
@@ -69,9 +73,11 @@ impl Default for Anim1 {
         let render_now = true;
         let stage = 0;
         Self {
-            title: "Stereokit Sprites".to_owned(),
             id: "Sprite 1".to_string(),
             sk_info: None,
+            shutdown_completed: false,
+
+            title: "Stereokit Sprites".to_owned(),
             mobile,
             transform,
             render_now,
@@ -80,22 +86,20 @@ impl Default for Anim1 {
     }
 }
 
-impl IStepper for Anim1 {
-    fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
-        self.id = id;
-        self.sk_info = Some(sk_info);
+impl Anim1 {
+    fn start(&mut self) -> bool {
+        // We ask for a notification to be displayed
         let mut notif = HudNotification::default();
         notif.position = Vec3::new(0.0, 0.3, -0.2);
         notif.text = "Close right hand to change animation".into();
 
-        let rc_sk = self.sk_info.as_ref().unwrap();
-        let sk = rc_sk.as_ref();
-        let event_loop_proxy = sk.borrow().get_event_loop_proxy().unwrap();
-        let _ = event_loop_proxy.send_event(StepperAction::add("HudNotifAnim1", notif));
+        SkInfo::send_message(&self.sk_info, StepperAction::add("HudNotifAnim1", notif));
         true
     }
 
-    fn step(&mut self, token: &MainThreadToken) {
+    fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
+
+    fn draw(&mut self, token: &MainThreadToken) {
         self.mobile.draw(token, self.transform, None, None);
 
         if self.render_now {
@@ -130,10 +134,14 @@ impl IStepper for Anim1 {
         }
     }
 
-    fn shutdown(&mut self) {
-        let rc_sk = self.sk_info.as_ref().unwrap();
-        let sk = rc_sk.as_ref();
-        let event_loop_proxy = sk.borrow().get_event_loop_proxy().unwrap();
-        let _ = event_loop_proxy.send_event(StepperAction::remove("HudNotifAnim1"));
+    fn close(&mut self, triggering: bool) -> bool {
+        if triggering {
+            // We ask for the start notification to be removed if it hasn't been done yet.
+            SkInfo::send_message(&self.sk_info, StepperAction::remove("HudNotifAnim1"));
+            self.shutdown_completed = true;
+            true
+        } else {
+            self.shutdown_completed
+        }
     }
 }

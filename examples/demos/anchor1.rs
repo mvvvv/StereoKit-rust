@@ -1,8 +1,9 @@
 use std::{cell::RefCell, rc::Rc};
 
+use stereokit_macros::IStepper;
 use stereokit_rust::{
     anchor::{Anchor, AnchorCaps},
-    event_loop::{IStepper, StepperId},
+    event_loop::{IStepper, StepperAction, StepperId},
     font::Font,
     material::Material,
     maths::{Matrix, Pose, Quat, Ray, Vec3},
@@ -13,9 +14,11 @@ use stereokit_rust::{
     util::named_colors::{RED, WHITE},
 };
 
+#[derive(IStepper)]
 pub struct Anchor1 {
     id: StepperId,
-    sk: Option<Rc<RefCell<SkInfo>>>,
+    sk_info: Option<Rc<RefCell<SkInfo>>>,
+
     pub transform: Matrix,
     pub window_pose: Pose,
     anchors: Vec<Anchor>,
@@ -30,7 +33,8 @@ impl Default for Anchor1 {
     fn default() -> Self {
         Self {
             id: "Anchor1".to_string(),
-            sk: None,
+            sk_info: None,
+
             transform: Matrix::tr(&((Vec3::NEG_Z * 2.5) + Vec3::Y), &Quat::from_angles(0.0, 180.0, 0.0)),
             window_pose: Pose::new(Vec3::NEG_Z * 0.1 + Vec3::Y * 1.5, Some(Quat::from_angles(0.0, 180.0, 0.0))),
             anchors: vec![],
@@ -41,20 +45,14 @@ impl Default for Anchor1 {
     }
 }
 
-impl IStepper for Anchor1 {
-    fn initialize(&mut self, id: StepperId, sk: Rc<RefCell<SkInfo>>) -> bool {
-        self.id = id;
-        self.sk = Some(sk);
+impl Anchor1 {
+    fn start(&mut self) -> bool {
         self.anchors = Anchor::anchors().collect();
         true
     }
 
-    fn step(&mut self, token: &MainThreadToken) {
-        self.draw(token)
-    }
-}
+    fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
-impl Anchor1 {
     fn draw(&mut self, token: &MainThreadToken) {
         // we need a pointer
         let right_hand = Input::hand(Handed::Right);

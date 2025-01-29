@@ -1,5 +1,6 @@
 use std::{cell::RefCell, rc::Rc};
 
+use stereokit_macros::IStepper;
 use stereokit_rust::{
     event_loop::{IStepper, StepperAction, StepperId},
     framework::{HandMenuAction, HandMenuRadial, HandRadial, HandRadialLayer},
@@ -10,7 +11,7 @@ use stereokit_rust::{
     sk::{MainThreadToken, SkInfo},
     system::{Log, Renderer},
     tex::{SHCubemap, Tex, TexFormat, TexSample},
-    tools::{log_window::SHOW_LOG_WINDOW, screenshot::SHOW_SCREENSHOT_WINDOW},
+    tools::{fly_over::ENABLE_FLY_OVER, log_window::SHOW_LOG_WINDOW, screenshot::SHOW_SCREENSHOT_WINDOW},
     util::{
         named_colors::{BLACK, BLUE, BURLY_WOOD, LIGHT_BLUE, LIGHT_CYAN, RED, SEA_GREEN, STEEL_BLUE, WHITE, YELLOW},
         Color128, Gradient, ShLight, SphericalHarmonics,
@@ -22,9 +23,12 @@ pub const CHANGE_FLOOR: &str = "ChangeFlor";
 
 /// The basic Stepper. This stepper is used for Thread1 demo, we must ensure the StereoKit code stay in the main thread
 /// Default may be called in an other thread
+#[derive(IStepper)]
 pub struct HandMenuRadial1 {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
+    shutdown_completed: bool,
+
     clean_tile: Material,
     parquet: Material,
     water: Material,
@@ -135,6 +139,7 @@ impl Default for HandMenuRadial1 {
         Self {
             id: "HandMenuRadial1".to_string(),
             sk_info: None,
+            shutdown_completed: false,
 
             clean_tile,
             parquet,
@@ -152,38 +157,30 @@ impl Default for HandMenuRadial1 {
 }
 
 /// All the code here run in the main thread
-impl IStepper for HandMenuRadial1 {
-    fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
-        self.id = id;
+impl HandMenuRadial1 {
+    /// Called from IStepper::initialize here you can abort the initialization by returning false
+    fn start(&mut self) -> bool {
+        let id: &StepperId = &self.id;
 
         // Open or close the log window
-        let id = self.id.clone();
         let mut show_log = true;
-        let event_loop_proxy = sk_info.borrow().get_event_loop_proxy().unwrap();
-        let send_event_show_log = move |show: bool| {
-            let _ = &event_loop_proxy.send_event(StepperAction::event(id, SHOW_LOG_WINDOW, &show.to_string()));
-        };
+        let send_event_show_log = SkInfo::get_message_closure(&self.sk_info, id, SHOW_LOG_WINDOW);
 
         // Open or close the screenshot window
-        let id = self.id.clone();
         let mut show_screenshot = false;
-        let event_loop_proxy = sk_info.borrow().get_event_loop_proxy().unwrap();
-        let send_event_show_screenshot = move |show: bool| {
-            let _ = &event_loop_proxy.send_event(StepperAction::event(id, SHOW_SCREENSHOT_WINDOW, &show.to_string()));
-        };
+        let send_event_show_screenshot = SkInfo::get_message_closure(&self.sk_info, id, SHOW_SCREENSHOT_WINDOW);
+
+        // Enable disable fly over
+        let mut fly_over = true;
+        let send_event_fly_over = SkInfo::get_message_closure(&self.sk_info, id, ENABLE_FLY_OVER);
 
         // Change the material of the floor
-        let id = self.id.clone();
-        let event_loop_proxy = sk_info.borrow().get_event_loop_proxy().unwrap();
-        let change_floor = move |floor_index: String| {
-            let _ = &event_loop_proxy.send_event(StepperAction::event(id, CHANGE_FLOOR, &floor_index));
-        };
-        let change_floor0 = change_floor.clone();
-        let change_floor1 = change_floor.clone();
-        let change_floor2 = change_floor.clone();
-        let change_floor3 = change_floor.clone();
-        let change_floor4 = change_floor.clone();
-        let change_floor5 = change_floor.clone();
+        let change_floor0 = SkInfo::get_message_closure(&self.sk_info, id, CHANGE_FLOOR);
+        let change_floor1 = SkInfo::get_message_closure(&self.sk_info, id, CHANGE_FLOOR);
+        let change_floor2 = SkInfo::get_message_closure(&self.sk_info, id, CHANGE_FLOOR);
+        let change_floor3 = SkInfo::get_message_closure(&self.sk_info, id, CHANGE_FLOOR);
+        let change_floor4 = SkInfo::get_message_closure(&self.sk_info, id, CHANGE_FLOOR);
+        let change_floor5 = SkInfo::get_message_closure(&self.sk_info, id, CHANGE_FLOOR);
 
         let mut menu_ico = Material::pbr_clip().copy();
         let tex = Tex::from_file("icons/hamburger.png", true, None).unwrap_or_default();
@@ -196,6 +193,10 @@ impl IStepper for HandMenuRadial1 {
         let mut log_ico = Material::pbr_clip().copy();
         let tex = Tex::from_file("icons/log_viewer.png", true, None).unwrap_or_default();
         log_ico.diffuse_tex(tex).clip_cutoff(0.1);
+
+        let mut fly_over_ico = Material::pbr_clip().copy();
+        let tex = Tex::from_file("icons/fly_over.png", true, None).unwrap_or_default();
+        fly_over_ico.diffuse_tex(tex).clip_cutoff(0.1);
 
         //---- Sky domes and floor
         let mut gradient_sky = Gradient::new(None);
@@ -314,7 +315,7 @@ impl IStepper for HandMenuRadial1 {
                             "Black tile",
                             None,
                             move || {
-                                change_floor0.clone()("0".into());
+                                change_floor0("0".into());
                             },
                             if self.floor == 0 { HandMenuAction::Checked(1) } else { HandMenuAction::Unchecked(1) },
                         ),
@@ -322,7 +323,7 @@ impl IStepper for HandMenuRadial1 {
                             "Parquet",
                             None,
                             move || {
-                                change_floor1.clone()("1".into());
+                                change_floor1("1".into());
                             },
                             if self.floor == 1 { HandMenuAction::Checked(1) } else { HandMenuAction::Unchecked(1) },
                         ),
@@ -330,7 +331,7 @@ impl IStepper for HandMenuRadial1 {
                             "sea",
                             None,
                             move || {
-                                change_floor2.clone()("2".into());
+                                change_floor2("2".into());
                             },
                             if self.floor == 2 { HandMenuAction::Checked(1) } else { HandMenuAction::Unchecked(1) },
                         ),
@@ -338,7 +339,7 @@ impl IStepper for HandMenuRadial1 {
                             "water",
                             None,
                             move || {
-                                change_floor3.clone()("3".into());
+                                change_floor3("3".into());
                             },
                             if self.floor == 3 { HandMenuAction::Checked(1) } else { HandMenuAction::Unchecked(1) },
                         ),
@@ -346,7 +347,7 @@ impl IStepper for HandMenuRadial1 {
                             "None",
                             None,
                             move || {
-                                change_floor4.clone()("4".into());
+                                change_floor4("4".into());
                             },
                             if self.floor == 4 { HandMenuAction::Checked(1) } else { HandMenuAction::Unchecked(1) },
                         ),
@@ -354,7 +355,7 @@ impl IStepper for HandMenuRadial1 {
                             "test",
                             None,
                             move || {
-                                change_floor5.clone()("5".into());
+                                change_floor5("5".into());
                             },
                             if self.floor == 5 { HandMenuAction::Checked(1) } else { HandMenuAction::Unchecked(1) },
                         ),
@@ -367,7 +368,7 @@ impl IStepper for HandMenuRadial1 {
                     Some(screenshot_ico),
                     move || {
                         show_screenshot = !show_screenshot;
-                        send_event_show_screenshot.clone()(show_screenshot);
+                        send_event_show_screenshot(show_screenshot.to_string());
                     },
                     HandMenuAction::Unchecked(2),
                 ),
@@ -376,44 +377,41 @@ impl IStepper for HandMenuRadial1 {
                     Some(log_ico),
                     move || {
                         show_log = !show_log;
-                        send_event_show_log.clone()(show_log);
+                        send_event_show_log(show_log.to_string());
                     },
                     HandMenuAction::Checked(3),
+                ),
+                HandRadial::item(
+                    "Fly",
+                    Some(fly_over_ico),
+                    move || {
+                        fly_over = !fly_over;
+                        send_event_fly_over(fly_over.to_string());
+                    },
+                    HandMenuAction::Checked(4),
                 ),
                 HandRadial::item("Close", None, || {}, HandMenuAction::Close),
             ],
         ));
 
-        let event_loop_proxy = sk_info.borrow().get_event_loop_proxy().unwrap();
-        let _err = event_loop_proxy.send_event(StepperAction::add("HandMenuStepper1", hand_menu_stepper));
-
-        self.sk_info = Some(sk_info);
+        SkInfo::send_message(&self.sk_info, StepperAction::add("HandMenuStepper1", hand_menu_stepper));
 
         true
     }
 
-    fn step(&mut self, token: &MainThreadToken) {
-        for e in token.get_event_report().iter() {
-            if let StepperAction::Event(_, key, value) = e {
-                if key.eq(CHANGE_FLOOR) {
-                    self.floor = value.parse().unwrap_or(0);
-                } else if key.eq(SHOW_FLOOR) {
-                    self.show_floor = value.parse().unwrap_or(true);
-                } else if key.eq(SHOW_SHADOWS) {
-                    self.show_shadows = value.parse().unwrap_or(true);
-                }
-            }
+    /// Here we check the event report and update the floor and the shadows
+    fn check_event(&mut self, _id: &StepperId, key: &str, value: &str) {
+        if key.eq(CHANGE_FLOOR) {
+            self.floor = value.parse().unwrap_or(0);
+        } else if key.eq(SHOW_FLOOR) {
+            self.show_floor = value.parse().unwrap_or(true);
+        } else if key.eq(SHOW_SHADOWS) {
+            self.show_shadows = value.parse().unwrap_or(true);
         }
-        self.draw(token)
     }
 
-    fn shutdown(&mut self) {
-        let event_loop_proxy = self.sk_info.take().unwrap().borrow().get_event_loop_proxy().unwrap();
-        let _err = event_loop_proxy.send_event(StepperAction::remove("HandMenuStepper1"));
-    }
-}
-
-impl HandMenuRadial1 {
+    /// Called from IStepper::step after check_event, here you can draw your UI and the scene
+    /// Here we draw or not draw the floor
     fn draw(&mut self, token: &MainThreadToken) {
         // draw a floor if needed
         if self.show_floor {
@@ -451,6 +449,17 @@ impl HandMenuRadial1 {
                 5 => self.floor_model.draw_with_material(token, &self.test_material, self.floor_transform, None, None),
                 _ => (),
             }
+        }
+    }
+
+    /// Close the HandMenuStepper1
+    fn close(&mut self, triggering: bool) -> bool {
+        if triggering {
+            SkInfo::send_message(&self.sk_info, StepperAction::remove("HandMenuStepper1"));
+            self.shutdown_completed = true;
+            true
+        } else {
+            self.shutdown_completed
         }
     }
 }

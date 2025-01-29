@@ -1,7 +1,8 @@
 use std::{cell::RefCell, rc::Rc};
 
+use stereokit_macros::IStepper;
 use stereokit_rust::{
-    event_loop::{IStepper, StepperId},
+    event_loop::{IStepper, StepperAction, StepperId},
     font::Font,
     material::Material,
     maths::{units::M, Matrix, Pose, Quat, Vec3},
@@ -13,10 +14,13 @@ use stereokit_rust::{
     util::{named_colors::RED, Time},
 };
 
-/// The plane1 stepper a flying plane
+/// The Biplane1 stepper a flying plane
+#[derive(IStepper)]
 pub struct Biplane1 {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
+    shutdown_completed: bool,
+
     plane_pose: Pose,
     previous_target: Pose,
     next_target: Pose,
@@ -36,6 +40,7 @@ unsafe impl Send for Biplane1 {}
 
 /// This code may be called in main thread
 impl Default for Biplane1 {
+    /// Creates a new instance of Biplane1 with default values.
     fn default() -> Self {
         let model = Model::from_file("plane.glb", None).unwrap_or_default();
         let nodes = model.get_nodes();
@@ -53,6 +58,8 @@ impl Default for Biplane1 {
         Self {
             id: "Plane1".to_string(),
             sk_info: None,
+            shutdown_completed: false,
+
             plane_pose,
             speed_factor: 0.5,
             rotate_speed_factor: 1.0,
@@ -71,10 +78,9 @@ impl Default for Biplane1 {
 }
 
 /// All the code here run in the main thread
-impl IStepper for Biplane1 {
-    fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
-        self.id = id;
-        self.sk_info = Some(sk_info);
+impl Biplane1 {
+    /// Initializes the Biplane1 instance.
+    fn start(&mut self) -> bool {
         self.text_style = Some(Text::make_style(Font::default(), 0.3, RED));
 
         self.plane_sound_inst = Some(self.plane_sound.play(self.plane_pose.position, Some(1.0)));
@@ -82,24 +88,17 @@ impl IStepper for Biplane1 {
         true
     }
 
-    fn step(&mut self, token: &MainThreadToken) {
-        self.draw(token)
-    }
+    /// Checks for events and handles them accordingly.
+    fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
-    fn shutdown(&mut self) {
-        if let Some(sound_inst) = self.plane_sound_inst {
-            sound_inst.stop();
-        }
-    }
-}
-
-impl Biplane1 {
+    /// Draws the Biplane1 instance.
     fn draw(&mut self, token: &MainThreadToken) {
         self.animate_plane(token);
 
         Text::add_at(token, &self.text, self.transform, self.text_style, None, None, None, None, None, None);
     }
 
+    /// Animates the plane by moving it towards the next target.
     fn animate_plane(&mut self, token: &MainThreadToken) {
         let forward = self.plane_pose.get_forward();
         let stepf = Time::get_stepf();
@@ -107,17 +106,24 @@ impl Biplane1 {
         let dir_to_go = Vec3::direction(self.next_target.position, next_position);
         let dot = (Vec3::dot(forward, dir_to_go) - 1.0) / -2.2;
         let up = Vec3::Y + dir_to_go * 2.0 + forward;
+        // Calculate fast rolling orientation towards next position
         let fast_rolling = Quat::look_at(self.plane_pose.position, next_position, Some(up)).get_normalized();
         self.plane_pose.orientation =
             Quat::slerp(self.plane_pose.orientation, fast_rolling, Time::get_stepf() * self.rolling_speed_factor)
                 .get_normalized();
+
+        // Calculate final rotation orientation towards the next target
         let final_rotation = Quat::look_at(next_position, self.next_target.position, None).get_normalized();
+
+        // Smoothly interpolate between current plane orientation and final rotation based on distance to target
         let next_rotation = Quat::slerp(
             self.plane_pose.orientation,
             final_rotation,
             Time::get_stepf() * (1.0 - dot) * self.rotate_speed_factor,
         )
         .get_normalized();
+
+        // Check if plane is close enough to the next target position
         if (next_position - self.next_target.position).length() < 0.6 * M {
             let x = stepf * 3000.0 % 3.0;
             let y = stepf * 3000.0 % 2.0 + 1.0;
@@ -154,5 +160,23 @@ impl Biplane1 {
             None,
             None,
         );
+    }
+
+    /// Closes the biplane and performs cleanup operations.
+    ///
+    /// # Parameters
+    /// - `triggering`: A boolean indicating whether the close operation is triggered.
+    ///
+    /// # Returns a boolean indicating whether the shutdown is completed.
+    fn close(&mut self, triggering: bool) -> bool {
+        if triggering {
+            if let Some(sound_inst) = self.plane_sound_inst {
+                sound_inst.stop();
+            }
+            self.shutdown_completed = true;
+            true
+        } else {
+            self.shutdown_completed
+        }
     }
 }

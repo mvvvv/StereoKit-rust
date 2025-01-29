@@ -24,7 +24,7 @@ use winit::platform::android::{
 };
 
 #[cfg(feature = "event-loop")]
-use crate::event_loop::{StepperAction, Steppers};
+use crate::event_loop::{StepperAction, StepperId, Steppers};
 #[cfg(feature = "event-loop")]
 use std::collections::VecDeque;
 #[cfg(feature = "event-loop")]
@@ -113,7 +113,7 @@ pub enum DisplayBlend {
 
 /// Information about a system’s capabilities and properties!
 /// <https://stereokit.net/Pages/StereoKit/SystemInfo.html>
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 #[repr(C)]
 pub struct SystemInfo {
     display_width: i32,
@@ -591,12 +591,6 @@ pub struct SkInfo {
 }
 
 impl SkInfo {
-    /// Get an event_loop_proxy clone to send events
-    #[cfg(feature = "event-loop")]
-    pub fn get_event_loop_proxy(&self) -> Option<EventLoopProxy<StepperAction>> {
-        self.event_loop_proxy.clone()
-    }
-
     /// This is a copy of the settings that StereoKit was initialized with, so you can refer back to them a little
     /// easier.  Some of these values will be different than provided, as StereoKit will resolve some default values
     /// based on the platform capabilities or internal preference. These are read only, and keep in mind that some
@@ -613,10 +607,81 @@ impl SkInfo {
         self.system_info.clone()
     }
 
+    /// Get an event_loop_proxy clone to send events
+    #[cfg(feature = "event-loop")]
+    pub fn get_event_loop_proxy(&self) -> Option<EventLoopProxy<StepperAction>> {
+        self.event_loop_proxy.clone()
+    }
+
     /// Non canonical function to get the rust ndk AndroidApp
     #[cfg(target_os = "android")]
-    pub fn get_android_app(&mut self) -> &AndroidApp {
+    pub fn get_android_app(&self) -> &AndroidApp {
         &self.android_app
+    }
+
+    /// This is a copy of the settings that StereoKit was initialized with, so you can refer back to them a little
+    /// easier.  Some of these values will be different than provided, as StereoKit will resolve some default values
+    /// based on the platform capabilities or internal preference. These are read only, and keep in mind that some
+    /// settings are only requests! Check SK.System and other properties for the current state of StereoKit.
+    /// <https://stereokit.net/Pages/StereoKit/SK/Settings.html>
+    pub fn settings_from(sk_info: &Option<Rc<RefCell<SkInfo>>>) -> SkSettings {
+        if sk_info.is_none() {
+            Log::err("The stepper must be initialized. SkInfo::setting_from(??) returns an invalid default value.");
+            return SkSettings::default();
+        }
+        let rc_sk = sk_info.as_ref().unwrap();
+        let sk = rc_sk.as_ref();
+        sk.borrow().get_settings()
+    }
+
+    /// This structure contains information about the current system and its capabilities. There’s a lot of different MR
+    /// devices, so it’s nice to have code for systems with particular characteristics!
+    /// <https://stereokit.net/Pages/StereoKit/SK/System.html>
+    pub fn system_from(sk_info: &Option<Rc<RefCell<SkInfo>>>) -> SystemInfo {
+        if sk_info.is_none() {
+            Log::err("The stepper must be initialized. SkInfo::system_from(??) returns an invalid default value.");
+            return SystemInfo::default();
+        }
+        let rc_sk = sk_info.as_ref().unwrap();
+        let sk = rc_sk.as_ref();
+        sk.borrow().get_system()
+    }
+
+    /// Get an event_loop_proxy clone to send events
+    #[cfg(feature = "event-loop")]
+    pub fn event_loop_proxy_from(sk_info: &Option<Rc<RefCell<SkInfo>>>) -> Option<EventLoopProxy<StepperAction>> {
+        if sk_info.is_none() {
+            Log::err("The stepper must be initialized. SkInfo::event_loop_proxy_from(??) returns None.");
+            return None;
+        }
+        let rc_sk = sk_info.as_ref().unwrap();
+        let sk = rc_sk.as_ref();
+        sk.borrow().get_event_loop_proxy()
+    }
+
+    /// Send a StepperAction to the event loop
+    /// sk_info must be a valid value
+    #[cfg(feature = "event-loop")]
+    pub fn send_message(sk_info: &Option<Rc<RefCell<SkInfo>>>, message: StepperAction) {
+        if let Some(proxy) = Self::event_loop_proxy_from(sk_info) {
+            proxy.send_event(message).unwrap();
+        } else {
+            Log::err("The stepper must be initialized. SkInfo::send_message(??) not sent.");
+        }
+    }
+
+    /// Get a closure to send a message to the event loop from a given ID for a given key. This is useful for
+    /// HandMenuRadial for example.
+    ///
+    /// see examples/demos/hand_menu_radial1.rs
+    #[cfg(feature = "event-loop")]
+    pub fn get_message_closure(sk_info: &Option<Rc<RefCell<SkInfo>>>, id: &StepperId, key: &str) -> impl Fn(String) {
+        let sk_info = sk_info.clone();
+        let key = key.to_string();
+        let id = id.clone();
+        Box::new(move |value: String| {
+            SkInfo::send_message(&sk_info, StepperAction::event(id.clone(), &key, &value));
+        })
     }
 }
 

@@ -7,6 +7,8 @@ use std::{
     sync::Mutex,
 };
 
+use stereokit_macros::IStepper;
+
 use crate::{
     event_loop::{IStepper, StepperAction, StepperId},
     maths::{units::CM, Pose, Quat, Vec2, Vec3},
@@ -27,16 +29,21 @@ use super::{
 /// Somewhere to store the selected filename
 static FILE_NAME: Mutex<String> = Mutex::new(String::new());
 
-pub const SHOW_SCREENSHOT_WINDOW: &str = "ShowScreenshotWindow";
+pub const SHOW_SCREENSHOT_WINDOW: &str = "Tool_ShowScreenshotWindow";
 pub const SCREENSHOT_FORMATS: [&str; 2] = [".raw", ".rgba"];
 pub const CAPTURE_TEXTURE_ID: &str = "Uniq_ScreenshotTexture";
 const BROWSER_SUFFIX: &str = "_file_browser";
+
+/// A simple screenshot viewer to take / save / display screenshots.
+#[derive(IStepper)]
 pub struct ScreenshotViewer {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
+    pub enabled: bool,
+    shutdown_completed: bool,
+
     pub picture_size: Vec2,
     pub field_of_view: f32,
-    pub enabled: bool,
     pub pose: Pose,
     pub window_size: Vec2,
     tex: Tex,
@@ -53,9 +60,11 @@ impl Default for ScreenshotViewer {
         Self {
             id: "ScreenshotStepper".to_string(),
             sk_info: None,
+            enabled: false,
+            shutdown_completed: false,
+
             picture_size,
             field_of_view: 90.0,
-            enabled: false,
             pose: Pose::new(Vec3::new(-0.7, 1.0, -0.3), Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0)))),
             window_size: Vec2::new(42.0, 37.0) * CM,
             tex,
@@ -64,15 +73,9 @@ impl Default for ScreenshotViewer {
     }
 }
 
-impl IStepper for ScreenshotViewer {
-    fn enabled(&self) -> bool {
-        self.enabled
-    }
-
-    fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
-        self.id = id;
-        self.sk_info = Some(sk_info);
-
+impl ScreenshotViewer {
+    /// Called from IStepper::initialize here you can abort the initialization by returning false
+    fn start(&mut self) -> bool {
         // self.tex = Tex::gen_color(
         //     Color128::WHITE,
         //     self.picture_size.x as i32,
@@ -92,34 +95,21 @@ impl IStepper for ScreenshotViewer {
         true
     }
 
-    fn step(&mut self, token: &MainThreadToken) {
-        for e in token.get_event_report().iter() {
-            if let StepperAction::Event(id, key, value) = e {
-                if key.eq(SHOW_SCREENSHOT_WINDOW) {
-                    self.enabled = value.parse().unwrap_or(false);
-                    if !self.enabled {
-                        self.close_file_browser()
-                    }
-                } else if id == &self.id && key.eq(FILE_BROWSER_OPEN) {
-                    let mut file_name = FILE_NAME.lock().unwrap();
-                    file_name.clear();
-                    file_name.push_str(value);
-                }
+    /// Called from IStepper::step, here you can check the event report
+    fn check_event(&mut self, id: &StepperId, key: &str, value: &str) {
+        if key.eq(SHOW_SCREENSHOT_WINDOW) {
+            self.enabled = value.parse().unwrap_or(false);
+            if !self.enabled {
+                self.close_file_browser()
             }
+        } else if id == &self.id && key.eq(FILE_BROWSER_OPEN) {
+            let mut file_name = FILE_NAME.lock().unwrap();
+            file_name.clear();
+            file_name.push_str(value);
         }
-        self.draw(token)
     }
 
-    fn shutdown(&mut self) {
-        self.close_file_browser();
-    }
-}
-
-impl ScreenshotViewer {
-    pub fn show(&mut self, value: bool) {
-        self.enabled = value;
-    }
-
+    /// Called from IStepper::step after check_event, here you can draw your UI and scene
     fn draw(&mut self, token: &MainThreadToken) {
         if !self.enabled {
             return;
@@ -180,7 +170,7 @@ impl ScreenshotViewer {
                 let mut file_browser = FileBrowser::default();
 
                 if cfg!(target_os = "android") {
-                    if let Some(img_dir) = get_external_path(self.sk_info.clone().unwrap()) {
+                    if let Some(img_dir) = get_external_path(&self.sk_info) {
                         file_browser.dir = img_dir;
                     }
                 }
@@ -189,11 +179,7 @@ impl ScreenshotViewer {
                 }
                 file_browser.caller = self.id.clone();
                 file_browser.window_pose = Ui::popup_pose(Vec3::ZERO);
-                let rc_sk = self.sk_info.as_ref().unwrap();
-                let sk = rc_sk.as_ref();
-                let event_loop_proxy = sk.borrow().get_event_loop_proxy().unwrap();
-
-                let _ = event_loop_proxy.send_event(StepperAction::add(self.id.clone() + BROWSER_SUFFIX, file_browser));
+                SkInfo::send_message(&self.sk_info, StepperAction::add(self.id.clone() + BROWSER_SUFFIX, file_browser));
             } else {
                 self.screen = None;
                 if !Platform::get_file_picker_visible() {
@@ -245,7 +231,7 @@ impl ScreenshotViewer {
         Ui::same_line();
         if Ui::button("Save", None) && !Platform::get_file_picker_visible() {
             if cfg!(target_os = "android") {
-                if let Some(img_dir) = get_external_path(self.sk_info.clone().unwrap()) {
+                if let Some(img_dir) = get_external_path(&self.sk_info) {
                     if let Err(err) = set_current_dir(&img_dir) {
                         Log::err(format!("Unable to move current_dir to {:?} : {:?}", img_dir, err))
                     }
@@ -318,10 +304,14 @@ impl ScreenshotViewer {
     }
 
     fn close_file_browser(&mut self) {
-        let rc_sk = self.sk_info.as_ref().unwrap();
-        let sk = rc_sk.as_ref();
-        let event_loop_proxy = sk.borrow().get_event_loop_proxy().unwrap();
+        SkInfo::send_message(&self.sk_info, StepperAction::remove(self.id.clone() + BROWSER_SUFFIX));
+    }
 
-        let _ = event_loop_proxy.send_event(StepperAction::remove(self.id.clone() + BROWSER_SUFFIX));
+    fn close(&mut self, triggering: bool) -> bool {
+        if triggering {
+            self.close_file_browser();
+            self.shutdown_completed = true;
+        }
+        self.shutdown_completed
     }
 }

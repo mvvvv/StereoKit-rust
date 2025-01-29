@@ -84,7 +84,7 @@ min_sdk_version = 29
 target_sdk_version = 32
 max_sdk_version = 32
 
-#---Android features (Horizon OS and AndroidXR)
+#---Android features common
 [[package.metadata.android.uses_feature]]
 name = "android.hardware.vulkan.level"
 required = true
@@ -93,10 +93,10 @@ required = true
 name = "android.hardware.vr.headtracking"
 required = true
 
+#---Android feature HorizonOS
 [[package.metadata.android.uses_feature]]
 name = "oculus.software.handtracking"
 required = false
-
 
 [[package.metadata.android.uses_feature]]
 name = "oculus.software.face_tracking"
@@ -130,7 +130,24 @@ required = true
 name = "com.oculus.feature.RENDER_MODEL"
 required = true
 
-#---Android permission (Horizon OS and AndroidXR)
+#---Android feature AndroidXR
+[[package.metadata.android.uses_feature]]
+name = "android.software.xr.immersive"
+required = true
+
+[[package.metadata.android.uses_feature]]
+name = "android.hardware.xr.input.hand_tracking"
+required = false
+
+[[package.metadata.android.uses_feature]]
+name = "android.hardware.xr.input.controller"
+required = false
+
+[[package.metadata.android.uses_feature]]
+name = "android.hardware.xr.input.eye_tracking"
+required = false
+
+#---Android permission common
 [[package.metadata.android.uses_permission]]
 name = "android.permission.INTERNET"
 
@@ -224,7 +241,7 @@ theme = "@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen"
 extract_native_libs = true
 has_code = false
 
-
+#---Horizon OS
 [[package.metadata.android.application.meta_data]]
 name = "com.oculus.handtracking.version"
 value = "V2.0"
@@ -240,6 +257,25 @@ value = "quest2|questpro|quest3"
 [[package.metadata.android.application.meta_data]]
 name = "com.oculus.intent.category.VR"
 value = "vr_only"
+
+#---Pico
+[[package.metadata.android.application.meta_data]]
+name = "pvr.app.type"
+value = "vr"
+
+[[package.metadata.android.application.meta_data]]
+name = "handtracking"
+value = "1"
+
+#---Snapdragon
+[[package.metadata.android.application.meta_data]]
+name = "spaces.version"
+value = "0.15.0"
+
+#---AndroidXR
+[[package.metadata.android.application.meta_data]]
+name = "android.window.PROPERTY_XR_ACTIVITY_START_MODE"
+value = "XR_ACTIVITY_START_MODE_FULL_SPACE_UNMANAGED"
 
 [package.metadata.android.application.activity]
 #name = ".MainActivity"

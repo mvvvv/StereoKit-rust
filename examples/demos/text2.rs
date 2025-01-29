@@ -1,7 +1,8 @@
 use std::{cell::RefCell, rc::Rc};
 
+use stereokit_macros::IStepper;
 use stereokit_rust::{
-    event_loop::{IStepper, StepperId},
+    event_loop::{IStepper, StepperAction, StepperId},
     font::Font,
     maths::{units::CM, Matrix, Pose, Quat, Vec2, Vec3},
     sk::{MainThreadToken, SkInfo},
@@ -17,9 +18,12 @@ abcdefghijklmnopqrstuvwxyz=)àç_è-('"é&
 αβγδϵζηθικλμνξοπρστυϕχψω
 THE END"#;
 
+/// The Text2 stepper
+#[derive(IStepper)]
 pub struct Text2 {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
+
     pub transform: Matrix,
     pub window_demo_pose: Pose,
     pub demo_win_width: f32,
@@ -44,8 +48,9 @@ impl Default for Text2 {
         Self {
             id: "Text2".to_string(),
             sk_info: None,
-            transform: Matrix::tr(&((Vec3::NEG_Z * 2.5) + Vec3::Y), &Quat::from_angles(0.0, 180.0, 0.0)),
-            window_demo_pose: Pose::new(Vec3::new(0.0, 1.5, -0.3), Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0)))),
+
+            transform: Matrix::tr(&((Vec3::NEG_Z * -2.5) + Vec3::Y), &Quat::from_angles(0.0, 180.0, 0.0)),
+            window_demo_pose: Pose::new(Vec3::new(0.0, 1.5, -1.3), Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0)))),
             demo_win_width: 40.0 * CM,
             font_selected: 1,
             text_style_test: Text::make_style(Font::default(), text_size, WHITE),
@@ -62,19 +67,16 @@ impl Default for Text2 {
     }
 }
 
-impl IStepper for Text2 {
-    fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
-        self.id = id;
-        self.sk_info = Some(sk_info);
+impl Text2 {
+    /// Called from IStepper::initialize here you can abort the initialization by returning false
+    fn start(&mut self) -> bool {
         true
     }
 
-    fn step(&mut self, token: &MainThreadToken) {
-        self.draw(token)
-    }
-}
+    /// Called from IStepper::step, here you can check the event report
+    fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
-impl Text2 {
+    /// Called from IStepper::draw, here you can draw the UI and the scene
     fn draw(&mut self, token: &MainThreadToken) {
         Ui::window_begin(
             "Text options",

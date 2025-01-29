@@ -91,8 +91,6 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
     let mut log_window = LogWindow::new(&LOG_LOG);
     log_window.pose = Pose::new(Vec3::new(-0.7, 2.0, -0.3), Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0))));
 
-    log_window.show(true);
-
     let tex_particule = Tex::gen_particle(128, 128, 0.9, None);
     let exit_button =
         match Sprite::from_tex(Tex::from_file("textures/exit.jpeg", true, None).unwrap_or_default(), None, None) {

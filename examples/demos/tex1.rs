@@ -1,3 +1,4 @@
+use stereokit_macros::IStepper;
 use stereokit_rust::{
     event_loop::{IStepper, StepperAction, StepperId},
     material::{Cull, Material},
@@ -21,10 +22,13 @@ use std::f32::consts::PI;
 use std::ops::Mul;
 use std::rc::Rc;
 
+#[derive(IStepper)]
 pub struct Tex1 {
-    pub title: String,
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
+    shutdown_completed: bool,
+
+    pub title: String,
     panels: Model,
     tex_vide: Tex,
     tex_vide2: Tex,
@@ -280,9 +284,11 @@ impl Default for Tex1 {
         let stage = 0;
 
         let this = Self {
-            title: "Tex1".to_owned(),
             id: "Tex1".to_owned(),
             sk_info: None,
+            shutdown_completed: false,
+
+            title: "Tex1".to_owned(),
             panels,
             tex_vide,
             tex_vide2,
@@ -310,22 +316,23 @@ impl Default for Tex1 {
     }
 }
 
-impl IStepper for Tex1 {
-    fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
-        self.id = id;
-        self.sk_info = Some(sk_info);
+impl Tex1 {
+    /// Called from IStepper::initialize here you can abort the initialization by returning false
+    fn start(&mut self) -> bool {
+        // We ask for a notification to be displayed
         let mut notif = HudNotification::default();
         notif.position = Vec3::new(0.0, 0.3, -0.2).into();
         notif.text = "Close right hand to change textures".into();
 
-        let rc_sk = self.sk_info.as_ref().unwrap();
-        let sk = rc_sk.as_ref();
-        let event_loop_proxy = sk.borrow().get_event_loop_proxy().unwrap();
-        let _ = event_loop_proxy.send_event(StepperAction::add("HudNotifTex1", notif));
+        SkInfo::send_message(&self.sk_info, StepperAction::add("HudNotifTex1", notif));
         true
     }
 
-    fn step(&mut self, token: &MainThreadToken) {
+    /// Called from IStepper::step, here you can check the event report
+    fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
+
+    /// Called from IStepper::step after check_event, here you can draw your UI and your scene
+    fn draw(&mut self, token: &MainThreadToken) {
         self.panels.draw(
             token,
             Mat4::IDENTITY.mul(Mat4::from_scale_rotation_translation(
@@ -444,10 +451,15 @@ impl IStepper for Tex1 {
         }
     }
 
-    fn shutdown(&mut self) {
-        let rc_sk = self.sk_info.as_ref().unwrap();
-        let sk = rc_sk.as_ref();
-        let event_loop_proxy = sk.borrow().get_event_loop_proxy().unwrap();
-        let _ = event_loop_proxy.send_event(StepperAction::remove("HudNotifTex1"));
+    /// Called from IStepper::shutdown then IStepper::shutdown_done, here you can clean up your resources
+    fn close(&mut self, triggering: bool) -> bool {
+        if triggering {
+            // remove the notification if it hasn't been done yet.
+            SkInfo::send_message(&self.sk_info, StepperAction::remove("HudNotifTex1"));
+            self.shutdown_completed = true;
+            true
+        } else {
+            self.shutdown_completed
+        }
     }
 }

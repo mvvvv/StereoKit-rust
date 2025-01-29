@@ -1,3 +1,4 @@
+use c_stepper::CStepper;
 use stereokit_rust::{
     event_loop::{StepperAction, StepperId},
     sk::Sk,
@@ -9,6 +10,7 @@ pub mod anim1;
 pub mod asset1;
 pub mod b_stepper;
 pub mod biplane1;
+pub mod c_stepper;
 pub mod hand_menu_radial1;
 pub mod math1;
 pub mod program;
@@ -47,6 +49,10 @@ impl Test {
             Test::new("Test B", |sk| {
                 sk.push_action(StepperAction::add_default::<BStepper>("Test B"));
                 "Test B".to_string()
+            }),
+            Test::new("Test C", |sk| {
+                sk.push_action(StepperAction::add_default::<CStepper>("Test C"));
+                "Test C".to_string()
             }),
             Test::new("Threads1", |sk| {
                 sk.push_action(StepperAction::add_default::<Threads1>("Threads1"));

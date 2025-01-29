@@ -3,8 +3,9 @@ use std::{
     path::{Path, PathBuf},
     rc::Rc,
 };
+use stereokit_macros::IStepper;
 use stereokit_rust::{
-    event_loop::{IStepper, StepperId},
+    event_loop::{IStepper, StepperAction, StepperId},
     font::Font,
     include_asset_tree,
     material::Material,
@@ -23,9 +24,13 @@ use stereokit_rust::{
 
 const ASSET_DIR: &[&str] = include_asset_tree!("assets"); // you can't use get_assets_dir() here
 
+/// Represents the Asset1 demo which let you open and display some of your assets.
+#[derive(IStepper)]
 pub struct Asset1 {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
+    shutdown_completed: bool,
+
     pub transform: Matrix,
     pub asset_pose: Pose,
     pub asset_scale: Vec3,
@@ -46,10 +51,13 @@ pub struct Asset1 {
 unsafe impl Send for Asset1 {}
 
 impl Default for Asset1 {
+    /// Creates a new instance of Asset1 with default values.
     fn default() -> Self {
         Self {
             id: "Asset1".to_string(),
             sk_info: None,
+            shutdown_completed: false,
+
             transform: Matrix::tr(&((Vec3::NEG_Z * 2.5) + Vec3::Y), &Quat::from_angles(0.0, 180.0, 0.0)),
             asset_pose: Pose::new(Vec3::new(0.0, 1.3, -0.3), None),
             asset_scale: Vec3::ONE * 0.02,
@@ -78,11 +86,10 @@ impl Default for Asset1 {
     }
 }
 
-impl IStepper for Asset1 {
-    fn initialize(&mut self, id: StepperId, sk: Rc<RefCell<SkInfo>>) -> bool {
-        self.id = id;
-        self.asset_files = get_assets(sk.clone(), self.asset_sub_dir.clone(), &self.exts);
-        self.sk_info = Some(sk);
+impl Asset1 {
+    /// Initializes the Asset1 instance and loads asset files names.
+    fn start(&mut self) -> bool {
+        self.asset_files = get_assets(&self.sk_info, self.asset_sub_dir.clone(), &self.exts);
 
         // Some test about hand meshes
         let left_hand = Input::get_controller_model(Handed::Left);
@@ -98,19 +105,10 @@ impl IStepper for Asset1 {
         true
     }
 
-    fn step(&mut self, token: &MainThreadToken) {
-        self.draw(token)
-    }
+    /// Checks for events and handles them accordingly.
+    fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
-    fn shutdown(&mut self) {
-        Input::hand_material(Handed::Right, Some(self.hand_material.clone_ref()));
-        if let Some(sound_inst) = self.sound_to_play {
-            sound_inst.stop();
-        }
-    }
-}
-
-impl Asset1 {
+    /// Draws the asset model and handles user interactions.
     fn draw(&mut self, token: &MainThreadToken) {
         // If a model has been selected, we draw it
         if let Some(model) = &self.model_to_show {
@@ -170,11 +168,7 @@ impl Asset1 {
                 //---back button
                 if Ui::button("..", None) {
                     self.asset_sub_dir.pop();
-                    new_asset_file = Some(get_assets(
-                        self.sk_info.as_ref().unwrap().clone(),
-                        self.asset_sub_dir.clone(),
-                        &self.exts,
-                    ));
+                    new_asset_file = Some(get_assets(&self.sk_info, self.asset_sub_dir.clone(), &self.exts));
                 }
             }
         }
@@ -194,11 +188,7 @@ impl Asset1 {
                     Ui::same_line();
                     if Ui::button(name, None) {
                         self.asset_sub_dir.push(name);
-                        new_asset_file = Some(get_assets(
-                            self.sk_info.as_ref().unwrap().clone(),
-                            self.asset_sub_dir.clone(),
-                            &self.exts,
-                        ));
+                        new_asset_file = Some(get_assets(&self.sk_info, self.asset_sub_dir.clone(), &self.exts));
                     }
                 }
             }
@@ -268,6 +258,19 @@ impl Asset1 {
             }
         } else {
             None
+        }
+    }
+
+    fn close(&mut self, _triggering: bool) -> bool {
+        if _triggering {
+            Input::hand_material(Handed::Right, Some(self.hand_material.clone_ref()));
+            if let Some(sound_inst) = self.sound_to_play {
+                sound_inst.stop();
+            }
+            self.shutdown_completed = true;
+            true
+        } else {
+            self.shutdown_completed
         }
     }
 }

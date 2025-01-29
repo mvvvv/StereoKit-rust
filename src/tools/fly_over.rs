@@ -1,16 +1,23 @@
 use std::{cell::RefCell, rc::Rc};
 
+use stereokit_macros::IStepper;
+
 use crate::{
-    event_loop::{IStepper, StepperId},
+    event_loop::{IStepper, StepperAction, StepperId},
     maths::{Matrix, Quat, Vec2, Vec3},
     sk::{AppMode, MainThreadToken, OriginMode, SkInfo},
     system::{Handed, Input, Key, Log, Renderer, World},
     util::Time,
 };
 
+pub const ENABLE_FLY_OVER: &str = "Tool_EnableFlyOver";
+
+#[derive(IStepper)]
 pub struct FlyOver {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
+    pub enabled: bool,
+
     pub move_speed: f32,
     pub rotate_speed: f32,
     reverse: f32,
@@ -20,17 +27,22 @@ unsafe impl Send for FlyOver {}
 
 impl Default for FlyOver {
     fn default() -> Self {
-        Self { id: "FlyOver".to_string(), sk_info: None, move_speed: 2.0, rotate_speed: 90.0, reverse: 1.0 }
+        Self {
+            id: "FlyOver".to_string(),
+            sk_info: None,
+            enabled: true,
+
+            move_speed: 2.0,
+            rotate_speed: 90.0,
+            reverse: 1.0,
+        }
     }
 }
 
-impl IStepper for FlyOver {
-    fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
-        self.id = id;
-        self.sk_info = Some(sk_info);
-        let rc_sk = self.sk_info.as_ref().unwrap();
-        let sk = rc_sk.as_ref();
-        let sk_settings = sk.borrow().get_settings();
+impl FlyOver {
+    /// Called from IStepper::initialize here you can abort the initialization by returning false
+    fn start(&mut self) -> bool {
+        let sk_settings = SkInfo::settings_from(&self.sk_info);
         if sk_settings.mode != AppMode::Simulator {
             let origin_mode = World::get_origin_mode();
             Log::diag(format!("Fly_Over: OriginMode is {:?} ", origin_mode));
@@ -46,12 +58,15 @@ impl IStepper for FlyOver {
         true
     }
 
-    fn step(&mut self, token: &MainThreadToken) {
-        self.draw(token)
+    /// Called from IStepper::step, here you can check the event report
+    fn check_event(&mut self, _id: &StepperId, key: &str, value: &str) {
+        if key.eq(ENABLE_FLY_OVER) {
+            self.enabled = value.parse().unwrap_or(false);
+            Log::diag(format!("Fly_Over: enabled is {}", self.enabled));
+        }
     }
-}
 
-impl FlyOver {
+    /// Called from IStepper::step, after check_event here you can draw your UI
     fn draw(&mut self, _token: &MainThreadToken) {
         //----- move
         let mut camera_root = Renderer::get_camera_root();

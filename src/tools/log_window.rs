@@ -1,5 +1,7 @@
 use std::{cell::RefCell, rc::Rc, sync::Mutex};
 
+use stereokit_macros::IStepper;
+
 use crate::{
     event_loop::{IStepper, StepperAction, StepperId},
     font::Font,
@@ -18,12 +20,14 @@ pub struct LogItem {
     pub count: i32,
 }
 
-pub const SHOW_LOG_WINDOW: &str = "ShowLogWindow";
+pub const SHOW_LOG_WINDOW: &str = "Tool_ShowLogWindow";
 
+#[derive(IStepper)]
 pub struct LogWindow<'a> {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
     pub enabled: bool,
+
     pub pose: Pose,
     pub x_len: f32,
     pub y_len: f32,
@@ -38,36 +42,9 @@ pub struct LogWindow<'a> {
 
 unsafe impl Send for LogWindow<'_> {}
 
-impl IStepper for LogWindow<'_> {
-    fn enabled(&self) -> bool {
-        self.enabled
-    }
-
-    fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
-        self.id = id;
-        self.sk_info = Some(sk_info);
-
-        true
-    }
-
-    fn step(&mut self, token: &MainThreadToken) {
-        for e in token.get_event_report().iter() {
-            if let StepperAction::Event(_, key, value) = e {
-                if key.eq(SHOW_LOG_WINDOW) {
-                    self.enabled = value.parse().unwrap_or(false)
-                }
-            }
-        }
-
-        self.draw(token)
-    }
-
-    fn shutdown(&mut self) {}
-}
-
 impl<'a> LogWindow<'a> {
     pub fn new(log_log: &'a Mutex<Vec<LogItem>>) -> Self {
-        let enabled = false;
+        let enabled = true;
         let pose = Pose::IDENTITY;
         let x_len = 110.0;
         let y_len = 15.0;
@@ -83,6 +60,7 @@ impl<'a> LogWindow<'a> {
             id: "LogWindow".to_string(),
             sk_info: None,
             enabled,
+
             pose,
             x_len,
             y_len,
@@ -96,15 +74,19 @@ impl<'a> LogWindow<'a> {
         }
     }
 
-    pub fn show(&mut self, value: bool) {
-        self.enabled = value;
+    /// Called from IStepper::initialize here you can abort the initialization by returning false
+    fn start(&mut self) -> bool {
+        true
     }
 
+    /// Called from IStepper::step, here you can check the event report
+    fn check_event(&mut self, _id: &StepperId, key: &str, value: &str) {
+        if key.eq(SHOW_LOG_WINDOW) {
+            self.enabled = value.parse().unwrap_or(false)
+        }
+    }
+    /// Called from IStepper::step, after check_event here you can draw your UI
     fn draw(&mut self, token: &MainThreadToken) {
-        if !self.enabled {
-            return;
-        };
-
         Ui::window_begin("Log", &mut self.pose, Some(Vec2::new(self.x_len, 0.0) * CM), None, None);
         self.draw_logs(token);
         Ui::hseparator();

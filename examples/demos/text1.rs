@@ -1,5 +1,6 @@
 use std::{cell::RefCell, mem::transmute, rc::Rc};
 
+use stereokit_macros::IStepper;
 use stereokit_rust::{
     event_loop::{IStepper, StepperAction, StepperId},
     font::Font,
@@ -34,9 +35,11 @@ Entrée-\n-13-4|ù|û|ü|ÿ|À|Â|Ä|Ç|É|È|Ê|Ë|%|Entrée-\n-13-3
 spr:sk/ui/shift--16-3-go_1|Î|Ï|Ô|Ö|Ù|Û|Ü|Ÿ|$|£|€|¥|✋|spr:sk/ui/shift--16-2-go_1|spr:sk/ui/arrow_up--38
 Ctrl--17-4-mod|Cmd--91-3|Alt--18-3-go_0| - -32-13|Alt--18-3-go_0|Ctrl--17-3-mod|spr:sk/ui/arrow_left--37|spr:sk/ui/arrow_down--40|spr:sk/ui/arrow_right--39|"#;
 
+#[derive(IStepper)]
 pub struct Text1 {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
+
     pub transform: Matrix,
     pub window_demo_pose: Pose,
     pub demo_win_width: f32,
@@ -63,6 +66,7 @@ impl Default for Text1 {
         Self {
             id: "Text1".to_string(),
             sk_info: None,
+
             transform: Matrix::tr(&((Vec3::NEG_Z * -2.5) + Vec3::Y), &Quat::from_angles(0.0, 180.0, 0.0)),
             window_demo_pose: Pose::new(Vec3::new(0.0, 1.5, -1.3), Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0)))),
             demo_win_width: 80.0 * CM,
@@ -84,19 +88,16 @@ impl Default for Text1 {
     }
 }
 
-impl IStepper for Text1 {
-    fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
-        self.id = id;
-        self.sk_info = Some(sk_info);
+impl Text1 {
+    /// Called from IStepper::initialize here you can abort the initialization by returning false
+    fn start(&mut self) -> bool {
         true
     }
 
-    fn step(&mut self, token: &MainThreadToken) {
-        self.draw(token)
-    }
-}
+    /// Called from IStepper::step, here you can check the event report
+    fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
-impl Text1 {
+    /// Called from IStepper::step after check_event, here you can draw your UI and the scene
     fn draw(&mut self, token: &MainThreadToken) {
         Ui::window_begin(
             "Text options",
@@ -205,10 +206,7 @@ impl Text1 {
                 unsafe { transmute::<u32, stereokit_rust::system::TextContext>(((self.text_context as u32) + 1) % 4) };
         }
         if Ui::button("Quit Demos", None) {
-            let rc_sk = self.sk_info.as_ref().unwrap();
-            let sk = rc_sk.as_ref();
-            let event_loop_proxy = sk.borrow().get_event_loop_proxy().unwrap();
-            let _ = event_loop_proxy.send_event(StepperAction::Quit(self.id.clone(), "Quit button test".to_string()));
+            SkInfo::send_message(&self.sk_info, StepperAction::Quit(self.id.clone(), "Quit button test".to_string()));
         }
         Ui::next_line();
         Ui::hseparator();

@@ -1,7 +1,8 @@
 use std::{cell::RefCell, rc::Rc};
 
+use stereokit_macros::IStepper;
 use stereokit_rust::{
-    event_loop::{IStepper, StepperId},
+    event_loop::{IStepper, StepperAction, StepperId},
     font::Font,
     material::Material,
     maths::{Bounds, Matrix, Plane, Pose, Quat, Ray, Sphere, Vec3},
@@ -19,6 +20,8 @@ use stereokit_rust::{
 pub const SPHERE_RADIUS: f32 = 0.4;
 pub const ROTATION_SPEED: f32 = 30.0;
 
+/// The Math1 stepper
+#[derive(IStepper)]
 pub struct Math1 {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
@@ -36,6 +39,7 @@ pub struct Math1 {
 unsafe impl Send for Math1 {}
 
 impl Default for Math1 {
+    /// Creates a new instance of Math1 with default values.
     fn default() -> Self {
         let transform_ico_sphere = Matrix::ts(Vec3::NEG_Z * 0.5 + Vec3::X + Vec3::Y * 1.5, Vec3::ONE * 0.3);
         let model_pose = Pose::new(Vec3::NEG_Z + Vec3::Y * 1.0, None);
@@ -60,19 +64,16 @@ impl Default for Math1 {
     }
 }
 
-impl IStepper for Math1 {
-    fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
-        self.id = id;
-        self.sk_info = Some(sk_info);
+impl Math1 {
+    /// Called from IStepper::initialize here you can abort the initialization by returning false
+    fn start(&mut self) -> bool {
         true
     }
 
-    fn step(&mut self, token: &MainThreadToken) {
-        self.draw(token)
-    }
-}
+    /// Called from IStepper::step, here you can check the event report
+    fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
-impl Math1 {
+    /// Called from IStepper::step after check_event, here you can draw the scene
     fn draw(&mut self, token: &MainThreadToken) {
         Ui::handle("Math1_Cube", &mut self.model_pose, self.model.get_bounds(), false, None, None);
 

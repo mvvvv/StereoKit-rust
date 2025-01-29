@@ -34,10 +34,19 @@ pub fn get_assets_dir() -> String {
 
 /// Read all the assets of a given assets sub directory
 #[cfg(target_os = "android")]
-pub fn get_assets(sk_info: Rc<RefCell<SkInfo>>, sub_dir: PathBuf, file_extensions: &Vec<String>) -> Vec<PathEntry> {
+pub fn get_assets(
+    sk_info: &Option<Rc<RefCell<SkInfo>>>,
+    sub_dir: PathBuf,
+    file_extensions: &Vec<String>,
+) -> Vec<PathEntry> {
     use std::ffi::CString;
 
-    let mut sk_i = sk_info.borrow_mut();
+    if sk_info.is_none() {
+        Log::err("get_assets, sk_info is None");
+        return vec![];
+    }
+
+    let sk_i = sk_info.as_ref().unwrap().borrow_mut();
     let app = sk_i.get_android_app();
     let mut exts = vec![];
     for extension in file_extensions {
@@ -73,8 +82,13 @@ pub fn get_assets(sk_info: Rc<RefCell<SkInfo>>, sub_dir: PathBuf, file_extension
 
 /// Read all the assets of a given assets sub directory
 #[cfg(not(target_os = "android"))]
-pub fn get_assets(_sk_info: Rc<RefCell<SkInfo>>, sub_dir: PathBuf, file_extensions: &Vec<String>) -> Vec<PathEntry> {
+pub fn get_assets(
+    _sk_info: &Option<Rc<RefCell<SkInfo>>>,
+    sub_dir: PathBuf,
+    file_extensions: &Vec<String>,
+) -> Vec<PathEntry> {
     use std::{env, fs::read_dir};
+
     let sub_dir = sub_dir.to_str().unwrap_or("");
     let mut exts = vec![];
     for extension in file_extensions {
@@ -120,29 +134,39 @@ pub fn get_assets(_sk_info: Rc<RefCell<SkInfo>>, sub_dir: PathBuf, file_extensio
 
 /// Get the path to internal data directory for Android
 #[cfg(target_os = "android")]
-pub fn get_internal_path(sk_info: Rc<RefCell<SkInfo>>) -> Option<PathBuf> {
-    let mut sk_i = sk_info.borrow_mut();
+pub fn get_internal_path(sk_info: &Option<Rc<RefCell<SkInfo>>>) -> Option<PathBuf> {
+    if sk_info.is_none() {
+        Log::err("get_internal_path, sk_info is None");
+        return None;
+    }
+
+    let sk_i = sk_info.as_ref().unwrap().borrow_mut();
     let app = sk_i.get_android_app();
     app.internal_data_path()
 }
 
 /// Get the path to internal data directory for non android
 #[cfg(not(target_os = "android"))]
-pub fn get_internal_path(_sk_info: Rc<RefCell<SkInfo>>) -> Option<PathBuf> {
+pub fn get_internal_path(_sk_info: &Option<Rc<RefCell<SkInfo>>>) -> Option<PathBuf> {
     None
 }
 
 /// Get the path to external data directory for Android
 #[cfg(target_os = "android")]
-pub fn get_external_path(sk_info: Rc<RefCell<SkInfo>>) -> Option<PathBuf> {
-    let mut sk_i = sk_info.borrow_mut();
+pub fn get_external_path(sk_info: &Option<Rc<RefCell<SkInfo>>>) -> Option<PathBuf> {
+    if sk_info.is_none() {
+        Log::err("get_external_path, sk_info is None");
+        return None;
+    }
+
+    let sk_i = sk_info.as_ref().unwrap().borrow_mut();
     let app = sk_i.get_android_app();
     app.external_data_path()
 }
 
 /// Get the path to internal data directory for non android (assets)
 #[cfg(not(target_os = "android"))]
-pub fn get_external_path(_sk_info: Rc<RefCell<SkInfo>>) -> Option<PathBuf> {
+pub fn get_external_path(_sk_info: &Option<Rc<RefCell<SkInfo>>>) -> Option<PathBuf> {
     use std::env;
 
     let path_assets = env::current_dir().unwrap().join(get_assets_dir());
@@ -151,10 +175,15 @@ pub fn get_external_path(_sk_info: Rc<RefCell<SkInfo>>) -> Option<PathBuf> {
 
 /// Open an asset like a file
 #[cfg(target_os = "android")]
-pub fn open_asset(sk_info: Rc<RefCell<SkInfo>>, asset_path: impl AsRef<Path>) -> Option<File> {
+pub fn open_asset(sk_info: &Option<Rc<RefCell<SkInfo>>>, asset_path: impl AsRef<Path>) -> Option<File> {
     use std::ffi::CString;
 
-    let mut sk_i = sk_info.borrow_mut();
+    if sk_info.is_none() {
+        Log::err("open_asset, sk_info is None");
+        return None;
+    }
+
+    let sk_i = sk_info.as_ref().unwrap().borrow_mut();
     let app = sk_i.get_android_app();
 
     if let Ok(cstring) = CString::new(asset_path.as_ref().to_str().unwrap_or("Error!!!")) {
@@ -177,7 +206,7 @@ pub fn open_asset(sk_info: Rc<RefCell<SkInfo>>, asset_path: impl AsRef<Path>) ->
 
 /// Open an asset like a file
 #[cfg(not(target_os = "android"))]
-pub fn open_asset(_sk_info: Rc<RefCell<SkInfo>>, asset_path: impl AsRef<Path>) -> Option<File> {
+pub fn open_asset(_sk_info: &Option<Rc<RefCell<SkInfo>>>, asset_path: impl AsRef<Path>) -> Option<File> {
     use std::env;
 
     let path_assets = env::current_dir().unwrap().join(get_assets_dir());
@@ -187,7 +216,7 @@ pub fn open_asset(_sk_info: Rc<RefCell<SkInfo>>, asset_path: impl AsRef<Path>) -
 
 /// Read the files and eventually the sub directory of a given directory
 pub fn get_files(
-    _sk_info: Rc<RefCell<SkInfo>>,
+    _sk_info: &Option<Rc<RefCell<SkInfo>>>,
     dir: PathBuf,
     file_extensions: &Vec<String>,
     show_other_dirs: bool,
@@ -223,8 +252,13 @@ pub fn get_files(
 
 /// Open winit IME keyboard
 #[cfg(target_os = "android")]
-pub fn show_soft_input_ime(sk_info: Rc<RefCell<SkInfo>>, show: bool) -> bool {
-    let mut sk_i = sk_info.borrow_mut();
+pub fn show_soft_input_ime(sk_info: &Option<Rc<RefCell<SkInfo>>>, show: bool) -> bool {
+    if sk_info.is_none() {
+        Log::err("show_soft_input_ime, sk_info is None");
+        return false;
+    }
+
+    let sk_i = sk_info.as_ref().unwrap().borrow_mut();
     let app = sk_i.get_android_app();
     if show {
         app.show_soft_input(false);
@@ -235,7 +269,7 @@ pub fn show_soft_input_ime(sk_info: Rc<RefCell<SkInfo>>, show: bool) -> bool {
 }
 /// Open nothing has we don't have a winit IME keyboard
 #[cfg(not(target_os = "android"))]
-pub fn show_soft_input_ime(_sk_info: Rc<RefCell<SkInfo>>, _show: bool) -> bool {
+pub fn show_soft_input_ime(_sk_info: &Option<Rc<RefCell<SkInfo>>>, _show: bool) -> bool {
     false
 }
 
