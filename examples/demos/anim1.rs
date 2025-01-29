@@ -5,6 +5,7 @@ use stereokit_rust::{
     event_loop::{IStepper, StepperAction, StepperId},
     material::{Cull, Material, Transparency},
     maths::{Matrix, Quat, Vec3, Vec4},
+    mesh::Mesh,
     model::{AnimMode, Model},
     shader::Shader,
     sk::{MainThreadToken, SkInfo},
@@ -61,10 +62,19 @@ impl Default for Anim1 {
         anims.play_anim("flyRotate", AnimMode::Loop);
 
         Log::info(format!("model <~GRN>node count<~clr> : <~RED>{}<~clr> !!!", &mobile.get_nodes().get_count()));
-        for n in mobile.get_nodes().all() {
+        let nodes = mobile.get_nodes();
+        nodes.get_root_node().add_child(
+            "toto",
+            Matrix::IDENTITY,
+            Some(&Mesh::sphere()), //
+            Some(&ico_material),
+            true,
+        );
+        for n in nodes.all() {
             Log::info(format!("---- : {:?} id: {:?} ", n.get_name(), n.get_id()));
-            let material = n.get_material().unwrap_or_default();
-            Log::info(format!("------- material : {:?}", material.get_id()));
+            let material = n.get_material();
+            let mesh = n.get_mesh();
+            Log::info(format!("------- material: {:?} / mesh: {:?}", material, mesh));
         }
 
         let transform =

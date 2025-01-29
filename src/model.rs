@@ -1,5 +1,6 @@
 use crate::maths::{Bool32T, Matrix};
 use crate::sk::MainThreadToken;
+
 use crate::{
     material::{Cull, Material, MaterialT},
     maths::{Bounds, Ray, Vec3},
@@ -712,18 +713,26 @@ impl<'a> Nodes<'a> {
         &mut self,
         name: S,
         local_transform: impl Into<Matrix>,
-        mesh: impl AsRef<Mesh>,
-        material: impl AsRef<Material>,
+        mesh: Option<&Mesh>,
+        material: Option<&Material>,
         solid: bool,
     ) -> &mut Self {
         let c_str = CString::new(name.as_ref()).unwrap();
+        let mesh = match mesh {
+            Some(mesh) => mesh.0.as_ptr(),
+            None => null_mut(),
+        };
+        let material = match material {
+            Some(material) => material.0.as_ptr(),
+            None => null_mut(),
+        };
         unsafe {
             model_node_add(
                 self.model.0.as_ptr(),
                 c_str.as_ptr(),
                 local_transform.into(),
-                mesh.as_ref().0.as_ptr(),
-                material.as_ref().0.as_ptr(),
+                mesh,
+                material,
                 solid as Bool32T,
             )
         };
@@ -891,19 +900,27 @@ impl ModelNode<'_> {
         &mut self,
         name: S,
         local_transform: impl Into<Matrix>,
-        mesh: impl AsRef<Mesh>,
-        material: impl AsRef<Material>,
+        mesh: Option<&Mesh>,
+        material: Option<&Material>,
         solid: bool,
     ) -> &mut Self {
         let c_str = CString::new(name.as_ref()).unwrap();
+        let mesh = match mesh {
+            Some(mesh) => mesh.0.as_ptr(),
+            None => null_mut(),
+        };
+        let material = match material {
+            Some(material) => material.0.as_ptr(),
+            None => null_mut(),
+        };
         unsafe {
             model_node_add_child(
                 self.model.0.as_ptr(),
                 self.id,
                 c_str.as_ptr(),
                 local_transform.into(),
-                mesh.as_ref().0.as_ptr(),
-                material.as_ref().0.as_ptr(),
+                mesh,
+                material,
                 solid as Bool32T,
             )
         };
@@ -946,7 +963,7 @@ impl ModelNode<'_> {
     ///
     /// see also [`crate::model::model_node_get_material`]
     pub fn get_material(&self) -> Option<Material> {
-        Some(Material(NonNull::new(unsafe { model_node_get_material(self.model.0.as_ptr(), self.id) })?))
+        NonNull::new(unsafe { model_node_get_material(self.model.0.as_ptr(), self.id) }).map(Material)
     }
 
     /// Get the mesh of the node
@@ -954,7 +971,7 @@ impl ModelNode<'_> {
     ///
     /// see also [`crate::model::model_node_get_mesh`]
     pub fn get_mesh(&self) -> Option<Mesh> {
-        Some(Mesh(NonNull::new(unsafe { model_node_get_mesh(self.model.0.as_ptr(), self.id) })?))
+        NonNull::new(unsafe { model_node_get_mesh(self.model.0.as_ptr(), self.id) }).map(Mesh)
     }
 
     /// Get the transform matrix of the node

@@ -2,7 +2,7 @@ use stereokit_macros::IStepper;
 use stereokit_rust::{
     event_loop::{IStepper, StepperAction, StepperId},
     material::{Cull, Material},
-    maths::Vec4,
+    maths::{Matrix, Vec4},
     mesh::Mesh,
     model::Model,
     sk::{MainThreadToken, SkInfo},
@@ -198,64 +198,64 @@ impl Default for Tex1 {
             .add(
                 "p1",
                 Mat4::IDENTITY.mul(Mat4::from_translation(glam::Vec3::new(-2.5, 2.5, 0.0))),
-                Mesh::screen_quad(),
-                &color2,
+                Some(&Mesh::screen_quad()),
+                Some(&color2),
                 false,
             )
             .add(
                 "p2",
                 Mat4::IDENTITY.mul(Mat4::from_translation(glam::Vec3::new(0.0, 2.5, 0.0))),
-                Mesh::screen_quad(),
-                &color4,
+                Some(&Mesh::screen_quad()),
+                Some(&color4),
                 false,
             )
             .add(
                 "p3",
                 Mat4::IDENTITY.mul(Mat4::from_translation(glam::Vec3::new(2.5, 2.5, 0.0))),
-                Mesh::screen_quad(),
-                &particule,
+                Some(&Mesh::screen_quad()),
+                Some(&particule),
                 false,
             )
             .add(
                 "p4",
                 Mat4::IDENTITY.mul(Mat4::from_translation(glam::Vec3::new(-2.5, 0.0, 0.0))),
-                Mesh::screen_quad(),
-                &color,
+                Some(&Mesh::screen_quad()),
+                Some(&color),
                 false,
             )
             .add(
                 "p5",
                 Mat4::IDENTITY.mul(Mat4::from_translation(glam::Vec3::new(0.0, 0.0, 0.0))),
-                Mesh::screen_quad(),
-                &color3,
+                Some(&Mesh::screen_quad()),
+                Some(&color3),
                 false,
             )
             .add(
                 "p6",
                 Mat4::IDENTITY.mul(Mat4::from_translation(glam::Vec3::new(2.5, 0.0, 0.0))),
-                Mesh::screen_quad(),
-                &vide,
+                Some(&Mesh::screen_quad()),
+                Some(&vide),
                 false,
             )
             .add(
                 "p7",
                 Mat4::IDENTITY.mul(Mat4::from_translation(glam::Vec3::new(-2.5, -2.5, 0.0))),
-                Mesh::screen_quad(),
-                &vide2,
+                Some(&Mesh::screen_quad()),
+                Some(&vide2),
                 false,
             )
             .add(
                 "p8",
                 Mat4::IDENTITY.mul(Mat4::from_translation(glam::Vec3::new(0.0, -2.5, 0.0))),
-                Mesh::screen_quad(),
-                &vide3,
+                Some(&Mesh::screen_quad()),
+                Some(&vide3),
                 false,
             )
             .add(
                 "p9",
                 Mat4::IDENTITY.mul(Mat4::from_translation(glam::Vec3::new(2.5, -2.5, 0.0))),
-                Mesh::screen_quad(),
-                &vide4,
+                Some(&Mesh::screen_quad()),
+                Some(&vide4),
                 false,
             )
             .add(
@@ -264,8 +264,8 @@ impl Default for Tex1 {
                     glam::Quat::from_rotation_y(PI / 2.0),
                     glam::Vec3::new(0.0, -2.5, 1.0),
                 )),
-                Mesh::screen_quad(),
-                &zarbi,
+                Some(&Mesh::screen_quad()),
+                Some(&zarbi),
                 false,
             );
 
@@ -319,6 +319,35 @@ impl Default for Tex1 {
 impl Tex1 {
     /// Called from IStepper::initialize here you can abort the initialization by returning false
     fn start(&mut self) -> bool {
+        let nodes = self.panels.get_nodes();
+        nodes.get_root_node().add_child(
+            "tata",
+            Matrix::IDENTITY,
+            None, //
+            None,
+            true,
+        );
+        nodes.get_root_node().add_child(
+            "toto",
+            Matrix::IDENTITY,
+            Some(&Mesh::sphere()), //
+            None,
+            true,
+        );
+        nodes.get_root_node().add_child(
+            "titi",
+            Matrix::IDENTITY,
+            Some(&Mesh::sphere()), //
+            Some(&Material::unlit()),
+            true,
+        );
+        for n in nodes.all() {
+            Log::info(format!("---- : {:?} id: {:?} ", n.get_name(), n.get_id()));
+            let material = n.get_material();
+            let mesh = n.get_mesh();
+            Log::info(format!("------- material: {:?} / mesh: {:?}", material, mesh));
+        }
+
         // We ask for a notification to be displayed
         let mut notif = HudNotification::default();
         notif.position = Vec3::new(0.0, 0.3, -0.2).into();

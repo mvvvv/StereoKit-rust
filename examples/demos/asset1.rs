@@ -225,7 +225,7 @@ impl Asset1 {
                 let tex = Tex::from_file(file_path, true, None).unwrap_or_default();
                 let mut material = Material::pbr_clip().copy();
                 material.diffuse_tex(tex).clip_cutoff(0.1);
-                model.get_nodes().add("tex_plane", Matrix::IDENTITY, mesh, material, true);
+                model.get_nodes().add("tex_plane", Matrix::IDENTITY, Some(&mesh), Some(&material), true);
                 Some(AssetToShow::model(model))
             } else if ext == ".sks" {
                 let model = Model::new();
@@ -233,7 +233,7 @@ impl Asset1 {
                 let tex = Tex::from_file("textures/open_gltf.jpeg", true, None).unwrap_or_default();
                 if let Ok(mut material) = Material::from_file(&file_path, None) {
                     material.diffuse_tex(tex);
-                    model.get_nodes().add("tex_plane", Matrix::IDENTITY, mesh, material, true);
+                    model.get_nodes().add("tex_plane", Matrix::IDENTITY, Some(&mesh), Some(&material), true);
                     Some(AssetToShow::model(model))
                 } else {
                     None
@@ -248,7 +248,7 @@ impl Asset1 {
 
                     let mut material = Material::default_copy();
                     material.diffuse_tex(tex);
-                    model.get_nodes().add("tex_sound", Matrix::IDENTITY, mesh, material, true);
+                    model.get_nodes().add("tex_sound", Matrix::IDENTITY, Some(&mesh), Some(&material), true);
                     Some(AssetToShow::sound(model, sound_inst))
                 } else {
                     None
