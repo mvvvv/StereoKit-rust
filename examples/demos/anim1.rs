@@ -61,21 +61,14 @@ impl Default for Anim1 {
         let mut anims = mobile.get_anims();
         anims.play_anim("flyRotate", AnimMode::Loop);
 
-        Log::info(format!("model <~GRN>node count<~clr> : <~RED>{}<~clr> !!!", &mobile.get_nodes().get_count()));
         let nodes = mobile.get_nodes();
         nodes.get_root_node().add_child(
             "toto",
             Matrix::IDENTITY,
-            Some(&Mesh::sphere()), //
-            Some(&ico_material),
+            None, //
+            None,
             true,
         );
-        for n in nodes.all() {
-            Log::info(format!("---- : {:?} id: {:?} ", n.get_name(), n.get_id()));
-            let material = n.get_material();
-            let mesh = n.get_mesh();
-            Log::info(format!("------- material: {:?} / mesh: {:?}", material, mesh));
-        }
 
         let transform =
             Matrix::trs(&(Vec3::new(0.0, 4.5, -2.0)), &Quat::from_angles(90.0, 0.0, 0.0), &(Vec3::ONE * 0.25));
@@ -98,6 +91,27 @@ impl Default for Anim1 {
 
 impl Anim1 {
     fn start(&mut self) -> bool {
+        let mobile = &self.mobile;
+        // We inspect the model
+        let mut nodes = mobile.get_nodes();
+        nodes.add(
+            "tutu",
+            Matrix::IDENTITY,
+            None, //
+            None,
+            true,
+        );
+        Log::info(format!("model <~GRN>node count<~clr> : <~RED>{}<~clr> !!!", &mobile.get_nodes().get_count()));
+        for n in nodes.all() {
+            Log::info(format!("---- : {:?} id: {:?} ", n.get_name(), n.get_id()));
+            if let Some(mesh) = n.get_mesh() {
+                let material = n.get_material().expect("ModeNode with a mesh Should have a material!");
+                Log::info(format!("------- material: {:?} / mesh: {:?}", material.get_id(), mesh.get_id()));
+            } else {
+                Log::info("------- no mesh, no material");
+            }
+        }
+
         // We ask for a notification to be displayed
         let mut notif = HudNotification::default();
         notif.position = Vec3::new(0.0, 0.3, -0.2);

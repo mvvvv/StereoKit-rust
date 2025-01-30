@@ -321,16 +321,9 @@ impl Tex1 {
     fn start(&mut self) -> bool {
         let nodes = self.panels.get_nodes();
         nodes.get_root_node().add_child(
-            "tata",
+            "tyty",
             Matrix::IDENTITY,
             None, //
-            None,
-            true,
-        );
-        nodes.get_root_node().add_child(
-            "toto",
-            Matrix::IDENTITY,
-            Some(&Mesh::sphere()), //
             None,
             true,
         );
@@ -341,11 +334,15 @@ impl Tex1 {
             Some(&Material::unlit()),
             true,
         );
+        Log::info(format!("model <~GRN>node count<~clr> : <~RED>{}<~clr> !!!", &nodes.get_count()));
         for n in nodes.all() {
             Log::info(format!("---- : {:?} id: {:?} ", n.get_name(), n.get_id()));
-            let material = n.get_material();
-            let mesh = n.get_mesh();
-            Log::info(format!("------- material: {:?} / mesh: {:?}", material, mesh));
+            if let Some(mesh) = n.get_mesh() {
+                let material = n.get_material().expect("ModeNode with a mesh Should have a material!");
+                Log::info(format!("------- material: {:?} / mesh: {:?}", material.get_id(), mesh.get_id()));
+            } else {
+                Log::info("------- no mesh, no material");
+            }
         }
 
         // We ask for a notification to be displayed
