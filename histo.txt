@@ -1,6 +1,6 @@
  #------A bunch of commands you'll use here
  #---- installing
- cargo install --path .
+ cargo install -F event-loop --path .  #---or no-event-loop 
  cargo compile_sks
  cargo install cargo-apk
  rustup target add aarch64-linux-android
