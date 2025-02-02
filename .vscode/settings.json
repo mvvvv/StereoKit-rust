@@ -8,4 +8,5 @@
   "!!!rust-analyzer.cargo.target": "aarch64-linux-android",
   "!!!rust-analyzer.cargo.buildScripts.enable": false,
   "rust-analyzer.cargo.buildScripts.overrideCommand": null,
+  "rust-analyzer.checkOnSave": true,
 }
