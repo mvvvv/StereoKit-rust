@@ -5,7 +5,6 @@ use stereokit_rust::{
     event_loop::{IStepper, StepperAction, StepperId},
     material::{Cull, Material, Transparency},
     maths::{Matrix, Quat, Vec3, Vec4},
-    mesh::Mesh,
     model::{AnimMode, Model},
     shader::Shader,
     sk::{MainThreadToken, SkInfo},
