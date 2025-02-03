@@ -11,14 +11,13 @@ use std::{
 
 use stereokit_macros::IStepper;
 use stereokit_rust::{
-    event_loop::{IStepper, StepperAction, StepperId},
     font::Font,
     material::Material,
     maths::{Matrix, Quat, Vec3},
     model::Model,
+    prelude::*,
     shader::Shader,
-    sk::{MainThreadToken, SkInfo},
-    system::{Log, Text, TextStyle},
+    system::{Text, TextStyle},
     util::{named_colors::GREEN_YELLOW, Color128},
 };
 

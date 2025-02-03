@@ -1,13 +1,13 @@
 use std::{cell::RefCell, rc::Rc};
 
 use stereokit_rust::{
-    event_loop::{IStepper, StepperClosures, StepperId},
+    event_loop::StepperClosures,
     font::Font,
     material::Material,
     maths::{Matrix, Quat, Vec3},
     mesh::Mesh,
-    sk::{MainThreadToken, SkInfo},
-    system::{Log, Renderer, Text},
+    prelude::*,
+    system::{Renderer, Text},
     util::{named_colors::RED, Time},
 };
 /// The basic Stepper. This stepper is used for Thread1 demo, we must ensure the StereoKit code stay in the main thread

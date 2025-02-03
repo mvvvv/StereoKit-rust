@@ -5,17 +5,16 @@ use std::{
 };
 use stereokit_macros::IStepper;
 use stereokit_rust::{
-    event_loop::{IStepper, StepperAction, StepperId},
     font::Font,
     include_asset_tree,
     material::Material,
     maths::{Matrix, Pose, Quat, Vec2, Vec3},
     mesh::Mesh,
     model::{AnimMode, Model},
-    sk::{MainThreadToken, SkInfo},
+    prelude::*,
     sound::{Sound, SoundInst},
     sprite::Sprite,
-    system::{Assets, Handed, Input, Log, Renderer, Text, TextStyle},
+    system::{Assets, Handed, Input, Renderer, Text, TextStyle},
     tex::Tex,
     tools::os_api::{get_assets, PathEntry},
     ui::{Ui, UiBtnLayout},

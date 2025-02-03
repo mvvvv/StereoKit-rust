@@ -5,13 +5,12 @@ use std::rc::Rc;
 use glam::Mat4;
 use stereokit_macros::IStepper;
 use stereokit_rust::{
-    event_loop::{IStepper, StepperAction, StepperId},
     font::Font,
     material::Material,
     maths::{Matrix, Quat, Vec3, Vec4},
-    sk::{MainThreadToken, SkInfo},
+    prelude::*,
     sprite::{Sprite, SpriteType},
-    system::{AssetType, Assets, Lines, Log, Text, TextAlign, TextStyle},
+    system::{AssetType, Assets, Lines, Text, TextAlign, TextStyle},
     tex::Tex,
     util::{
         named_colors::{BLACK, BLUE, CYAN, LIGHT_BLUE, WHITE, YELLOW},

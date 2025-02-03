@@ -2,12 +2,11 @@ use std::{cell::RefCell, rc::Rc};
 
 use stereokit_macros::IStepper;
 use stereokit_rust::{
-    event_loop::{IStepper, StepperAction, StepperId},
     font::Font,
     material::Material,
     maths::{units::CM, Matrix, Pose, Quat, Vec2, Vec3},
     mesh::Mesh,
-    sk::{MainThreadToken, SkInfo},
+    prelude::*,
     system::{BtnState, Text, TextAlign, TextStyle},
     ui::{IdHashT, Ui, UiColor, UiCorner, UiLathePt, UiSliderData, UiVisual},
     util::{

@@ -3,13 +3,12 @@ use std::{cell::RefCell, rc::Rc};
 use stereokit_macros::IStepper;
 use stereokit_rust::{
     anchor::{Anchor, AnchorCaps},
-    event_loop::{IStepper, StepperAction, StepperId},
     font::Font,
     material::Material,
     maths::{Matrix, Pose, Quat, Ray, Vec3},
     mesh::Mesh,
-    sk::{MainThreadToken, SkInfo},
-    system::{Handed, Input, Lines, Log, Text, TextStyle},
+    prelude::*,
+    system::{Handed, Input, Lines, Text, TextStyle},
     ui::{Ui, UiCut},
     util::named_colors::{RED, WHITE},
 };

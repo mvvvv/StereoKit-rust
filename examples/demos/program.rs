@@ -2,16 +2,17 @@ use std::{process, sync::Mutex, thread};
 
 use openxr_sys::EnvironmentBlendMode;
 use stereokit_rust::{
-    event_loop::{SkClosures, StepperAction, StepperId},
+    event_loop::SkClosures,
     material::Cull,
     maths::{units::*, Pose, Quat, Vec2, Vec3},
     model::Model,
+    prelude::*,
     shader::Shader,
-    sk::{AppFocus, DisplayBlend, DisplayMode, Sk},
+    sk::{AppFocus, DisplayBlend, DisplayMode},
     sound::{Sound, SoundInst},
     sprite::Sprite,
     system::{
-        Backend, BackendOpenXR, BackendXRType, BtnState, Input, Key, Lines, Log, LogLevel, Projection, Renderer, Text,
+        Backend, BackendOpenXR, BackendXRType, BtnState, Input, Key, Lines, LogLevel, Projection, Renderer, Text,
     },
     tex::Tex,
     tools::{

@@ -2,15 +2,14 @@ use std::{cell::RefCell, rc::Rc};
 
 use stereokit_macros::IStepper;
 use stereokit_rust::{
-    event_loop::{IStepper, StepperAction, StepperId},
     font::Font,
     material::Material,
     maths::{units::M, Matrix, Pose, Quat, Vec3},
     mesh::Mesh,
     model::Model,
-    sk::{MainThreadToken, SkInfo},
+    prelude::*,
     sound::{Sound, SoundInst},
-    system::{Log, Renderer, Text, TextStyle},
+    system::{Renderer, Text, TextStyle},
     util::{named_colors::RED, Time},
 };
 

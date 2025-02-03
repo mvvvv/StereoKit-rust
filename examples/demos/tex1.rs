@@ -1,12 +1,11 @@
 use stereokit_macros::IStepper;
 use stereokit_rust::{
-    event_loop::{IStepper, StepperAction, StepperId},
     material::{Cull, Material},
     maths::{Matrix, Vec4},
     mesh::Mesh,
     model::Model,
-    sk::{MainThreadToken, SkInfo},
-    system::{Handed, Input, Log},
+    prelude::*,
+    system::{Handed, Input},
     tex::{Tex, TexFormat, TexType},
     tools::notif::HudNotification,
     util::{
