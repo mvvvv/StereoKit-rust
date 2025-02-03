@@ -3,7 +3,6 @@ use crate::{
     system::IAsset,
     StereoKitError,
 };
-
 use std::{
     ffi::{CStr, CString},
     path::Path,

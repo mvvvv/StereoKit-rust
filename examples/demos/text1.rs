@@ -1,6 +1,4 @@
-use std::{cell::RefCell, mem::transmute, rc::Rc};
-
-use stereokit_macros::IStepper;
+use std::mem::transmute;
 use stereokit_rust::{
     font::Font,
     maths::{units::CM, Matrix, Pose, Quat, Vec2, Vec3},

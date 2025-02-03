@@ -1,5 +1,3 @@
-use stereokit_macros::IStepper;
-
 use crate::{
     maths::{Pose, Quat, Vec2, Vec3},
     prelude::*,
@@ -7,7 +5,7 @@ use crate::{
     tools::os_api::PathEntry,
     ui::{Ui, UiBtnLayout, UiWin},
 };
-use std::{cell::RefCell, path::PathBuf, rc::Rc};
+use std::path::PathBuf;
 
 use super::os_api::get_files;
 

@@ -1,9 +1,5 @@
-use std::cell::RefCell;
-use std::f32::consts::PI;
-use std::rc::Rc;
-
 use glam::Mat4;
-use stereokit_macros::IStepper;
+use std::f32::consts::PI;
 use stereokit_rust::{
     font::Font,
     material::Material,

@@ -1,9 +1,3 @@
-use std::{
-    self,
-    ffi::{c_char, c_void, CStr, CString},
-    ptr::NonNull,
-};
-
 use crate::{
     material::{Material, MaterialT},
     maths::{Matrix, Rect},
@@ -13,6 +7,11 @@ use crate::{
     tex::{Tex, TexT},
     util::Color128,
     StereoKitError,
+};
+use std::{
+    self,
+    ffi::{c_char, c_void, CStr, CString},
+    ptr::NonNull,
 };
 
 /// A RenderList is a collection of Draw commands that can be submitted to various surfaces. RenderList.Primary is

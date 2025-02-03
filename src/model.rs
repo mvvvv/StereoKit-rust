@@ -1,6 +1,5 @@
 use crate::maths::{Bool32T, Matrix};
 use crate::sk::MainThreadToken;
-
 use crate::{
     material::{Cull, Material, MaterialT},
     maths::{Bounds, Ray, Vec3},

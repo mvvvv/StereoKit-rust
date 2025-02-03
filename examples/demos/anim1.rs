@@ -1,6 +1,3 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-use stereokit_macros::IStepper;
 use stereokit_rust::{
     material::{Cull, Material, Transparency},
     maths::{Matrix, Quat, Vec3, Vec4},

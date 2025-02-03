@@ -22,9 +22,8 @@ pub const USAGE: &str = r#"Usage : program [OPTION]
 #[allow(dead_code)]
 #[cfg(not(target_os = "android"))]
 fn main() {
-    use std::env;
-
     use demos::program::launch;
+    use std::env;
     use stereokit_rust::sk::{DepthMode, Sk, StandbyMode};
     use stereokit_rust::system::BackendOpenXR;
     use stereokit_rust::{

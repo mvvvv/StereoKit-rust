@@ -1,10 +1,3 @@
-use std::{
-    ffi::{c_char, c_void, CStr, CString},
-    mem::size_of,
-    path::{Path, PathBuf},
-    ptr::{null_mut, NonNull},
-};
-
 use crate::{
     maths::{Bool32T, Vec3},
     system::{
@@ -13,6 +6,12 @@ use crate::{
     },
     util::{Color128, Color32, Gradient, GradientKey, GradientT, SphericalHarmonics},
     StereoKitError,
+};
+use std::{
+    ffi::{c_char, c_void, CStr, CString},
+    mem::size_of,
+    path::{Path, PathBuf},
+    ptr::{null_mut, NonNull},
 };
 
 bitflags::bitflags! {

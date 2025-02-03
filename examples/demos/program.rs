@@ -1,6 +1,5 @@
-use std::{process, sync::Mutex, thread};
-
 use openxr_sys::EnvironmentBlendMode;
+use std::{process, sync::Mutex, thread};
 use stereokit_rust::{
     event_loop::SkClosures,
     material::Cull,

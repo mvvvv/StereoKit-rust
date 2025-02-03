@@ -1,12 +1,11 @@
-use std::{
-    ffi::{c_char, c_void, CStr, CString},
-    ptr::{null_mut, NonNull},
-};
-
 use crate::{
     maths::{Bool32T, Pose},
     system::{BtnState, IAsset, Log},
     StereoKitError,
+};
+use std::{
+    ffi::{c_char, c_void, CStr, CString},
+    ptr::{null_mut, NonNull},
 };
 
 /// An Anchor in StereoKit is a completely virtual pose that is pinned to a real-world location. They are creatable via

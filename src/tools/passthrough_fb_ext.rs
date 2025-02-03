@@ -14,7 +14,7 @@ use crate::{
     system::{Backend, BackendOpenXR, BackendXRType, Renderer},
     util::Color128,
 };
-use std::{cell::RefCell, ptr::null_mut, rc::Rc};
+use std::ptr::null_mut;
 
 /// The StepperAction to trigger with the value "0"/"1" to Deactivate/Activate the passthrough.
 pub const PASSTHROUGH_FLIP: &str = "PassthroughFlip";

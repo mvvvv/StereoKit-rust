@@ -1,5 +1,3 @@
-use std::{borrow::BorrowMut, cell::RefCell, collections::VecDeque, rc::Rc};
-
 use crate::{
     material::Material,
     maths::{lerp, units::CM, Matrix, Plane, Pose, Quat, Vec2, Vec3},
@@ -17,6 +15,7 @@ use crate::{
         Color128, Time,
     },
 };
+use std::{borrow::BorrowMut, collections::VecDeque};
 
 /// StereoKit initialization settings! Setup SkSettings with your data before calling SkSetting.Init().
 /// <https://stereokit.net/Pages/StereoKit.Framework/HandMenuItem.html

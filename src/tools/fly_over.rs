@@ -1,7 +1,3 @@
-use std::{cell::RefCell, rc::Rc};
-
-use stereokit_macros::IStepper;
-
 use crate::{
     maths::{Matrix, Quat, Vec2, Vec3},
     prelude::*,

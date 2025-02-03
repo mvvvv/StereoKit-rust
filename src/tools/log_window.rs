@@ -1,7 +1,3 @@
-use std::{cell::RefCell, rc::Rc, sync::Mutex};
-
-use stereokit_macros::IStepper;
-
 use crate::{
     font::Font,
     material::Cull,
@@ -11,6 +7,7 @@ use crate::{
     ui::{Ui, UiCut},
     util::Color128,
 };
+use std::sync::Mutex;
 
 #[derive(Debug, Clone)]
 pub struct LogItem {

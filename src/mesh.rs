@@ -1,8 +1,3 @@
-use std::{
-    ffi::{c_char, CStr, CString},
-    ptr::{slice_from_raw_parts_mut, NonNull},
-};
-
 use crate::{
     material::{Cull, Material, MaterialT},
     maths::{Bool32T, Bounds, Matrix, Ray, Vec2, Vec3, Vec4},
@@ -10,6 +5,10 @@ use crate::{
     system::{IAsset, RenderLayer},
     util::{Color128, Color32},
     StereoKitError,
+};
+use std::{
+    ffi::{c_char, CStr, CString},
+    ptr::{slice_from_raw_parts_mut, NonNull},
 };
 
 /// This represents a single vertex in a Mesh, all StereoKit Meshes currently use this exact layout!

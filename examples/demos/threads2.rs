@@ -1,6 +1,4 @@
 use std::{
-    cell::RefCell,
-    rc::Rc,
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc,
@@ -8,8 +6,6 @@ use std::{
     thread::{self, JoinHandle},
     time,
 };
-
-use stereokit_macros::IStepper;
 use stereokit_rust::{
     font::Font,
     material::Material,

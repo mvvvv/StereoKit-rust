@@ -1,4 +1,6 @@
-use stereokit_macros::IStepper;
+use glam::{Mat4, Quat, Vec3};
+use std::f32::consts::PI;
+use std::ops::Mul;
 use stereokit_rust::{
     material::{Cull, Material},
     maths::{Matrix, Vec4},
@@ -13,13 +15,6 @@ use stereokit_rust::{
         Color128, Color32, Gradient,
     },
 };
-
-use glam::{Mat4, Quat, Vec3};
-
-use std::cell::RefCell;
-use std::f32::consts::PI;
-use std::ops::Mul;
-use std::rc::Rc;
 
 #[derive(IStepper)]
 pub struct Tex1 {

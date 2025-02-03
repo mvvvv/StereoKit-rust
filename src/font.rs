@@ -1,10 +1,9 @@
+use crate::{system::IAsset, tex::TexT, StereoKitError};
 use std::{
     ffi::{c_char, CStr, CString},
     path::Path,
     ptr::NonNull,
 };
-
-use crate::{system::IAsset, tex::TexT, StereoKitError};
 
 /// This class represents a text font asset! On the back-end, this asset is composed of a texture with font characters
 /// rendered to it, and a list of data about where, and how large those characters are on the texture.

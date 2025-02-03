@@ -15,7 +15,7 @@ use crate::{
     prelude::*,
     system::{Backend, BackendOpenXR, BackendXRType},
 };
-use std::{cell::RefCell, ffi::c_void, ptr::null_mut, rc::Rc};
+use std::{ffi::c_void, ptr::null_mut};
 
 /// The StepperAction to trigger with the value "0"/"1" to Show/Hide the keyboard.
 pub const KEYBOARD_SHOW: &str = "KeyboardShow";

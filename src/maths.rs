@@ -1,13 +1,11 @@
-/// Creates a text description of the Sphere, in the format of “[center:X radius:X]”
-use std::{
-    fmt::Display,
-    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
-};
-
 use crate::{
     material::Cull,
     mesh::{mesh_ray_intersect, Mesh, VindT},
     model::{model_ray_intersect, Model},
+};
+use std::{
+    fmt::Display,
+    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 
 /// Native code use this as bool

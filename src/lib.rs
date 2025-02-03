@@ -1,5 +1,7 @@
 use std::{ffi::NulError, path::PathBuf};
 pub use stereokit_macros::include_asset_tree;
+#[cfg(feature = "event-loop")]
+pub use stereokit_macros::IStepper;
 use thiserror::Error;
 pub mod anchor;
 #[cfg(feature = "event-loop")]

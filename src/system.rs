@@ -1,11 +1,3 @@
-use std::{
-    ffi::{c_char, c_ushort, c_void, CStr, CString},
-    fmt,
-    mem::{size_of, transmute_copy},
-    path::Path,
-    ptr::{null, null_mut, NonNull},
-};
-
 use crate::{
     anchor::{Anchor, _AnchorT},
     font::{Font, FontT, _FontT},
@@ -21,6 +13,13 @@ use crate::{
     tex::{Tex, TexFormat, TexT, _TexT},
     util::{Color128, Color32, SphericalHarmonics},
     StereoKitError,
+};
+use std::{
+    ffi::{c_char, c_ushort, c_void, CStr, CString},
+    fmt,
+    mem::{size_of, transmute_copy},
+    path::Path,
+    ptr::{null, null_mut, NonNull},
 };
 
 /// All StereoKit assets implement this interface! This is mostly to help group and hold Asset objects, and is

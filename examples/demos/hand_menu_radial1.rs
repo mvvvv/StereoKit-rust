@@ -1,6 +1,3 @@
-use std::{cell::RefCell, rc::Rc};
-
-use stereokit_macros::IStepper;
 use stereokit_rust::{
     framework::{HandMenuAction, HandMenuRadial, HandRadial, HandRadialLayer},
     material::{Cull, Material, Transparency},

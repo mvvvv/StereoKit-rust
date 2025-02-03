@@ -11,8 +11,6 @@ use std::{
     thread::sleep,
     time::Duration,
 };
-pub use winit;
-
 use winit::{
     application::ApplicationHandler,
     event::WindowEvent,

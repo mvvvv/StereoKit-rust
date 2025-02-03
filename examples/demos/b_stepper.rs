@@ -1,5 +1,3 @@
-use std::{cell::RefCell, rc::Rc};
-
 use stereokit_rust::{
     event_loop::StepperClosures,
     font::Font,

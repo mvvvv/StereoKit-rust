@@ -1,15 +1,12 @@
+use super::a_stepper::AStepper;
 use std::{
     any::TypeId,
-    cell::RefCell,
-    rc::Rc,
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc,
     },
     thread, time,
 };
-
-use stereokit_macros::IStepper;
 use stereokit_rust::{
     font::Font,
     maths::{Matrix, Quat, Vec3},
@@ -17,8 +14,6 @@ use stereokit_rust::{
     system::{Text, TextStyle},
     util::{named_colors::GREEN_YELLOW, Time},
 };
-
-use super::a_stepper::AStepper;
 
 #[derive(IStepper)]
 pub struct Threads1 {

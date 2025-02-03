@@ -1,14 +1,13 @@
-use std::ffi::{c_char, c_void, CStr, CString};
-use std::marker::PhantomData;
-use std::path::Path;
-use std::ptr::NonNull;
-
 use crate::maths::{Bool32T, Matrix, Vec2, Vec3, Vec4};
 use crate::shader::{Shader, ShaderT};
 use crate::system::{IAsset, Log};
 use crate::tex::{Tex, TexT};
 use crate::util::Color128;
 use crate::StereoKitError;
+use std::ffi::{c_char, c_void, CStr, CString};
+use std::marker::PhantomData;
+use std::path::Path;
+use std::ptr::NonNull;
 
 /// Also known as ‘alpha’ for those in the know. But there’s actually more than one type of transparency in rendering!
 /// The horrors. We’re keepin’ it fairly simple for now, so you get three options!

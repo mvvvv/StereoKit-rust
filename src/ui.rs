@@ -1,8 +1,3 @@
-use std::{
-    ffi::{c_char, c_ushort, CStr, CString},
-    ptr::{null_mut, NonNull},
-};
-
 use crate::{
     material::{Material, MaterialT},
     maths::{Bool32T, Bounds, Pose, Vec2, Vec3},
@@ -13,6 +8,10 @@ use crate::{
     system::{BtnState, Handed, HierarchyParent, Log, TextAlign, TextContext, TextFit, TextStyle},
     util::{Color128, Color32},
     StereoKitError,
+};
+use std::{
+    ffi::{c_char, c_ushort, CStr, CString},
+    ptr::{null_mut, NonNull},
 };
 
 /// A description of what type of window to draw! This is a bit flag, so it can contain multiple elements.

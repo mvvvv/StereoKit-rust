@@ -4,4 +4,10 @@ pub use crate::{
 };
 
 #[cfg(feature = "event-loop")]
-pub use crate::event_loop::{IStepper, StepperAction, StepperId};
+pub use crate::{
+    event_loop::{IStepper, StepperAction, StepperId},
+    IStepper,
+};
+
+#[cfg(feature = "event-loop")]
+pub use std::{cell::RefCell, rc::Rc};
