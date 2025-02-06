@@ -21,6 +21,7 @@ pub const USAGE: &str = r#"Usage : program [OPTION]
 
 #[allow(dead_code)]
 #[cfg(not(target_os = "android"))]
+#[cfg(feature = "event-loop")]
 fn main() {
     use demos::program::launch;
     use std::env;
@@ -117,4 +118,10 @@ fn main() {
 /// Fake main for android
 #[allow(dead_code)]
 #[cfg(target_os = "android")]
+#[cfg(feature = "event-loop")]
+fn main() {}
+
+/// Fake main for no-event-loop asked by cargo test --features no-event-loop
+#[allow(dead_code)]
+#[cfg(feature = "no-event-loop")]
 fn main() {}

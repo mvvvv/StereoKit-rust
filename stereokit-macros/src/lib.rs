@@ -168,3 +168,59 @@ fn get_sub_dirs(path_assets: PathBuf, sub_path: &Path) -> Vec<String> {
     }
     vec_path
 }
+
+#[proc_macro]
+pub fn test_init_sk(_input: TokenStream) -> TokenStream {
+    let expanded = quote! {
+        use stereokit_rust::{*, prelude::*, test_screenshot};
+
+        #[cfg(feature = "no-event-loop")]
+        let mut sk = sk::SkSettings::default().mode(sk::AppMode::Offscreen).app_name("cargo test").init().unwrap();
+        #[cfg(feature = "event-loop")]
+        let (mut sk, mut event_loop) = sk::SkSettings::default().mode(sk::AppMode::Offscreen).app_name("cargo test").init_with_event_loop().unwrap();
+
+        let mut filename_scr = "screenshots/default_screenshoot.png";
+        let mut number_of_steps = 1;
+        let (mut width_scr, mut height_scr, mut fov_scr, mut from_scr, mut at_scr)  = (200, 200, 99.0, maths::Vec3::Z, maths::Vec3::ZERO);
+    };
+
+    TokenStream::from(expanded)
+}
+
+#[proc_macro]
+pub fn test_screenshot(input: TokenStream) -> TokenStream {
+    let input: proc_macro2::TokenStream = input.into();
+    let expanded = quote! {
+        let mut iter = 0;
+        #[cfg(feature = "no-event-loop")]
+        {
+            while let Some(token) = sk.step() {
+                if iter > number_of_steps {break}
+
+                #input
+
+                iter+=1;
+                if iter == number_of_steps {
+                    // render screenshot
+                    system::Renderer::screenshot(token, filename_scr, 90, maths::Pose::look_at(from_scr, at_scr), width_scr, height_scr, Some(fov_scr) );
+                }
+            }
+        }
+        #[cfg(feature = "event-loop")]
+        {
+            event_loop::SkClosures::new(sk, |sk, token| {
+                if iter > number_of_steps {sk.quit(None)}
+
+                #input
+
+                iter+=1;
+                if iter == number_of_steps {
+                    // render screenshot
+                    system::Renderer::screenshot(token, filename_scr, 90, maths::Pose::look_at(from_scr, at_scr), width_scr, height_scr, Some(fov_scr) );
+                }
+            }).run(event_loop);
+        }
+    };
+
+    TokenStream::from(expanded)
+}

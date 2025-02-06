@@ -26,7 +26,7 @@ pub const USAGE: &str = r#"Usage : cargo build_sk_rs [Options] <Output_path>
         -h|--help                       : Display help
         
         
-    If you want DLL instead of static link set variable SKC_IN_DLL=ON"#;
+    If you want DLL instead of static link use the feature skc-in-dll"#;
 
 enum Target {
     Default,
@@ -149,11 +149,12 @@ fn main() {
     };
 
     if !output_path.exists() || !output_path.is_dir() {
-        panic!("You forgot to indicate the <output_path> to create");
+        println!("You forgot to indicate the <output_path> to create");
+        panic!("{}", USAGE);
     }
-
     if !output_path.is_dir() {
-        panic!("Argument {} should be a valid directory name", output_path_name);
+        println!("Argument {} should be a valid directory name", output_path_name);
+        panic!("{}", USAGE);
     }
 
     //----Second the cargo build command

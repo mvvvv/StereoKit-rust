@@ -185,11 +185,35 @@ impl Model {
     }
 
     /// Loads a list of mesh and material subsets from a .obj, .stl, .ply (ASCII), .gltf, or .glb file.
+    ///
+    /// **Important**: The model is loaded only once. If you open the same file a second time, it will return the model
+    /// loaded the first time and all its modifications afterwards. If you want two different instances, remember to
+    /// copy the model while not forgetting that the assets that the copies contain when loaded are the same.
     /// <https://stereokit.net/Pages/StereoKit/Model/FromFile.html>
+    /// * file - Name of the file to load! This gets prefixed with the StereoKit asset folder if no drive letter
+    ///   is specified in the path.
+    /// * shader - The shader to use for the model’s materials! If None, this will automatically determine the best
+    ///   shader available to use.
     ///
     /// see also [`crate::model::model_create_file`]
-    pub fn from_file(file_utf8: impl AsRef<Path>, shader: Option<Shader>) -> Result<Model, StereoKitError> {
-        let path = file_utf8.as_ref();
+    ///
+    /// # Examples
+    /// ```
+    /// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    ///
+    /// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model};
+    ///
+    /// let model = Model::from_file("center.glb", None).unwrap().copy();
+    /// let transform = Matrix::ts(Vec3::NEG_Y * 0.40, Vec3::ONE * 0.25);
+    ///
+    /// filename_scr = "screenshots/model_from_file.jpeg";
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     model.draw(token, transform, None, None);
+    /// );
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_from_file.jpeg" alt="screenshot" width="200">
+    pub fn from_file(file: impl AsRef<Path>, shader: Option<Shader>) -> Result<Model, StereoKitError> {
+        let path = file.as_ref();
         let path_buf = path.to_path_buf();
         let c_str = CString::new(path.to_str().unwrap())?;
         let shader = shader.map(|shader| shader.0.as_ptr()).unwrap_or(null_mut());
@@ -198,12 +222,13 @@ impl Model {
             None => Err(StereoKitError::ModelFromFile(path_buf.to_owned(), "file not found!".to_owned())),
         }
     }
-    /// Creates a new Model from an existing one.
+    /// Creates a shallow copy of a Model asset! Meshes and Materials referenced by this Model will be referenced, not
+    /// copied.
     /// <https://stereokit.net/Pages/StereoKit/Model/Copy.html>
     ///
     /// see also [`crate::model::model_copy()`]
-    pub fn copy(model: impl AsRef<Model>) -> Model {
-        Model(NonNull::new(unsafe { model_copy(model.as_ref().0.as_ptr()) }).unwrap())
+    pub fn copy(&self) -> Model {
+        Model(NonNull::new(unsafe { model_copy(self.0.as_ptr()) }).unwrap())
     }
 
     /// Looks for a Model asset that’s already loaded, matching the given id!

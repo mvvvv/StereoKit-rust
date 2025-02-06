@@ -27,14 +27,16 @@ pub const PASSTHROUGH_FLIP: &str = "PassthroughFlip";
 /// Use PassthroughFbExt::new(true) instead of Default if you want to have it at start up.
 ///
 ///
-/// ```ignore
+/// ```
 /// // The folowing line must be added before initializing sk:
 /// stereokit_rust::system::BackendOpenXR::request_ext("XR_FB_passthrough");
-/// let (sk, event_loop) = settings.init_with_event_loop(app).unwrap();
+/// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 ///
 /// // Launch the stepper as follow :
-/// let passthrough = true;
-/// let passthrough_enabled = stereokit_rust::system::BackendOpenXR::ext_enabled("XR_FB_passthrough");
+/// use stereokit_rust::tools::passthrough_fb_ext::*;
+/// let mut passthrough = false;
+/// let mut new_passthrough_value = true; // !!!! Get a proper way to decide of this value !!!!
+/// let passthrough_enabled = system::BackendOpenXR::ext_enabled("XR_FB_passthrough");
 /// if passthrough_enabled {
 ///    sk.push_action(StepperAction::add_default::<PassthroughFbExt>(
 ///        "PassthroughFbExt",
@@ -56,15 +58,15 @@ pub const PASSTHROUGH_FLIP: &str = "PassthroughFlip";
 ///  // Activate/Deactivate the stepper as follow :
 ///  if passthrough_enabled && passthrough != new_passthrough_value {
 ///      passthrough = new_passthrough_value;
-///          let mut string_value = "0";
-///          if passthrough {
-///              Log::diag("Activate passthrough");
-///              string_value = "1";
-///          } else {
-///              Log::diag("Deactivate passthrough");
-///          }
-///          sk.push_action(StepperAction::event("main".into(), PASSTHROUGH_FLIP, string_value))
+///      let mut string_value = "0";
+///      if passthrough {
+///          Log::diag("Activate passthrough");
+///          string_value = "1";
+///      } else {
+///          Log::diag("Deactivate passthrough");
 ///      }
+///      sk.push_action(StepperAction::event("main".into(), PASSTHROUGH_FLIP, string_value))
+///      
 ///  }
 /// ```
 

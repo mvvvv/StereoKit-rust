@@ -1,22 +1,26 @@
 pub mod demos;
 
-use stereokit_rust::event_loop::StepperAction;
 #[cfg(target_os = "android")]
 //use android_activity::AndroidApp;
 use winit::platform::android::activity::AndroidApp;
 
+#[cfg(feature = "event-loop")]
 use demos::program::launch;
-use stereokit_rust::sk::Sk;
-use stereokit_rust::system::Log;
+#[cfg(feature = "event-loop")]
 use stereokit_rust::{
+    event_loop::StepperAction,
+    sk::Sk,
     sk::{OriginMode, SkSettings},
     system::BackendOpenXR,
+    system::Log,
     system::LogLevel,
 };
+#[cfg(feature = "event-loop")]
 use winit::event_loop::EventLoop;
 
 #[allow(dead_code)]
 #[cfg(target_os = "android")]
+#[cfg(feature = "event-loop")]
 #[no_mangle]
 fn android_main(app: AndroidApp) {
     use stereokit_rust::sk::DepthMode;
@@ -46,6 +50,7 @@ fn android_main(app: AndroidApp) {
 
 #[allow(dead_code)]
 #[cfg(not(target_os = "android"))]
+#[cfg(feature = "event-loop")]
 fn main() {
     use stereokit_rust::sk::AppMode;
 
@@ -64,6 +69,7 @@ fn main() {
     _main(sk, event_loop);
 }
 
+#[cfg(feature = "event-loop")]
 pub fn _main(sk: Sk, event_loop: EventLoop<StepperAction>) {
     let is_testing = false;
     let start_test = "".to_string();
@@ -71,3 +77,8 @@ pub fn _main(sk: Sk, event_loop: EventLoop<StepperAction>) {
     launch(sk, event_loop, is_testing, start_test);
     Sk::shutdown();
 }
+
+/// Fake main for no-event-loop asked by cargo test --features no-event-loop
+#[allow(dead_code)]
+#[cfg(feature = "no-event-loop")]
+fn main() {}

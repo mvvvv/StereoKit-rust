@@ -2860,7 +2860,7 @@ impl Renderer {
     /// * viewpoint - is Pose::look_at(from_point, looking_at_point)
     /// * field_of_view - If None will use default value of 90°
     ///
-    /// see also [`crate::system::render_screenshot_pose`]
+    /// see also [`crate::system::render_screenshot`]
     pub fn screenshot(
         _token: &MainThreadToken,
         filename: impl AsRef<Path>,
@@ -2886,7 +2886,7 @@ impl Renderer {
     /// * field_of_view - If None will use default value of 90°
     /// * tex_format - If None will use default value of TexFormat::RGBA32
     ///
-    /// see also [`crate::system::render_screenshot_pose`]
+    /// see also [`crate::system::render_screenshot_capture`]
     pub fn screenshot_capture<F: FnMut(&[Color32], usize, usize)>(
         _token: &MainThreadToken,
         mut on_screenshot: F,
@@ -2918,7 +2918,7 @@ impl Renderer {
     /// * clear - If None wille use default value of All
     /// * tex_format - If None will use default value of TexFormat::RGBA32
     ///
-    /// see also [`crate::system::render_screenshot_pose`]
+    /// see also [`crate::system::render_screenshot_viewpoint`]
     #[allow(clippy::too_many_arguments)]
     pub fn screenshot_viewpoint<M: Into<Matrix>, F: FnMut(&[Color32], usize, usize)>(
         _token: &MainThreadToken,

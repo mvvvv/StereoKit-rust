@@ -15,6 +15,29 @@ use std::{
 /// It’s good to fill out all values of a Vertex explicitly, as default values for the normal (0,0,0) and color
 /// (0,0,0,0) will cause your mesh to appear completely black, or even transparent in most shaders!
 /// <https://stereokit.net/Pages/StereoKit/Vertex.html>
+///
+/// # Examples
+/// ```
+/// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+///
+/// use stereokit_rust::{maths::{Vec3, Vec2, Matrix}, util::Color32, mesh::{Mesh,Vertex}, material::Material};
+///
+/// // Creating vertices with all fields specified
+/// let vertices = [
+///     Vertex::new(Vec3::ZERO,Vec3::UP,None,         Some(Color32::rgb(255, 0, 0))),
+///     Vertex::new(Vec3::X,   Vec3::UP,Some(Vec2::X),Some(Color32::rgb(255, 255, 0))),
+///     Vertex::new(Vec3::Y,   Vec3::UP,Some(Vec2::Y),Some(Color32::rgb(0, 0, 255))),
+/// ];
+/// let indices = [0, 1, 2, 2, 1, 0];
+/// let mut mesh = Mesh::new();
+/// mesh.id("most_basic_mesh").keep_data(true).set_data(&vertices, &indices, true);
+///
+/// filename_scr = "screenshots/basic_mesh.jpeg";
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+///     mesh.draw(token, Material::pbr(), Matrix::IDENTITY, None, None);
+/// );
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/basic_mesh.jpeg" alt="screenshot" width="200">
 #[derive(Default, Debug, Copy, Clone)]
 #[repr(C)]
 pub struct Vertex {
@@ -33,27 +56,6 @@ impl Vertex {
     /// <https://stereokit.net/Pages/StereoKit/Vertex/Vertex.html>
     /// * texture_coordinate - If None, set the value to Vec2::ZERO
     /// * color - If None, set the value to Color32::WHITE
-    ///
-    /// # Examples
-    /// ```
-    /// use stereokit_rust::{maths::{Vec3, Vec2}, util::Color32, mesh::Vertex};
-    ///
-    /// // Creating a vertex with all fields specified
-    /// let vertex1 = Vertex::new(
-    ///     Vec3::new(1.0, 2.0, 3.0),
-    ///     Vec3::new(0.0, 1.0, 0.0),
-    ///     Some(Vec2::new(0.5, 0.5)),
-    ///     Some(Color32::rgba(255, 0, 0))
-    /// );
-    ///
-    /// // Creating a vertex with default values for texture coordinate and color
-    /// let vertex2 = Vertex::new(
-    ///     Vec3::new(-1.0, -2.0, -3.0),
-    ///     Vec3::new(0.0, 0.0, 1.0),
-    ///     None,
-    ///     None
-    /// );
-    /// ```
     pub fn new<V: Into<Vec3>>(
         position: V,
         normal: V,
@@ -95,8 +97,28 @@ pub enum Memory {
 /// Mesh indices are stored as unsigned ints, so you can have a mesh with a fudgeton of verts! 4 billion or so :)
 /// <https://stereokit.net/Pages/StereoKit/Mesh.html>
 ///
-/// ## Examples
+/// # Examples
+/// ```
+/// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 ///
+/// use stereokit_rust::{maths::{Vec3, Matrix, Quat}, util::{named_colors,Color32}, mesh::Mesh, material::Material};
+///
+/// // Create Meshes
+/// let cube = Mesh::generate_cube(Vec3::ONE * 0.8, None);
+/// let sphere = Mesh::generate_sphere(1.0, None);
+///
+/// let material_cube = Material::pbr().copy();
+/// let mut material_sphere = Material::pbr().copy();
+/// material_sphere.color_tint(named_colors::GREEN);
+/// let cube_transform = Matrix::r(Quat::from_angles(40.0, 50.0, 20.0));
+///
+/// filename_scr = "screenshots/meshes.jpeg";
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+///     cube.draw(token, &material_cube, cube_transform, None, None);
+///     sphere.draw(token, &material_sphere, Matrix::IDENTITY, None, None);
+/// );
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/meshes.jpeg" alt="screenshot" width="200">
 #[derive(Debug)]
 pub struct Mesh(pub NonNull<_MeshT>);
 impl Drop for Mesh {

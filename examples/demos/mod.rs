@@ -1,3 +1,5 @@
+#![cfg(feature = "event-loop")]
+
 use stereokit_rust::prelude::*;
 
 pub mod a_stepper;
