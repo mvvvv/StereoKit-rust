@@ -30,6 +30,8 @@ jobs:
         path: |
           .deps_cache
 
+    - run: mkdir .deps_cache/cpm
+
     - name: Build event-loop
       run: cargo build --verbose --features event-loop --example main_pc
     - name: Run tests event-loop
@@ -56,7 +58,9 @@ jobs:
         key: DependencyCache
         path: |
           .deps_cache
+    - run: mkdir .deps_cache/cpm
     
+
     - name: Install Prerequisites
       run: |
         sudo apt-get update
