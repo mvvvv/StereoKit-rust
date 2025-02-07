@@ -51,9 +51,13 @@ jobs:
     - name: Get Cache
       uses: actions/cache@v4
       with:
-        key: DependencyCache
         path: |
-          .deps_cache
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          target/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
     - name: Build event-loop
       run: cargo build --verbose --features event-loop --example main_pc
@@ -79,9 +83,13 @@ jobs:
     - name: Get Cache
       uses: actions/cache@v4
       with:
-        key: DependencyCache
         path: |
-          .deps_cache
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          target/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
     - name: Install Prerequisites
       run: |
