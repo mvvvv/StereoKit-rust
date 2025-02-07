@@ -10,12 +10,12 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
 
-    runs-on: ubuntu-latest
+  build-windows:
+    runs-on: windows-latest
     env:
       CPM_SOURCE_CACHE: .deps_cache
-    
+
     steps:
     - uses: actions/checkout@v4
       with:
@@ -29,11 +29,38 @@ jobs:
         key: DependencyCache
         path: |
           .deps_cache
+
+    - name: Build event-loop
+      run: cargo build --verbose --features event-loop --example main_pc
+    - name: Run tests event-loop
+      run: cargo test --verbose --features event-loop
+    
+    - name: Build no-event-loop
+      run: cargo build --verbose --features no-event-loop --example manual
+    - name: Run tests no-event-loop
+      run: cargo test --verbose --features no-event-loop
+
+  build-linux:
+    runs-on: ubuntu-latest
+    env:
+      CPM_SOURCE_CACHE: .deps_cache
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: 'recursive'
+
+    - name: Get Cache
+      uses: actions/cache@v4
+      with:
+        key: DependencyCache
+        path: |
+          .deps_cache
     
     - name: Install Prerequisites
       run: |
         sudo apt-get update
-        sudo apt-get install clang lld ninja-build libx11-dev libxfixes-dev libegl-dev libgbm-dev libfontconfig-dev
+        sudo apt-get install clang cmake lld ninja-build libx11-dev libxfixes-dev libegl-dev libgbm-dev libfontconfig-dev
 
     - name: Build event-loop
       run: cargo build --verbose --features event-loop --example main_pc
