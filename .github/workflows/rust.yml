@@ -37,8 +37,6 @@ jobs:
 
   build-windows:
     runs-on: windows-latest
-    env:
-      CPM_SOURCE_CACHE: .deps_cache
 
     steps:
     - uses: actions/checkout@v4
@@ -71,8 +69,6 @@ jobs:
 
   build-linux:
     runs-on: ubuntu-latest
-    env:
-      CPM_SOURCE_CACHE: .deps_cache
     
     steps:
     - uses: actions/checkout@v4
