@@ -18,12 +18,15 @@ use std::{
 ///
 /// use stereokit_rust::{ui::Ui, maths::{Vec3, Quat, Pose, Matrix}, font::Font, system::Text, util::named_colors::{RED, GREEN} };
 ///
-/// // Load a font asset
-/// let mut emoji_font = Font::from_file("fonts/Noto_Emoji/NotoEmoji-VariableFont_wght.ttf").unwrap_or_default();
+/// // Load font assets
+/// let mut emoji_font = Font::from_file(
+///     "fonts/Noto_Emoji/NotoEmoji-VariableFont_wght.ttf").unwrap_or_default();
 /// let emoji_style = Some(Text::make_style(emoji_font, 0.35, RED));
-/// let mut text_font =  Font::from_file("fonts/Inter/Inter-VariableFont_opsz,wght.ttf").unwrap_or_default();
-/// let text_style = Text::make_style(text_font, 0.15, GREEN);
-/// let mut window_pose = Pose::new(Vec3::new(0.00, 0.0, 0.85), Some(Quat::from_angles(0.0, 130.0, 0.0)));
+/// let mut text_font =  Font::from_file(
+///     "fonts/Inter/Inter-VariableFont_opsz,wght.ttf").unwrap_or_default();
+/// let text_style = Text::make_style(text_font, 0.025, GREEN);
+/// let mut window_pose = Pose::new(
+///     Vec3::new(-0.05, 0.0, 0.85), Some(Quat::from_angles(0.0, 160.0, 0.0)));
 ///
 /// filename_scr = "screenshots/font.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
@@ -31,7 +34,7 @@ use std::{
 ///
 ///     Ui::window_begin("Default Font", &mut window_pose, None, None, None);
 ///     Ui::push_text_style(text_style);
-///     Ui::text("text font", None, None, None, Some(0.90), None, None);
+///     Ui::text("text font", None, None, None, Some(0.14), None, None);
 ///     Ui::pop_text_style();
 ///     Ui::window_end();
 /// );
