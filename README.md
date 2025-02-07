@@ -2,6 +2,11 @@
 
 ![Screenshot](/StereoKit-rust.png)
 
+<p align="center">
+    <a href="https://github.com/mvvvv/StereoKit-rust/branches"><img src="https://img.shields.io/github/last-commit/mvvvv/StereoKit-rust/master" /></a>
+    <a href="https://tldrlegal.com/license/mit-license"><img src="https://img.shields.io/github/license/mvvvv/StereoKit-rust" /></a>
+</p>
+
 Its purpose is to improve the previous rust project <https://github.com/MalekiRe/stereokit-rs>:
 - by abandoning the automatic bindgen to avoid the multiplication of data types and eliminate costly transmutes.
 - by implementing all the missing API calls and data types.
