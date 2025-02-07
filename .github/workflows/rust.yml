@@ -5,80 +5,26 @@ on:
       branch:
         description: 'Branch to build'
         type: string
-        required: true
-      upload:
-        description: 'Upload to NuGet'
-        type: boolean
         required: false
-        default: false
       commitChanges:
         description: 'Commit changed files (versions, build size, etc.)'
         type: boolean
         required: false
         default: false
-      major:
-        description: 'Major version number'
-        type: number
-        required: true
-      minor:
-        description: 'Minor version number'
-        type: number
-        required: true
-      patch:
-        description: 'Patch version number'
-        type: number
-        required: true
-      pre:
-        description: 'Prerelease version number'
-        type: number
-        required: false
-        default: 0
-      preName:
-        description: 'Prerelease name'
-        type: string
-        required: false
-        default: 'preview'
+
   workflow_call:
     inputs:
       branch:
         description: 'Branch to build'
         type: string
-        required: true
-      upload:
-        description: 'Upload to NuGet'
-        type: boolean
         required: false
-        default: false
+
       commitChanges:
         description: 'Commit changed files (versions, build size, etc.)'
         type: boolean
         required: false
         default: false
-      major:
-        description: 'Major version number'
-        type: string
-        required: true
-      minor:
-        description: 'Minor version number'
-        type: string
-        required: true
-      patch:
-        description: 'Patch version number'
-        type: string
-        required: true
-      pre:
-        description: 'Prerelease version number'
-        type: string
-        required: false
-        default: '0'
-      preName:
-        description: 'Prerelease name'
-        type: string
-        required: false
-        default: 'preview'
-    secrets:
-      NUGET_KEY:
-        required: true
+
 
 permissions:
   contents: write
