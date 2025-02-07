@@ -16,8 +16,8 @@ jobs:
     
     steps:
     - uses: actions/checkout@v4
-    - name: get stereokit submodule
-      run: git submodule update --init
+      with:
+        submodules: 'recursive'
     - name: Build event-loop
       run: cargo build --verbose --features event-loop --example main_pc
     - name: Run tests event-loop
