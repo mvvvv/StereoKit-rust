@@ -13,15 +13,33 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    env:
+      CPM_SOURCE_CACHE: .deps_cache
     
     steps:
     - uses: actions/checkout@v4
       with:
         submodules: 'recursive'
+
+    - uses: lukka/get-cmake@v3.26.3
+
+    - name: Get Cache
+      uses: actions/cache@v4
+      with:
+        key: DependencyCache
+        path: |
+          .deps_cache
+    
+    - name: Install Prerequisites
+      run: |
+        sudo apt-get update
+        sudo apt-get install clang lld ninja-build libx11-dev libxfixes-dev libegl-dev libgbm-dev libfontconfig-dev
+
     - name: Build event-loop
       run: cargo build --verbose --features event-loop --example main_pc
     - name: Run tests event-loop
       run: cargo test --verbose --features event-loop
+
     - name: Build no-event-loop
       run: cargo build --verbose --features no-event-loop --example manual
     - name: Run tests no-event-loop
