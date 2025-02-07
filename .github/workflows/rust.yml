@@ -1,0 +1,26 @@
+name: Rust
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build event-loop
+      run: cargo build --verbose --features event-loop --example main_pc
+    - name: Run tests event-loop
+      run: cargo test --verbose --features event-loop
+    - name: Build no-event-loop
+      run: cargo build --verbose --features no-event-loop --example manual
+    - name: Run tests no-event-loop
+      run: cargo test --verbose --features no-event-loop
