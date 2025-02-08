@@ -61,11 +61,6 @@ jobs:
       run: cargo build --verbose --features event-loop --example main_pc
     - name: Run tests event-loop
       run: cargo test --verbose --features event-loop
-    
-    - name: Build no-event-loop
-      run: cargo build --verbose --features no-event-loop --example manual
-    - name: Run tests no-event-loop
-      run: cargo test --verbose --features no-event-loop
 
   build-linux:
     runs-on: ubuntu-latest
@@ -92,12 +87,15 @@ jobs:
         sudo apt-get update
         sudo apt-get install clang cmake lld ninja-build libx11-dev libxfixes-dev libegl-dev libgbm-dev libfontconfig-dev
 
+    - name: Build no-event-loop
+      run: cargo build --verbose --features no-event-loop --example manual
+    - name: Run tests no-event-loop
+      run: cargo test --verbose --features no-event-loop
+
+    - name: Setup Ubuntu for winit
+      run : export DISPLAY="127.0.0.1:10.0"
     - name: Build event-loop
       run: cargo build --verbose --features event-loop --example main_pc
     - name: Run tests event-loop
       run: cargo test --verbose --features event-loop
 
-    - name: Build no-event-loop
-      run: cargo build --verbose --features no-event-loop --example manual
-    - name: Run tests no-event-loop
-      run: cargo test --verbose --features no-event-loop
