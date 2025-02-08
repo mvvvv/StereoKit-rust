@@ -27,25 +27,31 @@ unsafe impl Send for Anim1 {}
 
 impl Default for Anim1 {
     fn default() -> Self {
-        let calcaire = Material::find("clean_tile").unwrap_or_default();
         let mobile = Model::from_file("mobiles.gltf", Some(Shader::pbr())).unwrap().copy();
-        let mut brick_wall = calcaire.copy();
-        brick_wall
+
+        let calcaire = Material::find("clean_tile").unwrap_or_default();
+        let mut brick_wall_material = calcaire.copy();
+        let prefix_id = brick_wall_material.get_id().to_string();
+        brick_wall_material
             .roughness_amount(0.7)
             .color_tint(DARK_RED)
             .tex_transform(Vec4::new(0.0, 0.0, 5.0, 5.0))
             .transparency(Transparency::None)
-            .face_cull(Cull::None);
+            .face_cull(Cull::None)
+            .id(format!("BRICK_{}", prefix_id));
+        Log::diag(format!("Brick material ID is {}", brick_wall_material.get_id()));
         // The nodes stay alive and keep Material alive so, no id .id("brick_wall");
-        let mut ico_material = brick_wall.copy();
-        ico_material.face_cull(Cull::Back).color_tint(WHITE);
+        let mut ico_material = brick_wall_material.copy();
+        let prefix_id = brick_wall_material.get_id().to_string();
+        ico_material.face_cull(Cull::Back).color_tint(WHITE).id(format!("ICO_{}", prefix_id));
+        Log::diag(format!("Ico material ID is {}", ico_material.get_id()));
         let nodes = &mobile.get_nodes();
         nodes
             .get_root_node()
             .material(&ico_material)
             .iterate()
             .unwrap()
-            .material(&brick_wall)
+            .material(&brick_wall_material)
             .iterate()
             .unwrap()
             .material(&ico_material)
