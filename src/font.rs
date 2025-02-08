@@ -13,16 +13,16 @@ use std::{
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 ///
 /// use stereokit_rust::{ui::Ui, maths::{Vec3, Quat, Pose, Matrix}, font::Font, system::Text, util::named_colors::{RED, GREEN} };
 ///
 /// // Load font assets
-/// let mut emoji_font = Font::from_file(
+/// let emoji_font = Font::from_file(
 ///     "fonts/Noto_Emoji/NotoEmoji-VariableFont_wght.ttf").unwrap_or_default();
 /// let emoji_style = Some(Text::make_style(emoji_font, 0.35, RED));
-/// let mut text_font =  Font::from_file(
+/// let text_font =  Font::from_file(
 ///     "fonts/Inter/Inter-VariableFont_opsz,wght.ttf").unwrap_or_default();
 /// let text_style = Text::make_style(text_font, 0.025, GREEN);
 /// let mut window_pose = Pose::new(
