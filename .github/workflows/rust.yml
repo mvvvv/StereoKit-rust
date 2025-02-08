@@ -6,24 +6,17 @@ on:
         description: 'Branch to build'
         type: string
         required: false
-      commitChanges:
-        description: 'Commit changed files (versions, build size, etc.)'
+        default: 'master'
+      onWindows:
+        description: 'on windows latest!'
         type: boolean
         required: false
-        default: false
-
-  workflow_call:
-    inputs:
-      branch:
-        description: 'Branch to build'
-        type: string
-        required: false
-
-      commitChanges:
-        description: 'Commit changed files (versions, build size, etc.)'
-        type: boolean
-        required: false
-        default: false
+        default: true
+      onUbuntu:
+          description: 'on ubuntu latest!'
+          type: boolean
+          required: false
+          default: true
 
 
 permissions:
@@ -39,7 +32,7 @@ jobs:
 
   build-windows:
     runs-on: windows-latest
-
+    if: ${{ inputs.onWindows }}
     steps:
     - uses: actions/checkout@v4
       with:
@@ -66,7 +59,7 @@ jobs:
 
   build-linux:
     runs-on: ubuntu-latest
-    
+    if: ${{ inputs.onUbuntu }}
     steps:
     - uses: actions/checkout@v4
       with:
