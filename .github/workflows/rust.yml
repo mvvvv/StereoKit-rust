@@ -32,6 +32,8 @@ permissions:
 
 env:
   CARGO_TERM_COLOR: always
+  CARGO_TERM_VERBOSE: true
+  RUST_BACKTRACE: 1
 
 jobs:
 
@@ -85,15 +87,17 @@ jobs:
     - name: Install Prerequisites
       run: |
         sudo apt-get update
-        sudo apt-get install clang cmake lld ninja-build libx11-dev libxfixes-dev libegl-dev libgbm-dev libfontconfig-dev
+        sudo apt-get install xvfb clang cmake lld ninja-build libx11-dev libxfixes-dev libegl-dev libgbm-dev libfontconfig-dev
 
-    - name: Setup Ubuntu for winit
-      run : export DISPLAY="127.0.0.1:10.0"
+    - name: run X for winit
+      run: |
+        export DISPLAY=:99
+        Xvfb -ac :99 -screen 0 1280x1024x16 > /dev/null 2>&1 &
+
     - name: Build event-loop
       run: cargo build --verbose --features event-loop --example main_pc
     - name: Run tests event-loop
       run: cargo test --verbose --features event-loop
-  
 
     - name: Build no-event-loop
       run: cargo build --verbose --features no-event-loop --example manual
