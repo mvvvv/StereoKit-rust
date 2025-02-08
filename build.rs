@@ -18,9 +18,9 @@ fn main() {
     let skc_in_dll = cfg!(feature = "skc-in-dll");
 
     if win_gl {
-        println!("cargo:warning=Compiling with {} for {}/opengl with profile {}", target_env, target_os, profile);
+        println!("cargo:info=Compiling with {} for {}/opengl with profile {}", target_env, target_os, profile);
     } else {
-        println!("cargo:warning=Compiling with {} for {} with profile {}", target_env, target_os, profile);
+        println!("cargo:info=Compiling with {} for {} with profile {}", target_env, target_os, profile);
     }
 
     if target_os == "macos" {
@@ -55,7 +55,7 @@ fn main() {
     }
 
     if cfg!(feature = "force-local-deps") && var("FORCE_LOCAL_DEPS").is_ok() {
-        println!("cargo:warning=Force local deps !!");
+        println!("cargo:info=Force local deps !!");
         // Helper function to define optional dependencies
         fn define_if_exists(var_name: &str, cmake_var: &str, config: &mut Config) {
             if let Ok(value) = var(var_name) {
@@ -133,11 +133,11 @@ fn main() {
                     let target_dir = Path::new(&out_dir).parent().unwrap().parent().unwrap().parent().unwrap();
                     let deps_libs = target_dir.join("deps");
                     println!("cargo:rustc-link-search=native={}", deps_libs.to_str().unwrap());
-                    println!("cargo:warning=dst --> {:?}", dst);
+                    println!("cargo:info=dst --> {:?}", dst);
                     let dest_file_dll = deps_libs.join(deuleuleu);
                     let file_dll = dst.join("build").join(deuleuleu);
-                    println!("cargo:warning={} is copied from here --> {:?}", deuleuleu, file_dll);
-                    println!("cargo:warning=                             to there --> {:?}", dest_file_dll);
+                    println!("cargo:info={} is copied from here --> {:?}", deuleuleu, file_dll);
+                    println!("cargo:info=                             to there --> {:?}", dest_file_dll);
                     let _lib_dll = fs::copy(file_dll, dest_file_dll).unwrap();
                 }
             } else {
@@ -149,29 +149,29 @@ fn main() {
                 let lib_pdb = lib.clone() + ".pdb";
                 let target_dir = Path::new(&out_dir).parent().unwrap().parent().unwrap().parent().unwrap();
                 let deps_libs = target_dir.join("deps");
-                println!("cargo:warning=dst --> {:?}", dst);
+                println!("cargo:info=dst --> {:?}", dst);
                 //---Do we have a .dll ?
                 let file_dll = dst.join("build").join(&profile).join(&deuleuleu);
                 if file_dll.is_file() {
                     let dest_file_dll = deps_libs.join(&deuleuleu);
-                    println!("cargo:warning=StereoKitC.dll is copied from here --> {:?}", file_dll);
-                    println!("cargo:warning=                          to there --> {:?}", dest_file_dll);
+                    println!("cargo:info=StereoKitC.dll is copied from here --> {:?}", file_dll);
+                    println!("cargo:info=                          to there --> {:?}", dest_file_dll);
                     let _lib_dll = fs::copy(file_dll, dest_file_dll).unwrap();
                 }
                 //---Do we have a .lib ?
                 let file_lib = dst.join("build").join(&profile).join(&lib_lib);
                 if file_lib.is_file() {
                     let dest_file_lib = deps_libs.join(&lib_lib);
-                    println!("cargo:warning=StereoKitC.lib is copied from here --> {:?}", file_lib);
-                    println!("cargo:warning=                          to there --> {:?}", dest_file_lib);
+                    println!("cargo:info=StereoKitC.lib is copied from here --> {:?}", file_lib);
+                    println!("cargo:info=                          to there --> {:?}", dest_file_lib);
                     let _lib_dll = fs::copy(file_lib, dest_file_lib).unwrap();
                 }
                 //---Do we have a .pdb ?
                 let file_pdb = dst.join("build").join(&profile).join(&lib_pdb);
                 if file_pdb.is_file() {
                     let dest_file_pdb = deps_libs.join(&lib_pdb);
-                    println!("cargo:warning=StereoKitC.pdb is copied from here --> {:?}", file_pdb);
-                    println!("cargo:warning=                          to there --> {:?}", dest_file_pdb);
+                    println!("cargo:info=StereoKitC.pdb is copied from here --> {:?}", file_pdb);
+                    println!("cargo:info=                          to there --> {:?}", dest_file_pdb);
                     let _lib_dll = fs::copy(file_pdb, dest_file_pdb).unwrap();
                 }
             }
@@ -213,8 +213,8 @@ fn main() {
                     .parent()
                     .unwrap();
                 let mut runtime_libs = target_dir.join("runtime_libs");
-                println!("cargo:warning=dst --> {:?}", dst);
-                println!("cargo:warning=Android runtime_libs are copied here --> {:?}", runtime_libs);
+                println!("cargo:info=dst --> {:?}", dst);
+                println!("cargo:info=Android runtime_libs are copied here --> {:?}", runtime_libs);
                 assert!(target_dir.ends_with("target"));
                 if let Err(_e) = fs::create_dir(&runtime_libs) {};
                 runtime_libs = runtime_libs.join(&abi);
