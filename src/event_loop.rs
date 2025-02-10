@@ -157,6 +157,8 @@ impl<'a> SkClosures<'a> {
             action();
         }
         (self.on_step)(&mut self.sk, &self.token);
+
+        self.token.event_report.clear();
     }
 
     /// Common way to run the loop with step and shutdown
@@ -373,6 +375,8 @@ pub struct StepperHandler {
 
 /// A lazy way to identify IStepper instances
 pub type StepperId = String;
+pub const ISTEPPER_RUNNING: &str = "IStepper_Running";
+pub const ISTEPPER_REMOVED: &str = "IStepper_Removed";
 
 /// Steppers manager. Non canonical way you can create a scene with all the Steppers you need
 /// <https://stereokit.net/Pages/StereoKit.Framework/IStepper.html<
@@ -439,12 +443,14 @@ impl Steppers {
                     if stepper_h.stepper.initialize_done() {
                         Log::info(format!("Stepper {} is initialized.", &stepper_h.id));
                         stepper_h.state = StepperState::Running;
+                        token.event_report.push(StepperAction::event(stepper_h.id.clone(), ISTEPPER_RUNNING, "true"));
                     }
                 }
                 StepperState::Running => (),
                 StepperState::Closing => {
                     if stepper_h.stepper.shutdown_done() {
                         removed_steppers.push(stepper_h.id.clone());
+                        token.event_report.push(StepperAction::event(stepper_h.id.clone(), ISTEPPER_REMOVED, "true"));
                     }
                 }
             }
@@ -464,8 +470,6 @@ impl Steppers {
         {
             stepper_h.stepper.step(token)
         }
-
-        token.event_report.clear();
 
         true
     }

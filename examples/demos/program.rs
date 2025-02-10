@@ -1,7 +1,7 @@
 use openxr_sys::EnvironmentBlendMode;
 use std::{process, sync::Mutex, thread};
 use stereokit_rust::{
-    event_loop::SkClosures,
+    event_loop::{SkClosures, ISTEPPER_REMOVED},
     material::Cull,
     maths::{units::*, Pose, Quat, Vec2, Vec3},
     model::Model,
@@ -37,7 +37,7 @@ use super::{
     hand_menu_radial1::{HandMenuRadial1, SHOW_FLOOR},
     Test,
 };
-pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool, start_test: String) {
+pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: bool, start_test: String) {
     Log::diag(
         "======================================================================================================================== !!",
     );
@@ -46,7 +46,6 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
     Renderer::multisample(4);
 
     let mut window_demo_pose = Pose::new(Vec3::new(-0.7, 1.5, -0.3), Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0))));
-    let window_demo_show = false;
 
     let demo_win_width = 55.0 * CM;
 
@@ -54,10 +53,8 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
     let mut hidden_time = std::time::SystemTime::now();
     let mut now = std::time::SystemTime::now();
 
-    let run_seconds = 0.0f32;
-    // let mut run_frames = 2;
-    // let mut test_index = 0;
     let mut active_scene: Option<StepperId> = None;
+    let mut deleting_scene: Option<StepperId> = None;
     let mut next_scene: Option<&Test> = None;
     let mut scene_frame = 0;
     let mut scene_time = 0.0f32;
@@ -206,30 +203,40 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
             Log::info(format!("App focus changed to : {:?}", last_focus));
         }
 
-        if is_testing && run_seconds != 0.0 {
-            Time::set_time(Time::get_total() + 1.0 / 90.0, 1.0 / 90.0)
+        // if is_testing && run_seconds != 0.0 {
+        //     Time::set_time(Time::get_total() + 1.0 / 90.0, 1.0 / 90.0)
+        // }
+
+        // In case we close the active_scene we have to free the choice to select an other one
+        let mut launch_next = false;
+        for event in token.get_event_report() {
+            if let Some(active_stepper) = &active_scene {
+                if let StepperAction::Event(stepper_id, key, _value) = event {
+                    if active_stepper == stepper_id && key == ISTEPPER_REMOVED {
+                        active_scene = None;
+                        launch_next = true;
+                    }
+                }
+            }
         }
 
         if let Some(next_s) = &next_scene {
-            if let Some(active_stepper) = &active_scene {
-                sk.push_action(StepperAction::remove(active_stepper.clone()));
-                active_scene = None;
-                // As we can relaunch the same IStepper, we have to be sure the previous is closed so we leave
-                // this frame here to execute the StepperAction::remove before launching next IStepper.
-                // So 2 frames without any IStepper.
-                return;
+            if deleting_scene.is_none() {
+                if let Some(active_stepper) = &active_scene {
+                    sk.push_action(StepperAction::remove(active_stepper.clone()));
+                    deleting_scene = Some(active_stepper.clone());
+                } else {
+                    launch_next = true;
+                }
             }
-            // if is_testing {
-            //     Time::set_time(0.0, 0.0);
-            //     Input::hand_visible(Handed::Max, false);
-            //     Input::hand_clear_override(Handed::Left);
-            //     Input::hand_clear_override(Handed::Right);
-            //     Assets::block_for_priority(i32::MAX);
-            // }
-            let next_launcher = (next_s.launcher)(sk);
-            active_scene = Some(next_launcher);
-            scene_time = Time::get_totalf();
-            next_scene = None;
+
+            if launch_next {
+                deleting_scene = None;
+                let next_launcher = (next_s.launcher)(sk);
+                active_scene = Some(next_launcher);
+                scene_time = Time::get_totalf();
+                next_scene = None;
+            }
         }
         scene_frame += 1;
 
@@ -244,150 +251,143 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, is_testing: bool
 
         Lines::add_axis(token, Pose::IDENTITY, Some(0.5), None);
 
-        if !window_demo_show {
-            Ui::window_begin("Demos", &mut window_demo_pose, Some(Vec2::new(demo_win_width, 0.0)), None, None);
-            let mut start = 0usize;
-            let mut curr_width_total = 0.0;
-            let ui_settings = Ui::get_settings();
-            let style = Ui::get_text_style();
-            let mut i = 0;
-            for test in tests.iter() {
-                i += 1;
-                let width = Text::size_layout(&test.name, Some(style), None).x + ui_settings.padding * 2.0;
-                if curr_width_total + width + ui_settings.gutter > demo_win_width {
-                    let inflate =
-                        (demo_win_width - (curr_width_total - ui_settings.gutter + 0.0001)) / ((i - start) as f32);
-                    for t in start..i {
-                        let test_in_line = &tests[t];
-                        let curr_width = Text::size_layout(&test_in_line.name, Some(style), None).x
-                            + ui_settings.padding * 2.0
-                            + inflate;
-                        if Ui::button(&test_in_line.name, Some(Vec2::new(curr_width, 0.0))) {
-                            Log::info(format!("Starting scene: {}", &test_in_line.name.to_string()));
-                            next_scene = Some(test_in_line);
-                        }
-                        Ui::same_line();
+        Ui::window_begin("Demos", &mut window_demo_pose, Some(Vec2::new(demo_win_width, 0.0)), None, None);
+        Ui::push_enabled(deleting_scene.is_none(), None);
+        let mut start = 0usize;
+        let mut curr_width_total = 0.0;
+        let ui_settings = Ui::get_settings();
+        let style = Ui::get_text_style();
+        let mut i = 0;
+        for test in tests.iter() {
+            i += 1;
+            let width = Text::size_layout(&test.name, Some(style), None).x + ui_settings.padding * 2.0;
+            if curr_width_total + width + ui_settings.gutter > demo_win_width {
+                let inflate =
+                    (demo_win_width - (curr_width_total - ui_settings.gutter + 0.0001)) / ((i - start) as f32);
+                for t in start..i {
+                    let test_in_line = &tests[t];
+                    let curr_width = Text::size_layout(&test_in_line.name, Some(style), None).x
+                        + ui_settings.padding * 2.0
+                        + inflate;
+                    if Ui::button(&test_in_line.name, Some(Vec2::new(curr_width, 0.0))) {
+                        Log::info(format!("Starting scene: {}", &test_in_line.name.to_string()));
+                        next_scene = Some(test_in_line);
                     }
-                    start = i;
+                    Ui::same_line();
                 }
-                if start == i {
-                    curr_width_total = ui_settings.margin * 2.0;
-                }
-                curr_width_total += width + ui_settings.gutter;
+                start = i;
             }
-            for t in start..tests.len() {
-                let test = tests.get(t).unwrap();
-                let curr_width = Text::size_layout(&test.name, Some(style), None).x + ui_settings.padding * 2.0;
-
-                if Ui::button(&test.name, Some(Vec2::new(curr_width, 0.0))) {
-                    Log::info(format!("Starting scene: {}", &test.name.to_string()));
-                    next_scene = Some(test);
-                }
-                Ui::same_line();
+            if start == i {
+                curr_width_total = ui_settings.margin * 2.0;
             }
-            Ui::next_line();
-            Ui::hseparator();
-            if Ui::button_img("Exit", &exit_button, Some(UiBtnLayout::CenterNoText), Some(Vec2::new(0.10, 0.10)), None)
-            {
-                Log::diag(format!(
-                    "Closure Thread id : {:?} / {:?} ",
-                    thread::current().name(),
-                    thread::current().id()
-                ));
-                Log::diag(format!("Closure Process id : {:?} / {:?} ", thread::current().name(), process::id()));
-                // sk.quit(None); // is too harsh we want to shutdown our steppers
-                sk.push_action(StepperAction::Quit("main".into(), "Main program call quit".into()));
-                if cfg!(target_os = "android") {
-                    let no = Sound::from_file("sounds/no.wav").unwrap();
-                    inst_play = Some(no.play(Vec3::ONE, None));
-                }
-            }
-            Ui::same_line();
-            Ui::panel_begin(None);
-            if passthrough_fb_enabled || passthough_blend_enabled {
-                if let Some(new_value) = Ui::toggle("Passthrough MR", passthrough, None) {
-                    passthrough = new_value;
-                    let mut string_value = "0";
-                    if new_value {
-                        Log::diag("Activate passthrough");
-                        sk.push_action(StepperAction::event("main".into(), SHOW_FLOOR, "false"));
-                        string_value = "1";
-                    } else {
-                        Log::diag("Deactivate passthrough");
-                        sk.push_action(StepperAction::event("main".into(), SHOW_FLOOR, "true"));
-                    }
-                    if passthrough_fb_enabled {
-                        sk.push_action(StepperAction::event("main".into(), PASSTHROUGH_FLIP, string_value));
-                    } else if string_value == "1" {
-                        Device::display_blend(DisplayBlend::AnyTransparent);
-                    } else {
-                        Device::display_blend(DisplayBlend::Opaque);
-                    }
-                }
-                Ui::same_line();
-            }
-
-            fps = ((1.0 / Time::get_step()) + fps) / 2.0;
-            Ui::label(format!("FPS: {:.0}", fps), None, true);
-            Ui::same_line();
-
-            if refresh_rate_editable
-                && Ui::button_img(
-                    format!("Up to {:?} FPS", current_refresh_rate as u32),
-                    &next_refresh_rate_image,
-                    None,
-                    None,
-                    None,
-                )
-            {
-                let mut restart = true;
-                for i in &refresh_rates {
-                    if *i > current_refresh_rate {
-                        current_refresh_rate = *i;
-                        restart = false;
-                        break;
-                    }
-                }
-                if restart {
-                    current_refresh_rate = refresh_rates[0]
-                }
-                if !set_display_refresh_rate(current_refresh_rate, true) {
-                    current_refresh_rate = 0.0;
-                }
-            }
-
-            Ui::next_line();
-            Ui::label("Viewport scaling:", None, true);
-            Ui::same_line();
-            Ui::label(format!("{:.2}", viewport_scaling), None, true);
-            Ui::same_line();
-            if let Some(new_value) =
-                Ui::hslider("scaling", &mut viewport_scaling, 0.1, 1.0, Some(0.05), None, None, None)
-            {
-                Renderer::viewport_scaling(new_value);
-                viewport_scaling = new_value;
-            }
-
-            if reduce_to < viewport_scaling {
-                viewport_scaling = reduce_to;
-                Renderer::viewport_scaling(viewport_scaling);
-            } else {
-                reduce_to = 1.0
-            }
-
-            // Ui::label("MSAA:", None, true);
-            // Ui::same_line();
-            // Ui::label(format!("{:.0}", multisample), None, true);
-            // Ui::same_line();
-            // if let Some(new_value) = Ui::hslider("msaa", &mut multisample, 0.1, 8.0, Some(1.0), None, None, None) {
-            //     Renderer::multisample(new_value as i32);
-            //     multisample = new_value;
-            // }
-
-            Ui::panel_end();
-
-            Ui::window_end();
+            curr_width_total += width + ui_settings.gutter;
         }
+        for t in start..tests.len() {
+            let test = tests.get(t).unwrap();
+            let curr_width = Text::size_layout(&test.name, Some(style), None).x + ui_settings.padding * 2.0;
+
+            if Ui::button(&test.name, Some(Vec2::new(curr_width, 0.0))) {
+                Log::info(format!("Starting scene: {}", &test.name.to_string()));
+                next_scene = Some(test);
+            }
+            Ui::same_line();
+        }
+        Ui::pop_enabled();
+        Ui::next_line();
+        Ui::hseparator();
+        if Ui::button_img("Exit", &exit_button, Some(UiBtnLayout::CenterNoText), Some(Vec2::new(0.10, 0.10)), None) {
+            Log::diag(format!("Closure Thread id : {:?} / {:?} ", thread::current().name(), thread::current().id()));
+            Log::diag(format!("Closure Process id : {:?} / {:?} ", thread::current().name(), process::id()));
+            // sk.quit(None); // is too harsh we want to shutdown our steppers
+            sk.push_action(StepperAction::Quit("main".into(), "Main program call quit".into()));
+            if cfg!(target_os = "android") {
+                let no = Sound::from_file("sounds/no.wav").unwrap();
+                inst_play = Some(no.play(Vec3::ONE, None));
+            }
+        }
+        Ui::same_line();
+        Ui::panel_begin(None);
+        if passthrough_fb_enabled || passthough_blend_enabled {
+            if let Some(new_value) = Ui::toggle("Passthrough MR", passthrough, None) {
+                passthrough = new_value;
+                let mut string_value = "0";
+                if new_value {
+                    Log::diag("Activate passthrough");
+                    sk.push_action(StepperAction::event("main".into(), SHOW_FLOOR, "false"));
+                    string_value = "1";
+                } else {
+                    Log::diag("Deactivate passthrough");
+                    sk.push_action(StepperAction::event("main".into(), SHOW_FLOOR, "true"));
+                }
+                if passthrough_fb_enabled {
+                    sk.push_action(StepperAction::event("main".into(), PASSTHROUGH_FLIP, string_value));
+                } else if string_value == "1" {
+                    Device::display_blend(DisplayBlend::AnyTransparent);
+                } else {
+                    Device::display_blend(DisplayBlend::Opaque);
+                }
+            }
+            Ui::same_line();
+        }
+
+        fps = ((1.0 / Time::get_step()) + fps) / 2.0;
+        Ui::label(format!("FPS: {:.0}", fps), None, true);
+        Ui::same_line();
+
+        if refresh_rate_editable
+            && Ui::button_img(
+                format!("Up to {:?} FPS", current_refresh_rate as u32),
+                &next_refresh_rate_image,
+                None,
+                None,
+                None,
+            )
+        {
+            let mut restart = true;
+            for i in &refresh_rates {
+                if *i > current_refresh_rate {
+                    current_refresh_rate = *i;
+                    restart = false;
+                    break;
+                }
+            }
+            if restart {
+                current_refresh_rate = refresh_rates[0]
+            }
+            if !set_display_refresh_rate(current_refresh_rate, true) {
+                current_refresh_rate = 0.0;
+            }
+        }
+
+        Ui::next_line();
+        Ui::label("Viewport scaling:", None, true);
+        Ui::same_line();
+        Ui::label(format!("{:.2}", viewport_scaling), None, true);
+        Ui::same_line();
+        if let Some(new_value) = Ui::hslider("scaling", &mut viewport_scaling, 0.1, 1.0, Some(0.05), None, None, None) {
+            Renderer::viewport_scaling(new_value);
+            viewport_scaling = new_value;
+        }
+
+        if reduce_to < viewport_scaling {
+            viewport_scaling = reduce_to;
+            Renderer::viewport_scaling(viewport_scaling);
+        } else {
+            reduce_to = 1.0
+        }
+
+        // Ui::label("MSAA:", None, true);
+        // Ui::same_line();
+        // Ui::label(format!("{:.0}", multisample), None, true);
+        // Ui::same_line();
+        // if let Some(new_value) = Ui::hslider("msaa", &mut multisample, 0.1, 8.0, Some(1.0), None, None, None) {
+        //     Renderer::multisample(new_value as i32);
+        //     multisample = new_value;
+        // }
+
+        Ui::panel_end();
+
+        Ui::window_end();
     })
     .on_sleeping_step(|_sk, _token| {
         now = std::time::SystemTime::now();
