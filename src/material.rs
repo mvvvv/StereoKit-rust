@@ -170,8 +170,8 @@ impl Material {
         mat
     }
 
-    /// Loads a Shader asset and creates a Material using it. If the shader fails to load, a warning will be added to the log,
-    /// and this Material will default to using an Unlit shader.
+    /// Loads a Shader asset and creates a Material using it. If the shader fails to load, an error will be returned,
+    /// if so you can use unwrap_or_default() to get the default.
     /// <https://stereokit.net/Pages/StereoKit/Material/Material.html>
     /// * id - If None the id will be set to a default value "auto/asset_???"
     ///
@@ -243,6 +243,30 @@ impl Material {
             NonNull::new(unsafe { material_find(material_get_id(self.0.as_ptr())) })
                 .expect("<asset>::clone_ref failed!"),
         )
+    }
+
+    /// Non-canonical function of convenience!! Use this for Icons and other Ui Images
+    /// Copy a Material and set a Tex image to its diffuse_tex. If the Tex fails to load, an error will be returned,
+    /// if so you can use unwrap_or_default() to get the default.
+    /// <https://stereokit.net/Pages/StereoKit/Material/Material.html>
+    /// * id - If None the id will be set to a default value "auto/asset_???"
+    ///
+    /// see also [`crate::material::material_create`][`crate::material::material_set_id`]
+    pub fn copy_for_tex(
+        &mut self,
+        tex_file_name: impl AsRef<Path>,
+        srgb_data: bool,
+        priority: Option<i32>,
+    ) -> Result<Material, StereoKitError> {
+        let tex = Tex::from_file(&tex_file_name, srgb_data, priority);
+        match tex {
+            Ok(tex) => {
+                let mut mat = self.copy();
+                mat.diffuse_tex(tex);
+                Ok(mat)
+            }
+            Err(err) => Err(StereoKitError::TexFile(tex_file_name.as_ref().to_path_buf(), err.to_string())),
+        }
     }
 
     /// Set a new id to the material.
