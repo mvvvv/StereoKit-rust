@@ -330,6 +330,11 @@ pub enum HandMenuAction {
     Unchecked(u8),
 }
 
+///---The way to swap between more than one hand_menu_radial. Use this suffix for your ID to your HandMenuRadial menus
+pub const HAND_MENU_RADIAL: &str = "hand_menu_radial_";
+///---If this menu is the one who takes the focus (true) or if he returns the focus on the menu previously active (false)
+pub const HAND_MENU_RADIAL_FOCUS: &str = "hand_menu_radial_focus";
+
 /// A menu that shows up in circle around the user’s hand! Selecting an item can perform an action, or even spawn a
 /// sub-layer of menu items. This is an easy way to store actions out of the way, yet remain easily accessible to the
 /// user.
@@ -337,9 +342,63 @@ pub enum HandMenuAction {
 /// The user faces their palm towards their head, and then makes a grip motion to spawn the menu. The user can then
 /// perform actions by making fast, direction based motions that are easy to build muscle memory for.
 /// <https://stereokit.net/Pages/StereoKit.Framework/HandMenuRadial.html>
+///
+/// # Examples
+/// ```
+/// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{framework::*, material::Material, system::{Input, Key}};
+///
+/// // swapping a value
+/// let mut swap_value = true;
+///
+/// // nice icon
+/// let mut menu_ico = Material::pbr_clip()
+///     .copy_for_tex("icons/hamburger.png", true, None).unwrap_or_default();
+/// menu_ico.clip_cutoff(0.1);
+///
+/// //---Create then load hand menu radial
+/// let mut hand_menu_stepper =
+///     HandMenuRadial::new(HandRadialLayer::new("root", None, Some(100.0),
+///     vec![
+///         HandRadial::layer("Todo!", Some(menu_ico), None,
+///             vec![
+///                 HandRadial::item("Back", None, || {}, HandMenuAction::Back),
+///                 HandRadial::item("Close", None, || {}, HandMenuAction::Close),
+///             ],
+///         ),
+///         HandRadial::item("Swap", None,
+///             move || {
+///                 swap_value = !swap_value;
+///             },
+///             HandMenuAction::Checked(1),
+///         ),
+///         HandRadial::item("Close", None, || {}, HandMenuAction::Close),
+///     ],
+/// ));
+/// let id = HandMenuRadial::build_id("1");
+/// SkInfo::send_message(&Some(sk.get_sk_info_clone()),
+///     StepperAction::add(id.clone(), hand_menu_stepper));
+///
+/// number_of_steps=10;
+/// test_steps!(// !!!! Get a proper main loop !!!!
+///     if iter == 1 {
+///         SkInfo::send_message(&Some(sk.get_sk_info_clone()),
+///             StepperAction::event(id.clone(), HAND_MENU_RADIAL_FOCUS, &true.to_string()));
+///     }
+///     if iter == 8 {
+///         SkInfo::send_message(&Some(sk.get_sk_info_clone()),
+///             StepperAction::remove(id.clone()));
+///     }
+/// );
+/// ```
+
+#[derive(IStepper)]
 pub struct HandMenuRadial {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
+    enabled: bool,
+
+    menu_stack: Vec<String>,
     menu_pose: Pose,
     dest_pose: Pose,
     root: Rc<HandRadial>,
@@ -366,18 +425,43 @@ pub struct HandMenuRadial {
 
 unsafe impl Send for HandMenuRadial {}
 
-impl IStepper for HandMenuRadial {
+impl HandMenuRadial {
+    pub fn build_id(id: &str) -> String {
+        format!("{}{}", HAND_MENU_RADIAL, id)
+    }
+
     /// Part of IStepper, you shouldn’t be calling this yourself.
     /// <https://stereokit.net/Pages/StereoKit.Framework/HandMenuRadial/Initialize.html>
-    fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
-        self.id = id;
-        self.sk_info = Some(sk_info);
+    fn start(&mut self) -> bool {
         true
+    }
+
+    /// Called from IStepper::step, here you can check the event report
+    fn check_event(&mut self, id: &StepperId, key: &str, value: &str) {
+        if key == HAND_MENU_RADIAL_FOCUS {
+            if value.parse().unwrap_or_default() {
+                if *id == self.id {
+                    self.enabled = true
+                } else if self.enabled {
+                    self.menu_stack.push(id.clone());
+                    self.enabled = false;
+                }
+            } else if *id == self.id {
+                self.enabled = false
+            } else {
+                if let Some(index) = self.menu_stack.iter().position(|x| *x == *id) {
+                    self.menu_stack.remove(index);
+                }
+                if self.menu_stack.is_empty() {
+                    self.enabled = true;
+                }
+            }
+        }
     }
 
     /// Part of IStepper, you shouldn’t be calling this yourself.
     /// <https://stereokit.net/Pages/StereoKit.Framework/HandMenuRadial/Step.html>
-    fn step(&mut self, token: &MainThreadToken) {
+    fn draw(&mut self, token: &MainThreadToken) {
         if self.active_hand == Handed::Max {
             for hand in [Handed::Left, Handed::Right] {
                 self.step_menu_indicator(token, hand);
@@ -387,12 +471,6 @@ impl IStepper for HandMenuRadial {
         }
     }
 
-    /// Part of IStepper, you shouldn’t be calling this yourself.
-    /// <https://stereokit.net/Pages/StereoKit.Framework/HandMenuRadial/Shutdown.html>
-    fn shutdown(&mut self) {}
-}
-
-impl HandMenuRadial {
     /// When using the Simulator, this key will activate the menu on the current hand, regardless of which direction it
     /// is facing.
     pub const SIMULATOR_KEY: Key = Key::F1;
@@ -429,6 +507,11 @@ impl HandMenuRadial {
         let mut text_style = TextStyle::default();
         text_style.layout_height(0.016);
         Self {
+            id: "HandleMenuRadial_not_initialized".to_string(),
+            sk_info: None,
+            enabled: false,
+
+            menu_stack: Vec::new(),
             menu_pose: Pose::default(),
             dest_pose: Pose::default(),
             root,
@@ -450,8 +533,6 @@ impl HandMenuRadial {
             text_style,
             checked_material,
             on_checked_material,
-            id: "HandleMenuRadial".to_string(),
-            sk_info: None,
         }
     }
 
@@ -503,7 +584,6 @@ impl HandMenuRadial {
         if !hand.is_tracked() {
             return;
         };
-
         let mut show_menu = false;
         if Backend::xr_type() == BackendXRType::Simulator {
             if Input::key(Self::SIMULATOR_KEY).is_just_active() {

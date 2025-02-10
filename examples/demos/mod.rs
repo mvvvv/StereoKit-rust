@@ -1,5 +1,6 @@
 #![cfg(feature = "event-loop")]
 
+use hand_menu_radial0::HandMenuRadial0;
 use stereokit_rust::prelude::*;
 
 pub mod a_stepper;
@@ -10,6 +11,7 @@ pub mod b_stepper;
 pub mod biplane1;
 pub mod c_stepper;
 pub mod font1;
+pub mod hand_menu_radial0;
 pub mod hand_menu_radial1;
 pub mod math1;
 pub mod program;
@@ -52,6 +54,10 @@ impl Test {
             Test::new("Test C", |sk| {
                 sk.push_action(StepperAction::add_default::<CStepper>("Test C"));
                 "Test C".to_string()
+            }),
+            Test::new("HandMenuRadial0", |sk| {
+                sk.push_action(StepperAction::add_default::<HandMenuRadial0>("HandMenuRadial0"));
+                "HandMenuRadial0".to_string()
             }),
             Test::new("Threads1", |sk| {
                 sk.push_action(StepperAction::add_default::<Threads1>("Threads1"));

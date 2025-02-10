@@ -1,5 +1,5 @@
 use stereokit_rust::{
-    framework::{HandMenuAction, HandMenuRadial, HandRadial, HandRadialLayer},
+    framework::{HandMenuAction, HandMenuRadial, HandRadial, HandRadialLayer, HAND_MENU_RADIAL_FOCUS},
     material::{Cull, Material, Transparency},
     maths::{Matrix, Quat, Vec2, Vec3, Vec4},
     mesh::Mesh,
@@ -16,6 +16,7 @@ use stereokit_rust::{
 pub const SHOW_SHADOWS: &str = "ShowShadows";
 pub const SHOW_FLOOR: &str = "ShowFloor";
 pub const CHANGE_FLOOR: &str = "ChangeFlor";
+const ID: &str = "demo_1";
 
 /// The basic Stepper. This stepper is used for Thread1 demo, we must ensure the StereoKit code stay in the main thread
 /// Default may be called in an other thread
@@ -23,6 +24,7 @@ pub const CHANGE_FLOOR: &str = "ChangeFlor";
 pub struct HandMenuRadial1 {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
+    initialize_completed: bool,
     shutdown_completed: bool,
 
     clean_tile: Material,
@@ -135,6 +137,7 @@ impl Default for HandMenuRadial1 {
         Self {
             id: "HandMenuRadial1".to_string(),
             sk_info: None,
+            initialize_completed: false,
             shutdown_completed: false,
 
             clean_tile,
@@ -178,21 +181,18 @@ impl HandMenuRadial1 {
         let change_floor4 = SkInfo::get_message_closure(&self.sk_info, id, CHANGE_FLOOR);
         let change_floor5 = SkInfo::get_message_closure(&self.sk_info, id, CHANGE_FLOOR);
 
-        let mut menu_ico = Material::pbr_clip().copy();
-        let tex = Tex::from_file("icons/hamburger.png", true, None).unwrap_or_default();
-        menu_ico.diffuse_tex(tex).clip_cutoff(0.1);
+        let mut menu_ico = Material::pbr_clip().copy_for_tex("icons/hamburger.png", true, None).unwrap_or_default();
+        menu_ico.clip_cutoff(0.1);
 
-        let mut screenshot_ico = Material::pbr_clip().copy();
-        let tex = Tex::from_file("icons/screenshot.png", true, None).unwrap_or_default();
-        screenshot_ico.diffuse_tex(tex).clip_cutoff(0.1);
+        let mut screenshot_ico =
+            Material::pbr_clip().copy_for_tex("icons/screenshot.png", true, None).unwrap_or_default();
+        screenshot_ico.clip_cutoff(0.1);
 
-        let mut log_ico = Material::pbr_clip().copy();
-        let tex = Tex::from_file("icons/log_viewer.png", true, None).unwrap_or_default();
-        log_ico.diffuse_tex(tex).clip_cutoff(0.1);
+        let mut log_ico = Material::pbr_clip().copy_for_tex("icons/log_viewer.png", true, None).unwrap_or_default();
+        log_ico.clip_cutoff(0.1);
 
-        let mut fly_over_ico = Material::pbr_clip().copy();
-        let tex = Tex::from_file("icons/fly_over.png", true, None).unwrap_or_default();
-        fly_over_ico.diffuse_tex(tex).clip_cutoff(0.1);
+        let mut fly_over_ico = Material::pbr_clip().copy_for_tex("icons/fly_over.png", true, None).unwrap_or_default();
+        fly_over_ico.clip_cutoff(0.1);
 
         //---- Sky domes and floor
         let mut gradient_sky = Gradient::new(None);
@@ -389,9 +389,18 @@ impl HandMenuRadial1 {
                 HandRadial::item("Close", None, || {}, HandMenuAction::Close),
             ],
         ));
+        self.id = HandMenuRadial::build_id(ID);
+        SkInfo::send_message(&self.sk_info, StepperAction::add(self.id.clone(), hand_menu_stepper));
 
-        SkInfo::send_message(&self.sk_info, StepperAction::add("HandMenuStepper1", hand_menu_stepper));
+        true
+    }
 
+    fn start_completed(&mut self) -> bool {
+        self.initialize_completed = true;
+        SkInfo::send_message(
+            &self.sk_info,
+            StepperAction::event(self.id.clone(), HAND_MENU_RADIAL_FOCUS, &true.to_string()),
+        );
         true
     }
 
@@ -448,13 +457,22 @@ impl HandMenuRadial1 {
         }
     }
 
+    /// Called from IStepper::shutdown(triggering) then IStepper::shutdown_done(waiting for true response),
+    /// here you can close your resources
     /// Close the HandMenuStepper1
     fn close(&mut self, triggering: bool) -> bool {
         if triggering {
-            SkInfo::send_message(&self.sk_info, StepperAction::remove("HandMenuStepper1"));
-            self.shutdown_completed = true;
-            true
+            //We indicate we give up before being shutdowned
+            SkInfo::send_message(
+                &self.sk_info,
+                StepperAction::event(self.id.clone(), HAND_MENU_RADIAL_FOCUS, &false.to_string()),
+            );
+            self.shutdown_completed = false;
+            false
         } else {
+            //One step further we can disappear in the darkness
+            SkInfo::send_message(&self.sk_info, StepperAction::remove(self.id.clone()));
+            self.shutdown_completed = true;
             self.shutdown_completed
         }
     }
