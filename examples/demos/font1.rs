@@ -27,9 +27,19 @@ unsafe impl Send for Font1 {}
 impl Default for Font1 {
     fn default() -> Self {
         // Load font assets
-        let emoji_font = Font::from_file("fonts/Noto_Emoji/NotoEmoji-VariableFont_wght.ttf").unwrap_or_default();
+        let emoji_font = if cfg!(windows) {
+            Font::from_file("C:\\Windows\\Fonts\\Seguiemj.ttf")
+                .unwrap_or(Font::from_file("fonts/Noto_Emoji/NotoEmoji-VariableFont_wght.ttf").unwrap_or_default())
+        } else {
+            Font::from_file("fonts/Noto_Emoji/NotoEmoji-VariableFont_wght.ttf").unwrap_or_default()
+        };
+        let text_font = if cfg!(windows) {
+            Font::from_file("C:\\Windows\\Fonts\\Arial.ttf").unwrap_or_default()
+        } else {
+            Font::from_file("fonts/Inter/Inter-VariableFont_opsz,wght.ttf").unwrap_or_default()
+        };
+
         let emoji_style = Some(Text::make_style(emoji_font, 0.35, BLUE));
-        let text_font = Font::from_file("fonts/Inter/Inter-VariableFont_opsz,wght.ttf").unwrap_or_default();
         let text_style = Text::make_style(text_font, 0.025, GREEN);
         let window_pose = Pose::new(Vec3::new(-0.05, 1.5, -0.45), Some(Quat::from_angles(0.0, 160.0, 0.0)));
         Self {

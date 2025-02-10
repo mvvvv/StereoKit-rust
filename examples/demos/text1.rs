@@ -117,27 +117,30 @@ impl Text1 {
         }
         Ui::same_line();
         if Ui::radio_img(
-            "Font Noto Emoji",
+            "Font Emoji",
             self.font_selected == 2,
             &self.radio_off,
             &self.radio_on,
             UiBtnLayout::Left,
             None,
         ) {
-            let font = Font::from_file("fonts/Noto_Emoji/NotoEmoji-VariableFont_wght.ttf").unwrap_or_default();
+            let font = if cfg!(windows) {
+                Font::from_file("C:\\Windows\\Fonts\\Seguiemj.ttf")
+                    .unwrap_or(Font::from_file("fonts/Noto_Emoji/NotoEmoji-VariableFont_wght.ttf").unwrap_or_default())
+            } else {
+                Font::from_file("fonts/Noto_Emoji/NotoEmoji-VariableFont_wght.ttf").unwrap_or_default()
+            };
             self.text_style_test = Text::make_style(font, 0.05, WHITE);
             self.font_selected = 2;
         }
         Ui::same_line();
-        if Ui::radio_img(
-            "Font Inter",
-            self.font_selected == 3,
-            &self.radio_off,
-            &self.radio_on,
-            UiBtnLayout::Left,
-            None,
-        ) {
-            let font = Font::from_file("fonts/Inter/Inter-VariableFont_opsz,wght.ttf").unwrap_or_default();
+        if Ui::radio_img("Font text", self.font_selected == 3, &self.radio_off, &self.radio_on, UiBtnLayout::Left, None)
+        {
+            let font = if cfg!(windows) {
+                Font::from_file("C:\\Windows\\Fonts\\Arial.ttf").unwrap_or_default()
+            } else {
+                Font::from_file("fonts/Inter/Inter-VariableFont_opsz,wght.ttf").unwrap_or_default()
+            };
             self.text_style_test = Text::make_style(font, 0.05, WHITE);
             self.font_selected = 3;
         }
@@ -204,6 +207,11 @@ impl Text1 {
         }
         if Ui::button("Quit Demos", None) {
             SkInfo::send_message(&self.sk_info, StepperAction::Quit(self.id.clone(), "Quit button test".to_string()));
+        }
+        Ui::same_line();
+        if Ui::button("test inject key F1", None) {
+            Input::key_inject_press(Key::F1);
+            Input::key_inject_release(Key::F1);
         }
         Ui::next_line();
         Ui::hseparator();

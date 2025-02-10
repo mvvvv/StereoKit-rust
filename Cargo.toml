@@ -69,6 +69,11 @@ crate-type = ["bin"]
 name = "main"
 crate-type = ["cdylib"]
 
+[[test]]
+name = "tests"
+path = "tests/main.rs"
+harness = false
+
 [package.metadata.android]
 package = "com.stereokit.rust_binding.demos"
 build_targets = ["aarch64-linux-android"]
