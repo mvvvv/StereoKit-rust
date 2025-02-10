@@ -125,8 +125,11 @@ impl Text1 {
             None,
         ) {
             let font = if cfg!(windows) {
-                Font::from_file("C:\\Windows\\Fonts\\Seguiemj.ttf")
-                    .unwrap_or(Font::from_file("fonts/Noto_Emoji/NotoEmoji-VariableFont_wght.ttf").unwrap_or_default())
+                Font::from_files(&[
+                    "C:\\Windows\\Fonts\\Seguiemj.ttf",
+                    "fonts\\Noto_Emoji\\NotoEmoji-VariableFont_wght.ttf",
+                ])
+                .unwrap_or_default()
             } else {
                 Font::from_file("fonts/Noto_Emoji/NotoEmoji-VariableFont_wght.ttf").unwrap_or_default()
             };

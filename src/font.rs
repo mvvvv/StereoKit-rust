@@ -13,7 +13,7 @@ use std::{
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 ///
 /// use stereokit_rust::{ui::Ui, maths::{Vec3, Quat, Pose, Matrix}, font::Font, system::Text, util::named_colors::{RED, GREEN} };

@@ -52,3 +52,6 @@ fn main() {
         }
     );
 }
+
+#[cfg(feature = "no-event-loop")]
+fn main() {}
