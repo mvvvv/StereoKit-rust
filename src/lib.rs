@@ -2,6 +2,7 @@ use std::{ffi::NulError, path::PathBuf};
 pub use stereokit_macros::include_asset_tree;
 pub use stereokit_macros::test_init_sk;
 pub use stereokit_macros::test_screenshot;
+pub use stereokit_macros::test_steps;
 #[cfg(feature = "event-loop")]
 pub use stereokit_macros::IStepper;
 use thiserror::Error;

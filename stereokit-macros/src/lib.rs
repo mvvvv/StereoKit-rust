@@ -170,9 +170,23 @@ fn get_sub_dirs(path_assets: PathBuf, sub_path: &Path) -> Vec<String> {
 }
 
 #[proc_macro]
+/// Initialize sk (and eventually event_loop) for a test.
+///
+/// If you intend to run a main loop, with test_screenshot!(...) or test_steps!(...) here some variables you may use:
+/// * number_of_steps - Default is 1, you can change this value before the main loop
+/// * token - the MainThreadToken you need to draw in the main_loop
+/// * iter - The step number in the main_loop. [0..number_of_steps]
+///
+/// If you intend to take a screenshot with test_screenshot!(...) there is also those variables to change before the
+/// main loop:
+/// * width_scr - width of the screenshot (default is 200)
+/// * height_scr - height of the screenshot (default is 200)
+/// * fov_scr - fov of the screenshot (default is 99.0)
+/// * from_scr - Position of the camera (default is Vec3::Z)
+/// * at_scr - Point looked at by the camera (default is Vec3::ZERO)
 pub fn test_init_sk(_input: TokenStream) -> TokenStream {
     let expanded = quote! {
-        use stereokit_rust::{*, prelude::*, test_screenshot};
+        use stereokit_rust::{*, prelude::*, test_screenshot, test_steps};
 
         #[cfg(feature = "no-event-loop")]
         let mut sk = sk::SkSettings::default().mode(sk::AppMode::Offscreen).app_name("cargo test").init().unwrap();
@@ -188,6 +202,8 @@ pub fn test_init_sk(_input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro]
+/// Run a main_loop then take a screenshot when the number_of_steps is reached
+/// see [`crate::test_init_sk`] for the details
 pub fn test_screenshot(input: TokenStream) -> TokenStream {
     let input: proc_macro2::TokenStream = input.into();
     let expanded = quote! {
@@ -218,6 +234,38 @@ pub fn test_screenshot(input: TokenStream) -> TokenStream {
                     // render screenshot
                     system::Renderer::screenshot(token, filename_scr, 90, maths::Pose::look_at(from_scr, at_scr), width_scr, height_scr, Some(fov_scr) );
                 }
+            }).run(event_loop);
+        }
+    };
+
+    TokenStream::from(expanded)
+}
+
+#[proc_macro]
+/// Run a main_loop until the number_of_steps is reached
+/// see [`crate::test_init_sk`] for the details
+pub fn test_steps(input: TokenStream) -> TokenStream {
+    let input: proc_macro2::TokenStream = input.into();
+    let expanded = quote! {
+        let mut iter = 0;
+        #[cfg(feature = "no-event-loop")]
+        {
+            while let Some(token) = sk.step() {
+                if iter > number_of_steps {break}
+
+                #input
+
+                iter+=1;
+            }
+        }
+        #[cfg(feature = "event-loop")]
+        {
+            event_loop::SkClosures::new(sk, |sk, token| {
+                if iter > number_of_steps {sk.quit(None)}
+
+                #input
+
+                iter+=1;
             }).run(event_loop);
         }
     };
