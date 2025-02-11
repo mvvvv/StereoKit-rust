@@ -142,7 +142,7 @@ impl Text1 {
             let font = if cfg!(windows) {
                 Font::from_file("C:\\Windows\\Fonts\\Arial.ttf").unwrap_or_default()
             } else {
-                Font::from_file("fonts/Inter/Inter-VariableFont_opsz,wght.ttf").unwrap_or_default()
+                Font::from_file("fonts/Inter/Inter-VariableFont_opsz_wght.ttf").unwrap_or_default()
             };
             self.text_style_test = Text::make_style(font, 0.05, WHITE);
             self.font_selected = 3;

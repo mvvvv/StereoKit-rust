@@ -36,7 +36,7 @@ impl Default for Font1 {
         let text_font = if cfg!(windows) {
             Font::from_file("C:\\Windows\\Fonts\\Arial.ttf").unwrap_or_default()
         } else {
-            Font::from_file("fonts/Inter/Inter-VariableFont_opsz,wght.ttf").unwrap_or_default()
+            Font::from_file("fonts/Inter/Inter-VariableFont_opsz_wght.ttf").unwrap_or_default()
         };
 
         let emoji_style = Some(Text::make_style(emoji_font, 0.35, BLUE));
