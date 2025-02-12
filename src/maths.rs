@@ -91,6 +91,12 @@ impl From<Vec2> for glam::Vec2 {
     }
 }
 
+impl From<[f32; 2]> for Vec2 {
+    fn from(val: [f32; 2]) -> Self {
+        Vec2 { x: val[0], y: val[1] }
+    }
+}
+
 impl Vec2 {
     /// A Vec2 with all components at zero, this is the same as new Vec2(0,0).
     /// <https://stereokit.net/Pages/StereoKit/Vec2/Zero.html>
@@ -942,6 +948,11 @@ impl From<glam::Vec4> for Vec4 {
         Self { x: value.x, y: value.y, z: value.z, w: value.w }
     }
 }
+impl From<[f32; 4]> for Vec4 {
+    fn from(val: [f32; 4]) -> Self {
+        Vec4 { x: val[0], y: val[1], z: val[2], w: val[3] }
+    }
+}
 
 impl From<Vec4> for glam::Vec4 {
     fn from(value: Vec4) -> Self {
@@ -1565,6 +1576,11 @@ impl From<glam::Mat4> for Matrix {
     }
 }
 
+impl From<[f32; 16]> for Matrix {
+    fn from(s: [f32; 16]) -> Self {
+        Self { m: s }
+    }
+}
 impl std::fmt::Debug for Matrix {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self)

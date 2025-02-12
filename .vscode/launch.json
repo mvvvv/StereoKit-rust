@@ -41,8 +41,6 @@
       },
       "args": [
         "--test",
-        "--start",
-        "Tex1"
       ],
       "cwd": "${workspaceFolder}",
       "env": {

@@ -52,7 +52,7 @@ impl Default for HandMenuRadial1 {
         for param in tile.get_all_param_info() {
             match param.get_name() {
                 "metal" => {
-                    let metal_tex = param.get_texture().unwrap();
+                    let mut metal_tex = param.get_texture().unwrap();
                     metal_tex.sample_mode(TexSample::Anisotropic).anisotropy(6);
                     clean_tile.metal_tex(metal_tex);
                     &mut clean_tile

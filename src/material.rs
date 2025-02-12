@@ -1,7 +1,7 @@
 use crate::maths::{Bool32T, Matrix, Vec2, Vec3, Vec4};
 use crate::shader::{Shader, ShaderT};
 use crate::system::{IAsset, Log};
-use crate::tex::{Tex, TexT};
+use crate::tex::{tex_addref, Tex, TexT};
 use crate::util::Color128;
 use crate::StereoKitError;
 use std::ffi::{c_char, c_void, CStr, CString};
@@ -842,6 +842,39 @@ pub enum MaterialParam {
     UInt4 = 15,
 }
 
+#[derive(Debug)]
+#[repr(C)]
+pub enum MaterialParamValue {
+    /// This data type is not currently recognized. Please report your case on GitHub Issues!
+    Unknown,
+    /// A single 32 bit float value
+    Float(f32),
+    /// A color value described by 4 floating point values. Memory-wise this is
+    /// the same as a Vector4, but in the shader this variable has a ':color'
+    /// tag applied to it using StereoKits's shader info syntax, indicating it's
+    /// a color value. Color values for shaders should be in linear space, not
+    /// gamma.
+    Color128([f32; 4]),
+    /// A 2 component vector composed of floating point values
+    Vec2([f32; 2]),
+    /// A 3 component vector composed of floating point values
+    Vec3([f32; 3]),
+    /// A 4 component vector composed of floating point values
+    Vec4([f32; 4]),
+    /// A 4x4 matrix of floats.
+    Matrix([f32; 16]),
+    /// Texture information!
+    Texture(Tex),
+    Int(i32),
+    Int2([i32; 2]),
+    Int3([i32; 3]),
+    Int4([i32; 4]),
+    UInt(u32),
+    UInt2([u32; 2]),
+    UInt3([u32; 3]),
+    UInt4([u32; 4]),
+}
+
 impl Iterator for ParamInfos<'_> {
     type Item = ParamInfo;
 
@@ -852,13 +885,9 @@ impl Iterator for ParamInfos<'_> {
         self.index += 1;
         let count = unsafe { material_get_param_count(self.material.0.as_ptr()) };
         if self.index < count {
-            let i = self.index;
-            let res = self.material_get_param_info(i);
+            let res = self.material_get_param_info(self.index);
             match res {
-                Some((name, type_info)) => {
-                    //self.get_data_with_id(self.index - 1,  type_info)
-                    self.get_data(name, type_info)
-                }
+                Some((name, type_info)) => self.get_data(name, type_info),
                 None => {
                     //error
                     Log::err(format!(
@@ -1114,7 +1143,7 @@ impl<'a> ParamInfos<'a> {
     /// <https://stereokit.net/Pages/StereoKit/Material.html>
     ///
     /// see also [`ParamInfo`][`crate::material::material_get_param_id`]
-    pub fn get_data_with_id<S: AsRef<str>>(&self, id: u64, type_info: MaterialParam) -> Option<ParamInfo> {
+    pub fn get_data_with_id(&self, id: u64, type_info: MaterialParam) -> Option<ParamInfo> {
         let value = CString::new("H").unwrap().into_raw() as *mut c_void;
         if unsafe { material_get_param_id(self.material.0.as_ptr(), id, type_info, value) } != 0 {
             Some(ParamInfo::new(id.to_string(), value, type_info))
@@ -1138,13 +1167,45 @@ impl<'a> ParamInfos<'a> {
 /// see also [`stereokit::Material`]
 pub struct ParamInfo {
     pub name: String,
-    pub value: *mut c_void,
+    pub value: MaterialParamValue,
     pub type_info: MaterialParam,
 }
 
 impl ParamInfo {
     pub fn new<S: AsRef<str>>(name: S, value: *mut c_void, type_info: MaterialParam) -> ParamInfo {
-        ParamInfo { name: name.as_ref().to_string(), value, type_info }
+        // Transmute the pointer to a specific type based on `type_info`
+        let transmuted_value = unsafe {
+            match type_info {
+                MaterialParam::Float => MaterialParamValue::Float(std::ptr::read(value as *const f32)),
+                MaterialParam::Color128 => MaterialParamValue::Color128(std::ptr::read(value as *const [f32; 4])),
+                MaterialParam::Vec2 => MaterialParamValue::Vec2(std::ptr::read(value as *const [f32; 2])),
+                MaterialParam::Vec3 => MaterialParamValue::Vec3(std::ptr::read(value as *const [f32; 3])),
+                MaterialParam::Vec4 => MaterialParamValue::Vec4(std::ptr::read(value as *const [f32; 4])),
+                MaterialParam::Matrix => MaterialParamValue::Matrix(std::ptr::read(value as *const [f32; 16])),
+                MaterialParam::Texture => {
+                    let tex_t = std::ptr::read(value as *mut TexT);
+                    if let Some(non_null) = NonNull::new(tex_t) {
+                        let texture = Tex(non_null);
+                        tex_addref(texture.0.as_ptr());
+                        MaterialParamValue::Texture(texture)
+                    } else {
+                        Log::err(format!("Texture {} cannot be load.", name.as_ref()));
+                        MaterialParamValue::Unknown
+                    }
+                }
+                MaterialParam::Int => MaterialParamValue::Int(std::ptr::read(value as *const i32)),
+                MaterialParam::Int2 => MaterialParamValue::Int2(std::ptr::read(value as *const [i32; 2])),
+                MaterialParam::Int3 => MaterialParamValue::Int3(std::ptr::read(value as *const [i32; 3])),
+                MaterialParam::Int4 => MaterialParamValue::Int4(std::ptr::read(value as *const [i32; 4])),
+                MaterialParam::UInt => MaterialParamValue::UInt(std::ptr::read(value as *const u32)),
+                MaterialParam::UInt2 => MaterialParamValue::UInt2(std::ptr::read(value as *const [u32; 2])),
+                MaterialParam::UInt3 => MaterialParamValue::UInt3(std::ptr::read(value as *const [u32; 3])),
+                MaterialParam::UInt4 => MaterialParamValue::UInt4(std::ptr::read(value as *const [u32; 4])),
+                MaterialParam::Unknown => MaterialParamValue::Unknown,
+            }
+        };
+
+        ParamInfo { name: name.as_ref().to_string(), value: transmuted_value, type_info }
     }
 
     pub fn get_name(&self) -> &str {
@@ -1155,89 +1216,95 @@ impl ParamInfo {
         self.type_info
     }
 
-    pub fn get_raw_ptr(&self) -> *mut c_void {
-        self.value
-    }
-
-    pub fn get_float(&self) -> Option<&f32> {
-        if self.value.is_null() || self.type_info != MaterialParam::Float {
-            None
+    pub fn get_float(&self) -> Option<f32> {
+        if let MaterialParamValue::Float(value) = &self.value {
+            Some(*value)
         } else {
-            Some(unsafe { &*(self.value as *const f32) })
+            None
         }
     }
 
-    pub fn get_vector2(&self) -> Option<&Vec2> {
-        if self.value.is_null() || self.type_info != MaterialParam::Vec2 {
-            None
+    pub fn get_vector2(&self) -> Option<Vec2> {
+        if let MaterialParamValue::Vec2(value) = self.value {
+            Some(value.into())
         } else {
-            Some(unsafe { &*(self.value as *const Vec2) })
+            None
         }
     }
 
-    pub fn get_vector3(&self) -> Option<&Vec3> {
-        if self.value.is_null() || self.type_info != MaterialParam::Vec2 {
-            None
+    pub fn get_vector3(&self) -> Option<Vec3> {
+        if let MaterialParamValue::Vec3(value) = self.value {
+            Some(value.into())
         } else {
-            Some(unsafe { &*(self.value as *const Vec3) })
+            None
         }
     }
 
-    pub fn get_vector4(&self) -> Option<&Vec4> {
-        if self.value.is_null() || self.type_info != MaterialParam::Vec4 {
-            None
+    pub fn get_vector4(&self) -> Option<Vec4> {
+        if let MaterialParamValue::Vec4(value) = self.value {
+            Some(value.into())
         } else {
-            Some(unsafe { &*(self.value as *const Vec4) })
+            None
         }
     }
 
-    pub fn get_color(&self) -> Option<&Color128> {
-        if self.value.is_null() || self.type_info != MaterialParam::Color128 {
-            None
+    pub fn get_color(&self) -> Option<Color128> {
+        if let MaterialParamValue::Color128(value) = self.value {
+            Some(value.into())
         } else {
-            Some(unsafe { &*(self.value as *const Color128) })
+            None
         }
     }
 
-    pub fn get_int(&self) -> Option<&i32> {
-        if self.value.is_null()
-            || self.type_info != MaterialParam::Int
-            || self.type_info != MaterialParam::Int2
-            || self.type_info != MaterialParam::Int3
-            || self.type_info != MaterialParam::Int4
-        {
-            None
+    pub fn get_int(&self) -> Option<i32> {
+        if let MaterialParamValue::Int(value) = self.value {
+            Some(value)
         } else {
-            Some(unsafe { &*(self.value as *const i32) })
+            None
         }
     }
 
-    pub fn get_uint(&self) -> Option<&u32> {
-        if self.value.is_null()
-            || self.type_info != MaterialParam::UInt
-            || self.type_info != MaterialParam::UInt2
-            || self.type_info != MaterialParam::UInt3
-            || self.type_info != MaterialParam::UInt4
-        {
-            None
-        } else {
-            Some(unsafe { &*(self.value as *const u32) })
+    pub fn get_ints(&self) -> Option<Vec<i32>> {
+        match self.value {
+            MaterialParamValue::Int(value) => Some(vec![value]),
+            MaterialParamValue::Int2(value) => Some(value.to_vec()),
+            MaterialParamValue::Int3(value) => Some(value.to_vec()),
+            MaterialParamValue::Int4(value) => Some(value.to_vec()),
+            _ => None,
         }
     }
 
-    pub fn get_matrix(&self) -> Option<&Matrix> {
-        if self.value.is_null() || self.type_info != MaterialParam::Matrix {
-            None
+    pub fn get_uint(&self) -> Option<u32> {
+        if let MaterialParamValue::UInt(value) = self.value {
+            Some(value)
         } else {
-            Some(unsafe { &*(self.value as *const Matrix) })
+            None
         }
     }
 
-    pub fn get_texture(&self) -> Option<&mut Tex> {
-        if self.value.is_null() || self.type_info != MaterialParam::Texture {
-            None
+    pub fn get_uints(&self) -> Option<Vec<u32>> {
+        match self.value {
+            MaterialParamValue::UInt(value) => Some(vec![value]),
+            MaterialParamValue::UInt2(value) => Some(value.to_vec()),
+            MaterialParamValue::UInt3(value) => Some(value.to_vec()),
+            MaterialParamValue::UInt4(value) => Some(value.to_vec()),
+            _ => None,
+        }
+    }
+
+    pub fn get_matrix(&self) -> Option<Matrix> {
+        if let MaterialParamValue::Matrix(value) = self.value {
+            Some(value.into())
         } else {
-            Some(unsafe { &mut *(self.value as *mut Tex) })
+            None
+        }
+    }
+
+    pub fn get_texture(&self) -> Option<Tex> {
+        if let MaterialParamValue::Texture(value) = &self.value {
+            Some(value.clone_ref())
+        } else {
+            None
         }
     }
 
