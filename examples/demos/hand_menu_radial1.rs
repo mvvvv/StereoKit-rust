@@ -63,6 +63,7 @@ impl Default for HandMenuRadial1 {
                 "occlusion" => clean_tile.occlusion_tex(param_infos.get_texture("occlusion").unwrap()),
                 _ => &mut clean_tile,
             };
+            assert!(param_infos.has_param(param.get_name(), param.get_type()));
             Log::diag(format!(" --- {}/{:?} : {} ", param.get_name(), param.get_type(), param_infos.string_of(&param)));
         }
         clean_tile

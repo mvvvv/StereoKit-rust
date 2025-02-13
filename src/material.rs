@@ -878,6 +878,17 @@ impl<'a> ParamInfos<'a> {
         ParamInfos { material, index: -1 }
     }
 
+    /// Only way to see if a shader has a given parameter if you do not iterate over parameters.
+    /// <https://stereokit.net/Pages/StereoKit/Material.html>
+    ///
+    /// see also [`crate::material::material_has_param`]
+    pub fn has_param<S: AsRef<str>>(&self, name: S, type_info: MaterialParam) -> bool {
+        unsafe {
+            let cstr = &CString::new(name.as_ref()).unwrap_or_default();
+            material_has_param(self.material.0.as_ptr(), cstr.as_ptr(), type_info) != 0
+        }
+    }
+
     /// This allows you to set more complex shader data types such as structs. Note the SK doesn’t guard against setting
     /// data of the wrong size here, so pay extra attention to the size of your data here, and ensure it matched up with
     /// the shader!
@@ -1087,6 +1098,18 @@ impl<'a> ParamInfos<'a> {
         unsafe { material_get_param_info(self.material.0.as_ptr(), index, name_info, &mut type_info) }
         let name_info = unsafe { CStr::from_ptr(*name_info).to_str().unwrap() };
         Some((name_info, type_info))
+    }
+
+    /// Gets the value of a shader parameter with the given name. If no parameter is found, a default value of ‘false’
+    /// will be returned.
+    /// <https://stereokit.net/Pages/StereoKit/Material/GetBool.html>
+    ///
+    /// see also [`crate::material::material_get_bool`]
+    pub fn get_bool<S: AsRef<str>>(&self, name: S) -> bool {
+        unsafe {
+            let cstr = &CString::new(name.as_ref()).unwrap_or_default();
+            material_get_bool(self.material.0.as_ptr(), cstr.as_ptr()) != 0
+        }
     }
 
     /// Gets the value of a shader parameter with the given name. If no parameter is found, a default value of ‘0’ will
