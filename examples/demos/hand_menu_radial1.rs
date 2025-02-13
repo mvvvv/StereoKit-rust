@@ -49,20 +49,21 @@ impl Default for HandMenuRadial1 {
         let tile = Material::find("mobiles.gltf/mat/Calcaire blanc").unwrap_or_default();
         let mut clean_tile = Material::pbr().copy();
         Log::diag("calcaire_blanc params:");
+        let param_infos = tile.get_all_param_info();
         for param in tile.get_all_param_info() {
             match param.get_name() {
                 "metal" => {
-                    let mut metal_tex = param.get_texture().unwrap();
+                    let mut metal_tex = param_infos.get_texture("metal").unwrap();
                     metal_tex.sample_mode(TexSample::Anisotropic).anisotropy(6);
                     clean_tile.metal_tex(metal_tex);
                     &mut clean_tile
                 }
-                "diffuse" => clean_tile.diffuse_tex(param.get_texture().unwrap()),
-                "normal" => clean_tile.normal_tex(param.get_texture().unwrap()),
-                "occlusion" => clean_tile.occlusion_tex(param.get_texture().unwrap()),
+                "diffuse" => clean_tile.diffuse_tex(param_infos.get_texture("diffuse").unwrap()),
+                "normal" => clean_tile.normal_tex(param_infos.get_texture("normal").unwrap()),
+                "occlusion" => clean_tile.occlusion_tex(param_infos.get_texture("occlusion").unwrap()),
                 _ => &mut clean_tile,
             };
-            Log::diag(format!(" --- {} :{}", param.get_name(), param.to_string().unwrap_or("no value".to_string())));
+            Log::diag(format!(" --- {}/{:?} : {} ", param.get_name(), param.get_type(), param_infos.string_of(&param)));
         }
         clean_tile
             .id("clean_tile")
