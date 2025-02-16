@@ -115,6 +115,13 @@ fn main() {
             cargo_link!("meshoptimizer");
             cargo_link!("windowsapp");
             cargo_link!("user32");
+            cargo_link!("shell32");
+            // test not really useful, just there to recall this annoying problem:
+            if cfg!(windows) {
+                cargo_link!("Comdlg32");
+            } else {
+                cargo_link!("comdlg32");
+            }
             println!("cargo:rustc-link-search=native={}", dst.display());
             if target_env == "gnu" {
                 if !skc_in_dll {
