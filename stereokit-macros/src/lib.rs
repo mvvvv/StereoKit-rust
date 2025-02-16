@@ -187,11 +187,12 @@ fn get_sub_dirs(path_assets: PathBuf, sub_path: &Path) -> Vec<String> {
 pub fn test_init_sk(_input: TokenStream) -> TokenStream {
     let expanded = quote! {
         use stereokit_rust::{*, prelude::*, test_screenshot, test_steps};
-
+        let mut sk_settings = sk::SkSettings::default();
+        sk_settings.mode(sk::AppMode::Offscreen).app_name("cargo test");
         #[cfg(feature = "no-event-loop")]
-        let mut sk = sk::SkSettings::default().mode(sk::AppMode::Offscreen).app_name("cargo test").init().unwrap();
+        let mut sk = sk_settings.init().unwrap();
         #[cfg(feature = "event-loop")]
-        let (mut sk, mut event_loop) = sk::SkSettings::default().mode(sk::AppMode::Offscreen).app_name("cargo test").init_with_event_loop().unwrap();
+        let (mut sk, mut event_loop) = sk_settings.init_with_event_loop().unwrap();
 
         let mut filename_scr = "screenshots/default_screenshoot.png";
         let mut number_of_steps = 1;
@@ -236,6 +237,9 @@ pub fn test_screenshot(input: TokenStream) -> TokenStream {
                 }
             }).run(event_loop);
         }
+        //--shutdown
+        // Sk::shutdown();
+
     };
 
     TokenStream::from(expanded)
@@ -268,6 +272,8 @@ pub fn test_steps(input: TokenStream) -> TokenStream {
                 iter+=1;
             }).run(event_loop);
         }
+        //--shutdown
+        Sk::shutdown();
     };
 
     TokenStream::from(expanded)
