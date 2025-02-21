@@ -1,10 +1,10 @@
+use crate::StereoKitError;
 use crate::maths::{Bool32T, Matrix, Vec2, Vec3, Vec4};
 use crate::shader::{Shader, ShaderT};
 use crate::system::{IAsset, Log};
 use crate::tex::{Tex, TexT};
 use crate::util::Color128;
-use crate::StereoKitError;
-use std::ffi::{c_char, c_void, CStr, CString};
+use std::ffi::{CStr, CString, c_char, c_void};
 use std::marker::PhantomData;
 use std::path::Path;
 use std::ptr::NonNull;
@@ -86,6 +86,30 @@ pub enum Cull {
 /// Items drawn with the same Material can be batched together into a single, fast operation on the graphics card, so
 /// re-using materials can be extremely beneficial for performance!
 /// <https://stereokit.net/Pages/StereoKit/Material.html>
+///
+/// ### Examples
+/// ```
+/// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+///
+/// use stereokit_rust::{maths::Matrix, util::Color128, mesh::Mesh, material::{*}};
+///
+/// let cube = Mesh::cube();
+/// // Create a material with default properties
+/// let mut material_cube = Material::default();
+///
+/// // Set some shader properties
+/// material_cube.color_tint   (Color128::new(1.0, 0.5, 0.3, 1.0))
+///              .transparency (Transparency::MSAA)
+///              .depth_test   (DepthTest::LessOrEq)
+///              .face_cull    (Cull::Front);
+///
+/// filename_scr = "screenshots/materials.jpeg";
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+///     cube.draw(token, &material_cube, Matrix::IDENTITY, None, None);
+/// );
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/materials.jpeg" alt="screenshot" width="200">
+
 #[derive(Debug)]
 pub struct Material(pub NonNull<_MaterialT>);
 impl Drop for Material {
@@ -105,7 +129,7 @@ pub struct _MaterialT {
 }
 pub type MaterialT = *mut _MaterialT;
 
-extern "C" {
+unsafe extern "C" {
     pub fn material_find(id: *const c_char) -> MaterialT;
     pub fn material_create(shader: ShaderT) -> MaterialT;
     pub fn material_copy(material: MaterialT) -> MaterialT;
@@ -159,9 +183,24 @@ impl Default for Material {
 impl Material {
     /// Creates a material from a shader, and uses the shader’s default settings.
     /// <https://stereokit.net/Pages/StereoKit/Material/Material.html>
+    /// * shader - Any valid shader.
     /// * id - If None the id will be set to a default value "auto/asset_???"
     ///
     /// see also [`crate::material::material_create`][`crate::material::material_set_id`]
+    /// ### Examples
+    /// ```
+    /// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    ///
+    /// use stereokit_rust::{maths::{Vec2, Matrix, Vec3}, mesh::Mesh, material::Material, shader::Shader};
+    ///
+    /// // Create Mesh and its material
+    /// let plane = Mesh::generate_plane(Vec2::ONE, Vec3::NEG_Z, Vec3::X, None,  true);
+    /// let mut material_plane = Material::new(Shader::unlit(), Some("my_material_plane"));
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     plane.draw(token, &material_plane,  Matrix::IDENTITY, None, None);
+    /// );
+    /// ```
     pub fn new(shader: impl AsRef<Shader>, id: Option<&str>) -> Material {
         let mut mat = Material(NonNull::new(unsafe { material_create(shader.as_ref().0.as_ptr()) }).unwrap());
         if let Some(id) = id {
@@ -174,8 +213,24 @@ impl Material {
     /// if so you can use unwrap_or_default() to get the default.
     /// <https://stereokit.net/Pages/StereoKit/Material/Material.html>
     /// * id - If None the id will be set to a default value "auto/asset_???"
+    /// * shader_file_name - The filename of a Shader asset.
     ///
     /// see also [`crate::material::material_create`][`crate::material::material_set_id`]
+    /// ### Examples
+    /// ```
+    /// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    ///
+    /// use stereokit_rust::{maths::{Matrix, Vec3}, mesh::Mesh, material::Material};
+    ///
+    /// // Create Mesh and its material
+    /// let circle = Mesh::generate_circle(1.0, Vec3::NEG_Z, Vec3::X, None,  true);
+    /// let material_circle =
+    ///     Material::from_file("shaders/blinker.hlsl.sks", Some("my_material_circle")).unwrap();
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     circle.draw(token, &material_circle,  Matrix::IDENTITY, None, None);
+    /// );
+    /// ```
     pub fn from_file(shader_file_name: impl AsRef<Path>, id: Option<&str>) -> Result<Material, StereoKitError> {
         let shader = Shader::from_file(&shader_file_name);
         match shader {
@@ -203,6 +258,24 @@ impl Material {
     /// <https://stereokit.net/Pages/StereoKit/Material/Copy.html>
     ///
     /// see also [`crate::material::material_copy()`]
+    /// ### Examples
+    /// ```
+    /// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    ///
+    /// use stereokit_rust::{maths::Matrix, util::named_colors, material::Material};
+    ///
+    /// let mut material_blue = Material::default_copy();
+    /// material_blue.metallic_amount(0.63);
+    /// material_blue.color_tint(named_colors::BLUE);
+    /// let mut material_red = material_blue.copy();
+    /// material_red.id("my_red_material").color_tint(named_colors::RED);
+    ///
+    /// assert_eq!(&material_blue.get_all_param_info().get_float("metal"),
+    ///            &material_red.get_all_param_info().get_float("metal"));
+    /// assert_ne!(&material_blue.get_id(), &material_red.get_id());
+    /// assert_ne!(&material_blue.get_all_param_info().get_color("color"),
+    ///            &material_red.get_all_param_info().get_color("color"));
+    /// ```
     pub fn copy(&self) -> Material {
         Material(NonNull::new(unsafe { material_copy(self.0.as_ptr()) }).unwrap())
     }
@@ -210,8 +283,27 @@ impl Material {
     /// Creates a new Material asset with the same shader and properties! Draw calls with the new Material will not
     /// batch together with this one.
     /// <https://stereokit.net/Pages/StereoKit/Material/Copy.html>
+    /// * id - Which material are you looking for?
     ///
+    /// Returns a new Material asset with the same shader and properties if the id is found.
     /// see also [`crate::material::material_copy_id`]
+    /// ### Examples
+    /// ```
+    /// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    ///
+    /// use stereokit_rust::{util::named_colors, material::Material, shader::Shader};
+    ///
+    /// let mut material = Material::new(Shader::pbr(), Some("my_material"));
+    /// material.roughness_amount(0.42);
+    /// let mut material_red = Material::copy_id("my_material").unwrap();
+    /// material_red.id("my_red_material").color_tint(named_colors::RED);
+    ///
+    /// assert_eq!(&material.get_all_param_info().get_float("roughness"),
+    ///            &material_red.get_all_param_info().get_float("roughness"));
+    /// assert_ne!(&material.get_all_param_info().get_color("color"),
+    ///            &material_red.get_all_param_info().get_color("color"));
+    /// assert_ne!(&material.get_id(), &material_red.get_id());
+    /// ```
     pub fn copy_id<S: AsRef<str>>(id: S) -> Result<Material, StereoKitError> {
         let c_str = CString::new(id.as_ref())?;
         match NonNull::new(unsafe { material_copy_id(c_str.as_ptr()) }) {
@@ -222,8 +314,23 @@ impl Material {
 
     /// Looks for a Material asset that’s already loaded, matching the given id!
     /// <https://stereokit.net/Pages/StereoKit/Material/Find.html>
+    /// * id - Which material are you looking for ?
     ///
     /// see also [`crate::material::material_find`]
+    /// ### Examples
+    /// ```
+    /// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    ///
+    /// use stereokit_rust::{util::named_colors,material::Material, shader::Shader};
+    ///
+    /// let mut material = Material::new(Shader::pbr(), Some("my_material"));
+    /// let mut material_red = Material::find("my_material").unwrap();
+    /// material_red.id("my_red_material").color_tint(named_colors::RED);
+    ///
+    /// assert_eq!(&material.get_all_param_info().get_color("color"),
+    ///            &material_red.get_all_param_info().get_color("color"));
+    /// assert_eq!(&material.get_id(),&"my_red_material");
+    /// ```
     pub fn find<S: AsRef<str>>(id: S) -> Result<Material, StereoKitError> {
         let c_str = CString::new(id.as_ref())?;
         let material = NonNull::new(unsafe { material_find(c_str.as_ptr()) });
@@ -238,6 +345,20 @@ impl Material {
     /// <https://stereokit.net/Pages/StereoKit/Material/Find.html>
     ///
     /// see also [`crate::material::material_find()`]
+    /// ### Examples
+    /// ```
+    /// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    ///
+    /// use stereokit_rust::{util::named_colors,material::Material, shader::Shader};
+    ///
+    /// let mut material = Material::new(Shader::pbr(), Some("my_material"));
+    /// let mut material_red = material.clone_ref();
+    /// material_red.id("my_red_material").color_tint(named_colors::RED);
+    ///
+    /// assert_eq!(&material.get_all_param_info().get_color("color"),
+    ///            &material_red.get_all_param_info().get_color("color"));
+    /// assert_eq!(&material.get_id(),&"my_red_material");
+    /// ```
     pub fn clone_ref(&self) -> Material {
         Material(
             NonNull::new(unsafe { material_find(material_get_id(self.0.as_ptr())) })
@@ -742,7 +863,7 @@ pub struct ParamInfos<'a> {
     index: i32,
 }
 
-extern "C" {
+unsafe extern "C" {
     pub fn material_set_float(material: MaterialT, name: *const c_char, value: f32);
     pub fn material_set_vector2(material: MaterialT, name: *const c_char, value: Vec2);
     pub fn material_set_vector3(material: MaterialT, name: *const c_char, value: Vec3);
@@ -795,7 +916,7 @@ extern "C" {
         out_value: *mut c_void,
     ) -> Bool32T;
     pub fn material_get_param_id(material: MaterialT, id: u64, type_: MaterialParam, out_value: *mut c_void)
-        -> Bool32T;
+    -> Bool32T;
     pub fn material_get_param_info(
         material: MaterialT,
         index: i32,
@@ -1331,7 +1452,7 @@ impl ParamInfo {
     }
 }
 
-extern "C" {
+unsafe extern "C" {
     pub fn material_buffer_create(register_slot: i32, size: i32) -> MaterialBufferT;
     pub fn material_buffer_set_data(buffer: MaterialBufferT, buffer_data: *const c_void);
     pub fn material_buffer_release(buffer: MaterialBufferT);

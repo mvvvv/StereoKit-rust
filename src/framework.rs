@@ -343,7 +343,7 @@ pub const HAND_MENU_RADIAL_FOCUS: &str = "hand_menu_radial_focus";
 /// perform actions by making fast, direction based motions that are easy to build muscle memory for.
 /// <https://stereokit.net/Pages/StereoKit.Framework/HandMenuRadial.html>
 ///
-/// # Examples
+/// ### Examples
 /// ```
 /// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{framework::*, material::Material, system::{Input, Key}};
