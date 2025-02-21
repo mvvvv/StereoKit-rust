@@ -25,6 +25,7 @@ enum SleepPhase {
     Sleeping,
     WakingUp,
     WokeUp,
+    Stopping,
 }
 
 /// What winit v0.30 want is : run_app()
@@ -122,6 +123,7 @@ impl ApplicationHandler<StepperAction> for SkClosures<'_> {
                     self.sleeping = SleepPhase::WakingUp;
                 }
             }
+            SleepPhase::Stopping => {}
         }
     }
 
@@ -147,10 +149,13 @@ impl<'a> SkClosures<'a> {
     fn step(&mut self, event_loop: &ActiveEventLoop) {
         if unsafe { sk_step(None) } == 0 {
             self.window_event(event_loop, self.window_id.unwrap_or(WindowId::dummy()), WindowEvent::CloseRequested);
+            self.sleeping = SleepPhase::Stopping;
+            Log::diag("sk_step() says stop()!!");
         }
         if !self.sk.steppers.step(&mut self.token) {
             self.sk.steppers.shutdown();
             unsafe { sk_quit(QuitReason::User) }
+            Log::diag("The app demand to quit()!!");
             // see WindowEvent::CloseRequested for  (self.shutdown)(&mut self.sk);
         };
         while let Some(mut action) = self.sk.actions.pop_front() {
