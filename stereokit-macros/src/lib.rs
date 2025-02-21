@@ -195,7 +195,7 @@ pub fn test_init_sk(_input: TokenStream) -> TokenStream {
         let (mut sk, mut event_loop) = sk_settings.init_with_event_loop().unwrap();
 
         let mut filename_scr = "screenshots/default_screenshoot.png";
-        let mut number_of_steps = 1;
+        let mut number_of_steps = 3;
         let (mut width_scr, mut height_scr, mut fov_scr, mut from_scr, mut at_scr)  = (200, 200, 99.0, maths::Vec3::Z, maths::Vec3::ZERO);
     };
 
@@ -237,8 +237,6 @@ pub fn test_screenshot(input: TokenStream) -> TokenStream {
                 }
             }).run(event_loop);
         }
-        //--shutdown
-        // Sk::shutdown();
 
     };
 
@@ -272,8 +270,6 @@ pub fn test_steps(input: TokenStream) -> TokenStream {
                 iter+=1;
             }).run(event_loop);
         }
-        //--shutdown
-        Sk::shutdown();
     };
 
     TokenStream::from(expanded)
