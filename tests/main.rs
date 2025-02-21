@@ -1,11 +1,60 @@
 #![cfg(test)]
+use stereokit_rust::sk::Sk;
 
 #[cfg(feature = "event-loop")]
 fn main() {
+    hand_menu_radial0();
+    Sk::shutdown();
+}
+
+#[cfg(feature = "no-event-loop")]
+fn main() {
+    material1();
+    Sk::shutdown();
+    material2();
+    Sk::shutdown();
+}
+
+pub fn material1() {
+    stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize
+    use stereokit_rust::{
+        material::Material,
+        maths::{Matrix, Vec3},
+        mesh::Mesh,
+    };
+
+    // Create Mesh and its material
+    let circle = Mesh::generate_circle(1.0, Vec3::NEG_Z, Vec3::X, None, true);
+    let material_circle =
+        Material::from_file("shaders/blinker.hlsl.sks", Some("my_material_circle")).unwrap_or_default();
+    test_steps!( // !!!! Get a proper main loop !!!!
+        circle.draw(token, &material_circle,  Matrix::IDENTITY, None, None);
+    );
+}
+
+pub fn material2() {
+    stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize
+    use stereokit_rust::{
+        material::Material,
+        maths::{Matrix, Vec3},
+        mesh::Mesh,
+    };
+
+    // Create Mesh and its material
+    let circle = Mesh::generate_circle(1.0, Vec3::NEG_Z, Vec3::X, None, true);
+    let material_circle =
+        Material::from_file("shaders/blinker.hlsl.sks", Some("my_material_circle")).unwrap_or_default();
+    test_steps!( // !!!! Get a proper main loop !!!!
+        circle.draw(token, &material_circle,  Matrix::IDENTITY, None, None);
+    );
+}
+
+#[cfg(feature = "event-loop")]
+fn hand_menu_radial0() {
     use stereokit_rust::{framework::*, material::Material};
 
     stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-                                     // Open or close the log window (done by IStepper LogWindow waiting for SHOW_LOG_WINDOW event)
+    // Open or close the log window (done by IStepper LogWindow waiting for SHOW_LOG_WINDOW event)
     let mut swap_value = true;
 
     // nice icon
@@ -52,6 +101,3 @@ fn main() {
         }
     );
 }
-
-#[cfg(feature = "no-event-loop")]
-fn main() {}
