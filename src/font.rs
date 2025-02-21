@@ -1,6 +1,6 @@
-use crate::{system::IAsset, tex::TexT, StereoKitError};
+use crate::{StereoKitError, system::IAsset, tex::TexT};
 use std::{
-    ffi::{c_char, CStr, CString},
+    ffi::{CStr, CString, c_char},
     path::Path,
     ptr::NonNull,
 };
@@ -11,7 +11,7 @@ use std::{
 /// This asset is used anywhere that text shows up, like in the UI or Text classes!
 /// <https://stereokit.net/Pages/StereoKit/Font.html>
 ///
-/// # Examples
+/// ### Examples
 ///
 /// ```no_run
 /// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -67,7 +67,7 @@ pub struct _FontT {
 }
 pub type FontT = *mut _FontT;
 
-extern "C" {
+unsafe extern "C" {
     pub fn font_find(id: *const c_char) -> FontT;
     pub fn font_create(file_utf8: *const c_char) -> FontT;
     pub fn font_create_files(in_arr_files: *mut *const c_char, file_count: i32) -> FontT;

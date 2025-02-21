@@ -61,7 +61,9 @@ impl FileBrowser {
         self.files_of_dir = get_files(&self.sk_info, self.dir.clone(), &self.exts, true);
 
         if self.caller.is_empty() {
-            Log::err("FileBrowser must be called by an other stepper (FileBrowser::caller) it will notify of the selected file ");
+            Log::err(
+                "FileBrowser must be called by an other stepper (FileBrowser::caller) it will notify of the selected file ",
+            );
             return false;
         }
 

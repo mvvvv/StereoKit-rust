@@ -1,13 +1,13 @@
 use crate::{
+    StereoKitError,
     maths::{Matrix, Vec2},
     sk::MainThreadToken,
     system::{IAsset, TextAlign},
     tex::{Tex, TexT},
     util::Color32,
-    StereoKitError,
 };
 use std::{
-    ffi::{c_char, CStr, CString},
+    ffi::{CStr, CString, c_char},
     path::Path,
     ptr::NonNull,
 };
@@ -56,7 +56,7 @@ pub struct _SpriteT {
     _unused: [u8; 0],
 }
 pub type SpriteT = *mut _SpriteT;
-extern "C" {
+unsafe extern "C" {
     pub fn sprite_find(id: *const c_char) -> SpriteT;
     pub fn sprite_create(sprite: TexT, type_: SpriteType, atlas_id: *const c_char) -> SpriteT;
     pub fn sprite_create_file(filename_utf8: *const c_char, type_: SpriteType, atlas_id: *const c_char) -> SpriteT;

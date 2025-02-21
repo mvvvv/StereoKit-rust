@@ -1,17 +1,17 @@
 use crate::{
+    StereoKitError,
     maths::{Bool32T, Vec3},
     system::{
-        render_enable_skytex, render_get_skylight, render_get_skytex, render_set_skylight, render_set_skytex,
-        AssetState, IAsset, Log,
+        AssetState, IAsset, Log, render_enable_skytex, render_get_skylight, render_get_skytex, render_set_skylight,
+        render_set_skytex,
     },
-    util::{Color128, Color32, Gradient, GradientKey, GradientT, SphericalHarmonics},
-    StereoKitError,
+    util::{Color32, Color128, Gradient, GradientKey, GradientT, SphericalHarmonics},
 };
 use std::{
-    ffi::{c_char, c_void, CStr, CString},
+    ffi::{CStr, CString, c_char, c_void},
     mem::size_of,
     path::{Path, PathBuf},
-    ptr::{null_mut, NonNull},
+    ptr::{NonNull, null_mut},
 };
 
 bitflags::bitflags! {
@@ -199,7 +199,7 @@ pub type TexT = *mut _TexT;
 unsafe impl Send for Tex {}
 unsafe impl Sync for Tex {}
 
-extern "C" {
+unsafe extern "C" {
     pub fn tex_find(id: *const c_char) -> TexT;
     pub fn tex_create(type_: TexType, format: TexFormat) -> TexT;
     pub fn tex_create_rendertarget(

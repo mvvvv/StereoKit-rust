@@ -8,7 +8,7 @@ use std::{
 use stereokit_macros::IStepper;
 
 use crate::{
-    maths::{units::CM, Pose, Quat, Vec2, Vec3},
+    maths::{Pose, Quat, Vec2, Vec3, units::CM},
     prelude::*,
     system::Renderer,
     tex::{Tex, TexFormat},
@@ -19,7 +19,7 @@ use crate::{
 use crate::sprite::Sprite;
 
 use super::{
-    file_browser::{FileBrowser, FILE_BROWSER_OPEN},
+    file_browser::{FILE_BROWSER_OPEN, FileBrowser},
     os_api::get_external_path,
 };
 

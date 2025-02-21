@@ -21,7 +21,6 @@ use winit::event_loop::EventLoop;
 #[allow(dead_code)]
 #[cfg(target_os = "android")]
 #[cfg(feature = "event-loop")]
-#[no_mangle]
 fn android_main(app: AndroidApp) {
     use stereokit_rust::sk::DepthMode;
 
@@ -65,7 +64,6 @@ fn main() {
     BackendOpenXR::request_ext("XR_FB_display_refresh_rate");
     BackendOpenXR::request_ext("XR_FB_passthrough");
     let (sk, event_loop) = settings.init_with_event_loop().unwrap();
-
     _main(sk, event_loop);
 }
 

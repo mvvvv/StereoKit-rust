@@ -1,14 +1,14 @@
 use crate::{
+    StereoKitError,
     material::{Cull, Material, MaterialT},
     maths::{Bool32T, Bounds, Matrix, Ray, Vec2, Vec3, Vec4},
     sk::MainThreadToken,
     system::{IAsset, RenderLayer},
-    util::{Color128, Color32},
-    StereoKitError,
+    util::{Color32, Color128},
 };
 use std::{
-    ffi::{c_char, CStr, CString},
-    ptr::{slice_from_raw_parts_mut, NonNull},
+    ffi::{CStr, CString, c_char},
+    ptr::{NonNull, slice_from_raw_parts_mut},
 };
 
 /// This represents a single vertex in a Mesh, all StereoKit Meshes currently use this exact layout!
@@ -16,7 +16,7 @@ use std::{
 /// (0,0,0,0) will cause your mesh to appear completely black, or even transparent in most shaders!
 /// <https://stereokit.net/Pages/StereoKit/Vertex.html>
 ///
-/// # Examples
+/// ### Examples
 /// ```
 /// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 ///
@@ -97,7 +97,7 @@ pub enum Memory {
 /// Mesh indices are stored as unsigned ints, so you can have a mesh with a fudgeton of verts! 4 billion or so :)
 /// <https://stereokit.net/Pages/StereoKit/Mesh.html>
 ///
-/// # Examples
+/// ### Examples
 /// ```
 /// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 ///
@@ -139,7 +139,7 @@ pub struct _MeshT {
 }
 pub type MeshT = *mut _MeshT;
 pub type VindT = u32;
-extern "C" {
+unsafe extern "C" {
     pub fn mesh_find(name: *const c_char) -> MeshT;
     pub fn mesh_create() -> MeshT;
     pub fn mesh_copy(mesh: MeshT) -> MeshT;

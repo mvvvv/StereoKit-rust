@@ -1,7 +1,7 @@
 use crate::{
+    StereoKitError,
     maths::{Bool32T, Vec3},
     system::IAsset,
-    StereoKitError,
 };
 use std::{
     ffi::{CStr, CString},
@@ -43,7 +43,7 @@ pub type SoundT = *mut _SoundT;
 unsafe impl Send for Sound {}
 unsafe impl Sync for Sound {}
 
-extern "C" {
+unsafe extern "C" {
     pub fn sound_find(id: *const ::std::os::raw::c_char) -> SoundT;
     pub fn sound_set_id(sound: SoundT, id: *const ::std::os::raw::c_char);
     pub fn sound_get_id(sound: SoundT) -> *const ::std::os::raw::c_char;
@@ -298,7 +298,7 @@ impl Sound {
     }
 }
 
-extern "C" {
+unsafe extern "C" {
     pub fn sound_inst_stop(sound_inst: SoundInst);
     pub fn sound_inst_is_playing(sound_inst: SoundInst) -> Bool32T;
     pub fn sound_inst_set_pos(sound_inst: SoundInst, pos: Vec3);

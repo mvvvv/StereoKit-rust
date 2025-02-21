@@ -1,11 +1,11 @@
 use crate::{
+    StereoKitError,
     maths::{Bool32T, Pose},
     system::{BtnState, IAsset, Log},
-    StereoKitError,
 };
 use std::{
-    ffi::{c_char, c_void, CStr, CString},
-    ptr::{null_mut, NonNull},
+    ffi::{CStr, CString, c_char, c_void},
+    ptr::{NonNull, null_mut},
 };
 
 /// An Anchor in StereoKit is a completely virtual pose that is pinned to a real-world location. They are creatable via
@@ -62,7 +62,7 @@ bitflags::bitflags! {
         const Stability = 2;
     }
 }
-extern "C" {
+unsafe extern "C" {
     pub fn anchor_find(asset_id_utf8: *const c_char) -> AnchorT;
     pub fn anchor_create(pose: Pose) -> AnchorT;
     pub fn anchor_set_id(anchor: AnchorT, asset_id_utf8: *const c_char);

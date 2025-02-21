@@ -1,8 +1,8 @@
 use crate::{
+    StereoKitError,
     maths::Bool32T,
     system::{BackendOpenXR, Log, LogLevel},
     tools::os_api::get_assets_dir,
-    StereoKitError,
 };
 #[cfg(target_os = "android")]
 #[cfg(feature = "no-event-loop")]
@@ -10,7 +10,7 @@ use android_activity::{AndroidApp, MainEvent, PollEvent};
 use openxr_sys::pfn::DestroyInstance;
 use std::{
     cell::RefCell,
-    ffi::{c_char, c_void, CStr, CString},
+    ffi::{CStr, CString, c_char, c_void},
     fmt::{self, Formatter},
     path::Path,
     ptr::null_mut,
@@ -19,8 +19,8 @@ use std::{
 #[cfg(target_os = "android")]
 #[cfg(feature = "event-loop")]
 use winit::platform::android::{
-    activity::{AndroidApp, MainEvent, PollEvent},
     EventLoopBuilderExtAndroid,
+    activity::{AndroidApp, MainEvent, PollEvent},
 };
 
 #[cfg(feature = "event-loop")]
@@ -245,7 +245,7 @@ pub enum StandbyMode {
     None = 3,
 }
 
-extern "C" {
+unsafe extern "C" {
     pub fn sk_init(settings: SkSettings) -> Bool32T;
     pub fn sk_set_window(window: *mut c_void);
     pub fn sk_set_window_xam(window: *mut c_void);
@@ -675,7 +675,7 @@ impl SkInfo {
     ///
     /// see examples/demos/hand_menu_radial1.rs
     #[cfg(feature = "event-loop")]
-    pub fn get_message_closure(sk_info: &Option<Rc<RefCell<SkInfo>>>, id: &StepperId, key: &str) -> impl Fn(String) {
+    pub fn get_message_closure(sk_info: Option<Rc<RefCell<SkInfo>>>, id: StepperId, key: &str) -> impl Fn(String) {
         let sk_info = sk_info.clone();
         let key = key.to_string();
         let id = id.clone();

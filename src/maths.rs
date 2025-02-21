@@ -1,7 +1,7 @@
 use crate::{
     material::Cull,
-    mesh::{mesh_ray_intersect, Mesh, VindT},
-    model::{model_ray_intersect, Model},
+    mesh::{Mesh, VindT, mesh_ray_intersect},
+    model::{Model, model_ray_intersect},
 };
 use std::{
     fmt::Display,
@@ -493,7 +493,7 @@ impl From<Vec3> for [f32; 3] {
     }
 }
 
-extern "C" {
+unsafe extern "C" {
     pub fn vec3_cross(a: *const Vec3, b: *const Vec3) -> Vec3;
 }
 
@@ -1279,7 +1279,7 @@ impl From<Quat> for Vec4 {
     }
 }
 
-extern "C" {
+unsafe extern "C" {
     pub fn quat_difference(a: *const Quat, b: *const Quat) -> Quat;
     pub fn quat_lookat(from: *const Vec3, at: *const Vec3) -> Quat;
     pub fn quat_lookat_up(from: *const Vec3, at: *const Vec3, up: *const Vec3) -> Quat;
@@ -1587,7 +1587,7 @@ impl std::fmt::Debug for Matrix {
     }
 }
 
-extern "C" {
+unsafe extern "C" {
     pub fn pose_matrix_out(pose: *const Pose, out_result: *mut Matrix, scale: Vec3);
     pub fn matrix_inverse(a: *const Matrix, out_Matrix: *mut Matrix);
     pub fn matrix_invert(a: *const Matrix) -> Matrix;
@@ -2262,7 +2262,7 @@ impl AsRef<Bounds> for Bounds {
     }
 }
 
-extern "C" {
+unsafe extern "C" {
     pub fn bounds_ray_intersect(bounds: Bounds, ray: Ray, out_pt: *mut Vec3) -> Bool32T;
     pub fn bounds_point_contains(bounds: Bounds, pt: Vec3) -> Bool32T;
     pub fn bounds_line_contains(bounds: Bounds, pt1: Vec3, pt2: Vec3) -> Bool32T;
@@ -2534,7 +2534,7 @@ impl AsRef<Plane> for Plane {
     }
 }
 
-extern "C" {
+unsafe extern "C" {
     pub fn plane_from_points(p1: Vec3, p2: Vec3, p3: Vec3) -> Plane;
     pub fn plane_from_ray(ray: Ray) -> Plane;
     pub fn plane_ray_intersect(plane: Plane, ray: Ray, out_pt: *mut Vec3) -> Bool32T;
@@ -2784,7 +2784,7 @@ impl AsRef<Sphere> for Sphere {
     }
 }
 
-extern "C" {
+unsafe extern "C" {
     pub fn sphere_ray_intersect(sphere: Sphere, ray: Ray, out_pt: *mut Vec3) -> Bool32T;
     pub fn sphere_point_contains(sphere: Sphere, pt: Vec3) -> Bool32T;
 }
@@ -2872,7 +2872,7 @@ pub struct Ray {
     pub direction: Vec3,
 }
 
-extern "C" {
+unsafe extern "C" {
     pub fn ray_intersect_plane(ray: Ray, plane_pt: Vec3, plane_normal: Vec3, out_t: *mut f32) -> Bool32T;
     pub fn ray_from_mouse(screen_pixel_pos: Vec2, out_ray: *mut Ray) -> Bool32T;
     pub fn ray_point_closest(ray: Ray, pt: Vec3) -> Vec3;

@@ -1,16 +1,16 @@
 use crate::{
+    StereoKitError,
     material::{Material, MaterialT},
     maths::{Matrix, Rect},
     mesh::{Mesh, MeshT},
     model::{Model, ModelT},
-    system::{assets_releaseref_threadsafe, IAsset, RenderClear, RenderLayer},
+    system::{IAsset, RenderClear, RenderLayer, assets_releaseref_threadsafe},
     tex::{Tex, TexT},
     util::Color128,
-    StereoKitError,
 };
 use std::{
     self,
-    ffi::{c_char, c_void, CStr, CString},
+    ffi::{CStr, CString, c_char, c_void},
     ptr::NonNull,
 };
 
@@ -40,7 +40,7 @@ pub struct _RenderListT {
 }
 pub type RenderListT = *mut _RenderListT;
 
-extern "C" {
+unsafe extern "C" {
     pub fn render_list_find(id: *const c_char) -> RenderListT;
     pub fn render_list_set_id(render_list: RenderListT, id: *const c_char);
     pub fn render_list_get_id(render_list: RenderListT) -> *const c_char;

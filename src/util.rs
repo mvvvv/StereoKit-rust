@@ -1,11 +1,11 @@
 use crate::{
-    maths::{lerp, Bool32T, Vec3},
+    StereoKitError,
+    maths::{Bool32T, Vec3, lerp},
     sk::DisplayBlend,
     system::TextContext,
-    StereoKitError,
 };
 use std::{
-    ffi::{c_char, c_void, CStr, CString},
+    ffi::{CStr, CString, c_char, c_void},
     fmt::Display,
     ops::{Div, DivAssign, Mul, MulAssign},
     ptr::NonNull,
@@ -25,7 +25,7 @@ use std::{
 /// incorrect colors. We do our best to indicate what color space a function uses, but it’s not enforced through syntax!
 /// <https://stereokit.net/Pages/StereoKit/Color.html>
 #[repr(C)]
-#[derive(Debug, Copy, Clone, Default)]
+#[derive(Debug, Copy, Clone, Default, PartialEq)]
 pub struct Color128 {
     pub r: f32,
     pub g: f32,
@@ -44,7 +44,7 @@ impl From<Color32> for Color128 {
     }
 }
 
-extern "C" {
+unsafe extern "C" {
     pub fn color_hsv(hue: f32, saturation: f32, value: f32, transparency: f32) -> Color128;
     pub fn color_to_hsv(color: *const Color128) -> Vec3;
     pub fn color_lab(l: f32, a: f32, b: f32, transparency: f32) -> Color128;
@@ -603,7 +603,7 @@ pub struct FovInfo {
 /// adjustable settings here and there.
 /// <https://stereokit.net/Pages/StereoKit/Device.html>
 pub struct Device;
-extern "C" {
+unsafe extern "C" {
     pub fn device_display_get_type() -> DisplayType;
     pub fn device_display_get_blend() -> DisplayBlend;
     pub fn device_display_set_blend(blend: DisplayBlend) -> Bool32T;
@@ -766,7 +766,7 @@ pub struct _GradientT {
 }
 pub type GradientT = *mut _GradientT;
 
-extern "C" {
+unsafe extern "C" {
     pub fn gradient_create() -> GradientT;
     pub fn gradient_create_keys(in_arr_keys: *const GradientKey, count: i32) -> GradientT;
     pub fn gradient_add(gradient: GradientT, color_linear: Color128, position: f32);
@@ -876,7 +876,7 @@ pub enum PickerMode {
 /// <https://stereokit.net/Pages/StereoKit/Platform.html>
 pub struct Platform;
 
-extern "C" {
+unsafe extern "C" {
     pub fn platform_file_picker(
         mode: PickerMode,
         callback_data: *mut c_void,
@@ -928,10 +928,10 @@ unsafe extern "C" fn fp_trampoline<FS: FnMut(&str), FC: FnMut()>(
     confirmed: Bool32T,
     filename: *const c_char,
 ) {
-    let data = &mut *(user_data as *mut (&mut FS, &mut FC));
+    let data = unsafe { &mut *(user_data as *mut (&mut FS, &mut FC)) };
     let (update, cancel) = data;
     if confirmed != 0 {
-        let c_str = CStr::from_ptr(filename).to_str().unwrap();
+        let c_str = unsafe { CStr::from_ptr(filename).to_str().unwrap() };
         update(c_str)
     } else {
         cancel()
@@ -947,9 +947,9 @@ unsafe extern "C" fn fp_sz_trampoline<F: FnMut(bool, &str)>(
     filename: *const c_char,
     filename_length: i32,
 ) {
-    let closure = &mut *(user_data as *mut &mut F);
+    let closure = unsafe { &mut *(user_data as *mut &mut F) };
     if confirmed != 0 && filename_length > 0 {
-        let c_str = CStr::from_ptr(filename).to_str().unwrap();
+        let c_str = unsafe { CStr::from_ptr(filename).to_str().unwrap() };
         closure(true, c_str)
     } else {
         let c_str = "";
@@ -1200,7 +1200,7 @@ pub struct SphericalHarmonics {
     pub coefficients: [Vec3; 9usize],
 }
 
-extern "C" {
+unsafe extern "C" {
     pub fn sh_create(in_arr_lights: *const ShLight, light_count: i32) -> SphericalHarmonics;
     pub fn sh_brightness(ref_harmonics: *mut SphericalHarmonics, scale: f32);
     pub fn sh_add(ref_harmonics: *mut SphericalHarmonics, light_dir: Vec3, light_color: Vec3);
@@ -1273,7 +1273,7 @@ impl SphericalHarmonics {
 /// <https://stereokit.net/Pages/StereoKit/Time.html>
 pub struct Time;
 
-extern "C" {
+unsafe extern "C" {
     // Deprecated: pub fn time_get_raw() -> f64;
     // Deprecated: pub fn time_getf_unscaled() -> f32;
     // Deprecated: pub fn time_get_unscaled() -> f64;

@@ -4,7 +4,7 @@ use crate::{
     prelude::*,
     shader::Shader,
     system::{Text, TextStyle},
-    util::{named_colors::BLACK, Time},
+    util::{Time, named_colors::BLACK},
 };
 
 /// A simple notification to display a text for a given duration in second.

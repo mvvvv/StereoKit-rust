@@ -1,25 +1,25 @@
 use crate::{
-    anchor::{Anchor, _AnchorT},
-    font::{Font, FontT, _FontT},
-    material::{Material, MaterialT, _MaterialT},
-    maths::{ray_from_mouse, Bool32T, Matrix, Pose, Quat, Ray, Rect, Vec2, Vec3},
-    mesh::{Mesh, MeshT, _MeshT},
-    model::{Model, ModelT, _ModelT},
-    render_list::{RenderList, _RenderListT},
-    shader::{Shader, ShaderT, _ShaderT},
-    sk::{MainThreadToken, OriginMode},
-    sound::{Sound, SoundT, _SoundT},
-    sprite::{Sprite, _SpriteT},
-    tex::{Tex, TexFormat, TexT, _TexT},
-    util::{Color128, Color32, SphericalHarmonics},
     StereoKitError,
+    anchor::{_AnchorT, Anchor},
+    font::{_FontT, Font, FontT},
+    material::{_MaterialT, Material, MaterialT},
+    maths::{Bool32T, Matrix, Pose, Quat, Ray, Rect, Vec2, Vec3, ray_from_mouse},
+    mesh::{_MeshT, Mesh, MeshT},
+    model::{_ModelT, Model, ModelT},
+    render_list::{_RenderListT, RenderList},
+    shader::{_ShaderT, Shader, ShaderT},
+    sk::{MainThreadToken, OriginMode},
+    sound::{_SoundT, Sound, SoundT},
+    sprite::{_SpriteT, Sprite},
+    tex::{_TexT, Tex, TexFormat, TexT},
+    util::{Color32, Color128, SphericalHarmonics},
 };
 use std::{
-    ffi::{c_char, c_ushort, c_void, CStr, CString},
+    ffi::{CStr, CString, c_char, c_ushort, c_void},
     fmt,
     mem::{size_of, transmute_copy},
     path::Path,
-    ptr::{null, null_mut, NonNull},
+    ptr::{NonNull, null, null_mut},
 };
 
 /// All StereoKit assets implement this interface! This is mostly to help group and hold Asset objects, and is
@@ -91,7 +91,7 @@ pub struct Assets;
 
 pub type AssetT = *mut c_void;
 
-extern "C" {
+unsafe extern "C" {
     pub fn assets_releaseref_threadsafe(asset: *mut c_void);
     pub fn assets_current_task() -> i32;
     pub fn assets_total_tasks() -> i32;
@@ -343,7 +343,7 @@ pub type OpenXRHandleT = u64;
 /// <https://stereokit.net/Pages/StereoKit/Backend.html>
 pub struct Backend;
 pub type VoidFunction = unsafe extern "system" fn();
-extern "C" {
+unsafe extern "C" {
     pub fn backend_xr_get_type() -> BackendXRType;
     pub fn backend_openxr_get_instance() -> OpenXRHandleT;
     pub fn backend_openxr_get_session() -> OpenXRHandleT;
@@ -718,7 +718,7 @@ pub enum HierarchyParent {
 /// <https://stereokit.net/Pages/StereoKit/Hierarchy.html>
 pub struct Hierarchy;
 
-extern "C" {
+unsafe extern "C" {
     pub fn hierarchy_push(transform: *const Matrix, parent_behavior: HierarchyParent);
     pub fn hierarchy_pop();
     pub fn hierarchy_set_enabled(enabled: Bool32T);
@@ -1565,7 +1565,7 @@ pub enum Key {
 /// Input from the system come from this class! Hands, eyes, heads, mice and pointers!
 /// <https://stereokit.net/Pages/StereoKit/Input.html>
 pub struct Input;
-extern "C" {
+unsafe extern "C" {
     pub fn input_pointer_count(filter: InputSource) -> i32;
     pub fn input_pointer(index: i32, filter: InputSource) -> Pointer;
     pub fn input_hand(hand: Handed) -> *const Hand;
@@ -2039,7 +2039,7 @@ pub struct LinePoint {
 /// <https://stereokit.net/Pages/StereoKit/Lines.html>
 pub struct Lines;
 
-extern "C" {
+unsafe extern "C" {
     pub fn line_add(start: Vec3, end: Vec3, color_start: Color32, color_end: Color32, thickness: f32);
     pub fn line_addv(start: LinePoint, end: LinePoint);
     pub fn line_add_axis(pose: Pose, size: f32);
@@ -2200,7 +2200,7 @@ pub enum LogLevel {
 /// stereokit_rust::system::Log::info("model <~GRN>node count<~clr> : <~RED>6589<~clr> !!!");
 /// ```
 pub struct Log;
-extern "C" {
+unsafe extern "C" {
     pub fn log_diag(text: *const c_char);
     //pub fn log_diagf(text: *const c_char, ...);
     pub fn log_info(text: *const c_char);
@@ -2231,8 +2231,8 @@ unsafe extern "C" fn log_trampoline<'a, F: FnMut(LogLevel, &str) + 'a>(
     log_level: LogLevel,
     text: *const c_char,
 ) {
-    let closure = &mut *(context as *mut &mut F);
-    let c_str = CStr::from_ptr(text).to_str().unwrap().trim_end();
+    let closure = unsafe { &mut *(context as *mut &mut F) };
+    let c_str = unsafe { CStr::from_ptr(text).to_str().unwrap().trim_end() };
     closure(log_level, c_str)
 }
 
@@ -2329,7 +2329,7 @@ impl Log {
 ///## Examples
 pub struct Microphone;
 
-extern "C" {
+unsafe extern "C" {
     pub fn mic_device_count() -> i32;
     pub fn mic_device_name(index: i32) -> *const c_char;
     pub fn mic_start(device_name: *const c_char) -> Bool32T;
@@ -2500,7 +2500,7 @@ pub enum Projection {
 ///## Examples
 pub struct Renderer;
 
-extern "C" {
+unsafe extern "C" {
     pub fn render_set_clip(near_plane: f32, far_plane: f32);
     pub fn render_set_fov(field_of_view_degrees: f32);
     pub fn render_set_ortho_clip(near_plane: f32, far_plane: f32);
@@ -2613,8 +2613,12 @@ unsafe extern "C" fn sc_capture_trampoline<F: FnMut(&[Color32], usize, usize)>(
     height: i32,
     context: *mut c_void,
 ) {
-    let closure = &mut *(context as *mut &mut F);
-    closure(std::slice::from_raw_parts(color_buffer, (width * height) as usize), width as usize, height as usize)
+    let closure = unsafe { &mut *(context as *mut &mut F) };
+    closure(
+        unsafe { std::slice::from_raw_parts(color_buffer, (width * height) as usize) },
+        width as usize,
+        height as usize,
+    )
 }
 
 impl Renderer {
@@ -3151,10 +3155,10 @@ pub struct TextStyle {
     _id: u32,
 }
 
-extern "C" {
+unsafe extern "C" {
     pub fn text_make_style(font: FontT, layout_height: f32, color_gamma: Color128) -> TextStyle;
     pub fn text_make_style_shader(font: FontT, layout_height: f32, shader: ShaderT, color_gamma: Color128)
-        -> TextStyle;
+    -> TextStyle;
     pub fn text_make_style_mat(
         font: FontT,
         layout_height: f32,
@@ -3453,7 +3457,7 @@ pub enum TextContext {
 /// <https://stereokit.net/Pages/StereoKit/Text.html>
 pub struct Text;
 
-extern "C" {
+unsafe extern "C" {
     pub fn text_add_at(
         text_utf8: *const c_char,
         transform: *const Matrix,
@@ -3814,7 +3818,7 @@ pub enum SpatialNodeType {
 /// <https://stereokit.net/Pages/StereoKit/World.html>
 pub struct World;
 
-extern "C" {
+unsafe extern "C" {
     pub fn world_has_bounds() -> Bool32T;
     pub fn world_get_bounds_size() -> Vec2;
     pub fn world_get_bounds_pose() -> Pose;
@@ -3967,11 +3971,7 @@ impl World {
     /// see also [crate::system::world_raycast]
     pub fn raycast(ray: impl Into<Ray>) -> Option<Ray> {
         let mut intersection = Ray::default();
-        if unsafe { world_raycast(ray.into(), &mut intersection) != 0 } {
-            Some(intersection)
-        } else {
-            None
-        }
+        if unsafe { world_raycast(ray.into(), &mut intersection) != 0 } { Some(intersection) } else { None }
     }
 
     /// This is the orientation and center point of the system’s boundary/guardian. This can be useful to find the floor

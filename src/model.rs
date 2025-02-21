@@ -1,18 +1,18 @@
 use crate::maths::{Bool32T, Matrix};
 use crate::sk::MainThreadToken;
 use crate::{
+    StereoKitError,
     material::{Cull, Material, MaterialT},
     maths::{Bounds, Ray, Vec3},
     mesh::{Mesh, MeshT},
     shader::{Shader, ShaderT},
     system::{IAsset, Log, RenderLayer},
     util::Color128,
-    StereoKitError,
 };
 use std::{
-    ffi::{c_char, c_void, CStr, CString},
+    ffi::{CStr, CString, c_char, c_void},
     path::Path,
-    ptr::{null_mut, NonNull},
+    ptr::{NonNull, null_mut},
 };
 
 /// A Model is a collection of meshes, materials, and transforms that make up a visual element! This is a great way to
@@ -54,7 +54,7 @@ pub struct _ModelT {
 }
 pub type ModelT = *mut _ModelT;
 
-extern "C" {
+unsafe extern "C" {
     pub fn model_find(id: *const c_char) -> ModelT;
     pub fn model_copy(model: ModelT) -> ModelT;
     pub fn model_create() -> ModelT;
@@ -197,7 +197,7 @@ impl Model {
     ///
     /// see also [`crate::model::model_create_file`]
     ///
-    /// # Examples
+    /// ### Examples
     /// ```
     /// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     ///
@@ -534,11 +534,7 @@ impl<'a> Anims<'a> {
             Err(..) => return None,
         };
         let index = unsafe { model_anim_find(self.model.0.as_ptr(), c_str.as_ptr()) };
-        if index < 0 {
-            None
-        } else {
-            Some(index)
-        }
+        if index < 0 { None } else { Some(index) }
     }
 
     /// Get the number of animations
@@ -592,7 +588,7 @@ pub struct Nodes<'a> {
     model: &'a Model,
 }
 
-extern "C" {
+unsafe extern "C" {
     pub fn model_subset_count(model: ModelT) -> i32;
     pub fn model_node_add(
         model: ModelT,

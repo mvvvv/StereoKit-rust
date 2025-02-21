@@ -1,5 +1,5 @@
 use stereokit_rust::{
-    framework::{HandMenuAction, HandMenuRadial, HandRadial, HandRadialLayer, HAND_MENU_RADIAL_FOCUS},
+    framework::{HAND_MENU_RADIAL_FOCUS, HandMenuAction, HandMenuRadial, HandRadial, HandRadialLayer},
     material::{Cull, Material, Transparency},
     maths::{Matrix, Quat, Vec2, Vec3, Vec4},
     mesh::Mesh,
@@ -9,8 +9,8 @@ use stereokit_rust::{
     tex::{SHCubemap, Tex, TexFormat, TexSample},
     tools::{fly_over::ENABLE_FLY_OVER, log_window::SHOW_LOG_WINDOW, screenshot::SHOW_SCREENSHOT_WINDOW},
     util::{
-        named_colors::{BLACK, BLUE, BURLY_WOOD, LIGHT_BLUE, LIGHT_CYAN, RED, SEA_GREEN, STEEL_BLUE, WHITE, YELLOW},
         Color128, Gradient, ShLight, SphericalHarmonics,
+        named_colors::{BLACK, BLUE, BURLY_WOOD, LIGHT_BLUE, LIGHT_CYAN, RED, SEA_GREEN, STEEL_BLUE, WHITE, YELLOW},
     },
 };
 pub const SHOW_SHADOWS: &str = "ShowShadows";
@@ -161,27 +161,30 @@ impl Default for HandMenuRadial1 {
 impl HandMenuRadial1 {
     /// Called from IStepper::initialize here you can abort the initialization by returning false
     fn start(&mut self) -> bool {
-        let id: &StepperId = &self.id;
+        self.id = HandMenuRadial::build_id(ID);
+        let id: StepperId = self.id.clone();
+        let sk_info = self.sk_info.clone();
 
         // Open or close the log window
         let mut show_log = true;
-        let send_event_show_log = SkInfo::get_message_closure(&self.sk_info, id, SHOW_LOG_WINDOW);
+        let send_event_show_log = SkInfo::get_message_closure(sk_info.clone(), id.clone(), SHOW_LOG_WINDOW);
 
         // Open or close the screenshot window
         let mut show_screenshot = false;
-        let send_event_show_screenshot = SkInfo::get_message_closure(&self.sk_info, id, SHOW_SCREENSHOT_WINDOW);
+        let send_event_show_screenshot =
+            SkInfo::get_message_closure(sk_info.clone(), id.clone(), SHOW_SCREENSHOT_WINDOW);
 
         // Enable disable fly over
         let mut fly_over = true;
-        let send_event_fly_over = SkInfo::get_message_closure(&self.sk_info, id, ENABLE_FLY_OVER);
+        let send_event_fly_over = SkInfo::get_message_closure(sk_info.clone(), id.clone(), ENABLE_FLY_OVER);
 
         // Change the material of the floor
-        let change_floor0 = SkInfo::get_message_closure(&self.sk_info, id, CHANGE_FLOOR);
-        let change_floor1 = SkInfo::get_message_closure(&self.sk_info, id, CHANGE_FLOOR);
-        let change_floor2 = SkInfo::get_message_closure(&self.sk_info, id, CHANGE_FLOOR);
-        let change_floor3 = SkInfo::get_message_closure(&self.sk_info, id, CHANGE_FLOOR);
-        let change_floor4 = SkInfo::get_message_closure(&self.sk_info, id, CHANGE_FLOOR);
-        let change_floor5 = SkInfo::get_message_closure(&self.sk_info, id, CHANGE_FLOOR);
+        let change_floor0 = SkInfo::get_message_closure(sk_info.clone(), id.clone(), CHANGE_FLOOR);
+        let change_floor1 = SkInfo::get_message_closure(sk_info.clone(), id.clone(), CHANGE_FLOOR);
+        let change_floor2 = SkInfo::get_message_closure(sk_info.clone(), id.clone(), CHANGE_FLOOR);
+        let change_floor3 = SkInfo::get_message_closure(sk_info.clone(), id.clone(), CHANGE_FLOOR);
+        let change_floor4 = SkInfo::get_message_closure(sk_info.clone(), id.clone(), CHANGE_FLOOR);
+        let change_floor5 = SkInfo::get_message_closure(sk_info.clone(), id.clone(), CHANGE_FLOOR);
 
         let mut menu_ico = Material::pbr_clip().copy_for_tex("icons/hamburger.png", true, None).unwrap_or_default();
         menu_ico.clip_cutoff(0.1);
@@ -391,7 +394,7 @@ impl HandMenuRadial1 {
                 HandRadial::item("Close", None, || {}, HandMenuAction::Close),
             ],
         ));
-        self.id = HandMenuRadial::build_id(ID);
+
         SkInfo::send_message(&self.sk_info, StepperAction::add(self.id.clone(), hand_menu_stepper));
 
         true

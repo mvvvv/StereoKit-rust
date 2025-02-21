@@ -1,6 +1,6 @@
-use crate::{system::IAsset, StereoKitError};
+use crate::{StereoKitError, system::IAsset};
 use std::{
-    ffi::{c_void, CStr, CString},
+    ffi::{CStr, CString, c_void},
     path::Path,
     ptr::NonNull,
 };
@@ -29,7 +29,7 @@ pub struct _ShaderT {
     _unused: [u8; 0],
 }
 pub type ShaderT = *mut _ShaderT;
-extern "C" {
+unsafe extern "C" {
     pub fn shader_find(id: *const ::std::os::raw::c_char) -> ShaderT;
     pub fn shader_create_file(filename_utf8: *const ::std::os::raw::c_char) -> ShaderT;
     pub fn shader_create_mem(data: *mut ::std::os::raw::c_void, data_size: usize) -> ShaderT;

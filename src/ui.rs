@@ -1,4 +1,5 @@
 use crate::{
+    StereoKitError,
     material::{Material, MaterialT},
     maths::{Bool32T, Bounds, Pose, Vec2, Vec3},
     mesh::{Mesh, MeshT, Vertex},
@@ -6,12 +7,11 @@ use crate::{
     sound::{Sound, SoundT},
     sprite::{Sprite, SpriteT},
     system::{BtnState, Handed, HierarchyParent, Log, TextAlign, TextContext, TextFit, TextStyle},
-    util::{Color128, Color32},
-    StereoKitError,
+    util::{Color32, Color128},
 };
 use std::{
-    ffi::{c_char, c_ushort, CStr, CString},
-    ptr::{null_mut, NonNull},
+    ffi::{CStr, CString, c_char, c_ushort},
+    ptr::{NonNull, null_mut},
 };
 
 /// A description of what type of window to draw! This is a bit flag, so it can contain multiple elements.
@@ -393,7 +393,7 @@ pub struct UiSliderData {
 /// <https://stereokit.net/Pages/StereoKit/UI.html>
 pub struct Ui;
 
-extern "C" {
+unsafe extern "C" {
     pub fn ui_quadrant_size_verts(ref_vertices: *mut Vertex, vertex_count: i32, overflow_percent: f32);
     pub fn ui_quadrant_size_mesh(ref_mesh: MeshT, overflow_percent: f32);
     pub fn ui_gen_quadrant_mesh(
