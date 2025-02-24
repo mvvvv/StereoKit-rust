@@ -15,7 +15,7 @@ use std::{
 /// On HoloLens 2, sounds are automatically processed on the HPU, freeing up the CPU for more of your app’s code. To
 /// simulate this same effect on your development PC, you need to enable spatial sound on your audio endpoint. To do
 /// this, right click the speaker icon in your system tray, navigate to “Spatial sound”, and choose “Windows Sonic for
-/// Headphones.” For more information, visit https://docs.microsoft.com/en-us/windows/win32/coreaudio/spatial-sound
+/// Headphones.” For more information, visit <https://docs.microsoft.com/en-us/windows/win32/coreaudio/spatial-sound>
 ///<https://stereokit.net/Pages/StereoKit/Sound.html>
 /// ## Examples
 ///
@@ -178,7 +178,7 @@ impl Sound {
     /// <https://stereokit.net/Pages/StereoKit/Sound/Play.html>
     /// * volume - if None will have default value of 1.0
     ///
-    /// see also [`stereokit::StereoKitDraw::sound_play`]
+    /// see also [`crate::sound::sound_play`]
     pub fn play(&self, at: impl Into<Vec3>, volume: Option<f32>) -> SoundInst {
         let volume = volume.unwrap_or(1.0);
         unsafe { sound_play(self.0.as_ptr(), at.into(), volume) }
@@ -195,7 +195,7 @@ impl Sound {
     /// many samples are available to read.
     /// <https://stereokit.net/Pages/StereoKit/Sound/ReadSamples.html>
     ///
-    /// see also [`stereokit::StereoKitDraw::sound_read_samples`]
+    /// see also [`crate::sound::sound_read_samples`]
     #[allow(clippy::not_unsafe_ptr_arg_deref)]
     pub fn read_samples(&self, out_arr_samples: *mut f32, sample_count: u64) -> u64 {
         unsafe { sound_read_samples(self.0.as_ptr(), out_arr_samples, sample_count) }
@@ -211,7 +211,7 @@ impl Sound {
     /// data if your source is already in native memory!
     /// <https://stereokit.net/Pages/StereoKit/Sound/WriteSamples.html>
     ///
-    /// see also [`stereokit::StereoKitDraw::sound_write_samples`]
+    /// see also [`crate::sound::sound_write_samples`]
     #[allow(clippy::not_unsafe_ptr_arg_deref)]
     pub fn write_samples(&self, in_arr_samples: *const f32, sample_count: u64) {
         unsafe { sound_write_samples(self.0.as_ptr(), in_arr_samples, sample_count) };

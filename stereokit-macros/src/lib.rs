@@ -24,7 +24,7 @@ fn has_field(field_name: &str, input: &DeriveInput) -> bool {
 /// Derive the IStepper trait for a struct which must implement:
 /// * Fields:     
 ///   - **id**: StepperId,
-///   - **sk_info**: Option<Rc<RefCell<SkInfo>>>,
+///   - **sk_info**: `Option<Rc<RefCell<SkInfo>>>`,
 ///   - *Optional* when the stepper should initialize on more than one step : **initialize_completed**: bool
 ///   - *Optional* when you want to implement an active/inactive flag: **enabled**: bool
 ///   - *Optional* when the stepper should shutdown some stuffs : **shutdown_completed**: bool
@@ -204,7 +204,7 @@ pub fn test_init_sk(_input: TokenStream) -> TokenStream {
 
 #[proc_macro]
 /// Run a main_loop then take a screenshot when the number_of_steps is reached
-/// see [`crate::test_init_sk`] for the details
+/// see [`crate::test_init_sk!`] for the details
 pub fn test_screenshot(input: TokenStream) -> TokenStream {
     let input: proc_macro2::TokenStream = input.into();
     let expanded = quote! {
@@ -245,7 +245,7 @@ pub fn test_screenshot(input: TokenStream) -> TokenStream {
 
 #[proc_macro]
 /// Run a main_loop until the number_of_steps is reached
-/// see [`crate::test_init_sk`] for the details
+/// see [`crate::test_init_sk!`] for the details
 pub fn test_steps(input: TokenStream) -> TokenStream {
     let input: proc_macro2::TokenStream = input.into();
     let expanded = quote! {

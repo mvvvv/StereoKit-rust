@@ -35,8 +35,6 @@ pub enum SpriteType {
 /// Since rendering is atlas based, you also have only one material per atlas. So this is why you might wish to put a
 /// sprite in one atlas or another, so you can apply different
 /// <https://stereokit.net/Pages/StereoKit/Sprite.html>
-///
-/// see also [`stereokit::Sprite`]
 #[repr(C)]
 #[derive(Debug)]
 pub struct Sprite(pub NonNull<_SpriteT>);
@@ -184,7 +182,7 @@ impl Sprite {
     /// * color_linear - if None has default value of WHITE
     /// * text_align - indicate how
     ///
-    /// see also [`stereokit::StereoKitDraw::sprite_draw`]
+    /// see also [`crate::sprite::sprite_draw`]
     pub fn draw(
         &self,
         _token: &MainThreadToken,

@@ -107,7 +107,7 @@ unsafe extern "C" {
     pub fn asset_release(asset: AssetT);
 }
 
-/// Non-canonical structure to store an asset and avoid reducer Box<dyn Asset>
+/// Non-canonical structure to store an asset and avoid reducer `Box<dyn Asset>`
 #[derive(Debug)]
 pub enum Asset {
     None,
@@ -145,7 +145,7 @@ impl fmt::Display for Asset {
 
 /// Iterator on assets
 ///
-/// see also [Assets::all][Assets::type]
+/// see also [Assets::all][Assets::all_of_type]
 #[derive(Debug, Copy, Clone)]
 pub struct AssetIter {
     index: i32,
@@ -244,7 +244,7 @@ impl Assets {
     /// This is the index of the current asset loading task. Note that to load one asset, multiple tasks are generated.
     /// <https://stereokit.net/Pages/StereoKit/Assets/CurrentTask.html>
     ///
-    /// see also [crate::system::asset_current_task]
+    /// see also [`crate::system::assets_current_task``]
     pub fn current_task() -> i32 {
         unsafe { assets_current_task() }
     }
@@ -253,7 +253,7 @@ impl Assets {
     /// to wait until all tasks within a certain priority range have been completed.
     /// <https://stereokit.net/Pages/StereoKit/Assets/CurrentTaskPriority.html>
     ///
-    /// see also [crate::system::asset_current_task_priority]
+    /// see also [crate::system::assets_current_task_priority]
     pub fn current_task_priority() -> i32 {
         unsafe { assets_current_task_priority() }
     }
@@ -3269,7 +3269,7 @@ impl TextStyle {
     /// Height of a text glyph in meters. StereoKit currently bases this on the letter ‘T’.
     /// <https://stereokit.net/Pages/StereoKit/TextStyle/CharHeight.html>
     ///
-    /// see also [`crate::system::text_style_set_char_height`]
+    /// see also [`crate::system::text_style_set_layout_height`]
     #[deprecated(since = "0.40.0", note = "please use TextStyle::layout_height")]
     pub fn char_height(&mut self, char_height: f32) {
         unsafe { text_style_set_layout_height(*self, char_height) }
@@ -3316,7 +3316,7 @@ impl TextStyle {
     /// Returns the maximum height of a text character using this style, in meters.
     /// <https://stereokit.net/Pages/StereoKit/TextStyle/CharHeight.html>
     ///
-    /// see also [`crate::system::text_style_get_char_height`]
+    /// see also [`crate::system::text_style_get_layout_height`]
     #[deprecated(since = "0.40.0", note = "please use get_layout_height")]
     pub fn get_char_height(&self) -> f32 {
         unsafe { text_style_get_layout_height(*self) }
@@ -3603,7 +3603,7 @@ impl Text {
     ///
     /// Returns a text style id for use with text rendering functions.
     ///
-    /// see also [`crate::system::text_make_mat`]
+    /// see also [`crate::system::text_make_style_mat`]
     pub fn make_style_with_material(
         font: impl AsRef<Font>,
         layout_height_meters: f32,
@@ -3945,7 +3945,7 @@ impl World {
     /// with the Windows QR code package.
     /// <https://stereokit.net/Pages/StereoKit/World/FromSpatialNode.html>
     ///
-    /// see also [crate::system::world_f]
+    /// see also [crate::system::world_try_from_spatial_graph]
     pub fn from_spatial_node(
         spatial_graph_node_id: impl AsRef<str>,
         spatial_node_type: SpatialNodeType,

@@ -221,7 +221,7 @@ impl Anchor {
     /// Tries to get the underlying perception spatial anchor
     /// for platforms using Microsoft spatial anchors.
     /// <https://stereokit.net/Pages/StereoKit/Anchor/TryGetPerceptionAnchor.html>
-    /// * "<T>" - The type of the spatial anchor. Must corresponds to the the Windows API type
+    /// * 'T' - The type of the spatial anchor. Must corresponds to the the Windows API type
     ///   of Windows.Perception.Spatial.SpatialAnchor.
     /// * spatial_anchor - The spatial anchor.
     ///

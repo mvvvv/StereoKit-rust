@@ -127,7 +127,7 @@ impl Vec2 {
         Self { x, y }
     }
 
-    /// Returns the counter-clockwise degrees from [1,0]. Resulting value is between 0 and 360. Vector does not need
+    /// Returns the counter-clockwise degrees from `[1,0]`. Resulting value is between 0 and 360. Vector does not need
     /// to be normalized.
     /// <https://stereokit.net/Pages/StereoKit/Vec2/Angle.html>
     #[inline]
@@ -935,7 +935,7 @@ impl Neg for Vec3 {
 /// <https://stereokit.net/Pages/StereoKit/Vec4.html>
 ///
 /// see also [`glam::Vec4`]
-#[derive(Debug, Default, Copy, Clone)]
+#[derive(Debug, Default, Copy, Clone, PartialEq)]
 #[repr(C)]
 pub struct Vec4 {
     pub x: f32,
@@ -963,6 +963,9 @@ impl From<Vec4> for glam::Vec4 {
 impl Vec4 {
     /// all components to 0
     pub const ZERO: Vec4 = Vec4 { x: 0.0, y: 0.0, z: 0.0, w: 0.0 };
+
+    /// all components to 1
+    pub const ONE: Vec4 = Vec4 { x: 1.0, y: 1.0, z: 1.0, w: 1.0 };
 
     /// A normalized Vector that points down the X axis, this is the same as new Vec4(1,0,0,0).
     /// <https://stereokit.net/Pages/StereoKit/Vec4/UnitX.html>    
@@ -1310,7 +1313,7 @@ impl Quat {
     /// Costly, see get_inverse for a faster way to get this.
     /// <https://stereokit.net/Pages/StereoKit/Quat/Invert.html>
     ///
-    /// see also [`QuatT::get_inverse`] [`crate::maths::quat_inverse`]
+    /// see also [`Quat::get_inverse`] [`crate::maths::quat_inverse`]
     #[inline]
     pub fn invert(&mut self) -> &mut Self {
         let m = unsafe { quat_inverse(self) };
@@ -1325,7 +1328,7 @@ impl Quat {
     /// Costly, see get_normalized for a faster way to get this.
     /// <https://stereokit.net/Pages/StereoKit/Quat/Normalize.html>
     ///
-    /// see also [`QuatT::get_normalized`] [`crate::maths::quat_normalize`]
+    /// see also [`Quat::get_normalized`] [`crate::maths::quat_normalize`]
     #[inline]
     pub fn normalize(&mut self) -> &mut Self {
         let m = unsafe { quat_normalize(self) };
@@ -1778,7 +1781,7 @@ impl Matrix {
     /// Translate, Rotate. Creates a transform Matrix using these components!
     /// <https://stereokit.net/Pages/StereoKit/Matrix/TR.html>
     ///
-    /// see also [`crate::maths::matrix_tr`]
+    /// see also [`crate::maths::matrix_trs`]
     #[inline]
     pub fn tr(translation: &Vec3, rotation: &Quat) -> Self {
         unsafe { matrix_trs(translation, rotation, &Vec3::ONE) }
@@ -2020,7 +2023,7 @@ impl Display for Matrix {
 /// use Matrix.transform_normal.
 /// <https://stereokit.net/Pages/StereoKit/Matrix/op_Multiply.html>
 ///
-/// see also [`crate::maths::matrix_mul_point`]
+/// see also [`crate::maths::matrix_transform_pt`]
 impl Mul<Vec3> for Matrix {
     type Output = Vec3;
 
@@ -2034,7 +2037,7 @@ impl Mul<Vec3> for Matrix {
 /// use Matrix.transform_normal.
 /// <https://stereokit.net/Pages/StereoKit/Matrix/op_Multiply.html>
 ///
-/// see also [`crate::maths::matrix_mul_point`]
+/// see also [`crate::maths::matrix_transform_pt`]
 impl MulAssign<Matrix> for Vec3 {
     fn mul_assign(&mut self, rhs: Matrix) {
         let res = unsafe { matrix_transform_pt(rhs, *self) };
@@ -2049,7 +2052,7 @@ impl MulAssign<Matrix> for Vec3 {
 /// use Matrix.transform_normal.
 /// <https://stereokit.net/Pages/StereoKit/Matrix/op_Multiply.html>
 ///
-/// see also [`crate::maths::matrix_mul_point`]
+/// see also [`crate::maths::matrix_transform_pt`]
 impl Mul<Matrix> for Vec3 {
     type Output = Vec3;
 
@@ -2060,7 +2063,7 @@ impl Mul<Matrix> for Vec3 {
 
 /// <https://stereokit.net/Pages/StereoKit/Matrix/op_Multiply.html>
 ///
-/// see also [`crate::maths::matrix_mul_point4`]
+/// see also [`crate::maths::matrix_transform_pt4`]
 impl Mul<Vec4> for Matrix {
     type Output = Vec4;
 
@@ -2071,7 +2074,7 @@ impl Mul<Vec4> for Matrix {
 
 /// <https://stereokit.net/Pages/StereoKit/Matrix/op_Multiply.html>
 ///
-/// see also [`crate::maths::matrix_mul_point4`]
+/// see also [`crate::maths::matrix_transform_pt4`]
 impl MulAssign<Matrix> for Vec4 {
     fn mul_assign(&mut self, rhs: Matrix) {
         let res = unsafe { matrix_transform_pt4(rhs, *self) };
@@ -2084,7 +2087,7 @@ impl MulAssign<Matrix> for Vec4 {
 
 /// <https://stereokit.net/Pages/StereoKit/Matrix/op_Multiply.html>
 ///
-/// see also [`crate::maths::matrix_mul_point4`]
+/// see also [`crate::maths::matrix_transform_pt4`]
 impl Mul<Matrix> for Vec4 {
     type Output = Vec4;
 
@@ -2135,7 +2138,7 @@ impl Mul<Matrix> for Ray {
 /// Transform an orientation by the Matrix.
 /// <https://stereokit.net/Pages/StereoKit/Matrix/op_Multiply.html>
 ///
-/// see also [`crate::maths::matrix_mul_rotation`]
+/// see also [`crate::maths::matrix_transform_quat`]
 impl Mul<Quat> for Matrix {
     type Output = Quat;
 
@@ -2147,7 +2150,7 @@ impl Mul<Quat> for Matrix {
 /// Transform an orientation by the Matrix.
 /// <https://stereokit.net/Pages/StereoKit/Matrix/op_Multiply.html>
 ///
-/// see also [`crate::maths::matrix_mul_rotation`]
+/// see also [`crate::maths::matrix_transform_quat`]
 impl MulAssign<Matrix> for Quat {
     fn mul_assign(&mut self, rhs: Matrix) {
         let res = unsafe { matrix_transform_quat(rhs, *self) };
@@ -2161,7 +2164,7 @@ impl MulAssign<Matrix> for Quat {
 /// Transform an orientation by the Matrix.
 /// <https://stereokit.net/Pages/StereoKit/Matrix/op_Multiply.html>
 ///
-/// see also [`crate::maths::matrix_mul_rotation`]
+/// see also [`crate::maths::matrix_transform_quat`]
 impl Mul<Matrix> for Quat {
     type Output = Quat;
 
@@ -2174,7 +2177,7 @@ impl Mul<Matrix> for Quat {
 /// properly for the Pose’s quaternion.
 /// <https://stereokit.net/Pages/StereoKit/Matrix/op_Multiply.html>
 ///
-/// see also [`crate::maths::matrix_mul_pose`]
+/// see also [`crate::maths::matrix_transform_pose`]
 impl Mul<Pose> for Matrix {
     type Output = Pose;
 
@@ -2187,7 +2190,7 @@ impl Mul<Pose> for Matrix {
 /// properly for the Pose’s quaternion.
 /// <https://stereokit.net/Pages/StereoKit/Matrix/op_Multiply.html>
 ///
-/// see also [`crate::maths::matrix_mul_pose`]
+/// see also [`crate::maths::matrix_transform_pose`]
 impl MulAssign<Matrix> for Pose {
     fn mul_assign(&mut self, rhs: Matrix) {
         let res = unsafe { matrix_transform_pose(rhs, *self) };
@@ -2200,7 +2203,7 @@ impl MulAssign<Matrix> for Pose {
 /// properly for the Pose’s quaternion.
 /// <https://stereokit.net/Pages/StereoKit/Matrix/op_Multiply.html>
 ///
-/// see also [`crate::maths::matrix_mul_pose`]
+/// see also [`crate::maths::matrix_transform_pose`]
 impl Mul<Matrix> for Pose {
     type Output = Pose;
 
@@ -2246,9 +2249,6 @@ impl MulAssign<Matrix> for Matrix {
 /// While the constructor uses a center+dimensions for creating a bounds, don’t forget the static From* methods that
 /// allow you to define a Bounds from different types of data!
 /// <https://stereokit.net/Pages/StereoKit/Bounds.html>
-/// ## Examples
-///
-/// see also [`crate::maths::Bounds`]
 #[derive(Copy, Clone, Debug, Default)]
 #[repr(C)]
 pub struct Bounds {
@@ -2275,8 +2275,6 @@ unsafe extern "C" {
 impl Bounds {
     /// Creates a bounding box object!
     /// <https://stereokit.net/Pages/StereoKit/Bounds/Bounds.html>
-    ///
-    /// see also [`crate::maths::Bounds]
     #[inline]
     pub fn new<V: Into<Vec3>>(center: V, dimensions: V) -> Bounds {
         Bounds { center: center.into(), dimensions: dimensions.into() }
@@ -2284,8 +2282,6 @@ impl Bounds {
 
     /// Creates a bounding box object centered around zero!
     /// <https://stereokit.net/Pages/StereoKit/Bounds/Bounds.html>
-    ///
-    /// see also [`crate::maths::Bounds]
     #[inline]
     pub fn bounds_centered(dimensions: impl Into<Vec3>) -> Bounds {
         Bounds { center: Vec3::ZERO, dimensions: dimensions.into() }
@@ -2293,8 +2289,6 @@ impl Bounds {
 
     /// Create a bounding box from a corner, plus box dimensions.
     /// <https://stereokit.net/Pages/StereoKit/Bounds/FromCorner.html>
-    ///
-    /// see also [`crate::maths::Bounds]
     #[inline]
     pub fn from_corner<V: Into<Vec3>>(bottom_left_back: V, dimensions: V) -> Bounds {
         let dim = dimensions.into();
@@ -2303,8 +2297,6 @@ impl Bounds {
 
     /// Create a bounding box between two corner points.
     /// <https://stereokit.net/Pages/StereoKit/Bounds/FromCorners.html>
-    ///
-    /// see also [`crate::maths::Bounds]
     #[inline]
     pub fn from_corners<V: Into<Vec3>>(bottom_left_back: V, top_right_front: V) -> Bounds {
         let blb = bottom_left_back.into();
@@ -2339,8 +2331,6 @@ impl Bounds {
 
     /// Scale this bounds. It will scale the center as well as the dimensions! Modifies this bounds object.
     /// <https://stereokit.net/Pages/StereoKit/Bounds/Scale.html>
-    ///
-    /// see also [`crate::maths::Bounds]
     #[inline]
     pub fn scale(&mut self, scale: f32) -> &mut Self {
         self.dimensions *= scale;
@@ -2350,8 +2340,6 @@ impl Bounds {
 
     /// Scale this bounds. It will scale the center as well as the dimensions! Modifies this bounds object.
     /// <https://stereokit.net/Pages/StereoKit/Bounds/Scale.html>
-    ///
-    /// see also [`crate::maths::Bounds]
     #[inline]
     pub fn scale_vec(&mut self, scale: Vec3) -> &mut Self {
         self.dimensions *= scale;
@@ -2405,8 +2393,6 @@ impl Bounds {
     /// Scale the bounds. It will scale the center as well as the dimensions! Returns a new Bounds.
     /// equivalent to using multiply operator
     /// <https://stereokit.net/Pages/StereoKit/Bounds/Scaled.html>
-    ///
-    /// see also [`crate::maths::Bounds]
     #[inline]
     pub fn scaled(&self, scale: f32) -> Self {
         *self * scale
@@ -2415,8 +2401,6 @@ impl Bounds {
     /// Scale the bounds. It will scale the center as well as the dimensions! Returns a new Bounds.
     /// equivalent to using multiply operator
     /// <https://stereokit.net/Pages/StereoKit/Bounds/Scaled.html>
-    ///
-    /// see also [`crate::maths::Bounds]
     #[inline]
     pub fn scaled_vec(&self, scale: impl Into<Vec3>) -> Self {
         *self * scale.into()
@@ -2516,8 +2500,6 @@ impl MulAssign<Vec3> for Bounds {
 ///
 /// This plane is stored using the ax + by + cz + d = 0 formula, where the normal is a,b,c, and the d is, well, d.
 /// <https://stereokit.net/Pages/StereoKit/Plane.html>
-///
-/// see also [`crate::maths::Plane`]
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
 #[repr(C)]
 pub struct Plane {
@@ -2668,8 +2650,6 @@ impl Pose {
     /// Basic initialization constructor! Just copies in the provided values directly, and uses Identity for the
     /// orientation.
     /// <https://stereokit.net/Pages/StereoKit/Pose/Pose.html>
-    ///
-    /// see also [`crate::maths::Pose`]
     #[inline]
     pub fn new(position: impl Into<Vec3>, orientation: Option<Quat>) -> Self {
         let orientation = orientation.unwrap_or(Quat::IDENTITY);
@@ -2678,8 +2658,6 @@ impl Pose {
 
     /// Interpolates between two poses! It is unclamped, so values outside of (0,1) will extrapolate their position.
     /// <https://stereokit.net/Pages/StereoKit/Pose/Lerp.html>
-    ///
-    /// see also [`crate::maths::Pose`]
     #[inline]
     pub fn lerp(a: impl Into<Pose>, b: impl Into<Pose>, percent: f32) -> Self {
         let a = a.into();
@@ -2693,8 +2671,6 @@ impl Pose {
     /// Creates a Pose that looks from one location in the direction of another location. This leaves “Up” as the +Y
     /// axis.
     /// <https://stereokit.net/Pages/StereoKit/Pose/LookAt.html>
-    ///
-    /// see also [`crate::maths::Pose`]
     #[inline]
     pub fn look_at(from: impl Into<Vec3>, at: impl Into<Vec3>) -> Self {
         let from = from.into();
@@ -2705,8 +2681,6 @@ impl Pose {
     /// Converts this pose into a transform matrix.
     /// <https://stereokit.net/Pages/StereoKit/Pose/ToMatrix.html>
     /// * scale - Let you add a scale factor if needed.
-    ///
-    /// see also [`crate::maths::Pose`]
     #[inline]
     pub fn to_matrix(&self, scale: Option<Vec3>) -> Matrix {
         match scale {
@@ -2718,8 +2692,6 @@ impl Pose {
     /// Calculates the forward direction from this pose. This is done by multiplying the orientation with
     /// Vec3::new(0, 0, -1). Remember that Forward points down the -Z axis!
     /// <https://stereokit.net/Pages/StereoKit/Pose/Forward.html>
-    ///
-    /// see also [`crate::maths::Pose::forward`]
     #[inline]
     pub fn get_forward(&self) -> Vec3 {
         self.orientation.mul_vec3(Vec3::new(0.0, 0.0, -1.0))
@@ -2729,7 +2701,7 @@ impl Pose {
     /// direction is a unit vector/normalized.
     /// <https://stereokit.net/Pages/StereoKit/Pose/Ray.html>
     ///
-    /// see also [`crate::maths::Pose::ray`]
+    /// see also [`Ray`]
     #[inline]
     pub fn get_ray(&self) -> Ray {
         Ray { position: self.position, direction: Vec3::new(0.0, 0.0, -1.0) }
@@ -2737,8 +2709,6 @@ impl Pose {
 
     /// Calculates the right (+X) direction from this pose. This is done by multiplying the orientation with Vec3.Right.
     /// <https://stereokit.net/Pages/StereoKit/Pose/Right.html>
-    ///
-    /// see also [`crate::maths::Pose`]
     #[inline]
     pub fn get_right(&self) -> Vec3 {
         self.orientation.mul_vec3(Vec3::RIGHT)
@@ -2746,8 +2716,6 @@ impl Pose {
 
     /// Calculates the up (+Y) direction from this pose. This is done by multiplying the orientation with Vec3.Up.
     /// <https://stereokit.net/Pages/StereoKit/Pose/Up.html>
-    ///
-    /// see also [`crate::maths::Pose`]
     #[inline]
     pub fn get_up(&self) -> Vec3 {
         self.orientation.mul_vec3(Vec3::UP)
@@ -2767,8 +2735,6 @@ impl Display for Pose {
 /// visibility, and other things!
 ///
 /// <https://stereokit.net/Pages/StereoKit/Sphere.html>
-///
-/// see also [`crate::maths::Sphere`]
 #[derive(Copy, Clone, Debug, Default)]
 #[repr(C)]
 pub struct Sphere {
@@ -2792,8 +2758,6 @@ unsafe extern "C" {
 impl Sphere {
     /// Creates a Sphere directly from the ax + by + cz + d = 0 formula!
     /// <https://stereokit.net/Pages/StereoKit/Sphere.html>
-    ///
-    /// see also [`crate::maths::Sphere]
     #[inline]
     pub fn new<V: Into<Vec3>>(center: V, radius: f32) -> Sphere {
         Sphere { center: center.into(), radius }
@@ -2987,7 +2951,7 @@ impl Ray {
     ///   transformed back into world space later.
     /// - The indice of the mesh where the intersection occurs.
     ///
-    /// see also [`stereokit::mesh_ray_intersect`]    
+    /// see also [`crate::mesh::mesh_ray_intersect`]    
     #[inline]
     pub fn intersect_mesh(&self, mesh: &Mesh, cull: Option<Cull>) -> Option<(Vec3, VindT)> {
         let mut out_ray = Ray::default();

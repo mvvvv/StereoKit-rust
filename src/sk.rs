@@ -350,7 +350,7 @@ impl SkSettings {
     }
 
     /// Where to look for assets when loading files! Final path will look like ‘\[assetsFolder\]/\[file\]’, so a
-    /// trailing ‘/’ is unnecessary. Default is ""
+    /// trailing ‘/’ is unnecessary. Default is "assets"
     /// <https://stereokit.net/Pages/StereoKit/SKSettings/assetsFolder.html>
     ///
     /// Not pub anymore, please change variable SK_RUST_ASSET_DIR in config.toml [env]

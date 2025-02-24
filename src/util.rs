@@ -104,7 +104,7 @@ impl Color128 {
     /// perception, and has significantly more accurate to perception lightness values, so this is an excellent color
     /// space for color operations that wish to preserve color brightness properly.
     ///
-    /// Traditionally, values are L [0,100], a,b [-200,+200] but here we normalize them all to the 0-1 range. If you
+    /// Traditionally, values are L `[0,100], a,b [-200,+200]` but here we normalize them all to the 0-1 range. If you
     /// hate it, let me know why!
     /// <https://stereokit.net/Pages/StereoKit/Color/LAB.html>    
     pub fn lab(l: f32, a: f32, b: f32, transparency: f32) -> Self {
@@ -115,7 +115,7 @@ impl Color128 {
     /// perception, and has significantly more accurate to perception lightness values, so this is an excellent color
     /// space for color operations that wish to preserve color brightness properly.
     ///
-    /// Traditionally, values are L [0,100], a,b [-200,+200] but here we normalize them all to the 0-1 range. If you
+    /// Traditionally, values are L `[0,100], a,b [-200,+200]` but here we normalize them all to the 0-1 range. If you
     /// hate it, let me know why!
     /// <https://stereokit.net/Pages/StereoKit/Color/LAB.html>    
     pub fn lab_vec3(vec: Vec3, transparency: f32) -> Self {
@@ -345,7 +345,6 @@ impl From<[u8; 4]> for Color32 {
 
 macro_rules! named_color {
     ($name:ident, $r:expr, $g:expr, $b:expr) => {
-        #[doc = "as defined here : https://www.w3.org/wiki/CSS/Properties/color/keywords"]
         pub const $name: crate::util::Color32 = crate::util::Color32 { r: $r, g: $g, b: $b, a: 255 };
     };
 }
@@ -1211,7 +1210,7 @@ impl SphericalHarmonics {
     /// Creates a SphericalHarmonics approximation of the irradiance given from a set of directional lights!
     /// <https://stereokit.net/Pages/StereoKit/SphericalHarmonics/FromLights.html>
     ///
-    ///  see also [`crate::util::SHLight`]
+    ///  see also [`crate::util::ShLight`]
     pub fn from_lights(lights: &[ShLight]) -> Self {
         unsafe { sh_create(lights.as_ptr(), lights.len() as i32) }
     }

@@ -199,8 +199,7 @@ impl Model {
     ///
     /// ### Examples
     /// ```
-    /// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    ///
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model};
     ///
     /// let model = Model::from_file("center.glb", None).unwrap().copy();
@@ -278,7 +277,7 @@ impl Model {
     /// * color_linear - if None has default value of WHITE
     /// * layer - if None has default value of Layer0
     ///
-    /// see also [`stereokit::StereoKitDraw::model_draw`]
+    /// see also [`crate::model::model_draw`]
     pub fn draw(
         &self,
         _token: &MainThreadToken,
@@ -300,7 +299,7 @@ impl Model {
     /// * color_linear - if None has default value of WHITE
     /// * layer - if None has default value of Layer0
     ///
-    /// see also [`stereokit::StereoKitDraw::model_draw`]
+    /// see also [`crate::model::model_draw`]
     pub fn draw_with_material<M: AsRef<Material>>(
         &self,
         _token: &MainThreadToken,
@@ -381,7 +380,7 @@ impl Model {
     /// <https://stereokit.net/Pages/StereoKit/Model/Intersect.html>
     /// * cull - If None has default value of Cull::Back.
     ///
-    /// see also [`stereokit::model_ray_intersect`]
+    /// see also [`crate::model::model_ray_intersect`]
     #[inline]
     pub fn intersect_model(&self, ray: Ray, cull: Option<Cull>) -> Option<Vec3> {
         ray.intersect_model(self, cull)
@@ -393,7 +392,7 @@ impl Model {
     /// <https://stereokit.net/Pages/StereoKit/Model/Intersect.html>
     /// * cull - If None has default value of Cull::Back.
     ///
-    /// see also [`stereokit::model_ray_intersect`]
+    /// see also [`crate::model::model_ray_intersect`]
     #[inline]
     #[allow(clippy::not_unsafe_ptr_arg_deref)]
     pub fn intersect_model_to_ptr(&self, ray: Ray, cull: Option<Cull>, out_ray: *mut Ray) -> bool {
@@ -404,7 +403,7 @@ impl Model {
 /// Animations of a Model
 /// <https://stereokit.net/Pages/StereoKit/ModelAnimCollection.html>
 ///
-/// see also [`stereokit::Model`]
+/// see also [`Model::get_anims`]
 pub struct Anims<'a> {
     model: &'a Model,
     curr: i32,
@@ -564,7 +563,7 @@ impl<'a> Anims<'a> {
     /// Get the current animation duration
     /// <https://stereokit.net/Pages/StereoKit/Model/AnimTime.html>
     ///
-    /// see also [`crate::model::model_anim_time`]
+    /// see also [`crate::model::model_anim_active_time`]
     pub fn get_anim_time(&self) -> f32 {
         unsafe { model_anim_active_time(self.model.0.as_ptr()) }
     }
@@ -582,7 +581,7 @@ impl<'a> Anims<'a> {
 /// <https://stereokit.net/Pages/StereoKit/ModelNodeCollection.html>
 /// <https://stereokit.net/Pages/StereoKit/ModelVisualCollection.html>
 ///
-/// see also [`stereokit::ModelNodeId`]
+/// see also [`Model::get_nodes`]
 #[derive(Debug, Copy, Clone)]
 pub struct Nodes<'a> {
     model: &'a Model,
@@ -725,7 +724,7 @@ impl<'a> Nodes<'a> {
 
     /// This adds a root node to the Model’s node hierarchy! If There is already an initial root node,
     /// this node will still be a root node, but will be a Sibling of the Model’s RootNode. If this is the first root node added,
-    /// you’ll be able to access it via [get_root].
+    /// you’ll be able to access it via [Nodes::get_root_node].
     /// <https://stereokit.net/Pages/StereoKit/Model/AddNode.html>
     ///
     /// see also [ModelNode::add_child] [`crate::model::model_node_add`]
@@ -915,7 +914,7 @@ impl ModelNode<'_> {
     /// Adds a Child node below this node, at the end of the child chain! The local transform of the child will have this node as reference
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/AddChild.html>
     ///
-    /// see also [Node::add] [`crate::model::model_node_add_child`]
+    /// see also [Nodes::add] [`crate::model::model_node_add_child`]
     pub fn add_child<S: AsRef<str>>(
         &mut self,
         name: S,
@@ -1067,7 +1066,7 @@ impl ModelNode<'_> {
     /// The whole model in which this node belongs
     /// <https://stereokit.net/Pages/StereoKit/Model.html>
     ///
-    /// see also [`stereokit::Model`]
+    /// see also [`crate::model::Model`]
     pub fn get_model(&self) -> &Model {
         self.model
     }
@@ -1083,7 +1082,7 @@ impl ModelNode<'_> {
 /// Infos of a ModelNode
 /// <https://stereokit.net/Pages/StereoKit/ModelNodeInfoCollection.html>
 ///
-/// see also [`stereokit::ModelNode`]
+/// see also [`crate::model::ModelNode`]
 pub struct Infos<'a> {
     model: &'a Model,
     node_id: ModelNodeId,

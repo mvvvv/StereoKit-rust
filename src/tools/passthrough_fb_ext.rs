@@ -1,11 +1,11 @@
 use openxr_sys::{
+    CompositionLayerFlags, CompositionLayerPassthroughFB, PassthroughCreateInfoFB, PassthroughFB, PassthroughFlagsFB,
+    PassthroughLayerCreateInfoFB, PassthroughLayerFB, PassthroughLayerPurposeFB, Result, Session, Space, StructureType,
     pfn::{
         CreatePassthroughFB, CreatePassthroughLayerFB, DestroyPassthroughFB, DestroyPassthroughLayerFB,
         PassthroughLayerPauseFB, PassthroughLayerResumeFB, PassthroughLayerSetStyleFB, PassthroughPauseFB,
         PassthroughStartFB,
     },
-    CompositionLayerFlags, CompositionLayerPassthroughFB, PassthroughCreateInfoFB, PassthroughFB, PassthroughFlagsFB,
-    PassthroughLayerCreateInfoFB, PassthroughLayerFB, PassthroughLayerPurposeFB, Result, Session, Space, StructureType,
 };
 use stereokit_macros::IStepper;
 
@@ -153,11 +153,7 @@ impl PassthroughFbExt {
     fn check_event(&mut self, _id: &StepperId, key: &str, value: &str) {
         // Here we enable/disable the passthrough
         if key.eq(PASSTHROUGH_FLIP) {
-            if value == "0" {
-                self.enable(false)
-            } else {
-                self.enable(true)
-            }
+            if value == "0" { self.enable(false) } else { self.enable(true) }
         }
     }
     /// Called from IStepper::step after check_event, here you can draw your UI and scene

@@ -489,7 +489,7 @@ pub fn set_display_refresh_rate(rate: f32, with_log: bool) -> bool {
     }
 }
 /// Get the list of environnement blend_modes available on this device
-/// see also [`crate::system::Device::valid_blend()`]
+/// see also [`crate::util::Device::valid_blend()`]
 pub fn get_env_blend_modes(with_log: bool) -> Vec<EnvironmentBlendMode> {
     //>>>>>>>>>>> Get the env blend mode
     let mut count = 0u32;

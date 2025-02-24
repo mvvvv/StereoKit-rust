@@ -7,9 +7,6 @@ use std::{
 
 /// fluent syntax for Shader
 /// <https://stereokit.net/Pages/StereoKit/Shader.html>
-/// ## Examples
-///
-/// see also [`stereokit::Shader`]
 #[repr(C)]
 #[derive(Debug)]
 pub struct Shader(pub NonNull<_ShaderT>);
@@ -65,7 +62,7 @@ impl Shader {
     /// Asset Id will be the same as the filename.
     /// <https://stereokit.net/Pages/StereoKit/Shader/FromMemory.html>
     ///
-    /// see also [`stereokit::StereoKitMultiThread::shader_create_mem`]
+    /// see also [`crate::shader::shader_create_mem`]
     pub fn from_memory(data: &[u8]) -> Result<Shader, StereoKitError> {
         Ok(Shader(
             NonNull::new(unsafe { shader_create_mem(data.as_ptr() as *mut c_void, data.len()) })
@@ -77,7 +74,7 @@ impl Shader {
     /// tool called with `cargo compile_sks` or `cargo build_sk_rs`.
     /// <https://stereokit.net/Pages/StereoKit/Shader/FromFile.html>
     ///
-    /// see also [`stereokit::StereoKitMultiThread::shader_create_file`]
+    /// see also [`crate::shader::shader_create_file`]
     pub fn from_file(file_utf8: impl AsRef<Path>) -> Result<Shader, StereoKitError> {
         let path_buf = file_utf8.as_ref().to_path_buf();
         let c_str = CString::new(
@@ -95,7 +92,7 @@ impl Shader {
     /// Looks for a shader asset that’s already loaded, matching the given id!
     /// <https://stereokit.net/Pages/StereoKit/Shader/Find.html>
     ///
-    /// see also [`stereokit::StereoKitMultiThread::shader_find`]
+    /// see also [`crate::shader::shader_find`]
     pub fn find<S: AsRef<str>>(id: S) -> Result<Shader, StereoKitError> {
         let c_str = CString::new(id.as_ref())
             .map_err(|_| StereoKitError::ShaderFind(id.as_ref().into(), "CString conversion".to_string()))?;
@@ -120,7 +117,7 @@ impl Shader {
     /// managing your assets, or finding them later on!
     /// <https://stereokit.net/Pages/StereoKit/Shader/Id.html>
     ///
-    /// see also [`stereokit::StereoKitMultiThread::shader_set_id`]
+    /// see also [`crate::shader::shader_set_id`]
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
         let c_str = CString::new(id.as_ref()).unwrap();
         unsafe { shader_set_id(self.0.as_ptr(), c_str.as_ptr()) };
@@ -130,7 +127,7 @@ impl Shader {
     /// The id of this shader
     /// <https://stereokit.net/Pages/StereoKit/Shader/Id.html>
     ///
-    /// see also [`stereokit::StereoKitMultiThread::shader_get_id`]
+    /// see also [`crate::shader::shader_get_id`]
     pub fn get_id(&self) -> &str {
         unsafe { CStr::from_ptr(shader_get_id(self.0.as_ptr())) }.to_str().unwrap()
     }
@@ -138,7 +135,7 @@ impl Shader {
     /// The name of the shader, provided in the shader file itself. Not the filename or id.
     /// <https://stereokit.net/Pages/StereoKit/Shader/Name.html>
     ///
-    /// see also [`stereokit::StereoKitMultiThread::shader_get_name`]
+    /// see also [`crate::shader::shader_get_name`]
     pub fn get_name(&self) -> &str {
         unsafe { CStr::from_ptr(shader_get_name(self.0.as_ptr())) }.to_str().unwrap()
     }

@@ -138,7 +138,7 @@ pub enum TexFormat {
 /// specifically, how does the shader grab colors between the provided
 /// pixels? If you'd like an in-depth explanation of these topics, check
 /// out [this exploration of texture filtering]
-/// (https://medium.com/@bgolus/sharper-mipmapping-using-shader-based-supersampling-ed7aadb47bec)
+/// <https://medium.com/@bgolus/sharper-mipmapping-using-shader-based-supersampling-ed7aadb47bec>
 /// by graphics wizard Ben Golus.
 /// <https://stereokit.net/Pages/StereoKit/TexSample.html>
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -550,7 +550,7 @@ impl Tex {
     /// Looks for a Material asset that’s already loaded, matching the given id!
     /// <https://stereokit.net/Pages/StereoKit/Tex/Find.html>
     ///
-    /// see also [`crate::tex::material_find`]
+    /// see also [`crate::tex::tex_find`]
     pub fn find<S: AsRef<str>>(id: S) -> Result<Tex, StereoKitError> {
         let c_str = CString::new(id.as_ref()).map_err(|_| StereoKitError::TexCString(id.as_ref().into()))?;
         Ok(Tex(
@@ -932,7 +932,7 @@ impl Tex {
     /// to it.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetSize.html>
     ///
-    /// see also [`crate::tex::tex_set_size`]
+    /// see also [`crate::tex::tex_set_colors`]
     pub fn set_size(&mut self, width: usize, height: usize) -> &mut Self {
         unsafe { tex_set_colors(self.0.as_ptr(), width as i32, height as i32, null_mut()) };
         self
@@ -1065,7 +1065,7 @@ impl Tex {
 
     /// Non-canon function which returns a tuple made of (width, heigh, size) of the corresponding texture.
     ///
-    /// use mip < 0 for textures using [TexType::IMAGE_NO_MIPS]
+    /// use mip < 0 for textures using [`crate::tex::TexType::ImageNomips`]
     ///
     /// use mip >=0 to retrieve the info about one MIP of the texture
     ///
@@ -1117,7 +1117,7 @@ impl Tex {
     ///
     /// The function [`Tex::get_data_infos`] may help you to shape the right receiver.
     ///
-    /// see also [`crate::tex::tex_get_data`][`crate::tex::tex_get_data_mip`]
+    /// see also [`crate::tex::tex_get_data`]
     pub fn get_color_data<T>(&self, color_data: &[T], mut mip_level: i8) -> bool {
         let size_of_color = std::mem::size_of_val(color_data);
         let (width, height, size_test) = match self.get_data_infos(mip_level) {
@@ -1162,7 +1162,7 @@ impl Tex {
     ///
     /// The function [`Tex::get_data_infos`] may help you to shape the right receiver.
     ///
-    /// see also [`crate::tex::tex_get_data`][`crate::tex::tex_get_data_mip`]
+    /// see also [`crate::tex::tex_get_data`]
     pub fn get_u8_color_data(&self, color_data: &[u8], color_size: usize, mut mip_level: i8) -> bool {
         let size_of_color = std::mem::size_of_val(color_data);
         let (width, height, size_test) = match self.get_data_infos(mip_level) {

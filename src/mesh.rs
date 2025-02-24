@@ -18,8 +18,7 @@ use std::{
 ///
 /// ### Examples
 /// ```
-/// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-///
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{maths::{Vec3, Vec2, Matrix}, util::Color32, mesh::{Mesh,Vertex}, material::Material};
 ///
 /// // Creating vertices with all fields specified
@@ -99,8 +98,7 @@ pub enum Memory {
 ///
 /// ### Examples
 /// ```
-/// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-///
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{maths::{Vec3, Matrix, Quat}, util::{named_colors,Color32}, mesh::Mesh, material::Material};
 ///
 /// // Create Meshes
@@ -417,7 +415,7 @@ impl Mesh {
     ///   smoother corners, but can decrease performance.! None is 4.
     ///
     /// Returns a cube mesh with rounded corners, pre-sized to the given dimensions
-    /// see also [`crate::mesh::mesh_gen_rounded_circle`]
+    /// see also [`crate::mesh::mesh_gen_rounded_cube`]
     pub fn generate_rounded_cube(dimensions: impl Into<Vec3>, edge_radius: f32, subdivisions: Option<i32>) -> Mesh {
         let subdivisions = subdivisions.unwrap_or(4);
         Mesh(NonNull::new(unsafe { mesh_gen_rounded_cube(dimensions.into(), edge_radius, subdivisions) }).unwrap())
@@ -581,7 +579,7 @@ impl Mesh {
     /// * indices - A list of face indices, must be a multiple of 3. Each index represents a vertex from the array
     ///   assigned using SetVerts.
     ///
-    /// see also [`crate::mesh::mesh_set_indss`]
+    /// see also [`crate::mesh::mesh_set_inds`]
     pub fn set_inds(&mut self, indices: &[u32]) -> &mut Self {
         unsafe { mesh_set_inds(self.0.as_ptr(), indices.as_ptr(), indices.len() as i32) };
         self
@@ -600,7 +598,7 @@ impl Mesh {
     ///   user's head from a 3rd person perspective, but filtering it out from the 1st person perspective.If None has
     ///   default value of Layer0
     ///
-    /// see also [`stereokit::StereoKitDraw::mesh_draw`]
+    /// see also [`crate::mesh::mesh_draw`]
     pub fn draw(
         &self,
         _token: &MainThreadToken,
@@ -667,7 +665,7 @@ impl Mesh {
     /// <https://stereokit.net/Pages/StereoKit/Mesh/GetInds.html>
     /// Returns - An array of indices representing the Mesh, or null if keep_data is false.
     ///
-    /// see also [`crate::mesh::mesh_get_inds_ref`]
+    /// see also [Mesh::get_inds_copy] [`crate::mesh::mesh_get_inds`]
     pub fn get_inds(&self) -> &[u32] {
         let inds_ptr = CString::new("H").unwrap().into_raw() as *mut *mut u32;
         let mut inds_len = 0;
@@ -684,7 +682,7 @@ impl Mesh {
     /// Due to the way marshalling works, this is **not** a cheap function!
     /// <https://stereokit.net/Pages/StereoKit/Mesh/GetInds.html>
     ///
-    /// see also [`crate::mesh::mesh_get_inds_copy`]
+    /// see also [Mesh::get_inds] [`crate::mesh::mesh_get_inds`]
     pub fn get_inds_copy(&self) -> Vec<u32> {
         self.get_inds().to_vec()
     }
@@ -696,7 +694,7 @@ impl Mesh {
     /// Due to the way marshalling works, this is **not** a cheap function!
     /// <https://stereokit.net/Pages/StereoKit/Mesh/GetVerts.html>
     ///
-    /// see also [`crate::mesh::mesh_get_verts`]
+    /// see also [Mesh::get_verts_copy] [`crate::mesh::mesh_get_verts`]
     pub fn get_verts(&self) -> &[Vertex] {
         let verts_pointer = CString::new("H").unwrap().into_raw() as *mut *mut Vertex;
         let mut verts_len = 0;
@@ -714,7 +712,7 @@ impl Mesh {
     /// Due to the way marshalling works, this is **not** a cheap function!
     /// <https://stereokit.net/Pages/StereoKit/Mesh/GetVerts.html>
     ///
-    /// see also [`crate::mesh::mesh_get_verts_copy`]
+    /// see also [Mesh::get_verts] [`crate::mesh::mesh_get_verts`]
     pub fn get_verts_copy(&self) -> Vec<Vertex> {
         self.get_verts().to_vec()
     }
@@ -754,7 +752,7 @@ impl Mesh {
     ///   be transformed back into world space later.
     /// - The indice of the mesh where the intersection occurs.
     ///
-    /// see also [`stereokit::mesh_ray_intersect`]
+    /// see also [`crate::mesh::mesh_ray_intersect`]
     #[inline]
     pub fn intersect_mesh(&self, model_space_ray: Ray, cull: Option<Cull>) -> Option<(Vec3, VindT)> {
         model_space_ray.intersect_mesh(self, cull)
@@ -774,7 +772,7 @@ impl Mesh {
     /// * out_start_inds - The index of the first index of the triangle that was hit
     ///
     /// Returns true if an intersection occurs.
-    /// see also [`stereokit::mesh_ray_intersect`]
+    /// see also [`crate::mesh::mesh_ray_intersect`]
     #[inline]
     #[allow(clippy::not_unsafe_ptr_arg_deref)]
     pub fn intersect_mesh_to_ptr(

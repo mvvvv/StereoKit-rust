@@ -1,6 +1,6 @@
 use crate::{
     material::Material,
-    maths::{lerp, units::CM, Matrix, Plane, Pose, Quat, Vec2, Vec3},
+    maths::{Matrix, Plane, Pose, Quat, Vec2, Vec3, lerp, units::CM},
     mesh::{Inds, Mesh, Vertex},
     prelude::*,
     sound::Sound,
@@ -11,8 +11,8 @@ use crate::{
     tex::Tex,
     ui::{Ui, UiColor},
     util::{
-        named_colors::{GREEN, WHITE},
         Color128, Time,
+        named_colors::{GREEN, WHITE},
     },
 };
 use std::{borrow::BorrowMut, collections::VecDeque};
@@ -117,11 +117,7 @@ impl HandRadial {
         match self {
             HandRadial::Item(item) => {
                 let value = item.action.borrow();
-                if let HandMenuAction::Checked(group) = *value {
-                    Some(group)
-                } else {
-                    None
-                }
+                if let HandMenuAction::Checked(group) = *value { Some(group) } else { None }
             }
             HandRadial::Layer(_) => None,
         }
@@ -131,11 +127,7 @@ impl HandRadial {
         match self {
             HandRadial::Item(item) => {
                 let value = item.action.borrow();
-                if let HandMenuAction::Unchecked(group) = *value {
-                    Some(group)
-                } else {
-                    None
-                }
+                if let HandMenuAction::Unchecked(group) = *value { Some(group) } else { None }
             }
             HandRadial::Layer(_) => None,
         }
@@ -345,7 +337,7 @@ pub const HAND_MENU_RADIAL_FOCUS: &str = "hand_menu_radial_focus";
 ///
 /// ### Examples
 /// ```
-/// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{framework::*, material::Material, system::{Input, Key}};
 ///
 /// // swapping a value

@@ -14,8 +14,7 @@ use std::{
 /// ### Examples
 ///
 /// ```no_run
-/// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-///
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{ui::Ui, maths::{Vec3, Quat, Pose, Matrix}, font::Font, system::Text, util::named_colors::{RED, GREEN} };
 ///
 /// // Load font assets
@@ -105,7 +104,7 @@ impl Font {
     /// Loads a font and creates a font asset from it.
     /// <https://stereokit.net/Pages/StereoKit/Font/FromFile.html>
     ///
-    /// see also [`crate::font::font_create_file`]
+    /// see also [`crate::font::font_create`]
     pub fn from_file(file_utf8: impl AsRef<Path>) -> Result<Font, StereoKitError> {
         let path_buf = file_utf8.as_ref().to_path_buf();
         let c_str = CString::new(
@@ -124,7 +123,7 @@ impl Font {
     /// If a glyph is not found, StereoKit will look in the next font file in the list.
     /// <https://stereokit.net/Pages/StereoKit/Font/FromFile.html>
     ///
-    /// see also [`crate::font::font_create_file`]
+    /// see also [`crate::font::font_create_files`]
     pub fn from_files<P: AsRef<Path>>(files_utf8: &[P]) -> Result<Font, StereoKitError> {
         let mut c_files = Vec::new();
         for path in files_utf8 {

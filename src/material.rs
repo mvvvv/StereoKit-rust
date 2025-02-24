@@ -89,8 +89,7 @@ pub enum Cull {
 ///
 /// ### Examples
 /// ```
-/// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-///
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{maths::Matrix, util::Color128, mesh::Mesh, material::{*}};
 ///
 /// let cube = Mesh::cube();
@@ -109,7 +108,6 @@ pub enum Cull {
 /// );
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/materials.jpeg" alt="screenshot" width="200">
-
 #[derive(Debug)]
 pub struct Material(pub NonNull<_MaterialT>);
 impl Drop for Material {
@@ -189,8 +187,7 @@ impl Material {
     /// see also [`crate::material::material_create`][`crate::material::material_set_id`]
     /// ### Examples
     /// ```
-    /// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    ///
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::{Vec2, Matrix, Vec3}, mesh::Mesh, material::Material, shader::Shader};
     ///
     /// // Create Mesh and its material
@@ -218,8 +215,7 @@ impl Material {
     /// see also [`crate::material::material_create`][`crate::material::material_set_id`]
     /// ### Examples
     /// ```
-    /// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    ///
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::{Matrix, Vec3}, mesh::Mesh, material::Material};
     ///
     /// // Create Mesh and its material
@@ -260,8 +256,7 @@ impl Material {
     /// see also [`crate::material::material_copy()`]
     /// ### Examples
     /// ```
-    /// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    ///
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::Matrix, util::named_colors, material::Material};
     ///
     /// let mut material_blue = Material::default_copy();
@@ -289,8 +284,7 @@ impl Material {
     /// see also [`crate::material::material_copy_id`]
     /// ### Examples
     /// ```
-    /// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    ///
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{util::named_colors, material::Material, shader::Shader};
     ///
     /// let mut material = Material::new(Shader::pbr(), Some("my_material"));
@@ -319,8 +313,7 @@ impl Material {
     /// see also [`crate::material::material_find`]
     /// ### Examples
     /// ```
-    /// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    ///
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{util::named_colors,material::Material, shader::Shader};
     ///
     /// let mut material = Material::new(Shader::pbr(), Some("my_material"));
@@ -347,8 +340,7 @@ impl Material {
     /// see also [`crate::material::material_find()`]
     /// ### Examples
     /// ```
-    /// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    ///
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{util::named_colors,material::Material, shader::Shader};
     ///
     /// let mut material = Material::new(Shader::pbr(), Some("my_material"));
@@ -372,7 +364,21 @@ impl Material {
     /// <https://stereokit.net/Pages/StereoKit/Material/Material.html>
     /// * id - If None the id will be set to a default value "auto/asset_???"
     ///
-    /// see also [`crate::material::material_create`][`crate::material::material_set_id`]
+    /// see also [Material::diffuse_tex] [`crate::material::material_create`][`crate::material::material_set_id`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::material::Material;
+    ///
+    /// let material1 = Material::unlit().copy();
+    /// let material2 = Material::unlit().copy();
+    /// let mut material3 = Material::unlit().copy_for_tex("textures/open_gltf.jpeg", true, None).unwrap();
+    ///
+    /// assert_eq!(&material1.get_all_param_info().get_texture("diffuse").unwrap().get_id(),
+    ///            &material2.get_all_param_info().get_texture("diffuse").unwrap().get_id());
+    /// assert_ne!(&material2.get_all_param_info().get_texture("diffuse").unwrap().get_id(),
+    ///            &material3.get_all_param_info().get_texture("diffuse").unwrap().get_id());
+    /// ```
     pub fn copy_for_tex(
         &mut self,
         tex_file_name: impl AsRef<Path>,
@@ -394,6 +400,17 @@ impl Material {
     /// <https://stereokit.net/Pages/StereoKit/Material/Id.html>
     ///
     /// see also [`crate::material::material_set_id`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{material::Material, shader::Shader};
+    ///
+    /// let mut material = Material::new(Shader::pbr(), Some("my_material"));
+    /// assert_eq!(material.get_id(), "my_material");
+    ///
+    /// material.id("my_new_material");
+    /// assert_eq!(material.get_id(), "my_new_material");
+    /// ```
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
         let c_str = CString::new(id.as_ref()).unwrap();
         unsafe { material_set_id(self.0.as_ptr(), c_str.as_ptr()) };
@@ -404,6 +421,17 @@ impl Material {
     /// <https://stereokit.net/Pages/StereoKit/Material/Shader.html>
     ///
     /// see also [`crate::material::material_set_shader`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to init sk !!!!
+    /// use stereokit_rust::{material::Material, shader::Shader};
+    ///
+    /// let mut material = Material::new(Shader::pbr(), Some("my_material"));
+    /// assert_eq!(material.get_shader().get_id(), Shader::pbr().get_id());
+    ///
+    /// material.shader(Shader::unlit());
+    /// assert_eq!(material.get_shader().get_id(), Shader::unlit().get_id());
+    /// ```
     pub fn shader(&mut self, shader: impl AsRef<Shader>) -> &mut Self {
         unsafe { material_set_shader(self.0.as_ptr(), shader.as_ref().0.as_ptr()) };
         self
@@ -414,6 +442,15 @@ impl Material {
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
     /// see also [`crate::material::material_set_param`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to init sk !!!!
+    /// use stereokit_rust::{material::Material};
+    ///
+    /// let mut material = Material::pbr_clip().copy();
+    /// material.clip_cutoff(0.53);
+    /// assert_eq!(material.get_all_param_info().get_float("cutoff"), 0.53);
+    /// ```
     pub fn clip_cutoff(&mut self, cutoff: f32) -> &mut Self {
         let ptr: *const f32 = &cutoff;
         unsafe {
@@ -422,11 +459,21 @@ impl Material {
         }
         self
     }
+
     /// A per-material color tint, behavior could vary from shader to shader, but often this is just multiplied against
     /// the diffuse texture right at the start. This represents the Color param ‘color’.
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
     /// see also [`crate::material::material_set_param`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to init sk !!!!
+    /// use stereokit_rust::{material::Material, util::named_colors};
+    ///
+    /// let mut material = Material::unlit().copy();
+    /// material.color_tint(named_colors::RED);
+    /// assert_eq!(material.get_all_param_info().get_color("color"), named_colors::RED.into());
+    /// ```    
     pub fn color_tint(&mut self, color: impl Into<Color128>) -> &mut Self {
         let ptr: *const Color128 = &color.into();
         unsafe {
@@ -440,7 +487,24 @@ impl Material {
     /// is usually the base color that the shader works with. This represents the texture param ‘diffuse’.
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
+    /// see also [`Material::copy_for_tex`]
     /// see also [`crate::material::material_set_param`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{material::Material, tex::Tex};
+    ///
+    /// let mut material = Material::unlit().copy();
+    /// let default_tex = material.get_all_param_info().get_texture("diffuse").unwrap();
+    ///
+    /// let tex = Tex::from_file("textures/open_gltf.jpeg", true, None).unwrap();
+    /// material.diffuse_tex(&tex);
+    ///
+    /// assert_eq!(&material.get_all_param_info().get_texture("diffuse").unwrap().get_id(),
+    ///            &tex.get_id());
+    /// assert_ne!(&default_tex.get_id(),
+    ///            &tex.get_id());
+    /// ```
     pub fn diffuse_tex(&mut self, texture: impl AsRef<Tex>) -> &mut Self {
         unsafe {
             let cstr = &CString::new("diffuse").unwrap();
@@ -458,9 +522,19 @@ impl Material {
     /// white, and the default value for this parameter is 0,0,0,0. This represents the Color param ‘emission_factor’.
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
+    /// see also [`Material::emission_tex`]
     /// see also [`crate::material::material_set_param`]
-    pub fn emission_factor(&mut self, color: Color128) -> &mut Self {
-        let ptr: *const Color128 = &color;
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to init sk !!!!
+    /// use stereokit_rust::{material::Material, util::named_colors};
+    ///
+    /// let mut material = Material::pbr().copy();
+    /// material.emission_factor(named_colors::RED);
+    /// assert_eq!(material.get_all_param_info().get_color("emission_factor"), named_colors::RED.into());
+    /// ```  
+    pub fn emission_factor(&mut self, color: impl Into<Color128>) -> &mut Self {
+        let ptr: *const Color128 = &color.into();
         unsafe {
             let cstr = &CString::new("emission_factor").unwrap();
             material_set_param(self.0.as_ptr(), cstr.as_ptr(), MaterialParam::Color128, ptr as *const c_void);
@@ -472,7 +546,21 @@ impl Material {
     /// Tends to look really glowy. This represents the texture param ‘emission’.
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
+    /// see also [`Material::emission_factor`]
     /// see also [`crate::material::material_set_param`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{util::named_colors, material::Material, tex::Tex};
+    ///
+    /// let mut material = Material::pbr_clip().copy_for_tex("textures/water/bump_large.ktx2", true, Some(0)).unwrap();
+    ///
+    /// let tex = Tex::from_file("textures/water/bump_large_inverse.ktx2", true, None).unwrap();
+    /// material.emission_tex(&tex).emission_factor(named_colors::RED);
+    ///
+    /// assert_eq!(&material.get_all_param_info().get_texture("emission").unwrap().get_id(),
+    ///            &tex.get_id());
+    /// ```
     pub fn emission_tex(&mut self, texture: impl AsRef<Tex>) -> &mut Self {
         unsafe {
             let cstr = &CString::new("emission").unwrap();
@@ -490,7 +578,18 @@ impl Material {
     /// This represents the float param ‘metallic’.
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
+    /// see also [`Material::metal_tex`]
     /// see also [`crate::material::material_set_param`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to init sk !!!!
+    /// use stereokit_rust::{material::Material, util::named_colors};
+    ///
+    /// let mut material = Material::pbr().copy();
+    /// material.metallic_amount(0.68);
+    /// assert_eq!(material.get_all_param_info().get_float("metallic"), 0.68);
+    ///
+    /// ```  
     pub fn metallic_amount(&mut self, amount: f32) -> &mut Self {
         let ptr: *const f32 = &amount;
         unsafe {
@@ -504,7 +603,21 @@ impl Material {
     /// respectively. This represents the texture param ‘metal’.
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
+    /// see also [`Material::metallic_amount`]
     /// see also [`crate::material::material_set_param`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{material::Material, tex::Tex};
+    ///
+    /// let mut material = Material::pbr_clip().copy_for_tex("textures/parquet2/parquet2.ktx2", true, Some(0)).unwrap();
+    ///
+    /// let tex = Tex::from_file("textures/parquet2/parquet2metal.ktx2", true, None).unwrap();
+    /// material.metal_tex(&tex).metallic_amount(0.68);
+    ///
+    /// assert_eq!(&material.get_all_param_info().get_texture("metal").unwrap().get_id(),
+    ///            &tex.get_id());
+    /// ```
     pub fn metal_tex(&mut self, texture: impl AsRef<Tex>) -> &mut Self {
         unsafe {
             let cstr = &CString::new("metal").unwrap();
@@ -524,6 +637,19 @@ impl Material {
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
     /// see also [`crate::material::material_set_param`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{material::Material, tex::Tex};
+    ///
+    /// let mut material = Material::from_file("shaders/water_pbr2.hlsl.sks", None).unwrap();
+    ///
+    /// let tex = Tex::from_file("textures/water/bump_large.ktx2", true, None).unwrap();
+    /// material.normal_tex(&tex);
+    ///
+    /// assert_eq!(&material.get_all_param_info().get_texture("normal").unwrap().get_id(),
+    ///            &tex.get_id());
+    /// ```
     pub fn normal_tex(&mut self, texture: impl AsRef<Tex>) -> &mut Self {
         unsafe {
             let cstr = &CString::new("normal").unwrap();
@@ -542,6 +668,19 @@ impl Material {
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
     /// see also [`crate::material::material_set_param`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{material::Material, tex::Tex};
+    ///
+    /// let mut material = Material::pbr().copy_for_tex("textures/parquet2/parquet2.ktx2", true, None).unwrap();
+    ///
+    /// let tex = Tex::from_file("textures/parquet2/parquet2ao.ktx2", true, None).unwrap();
+    /// material.occlusion_tex(&tex);
+    ///
+    /// assert_eq!(&material.get_all_param_info().get_texture("occlusion").unwrap().get_id(),
+    ///            &tex.get_id());
+    /// ```
     pub fn occlusion_tex(&mut self, texture: impl AsRef<Tex>) -> &mut Self {
         unsafe {
             let cstr = &CString::new("occlusion").unwrap();
@@ -560,6 +699,16 @@ impl Material {
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
     /// see also [`crate::material::material_set_param`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::material::Material;
+    ///
+    /// let mut material = Material::pbr().copy();
+    /// material.roughness_amount(0.78);
+    ///
+    /// assert_eq!(material.get_all_param_info().get_float("roughness"), 0.78);
+    /// ```
     pub fn roughness_amount(&mut self, amount: f32) -> &mut Self {
         let ptr: *const f32 = &amount;
         unsafe {
@@ -588,6 +737,16 @@ impl Material {
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
     /// see also [`crate::material::material_set_param`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::material::Material;
+    ///
+    /// let mut material = Material::from_file("shaders/water_pbr2.hlsl.sks", None).unwrap();
+    /// material.time(0.38);
+    ///
+    /// assert_eq!(material.get_all_param_info().get_float("time"), 0.38);
+    /// ```
     pub fn time(&mut self, time: f32) -> &mut Self {
         let ptr: *const f32 = &time;
         unsafe {
@@ -604,6 +763,16 @@ impl Material {
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
     /// see also [`crate::material::material_set_param`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Vec4, material::Material};
+    ///
+    /// let mut material = Material::unlit().copy();
+    /// material.tex_transform(Vec4::ONE * 5.5);
+    ///
+    /// assert_eq!(material.get_all_param_info().get_vector4("tex_trans"), Vec4::ONE * 5.5);
+    /// ```
     pub fn tex_transform(&mut self, transform: impl Into<Vec4>) -> &mut Self {
         let ptr: *const Vec4 = &transform.into();
         unsafe {
@@ -614,11 +783,37 @@ impl Material {
     }
 
     //--- Others parameters
+
     /// What type of transparency does this Material use? Default is None. Transparency has an impact on performance, and draw order.
-    /// Check the [stereokit::Transparency] enum for details.
+    /// Check the [`Transparency`] enum for details.
     /// <https://stereokit.net/Pages/StereoKit/Material/Transparency.html>
     ///
     /// see also [`crate::material::material_set_transparency`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix, Quat}, util::{named_colors,Color32},
+    ///                      mesh::Mesh, material::{Material, Transparency}};
+    ///
+    /// // Creating Meshes and their materials
+    /// let cube = Mesh::generate_cube(Vec3::ONE * 0.8, None);
+    /// let sphere = Mesh::generate_sphere(1.4, None);
+    ///
+    /// let mut material_sphere = Material::pbr().copy();
+    /// material_sphere.color_tint(named_colors::BLUE).transparency(Transparency::Add);
+    ///
+    /// let material_cube = Material::pbr().copy();
+    /// let cube_transform = Matrix::r(Quat::from_angles(40.0, 50.0, 20.0));
+    ///
+    /// assert_eq!(material_sphere.get_transparency(), Transparency::Add);
+    /// assert_eq!(material_cube.get_transparency(), Transparency::None);
+    /// filename_scr = "screenshots/material_transparency.jpeg";
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     cube.draw(token, &material_cube, cube_transform, None, None);
+    ///     sphere.draw(token, &material_sphere, Matrix::IDENTITY, None, None);
+    /// );
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/material_transparency.jpeg" alt="screenshot" width="200">
     pub fn transparency(&mut self, mode: Transparency) -> &mut Self {
         unsafe { material_set_transparency(self.0.as_ptr(), mode) };
         self
@@ -628,6 +823,33 @@ impl Material {
     /// <https://stereokit.net/Pages/StereoKit/Material/FaceCull.html>
     ///
     /// see also [`crate::material::material_set_cull`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::{named_colors,Color32},
+    ///                      mesh::Mesh, material::{Material, Cull}};
+    ///
+    /// // Creating Meshes and their materials
+    /// let cube1 = Mesh::generate_cube(Vec3::ONE * 1.0, None);
+    /// let cube2 = Mesh::generate_cube(Vec3::ONE * 0.4, None);
+    ///
+    /// let mut material_cube1 = Material::pbr().copy();
+    /// material_cube1.face_cull(Cull::Front).color_tint(named_colors::RED);
+    ///
+    /// let mut material_cube2 = Material::pbr().copy();
+    /// assert_eq!(material_cube2.get_face_cull(), Cull::Back);
+    /// material_cube2.face_cull(Cull::None).color_tint(named_colors::GREEN);
+    ///
+    /// assert_eq!(material_cube1.get_face_cull(), Cull::Front);
+    /// assert_eq!(material_cube2.get_face_cull(), Cull::None);
+    ///
+    /// filename_scr = "screenshots/material_face_cull.jpeg";
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     cube1.draw(token, &material_cube1,  Matrix::IDENTITY, None, None);
+    ///     cube2.draw(token, &material_cube2,  Matrix::IDENTITY, None, None);
+    /// );
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/material_face_cull.jpeg" alt="screenshot" width="200">
     pub fn face_cull(&mut self, mode: Cull) -> &mut Self {
         unsafe { material_set_cull(self.0.as_ptr(), mode) };
         self
@@ -638,6 +860,16 @@ impl Material {
     /// <https://stereokit.net/Pages/StereoKit/Material/Wireframe.html>
     ///
     /// see also [`crate::material::material_set_wireframe`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{util::{named_colors,Color32},material::Material};
+    ///
+    /// let mut material_cube = Material::pbr().copy();
+    /// assert_eq!(material_cube.get_wireframe(), false);
+    /// material_cube.wireframe(true).color_tint(named_colors::CYAN);
+    /// assert_eq!(material_cube.get_wireframe(), true);
+    /// ```
     pub fn wireframe(&mut self, wireframe: bool) -> &mut Self {
         unsafe { material_set_wireframe(self.0.as_ptr(), wireframe as Bool32T) };
         self
@@ -649,6 +881,16 @@ impl Material {
     /// <https://stereokit.net/Pages/StereoKit/Material/DepthTest.html>
     ///
     /// see also [`crate::material::material_set_depth_test`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{ util::{named_colors,Color32}, material::{Material, DepthTest}};
+    ///
+    /// let mut material_cube = Material::pbr().copy();
+    /// assert_eq!(material_cube.get_depth_test(), DepthTest::Less);
+    /// material_cube.depth_test(DepthTest::Greater).color_tint(named_colors::CYAN);
+    /// assert_eq!(material_cube.get_depth_test(), DepthTest::Greater);
+    /// ```
     pub fn depth_test(&mut self, depth_test_mode: DepthTest) -> &mut Self {
         unsafe { material_set_depth_test(self.0.as_ptr(), depth_test_mode) };
         self
@@ -660,6 +902,16 @@ impl Material {
     /// <https://stereokit.net/Pages/StereoKit/Material/DepthWrite.html>
     ///
     /// see also [`crate::material::material_set_depth_write`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{util::{named_colors,Color32},material::Material};
+    ///
+    /// let mut material_cube = Material::pbr().copy();
+    /// assert_eq!(material_cube.get_depth_write(), true);
+    /// material_cube.depth_write(false).color_tint(named_colors::CYAN);
+    /// assert_eq!(material_cube.get_depth_write(), false);
+    /// ```
     pub fn depth_write(&mut self, write_enabled: bool) -> &mut Self {
         unsafe { material_set_depth_write(self.0.as_ptr(), write_enabled as Bool32T) };
         self
@@ -672,6 +924,16 @@ impl Material {
     /// <https://stereokit.net/Pages/StereoKit/Material/QueueOffset.html>
     ///
     /// see also [`crate::material::material_set_queue_offset`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{util::{named_colors,Color32},material::Material};
+    ///
+    /// let mut material_cube = Material::pbr().copy();
+    /// assert_eq!(material_cube.get_queue_offset(), 0);
+    /// material_cube.queue_offset(8).color_tint(named_colors::CYAN);
+    /// assert_eq!(material_cube.get_queue_offset(), 8);
+    /// ```
     pub fn queue_offset(&mut self, offset: i32) -> &mut Self {
         unsafe { material_set_queue_offset(self.0.as_ptr(), offset) };
         self
@@ -682,79 +944,110 @@ impl Material {
     /// <https://stereokit.net/Pages/StereoKit/Material/Chain.html>
     ///
     /// see also [`crate::material::material_set_chain`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::material::Material;
+    ///
+    /// let mut material_cube = Material::pbr().copy();
+    /// assert!(material_cube.get_chain().is_none());
+    ///
+    /// let mut material_to_chain = Material::ui_quadrant().copy();
+    /// material_to_chain.id("material_to_chain");
+    /// material_cube.chain(&material_to_chain);
+    /// assert_eq!(material_cube.get_chain().unwrap().get_id(), material_to_chain.get_id());
+    /// ```
     pub fn chain(&mut self, chained_material: &Material) -> &mut Self {
         unsafe { material_set_chain(self.0.as_ptr(), chained_material.0.as_ptr()) };
         self
     }
 
-    /// Get the id of the material.
+    /// Get the [`Material::id`] of the material.
     /// <https://stereokit.net/Pages/StereoKit/Material/Id.html>
     ///
     /// see also [`crate::material::material_get_id`]
+    ///
+    /// see example in [`Material::id`]
     pub fn get_id(&self) -> &str {
         unsafe { CStr::from_ptr(material_get_id(self.0.as_ptr())) }.to_str().unwrap()
     }
 
-    /// Get the [`MaterialParam::shader`] of the material.
+    /// Get the [`Material::shader`] of the material.
     /// <https://stereokit.net/Pages/StereoKit/Material/Shader.html>
     ///
     /// see also [`crate::material::material_get_shader`]
+    ///
+    /// see example in [`Material::shader`]
     pub fn get_shader(&self) -> Shader {
         unsafe { Shader(NonNull::new(material_get_shader(self.0.as_ptr())).unwrap()) }
     }
 
-    /// Get the [`MaterialParam::transparency`] of the material.
+    /// Get the [`Material::transparency`] of the material.
     /// <https://stereokit.net/Pages/StereoKit/Material/Transparency.html>
     ///
     /// see also [`crate::material::material_get_transparency`]
+    ///
+    /// see example in [`Material::transparency`]
     pub fn get_transparency(&self) -> Transparency {
         unsafe { material_get_transparency(self.0.as_ptr()) }
     }
 
-    /// Get the [`MaterialParam::face_cull`] of the material.
+    /// Get the [`Material::face_cull`] of the material.
     /// <https://stereokit.net/Pages/StereoKit/Material/FaceCull.html>
     ///
     /// see also [`crate::material::material_get_cull`]
+    ///
+    /// see example in [`Material::face_cull`]
     pub fn get_face_cull(&self) -> Cull {
         unsafe { material_get_cull(self.0.as_ptr()) }
     }
 
-    /// Get the [`MaterialParam::wireframe`] of the material.
+    /// Get the [`Material::wireframe`] of the material.
     /// <https://stereokit.net/Pages/StereoKit/Material/Wireframe.html>
     ///
     /// see also [`crate::material::material_get_wireframe`]
+    ///
+    /// see example in [`Material::wireframe`]
     pub fn get_wireframe(&self) -> bool {
         unsafe { material_get_wireframe(self.0.as_ptr()) != 0 }
     }
 
-    /// Get the [`MaterialParam::depth_test`] of the material.
+    /// Get the [`Material::depth_test`] of the material.
     /// <https://stereokit.net/Pages/StereoKit/Material/DepthTest.html>
     ///
     /// see also [`crate::material::material_get_depth_test`]
+    ///
+    /// see example in [`Material::depth_test`]
     pub fn get_depth_test(&self) -> DepthTest {
         unsafe { material_get_depth_test(self.0.as_ptr()) }
     }
 
-    /// Get the [`MaterialParam::depth_write`] of the material.
+    /// Get the [`Material::depth_write`] of the material.
     /// <https://stereokit.net/Pages/StereoKit/Material/DepthWrite.html>
     ///
     /// see also [`crate::material::material_get_depth_write`]
+    ///
+    /// see example in [`Material::depth_write`]
     pub fn get_depth_write(&self) -> bool {
         unsafe { material_get_depth_write(self.0.as_ptr()) != 0 }
     }
 
-    /// Get the [`MaterialParam::queue_offset`] of the material.
+    /// Get the [`Material::queue_offset`] of the material.
     /// <https://stereokit.net/Pages/StereoKit/Material/QueueOffset.html>
     ///
     /// see also [`crate::material::material_get_queue_offset`]
+    ///
+    /// see example in [`Material::queue_offset`]
     pub fn get_queue_offset(&self) -> i32 {
         unsafe { material_get_queue_offset(self.0.as_ptr()) }
     }
 
-    /// Get the [`MaterialParam::chain`] of the material.
+    /// Get the [`Material::chain`] of the material.
     /// <https://stereokit.net/Pages/StereoKit/Material/Chain.html>
     ///
     /// see also [`crate::material::material_get_chain`]
+    ///
+    /// see example in [`Material::chain`]
     pub fn get_chain(&self) -> Option<Material> {
         unsafe { NonNull::new(material_get_chain(self.0.as_ptr())).map(Material) }
     }
@@ -762,7 +1055,9 @@ impl Material {
     /// Get All param infos.
     /// <https://stereokit.net/Pages/StereoKit/Material/GetAllParamInfo.html>
     ///
-    /// see also [`ParamInfos`][`stereokit::Material`]
+    /// see also [`ParamInfos`][`ParamInfo`]
+    /// ### Examples
+    ///
     pub fn get_all_param_info(&self) -> ParamInfos<'_> {
         ParamInfos::from(self)
     }
@@ -857,7 +1152,7 @@ impl Material {
 /// Warning, you have to be cautious when settings some infos
 /// <https://stereokit.net/Pages/StereoKit/Material/GetAllParamInfo.html>
 ///
-/// see also [`stereokit::Material`]
+/// see also [`Material::get_all_param_info`] [ParamInfo]
 pub struct ParamInfos<'a> {
     material: &'a Material,
     index: i32,
@@ -1273,7 +1568,7 @@ impl<'a> ParamInfos<'a> {
     /// Vec4::ZERO will be returned.
     /// <https://stereokit.net/Pages/StereoKit/Material/GetVector4.html>
     ///
-    /// see also [`crate::material::material_get_vector4`]    pub fn get_vector4<S: AsRef<str>>(&mut self, name: S) -> Option<Vec4> {
+    /// see also [`crate::material::material_get_vector4`]
     pub fn get_vector4<S: AsRef<str>>(&self, name: S) -> Vec4 {
         unsafe {
             let cstr = &CString::new(name.as_ref()).unwrap_or_default();
@@ -1432,7 +1727,7 @@ impl<'a> ParamInfos<'a> {
 /// One Info of a Material. This is only used for read
 /// <https://stereokit.net/Pages/StereoKit/Material/GetAllParamInfo.html>
 ///
-/// see also [`stereokit::Material`]
+/// see also [ParamInfos] [`Material::get_all_param_info`]
 pub struct ParamInfo {
     pub name: String,
     pub type_info: MaterialParam,
@@ -1458,8 +1753,18 @@ unsafe extern "C" {
     pub fn material_buffer_release(buffer: MaterialBufferT);
 }
 
-pub struct MaterialBuffer_<T> {
-    material_buffer: MaterialBufferT,
+/// This is a chunk of memory that will get bound to all shaders at a particular register slot. StereoKit uses this to
+/// provide engine values to the shader, and you can also use this to drive graphical shader systems of your own!
+///
+/// For example, if your application has a custom lighting system, fog, wind, or some other system that multiple shaders
+/// might need to refer to, this is the perfect tool to use.
+///
+/// The type ‘T’ for this buffer must be a struct that uses the #[repr(C)] attribute for
+/// proper copying. It should also match the layout of your equivalent cbuffer in the shader file. Note that shaders
+/// often have specific byte alignment requirements!
+/// <https://stereokit.net/Pages/StereoKit/MaterialBuffer.html>
+pub struct MaterialBuffer<T> {
+    _material_buffer: MaterialBufferT,
     phantom: PhantomData<T>,
 }
 #[repr(C)]
@@ -1469,27 +1774,29 @@ pub struct _MaterialBufferT {
 }
 pub type MaterialBufferT = *mut _MaterialBufferT;
 
-impl<T> Drop for MaterialBuffer_<T> {
+impl<T> Drop for MaterialBuffer<T> {
     fn drop(&mut self) {
-        unsafe { material_buffer_release(self.material_buffer) }
+        unsafe { material_buffer_release(self._material_buffer) }
     }
 }
-impl<T> AsRef<MaterialBuffer_<T>> for MaterialBuffer_<T> {
-    fn as_ref(&self) -> &MaterialBuffer_<T> {
+impl<T> AsRef<MaterialBuffer<T>> for MaterialBuffer<T> {
+    fn as_ref(&self) -> &MaterialBuffer<T> {
         self
     }
 }
 
-impl<T> MaterialBuffer_<T> {
+impl<T> MaterialBuffer<T> {
     /// Create a new global MaterialBuffer bound to the register slot id. All shaders will have access to the data
     /// provided via this instance’s Set.
     /// <https://stereokit.net/Pages/StereoKit/MaterialBuffer/MaterialBuffer.html>
+    /// * register_slot - Valid values are 3-16. This is the register id that this data will be bound to. In HLSL,
+    ///   you’ll see the slot id for ‘3’ indicated like this : register(b3)
     ///
     /// see also [`crate::material::material_buffer_create`]
-    pub fn material_buffer(register_slot: i32) -> MaterialBuffer_<T> {
+    pub fn new(register_slot: i32) -> MaterialBuffer<T> {
         let size = std::mem::size_of::<T>();
         let mat_buffer = unsafe { material_buffer_create(register_slot, size as i32) };
-        MaterialBuffer_ { material_buffer: mat_buffer, phantom: PhantomData }
+        MaterialBuffer { _material_buffer: mat_buffer, phantom: PhantomData }
     }
 
     /// This will upload your data to the GPU for shaders to use.
@@ -1497,6 +1804,6 @@ impl<T> MaterialBuffer_<T> {
     ///
     /// see also [`crate::material::material_buffer_set_data`]
     pub fn set(&self, in_data: *mut T) {
-        unsafe { material_buffer_set_data(self.material_buffer, in_data as *const c_void) };
+        unsafe { material_buffer_set_data(self._material_buffer, in_data as *const c_void) };
     }
 }

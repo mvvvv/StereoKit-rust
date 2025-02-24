@@ -66,7 +66,7 @@ pub enum UiCut {
 }
 
 /// Theme color categories to pair with Ui::set_theme_color.
-/// The total lenght is [u32,u32] where the fist u32 is the enum and the second is the ExtraSlot value
+/// The total lenght is `[u32,u32]` where the fist u32 is the enum and the second is the ExtraSlot value
 /// native C function should convert this to UiColorT
 /// <https://stereokit.net/Pages/StereoKit/UIColor.html>
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -1928,7 +1928,7 @@ impl Ui {
     /// * size - The layout size for this element in Hierarchy space. If an axis is left as zero, it will be
     ///   auto-calculated. For X this is the remaining width of the current layout, and for Y this is Ui::line_height.
     ///
-    /// see also [`crate::ui::ui_radio`] [`crate::ui::ui_radio_sz`]
+    /// see also [`crate::ui::ui_toggle_img`] [`crate::ui::ui_toggle_img_sz`]
     #[deprecated(since = "0.0.1", note = "Performence issues, use radio_img instead")]
     pub fn radio(id: impl AsRef<str>, active: bool, size: Option<Vec2>) -> bool {
         let cstr = CString::new(id.as_ref()).unwrap();
