@@ -38,7 +38,7 @@ struct psIn {
     float3 normal    : NORMAL0;
     float4 color     : COLOR0;
     float3 irradiance: COLOR1;
-	float3 world     : TEXCOORD1;    
+    float3 world     : TEXCOORD1;    
     float3 view_dir  : TEXCOORD2;
     uint view_id     : SV_RenderTargetArrayIndex;
 };
@@ -48,7 +48,7 @@ psIn vs(vsIn input, uint id : SV_InstanceID) {
     o.view_id = id % sk_view_count;
     id        = id / sk_view_count;
 
-	o.world     = mul(float4(input.pos.xyz, 1), sk_inst[id].world).xyz;
+    o.world     = mul(float4(input.pos.xyz, 1), sk_inst[id].world).xyz;
     o.pos       = mul(float4(o.world,   1), sk_viewproj[o.view_id]);
 
     o.normal     = normalize(mul(float4(input.normal, 0), sk_inst[id].world).xyz);
@@ -71,11 +71,11 @@ float4 ps(psIn input) : SV_TARGET {
     uv.x += offset;
     uv.y += offset;
     float3 normal_cal   = normal   .Sample(normal_samp,   uv).rgb * input.normal;
-	float2 metal_rough  = metal    .Sample(metal_samp,    uv * 0.2).gb; // rough is g, b is metallic
-	float  ao           = occlusion.Sample(occlusion_samp,uv * 0.6).r;  // occlusion is sometimes part of the metal tex, uses r channel
+    float2 metal_rough  = metal    .Sample(metal_samp,    uv * 0.2).gb; // rough is g, b is metallic
+    float  ao           = occlusion.Sample(occlusion_samp,uv * 0.6).r;  // occlusion is sometimes part of the metal tex, uses r channel
 
-	float metallic_final = metal_rough.y * metallic;
-	float rough_final    = metal_rough.x * roughness;
+    float metallic_final = metal_rough.y * metallic;
+    float rough_final    = metal_rough.x * roughness;
 
     float4 color = sk_pbr_shade(albedo, input.irradiance, ao, metallic_final, rough_final, input.view_dir, normal_cal);
 
