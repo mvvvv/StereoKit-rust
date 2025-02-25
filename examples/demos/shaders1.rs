@@ -9,8 +9,8 @@ use stereokit_rust::{
     tex::Tex,
     ui::{Ui, UiMove, UiWin},
     util::{
-        named_colors::{BLUE, GREEN, LIGHT_BLUE, RED, WHITE},
         Time,
+        named_colors::{BLUE, GREEN, LIGHT_BLUE, RED, WHITE},
     },
 };
 
@@ -21,14 +21,16 @@ pub struct Shader1 {
     sk_info: Option<Rc<RefCell<SkInfo>>>,
     pub transform_mesh: Matrix,
     pub transform_plane: Matrix,
+    pub transform_water2: Matrix,
+    pub transform_brick: Matrix,
     pub pose_progress: Pose,
     material_red: Material,
     material_green: Material,
     water2: Material,
+    brick: Material,
     mesh: Mesh,
     plane: Mesh,
     pub transform_text: Matrix,
-    pub transform_water2: Matrix,
     text: String,
     text_style: TextStyle,
     fps: f64,
@@ -70,6 +72,10 @@ impl Default for Shader1 {
             .color_tint(LIGHT_BLUE)
             .time(5.0);
 
+        // brick
+        let mut brick = Material::from_file("shaders/brick_pbr.hlsl.sks", "brick".into()).unwrap_or_default().copy();
+        brick.tex_transform(Vec4::new(0.0, 0.0, 0.04, 0.04));
+
         //---- Transform Matrices.
         let transform_mesh = Matrix::trs(
             &((Vec3::NEG_Z * 1.0) + Vec3::X + Vec3::Y * 1.4),
@@ -82,6 +88,9 @@ impl Default for Shader1 {
 
         let transform_water2 =
             Matrix::tr(&((Vec3::NEG_Z * 1.0) + Vec3::X * 0.2 + Vec3::Y * 0.2), &Quat::from_angles(0.0, 180.0, 0.0));
+
+        let transform_brick =
+            Matrix::tr(&((Vec3::NEG_Z * 1.0) + Vec3::X * 1.5 + Vec3::Y * 0.2), &Quat::from_angles(0.0, 180.0, 0.0));
 
         let transform_text = Matrix::tr(&(Vec3::ONE * -0.2), &Quat::from_angles(0.0, 180.0, 0.0));
 
@@ -104,11 +113,13 @@ impl Default for Shader1 {
             sk_info: None,
             transform_mesh,
             transform_plane,
-            pose_progress,
             transform_water2,
+            transform_brick,
+            pose_progress,
             material_red: blinker_material,
             material_green,
             water2,
+            brick,
             mesh,
             plane,
             transform_text,
@@ -153,6 +164,7 @@ impl Shader1 {
         Ui::vprogress_bar(total_scale / 2.0, 0.50, false);
         Ui::window_end();
         self.mesh.draw(token, &self.water2, self.transform_water2, None, None);
+        self.plane.draw(token, &self.brick, self.transform_brick, None, None);
 
         self.fps = ((1.0 / Time::get_step()) + self.fps) / 2.0;
 

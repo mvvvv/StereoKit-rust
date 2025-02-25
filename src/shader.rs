@@ -5,8 +5,30 @@ use std::{
     ptr::NonNull,
 };
 
-/// fluent syntax for Shader
+/// A shader is a piece of code that runs on the GPU, and determines how model data gets transformed into pixels on
+/// screen! It’s more likely that you’ll work more directly with Materials, which shaders are a subset of.
+///
+/// With this particular class, you can mostly just look at it. It doesn’t do a whole lot. Maybe you can swap out the
+/// shader code or something sometimes!
 /// <https://stereokit.net/Pages/StereoKit/Shader.html>
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{shader::Shader, material::Material,
+///                      mesh::Mesh, maths::{Matrix, Vec2, Vec3, Vec4}};
+///
+/// let plane = Mesh::generate_plane( Vec2::ONE*2.0, Vec3::NEG_Z, Vec3::X, None, true);
+/// let shader = Shader::from_file("shaders/brick_pbr.hlsl.sks").unwrap();
+/// let mut material = Material::new(shader,Some("my_material"));
+/// material.tex_transform(Vec4::new(0.0, 0.0, 0.03, 0.03));
+///
+/// filename_scr = "screenshots/shaders.jpeg";
+/// test_screenshot!(
+///     plane.draw(token, &material, Matrix::IDENTITY, None, None);
+/// );
+///
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/shaders.jpeg" alt="screenshot" width="200">
 #[repr(C)]
 #[derive(Debug)]
 pub struct Shader(pub NonNull<_ShaderT>);
@@ -47,11 +69,18 @@ impl IAsset for Shader {
     }
 }
 
-/// This is a fast, general purpose shader. It uses a texture for ‘diffuse’, a ‘color’ property for tinting the
-/// material, and a ‘tex_scale’ for scaling the UV coordinates. For lighting, it just uses a lookup from the current
-/// cubemap.
-/// <https://stereokit.net/Pages/StereoKit/Shader/Default.html>
 impl Default for Shader {
+    /// This is a fast, general purpose shader. It uses a texture for ‘diffuse’, a ‘color’ property for tinting the
+    /// material, and a ‘tex_scale’ for scaling the UV coordinates. For lighting, it just uses a lookup from the current
+    /// cubemap.
+    /// <https://stereokit.net/Pages/StereoKit/Shader/Default.html>
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{shader::Shader};
+    /// let mut shader = Shader::default();
+    /// assert_eq!(shader.get_id(), "default/shader");
+    /// ```
     fn default() -> Self {
         Self::find("default/shader").unwrap()
     }
@@ -75,6 +104,8 @@ impl Shader {
     /// <https://stereokit.net/Pages/StereoKit/Shader/FromFile.html>
     ///
     /// see also [`crate::shader::shader_create_file`]
+    ///
+    /// see example in [`Shader`]
     pub fn from_file(file_utf8: impl AsRef<Path>) -> Result<Shader, StereoKitError> {
         let path_buf = file_utf8.as_ref().to_path_buf();
         let c_str = CString::new(
@@ -93,6 +124,16 @@ impl Shader {
     /// <https://stereokit.net/Pages/StereoKit/Shader/Find.html>
     ///
     /// see also [`crate::shader::shader_find`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{shader::Shader};
+    /// let mut shader = Shader::from_file("shaders/brick_pbr.hlsl.sks").unwrap();
+    /// shader.id("my_brick_shader");
+    /// let mut shader_again = Shader::find("my_brick_shader");
+    /// assert!(shader_again.is_ok(), "Failed to find shader");
+    /// assert_eq!(shader_again.unwrap().get_id(), shader.get_id());
+    /// ```
     pub fn find<S: AsRef<str>>(id: S) -> Result<Shader, StereoKitError> {
         let c_str = CString::new(id.as_ref())
             .map_err(|_| StereoKitError::ShaderFind(id.as_ref().into(), "CString conversion".to_string()))?;
@@ -103,10 +144,20 @@ impl Shader {
     }
 
     /// Creates a clone of the same reference. Basically, the new variable is the same asset. This is what you get by
-    /// calling find() method.
+    /// calling [Shader::find] method.
     /// <https://stereokit.net/Pages/StereoKit/Shader/Find.html>
     ///
     /// see also [`crate::shader::shader_find()`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{shader::Shader};
+    /// let mut shader = Shader::from_file("shaders/brick_pbr.hlsl.sks").unwrap();
+    /// shader.id("my_brick_shader");
+    /// let mut shader_again = shader.clone_ref();
+    /// assert_eq!(shader_again.get_id(), "my_brick_shader");
+    ///
+    /// ```
     pub fn clone_ref(&self) -> Shader {
         Shader(
             NonNull::new(unsafe { shader_find(shader_get_id(self.0.as_ptr())) }).expect("<asset>::clone_ref failed!"),
@@ -118,6 +169,14 @@ impl Shader {
     /// <https://stereokit.net/Pages/StereoKit/Shader/Id.html>
     ///
     /// see also [`crate::shader::shader_set_id`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{shader::Shader};
+    /// let mut shader = Shader::from_file("shaders/brick_pbr.hlsl.sks").unwrap();
+    /// shader.id("my_brick_shader");
+    /// assert_eq!(shader.get_id(), "my_brick_shader");
+    /// ```
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
         let c_str = CString::new(id.as_ref()).unwrap();
         unsafe { shader_set_id(self.0.as_ptr(), c_str.as_ptr()) };
@@ -128,6 +187,8 @@ impl Shader {
     /// <https://stereokit.net/Pages/StereoKit/Shader/Id.html>
     ///
     /// see also [`crate::shader::shader_get_id`]
+    ///
+    /// see example in [`Shader::id`]
     pub fn get_id(&self) -> &str {
         unsafe { CStr::from_ptr(shader_get_id(self.0.as_ptr())) }.to_str().unwrap()
     }
@@ -136,16 +197,37 @@ impl Shader {
     /// <https://stereokit.net/Pages/StereoKit/Shader/Name.html>
     ///
     /// see also [`crate::shader::shader_get_name`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{shader::Shader};
+    /// let shader = Shader::from_file("shaders/brick_pbr.hlsl.sks").unwrap();
+    /// assert_eq!(shader.get_name(), "the_name_of_brick_pbr");
+    /// ```
     pub fn get_name(&self) -> &str {
         unsafe { CStr::from_ptr(shader_get_name(self.0.as_ptr())) }.to_str().unwrap()
     }
 
     /// <https://stereokit.net/Pages/StereoKit/Shader/Blit.html>
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{shader::Shader};
+    /// let mut shader = Shader::blit();
+    /// assert_eq!(shader.get_id(), "default/shader_blit");
+    /// ```
     pub fn blit() -> Self {
         Self::find("default/shader_blit").unwrap()
     }
 
     /// <https://stereokit.net/Pages/StereoKit/Shader/LightMap.html>
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{shader::Shader};
+    /// let mut shader = Shader::light_map();
+    /// assert_eq!(shader.get_id(), "default/shader_lightmap");
+    /// ```
     pub fn light_map() -> Self {
         Self::find("default/shader_lightmap").unwrap()
     }
@@ -153,6 +235,13 @@ impl Shader {
     /// Sometimes lighting just gets in the way! This is an extremely simple and fast shader that uses a ‘diffuse’
     /// texture and a ‘color’ tint property to draw a model without any lighting at all!
     /// <https://stereokit.net/Pages/StereoKit/Shader/Unlit.html>
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{shader::Shader};
+    /// let mut shader = Shader::unlit();
+    /// assert_eq!(shader.get_id(), "default/shader_unlit");
+    /// ```
     pub fn unlit() -> Self {
         Self::find("default/shader_unlit").unwrap()
     }
@@ -161,16 +250,37 @@ impl Shader {
     /// texture and a ‘color’ tint property to
     /// draw a model without any lighting at all! This shader will also discard pixels with an alpha of zero.
     /// <https://stereokit.net/Pages/StereoKit/Shader/UnlitClip.html>
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{shader::Shader};
+    /// let mut shader = Shader::unlit_clip();
+    /// assert_eq!(shader.get_id(), "default/shader_unlit_clip");
+    /// ```
     pub fn unlit_clip() -> Self {
         Self::find("default/shader_unlit_clip").unwrap()
     }
 
-    /// <https://stereokit.net/Pages/StereoKit/Shader.html>
+    /// <https://stereokit.net/Pages/StereoKit/Shader/Font.html>
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{shader::Shader};
+    /// let mut shader = Shader::font();
+    /// assert_eq!(shader.get_id(), "default/shader_font");
+    /// ```
     pub fn font() -> Self {
         Self::find("default/shader_font").unwrap()
     }
 
-    /// <https://stereokit.net/Pages/StereoKit/Shader.html>
+    /// <https://stereokit.net/Pages/StereoKit/Shader/equirect.html>
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{shader::Shader};
+    /// let mut shader = Shader::equirect();
+    /// assert_eq!(shader.get_id(), "default/shader_equirect");
+    /// ```
     pub fn equirect() -> Self {
         Self::find("default/shader_equirect").unwrap()
     }
@@ -178,6 +288,13 @@ impl Shader {
     /// A shader for UI or interactable elements, this’ll be the same as the Shader, but with an additional finger
     /// ‘shadow’ and distance circle effect that helps indicate finger distance from the surface of the object.
     /// <https://stereokit.net/Pages/StereoKit/Shader/UI.html>
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{shader::Shader};
+    /// let mut shader = Shader::ui();
+    /// assert_eq!(shader.get_id(), "default/shader_ui");
+    /// ```
     pub fn ui() -> Self {
         Self::find("default/shader_ui").unwrap()
     }
@@ -188,33 +305,63 @@ impl Shader {
     /// on cube-like meshes where each face has UV coordinates from 0-1.
     /// Shader Parameters: color - color border_size - meters border_size_grow - meters border_affect_radius - meters
     /// <https://stereokit.net/Pages/StereoKit/Shader/UIBox.html>
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{shader::Shader};
+    /// let mut shader = Shader::ui_box();
+    /// assert_eq!(shader.get_id(), "default/shader_ui_box");
+    /// ```
     pub fn ui_box() -> Self {
         Self::find("default/shader_ui_box").unwrap()
     }
 
     /// <https://stereokit.net/Pages/StereoKit/Shader.html>
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{shader::Shader};
+    /// let mut shader = Shader::ui_quadrant();
+    /// assert_eq!(shader.get_id(), "default/shader_ui_quadrant");
+    /// ```
     pub fn ui_quadrant() -> Self {
         Self::find("default/shader_ui_quadrant").unwrap()
     }
 
     /// <https://stereokit.net/Pages/StereoKit/Shader.html>
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{shader::Shader};
+    /// let mut shader = Shader::sky();
+    /// assert_eq!(shader.get_id(), "default/shader_sky");
+    /// ```
     pub fn sky() -> Self {
         Self::find("default/shader_sky").unwrap()
     }
 
-    /// <https://stereokit.net/Pages/StereoKit/Shader.html>
-    pub fn line() -> Self {
-        Self::find("default/shader_line").unwrap()
-    }
-
     /// A physically based shader.
     /// <https://stereokit.net/Pages/StereoKit/Shader/PBR.html>
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{shader::Shader};
+    /// let mut shader = Shader::pbr();
+    /// assert_eq!(shader.get_id(), "default/shader_pbr");
+    /// ```
     pub fn pbr() -> Self {
         Self::find("default/shader_pbr").unwrap()
     }
 
     /// Same as ShaderPBR, but with a discard clip for transparency.
     /// <https://stereokit.net/Pages/StereoKit/Shader/PBRClip.html>
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{shader::Shader};
+    /// let mut shader = Shader::pbr_clip();
+    /// assert_eq!(shader.get_id(), "default/shader_pbr_clip");
+    /// ```
     pub fn pbr_clip() -> Self {
         Self::find("default/shader_pbr_clip").unwrap()
     }
