@@ -1893,11 +1893,11 @@ impl<'a> ParamInfos<'a> {
 
     /// Gets the value of a shader parameter with the given name. If no parameter is found, a default value of
     /// Vec4::ZERO will be returned.
-    /// see example in [`ParamInfos::set_vector4`]
     /// <https://stereokit.net/Pages/StereoKit/Material/GetVector4.html>
     /// * name - The name of the shader parameter to get.
     ///
     /// see also [`material_get_vector4`]
+    /// see example in [`ParamInfos::set_vector4`]
     pub fn get_vector4<S: AsRef<str>>(&self, name: S) -> Vec4 {
         unsafe {
             let cstr = &CString::new(name.as_ref()).unwrap_or_default();
