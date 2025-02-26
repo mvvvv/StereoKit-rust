@@ -177,7 +177,7 @@ pub enum TexAddress {
 /// can also create textures procedurally.
 /// <https://stereokit.net/Pages/StereoKit/Tex.html>
 #[repr(C)]
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Tex(pub NonNull<_TexT>);
 impl Drop for Tex {
     fn drop(&mut self) {

@@ -1590,6 +1590,12 @@ impl std::fmt::Debug for Matrix {
     }
 }
 
+impl PartialEq for Matrix {
+    fn eq(&self, other: &Self) -> bool {
+        unsafe { self.m == other.m }
+    }
+}
+
 unsafe extern "C" {
     pub fn pose_matrix_out(pose: *const Pose, out_result: *mut Matrix, scale: Vec3);
     pub fn matrix_inverse(a: *const Matrix, out_Matrix: *mut Matrix);
@@ -1629,8 +1635,11 @@ unsafe extern "C" {
 }
 
 impl Matrix {
-    /// Identity matrix made of [[Vec4T::X, Vec4T::Y, Vec4T::Z, Vec4T::W]]
+    /// Identity matrix made of [[Vec4::X, Vec4::Y, Vec4::Z, Vec4::W]]
     pub const IDENTITY: Matrix = Matrix { row: [Vec4::X, Vec4::Y, Vec4::Z, Vec4::W] };
+
+    /// Null or Zero matrix made of [[Vec4::ZERO, Vec4::ZERO, Vec4::ZERO, Vec4::ZERO]]
+    pub const NULL: Matrix = Matrix { row: [Vec4::ZERO, Vec4::ZERO, Vec4::ZERO, Vec4::ZERO] };
 
     /// This creates a matrix used for projecting 3D geometry onto a 2D surface for rasterization. Orthographic
     /// projection matrices will preserve parallel lines. This is great for 2D scenes or content.

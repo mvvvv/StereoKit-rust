@@ -7,17 +7,26 @@
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 //--name                  = the_name_of_brick_pbr
 //--color:color           = 0.45,0.29,0.23,1
-//--line_color:color      = 0.845,0.845,0.845,1
+//--line_color:color      = 0.84,0.84,0.84
 //--edge_pos              = 1.5
 //--metallic              = 0
 //--roughness             = 1
 //--tex_trans             = 0,0,0.1,0.1
+//--use_occlusion         = false
+//--size_factors          = 300,-100,50,25
+//--edge_limit            = 0.1,0.9
+//!!shadertoy
+//!!hlsl
 float4  color;
-float4  line_color;
+float3  line_color;
 float   edge_pos;
 float   metallic;
 float   roughness;
 float4  tex_trans;
+bool    use_occlusion;
+int4    size_factors;
+matrix  useless;
+float2  edge_limit;
 
 //--metal     = white
 //--occlusion = white
@@ -28,7 +37,9 @@ SamplerState occlusion_s : register(s1);
 
 float mixcolor (float x, float y)
 {
-    return sin(2.*cos(x/100) - 5.*sin(y/100)+ 7.*cos(x/50) - 11.*sin(y/50)+ 13.*cos(x/25) - 17.*sin(y/25))*0.1;
+    return sin(   2.*cos(x/size_factors[1]) - 5.*sin(y/size_factors[1]) 
+                + 7.*cos(x/size_factors[2]) - 11.*sin(y/size_factors[2])
+                + 13.*cos(x/size_factors[3]) - 17.*sin(y/size_factors[3]))*0.1;
 }
 
 //brick_color function
@@ -49,10 +60,10 @@ float3 brick_color(float2 uv)
     
     
     bool vrt_edge = step( 1. - 0.01, vertical_edge) == 1.;
-    bool hrt_edge = gv.y > (0.9) || gv.y < (0.1);
+    bool hrt_edge = gv.y > (edge_limit[1]) || gv.y < (edge_limit[0]);
     
     if(hrt_edge || vrt_edge)  
-        return line_color.rgb;
+        return line_color;
     return brick;
 }
 
@@ -128,14 +139,16 @@ psIn vs(vsIn input, uint id : SV_InstanceID) {
 
 float4 ps(psIn input) : SV_TARGET {
     
-    float4 albedo = float4(brick_color(input.uv * 300.0), 1.0);
-    float3 normal_cal = normal(input.uv * 300.0) * input.normal;
+    float4 albedo = float4(brick_color(input.uv * size_factors[0]), 1.0);
+    float3 normal_cal = normal(input.uv * size_factors[0]) * input.normal;
     float2 metal_rough = metal    .Sample(metal_s,    input.uv).gb; // rough is g, b is metallic
-    float  ao          = occlusion.Sample(occlusion_s,input.uv).r;  // occlusion is sometimes part of the metal tex, uses r channel
-
     float metallic_final = metal_rough.y * metallic;
     float rough_final    = metal_rough.x * roughness;
-
+    float  ao  = 1.0;
+    if (use_occlusion) {
+        ao  = occlusion.Sample(occlusion_s,input.uv).r;  // occlusion is sometimes part of the metal tex, uses r channel
+    }
+    
     float4 color = sk_pbr_shade(albedo, input.irradiance, ao, metallic_final, rough_final, input.view_dir, normal_cal);
 
     return color;

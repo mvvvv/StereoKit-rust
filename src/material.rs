@@ -171,7 +171,14 @@ impl Default for Material {
     /// here’s where you do it!
     /// <https://stereokit.net/Pages/StereoKit/Material/Default.html>
     ///
-    /// see also [`crate::font::font_find`]
+    /// see also [crate::font::font_find]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{material::Material};
+    /// let mut material = Material::default();
+    /// assert_eq!(material.get_id(), "default/material");
+    /// ```
     fn default() -> Self {
         let c_str = CString::new("default/material").unwrap();
         Material(NonNull::new(unsafe { material_find(c_str.as_ptr()) }).unwrap())
@@ -184,7 +191,7 @@ impl Material {
     /// * shader - Any valid shader.
     /// * id - If None the id will be set to a default value "auto/asset_???"
     ///
-    /// see also [`crate::material::material_create`][`crate::material::material_set_id`]
+    /// see also [`material_create`][`material_set_id`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -212,7 +219,7 @@ impl Material {
     /// * id - If None the id will be set to a default value "auto/asset_???"
     /// * shader_file_name - The filename of a Shader asset.
     ///
-    /// see also [`crate::material::material_create`][`crate::material::material_set_id`]
+    /// see also [`material_create`][`material_set_id`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -244,7 +251,7 @@ impl Material {
     /// Creates a new Material asset with the default Material and its properties!
     /// <https://stereokit.net/Pages/StereoKit/Material/Copy.html>
     ///
-    /// see also [`crate::material::material_copy`]
+    /// see also [`material_copy`]
     pub fn default_copy() -> Material {
         Material::default().copy()
     }
@@ -253,7 +260,7 @@ impl Material {
     /// batch together with this one.
     /// <https://stereokit.net/Pages/StereoKit/Material/Copy.html>
     ///
-    /// see also [`crate::material::material_copy()`]
+    /// see also [`material_copy()`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -281,7 +288,7 @@ impl Material {
     /// * id - Which material are you looking for?
     ///
     /// Returns a new Material asset with the same shader and properties if the id is found.
-    /// see also [`crate::material::material_copy_id`]
+    /// see also [`material_copy_id`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -310,7 +317,7 @@ impl Material {
     /// <https://stereokit.net/Pages/StereoKit/Material/Find.html>
     /// * id - Which material are you looking for ?
     ///
-    /// see also [`crate::material::material_find`]
+    /// see also [`material_find`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -337,7 +344,7 @@ impl Material {
     /// calling find() method.
     /// <https://stereokit.net/Pages/StereoKit/Material/Find.html>
     ///
-    /// see also [`crate::material::material_find()`]
+    /// see also [`material_find()`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -364,7 +371,7 @@ impl Material {
     /// <https://stereokit.net/Pages/StereoKit/Material/Material.html>
     /// * id - If None the id will be set to a default value "auto/asset_???"
     ///
-    /// see also [Material::diffuse_tex] [`crate::material::material_create`][`crate::material::material_set_id`]
+    /// see also [Material::diffuse_tex] [`material_create`][`material_set_id`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -399,7 +406,7 @@ impl Material {
     /// Set a new id to the material.
     /// <https://stereokit.net/Pages/StereoKit/Material/Id.html>
     ///
-    /// see also [`crate::material::material_set_id`]
+    /// see also [`material_set_id`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -420,7 +427,7 @@ impl Material {
     /// Overrides the Shader this material uses.
     /// <https://stereokit.net/Pages/StereoKit/Material/Shader.html>
     ///
-    /// see also [`crate::material::material_set_shader`]
+    /// see also [`material_set_shader`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to init sk !!!!
@@ -441,7 +448,7 @@ impl Material {
     /// Typically, the diffuse/albedo’s alpha component is sampled for comparison here. This represents the float param ‘cutoff’.
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
-    /// see also [`crate::material::material_set_param`]
+    /// see also [`material_set_param`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to init sk !!!!
@@ -464,7 +471,7 @@ impl Material {
     /// the diffuse texture right at the start. This represents the Color param ‘color’.
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
-    /// see also [`crate::material::material_set_param`]
+    /// see also [`material_set_param`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to init sk !!!!
@@ -488,7 +495,7 @@ impl Material {
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
     /// see also [`Material::copy_for_tex`]
-    /// see also [`crate::material::material_set_param`]
+    /// see also [`material_set_param`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -523,7 +530,7 @@ impl Material {
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
     /// see also [`Material::emission_tex`]
-    /// see also [`crate::material::material_set_param`]
+    /// see also [`material_set_param`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to init sk !!!!
@@ -547,7 +554,7 @@ impl Material {
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
     /// see also [`Material::emission_factor`]
-    /// see also [`crate::material::material_set_param`]
+    /// see also [`material_set_param`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -579,7 +586,7 @@ impl Material {
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
     /// see also [`Material::metal_tex`]
-    /// see also [`crate::material::material_set_param`]
+    /// see also [`material_set_param`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to init sk !!!!
@@ -604,7 +611,7 @@ impl Material {
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
     /// see also [`Material::metallic_amount`]
-    /// see also [`crate::material::material_set_param`]
+    /// see also [`material_set_param`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -636,7 +643,7 @@ impl Material {
     /// Tangent Coordinate Space, and the RGB values map to XYZ values. This represents the texture param ‘normal’.
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
-    /// see also [`crate::material::material_set_param`]
+    /// see also [`material_set_param`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -667,7 +674,7 @@ impl Material {
     /// areas that are surrounded by geometry that would likely block reflections. This represents the texture param ‘occlusion’.
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
-    /// see also [`crate::material::material_set_param`]
+    /// see also [`material_set_param`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -698,7 +705,7 @@ impl Material {
     /// This represents the float param ‘roughness’.
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
-    /// see also [`crate::material::material_set_param`]
+    /// see also [`material_set_param`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -722,7 +729,7 @@ impl Material {
     /// This is great for tiling textures! This represents the float param ‘tex_scale’.
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
-    /// see also [`crate::material::material_set_param`]
+    /// see also [`material_set_param`]
     #[deprecated(since = "0.40.0", note = "please use `tex_transform` instead")]
     pub fn tex_scale(&mut self, scale: f32) -> &mut Self {
         let ptr: *const f32 = &scale;
@@ -736,7 +743,7 @@ impl Material {
     /// Non canonical shader parameter to indicate a time multiplier if the shader have one (water, blinker ...)
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
-    /// see also [`crate::material::material_set_param`]
+    /// see also [`material_set_param`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -762,7 +769,7 @@ impl Material {
     /// This represents the float param 'tex_trans'.
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
-    /// see also [`crate::material::material_set_param`]
+    /// see also [`material_set_param`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -788,7 +795,7 @@ impl Material {
     /// Check the [`Transparency`] enum for details.
     /// <https://stereokit.net/Pages/StereoKit/Material/Transparency.html>
     ///
-    /// see also [`crate::material::material_set_transparency`]
+    /// see also [`material_set_transparency`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -822,7 +829,7 @@ impl Material {
     /// How should this material cull faces?
     /// <https://stereokit.net/Pages/StereoKit/Material/FaceCull.html>
     ///
-    /// see also [`crate::material::material_set_cull`]
+    /// see also [`material_set_cull`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -859,7 +866,7 @@ impl Material {
     /// Note that this may not work on some mobile OpenGL systems like Quest.
     /// <https://stereokit.net/Pages/StereoKit/Material/Wireframe.html>
     ///
-    /// see also [`crate::material::material_set_wireframe`]
+    /// see also [`material_set_wireframe`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -880,7 +887,7 @@ impl Material {
     /// indicates an object is behind something.
     /// <https://stereokit.net/Pages/StereoKit/Material/DepthTest.html>
     ///
-    /// see also [`crate::material::material_set_depth_test`]
+    /// see also [`material_set_depth_test`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -901,7 +908,7 @@ impl Material {
     /// accounted for when the MR system is performing late stage reprojection. Not writing to the buffer can also be faster! :)
     /// <https://stereokit.net/Pages/StereoKit/Material/DepthWrite.html>
     ///
-    /// see also [`crate::material::material_set_depth_write`]
+    /// see also [`material_set_depth_write`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -923,7 +930,7 @@ impl Material {
     ///  that are far away (skybox!) can be pushed towards the back of the queue, so they’re more likely to be discarded early.
     /// <https://stereokit.net/Pages/StereoKit/Material/QueueOffset.html>
     ///
-    /// see also [`crate::material::material_set_queue_offset`]
+    /// see also [`material_set_queue_offset`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -943,7 +950,7 @@ impl Material {
     /// also be used to draw the same item.
     /// <https://stereokit.net/Pages/StereoKit/Material/Chain.html>
     ///
-    /// see also [`crate::material::material_set_chain`]
+    /// see also [`material_set_chain`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -965,7 +972,7 @@ impl Material {
     /// Get the [`Material::id`] of the material.
     /// <https://stereokit.net/Pages/StereoKit/Material/Id.html>
     ///
-    /// see also [`crate::material::material_get_id`]
+    /// see also [`material_get_id`]
     ///
     /// see example in [`Material::id`]
     pub fn get_id(&self) -> &str {
@@ -975,7 +982,7 @@ impl Material {
     /// Get the [`Material::shader`] of the material.
     /// <https://stereokit.net/Pages/StereoKit/Material/Shader.html>
     ///
-    /// see also [`crate::material::material_get_shader`]
+    /// see also [`material_get_shader`]
     ///
     /// see example in [`Material::shader`]
     pub fn get_shader(&self) -> Shader {
@@ -985,7 +992,7 @@ impl Material {
     /// Get the [`Material::transparency`] of the material.
     /// <https://stereokit.net/Pages/StereoKit/Material/Transparency.html>
     ///
-    /// see also [`crate::material::material_get_transparency`]
+    /// see also [`material_get_transparency`]
     ///
     /// see example in [`Material::transparency`]
     pub fn get_transparency(&self) -> Transparency {
@@ -995,7 +1002,7 @@ impl Material {
     /// Get the [`Material::face_cull`] of the material.
     /// <https://stereokit.net/Pages/StereoKit/Material/FaceCull.html>
     ///
-    /// see also [`crate::material::material_get_cull`]
+    /// see also [`material_get_cull`]
     ///
     /// see example in [`Material::face_cull`]
     pub fn get_face_cull(&self) -> Cull {
@@ -1005,7 +1012,7 @@ impl Material {
     /// Get the [`Material::wireframe`] of the material.
     /// <https://stereokit.net/Pages/StereoKit/Material/Wireframe.html>
     ///
-    /// see also [`crate::material::material_get_wireframe`]
+    /// see also [`material_get_wireframe`]
     ///
     /// see example in [`Material::wireframe`]
     pub fn get_wireframe(&self) -> bool {
@@ -1015,7 +1022,7 @@ impl Material {
     /// Get the [`Material::depth_test`] of the material.
     /// <https://stereokit.net/Pages/StereoKit/Material/DepthTest.html>
     ///
-    /// see also [`crate::material::material_get_depth_test`]
+    /// see also [`material_get_depth_test`]
     ///
     /// see example in [`Material::depth_test`]
     pub fn get_depth_test(&self) -> DepthTest {
@@ -1025,7 +1032,7 @@ impl Material {
     /// Get the [`Material::depth_write`] of the material.
     /// <https://stereokit.net/Pages/StereoKit/Material/DepthWrite.html>
     ///
-    /// see also [`crate::material::material_get_depth_write`]
+    /// see also [`material_get_depth_write`]
     ///
     /// see example in [`Material::depth_write`]
     pub fn get_depth_write(&self) -> bool {
@@ -1035,7 +1042,7 @@ impl Material {
     /// Get the [`Material::queue_offset`] of the material.
     /// <https://stereokit.net/Pages/StereoKit/Material/QueueOffset.html>
     ///
-    /// see also [`crate::material::material_get_queue_offset`]
+    /// see also [`material_get_queue_offset`]
     ///
     /// see example in [`Material::queue_offset`]
     pub fn get_queue_offset(&self) -> i32 {
@@ -1045,7 +1052,7 @@ impl Material {
     /// Get the [`Material::chain`] of the material.
     /// <https://stereokit.net/Pages/StereoKit/Material/Chain.html>
     ///
-    /// see also [`crate::material::material_get_chain`]
+    /// see also [`material_get_chain`]
     ///
     /// see example in [`Material::chain`]
     pub fn get_chain(&self) -> Option<Material> {
@@ -1057,7 +1064,27 @@ impl Material {
     ///
     /// see also [`ParamInfos`][`ParamInfo`]
     /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{material::{Material, MaterialParam}, shader::Shader};
     ///
+    /// let material = Material::new(Shader::pbr(), Some("my_material"));
+    /// let param_infos = material.get_all_param_info();
+    /// assert_ne!(param_infos.get_count(), 0);
+    /// for param in param_infos {
+    ///    match param.name.as_str()  {
+    ///        "diffuse" | "emission" | "metal" | "occlusion"  
+    ///             => assert_eq!(param.type_info, MaterialParam::Texture),
+    ///        "color" | "emission_factor"  
+    ///             => assert_eq!(param.type_info, MaterialParam::Color128),
+    ///        "metallic" | "roughness"  
+    ///             => assert_eq!(param.type_info, MaterialParam::Float),
+    ///        "tex_trans"  
+    ///             => assert_eq!(param.type_info, MaterialParam::Vec4),
+    ///        _ => {}
+    ///    }
+    /// }
+    /// ```
     pub fn get_all_param_info(&self) -> ParamInfos<'_> {
         ParamInfos::from(self)
     }
@@ -1068,12 +1095,26 @@ impl Material {
     /// override StereoKit’s default PBR behavior, here’s where you do it! Note that the shader used by default here is
     /// much more costly than Default.Material.
     ///  <https://stereokit.net/Pages/StereoKit/Material/PBR.html>
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{material::Material};
+    /// let mut material = Material::pbr();
+    /// assert_eq!(material.get_id(), "default/material_pbr");
+    /// ```
     pub fn pbr() -> Self {
         Self::find("default/material_pbr").unwrap()
     }
 
     /// Same as MaterialPBR, but it uses a discard clip for transparency.
     /// <https://stereokit.net/Pages/StereoKit/Material/PBRClip.html>
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{material::Material};
+    /// let mut material = Material::pbr_clip();
+    /// assert_eq!(material.get_id(), "default/material_pbr_clip");
+    /// ```
     pub fn pbr_clip() -> Self {
         Self::find("default/material_pbr_clip").unwrap()
     }
@@ -1083,6 +1124,13 @@ impl Material {
     /// this one when creating your own materials! Or if you want to override StereoKit’s default unlit behavior,
     /// here’s where you do it!
     /// <https://stereokit.net/Pages/StereoKit/Material/Unlit.html>
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{material::Material};
+    /// let mut material = Material::unlit();
+    /// assert_eq!(material.get_id(), "default/material_unlit");
+    /// ```
     pub fn unlit() -> Self {
         Self::find("default/material_unlit").unwrap()
     }
@@ -1093,24 +1141,52 @@ impl Material {
     /// performance characteristics, so it can be great to copy this one when creating your own materials!
     /// Or if you want to override StereoKit’s default unlit clipped behavior, here’s where you do it!
     /// <https://stereokit.net/Pages/StereoKit/Material/UnlitClip.html>
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{material::Material};
+    /// let mut material = Material::unlit_clip();
+    /// assert_eq!(material.get_id(), "default/material_unlit_clip");
+    /// ```
     pub fn unlit_clip() -> Self {
         Self::find("default/material_unlit_clip").unwrap()
     }
 
     /// The material used by cubemap
     /// <https://stereokit.net/Pages/StereoKit/Material.html>
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{material::Material};
+    /// let mut material = Material::equirect();
+    /// assert_eq!(material.get_id(), "default/equirect_convert");
+    /// ```
     pub fn equirect() -> Self {
-        Self::find("default/material_equirect").unwrap()
+        Self::find("default/equirect_convert").unwrap()
     }
 
     /// The material used by font
     /// <https://stereokit.net/Pages/StereoKit/Material.html>
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{material::Material};
+    /// let mut material = Material::font();
+    /// assert_eq!(material.get_id(), "default/material_font");
+    /// ```
     pub fn font() -> Self {
         Self::find("default/material_font").unwrap()
     }
 
     /// The material used for hands
     /// <https://stereokit.net/Pages/StereoKit/Material.html>
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{material::Material};
+    /// let mut material = Material::hand();
+    /// assert_eq!(material.get_id(), "default/material_hand");
+    /// ```
     pub fn hand() -> Self {
         Self::find("default/material_hand").unwrap()
     }
@@ -1119,6 +1195,13 @@ impl Material {
     /// the finger
     /// is to the UI.
     /// <https://stereokit.net/Pages/StereoKit/Material/UI.html>
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{material::Material};
+    /// let mut material = Material::ui();
+    /// assert_eq!(material.get_id(), "default/material_ui");
+    /// ```
     pub fn ui() -> Self {
         Self::find("default/material_ui").unwrap()
     }
@@ -1129,6 +1212,13 @@ impl Material {
     /// works best on cube-like meshes where each face has UV coordinates from 0-1.
     /// Shader Parameters: color - color border_size - meters border_size_grow - meters border_affect_radius - meters
     /// <https://stereokit.net/Pages/StereoKit/Material/UIBox.html>
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{material::Material};
+    /// let mut material = Material::ui_box();
+    /// assert_eq!(material.get_id(), "default/material_ui_box");
+    /// ```
     pub fn ui_box() -> Self {
         Self::find("default/material_ui_box").unwrap()
     }
@@ -1136,6 +1226,13 @@ impl Material {
     /// The material used by the UI for Quadrant Sized UI elements. See UI.QuadrantSizeMesh for additional details.
     /// By default, it uses a shader that creates a ‘finger shadow’ that shows how close the finger is to the UI.
     /// <https://stereokit.net/Pages/StereoKit/Material.html>
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{material::Material};
+    /// let mut material = Material::ui_quadrant();
+    /// assert_eq!(material.get_id(), "default/material_ui_quadrant");
+    /// ```
     pub fn ui_quadrant() -> Self {
         Self::find("default/material_ui_quadrant").unwrap()
     }
@@ -1143,6 +1240,13 @@ impl Material {
     /// The material used by the UI for Aura, an extra space and visual element that goes around Window elements to make
     /// them easier to grab
     /// <https://stereokit.net/Pages/StereoKit/Material.html>
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{material::Material};
+    /// let mut material = Material::ui_aura();
+    /// assert_eq!(material.get_id(), "default/material_ui_aura");
+    /// ```
     pub fn ui_aura() -> Self {
         Self::find("default/material_ui_aura").unwrap()
     }
@@ -1153,6 +1257,29 @@ impl Material {
 /// <https://stereokit.net/Pages/StereoKit/Material/GetAllParamInfo.html>
 ///
 /// see also [`Material::get_all_param_info`] [ParamInfo]
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{material::{Material, MaterialParam, Cull},
+///                      mesh::Mesh, maths::{Vec3, Vec4, Matrix}};
+///
+/// let cube = Mesh::cube();
+/// let mut material_cube = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+/// material_cube.face_cull(Cull::Front).tex_transform(Vec4::new(0.0, 0.0, 0.04, 0.04));
+/// let mut param_infos = material_cube.get_all_param_info();
+/// assert!(param_infos.has_param("line_color"), "line_color is missing");
+/// assert_eq!(param_infos.get_float("edge_pos"), 1.5);
+///
+/// // Change of unusual values that are not listed in Material
+/// param_infos .set_float("edge_pos", 0.5)
+///             .set_vector3("line_color", Vec3::new(0.54, 0.54, 0.20));
+///
+/// filename_scr = "screenshots/param_infos.jpeg";
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+///     cube.draw(token, &material_cube, Matrix::IDENTITY, None, None);
+/// );
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/param_infos.jpeg" alt="screenshot" width="200">
 pub struct ParamInfos<'a> {
     material: &'a Material,
     index: i32,
@@ -1263,7 +1390,7 @@ impl Iterator for ParamInfos<'_> {
 
     /// get all the param info
     ///
-    /// see also [`crate::material::material_get_param_info`][`crate::material::material_get_param_count`][`crate::material::material_get_param`]
+    /// see also [`material_get_param_info`][`material_get_param_count`][`material_get_param`]
     fn next(&mut self) -> Option<Self::Item> {
         self.index += 1;
         let count = unsafe { material_get_param_count(self.material.0.as_ptr()) };
@@ -1290,18 +1417,43 @@ impl Iterator for ParamInfos<'_> {
 
 impl<'a> ParamInfos<'a> {
     /// helper to get the infos with only a material
+    /// <https://stereokit.net/Pages/StereoKit/Material/GetAllParamInfo.html>
+    /// * material - the material to get the param info from.
+    ///
+    /// see also [`Material::get_all_param_info`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::material::{Material, MaterialParam, ParamInfos};
+    ///
+    /// let mut material_cube = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let mut param_infos = ParamInfos::from(&material_cube);
+    /// assert!(param_infos.has_param("line_color"), "line_color is missing");
+    /// assert_eq!(param_infos.get_float("edge_pos"), 1.5);
+    /// ```
     pub fn from(material: &'a Material) -> ParamInfos<'a> {
         ParamInfos { material, index: -1 }
     }
 
     /// Only way to see if a shader has a given parameter if you do not iterate over parameters.
     /// <https://stereokit.net/Pages/StereoKit/Material.html>
+    /// * name: The name of the parameter to check for.
     ///
-    /// see also [`crate::material::material_has_param`]
-    pub fn has_param<S: AsRef<str>>(&self, name: S, type_info: MaterialParam) -> bool {
+    /// see also [`material_has_param`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::material::{Material, MaterialParam, ParamInfos};
+    ///
+    /// let mut material_cube = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let mut param_infos = ParamInfos::from(&material_cube);
+    /// assert!(param_infos.has_param("line_color"), "line_color is missing");
+    /// assert!(param_infos.has_param("edge_pos"),   "edge_pos is missing");
+    /// ```
+    pub fn has_param<S: AsRef<str>>(&self, name: S) -> bool {
         unsafe {
             let cstr = &CString::new(name.as_ref()).unwrap_or_default();
-            material_has_param(self.material.0.as_ptr(), cstr.as_ptr(), type_info) != 0
+            material_has_param(self.material.0.as_ptr(), cstr.as_ptr(), MaterialParam::Unknown) != 0
         }
     }
 
@@ -1309,10 +1461,31 @@ impl<'a> ParamInfos<'a> {
     /// data of the wrong size here, so pay extra attention to the size of your data here, and ensure it matched up with
     /// the shader!
     /// <https://stereokit.net/Pages/StereoKit/Material/SetData.html>
+    /// * name - The name of the parameter to set
+    /// * type_info - The type of the data being set.
+    /// * value - A pointer to the data being set.
     ///
-    /// see also [`crate::material::material_set_param`]
+    /// <https://stereokit.net/Pages/StereoKit/Material/SetData.html>
+    ///
+    /// see also [`material_set_param`]
     ///    # Safety
     ///    Be sure of the data you want to modify this way.
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::material::{Material, MaterialParam};
+    ///
+    /// let mut material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let mut param_infos = material.get_all_param_info();
+    /// // an odd way to do : material.color_tint(...);
+    /// let mut new_color: std::vec::Vec<f32>  = vec![1.0, 0.5, 0.2, 1.0];
+    /// unsafe{
+    ///     param_infos.set_data("color", MaterialParam::Color128,
+    ///                          new_color.as_ptr() as *mut std::ffi::c_void);
+    /// }
+    /// assert_eq!( param_infos.get_color("color"),
+    ///             util::Color128::new(1.0, 0.5, 0.2, 1.0));
+    /// ```
     pub unsafe fn set_data<S: AsRef<str>>(
         &mut self,
         name: S,
@@ -1329,8 +1502,11 @@ impl<'a> ParamInfos<'a> {
     /// Add an info value (identified with an id) to the shader of this material. Be sure of using a pointer 'value'
     /// corresponding to the right type 'type_info'
     /// <https://stereokit.net/Pages/StereoKit/Material/SetData.html>
+    /// * id - the hash_fnv64_string value of the name of the parameter.
+    /// * type_info - the type of the parameter you want to set.
+    /// * value - a pointer to the data you want to set.
     ///
-    /// see also [`ParamInfo`][`crate::material::material_set_param_id`]
+    /// see also [`ParamInfo`][`material_set_param_id`]
     ///    # Safety
     ///    Be sure of the data you want to modify this way.
     pub unsafe fn set_data_with_id<S: AsRef<str>>(
@@ -1346,8 +1522,21 @@ impl<'a> ParamInfos<'a> {
     /// Sets a shader parameter with the given name to the provided value. If no parameter is found, nothing happens,
     /// and the value is not set!
     /// <https://stereokit.net/Pages/StereoKit/Material/SetBool.html>
+    /// * name - Name of the shader parameter.
+    /// * value - The new value to set.
     ///
-    /// see also [`crate::material::material_set_bool`]
+    /// see also [`material_set_bool`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::material::{Material, MaterialParam};
+    ///
+    /// let mut material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let mut param_infos = material.get_all_param_info();
+    /// param_infos.set_bool("use_occlusion", true);
+    ///
+    /// assert_eq!( param_infos.get_bool("use_occlusion"),true);
+    /// ```
     pub fn set_bool<S: AsRef<str>>(&mut self, name: S, value: bool) -> &mut Self {
         unsafe {
             let cstr = &CString::new(name.as_ref()).unwrap_or_default();
@@ -1359,12 +1548,27 @@ impl<'a> ParamInfos<'a> {
     /// Sets a shader parameter with the given name to the provided value. If no parameter is found, nothing happens,
     /// and the value is not set!
     /// <https://stereokit.net/Pages/StereoKit/Material/SetColor.html>
+    /// * name - Name of the shader parameter.
+    /// * color_gamma - The gamma space color for the shader to use.
     ///
-    /// see also [`crate::material::material_set_color`]
-    pub fn set_color<S: AsRef<str>>(&mut self, name: S, value: impl Into<Color128>) -> &mut Self {
+    /// see also [`material_set_color`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{material::{Material, MaterialParam},util::Color128};
+    ///
+    /// let mut material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let mut param_infos = material.get_all_param_info();
+    /// let new_color = Color128::new(1.0, 0.5, 0.2, 1.0);
+    /// // same as Material::color_tint(new_color);
+    /// param_infos.set_color("color", new_color);  
+    ///
+    /// assert_eq!( param_infos.get_color("color"),new_color.to_linear() );
+    /// ```
+    pub fn set_color<S: AsRef<str>>(&mut self, name: S, color_gamma: impl Into<Color128>) -> &mut Self {
         unsafe {
             let cstr = &CString::new(name.as_ref()).unwrap_or_default();
-            material_set_color(self.material.0.as_ptr(), cstr.as_ptr(), value.into())
+            material_set_color(self.material.0.as_ptr(), cstr.as_ptr(), color_gamma.into())
         };
         self
     }
@@ -1372,8 +1576,21 @@ impl<'a> ParamInfos<'a> {
     /// Sets a shader parameter with the given name to the provided value. If no parameter is found, nothing happens,
     /// and the value is not set!
     /// <https://stereokit.net/Pages/StereoKit/Material/SetFloat.html>
+    /// * name - The name of the parameter to set.
+    /// * value - The value to set for the parameter.
     ///
-    /// see also [`crate::material::material_set_float`]
+    /// see also [`material_set_float`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::material::{Material, MaterialParam};
+    ///
+    /// let mut material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let mut param_infos = material.get_all_param_info();
+    /// param_infos.set_float("edge_pos", 0.18);
+    ///
+    /// assert_eq!( param_infos.get_float("edge_pos"), 0.18);
+    /// ```
     pub fn set_float<S: AsRef<str>>(&mut self, name: S, value: f32) -> &mut Self {
         unsafe {
             let cstr = &CString::new(name.as_ref()).unwrap_or_default();
@@ -1385,12 +1602,25 @@ impl<'a> ParamInfos<'a> {
     /// Sets a shader parameter with the given name to the provided value. If no parameter is found, nothing happens,
     /// and the value is not set!
     /// <https://stereokit.net/Pages/StereoKit/Material/SetInt.html>
-    /// * value : up to 4 integer values
+    /// * nanme - the name of the parameter to set
+    /// * value - up to 4 integer values
     ///
-    /// see also [`crate::material::material_set_int`]
-    /// see also [`crate::material::material_set_int2`]
-    /// see also [`crate::material::material_set_int3`]
-    /// see also [`crate::material::material_set_int4`]
+    /// see also [`material_set_int`]
+    /// see also [`material_set_int2`]
+    /// see also [`material_set_int3`]
+    /// see also [`material_set_int4`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::material::{Material, MaterialParam};
+    ///
+    /// let mut material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let mut param_infos = material.get_all_param_info();
+    /// let new_factors = vec![302,50,20,10];
+    /// param_infos.set_int("size_factors", new_factors.as_slice());
+    ///
+    /// assert_eq!( param_infos.get_int_vector("size_factors", MaterialParam::Int4).unwrap(), new_factors);
+    /// ```
     pub fn set_int<S: AsRef<str>>(&mut self, name: S, values: &[i32]) -> &mut Self {
         unsafe {
             let cstr = &CString::new(name.as_ref()).unwrap_or_default();
@@ -1413,14 +1643,29 @@ impl<'a> ParamInfos<'a> {
     }
 
     /// Sets a shader parameter with the given name to the provided value. If no parameter is found, nothing happens,
-    /// and the value is not set!
+    /// and the value is not set! Warning, this may work on Int values as you can see in the examples.
     /// <https://stereokit.net/Pages/StereoKit/Material/SetUInt.html>
-    /// * value : up to 4 integer values
+    /// * name - the name of the parameter to set
+    /// * value : up to 4 unsigned integer values
     ///
-    /// see also [`crate::material::material_set_uint`]
-    /// see also [`crate::material::material_set_uint2`]
-    /// see also [`crate::material::material_set_uint3`]
-    /// see also [`crate::material::material_set_uint4`]
+    /// see also [`material_set_uint`]
+    /// see also [`material_set_uint2`]
+    /// see also [`material_set_uint3`]
+    /// see also [`material_set_uint4`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::material::{Material, MaterialParam};
+    ///
+    /// let mut material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let mut param_infos = material.get_all_param_info();
+    /// assert_eq!( param_infos.get_uint_vector("size_factors", MaterialParam::UInt4).unwrap(), vec![300, 4294967196, 50, 25]);
+    /// let new_factors = vec![303,502,201,100];
+    /// param_infos.set_uint("size_factors", new_factors.as_slice());
+    ///
+    /// assert!( param_infos.has_param("size_factors"),"size_factors should be here");
+    /// assert_eq!( param_infos.get_uint_vector("size_factors", MaterialParam::UInt4).unwrap(), new_factors);
+    /// ```
     pub fn set_uint<S: AsRef<str>>(&mut self, name: S, values: &[u32]) -> &mut Self {
         unsafe {
             let cstr = &CString::new(name.as_ref()).unwrap_or_default();
@@ -1445,8 +1690,24 @@ impl<'a> ParamInfos<'a> {
     /// Sets a shader parameter with the given name to the provided value. If no parameter is found, nothing happens,
     /// and the value is not set!
     /// <https://stereokit.net/Pages/StereoKit/Material/SetMatrix.html>
+    /// * name - The name of the parameter to set.
+    /// * value - The [Matrix] to set for the parameter.
     ///
-    /// see also [`crate::material::material_set_matrix`]
+    /// see also [`material_set_matrix`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{material::{Material, MaterialParam}, maths::{Vec3, Matrix}};
+    ///
+    /// let mut material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let mut param_infos = material.get_all_param_info();
+    /// assert_eq!( param_infos.get_matrix("useless"), Matrix::NULL );
+    /// let new_matrix = Matrix::t( Vec3::new(1.0, 2.0, 3.0));
+    /// param_infos.set_matrix("useless", new_matrix);
+    ///
+    /// assert!( param_infos.has_param("useless"),"size_factors should be here");
+    /// assert_eq!( param_infos.get_matrix("useless"), new_matrix);
+    /// ```
     pub fn set_matrix<S: AsRef<str>>(&mut self, name: S, value: impl Into<Matrix>) -> &mut Self {
         unsafe {
             let cstr = &CString::new(name.as_ref()).unwrap_or_default();
@@ -1458,8 +1719,22 @@ impl<'a> ParamInfos<'a> {
     /// Sets a shader parameter with the given name to the provided value. If no parameter is found, nothing happens,
     /// and the value is not set!
     /// <https://stereokit.net/Pages/StereoKit/Material/SetTexture.html>
+    /// * name - the name of the parameter to set
+    /// * value - the [Tex] to set for the parameter
     ///
-    /// see also [`crate::material::material_set_texture`]
+    /// see also [`material_set_texture`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{material::{Material, MaterialParam}, tex::{Tex}};
+    ///
+    /// let mut material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let mut param_infos = material.get_all_param_info();
+    /// assert_ne!( param_infos.get_texture("metal").unwrap(), Tex::default() );
+    /// let metal_tex = Tex::from_file("textures/open_gltf.jpeg", true, None).unwrap();
+    /// param_infos.set_texture("metal", &metal_tex);
+    /// assert_eq!( param_infos.get_texture("metal").unwrap(), metal_tex );
+    /// ```
     pub fn set_texture<S: AsRef<str>>(&mut self, name: S, value: impl AsRef<Tex>) -> &mut Self {
         unsafe {
             let cstr = &CString::new(name.as_ref()).unwrap_or_default();
@@ -1471,9 +1746,23 @@ impl<'a> ParamInfos<'a> {
     /// Sets a shader parameter with the given name to the provided value. If no parameter is found, nothing happens,
     /// and the value is not set!
     /// <https://stereokit.net/Pages/StereoKit/Material/SetVector.html>
+    /// * name - the name of the parameter to set
+    /// * value - the [Vec2] to set for the parameter
     ///
-    /// see also [`crate::material::material_set_vector2`]
-    pub fn set_vec2<S: AsRef<str>>(&mut self, name: S, value: impl Into<Vec2>) -> &mut Self {
+    /// see also [`material_set_vector2`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{material::{Material, MaterialParam}, maths::Vec2};
+    ///
+    /// let mut material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let mut param_infos = material.get_all_param_info();
+    /// assert_eq!( param_infos.get_vector2("edge_limit"), Vec2::new(0.1, 0.9) );
+    /// let new_vec2 = Vec2::new(0.15, 0.85);
+    /// param_infos.set_vector2("edge_limit", new_vec2);
+    /// assert_eq!( param_infos.get_vector2("edge_limit"), new_vec2);
+    /// ```
+    pub fn set_vector2<S: AsRef<str>>(&mut self, name: S, value: impl Into<Vec2>) -> &mut Self {
         unsafe {
             let cstr = &CString::new(name.as_ref()).unwrap_or_default();
             material_set_vector2(self.material.0.as_ptr(), cstr.as_ptr(), value.into())
@@ -1484,9 +1773,23 @@ impl<'a> ParamInfos<'a> {
     /// Sets a shader parameter with the given name to the provided value. If no parameter is found, nothing happens,
     /// and the value is not set!
     /// <https://stereokit.net/Pages/StereoKit/Material/SetVector.html>
+    /// * name - the name of the parameter to set
+    /// * value - the [Vec3] to set for the parameter
     ///
-    /// see also [`crate::material::material_set_vector3`]
-    pub fn set_vec3<S: AsRef<str>>(&mut self, name: S, value: impl Into<Vec3>) -> &mut Self {
+    /// see also [`material_set_vector2`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{material::{Material, MaterialParam}, maths::Vec3};
+    ///
+    /// let mut material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let mut param_infos = material.get_all_param_info();
+    /// assert_eq!( param_infos.get_vector3("line_color"), Vec3::new(0.84, 0.84, 0.84) );
+    /// let new_vec3 = Vec3::new(0.75, 0.75, 0.75);
+    /// param_infos.set_vector3("line_color", new_vec3);
+    /// assert_eq!( param_infos.get_vector3("line_color"), new_vec3);
+    /// ```
+    pub fn set_vector3<S: AsRef<str>>(&mut self, name: S, value: impl Into<Vec3>) -> &mut Self {
         unsafe {
             let cstr = &CString::new(name.as_ref()).unwrap_or_default();
             material_set_vector3(self.material.0.as_ptr(), cstr.as_ptr(), value.into())
@@ -1497,9 +1800,25 @@ impl<'a> ParamInfos<'a> {
     /// Sets a shader parameter with the given name to the provided value. If no parameter is found, nothing happens,
     /// and the value is not set!
     /// <https://stereokit.net/Pages/StereoKit/Material/SetVector.html>
+    /// * name- The name of the parameter to set.
+    /// * value - the [Vec4] to set for the parameter
     ///
-    /// see also [`crate::material::material_set_vector4`]
-    pub fn set_vec4<S: AsRef<str>>(&mut self, name: S, value: impl Into<Vec4>) -> &mut Self {
+    /// see also [`material_set_vector4`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{material::Material, maths::Vec4};
+    ///
+    /// let mut material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let mut param_infos = material.get_all_param_info();
+    /// assert_eq!( param_infos.get_vector4("tex_trans"), Vec4::new(0.0, 0.0, 0.1,0.1) );
+    ///
+    /// let new_vec4 = Vec4::new(0.0, 0.0, 0.75, 0.75);
+    /// // same as material.tex_transform(new_vec4)
+    /// param_infos.set_vector4("tex_trans", new_vec4);
+    /// assert_eq!( param_infos.get_vector4("tex_trans"), new_vec4);
+    /// ```
+    pub fn set_vector4<S: AsRef<str>>(&mut self, name: S, value: impl Into<Vec4>) -> &mut Self {
         unsafe {
             let cstr = &CString::new(name.as_ref()).unwrap_or_default();
             material_set_vector4(self.material.0.as_ptr(), cstr.as_ptr(), value.into())
@@ -1507,7 +1826,7 @@ impl<'a> ParamInfos<'a> {
         self
     }
 
-    //Get the name and type of the info at given index
+    /// Get the name and type of the info at given index
     fn material_get_param_info(&self, index: i32) -> Option<(&str, MaterialParam)> {
         let name_info = CString::new("H").unwrap().into_raw() as *mut *mut c_char;
         let mut type_info = MaterialParam::Unknown;
@@ -1519,8 +1838,10 @@ impl<'a> ParamInfos<'a> {
     /// Gets the value of a shader parameter with the given name. If no parameter is found, a default value of ‘false’
     /// will be returned.
     /// <https://stereokit.net/Pages/StereoKit/Material/GetBool.html>
+    /// * name - The name of the shader parameter to get.
     ///
-    /// see also [`crate::material::material_get_bool`]
+    /// see also [`material_get_bool`]
+    /// see example in [`ParamInfos::set_bool`]
     pub fn get_bool<S: AsRef<str>>(&self, name: S) -> bool {
         unsafe {
             let cstr = &CString::new(name.as_ref()).unwrap_or_default();
@@ -1531,8 +1852,10 @@ impl<'a> ParamInfos<'a> {
     /// Gets the value of a shader parameter with the given name. If no parameter is found, a default value of ‘0’ will
     /// be returned.
     /// <https://stereokit.net/Pages/StereoKit/Material/GetFloat.html>
+    /// * name - The name of the shader parameter to get.
     ///
-    /// see also [`crate::material::material_get_float`]
+    /// see also [`material_get_float`]
+    /// see example in [`ParamInfos::set_float`]
     pub fn get_float<S: AsRef<str>>(&self, name: S) -> f32 {
         unsafe {
             let cstr = &CString::new(name.as_ref()).unwrap_or_default();
@@ -1543,8 +1866,10 @@ impl<'a> ParamInfos<'a> {
     /// Gets the value of a shader parameter with the given name. If no parameter is found, a default value of
     /// Vec2::ZERO will be returned.
     /// <https://stereokit.net/Pages/StereoKit/Material/GetVector2.html>
+    /// * name - The name of the shader parameter to get.
     ///
-    /// see also [`crate::material::material_get_vector2`]
+    /// see also [`material_get_vector2`]
+    /// see example in [`ParamInfos::set_vector2`]
     pub fn get_vector2<S: AsRef<str>>(&self, name: S) -> Vec2 {
         unsafe {
             let cstr = &CString::new(name.as_ref()).unwrap_or_default();
@@ -1555,8 +1880,10 @@ impl<'a> ParamInfos<'a> {
     /// Gets the value of a shader parameter with the given name. If no parameter is found, a default value of
     /// Vec3::ZERO will be returned.
     /// <https://stereokit.net/Pages/StereoKit/Material/GetVector3.html>
+    /// * name - The name of the shader parameter to get.
     ///
-    /// see also [`crate::material::material_get_vector3`]
+    /// see also [`material_get_vector3`]
+    /// see example in [`ParamInfos::set_vector3`]
     pub fn get_vector3<S: AsRef<str>>(&self, name: S) -> Vec3 {
         unsafe {
             let cstr = &CString::new(name.as_ref()).unwrap_or_default();
@@ -1566,9 +1893,11 @@ impl<'a> ParamInfos<'a> {
 
     /// Gets the value of a shader parameter with the given name. If no parameter is found, a default value of
     /// Vec4::ZERO will be returned.
+    /// see example in [`ParamInfos::set_vector4`]
     /// <https://stereokit.net/Pages/StereoKit/Material/GetVector4.html>
+    /// * name - The name of the shader parameter to get.
     ///
-    /// see also [`crate::material::material_get_vector4`]
+    /// see also [`material_get_vector4`]
     pub fn get_vector4<S: AsRef<str>>(&self, name: S) -> Vec4 {
         unsafe {
             let cstr = &CString::new(name.as_ref()).unwrap_or_default();
@@ -1577,10 +1906,12 @@ impl<'a> ParamInfos<'a> {
     }
 
     /// Gets the value of a shader parameter with the given name. If no parameter is found, a default value of
-    /// Color128::WHITE will be returned.
+    /// Color128::WHITE will be returned. Warning: This function returns a gamma color.
     /// <https://stereokit.net/Pages/StereoKit/Material/GetColor.html>
+    /// * name - The name of the shader parameter to get.
     ///
-    /// see also [`crate::material::material_get_color`]
+    /// see also [`material_get_color`]
+    /// see example in [`ParamInfos::set_color`]
     pub fn get_color<S: AsRef<str>>(&self, name: S) -> Color128 {
         unsafe {
             let cstr = &CString::new(name.as_ref()).unwrap_or_default();
@@ -1591,8 +1922,10 @@ impl<'a> ParamInfos<'a> {
     /// Gets the value of a shader parameter with the given name. If no parameter is found, a default value of ‘0’ will
     /// be returned.
     /// <https://stereokit.net/Pages/StereoKit/Material/GetInt.html>
+    /// * name - The name of the shader parameter to get.
     ///
-    /// see also [`crate::material::material_get_int]
+    /// see also [`material_get_int]
+    /// see example in [`ParamInfos::set_int`]
     pub fn get_int<S: AsRef<str>>(&self, name: S) -> i32 {
         unsafe {
             let cstr = &CString::new(name.as_ref()).unwrap_or_default();
@@ -1601,6 +1934,10 @@ impl<'a> ParamInfos<'a> {
     }
 
     /// Get int vector using unsafe material_get_param function
+    /// * name - The name of the shader parameter to get.
+    /// * type_info - The type of the shader parameter to get: Int, Int2, Int3 or Int4
+    ///
+    /// see example in [`ParamInfos::set_int`]
     pub fn get_int_vector<S: AsRef<str>>(&self, name: S, type_info: MaterialParam) -> Option<Vec<i32>> {
         if let Some(out_value) = self.get_data(name, type_info) {
             match type_info {
@@ -1618,8 +1955,10 @@ impl<'a> ParamInfos<'a> {
     /// Gets the value of a shader parameter with the given name. If no parameter is found, a default value of ‘0’ will
     /// be returned.
     /// <https://stereokit.net/Pages/StereoKit/Material/GetUInt.html>
+    /// * name - The name of the shader parameter to get.
     ///
-    /// see also [`crate::material::material_get_uint`]
+    /// see also [`material_get_uint`]
+    /// see example in [`ParamInfos::set_uint`]
     pub fn get_uint<S: AsRef<str>>(&self, name: S) -> u32 {
         unsafe {
             let cstr = &CString::new(name.as_ref()).unwrap_or_default();
@@ -1628,13 +1967,17 @@ impl<'a> ParamInfos<'a> {
     }
 
     /// Get uint vector using unsafe material_get_param function
+    /// * name - The name of the shader parameter to get.
+    /// * type_info - The type of the shader parameter to get: UInt, UInt2, UInt3, UInt4.
+    ///
+    /// see example in [`ParamInfos::set_uint`]
     pub fn get_uint_vector<S: AsRef<str>>(&self, name: S, type_info: MaterialParam) -> Option<Vec<u32>> {
         if let Some(out_value) = self.get_data(name, type_info) {
             match type_info {
-                MaterialParam::Int => Some(unsafe { std::ptr::read(out_value as *const [u32; 1]).to_vec() }),
-                MaterialParam::Int2 => Some(unsafe { std::ptr::read(out_value as *const [u32; 2]).to_vec() }),
-                MaterialParam::Int3 => Some(unsafe { std::ptr::read(out_value as *const [u32; 3]).to_vec() }),
-                MaterialParam::Int4 => Some(unsafe { std::ptr::read(out_value as *const [u32; 4]).to_vec() }),
+                MaterialParam::UInt => Some(unsafe { std::ptr::read(out_value as *const [u32; 1]).to_vec() }),
+                MaterialParam::UInt2 => Some(unsafe { std::ptr::read(out_value as *const [u32; 2]).to_vec() }),
+                MaterialParam::UInt3 => Some(unsafe { std::ptr::read(out_value as *const [u32; 3]).to_vec() }),
+                MaterialParam::UInt4 => Some(unsafe { std::ptr::read(out_value as *const [u32; 4]).to_vec() }),
                 _ => None,
             }
         } else {
@@ -1645,8 +1988,10 @@ impl<'a> ParamInfos<'a> {
     /// Gets the value of a shader parameter with the given name. If no parameter is found, a default value of
     /// Matrix.Identity will be returned.
     /// <https://stereokit.net/Pages/StereoKit/Material/GetMatrix.html>
+    /// * name - The name of the parameter to get.
     ///
-    /// see also [`crate::material::material_get_matrix`]
+    /// see also [`material_get_matrix`]
+    /// see example in [`ParamInfos::set_matrix`]
     pub fn get_matrix<S: AsRef<str>>(&self, name: S) -> Matrix {
         unsafe {
             let cstr = &CString::new(name.as_ref()).unwrap_or_default();
@@ -1656,8 +2001,10 @@ impl<'a> ParamInfos<'a> {
 
     /// Gets the value of a shader parameter with the given name. If no parameter is found,None will be returned.
     /// <https://stereokit.net/Pages/StereoKit/Material/GetTexture.html>
+    /// * name - The name of the parameter to get.
     ///
-    /// see also [`crate::material::material_get_texture`]
+    /// see also [`material_get_texture`]
+    /// see example in [`ParamInfos::set_texture`]
     pub fn get_texture<S: AsRef<str>>(&self, name: S) -> Option<Tex> {
         NonNull::new(unsafe {
             let cstr = &CString::new(name.as_ref()).unwrap_or_default();
@@ -1668,8 +2015,23 @@ impl<'a> ParamInfos<'a> {
 
     /// Get an info value of the shader of this material
     /// <https://stereokit.net/Pages/StereoKit/Material.html>
+    /// * name - The name of the parameter to get.
+    /// * type_info - The type of the parameter to get.
     ///
-    /// see also [`ParamInfo`][`crate::material::material_get_param`]
+    /// see also [`ParamInfo`][`material_get_param`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::material::{Material, MaterialParam};
+    ///
+    /// let mut material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let mut param_infos = material.get_all_param_info();
+    /// if let Some(out_value) = param_infos.get_data("size_factors", MaterialParam::Int4) {
+    ///     let vec4 = unsafe { std::ptr::read(out_value as *const [i32; 4]).to_vec() };
+    ///     assert_eq!( vec4, vec![300,-100,50,25] );
+    /// } else { panic!("Failed to size_factors Int4");}
+    /// ```
+    /// see [`ParamInfos::set_data`]
     pub fn get_data<S: AsRef<str>>(&self, name: S, type_info: MaterialParam) -> Option<*mut c_void> {
         let out_value = CString::new("H").unwrap().into_raw() as *mut c_void;
         let cstr = &CString::new(name.as_ref()).unwrap();
@@ -1682,8 +2044,11 @@ impl<'a> ParamInfos<'a> {
 
     /// Get an info value (identified with an id) of the shader of this material
     /// <https://stereokit.net/Pages/StereoKit/Material.html>
+    /// * id - the hash_fnv64_string value of the name of the parameter.
+    /// * type_info - the type of the parameter.
     ///
-    /// see also [`ParamInfo`][`crate::material::material_get_param_id`]
+    /// Returns a pointer to the value that will be filled in if the parameter is found.
+    /// see also [`ParamInfo`][`material_get_param_id`][`ParamInfos::set_data_with_id`]
     pub fn get_data_with_id(&self, id: u64, type_info: MaterialParam) -> Option<*mut c_void> {
         let out_value = CString::new("H").unwrap().into_raw() as *mut c_void;
         if unsafe { material_get_param_id(self.material.0.as_ptr(), id, type_info, out_value) } != 0 {
@@ -1696,12 +2061,42 @@ impl<'a> ParamInfos<'a> {
     /// Get the number of infos for this node
     /// <https://stereokit.net/Pages/StereoKit/Material/ParamCount.html>
     ///
-    /// see also [`crate::material::material_get_param_count`]
+    /// see also [`material_get_param_count`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::material::Material;
+    ///
+    /// let mut material = Material::unlit();
+    /// let mut param_infos = material.get_all_param_info();
+    /// assert_eq!( param_infos.get_count(), 3);
+    /// ```
     pub fn get_count(&self) -> i32 {
         unsafe { material_get_param_count(self.material.0.as_ptr()) }
     }
 
     /// Get the string value of the given ParamInfo
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::material::Material;
+    ///
+    /// let mut material = Material::unlit();
+    /// let mut param_infos_iter = material.get_all_param_info();
+    /// let mut param_infos = material.get_all_param_info();
+    /// for param in param_infos_iter {
+    ///     match (param.get_name()) {
+    ///         "color" =>
+    ///             assert_eq!(param_infos.string_of(&param), "r:1, g:1, b:1, a:1"),
+    ///         "tex_trans" =>
+    ///             assert_eq!(param_infos.string_of(&param), "[x:0, y:0, z:1, w:1]"),
+    ///         "diffuse" =>
+    ///             assert_eq!(param_infos.string_of(&param), "Texture data..."),
+    ///        otherwise =>
+    ///             panic!("Unknown param type: {}", otherwise)
+    ///     }
+    /// }
+    /// ```
     pub fn string_of(&self, info: &ParamInfo) -> String {
         match info.get_type() {
             MaterialParam::Unknown => "Unknown".into(),
@@ -1724,7 +2119,7 @@ impl<'a> ParamInfos<'a> {
     }
 }
 
-/// One Info of a Material. This is only used for read
+/// One Info of a Material. This is only useful for [`Material::get_all_param_info`] iterator.
 /// <https://stereokit.net/Pages/StereoKit/Material/GetAllParamInfo.html>
 ///
 /// see also [ParamInfos] [`Material::get_all_param_info`]
@@ -1734,14 +2129,19 @@ pub struct ParamInfo {
 }
 
 impl ParamInfo {
+    /// Create a new ParamInfo with the given name and type info. There is no reason to use this method as you can
+    /// get values from [`Material`] get_???? methods
+    /// [`Material::get_all_param_info`] iterator
     pub fn new<S: AsRef<str>>(name: S, type_info: MaterialParam) -> ParamInfo {
         ParamInfo { name: name.as_ref().to_string(), type_info }
     }
 
+    /// Get the name of the shader parameter
     pub fn get_name(&self) -> &str {
         self.name.as_str()
     }
 
+    /// Get the type of the shader parameter
     pub fn get_type(&self) -> MaterialParam {
         self.type_info
     }
@@ -1792,7 +2192,7 @@ impl<T> MaterialBuffer<T> {
     /// * register_slot - Valid values are 3-16. This is the register id that this data will be bound to. In HLSL,
     ///   you’ll see the slot id for ‘3’ indicated like this : register(b3)
     ///
-    /// see also [`crate::material::material_buffer_create`]
+    /// see also [`material_buffer_create`]
     pub fn new(register_slot: i32) -> MaterialBuffer<T> {
         let size = std::mem::size_of::<T>();
         let mat_buffer = unsafe { material_buffer_create(register_slot, size as i32) };
@@ -1802,7 +2202,7 @@ impl<T> MaterialBuffer<T> {
     /// This will upload your data to the GPU for shaders to use.
     /// <https://stereokit.net/Pages/StereoKit/MaterialBuffer/Set.html>
     ///
-    /// see also [`crate::material::material_buffer_set_data`]
+    /// see also [`material_buffer_set_data`]
     pub fn set(&self, in_data: *mut T) {
         unsafe { material_buffer_set_data(self._material_buffer, in_data as *const c_void) };
     }
