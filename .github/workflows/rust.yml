@@ -52,15 +52,21 @@ jobs:
           target/
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
+    - name: Install StereoKit
+      run: cargo install -F event-loop --path . 
+
+    - name: compile shaders
+      run: cargo compile_sks --options -f -t x
+
     - name: Build event-loop
       run: cargo build --verbose --features event-loop --example main_pc
     - name: Run tests event-loop
-      run: cargo test --verbose --features event-loop -- --test-threads=1
+      run: cargo test --verbose --features event-loop
 
     - name: Build no-event-loop
       run: cargo build --verbose --features no-event-loop --example manual
     - name: Run tests no-event-loop
-      run: cargo test --verbose --features no-event-loop -- --test-threads=1
+      run: cargo test --verbose --features no-event-loop
 
   build-linux:
     runs-on: ubuntu-latest
@@ -86,6 +92,12 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install xvfb clang cmake lld ninja-build libx11-dev libxfixes-dev libegl-dev libgbm-dev libfontconfig-dev libxkbcommon-x11-0 libxkbcommon0
+
+    - name: Install StereoKit
+      run: cargo install -F event-loop --path . 
+
+    - name: compile shaders
+      run: cargo compile_sks --options -f -t e
 
     - name: Build event-loop
       run: cargo build --verbose --features event-loop --example main_pc
