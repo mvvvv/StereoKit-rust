@@ -1034,6 +1034,14 @@ impl Vec4 {
         Quat { x: self.x, y: self.y, z: self.z, w: self.w }
     }
 
+    /// This is the squared length/magnitude of the vector! It skips the Sqrt call, and just gives you the squared
+    /// version for speedy calculations that can work with it squared.
+    /// <https://stereokit.net/Pages/StereoKit/Vec4.html>
+    #[inline]
+    pub fn length_sq(&self) -> f32 {
+        Self::dot(*self, *self)
+    }
+
     /// What’s a dot product do for 4D vectors, you might ask? Well, I’m no mathematician, so hopefully you are! I’ve
     /// never used it before. Whatever you’re doing with this function, it’s SIMD fast!
     /// <https://stereokit.net/Pages/StereoKit/Vec4/Dot.html>
@@ -1301,7 +1309,7 @@ impl Quat {
     /// <https://stereokit.net/Pages/StereoKit/Quat/Identity.html>
     pub const IDENTITY: Self = Self { x: 0.0, y: 0.0, z: 0.0, w: 1.0 };
 
-    /// You may want to use static creation methods, like Quat.LookAt, or Quat.Identity instead of this one! Unless you
+    /// You may want to use static creation methods, like Quat::look_at, or Quat::IDENTITY instead of this one! Unless you
     /// know what you’re doing.
     /// <https://stereokit.net/Pages/StereoKit/Quat/Quat.html>
     #[inline]
