@@ -1267,7 +1267,7 @@ impl Material {
 /// let mut material_cube = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
 /// material_cube.face_cull(Cull::Front).tex_transform(Vec4::new(0.0, 0.0, 0.04, 0.04));
 /// let mut param_infos = material_cube.get_all_param_info();
-/// assert!(param_infos.has_param("line_color"), "line_color is missing");
+/// assert!(param_infos.has_param("line_color", MaterialParam::Vec3), "line_color is missing");
 /// assert_eq!(param_infos.get_float("edge_pos"), 1.5);
 ///
 /// // Change of unusual values that are not listed in Material
@@ -1428,7 +1428,7 @@ impl<'a> ParamInfos<'a> {
     ///
     /// let mut material_cube = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
     /// let mut param_infos = ParamInfos::from(&material_cube);
-    /// assert!(param_infos.has_param("line_color"), "line_color is missing");
+    /// assert!(param_infos.has_param("line_color", MaterialParam::Vec3), "line_color is missing");
     /// assert_eq!(param_infos.get_float("edge_pos"), 1.5);
     /// ```
     pub fn from(material: &'a Material) -> ParamInfos<'a> {
@@ -1447,13 +1447,13 @@ impl<'a> ParamInfos<'a> {
     ///
     /// let mut material_cube = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
     /// let mut param_infos = ParamInfos::from(&material_cube);
-    /// assert!(param_infos.has_param("line_color"), "line_color is missing");
-    /// assert!(param_infos.has_param("edge_pos"),   "edge_pos is missing");
+    /// assert!(param_infos.has_param("line_color", MaterialParam::Vec3), "line_color is missing");
+    /// assert!(param_infos.has_param("edge_pos", MaterialParam::Float),   "edge_pos is missing");
     /// ```
-    pub fn has_param<S: AsRef<str>>(&self, name: S) -> bool {
+    pub fn has_param<S: AsRef<str>>(&self, name: S, type_: MaterialParam) -> bool {
         unsafe {
             let cstr = &CString::new(name.as_ref()).unwrap_or_default();
-            material_has_param(self.material.0.as_ptr(), cstr.as_ptr(), MaterialParam::Unknown) != 0
+            material_has_param(self.material.0.as_ptr(), cstr.as_ptr(), type_) != 0
         }
     }
 
@@ -1663,7 +1663,7 @@ impl<'a> ParamInfos<'a> {
     /// let new_factors = vec![303,502,201,100];
     /// param_infos.set_uint("size_factors", new_factors.as_slice());
     ///
-    /// assert!( param_infos.has_param("size_factors"),"size_factors should be here");
+    /// assert!( param_infos.has_param("size_factors", MaterialParam::UInt4),"size_factors should be here");
     /// assert_eq!( param_infos.get_uint_vector("size_factors", MaterialParam::UInt4).unwrap(), new_factors);
     /// ```
     pub fn set_uint<S: AsRef<str>>(&mut self, name: S, values: &[u32]) -> &mut Self {
@@ -1705,7 +1705,7 @@ impl<'a> ParamInfos<'a> {
     /// let new_matrix = Matrix::t( Vec3::new(1.0, 2.0, 3.0));
     /// param_infos.set_matrix("useless", new_matrix);
     ///
-    /// assert!( param_infos.has_param("useless"),"size_factors should be here");
+    /// assert!( param_infos.has_param("useless", MaterialParam::Matrix),"size_factors should be here");
     /// assert_eq!( param_infos.get_matrix("useless"), new_matrix);
     /// ```
     pub fn set_matrix<S: AsRef<str>>(&mut self, name: S, value: impl Into<Matrix>) -> &mut Self {
