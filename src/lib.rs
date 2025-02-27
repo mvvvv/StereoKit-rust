@@ -1,10 +1,10 @@
 use std::{ffi::NulError, path::PathBuf};
+#[cfg(feature = "event-loop")]
+pub use stereokit_macros::IStepper;
 pub use stereokit_macros::include_asset_tree;
 pub use stereokit_macros::test_init_sk;
 pub use stereokit_macros::test_screenshot;
 pub use stereokit_macros::test_steps;
-#[cfg(feature = "event-loop")]
-pub use stereokit_macros::IStepper;
 use thiserror::Error;
 pub mod anchor;
 #[cfg(feature = "event-loop")]
@@ -90,6 +90,8 @@ pub enum StereoKitError {
     SoundFile(PathBuf),
     #[error("failed to create sound streaming {0}")]
     SoundCreate(String),
+    #[error("failed to create anchor {0}")]
+    AnchorCreate(String),
     #[error("failed to find anchor {0} for reason {1}")]
     AnchorFind(String, String),
     #[error("failed to init stereokit with settings {0}")]

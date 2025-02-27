@@ -11,28 +11,9 @@ fn main() {
 fn main() {
     material1();
     Sk::shutdown();
-    material2();
-    Sk::shutdown();
 }
 
 pub fn material1() {
-    stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize
-    use stereokit_rust::{
-        material::Material,
-        maths::{Matrix, Vec3},
-        mesh::Mesh,
-    };
-
-    // Create Mesh and its material
-    let circle = Mesh::generate_circle(1.0, Vec3::NEG_Z, Vec3::X, None, true);
-    let material_circle =
-        Material::from_file("shaders/blinker.hlsl.sks", Some("my_material_circle")).unwrap_or_default();
-    test_steps!( // !!!! Get a proper main loop !!!!
-        circle.draw(token, &material_circle,  Matrix::IDENTITY, None, None);
-    );
-}
-
-pub fn material2() {
     stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize
     use stereokit_rust::{
         material::Material,

@@ -89,9 +89,12 @@ impl Anchor1 {
         pose_tip.position += ray.direction * 0.5;
         Ui::push_enabled(storable || stability, None);
         if Ui::button("Create New", None) {
-            let anchor = Anchor::from_pose(pose_tip);
-            anchor.try_set_persistent(true);
-            self.anchors.push(anchor);
+            if let Ok(anchor) = Anchor::from_pose(pose_tip) {
+                anchor.try_set_persistent(true);
+                self.anchors.push(anchor);
+            } else {
+                Log::err("Failed to create anchor from pose")
+            }
         }
         Ui::pop_enabled();
         Ui::window_end();

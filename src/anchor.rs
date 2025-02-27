@@ -25,9 +25,21 @@ use std::{
 /// * A semantically labeled floor plane is not an Anchor (it’s physical)
 ///
 /// <https://stereokit.net/Pages/StereoKit/Anchor.html>
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{anchor::{Anchor, AnchorCaps}, maths::Pose};
 ///
+/// let storable = !(Anchor::get_capabilities() & AnchorCaps::Storable).is_empty();
+/// let stability = !(Anchor::get_capabilities() & AnchorCaps::Stability).is_empty();
+/// if storable || stability {
+///     // create an anchor in center of the world
+///     let anchor = Anchor::from_pose(Pose::default()).expect("What?!!!?");
+///     anchor.try_set_persistent(true);
+/// }
+/// ```
 #[repr(C)]
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Anchor(pub NonNull<_AnchorT>);
 impl Drop for Anchor {
     fn drop(&mut self) {
@@ -98,8 +110,17 @@ impl IAsset for Anchor {
 impl Anchor {
     /// Searches the asset list for an anchor with the given Id.
     /// <https://stereokit.net/Pages/StereoKit/Anchor/Find.html>
+    /// * id - The Id to search for.
     ///
-    /// see also [`crate::anchor::anchor_find`]
+    /// see also [`anchor_find`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::anchor::Anchor;
+    ///
+    /// let my_anchor = Anchor::find("the_anchor that doesn't exist");
+    /// assert!(my_anchor.is_err());
+    /// ```
     pub fn find<S: AsRef<str>>(id: S) -> Result<Anchor, StereoKitError> {
         let c_str = CString::new(id.as_ref())
             .map_err(|_| StereoKitError::AnchorFind(id.as_ref().into(), "CString conversion error".to_string()))?;
@@ -113,7 +134,18 @@ impl Anchor {
     /// calling find() method.
     /// <https://stereokit.net/Pages/StereoKit/Anchor/Find.html>
     ///
-    /// see also [`crate::anchor::anchor_find()`]
+    /// see also [`anchor_find()`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{anchor::Anchor, maths::Pose};
+    ///
+    /// // create an anchor in center of the world
+    /// if let Ok(anchor) = Anchor::from_pose(Pose::default()){;
+    ///     let same = anchor.clone_ref();
+    ///     assert_eq!(same.get_id(), anchor.get_id());
+    /// }
+    /// ```
     pub fn clone_ref(&self) -> Anchor {
         Anchor(
             NonNull::new(unsafe { anchor_find(anchor_get_id(self.0.as_ptr())) }).expect("<asset>::clone_ref failed!"),
@@ -122,18 +154,44 @@ impl Anchor {
 
     /// This creates a new Anchor from a world space pose.
     /// <https://stereokit.net/Pages/StereoKit/Anchor/FromPose.html>
+    /// * pose - A world space pose for the new Anchor
     ///
-    /// see also [`crate::anchor::anchor_create`]
-    pub fn from_pose(pose: impl Into<Pose>) -> Anchor {
-        Anchor(NonNull::new(unsafe { anchor_create(pose.into()) }).unwrap())
+    /// see also [`anchor_create`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{anchor::Anchor, maths::Pose};
+    ///
+    /// // create an anchor in center of the world
+    /// if let Ok(anchor) = Anchor::from_pose(Pose::default()){;
+    ///     anchor.try_set_persistent(true);
+    /// }
+    /// ```
+    pub fn from_pose(pose: impl Into<Pose>) -> Result<Anchor, StereoKitError> {
+        Ok(Anchor(
+            NonNull::new(unsafe { anchor_create(pose.into()) })
+                .ok_or(StereoKitError::AnchorCreate("anchor_create failed!".into()))?,
+        ))
     }
 
     /// Gets or sets the unique identifier of this asset resource! This can be helpful for debugging,
     /// managing your assets, or finding them later on! This is StereoKit’s asset ID, and not the system’s unique Name
     /// for the anchor.
     /// <https://stereokit.net/Pages/StereoKit/Anchor/Id.html>
+    /// * id - The new id for this Anchor.
     ///
-    /// see also [`crate::anchor::anchor_set_id`]
+    /// see also [`anchor_set_id`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{anchor::Anchor, maths::Pose};
+    ///
+    /// // create an anchor in center of the world
+    /// if let Ok(mut anchor) = Anchor::from_pose(Pose::default()){;
+    ///     anchor.id("my_anchor");
+    ///     assert_eq!(anchor.get_id(), "my_anchor");
+    /// }
+    /// ```
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
         let c_str = CString::new(id.as_ref()).unwrap();
         unsafe { anchor_set_id(self.0.as_ptr(), c_str.as_ptr()) };
@@ -143,7 +201,16 @@ impl Anchor {
     /// This will remove persistence from all Anchors the app knows about, even if they aren’t tracked.
     /// <https://stereokit.net/Pages/StereoKit/Anchor/ClearStored.html>
     ///
-    /// see also [`crate::anchor::anchor_clear_stored`]
+    /// see also [`anchor_clear_stored`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{anchor::Anchor, maths::Pose};
+    ///
+    /// Anchor::clear_store();
+    /// assert_eq!(Anchor::anchors().get_count(), 0);
+    /// assert_eq!(Anchor::new_anchors().get_count(), 0);
+    /// ```
     pub fn clear_store() {
         unsafe { anchor_clear_stored() };
     }
@@ -151,7 +218,14 @@ impl Anchor {
     /// Get an iterator of all Anchors that exist in StereoKit at the current moment.
     /// <https://stereokit.net/Pages/StereoKit/Anchor/Anchors.html>
     ///
-    /// see also [`crate::anchor::anchor_get_count`] [`crate::anchor::anchor_get_index`]
+    /// see also [`anchor_get_count`] [`anchor_get_index`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{anchor::Anchor, maths::Pose};
+    ///
+    /// assert_eq!(Anchor::anchors().get_count(), 0);
+    /// ```
     pub fn anchors() -> AnchorIter {
         AnchorIter::anchors()
     }
@@ -159,9 +233,38 @@ impl Anchor {
     /// Get an iterator of all Anchors that are new to StereoKit this frame.
     /// <https://stereokit.net/Pages/StereoKit/Anchor/Anchors.html>
     ///
-    /// see also [`crate::anchor::anchor_get_new_count`] [`crate::anchor::anchor_get_new_index`]
+    /// see also [`anchor_get_new_count`] [`anchor_get_new_index`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{anchor::Anchor, maths::Pose};
+    ///
+    /// assert_eq!(Anchor::new_anchors().get_count(), 0);
+    /// ```
     pub fn new_anchors() -> AnchorIter {
         AnchorIter::new_anchors()
+    }
+
+    /// This will attempt to make or prevent this Anchor from persisting across app sessions. You may want to check if
+    /// the system is capable of persisting anchors via Anchors.Capabilities, but it’s possible for this to fail on the
+    /// OpenXR runtime’s side as well.
+    /// <https://stereokit.net/Pages/StereoKit/Anchor/TrySetPersistent.html>
+    ///
+    /// see also [`anchor_try_set_persistent`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{anchor::Anchor, maths::Pose};
+    ///
+    /// // create an anchor in center of the world
+    /// if let Ok(mut anchor) = Anchor::from_pose(Pose::default()){;
+    ///     assert_eq!(anchor.get_persistent(), false);
+    ///     anchor.try_set_persistent(true);
+    ///     assert_eq!(anchor.get_persistent(), true);
+    /// }
+    /// ```
+    pub fn try_set_persistent(&self, persistent: bool) -> bool {
+        unsafe { anchor_try_set_persistent(self.0.as_ptr(), persistent as Bool32T) != 0 }
     }
 
     /// This describes the anchoring capabilities of the current XR anchoring backend. Some systems like a HoloLens can
@@ -169,7 +272,20 @@ impl Anchor {
     /// to make a persistent Anchor that’s relative to the stage, but doesn’t provide any stability benefits.
     /// <https://stereokit.net/Pages/StereoKit/Anchor/Capabilities.html>
     ///
-    /// see also [`crate::anchor::anchor_get_capabilities`]
+    /// see also [`anchor_get_capabilities`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{anchor::{Anchor, AnchorCaps}, maths::Pose};
+    ///
+    /// let storable = !(Anchor::get_capabilities() & AnchorCaps::Storable).is_empty();
+    /// let stability = !(Anchor::get_capabilities() & AnchorCaps::Stability).is_empty();
+    /// if storable || stability {
+    ///     // create an anchor in center of the world
+    ///     let anchor = Anchor::from_pose(Pose::default()).expect("What?!!!?");
+    ///     anchor.try_set_persistent(true);
+    /// }
+    /// ```
     pub fn get_capabilities() -> AnchorCaps {
         unsafe { anchor_get_capabilities() }
     }
@@ -177,7 +293,8 @@ impl Anchor {
     /// The id of this anchor. This is StereoKit’s asset ID, and not the system’s unique Name for the anchor.
     /// <https://stereokit.net/Pages/StereoKit/Anchor/Id.html>
     ///
-    /// see also [`crate::anchor::anchor_get_id`]
+    /// see also [`anchor_get_id`]
+    /// see example in [`Anchor::id`]
     pub fn get_id(&self) -> &str {
         unsafe { CStr::from_ptr(anchor_get_id(self.0.as_ptr())) }.to_str().unwrap()
     }
@@ -187,7 +304,17 @@ impl Anchor {
     /// tracked are more accurate than world-space positions.
     /// <https://stereokit.net/Pages/StereoKit/Anchor/Pose.html>
     ///
-    /// see also [`crate::anchor::anchor_get_pose`]
+    /// see also [`anchor_get_pose`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{anchor::Anchor, maths::Pose};
+    ///
+    /// // create an anchor in center of the world
+    /// if let Ok(mut anchor) = Anchor::from_pose(Pose::default()){;
+    ///     assert_eq!(anchor.get_pose(), Pose::default());
+    /// }
+    /// ```
     pub fn get_pose(&self) -> Pose {
         unsafe { anchor_get_pose(self.0.as_ptr()) }
     }
@@ -196,7 +323,17 @@ impl Anchor {
     /// device knows where this Anchor is located.
     /// <https://stereokit.net/Pages/StereoKit/Anchor/Tracked.html>
     ///
-    /// see also [`crate::anchor::anchor_get_tracked`]
+    /// see also [`anchor_get_tracked`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{anchor::Anchor, maths::Pose, system::BtnState};
+    ///
+    /// // create an anchor in center of the world
+    /// if let Ok(mut anchor) = Anchor::from_pose(Pose::default()){;
+    ///     assert_eq!(anchor.get_tracked(), BtnState::Active);
+    /// }
+    /// ```
     pub fn get_tracked(&self) -> BtnState {
         unsafe { anchor_get_tracked(self.0.as_ptr()) }
     }
@@ -204,7 +341,8 @@ impl Anchor {
     /// Will this Anchor persist across multiple app sessions? You can use TrySetPersistent to change this value.
     /// <https://stereokit.net/Pages/StereoKit/Anchor/Persistent.html>
     ///
-    /// see also [`crate::anchor::anchor_get_persistent`]
+    /// see also [`anchor_get_persistent`]
+    /// see example in [`Anchor::try_set_persistent`]
     pub fn get_persistent(&self) -> bool {
         unsafe { anchor_get_persistent(self.0.as_ptr()) != 0 }
     }
@@ -213,7 +351,17 @@ impl Anchor {
     /// Anchors.
     /// <https://stereokit.net/Pages/StereoKit/Anchor/Name.html>
     ///
-    /// see also [`crate::anchor::anchor_get_name`]
+    /// see also [`anchor_get_name`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{anchor::Anchor, maths::Pose, system::BtnState};
+    ///
+    /// // create an anchor in center of the world
+    /// if let Ok(mut anchor) = Anchor::from_pose(Pose::default()){;
+    ///     assert_eq!(anchor.get_name().is_empty(), false);
+    /// }
+    /// ```
     pub fn get_name(&self) -> &str {
         unsafe { CStr::from_ptr(anchor_get_name(self.0.as_ptr())).to_str().unwrap() }
     }
@@ -227,7 +375,7 @@ impl Anchor {
     ///
     /// returns Some(anchor) if the perception spatial anchor was successfully obtained, false otherwise.
     ///
-    /// see also [`crate::anchor::anchor_get_name`]
+    /// see also [`anchor_get_name`]
     pub fn try_get_perception_anchor<T>(&self) -> Option<*mut T> {
         let out_anchor: *mut T = null_mut();
         if unsafe { anchor_get_perception_anchor(self.0.as_ptr(), out_anchor as *mut *mut c_void) } != 0 {
@@ -236,18 +384,31 @@ impl Anchor {
             None
         }
     }
-
-    /// This will attempt to make or prevent this Anchor from persisting across app sessions. You may want to check if
-    /// the system is capable of persisting anchors via Anchors.Capabilities, but it’s possible for this to fail on the
-    /// OpenXR runtime’s side as well.
-    /// <https://stereokit.net/Pages/StereoKit/Anchor/TrySetPersistent.html>
-    ///
-    /// see also [`crate::anchor::anchor_try_set_persistent`]
-    pub fn try_set_persistent(&self, persistent: bool) -> bool {
-        unsafe { anchor_try_set_persistent(self.0.as_ptr(), persistent as Bool32T) != 0 }
-    }
 }
 
+/// Iterator for getting the list of anchors or new_anchors.
+/// see also   [`Anchor::new_anchors`][`Anchor::anchors`]
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{anchor::{Anchor, AnchorIter}, maths::Pose};
+///
+/// for anchor in  Anchor::anchors() {
+///     println!("Anchor: {:?}", anchor);
+/// }
+///
+/// for anchor in  Anchor::new_anchors() {
+///     println!("New Anchor: {:?}", anchor);
+/// }
+///
+/// for anchor in  AnchorIter::anchors() {
+///     println!("Anchor: {:?}", anchor);
+/// }
+///
+/// for anchor in  AnchorIter::new_anchors() {
+///     println!("New Anchor: {:?}", anchor);
+/// }
+/// ```
 pub struct AnchorIter {
     index: i32,
     only_new: bool,
@@ -295,10 +456,33 @@ impl Iterator for AnchorIter {
 }
 
 impl AnchorIter {
+    /// Get number of anchors
+    /// see also [`anchor_get_count`] [`anchor_get_new_count`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{anchor::Anchor, maths::Pose};
+    ///
+    /// assert_eq!(Anchor::anchors().get_count(), 0);
+    /// assert_eq!(Anchor::new_anchors().get_count(), 0);
+    /// ```
+    pub fn get_count(&self) -> i32 {
+        if self.only_new { unsafe { anchor_get_new_count() } } else { unsafe { anchor_get_count() } }
+    }
+
     /// Get an iterator of all Anchors that exist in StereoKit at the current moment.
     /// <https://stereokit.net/Pages/StereoKit/Anchor/Anchors.html>
     ///
-    /// see also [`crate::anchor::anchor_get_count`] [`crate::anchor::anchor_get_index`]
+    /// see also [`anchor_get_count`] [`anchor_get_index`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{anchor::AnchorIter, maths::Pose};
+    ///
+    /// for anchor in  AnchorIter::anchors() {
+    ///     println!("Anchor: {:?}", anchor);
+    /// }
+    /// ```
     pub fn anchors() -> AnchorIter {
         AnchorIter { index: -1, only_new: false }
     }
@@ -306,7 +490,16 @@ impl AnchorIter {
     /// Get an iterator of all Anchors that are new to StereoKit this frame.
     /// <https://stereokit.net/Pages/StereoKit/Anchor/Anchors.html>
     ///
-    /// see also [`crate::anchor::anchor_get_new_count`] [`crate::anchor::anchor_get_new_index`]
+    /// see also [`anchor_get_new_count`] [`anchor_get_new_index`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{anchor::AnchorIter, maths::Pose};
+    ///
+    /// for anchor in  AnchorIter::new_anchors() {
+    ///     println!("New Anchor: {:?}", anchor);
+    /// }
+    /// ```
     pub fn new_anchors() -> AnchorIter {
         AnchorIter { index: -1, only_new: true }
     }
