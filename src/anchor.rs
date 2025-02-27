@@ -391,7 +391,7 @@ impl Anchor {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{anchor::{Anchor, AnchorIter}, maths::Pose};
+/// use stereokit_rust::anchor::{Anchor, AnchorIter};
 ///
 /// for anchor in  Anchor::anchors() {
 ///     println!("Anchor: {:?}", anchor);
@@ -456,15 +456,18 @@ impl Iterator for AnchorIter {
 }
 
 impl AnchorIter {
-    /// Get number of anchors
+    /// Get the number of anchors. Unlike [`Iterator::count()`] does not consume the iterator.
     /// see also [`anchor_get_count`] [`anchor_get_new_count`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{anchor::Anchor, maths::Pose};
+    /// use stereokit_rust::anchor::Anchor;
+    //
+    /// let anchors = Anchor::anchors();
+    /// assert_eq!(anchors.get_count(), anchors.count() as i32);
     ///
-    /// assert_eq!(Anchor::anchors().get_count(), 0);
-    /// assert_eq!(Anchor::new_anchors().get_count(), 0);
+    /// let new_anchors = Anchor::new_anchors();
+    /// assert_eq!(new_anchors.get_count(), new_anchors.count() as i32);
     /// ```
     pub fn get_count(&self) -> i32 {
         if self.only_new { unsafe { anchor_get_new_count() } } else { unsafe { anchor_get_count() } }
@@ -474,10 +477,11 @@ impl AnchorIter {
     /// <https://stereokit.net/Pages/StereoKit/Anchor/Anchors.html>
     ///
     /// see also [`anchor_get_count`] [`anchor_get_index`]
+    /// same as [`Anchor::anchors`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{anchor::AnchorIter, maths::Pose};
+    /// use stereokit_rust::anchor::AnchorIter;
     ///
     /// for anchor in  AnchorIter::anchors() {
     ///     println!("Anchor: {:?}", anchor);
@@ -491,10 +495,11 @@ impl AnchorIter {
     /// <https://stereokit.net/Pages/StereoKit/Anchor/Anchors.html>
     ///
     /// see also [`anchor_get_new_count`] [`anchor_get_new_index`]
+    /// same as [`Anchor::new_anchors`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{anchor::AnchorIter, maths::Pose};
+    /// use stereokit_rust::anchor::AnchorIter;
     ///
     /// for anchor in  AnchorIter::new_anchors() {
     ///     println!("New Anchor: {:?}", anchor);
