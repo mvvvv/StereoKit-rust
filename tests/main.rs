@@ -1,14 +1,14 @@
 #![cfg(test)]
-use stereokit_rust::sk::Sk;
 
 #[cfg(feature = "event-loop")]
 fn main() {
     hand_menu_radial0();
-    Sk::shutdown();
+    //Sk::shutdown();
 }
 
 #[cfg(feature = "no-event-loop")]
 fn main() {
+    use stereokit_rust::sk::Sk;
     material1();
     Sk::shutdown();
 }
