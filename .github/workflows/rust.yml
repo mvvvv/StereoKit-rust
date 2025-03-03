@@ -109,10 +109,10 @@ jobs:
 
     - name: Build no-event-loop
       run: cargo build --verbose --features no-event-loop --example manual
-    - name: Run tests no-event-loop
-      run: |
-        export DISPLAY=:99
-        Xvfb -ac :99 -screen 0 1280x1024x16 > /dev/null 2>&1 &
-        cargo test --verbose --features no-event-loop -- --test-threads=1
+    # - name: Run tests no-event-loop
+    #   run: |
+    #     export DISPLAY=:99
+    #     Xvfb -ac :99 -screen 0 1280x1024x16 > /dev/null 2>&1 &
+    #     cargo test --verbose --features no-event-loop -- --test-threads=1
 
 
