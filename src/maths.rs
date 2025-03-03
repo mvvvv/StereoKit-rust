@@ -1416,7 +1416,6 @@ impl Neg for Vec4 {
     }
 }
 
-/// Native code use this as Quat
 /// Quaternions are efficient and robust mathematical objects for representing rotations! Understanding the details of
 /// how a quaternion works is not generally necessary for using them effectively, so don’t worry too much if they seem
 /// weird to you. They’re weird to me too.
@@ -2543,7 +2542,6 @@ impl MulAssign<Matrix> for Matrix {
     }
 }
 
-/// fluent syntax for Bounds.
 /// Bounds is an axis aligned bounding box type that can be used for storing the sizes of objects, calculating
 /// containment, intersections, and more!
 ///
@@ -3085,7 +3083,6 @@ impl MulAssign<Vec3> for Bounds {
     }
 }
 
-/// fluent syntax for Plane.
 /// Planes are really useful for collisions, intersections, and visibility testing!
 ///
 /// This plane is stored using the ax + by + cz + d = 0 formula, where the normal is a,b,c, and the d is, well, d.

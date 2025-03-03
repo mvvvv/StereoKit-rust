@@ -21,7 +21,7 @@ pub const PASSTHROUGH_FLIP: &str = "PassthroughFlip";
 
 ///
 ///
-///  This is a rust copycat of https://github.com/StereoKit/StereoKit/blob/master/Examples/StereoKitTest/Tools/PassthroughFBExt.cs
+///  This is a rust copycat of <https://github.com/StereoKit/StereoKit/blob/master/Examples/StereoKitTest/Tools/PassthroughFBExt.cs>
 ///
 ///
 /// Use PassthroughFbExt::new(true) instead of Default if you want to have it at start up.

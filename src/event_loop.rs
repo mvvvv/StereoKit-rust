@@ -1,5 +1,5 @@
 use crate::{
-    sk::{sk_quit, sk_step, AppFocus, MainThreadToken, QuitReason, Sk, SkInfo},
+    sk::{AppFocus, MainThreadToken, QuitReason, Sk, SkInfo, sk_quit, sk_step},
     system::{Input, Log},
 };
 use std::{
@@ -384,7 +384,7 @@ pub const ISTEPPER_RUNNING: &str = "IStepper_Running";
 pub const ISTEPPER_REMOVED: &str = "IStepper_Removed";
 
 /// Steppers manager. Non canonical way you can create a scene with all the Steppers you need
-/// <https://stereokit.net/Pages/StereoKit.Framework/IStepper.html<
+/// <https://stereokit.net/Pages/StereoKit.Framework/IStepper.html>
 #[cfg(feature = "event-loop")]
 pub struct Steppers {
     sk: Rc<RefCell<SkInfo>>,

@@ -1,33 +1,89 @@
+/// StereoKit-rust is a Rust binding for the StereoKit C API. It allows you to create VR applications with ease.
+/// [![GitHub](https://github.com/mvvvv/StereoKit-rust/blob/master/StereoKit-rust.png)](https://github.com/mvvvv/StereoKit-rust/)
+///
+///
 use std::{ffi::NulError, path::PathBuf};
+
 #[cfg(feature = "event-loop")]
 pub use stereokit_macros::IStepper;
+
 pub use stereokit_macros::include_asset_tree;
 pub use stereokit_macros::test_init_sk;
 pub use stereokit_macros::test_screenshot;
 pub use stereokit_macros::test_steps;
+
+/// Some of the errors you might encounter when using StereoKit-rust.
 use thiserror::Error;
+
+/// Anchor related structs and functions.
+///
+/// With examples which are also unit tests.
 pub mod anchor;
+
 #[cfg(feature = "event-loop")]
 pub mod event_loop;
+
+/// Font related structs and functions.
+///
+/// ## Examples which are also unit tests:
+/// [![Font](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/font.jpeg)](font::Font)
 pub mod font;
+
+/// HandMenuRadial related structs and functions.
+///
+/// With examples which are also unit tests.
 #[cfg(feature = "event-loop")]
 pub mod framework;
+
+/// Material related structs and functions.
+///
+/// ## Examples which are also unit tests:
+/// [![Material](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/materials.jpeg)](material::Material)
+/// [![Material Transparency](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/material_transparency.jpeg)](material::Material::transparency)
+/// [![Material Face Cull](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/material_face_cull.jpeg)](material::Material::face_cull)
+/// [![Material Parameter Info](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/param_infos.jpeg)](material::ParamInfos)
 pub mod material;
+
+/// Vec2, 3 and4, Quat and Matrix, Bounds, Plane and Ray related structs and functions.
+///
+/// ## Examples which are also unit tests:
+/// [![Matrix](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/matrix.jpeg)](maths::Matrix)
+/// [![Bounds](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/bounds.jpeg)](maths::Bounds)
+/// [![Plane](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/plane.jpeg)](maths::Plane)
+/// [![Pose](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/pose.jpeg)](maths::Pose)
+/// [![Sphere](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sphere.jpeg)](maths::Sphere)
+/// [![Ray](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ray.jpeg)](maths::Ray)
+/// [![Intersect Meshes](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/intersect_meshes.jpeg)](maths::Ray::intersect_mesh)
+/// [![Intersect Model](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/intersect_model.jpeg)](maths::Ray::intersect_model)
 pub mod maths;
+
 pub mod mesh;
+
 pub mod model;
+
 pub mod prelude;
+
 pub mod render_list;
+
 pub mod shader;
+
 pub mod sk;
+
 pub mod sound;
+
 pub mod sprite;
+
 pub mod system;
+
 pub mod tex;
+
 pub mod tools;
+
 pub mod ui;
+
 pub mod util;
 
+/// Some of the errors you might encounter when using StereoKit-rust.
 #[derive(Error, Debug)]
 pub enum StereoKitError {
     #[error("unable to create model from file path {0}")]

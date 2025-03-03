@@ -1034,7 +1034,7 @@ impl Sk {
     }
 
     /// This is a non canonical function that let you change all the steppers
-    /// https://stereokit.net/Pages/StereoKit.Framework/IStepper.html
+    /// <https://stereokit.net/Pages/StereoKit.Framework/IStepper.html>
     pub fn change_steppers(&mut self, steppers: Steppers) {
         self.steppers = steppers;
     }

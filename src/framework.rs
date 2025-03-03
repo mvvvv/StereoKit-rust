@@ -18,7 +18,7 @@ use crate::{
 use std::{borrow::BorrowMut, collections::VecDeque};
 
 /// StereoKit initialization settings! Setup SkSettings with your data before calling SkSetting.Init().
-/// <https://stereokit.net/Pages/StereoKit.Framework/HandMenuItem.html
+/// <https://stereokit.net/Pages/StereoKit.Framework/HandMenuItem.html>
 pub struct HandMenuItem {
     pub name: String,
     pub image: Option<Material>,
@@ -28,7 +28,7 @@ pub struct HandMenuItem {
 
 impl HandMenuItem {
     /// Makes a menu item!
-    /// <https://stereokit.net/Pages/StereoKit.Framework/HandMenuItem/HandMenuItem.html
+    /// <https://stereokit.net/Pages/StereoKit.Framework/HandMenuItem/HandMenuItem.html>
     pub fn new<C: FnMut() + 'static>(
         name: impl AsRef<str>,
         image: Option<Material>,
@@ -44,7 +44,7 @@ impl HandMenuItem {
     }
 
     /// This draws the menu item on the radial menu!
-    /// <https://stereokit.net/Pages/StereoKit.Framework/HandMenuItem/Draw.html
+    /// <https://stereokit.net/Pages/StereoKit.Framework/HandMenuItem/Draw.html>
     pub fn draw_basic(&self, token: &MainThreadToken, at: Vec3, focused: bool) {
         let scale = match focused {
             true => Vec3::ONE * 0.6,
@@ -156,7 +156,7 @@ impl HandRadial {
 }
 
 /// This is a collection of display and behavior information for a single item on the hand menu.
-/// <https://stereokit.net/Pages/StereoKit.Framework/HandRadialLayer.html
+/// <https://stereokit.net/Pages/StereoKit.Framework/HandRadialLayer.html>
 pub struct HandRadialLayer {
     pub layer_name: String,
     pub items: Vec<Rc<HandRadial>>,
@@ -168,7 +168,7 @@ pub struct HandRadialLayer {
 
 /// Creates a menu layer, this overload will calculate a back_angle if there are any back actions present in the item
 /// list.
-/// <https://stereokit.net/Pages/StereoKit.Framework/HandRadialLayer/HandRadialLayer.html
+/// <https://stereokit.net/Pages/StereoKit.Framework/HandRadialLayer/HandRadialLayer.html>
 impl HandRadialLayer {
     pub fn new(
         name: impl AsRef<str>,
@@ -209,7 +209,7 @@ impl HandRadialLayer {
     }
 
     /// This adds a menu layer as a child item of this layer.
-    /// <https://stereokit.net/Pages/StereoKit.Framework/HandRadialLayer/AddChild.html
+    /// <https://stereokit.net/Pages/StereoKit.Framework/HandRadialLayer/AddChild.html>
     pub fn add_child(&mut self, mut layer: HandRadialLayer) -> &mut Self {
         layer.parent = Some(self.layer_name.clone());
         self.items.push(Rc::new(HandRadial::Layer(layer)));
@@ -217,7 +217,7 @@ impl HandRadialLayer {
     }
 
     /// Find a child menu layer by name. Recursive function
-    /// <https://stereokit.net/Pages/StereoKit.Framework/HandRadialLayer/FindChild.html
+    /// <https://stereokit.net/Pages/StereoKit.Framework/HandRadialLayer/FindChild.html>
     pub fn find_child(&self, name: impl AsRef<str>) -> Option<&HandRadialLayer> {
         for line in self.items.iter() {
             let line = line.as_ref();
@@ -238,7 +238,7 @@ impl HandRadialLayer {
 
     /// Finds the layer in the list of child layers, and removes it, if it exists.
     /// Not recursive. self must be the layer containing the one to delete
-    /// <https://stereokit.net/Pages/StereoKit.Framework/HandRadialLayer/RemoveChild.html
+    /// <https://stereokit.net/Pages/StereoKit.Framework/HandRadialLayer/RemoveChild.html>
     pub fn remove_child(&mut self, name: impl AsRef<str>) -> bool {
         for (index, line) in self.items.iter().enumerate() {
             let line = line.as_ref();
@@ -257,14 +257,14 @@ impl HandRadialLayer {
     }
 
     /// This appends a new menu item to the end of the menu’s list.
-    /// <https://stereokit.net/Pages/StereoKit.Framework/HandRadialLayer/AddItem.html
+    /// <https://stereokit.net/Pages/StereoKit.Framework/HandRadialLayer/AddItem.html>
     pub fn add_item(&mut self, menu_item: HandMenuItem) -> &mut Self {
         self.items.push(Rc::new(HandRadial::Item(menu_item)));
         self
     }
 
     /// Find a menu item by name.
-    /// <https://stereokit.net/Pages/StereoKit.Framework/HandRadialLayer/FindItem.html
+    /// <https://stereokit.net/Pages/StereoKit.Framework/HandRadialLayer/FindItem.html>
     pub fn find_item(&mut self, name: impl AsRef<str>) -> Option<&HandMenuItem> {
         for line in self.items.iter() {
             let line = line.as_ref();
@@ -282,7 +282,7 @@ impl HandRadialLayer {
     }
 
     /// Finds the item in the list, and removes it, if it exists.
-    /// <https://stereokit.net/Pages/StereoKit.Framework/HandRadialLayer/RemoveItem.html
+    /// <https://stereokit.net/Pages/StereoKit.Framework/HandRadialLayer/RemoveItem.html>
     pub fn remove_item(&mut self, name: impl AsRef<str>) -> bool {
         for (index, line) in self.items.iter().enumerate() {
             let line = line.as_ref();
