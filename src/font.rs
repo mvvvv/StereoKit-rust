@@ -10,9 +10,7 @@ use std::{
 ///
 /// This asset is used anywhere that text shows up, like in the UI or Text classes!
 /// <https://stereokit.net/Pages/StereoKit/Font.html>
-///
 /// ### Examples
-///
 /// ```no_run
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{ui::Ui, maths::{Vec3, Quat, Pose, Matrix}, font::Font, system::Text, util::named_colors::{RED, GREEN} };
@@ -31,7 +29,7 @@ use std::{
 /// let emoji_style = Some(Text::make_style(emoji_font, 0.35, RED));
 /// let text_style = Text::make_style(text_font, 0.025, GREEN);
 /// let mut window_pose = Pose::new(
-///     Vec3::new(-0.05, 0.0, 0.85), Some(Quat::from_angles(0.0, 160.0, 0.0)));
+///     [0.0, 0.0, 0.90], Some([0.0, 160.0, 0.0].into()));
 ///
 /// filename_scr = "screenshots/font.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!

@@ -54,7 +54,7 @@ mod tests_vec {
         v3.normalize();
         assert!((v3.length() - 1.0).abs() < 0.0001);
         assert_eq!(v3.length(), v3.magnitude());
-        assert_eq!(v3.length_sq(), v3.magnitude_squared());
+        assert_eq!(v3.length_sq(), v3.magnitude_sq());
         assert_eq!(Vec2::new(3.0 / 5.0, 4.0 / 5.0), v3);
         assert_eq!(v1.get_normalized().length(), 0.99999994);
         assert_eq!(v1.x0y(), Vec3::new(1.0, 0.0, 2.0));
@@ -788,7 +788,7 @@ mod tests_matrix {
         let mut position: Vec3 = Vec3 { x: 0.0, y: 0.0, z: 0.0 };
         let mut scale: Vec3 = Vec3 { x: 0.0, y: 0.0, z: 0.0 };
         let mut orientation: Quat = Quat { x: 0.0, y: 0.0, z: 0.0, w: 0.0 };
-        assert!(m.decompose_to_ptr(&mut position, &mut scale, &mut orientation));
+        assert!(m.decompose_to_ptr(&mut position, &mut orientation, &mut scale));
         assert!((position.x - 1.0).abs() < 0.0001);
         assert!((position.y - 2.0).abs() < 0.0001);
         assert!((position.z - 3.0).abs() < 0.0001);

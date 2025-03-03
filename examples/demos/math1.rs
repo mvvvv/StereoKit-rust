@@ -8,8 +8,8 @@ use stereokit_rust::{
     system::{Handed, Input, Lines, Text, TextStyle},
     ui::Ui,
     util::{
-        named_colors::{BLACK, BLUE, GREEN, RED, WHITE, YELLOW_GREEN},
         Time,
+        named_colors::{BLACK, BLUE, GREEN, RED, WHITE, YELLOW_GREEN},
     },
 };
 
@@ -101,7 +101,7 @@ impl Math1 {
 
         // Add little_spheres and change color of the big sphere if the ray hit bounds then sphere surface.
         let mut color = WHITE;
-        if let Some(out_bounds_inverse) = ray_to_bounds.intersect_bound(self.model.get_bounds()) {
+        if let Some(out_bounds_inverse) = ray_to_bounds.intersect_bounds(self.model.get_bounds()) {
             color = RED; // changed from WHITE
             let out_bounds = transform.transform_point(out_bounds_inverse);
             let sphere_transform = Matrix::t(out_bounds);
@@ -126,7 +126,7 @@ impl Math1 {
 
         // Add little_sphere to the floor if pointed by the ray
         let plane = Plane::new(Vec3::Y, 0.0);
-        if let Some(out_plane) = ray.intersect(plane) {
+        if let Some(out_plane) = ray.intersect_plane(plane) {
             let sphere_transform = Matrix::ts(out_plane, Vec3::ONE * 8.0);
             self.little_sphere.draw(token, &self.material, sphere_transform, Some(WHITE.into()), None);
         }

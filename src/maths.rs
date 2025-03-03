@@ -72,7 +72,26 @@ pub mod units {
 /// <https://stereokit.net/Pages/StereoKit/Vec2.html>
 ///
 /// see also [`glam::Vec2`]
-#[derive(Debug, Default, Copy, Clone, PartialEq)]
+/// ### Examples
+/// ```
+/// use stereokit_rust::maths::Vec2;
+///
+/// let vec2        = Vec2::new(1.0, 2.0);
+/// let vec2a       = Vec2 { x: 1.0, y: 2.0 };
+/// let vec2b       = Vec2::X + Vec2::Y * 2.0;
+/// let vec3c: Vec2 = [1.0, 2.0].into();
+///
+/// assert_eq!(vec2, vec2a);
+/// assert_eq!(vec2a + vec2b,                   Vec2 { x: 2.0, y: 4.0 });
+/// assert_eq!(vec3c,                           Vec2 { x: 1.0, y: 2.0 });
+/// assert_eq!(vec2a.length_sq(),               5.0);
+/// assert_eq!(Vec2::Y.angle(),                 90.0);
+/// assert_eq!(vec2a.magnitude(),               (5.0f32).sqrt());
+/// assert!   (vec2a.get_normalized().length() - 1.0 < f32::EPSILON);
+/// assert_eq!(Vec2::angle_between(Vec2::X, Vec2::Y), 90.0);
+/// assert_eq!(Vec2::dot(Vec2::X, Vec2::Y), 0.0);
+/// ```
+#[derive(Debug, Default, Copy, Clone)]
 #[repr(C)]
 pub struct Vec2 {
     pub x: f32,
@@ -94,6 +113,14 @@ impl From<Vec2> for glam::Vec2 {
 impl From<[f32; 2]> for Vec2 {
     fn from(val: [f32; 2]) -> Self {
         Vec2 { x: val[0], y: val[1] }
+    }
+}
+
+///  Warning: Equality with a precision of 0.1 millimeter
+impl PartialEq for Vec2 {
+    ///  Warning: Equality with a precision of 0.1 millimeter
+    fn eq(&self, other: &Self) -> bool {
+        ((self.x - other.x).abs() < 0.0001) && ((self.y - other.y).abs() < 0.0001)
     }
 }
 
@@ -142,6 +169,8 @@ impl Vec2 {
     /// Checks if a point is within a certain radius of this one. This is an easily readable shorthand of the squared
     /// distance check.
     /// <https://stereokit.net/Pages/StereoKit/Vec2/InRadius.html>
+    /// * point - The point to check against.
+    /// * radius - The distance to check within.
     #[inline]
     pub fn in_radius(&self, point: Self, radius: f32) -> bool {
         Self::distance(*self, point) <= radius
@@ -185,7 +214,7 @@ impl Vec2 {
     /// speedy calculations that can work with it squared. Vec2::length_squared is faster
     /// <https://stereokit.net/Pages/StereoKit/Vec2/MagnitudeSq.html>
     #[inline]
-    pub fn magnitude_squared(&self) -> f32 {
+    pub fn magnitude_sq(&self) -> f32 {
         self.length_sq()
     }
 
@@ -222,6 +251,8 @@ impl Vec2 {
     /// of A, and negative if B is clockwise (right) of A. Vectors do not need to be normalized. NOTE: Since this will
     /// return a positive or negative angle, order of parameters matters!
     /// <https://stereokit.net/Pages/StereoKit/Vec2/AngleBetween.html>
+    /// * a - The first, initial vector, A. Does not need to be normalized.
+    /// * b - The second, final vector, B. Does not need to be normalized.
     #[inline]
     pub fn angle_between(a: Self, b: Self) -> f32 {
         (Self::dot(a, b) / (a.length_sq() * b.length_sq()).sqrt()).acos().to_degrees()
@@ -237,6 +268,8 @@ impl Vec2 {
     /// Calculates the distance between two points in space! Make sure they’re in the same coordinate space! Uses a Sqrt,
     /// so it’s not blazing fast, prefer DistanceSq when possible.
     /// <https://stereokit.net/Pages/StereoKit/Vec2/Distance.html>
+    /// * a - The first point.
+    /// * b - The second point.
     #[inline]
     pub fn distance(a: Self, b: Self) -> f32 {
         (a - b).length()
@@ -245,6 +278,8 @@ impl Vec2 {
     /// Calculates the distance between two points in space, but leaves them squared! Make sure they’re in the same
     /// coordinate space! This is a fast function :)
     /// <https://stereokit.net/Pages/StereoKit/Vec2/DistanceSq.html>
+    /// - a - The first point.
+    /// - b - The second point.
     #[inline]
     pub fn distance_sq(a: Self, b: Self) -> f32 {
         (a - b).length_sq()
@@ -255,6 +290,8 @@ impl Vec2 {
     /// -1 if they’re opposite, and a gradient in-between with 0 being perpendicular. See [Freya Holmer’s excellent
     /// visualization of this concept](<https://twitter.com/FreyaHolmer/status/1200807790580768768>)
     /// <https://stereokit.net/Pages/StereoKit/Vec2/Dot.html>
+    /// * a - The first vector.
+    /// * b - The second vector.
     #[inline]
     pub fn dot(a: Self, b: Self) -> f32 {
         (a.x * b.x) + (a.y * b.y)
@@ -263,6 +300,7 @@ impl Vec2 {
     /// Creates a vector pointing in the direction of the angle, with a length of 1. Angles are counter-clockwise, and
     /// start from (1,0), so an angle of 90 will be (0,1).
     /// <https://stereokit.net/Pages/StereoKit/Vec2/FromAngle.html>
+    /// * degrees - Counter-clockwise angle from(1,0) in degrees.
     #[inline]
     pub fn from_angles(degree: f32) -> Self {
         Self { x: degree.to_radians().cos(), y: degree.to_radians().sin() }
@@ -271,6 +309,9 @@ impl Vec2 {
     /// Blends (Linear Interpolation) between two vectors, based on a ‘blend’ value, where 0 is a, and 1 is b.
     /// Doesn’t clamp percent for you.
     /// <https://stereokit.net/Pages/StereoKit/Vec2/Lerp.html>
+    /// * a - The first vector to blend, or '0.0' blend.
+    /// * b - The second vector to blend, or '1.0' blend.
+    /// * blend - A value between 0 and 1. Can be outside this range, it’ll just interpolate outside of the a, b range.
     #[inline]
     pub fn lerp(a: Self, b: Self, blend: f32) -> Self {
         a + ((b - a) * blend)
@@ -278,6 +319,8 @@ impl Vec2 {
 
     /// Returns a vector where each elements is the maximum value for each corresponding pair.
     /// <https://stereokit.net/Pages/StereoKit/Vec2/Max.html>
+    /// * a - Order isn't important here.
+    /// * b - Order isn't important here.
     #[inline]
     pub fn max(a: Self, b: Self) -> Self {
         Self { x: f32::max(a.x, b.x), y: f32::max(a.y, b.y) }
@@ -285,6 +328,8 @@ impl Vec2 {
 
     /// Returns a vector where each elements is the minimum value for each corresponding pair.
     /// <https://stereokit.net/Pages/StereoKit/Vec2/Min.html>
+    /// * a - Order isn't important here.
+    /// * b - Order isn't important here.
     #[inline]
     pub fn min(a: Self, b: Self) -> Self {
         Self { x: f32::min(a.x, b.x), y: f32::min(a.y, b.y) }
@@ -461,7 +506,25 @@ impl Neg for Vec2 {
 /// <https://stereokit.net/Pages/StereoKit/Vec3.html>
 ///
 /// see also [`glam::Vec3`]
-#[derive(Debug, Default, Copy, Clone, PartialEq)]
+/// ### Examples
+/// ```
+/// use stereokit_rust::maths::Vec3;
+///
+/// let vec3        = Vec3::new(1.0, 2.0, 3.0);
+/// let vec3a       = Vec3 { x: 1.0, y: 2.0, z:3.0 };
+/// let vec3b       = Vec3::X + Vec3::Y * 2.0;
+/// let vec3c: Vec3 = [1.0, 2.0, 3.0].into();
+///
+/// assert_eq!(vec3, vec3a);
+/// assert_eq!(vec3a + vec3b,                   Vec3 { x: 2.0, y: 4.0, z: 3.0 });
+/// assert_eq!(vec3c,                           Vec3 { x: 1.0, y: 2.0, z: 3.0 });
+/// assert_eq!(vec3a.length_sq(),               14.0);
+/// assert_eq!(vec3a.magnitude(),               (14.0f32).sqrt());
+/// assert!   (vec3a.get_normalized().length() - 1.0 < f32::EPSILON);
+/// assert_eq!(Vec3::angle_between(Vec3::X, Vec3::Y), 90.0);
+/// assert_eq!(Vec3::dot(Vec3::X, Vec3::Y), 0.0);
+/// ```
+#[derive(Debug, Default, Copy, Clone)]
 #[repr(C)]
 pub struct Vec3 {
     pub x: f32,
@@ -490,6 +553,16 @@ impl From<[f32; 3]> for Vec3 {
 impl From<Vec3> for [f32; 3] {
     fn from(val: Vec3) -> Self {
         [val.x, val.y, val.z]
+    }
+}
+
+///  Warning: Equality with a precision of 0.1 millimeter
+impl PartialEq for Vec3 {
+    ///  Warning: Equality with a precision of 0.1 millimeter
+    fn eq(&self, other: &Self) -> bool {
+        ((self.x - other.x).abs() < 0.0001)
+            && ((self.y - other.y).abs() < 0.0001)
+            && ((self.z - other.z).abs() < 0.0001)
     }
 }
 
@@ -556,6 +629,8 @@ impl Vec3 {
     /// Checks if a point is within a certain radius of this one. This is an easily readable shorthand of the squared
     /// distance check.
     /// <https://stereokit.net/Pages/StereoKit/Vec3/InRadius.html>
+    /// * point- The point to check against.
+    /// * radius - The radius to check within.
     #[inline]
     pub fn in_radius(&self, point: Self, radius: f32) -> bool {
         Self::distance(*self, point) <= radius
@@ -657,6 +732,8 @@ impl Vec3 {
     /// Calculates the angle between two vectors in degrees! Vectors do not need to be normalized, and the result will
     /// always be positive.
     /// <https://stereokit.net/Pages/StereoKit/Vec3/AngleBetween.html>
+    /// * a - The first, initial vector, A. Does not need to be normalized.
+    /// * b - The second vector, B, that we're finding the angle to. Does not need to be normalized.
     #[inline]
     pub fn angle_between(a: Self, b: Self) -> f32 {
         (Self::dot(a, b) / (a.length_sq() * b.length_sq()).sqrt()).acos().to_degrees()
@@ -665,6 +742,8 @@ impl Vec3 {
     /// Creates a vector that points out at the given 2D angle! This creates the vector on the XY plane, and allows you
     /// to specify a constant z value.
     /// <https://stereokit.net/Pages/StereoKit/Vec3/AngleXY.html>
+    /// * angle_deg - The angle in degrees, starting from the (1,0) at 0, and continuing to (0,1) at 90, etc.
+    /// * z - The constant Z value for this vector.
     #[inline]
     pub fn angle_xy(angle_deg: f32, z: f32) -> Vec3 {
         Self { x: angle_deg.to_radians().cos(), y: angle_deg.to_radians().sin(), z }
@@ -673,6 +752,8 @@ impl Vec3 {
     /// Creates a vector that points out at the given 2D angle! This creates the vector on the XZ plane, and allows you
     /// to specify a constant y value.
     /// <https://stereokit.net/Pages/StereoKit/Vec3/AngleXZ.html>
+    /// * angle_deg - The angle in degrees, starting from the (1,0) at 0, and continuing to (0,1) at 90, etc.
+    /// * y - The constant Y value for this vector.
     #[inline]
     pub fn angle_xz(angle_deg: f32, y: f32) -> Self {
         Self { x: angle_deg.to_radians().cos(), y, z: angle_deg.to_radians().sin() }
@@ -680,8 +761,50 @@ impl Vec3 {
 
     /// The cross product of two vectors!
     /// <https://stereokit.net/Pages/StereoKit/Vec3/Cross.html>
+    /// * a - The first vector.
+    /// * b - The second vector.
     ///
-    /// see also [`crate::maths::vec3_cross`]
+    /// see also [`vec3_cross`]
+    /// ### Examples
+    ///```
+    /// use stereokit_rust::maths::Vec3;
+    ///
+    /// // Test case 1: Basic cross product
+    /// let a = Vec3::new(1.0, 0.0, 0.0);
+    /// let b = Vec3::new(0.0, 1.0, 0.0);
+    /// let result = Vec3::cross(a, b);
+    /// assert_eq!(result, Vec3::new(0.0, 0.0, 1.0));
+    ///
+    /// // Test case 2: Cross product in different direction
+    /// let a = Vec3::new(0.0, 1.0, 0.0);
+    /// let b = Vec3::new(1.0, 0.0, 0.0);
+    /// let result = Vec3::cross(a, b);
+    /// assert_eq!(result, Vec3::new(0.0, 0.0, -1.0));
+    ///
+    /// // Test case 3: Cross product with non-unit vectors
+    /// let a = Vec3::new(2.0, 0.0, 0.0);
+    /// let b = Vec3::new(0.0, 3.0, 0.0);
+    /// let result = Vec3::cross(a, b);
+    /// assert_eq!(result, Vec3::new(0.0, 0.0, 6.0));
+    ///
+    /// // Test case 4: Cross product of parallel vectors
+    /// let a = Vec3::new(1.0, 0.0, 0.0);
+    /// let b = Vec3::new(2.0, 0.0, 0.0);
+    /// let result = Vec3::cross(a, b);
+    /// assert_eq!(result, Vec3::ZERO);
+    ///
+    /// // Test case 5: cross product of orthogonal vector
+    /// let a = Vec3::new(1.0, 2.0, 3.0);
+    /// let b = Vec3::new(4.0, 5.0, 6.0);
+    /// let result = Vec3::cross(a,b);
+    /// assert_eq!(result, Vec3::new(-3.0, 6.0, -3.0));
+    ///
+    /// // Test case 6: cross product of orthogonal vector
+    /// let a = Vec3::new(4.0, 5.0, 6.0);
+    /// let b = Vec3::new(1.0, 2.0, 3.0);
+    /// let result = Vec3::cross(a,b);
+    /// assert_eq!(result, Vec3::new(3.0, -6.0, 3.0));
+    /// ```
     #[inline]
     pub fn cross(a: Self, b: Self) -> Self {
         unsafe { vec3_cross(&a, &b) }
@@ -689,6 +812,8 @@ impl Vec3 {
 
     /// Creates a normalized delta vector that points out from an origin point to a target point!
     /// <https://stereokit.net/Pages/StereoKit/Vec3/Direction.html>
+    /// * to - The target point.
+    /// * from - The origin point.
     #[inline]
     pub fn direction(to: Self, from: Self) -> Self {
         (to - from).get_normalized()
@@ -697,6 +822,8 @@ impl Vec3 {
     /// Calculates the distance between two points in space! Make sure they’re in the same coordinate space! Uses a
     /// Sqrt, so it’s not blazing fast, prefer DistanceSq when possible.
     /// <https://stereokit.net/Pages/StereoKit/Vec3/Distance.html>
+    /// * a - The first point.
+    /// * b - The second point.
     #[inline]
     pub fn distance(a: Self, b: Self) -> f32 {
         (a - b).length()
@@ -715,6 +842,8 @@ impl Vec3 {
     /// if they’re opposite, and a gradient in-between with 0 being perpendicular.  See [Freya Holmer’s excellent
     /// visualization of this concept](<https://twitter.com/FreyaHolmer/status/1200807790580768768>)
     /// <https://stereokit.net/Pages/StereoKit/Vec3/Dot.html>
+    /// * a - The first vector.
+    /// * b - The second vector.
     #[inline]
     pub fn dot(a: Self, b: Self) -> f32 {
         (a.x * b.x) + (a.y * b.y) + (a.z * b.z)
@@ -723,6 +852,10 @@ impl Vec3 {
     /// Blends (Linear Interpolation) between two vectors, based on a ‘blend’ value, where 0 is a, and 1 is b. Doesn’t
     /// clamp percent for you.
     /// <https://stereokit.net/Pages/StereoKit/Vec3/Lerp.html>
+    /// * a - First item in the blend, or '0.0' blend.
+    /// * b - Second item in the blend, or '1.0' blend.
+    /// * blend - The blend value between 0 and 1. Can be outside this range, it’ll just interpolate outside of the a,
+    ///   b range.
     #[inline]
     pub fn lerp(a: Self, b: Self, blend: f32) -> Self {
         a + ((b - a) * blend)
@@ -730,6 +863,8 @@ impl Vec3 {
 
     /// Returns a vector where each elements is the maximum value for each corresponding pair.
     /// <https://stereokit.net/Pages/StereoKit/Vec3/Max.html>
+    /// * a - Order isn't important here.
+    /// * b - Order isn't important here.
     #[inline]
     pub fn max(a: Self, b: Self) -> Self {
         Self { x: f32::max(a.x, b.x), y: f32::max(a.y, b.y), z: f32::max(a.z, b.z) }
@@ -737,6 +872,8 @@ impl Vec3 {
 
     /// Returns a vector where each elements is the minimum value for each corresponding pair.
     /// <https://stereokit.net/Pages/StereoKit/Vec3/Min.html>
+    /// * a - Order isn't important here.
+    /// * b - Order isn't important here.
     #[inline]
     pub fn min(a: Self, b: Self) -> Self {
         Self { x: f32::min(a.x, b.x), y: f32::min(a.y, b.y), z: f32::min(a.z, b.z) }
@@ -748,6 +885,8 @@ impl Vec3 {
     /// If you consider a forward vector and an up vector, then the direction to the right is pretty trivial to imagine
     /// in relation to those vectors!
     /// <https://stereokit.net/Pages/StereoKit/Vec3/PerpendicularRight.html>
+    /// * forward - What way are you facing?
+    /// * up - Which direction is up?
     #[inline]
     pub fn perpendicular_right(forward: Self, up: Self) -> Self {
         Self::cross(forward, up)
@@ -935,7 +1074,22 @@ impl Neg for Vec3 {
 /// <https://stereokit.net/Pages/StereoKit/Vec4.html>
 ///
 /// see also [`glam::Vec4`]
-#[derive(Debug, Default, Copy, Clone, PartialEq)]
+/// ### Examples
+/// ```
+/// use stereokit_rust::maths::Vec4;
+///
+/// let vec4        = Vec4::new(1.0, 2.0, 3.0, 4.0);
+/// let vec4a       = Vec4 { x: 1.0, y: 2.0, z:3.0, w:4.0 };
+/// let vec4b       = Vec4::X + Vec4::Y * 2.0;
+/// let vec4c: Vec4 = [1.0, 2.0, 3.0, 4.0].into();
+///
+/// assert_eq!(vec4, vec4a);
+/// assert_eq!(vec4a + vec4b,                   Vec4 { x: 2.0, y: 4.0, z: 3.0, w: 4.0 });
+/// assert_eq!(vec4c,                           Vec4 { x: 1.0, y: 2.0, z: 3.0, w: 4.0 });
+/// assert_eq!(vec4a.length_sq(),               30.0);
+/// assert_eq!(Vec4::dot(Vec4::X, Vec4::Y),     0.0);
+/// ```
+#[derive(Debug, Default, Copy, Clone)]
 #[repr(C)]
 pub struct Vec4 {
     pub x: f32,
@@ -957,6 +1111,17 @@ impl From<[f32; 4]> for Vec4 {
 impl From<Vec4> for glam::Vec4 {
     fn from(value: Vec4) -> Self {
         Self::new(value.x, value.y, value.z, value.w)
+    }
+}
+
+///  Warning: Equality with a precision of 0.1 millimeter
+impl PartialEq for Vec4 {
+    ///  Warning: Equality with a precision of 0.1 millimeter
+    fn eq(&self, other: &Self) -> bool {
+        ((self.x - other.x).abs() < 0.0001)
+            && ((self.y - other.y).abs() < 0.0001)
+            && ((self.z - other.z).abs() < 0.0001)
+            && ((self.w - other.w).abs() < 0.0001)
     }
 }
 
@@ -1028,7 +1193,7 @@ impl Vec4 {
     /// Vec4, or visa versa, who am I to judge?
     /// <https://stereokit.net/Pages/StereoKit/Vec4/Quat.html>
     ///
-    /// see also [`crate::maths::matrix_extract_translation`]
+    /// see also [`matrix_extract_translation`]
     #[inline]
     pub fn get_as_quat(&self) -> Quat {
         Quat { x: self.x, y: self.y, z: self.z, w: self.w }
@@ -1045,6 +1210,8 @@ impl Vec4 {
     /// What’s a dot product do for 4D vectors, you might ask? Well, I’m no mathematician, so hopefully you are! I’ve
     /// never used it before. Whatever you’re doing with this function, it’s SIMD fast!
     /// <https://stereokit.net/Pages/StereoKit/Vec4/Dot.html>
+    /// * a - The first vector.
+    /// * b - The second vector.
     #[inline]
     pub fn dot(a: Self, b: Self) -> f32 {
         (a.x * b.x) + (a.y * b.y) + (a.z * b.z) + (a.w * b.w)
@@ -1053,6 +1220,10 @@ impl Vec4 {
     /// Blends (Linear Interpolation) between two vectors, based on a ‘blend’ value, where 0 is a, and 1 is b. Doesn’t
     /// clamp percent for you.
     /// <https://stereokit.net/Pages/StereoKit/Vec4/Lerp.html>
+    /// * a - First item in the blend, or '0.0 blend.
+    /// * b - Second item in the blend, or '1.0 blend.
+    /// * blend - A blend value between 0 and 1. Can be outside this range, it’ll just interpolate outside of the a, b
+    ///   range.
     #[inline]
     pub fn lerp(a: Self, b: Self, blend: f32) -> Self {
         a + ((b - a) * blend)
@@ -1060,6 +1231,8 @@ impl Vec4 {
 
     /// Returns a vector where each elements is the maximum value for each corresponding pair.
     /// <https://stereokit.net/Pages/StereoKit/Vec4/Max.html>
+    /// * a - Order isn't important here.
+    /// * b - Order isn't important here.
     #[inline]
     pub fn max(a: Self, b: Self) -> Self {
         Self { x: f32::max(a.x, b.x), y: f32::max(a.y, b.y), z: f32::max(a.z, b.z), w: f32::max(a.w, b.w) }
@@ -1067,6 +1240,8 @@ impl Vec4 {
 
     /// Returns a vector where each elements is the minimum value for each corresponding pair.
     /// <https://stereokit.net/Pages/StereoKit/Vec4/Min.html>
+    /// * a - Order isn't important here.
+    /// * b - Order isn't important here.
     #[inline]
     pub fn min(a: Self, b: Self) -> Self {
         Self { x: f32::min(a.x, b.x), y: f32::min(a.y, b.y), z: f32::min(a.z, b.z), w: f32::min(a.w, b.w) }
@@ -1251,8 +1426,28 @@ impl Neg for Vec4 {
 /// <https://stereokit.net/Pages/StereoKit/Quat.html>
 ///
 ///  see also [`glam::Quat`]
+/// ### Examples
+/// ```
+/// use stereokit_rust::maths::{Quat, Vec3, Vec4};
+///
+/// let mut quat1 = Quat::new(0.0, 0.0, 0.0, 1.0);
+/// let mut quat2 = Quat::from_angles(0.0, 90.0, 0.0);
+/// let mut quat2b :Quat= [0.0, 90.0, 0.0].into();
+/// let mut quat3 = Quat::look_at(Vec3::X, Vec3::ZERO, None);
+/// let vec4_w: Vec4 = (quat2 - quat3).into();
+///
+/// // quat2 == quat3 but because of epsilon here is the demo:
+/// assert_eq!(vec4_w.w,            1.0);
+/// assert_eq!(vec4_w.length_sq(),  1.0);
+/// assert_eq!(quat2b,              quat2);
+///
+/// assert_eq!(quat1,               Quat::IDENTITY);
+/// assert_eq!(*quat1.normalize(),  Quat::IDENTITY);
+/// assert_eq!(*quat1.invert(),     Quat::IDENTITY);
+///
+/// ```
 #[repr(C)]
-#[derive(Debug, Default, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone)]
 pub struct Quat {
     pub x: f32,
     pub y: f32,
@@ -1279,6 +1474,11 @@ impl From<Quat> for glam::Vec4 {
         Self::new(val.x, val.y, val.z, val.w)
     }
 }
+impl From<[f32; 3]> for Quat {
+    fn from(val: [f32; 3]) -> Self {
+        Quat::from_angles(val[0], val[1], val[2])
+    }
+}
 impl From<Vec4> for Quat {
     fn from(val: Vec4) -> Self {
         Quat { x: val.x, y: val.y, z: val.z, w: val.w }
@@ -1287,6 +1487,24 @@ impl From<Vec4> for Quat {
 impl From<Quat> for Vec4 {
     fn from(val: Quat) -> Self {
         Self { x: val.x, y: val.y, z: val.z, w: val.w }
+    }
+}
+
+impl Default for Quat {
+    // Identity quaternion (no rotation)
+    fn default() -> Self {
+        Quat::IDENTITY
+    }
+}
+
+///  Warning: Equality with a precision of 0.000001
+impl PartialEq for Quat {
+    ///  Warning: Equality with a precision of 0.000001
+    fn eq(&self, other: &Self) -> bool {
+        ((self.x - other.x).abs() < 0.000001)
+            && ((self.y - other.y).abs() < 0.000001)
+            && ((self.z - other.z).abs() < 0.000001)
+            && ((self.w - other.w).abs() < 0.000001)
     }
 }
 
@@ -1321,7 +1539,7 @@ impl Quat {
     /// Costly, see get_inverse for a faster way to get this.
     /// <https://stereokit.net/Pages/StereoKit/Quat/Invert.html>
     ///
-    /// see also [`Quat::get_inverse`] [`crate::maths::quat_inverse`]
+    /// see also [`Quat::get_inverse`] [`quat_inverse`]
     #[inline]
     pub fn invert(&mut self) -> &mut Self {
         let m = unsafe { quat_inverse(self) };
@@ -1336,7 +1554,7 @@ impl Quat {
     /// Costly, see get_normalized for a faster way to get this.
     /// <https://stereokit.net/Pages/StereoKit/Quat/Normalize.html>
     ///
-    /// see also [`Quat::get_normalized`] [`crate::maths::quat_normalize`]
+    /// see also [`Quat::get_normalized`] [`quat_normalize`]
     #[inline]
     pub fn normalize(&mut self) -> &mut Self {
         let m = unsafe { quat_normalize(self) };
@@ -1350,7 +1568,7 @@ impl Quat {
     /// Rotates a quaternion making it relative to another rotation while preserving it’s “Length”!
     /// <https://stereokit.net/Pages/StereoKit/Quat/Relative.html>
     ///
-    /// see also [`crate::maths::quat_mul`]
+    /// see also [`quat_mul`]
     #[inline]
     pub fn relative(&mut self, to: Self) -> &mut Self {
         let m = to.mul(*self).mul(to.get_inverse());
@@ -1363,8 +1581,9 @@ impl Quat {
 
     /// This rotates a point around the origin by the Quat.
     /// <https://stereokit.net/Pages/StereoKit/Quat/Rotate.html>
+    /// * point - The point to rotate around the origin.
     ///
-    /// see also [`crate::maths::quat_mul_vec`]
+    /// see also [`quat_mul_vec`]
     #[inline]
     pub fn rotate_point(&self, point: Vec3) -> Vec3 {
         unsafe { quat_mul_vec(self, &point) }
@@ -1372,8 +1591,10 @@ impl Quat {
 
     /// This rotates a point around the origin by the Quat.
     /// <https://stereokit.net/Pages/StereoKit/Quat/Rotate.html>
+    /// * a - The Quat to use for rotation.
+    /// * point - The point to rotate around the origin.
     ///
-    /// see also [`crate::maths::quat_mul_vec`]
+    /// see also [`quat_mul_vec`]
     #[inline]
     pub fn rotate(a: Self, point: Vec3) -> Vec3 {
         unsafe { quat_mul_vec(&a, &point) }
@@ -1381,9 +1602,11 @@ impl Quat {
 
     /// Creates a quaternion that goes from one rotation to another.
     /// <https://stereokit.net/Pages/StereoKit/Quat/Delta.html>
-    /// see also - operator
+    /// * from - The origin rotation.
+    /// * to - The target rotation.
     ///
-    /// see also [`crate::maths::quat_difference`]
+    /// see also `-`` operator
+    /// see also [`quat_difference`]
     #[inline]
     pub fn delta(from: Self, to: Self) -> Self {
         unsafe { quat_difference(&from, &to) }
@@ -1392,6 +1615,8 @@ impl Quat {
     /// Creates a rotation that goes from one direction to another. Which is comes in handy when trying to roll
     /// something around with position data.
     /// <https://stereokit.net/Pages/StereoKit/Quat/Delta.html>
+    /// * from - The origin direction.
+    /// * to - The target direction.
     #[inline]
     pub fn delta_dir(from: Vec3, to: Vec3) -> Self {
         let c = Vec3::cross(from, to);
@@ -1401,8 +1626,11 @@ impl Quat {
 
     /// Creates a Roll/Pitch/Yaw rotation (applied in that order) from the provided angles in degrees!
     /// <https://stereokit.net/Pages/StereoKit/Quat/FromAngles.html>
+    /// * pitch_x_deg - The angle to rotate around the X-axis in degrees.
+    /// * yaw_y_deg - The angle to rotate around the Y-axis in degrees.
+    /// * roll_z_deg - The angle to rotate around the Z-axis in degrees.
     ///
-    /// see also [`crate::maths::quat_from_angles`]
+    /// see also [`quat_from_angles`]
     #[inline]
     pub fn from_angles(pitch_x_deg: f32, yaw_y_deg: f32, roll_z_deg: f32) -> Self {
         unsafe { quat_from_angles(pitch_x_deg, yaw_y_deg, roll_z_deg) }
@@ -1412,13 +1640,17 @@ impl Quat {
     /// style rotation, or other facing behavior when you know where an object is, and where you want it to look at.
     /// This rotation works best when applied to objects that face Vec3.Forward in their resting/model space pose.
     /// <https://stereokit.net/Pages/StereoKit/Quat/LookAt.html>
+    /// * from - Position of where the 'object' is.
+    /// * at - The position you want the 'object' to look at.
     /// * up - Look From/At positions describe X and Y axis rotation well, but leave Z Axis/Roll
     ///        undefined. Providing an upDirection vector helps to indicate roll around the From/At line. If None : up
     ///        direction will be (0,1,0), to prevent roll.    
     ///
-    /// see also [`crate::maths::quat_lookat`][`crate::maths::quat_lookat_up`]
+    /// see also [`quat_lookat`][`quat_lookat_up`]
     #[inline]
-    pub fn look_at(from: Vec3, at: Vec3, up: Option<Vec3>) -> Self {
+    pub fn look_at<V: Into<Vec3>>(from: V, at: V, up: Option<Vec3>) -> Self {
+        let from = from.into();
+        let at = at.into();
         match up {
             Some(up) => unsafe { quat_lookat_up(&from, &at, &up) },
             None => unsafe { quat_lookat(&from, &at) },
@@ -1429,18 +1661,23 @@ impl Quat {
     /// behavior! This rotation works best when applied to objects that face Vec3.Forward in their resting/model space
     /// pose.
     /// <https://stereokit.net/Pages/StereoKit/Quat/LookDir.html>
+    /// * direction - The direction the rotation should be looking. Doesn't need to be normalized.
     ///
-    /// see also [`crate::maths::quat_lookat`]
+    /// see also [`quat_lookat`]
     #[inline]
-    pub fn look_dir(direction: Vec3) -> Self {
+    pub fn look_dir<V: Into<Vec3>>(direction: V) -> Self {
+        let direction = direction.into();
         unsafe { quat_lookat(&Vec3::ZERO, &direction) }
     }
 
     /// Spherical Linear interpolation. Interpolates between two quaternions! Both Quats should be normalized/unit
     /// quaternions, or you may get unexpected results.
     /// <https://stereokit.net/Pages/StereoKit/Quat/Slerp.html>
+    /// * a - Start quaternion, should be normalized/unit length.
+    /// * b - End quaternion, should be normalized/unit length.
+    /// * slerp - The interpolation amount! This’ll be a if 0, and b if 1. Unclamped.
     ///
-    /// see also [`crate::maths::quat_slerp`]
+    /// see also [`quat_slerp`]
     #[inline]
     pub fn slerp(a: Self, b: Self, slerp: f32) -> Self {
         unsafe { quat_slerp(&a, &b, slerp) }
@@ -1449,7 +1686,7 @@ impl Quat {
     /// The reverse rotation! If this quat goes from A to B, the inverse will go from B to A.
     /// <https://stereokit.net/Pages/StereoKit/Quat/Inverse.html>
     ///
-    /// see also [`crate::maths::quat_inverse`]
+    /// see also [`quat_inverse`]
     #[inline]
     pub fn get_inverse(&self) -> Self {
         unsafe { quat_inverse(self) }
@@ -1458,7 +1695,7 @@ impl Quat {
     /// A normalized quaternion has the same orientation, and a length of 1.
     /// <https://stereokit.net/Pages/StereoKit/Quat/Normalized.html>
     ///
-    /// see also [`crate::maths::quat_normalize`]
+    /// see also [`quat_normalize`]
     #[inline]
     pub fn get_normalized(&self) -> Self {
         unsafe { quat_normalize(self) }
@@ -1476,7 +1713,7 @@ impl Quat {
     /// <https://stereokit.net/Pages/StereoKit/Quat/op_Multiply.html>
     /// see also * operator
     ///
-    /// see also [`crate::maths::quat_mul`]
+    /// see also [`quat_mul`]
     #[inline]
     pub fn mul(&self, rhs: &Self) -> Self {
         unsafe { quat_mul(self, rhs) }
@@ -1486,9 +1723,10 @@ impl Quat {
     /// <https://stereokit.net/Pages/StereoKit/Quat/op_Multiply.html>
     /// see also * operator
     ///
-    /// see also [`crate::maths::quat_mul_vec`]
+    /// see also [`quat_mul_vec`]
     #[inline]
-    pub fn mul_vec3(&self, rhs: Vec3) -> Vec3 {
+    pub fn mul_vec3<V: Into<Vec3>>(&self, rhs: V) -> Vec3 {
+        let rhs = rhs.into();
         unsafe { quat_mul_vec(self, &rhs) }
     }
 
@@ -1511,7 +1749,7 @@ impl Display for Quat {
 /// This is the combination of rotations a and b. Note that order matters h
 /// <https://stereokit.net/Pages/StereoKit/Quat/op_Multiply.html>
 ///
-/// see also [`crate::maths::quat_mul`]
+/// see also [`quat_mul`]
 impl Mul<Quat> for Quat {
     type Output = Self;
     #[inline]
@@ -1523,7 +1761,7 @@ impl Mul<Quat> for Quat {
 /// This is the combination of rotations a and b. Note that order matters h
 /// <https://stereokit.net/Pages/StereoKit/Quat/op_Multiply.html>
 ///
-/// see also [`crate::maths::quat_mul`]
+/// see also [`quat_mul`]
 impl MulAssign<Quat> for Quat {
     #[inline]
     fn mul_assign(&mut self, rhs: Quat) {
@@ -1534,7 +1772,7 @@ impl MulAssign<Quat> for Quat {
 /// This rotates a point around the origin by the Quat.
 /// <https://stereokit.net/Pages/StereoKit/Quat/op_Multiply.html>
 ///
-/// see also [`crate::maths::quat_mul_vec`]
+/// see also [`quat_mul_vec`]
 impl Mul<Vec3> for Quat {
     type Output = Vec3;
 
@@ -1547,7 +1785,7 @@ impl Mul<Vec3> for Quat {
 /// <https://stereokit.net/Pages/StereoKit/Quat/op_Subtraction.html>
 /// see also QuatT::delta()
 ///
-/// see also [`crate::maths::quat_difference`]
+/// see also [`quat_difference`]
 impl Sub<Quat> for Quat {
     type Output = Self;
 
@@ -1572,8 +1810,25 @@ impl Sub<Quat> for Quat {
 /// (i.e. TRS), so please keep this in mind when creating transformations.
 ///
 /// Matrices are prominently used within shaders for mesh transforms!
-/// see also [`glam::Mat4`]
 /// <https://stereokit.net/Pages/StereoKit/Matrix.html>
+///
+/// see also [`glam::Mat4`]
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{maths::{Vec3, Quat, Matrix}, model::Model};
+///
+/// let model = Model::from_file("center.glb", None).unwrap().copy();
+/// let transform = Matrix::trs( &(Vec3::NEG_Y * 0.7),
+///                              &([0.0, 155.0, 10.0].into()),
+///                              &(Vec3::ONE * 0.3) );
+///
+/// filename_scr = "screenshots/matrix.jpeg";
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+///     model.draw(token, transform, None, None);
+/// );
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/matrix.jpeg" alt="screenshot" width="200">
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub union Matrix {
@@ -1598,9 +1853,16 @@ impl std::fmt::Debug for Matrix {
     }
 }
 
+///  Warning: Equality with a precision of 0.1 millimeter
 impl PartialEq for Matrix {
+    ///  Warning: Equality with a precision of 0.1 millimeter
     fn eq(&self, other: &Self) -> bool {
-        unsafe { self.m == other.m }
+        unsafe {
+            self.row[0] == other.row[0]
+                && self.row[1] == other.row[1]
+                && self.row[2] == other.row[2]
+                && self.row[3] == other.row[3]
+        }
     }
 }
 
@@ -1660,7 +1922,7 @@ impl Matrix {
     ///   buffers, this should not be too far away, or you'll see bad z-fighting artifacts.    
     ///
     /// Returns the final orthographic Matrix.
-    /// see also [`crate::maths::matrix_orthographic`]
+    /// see also [`matrix_orthographic`]
     #[inline]
     pub fn ortographic(width: f32, height: f32, near_clip: f32, far_clip: f32) -> Self {
         unsafe { matrix_orthographic(width, height, near_clip, far_clip) }
@@ -1678,7 +1940,7 @@ impl Matrix {
     ///   buffers, this should not be too far away, or you'll see bad z-fighting artifacts.    
     ///
     /// Returns the final perspective matrix.
-    /// see also [`crate::maths::matrix_perspective`]
+    /// see also [`matrix_perspective`]
     #[inline]
     pub fn perspective(fov_degrees: f32, aspect_ratio: f32, near_clip: f32, far_clip: f32) -> Self {
         unsafe { matrix_perspective(fov_degrees.to_radians(), aspect_ratio, near_clip, far_clip) }
@@ -1702,7 +1964,7 @@ impl Matrix {
     /// we find the ratio between the size of the image plane and distance from the camera in one unit distance and
     /// multiply it by the near clip distance to find a near plane that is parallel.
     ///
-    /// see also [`crate::maths::matrix_perspective`]
+    /// see also [`matrix_perspective`]
     pub fn perspective_focal(image_resolution: Vec2, focal_length_px: f32, near_clip: f32, far_clip: f32) -> Self {
         let near_plane_dimensions = image_resolution / focal_length_px * near_clip;
 
@@ -1736,7 +1998,7 @@ impl Matrix {
 
     /// <https://stereokit.net/Pages/StereoKit/Matrix/LookAt.html>
     ///
-    /// see also [`crate::maths::matrix_r`]
+    /// see also [`matrix_r`]
     #[inline]
     pub fn look_at(from: Vec3, at: Vec3, up: Option<Vec3>) -> Self {
         let up = up.unwrap_or(Vec3::UP);
@@ -1770,35 +2032,40 @@ impl Matrix {
 
     /// Create a rotation matrix from a Quaternion.
     /// <https://stereokit.net/Pages/StereoKit/Matrix/R.html>
+    /// * rotation - The quaternion describing the rotation for this transform.
     ///
-    /// see also [`crate::maths::matrix_r`]
+    /// see also [`matrix_r`]
     #[inline]
-    pub fn r(rotation: Quat) -> Self {
-        unsafe { matrix_r(rotation) }
+    pub fn r<Q: Into<Quat>>(rotation: Q) -> Self {
+        unsafe { matrix_r(rotation.into()) }
     }
 
     /// Creates a scaling Matrix, where scale can be different on each axis (non-uniform).
     /// <https://stereokit.net/Pages/StereoKit/Matrix/S.html>
+    /// * scale - How much larger or smaller this transform makes things. Vec3::ONE is the default.
     ///
-    /// see also [`crate::maths::matrix_s`]
+    /// see also [`matrix_s`]
     #[inline]
-    pub fn s(scale: Vec3) -> Self {
-        unsafe { matrix_s(scale) }
+    pub fn s<V: Into<Vec3>>(scale: V) -> Self {
+        unsafe { matrix_s(scale.into()) }
     }
 
     /// Translate. Creates a translation Matrix!
     /// <https://stereokit.net/Pages/StereoKit/Matrix/T.html>
+    /// * translation - Move an object by this amount.
     ///
-    /// see also [`crate::maths::matrix_t`]
+    /// see also [`matrix_t`]
     #[inline]
-    pub fn t(translation: Vec3) -> Self {
-        unsafe { matrix_t(translation) }
+    pub fn t<V: Into<Vec3>>(translation: V) -> Self {
+        unsafe { matrix_t(translation.into()) }
     }
 
     /// Translate, Rotate. Creates a transform Matrix using these components!
     /// <https://stereokit.net/Pages/StereoKit/Matrix/TR.html>
+    /// * translation - Move an object by this amount.
+    /// * rotation - The quaternion describing the rotation for this transform.
     ///
-    /// see also [`crate::maths::matrix_trs`]
+    /// see also [`matrix_trs`]
     #[inline]
     pub fn tr(translation: &Vec3, rotation: &Quat) -> Self {
         unsafe { matrix_trs(translation, rotation, &Vec3::ONE) }
@@ -1806,17 +2073,22 @@ impl Matrix {
 
     /// Translate, Scale. Creates a transform Matrix using these components!
     /// <https://stereokit.net/Pages/StereoKit/Matrix/TS.html>
+    /// * translation - Move an object by this amount.
+    /// * scale - How much larger or smaller this transform makes things. Vec3::ONE is the default.
     ///
-    /// see also [`crate::maths::matrix_ts`]
+    /// see also [`matrix_ts`]
     #[inline]
-    pub fn ts(translation: Vec3, scale: Vec3) -> Self {
-        unsafe { matrix_ts(translation, scale) }
+    pub fn ts<V: Into<Vec3>>(translation: V, scale: V) -> Self {
+        unsafe { matrix_ts(translation.into(), scale.into()) }
     }
 
     /// Translate, Rotate, Scale. Creates a transform Matrix using all these components!
     /// <https://stereokit.net/Pages/StereoKit/Matrix/TRS.html>
+    /// * translation - Move an object by this amount.
+    /// * rotation - The quaternion describing the rotation for this transform.
+    /// * scale - How much larger or smaller this transform makes things. Vec3::ONE is a good default.
     ///
-    /// see also [`crate::maths::matrix_trs`]
+    /// see also [`matrix_trs`]
     #[inline]
     pub fn trs(translation: &Vec3, rotation: &Quat, scale: &Vec3) -> Self {
         unsafe { matrix_trs(translation, rotation, scale) }
@@ -1824,8 +2096,11 @@ impl Matrix {
 
     /// Translate, Rotate, Scale. Update a transform Matrix using all these components!
     /// <https://stereokit.net/Pages/StereoKit/Matrix/TRS.html>
+    /// * translation - Move an object by this amount.
+    /// * rotation - The quaternion describing the rotation for this transform.
+    /// * scale - How much larger or smaller this transform makes things. Vec3::ONE is a good default.
     ///
-    /// see also [`crate::maths::matrix_trs_out`]
+    /// see also [`matrix_trs_out`]
     #[inline]
     #[allow(clippy::not_unsafe_ptr_arg_deref)]
     pub fn trs_to_pointer(translation: &Vec3, rotation: &Quat, scale: &Vec3, out_result: *mut Matrix) {
@@ -1836,7 +2111,7 @@ impl Matrix {
     /// The Matrix is modified so use get_inverse* for performance gains
     /// <https://stereokit.net/Pages/StereoKit/Matrix/Invert.html>
     ///
-    /// see also [`Matrix::get_inverse`] [`crate::maths::matrix_invert`]
+    /// see also [`Matrix::get_inverse`] [`matrix_invert`]
     #[inline]
     pub fn invert(&mut self) -> &mut Self {
         let m = unsafe { matrix_invert(self) };
@@ -1854,7 +2129,7 @@ impl Matrix {
     /// uses different conventions! The Matrix is modified so use get_transposed* for performance gains
     /// <https://stereokit.net/Pages/StereoKit/Matrix/Transpose.html>
     ///
-    /// see also [`crate::maths::matrix_transpose`]
+    /// see also [`matrix_transpose`]
     #[inline]
     pub fn transpose(&mut self) -> &mut Self {
         let m = unsafe { matrix_transpose(*self) };
@@ -1872,7 +2147,7 @@ impl Matrix {
     /// <https://stereokit.net/Pages/StereoKit/Matrix/Decompose.html>
     /// Returns the tuple (position:Vec3, scale:Vec3, orientation:QuatT)
     ///
-    /// see also [`crate::maths::matrix_decompose`]
+    /// see also [`matrix_decompose`]
     #[inline]
     pub fn decompose(&self) -> Option<(Vec3, Vec3, Quat)> {
         let position: *mut Vec3 = &mut Vec3 { x: 0.0, y: 0.0, z: 0.0 };
@@ -1887,32 +2162,38 @@ impl Matrix {
     /// Returns this transformation matrix to its original translation, rotation and scale components. Not exactly a
     /// cheap function. If this is not a transform matrix, there’s a chance this call will fail, and return false.
     /// <https://stereokit.net/Pages/StereoKit/Matrix/Decompose.html>
+    /// * out_position - The translation component of the matrix.
+    /// * out_orientation - The rotation component of the matrix, some lossiness may be encountered when
+    ///   composing/decomposing.
+    /// * out_scale - The scale component of the matrix.
     ///
-    /// see also [`crate::maths::matrix_decompose`]
+    /// see also [`matrix_decompose`]
     #[inline]
     #[allow(clippy::not_unsafe_ptr_arg_deref)]
-    pub fn decompose_to_ptr(&self, out_position: *mut Vec3, out_scale: *mut Vec3, out_orientation: *mut Quat) -> bool {
+    pub fn decompose_to_ptr(&self, out_position: *mut Vec3, out_orientation: *mut Quat, out_scale: *mut Vec3) -> bool {
         unsafe { matrix_decompose(self, out_position, out_scale, out_orientation) != 0 }
     }
 
     /// Transforms a point through the Matrix! This is basically just multiplying a vector (x,y,z,1) with the Matrix.
-    /// <https://stereokit.net/Pages/StereoKit/Matrix/Transform.html> see also the * operator
+    /// <https://stereokit.net/Pages/StereoKit/Matrix/Transform.html> see also the '*' operator
+    /// * point - The point to transform.
     ///
-    /// see also [`crate::maths::matrix_transform_pt`]
+    /// see also [`matrix_transform_pt`]
     #[inline]
-    pub fn transform_point(&self, point: Vec3) -> Vec3 {
-        unsafe { matrix_transform_pt(*self, point) }
+    pub fn transform_point<V: Into<Vec3>>(&self, point: V) -> Vec3 {
+        unsafe { matrix_transform_pt(*self, point.into()) }
     }
 
     /// Shorthand to transform a ray though the Matrix! This properly transforms the position with the point transform
     /// method, and the direction with the direction transform method. Does not normalize, nor does it preserve a
     /// normalized direction if the Matrix contains scale data.
     /// <https://stereokit.net/Pages/StereoKit/Matrix/Transform.html> see also the * operator
+    /// * ray - A ray you wish to transform from one space to another.
     ///
-    /// see also [`crate::maths::matrix_transform_ray`]
+    /// see also [`matrix_transform_ray`]
     #[inline]
-    pub fn transform_ray(&self, ray: Ray) -> Ray {
-        unsafe { matrix_transform_ray(*self, ray) }
+    pub fn transform_ray<R: Into<Ray>>(&self, ray: R) -> Ray {
+        unsafe { matrix_transform_ray(*self, ray.into()) }
     }
 
     /// Shorthand for transforming a Pose! This will transform the position of the Pose with the matrix, extract a
@@ -1920,11 +2201,12 @@ impl Matrix {
     /// is an expensive operation, so if you’re doing it more than once, you should cache the rotation Quat and do this
     /// transform manually.
     /// <https://stereokit.net/Pages/StereoKit/Matrix/Transform.html> see also the * operator
+    /// * pose - The original pose.
     ///
-    /// see also [`crate::maths::matrix_transform_pose`]
+    /// see also [`matrix_transform_pose`]
     #[inline]
-    pub fn transform_pose(&self, pose: Pose) -> Pose {
-        unsafe { matrix_transform_pose(*self, pose) }
+    pub fn transform_pose<P: Into<Pose>>(&self, pose: P) -> Pose {
+        unsafe { matrix_transform_pose(*self, pose.into()) }
     }
 
     /// Shorthand for transforming a rotation! This will extract a
@@ -1933,28 +2215,29 @@ impl Matrix {
     /// transform manually.
     /// <https://stereokit.net/Pages/StereoKit/Matrix/Transform.html> see also the * operator
     ///
-    /// see also [`crate::maths::matrix_transform_quat`]
+    /// see also [`matrix_transform_quat`]
     #[inline]
-    pub fn transform_quat(&self, rotation: Quat) -> Quat {
-        unsafe { matrix_transform_quat(*self, rotation) }
+    pub fn transform_quat<Q: Into<Quat>>(&self, rotation: Q) -> Quat {
+        unsafe { matrix_transform_quat(*self, rotation.into()) }
     }
 
     /// Transforms a point through the Matrix, but excluding translation! This is great for transforming vectors that
     /// are -directions- rather than points in space. Use this to transform normals and directions. The same as
     /// multiplying (x,y,z,0) with the Matrix.
     /// <https://stereokit.net/Pages/StereoKit/Matrix/TransformNormal.html> do not correspond to * operator !
+    /// * dir - A direction vector to be transformed.
     ///
-    /// see also [`crate::maths::matrix_transform_dir`]
+    /// see also [`matrix_transform_dir`]
     #[inline]
-    pub fn transform_normal(&self, dir: Vec3) -> Vec3 {
-        unsafe { matrix_transform_dir(*self, dir) }
+    pub fn transform_normal<V: Into<Vec3>>(&self, dir: V) -> Vec3 {
+        unsafe { matrix_transform_dir(*self, dir.into()) }
     }
 
     /// Creates an inverse matrix! If the matrix takes a point from a -> b, then its inverse takes the point
     /// from b -> a.
     /// <https://stereokit.net/Pages/StereoKit/Matrix/Inverse.html>
     ///
-    /// see also [`crate::maths::matrix_inverse`]
+    /// see also [`matrix_inverse`]
     #[inline]
     pub fn get_inverse(&self) -> Self {
         let out: *mut Matrix = &mut Matrix { row: [Vec4::ZERO, Vec4::ZERO, Vec4::ZERO, Vec4::ZERO] };
@@ -1967,8 +2250,9 @@ impl Matrix {
     /// Creates an inverse matrix! If the matrix takes a point from a -> b, then its inverse takes the point
     /// from b -> a.
     /// <https://stereokit.net/Pages/StereoKit/Matrix/Inverse.html>
+    /// * out - The output matrix.
     ///
-    /// see also [`crate::maths::matrix_inverse`]
+    /// see also [`matrix_inverse`]
     #[inline]
     #[allow(clippy::not_unsafe_ptr_arg_deref)]
     pub fn get_inverse_to_ptr(&self, out: *mut Matrix) {
@@ -1981,7 +2265,7 @@ impl Matrix {
     /// fast. This is backed by Decompose, so if you need any additional info, it’s better to just call Decompose instead.
     /// <https://stereokit.net/Pages/StereoKit/Matrix/Pose.html>
     ///
-    /// see also [`crate::maths::matrix_extract_pose`]
+    /// see also [`matrix_extract_pose`]
     #[inline]
     pub fn get_pose(&self) -> Pose {
         unsafe { matrix_extract_pose(self) }
@@ -1991,7 +2275,7 @@ impl Matrix {
     /// Decompose, so if you need any additional info, it’s better to just call Decompose instead.
     /// <https://stereokit.net/Pages/StereoKit/Matrix/Rotation.html>
     ///
-    /// see also [`crate::maths::matrix_extract_rotation`]
+    /// see also [`matrix_extract_rotation`]
     #[inline]
     pub fn get_rotation(&self) -> Quat {
         unsafe { matrix_extract_rotation(self) }
@@ -2001,7 +2285,7 @@ impl Matrix {
     /// than calling Decompose.
     /// <https://stereokit.net/Pages/StereoKit/Matrix/Scale.html>
     ///
-    /// see also [`crate::maths::matrix_extract_scale`]
+    /// see also [`matrix_extract_scale`]
     #[inline]
     pub fn get_scale(&self) -> Vec3 {
         unsafe { matrix_extract_scale(self) }
@@ -2010,7 +2294,7 @@ impl Matrix {
     /// A fast getter that will return or set the translation component embedded in this transform matrix.
     /// <https://stereokit.net/Pages/StereoKit/Matrix/Translation.html>
     ///
-    /// see also [`crate::maths::matrix_extract_translation`]
+    /// see also [`matrix_extract_translation`]
     #[inline]
     pub fn get_translation(&self) -> Vec3 {
         unsafe { matrix_extract_translation(self) }
@@ -2021,7 +2305,7 @@ impl Matrix {
     /// in a math library that uses different conventions!
     /// <https://stereokit.net/Pages/StereoKit/Matrix/Transposed.html>
     ///
-    /// see also [`crate::maths::matrix_transpose`]
+    /// see also [`matrix_transpose`]
     #[inline]
     pub fn get_transposed(&self) -> Matrix {
         unsafe { matrix_transpose(*self) }
@@ -2040,7 +2324,7 @@ impl Display for Matrix {
 /// use Matrix.transform_normal.
 /// <https://stereokit.net/Pages/StereoKit/Matrix/op_Multiply.html>
 ///
-/// see also [`crate::maths::matrix_transform_pt`]
+/// see also [`matrix_transform_pt`]
 impl Mul<Vec3> for Matrix {
     type Output = Vec3;
 
@@ -2054,7 +2338,7 @@ impl Mul<Vec3> for Matrix {
 /// use Matrix.transform_normal.
 /// <https://stereokit.net/Pages/StereoKit/Matrix/op_Multiply.html>
 ///
-/// see also [`crate::maths::matrix_transform_pt`]
+/// see also [`matrix_transform_pt`]
 impl MulAssign<Matrix> for Vec3 {
     fn mul_assign(&mut self, rhs: Matrix) {
         let res = unsafe { matrix_transform_pt(rhs, *self) };
@@ -2069,7 +2353,7 @@ impl MulAssign<Matrix> for Vec3 {
 /// use Matrix.transform_normal.
 /// <https://stereokit.net/Pages/StereoKit/Matrix/op_Multiply.html>
 ///
-/// see also [`crate::maths::matrix_transform_pt`]
+/// see also [`matrix_transform_pt`]
 impl Mul<Matrix> for Vec3 {
     type Output = Vec3;
 
@@ -2080,7 +2364,7 @@ impl Mul<Matrix> for Vec3 {
 
 /// <https://stereokit.net/Pages/StereoKit/Matrix/op_Multiply.html>
 ///
-/// see also [`crate::maths::matrix_transform_pt4`]
+/// see also [`matrix_transform_pt4`]
 impl Mul<Vec4> for Matrix {
     type Output = Vec4;
 
@@ -2091,7 +2375,7 @@ impl Mul<Vec4> for Matrix {
 
 /// <https://stereokit.net/Pages/StereoKit/Matrix/op_Multiply.html>
 ///
-/// see also [`crate::maths::matrix_transform_pt4`]
+/// see also [`matrix_transform_pt4`]
 impl MulAssign<Matrix> for Vec4 {
     fn mul_assign(&mut self, rhs: Matrix) {
         let res = unsafe { matrix_transform_pt4(rhs, *self) };
@@ -2104,7 +2388,7 @@ impl MulAssign<Matrix> for Vec4 {
 
 /// <https://stereokit.net/Pages/StereoKit/Matrix/op_Multiply.html>
 ///
-/// see also [`crate::maths::matrix_transform_pt4`]
+/// see also [`matrix_transform_pt4`]
 impl Mul<Matrix> for Vec4 {
     type Output = Vec4;
 
@@ -2117,7 +2401,7 @@ impl Mul<Matrix> for Vec4 {
 /// which should include translation, and which should not.
 /// <https://stereokit.net/Pages/StereoKit/Matrix/op_Multiply.html>
 ///
-/// see also [`crate::maths::matrix_transform_ray`]
+/// see also [`matrix_transform_ray`]
 impl Mul<Ray> for Matrix {
     type Output = Ray;
 
@@ -2130,7 +2414,7 @@ impl Mul<Ray> for Matrix {
 /// which should include translation, and which should not.
 /// <https://stereokit.net/Pages/StereoKit/Matrix/op_Multiply.html>
 ///
-/// see also [`crate::maths::matrix_transform_ray`]
+/// see also [`matrix_transform_ray`]
 impl MulAssign<Matrix> for Ray {
     fn mul_assign(&mut self, rhs: Matrix) {
         let res = unsafe { matrix_transform_ray(rhs, *self) };
@@ -2143,7 +2427,7 @@ impl MulAssign<Matrix> for Ray {
 /// which should include translation, and which should not.
 /// <https://stereokit.net/Pages/StereoKit/Matrix/op_Multiply.html>
 ///
-/// see also [`crate::maths::matrix_transform_ray`]
+/// see also [`matrix_transform_ray`]
 impl Mul<Matrix> for Ray {
     type Output = Ray;
 
@@ -2155,7 +2439,7 @@ impl Mul<Matrix> for Ray {
 /// Transform an orientation by the Matrix.
 /// <https://stereokit.net/Pages/StereoKit/Matrix/op_Multiply.html>
 ///
-/// see also [`crate::maths::matrix_transform_quat`]
+/// see also [`matrix_transform_quat`]
 impl Mul<Quat> for Matrix {
     type Output = Quat;
 
@@ -2167,7 +2451,7 @@ impl Mul<Quat> for Matrix {
 /// Transform an orientation by the Matrix.
 /// <https://stereokit.net/Pages/StereoKit/Matrix/op_Multiply.html>
 ///
-/// see also [`crate::maths::matrix_transform_quat`]
+/// see also [`matrix_transform_quat`]
 impl MulAssign<Matrix> for Quat {
     fn mul_assign(&mut self, rhs: Matrix) {
         let res = unsafe { matrix_transform_quat(rhs, *self) };
@@ -2181,7 +2465,7 @@ impl MulAssign<Matrix> for Quat {
 /// Transform an orientation by the Matrix.
 /// <https://stereokit.net/Pages/StereoKit/Matrix/op_Multiply.html>
 ///
-/// see also [`crate::maths::matrix_transform_quat`]
+/// see also [`matrix_transform_quat`]
 impl Mul<Matrix> for Quat {
     type Output = Quat;
 
@@ -2194,7 +2478,7 @@ impl Mul<Matrix> for Quat {
 /// properly for the Pose’s quaternion.
 /// <https://stereokit.net/Pages/StereoKit/Matrix/op_Multiply.html>
 ///
-/// see also [`crate::maths::matrix_transform_pose`]
+/// see also [`matrix_transform_pose`]
 impl Mul<Pose> for Matrix {
     type Output = Pose;
 
@@ -2207,7 +2491,7 @@ impl Mul<Pose> for Matrix {
 /// properly for the Pose’s quaternion.
 /// <https://stereokit.net/Pages/StereoKit/Matrix/op_Multiply.html>
 ///
-/// see also [`crate::maths::matrix_transform_pose`]
+/// see also [`matrix_transform_pose`]
 impl MulAssign<Matrix> for Pose {
     fn mul_assign(&mut self, rhs: Matrix) {
         let res = unsafe { matrix_transform_pose(rhs, *self) };
@@ -2220,7 +2504,7 @@ impl MulAssign<Matrix> for Pose {
 /// properly for the Pose’s quaternion.
 /// <https://stereokit.net/Pages/StereoKit/Matrix/op_Multiply.html>
 ///
-/// see also [`crate::maths::matrix_transform_pose`]
+/// see also [`matrix_transform_pose`]
 impl Mul<Matrix> for Pose {
     type Output = Pose;
 
@@ -2234,7 +2518,7 @@ impl Mul<Matrix> for Pose {
 /// ‘translate * scale’.
 /// <https://stereokit.net/Pages/StereoKit/Matrix/op_Multiply.html>
 ///
-/// see also [`crate::maths::matrix_mul`]
+/// see also [`matrix_mul`]
 impl Mul<Matrix> for Matrix {
     type Output = Self;
 
@@ -2252,7 +2536,7 @@ impl Mul<Matrix> for Matrix {
 /// ‘translate * scale’.
 /// <https://stereokit.net/Pages/StereoKit/Matrix/op_Multiply.html>
 ///
-/// see also [`crate::maths::matrix_mul`]
+/// see also [`matrix_mul`]
 impl MulAssign<Matrix> for Matrix {
     fn mul_assign(&mut self, rhs: Matrix) {
         unsafe { matrix_mul(&rhs, self, self) };
@@ -2266,7 +2550,37 @@ impl MulAssign<Matrix> for Matrix {
 /// While the constructor uses a center+dimensions for creating a bounds, don’t forget the static From* methods that
 /// allow you to define a Bounds from different types of data!
 /// <https://stereokit.net/Pages/StereoKit/Bounds.html>
-#[derive(Copy, Clone, Debug, Default)]
+///
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{maths::{Vec3, Matrix, Pose}, model::Model, ui::Ui,
+///     mesh::Mesh, material::Material, util::named_colors};
+///
+/// let model = Model::from_file("center.glb", None).unwrap().copy();
+/// let cube = Mesh::cube();
+/// let mut material_cube =Material::ui_box();
+/// material_cube   .color_tint(named_colors::GOLD)
+///                 .get_all_param_info().set_float("border_size", 0.05);
+///
+/// let scale = 0.4;
+/// let bounds = model.get_bounds() * scale;
+/// let transform = Matrix::s(Vec3::ONE * scale);
+/// let transform_cube = Matrix::ts( bounds.center, bounds.dimensions);
+/// let mut handle_pose =
+///     Pose::new([0.0,-0.95,-0.65], Some([0.0, 140.0, 0.0].into()));
+///
+/// filename_scr = "screenshots/bounds.jpeg";
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+///     Ui::handle_begin( "Model Handle", &mut handle_pose,
+///                       bounds, false, None, None);
+///     model.draw(token, transform, None, None);
+///     cube.draw(token, &material_cube, transform_cube, None, None);
+///     Ui::handle_end();
+/// );
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/bounds.jpeg" alt="screenshot" width="200">
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 #[repr(C)]
 pub struct Bounds {
     pub center: Vec3,
@@ -2292,6 +2606,18 @@ unsafe extern "C" {
 impl Bounds {
     /// Creates a bounding box object!
     /// <https://stereokit.net/Pages/StereoKit/Bounds/Bounds.html>
+    /// * center - The exact center of the box.
+    /// * dimensions - The total size of the box, from one end to the other. This is the width, height, and depth of
+    ///   the Bounds.
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Bounds};
+    ///
+    /// let bounds = Bounds::new([1.0, 2.0, 3.0], [4.0, 5.0, 6.0]);
+    /// assert_eq!(bounds.center, Vec3::new(1.0, 2.0, 3.0));
+    /// assert_eq!(bounds.dimensions, Vec3::new(4.0, 5.0, 6.0));
+    /// ```
     #[inline]
     pub fn new<V: Into<Vec3>>(center: V, dimensions: V) -> Bounds {
         Bounds { center: center.into(), dimensions: dimensions.into() }
@@ -2299,6 +2625,17 @@ impl Bounds {
 
     /// Creates a bounding box object centered around zero!
     /// <https://stereokit.net/Pages/StereoKit/Bounds/Bounds.html>
+    /// * dimensions - The total size of the box, from one end to the other. This is the width, height, and depth of
+    ///   the Bounds.
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Bounds};
+    ///
+    /// let bounds = Bounds::bounds_centered( [4.0, 5.0, 6.0]);
+    /// assert_eq!(bounds.center, Vec3::ZERO);
+    /// assert_eq!(bounds.dimensions, Vec3::new(4.0, 5.0, 6.0));
+    /// ```
     #[inline]
     pub fn bounds_centered(dimensions: impl Into<Vec3>) -> Bounds {
         Bounds { center: Vec3::ZERO, dimensions: dimensions.into() }
@@ -2306,6 +2643,17 @@ impl Bounds {
 
     /// Create a bounding box from a corner, plus box dimensions.
     /// <https://stereokit.net/Pages/StereoKit/Bounds/FromCorner.html>
+    /// * bottom_left_back - The -X,-Y,-Z corner of the box.
+    /// * dimensions - The dimensions of the bounding box.
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Bounds};
+    ///
+    /// let bounds = Bounds::from_corner( Vec3::ZERO, [1.0, 2.0, 3.0].into());
+    /// assert_eq!(bounds.center, [0.5, 1.0, 1.5].into());
+    /// assert_eq!(bounds.dimensions, Vec3::new(1.0, 2.0, 3.0));
+    /// ```
     #[inline]
     pub fn from_corner<V: Into<Vec3>>(bottom_left_back: V, dimensions: V) -> Bounds {
         let dim = dimensions.into();
@@ -2314,6 +2662,17 @@ impl Bounds {
 
     /// Create a bounding box between two corner points.
     /// <https://stereokit.net/Pages/StereoKit/Bounds/FromCorners.html>
+    /// * bottom_left_back - The -X,-Y,-Z corner of the box.
+    /// * top_right_front - The +X,+Y,+Z corner of the box.
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Bounds};
+    ///
+    /// let bounds = Bounds::from_corners( Vec3::ZERO, Vec3::ONE);
+    /// assert_eq!(bounds.center, Vec3::ONE / 2.0);
+    /// assert_eq!(bounds.dimensions, Vec3::ONE);
+    /// ```
     #[inline]
     pub fn from_corners<V: Into<Vec3>>(bottom_left_back: V, top_right_front: V) -> Bounds {
         let blb = bottom_left_back.into();
@@ -2323,8 +2682,18 @@ impl Bounds {
 
     /// Grow the Bounds to encapsulate the provided point. Returns the result, and does NOT modify the current bounds.
     /// <https://stereokit.net/Pages/StereoKit/Bounds/Grown.html>
+    /// * pt - The point to encapsulate! This should be in the same space as the bounds.
     ///
-    /// see also [`crate::maths::bounds_grow_to_fit_pt]
+    /// see also [`bounds_grow_to_fit_pt]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Bounds};
+    ///
+    /// let mut bounds = Bounds::from_corners( Vec3::ZERO, Vec3::ONE);
+    /// bounds.grown_point(Vec3::new(1.0, 2.0, 3.0));
+    /// assert_eq!(bounds.center, Vec3{ x: 0.5, y: 1.0, z: 1.5 });
+    /// assert_eq!(bounds.dimensions, Vec3 { x: 1.0, y: 2.0, z: 3.0 });
+    /// ```
     #[inline]
     pub fn grown_point(&mut self, pt: impl Into<Vec3>) -> &mut Self {
         let b = unsafe { bounds_grow_to_fit_pt(*self, pt.into()) };
@@ -2333,11 +2702,24 @@ impl Bounds {
         self
     }
 
-    /// Grow the Bounds to encapsulate the provided point. Returns the result, and does NOT modify the current bounds.
+    /// Grow the Bounds to encapsulate the provided box after it has been transformed by the provided matrix transform.
+    /// This will transform each corner of the box, and expand the bounds to encapsulate each point!
     /// <https://stereokit.net/Pages/StereoKit/Bounds/Grown.html>
-    /// * opt_box_transform - to center use Mat4::IDENTITY
+    /// * box_ - the box to encapsulate! The corners of this box are transformed, and then used to grow the bounds.
+    /// * opt_box_transform - to center use Matrix::IDENTITY
     ///
-    /// see also [`crate::maths::bounds_grow_to_fit_box]
+    /// see also [`bounds_grow_to_fit_box]
+    /// see also [`bounds_grow_to_fit_pt]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Matrix, Bounds};
+    ///
+    /// let mut bounds = Bounds::from_corners( Vec3::ZERO, Vec3::ONE);
+    /// let bounds_plus = Bounds::from_corners( Vec3::ONE, Vec3::ONE * 2.0);
+    /// bounds.grown_box(bounds_plus, Matrix::IDENTITY);
+    /// assert_eq!(bounds.center, Vec3::ONE);
+    /// assert_eq!(bounds.dimensions, Vec3::ONE * 2.0);
+    /// ```
     #[inline]
     pub fn grown_box<M: Into<Matrix>>(&mut self, box_: impl AsRef<Bounds>, opt_box_transform: M) -> &mut Self {
         let b = unsafe { bounds_grow_to_fit_box(*self, *(box_.as_ref()), &opt_box_transform.into()) };
@@ -2348,6 +2730,20 @@ impl Bounds {
 
     /// Scale this bounds. It will scale the center as well as the dimensions! Modifies this bounds object.
     /// <https://stereokit.net/Pages/StereoKit/Bounds/Scale.html>
+    /// * scale - The scale to apply.
+    ///
+    /// see also [Bounds::scale_vec][Bounds::scaled][Bounds::scaled_vec] and '/' '*' operator
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Matrix, Bounds};
+    ///
+    /// let mut bounds = Bounds::from_corners( Vec3::ZERO, Vec3::ONE);
+    /// bounds.scale(2.0);
+    /// let bounds_plus = Bounds::from_corners( Vec3::ZERO, Vec3::ONE) * 2.0;
+    ///
+    /// assert_eq!(bounds.center, bounds_plus.center);
+    /// assert_eq!(bounds.dimensions, bounds_plus.dimensions);
+    /// ```
     #[inline]
     pub fn scale(&mut self, scale: f32) -> &mut Self {
         self.dimensions *= scale;
@@ -2357,8 +2753,23 @@ impl Bounds {
 
     /// Scale this bounds. It will scale the center as well as the dimensions! Modifies this bounds object.
     /// <https://stereokit.net/Pages/StereoKit/Bounds/Scale.html>
+    /// * scale - The scale to apply.
+    ///
+    /// see also [Bounds::scale][Bounds::scaled_vec][Bounds::scaled] and '/' '*' operator
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Matrix, Bounds};
+    ///
+    /// let mut bounds = Bounds::from_corners( Vec3::ZERO, Vec3::ONE);
+    /// bounds.scale_vec([1.0, 2.0, 3.0]);
+    /// let bounds_plus = Bounds::from_corners( Vec3::ZERO, Vec3::ONE) * Vec3::new(1.0, 2.0, 3.0);
+    ///
+    /// assert_eq!(bounds.center, bounds_plus.center);
+    /// assert_eq!(bounds.dimensions, bounds_plus.dimensions);
+    /// ```
     #[inline]
-    pub fn scale_vec(&mut self, scale: Vec3) -> &mut Self {
+    pub fn scale_vec(&mut self, scale: impl Into<Vec3>) -> &mut Self {
+        let scale = scale.into();
         self.dimensions *= scale;
         self.center *= scale;
         self
@@ -2366,8 +2777,31 @@ impl Bounds {
 
     /// Does the Bounds contain the given point? This includes points that are on the surface of the Bounds.
     /// <https://stereokit.net/Pages/StereoKit/Bounds/Contains.html>
+    /// * pt - A point in the same coordinate space as the Bounds.
     ///
-    /// see also [`crate::maths::bounds_point_contains`]
+    /// see also [`bounds_point_contains`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Bounds, Matrix};
+    ///
+    /// // A cube of 1 meter per side at this position, aligned with x y and z axis.
+    /// let box_transform = Matrix::t([10.0, 1.0, 2.0]);
+    /// let box_bounds = Bounds::bounds_centered([1.0,1.0,1.0]);
+    ///
+    /// let inv = box_transform.get_inverse();
+    /// let point1 = inv.transform_point([10.2, 1.3, 2.4]);
+    /// let point2 = inv.transform_point([10.9, 1.8, 2.1]);
+    /// let point3 = inv.transform_point([10.5, 2.01, 1.7]);
+    /// let point4 = inv.transform_point([9.5, 0.7, 1.5]);
+    ///
+    /// assert!(box_bounds.contains_point(point1),  "point1 should be inside");
+    /// assert!(!box_bounds.contains_point(point2), "point2 should be outside");
+    /// assert!(!box_bounds.contains_point(point3), "point3 should be outside");
+    /// assert!(box_bounds.contains_point(point4),  "point4 should be inside");
+    ///
+    /// assert!(box_bounds.contains_point([0.5, 0.5, 0.5]),
+    ///         "inverse point should be inside");
+    /// ```
     #[inline]
     pub fn contains_point(&self, pt: impl Into<Vec3>) -> bool {
         unsafe { bounds_point_contains(*self, pt.into()) != 0 }
@@ -2375,8 +2809,32 @@ impl Bounds {
 
     /// Does the Bounds contain or intersects with the given line?
     /// <https://stereokit.net/Pages/StereoKit/Bounds/Contains.html>
+    /// * line_pt1 - The first point on the line.
+    /// * line_pt2 - The second point on the line.
     ///
-    /// see also [`crate::maths::bounds_line_contains`]
+    /// see also [`bounds_line_contains`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Bounds, Matrix};
+    ///
+    /// // A cube of 1 meter per side at this position, aligned with x y and z axis.
+    /// let box_transform = Matrix::t([10.0, 1.0, 2.0]);
+    /// let box_bounds = Bounds::bounds_centered([1.0,1.0,1.0]);
+    ///
+    /// let inv = box_transform.get_inverse();
+    /// let point1 = inv.transform_point([10.2, 1.3, 2.4]);
+    /// let point2 = inv.transform_point([10.9, 1.8, 2.1]);
+    /// let point3 = inv.transform_point([10.5, 2.01, 1.7]);
+    /// let point4 = inv.transform_point([9.5, 0.7, 1.5]);
+    ///
+    /// assert!(box_bounds.contains_line(point1, point2),  "point1-point2 should be inside");
+    /// assert!(!box_bounds.contains_line(point2, point3), "point2-point3 should be outside");
+    /// assert!(box_bounds.contains_line(point3, point4),  "point3-point4 should be inside");
+    /// assert!(box_bounds.contains_line(point4, point1),  "point4-point1 should be inside");
+    ///
+    /// assert!(box_bounds.contains_line([0.1, 0.1, 0.1], [0.9, 0.9, 0.9]),
+    ///         "inverse line should be inside");
+    /// ```
     #[inline]
     pub fn contains_line<V3: Into<Vec3>>(&self, line_pt1: V3, line_pt2: V3) -> bool {
         unsafe { bounds_line_contains(*self, line_pt1.into(), line_pt2.into()) != 0 }
@@ -2384,8 +2842,34 @@ impl Bounds {
 
     /// Does the bounds contain or intersect with the given capsule?
     /// <https://stereokit.net/Pages/StereoKit/Bounds/Contains.html>
+    /// * pt1 - The first point of the capsule.
+    /// * pt2 - The second point of the capsule.
+    /// * radius - The radius of the capsule.
     ///
-    /// see also [`crate::maths::bounds_capsule_contains`]
+    /// see also [`bounds_capsule_contains`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Bounds, Matrix};
+    ///
+    /// // A cube of 1 meter per side at this position, aligned with x y and z axis.
+    /// let box_transform = Matrix::t([10.0, 1.0, 2.0]);
+    /// let box_bounds = Bounds::bounds_centered([1.0,1.0,1.0]);
+    ///
+    /// let inv = box_transform.get_inverse();
+    /// let point1 = inv.transform_point([10.2, 1.3, 2.4]);
+    /// let point2 = inv.transform_point([10.9, 1.8, 2.1]);
+    /// let point3 = inv.transform_point([10.5, 2.01, 1.7]);
+    /// let point4 = inv.transform_point([9.5, 0.7, 1.5]);
+    ///
+    /// assert!(box_bounds.contains_capsule(point1, point2, 0.1),  "point1-point2 should be inside");
+    /// assert!(!box_bounds.contains_capsule(point2, point3, 0.1), "point2-point3 * 0.1 should be outside");
+    /// assert!(box_bounds.contains_capsule(point2, point3, 0.4),  "point2-point3 * 0.4 should be inside");
+    /// assert!(box_bounds.contains_capsule(point3, point4, 0.1),  "point3-point4 should be inside");
+    /// assert!(box_bounds.contains_capsule(point4, point1, 0.1),  "point4-point1 should be inside");
+    ///
+    /// assert!(box_bounds.contains_capsule([0.1, 0.1, 0.1], [0.9, 0.9, 0.9], 10.0),
+    ///         "inverse line * 10 should be inside");
+    /// ```
     #[inline]
     pub fn contains_capsule<V3: Into<Vec3>>(&self, line_pt1: V3, line_pt2: V3, radius: f32) -> bool {
         unsafe { bounds_capsule_contains(*self, line_pt1.into(), line_pt2.into(), radius) != 0 }
@@ -2397,10 +2881,37 @@ impl Bounds {
     /// * ray - Any Ray in the same coordinate space as the Bounds
     ///
     /// Returns the closest intersection point to the origin of the ray or None if there isn't an instersection
-    /// see also [`crate::maths::bounds_ray_intersect`]
+    /// see also [`bounds_ray_intersect`] same as [`Ray::intersect_bounds`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Bounds, Matrix, Ray};
+    ///
+    /// // A cube of 1 meter per side at this position, aligned with x y and z axis.
+    /// let box_transform = Matrix::t([10.0, 1.0, 2.0]);
+    /// let box_bounds = Bounds::bounds_centered([1.0,1.0,1.0]);
+    ///
+    /// let inv = box_transform.get_inverse();
+    /// let ray1 = inv.transform_ray(Ray::new([10.2, 1.3, 2.4],[0.0, 1.0, 0.0]));
+    /// let ray2 = inv.transform_ray(Ray::new([10.9, 1.8, 2.6],[0.0, 0.0, 1.0]));
+    /// let ray3 = inv.transform_ray(Ray::new([10.5, 2.0, 2.7],[1.0, 0.0, 1.0]));
+    ///
+    /// assert!(box_bounds.intersect(ray1).is_some(),  "should be a point of contact");
+    /// assert_eq!(box_bounds.intersect(ray2), None);
+    /// assert_eq!(box_bounds.intersect(ray3),  None);
+    /// assert_eq!(box_bounds.intersect(Ray::new([0.1, 0.1, 0.1], [0.9, 0.9, 0.9])),
+    ///             Some([-0.5, -0.5, -0.5].into()));
+    ///
+    /// // We want the contact point for ray1
+    /// let contact_point = box_bounds.intersect(ray1)
+    ///         .expect ("There should be a point of contact");
+    ///
+    /// let contact_point = box_transform.transform_point(contact_point);
+    /// assert_eq!(contact_point,  [10.2, 0.5, 2.4 ].into());
+    /// ```
     #[inline]
-    pub fn intersect(&self, ray: Ray) -> Option<Vec3> {
+    pub fn intersect<R: Into<Ray>>(&self, ray: R) -> Option<Vec3> {
         let mut pt = Vec3::default();
+        let ray = ray.into();
         match unsafe { bounds_ray_intersect(*self, ray, &mut pt) != 0 } {
             true => Some(pt),
             false => None,
@@ -2410,6 +2921,21 @@ impl Bounds {
     /// Scale the bounds. It will scale the center as well as the dimensions! Returns a new Bounds.
     /// equivalent to using multiply operator
     /// <https://stereokit.net/Pages/StereoKit/Bounds/Scaled.html>
+    /// * scale - The scale to apply.
+    ///
+    /// see also [Bounds::scale][Bounds::scaled_vec][Bounds::scale_vec] and '/' '*' operator
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Bounds};
+    ///
+    /// let mut bounds = Bounds::from_corners( Vec3::ZERO, Vec3::ONE);
+    /// let bounds_scaled = bounds.scaled(2.0);
+    /// let bounds_plus = Bounds::from_corners( Vec3::ZERO, Vec3::ONE) * 2.0;
+    ///
+    /// assert_eq!(*bounds.scale(2.0), bounds_scaled);
+    /// assert_eq!(bounds_scaled.center, bounds_plus.center);
+    /// assert_eq!(bounds_scaled.dimensions, bounds_plus.dimensions);
+    /// ```
     #[inline]
     pub fn scaled(&self, scale: f32) -> Self {
         *self * scale
@@ -2418,6 +2944,21 @@ impl Bounds {
     /// Scale the bounds. It will scale the center as well as the dimensions! Returns a new Bounds.
     /// equivalent to using multiply operator
     /// <https://stereokit.net/Pages/StereoKit/Bounds/Scaled.html>
+    /// * scale - The scale to apply.
+    ///
+    /// see also [Bounds::scale_vec][Bounds::scale][Bounds::scaled] and '/' '*' operator
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Bounds};
+    ///
+    /// let bounds = Bounds::from_corners( Vec3::ZERO, Vec3::ONE);
+    /// let bounds_scaled = bounds.scaled_vec([1.0, 2.0, 3.0]);
+    /// let bounds_plus = Bounds::from_corners( Vec3::ZERO, Vec3::ONE) * Vec3::new(1.0, 2.0, 3.0);
+    ///
+    /// assert_eq!(bounds * Vec3::new(1.0, 2.0, 3.0), bounds_scaled);
+    /// assert_eq!(bounds_scaled.center, bounds_plus.center);
+    /// assert_eq!(bounds_scaled.dimensions, bounds_plus.dimensions);
+    /// ```
     #[inline]
     pub fn scaled_vec(&self, scale: impl Into<Vec3>) -> Self {
         *self * scale.into()
@@ -2426,8 +2967,20 @@ impl Bounds {
     /// This returns a Bounds that encapsulates the transformed points of the current Bounds’s corners.
     /// Note that this will likely introduce a lot of extra empty volume in many cases, as the result is still always axis aligned.
     /// <https://stereokit.net/Pages/StereoKit/Bounds/Transformed.html>
+    /// * transform - A transform Matrix for the current Bounds’s corners.
     ///
-    /// see also [`crate::maths::bounds_transform]
+    /// see also [`bounds_transform]
+    /// ### Examples
+    ///```
+    /// use stereokit_rust::maths::{Vec3, Bounds, Matrix};
+    ///
+    /// let matrix = Matrix::r([90.0, 90.0, 90.0]);
+    /// let bounds = Bounds::bounds_centered([1.0, 1.0, 1.0]);
+    /// let bounds_transformed = bounds.transformed(matrix);
+    ///
+    /// assert_eq!(bounds_transformed.dimensions, Vec3{x: 1.0000001, y: 0.99999994, z: 0.99999994});
+    /// assert_eq!(bounds_transformed.center, Vec3{x:0.0, y:0.0, z:0.0})
+    ///```
     #[inline]
     pub fn transformed(&self, transform: impl Into<Matrix>) -> Self {
         unsafe { bounds_transform(*self, transform.into()) }
@@ -2436,6 +2989,16 @@ impl Bounds {
     /// From the front, this is the Top (Y+), Left (X+), Center
     /// (Z0) of the bounds. Useful when working with UI layout bounds.
     /// <https://stereokit.net/Pages/StereoKit/Bounds/TLC.html>
+    ///
+    /// see also [Bounds::tlb]
+    /// ### Examples
+    ///```
+    /// use stereokit_rust::maths::{Vec3, Bounds};
+    ///
+    /// let bounds = Bounds::bounds_centered([1.0, 1.0, 1.0]);
+    ///
+    /// assert_eq!(bounds.tlc(), Vec3{x:0.5, y:0.5, z: 0.0});
+    ///```    
     #[inline]
     pub fn tlc(&self) -> Vec3 {
         self.center + self.dimensions.xy0() / 2.0
@@ -2444,6 +3007,16 @@ impl Bounds {
     /// From the front, this is the Top (Y+), Left (X+), Back (Z+)
     /// of the bounds. Useful when working with UI layout bounds.
     /// <https://stereokit.net/Pages/StereoKit/Bounds/TLB.html>
+    ///
+    /// see also [Bounds::tlb]
+    /// ### Examples
+    ///```
+    /// use stereokit_rust::maths::{Vec3, Bounds};
+    ///
+    /// let bounds = Bounds::bounds_centered([1.0, 1.0, 1.0]);
+    ///
+    /// assert_eq!(bounds.tlb(), Vec3{x:0.5, y:0.5, z: 0.5});
+    ///```
     #[inline]
     pub fn tlb(&self) -> Vec3 {
         self.center + self.dimensions / 2.0
@@ -2517,7 +3090,39 @@ impl MulAssign<Vec3> for Bounds {
 ///
 /// This plane is stored using the ax + by + cz + d = 0 formula, where the normal is a,b,c, and the d is, well, d.
 /// <https://stereokit.net/Pages/StereoKit/Plane.html>
-#[derive(Copy, Clone, Debug, Default, PartialEq)]
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{maths::{Vec3, Matrix, Plane},
+///                      mesh::Mesh, material::Material, util::named_colors};
+///
+/// let plane_mesh = Mesh::generate_plane_up([1.0,1.0], None, true);
+/// let mut material_plane = Material::pbr();
+///
+/// let transform_wall = Matrix::tr(&([-0.5, 0.0, 0.0].into()),
+///                                 &([0.0, 0.0, 90.0].into()));
+/// let transform_floor = Matrix::t(  [0.0, -0.5, 0.0]);
+///
+/// let wall =   Plane::new (Vec3::X, 0.5);
+/// let wall_b = Plane::from_point( [-0.5, -1.1, -1.1].into(), Vec3::X);
+/// let wall_c = Plane::from_points([-0.5, -2.2, -2.2],
+///                                 [-0.5, -3.3, -3.3],
+///                                 [-0.5, -4.4, -14.4]);
+///
+/// assert_eq!(wall.closest(Vec3::Y), Vec3 {x:-0.5, y:1.0, z:0.0});
+/// assert_eq!(wall_b.closest(Vec3::Y), Vec3 {x:-0.5, y:1.0, z:0.0});
+/// assert_eq!(wall_c.closest(Vec3::Y), Vec3 {x:-0.5, y:1.0, z:0.0});
+/// assert_eq!(wall, wall_b);
+/// //assert_eq!(wall, wall_c); // differents but the same
+///
+/// filename_scr = "screenshots/plane.jpeg";
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+///     plane_mesh.draw(token, &material_plane, transform_wall, Some(named_colors::CYAN.into()), None);
+///     plane_mesh.draw(token, &material_plane, transform_floor, Some(named_colors::BLACK.into()), None);
+/// );
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/plane.jpeg" alt="screenshot" width="200">
+#[derive(Copy, Clone, Debug, Default)]
 #[repr(C)]
 pub struct Plane {
     /// The direction the plane is facing.
@@ -2526,10 +3131,19 @@ pub struct Plane {
     /// the origin to the surface of the plane.
     pub d: f32,
 }
+
 /// AsRef
 impl AsRef<Plane> for Plane {
     fn as_ref(&self) -> &Plane {
         self
+    }
+}
+
+///  Warning: Equality with a precision of 0.1 millimeter
+impl PartialEq for Plane {
+    ///  Warning: Equality with a precision of 0.1 millimeter
+    fn eq(&self, other: &Self) -> bool {
+        self.normal == other.normal && self.d - other.d < 0.0001
     }
 }
 
@@ -2568,14 +3182,27 @@ impl Plane {
     }
 
     /// Creates a plane from 3 points that are directly on that plane.
+    /// Unstable as some normal with NaN values may be created if the points are aligned.
     ///
     /// <https://stereokit.net/Pages/StereoKit/Plane/Plane.html>
+    ///
     /// ## Examples
     /// ```
     /// use stereokit_rust::maths::{Plane,Vec3};
-    /// let ground = Plane::from_points(Vec3::X, Vec3::Z, Vec3::X + Vec3::Z);
-    /// assert_eq!(ground.d , 0.0);
+    /// let ground = Plane::from_points([1.0, 1.5, 0.0],
+    ///                                 [0.0, 1.5, 1.0],
+    ///                                 [1.0, 1.5, 1.0]);
+    /// assert_eq!(ground.d , 1.5);
+    /// assert!(ground.normal.y + 1.0 < 0.0001);
+    ///
+    /// let wall_c = Plane::from_points([-0.5, -0.4, -1.0],
+    ///                                 [-0.5, 0.0, 3.0],
+    ///                                 [-0.5, 0.3, -4.0]);
+    /// println! ("{:?}", wall_c);
+    /// assert_eq!(wall_c.d , 0.5);
+    /// assert!(wall_c.normal.x - 1.0 < 0.0001);
     /// ```
+    #[deprecated(since = "0.4.0", note = "Unstable! use `Plane::from_point` or `Plane::new` instead")]
     #[inline]
     pub fn from_points<V: Into<Vec3>>(point_on_plane1: V, point_on_plane2: V, point_on_plane3: V) -> Plane {
         let p1 = point_on_plane1.into();
@@ -2583,7 +3210,18 @@ impl Plane {
         let p3 = point_on_plane3.into();
         let dir1 = p2 - p1;
         let dir2 = p2 - p3;
-        let normal = Vec3::cross(dir1, dir2).get_normalized();
+        let mut normal = Vec3::cross(dir1, dir2).get_normalized();
+        if normal.z.is_nan() {
+            let dir1 = p1 - p3;
+            let dir2 = p1 - p2;
+            normal = Vec3::cross(dir1, dir2).get_normalized();
+            if normal.z.is_nan() {
+                let dir1 = p3 - p1;
+                let dir2 = p3 - p2;
+                normal = Vec3::cross(dir1, dir2).get_normalized();
+            }
+        }
+
         //let plane0 = Plane { normal, d: 0.0 };
         //let p0 = plane0.closest(p2);
         //Plane { normal, d: Vec3::distance(p0, p2) }
@@ -2595,7 +3233,7 @@ impl Plane {
     /// Finds the closest point on this plane to the given point!
     /// <https://stereokit.net/Pages/StereoKit/Plane/Closest.html>
     ///
-    /// see also [`crate::maths::plane_point_closest`]
+    /// see also [`plane_point_closest`]
     /// ## Examples
     /// ```
     /// use stereokit_rust::maths::{Plane,Vec3};
@@ -2617,7 +3255,7 @@ impl Plane {
     /// * ray - The ray we're checking with.
     ///
     /// Returns the intersection point or None if there isn't an instersection
-    /// see also [`crate::maths::plane_ray_intersect`]
+    /// see also [`plane_ray_intersect`] same as [`Ray::intersect_plane`]
     #[inline]
     pub fn intersect(&self, ray: Ray) -> Option<Vec3> {
         let mut pt = Vec3::default();
@@ -2633,7 +3271,7 @@ impl Plane {
     /// * line_end - End of the line.
     ///
     /// Returns the intersection point or None if there isn't an instersection
-    /// see also [`crate::maths::plane_line_intersect`]
+    /// see also [`plane_line_intersect`]
     #[inline]
     pub fn intersect_line<V: Into<Vec3>>(&self, line_start: V, line_end: V) -> Option<Vec3> {
         let mut pt = Vec3::default();
@@ -2650,14 +3288,50 @@ impl Display for Plane {
         write!(f, "[normal:{} distance:{}]", self.normal, self.d)
     }
 }
+
 /// Pose represents a location and orientation in space, excluding scale! The default value of a Pose use
 /// Pose.Identity .
 /// <https://stereokit.net/Pages/StereoKit/Pose.html>
+///
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{ui::Ui, maths::{Vec3, Pose, Matrix}, model::Model };
+///
+/// let plane = Model::from_file("plane.glb", None).unwrap_or_default();
+/// let bounds = plane.get_bounds();
+/// let mut handle_pose = Pose::look_at(
+///     [0.0, -5.5, -10.0], (Vec3::Z + Vec3::X) * 100.0);
+///
+/// let mut window_pose = Pose::new(
+///     [0.0, 0.05, 0.90], Some([0.0, 200.0, 0.0].into()));
+///
+/// filename_scr = "screenshots/pose.jpeg";
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+///     Ui::handle_begin( "Model Handle", &mut handle_pose,
+///                       bounds, false, None, None);
+///     plane.draw(token, Matrix::IDENTITY, None, None);
+///     Ui::handle_end();
+///
+///     Ui::window_begin("My Window", &mut window_pose, None, None, None);
+///     Ui::text("My Text", None, None, None, Some(0.14), None, None);
+///     Ui::window_end();
+/// );
+/// ```
+///
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/pose.jpeg" alt="screenshot" width="200">
 #[repr(C)]
-#[derive(Default, Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Pose {
     pub position: Vec3,
     pub orientation: Quat,
+}
+
+impl Default for Pose {
+    /// Position is Vec3::ZERO, and orientation is Quat::IDENTITY (no rotation)
+    fn default() -> Self {
+        Pose::IDENTITY
+    }
 }
 
 impl Pose {
@@ -2667,6 +3341,16 @@ impl Pose {
     /// Basic initialization constructor! Just copies in the provided values directly, and uses Identity for the
     /// orientation.
     /// <https://stereokit.net/Pages/StereoKit/Pose/Pose.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Pose};
+    /// let mut handle_pose = Pose::new( [0.0, 0.05, 0.90], None);
+    ///
+    /// let mut window_pose = Pose::new(
+    ///     [0.0, 0.05, 0.90], Some([0.0, 180.0 * 4.0, 0.0].into()));
+    ///
+    /// assert_eq!(handle_pose, window_pose);
     #[inline]
     pub fn new(position: impl Into<Vec3>, orientation: Option<Quat>) -> Self {
         let orientation = orientation.unwrap_or(Quat::IDENTITY);
@@ -2675,6 +3359,16 @@ impl Pose {
 
     /// Interpolates between two poses! It is unclamped, so values outside of (0,1) will extrapolate their position.
     /// <https://stereokit.net/Pages/StereoKit/Pose/Lerp.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Pose};
+    ///
+    /// let mut pose1 = Pose::new( Vec3::Y, None);
+    /// let mut pose2 = Pose::new( Vec3::Y, Some([0.0, 45.0, 0.0].into()));
+    /// let mut pose3 = Pose::new( Vec3::Y, Some([0.0, 90.0, 0.0].into()));
+    ///
+    /// assert_eq!(Pose::lerp(pose1, pose3, 0.5), pose2);
     #[inline]
     pub fn lerp(a: impl Into<Pose>, b: impl Into<Pose>, percent: f32) -> Self {
         let a = a.into();
@@ -2688,6 +3382,13 @@ impl Pose {
     /// Creates a Pose that looks from one location in the direction of another location. This leaves “Up” as the +Y
     /// axis.
     /// <https://stereokit.net/Pages/StereoKit/Pose/LookAt.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Pose};
+    ///
+    /// let mut pose1 = Pose::look_at(Vec3::ZERO, Vec3::NEG_Z );
+    /// assert_eq!(pose1, Pose::default());
     #[inline]
     pub fn look_at(from: impl Into<Vec3>, at: impl Into<Vec3>) -> Self {
         let from = from.into();
@@ -2698,6 +3399,14 @@ impl Pose {
     /// Converts this pose into a transform matrix.
     /// <https://stereokit.net/Pages/StereoKit/Pose/ToMatrix.html>
     /// * scale - Let you add a scale factor if needed.
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Matrix, Pose};
+    ///
+    /// let pose1 = Pose::IDENTITY;
+    ///
+    /// assert_eq!(pose1.to_matrix(None), Matrix::IDENTITY);    
     #[inline]
     pub fn to_matrix(&self, scale: Option<Vec3>) -> Matrix {
         match scale {
@@ -2709,9 +3418,19 @@ impl Pose {
     /// Calculates the forward direction from this pose. This is done by multiplying the orientation with
     /// Vec3::new(0, 0, -1). Remember that Forward points down the -Z axis!
     /// <https://stereokit.net/Pages/StereoKit/Pose/Forward.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3,  Pose};
+    ///
+    /// let pose1 = Pose::default();
+    /// assert_eq!(pose1.get_forward(), Vec3::NEG_Z);    
+    ///
+    /// let pose2 = Pose::look_at(Vec3::new(1.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 0.0));
+    /// assert_eq!(pose2.get_forward(), Vec3::NEG_X);    
     #[inline]
     pub fn get_forward(&self) -> Vec3 {
-        self.orientation.mul_vec3(Vec3::new(0.0, 0.0, -1.0))
+        self.orientation.mul_vec3(Vec3::FORWARD)
     }
 
     /// This creates a ray starting at the Pose’s position, and pointing in the ‘Forward’ direction. The Ray
@@ -2719,13 +3438,35 @@ impl Pose {
     /// <https://stereokit.net/Pages/StereoKit/Pose/Ray.html>
     ///
     /// see also [`Ray`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Pose, Ray};
+    ///
+    /// let pose1 = Pose::default();
+    /// let ray_forward = Ray::new( Vec3::ZERO, Vec3::NEG_Z);
+    /// assert_eq!(pose1.get_ray(), ray_forward);    
+    ///
+    /// let pose2 = Pose::look_at(Vec3::new(1.0, 0.0, 0.0), Vec3::new(1.0, 2.0, 0.0));
+    /// let ray_to_the_left = Ray::new(Vec3::X, Vec3::Y);
+    /// assert_eq!(pose2.get_ray(), ray_to_the_left);   
     #[inline]
     pub fn get_ray(&self) -> Ray {
-        Ray { position: self.position, direction: Vec3::new(0.0, 0.0, -1.0) }
+        Ray { position: self.position, direction: self.orientation.mul_vec3(Vec3::FORWARD) }
     }
 
     /// Calculates the right (+X) direction from this pose. This is done by multiplying the orientation with Vec3.Right.
     /// <https://stereokit.net/Pages/StereoKit/Pose/Right.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Pose, Ray};
+    ///
+    /// let pose1 = Pose::default();
+    /// assert_eq!(pose1.get_right(), Vec3::X);    
+    ///
+    /// let pose2 = Pose::look_at(Vec3::new(1.0, 0.0, 0.0), Vec3::new(1.0, 2.0, 3.0));
+    /// assert_eq!(pose2.get_right(), Vec3::NEG_X);  
+    /// ```
     #[inline]
     pub fn get_right(&self) -> Vec3 {
         self.orientation.mul_vec3(Vec3::RIGHT)
@@ -2733,6 +3474,17 @@ impl Pose {
 
     /// Calculates the up (+Y) direction from this pose. This is done by multiplying the orientation with Vec3.Up.
     /// <https://stereokit.net/Pages/StereoKit/Pose/Up.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Pose, Ray};
+    ///
+    /// let pose1 = Pose::default();
+    /// assert_eq!(pose1.get_up(), Vec3::Y);    
+    ///
+    /// let pose2 = Pose::look_at(Vec3::new(1.0, 0.0, 0.0), Vec3::new(2.0, 0.0, 3.0));
+    /// assert_eq!(pose2.get_up(), Vec3::Y);  
+    /// ```
     #[inline]
     pub fn get_up(&self) -> Vec3 {
         self.orientation.mul_vec3(Vec3::UP)
@@ -2747,12 +3499,41 @@ impl Display for Pose {
     }
 }
 
-/// fluent syntax for Sphere.
 /// Represents a sphere in 3D space! Composed of a center point and a radius, can be used for raycasting, collision,
 /// visibility, and other things!
-///
 /// <https://stereokit.net/Pages/StereoKit/Sphere.html>
-#[derive(Copy, Clone, Debug, Default)]
+///
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{maths::{Vec3, Matrix, Sphere, Ray}, system::Lines,
+///     mesh::Mesh, material::Material, util::named_colors};
+///
+/// let sphere = Sphere::new(Vec3::ZERO, 0.5);
+/// let sphere_mesh = Mesh::generate_sphere(sphere.radius * 2.0, Some(12));
+/// let mut material_sphere = Material::pbr().copy();
+/// material_sphere.color_tint(named_colors::GOLD)
+///                .get_all_param_info().set_float("border_size", 0.05);
+///
+/// let scale = 0.1;
+/// let transform = Matrix::t(sphere.center);
+/// let ray_x = Ray::new(Vec3::X, Vec3::NEG_X);
+/// let ray_y = Ray::new(Vec3::Y, Vec3::NEG_Y);
+/// let contact_x = sphere.intersect(ray_x).expect("X Should be there");
+/// let contact_y = sphere.intersect(ray_y).expect("Y Should be there");
+///
+/// assert_eq!(contact_x, Vec3::X * sphere.radius);
+/// assert_eq!(contact_y, Vec3::Y * sphere.radius);
+///
+/// filename_scr = "screenshots/sphere.jpeg";
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+///     sphere_mesh.draw(token, &material_sphere, transform, None, None);
+///     Lines::add_ray(token, ray_x, 0.30, named_colors::GREEN, None, 0.04);
+///     Lines::add_ray(token, ray_y, 0.30, named_colors::BLUE, None, 0.04);
+/// );
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sphere.jpeg" alt="screenshot" width="200">
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 #[repr(C)]
 pub struct Sphere {
     /// Center of the sphere
@@ -2775,6 +3556,16 @@ unsafe extern "C" {
 impl Sphere {
     /// Creates a Sphere directly from the ax + by + cz + d = 0 formula!
     /// <https://stereokit.net/Pages/StereoKit/Sphere.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Sphere};
+    ///
+    /// let sphere = Sphere::new(Vec3::ZERO, 0.5);
+    /// let sphere_b = Sphere {center : Vec3::ZERO, radius : 0.5};
+    ///
+    /// assert_eq!(sphere, sphere_b);
+    /// ```
     #[inline]
     pub fn new<V: Into<Vec3>>(center: V, radius: f32) -> Sphere {
         Sphere { center: center.into(), radius }
@@ -2783,7 +3574,16 @@ impl Sphere {
     /// A fast check to see if the given point is contained in or on a sphere!
     /// <https://stereokit.net/Pages/StereoKit/Sphere/Contains.html>
     ///
-    /// see also [`crate::maths::sphere_point_contains`]
+    /// see also [`sphere_point_contains`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Sphere};
+    ///
+    /// let sphere = Sphere::new(Vec3::ZERO, 0.5);
+    ///
+    /// assert!(sphere.contains(Vec3::ONE * 0.28), "Should be contained");
+    /// assert!(!sphere.contains(Vec3::ONE * 0.29), "Should not be contained");
+    /// ```    
     #[inline]
     pub fn contains<V: Into<Vec3>>(&self, point: V) -> bool {
         unsafe { sphere_point_contains(*self, point.into()) != 0 }
@@ -2795,7 +3595,16 @@ impl Sphere {
     /// * ray - A ray to intersect with
     ///
     /// Returns the closest intersection point to the ray's origin. Or None it there is no intersection.
-    /// see also [`crate::maths::sphere_ray_intersect`]
+    /// see also [`sphere_ray_intersect`] same as [`Ray::intersect_sphere`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Sphere, Ray};
+    ///
+    /// let sphere = Sphere::new(Vec3::ZERO, 0.5);
+    ///
+    /// assert_eq!(sphere.intersect(Ray::new(Vec3::Z, Vec3::NEG_Z)), Some(Vec3::Z * 0.5));
+    /// assert_ne!(sphere.intersect(Ray::new(Vec3::Z, Vec3::Z)),     None);
+    /// ```
     #[inline]
     pub fn intersect(&self, ray: Ray) -> Option<Vec3> {
         let mut pt = Vec3::default();
@@ -2813,7 +3622,7 @@ impl Display for Sphere {
 }
 /// A pretty straightforward 2D rectangle, defined by the top left corner of the rectangle, and its width/height.
 /// <https://stereokit.net/Pages/StereoKit/Rect.html>
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 #[repr(C)]
 pub struct Rect {
     /// The X axis position of the top left corner of the rectangle.
@@ -2835,6 +3644,16 @@ impl Default for Rect {
 impl Rect {
     /// Create a 2D rectangle, defined by the top left corner of the rectangle, and its width/height.
     /// <https://stereokit.net/Pages/StereoKit/Rect/Rect.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Rect};
+    ///
+    /// let rect = Rect::new(0.0, 0.0, 1920.0, 1080.0);
+    /// let rect_b = Rect {x:0.0, y:0.0, width:1920.0, height:1080.0};
+    ///
+    /// assert_eq!(rect, rect_b);
+    /// ```
     pub const fn new(x: f32, y: f32, width: f32, height: f32) -> Self {
         Self { x, y, width, height }
     }
@@ -2844,7 +3663,42 @@ impl Rect {
 /// geometrical shapes.
 /// <https://stereokit.net/Pages/StereoKit/Ray.html>
 ///
-#[derive(Debug, Copy, Clone, Default)]
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{maths::{Vec3, Matrix, Ray}, model::Model, system::Lines,
+///     mesh::Mesh, material::Material, util::named_colors};
+///
+/// let point = Mesh::sphere();
+/// let mut material_point =Material::unlit();
+/// let model = Model::from_file("center.glb", None).unwrap().copy();
+/// let cube = Mesh::cube();
+/// let mut material_cube =Material::ui_box();
+/// material_cube   .color_tint(named_colors::GOLD)
+///                 .get_all_param_info().set_float("border_size", 0.05);
+///
+/// let center = Vec3::new(0.0, -2.5, -2.5);
+/// let bounds = model.get_bounds();
+/// let transform = Matrix::tr(&center, &([0.0, 220.0, 0.0].into()));
+/// let transform_cube = Matrix::ts( bounds.center, bounds.dimensions) * transform;
+/// let inv = transform.get_inverse();
+///
+/// let ray_x = Ray::new(Vec3{x:4.0, y: 0.0, z:  -2.5}, Vec3::NEG_X);
+/// let inv_ray_x = inv.transform_ray(ray_x);
+/// let inv_contact_x = bounds.intersect(inv_ray_x).expect("should be a point of contact");
+/// let contact_x = transform.transform_point(inv_contact_x);
+/// let transform_point_x = Matrix::ts(contact_x, Vec3::ONE * 0.3);
+///
+/// filename_scr = "screenshots/ray.jpeg";
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+///     model.draw(token, transform, None, None);
+///     cube.draw(token, &material_cube, transform_cube, None, None);
+///     Lines::add_ray(token, ray_x, 1.5, named_colors::WHITE, None, 0.2);
+///     point.draw(token, &material_point, transform_point_x, Some(named_colors::RED.into()), None );
+/// );
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ray.jpeg" alt="screenshot" width="200">
+#[derive(Default, Debug, Copy, Clone, PartialEq)]
 #[repr(C)]
 pub struct Ray {
     /// The position or origin point of the Ray.
@@ -2865,6 +3719,16 @@ impl Ray {
     /// * position - The position or origin point of the Ray.
     /// * direction - The direction the ray is facing, typically does not require being a unit vector, or normalized
     ///   direction.
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Ray};
+    ///
+    /// let ray = Ray::new(Vec3::ZERO, Vec3::ONE);
+    /// let ray_b = Ray {position: Vec3::ZERO, direction: Vec3::ONE};
+    ///
+    /// assert_eq!(ray, ray_b);
+    /// ```
     #[inline]
     pub fn new<V: Into<Vec3>>(pos: V, dir: V) -> Self {
         Self { position: pos.into(), direction: dir.into() }
@@ -2876,8 +3740,18 @@ impl Ray {
     /// * b - Location the ray is pointing towards.
     ///
     /// Returns a ray from point a to point b. Not normalized.
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Ray};
+    ///
+    /// let ray = Ray::new(Vec3::ZERO, Vec3::ONE);
+    /// let ray_b = Ray::from_to( Vec3::ZERO, Vec3::ONE);
+    ///
+    /// assert_eq!(ray, ray_b);
+    /// ```
     #[inline]
-    pub fn from_to<V: Into<Vec3>>(&self, a: V, b: V) -> Ray {
+    pub fn from_to<V: Into<Vec3>>(a: V, b: V) -> Ray {
         let position = a.into();
         let direction = b.into() - position;
         Ray { position, direction }
@@ -2891,6 +3765,15 @@ impl Ray {
     ///   magnitude. If self.direction is normalized, this is functionally the distance.
     ///
     /// Returns the point at position + direction*percent
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Ray};
+    ///
+    /// let ray = Ray::new(Vec3::ZERO, Vec3::ONE);
+    ///
+    /// assert_eq!(ray.get_at(3.0), Vec3::ONE * 3.0);
+    /// ```
     #[inline]
     pub fn get_at(&self, percent: f32) -> Vec3 {
         self.position + self.direction * percent
@@ -2902,7 +3785,16 @@ impl Ray {
     /// * to - Any point in the same coordinate space as the  Ray.
     ///
     /// Returns the point on the ray that's closest to the given point.
-    /// see also [`crate::maths::ray_point_closest`]
+    /// see also [`ray_point_closest`]
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Plane, Ray};
+    ///
+    /// let ray = Ray::new(Vec3::ZERO, Vec3::ONE);
+    ///
+    /// assert_eq!(ray.closest(Vec3::Z), Vec3::ONE);
+    /// ```
     #[inline]
     pub fn closest<V: Into<Vec3>>(&self, to: V) -> Vec3 {
         unsafe { ray_point_closest(*self, to.into()) }
@@ -2913,9 +3805,19 @@ impl Ray {
     /// * plane - Any plane you want to intersect with.
     ///
     /// Returns intersection point if there's an intersection information or None if there's no intersection
-    /// see also [`crate::maths::plane_ray_intersect`]
+    /// see also [`plane_ray_intersect`] same as [`Plane::intersect`]
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Plane, Ray};
+    ///
+    /// let ray = Ray::new(Vec3::ZERO, Vec3::ONE);
+    /// let plane = Plane::new(Vec3::NEG_Y, 2.5);
+    ///
+    /// assert_eq!(ray.intersect_plane(plane), Some(Vec3::ONE * 2.5));
+    /// ```
     #[inline]
-    pub fn intersect(&self, plane: Plane) -> Option<Vec3> {
+    pub fn intersect_plane(&self, plane: Plane) -> Option<Vec3> {
         let mut pt = Vec3::default();
         match unsafe { plane_ray_intersect(plane, *self, &mut pt) != 0 } {
             true => Some(pt),
@@ -2929,7 +3831,17 @@ impl Ray {
     ///
     /// Returns the closest intersection point to the ray origin if there's an intersection information or None if
     /// there's no intersection
-    /// see also [`crate::maths::sphere_ray_intersect`]
+    /// see also [`sphere_ray_intersect`] same as [`Sphere::intersect`]
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Sphere, Ray};
+    ///
+    /// let ray = Ray::new(Vec3::ZERO, Vec3::ONE);
+    /// let sphere = Sphere::new(Vec3::Y, 0.5);
+    ///
+    /// assert_eq!(ray.intersect_sphere(sphere), Some(Vec3::ONE * 0.5));
+    /// ```
     #[inline]
     pub fn intersect_sphere(&self, sphere: Sphere) -> Option<Vec3> {
         let mut pt = Vec3::default();
@@ -2945,9 +3857,33 @@ impl Ray {
     ///
     /// Returns the closest intersection point to the ray origin if there's an intersection information or None if
     /// there's no intersection
-    /// see also [`crate::maths::bounds_ray_intersect`]
+    /// see also [`bounds_ray_intersect`] same as [`Bounds::intersect`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Bounds, Matrix, Ray};
+    ///
+    /// // A cube of 1 meter per side at this position, aligned with x y and z axis.
+    /// let box_transform = Matrix::t([10.0, 1.0, 2.0]);
+    /// let box_bounds = Bounds::bounds_centered([1.0,1.0,1.0]);
+    ///
+    /// let inv = box_transform.get_inverse();
+    /// let ray1 = inv.transform_ray(Ray::new([10.2, 1.3, 2.4],[0.0, 1.0, 0.0]));
+    /// let ray2 = inv.transform_ray(Ray::new([10.9, 1.8, 2.6],[0.0, 0.0, 1.0]));
+    /// let ray3 = inv.transform_ray(Ray::new([10.5, 2.0, 2.7],[1.0, 0.0, 1.0]));
+    ///
+    /// assert!(ray1.intersect_bounds(box_bounds).is_some(),  "should be a point of contact");
+    /// assert_eq!(ray2.intersect_bounds(box_bounds), None);
+    /// assert_eq!(ray3.intersect_bounds(box_bounds), None);
+    ///
+    /// // We want the contact point for ray1
+    /// let contact_point = box_bounds.intersect(ray1)
+    ///         .expect ("There should be a point of contact");
+    ///
+    /// let contact_point = box_transform.transform_point(contact_point);
+    /// assert_eq!(contact_point,  [10.2, 0.5, 2.4 ].into());
+    /// ```
     #[inline]
-    pub fn intersect_bound(&self, bounds: Bounds) -> Option<Vec3> {
+    pub fn intersect_bounds(&self, bounds: Bounds) -> Option<Vec3> {
         let mut pt = Vec3::default();
         match unsafe { bounds_ray_intersect(bounds, *self, &mut pt) != 0 } {
             true => Some(pt),
@@ -2968,7 +3904,46 @@ impl Ray {
     ///   transformed back into world space later.
     /// - The indice of the mesh where the intersection occurs.
     ///
-    /// see also [`crate::mesh::mesh_ray_intersect`]    
+    /// see also [`crate::mesh::mesh_ray_intersect`] [`Ray::intersect_mesh_to_ptr`]  same as [`crate.mesh.Mesh::intersect`]    
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix, Quat, Ray}, system::Lines,
+    ///     util::{named_colors}, mesh::Mesh, material::{Material, Cull}};
+    ///
+    /// // Create Meshes
+    /// let cube = Mesh::generate_cube(Vec3::ONE * 0.8, None);
+    /// let sphere = Mesh::generate_sphere(1.0, Some(4));
+    ///
+    /// let material = Material::pbr().copy();
+    /// let transform = Matrix::r(Quat::from_angles(40.0, 50.0, 20.0));
+    /// let inv = transform.get_inverse();
+    ///
+    /// let ray = Ray::new([-3.0, 2.0, 0.5 ], [3.0, -2.0, -0.25]);
+    /// let inv_ray = inv.transform_ray(ray);
+    ///
+    /// let (contact_sphere, ind_sphere) = inv_ray.intersect_mesh( &sphere, Some(Cull::Front))
+    ///     .expect("Ray should touch sphere");
+    /// let (contact_cube, ind_cube) = inv_ray.intersect_mesh( &cube, Some(Cull::Back))
+    ///     .expect("Ray should touch cube");
+    /// assert_eq!(ind_sphere, 672);
+    /// assert_eq!(ind_cube, 9);
+    ///
+    /// let transform_contact_sphere = Matrix::ts(
+    ///     transform.transform_point(contact_sphere), Vec3::ONE * 0.1);
+    /// let transform_contact_cube = Matrix::ts(
+    ///     transform.transform_point(contact_cube), Vec3::ONE * 0.1);
+    ///
+    /// filename_scr = "screenshots/intersect_meshes.jpeg";
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     cube.draw(token, &material, transform, Some(named_colors::CYAN.into()), None);
+    ///     sphere.draw(token, &material, transform, Some(named_colors::BLUE.into()), None);
+    ///     Lines::add_ray(token, ray, 2.2, named_colors::WHITE, None, 0.02);
+    ///     sphere.draw(token, &material, transform_contact_cube, Some(named_colors::YELLOW.into()), None );
+    ///     sphere.draw(token, &material, transform_contact_sphere, Some(named_colors::RED.into()), None );
+    /// );
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/intersect_meshes.jpeg" alt="screenshot" width="200">
     #[inline]
     pub fn intersect_mesh(&self, mesh: &Mesh, cull: Option<Cull>) -> Option<(Vec3, VindT)> {
         let mut out_ray = Ray::default();
@@ -2996,7 +3971,46 @@ impl Ray {
     ///   If None has default value of Cull::Back.
     ///
     /// Returns true if an intersection occurs, false otherwise!
-    /// see also [`crate::maths::mesh_ray_intersect`]
+    /// see also [`mesh_ray_intersect`] [`Ray::intersect_mesh`] same as [`crate.mesh.Mesh::intersect_to_ptr`]  
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix, Quat, Ray}, system::Lines,
+    ///     util::{named_colors}, mesh::Mesh, material::{Material, Cull}};
+    ///
+    /// // Create Meshes
+    /// let cube = Mesh::generate_cube(Vec3::ONE * 0.8, None);
+    /// let sphere = Mesh::generate_sphere(1.0, Some(4));
+    ///
+    /// let material = Material::pbr().copy();
+    /// let transform = Matrix::r(Quat::from_angles(40.0, 50.0, 20.0));
+    /// let inv = transform.get_inverse();
+    ///
+    /// let ray = Ray::new([-3.0, 2.0, 0.5 ], [3.0, -2.0, -0.25]);
+    /// let inv_ray = inv.transform_ray(ray);
+    ///
+    /// let (mut contact_sphere_ray, mut ind_sphere) = (Ray::default(), 0u32);
+    /// assert!(inv_ray.intersect_mesh_to_ptr(
+    ///             &sphere, Some(Cull::Front),
+    ///             &mut contact_sphere_ray, &mut ind_sphere)
+    ///     ,"Ray should touch sphere");
+    ///
+    /// let (mut contact_cube_ray, mut ind_cube) = (Ray::default(), 0u32);
+    /// assert!( inv_ray.intersect_mesh_to_ptr(
+    ///             &cube, Some(Cull::Back),
+    ///             &mut contact_cube_ray, &mut ind_cube)
+    ///     ,"Ray should touch cube");
+    ///
+    /// assert_eq!(ind_sphere, 672);
+    /// assert_eq!(ind_cube, 9);
+    ///
+    /// assert_eq!(transform.transform_ray(contact_sphere_ray),
+    ///         Ray { position:  Vec3 { x: 0.36746234, y: -0.244975, z: 0.21937825 },
+    ///               direction: Vec3 { x: 0.58682406, y: -0.6427875, z: 0.49240398 }});
+    /// assert_eq!(transform.transform_ray(contact_cube_ray),
+    ///         Ray { position:  Vec3 { x: -0.39531866, y: 0.26354572, z: 0.2829433 },
+    ///               direction: Vec3 { x: -0.77243483, y: -0.2620026, z: 0.57853174 } });
+    /// ```
     #[inline]
     #[allow(clippy::not_unsafe_ptr_arg_deref)]
     pub fn intersect_mesh_to_ptr(
@@ -3019,7 +4033,35 @@ impl Ray {
     ///
     /// Returns the intersection point of the ray and the model, if an intersection occurs. This is in model space, and
     /// must be transformed back into world space later.
-    /// see also [`crate::maths::model_ray_intersect`]
+    /// see also [`model_ray_intersect`] [`Ray::intersect_model_to_ptr`] same as [`crate.model.Model::intersect`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix, Ray}, model::Model, system::Lines,
+    ///     mesh::Mesh, material::{Material, Cull}, util::named_colors};
+    ///
+    /// let model = Model::from_file("center.glb", None).unwrap().copy();
+    /// let transform = Matrix::tr(&([0.0,-2.25,-2.00].into()),
+    ///                            &([0.0, 140.0, 0.0].into()));
+    ///
+    /// let inv_ray = Ray::new([1.0, 2.0, -3.0], [-1.5, 2.0, 3.0]);
+    ///
+    /// let contact_model = inv_ray.intersect_model( &model, Some(Cull::Back))
+    ///     .expect("Ray should touch model");
+    ///
+    /// let ray = transform.transform_ray(inv_ray);
+    /// let transform_contact_model = Matrix::t(transform.transform_point(contact_model));
+    /// let point = Mesh::generate_sphere(0.2, Some(2));
+    /// let material = Material::pbr();
+    ///
+    /// filename_scr = "screenshots/intersect_model.jpeg";
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     model.draw(token, transform, None, None);
+    ///     Lines::add_ray(token, ray, 1.2, named_colors::WHITE, None, 0.02);
+    ///     point.draw(token, &material, transform_contact_model, Some(named_colors::RED.into()), None );
+    /// );
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/intersect_model.jpeg" alt="screenshot" width="200">
     #[inline]
     pub fn intersect_model(&self, model: &Model, cull: Option<Cull>) -> Option<Vec3> {
         let mut out_ray = Ray::default();
@@ -3042,7 +4084,27 @@ impl Ray {
     ///   guaranteed to be normalized, especially if your own model->world transform contains scale/skew in it.
     ///
     /// Returns - true if an intersection occurs, false otherwise!
-    /// see also [`crate::maths::model_ray_intersect`]
+    /// see also [`model_ray_intersect`] [`Ray::intersect_model`] same as [`crate.model.Model::intersect_to_ptr`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix, Ray}, model::Model,
+    ///     mesh::Mesh, material::{Material, Cull}, util::named_colors};
+    ///
+    /// let model = Model::from_file("center.glb", None).unwrap().copy();
+    /// let transform = Matrix::tr(&([0.0,-2.25,-2.00].into()),
+    ///                            &([0.0, 140.0, 0.0].into()));
+    ///
+    /// let inv_ray = Ray::new([1.0, 2.0, -3.0], [-1.5, 2.0, 3.0]);
+    ///
+    /// let mut inv_contact_model_ray = Ray::default();
+    /// assert!(inv_ray.intersect_model_to_ptr( &model, Some(Cull::Back), &mut inv_contact_model_ray)
+    ///     ,"Ray should touch model");
+    ///
+    /// let contact_model_ray = transform.transform_ray(inv_contact_model_ray);
+    /// assert_eq!(contact_model_ray,
+    ///            Ray { position:  Vec3 { x: -0.3688636, y: 1.2613544, z: -1.3526915 },
+    ///                  direction: Vec3 { x: -0.4004621, y: -0.016381653, z: 0.9161662 } });
     #[inline]
     #[allow(clippy::not_unsafe_ptr_arg_deref)]
     pub fn intersect_model_to_ptr(&self, model: &Model, cull: Option<Cull>, out_model_space_at: *mut Ray) -> bool {
