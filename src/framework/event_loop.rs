@@ -403,7 +403,7 @@ impl<'a> SkClosures<'a> {
 /// constructor is called on a different one.
 /// <https://stereokit.net/Pages/StereoKit.Framework/IStepper.html>
 ///
-/// see also [`stereokit_macros::IStepper`]
+/// see also [`crate::IStepper`]
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!

@@ -120,11 +120,13 @@ impl AsRef<Material> for Material {
         self
     }
 }
+/// StereoKit internal type.
 #[repr(C)]
 #[derive(Debug)]
 pub struct _MaterialT {
     _unused: [u8; 0],
 }
+/// StereoKit ffi type.
 pub type MaterialT = *mut _MaterialT;
 
 unsafe extern "C" {
@@ -188,8 +190,8 @@ impl Default for Material {
 impl Material {
     /// Creates a material from a shader, and uses the shader’s default settings.
     /// <https://stereokit.net/Pages/StereoKit/Material/Material.html>
-    /// * shader - Any valid shader.
-    /// * id - If None the id will be set to a default value "auto/asset_???"
+    /// * `shader` - Any valid shader.
+    /// * `id` - If None the id will be set to a default value "auto/asset_???"
     ///
     /// see also [`material_create`][`material_set_id`]
     /// ### Examples
@@ -216,8 +218,8 @@ impl Material {
     /// Loads a Shader asset and creates a Material using it. If the shader fails to load, an error will be returned,
     /// if so you can use unwrap_or_default() to get the default.
     /// <https://stereokit.net/Pages/StereoKit/Material/Material.html>
-    /// * id - If None the id will be set to a default value "auto/asset_???"
-    /// * shader_file_name - The filename of a Shader asset.
+    /// * `id` - If None the id will be set to a default value "auto/asset_???"
+    /// * `shader_file_name` - The filename of a Shader asset.
     ///
     /// see also [`material_create`][`material_set_id`]
     /// ### Examples
@@ -285,7 +287,7 @@ impl Material {
     /// Creates a new Material asset with the same shader and properties! Draw calls with the new Material will not
     /// batch together with this one.
     /// <https://stereokit.net/Pages/StereoKit/Material/Copy.html>
-    /// * id - Which material are you looking for?
+    /// * `id` - Which material are you looking for?
     ///
     /// Returns a new Material asset with the same shader and properties if the id is found.
     /// see also [`material_copy_id`]
@@ -315,7 +317,7 @@ impl Material {
 
     /// Looks for a Material asset that’s already loaded, matching the given id!
     /// <https://stereokit.net/Pages/StereoKit/Material/Find.html>
-    /// * id - Which material are you looking for ?
+    /// * `id` - Which material are you looking for ?
     ///
     /// see also [`material_find`]
     /// ### Examples
@@ -368,8 +370,11 @@ impl Material {
     /// Non-canonical function of convenience!! Use this for Icons and other Ui Images
     /// Copy a Material and set a Tex image to its diffuse_tex. If the Tex fails to load, an error will be returned,
     /// if so you can use unwrap_or_default() to get the default.
-    /// <https://stereokit.net/Pages/StereoKit/Material/Material.html>
-    /// * id - If None the id will be set to a default value "auto/asset_???"
+    /// <https://stereokit.net/Pages/StereoKit/Tex/FromFile.html>
+    /// * `tex_file_name` - The file name of the texture to load.
+    /// * `srgb_data` - If true, the texture will be loaded as sRGB data.
+    /// * `priority` - The priority sort order for this asset in the async loading system. Lower values mean loading
+    ///   sooner.
     ///
     /// see also [Material::diffuse_tex] [`material_create`][`material_set_id`]
     /// ### Examples
@@ -606,8 +611,8 @@ impl Material {
         self
     }
 
-    /// For physically based shaders, metal is a texture that encodes metallic and roughness data into the ‘B’ and ‘G’ channels,
-    /// respectively. This represents the texture param ‘metal’.
+    /// For physically based shaders, metal is a texture that encodes metallic and roughness data into the ‘B’ and ‘G’
+    /// channels, respectively. This represents the texture param ‘metal’.
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
     /// see also [`Material::metallic_amount`]
@@ -638,9 +643,10 @@ impl Material {
         self
     }
 
-    /// The ‘normal map’ texture for the material! This texture contains information about the direction of the material’s surface,
-    /// which is used to calculate lighting, and make surfaces look like they have more detail than they actually do. Normals are in
-    /// Tangent Coordinate Space, and the RGB values map to XYZ values. This represents the texture param ‘normal’.
+    /// The ‘normal map’ texture for the material! This texture contains information about the direction of the
+    /// material’s surface, which is used to calculate lighting, and make surfaces look like they have more detail than
+    /// they actually do. Normals are in Tangent Coordinate Space, and the RGB values map to XYZ values. This represents
+    /// the texture param ‘normal’.
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
     /// see also [`material_set_param`]
@@ -670,8 +676,9 @@ impl Material {
         self
     }
 
-    /// Used by physically based shaders, this can be used for baked ambient occlusion lighting, or to remove specular reflections from
-    /// areas that are surrounded by geometry that would likely block reflections. This represents the texture param ‘occlusion’.
+    /// Used by physically based shaders, this can be used for baked ambient occlusion lighting, or to remove specular
+    /// reflections from areas that are surrounded by geometry that would likely block reflections. This represents the
+    /// texture param ‘occlusion’.
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
     /// see also [`material_set_param`]
@@ -791,7 +798,8 @@ impl Material {
 
     //--- Others parameters
 
-    /// What type of transparency does this Material use? Default is None. Transparency has an impact on performance, and draw order.
+    /// What type of transparency does this Material use? Default is None. Transparency has an impact on performance,
+    /// and draw order.
     /// Check the [`Transparency`] enum for details.
     /// <https://stereokit.net/Pages/StereoKit/Material/Transparency.html>
     ///
@@ -862,7 +870,9 @@ impl Material {
         self
     }
 
-    /// Should this material draw only the edges/wires of the mesh? This can be useful for debugging, and even some kinds of visualization work.
+    /// Should this material draw only the edges/wires of the mesh? This can be useful for debugging, and even some
+    /// kinds of visualization work.
+    ///
     /// Note that this may not work on some mobile OpenGL systems like Quest.
     /// <https://stereokit.net/Pages/StereoKit/Material/Wireframe.html>
     ///
@@ -882,8 +892,9 @@ impl Material {
         self
     }
 
-    /// How does this material interact with the ZBuffer? Generally DepthTest.Less would be normal behavior: don’t draw objects that are
-    /// occluded. But this can also be used to achieve some interesting effects, like you could use DepthTest.Greater to draw a glow that
+    /// How does this material interact with the ZBuffer? Generally [DepthTest::Less] would be normal behavior: don’t draw
+    /// objects that are occluded. But this can also be used to achieve some interesting effects, like you could use
+    /// [DepthTest::Greater] to draw a glow that
     /// indicates an object is behind something.
     /// <https://stereokit.net/Pages/StereoKit/Material/DepthTest.html>
     ///
@@ -903,9 +914,10 @@ impl Material {
         self
     }
 
-    /// Should this material write to the ZBuffer? For opaque objects, this generally should be true. But transparent objects writing to the
-    /// ZBuffer can be problematic and cause draw order issues. Note that turning this off can mean that this material won’t get properly
-    /// accounted for when the MR system is performing late stage reprojection. Not writing to the buffer can also be faster! :)
+    /// Should this material write to the ZBuffer? For opaque objects, this generally should be true. But transparent
+    /// objects writing to the ZBuffer can be problematic and cause draw order issues. Note that turning this off can
+    /// mean that this material won’t get properly accounted for when the MR system is performing late stage
+    /// reprojection. Not writing to the buffer can also be faster! :)
     /// <https://stereokit.net/Pages/StereoKit/Material/DepthWrite.html>
     ///
     /// see also [`material_set_depth_write`]
@@ -924,10 +936,11 @@ impl Material {
         self
     }
 
-    /// This property will force this material to draw earlier or later in the draw queue. Positive values make it draw later, negative makes
-    ///  it earlier. This can be helpful for tweaking performance! If you know an object is always going to be close to the user and likely
-    ///  to obscure lots of objects (like hands), drawing it earlier can mean objects behind it get discarded much faster! Similarly, objects
-    ///  that are far away (skybox!) can be pushed towards the back of the queue, so they’re more likely to be discarded early.
+    /// This property will force this material to draw earlier or later in the draw queue. Positive values make it draw
+    /// later, negative makes it earlier. This can be helpful for tweaking performance! If you know an object is always
+    /// going to be close to the user and likely to obscure lots of objects (like hands), drawing it earlier can mean
+    /// objects behind it get discarded much faster! Similarly, objects that are far away (skybox!) can be pushed
+    /// towards the back of the queue, so they’re more likely to be discarded early.
     /// <https://stereokit.net/Pages/StereoKit/Material/QueueOffset.html>
     ///
     /// see also [`material_set_queue_offset`]
@@ -946,8 +959,8 @@ impl Material {
         self
     }
 
-    /// Allows you to chain Materials together in a form of multi-pass rendering! Any time the Material is used, the chained Materials will
-    /// also be used to draw the same item.
+    /// Allows you to chain Materials together in a form of multi-pass rendering! Any time the Material is used, the
+    /// chained Materials will also be used to draw the same item.
     /// <https://stereokit.net/Pages/StereoKit/Material/Chain.html>
     ///
     /// see also [`material_set_chain`]
@@ -1375,13 +1388,21 @@ pub enum MaterialParam {
     Matrix = 6,
     /// Texture information!
     Texture = 7,
+    /// An i32, or 1 component array composed of i32 values
     Int = 8,
+    /// A 2 component array composed of i32 values
     Int2 = 9,
+    /// A 3 component array composed of i32 values
     Int3 = 10,
+    /// A 4 component array composed of i32 values
     Int4 = 11,
+    /// A u32, or 1 component array composed of u32 values
     UInt = 12,
+    /// A 2 component array composed of u32 values
     UInt2 = 13,
+    /// A 3 component array composed of u32 values
     UInt3 = 14,
+    /// A 4 component array composed of u32 values
     UInt4 = 15,
 }
 
@@ -1418,7 +1439,7 @@ impl Iterator for ParamInfos<'_> {
 impl<'a> ParamInfos<'a> {
     /// helper to get the infos with only a material
     /// <https://stereokit.net/Pages/StereoKit/Material/GetAllParamInfo.html>
-    /// * material - the material to get the param info from.
+    /// * `material` - the material to get the param info from.
     ///
     /// see also [`Material::get_all_param_info`]
     /// ### Examples
@@ -1437,7 +1458,7 @@ impl<'a> ParamInfos<'a> {
 
     /// Only way to see if a shader has a given parameter if you do not iterate over parameters.
     /// <https://stereokit.net/Pages/StereoKit/Material.html>
-    /// * name: The name of the parameter to check for.
+    /// * `name`: The name of the parameter to check for.
     ///
     /// see also [`material_has_param`]
     /// ### Examples
@@ -1461,9 +1482,9 @@ impl<'a> ParamInfos<'a> {
     /// data of the wrong size here, so pay extra attention to the size of your data here, and ensure it matched up with
     /// the shader!
     /// <https://stereokit.net/Pages/StereoKit/Material/SetData.html>
-    /// * name - The name of the parameter to set
-    /// * type_info - The type of the data being set.
-    /// * value - A pointer to the data being set.
+    /// * `name` - The name of the parameter to set
+    /// * `type_info` - The type of the data being set.
+    /// * `value` - A pointer to the data being set.
     ///
     /// <https://stereokit.net/Pages/StereoKit/Material/SetData.html>
     ///
@@ -1502,9 +1523,9 @@ impl<'a> ParamInfos<'a> {
     /// Add an info value (identified with an id) to the shader of this material. Be sure of using a pointer 'value'
     /// corresponding to the right type 'type_info'
     /// <https://stereokit.net/Pages/StereoKit/Material/SetData.html>
-    /// * id - the hash_fnv64_string value of the name of the parameter.
-    /// * type_info - the type of the parameter you want to set.
-    /// * value - a pointer to the data you want to set.
+    /// * `id` - the hash_fnv64_string value of the name of the parameter.
+    /// * `type_info` - the type of the parameter you want to set.
+    /// * `value` - a pointer to the data you want to set.
     ///
     /// see also [`ParamInfo`][`material_set_param_id`]
     ///    # Safety
@@ -1522,8 +1543,8 @@ impl<'a> ParamInfos<'a> {
     /// Sets a shader parameter with the given name to the provided value. If no parameter is found, nothing happens,
     /// and the value is not set!
     /// <https://stereokit.net/Pages/StereoKit/Material/SetBool.html>
-    /// * name - Name of the shader parameter.
-    /// * value - The new value to set.
+    /// * `name` - Name of the shader parameter.
+    /// * `value` - The new value to set.
     ///
     /// see also [`material_set_bool`]
     /// ### Examples
@@ -1548,8 +1569,8 @@ impl<'a> ParamInfos<'a> {
     /// Sets a shader parameter with the given name to the provided value. If no parameter is found, nothing happens,
     /// and the value is not set!
     /// <https://stereokit.net/Pages/StereoKit/Material/SetColor.html>
-    /// * name - Name of the shader parameter.
-    /// * color_gamma - The gamma space color for the shader to use.
+    /// * `name` - Name of the shader parameter.
+    /// * `color_gamma` - The gamma space color for the shader to use.
     ///
     /// see also [`material_set_color`]
     /// ### Examples
@@ -1576,8 +1597,8 @@ impl<'a> ParamInfos<'a> {
     /// Sets a shader parameter with the given name to the provided value. If no parameter is found, nothing happens,
     /// and the value is not set!
     /// <https://stereokit.net/Pages/StereoKit/Material/SetFloat.html>
-    /// * name - The name of the parameter to set.
-    /// * value - The value to set for the parameter.
+    /// * `name` - The name of the parameter to set.
+    /// * `value` - The value to set for the parameter.
     ///
     /// see also [`material_set_float`]
     /// ### Examples
@@ -1602,8 +1623,8 @@ impl<'a> ParamInfos<'a> {
     /// Sets a shader parameter with the given name to the provided value. If no parameter is found, nothing happens,
     /// and the value is not set!
     /// <https://stereokit.net/Pages/StereoKit/Material/SetInt.html>
-    /// * nanme - the name of the parameter to set
-    /// * value - up to 4 integer values
+    /// * `name` - the name of the parameter to set
+    /// * `value` - up to 4 integer values
     ///
     /// see also [`material_set_int`]
     /// see also [`material_set_int2`]
@@ -1645,8 +1666,8 @@ impl<'a> ParamInfos<'a> {
     /// Sets a shader parameter with the given name to the provided value. If no parameter is found, nothing happens,
     /// and the value is not set! Warning, this may work on Int values as you can see in the examples.
     /// <https://stereokit.net/Pages/StereoKit/Material/SetUInt.html>
-    /// * name - the name of the parameter to set
-    /// * value : up to 4 unsigned integer values
+    /// * `name` - the name of the parameter to set
+    /// * `value` : up to 4 unsigned integer values
     ///
     /// see also [`material_set_uint`]
     /// see also [`material_set_uint2`]
@@ -1690,8 +1711,8 @@ impl<'a> ParamInfos<'a> {
     /// Sets a shader parameter with the given name to the provided value. If no parameter is found, nothing happens,
     /// and the value is not set!
     /// <https://stereokit.net/Pages/StereoKit/Material/SetMatrix.html>
-    /// * name - The name of the parameter to set.
-    /// * value - The [Matrix] to set for the parameter.
+    /// * `name` - The name of the parameter to set.
+    /// * `value` - The [Matrix] to set for the parameter.
     ///
     /// see also [`material_set_matrix`]
     /// ### Examples
@@ -1719,8 +1740,8 @@ impl<'a> ParamInfos<'a> {
     /// Sets a shader parameter with the given name to the provided value. If no parameter is found, nothing happens,
     /// and the value is not set!
     /// <https://stereokit.net/Pages/StereoKit/Material/SetTexture.html>
-    /// * name - the name of the parameter to set
-    /// * value - the [Tex] to set for the parameter
+    /// * `name` - the name of the parameter to set
+    /// * `value` - the [Tex] to set for the parameter
     ///
     /// see also [`material_set_texture`]
     /// ### Examples
@@ -1746,8 +1767,8 @@ impl<'a> ParamInfos<'a> {
     /// Sets a shader parameter with the given name to the provided value. If no parameter is found, nothing happens,
     /// and the value is not set!
     /// <https://stereokit.net/Pages/StereoKit/Material/SetVector.html>
-    /// * name - the name of the parameter to set
-    /// * value - the [Vec2] to set for the parameter
+    /// * `name` - the name of the parameter to set
+    /// * `value` - the [Vec2] to set for the parameter
     ///
     /// see also [`material_set_vector2`]
     /// ### Examples
@@ -1773,8 +1794,8 @@ impl<'a> ParamInfos<'a> {
     /// Sets a shader parameter with the given name to the provided value. If no parameter is found, nothing happens,
     /// and the value is not set!
     /// <https://stereokit.net/Pages/StereoKit/Material/SetVector.html>
-    /// * name - the name of the parameter to set
-    /// * value - the [Vec3] to set for the parameter
+    /// * `name` - the name of the parameter to set
+    /// * `value` - the [Vec3] to set for the parameter
     ///
     /// see also [`material_set_vector2`]
     /// ### Examples
@@ -1800,8 +1821,8 @@ impl<'a> ParamInfos<'a> {
     /// Sets a shader parameter with the given name to the provided value. If no parameter is found, nothing happens,
     /// and the value is not set!
     /// <https://stereokit.net/Pages/StereoKit/Material/SetVector.html>
-    /// * name- The name of the parameter to set.
-    /// * value - the [Vec4] to set for the parameter
+    /// * `name`- The name of the parameter to set.
+    /// * `value` - the [Vec4] to set for the parameter
     ///
     /// see also [`material_set_vector4`]
     /// ### Examples
@@ -1838,7 +1859,7 @@ impl<'a> ParamInfos<'a> {
     /// Gets the value of a shader parameter with the given name. If no parameter is found, a default value of ‘false’
     /// will be returned.
     /// <https://stereokit.net/Pages/StereoKit/Material/GetBool.html>
-    /// * name - The name of the shader parameter to get.
+    /// * `name` - The name of the shader parameter to get.
     ///
     /// see also [`material_get_bool`]
     /// see example in [`ParamInfos::set_bool`]
@@ -1852,7 +1873,7 @@ impl<'a> ParamInfos<'a> {
     /// Gets the value of a shader parameter with the given name. If no parameter is found, a default value of ‘0’ will
     /// be returned.
     /// <https://stereokit.net/Pages/StereoKit/Material/GetFloat.html>
-    /// * name - The name of the shader parameter to get.
+    /// * `name` - The name of the shader parameter to get.
     ///
     /// see also [`material_get_float`]
     /// see example in [`ParamInfos::set_float`]
@@ -1866,7 +1887,7 @@ impl<'a> ParamInfos<'a> {
     /// Gets the value of a shader parameter with the given name. If no parameter is found, a default value of
     /// Vec2::ZERO will be returned.
     /// <https://stereokit.net/Pages/StereoKit/Material/GetVector2.html>
-    /// * name - The name of the shader parameter to get.
+    /// * `name` - The name of the shader parameter to get.
     ///
     /// see also [`material_get_vector2`]
     /// see example in [`ParamInfos::set_vector2`]
@@ -1880,7 +1901,7 @@ impl<'a> ParamInfos<'a> {
     /// Gets the value of a shader parameter with the given name. If no parameter is found, a default value of
     /// Vec3::ZERO will be returned.
     /// <https://stereokit.net/Pages/StereoKit/Material/GetVector3.html>
-    /// * name - The name of the shader parameter to get.
+    /// * `name` - The name of the shader parameter to get.
     ///
     /// see also [`material_get_vector3`]
     /// see example in [`ParamInfos::set_vector3`]
@@ -1894,7 +1915,7 @@ impl<'a> ParamInfos<'a> {
     /// Gets the value of a shader parameter with the given name. If no parameter is found, a default value of
     /// Vec4::ZERO will be returned.
     /// <https://stereokit.net/Pages/StereoKit/Material/GetVector4.html>
-    /// * name - The name of the shader parameter to get.
+    /// * `name` - The name of the shader parameter to get.
     ///
     /// see also [`material_get_vector4`]
     /// see example in [`ParamInfos::set_vector4`]
@@ -1908,7 +1929,7 @@ impl<'a> ParamInfos<'a> {
     /// Gets the value of a shader parameter with the given name. If no parameter is found, a default value of
     /// Color128::WHITE will be returned. Warning: This function returns a gamma color.
     /// <https://stereokit.net/Pages/StereoKit/Material/GetColor.html>
-    /// * name - The name of the shader parameter to get.
+    /// * `name` - The name of the shader parameter to get.
     ///
     /// see also [`material_get_color`]
     /// see example in [`ParamInfos::set_color`]
@@ -1922,7 +1943,7 @@ impl<'a> ParamInfos<'a> {
     /// Gets the value of a shader parameter with the given name. If no parameter is found, a default value of ‘0’ will
     /// be returned.
     /// <https://stereokit.net/Pages/StereoKit/Material/GetInt.html>
-    /// * name - The name of the shader parameter to get.
+    /// * `name` - The name of the shader parameter to get.
     ///
     /// see also [`material_get_int]
     /// see example in [`ParamInfos::set_int`]
@@ -1934,8 +1955,8 @@ impl<'a> ParamInfos<'a> {
     }
 
     /// Get int vector using unsafe material_get_param function
-    /// * name - The name of the shader parameter to get.
-    /// * type_info - The type of the shader parameter to get: Int, Int2, Int3 or Int4
+    /// * `name` - The name of the shader parameter to get.
+    /// * `type_info` - The type of the shader parameter to get: Int, Int2, Int3 or Int4
     ///
     /// see example in [`ParamInfos::set_int`]
     pub fn get_int_vector<S: AsRef<str>>(&self, name: S, type_info: MaterialParam) -> Option<Vec<i32>> {
@@ -1955,7 +1976,7 @@ impl<'a> ParamInfos<'a> {
     /// Gets the value of a shader parameter with the given name. If no parameter is found, a default value of ‘0’ will
     /// be returned.
     /// <https://stereokit.net/Pages/StereoKit/Material/GetUInt.html>
-    /// * name - The name of the shader parameter to get.
+    /// * `name` - The name of the shader parameter to get.
     ///
     /// see also [`material_get_uint`]
     /// see example in [`ParamInfos::set_uint`]
@@ -1967,7 +1988,7 @@ impl<'a> ParamInfos<'a> {
     }
 
     /// Get uint vector using unsafe material_get_param function
-    /// * name - The name of the shader parameter to get.
+    /// * `name` - The name of the shader parameter to get.
     /// * type_info - The type of the shader parameter to get: UInt, UInt2, UInt3, UInt4.
     ///
     /// see example in [`ParamInfos::set_uint`]
@@ -1988,7 +2009,7 @@ impl<'a> ParamInfos<'a> {
     /// Gets the value of a shader parameter with the given name. If no parameter is found, a default value of
     /// Matrix.Identity will be returned.
     /// <https://stereokit.net/Pages/StereoKit/Material/GetMatrix.html>
-    /// * name - The name of the parameter to get.
+    /// * `name` - The name of the parameter to get.
     ///
     /// see also [`material_get_matrix`]
     /// see example in [`ParamInfos::set_matrix`]
@@ -2001,7 +2022,7 @@ impl<'a> ParamInfos<'a> {
 
     /// Gets the value of a shader parameter with the given name. If no parameter is found,None will be returned.
     /// <https://stereokit.net/Pages/StereoKit/Material/GetTexture.html>
-    /// * name - The name of the parameter to get.
+    /// * `name` - The name of the parameter to get.
     ///
     /// see also [`material_get_texture`]
     /// see example in [`ParamInfos::set_texture`]
@@ -2015,8 +2036,8 @@ impl<'a> ParamInfos<'a> {
 
     /// Get an info value of the shader of this material
     /// <https://stereokit.net/Pages/StereoKit/Material.html>
-    /// * name - The name of the parameter to get.
-    /// * type_info - The type of the parameter to get.
+    /// * `name` - The name of the parameter to get.
+    /// * `type_info` - The type of the parameter to get.
     ///
     /// see also [`ParamInfo`][`material_get_param`]
     /// ### Examples
@@ -2044,8 +2065,8 @@ impl<'a> ParamInfos<'a> {
 
     /// Get an info value (identified with an id) of the shader of this material
     /// <https://stereokit.net/Pages/StereoKit/Material.html>
-    /// * id - the hash_fnv64_string value of the name of the parameter.
-    /// * type_info - the type of the parameter.
+    /// * `id` - the hash_fnv64_string value of the name of the parameter.
+    /// * `type_info` - the type of the parameter.
     ///
     /// Returns a pointer to the value that will be filled in if the parameter is found.
     /// see also [`ParamInfo`][`material_get_param_id`][`ParamInfos::set_data_with_id`]
@@ -2167,11 +2188,13 @@ pub struct MaterialBuffer<T> {
     _material_buffer: MaterialBufferT,
     phantom: PhantomData<T>,
 }
+/// StereoKit internal type.
 #[repr(C)]
 #[derive(Debug)]
 pub struct _MaterialBufferT {
     _unused: [u8; 0],
 }
+/// StereoKit ffi type.
 pub type MaterialBufferT = *mut _MaterialBufferT;
 
 impl<T> Drop for MaterialBuffer<T> {
@@ -2189,7 +2212,7 @@ impl<T> MaterialBuffer<T> {
     /// Create a new global MaterialBuffer bound to the register slot id. All shaders will have access to the data
     /// provided via this instance’s Set.
     /// <https://stereokit.net/Pages/StereoKit/MaterialBuffer/MaterialBuffer.html>
-    /// * register_slot - Valid values are 3-16. This is the register id that this data will be bound to. In HLSL,
+    /// * `register_slot` - Valid values are 3-16. This is the register id that this data will be bound to. In HLSL,
     ///   you’ll see the slot id for ‘3’ indicated like this : register(b3)
     ///
     /// see also [`material_buffer_create`]
