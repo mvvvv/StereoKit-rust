@@ -28,7 +28,7 @@ pub mod anchor;
 /// [![Font](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/font.jpeg)](font::Font)
 pub mod font;
 
-/// [framework] is a namespace containing features exclusive to the rust bindings for StereoKit.
+/// A namespace containing features exclusive to the rust bindings for StereoKit.
 ///
 /// These are higher level pieces of functionality that do not necessarily adhere to the same goals and restrictions as
 /// StereoKit’s core functionality does. This corresponds to the C# namespace:
@@ -42,6 +42,8 @@ pub mod font;
 /// [![SkClosures](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sk_closures.jpeg)](framework::SkClosures)
 /// [![IStepper](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/a_stepper.jpeg)](framework::IStepper)
 /// [![StepperAction](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/stepper_actions.jpeg)](framework::StepperAction)
+/// [![Steppers](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/steppers.jpeg)](framework::Steppers)
+/// [![StepperClosures](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/stepper_closures.jpeg)](framework::StepperClosures)
 pub mod framework;
 
 /// Material related structs and functions.
@@ -70,6 +72,13 @@ pub mod material;
 /// [![Intersect Model](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/intersect_model.jpeg)](maths::Ray::intersect_model)
 pub mod maths;
 
+/// Mesh related structs and functions.
+///
+/// ## Examples
+/// which are also unit tests:
+///
+/// [![Mesh](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/meshes.jpeg)](mesh::Mesh)
+/// [![Vertex](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/basic_mesh.jpeg)](mesh::Vertex)
 pub mod mesh;
 
 pub mod model;
@@ -78,6 +87,12 @@ pub mod prelude;
 
 pub mod render_list;
 
+/// Shader related structs and functions.
+///
+/// ## Examples
+/// which are also unit tests:
+///
+/// [![Shader](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/shaders.jpeg)](shader::Shader)
 pub mod shader;
 
 pub mod sk;

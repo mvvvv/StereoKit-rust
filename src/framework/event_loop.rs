@@ -46,7 +46,7 @@ enum SleepPhase {
 /// let transform = Matrix::tr(&([0.0, 0.0, -6.5].into()),
 ///                            &([90.0, 0.0, 0.0].into()));
 ///
-/// let mut title = Title::new("SkClosures example", None, None, None);
+/// let mut title = Title::new("SkClosures", None, None, None);
 /// sk.send_event(StepperAction::add("Title_ID", title));
 ///
 /// let mut iter = 0;
@@ -62,7 +62,6 @@ enum SleepPhase {
 ///                 
 ///     if iter == number_of_steps {
 ///         // render screenshot
-///         fov_scr = 90.0;
 ///         system::Renderer::screenshot(token, filename_scr, 90,
 ///             maths::Pose::look_at(from_scr, at_scr),
 ///             width_scr, height_scr, Some(fov_scr) );
@@ -382,7 +381,7 @@ impl<'a> SkClosures<'a> {
     ///
     /// Have to be launched after [SkClosures::new] and eventually [SkClosures::on_sleeping_step] and [SkClosures::shutdown]
     /// see examples [SkClosures]
-    /// * `event_loop` - The event loop to run the app on. Created by [crate::sk::Sk::init_with_event_loop].
+    /// * `event_loop` - The event loop to run the app on. Created by [Sk::init_with_event_loop].
     pub fn run(&mut self, event_loop: EventLoop<StepperAction>) {
         event_loop.set_control_flow(ControlFlow::Poll);
         if let Err(err) = event_loop.run_app(self) {
@@ -467,7 +466,6 @@ impl<'a> SkClosures<'a> {
 /// );
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/a_stepper.jpeg" alt="screenshot" width="200">
-/// ```
 pub trait IStepper {
     /// This is called by StereoKit at the start of the next frame, and on the main thread. This happens before
     /// StereoKit’s main Step callback, and always after Sk.initialize.
@@ -515,10 +513,10 @@ pub trait IStepper {
 
 /// Steppers actions list. These are the events you can trigger from any threads. There are 3 ways to
 /// trigger an action:
-/// - Main thread/program where you can use sk: [crate::sk::Sk::send_event] or [crate::sk::Sk::quit] directly.
-/// - From any IStepper you should use [crate::sk::SkInfo::send_event].
+/// - Main thread/program where you can use sk: [Sk::send_event] or [crate::sk::Sk::quit] directly.
+/// - From any IStepper you should use [SkInfo::send_event].
 /// - From any threads you should use [winit::event_loop::EventLoopProxy::send_event]. You can get a proxy clone
-///   from [crate::sk::SkInfo::get_event_loop_proxy].
+///   from [SkInfo::get_event_loop_proxy] or [Sk::get_event_loop_proxy].
 ///
 /// <https://stereokit.net/Pages/StereoKit/SK.html>
 ///
@@ -529,10 +527,10 @@ pub trait IStepper {
 ///     tools::{title::Title, screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW}}, };
 /// use std::any::TypeId; // we need this to remove all the steppers of a given type.
 ///
-/// let mut title = Title::new("Stepper 1", Some(named_colors::GREEN), None, None);
-/// title.transform = Matrix::tr(&([0.0, 0.0, -1.0].into()),
-///                              &([0.0, 135.0, 0.0].into()));
-/// sk.send_event(StepperAction::add("Title_red_ID", title.clone()));
+/// let mut title = Title::new("StepperActions", Some(named_colors::GREEN), None, None);
+/// title.transform = Matrix::tr(&([-1.0, 0.0, -1.5].into()),
+///                              &([0.0, 155.0, 0.0].into()));
+/// sk.send_event(StepperAction::add("Title_green_ID", title.clone()));
 ///
 /// sk.send_event(StepperAction::add_default::<Title>("Title_white_ID"));
 ///
@@ -543,16 +541,16 @@ pub trait IStepper {
 /// number_of_steps = 4;
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
 ///     if iter == 0 {
-///        assert_eq!(sk.get_steppers().get_stepper_handlers().len(), 3);
+///        assert_eq!(sk.get_steppers_count(), 3);
 ///        sk.send_event(StepperAction::remove("Title_white_ID"));
 ///    } else if iter == 1 {
-///        assert_eq!(sk.get_steppers().get_stepper_handlers().len(), 2);
+///        assert_eq!(sk.get_steppers_count(), 2);
 ///        sk.send_event(StepperAction::remove_all(TypeId::of::<Title>()));
 ///    } else if iter == 2 {
-///        assert_eq!(sk.get_steppers().get_stepper_handlers().len(), 1);
-///        sk.send_event(StepperAction::add("Title_red_ID", title.clone()));
-///    } else if iter == 3 {
-///        assert_eq!(sk.get_steppers().get_stepper_handlers().len(), 2);
+///        assert_eq!(sk.get_steppers_count(), 1);
+///        sk.send_event(StepperAction::add("Title_green_ID", title.clone()));
+///    } else if iter < number_of_steps + 2{
+///        assert_eq!(sk.get_steppers_count(), 2);
 ///    }
 /// );
 /// ```
@@ -606,10 +604,10 @@ impl StepperAction {
     ///
     /// test_steps!(  // !!!! Get a proper main loop !!!!
     ///     if iter < number_of_steps + 2 {
-    ///         assert_eq!(sk.get_steppers().get_stepper_handlers().len(), 1);
+    ///         assert_eq!(sk.get_steppers_count(), 1);
     ///     } else if iter == number_of_steps + 2 {
     ///         /// We sk.quit() at 4 and at 5 the stepper has been removed.
-    ///         assert_eq!(sk.get_steppers().get_stepper_handlers().len(), 0);
+    ///         assert_eq!(sk.get_steppers_count(), 0);
     ///     } else {
     ///         panic!("there is not iter 6 !!!");
     ///     }
@@ -639,14 +637,14 @@ impl StepperAction {
     /// let mut title = Title::new("Stepper 1", Some(named_colors::GREEN), None, None);
     /// title.transform = Matrix::tr(&([0.0, 0.0, -1.0].into()),
     ///                              &([0.0, 135.0, 0.0].into()));
-    /// sk.send_event(StepperAction::add("Title_red_ID", title.clone()));
+    /// sk.send_event(StepperAction::add("Title_green_ID", title.clone()));
     ///
     /// test_steps!(  // !!!! Get a proper main loop !!!!
     ///     if iter < number_of_steps + 2 {
-    ///         assert_eq!(sk.get_steppers().get_stepper_handlers().len(), 1);
+    ///         assert_eq!(sk.get_steppers_count(), 1);
     ///     } else if iter == number_of_steps + 2 {
     ///         /// We sk.quit() at 4 and at 5 the stepper has been removed.
-    ///         assert_eq!(sk.get_steppers().get_stepper_handlers().len(), 0);
+    ///         assert_eq!(sk.get_steppers_count(), 0);
     ///     } else {
     ///         panic!("there is not iter 6 !!!");
     ///     }
@@ -671,10 +669,10 @@ impl StepperAction {
     ///
     /// test_steps!(  // !!!! Get a proper main loop !!!!
     ///     if iter < number_of_steps + 2 {
-    ///         assert_eq!(sk.get_steppers().get_stepper_handlers().len(), 1);
+    ///         assert_eq!(sk.get_steppers_count(), 1);
     ///     } else if iter == number_of_steps + 2 {
     ///         /// We sk.quit() at 4 and at 5 the stepper has been removed.
-    ///         assert_eq!(sk.get_steppers().get_stepper_handlers().len(), 0);
+    ///         assert_eq!(sk.get_steppers_count(), 0);
     ///     } else {
     ///         panic!("there is not iter 6 !!!");
     ///     }
@@ -698,9 +696,12 @@ impl StepperAction {
 
 /// State of the stepper
 #[derive(Clone, Copy, Debug, PartialEq)]
-enum StepperState {
+pub enum StepperState {
+    /// The stepper is being initialized.
     Initializing,
+    /// Initialization is complete, and the stepper is running.
     Running,
+    /// The stepper is being removed.
     Closing,
 }
 
@@ -710,6 +711,21 @@ pub struct StepperHandler {
     type_id: TypeId,
     stepper: Box<dyn IStepper>,
     state: StepperState,
+}
+impl StepperHandler {
+    /// Get the stepper id
+    pub fn get_id(&self) -> &StepperId {
+        &self.id
+    }
+
+    /// Get the stepper type_id
+    pub fn get_type_id(&self) -> TypeId {
+        self.type_id
+    }
+    /// Get the stepper state
+    pub fn get_state(&self) -> StepperState {
+        self.state
+    }
 }
 
 /// A lazy way to identify IStepper instances
@@ -722,32 +738,125 @@ pub const ISTEPPER_REMOVED: &str = "IStepper_Removed";
 /// Steppers manager. This is used internally by StereoKit, but you can use it to prepare your next scene managers.
 /// Non canonical.
 /// <https://stereokit.net/Pages/StereoKit.Framework/IStepper.html>
+///
+/// ### Example
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{maths::{Vec3, Matrix}, util::named_colors, framework::Steppers,
+///     tools::{title::Title, screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW}}, };
+///
+/// let mut steppers = Steppers::new(sk.get_sk_info_clone());
+///
+/// let mut title = Title::new("Steppers", Some(named_colors::BLUE), None, None);
+/// title.transform = Matrix::tr(&([-0.5, 0.5, -1.5].into()),
+///                              &([0.0, 155.0, 0.0].into()));
+/// steppers.send_event(StepperAction::add("Title_blue_ID1", title.clone()));
+///
+/// title.transform = Matrix::tr(&([-0.5, -0.5, -1.5].into()),
+///                              &([0.0, 245.0, 0.0].into()));
+/// // We may use the same ID for different steppers
+/// steppers.send_event(StepperAction::add("Title_blue_ID2", title.clone()));
+/// sk      .send_event(StepperAction::add("Title_blue_ID2", title.clone()));
+///
+/// steppers.send_event(StepperAction::add_default::<ScreenshotViewer>("ScreenshotViewer_ID"));
+/// steppers.send_event(StepperAction::event("main thread".into(), SHOW_SCREENSHOT_WINDOW, "true"));
+///
+/// filename_scr = "screenshots/steppers.jpeg";
+/// number_of_steps = 4;
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+///     if iter == 0 {
+///         assert_eq!(steppers.get_count(), 0);
+///         assert_eq!(sk.get_steppers_count(), 1);
+///         sk.swap_steppers(&mut steppers);
+///     } else if iter == 1 {
+///         assert_eq!(steppers.get_count(), 1);
+///         assert_eq!(sk.get_steppers_count(), 3);
+///         sk.swap_steppers(&mut steppers);
+///     } else if iter == 2 {
+///         assert_eq!(steppers.get_count(), 3);
+///         assert_eq!(sk.get_steppers_count(), 1);
+///         sk.swap_steppers(&mut steppers);
+///     } else if iter == number_of_steps + 1 {
+///         assert_eq!(sk.get_steppers_count(), 3);
+///         assert_eq!(steppers.get_count(), 1);
+///         steppers.shutdown();
+///     } else if iter == number_of_steps + 2 {
+///         /// all the steppers should be removed from Sk and steppers
+///         assert_eq!(sk.get_steppers_count(), 0);
+///         assert_eq!(steppers.get_count(), 0);
+///     }
+/// );
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/steppers.jpeg" alt="screenshot" width="200">
 #[cfg(feature = "event-loop")]
 pub struct Steppers {
-    sk: Rc<RefCell<SkInfo>>,
+    sk_info: Rc<RefCell<SkInfo>>,
     running_steppers: Vec<StepperHandler>,
     stepper_actions: VecDeque<StepperAction>,
 }
 
 #[cfg(feature = "event-loop")]
 impl Steppers {
-    // the only way to create a Steppers manager
-    pub fn new(sk: Rc<RefCell<SkInfo>>) -> Self {
-        Self { sk, running_steppers: vec![], stepper_actions: VecDeque::new() }
+    /// The only way to create a Steppers manager. You don't need it unless you want to swap different steppers.
+    /// * `sk_info` - A SkInfo Rc clone of the running Sk instance.
+    ///
+    /// [Sk] Create the default one when it is initialized.
+    /// ### Example
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix}, framework::Steppers};
+    ///
+    /// let mut steppers = Steppers::new(sk.get_sk_info_clone());
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     assert_eq!(steppers.get_count(), 0);
+    /// );
+    /// ```
+    pub fn new(sk_info: Rc<RefCell<SkInfo>>) -> Self {
+        Self { sk_info, running_steppers: vec![], stepper_actions: VecDeque::new() }
     }
 
-    /// push an action to consumme befor next frame
+    /// Push an action to consumme befor next frame
+    /// * `action` - The action to push.
+    ///
+    /// see also [Sk::send_event] [winit::event_loop::EventLoopProxy::send_event]
+    /// ### Example
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::named_colors, framework::Steppers,
+    ///     tools::{title::Title, screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW}}, };
+    ///
+    /// let mut steppers = Steppers::new(sk.get_sk_info_clone());
+    ///
+    /// let mut title = Title::new("Steppers", Some(named_colors::BLUE), None, None);
+    /// steppers.send_event(StepperAction::add("Title_blue_ID1", title.clone()));
+    /// steppers.send_event(StepperAction::add("Title_blue_ID2", title.clone()));
+    /// steppers.send_event(StepperAction::add_default::<ScreenshotViewer>("ScreenshotViewer_ID"));
+    /// steppers.send_event(StepperAction::event("main thread".into(), SHOW_SCREENSHOT_WINDOW, "true"));
+    /// steppers.send_event(StepperAction::remove("Title_blue_ID2"));
+    ///
+    /// sk.swap_steppers(&mut steppers);
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter < number_of_steps + 2 {
+    ///         assert_eq!(steppers.get_count(), 0);
+    ///         assert_eq!(sk.get_steppers_count(), 2);
+    ///     }
+    /// );
+    /// ```
     pub fn send_event(&mut self, action: StepperAction) {
         self.stepper_actions.push_back(action);
     }
 
-    /// Deque all the actions, create the frame event report, execute all the stepper if quit hasn't be asked
+    /// Deque all the actions, create the frame event report, execute all the steppers if quit hasn't be asked
     /// return false if sk_quit must be triggered.
-    pub fn step(&mut self, token: &mut MainThreadToken) -> bool {
+    /// * token - The token where the event report will be created for this frame.
+    ///
+    /// This must be call from the running [Sk] instance only.
+    pub(crate) fn step(&mut self, token: &mut MainThreadToken) -> bool {
         while let Some(action) = self.stepper_actions.pop_front() {
             match action {
                 StepperAction::Add(mut stepper, type_id, stepper_id) => {
-                    if stepper.initialize(stepper_id.clone(), self.sk.clone()) {
+                    if stepper.initialize(stepper_id.clone(), self.sk_info.clone()) {
                         let stepper_h =
                             StepperHandler { id: stepper_id, type_id, stepper, state: StepperState::Initializing };
                         self.running_steppers.push(stepper_h);
@@ -819,12 +928,88 @@ impl Steppers {
     /// An enumerable list of all currently active ISteppers registered with StereoKit. This does not include Steppers
     /// that have been added, but are not yet initialized. Stepper initialization happens at the beginning of the frame,
     /// before the app's Step.
+    ///
+    /// see also [Sk::get_steppers] to get the default running Steppers.
+    /// ### Example
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::named_colors,
+    ///     framework::{Steppers, StepperState, StepperHandler},
+    ///     tools::{title::Title, screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW}}, };
+    /// use std::any::TypeId;
+    ///
+    /// let mut steppers = Steppers::new(sk.get_sk_info_clone());
+    ///
+    /// let mut title = Title::new("Steppers", Some(named_colors::BLUE), None, None);
+    /// steppers.send_event(StepperAction::add("Title_blue_ID1", title.clone()));
+    /// steppers.send_event(StepperAction::add_default::<ScreenshotViewer>("ScreenshotViewer_ID"));
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter == 0 {
+    ///         assert_eq!(steppers.get_stepper_handlers().len(), 0);
+    ///         assert_eq!(sk.get_steppers_count(), 0);
+    ///         sk.swap_steppers(&mut steppers);
+    ///     } else if iter == 1 {
+    ///         assert_eq!(steppers.get_stepper_handlers().len(), 0);
+    ///         assert_eq!(sk.get_steppers_count(), 2);
+    ///         sk.swap_steppers(&mut steppers);
+    ///     } else if iter == 3 {
+    ///         let steppers_handlers = steppers.get_stepper_handlers();
+    ///         assert_eq!(steppers_handlers.len(), 2);
+    ///         assert_eq!(steppers_handlers[0].get_id(), "Title_blue_ID1");
+    ///         assert_eq!(steppers_handlers[0].get_type_id(), TypeId::of::<Title>());
+    ///         assert_eq!(steppers_handlers[0].get_state(), StepperState::Running);
+    ///
+    ///         assert_eq!(steppers_handlers[1].get_id(), "ScreenshotViewer_ID");
+    ///         assert_eq!(steppers_handlers[1].get_type_id(), TypeId::of::<ScreenshotViewer>());
+    ///         assert_eq!(steppers_handlers[1].get_state(), StepperState::Running);
+    ///
+    ///         assert_eq!(sk.get_steppers_count(), 0);
+    ///     }
+    /// );
+    /// ```
     pub fn get_stepper_handlers(&self) -> &[StepperHandler] {
         self.running_steppers.as_slice()
     }
 
-    /// Run the shutdown code for all active Steppers.
-    /// This is called when pushing StepperAction::Quit( origin , reason)
+    /// Run the shutdown code for all running steppers.
+    /// On default [Sk] Steppers, this is called when pushing StepperAction::Quit( origin , reason) but if you have other
+    /// inactive [Steppers] you may want to call this function to shutdown all of them.
+    /// Do not confuse with [Sk::shutdown] that you must call when exiting the program.
+    ///
+    /// see also [Sk::quit]
+    /// ### Example
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::named_colors,
+    ///     framework::{Steppers, StepperState, StepperHandler},
+    ///     tools::{title::Title, screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW}}, };
+    /// use std::any::TypeId;
+    ///
+    /// let mut steppers = Steppers::new(sk.get_sk_info_clone());
+    ///
+    /// let mut title = Title::new("Steppers", Some(named_colors::BLUE), None, None);
+    /// steppers.send_event(StepperAction::add("Title_blue_ID1", title.clone()));
+    /// steppers.send_event(StepperAction::add_default::<ScreenshotViewer>("ScreenshotViewer_ID"));
+    ///
+    /// sk.swap_steppers(&mut steppers);
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter == 0 {
+    ///         assert_eq!(steppers.get_count(), 0);
+    ///         assert_eq!(sk.get_steppers_count(), 2);
+    ///         sk.swap_steppers(&mut steppers);
+    ///     } else if iter == 1 {
+    ///         assert_eq!(steppers.get_count(), 2);
+    ///         assert_eq!(sk.get_steppers_count(), 0);
+    ///         steppers.shutdown();
+    ///         sk.swap_steppers(&mut steppers);
+    ///     } else {
+    ///         assert_eq!(steppers.get_count(), 0);
+    ///         assert_eq!(sk.get_steppers_count(), 0);
+    ///     }
+    /// );
+    /// ```
     pub fn shutdown(&mut self) {
         self.stepper_actions.clear();
         for stepper_h in self.running_steppers.iter_mut() {
@@ -857,42 +1042,166 @@ impl Steppers {
         }
         self.running_steppers.clear();
     }
+
+    /// The count of all ISteppers registered by this [Steppers]. This does not include Steppers
+    /// that have been added, but are not yet initialized. Stepper initialization happens at the beginning of the frame,
+    /// before the app's Step.
+    ///
+    /// see also [Sk::get_steppers_count]
+    /// ### Example
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::named_colors,
+    ///     framework::{Steppers, StepperState, StepperHandler},
+    ///     tools::{title::Title, screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW}}, };
+    /// use std::any::TypeId;
+    ///
+    /// let mut steppers = Steppers::new(sk.get_sk_info_clone());
+    ///
+    /// let mut title = Title::new("Steppers", Some(named_colors::BLUE), None, None);
+    /// steppers.send_event(StepperAction::add("Title_blue_ID1", title.clone()));
+    /// steppers.send_event(StepperAction::add_default::<ScreenshotViewer>("ScreenshotViewer_ID"));
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     assert_eq!(steppers.get_stepper_handlers().len(),  steppers.get_count());
+    ///     if iter == 0 {
+    ///         assert_eq!(sk.get_steppers_count(), 0);
+    ///         sk.swap_steppers(&mut steppers);
+    ///     } else if iter == 1 {
+    ///         assert_eq!(sk.get_steppers_count(), 2);
+    ///         sk.swap_steppers(&mut steppers);
+    ///     } else if iter == 3 {
+    ///         assert_eq!(sk.get_steppers_count(), 0);
+    ///     }
+    /// );
+    /// ```
+    pub fn get_count(&self) -> usize {
+        self.running_steppers.len()
+    }
 }
 
 /// Helper to create the whole code of a Stepper in method IStepper::initialize() while avoiding multiple fields.
+///
+/// Not really convincing with too many compromises.
+/// The privileged solution is the use of the derive macro [crate::IStepper]
+///
 /// See Demo b_stepper.rs::BStepper
 /// Non canonical structure
+///
+/// ### Examples:
+/// ```
+/// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{font::Font, framework::StepperClosures, material::Material,
+///        maths::{Matrix, Quat, Vec3},mesh::Mesh, system::{Renderer, Text},util::{Time, named_colors},};
+///
+/// pub struct BStepper {
+///     id: StepperId,
+///     sk_info: Option<Rc<RefCell<SkInfo>>>,
+///     pub text: String,
+///     closures: StepperClosures<'static>,
+/// }
+///
+/// unsafe impl Send for BStepper {}
+///
+/// /// This code may be called in some threads, so no StereoKit code
+/// impl Default for BStepper {
+///     fn default() -> Self {
+///         Self {
+///             id: "BStepper".to_string(),
+///             sk_info: None,
+///             text: "StepperClosures".to_owned(),
+///             closures: StepperClosures::new(),
+///         }
+///     }
+/// }
+///
+/// /// All the code here run in the main thread
+/// impl IStepper for BStepper {
+///     fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
+///         self.id = id;
+///         self.sk_info = Some(sk_info);
+///
+///         let mut transform = Matrix::tr(&((Vec3::NEG_Z * 0.5) + Vec3::Y), &Quat::from_angles(0.0, 180.0, 0.0));
+///         let mut round_cube = Mesh::generate_rounded_cube(Vec3::ONE / 5.0, 0.005, Some(16));
+///         round_cube.id("round_cube BStepper");
+///         let text_style = Some(Text::make_style(Font::default(), 0.3, named_colors::GOLD));
+///         let text = self.text.clone();
+///
+///         self.closures.set(
+///             move |token| {
+///                 transform *= Matrix::t(Vec3::Z * 0.2 * Time::get_stepf());
+///                 Renderer::add_mesh(token, &round_cube, Material::pbr(),
+///                                    transform, Some(named_colors::RED.into()), None);
+///                 Text::add_at(token, &text, transform, text_style, None, None, None, None, None, None);
+///                 // (1) You cannot do that here: self.text = "youpi".into();
+///             },
+///             || Log::diag("Closing Stepper B !!!"),
+///         );
+///         true
+///     }
+///
+///     fn step(&mut self, token: &MainThreadToken) {
+///         self.closures.step(token);
+///         // (2) Add here The code about fields that are shared with shutdown >>>
+///         {}
+///         //<<<
+///     }
+///
+///     fn shutdown(&mut self) {
+///         self.closures.shutdown();
+///         // (3) Add here The code about fields that are shared with step >>>
+///         {}
+///         //<<<
+///     }
+/// }
+///
+/// sk.send_event(StepperAction::add_default::<BStepper>("My_Basic_Stepper_ID"));
+///
+/// filename_scr = "screenshots/stepper_closures.jpeg";
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+///     // No code here as we only use BStepper
+/// );
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/stepper_closures.jpeg" alt="screenshot" width="200">
 pub struct StepperClosures<'a> {
     on_step: Box<dyn FnMut(&MainThreadToken) + 'a>,
     shutdown: Box<dyn FnMut() + 'a>,
 }
 
-/// create an empty struct to fulfill with fn ClosureStepper::fn(&self)
 impl Default for StepperClosures<'_> {
+    /// Same as new, but with a more explicit name
     fn default() -> Self {
         Self { on_step: Box::new(|_token| {}), shutdown: Box::new(|| {}) }
     }
 }
 
 impl StepperClosures<'_> {
+    /// Same as default, but with a more explicit name
     pub fn new() -> Self {
         Self { ..Default::default() }
     }
 
+    /// Set the stepper closures.
+    /// * `on_step` - The closure to call on each step.
+    /// * `on_shutdown` - The closure to call on shutdown.
+    ///
     pub fn set<U: FnMut(&MainThreadToken) + 'static, S: FnMut() + 'static>(
         &mut self,
         on_step: U,
-        shutdown: S,
+        on_shutdown: S,
     ) -> &mut Self {
         self.on_step = Box::new(on_step);
-        self.shutdown = Box::new(shutdown);
+        self.shutdown = Box::new(on_shutdown);
         self
     }
 
+    /// To call on each step.
+    /// * `token` - The main thread token.
     pub fn step(&mut self, token: &MainThreadToken) {
         (self.on_step)(token)
     }
 
+    /// To call on shutdown.
     pub fn shutdown(&mut self) {
         (self.shutdown)()
     }

@@ -1,13 +1,12 @@
 use crate::{
     StereoKitError,
     maths::Bool32T,
-    system::{BackendOpenXR, Log, LogLevel},
+    system::{Log, LogLevel},
     tools::os_api::get_assets_dir,
 };
 #[cfg(target_os = "android")]
 #[cfg(feature = "no-event-loop")]
 use android_activity::{AndroidApp, MainEvent, PollEvent};
-use openxr_sys::pfn::DestroyInstance;
 use std::{
     cell::RefCell,
     ffi::{CStr, CString, c_char, c_void},
@@ -911,31 +910,14 @@ impl Sk {
     ///
     /// see also [`crate::sk::sk_shutdown`]
     pub fn shutdown() {
-        if cfg!(target_os = "none") {
-            // TODO : THIS DOESN'T HELP Neither for WiVRn nor for SteamVRLinux WE CAN'T LEAVE!!!! FOR EVER STUCK IN VR XR MR !!!
-            Log::diag(format!("Destroy Instance {}", BackendOpenXR::instance()));
-            let instance = BackendOpenXR::instance();
-            if let Some(destroyer) = BackendOpenXR::get_function::<DestroyInstance>("xrDestroyInstance") {
-                match unsafe { destroyer(openxr_sys::Instance::from_raw(instance)) } {
-                    openxr_sys::Result::SUCCESS => {}
-                    otherwise => {
-                        Log::err(format!("xrDestroyInstance failed: {otherwise}"));
-                    }
-                }
-            } else {
-                Log::err("No xrDestroyInstance found !");
-            }
-            unsafe { sk_shutdown() }
+        unsafe { sk_shutdown() }
+        if cfg!(target_os = "android") {
             std::process::exit(0);
-        } else {
-            unsafe { sk_shutdown() }
-            if cfg!(target_os = "android") {
-                std::process::exit(0);
-            }
         }
     }
 }
 
+/// <h2>Sk methods only available for event-loop feature.</h2>
 #[cfg(feature = "event-loop")]
 impl Sk {
     /// Initializes StereoKit window, default resources, systems, etc.
@@ -1033,10 +1015,10 @@ impl Sk {
         }
     }
 
-    /// This is a non canonical function that let you change all the steppers
+    /// This is a non canonical function that let you swap the current steppers with a new set of steppers
     /// <https://stereokit.net/Pages/StereoKit.Framework/IStepper.html>
-    pub fn change_steppers(&mut self, steppers: Steppers) {
-        self.steppers = steppers;
+    pub fn swap_steppers(&mut self, steppers: &mut Steppers) {
+        std::mem::swap(&mut self.steppers, steppers);
     }
 
     /// This will queue up some code to be run on StereoKit’s main thread! Immediately after StereoKit’s Step, all
@@ -1049,6 +1031,13 @@ impl Sk {
     /// convenient way to push some Add steppers action
     pub fn send_event(&mut self, action: StepperAction) {
         self.steppers.send_event(action);
+    }
+
+    /// The number of ISteppers registered in the current [Steppers]. This does not include
+    /// Steppers that have been added, but are not yet initialized. Stepper initialization happens at the beginning of
+    /// the frame, before the app's Step.
+    pub fn get_steppers_count(&mut self) -> usize {
+        self.steppers.get_count()
     }
 
     /// An enumerable list of all currently active ISteppers registered with StereoKit. This does not include Steppers
@@ -1068,7 +1057,7 @@ impl Sk {
     /// <https://stereokit.net/Pages/StereoKit/SK/Step.html>
     ///
     /// see also [`crate::sk::sk_step`]
-    #[deprecated(since = "0.40.0", note = "see SkClosure::about_to_wait() instead")]
+    #[deprecated(since = "0.40.0", note = "see [crate::framework::SkClosures] instead")]
     pub fn step_looped<F: FnMut(&mut Sk)>(&mut self, on_step: &mut F) -> bool {
         if unsafe { sk_step(None) } == 0 {
             return false;
@@ -1120,7 +1109,7 @@ impl Sk {
     /// <https://stereokit.net/Pages/StereoKit/SK/Run.html>
     ///
     /// see also [`crate::sk::sk_run_data`]
-    #[deprecated(since = "0.40.0", note = "see SkClosure::run_app() instead")]
+    #[deprecated(since = "0.40.0", note = "see [crate::framework::SkClosures] instead")]
     pub fn run<U: FnMut(&mut Sk), S: FnMut(&mut Sk)>(
         mut self,
         event_loop: EventLoop<StepperAction>,
