@@ -118,7 +118,7 @@ impl Anim1 {
         notif.position = Vec3::new(0.0, 0.3, -0.2);
         notif.text = "Close right hand to change animation".into();
 
-        SkInfo::send_message(&self.sk_info, StepperAction::add("HudNotifAnim1", notif));
+        SkInfo::send_event(&self.sk_info, StepperAction::add("HudNotifAnim1", notif));
         true
     }
 
@@ -162,7 +162,7 @@ impl Anim1 {
     fn close(&mut self, triggering: bool) -> bool {
         if triggering {
             // We ask for the start notification to be removed if it hasn't been done yet.
-            SkInfo::send_message(&self.sk_info, StepperAction::remove("HudNotifAnim1"));
+            SkInfo::send_event(&self.sk_info, StepperAction::remove("HudNotifAnim1"));
             self.shutdown_completed = true;
             true
         } else {

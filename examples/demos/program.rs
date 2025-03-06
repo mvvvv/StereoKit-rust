@@ -1,9 +1,9 @@
 use openxr_sys::EnvironmentBlendMode;
 use std::{process, sync::Mutex, thread};
 use stereokit_rust::{
-    event_loop::{SkClosures, ISTEPPER_REMOVED},
+    framework::{ISTEPPER_REMOVED, SkClosures},
     material::Cull,
-    maths::{units::*, Pose, Quat, Vec2, Vec3},
+    maths::{Pose, Quat, Vec2, Vec3, units::*},
     model::Model,
     prelude::*,
     shader::Shader,
@@ -21,7 +21,7 @@ use stereokit_rust::{
         os_api::{
             get_all_display_refresh_rates, get_display_refresh_rate, get_env_blend_modes, set_display_refresh_rate,
         },
-        passthrough_fb_ext::{PassthroughFbExt, PASSTHROUGH_FLIP},
+        passthrough_fb_ext::{PASSTHROUGH_FLIP, PassthroughFbExt},
         screenshot::ScreenshotViewer,
         //virtual_kbd_meta::VirtualKbdMETA,
     },
@@ -34,8 +34,8 @@ use winit::event_loop::EventLoop;
 static LOG_LOG: Mutex<Vec<LogItem>> = Mutex::new(vec![]);
 
 use super::{
-    hand_menu_radial1::{HandMenuRadial1, SHOW_FLOOR},
     Test,
+    hand_menu_radial1::{HandMenuRadial1, SHOW_FLOOR},
 };
 pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: bool, start_test: String) {
     Log::diag(
@@ -108,7 +108,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
     } else {
         notif.text = "Look at your wrist then grip when icons are\n aligned to open the hand menu".into();
     }
-    sk.push_action(StepperAction::add("HudNotif1", notif));
+    sk.send_event(StepperAction::add("HudNotif1", notif));
 
     let mobile = Model::from_file("mobiles.gltf", Some(Shader::pbr())).unwrap();
     Log::diag(format!("{:?}", mobile.get_id()));
@@ -116,18 +116,18 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
         Log::diag(format!("{:?}", iter.get_mesh().unwrap().get_id()));
     }
 
-    sk.push_action(StepperAction::add_default::<HandMenuRadial1>("HandMenuRadial1"));
-    sk.push_action(StepperAction::add("LogWindow", log_window));
-    sk.push_action(StepperAction::add_default::<ScreenshotViewer>("Screenshoot"));
-    sk.push_action(StepperAction::add_default::<FlyOver>("FlyOver"));
+    sk.send_event(StepperAction::add_default::<HandMenuRadial1>("HandMenuRadial1"));
+    sk.send_event(StepperAction::add("LogWindow", log_window));
+    sk.send_event(StepperAction::add_default::<ScreenshotViewer>("Screenshoot"));
+    sk.send_event(StepperAction::add_default::<FlyOver>("FlyOver"));
     let mut passthrough = false;
     let mut passthough_blend_enabled = false;
     let passthrough_fb_enabled = BackendOpenXR::ext_enabled("XR_FB_passthrough");
     if passthrough_fb_enabled {
-        sk.push_action(StepperAction::add_default::<PassthroughFbExt>("PassthroughFbExt"));
+        sk.send_event(StepperAction::add_default::<PassthroughFbExt>("PassthroughFbExt"));
         if passthrough {
-            sk.push_action(StepperAction::event("main".into(), PASSTHROUGH_FLIP, "1"));
-            sk.push_action(StepperAction::event("main".into(), SHOW_FLOOR, "false"));
+            sk.send_event(StepperAction::event("main".into(), PASSTHROUGH_FLIP, "1"));
+            sk.send_event(StepperAction::event("main".into(), SHOW_FLOOR, "false"));
             Log::diag("Passthrough Activated at start !!");
         } else {
             Log::diag("Passthrough Deactived at start !!");
@@ -150,7 +150,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
     }
     // let virtual_kbd_enabled = BackendOpenXR::ext_enabled("XR_META_virtual_keyboard");
     // if virtual_kbd_enabled {
-    //     sk.push_action(StepperAction::add_default::<VirtualKbdMETA>("VirtualKbdMETA"));
+    //     sk.send_event(StepperAction::add_default::<VirtualKbdMETA>("VirtualKbdMETA"));
     //     Log::diag("XR_META_virtual_keyboard Ready !!")
     // } else {
     //     Log::diag("No XR_META_virtual_keyboard !!")
@@ -223,7 +223,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
         if let Some(next_s) = &next_scene {
             if deleting_scene.is_none() {
                 if let Some(active_stepper) = &active_scene {
-                    sk.push_action(StepperAction::remove(active_stepper.clone()));
+                    sk.send_event(StepperAction::remove(active_stepper.clone()));
                     deleting_scene = Some(active_stepper.clone());
                 } else {
                     launch_next = true;
@@ -299,7 +299,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
             Log::diag(format!("Closure Thread id : {:?} / {:?} ", thread::current().name(), thread::current().id()));
             Log::diag(format!("Closure Process id : {:?} / {:?} ", thread::current().name(), process::id()));
             // sk.quit(None); // is too harsh we want to shutdown our steppers
-            sk.push_action(StepperAction::Quit("main".into(), "Main program call quit".into()));
+            sk.send_event(StepperAction::Quit("main".into(), "Main program call quit".into()));
             if cfg!(target_os = "android") {
                 let no = Sound::from_file("sounds/no.wav").unwrap();
                 inst_play = Some(no.play(Vec3::ONE, None));
@@ -313,14 +313,14 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
                 let mut string_value = "0";
                 if new_value {
                     Log::diag("Activate passthrough");
-                    sk.push_action(StepperAction::event("main".into(), SHOW_FLOOR, "false"));
+                    sk.send_event(StepperAction::event("main".into(), SHOW_FLOOR, "false"));
                     string_value = "1";
                 } else {
                     Log::diag("Deactivate passthrough");
-                    sk.push_action(StepperAction::event("main".into(), SHOW_FLOOR, "true"));
+                    sk.send_event(StepperAction::event("main".into(), SHOW_FLOOR, "true"));
                 }
                 if passthrough_fb_enabled {
-                    sk.push_action(StepperAction::event("main".into(), PASSTHROUGH_FLIP, string_value));
+                    sk.send_event(StepperAction::event("main".into(), PASSTHROUGH_FLIP, string_value));
                 } else if string_value == "1" {
                     Device::display_blend(DisplayBlend::AnyTransparent);
                 } else {
@@ -388,6 +388,10 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
         Ui::panel_end();
 
         Ui::window_end();
+    })
+    .on_window_event(|_sk, event| {
+        // we hope to flood the log with external controllers soon ...
+        Log::diag(format!("{:?}", event));
     })
     .on_sleeping_step(|_sk, _token| {
         now = std::time::SystemTime::now();

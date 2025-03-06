@@ -395,14 +395,14 @@ impl HandMenuRadial1 {
             ],
         ));
 
-        SkInfo::send_message(&self.sk_info, StepperAction::add(self.id.clone(), hand_menu_stepper));
+        SkInfo::send_event(&self.sk_info, StepperAction::add(self.id.clone(), hand_menu_stepper));
 
         true
     }
 
     fn start_completed(&mut self) -> bool {
         self.initialize_completed = true;
-        SkInfo::send_message(
+        SkInfo::send_event(
             &self.sk_info,
             StepperAction::event(self.id.clone(), HAND_MENU_RADIAL_FOCUS, &true.to_string()),
         );
@@ -468,7 +468,7 @@ impl HandMenuRadial1 {
     fn close(&mut self, triggering: bool) -> bool {
         if triggering {
             //We indicate we give up before being shutdowned
-            SkInfo::send_message(
+            SkInfo::send_event(
                 &self.sk_info,
                 StepperAction::event(self.id.clone(), HAND_MENU_RADIAL_FOCUS, &false.to_string()),
             );
@@ -476,7 +476,7 @@ impl HandMenuRadial1 {
             false
         } else {
             //One step further we can disappear in the darkness
-            SkInfo::send_message(&self.sk_info, StepperAction::remove(self.id.clone()));
+            SkInfo::send_event(&self.sk_info, StepperAction::remove(self.id.clone()));
             self.shutdown_completed = true;
             self.shutdown_completed
         }

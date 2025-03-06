@@ -20,24 +20,35 @@ use thiserror::Error;
 /// With examples which are also unit tests.
 pub mod anchor;
 
-#[cfg(feature = "event-loop")]
-pub mod event_loop;
-
 /// Font related structs and functions.
 ///
-/// ## Examples which are also unit tests:
+/// ## Examples
+/// which are also unit tests:
+///
 /// [![Font](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/font.jpeg)](font::Font)
 pub mod font;
 
-/// HandMenuRadial related structs and functions.
+/// [framework] is a namespace containing features exclusive to the rust bindings for StereoKit.
 ///
-/// With examples which are also unit tests.
-#[cfg(feature = "event-loop")]
+/// These are higher level pieces of functionality that do not necessarily adhere to the same goals and restrictions as
+/// StereoKit’s core functionality does. This corresponds to the C# namespace:
+/// <https://stereokit.net/Pages/StereoKit.Framework.html>
+/// - An event loop manager based on Winit.
+/// - HandMenuRadial related structs and functions.
+///
+/// ## Examples
+/// which are also unit tests:
+///
+/// [![SkClosures](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sk_closures.jpeg)](framework::SkClosures)
+/// [![IStepper](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/a_stepper.jpeg)](framework::IStepper)
+/// [![StepperAction](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/stepper_actions.jpeg)](framework::StepperAction)
 pub mod framework;
 
 /// Material related structs and functions.
 ///
-/// ## Examples which are also unit tests:
+/// ## Examples
+/// which are also unit tests:
+///
 /// [![Material](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/materials.jpeg)](material::Material)
 /// [![Material Transparency](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/material_transparency.jpeg)](material::Material::transparency)
 /// [![Material Face Cull](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/material_face_cull.jpeg)](material::Material::face_cull)
@@ -46,7 +57,9 @@ pub mod material;
 
 /// Vec2, 3 and4, Quat and Matrix, Bounds, Plane and Ray related structs and functions.
 ///
-/// ## Examples which are also unit tests:
+/// ## Examples
+/// which are also unit tests:
+///
 /// [![Matrix](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/matrix.jpeg)](maths::Matrix)
 /// [![Bounds](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/bounds.jpeg)](maths::Bounds)
 /// [![Plane](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/plane.jpeg)](maths::Plane)

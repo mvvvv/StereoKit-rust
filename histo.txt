@@ -28,3 +28,6 @@ ktx create --cubemap --encode uastc  --format R8G8B8A8_UNORM  --assign-oetf line
 
 #---- launch tests
 clear;cargo test --features event-loop
+
+#---- build docs
+cargo clean --doc && cargo doc --features event-loop

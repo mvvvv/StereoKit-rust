@@ -1,12 +1,12 @@
 use stereokit_rust::{
-    event_loop::StepperClosures,
     font::Font,
+    framework::StepperClosures,
     material::Material,
     maths::{Matrix, Quat, Vec3},
     mesh::Mesh,
     prelude::*,
     system::{Renderer, Text},
-    util::{named_colors::RED, Time},
+    util::{Time, named_colors::RED},
 };
 /// The basic Stepper. This stepper is used for Thread1 demo, we must ensure the StereoKit code stay in the main thread
 /// Default may be called in an other thread

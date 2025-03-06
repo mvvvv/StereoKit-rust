@@ -59,7 +59,7 @@ impl HudNotification {
 
         self.duration -= Time::get_stepf();
         if self.duration < 0.0 {
-            SkInfo::send_message(&self.sk_info, StepperAction::Remove(self.id.clone()));
+            SkInfo::send_event(&self.sk_info, StepperAction::Remove(self.id.clone()));
         }
     }
 }

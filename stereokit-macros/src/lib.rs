@@ -225,7 +225,7 @@ pub fn test_screenshot(input: TokenStream) -> TokenStream {
         }
         #[cfg(feature = "event-loop")]
         {
-            event_loop::SkClosures::new(sk, |sk, token| {
+            framework::SkClosures::new(sk, |sk, token| {
                 if iter > number_of_steps {sk.quit(None)}
 
                 #input
@@ -262,7 +262,7 @@ pub fn test_steps(input: TokenStream) -> TokenStream {
         }
         #[cfg(feature = "event-loop")]
         {
-            event_loop::SkClosures::new(sk, |sk, token| {
+            framework::SkClosures::new(sk, |sk, token| {
                 if iter > number_of_steps {sk.quit(None)}
 
                 #input

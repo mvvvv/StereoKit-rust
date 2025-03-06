@@ -176,7 +176,7 @@ impl ScreenshotViewer {
                 }
                 file_browser.caller = self.id.clone();
                 file_browser.window_pose = Ui::popup_pose(Vec3::ZERO);
-                SkInfo::send_message(&self.sk_info, StepperAction::add(self.id.clone() + BROWSER_SUFFIX, file_browser));
+                SkInfo::send_event(&self.sk_info, StepperAction::add(self.id.clone() + BROWSER_SUFFIX, file_browser));
             } else {
                 self.screen = None;
                 if !Platform::get_file_picker_visible() {
@@ -301,7 +301,7 @@ impl ScreenshotViewer {
     }
 
     fn close_file_browser(&mut self) {
-        SkInfo::send_message(&self.sk_info, StepperAction::remove(self.id.clone() + BROWSER_SUFFIX));
+        SkInfo::send_event(&self.sk_info, StepperAction::remove(self.id.clone() + BROWSER_SUFFIX));
     }
 
     fn close(&mut self, triggering: bool) -> bool {

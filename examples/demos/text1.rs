@@ -1,7 +1,7 @@
 use std::mem::transmute;
 use stereokit_rust::{
     font::Font,
-    maths::{units::CM, Matrix, Pose, Quat, Vec2, Vec3},
+    maths::{Matrix, Pose, Quat, Vec2, Vec3, units::CM},
     prelude::*,
     sound::{Sound, SoundInst},
     sprite::Sprite,
@@ -9,8 +9,8 @@ use stereokit_rust::{
     tools::os_api::show_soft_input,
     ui::{Ui, UiBtnLayout},
     util::{
-        named_colors::{RED, WHITE},
         Platform,
+        named_colors::{RED, WHITE},
     },
 };
 
@@ -209,7 +209,7 @@ impl Text1 {
                 unsafe { transmute::<u32, stereokit_rust::system::TextContext>(((self.text_context as u32) + 1) % 4) };
         }
         if Ui::button("Quit Demos", None) {
-            SkInfo::send_message(&self.sk_info, StepperAction::Quit(self.id.clone(), "Quit button test".to_string()));
+            SkInfo::send_event(&self.sk_info, StepperAction::Quit(self.id.clone(), "Quit button test".to_string()));
         }
         Ui::same_line();
         if Ui::button("test inject key F1", None) {

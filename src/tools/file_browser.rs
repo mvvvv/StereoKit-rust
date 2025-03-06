@@ -117,7 +117,7 @@ impl FileBrowser {
 
                     let file = self.dir.join(file_name_str);
 
-                    SkInfo::send_message(
+                    SkInfo::send_event(
                         &self.sk_info,
                         StepperAction::event(
                             self.caller.clone(),
@@ -167,6 +167,6 @@ impl FileBrowser {
     }
 
     fn close_me(&self) {
-        SkInfo::send_message(&self.sk_info, StepperAction::remove(self.id.clone()));
+        SkInfo::send_event(&self.sk_info, StepperAction::remove(self.id.clone()));
     }
 }

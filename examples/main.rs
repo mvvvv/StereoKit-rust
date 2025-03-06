@@ -8,7 +8,7 @@ use winit::platform::android::activity::AndroidApp;
 use demos::program::launch;
 #[cfg(feature = "event-loop")]
 use stereokit_rust::{
-    event_loop::StepperAction,
+    framework::StepperAction,
     sk::Sk,
     sk::{OriginMode, SkSettings},
     system::BackendOpenXR,

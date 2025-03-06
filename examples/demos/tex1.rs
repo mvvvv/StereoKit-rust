@@ -344,7 +344,7 @@ impl Tex1 {
         notif.position = Vec3::new(0.0, 0.3, -0.2).into();
         notif.text = "Close right hand to change textures".into();
 
-        SkInfo::send_message(&self.sk_info, StepperAction::add("HudNotifTex1", notif));
+        SkInfo::send_event(&self.sk_info, StepperAction::add("HudNotifTex1", notif));
         true
     }
 
@@ -475,7 +475,7 @@ impl Tex1 {
     fn close(&mut self, triggering: bool) -> bool {
         if triggering {
             // remove the notification if it hasn't been done yet.
-            SkInfo::send_message(&self.sk_info, StepperAction::remove("HudNotifTex1"));
+            SkInfo::send_event(&self.sk_info, StepperAction::remove("HudNotifTex1"));
             self.shutdown_completed = true;
             true
         } else {

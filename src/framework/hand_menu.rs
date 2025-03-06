@@ -322,9 +322,9 @@ pub enum HandMenuAction {
     Unchecked(u8),
 }
 
-///---The way to swap between more than one hand_menu_radial. Use this suffix for your ID to your HandMenuRadial menus
+///The way to swap between more than one hand_menu_radial. Use this prefix for your ID to your HandMenuRadial menus
 pub const HAND_MENU_RADIAL: &str = "hand_menu_radial_";
-///---If this menu is the one who takes the focus (true) or if he returns the focus on the menu previously active (false)
+///If this menu is the one who takes the focus (true) or if he returns the focus on the menu previously active (false)
 pub const HAND_MENU_RADIAL_FOCUS: &str = "hand_menu_radial_focus";
 
 /// A menu that shows up in circle around the user’s hand! Selecting an item can perform an action, or even spawn a
@@ -368,17 +368,17 @@ pub const HAND_MENU_RADIAL_FOCUS: &str = "hand_menu_radial_focus";
 ///     ],
 /// ));
 /// let id = HandMenuRadial::build_id("1");
-/// SkInfo::send_message(&Some(sk.get_sk_info_clone()),
+/// SkInfo::send_event(&Some(sk.get_sk_info_clone()),
 ///     StepperAction::add(id.clone(), hand_menu_stepper));
 ///
 /// number_of_steps=10;
 /// test_steps!(// !!!! Get a proper main loop !!!!
 ///     if iter == 1 {
-///         SkInfo::send_message(&Some(sk.get_sk_info_clone()),
+///         SkInfo::send_event(&Some(sk.get_sk_info_clone()),
 ///             StepperAction::event(id.clone(), HAND_MENU_RADIAL_FOCUS, &true.to_string()));
 ///     }
 ///     if iter == 8 {
-///         SkInfo::send_message(&Some(sk.get_sk_info_clone()),
+///         SkInfo::send_event(&Some(sk.get_sk_info_clone()),
 ///             StepperAction::remove(id.clone()));
 ///     }
 /// );

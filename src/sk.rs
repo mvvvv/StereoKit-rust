@@ -24,7 +24,7 @@ use winit::platform::android::{
 };
 
 #[cfg(feature = "event-loop")]
-use crate::event_loop::{StepperAction, StepperId, Steppers};
+use crate::framework::{StepperAction, StepperId, Steppers};
 #[cfg(feature = "event-loop")]
 use std::collections::VecDeque;
 #[cfg(feature = "event-loop")]
@@ -662,11 +662,11 @@ impl SkInfo {
     /// Send a StepperAction to the event loop
     /// sk_info must be a valid value
     #[cfg(feature = "event-loop")]
-    pub fn send_message(sk_info: &Option<Rc<RefCell<SkInfo>>>, message: StepperAction) {
+    pub fn send_event(sk_info: &Option<Rc<RefCell<SkInfo>>>, message: StepperAction) {
         if let Some(proxy) = Self::event_loop_proxy_from(sk_info) {
             proxy.send_event(message).unwrap();
         } else {
-            Log::err("The stepper must be initialized. SkInfo::send_message(??) not sent.");
+            Log::err("The stepper must be initialized. SkInfo::send_event(??) not sent.");
         }
     }
 
@@ -680,7 +680,7 @@ impl SkInfo {
         let key = key.to_string();
         let id = id.clone();
         Box::new(move |value: String| {
-            SkInfo::send_message(&sk_info, StepperAction::event(id.clone(), &key, &value));
+            SkInfo::send_event(&sk_info, StepperAction::event(id.clone(), &key, &value));
         })
     }
 }
@@ -1047,14 +1047,14 @@ impl Sk {
     }
 
     /// convenient way to push some Add steppers action
-    pub fn push_action(&mut self, action: StepperAction) {
-        self.steppers.push_action(action);
+    pub fn send_event(&mut self, action: StepperAction) {
+        self.steppers.send_event(action);
     }
 
     /// An enumerable list of all currently active ISteppers registered with StereoKit. This does not include Steppers
     /// that have been added, but are not yet initialized. Stepper initialization happens at the beginning of the frame,
     /// before the app's Step.
-    pub fn get_setters(&mut self) -> &Steppers {
+    pub fn get_steppers(&mut self) -> &Steppers {
         &self.steppers
     }
 
@@ -1140,7 +1140,7 @@ impl Sk {
                 }
                 Event::UserEvent(action) => {
                     Log::diag(format!("UserEvent {:?}", action));
-                    self.push_action(action);
+                    self.send_event(action);
                 }
                 Event::Suspended => Log::info("Suspended !!"),
                 Event::Resumed => Log::info("Resumed !!"),

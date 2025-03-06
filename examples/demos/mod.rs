@@ -44,79 +44,79 @@ impl Test {
     pub fn get_tests() -> Box<[Test]> {
         let tests = [
             Test::new("Test A", |sk| {
-                sk.push_action(StepperAction::add_default::<AStepper>("Test A"));
+                sk.send_event(StepperAction::add_default::<AStepper>("Test A"));
                 "Test A".to_string()
             }),
             Test::new("Test B", |sk| {
-                sk.push_action(StepperAction::add_default::<BStepper>("Test B"));
+                sk.send_event(StepperAction::add_default::<BStepper>("Test B"));
                 "Test B".to_string()
             }),
             Test::new("Test C", |sk| {
-                sk.push_action(StepperAction::add_default::<CStepper>("Test C"));
+                sk.send_event(StepperAction::add_default::<CStepper>("Test C"));
                 "Test C".to_string()
             }),
             Test::new("HandMenuRadial0", |sk| {
-                sk.push_action(StepperAction::add_default::<HandMenuRadial0>("HandMenuRadial0"));
+                sk.send_event(StepperAction::add_default::<HandMenuRadial0>("HandMenuRadial0"));
                 "HandMenuRadial0".to_string()
             }),
             Test::new("Threads1", |sk| {
-                sk.push_action(StepperAction::add_default::<Threads1>("Threads1"));
+                sk.send_event(StepperAction::add_default::<Threads1>("Threads1"));
                 "Threads1".to_string()
             }),
             Test::new("Threads2", |sk| {
-                sk.push_action(StepperAction::add_default::<Threads2>("Threads2"));
+                sk.send_event(StepperAction::add_default::<Threads2>("Threads2"));
                 "Threads2".to_string()
             }),
             Test::new("Anchor1", |sk| {
-                sk.push_action(StepperAction::add_default::<Anchor1>("Anchor1"));
+                sk.send_event(StepperAction::add_default::<Anchor1>("Anchor1"));
                 "Anchor1".to_string()
             }),
             Test::new("Text1", |sk| {
-                sk.push_action(StepperAction::add_default::<Text1>("Text1"));
+                sk.send_event(StepperAction::add_default::<Text1>("Text1"));
                 "Text1".to_string()
             }),
             Test::new("Font1", |sk| {
-                sk.push_action(StepperAction::add_default::<Font1>("Font1"));
+                sk.send_event(StepperAction::add_default::<Font1>("Font1"));
                 "Font1".to_string()
             }),
             Test::new("Text2", |sk| {
-                sk.push_action(StepperAction::add_default::<Text2>("Text2"));
+                sk.send_event(StepperAction::add_default::<Text2>("Text2"));
                 "Text2".to_string()
             }),
             Test::new("Sprite1", |sk| {
-                sk.push_action(StepperAction::add_default::<Sprite1>("Sprite1"));
+                sk.send_event(StepperAction::add_default::<Sprite1>("Sprite1"));
                 "Sprite1".to_string()
             }),
             Test::new("Tex1", |sk| {
-                sk.push_action(StepperAction::add_default::<Tex1>("Tex1"));
+                sk.send_event(StepperAction::add_default::<Tex1>("Tex1"));
                 "Tex1".to_string()
             }),
             Test::new("Ui1", |sk| {
-                sk.push_action(StepperAction::add_default::<Ui1>("Ui1"));
+                sk.send_event(StepperAction::add_default::<Ui1>("Ui1"));
                 "Ui1".to_string()
             }),
             Test::new("Anim1", |sk| {
-                sk.push_action(StepperAction::add_default::<Anim1>("Anim1"));
+                sk.send_event(StepperAction::add_default::<Anim1>("Anim1"));
                 "Anim1".to_string()
             }),
             Test::new("Shader1", |sk| {
-                sk.push_action(StepperAction::add_default::<Shader1>("Shader1"));
+                sk.send_event(StepperAction::add_default::<Shader1>("Shader1"));
                 "Shader1".to_string()
             }),
             Test::new("Math1", |sk| {
-                sk.push_action(StepperAction::add_default::<Math1>("Math1"));
+                sk.send_event(StepperAction::add_default::<Math1>("Math1"));
                 "Math1".to_string()
             }),
             Test::new("Asset1", |sk| {
-                sk.push_action(StepperAction::add_default::<Asset1>("Asset1"));
+                sk.send_event(StepperAction::add_default::<Asset1>("Asset1"));
                 "Asset1".to_string()
             }),
             Test::new("RenderList1", |sk| {
-                sk.push_action(StepperAction::add_default::<RenderList1>("RenderList1"));
+                sk.send_event(StepperAction::add_default::<RenderList1>("RenderList1"));
                 "RenderList1".to_string()
             }),
             Test::new("Biplane1", |sk| {
-                sk.push_action(StepperAction::add_default::<Biplane1>("Biplane1"));
+                sk.send_event(StepperAction::add_default::<Biplane1>("Biplane1"));
                 "Biplane1".to_string()
             }),
         ];

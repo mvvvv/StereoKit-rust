@@ -38,11 +38,11 @@ pub const PASSTHROUGH_FLIP: &str = "PassthroughFlip";
 /// let mut new_passthrough_value = true; // !!!! Get a proper way to decide of this value !!!!
 /// let passthrough_enabled = system::BackendOpenXR::ext_enabled("XR_FB_passthrough");
 /// if passthrough_enabled {
-///    sk.push_action(StepperAction::add_default::<PassthroughFbExt>(
+///    sk.send_event(StepperAction::add_default::<PassthroughFbExt>(
 ///        "PassthroughFbExt",
 ///    ));
 ///    if passthrough {
-///        sk.push_action(StepperAction::event(
+///        sk.send_event(StepperAction::event(
 ///            "main".into(),
 ///            PASSTHROUGH_FLIP,
 ///            "1",
@@ -65,7 +65,7 @@ pub const PASSTHROUGH_FLIP: &str = "PassthroughFlip";
 ///      } else {
 ///          Log::diag("Deactivate passthrough");
 ///      }
-///      sk.push_action(StepperAction::event("main".into(), PASSTHROUGH_FLIP, string_value))
+///      sk.send_event(StepperAction::event("main".into(), PASSTHROUGH_FLIP, string_value))
 ///      
 ///  }
 /// ```

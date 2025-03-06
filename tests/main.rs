@@ -69,15 +69,15 @@ fn hand_menu_radial0() {
         ],
     ));
     let id = HandMenuRadial::build_id("1");
-    SkInfo::send_message(&Some(sk.get_sk_info_clone()), StepperAction::add(id.clone(), hand_menu_stepper));
+    SkInfo::send_event(&Some(sk.get_sk_info_clone()), StepperAction::add(id.clone(), hand_menu_stepper));
     number_of_steps = 10;
     test_steps!(// !!!! Get a proper main loop !!!!
         if iter == 1 {
-            SkInfo::send_message(&Some(sk.get_sk_info_clone()),
+            SkInfo::send_event(&Some(sk.get_sk_info_clone()),
                 StepperAction::event(id.clone(), HAND_MENU_RADIAL_FOCUS, &true.to_string()));
         }
         if iter == 8 {
-            SkInfo::send_message(&Some(sk.get_sk_info_clone()),
+            SkInfo::send_event(&Some(sk.get_sk_info_clone()),
                 StepperAction::remove(id.clone()));
         }
     );

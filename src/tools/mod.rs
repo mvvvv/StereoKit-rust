@@ -21,3 +21,6 @@ pub mod screenshot;
 
 #[cfg(feature = "event-loop")]
 pub mod virtual_kbd_meta;
+
+#[cfg(feature = "event-loop")]
+pub mod title;

@@ -51,11 +51,13 @@ impl AsRef<Anchor> for Anchor {
         self
     }
 }
+/// StereoKit internal type.
 #[repr(C)]
 #[derive(Debug)]
 pub struct _AnchorT {
     _unused: [u8; 0],
 }
+/// StereoKit ffi type.
 pub type AnchorT = *mut _AnchorT;
 
 bitflags::bitflags! {
