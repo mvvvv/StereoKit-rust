@@ -42,11 +42,13 @@ impl AsRef<Shader> for Shader {
         self
     }
 }
+/// StereoKit internal type.
 #[repr(C)]
 #[derive(Debug)]
 pub struct _ShaderT {
     _unused: [u8; 0],
 }
+/// StereoKit ffi type.
 pub type ShaderT = *mut _ShaderT;
 unsafe extern "C" {
     pub fn shader_find(id: *const ::std::os::raw::c_char) -> ShaderT;
