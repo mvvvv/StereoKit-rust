@@ -9,4 +9,7 @@
   "!!!rust-analyzer.cargo.buildScripts.enable": false,
   "rust-analyzer.cargo.buildScripts.overrideCommand": null,
   "rust-analyzer.checkOnSave": true,
+  "files.associations": {
+    "locale": "cpp"
+  },
 }
