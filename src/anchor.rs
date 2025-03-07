@@ -112,7 +112,7 @@ impl IAsset for Anchor {
 impl Anchor {
     /// Searches the asset list for an anchor with the given Id.
     /// <https://stereokit.net/Pages/StereoKit/Anchor/Find.html>
-    /// * id - The Id to search for.
+    /// * `id` - The Id to search for.
     ///
     /// see also [`anchor_find`]
     /// ### Examples
@@ -156,7 +156,7 @@ impl Anchor {
 
     /// This creates a new Anchor from a world space pose.
     /// <https://stereokit.net/Pages/StereoKit/Anchor/FromPose.html>
-    /// * pose - A world space pose for the new Anchor
+    /// * `pose` - A world space pose for the new Anchor
     ///
     /// see also [`anchor_create`]
     /// ### Examples
@@ -180,7 +180,7 @@ impl Anchor {
     /// managing your assets, or finding them later on! This is StereoKit’s asset ID, and not the system’s unique Name
     /// for the anchor.
     /// <https://stereokit.net/Pages/StereoKit/Anchor/Id.html>
-    /// * id - The new id for this Anchor.
+    /// * `id` - The new id for this Anchor.
     ///
     /// see also [`anchor_set_id`]
     /// ### Examples
@@ -371,9 +371,9 @@ impl Anchor {
     /// Tries to get the underlying perception spatial anchor
     /// for platforms using Microsoft spatial anchors.
     /// <https://stereokit.net/Pages/StereoKit/Anchor/TryGetPerceptionAnchor.html>
-    /// * 'T' - The type of the spatial anchor. Must corresponds to the the Windows API type
+    /// * `'T'` - The type of the spatial anchor. Must corresponds to the the Windows API type
     ///   of Windows.Perception.Spatial.SpatialAnchor.
-    /// * spatial_anchor - The spatial anchor.
+    /// * `spatial_anchor` - The spatial anchor.
     ///
     /// returns Some(anchor) if the perception spatial anchor was successfully obtained, false otherwise.
     ///
