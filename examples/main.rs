@@ -18,10 +18,10 @@ use stereokit_rust::{
 #[cfg(feature = "event-loop")]
 use winit::event_loop::EventLoop;
 
-#[allow(dead_code)]
+#[unsafe(no_mangle)]
 #[cfg(target_os = "android")]
 #[cfg(feature = "event-loop")]
-fn android_main(app: AndroidApp) {
+pub fn android_main(app: AndroidApp) {
     use stereokit_rust::sk::DepthMode;
 
     let mut settings = SkSettings::default();

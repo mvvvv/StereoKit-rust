@@ -8,13 +8,13 @@ macro_rules! cargo_link {
 }
 
 fn main() {
-    let target_os = var("CARGO_CFG_TARGET_OS").unwrap();
-    let target_family = var("CARGO_CFG_TARGET_FAMILY").unwrap();
-    let profile = var("PROFILE").unwrap();
-    let target_env = var("CARGO_CFG_TARGET_ENV").unwrap();
+    let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap();
+    let target_family = env::var("CARGO_CFG_TARGET_FAMILY").unwrap();
+    let profile = env::var("PROFILE").unwrap();
+    let target_env = env::var("CARGO_CFG_TARGET_ENV").unwrap();
 
-    let win_gnu_libs = var("SK_RUST_WIN_GNU_LIBS").unwrap_or_default();
-    let win_gl = !var("SK_RUST_WINDOWS_GL").unwrap_or_default().is_empty();
+    let win_gnu_libs = env::var("SK_RUST_WIN_GNU_LIBS").unwrap_or_default();
+    let win_gl = !env::var("SK_RUST_WINDOWS_GL").unwrap_or_default().is_empty();
     let skc_in_dll = cfg!(feature = "skc-in-dll");
 
     if win_gl {
@@ -24,7 +24,9 @@ fn main() {
     }
 
     if target_os == "macos" {
-        println!("cargo:warning=You seem to be building for MacOS! We still enable builds so that rust-analyzer works, but this won't actually build StereoKit so it'll be pretty non-functional.");
+        println!(
+            "cargo:warning=You seem to be building for MacOS! We still enable builds so that rust-analyzer works, but this won't actually build StereoKit so it'll be pretty non-functional."
+        );
         return;
     }
 
@@ -54,11 +56,11 @@ fn main() {
         cmake_config.define("SK_WINDOWS_GL", "ON");
     }
 
-    if cfg!(feature = "force-local-deps") && var("FORCE_LOCAL_DEPS").is_ok() {
+    if cfg!(feature = "force-local-deps") && env::var("FORCE_LOCAL_DEPS").is_ok() {
         println!("cargo:info=Force local deps !!");
         // Helper function to define optional dependencies
         fn define_if_exists(var_name: &str, cmake_var: &str, config: &mut Config) {
-            if let Ok(value) = var(var_name) {
+            if let Ok(value) = env::var(var_name) {
                 config.define(cmake_var, value);
             }
         }
@@ -229,9 +231,26 @@ fn main() {
                 let dest_file_so = runtime_libs.join("libopenxr_loader.so");
                 if cfg!(feature = "build-dynamic-openxr") {
                     let file_so = dst.join("lib/libopenxr_loader.so");
-                    let _lib_o = fs::copy(file_so, dest_file_so).unwrap();
+                    let _lib_o = fs::copy(file_so, dest_file_so).expect("Unable to copy libopenxr_loader.so");
                 } else if let Err(_e) = fs::remove_file(dest_file_so) {
                 }
+
+                // // On Android, we must ensure that we're dynamically linking against the C++ standard library.
+                // // For more details, see https://github.com/rust-windowing/android-ndk-rs/issues/167
+                // // build tools do not add libc++_shared.so to the APK so we must do it ourselves
+                // let host_tab = format!("{}-{}", env::consts::OS, env::consts::ARCH);
+                // let target = env::var("TARGET").unwrap();
+                // let ndk = env::var("ANDROID_NDK_ROOT").unwrap();
+
+                // let libcxx = format!(
+                //     "{}/toolchains/llvm/prebuilt/{}/sysroot/usr/lib/{}/libc++_shared.so",
+                //     ndk, host_tab, target
+                // );
+                // println!("cargo:info=We copy {} to the {:?}", libcxx, runtime_libs);
+                // let dest_file_so = runtime_libs.join("libc++_shared.so");
+                // fs::copy(libcxx, dest_file_so).expect("Unable to copy libc++_shared.so");
+
+                cargo_link!("dylib=c++");
             } else {
                 cargo_link!("X11");
                 cargo_link!("Xfixes");
@@ -250,11 +269,4 @@ fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=StereoKit/StereoKitC/stereokit.h");
     println!("cargo:rerun-if-changed=StereoKit/StereoKitC/stereokit_ui.h");
-
-    // On Android, we must ensure that we're dynamically linking against the C++ standard library.
-    // For more details, see https://github.com/rust-windowing/android-ndk-rs/issues/167
-    use std::env::var;
-    if var("TARGET").map(|target| target.ends_with("-linux-android")).unwrap_or(false) {
-        cargo_link!("dylib=c++");
-    }
 }

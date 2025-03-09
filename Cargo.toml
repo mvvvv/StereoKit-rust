@@ -32,7 +32,7 @@ crate-type = ["lib", "cdylib"]
 name = "cargo-compile_sks"
 
 [build-dependencies]
-cmake = "0.1"
+cmake = "0.1.54"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
@@ -76,8 +76,8 @@ harness = false
 
 [package.metadata.android]
 package = "com.stereokit.rust_binding.demos"
-build_targets = ["aarch64-linux-android"]
-#build_targets = ["aarch64-linux-android","x86_64-linux-android"]
+#build_targets = ["aarch64-linux-android"]
+build_targets = ["aarch64-linux-android","x86_64-linux-android"]
 apk_label = "Stereokit-rust-demos"
 assets = "./assets"
 resources = "./res"
@@ -88,7 +88,7 @@ runtime_libs = "./target/runtime_libs"      #---the way to build and add Khronos
 [package.metadata.android.sdk]
 min_sdk_version = 29
 target_sdk_version = 32
-max_sdk_version = 32
+max_sdk_version = 34
 
 #---Android features common
 [[package.metadata.android.uses_feature]]
