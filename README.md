@@ -5,7 +5,7 @@
 <p align="center">
     <a href="https://github.com/mvvvv/StereoKit-rust/branches"><img src="https://img.shields.io/github/last-commit/mvvvv/StereoKit-rust/master" /></a>
     <a href="https://tldrlegal.com/license/mit-license"><img src="https://img.shields.io/github/license/mvvvv/StereoKit-rust" /></a>
-    ![Build & test](https://github.com/mvvvv/StereoKit-rust/actions/workflows/rust.yml/badge.svg?event=push)
+    ![Build/test](https://github.com/mvvvv/StereoKit-rust/actions/workflows/rust.yml/badge.svg?event=push)
 </p>
 
 Its purpose is to improve the previous rust project <https://github.com/MalekiRe/stereokit-rs>:
