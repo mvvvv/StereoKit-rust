@@ -86,6 +86,12 @@ pub mod maths;
 /// [![Mesh intersect](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_intersect.jpeg)](mesh::Mesh::intersect)
 pub mod mesh;
 
+/// Model related structs and functions.
+///
+/// ## Examples
+/// which are also unit tests:
+///
+/// [![Model from file](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_from_file.jpeg)](model::Model::from_file)
 pub mod model;
 
 pub mod prelude;

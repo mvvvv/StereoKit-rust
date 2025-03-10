@@ -1092,10 +1092,10 @@ impl Mesh {
     /// assert_eq!(plane.get_vert_count(), 4, "plane should have 4 vertices");
     /// assert_eq!(plane.get_ind_count(), 6, "plane should have 6 indices");
     ///
-    /// let triangle0 = plane.get_triangle(0).expect("triangle 0 should exist");    
-    /// let triangle1 = plane.get_triangle(1).expect("triangle 1 should exist");
+    /// let triangle0 = plane.get_triangle(0 * 3).expect("triangle 0 should exist");    
+    /// let triangle1 = plane.get_triangle(1 * 3).expect("triangle 1 should exist");
     /// assert!(plane.get_triangle(5).is_some(), "triangle 5 should exist");
-    /// assert!(plane.get_triangle(6).is_none(), "triangle 6 should not exist");
+    /// assert!(plane.get_triangle(2 * 3).is_none(), "triangle 6 should not exist");
     ///
     /// let vertices0 = [
     ///    Vertex::new([ 0.5, 0.0, 0.5].into(),Vec3::UP,Some(Vec2::ONE) , None),
@@ -1105,9 +1105,9 @@ impl Mesh {
     /// assert_eq!(triangle0, vertices0);
     ///
     /// let vertices1 = [
-    ///    Vertex::new([ 0.5, 0.0,-0.5].into(),Vec3::UP,Some(Vec2::X)   , None),
-    ///    Vertex::new([-0.5, 0.0,-0.5].into(),Vec3::UP,Some(Vec2::ZERO), None),
     ///    Vertex::new([-0.5, 0.0, 0.5].into(),Vec3::UP,Some(Vec2::Y)   , None),
+    ///    Vertex::new([ 0.5, 0.0, 0.5].into(),Vec3::UP,Some(Vec2::ONE) , None),
+    ///    Vertex::new([-0.5, 0.0,-0.5].into(),Vec3::UP,Some(Vec2::ZERO), None),
     ///    ];
     /// assert_eq!(triangle1, vertices1);
     /// ```
