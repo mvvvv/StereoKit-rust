@@ -3901,7 +3901,7 @@ impl Ray {
     ///   transformed back into world space later.
     /// - The indice of the mesh where the intersection occurs.
     ///
-    /// see also [`crate::mesh::mesh_ray_intersect`] [`Ray::intersect_mesh_to_ptr`]  same as [`crate.mesh.Mesh::intersect`]    
+    /// see also [`crate::mesh::mesh_ray_intersect`] [`Ray::intersect_mesh_to_ptr`]  same as [`crate::mesh::Mesh::intersect`]    
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -3968,7 +3968,7 @@ impl Ray {
     ///   If None has default value of Cull::Back.
     ///
     /// Returns true if an intersection occurs, false otherwise!
-    /// see also [`mesh_ray_intersect`] [`Ray::intersect_mesh`] same as [`crate.mesh.Mesh::intersect_to_ptr`]  
+    /// see also [`mesh_ray_intersect`] [`Ray::intersect_mesh`] same as [`crate::mesh::Mesh::intersect_to_ptr`]  
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -4030,7 +4030,7 @@ impl Ray {
     ///
     /// Returns the intersection point of the ray and the model, if an intersection occurs. This is in model space, and
     /// must be transformed back into world space later.
-    /// see also [`model_ray_intersect`] [`Ray::intersect_model_to_ptr`] same as [`crate.model.Model::intersect`]
+    /// see also [`model_ray_intersect`] [`Ray::intersect_model_to_ptr`] same as [`crate::model::Model::intersect`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -4081,7 +4081,7 @@ impl Ray {
     ///   guaranteed to be normalized, especially if your own model->world transform contains scale/skew in it.
     ///
     /// Returns - true if an intersection occurs, false otherwise!
-    /// see also [`model_ray_intersect`] [`Ray::intersect_model`] same as [`crate.model.Model::intersect_to_ptr`]
+    /// see also [`model_ray_intersect`] [`Ray::intersect_model`] same as [`crate::model::Model::intersect_to_ptr`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!

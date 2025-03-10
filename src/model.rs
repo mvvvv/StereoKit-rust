@@ -382,7 +382,7 @@ impl Model {
     ///
     /// see also [`crate::model::model_ray_intersect`]
     #[inline]
-    pub fn intersect_model(&self, ray: Ray, cull: Option<Cull>) -> Option<Vec3> {
+    pub fn intersect(&self, ray: Ray, cull: Option<Cull>) -> Option<Vec3> {
         ray.intersect_model(self, cull)
     }
 
@@ -395,7 +395,7 @@ impl Model {
     /// see also [`crate::model::model_ray_intersect`]
     #[inline]
     #[allow(clippy::not_unsafe_ptr_arg_deref)]
-    pub fn intersect_model_to_ptr(&self, ray: Ray, cull: Option<Cull>, out_ray: *mut Ray) -> bool {
+    pub fn intersect_to_ptr(&self, ray: Ray, cull: Option<Cull>, out_ray: *mut Ray) -> bool {
         ray.intersect_model_to_ptr(self, cull, out_ray)
     }
 }
