@@ -7,7 +7,7 @@
     <a href="https://tldrlegal.com/license/mit-license"><img src="https://img.shields.io/github/license/mvvvv/StereoKit-rust" /></a>
 </p>
 
-[![CI Status](https://github.com/mvvvv/StereoKit-rust/workflows/rust/badge.svg)](https://github.com/mvvvv/StereoKit-rust/actions)
+[![CI Status](https://github.com/mvvvv/StereoKit-rust/actions/workflows/rust.yml/badge.svg)](https://github.com/mvvvv/StereoKit-rust/actions)
 
 Its purpose is to improve the previous rust project <https://github.com/MalekiRe/stereokit-rs>:
 - by abandoning the automatic bindgen to avoid the multiplication of data types and eliminate costly transmutes.
