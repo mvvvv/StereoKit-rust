@@ -3,7 +3,7 @@ use crate::{
     maths::{Matrix, Quat, Vec3},
     prelude::*,
     system::{Text, TextStyle},
-    util::{Color32, Time, named_colors},
+    util::{Color32, named_colors},
 };
 /// Title is a basic Stepper to show a big title in the scene.
 #[derive(IStepper, Clone)]
@@ -63,7 +63,6 @@ impl Title {
 
     /// Called from IStepper::step, after check_event here you can draw your UI and scene
     fn draw(&mut self, token: &MainThreadToken) {
-        self.transform *= Matrix::r(Quat::from_angles(0.0, 10.0 * Time::get_stepf(), 0.0));
         Text::add_at(token, &self.text, self.transform, self.text_style, None, None, None, None, None, None);
     }
 }

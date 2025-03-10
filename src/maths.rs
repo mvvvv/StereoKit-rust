@@ -2557,7 +2557,7 @@ impl MulAssign<Matrix> for Matrix {
 ///
 /// let model = Model::from_file("center.glb", None).unwrap().copy();
 /// let cube = Mesh::cube();
-/// let mut material_cube =Material::ui_box();
+/// let mut material_cube = Material::ui_box();
 /// material_cube   .color_tint(named_colors::GOLD)
 ///                 .get_all_param_info().set_float("border_size", 0.05);
 ///

@@ -245,7 +245,6 @@ impl<'a> SkClosures<'a> {
     /// let transform = Matrix::IDENTITY;
     ///
     /// let mut iter = 0;
-    /// filename_scr = "screenshots/sk_closures.jpeg";
     /// SkClosures::run_app(sk, event_loop, |sk: &mut Sk, token: &MainThreadToken|  {
     ///     // Main loop where we draw stuff and do things!!
     ///     if iter > number_of_steps {sk.quit(None)}
@@ -302,7 +301,6 @@ impl<'a> SkClosures<'a> {
     ///
     /// let mut iter = 0;
     /// let mut hidden_time = std::time::SystemTime::now();
-    /// filename_scr = "screenshots/sk_closures.jpeg";
     /// SkClosures::new(sk, |sk, token|  {
     ///     // Main loop where we draw stuff and do things!!
     ///     if iter > number_of_steps {sk.quit(None)}

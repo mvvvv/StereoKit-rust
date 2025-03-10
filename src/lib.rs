@@ -79,6 +79,11 @@ pub mod maths;
 ///
 /// [![Mesh](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/meshes.jpeg)](mesh::Mesh)
 /// [![Vertex](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/basic_mesh.jpeg)](mesh::Vertex)
+/// [![Mesh bounds](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_bounds.jpeg)](mesh::Mesh::bounds)
+/// [![Mesh set_verts](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_set_verts.jpeg)](mesh::Mesh::set_verts)
+/// [![Mesh set_inds](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_set_inds.jpeg)](mesh::Mesh::set_inds)
+/// [![Mesh draw](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_draw.jpeg)](mesh::Mesh::draw)
+/// [![Mesh intersect](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_intersect.jpeg)](mesh::Mesh::intersect)
 pub mod mesh;
 
 pub mod model;
