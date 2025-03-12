@@ -74,7 +74,10 @@ impl Default for Shader1 {
 
         // brick
         let mut brick = Material::from_file("shaders/brick_pbr.hlsl.sks", "brick".into()).unwrap_or_default().copy();
-        brick.tex_transform(Vec4::new(0.0, 0.0, 0.04, 0.04));
+        brick
+            .tex_transform(Vec4::new(0.0, 0.0, 0.04, 0.04))
+            .get_all_param_info()
+            .set_bool("use_occlusion", true);
 
         //---- Transform Matrices.
         let transform_mesh = Matrix::trs(
