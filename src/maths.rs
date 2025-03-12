@@ -3901,7 +3901,7 @@ impl Ray {
     ///   transformed back into world space later.
     /// - The indice of the mesh where the intersection occurs.
     ///
-    /// see also [`crate::mesh::mesh_ray_intersect`] [`Ray::intersect_mesh_to_ptr`]  same as [`crate::mesh::Mesh::intersect`]    
+    /// see also [`mesh_ray_intersect`] [`Ray::intersect_mesh_to_ptr`]  same as [`Mesh::intersect`]    
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -3936,8 +3936,10 @@ impl Ray {
     ///     cube.draw(token, &material, transform, Some(named_colors::CYAN.into()), None);
     ///     sphere.draw(token, &material, transform, Some(named_colors::BLUE.into()), None);
     ///     Lines::add_ray(token, ray, 2.2, named_colors::WHITE, None, 0.02);
-    ///     sphere.draw(token, &material, transform_contact_cube, Some(named_colors::YELLOW.into()), None );
-    ///     sphere.draw(token, &material, transform_contact_sphere, Some(named_colors::RED.into()), None );
+    ///     sphere.draw(token, &material, transform_contact_cube,
+    ///                 Some(named_colors::YELLOW.into()), None );
+    ///     sphere.draw(token, &material, transform_contact_sphere,
+    ///                 Some(named_colors::RED.into()), None );
     /// );
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/intersect_meshes.jpeg" alt="screenshot" width="200">
@@ -3968,7 +3970,7 @@ impl Ray {
     ///   If None has default value of Cull::Back.
     ///
     /// Returns true if an intersection occurs, false otherwise!
-    /// see also [`mesh_ray_intersect`] [`Ray::intersect_mesh`] same as [`crate::mesh::Mesh::intersect_to_ptr`]  
+    /// see also [`mesh_ray_intersect`] [`Ray::intersect_mesh`] same as [`Mesh::intersect_to_ptr`]  
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -4030,7 +4032,7 @@ impl Ray {
     ///
     /// Returns the intersection point of the ray and the model, if an intersection occurs. This is in model space, and
     /// must be transformed back into world space later.
-    /// see also [`model_ray_intersect`] [`Ray::intersect_model_to_ptr`] same as [`crate::model::Model::intersect`]
+    /// see also [`model_ray_intersect`] [`Ray::intersect_model_to_ptr`] same as [`Model::intersect`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -4055,7 +4057,8 @@ impl Ray {
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     model.draw(token, transform, None, None);
     ///     Lines::add_ray(token, ray, 1.2, named_colors::WHITE, None, 0.02);
-    ///     point.draw(token, &material, transform_contact_model, Some(named_colors::RED.into()), None );
+    ///     point.draw(token, &material, transform_contact_model,
+    ///                Some(named_colors::RED.into()), None );
     /// );
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/intersect_model.jpeg" alt="screenshot" width="200">
@@ -4081,7 +4084,7 @@ impl Ray {
     ///   guaranteed to be normalized, especially if your own model->world transform contains scale/skew in it.
     ///
     /// Returns - true if an intersection occurs, false otherwise!
-    /// see also [`model_ray_intersect`] [`Ray::intersect_model`] same as [`crate::model::Model::intersect_to_ptr`]
+    /// see also [`model_ray_intersect`] [`Ray::intersect_model`] same as [`Model::intersect_to_ptr`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!

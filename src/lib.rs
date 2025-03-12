@@ -91,7 +91,14 @@ pub mod mesh;
 /// ## Examples
 /// which are also unit tests:
 ///
+/// [![Model](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model.jpeg)](model::Model)
+/// [![Model from memory](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_from_memory.jpeg)](model::Model::from_memory)
 /// [![Model from file](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_from_file.jpeg)](model::Model::from_file)
+/// [![Model from mesh](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_from_mesh.jpeg)](model::Model::from_mesh)
+/// [![Model bounds](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_bounds.jpeg)](model::Model::bounds)
+/// [![Model draw](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_draw.jpeg)](model::Model::draw)
+/// [![Model draw with material](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_draw_with_material.jpeg)](model::Model::draw_with_material)
+/// [![Model intersect](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_intersect.jpeg)](model::Model::intersect)
 pub mod model;
 
 pub mod prelude;

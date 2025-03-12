@@ -27,7 +27,35 @@ use std::{
 /// multiplication in order to execute a render command. So if you need speed, and only have a single mesh with a
 /// precalculated transform matrix, it can be faster to render a Mesh instead of a Model!
 /// <https://stereokit.net/Pages/StereoKit/Model.html>
-#[derive(Debug)]
+///
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model, mesh::Mesh, material::Material};
+///
+/// let sphere =       Mesh::generate_sphere(0.6, None);
+/// let rounded_cube = Mesh::generate_rounded_cube(Vec3::ONE * 0.6, 0.2, None);
+/// let cylinder =     Mesh::generate_cylinder(0.25, 0.6, Vec3::Z, None);
+///
+/// let transform1 = Matrix::t([-0.7,-0.5, 0.0]);
+/// let transform2 = Matrix::t([ 0.0, 0.0, 0.0]);
+/// let transform3 = Matrix::t([ 0.7, 0.5, 0.0]);
+///
+/// let material = Material::pbr();
+///
+/// let model = Model::new();
+/// let mut nodes = model.get_nodes();
+/// nodes.add("sphere",   transform1 , Some(&sphere),       Some(&material), true)
+///      .add("cube",     transform2 , Some(&rounded_cube), Some(&material), true)
+///      .add("cylinder", transform3 , Some(&cylinder),     Some(&material), true);
+///
+/// filename_scr = "screenshots/model.jpeg";
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+///     model.draw(token, Matrix::IDENTITY, None, None);
+/// );
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model.jpeg" alt="screenshot" width="200">
+#[derive(Debug, PartialEq)]
 pub struct Model(pub NonNull<_ModelT>);
 impl Drop for Model {
     fn drop(&mut self) {
@@ -47,11 +75,13 @@ impl From<Model> for ModelT {
     }
 }
 
+/// StereoKit internal type.
 #[repr(C)]
 #[derive(Debug)]
 pub struct _ModelT {
     _unused: [u8; 0],
 }
+/// StereoKit ffi type.
 pub type ModelT = *mut _ModelT;
 
 unsafe extern "C" {
@@ -137,6 +167,8 @@ impl IAsset for Model {
 impl Default for Model {
     /// Create an empty model
     /// <https://stereokit.net/Pages/StereoKit/Model/Model.html>
+    ///
+    /// see also [`Model::new`]
     fn default() -> Self {
         Self::new()
     }
@@ -146,7 +178,34 @@ impl Model {
     /// Create an empty model
     /// <https://stereokit.net/Pages/StereoKit/Model/Model.html>
     ///
-    /// see also [`crate::model::model_create`]
+    /// see also [`model_create`] [`Model::default`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model, mesh::Mesh, material::Material};
+    ///
+    /// // Let's create a model with two identical spheres.
+    /// let sphere =       Mesh::generate_sphere(0.6, None);
+    ///
+    /// let transform_mesh1  = Matrix::t([-0.7,-0.5, 0.0]);
+    /// let transform_mesh2  = Matrix::t([ 0.7, 0.5, 0.0]);
+    ///
+    /// let transform_model  = Matrix::r([ 0.0, 180.0, 0.0]);
+    ///
+    /// let material = Material::pbr();
+    ///
+    /// let model = Model::new();
+    /// let mut nodes = model.get_nodes();
+    /// assert_eq!(nodes.get_count(), 0);
+    ///
+    /// nodes.add("sphere1", transform_mesh1, Some(&sphere), Some(&material), true);
+    /// nodes.add("sphere2", transform_mesh2, Some(&sphere), Some(&material), true);
+    /// assert_eq!(nodes.get_count(), 2);
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     model.draw(token, transform_model, None, None);
+    /// );
+    /// ```
     pub fn new() -> Model {
         Model(NonNull::new(unsafe { model_create() }).unwrap())
     }
@@ -154,30 +213,84 @@ impl Model {
     /// Creates a single mesh subset Model using the indicated Mesh and Material!
     /// An id will be automatically generated for this asset.
     /// <https://stereokit.net/Pages/StereoKit/Model/FromMesh.html>
+    /// * `mesh` - The mesh to use for this model.
+    /// * `material` - The material to use for this mesh.
     ///
-    /// see also [`crate::model::model_create_mesh`]
+    /// see also [`model_create_mesh`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model, mesh::Mesh, material::Material};
+    ///
+    /// // Let's create a model with two identical spheres.
+    /// let sphere =       Mesh::generate_sphere(0.8, None);
+    ///
+    /// let transform_mesh1  = Matrix::t([-0.5,-0.5, 0.0]);
+    /// let transform_mesh2  = Matrix::t([ 0.5, 0.5, 0.0]);
+    ///
+    /// let transform_model  = Matrix::r([ 0.0, 150.0, 0.0]);
+    ///
+    /// let material = Material::pbr();
+    ///
+    /// let model = Model::from_mesh(&sphere, &material);
+    /// let mut nodes = model.get_nodes();
+    /// assert_eq!(nodes.get_count(), 1);
+    ///
+    /// nodes.add("sphere2", transform_mesh1, Some(&sphere), Some(&material), true);
+    /// nodes.add("sphere3", transform_mesh2, Some(&sphere), Some(&material), true);
+    /// assert_eq!(nodes.get_count(), 3);
+    ///
+    /// filename_scr = "model_from_mesh.jpeg";
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     model.draw(token, transform_model, None, None);
+    /// );
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_from_mesh.jpeg" alt="screenshot" width="200">
     pub fn from_mesh<Me: AsRef<Mesh>, Ma: AsRef<Material>>(mesh: Me, material: Ma) -> Model {
         Model(
             NonNull::new(unsafe { model_create_mesh(mesh.as_ref().0.as_ptr(), material.as_ref().0.as_ptr()) }).unwrap(),
         )
     }
 
-    /// Loads a list of mesh and material subsets from a .obj, .stl, .ply (ASCII),
-    /// .gltf, or .glb file stored in memory. Note that this function won’t work
-    /// well on files that reference other files, such as .gltf files with
+    /// Loads a list of mesh and material subsets from a .obj, .stl, .ply (ASCII), .gltf, or .glb file stored in memory.
+    /// Note that this function won’t work well on files that reference other files, such as .gltf files with
     /// references in them.
     /// <https://stereokit.net/Pages/StereoKit/Model/FromMemory.html>
+    /// * `file_name` - StereoKit still uses the filename of the data for format discovery, but not asset Id creation.
+    ///   If you don’t have a real filename for the data, just pass in an extension with a leading ‘.’ character here,
+    ///   like “.glb”.
+    /// * `data` - The binary data of a model file, this is NOT a raw array of vertex and index data!
+    /// * `shader` - The shader to use for the model's materials!, if None, this will automatically determine the best
+    ///   available shader to use.
     ///
-    /// see also [`crate::model::model_create_mem`]
+    /// see also [`model_create_mem`] [`Model::from_file`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model};
+    ///
+    /// let my_bytes = std::include_bytes!("../assets/center.glb");
+    ///
+    /// let model = Model::from_memory("my_bytes_center.glb", my_bytes, None).unwrap().copy();
+    /// let transform = Matrix::trs(&(Vec3::NEG_Y * 0.40),
+    ///                             &([0.0, 160.0, 0.0].into()),
+    ///                             &(Vec3::ONE * 0.25));
+    ///
+    /// filename_scr = "screenshots/model_from_memory.jpeg";
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     model.draw(token, transform, None, None);
+    /// );
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_from_memory.jpeg" alt="screenshot" width="200">    
     pub fn from_memory<S: AsRef<str>>(
         file_name: S,
-        memory: &[u8],
+        data: &[u8],
         shader: Option<Shader>,
     ) -> Result<Model, StereoKitError> {
         let c_file_name = CString::new(file_name.as_ref())?;
         let shader = shader.map(|shader| shader.0.as_ptr()).unwrap_or(null_mut());
         match NonNull::new(unsafe {
-            model_create_mem(c_file_name.as_ptr(), memory.as_ptr() as *const c_void, memory.len(), shader)
+            model_create_mem(c_file_name.as_ptr(), data.as_ptr() as *const c_void, data.len(), shader)
         }) {
             Some(model) => Ok(Model(model)),
             None => Err(StereoKitError::ModelFromMem(file_name.as_ref().to_owned(), "file not found!".to_owned())),
@@ -190,20 +303,22 @@ impl Model {
     /// loaded the first time and all its modifications afterwards. If you want two different instances, remember to
     /// copy the model while not forgetting that the assets that the copies contain when loaded are the same.
     /// <https://stereokit.net/Pages/StereoKit/Model/FromFile.html>
-    /// * file - Name of the file to load! This gets prefixed with the StereoKit asset folder if no drive letter
+    /// * `file` - Name of the file to load! This gets prefixed with the StereoKit asset folder if no drive letter
     ///   is specified in the path.
-    /// * shader - The shader to use for the model’s materials! If None, this will automatically determine the best
+    /// * `shader` - The shader to use for the model’s materials! If None, this will automatically determine the best
     ///   shader available to use.
     ///
-    /// see also [`crate::model::model_create_file`]
-    ///
+    /// see also [`model_create_file`] [`Model::from_memory`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model};
     ///
-    /// let model = Model::from_file("center.glb", None).unwrap().copy();
-    /// let transform = Matrix::ts(Vec3::NEG_Y * 0.40, Vec3::ONE * 0.25);
+    /// let model = Model::from_file("center.glb", None)
+    ///                              .expect("Could not load model").copy();
+    /// let transform = Matrix::trs(&(Vec3::NEG_Y * 0.40),
+    ///                             &([0.0, 190.0, 0.0].into()),
+    ///                             &(Vec3::ONE * 0.25));
     ///
     /// filename_scr = "screenshots/model_from_file.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
@@ -225,15 +340,46 @@ impl Model {
     /// copied.
     /// <https://stereokit.net/Pages/StereoKit/Model/Copy.html>
     ///
-    /// see also [`crate::model::model_copy()`]
+    /// see also [`model_copy()`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model};
+    ///
+    /// let model = Model::from_file("center.glb", None).expect("Model should load");
+    /// let model_copy = model.copy();
+    ///
+    /// assert_ne!(model, model_copy);
+    /// assert_eq!(model.get_nodes().get_count(), model_copy.get_nodes().get_count());
+    ///
+    /// // The nodes contains the same meshes as these are not copied.
+    /// assert_eq!(model.get_nodes().get_index(0).expect("Node should exist").get_mesh(),
+    ///            model_copy.get_nodes().get_index(0).expect("Node should exist").get_mesh());
+    ///
+    /// assert_eq!(model.get_nodes().get_index(2).expect("Node should exist").get_mesh(),
+    ///            model_copy.get_nodes().get_index(2).expect("Node should exist").get_mesh());
+    /// ```
     pub fn copy(&self) -> Model {
         Model(NonNull::new(unsafe { model_copy(self.0.as_ptr()) }).unwrap())
     }
 
     /// Looks for a Model asset that’s already loaded, matching the given id!
     /// <https://stereokit.net/Pages/StereoKit/Model/Find.html>
+    /// * `id` - Which Model are you looking for?
     ///
-    /// see also [`crate::model::model_find`]
+    /// see also [`model_find`] [`Model::clone_ref`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model};
+    ///
+    /// let mut model = Model::from_file("center.glb", None).expect("Model should load");
+    /// model.id("my_model_id");
+    ///
+    /// let same_model = Model::find("my_model_id").expect("Model should be found");
+    ///
+    /// assert_eq!(model, same_model);
+    /// ```
     pub fn find<S: AsRef<str>>(id: S) -> Result<Model, StereoKitError> {
         let c_str = CString::new(id.as_ref())?;
         match NonNull::new(unsafe { model_find(c_str.as_ptr()) }) {
@@ -246,7 +392,18 @@ impl Model {
     /// calling find() method.
     /// <https://stereokit.net/Pages/StereoKit/Model/Find.html>
     ///
-    /// see also [`crate::model::model_find()`]
+    /// see also [`model_find`] [`Model::find`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model};
+    ///
+    /// let mut model = Model::from_file("center.glb", None).expect("Model should load");
+    ///
+    /// let same_model = model.clone_ref();
+    ///
+    /// assert_eq!(model, same_model);
+    /// ```
     pub fn clone_ref(&self) -> Model {
         Model(NonNull::new(unsafe { model_find(model_get_id(self.0.as_ptr())) }).expect("<asset>::clone_ref failed!"))
     }
@@ -255,7 +412,18 @@ impl Model {
     /// Set a new id to the model.
     /// <https://stereokit.net/Pages/StereoKit/Model/Id.html>
     ///
-    /// see also [`crate::model::model_set_id`]
+    /// see also [`model_set_id`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model};
+    ///
+    /// let mut model = Model::new();
+    /// assert!(model.get_id().starts_with("auto/model_"));
+    ///
+    /// model.id("my_model_id");
+    /// assert_eq!(model.get_id(), "my_model_id");
+    /// ```
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
         let c_str = CString::new(id.as_ref()).unwrap();
         unsafe { model_set_id(self.0.as_ptr(), c_str.as_ptr()) };
@@ -266,18 +434,94 @@ impl Model {
     /// visibility testing, UI layout, and probably other things. While it’s normally calculated from the mesh bounds, you can also override this to suit your needs.
     /// <https://stereokit.net/Pages/StereoKit/Model/Bounds.html>
     ///
-    /// see also [`crate::model::model_set_bounds`][`crate::model::model_recalculate_bounds`]
+    /// see also [`model_set_bounds`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix, Bounds}, model::Model, mesh::Mesh,
+    ///                      material::Material, util::named_colors};
+    ///
+    /// let cube_bounds  = Mesh::cube();
+    ///
+    /// let cube = Mesh::generate_cube(Vec3::ONE * 0.3, None);
+    ///
+    /// let transform1 = Matrix::t([-0.30,-0.30,-0.30]);
+    /// let transform2 = Matrix::t([ 0.30, 0.30, 0.30]);
+    ///
+    /// let material = Material::pbr();
+    /// let mut model = Model::new();
+    /// let mut nodes = model.get_nodes();
+    /// nodes.get_root_node()
+    ///      .add_child("cube1", transform1, Some(&cube), Some(&material), true)
+    ///      .add_child("cube2", transform2, Some(&cube), Some(&material), true);
+    ///
+    /// let mut material_before = Material::ui_box();
+    /// material_before .color_tint(named_colors::GOLD)
+    ///                 .get_all_param_info().set_float("border_size", 0.025);
+    ///
+    /// let mut material_after = material_before.copy();
+    /// material_after.color_tint(named_colors::RED);
+    ///
+    /// let bounds = model.get_bounds();
+    /// let transform_before = Matrix::ts( bounds.center, bounds.dimensions);
+    /// assert_eq!(bounds.center, Vec3::ZERO);
+    /// assert_eq!(bounds.dimensions, Vec3::ONE * 0.9);
+    ///
+    /// // let's reduce the bounds to the upper cube only
+    /// model.bounds( Bounds::new([0.30, 0.30, 0.30].into(), Vec3::ONE * 0.301));
+    /// let new_bounds = model.get_bounds();
+    /// let transform_after = Matrix::ts( new_bounds.center, new_bounds.dimensions);
+    ///
+    /// filename_scr = "screenshots/model_bounds.jpeg";
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     model.draw(token, Matrix::IDENTITY, None, None);
+    ///     cube_bounds.draw(  token, &material_before, transform_before, None, None);
+    ///     cube_bounds.draw(  token, &material_after,  transform_after,  None, None);
+    /// );
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_bounds.jpeg" alt="screenshot" width="200">
     pub fn bounds(&mut self, bounds: impl AsRef<Bounds>) -> &mut Self {
         unsafe { model_set_bounds(self.0.as_ptr(), bounds.as_ref()) };
         self
     }
 
-    /// Adds the model to the render queue of this frame
+    /// Adds this Model to the render queue for this frame! If the Hierarchy has a transform on it, that transform is
+    /// combined with the Matrix provided here.
     /// <https://stereokit.net/Pages/StereoKit/Model/Draw.html>
-    /// * color_linear - if None has default value of WHITE
-    /// * layer - if None has default value of Layer0
+    /// * `token` - To be sure we are in the right thread, once per frame.
+    /// * `transform` - A Matrix that will transform the Model from Model Space into the current Hierarchy Space.
+    /// * `color_linear` - A per-instance linear space color value to pass into the shader! Normally this gets used like
+    ///   a material tint. If you’re adventurous and don’t need per-instance colors, this is a great spot to pack in
+    ///   extra per-instance data for the shader! If None has default value of WHITE.
+    /// * `layer` - All visuals are rendered using a layer bit-flag. By default, all layers are rendered, but this can
+    ///   be useful for filtering out objects for different rendering purposes! For example: rendering a mesh over the
+    ///   user’s head from a 3rd person perspective, but filtering it out from the 1st person perspective. If None has
+    ///   default value of Layer0.
     ///
-    /// see also [`crate::model::model_draw`]
+    /// see also [`model_draw`] [`Model::draw_with_material`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model, util::named_colors,
+    ///                      system::RenderLayer};
+    ///
+    /// let model = Model::from_file("center.glb", None)
+    ///                              .expect("Could not load model").copy();
+    /// let transform1 = Matrix::trs(&([-0.70, -0.70, 0.0].into()),
+    ///                              &([0.0, 190.0, 0.0].into()),
+    ///                              &(Vec3::ONE * 0.25));
+    /// let transform2 = transform1 * Matrix::t(Vec3::X * 0.70);
+    /// let transform3 = transform2 * Matrix::t(Vec3::X * 0.70);
+    ///
+    /// filename_scr = "screenshots/model_draw.jpeg";
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     model.draw(token, transform1, None, None);
+    ///     model.draw(token, transform2, Some(named_colors::YELLOW.into()), None);
+    ///     model.draw(token, transform3, Some(named_colors::BLACK.into()),
+    ///                Some(RenderLayer::Layer_first_person));
+    /// );
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_draw.jpeg" alt="screenshot" width="200">
     pub fn draw(
         &self,
         _token: &MainThreadToken,
@@ -295,11 +539,48 @@ impl Model {
 
     /// Adds the model to the render queue of this frame overrided with the given material
     /// <https://stereokit.net/Pages/StereoKit/Model/Draw.html>
-    /// * material_override - the material that will override all materials of this model
-    /// * color_linear - if None has default value of WHITE
-    /// * layer - if None has default value of Layer0
+    /// * `token` - To be sure we are in the right thread, once per frame.
+    /// * `material_override` - the material that will override all materials of this model
+    /// * `transform` - A Matrix that will transform the Model from Model Space into the current Hierarchy Space.
+    /// * `color_linear` - A per-instance linear space color value to pass into the shader! Normally this gets used like
+    ///   a material tint. If you’re adventurous and don’t need per-instance colors, this is a great spot to pack in
+    ///   extra per-instance data for the shader! If None has default value of WHITE.
+    /// * `layer` - All visuals are rendered using a layer bit-flag. By default, all layers are rendered, but this can
+    ///   be useful for filtering out objects for different rendering purposes! For example: rendering a mesh over the
+    ///   user’s head from a 3rd person perspective, but filtering it out from the 1st person perspective. If None has
+    ///   default value of Layer0.
     ///
-    /// see also [`crate::model::model_draw`]
+    /// see also [`model_draw`] [`Model::draw`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model, util::named_colors,
+    ///                      material::Material, system::RenderLayer};
+    ///
+    /// let model = Model::from_file("cuve.glb", None)
+    ///                              .expect("Could not load model").copy();
+    /// let transform1 = Matrix::trs(&([-0.50, -0.10, 0.0].into()),
+    ///                              &([45.0, 0.0, 0.0].into()),
+    ///                              &(Vec3::ONE * 0.07));
+    /// let transform2 = transform1 * Matrix::t(Vec3::X * 0.70);
+    /// let transform3 = transform2 * Matrix::t(Vec3::X * 0.70);
+    ///
+    /// let mut material_ui = Material::ui_box();
+    /// material_ui.color_tint(named_colors::GOLD)
+    ///            .get_all_param_info().set_float("border_size", 0.01);
+    ///
+    /// let material_brick =Material::from_file("shaders/brick_pbr.hlsl.sks",
+    ///                                         Some("my_material_brick")).unwrap();
+    ///
+    /// filename_scr = "screenshots/model_draw_with_material.jpeg";
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     model.draw_with_material(token, &material_ui,    transform1, None, None);
+    ///     model.draw_with_material(token, &material_brick, transform2, None, None);
+    ///     model.draw_with_material(token, &material_ui,    transform3, Some(named_colors::RED.into()),
+    ///                Some(RenderLayer::Layer_first_person));
+    /// );
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_draw_with_material.jpeg" alt="screenshot" width="200">
     pub fn draw_with_material<M: AsRef<Material>>(
         &self,
         _token: &MainThreadToken,
@@ -328,16 +609,83 @@ impl Model {
     /// but if you modify a Mesh that this Model is using, the Model can’t see it, and you should call this manually.
     /// <https://stereokit.net/Pages/StereoKit/Model/RecalculateBounds.html>
     ///
-    /// see also [`crate::model::model_recalculate_bounds`][`crate::model::model_set_bounds`]
+    /// see also [`model_recalculate_bounds`] [`Model::bounds`] [`Model::recalculate_bounds_exact`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec2, Vec3, Matrix, Bounds}, mesh::{Mesh, Vertex},
+    ///                      model::Model, material::Material, util::named_colors};
+    ///
+    /// let material = Material::pbr();
+    /// let mut square = Mesh::new();
+    /// square.set_verts(&[
+    ///     Vertex::new([-1.0, -1.0, 0.0].into(), Vec3::UP, None,            None),
+    ///     Vertex::new([ 1.0, -1.0, 0.0].into(), Vec3::UP, Some(Vec2::X),   None),
+    ///     Vertex::new([-1.0,  1.0, 0.0].into(), Vec3::UP, Some(Vec2::Y),   None),
+    ///     ], true)
+    ///    .set_inds(&[0, 1, 2]);
+    ///
+    /// let model = Model::from_mesh(&square, &material);
+    ///
+    /// assert_eq!(model.get_bounds(), Bounds::new(Vec3::ZERO, Vec3::new(2.0, 2.0, 0.0)));
+    ///
+    /// // We add a second vertex to our mesh adding the dimension-Z.
+    /// let mut vertices = square.get_verts_copy();
+    /// vertices.push(
+    ///     Vertex::new([ 1.0,  1.0, 1.0].into(), Vec3::UP, Some(Vec2::ONE), None));
+    ///
+    /// square.set_verts(&vertices, true)
+    ///       .set_inds(&[0, 1, 2, 2, 1, 3]);
+    ///
+    /// assert_eq!(model.get_bounds(), Bounds::new(Vec3::ZERO, Vec3::new(2.0, 2.0, 0.0)));
+    ///
+    /// model.recalculate_bounds();
+    ///
+    /// assert_eq!(model.get_bounds(), Bounds::new([0.0, 0.0, 0.5], [2.0, 2.0, 1.0]));
+    /// ```
     pub fn recalculate_bounds(&self) {
         unsafe { model_recalculate_bounds(self.0.as_ptr()) };
     }
 
-    /// Examines the visuals as they currently are, and rebuilds the bounds based on all the vertices in the model! This leads (in general) to a tighter bound than the
-    /// default bound based on bounding boxes. However, computing the exact bound can take much longer!
+    /// Examines the visuals as they currently are, and rebuilds the bounds based on all the vertices in the model!
+    /// This leads (in general) to a tighter bound than the default bound based on bounding boxes. However, computing
+    /// the exact bound can take much longer!
     /// <https://stereokit.net/Pages/StereoKit/Model/RecalculateBoundsExact.html>
     ///
-    /// see also [`crate::model::model_recalculate_bounds_exact`][`crate::model::model_set_bounds`]
+    /// see also [`model_recalculate_bounds_exact`] [`Model::bounds`] [`Model::recalculate_bounds`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec2, Vec3, Matrix, Bounds}, mesh::{Mesh, Vertex},
+    ///                      model::Model, material::Material, util::named_colors};
+    ///
+    /// let material = Material::pbr();
+    /// let mut square = Mesh::new();
+    /// square.set_verts(&[
+    ///     Vertex::new([-1.0, -1.0, 0.0].into(), Vec3::UP, None,            None),
+    ///     Vertex::new([ 1.0, -1.0, 0.0].into(), Vec3::UP, Some(Vec2::X),   None),
+    ///     Vertex::new([-1.0,  1.0, 0.0].into(), Vec3::UP, Some(Vec2::Y),   None),
+    ///     ], true)
+    ///    .set_inds(&[0, 1, 2]);
+    ///
+    /// let model = Model::from_mesh(&square, &material);
+    ///
+    /// assert_eq!(model.get_bounds(), Bounds::new(Vec3::ZERO, Vec3::new(2.0, 2.0, 0.0)));
+    ///
+    /// // We add a second vertex to our mesh adding the dimension-Z.
+    /// let mut vertices = square.get_verts_copy();
+    /// vertices.push(
+    ///     Vertex::new([ 1.0,  1.0, 1.0].into(), Vec3::UP, Some(Vec2::ONE), None));
+    ///
+    /// square.set_verts(&vertices, true)
+    ///       .set_inds(&[0, 1, 2, 2, 1, 3]);
+    ///
+    /// assert_eq!(model.get_bounds(), Bounds::new(Vec3::ZERO, Vec3::new(2.0, 2.0, 0.0)));
+    ///
+    /// model.recalculate_bounds_exact();
+    ///
+    /// assert_eq!(model.get_bounds(), Bounds::new([0.0, 0.0, 0.5], [2.0, 2.0, 1.0]));
+    /// ```
     pub fn recalculate_bounds_exact(&self) {
         unsafe { model_recalculate_bounds_exact(self.0.as_ptr()) };
     }
@@ -345,7 +693,8 @@ impl Model {
     /// Get the Id
     /// <https://stereokit.net/Pages/StereoKit/Model/Id.html>
     ///
-    /// see also [`crate::model::model_get_bounds`][`crate::model::model_set_bounds`]
+    /// see also [`model_get_id`] [`model_set_id`]
+    /// see example in [`Model::id`]
     pub fn get_id(&self) -> &str {
         unsafe { CStr::from_ptr(model_get_id(self.0.as_ptr())) }.to_str().unwrap()
     }
@@ -353,7 +702,8 @@ impl Model {
     /// Get the bounds
     /// <https://stereokit.net/Pages/StereoKit/Model/Bounds.html>
     ///
-    /// see also [`crate::model::model_get_bounds`][`crate::model::model_set_bounds`]
+    /// see also [`model_get_bounds`] [`model_set_bounds`]
+    /// see example in [`Model::bounds`]
     pub fn get_bounds(&self) -> Bounds {
         unsafe { model_get_bounds(self.0.as_ptr()) }
     }
@@ -362,6 +712,35 @@ impl Model {
     /// <https://stereokit.net/Pages/StereoKit/ModelNodeCollection.html>
     ///
     /// see also [Nodes]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix, Bounds}, model::Model, mesh::Mesh,
+    ///                      material::Material, util::named_colors};
+    ///
+    /// let cube_bounds  = Mesh::cube();
+    ///
+    /// let cube = Mesh::generate_cube(Vec3::ONE * 0.3, None);
+    ///
+    /// let transform1 = Matrix::t([-0.30,-0.30,-0.30]);
+    /// let transform2 = Matrix::t([ 0.30, 0.30, 0.30]);
+    /// let transform3 = Matrix::t([ 1.30, 1.30, 1.30]);
+    ///
+    /// let material = Material::pbr();
+    /// let mut model = Model::new();
+    /// let mut nodes = model.get_nodes();
+    /// nodes.add("cube1", transform1, Some(&cube), Some(&material), true)
+    ///      .add("cube2", transform2, Some(&cube), Some(&material), true)
+    ///      .add("not_a_mesh", transform3, None, None, true);
+    ///
+    /// for (iter, node) in nodes.all().enumerate() {
+    ///    match iter {
+    ///        0 => assert_eq!(node.get_name(), Some("cube1")),
+    ///        1 => assert_eq!(node.get_name(), Some("cube2")),
+    ///        _ => assert_eq!(node.get_name(), Some("not_a_mesh")),
+    ///    }
+    /// }
+    /// ```
     pub fn get_nodes(&self) -> Nodes {
         Nodes::from(self)
     }
@@ -370,6 +749,26 @@ impl Model {
     /// <https://stereokit.net/Pages/StereoKit/ModelAnimCollection.html>
     ///
     /// see also [Anims]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::model::{Model, Anims, AnimMode};
+    ///
+    /// let model = Model::from_file("mobiles.gltf", None)
+    ///                              .expect("Could not load model").copy();
+    /// let mut anims = model.get_anims();
+    /// assert_eq!(anims.get_count(), 3);
+    ///
+    /// for (iter, anim) in anims.enumerate() {
+    ///     match iter {
+    ///         0 => assert_eq!(anim.name, "rotate"),
+    ///         1 => assert_eq!(anim.name, "flyRotate"),
+    ///         _ => assert_eq!(anim.name, "fly"),
+    ///     }
+    /// }
+    ///
+    /// model.get_anims().play_anim_idx(0, AnimMode::Loop);
+    /// ```
     pub fn get_anims(&self) -> Anims {
         Anims::from(self)
     }
@@ -378,9 +777,61 @@ impl Model {
     /// be in model space, intersection point will be in model space too. You can use the inverse of the mesh’s world
     /// transform matrix to bring the ray into model space, see the example in the docs!
     /// <https://stereokit.net/Pages/StereoKit/Model/Intersect.html>
-    /// * cull - If None has default value of Cull::Back.
+    /// * `ray` - Ray must be in model space, the intersection point will be in model space too. You can use the inverse
+    ///   of the mesh’s world transform matrix to bring the ray into model space, see the example in the docs!
+    /// * `cull` - How should intersection work with respect to the direction the triangles are facing? Should we skip
+    ///   triangles that are facing away from the ray, or don’t skip anything? If None has default value of Cull::Back.
     ///
-    /// see also [`crate::model::model_ray_intersect`]
+    /// see also [`model_ray_intersect`] [`Model::intersect_to_ptr`] same as [`Ray::intersect_model`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix, Bounds, Ray}, model::Model, mesh::Mesh,
+    ///                      material::{Material, Cull}, util::named_colors, system::Lines};
+    ///
+    /// let cube_bounds  = Mesh::cube();
+    ///
+    /// let cube = Mesh::generate_cube(Vec3::ONE * 0.4, None);
+    ///
+    /// let transform1 = Matrix::t([-0.30,-0.30,-0.30]);
+    /// let transform2 = Matrix::t([ 0.30, 0.30, 0.30]);
+    ///
+    /// let material = Material::pbr();
+    /// let mut model = Model::new();
+    /// let mut nodes = model.get_nodes();
+    /// nodes.get_root_node()
+    ///      .add_child("cube1", transform1, Some(&cube), Some(&material), true)
+    ///      .add_child("cube2", transform2, Some(&cube), Some(&material), true);
+    /// let transform_model = Matrix::r([0.0, 15.0, 0.0]);
+    /// let inv = transform_model.get_inverse();
+    ///
+    /// let ray = Ray::from_to([-0.80, -2.8, -1.0],[0.35, 2.5, 1.0]);
+    /// let inv_ray = inv.transform_ray(ray);
+    ///
+    /// let contact_model = model.intersect(inv_ray, Some(Cull::Front))
+    ///           .expect("Intersection should be found");
+    ///
+    /// let transform_contact_model = Matrix::t(transform_model.transform_point(contact_model));
+    /// let point = Mesh::generate_sphere(0.1, Some(2));
+    /// let material = Material::pbr();
+    ///
+    /// let mut material_bounds = Material::ui_box();
+    /// material_bounds .color_tint(named_colors::GOLD)
+    ///                 .get_all_param_info().set_float("border_size", 0.025);
+    ///
+    /// let bounds = model.get_bounds();
+    /// let transform_before = transform_model * Matrix::ts( bounds.center, bounds.dimensions);
+    ///
+    /// filename_scr = "screenshots/model_intersect.jpeg";
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     model.draw(token, transform_model, None, None);
+    ///     cube_bounds.draw( token, &material_bounds, transform_before, None, None);
+    ///     Lines::add_ray(token, ray, 7.2, named_colors::BLUE, Some(named_colors::RED.into()), 0.02);
+    ///     point.draw(token, &material, transform_contact_model,
+    ///                Some(named_colors::RED.into()), None );
+    /// );
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_intersect.jpeg" alt="screenshot" width="200">
     #[inline]
     pub fn intersect(&self, ray: Ray, cull: Option<Cull>) -> Option<Vec3> {
         ray.intersect_model(self, cull)
@@ -390,9 +841,49 @@ impl Model {
     /// be in model space, intersection point will be in model space too. You can use the inverse of the mesh’s world
     /// transform matrix to bring the ray into model space, see the example in the docs!
     /// <https://stereokit.net/Pages/StereoKit/Model/Intersect.html>
-    /// * cull - If None has default value of Cull::Back.
+    /// * `ray` - Ray must be in model space, the intersection point will be in model space too. You can use the inverse
+    ///   of the mesh’s world transform matrix to bring the ray into model space, see the example in the docs!
+    /// * `cull` - How should intersection work with respect to the direction the triangles are facing? Should we skip
+    ///   triangles that are facing away from the ray, or don’t skip anything? If None has default value of Cull::Back.
+    /// * `out_ray` - The intersection point and surface direction of the ray and the mesh, if an intersection occurs.
+    ///   This is in model space, and must be transformed back into world space later. Direction is not guaranteed to be
+    ///   normalized, especially if your own model->world transform contains scale/skew in it.
     ///
-    /// see also [`crate::model::model_ray_intersect`]
+    /// see also [`model_ray_intersect`] [`Model::intersect`] same as [`Ray::intersect_model_to_ptr`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix, Bounds, Ray}, model::Model, mesh::Mesh,
+    ///                      material::{Material, Cull}, util::named_colors, system::Lines};
+    ///
+    /// let cube_bounds  = Mesh::cube();
+    ///
+    /// let cube = Mesh::generate_cube(Vec3::ONE * 0.4, None);
+    ///
+    /// let transform1 = Matrix::t([-0.30,-0.30,-0.30]);
+    /// let transform2 = Matrix::t([ 0.30, 0.30, 0.30]);
+    ///
+    /// let material = Material::pbr();
+    /// let mut model = Model::new();
+    /// let mut nodes = model.get_nodes();
+    /// nodes.get_root_node()
+    ///      .add_child("cube1", transform1, Some(&cube), Some(&material), true)
+    ///      .add_child("cube2", transform2, Some(&cube), Some(&material), true);
+    /// let transform_model = Matrix::r([0.0, 15.0, 0.0]);
+    /// let inv = transform_model.get_inverse();
+    ///
+    /// let ray = Ray::from_to([-0.80, -2.8, -1.0],[0.35, 2.5, 1.0]);
+    /// let inv_ray = inv.transform_ray(ray);
+    ///
+    /// let mut inv_contact_model_ray = Ray::default();
+    /// assert!( model.intersect_to_ptr(inv_ray, Some(Cull::Front), &mut inv_contact_model_ray)
+    ///     ,"Ray should touch model");
+    ///
+    /// let contact_model_ray = transform_model.transform_ray(inv_contact_model_ray);
+    /// assert_eq!(contact_model_ray,
+    ///     Ray { position:  Vec3 {  x: -0.24654332, y: -0.24928647, z: -0.037466552 },
+    ///           direction: Vec3 {  x:  0.25881907, y:  0.0,        z:  0.9659258   } });
+    /// ```
     #[inline]
     #[allow(clippy::not_unsafe_ptr_arg_deref)]
     pub fn intersect_to_ptr(&self, ray: Ray, cull: Option<Cull>, out_ray: *mut Ray) -> bool {
@@ -476,7 +967,7 @@ impl<'a> Anims<'a> {
     /// or in addition to Draw.
     /// <https://stereokit.net/Pages/StereoKit/Model/StepAnim.html>
     ///
-    /// see also [`crate::model::model_step_anim`][`crate::model::model_play_anim`]
+    /// see also [`model_step_anim`][`model_play_anim`]
     pub fn step_anim(&mut self) -> &mut Self {
         unsafe { model_step_anim(self.model.0.as_ptr()) };
         self
@@ -486,7 +977,7 @@ impl<'a> Anims<'a> {
     /// laying it with the animation mode.
     /// <https://stereokit.net/Pages/StereoKit/Model/PlayAnim.html>
     ///
-    /// see also [`crate::model::model_step_anim`][`crate::model::model_play_anim`]
+    /// see also [`model_step_anim`][`model_play_anim`]
     pub fn play_anim(&mut self, animation_name: impl AsRef<str>, mode: AnimMode) -> &mut Self {
         let c_str = CString::new(animation_name.as_ref()).unwrap();
         unsafe { model_play_anim(self.model.0.as_ptr(), c_str.as_ptr(), mode) };
@@ -496,7 +987,7 @@ impl<'a> Anims<'a> {
     /// Sets it up the animation at index idx as the active animation and begins playing it with the animation mode.
     /// <https://stereokit.net/Pages/StereoKit/Model/PlayAnim.html>
     ///
-    /// see also [`crate::model::model_play_anim_idx`][`crate::model::model_play_anim`]
+    /// see also [`model_play_anim_idx`][`model_play_anim`]
     pub fn play_anim_idx(&mut self, idx: i32, mode: AnimMode) -> &mut Self {
         unsafe { model_play_anim_idx(self.model.0.as_ptr(), idx, mode) };
         self
@@ -507,7 +998,7 @@ impl<'a> Anims<'a> {
     /// percentage of completion, see AnimCompletion instead.
     /// <https://stereokit.net/Pages/StereoKit/Model/AnimTime.html>
     ///
-    /// see also [`crate::model::model_set_anim_time`][`crate::model::model_play_anim`]
+    /// see also [`model_set_anim_time`][`model_play_anim`]
     pub fn anim_time(&mut self, time: f32) -> &mut Self {
         unsafe { model_set_anim_time(self.model.0.as_ptr(), time) };
         self
@@ -517,7 +1008,7 @@ impl<'a> Anims<'a> {
     /// animation is active, this will be zero.
     /// <https://stereokit.net/Pages/StereoKit/Model/AnimCompletion.html>
     ///
-    /// see also [`crate::model::model_set_anim_completion`][`crate::model::model_play_anim`]
+    /// see also [`model_set_anim_completion`][`model_play_anim`]
     pub fn anim_completion(&mut self, percent: f32) -> &mut Self {
         unsafe { model_set_anim_completion(self.model.0.as_ptr(), percent) };
         self
@@ -526,7 +1017,7 @@ impl<'a> Anims<'a> {
     /// get anim by name
     /// <https://stereokit.net/Pages/StereoKit/Model/FindAnim.html>
     ///
-    /// see also [`crate::model::model_anim_find`][`crate::model::model_play_anim`]
+    /// see also [`model_anim_find`][`model_play_anim`]
     pub fn find_anim<S: AsRef<str>>(&self, name: S) -> Option<i32> {
         let c_str = match CString::new(name.as_ref()) {
             Ok(c_str) => c_str,
@@ -539,7 +1030,7 @@ impl<'a> Anims<'a> {
     /// Get the number of animations
     /// <https://stereokit.net/Pages/StereoKit/Model/ModelAnimCollection.html>
     ///
-    /// see also [`crate::model::model_anim_count`]
+    /// see also [`model_anim_count`]
     pub fn get_count(&self) -> i32 {
         unsafe { model_anim_count(self.model.0.as_ptr()) }
     }
@@ -547,7 +1038,7 @@ impl<'a> Anims<'a> {
     /// Get the current animation
     /// <https://stereokit.net/Pages/StereoKit/Model/ActiveAnim.html>
     ///
-    /// see also [`crate::model::model_anim_active`]
+    /// see also [`model_anim_active`]
     pub fn get_active_anim(&self) -> i32 {
         unsafe { model_anim_active(self.model.0.as_ptr()) }
     }
@@ -555,7 +1046,7 @@ impl<'a> Anims<'a> {
     /// Get the current animation, mode
     /// <https://stereokit.net/Pages/StereoKit/Model/AnimMode.html>
     ///
-    /// see also [`crate::model::model_anim_active_mode`]
+    /// see also [`model_anim_active_mode`]
     pub fn get_anim_mode(&self) -> AnimMode {
         unsafe { model_anim_active_mode(self.model.0.as_ptr()) }
     }
@@ -563,7 +1054,7 @@ impl<'a> Anims<'a> {
     /// Get the current animation duration
     /// <https://stereokit.net/Pages/StereoKit/Model/AnimTime.html>
     ///
-    /// see also [`crate::model::model_anim_active_time`]
+    /// see also [`model_anim_active_time`]
     pub fn get_anim_time(&self) -> f32 {
         unsafe { model_anim_active_time(self.model.0.as_ptr()) }
     }
@@ -571,7 +1062,7 @@ impl<'a> Anims<'a> {
     /// Get the current animation completion %
     /// <https://stereokit.net/Pages/StereoKit/Model/AnimCompletion.html>
     ///
-    /// see also [`crate::model::model_anim_active_completion`]
+    /// see also [`model_anim_active_completion`]
     pub fn get_anim_completion(&self) -> f32 {
         unsafe { model_anim_active_completion(self.model.0.as_ptr()) }
     }
@@ -727,7 +1218,7 @@ impl<'a> Nodes<'a> {
     /// you’ll be able to access it via [Nodes::get_root_node].
     /// <https://stereokit.net/Pages/StereoKit/Model/AddNode.html>
     ///
-    /// see also [ModelNode::add_child] [`crate::model::model_node_add`]
+    /// see also [ModelNode::add_child] [`model_node_add`]
     pub fn add<S: AsRef<str>>(
         &mut self,
         name: S,
@@ -777,7 +1268,7 @@ impl<'a> Nodes<'a> {
     /// get node by name
     /// <https://stereokit.net/Pages/StereoKit/Model/FindNode.html>
     ///
-    /// see also [`crate::model::model_node_find`]
+    /// see also [`model_node_find`]
     pub fn find<S: AsRef<str>>(&self, name: S) -> Option<ModelNode> {
         let c_str = CString::new(name.as_ref()).unwrap();
         match unsafe { model_node_find(self.model.0.as_ptr(), c_str.as_ptr()) } {
@@ -789,7 +1280,7 @@ impl<'a> Nodes<'a> {
     /// Get the number of node
     /// <https://stereokit.net/Pages/StereoKit/ModelNodeCollection.html>
     ///
-    /// see also [NodeIter][`crate::model::model_node_count`]
+    /// see also [NodeIter] [`model_node_count`]
     pub fn get_count(&self) -> i32 {
         unsafe { model_node_count(self.model.0.as_ptr()) }
     }
@@ -797,7 +1288,7 @@ impl<'a> Nodes<'a> {
     /// Get the number of visual node
     /// <https://stereokit.net/Pages/StereoKit/ModelVisualCollection.html>
     ///
-    /// see also [NodeIter][`crate::model::model_node_visual_count`]
+    /// see also [NodeIter] [`model_node_visual_count`]
     pub fn get_visual_count(&self) -> i32 {
         unsafe { model_node_visual_count(self.model.0.as_ptr()) }
     }
@@ -805,7 +1296,7 @@ impl<'a> Nodes<'a> {
     /// Get the node at index
     /// <https://stereokit.net/Pages/StereoKit/ModelNodeCollection.html>
     ///
-    /// see also [NodeIter][`crate::model::model_node_index`]
+    /// see also [NodeIter] [`model_node_index`]
     pub fn get_index(&self, index: i32) -> Option<ModelNode> {
         match unsafe { model_node_index(self.model.0.as_ptr(), index) } {
             -1 => None,
@@ -816,7 +1307,7 @@ impl<'a> Nodes<'a> {
     /// Get the visual node at index
     /// <https://stereokit.net/Pages/StereoKit/ModelVisualCollection.html>
     ///
-    /// see also [NodeIter][`crate::model::model_node_visual_index`]
+    /// see also [NodeIter] [`model_node_visual_index`]
     pub fn get_visual_index(&self, index: i32) -> Option<ModelNode> {
         match unsafe { model_node_visual_index(self.model.0.as_ptr(), index) } {
             -1 => None,
@@ -827,7 +1318,7 @@ impl<'a> Nodes<'a> {
     /// Get the root node
     /// <https://stereokit.net/Pages/StereoKit/Model/RootNode.html>
     ///
-    /// see also [`crate::model::model_node_get_root`]
+    /// see also [`model_node_get_root`]
     pub fn get_root_node(&self) -> ModelNode {
         ModelNode { model: self.model, id: unsafe { model_node_get_root(self.model.0.as_ptr()) } }
     }
@@ -847,7 +1338,7 @@ impl ModelNode<'_> {
     /// Set the name of the node
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/Name.html>
     ///
-    /// see also [`crate::model::model_node_set_name`]
+    /// see also [`model_node_set_name`]
     pub fn name<S: AsRef<str>>(&mut self, name: S) -> &mut Self {
         let c_str = CString::new(name.as_ref()).unwrap();
         unsafe { model_node_set_name(self.model.0.as_ptr(), self.id, c_str.as_ptr()) };
@@ -858,7 +1349,7 @@ impl ModelNode<'_> {
     /// This flag is ignored if no Mesh is attached.
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/Solid.html>
     ///
-    /// see also [`crate::model::model_node_set_solid`]
+    /// see also [`model_node_set_solid`]
     pub fn solid(&mut self, solid: bool) -> &mut Self {
         unsafe { model_node_set_solid(self.model.0.as_ptr(), self.id, solid as Bool32T) };
         self
@@ -867,7 +1358,7 @@ impl ModelNode<'_> {
     /// Set the visibility of the node
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/Visible.html>
     ///
-    /// see also [`crate::model::model_node_set_visible`]
+    /// see also [`model_node_set_visible`]
     pub fn visible(&mut self, visible: bool) -> &mut Self {
         unsafe { model_node_set_visible(self.model.0.as_ptr(), self.id, visible as Bool32T) };
         self
@@ -876,7 +1367,7 @@ impl ModelNode<'_> {
     /// Set the material of the node
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/Material.html>
     ///
-    /// see also [`crate::model::model_node_set_material`]
+    /// see also [`model_node_set_material`]
     pub fn material<M: AsRef<Material>>(&mut self, material: M) -> &mut Self {
         unsafe { model_node_set_material(self.model.0.as_ptr(), self.id, material.as_ref().0.as_ptr()) };
         self
@@ -885,7 +1376,7 @@ impl ModelNode<'_> {
     /// Set the mesh of the node
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/Mesh.html>
     ///
-    /// see also [`crate::model::model_node_set_mesh`]
+    /// see also [`model_node_set_mesh`]
     pub fn mesh<M: AsRef<Mesh>>(&mut self, mesh: M) -> &mut Self {
         unsafe { model_node_set_mesh(self.model.0.as_ptr(), self.id, mesh.as_ref().0.as_ptr()) };
         self
@@ -895,7 +1386,7 @@ impl ModelNode<'_> {
     /// Setting this transform will update the LocalTransform, as well as all Child nodes below this one.
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/ModelTransform.html>
     ///
-    /// see also [`crate::model::model_node_set_transform_model`]
+    /// see also [`model_node_set_transform_model`]
     pub fn model_transform(&mut self, transform_model_space: impl Into<Matrix>) -> &mut Self {
         unsafe { model_node_set_transform_model(self.model.0.as_ptr(), self.id, transform_model_space.into()) };
         self
@@ -905,7 +1396,7 @@ impl ModelNode<'_> {
     /// Setting this transform will update the ModelTransform, as well as all Child nodes below this one.
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/LocalTransform.html>
     ///
-    /// see also [`crate::model::model_node_set_transform_local`]
+    /// see also [`model_node_set_transform_local`]
     pub fn local_transform(&mut self, transform_model_space: impl Into<Matrix>) -> &mut Self {
         unsafe { model_node_set_transform_local(self.model.0.as_ptr(), self.id, transform_model_space.into()) };
         self
@@ -914,7 +1405,7 @@ impl ModelNode<'_> {
     /// Adds a Child node below this node, at the end of the child chain! The local transform of the child will have this node as reference
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/AddChild.html>
     ///
-    /// see also [Nodes::add] [`crate::model::model_node_add_child`]
+    /// see also [Nodes::add] [`model_node_add_child`]
     pub fn add_child<S: AsRef<str>>(
         &mut self,
         name: S,
@@ -955,7 +1446,7 @@ impl ModelNode<'_> {
     /// Get the node Name
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/Name.html>
     ///
-    /// see also [`crate::model::model_node_get_name`]
+    /// see also [`model_node_get_name`]
     pub fn get_name(&self) -> Option<&str> {
         unsafe { CStr::from_ptr(model_node_get_name(self.model.0.as_ptr(), self.id)).to_str().ok() }
     }
@@ -964,7 +1455,7 @@ impl ModelNode<'_> {
     /// This flag is ignored if no Mesh is attached.
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/Solid.html>
     ///
-    /// see also [`crate::model::model_node_get_solid`]
+    /// see also [`model_node_get_solid`]
     pub fn get_solid(&self) -> bool {
         unsafe { model_node_get_solid(self.model.0.as_ptr(), self.id) != 0 }
     }
@@ -972,7 +1463,7 @@ impl ModelNode<'_> {
     /// Get the visibility of the node
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/Visible.html>
     ///
-    /// see also [`crate::model::model_node_get_visible`]
+    /// see also [`model_node_get_visible`]
     pub fn get_visible(&self) -> bool {
         unsafe { model_node_get_visible(self.model.0.as_ptr(), self.id) != 0 }
     }
@@ -980,7 +1471,7 @@ impl ModelNode<'_> {
     /// Get the material of the node
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/Material.html>
     ///
-    /// see also [`crate::model::model_node_get_material`]
+    /// see also [`model_node_get_material`]
     pub fn get_material(&self) -> Option<Material> {
         NonNull::new(unsafe { model_node_get_material(self.model.0.as_ptr(), self.id) }).map(Material)
     }
@@ -988,7 +1479,7 @@ impl ModelNode<'_> {
     /// Get the mesh of the node
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/Mesh.html>
     ///
-    /// see also [`crate::model::model_node_get_mesh`]
+    /// see also [`model_node_get_mesh`]
     pub fn get_mesh(&self) -> Option<Mesh> {
         NonNull::new(unsafe { model_node_get_mesh(self.model.0.as_ptr(), self.id) }).map(Mesh)
     }
@@ -996,7 +1487,7 @@ impl ModelNode<'_> {
     /// Get the transform matrix of the node
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/ModelTransform.html>
     ///
-    /// see also [`crate::model::model_node_get_transform_model`]
+    /// see also [`model_node_get_transform_model`]
     pub fn get_model_transform(&self) -> Matrix {
         unsafe { model_node_get_transform_model(self.model.0.as_ptr(), self.id) }
     }
@@ -1004,7 +1495,7 @@ impl ModelNode<'_> {
     /// Get the local transform matrix of the node
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/LocalTransform.html>
     ///
-    /// see also [`crate::model::model_node_get_transform_local`]
+    /// see also [`model_node_get_transform_local`]
     pub fn get_local_transform(&self) -> Matrix {
         unsafe { model_node_get_transform_local(self.model.0.as_ptr(), self.id) }
     }
@@ -1012,7 +1503,7 @@ impl ModelNode<'_> {
     /// Iterate to the next node
     /// <https://stereokit.net/Pages/StereoKit/ModelNodeCollection.html>
     ///
-    /// see also [`crate::model::model_node_iterate`]
+    /// see also [`model_node_iterate`]
     pub fn iterate(&self) -> Option<ModelNode> {
         match unsafe { model_node_iterate(self.model.0.as_ptr(), self.id) } {
             -1 => None,
@@ -1024,7 +1515,7 @@ impl ModelNode<'_> {
     /// get the Child and then iterate through its Siblings.
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/Child.html>
     ///
-    /// see also [`crate::model::model_node_child`]
+    /// see also [`model_node_child`]
     pub fn get_child(&self) -> Option<ModelNode> {
         match unsafe { model_node_child(self.model.0.as_ptr(), self.id) } {
             -1 => None,
@@ -1036,7 +1527,7 @@ impl ModelNode<'_> {
     /// None if there are no more ModelNodes in the tree there.
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/Sibling.html>
     ///
-    /// see also [`crate::model::model_node_sibling`]
+    /// see also [`model_node_sibling`]
     pub fn get_sibling(&self) -> Option<ModelNode> {
         match unsafe { model_node_sibling(self.model.0.as_ptr(), self.id) } {
             -1 => None,
@@ -1047,7 +1538,7 @@ impl ModelNode<'_> {
     /// The ModelNode above this one (“up”) in the hierarchy tree, or None if this is a root node.
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/Parent.html>
     ///
-    /// see also [`crate::model::model_node_parent`]
+    /// see also [`model_node_parent`]
     pub fn get_parent(&self) -> Option<ModelNode> {
         match unsafe { model_node_parent(self.model.0.as_ptr(), self.id) } {
             -1 => None,
@@ -1058,7 +1549,7 @@ impl ModelNode<'_> {
     /// The next ModelNode  in the hierarchy tree, or None if this is the last node.
     /// <https://stereokit.net/Pages/StereoKit/Model/ModelNodeCollection.html>
     ///
-    /// see also [`crate::model::model_node_iterate`]
+    /// see also [`model_node_iterate`]
     pub fn get_next(&self) -> Option<ModelNode> {
         self.iterate()
     }
@@ -1066,7 +1557,7 @@ impl ModelNode<'_> {
     /// The whole model in which this node belongs
     /// <https://stereokit.net/Pages/StereoKit/Model.html>
     ///
-    /// see also [`crate::model::Model`]
+    /// see also [`Model`]
     pub fn get_model(&self) -> &Model {
         self.model
     }
@@ -1082,7 +1573,7 @@ impl ModelNode<'_> {
 /// Infos of a ModelNode
 /// <https://stereokit.net/Pages/StereoKit/ModelNodeInfoCollection.html>
 ///
-/// see also [`crate::model::ModelNode`]
+/// see also [`ModelNode`]
 pub struct Infos<'a> {
     model: &'a Model,
     node_id: ModelNodeId,
@@ -1137,7 +1628,7 @@ impl<'a> Infos<'a> {
     /// Clear all infos
     /// <https://stereokit.net/Pages/StereoKit/ModelNodeInfoCollection/Clear.html>
     ///
-    /// see also [`crate::model::model_node_info_clear`]
+    /// see also [`model_node_info_clear`]
     pub fn clear(&mut self) -> &mut Self {
         unsafe { model_node_info_clear(self.model.0.as_ptr(), self.node_id) };
         self
@@ -1146,7 +1637,7 @@ impl<'a> Infos<'a> {
     /// Remove the first occurence found of an info. An error is logged if the info do not exist
     /// <https://stereokit.net/Pages/StereoKit/ModelNodeInfoCollection/Remove.html>
     ///
-    /// see also [`crate::model::model_node_info_remove`]
+    /// see also [`model_node_info_remove`]
     pub fn remove_info<S: AsRef<str>>(&mut self, info_key_utf8: S) -> &mut Self {
         let c_str = CString::new(info_key_utf8.as_ref()).unwrap();
         unsafe {
@@ -1160,7 +1651,7 @@ impl<'a> Infos<'a> {
     /// Set an info value to this node (key is unique). The last added key (if multiple) will be the first found.
     /// <https://stereokit.net/Pages/StereoKit/ModelNodeInfoCollection/Add.html>
     ///
-    /// see also [`crate::model::model_node_info_set`]
+    /// see also [`model_node_info_set`]
     pub fn set_info<S: AsRef<str>>(&mut self, info_key_utf8: S, info_value_utf8: S) -> &mut Self {
         let c_str = CString::new(info_key_utf8.as_ref()).unwrap();
         let c_value = CString::new(info_value_utf8.as_ref()).unwrap();
@@ -1172,7 +1663,7 @@ impl<'a> Infos<'a> {
     /// Return None if the key doesn't exist
     /// <https://stereokit.net/Pages/StereoKit/ModelNodeInfoCollection/Get.html>
     ///
-    /// see also [`crate::model::model_node_info_get`]
+    /// see also [`model_node_info_get`]
     pub fn get_info<S: AsRef<str>>(&self, info_key_utf8: S) -> Option<&str> {
         let c_str = CString::new(info_key_utf8.as_ref()).unwrap();
         match NonNull::new(unsafe { model_node_info_get(self.model.0.as_ptr(), self.node_id, c_str.as_ptr()) }) {
@@ -1185,7 +1676,7 @@ impl<'a> Infos<'a> {
     /// (get_info is more efficient, thanks to rust)
     /// <https://stereokit.net/Pages/StereoKit/ModelNodeInfoCollection/Contains.html>
     ///
-    /// see also [`crate::model::model_node_info_get`]
+    /// see also [`model_node_info_get`]
     pub fn contains<S: AsRef<str>>(&self, info_key_utf8: S) -> bool {
         self.get_info(info_key_utf8).is_some()
     }
@@ -1193,7 +1684,7 @@ impl<'a> Infos<'a> {
     /// Get the number of infos for this node
     /// <https://stereokit.net/Pages/StereoKit/ModelNodeInfoCollection/Count.html>
     ///
-    /// see also [`crate::model::model_node_info_count`]
+    /// see also [`model_node_info_count`]
     pub fn get_count(&self) -> i32 {
         unsafe { model_node_info_count(self.model.0.as_ptr(), self.node_id) }
     }
