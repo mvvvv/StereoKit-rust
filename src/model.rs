@@ -240,7 +240,7 @@ impl Model {
     /// nodes.add("sphere3", transform_mesh2, Some(&sphere), Some(&material), true);
     /// assert_eq!(nodes.get_count(), 3);
     ///
-    /// filename_scr = "model_from_mesh.jpeg";
+    /// filename_scr = "screenshots/model_from_mesh.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     model.draw(token, transform_model, None, None);
     /// );
