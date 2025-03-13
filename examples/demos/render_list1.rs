@@ -10,8 +10,8 @@ use stereokit_rust::{
     tex::{Tex, TexFormat, TexType},
     ui::Ui,
     util::{
-        named_colors::{BLUE_VIOLET, RED},
         Color128, Time,
+        named_colors::{BLUE_VIOLET, RED},
     },
 };
 

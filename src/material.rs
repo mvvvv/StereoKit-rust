@@ -108,7 +108,7 @@ pub enum Cull {
 /// );
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/materials.jpeg" alt="screenshot" width="200">
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Material(pub NonNull<_MaterialT>);
 impl Drop for Material {
     fn drop(&mut self) {

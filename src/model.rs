@@ -895,6 +895,37 @@ impl Model {
 /// <https://stereokit.net/Pages/StereoKit/ModelAnimCollection.html>
 ///
 /// see also [`Model::get_anims`]
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{maths::{Vec3, Matrix}, model::{Model, Anims, AnimMode}};
+///
+/// let model = Model::from_file("center.glb", None)
+///                              .expect("Could not load model").copy();
+/// let transform = Matrix::trs(&(Vec3::NEG_Y * 0.40),
+///                             &([0.0, 190.0, 0.0].into()),
+///                             &(Vec3::ONE * 0.25));
+///
+/// let mut anims = model.get_anims();
+/// assert_eq!(anims.get_count(), 1);
+/// anims.play_anim("SuzanneAction", AnimMode::Loop).anim_completion(0.75);
+///
+/// for (iter, anim) in anims.enumerate() {
+///     match iter {
+///         0 => assert_eq!(anim.name, "SuzanneAction"),
+///         _ => panic!("Unexpected animation name"),
+///     }
+/// }
+///
+/// number_of_steps = 100;
+/// let mut anims = model.get_anims();
+/// filename_scr = "screenshots/anims.jpeg";
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+///     model.draw(token, transform, None, None);
+/// );
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_from_file.jpeg" alt="screenshot" width="200">
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/anims.jpeg" alt="screenshot" width="200">
 pub struct Anims<'a> {
     model: &'a Model,
     curr: i32,
@@ -946,18 +977,62 @@ pub struct Anim {
 }
 
 impl<'a> Anims<'a> {
+    /// Same as [`Model::get_anims`]
     pub fn from<M: AsRef<Model>>(model: &'a M) -> Anims<'a> {
         Anims { model: model.as_ref(), curr: -1 }
     }
 
     /// Get the name of the animation at given index
-    fn get_name_at_index(&self, index: i32) -> Option<&str> {
-        unsafe { CStr::from_ptr(model_anim_get_name(self.model.0.as_ptr(), index)) }.to_str().ok()
+    ///
+    /// see also [`model_anim_get_name`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::model::{Model, Anims, AnimMode};
+    ///
+    /// let model = Model::from_file("mobiles.gltf", None)
+    ///                              .expect("Could not load model").copy();
+    /// let mut anims = model.get_anims();
+    /// assert_eq!(anims.get_count(), 3);
+    /// assert_eq!(anims.get_name_at_index(0), Some("rotate"));
+    /// assert_eq!(anims.get_name_at_index(1), Some("flyRotate"));
+    /// assert_eq!(anims.get_name_at_index(2), Some("fly"));
+    /// assert_eq!(anims.get_name_at_index(3), None);
+    /// ```
+    pub fn get_name_at_index(&self, index: i32) -> Option<&str> {
+        unsafe {
+            if model_anim_count(self.model.0.as_ptr()) > index {
+                CStr::from_ptr(model_anim_get_name(self.model.0.as_ptr(), index)).to_str().ok()
+            } else {
+                None
+            }
+        }
     }
 
     /// Get the duration of the animation at given index
-    fn get_duration_at_index(&self, index: i32) -> f32 {
-        unsafe { model_anim_get_duration(self.model.0.as_ptr(), index) }
+    ///
+    /// Returns `-0.01` if the index is out of bounds.
+    /// see also [`model_anim_get_duration`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::model::{Model, Anims, AnimMode};
+    ///
+    /// let model = Model::from_file("center.glb", None)
+    ///                              .expect("Could not load model").copy();
+    /// let mut anims = model.get_anims();
+    /// assert_eq!(anims.get_count(), 1);
+    /// assert_eq!(anims.get_duration_at_index(0), 2.5);
+    /// assert_eq!(anims.get_duration_at_index(1), -0.01);
+    /// ```
+    pub fn get_duration_at_index(&self, index: i32) -> f32 {
+        unsafe {
+            if model_anim_count(self.model.0.as_ptr()) > index {
+                model_anim_get_duration(self.model.0.as_ptr(), index)
+            } else {
+                -0.01
+            }
+        }
     }
 
     /// Calling Draw will automatically step the Model’s animation, but if you don’t draw the Model, or need access to
@@ -968,6 +1043,26 @@ impl<'a> Anims<'a> {
     /// <https://stereokit.net/Pages/StereoKit/Model/StepAnim.html>
     ///
     /// see also [`model_step_anim`][`model_play_anim`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix}, model::{Model, Anims, AnimMode}};
+    ///
+    /// let model = Model::from_file("center.glb", None)
+    ///                              .expect("Could not load model").copy();
+    /// let mut anims = model.get_anims();
+    /// assert_eq!(anims.get_count(), 1);
+    /// anims.play_anim("SuzanneAction", AnimMode::Loop);
+    ///
+    /// number_of_steps = 20;
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter % 10 < 5 {
+    ///         model.draw(token, Matrix::IDENTITY, None, None);
+    ///     } else {
+    ///         anims.step_anim();
+    ///     }
+    /// );
+    /// ```
     pub fn step_anim(&mut self) -> &mut Self {
         unsafe { model_step_anim(self.model.0.as_ptr()) };
         self
@@ -976,8 +1071,32 @@ impl<'a> Anims<'a> {
     /// Searches for an animation with the given name, and if it’s found, sets it up as the active animation and begins
     /// laying it with the animation mode.
     /// <https://stereokit.net/Pages/StereoKit/Model/PlayAnim.html>
+    /// * `name` - The name of the animation to play. Case sensitive.
+    /// * `mode` - The animation mode to use.
     ///
-    /// see also [`model_step_anim`][`model_play_anim`]
+    /// see also [`model_play_anim`] [`Anims::play_anim_idx`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::model::{Model, Anims, AnimMode};
+    ///
+    /// let model = Model::from_file("center.glb", None)
+    ///                              .expect("Could not load model").copy();
+    /// let mut anims = model.get_anims();
+    ///
+    /// anims.play_anim("SuzanneAction", AnimMode::Loop);
+    /// assert_eq!(anims.get_anim_mode(), AnimMode::Loop);
+    ///
+    /// anims.play_anim("SuzanneAction", AnimMode::Once);
+    /// assert_eq!(anims.get_anim_mode(), AnimMode::Once);
+    ///
+    /// anims.play_anim("SuzanneAction", AnimMode::Manual);
+    /// assert_eq!(anims.get_anim_mode(), AnimMode::Manual);
+    ///
+    /// // If anim does not exist:
+    /// anims.play_anim("Not exist", AnimMode::Manual);
+    /// assert_eq!(anims.get_anim_mode(), AnimMode::Manual);
+    /// ```
     pub fn play_anim(&mut self, animation_name: impl AsRef<str>, mode: AnimMode) -> &mut Self {
         let c_str = CString::new(animation_name.as_ref()).unwrap();
         unsafe { model_play_anim(self.model.0.as_ptr(), c_str.as_ptr(), mode) };
@@ -986,29 +1105,102 @@ impl<'a> Anims<'a> {
 
     /// Sets it up the animation at index idx as the active animation and begins playing it with the animation mode.
     /// <https://stereokit.net/Pages/StereoKit/Model/PlayAnim.html>
+    /// * `idx` - index of the animation to play
+    /// * `mode` - animation mode to play the animation with
     ///
-    /// see also [`model_play_anim_idx`][`model_play_anim`]
+    /// see also [`model_play_anim_idx`] [`Anims::play_anim`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::model::{Model, Anims, AnimMode};
+    ///
+    /// let model = Model::from_file("center.glb", None)
+    ///                              .expect("Could not load model").copy();
+    /// let mut anims = model.get_anims();
+    ///
+    /// anims.play_anim_idx(0, AnimMode::Loop);
+    /// assert_eq!(anims.get_anim_mode(), AnimMode::Loop);
+    ///
+    /// anims.play_anim_idx(0, AnimMode::Once);
+    /// assert_eq!(anims.get_anim_mode(), AnimMode::Once);
+    ///
+    /// // If index does not exist:
+    /// anims.play_anim_idx(102, AnimMode::Manual);
+    /// assert_eq!(anims.get_anim_mode(), AnimMode::Once);
+    /// ```
     pub fn play_anim_idx(&mut self, idx: i32, mode: AnimMode) -> &mut Self {
         unsafe { model_play_anim_idx(self.model.0.as_ptr(), idx, mode) };
         self
     }
 
-    /// This is the current time of the active animation in seconds, from the start of the animation. If no animation is
-    /// active, this will be zero. This will always be a value between zero and the active animation’s Duration. For a
-    /// percentage of completion, see AnimCompletion instead.
+    /// Set the current time of the active animation in seconds, from the start of the animation. This may be a value
+    /// superior to the animation’s Duration if the animation is a loop. For a percentage of completion,
+    /// see anim_completion instead.
     /// <https://stereokit.net/Pages/StereoKit/Model/AnimTime.html>
     ///
-    /// see also [`model_set_anim_time`][`model_play_anim`]
+    /// see also [`model_set_anim_time`] [`Anims::anim_completion`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::model::{Model, Anims, AnimMode};
+    ///
+    /// let model = Model::from_file("center.glb", None)
+    ///                              .expect("Could not load model").copy();
+    /// let mut anims = model.get_anims();
+    /// anims.play_anim_idx(0, AnimMode::Manual);
+    /// assert_eq!(anims.get_duration_at_index(0), 2.5);
+    ///
+    /// anims.anim_time(1.0);
+    /// assert_eq!(anims.get_anim_completion(), 0.4);
+    ///
+    /// anims.anim_time(2.0);
+    /// assert_eq!(anims.get_anim_completion(), 0.8);
+    ///
+    /// // if the asking for animation longer than the duration (AnimMode::Manual):
+    /// anims.anim_time(4.0);
+    /// assert_eq!(anims.get_anim_completion(), 1.0);
+    ///
+    /// anims.play_anim_idx(0, AnimMode::Loop);
+    /// // if the asking for animation longer than the duration (AnimMode::Loop):
+    /// anims.anim_time(4.0);
+    /// assert_eq!(anims.get_anim_completion(), 0.6);
+    /// ```
     pub fn anim_time(&mut self, time: f32) -> &mut Self {
         unsafe { model_set_anim_time(self.model.0.as_ptr(), time) };
         self
     }
 
-    /// This is the percentage of completion of the active animation. This will always be a value between 0-1. If no
-    /// animation is active, this will be zero.
+    /// This set the percentage of completion of the active animation. This may be a value superior to 1.0 if the
+    /// animation is a loop.
     /// <https://stereokit.net/Pages/StereoKit/Model/AnimCompletion.html>
     ///
-    /// see also [`model_set_anim_completion`][`model_play_anim`]
+    /// see also [`model_set_anim_completion`] [`Anims::anim_time`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::model::{Model, Anims, AnimMode};
+    ///
+    /// let model = Model::from_file("center.glb", None)
+    ///                              .expect("Could not load model").copy();
+    /// let mut anims = model.get_anims();
+    /// anims.play_anim_idx(0, AnimMode::Manual);
+    /// assert_eq!(anims.get_duration_at_index(0), 2.5);
+    ///
+    /// anims.anim_completion(0.4);
+    /// assert_eq!(anims.get_anim_time(), 1.0);
+    ///
+    /// anims.anim_completion(0.8);
+    /// assert_eq!(anims.get_anim_time(), 2.0);
+    ///
+    /// // If asking for a completion over 100% (AnimMode::Manual):
+    /// anims.anim_completion(1.8);
+    /// assert_eq!(anims.get_anim_time(), 2.5);
+    ///
+    /// anims.play_anim_idx(0, AnimMode::Loop);
+    /// // if the asking for a completion over 100% (AnimMode::Loop):
+    /// anims.anim_completion(1.8);
+    /// assert_eq!(anims.get_anim_time(), 2.0);
+    /// ```
     pub fn anim_completion(&mut self, percent: f32) -> &mut Self {
         unsafe { model_set_anim_completion(self.model.0.as_ptr(), percent) };
         self
@@ -1017,7 +1209,20 @@ impl<'a> Anims<'a> {
     /// get anim by name
     /// <https://stereokit.net/Pages/StereoKit/Model/FindAnim.html>
     ///
-    /// see also [`model_anim_find`][`model_play_anim`]
+    /// see also [`model_anim_find`] [`Anims::play_anim`] [`Anims::play_anim_idx]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::model::{Model, Anims};
+    /// let model = Model::from_file("center.glb", None)
+    ///     .expect("Could not load model")
+    ///     .copy();
+    ///
+    /// let anims = model.get_anims();
+    ///
+    /// assert_eq!(anims.find_anim("SuzanneAction"), Some(0));
+    /// assert_eq!(anims.find_anim("Not exist"), None);
+    /// ```
     pub fn find_anim<S: AsRef<str>>(&self, name: S) -> Option<i32> {
         let c_str = match CString::new(name.as_ref()) {
             Ok(c_str) => c_str,
@@ -1031,6 +1236,18 @@ impl<'a> Anims<'a> {
     /// <https://stereokit.net/Pages/StereoKit/Model/ModelAnimCollection.html>
     ///
     /// see also [`model_anim_count`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::model::{Model};
+    ///
+    /// let model = Model::from_file("mobiles.gltf", None)
+    ///                             .expect("Could not load model").copy();
+    ///
+    /// let count = model.get_anims().get_count();
+    ///
+    /// assert_eq!(count, 3);
+    /// ```
     pub fn get_count(&self) -> i32 {
         unsafe { model_anim_count(self.model.0.as_ptr()) }
     }
@@ -1038,7 +1255,21 @@ impl<'a> Anims<'a> {
     /// Get the current animation
     /// <https://stereokit.net/Pages/StereoKit/Model/ActiveAnim.html>
     ///
-    /// see also [`model_anim_active`]
+    /// see also [`model_anim_active`] [`Anims::play_anim`] [`Anims::play_anim_idx`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::model::{Model, AnimMode};
+    ///
+    /// let model = Model::from_file("mobiles.gltf", None)
+    ///                            .expect("Could not load model").copy();
+    ///
+    /// let mut anims = model.get_anims();
+    /// assert_eq!(anims.get_active_anim(), -1);
+    ///
+    /// anims.play_anim("flyRotate", AnimMode::Loop);
+    /// assert_eq!(anims.get_active_anim(), 1);
+    /// ```
     pub fn get_active_anim(&self) -> i32 {
         unsafe { model_anim_active(self.model.0.as_ptr()) }
     }
@@ -1046,15 +1277,45 @@ impl<'a> Anims<'a> {
     /// Get the current animation, mode
     /// <https://stereokit.net/Pages/StereoKit/Model/AnimMode.html>
     ///
-    /// see also [`model_anim_active_mode`]
+    /// see also [`model_anim_active_mode`] [`Anims::play_anim`] [`Anims::play_anim_idx`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::model::{Model, AnimMode};
+    ///
+    /// let model = Model::from_file("mobiles.gltf", None)
+    ///                           .expect("Could not load model").copy();
+    ///
+    /// let mut anims = model.get_anims();
+    /// assert_eq!(anims.get_anim_mode(), AnimMode::Loop);
+    ///
+    /// anims.play_anim("flyRotate", AnimMode::Once);
+    /// assert_eq!(anims.get_anim_mode(), AnimMode::Once);
+    ///
+    /// anims.play_anim("fly", AnimMode::Manual);
+    /// assert_eq!(anims.get_anim_mode(), AnimMode::Manual);
+    /// ```
     pub fn get_anim_mode(&self) -> AnimMode {
         unsafe { model_anim_active_mode(self.model.0.as_ptr()) }
     }
-
     /// Get the current animation duration
     /// <https://stereokit.net/Pages/StereoKit/Model/AnimTime.html>
     ///
-    /// see also [`model_anim_active_time`]
+    /// see also [`model_anim_active_time`] [`Anims::anim_time`] [`Anims::anim_completion`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::model::{Model, AnimMode};
+    ///
+    /// let model = Model::from_file("center.glb", None)
+    ///                           .expect("Could not load model").copy();
+    ///
+    /// let mut anims = model.get_anims();
+    /// assert_eq!(anims.get_anim_time(), 0.0);
+    ///
+    /// anims.play_anim("SuzanneAction", AnimMode::Loop ).anim_completion(0.5);
+    /// assert_eq!(anims.get_anim_time(), 1.25);
+    /// ```
     pub fn get_anim_time(&self) -> f32 {
         unsafe { model_anim_active_time(self.model.0.as_ptr()) }
     }
@@ -1062,7 +1323,21 @@ impl<'a> Anims<'a> {
     /// Get the current animation completion %
     /// <https://stereokit.net/Pages/StereoKit/Model/AnimCompletion.html>
     ///
-    /// see also [`model_anim_active_completion`]
+    /// see also [`model_anim_active_completion`] [`Anims::anim_time`] [`Anims::anim_completion`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::model::{Model, AnimMode};
+    ///
+    /// let model = Model::from_file("center.glb", None)
+    ///                          .expect("Could not load model").copy();
+    /// let mut anims = model.get_anims();
+    /// assert_eq!(anims.get_anim_completion(), 0.0);
+    ///
+    /// anims.play_anim("SuzanneAction", AnimMode::Loop);
+    /// anims.anim_time(0.5);
+    /// assert_eq!(anims.get_anim_completion(), 0.2);
+    /// ```
     pub fn get_anim_completion(&self) -> f32 {
         unsafe { model_anim_active_completion(self.model.0.as_ptr()) }
     }
@@ -1073,6 +1348,41 @@ impl<'a> Anims<'a> {
 /// <https://stereokit.net/Pages/StereoKit/ModelVisualCollection.html>
 ///
 /// see also [`Model::get_nodes`]
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{maths::{Vec3, Matrix} ,model::Model, util::Color128};
+///
+/// let model = Model::from_file("center.glb", None)
+///                           .expect("Could not load model").copy();
+/// let transform = Matrix::trs(&(Vec3::NEG_Y * 0.40),
+///                             &([0.0, 190.0, 0.0].into()),
+///                             &(Vec3::ONE * 0.25));
+///
+/// let mut nodes = model.get_nodes();
+///
+/// // Duplicate Suzanne ModelNode 5 times at different positions.
+/// let original_node = nodes.find("Suzanne").expect("Could not find Suzanne");
+/// let mesh = original_node.get_mesh().expect("Could not get Suzanne's mesh");
+/// let material_original = original_node.get_material().expect("Could not get Suzanne's material");
+///
+/// for i in -1..4 {
+///     let coord = i as f32 * 1.25;
+///     let color_idx = ((i+5) * 13694856) as u32;
+///     let position = Matrix::t([coord, coord, coord]);
+///     let name = format!("Suzanne_{}", i);
+///     let mut material = material_original.copy();
+///     material.color_tint(Color128::hex(color_idx));
+///
+///     nodes.add(name, position, Some(&mesh), Some(&material), true);
+/// }
+///
+/// filename_scr = "screenshots/model_nodes.jpeg";
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+///     model.draw(token, transform, None, None);
+/// );
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_nodes.jpeg" alt="screenshot" width="200">
 #[derive(Debug, Copy, Clone)]
 pub struct Nodes<'a> {
     model: &'a Model,
@@ -1143,7 +1453,7 @@ unsafe extern "C" {
 
 /// Iterator of the nodes of a model. Can be instanciate from [Model]
 ///
-/// see also [Nodes::all][Nodes::visuals]
+/// see also [Nodes::all] [Nodes::visuals]
 #[derive(Debug, Copy, Clone)]
 pub struct NodeIter<'a> {
     model: &'a Model,
@@ -1197,12 +1507,14 @@ impl<'a> Iterator for NodeIter<'a> {
 }
 
 impl<'a> NodeIter<'a> {
-    ///Get an iterator for all node of the given model
+    /// Get an iterator for all node of the given model
+    /// see also [Nodes::all]
     pub fn all_from(model: &'a impl AsRef<Model>) -> NodeIter<'a> {
         NodeIter { index: -1, model: model.as_ref(), visual: false }
     }
 
     ///Get an iterator for all visual node of the given model
+    /// see also [Nodes::visuals]
     pub fn visuals_from(model: &'a impl AsRef<Model>) -> NodeIter<'a> {
         NodeIter { index: -1, model: model.as_ref(), visual: true }
     }
@@ -1219,6 +1531,28 @@ impl<'a> Nodes<'a> {
     /// <https://stereokit.net/Pages/StereoKit/Model/AddNode.html>
     ///
     /// see also [ModelNode::add_child] [`model_node_add`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model, mesh::Mesh, material::Material};
+    ///
+    /// let sphere =       Mesh::generate_sphere(0.6, None);
+    /// let cylinder =     Mesh::generate_cylinder(0.25, 0.6, Vec3::Z, None);
+    ///
+    /// let transform1 = Matrix::t([-0.7,-0.5, 0.0]);
+    /// let transform2 = Matrix::t([ 0.0, 0.0, 0.0]);
+    ///
+    /// let material = Material::pbr();
+    ///
+    /// let model = Model::new();
+    /// let mut nodes = model.get_nodes();
+    /// nodes.add("sphere",   transform1 , Some(&sphere),       Some(&material), true)
+    ///      .add("cylinder", transform2 , Some(&cylinder),     Some(&material), true)
+    ///      .add("A matrix", Matrix::IDENTITY, None, None, false);
+    ///
+    /// assert_eq!(nodes.get_count(), 3);
+    /// assert_eq!(nodes.get_root_node().get_name(), Some("sphere"));
+    /// ```
     pub fn add<S: AsRef<str>>(
         &mut self,
         name: S,
@@ -1253,6 +1587,36 @@ impl<'a> Nodes<'a> {
     /// <https://stereokit.net/Pages/StereoKit/ModelNodeCollection.html>
     ///
     /// see also [NodeIter::all_from]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model, mesh::Mesh, material::Material};
+    ///
+    /// let sphere =       Mesh::generate_sphere(0.6, None);
+    /// let cylinder =     Mesh::generate_cylinder(0.25, 0.6, Vec3::Z, None);
+    ///
+    /// let transform1 = Matrix::t([-0.7,-0.5, 0.0]);
+    /// let transform2 = Matrix::t([ 0.0, 0.0, 0.0]);
+    ///
+    /// let material = Material::pbr();
+    ///
+    /// let model = Model::new();
+    /// let mut nodes = model.get_nodes();
+    /// nodes.add("sphere",   transform1 , Some(&sphere),       Some(&material), true)
+    ///      .add("cylinder", transform2 , Some(&cylinder),     Some(&material), true)
+    ///      .add("A matrix", Matrix::IDENTITY, None, None, false);
+    ///
+    /// assert_eq!(nodes.get_count(), 3);
+    /// assert_eq!(nodes.all().count(), 3);
+    ///
+    /// for (iter, node) in nodes.all().enumerate() {
+    ///     match iter {
+    ///         0 => assert_eq!(node.get_name(), Some("sphere")),
+    ///         1 => assert_eq!(node.get_name(), Some("cylinder")),
+    ///         _ => assert_eq!(node.get_name(), Some("A matrix")),
+    ///     }
+    /// }
+    /// ```
     pub fn all(&self) -> NodeIter {
         NodeIter::all_from(self.model)
     }
@@ -1261,14 +1625,71 @@ impl<'a> Nodes<'a> {
     /// <https://stereokit.net/Pages/StereoKit/ModelVisualCollection.html>
     ///
     /// see also [NodeIter::visuals_from]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model, mesh::Mesh, material::Material};
+    ///
+    /// let sphere =       Mesh::generate_sphere(0.6, None);
+    /// let cylinder =     Mesh::generate_cylinder(0.25, 0.6, Vec3::Z, None);
+    ///
+    /// let transform1 = Matrix::t([-0.7,-0.5, 0.0]);
+    /// let transform2 = Matrix::t([ 0.0, 0.0, 0.0]);
+    ///
+    /// let material = Material::pbr();
+    ///
+    /// let model = Model::new();
+    /// let mut nodes = model.get_nodes();
+    /// nodes.add("sphere",   transform1 , Some(&sphere),       Some(&material), true)
+    ///      .add("cylinder", transform2 , Some(&cylinder),     Some(&material), true)
+    ///      .add("A matrix", Matrix::IDENTITY, None, None, false);
+    ///
+    /// assert_eq!(nodes.get_count(), 3);
+    /// assert_eq!(nodes.get_visual_count(), 2);
+    /// assert_eq!(nodes.visuals().count(), 2);
+    ///
+    /// for (iter, node) in nodes.visuals().enumerate() {
+    ///     match iter {
+    ///         0 => assert_eq!(node.get_name(), Some("sphere")),
+    ///         _ => assert_eq!(node.get_name(), Some("cylinder")),
+    ///     }
+    /// }
+    /// ```
     pub fn visuals(&self) -> NodeIter {
         NodeIter::visuals_from(self.model)
     }
 
     /// get node by name
     /// <https://stereokit.net/Pages/StereoKit/Model/FindNode.html>
+    /// * `name` - Exact name to match against. ASCII only for now.
     ///
     /// see also [`model_node_find`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model, mesh::Mesh, material::Material};
+    ///
+    /// let sphere =      Mesh::generate_sphere(0.6, None);
+    /// let cylinder =    Mesh::generate_cylinder(0.25, 0.6, Vec3::Z, None);
+    ///
+    /// let transform1 = Matrix::t([-0.7,-0.5, 0.0]);
+    /// let transform2 = Matrix::t([ 0.0, 0.0, 0.0]);
+    ///
+    /// let material = Material::pbr();
+    ///
+    /// let model = Model::new();
+    /// let mut nodes = model.get_nodes();
+    /// nodes.add("sphere",   transform1 , Some(&sphere),      Some(&material), true)
+    ///      .add("cylinder", transform2 , Some(&cylinder),    Some(&material), true)
+    ///      .add("A matrix", Matrix::IDENTITY, None, None, false);
+    ///
+    /// let found_sphere = nodes.find("sphere");
+    /// assert!(found_sphere.is_some());
+    /// assert_eq!(found_sphere.unwrap().get_name(), Some("sphere"));
+    ///
+    /// let found_non_existent = nodes.find("non_existent");
+    /// assert!(found_non_existent.is_none());
+    /// ```
     pub fn find<S: AsRef<str>>(&self, name: S) -> Option<ModelNode> {
         let c_str = CString::new(name.as_ref()).unwrap();
         match unsafe { model_node_find(self.model.0.as_ptr(), c_str.as_ptr()) } {
@@ -1277,10 +1698,23 @@ impl<'a> Nodes<'a> {
         }
     }
 
-    /// Get the number of node
+    /// Get the number of node.
     /// <https://stereokit.net/Pages/StereoKit/ModelNodeCollection.html>
     ///
     /// see also [NodeIter] [`model_node_count`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Matrix, model::Model};
+    ///
+    /// let model = Model::new();
+    ///
+    /// let mut nodes = model.get_nodes();
+    /// assert_eq!(nodes.get_count(), 0);
+    ///
+    /// nodes.add("root", Matrix::IDENTITY, None, None, false);
+    /// assert_eq!(nodes.get_count(), 1);
+    /// ```
     pub fn get_count(&self) -> i32 {
         unsafe { model_node_count(self.model.0.as_ptr()) }
     }
@@ -1289,6 +1723,21 @@ impl<'a> Nodes<'a> {
     /// <https://stereokit.net/Pages/StereoKit/ModelVisualCollection.html>
     ///
     /// see also [NodeIter] [`model_node_visual_count`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Matrix, model::Model};
+    ///
+    /// let model = Model::new();
+    ///
+    /// let mut nodes = model.get_nodes();
+    /// assert_eq!(nodes.get_count(), 0);
+    /// assert_eq!(nodes.get_visual_count(), 0);
+    ///
+    /// nodes.add("root", Matrix::IDENTITY, None, None, false);
+    /// assert_eq!(nodes.get_count(), 1);
+    /// assert_eq!(nodes.get_visual_count(), 0);
+    /// ```
     pub fn get_visual_count(&self) -> i32 {
         unsafe { model_node_visual_count(self.model.0.as_ptr()) }
     }
@@ -1297,7 +1746,25 @@ impl<'a> Nodes<'a> {
     /// <https://stereokit.net/Pages/StereoKit/ModelNodeCollection.html>
     ///
     /// see also [NodeIter] [`model_node_index`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Matrix, model::Model};
+    ///
+    /// let model = Model::new();
+    ///
+    /// let mut nodes = model.get_nodes();
+    /// let node = nodes.get_index(0);
+    /// assert!(node.is_none());
+    ///
+    /// nodes.add("root", Matrix::IDENTITY, None, None, false);
+    /// let node = nodes.get_index(0).expect("Node should exist");
+    /// assert_eq!(node.get_name(), Some("root"));
+    /// ```
     pub fn get_index(&self, index: i32) -> Option<ModelNode> {
+        if unsafe { model_node_count(self.model.0.as_ptr()) } <= index {
+            return None;
+        }
         match unsafe { model_node_index(self.model.0.as_ptr(), index) } {
             -1 => None,
             otherwise => Some(ModelNode { model: self.model, id: otherwise }),
@@ -1308,7 +1775,25 @@ impl<'a> Nodes<'a> {
     /// <https://stereokit.net/Pages/StereoKit/ModelVisualCollection.html>
     ///
     /// see also [NodeIter] [`model_node_visual_index`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Matrix, model::Model};
+    ///
+    /// let model = Model::new();
+    ///
+    /// let mut nodes = model.get_nodes();
+    /// let node = nodes.get_visual_index(0);
+    /// assert!(node.is_none());
+    ///
+    /// nodes.add("root", Matrix::IDENTITY, None, None, false);
+    /// let node = nodes.get_visual_index(0);
+    /// assert!(node.is_none());
+    /// ```
     pub fn get_visual_index(&self, index: i32) -> Option<ModelNode> {
+        if unsafe { model_node_visual_count(self.model.0.as_ptr()) } <= index {
+            return None;
+        }
         match unsafe { model_node_visual_index(self.model.0.as_ptr(), index) } {
             -1 => None,
             otherwise => Some(ModelNode { model: self.model, id: otherwise }),
@@ -1319,15 +1804,72 @@ impl<'a> Nodes<'a> {
     /// <https://stereokit.net/Pages/StereoKit/Model/RootNode.html>
     ///
     /// see also [`model_node_get_root`]
-    pub fn get_root_node(&self) -> ModelNode {
-        ModelNode { model: self.model, id: unsafe { model_node_get_root(self.model.0.as_ptr()) } }
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Matrix, model::Model};
+    ///
+    /// let model = Model::new();
+    ///
+    /// let mut nodes = model.get_nodes();
+    /// let node = nodes.get_root_node();
+    /// assert!(node.is_none());
+    ///
+    /// nodes.add("root", Matrix::IDENTITY, None, None, false);
+    /// let node = nodes.get_root_node().expect("Node should exist");
+    /// assert_eq!(node.get_name(), Some("root"));
+    /// ```
+    pub fn get_root_node(&self) -> Option<ModelNode> {
+        let id = unsafe { model_node_get_root(self.model.0.as_ptr()) };
+        if id == -1 { None } else { Some(ModelNode { model: self.model, id }) }
     }
 }
 
-/// ModelNode
+/// This class is a link to a node in a Model’s internal hierarchy tree. It’s composed of node information, and links to
+/// the directly adjacent tree nodes.
 /// <https://stereokit.net/Pages/StereoKit/ModelNode.html>
-
-#[derive(Debug, Copy, Clone)]
+///
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model, mesh::Mesh,
+///                      material::Material, util::named_colors};
+///
+/// let sphere =       Mesh::generate_sphere(0.6, None);
+/// let rounded_cube = Mesh::generate_rounded_cube(Vec3::ONE * 0.6, 0.2, None);
+/// let cylinder =     Mesh::generate_cylinder(0.25, 0.6, Vec3::Z, None);
+///
+/// let transform1 = Matrix::t( [-0.7,-0.5, 0.0]);
+/// let transform2 = Matrix::t( [ 0.0, 0.0, 0.0]);
+/// let transform3 = Matrix::t( [ 0.7, 0.5, 0.0]);
+/// let trans_mini = Matrix::ts([ 0.0, 0.0, 0.5].into(), Vec3::ONE * 0.15);
+///
+/// let material = Material::pbr();
+///
+/// let model = Model::new();
+/// let mut nodes = model.get_nodes();
+/// nodes.add("sphere",   transform1 , Some(&sphere),       Some(&material), true)
+///      .add("cube",     transform2 , Some(&rounded_cube), Some(&material), true)
+///      .add("cylinder", transform3 , Some(&cylinder),     Some(&material), true)
+///      .add("mini",     trans_mini, None, None, true);
+///
+/// let mut material = material.copy();
+/// material.color_tint(named_colors::RED);
+/// let mut mini = nodes.find("mini").expect("mini node should exist!");
+/// mini.add_child("sphere",   transform1 , Some(&sphere),       Some(&material), true)
+///     .add_child("cube",     transform2 , Some(&rounded_cube), Some(&material), true)
+///     .add_child("cylinder", transform3 , Some(&cylinder),     Some(&material), true);
+///
+/// assert_eq!(nodes.get_visual_count(), 6);
+/// assert_eq!(nodes.get_count(), 7);
+///
+/// filename_scr = "screenshots/model_node.jpeg";
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+///     model.draw(token, Matrix::IDENTITY, None, None);
+/// );
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_node.jpeg" alt="screenshot" width="200">
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ModelNode<'a> {
     model: &'a Model,
     id: ModelNodeId,
@@ -1339,6 +1881,25 @@ impl ModelNode<'_> {
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/Name.html>
     ///
     /// see also [`model_node_set_name`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Matrix, model::Model};
+    ///
+    /// let model = Model::new();
+    ///
+    /// let mut nodes = model.get_nodes();
+    /// nodes.add("root", Matrix::IDENTITY, None, None, false);
+    ///
+    /// let mut node = nodes.find("root").expect("A node should exist!");
+    /// assert_eq!(node.get_name(), Some("root"));
+    ///
+    /// node.name("my_root_node");
+    /// assert_eq!(node.get_name(), Some("my_root_node"));
+    ///
+    /// let node = nodes.find("my_root_node").expect("A node should exist!");
+    /// assert!(nodes.find("root").is_none());
+    /// ```
     pub fn name<S: AsRef<str>>(&mut self, name: S) -> &mut Self {
         let c_str = CString::new(name.as_ref()).unwrap();
         unsafe { model_node_set_name(self.model.0.as_ptr(), self.id, c_str.as_ptr()) };
@@ -1349,16 +1910,50 @@ impl ModelNode<'_> {
     /// This flag is ignored if no Mesh is attached.
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/Solid.html>
     ///
-    /// see also [`model_node_set_solid`]
+    /// see also [`model_node_set_solid`] [`Nodes::add`] [`ModelNode::add_child`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Matrix, model::Model, mesh::Mesh, material::Material};
+    ///
+    /// let model = Model::new();
+    ///
+    /// let mut nodes = model.get_nodes();
+    /// nodes.add("cube", Matrix::IDENTITY, Some(&Mesh::cube()), Some(&Material::pbr()), false);
+    ///
+    /// let mut node = nodes.find("cube").expect("A node should exist!");
+    /// assert_eq!(node.get_solid(), false);
+    ///
+    /// node.solid(true);
+    /// assert_eq!(node.get_solid(), true);
+    /// ```
     pub fn solid(&mut self, solid: bool) -> &mut Self {
         unsafe { model_node_set_solid(self.model.0.as_ptr(), self.id, solid as Bool32T) };
         self
     }
 
-    /// Set the visibility of the node
+    /// Is this node flagged as visible? By default, this is true for all nodes with visual elements attached. These
+    /// nodes will not be drawn or skinned if you set this flag to false. If a ModelNode has no visual elements attached
+    /// to it, it will always return false, and setting this value will have no effect.
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/Visible.html>
     ///
     /// see also [`model_node_set_visible`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Matrix, model::Model, mesh::Mesh, material::Material};
+    ///
+    /// let model = Model::new();
+    ///
+    /// let mut nodes = model.get_nodes();
+    /// nodes.add("cube", Matrix::IDENTITY, Some(&Mesh::cube()), Some(&Material::pbr()), true);
+    ///
+    /// let mut node = nodes.find("cube").expect("A node should exist!");
+    /// assert_eq!(node.get_visible(), true);
+    ///
+    /// node.visible(false);
+    /// assert_eq!(node.get_visible(), false);
+    /// ```
     pub fn visible(&mut self, visible: bool) -> &mut Self {
         unsafe { model_node_set_visible(self.model.0.as_ptr(), self.id, visible as Bool32T) };
         self
@@ -1368,6 +1963,22 @@ impl ModelNode<'_> {
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/Material.html>
     ///
     /// see also [`model_node_set_material`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Matrix, model::Model, mesh::Mesh, material::Material};
+    ///
+    /// let model = Model::new();
+    ///
+    /// let mut nodes = model.get_nodes();
+    /// nodes.add("cube", Matrix::IDENTITY, Some(&Mesh::cube()), Some(&Material::pbr()), true);
+    ///
+    /// let mut node = nodes.find("cube").expect("A node should exist!");
+    /// assert_eq!(node.get_material(), Some(Material::pbr()));
+    ///
+    /// node.material(Material::unlit());
+    /// assert_eq!(node.get_material(), Some(Material::unlit()));
+    /// ```
     pub fn material<M: AsRef<Material>>(&mut self, material: M) -> &mut Self {
         unsafe { model_node_set_material(self.model.0.as_ptr(), self.id, material.as_ref().0.as_ptr()) };
         self
@@ -1377,16 +1988,62 @@ impl ModelNode<'_> {
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/Mesh.html>
     ///
     /// see also [`model_node_set_mesh`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Matrix, model::Model, mesh::Mesh, material::Material};
+    ///
+    /// let model = Model::new();
+    ///
+    /// let mut nodes = model.get_nodes();
+    /// nodes.add("mesh", Matrix::IDENTITY, Some(&Mesh::cube()), Some(&Material::pbr()), true);
+    ///
+    /// let mut node = nodes.find("mesh").expect("A node should exist!");
+    /// assert_eq!(node.get_mesh(), Some(Mesh::cube()));
+    ///
+    /// node.mesh(Mesh::sphere());
+    /// assert_eq!(node.get_mesh(), Some(Mesh::sphere()));
+    /// ```
     pub fn mesh<M: AsRef<Mesh>>(&mut self, mesh: M) -> &mut Self {
         unsafe { model_node_set_mesh(self.model.0.as_ptr(), self.id, mesh.as_ref().0.as_ptr()) };
         self
     }
 
-    /// Set the transform model of the node. The transform of this node relative to the Model itself. This incorporates transforms from all parent nodes.
+    /// Set the transform model of the node. The transform of this node relative to the Model itself. This incorporates
+    /// transforms from all parent nodes.
     /// Setting this transform will update the LocalTransform, as well as all Child nodes below this one.
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/ModelTransform.html>
     ///
     /// see also [`model_node_set_transform_model`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Matrix, model::Model, mesh::Mesh, material::Material};
+    ///
+    /// let model = Model::new();
+    ///
+    /// let mut nodes = model.get_nodes();
+    /// nodes.add("root_mesh", Matrix::t([1.0, 1.0, 1.0]), Some(&Mesh::cube()), Some(&Material::pbr()), true);
+    /// assert_eq!(model.get_bounds().center, [1.0, 1.0, 1.0].into());
+    /// assert_eq!(model.get_bounds().dimensions, [1.0, 1.0, 1.0].into());
+    ///
+    /// let mut node = nodes.find("root_mesh").expect("A node should exist!");
+    /// node.add_child("child_mesh", Matrix::IDENTITY, Some(&Mesh::cube()), Some(&Material::pbr()), false);
+    /// assert_eq!(model.get_bounds().center, [1.0, 1.0, 1.0].into());
+    /// assert_eq!(model.get_bounds().dimensions, [1.0, 1.0, 1.0].into());
+    ///
+    /// // Model_transform!!!
+    /// let mut node_child = nodes.find("child_mesh").expect("A node should exist!");
+    /// node_child.model_transform(Matrix::t([-2.0, -2.0, -2.0]));
+    /// assert_eq!(model.get_bounds().center, [-0.5, -0.5, -0.5].into());
+    /// assert_eq!(model.get_bounds().dimensions, [4.0, 4.0, 4.0].into());
+    ///
+    /// // Local_transform!!!
+    /// let mut node_child = nodes.find("child_mesh").expect("A node should exist!");
+    /// node_child.local_transform(Matrix::t([-2.0, -2.0, -2.0]));
+    /// assert_eq!(model.get_bounds().center, [0.0, 0.0, 0.0].into());
+    /// assert_eq!(model.get_bounds().dimensions, [3.0, 3.0, 3.0].into());
+    /// ```
     pub fn model_transform(&mut self, transform_model_space: impl Into<Matrix>) -> &mut Self {
         unsafe { model_node_set_transform_model(self.model.0.as_ptr(), self.id, transform_model_space.into()) };
         self
@@ -1397,15 +2054,42 @@ impl ModelNode<'_> {
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/LocalTransform.html>
     ///
     /// see also [`model_node_set_transform_local`]
+    /// see example [ModelNode::model_transform]
     pub fn local_transform(&mut self, transform_model_space: impl Into<Matrix>) -> &mut Self {
         unsafe { model_node_set_transform_local(self.model.0.as_ptr(), self.id, transform_model_space.into()) };
         self
     }
 
-    /// Adds a Child node below this node, at the end of the child chain! The local transform of the child will have this node as reference
+    /// Adds a Child node below this node, at the end of the child chain! The local transform of the child will have
+    /// this node as reference
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/AddChild.html>
+    /// * `name` - A text name to identify the node.
+    /// * `local_transform` - A Matrix describing this node’s transform in local space relative to the currently selected
+    ///   node.
+    /// * `mesh` - The Mesh to attach to this Node’s visual. If None, the material must also be None.
+    /// * `material` - The Material to attach to this Node’s visual. If None, the mesh must also be None.
+    /// * `solid` -  	A flag that indicates the Mesh for this node will be used in ray intersection tests. This flag
+    ///   is ignored if no Mesh is attached.
     ///
     /// see also [Nodes::add] [`model_node_add_child`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Matrix, model::Model, mesh::Mesh, material::Material};
+    ///
+    /// let model = Model::new();
+    /// let cube = Mesh::generate_cube([0.1, 0.1, 0.1], None);
+    /// let sphere = Mesh::generate_sphere(0.15, None);
+    /// let material = Material::pbr();
+    ///
+    /// let mut nodes = model.get_nodes();
+    /// nodes.add("root_mesh", Matrix::IDENTITY, Some(&cube), Some(&material), true);
+    /// let mut root_node = nodes.get_root_node().expect("A node should exist!");
+    ///
+    /// root_node
+    ///     .add_child("child_mesh2", Matrix::IDENTITY, Some(&sphere), Some(&material), true)
+    ///     .add_child("child_no_mesh", Matrix::IDENTITY, None, None, false);
+    /// ```
     pub fn add_child<S: AsRef<str>>(
         &mut self,
         name: S,
@@ -1439,14 +2123,33 @@ impl ModelNode<'_> {
 
     /// Get the node Id
     ///
-    pub fn get_id(&self) -> &ModelNodeId {
-        &self.id
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Matrix, model::Model, mesh::Mesh, material::Material};
+    ///
+    /// let model = Model::new();
+    ///
+    /// let mut nodes = model.get_nodes();
+    /// nodes.add("mosh", Matrix::IDENTITY, Some(&Mesh::cube()), Some(&Material::pbr()), true);
+    /// nodes.add("mesh", Matrix::IDENTITY, Some(&Mesh::cube()), Some(&Material::pbr()), true);
+    /// nodes.add("mush", Matrix::IDENTITY, Some(&Mesh::cube()), Some(&Material::pbr()), true);
+    ///
+    /// let node = nodes.find("mesh").expect("Node mesh should exist");
+    /// assert_eq!(node.get_id(), 1);
+    ///
+    /// let node = nodes.find("mush").expect("Node mesh should exist");
+    /// assert_eq!(node.get_id(), 2);
+    /// ```
+    pub fn get_id(&self) -> ModelNodeId {
+        self.id
     }
 
     /// Get the node Name
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/Name.html>
     ///
     /// see also [`model_node_get_name`]
+    /// see example [`ModelNode::name`]
     pub fn get_name(&self) -> Option<&str> {
         unsafe { CStr::from_ptr(model_node_get_name(self.model.0.as_ptr(), self.id)).to_str().ok() }
     }
@@ -1456,6 +2159,7 @@ impl ModelNode<'_> {
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/Solid.html>
     ///
     /// see also [`model_node_get_solid`]
+    /// see example [`ModelNode::solid`]
     pub fn get_solid(&self) -> bool {
         unsafe { model_node_get_solid(self.model.0.as_ptr(), self.id) != 0 }
     }
@@ -1464,6 +2168,7 @@ impl ModelNode<'_> {
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/Visible.html>
     ///
     /// see also [`model_node_get_visible`]
+    /// see example [`ModelNode::visible`]
     pub fn get_visible(&self) -> bool {
         unsafe { model_node_get_visible(self.model.0.as_ptr(), self.id) != 0 }
     }
@@ -1472,6 +2177,7 @@ impl ModelNode<'_> {
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/Material.html>
     ///
     /// see also [`model_node_get_material`]
+    /// see example [`ModelNode::material`]
     pub fn get_material(&self) -> Option<Material> {
         NonNull::new(unsafe { model_node_get_material(self.model.0.as_ptr(), self.id) }).map(Material)
     }
@@ -1480,6 +2186,7 @@ impl ModelNode<'_> {
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/Mesh.html>
     ///
     /// see also [`model_node_get_mesh`]
+    /// see example [`ModelNode::mesh`]
     pub fn get_mesh(&self) -> Option<Mesh> {
         NonNull::new(unsafe { model_node_get_mesh(self.model.0.as_ptr(), self.id) }).map(Mesh)
     }
@@ -1488,6 +2195,7 @@ impl ModelNode<'_> {
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/ModelTransform.html>
     ///
     /// see also [`model_node_get_transform_model`]
+    /// see example [`ModelNode::model_transform`]
     pub fn get_model_transform(&self) -> Matrix {
         unsafe { model_node_get_transform_model(self.model.0.as_ptr(), self.id) }
     }
@@ -1496,6 +2204,7 @@ impl ModelNode<'_> {
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/LocalTransform.html>
     ///
     /// see also [`model_node_get_transform_local`]
+    /// see example [`ModelNode::model_transform`]
     pub fn get_local_transform(&self) -> Matrix {
         unsafe { model_node_get_transform_local(self.model.0.as_ptr(), self.id) }
     }
@@ -1504,6 +2213,32 @@ impl ModelNode<'_> {
     /// <https://stereokit.net/Pages/StereoKit/ModelNodeCollection.html>
     ///
     /// see also [`model_node_iterate`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Matrix, model::Model, mesh::Mesh, material::Material};
+    ///
+    /// let model = Model::new();
+    ///
+    /// let mut nodes = model.get_nodes();
+    /// nodes.add("mosh", Matrix::IDENTITY, Some(&Mesh::cube()), Some(&Material::pbr()), true);
+    /// nodes.add("mesh", Matrix::IDENTITY, Some(&Mesh::cube()), Some(&Material::pbr()), true);
+    /// nodes.add("mush", Matrix::IDENTITY, Some(&Mesh::cube()), Some(&Material::pbr()), true);
+    ///
+    /// let mut node = nodes.find("mosh").expect("Node mosh should exist");
+    /// let mut next_node = node.iterate().expect("Node should have a follower");
+    /// assert_eq!(next_node.get_name(), Some("mesh"));
+    ///
+    /// next_node.add_child("mesh child", Matrix::IDENTITY, Some(&Mesh::cube()), Some(&Material::pbr()), true);
+    /// let next_node = next_node.iterate().expect("Node should have a follower");
+    /// assert_eq!(next_node.get_name(), Some("mesh child"));
+    ///
+    /// let next_node = next_node.iterate().expect("Node should have a follower");
+    /// assert_eq!(next_node.get_name(), Some("mush"));
+    ///
+    /// let next_node = next_node.iterate();
+    /// assert!(next_node.is_none());
+    /// ```
     pub fn iterate(&self) -> Option<ModelNode> {
         match unsafe { model_node_iterate(self.model.0.as_ptr(), self.id) } {
             -1 => None,
@@ -1516,6 +2251,25 @@ impl ModelNode<'_> {
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/Child.html>
     ///
     /// see also [`model_node_child`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Matrix, model::Model, mesh::Mesh, material::Material};
+    ///
+    /// let model = Model::new();
+    ///
+    /// let mut nodes = model.get_nodes();
+    /// nodes.add("mosh", Matrix::IDENTITY, Some(&Mesh::cube()), Some(&Material::pbr()), true);
+    /// nodes.add("mesh", Matrix::IDENTITY, Some(&Mesh::cube()), Some(&Material::pbr()), true);
+    /// nodes.add("mush", Matrix::IDENTITY, Some(&Mesh::cube()), Some(&Material::pbr()), true);
+    ///
+    /// let mut node = nodes.find("mesh").expect("Node mosh should exist");
+    /// node.add_child("mesh child1", Matrix::IDENTITY, Some(&Mesh::cube()), Some(&Material::pbr()), true);
+    /// node.add_child("mesh child2", Matrix::IDENTITY, Some(&Mesh::cube()), Some(&Material::pbr()), true);
+    ///
+    /// let child_node = node.get_child().expect("Node should have a child");
+    /// assert_eq!(child_node.get_name(), Some("mesh child1"));
+    /// ```
     pub fn get_child(&self) -> Option<ModelNode> {
         match unsafe { model_node_child(self.model.0.as_ptr(), self.id) } {
             -1 => None,
@@ -1528,6 +2282,31 @@ impl ModelNode<'_> {
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/Sibling.html>
     ///
     /// see also [`model_node_sibling`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Matrix, model::Model, mesh::Mesh, material::Material};
+    ///
+    /// let model = Model::new();
+    ///
+    /// let mut nodes = model.get_nodes();
+    /// nodes.add("mosh", Matrix::IDENTITY, Some(&Mesh::cube()), Some(&Material::pbr()), true);
+    /// nodes.add("mesh", Matrix::IDENTITY, Some(&Mesh::cube()), Some(&Material::pbr()), true);
+    /// nodes.add("mush", Matrix::IDENTITY, Some(&Mesh::cube()), Some(&Material::pbr()), true);
+    ///
+    /// let mut node = nodes.find("mesh").expect("Node mosh should exist");
+    /// node.add_child("mesh child1", Matrix::IDENTITY, Some(&Mesh::cube()), Some(&Material::pbr()), true);
+    /// node.add_child("mesh child2", Matrix::IDENTITY, Some(&Mesh::cube()), Some(&Material::pbr()), true);
+    ///
+    /// let child_node = node.get_child().expect("Node should have a child");
+    /// assert_eq!(child_node.get_name(), Some("mesh child1"));
+    ///
+    /// let child_node = child_node.get_sibling().expect("Child_node should have a sibling");
+    /// assert_eq!(child_node.get_name(), Some("mesh child2"));
+    ///
+    /// let sibling_node = node.get_sibling().expect("Node should have a sibling");
+    /// assert_eq!(sibling_node.get_name(), Some("mush"));
+    /// ```
     pub fn get_sibling(&self) -> Option<ModelNode> {
         match unsafe { model_node_sibling(self.model.0.as_ptr(), self.id) } {
             -1 => None,
@@ -1539,6 +2318,32 @@ impl ModelNode<'_> {
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/Parent.html>
     ///
     /// see also [`model_node_parent`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Matrix, model::Model, mesh::Mesh, material::Material};
+    ///
+    /// let model = Model::new();
+    ///
+    /// let mut nodes = model.get_nodes();
+    /// nodes.add("mesh", Matrix::IDENTITY, Some(&Mesh::cube()), Some(&Material::pbr()), true);
+    /// nodes.add("mush", Matrix::IDENTITY, Some(&Mesh::cube()), Some(&Material::pbr()), true);
+    ///
+    /// let mut node = nodes.find("mesh").expect("Node mosh should exist");
+    /// node.add_child("mesh child1", Matrix::IDENTITY, Some(&Mesh::cube()), Some(&Material::pbr()), true);
+    /// node.add_child("mesh child2", Matrix::IDENTITY, Some(&Mesh::cube()), Some(&Material::pbr()), true);
+    ///
+    /// let child_node = node.get_child().expect("Node should have a child");
+    /// assert_eq!(child_node.get_name(), Some("mesh child1"));
+    /// assert_eq!(child_node.get_parent().unwrap().get_name(), Some("mesh"));
+    ///
+    /// let child_node = child_node.get_sibling().expect("Child_node should have a sibling");
+    /// assert_eq!(child_node.get_name(), Some("mesh child2"));
+    /// assert_eq!(child_node.get_parent().unwrap().get_name(), Some("mesh"));
+    ///
+    /// // Mesh is it's own parent.
+    /// assert_eq!(child_node.get_parent().unwrap().get_name(), Some("mesh"));
+    /// ```
     pub fn get_parent(&self) -> Option<ModelNode> {
         match unsafe { model_node_parent(self.model.0.as_ptr(), self.id) } {
             -1 => None,
@@ -1550,6 +2355,7 @@ impl ModelNode<'_> {
     /// <https://stereokit.net/Pages/StereoKit/Model/ModelNodeCollection.html>
     ///
     /// see also [`model_node_iterate`]
+    /// same as [`ModelNode::iterate`]
     pub fn get_next(&self) -> Option<ModelNode> {
         self.iterate()
     }
@@ -1558,6 +2364,19 @@ impl ModelNode<'_> {
     /// <https://stereokit.net/Pages/StereoKit/Model.html>
     ///
     /// see also [`Model`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Matrix, model::Model, mesh::Mesh, material::Material};
+    ///
+    /// let model = Model::new();
+    ///
+    /// let mut nodes = model.get_nodes();
+    /// nodes.add("mesh", Matrix::IDENTITY, Some(&Mesh::cube()), Some(&Material::pbr()), true);
+    /// let node = nodes.get_root_node().expect("We should have a root node");
+    /// assert_eq!(node.get_name(), Some("mesh"));
+    /// assert_eq!(node.get_model(), &model);
+    /// ```
     pub fn get_model(&self) -> &Model {
         self.model
     }
@@ -1565,6 +2384,30 @@ impl ModelNode<'_> {
     /// Get Info for this node
     /// <https://stereokit.net/Pages/StereoKit/ModelNodeInfoCollection.html>
     ///
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Matrix, model::{Model, Info}};
+    ///
+    /// let model = Model::new();
+    ///
+    /// let mut nodes = model.get_nodes();
+    /// nodes.add("some_info", Matrix::IDENTITY, None, None, false);
+    ///
+    /// let mut node = nodes.get_root_node().expect("We should have a root node");
+    /// let mut infos = node.get_infos();
+    /// infos.set_info( "name1", "value1");
+    /// infos.set_info( "name2", "value2");
+    ///
+    /// assert_eq!(infos.get_count(), 2);
+    ///
+    /// for (item, info) in infos.enumerate() {
+    ///    match item {
+    ///        0 => assert_eq!(info, Info { name: "name2".to_string(), value: "value2".to_string() }),
+    ///        _ => assert_eq!(info, Info { name: "name1".to_string(), value: "value1".to_string() }),
+    ///    }
+    /// }
+    /// ```
     pub fn get_infos(&self) -> Infos {
         Infos::from(self)
     }
@@ -1595,13 +2438,14 @@ impl Iterator for Infos<'_> {
 
 /// One Info of a ModelNode
 /// <https://stereokit.net/Pages/StereoKit/ModelNodeInfoCollection.html>
+#[derive(Debug, Clone, PartialEq)]
 pub struct Info {
     pub name: String,
     pub value: String,
 }
 
 impl<'a> Infos<'a> {
-    /// Helper to get the collection struct
+    /// Helper to get the collection struct same as [`ModelNode::get_infos`]
     pub fn from(node: &'a ModelNode) -> Infos<'a> {
         Infos { model: node.model, node_id: node.id, curr: 0 }
     }
@@ -1628,7 +2472,27 @@ impl<'a> Infos<'a> {
     /// Clear all infos
     /// <https://stereokit.net/Pages/StereoKit/ModelNodeInfoCollection/Clear.html>
     ///
-    /// see also [`model_node_info_clear`]
+    /// see also [`model_node_info_clear`] [`ModelNode::get_infos`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Matrix, model::{Model, Info}};
+    ///
+    /// let model = Model::new();
+    ///
+    /// let mut nodes = model.get_nodes();
+    /// nodes.add("some_info", Matrix::IDENTITY, None, None, false);
+    ///
+    /// let mut node = nodes.get_root_node().expect("We should have a root node");
+    /// let mut infos = node.get_infos();
+    /// infos.set_info( "name1", "value1");
+    /// infos.set_info( "name2", "value2");
+    ///
+    /// assert_eq!(infos.get_count(), 2);
+    ///
+    /// infos.clear();
+    /// assert_eq!(infos.get_count(), 0);
+    /// ```
     pub fn clear(&mut self) -> &mut Self {
         unsafe { model_node_info_clear(self.model.0.as_ptr(), self.node_id) };
         self
@@ -1637,7 +2501,33 @@ impl<'a> Infos<'a> {
     /// Remove the first occurence found of an info. An error is logged if the info do not exist
     /// <https://stereokit.net/Pages/StereoKit/ModelNodeInfoCollection/Remove.html>
     ///
-    /// see also [`model_node_info_remove`]
+    /// see also [`model_node_info_remove`] [`ModelNode::get_infos`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Matrix, model::{Model, Info}};
+    ///
+    /// let model = Model::new();
+    ///
+    /// let mut nodes = model.get_nodes();
+    /// nodes.add("some_info", Matrix::IDENTITY, None, None, false);
+    ///
+    /// let mut node = nodes.get_root_node().expect("We should have a root node");
+    /// let mut infos = node.get_infos();
+    /// infos.set_info( "name1", "value1");
+    /// infos.set_info( "name2", "value2");
+    ///
+    /// assert_eq!(infos.get_count(), 2);
+    ///
+    /// infos.remove_info("name1000");
+    /// assert_eq!(infos.get_count(), 2);
+    ///
+    /// infos.remove_info("name1");
+    /// assert_eq!(infos.get_count(), 1);
+    ///
+    /// assert_eq!(infos.get_info("name1"), None);
+    /// assert_eq!(infos.get_info("name2"), Some("value2"));
+    /// ```
     pub fn remove_info<S: AsRef<str>>(&mut self, info_key_utf8: S) -> &mut Self {
         let c_str = CString::new(info_key_utf8.as_ref()).unwrap();
         unsafe {
@@ -1651,7 +2541,28 @@ impl<'a> Infos<'a> {
     /// Set an info value to this node (key is unique). The last added key (if multiple) will be the first found.
     /// <https://stereokit.net/Pages/StereoKit/ModelNodeInfoCollection/Add.html>
     ///
-    /// see also [`model_node_info_set`]
+    /// see also [`model_node_info_set`] [`ModelNode::get_infos`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Matrix, model::{Model, Info}};
+    ///
+    /// let model = Model::new();
+    ///
+    /// let mut nodes = model.get_nodes();
+    /// nodes.add("some_info", Matrix::IDENTITY, None, None, false);
+    ///
+    /// let mut node = nodes.get_root_node().expect("We should have a root node");
+    /// let mut infos = node.get_infos();
+    /// infos.set_info( "name1", "value111");
+    /// infos.set_info( "name1", "value1");
+    /// infos.set_info( "name2", "value2");
+    ///
+    /// assert_eq!(infos.get_count(), 2);
+    ///
+    /// assert_eq!(infos.get_info("name1"), Some("value1"));
+    /// assert_eq!(infos.get_info("name2"), Some("value2"));
+    /// ```
     pub fn set_info<S: AsRef<str>>(&mut self, info_key_utf8: S, info_value_utf8: S) -> &mut Self {
         let c_str = CString::new(info_key_utf8.as_ref()).unwrap();
         let c_value = CString::new(info_value_utf8.as_ref()).unwrap();
@@ -1663,7 +2574,28 @@ impl<'a> Infos<'a> {
     /// Return None if the key doesn't exist
     /// <https://stereokit.net/Pages/StereoKit/ModelNodeInfoCollection/Get.html>
     ///
-    /// see also [`model_node_info_get`]
+    /// see also [`model_node_info_get`] [`ModelNode::get_infos`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Matrix, model::{Model, Info}};
+    ///
+    /// let model = Model::new();
+    ///
+    /// let mut nodes = model.get_nodes();
+    /// nodes.add("some_info", Matrix::IDENTITY, None, None, false);
+    ///
+    /// let mut node = nodes.get_root_node().expect("We should have a root node");
+    /// let mut infos = node.get_infos();
+    /// infos.set_info( "name1", "value1");
+    /// infos.set_info( "name2", "value2");
+    ///
+    /// assert_eq!(infos.get_count(), 2);
+    ///
+    /// assert_eq!(infos.get_info("name1"), Some("value1"));
+    /// assert_eq!(infos.get_info("name2"), Some("value2"));
+    /// assert_eq!(infos.get_info("name3333"), None);
+    /// ```
     pub fn get_info<S: AsRef<str>>(&self, info_key_utf8: S) -> Option<&str> {
         let c_str = CString::new(info_key_utf8.as_ref()).unwrap();
         match NonNull::new(unsafe { model_node_info_get(self.model.0.as_ptr(), self.node_id, c_str.as_ptr()) }) {
@@ -1677,6 +2609,28 @@ impl<'a> Infos<'a> {
     /// <https://stereokit.net/Pages/StereoKit/ModelNodeInfoCollection/Contains.html>
     ///
     /// see also [`model_node_info_get`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Matrix, model::{Model, Info}};
+    ///
+    /// let model = Model::new();
+    ///
+    /// let mut nodes = model.get_nodes();
+    /// nodes.add("some_info", Matrix::IDENTITY, None, None, false);
+    ///
+    /// let mut node = nodes.get_root_node().expect("We should have a root node");
+    /// let mut infos = node.get_infos();
+    /// infos.set_info( "name1", "value111");
+    /// infos.set_info( "name1", "value1");
+    /// infos.set_info( "name2", "value2");
+    ///
+    /// assert_eq!(infos.get_count(), 2);
+    ///
+    /// assert_eq!(infos.contains("name1"), true);
+    /// assert_eq!(infos.contains("name2"), true);
+    /// assert_eq!(infos.contains("name333"), false);
+    /// ```
     pub fn contains<S: AsRef<str>>(&self, info_key_utf8: S) -> bool {
         self.get_info(info_key_utf8).is_some()
     }
@@ -1685,6 +2639,30 @@ impl<'a> Infos<'a> {
     /// <https://stereokit.net/Pages/StereoKit/ModelNodeInfoCollection/Count.html>
     ///
     /// see also [`model_node_info_count`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Matrix, model::{Model, Info}};
+    ///
+    /// let model = Model::new();
+    ///
+    /// let mut nodes = model.get_nodes();
+    /// nodes.add("some_info", Matrix::IDENTITY, None, None, false);
+    ///
+    /// let mut node = nodes.get_root_node().expect("We should have a root node");
+    /// let mut infos = node.get_infos();
+    /// infos.set_info( "name0", "value0");
+    /// assert_eq!(infos.get_count(), 1);
+    ///
+    /// infos.set_info( "name1", "value1");
+    /// assert_eq!(infos.get_count(), 2);
+    ///
+    /// infos.set_info( "name2", "value2");
+    /// assert_eq!(infos.get_count(), 3);
+    ///
+    /// infos.clear();
+    /// assert_eq!(infos.get_count(), 0);
+    /// ```
     pub fn get_count(&self) -> i32 {
         unsafe { model_node_info_count(self.model.0.as_ptr(), self.node_id) }
     }

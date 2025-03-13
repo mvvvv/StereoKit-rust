@@ -48,6 +48,7 @@ impl Default for Anim1 {
         let nodes = &mobile.get_nodes();
         nodes
             .get_root_node()
+            .expect("A root node is expected")
             .material(&ico_material)
             .iterate()
             .unwrap()
@@ -63,7 +64,7 @@ impl Default for Anim1 {
         anims.play_anim("flyRotate", AnimMode::Loop);
 
         let nodes = mobile.get_nodes();
-        nodes.get_root_node().add_child(
+        nodes.get_root_node().expect("A root node is expected").add_child(
             "toto",
             Matrix::IDENTITY,
             None, //

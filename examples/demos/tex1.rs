@@ -11,8 +11,8 @@ use stereokit_rust::{
     tex::{Tex, TexFormat, TexType},
     tools::notif::HudNotification,
     util::{
+        Color32, Color128, Gradient,
         named_colors::{BLACK, BLUE, LIGHT_BLUE, RED, YELLOW},
-        Color128, Color32, Gradient,
     },
 };
 
@@ -314,14 +314,14 @@ impl Tex1 {
     /// Called from IStepper::initialize here you can abort the initialization by returning false
     fn start(&mut self) -> bool {
         let nodes = self.panels.get_nodes();
-        nodes.get_root_node().add_child(
+        nodes.get_root_node().expect("A root node should exist!").add_child(
             "tyty",
             Matrix::IDENTITY,
             None, //
             None,
             true,
         );
-        nodes.get_root_node().add_child(
+        nodes.get_root_node().expect("A root node should exist!").add_child(
             "titi",
             Matrix::IDENTITY,
             Some(&Mesh::sphere()), //
