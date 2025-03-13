@@ -451,9 +451,8 @@ impl Model {
     /// let material = Material::pbr();
     /// let mut model = Model::new();
     /// let mut nodes = model.get_nodes();
-    /// nodes.get_root_node()
-    ///      .add_child("cube1", transform1, Some(&cube), Some(&material), true)
-    ///      .add_child("cube2", transform2, Some(&cube), Some(&material), true);
+    /// nodes.add("cube1", transform1, Some(&cube), Some(&material), true)
+    ///      .add("cube2", transform2, Some(&cube), Some(&material), true);
     ///
     /// let mut material_before = Material::ui_box();
     /// material_before .color_tint(named_colors::GOLD)
@@ -799,9 +798,8 @@ impl Model {
     /// let material = Material::pbr();
     /// let mut model = Model::new();
     /// let mut nodes = model.get_nodes();
-    /// nodes.get_root_node()
-    ///      .add_child("cube1", transform1, Some(&cube), Some(&material), true)
-    ///      .add_child("cube2", transform2, Some(&cube), Some(&material), true);
+    /// nodes.add("cube1", transform1, Some(&cube), Some(&material), true)
+    ///      .add("cube2", transform2, Some(&cube), Some(&material), true);
     /// let transform_model = Matrix::r([0.0, 15.0, 0.0]);
     /// let inv = transform_model.get_inverse();
     ///
@@ -866,9 +864,8 @@ impl Model {
     /// let material = Material::pbr();
     /// let mut model = Model::new();
     /// let mut nodes = model.get_nodes();
-    /// nodes.get_root_node()
-    ///      .add_child("cube1", transform1, Some(&cube), Some(&material), true)
-    ///      .add_child("cube2", transform2, Some(&cube), Some(&material), true);
+    /// nodes.add("cube1", transform1, Some(&cube), Some(&material), true)
+    ///      .add("cube2", transform2, Some(&cube), Some(&material), true);
     /// let transform_model = Matrix::r([0.0, 15.0, 0.0]);
     /// let inv = transform_model.get_inverse();
     ///
@@ -1551,7 +1548,7 @@ impl<'a> Nodes<'a> {
     ///      .add("A matrix", Matrix::IDENTITY, None, None, false);
     ///
     /// assert_eq!(nodes.get_count(), 3);
-    /// assert_eq!(nodes.get_root_node().get_name(), Some("sphere"));
+    /// assert_eq!(nodes.get_root_node().unwrap().get_name(), Some("sphere"));
     /// ```
     pub fn add<S: AsRef<str>>(
         &mut self,

@@ -101,7 +101,7 @@ pub mod mesh;
 /// [![Model intersect](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_intersect.jpeg)](model::Model::intersect)
 /// [![Model Anims](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/anims.jpeg)](model::Anims)
 /// [![Model Nodes](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_nodes.jpeg)](model::Nodes)
-/// [![ModelNode](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_node.jpeg)](model::ModelNodes)
+/// [![ModelNode](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_node.jpeg)](model::ModelNode)
 pub mod model;
 
 pub mod prelude;
