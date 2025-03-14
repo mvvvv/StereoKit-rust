@@ -1127,7 +1127,6 @@ impl Steppers {
 ///
 ///         self.closures.set(
 ///             move |token| {
-///                 transform *= Matrix::t(Vec3::Z * 0.2 * Time::get_stepf());
 ///                 Renderer::add_mesh(token, &round_cube, Material::pbr(),
 ///                                    transform, Some(named_colors::RED.into()), None);
 ///                 Text::add_at(token, &text, transform, text_style, None, None, None, None, None, None);

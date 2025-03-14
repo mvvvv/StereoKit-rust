@@ -269,12 +269,12 @@ impl Model {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model};
     ///
-    /// let my_bytes = std::include_bytes!("../assets/center.glb");
+    /// let my_bytes = std::include_bytes!("../assets/plane.glb");
     ///
     /// let model = Model::from_memory("my_bytes_center.glb", my_bytes, None).unwrap().copy();
-    /// let transform = Matrix::trs(&(Vec3::NEG_Y * 0.40),
-    ///                             &([0.0, 160.0, 0.0].into()),
-    ///                             &(Vec3::ONE * 0.25));
+    /// let transform = Matrix::trs(&(Vec3::Y * 0.10),
+    ///                             &([0.0, 110.0, 0.0].into()),
+    ///                             &(Vec3::ONE * 0.09));
     ///
     /// filename_scr = "screenshots/model_from_memory.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
@@ -905,7 +905,7 @@ impl Model {
 ///
 /// let mut anims = model.get_anims();
 /// assert_eq!(anims.get_count(), 1);
-/// anims.play_anim("SuzanneAction", AnimMode::Loop).anim_completion(0.75);
+/// anims.play_anim("SuzanneAction", AnimMode::Manual).anim_completion(0.80);
 ///
 /// for (iter, anim) in anims.enumerate() {
 ///     match iter {
@@ -914,7 +914,6 @@ impl Model {
 ///     }
 /// }
 ///
-/// number_of_steps = 100;
 /// let mut anims = model.get_anims();
 /// filename_scr = "screenshots/anims.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
@@ -2065,7 +2064,7 @@ impl ModelNode<'_> {
     ///   node.
     /// * `mesh` - The Mesh to attach to this Node’s visual. If None, the material must also be None.
     /// * `material` - The Material to attach to this Node’s visual. If None, the mesh must also be None.
-    /// * `solid` -  	A flag that indicates the Mesh for this node will be used in ray intersection tests. This flag
+    /// * `solid` - A flag that indicates the Mesh for this node will be used in ray intersection tests. This flag
     ///   is ignored if no Mesh is attached.
     ///
     /// see also [Nodes::add] [`model_node_add_child`]

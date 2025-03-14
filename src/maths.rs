@@ -3525,8 +3525,8 @@ impl Display for Pose {
 /// filename_scr = "screenshots/sphere.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
 ///     sphere_mesh.draw(token, &material_sphere, transform, None, None);
-///     Lines::add_ray(token, ray_x, 0.30, named_colors::GREEN, None, 0.04);
-///     Lines::add_ray(token, ray_y, 0.30, named_colors::BLUE, None, 0.04);
+///     Lines::add_ray(token, ray_x, 0.30, named_colors::RED, None, 0.04);
+///     Lines::add_ray(token, ray_y, 0.30, named_colors::GREEN, None, 0.04);
 /// );
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sphere.jpeg" alt="screenshot" width="200">
