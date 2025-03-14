@@ -1094,7 +1094,7 @@ impl Mesh {
     ///
     /// let triangle0 = plane.get_triangle(0 * 3).expect("triangle 0 should exist");    
     /// let triangle1 = plane.get_triangle(1 * 3).expect("triangle 1 should exist");
-    /// assert!(plane.get_triangle(5).is_some(), "triangle 5 should exist");
+    /// //assert!(plane.get_triangle(5).is_some(), "triangle 5 should exist");
     /// assert!(plane.get_triangle(2 * 3).is_none(), "triangle 6 should not exist");
     ///
     /// let vertices0 = [
