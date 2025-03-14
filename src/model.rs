@@ -267,7 +267,7 @@ impl Model {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model};
+    /// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model, util::named_colors};
     ///
     /// let my_bytes = std::include_bytes!("../assets/plane.glb");
     ///
@@ -278,7 +278,7 @@ impl Model {
     ///
     /// filename_scr = "screenshots/model_from_memory.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     model.draw(token, transform, None, None);
+    ///     model.draw(token, transform, Some(named_colors::GREEN.into()), None);
     /// );
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_from_memory.jpeg" alt="screenshot" width="200">    
