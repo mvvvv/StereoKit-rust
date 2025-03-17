@@ -74,7 +74,7 @@ fn hand_menu_radial0() {
     test_steps!(// !!!! Get a proper main loop !!!!
         if iter == 1 {
             SkInfo::send_event(&Some(sk.get_sk_info_clone()),
-                StepperAction::event(id.clone(), HAND_MENU_RADIAL_FOCUS, &true.to_string()));
+                StepperAction::event(id.as_str(), HAND_MENU_RADIAL_FOCUS, &true.to_string()));
         }
         if iter == 8 {
             SkInfo::send_event(&Some(sk.get_sk_info_clone()),

@@ -561,6 +561,8 @@ impl SkSettings {
 
 /// Provides a reason on why StereoKit has quit.
 /// <https://stereokit.net/Pages/StereoKit/QuitReason.html>
+///
+/// see also: [`Sk::quit`] [StepperAction::quit] [`Sk::get_quit_reason`]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
 pub enum QuitReason {
@@ -577,6 +579,8 @@ pub enum QuitReason {
 }
 
 /// Non canonical structure whose purpose is to expose infos for ISteppers.
+///
+/// see also: [`Sk::get_sk_info_clone`]
 #[allow(dead_code)]
 #[derive(Debug)]
 pub struct SkInfo {
@@ -678,7 +682,7 @@ impl SkInfo {
         let key = key.to_string();
         let id = id.clone();
         Box::new(move |value: String| {
-            SkInfo::send_event(&sk_info, StepperAction::event(id.clone(), &key, &value));
+            SkInfo::send_event(&sk_info, StepperAction::event(id.as_str(), &key, &value));
         })
     }
 }

@@ -126,8 +126,8 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
     if passthrough_fb_enabled {
         sk.send_event(StepperAction::add_default::<PassthroughFbExt>("PassthroughFbExt"));
         if passthrough {
-            sk.send_event(StepperAction::event("main".into(), PASSTHROUGH_FLIP, "1"));
-            sk.send_event(StepperAction::event("main".into(), SHOW_FLOOR, "false"));
+            sk.send_event(StepperAction::event("main", PASSTHROUGH_FLIP, "1"));
+            sk.send_event(StepperAction::event("main", SHOW_FLOOR, "false"));
             Log::diag("Passthrough Activated at start !!");
         } else {
             Log::diag("Passthrough Deactived at start !!");
@@ -313,14 +313,14 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
                 let mut string_value = "0";
                 if new_value {
                     Log::diag("Activate passthrough");
-                    sk.send_event(StepperAction::event("main".into(), SHOW_FLOOR, "false"));
+                    sk.send_event(StepperAction::event("main", SHOW_FLOOR, "false"));
                     string_value = "1";
                 } else {
                     Log::diag("Deactivate passthrough");
-                    sk.send_event(StepperAction::event("main".into(), SHOW_FLOOR, "true"));
+                    sk.send_event(StepperAction::event("main", SHOW_FLOOR, "true"));
                 }
                 if passthrough_fb_enabled {
-                    sk.send_event(StepperAction::event("main".into(), PASSTHROUGH_FLIP, string_value));
+                    sk.send_event(StepperAction::event("main", PASSTHROUGH_FLIP, string_value));
                 } else if string_value == "1" {
                     Device::display_blend(DisplayBlend::AnyTransparent);
                 } else {

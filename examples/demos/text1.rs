@@ -209,7 +209,7 @@ impl Text1 {
                 unsafe { transmute::<u32, stereokit_rust::system::TextContext>(((self.text_context as u32) + 1) % 4) };
         }
         if Ui::button("Quit Demos", None) {
-            SkInfo::send_event(&self.sk_info, StepperAction::Quit(self.id.clone(), "Quit button test".to_string()));
+            SkInfo::send_event(&self.sk_info, StepperAction::quit(&self.id, "Quit button test"));
         }
         Ui::same_line();
         if Ui::button("test inject key F1", None) {

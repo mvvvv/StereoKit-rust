@@ -120,7 +120,7 @@ impl FileBrowser {
                     SkInfo::send_event(
                         &self.sk_info,
                         StepperAction::event(
-                            self.caller.clone(),
+                            self.caller.as_str(),
                             FILE_BROWSER_OPEN,
                             file.to_str().unwrap_or("problemo!!"),
                         ),

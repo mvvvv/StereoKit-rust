@@ -661,9 +661,96 @@ impl StepperAction {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::tools::{title::Title, screenshot::ScreenshotViewer};
+    ///
+    /// sk.send_event(StepperAction::add_default::<ScreenshotViewer>("ScreenshotViewer_ID"));
+    /// sk.send_event(StepperAction::add_default::<Title>("Title_white_ID1"));
+    /// sk.send_event(StepperAction::add_default::<Title>("Title_white_ID2"));
+    ///
+    /// test_steps!(  // !!!! Get a proper main loop !!!!
+    ///     if iter == number_of_steps  {
+    ///         assert_eq!(sk.get_steppers_count(), 3);
+    ///         sk.send_event(StepperAction::remove_all(std::any::TypeId::of::<Title>()));
+    ///     } else if iter == number_of_steps + 1 {
+    ///         assert_eq!(sk.get_steppers_count(), 1);
+    ///     }
+    /// );
+    /// ```
+    pub fn remove_all(type_id: TypeId) -> Self {
+        StepperAction::RemoveAll(type_id)
+    }
+
+    /// This removes one or all IStepper instances that are assignable to the generic type specified. This will call the
+    /// IStepper’s Shutdown method on each removed instance before returning.
+    /// <https://stereokit.net/Pages/StereoKit/SK/RemoveStepper.html>
+    /// * `stepper_id` - The id of the stepper to remove.
+    ///
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::tools::{title::Title, screenshot::ScreenshotViewer};
+    ///
+    /// sk.send_event(StepperAction::add_default::<ScreenshotViewer>("ScreenshotViewer_ID"));
+    /// sk.send_event(StepperAction::add_default::<Title>("Title_white_ID1"));
+    /// sk.send_event(StepperAction::add_default::<Title>("Title_white_ID2"));
+    ///
+    /// test_steps!(  // !!!! Get a proper main loop !!!!
+    ///     if iter == number_of_steps  {
+    ///         assert_eq!(sk.get_steppers_count(), 3);
+    ///         sk.send_event(StepperAction::remove("Title_white_ID1"));
+    ///     } else if iter == number_of_steps + 1 {
+    ///         assert_eq!(sk.get_steppers_count(), 2);
+    ///     }
+    /// );
+    /// ```
+    pub fn remove(stepper_id: impl AsRef<str>) -> Self {
+        StepperAction::Remove(stepper_id.as_ref().to_string())
+    }
+
+    /// Quit the app,
+    /// <https://stereokit.net/Pages/StereoKit/SK/Quit.html>
+    /// * `stepper_id` - The id of the stepper that ask to quit.
+    /// * `reason` - The reason why the stepper ask to quit.
+    ///
+    /// see also [`Sk::quit`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::tools::screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW};
     ///
     /// sk.send_event(StepperAction::add_default::<ScreenshotViewer>("ScreenshotViewer_ID"));
+    ///
+    /// test_steps!(  // !!!! Get a proper main loop !!!!
+    ///     if iter == number_of_steps {
+    ///         // Same as Sk::quit()
+    ///         sk.send_event(StepperAction::quit("ScreenshotViewer_ID", "test_quit"));
+    ///     } else if iter >= number_of_steps + 1 {
+    ///         /// We sk.quit() at 4 and at 5 the stepper has been removed.
+    ///         assert_eq!(sk.get_steppers_count(), 0);
+    ///     } else {
+    ///         assert_eq!(sk.get_steppers_count(), 1);
+    ///     }
+    /// );
+    /// ```
+    pub fn quit(stepper_id: impl AsRef<str>, reason: impl AsRef<str>) -> Self {
+        StepperAction::Quit(stepper_id.as_ref().to_string(), reason.as_ref().to_string())
+    }
+
+    /// Event sent by a stepper for those who need it.
+    /// Key -> Value  are strings.
+    /// <https://stereokit.net/Pages/StereoKit/SK/SendEvent.html>
+    /// * `stepper_id` - The id of the stepper that send the event or is the target of the event. This is useful for
+    ///   filter the event.
+    /// * `key` - The key of the event.
+    /// * `value` - The value of the event.
+    ///
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::tools::screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW};
+    ///
+    /// sk.send_event(StepperAction::add_default::<ScreenshotViewer>("ScreenshotViewer_ID"));
+    /// sk.send_event(StepperAction::event("main thread", SHOW_SCREENSHOT_WINDOW, "true"));
     ///
     /// test_steps!(  // !!!! Get a proper main loop !!!!
     ///     if iter < number_of_steps + 2 {
@@ -676,19 +763,8 @@ impl StepperAction {
     ///     }
     /// );
     /// ```
-    pub fn remove_all(type_id: TypeId) -> Self {
-        StepperAction::RemoveAll(type_id)
-    }
-
-    /// This removes one or all IStepper instances that are assignable to the generic type specified. This will call the
-    /// IStepper’s Shutdown method on each removed instance before returning.
-    /// <https://stereokit.net/Pages/StereoKit/SK/RemoveStepper.html>
-    pub fn remove(stepper_id: impl AsRef<str>) -> Self {
-        StepperAction::Remove(stepper_id.as_ref().to_string())
-    }
-
-    pub fn event<S: AsRef<str>>(stepper_id: StepperId, key: S, value: S) -> Self {
-        StepperAction::Event(stepper_id, key.as_ref().to_owned(), value.as_ref().to_owned())
+    pub fn event<S: AsRef<str>>(stepper_id: S, key: S, value: S) -> Self {
+        StepperAction::Event(stepper_id.as_ref().to_string(), key.as_ref().to_owned(), value.as_ref().to_owned())
     }
 }
 
@@ -892,14 +968,14 @@ impl Steppers {
                     if stepper_h.stepper.initialize_done() {
                         Log::info(format!("Stepper {} is initialized.", &stepper_h.id));
                         stepper_h.state = StepperState::Running;
-                        token.event_report.push(StepperAction::event(stepper_h.id.clone(), ISTEPPER_RUNNING, "true"));
+                        token.event_report.push(StepperAction::event(stepper_h.id.as_str(), ISTEPPER_RUNNING, "true"));
                     }
                 }
                 StepperState::Running => (),
                 StepperState::Closing => {
                     if stepper_h.stepper.shutdown_done() {
                         removed_steppers.push(stepper_h.id.clone());
-                        token.event_report.push(StepperAction::event(stepper_h.id.clone(), ISTEPPER_REMOVED, "true"));
+                        token.event_report.push(StepperAction::event(stepper_h.id.as_str(), ISTEPPER_REMOVED, "true"));
                     }
                 }
             }

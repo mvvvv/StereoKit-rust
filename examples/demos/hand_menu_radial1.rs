@@ -404,7 +404,7 @@ impl HandMenuRadial1 {
         self.initialize_completed = true;
         SkInfo::send_event(
             &self.sk_info,
-            StepperAction::event(self.id.clone(), HAND_MENU_RADIAL_FOCUS, &true.to_string()),
+            StepperAction::event(self.id.as_str(), HAND_MENU_RADIAL_FOCUS, &true.to_string()),
         );
         true
     }
@@ -470,7 +470,7 @@ impl HandMenuRadial1 {
             //We indicate we give up before being shutdowned
             SkInfo::send_event(
                 &self.sk_info,
-                StepperAction::event(self.id.clone(), HAND_MENU_RADIAL_FOCUS, &false.to_string()),
+                StepperAction::event(self.id.as_str(), HAND_MENU_RADIAL_FOCUS, &false.to_string()),
             );
             self.shutdown_completed = false;
             false
