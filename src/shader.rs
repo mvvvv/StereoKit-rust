@@ -11,6 +11,8 @@ use std::{
 /// With this particular class, you can mostly just look at it. It doesn’t do a whole lot. Maybe you can swap out the
 /// shader code or something sometimes!
 /// <https://stereokit.net/Pages/StereoKit/Shader.html>
+///
+/// see also [`../material::Material`]
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -30,7 +32,7 @@ use std::{
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/shaders.jpeg" alt="screenshot" width="200">
 #[repr(C)]
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Shader(pub NonNull<_ShaderT>);
 impl Drop for Shader {
     fn drop(&mut self) {
@@ -92,8 +94,17 @@ impl Shader {
     /// gif, hdr, pic.
     /// Asset Id will be the same as the filename.
     /// <https://stereokit.net/Pages/StereoKit/Shader/FromMemory.html>
+    /// * `data` - A precompiled StereoKit Shader file as bytes.
     ///
     /// see also [`shader_create_mem`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{shader::Shader};
+    /// let shader_data = std::include_bytes!("../assets/shaders/brick_pbr.hlsl.sks");
+    /// let mut shader = Shader::from_memory(shader_data).unwrap();
+    /// assert_eq!(shader.get_name(), "the_name_of_brick_pbr");
+    ///```
     pub fn from_memory(data: &[u8]) -> Result<Shader, StereoKitError> {
         Ok(Shader(
             NonNull::new(unsafe { shader_create_mem(data.as_ptr() as *mut c_void, data.len()) })
@@ -104,9 +115,10 @@ impl Shader {
     /// Loads a shader from a precompiled StereoKit Shader (.sks) file! HLSL files can be compiled using the skshaderc
     /// tool called with `cargo compile_sks` or `cargo build_sk_rs`.
     /// <https://stereokit.net/Pages/StereoKit/Shader/FromFile.html>
+    /// * `file_utf8` - Path to a precompiled StereoKit Shader file! If no .sks extension is part of this path,
+    ///   StereoKit will automatically add it and check that first.
     ///
     /// see also [`Material::new`][`shader_create_file`]
-    ///
     /// see example in [`Shader`]
     pub fn from_file(file_utf8: impl AsRef<Path>) -> Result<Shader, StereoKitError> {
         let path_buf = file_utf8.as_ref().to_path_buf();
@@ -124,6 +136,7 @@ impl Shader {
 
     /// Looks for a shader asset that’s already loaded, matching the given id!
     /// <https://stereokit.net/Pages/StereoKit/Shader/Find.html>
+    /// * `id` - For shaders loaded from file, this’ll be the shader’s metadata name!
     ///
     /// see also [`shader_find`]
     /// ### Examples
@@ -158,7 +171,7 @@ impl Shader {
     /// shader.id("my_brick_shader");
     /// let mut shader_again = shader.clone_ref();
     /// assert_eq!(shader_again.get_id(), "my_brick_shader");
-    ///
+    /// assert_eq!(shader_again, shader);
     /// ```
     pub fn clone_ref(&self) -> Shader {
         Shader(
@@ -211,6 +224,7 @@ impl Shader {
     }
 
     /// <https://stereokit.net/Pages/StereoKit/Shader/Blit.html>
+    ///
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -223,6 +237,7 @@ impl Shader {
     }
 
     /// <https://stereokit.net/Pages/StereoKit/Shader/LightMap.html>
+    ///
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -237,6 +252,7 @@ impl Shader {
     /// Sometimes lighting just gets in the way! This is an extremely simple and fast shader that uses a ‘diffuse’
     /// texture and a ‘color’ tint property to draw a model without any lighting at all!
     /// <https://stereokit.net/Pages/StereoKit/Shader/Unlit.html>
+    ///
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -252,6 +268,7 @@ impl Shader {
     /// texture and a ‘color’ tint property to
     /// draw a model without any lighting at all! This shader will also discard pixels with an alpha of zero.
     /// <https://stereokit.net/Pages/StereoKit/Shader/UnlitClip.html>
+    ///
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -264,6 +281,7 @@ impl Shader {
     }
 
     /// <https://stereokit.net/Pages/StereoKit/Shader/Font.html>
+    ///
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -276,6 +294,7 @@ impl Shader {
     }
 
     /// <https://stereokit.net/Pages/StereoKit/Shader/equirect.html>
+    ///
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -290,6 +309,7 @@ impl Shader {
     /// A shader for UI or interactable elements, this’ll be the same as the Shader, but with an additional finger
     /// ‘shadow’ and distance circle effect that helps indicate finger distance from the surface of the object.
     /// <https://stereokit.net/Pages/StereoKit/Shader/UI.html>
+    ///
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -307,6 +327,7 @@ impl Shader {
     /// on cube-like meshes where each face has UV coordinates from 0-1.
     /// Shader Parameters: color - color border_size - meters border_size_grow - meters border_affect_radius - meters
     /// <https://stereokit.net/Pages/StereoKit/Shader/UIBox.html>
+    ///
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -319,6 +340,7 @@ impl Shader {
     }
 
     /// <https://stereokit.net/Pages/StereoKit/Shader.html>
+    ///
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -331,6 +353,7 @@ impl Shader {
     }
 
     /// <https://stereokit.net/Pages/StereoKit/Shader.html>
+    ///
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -344,6 +367,7 @@ impl Shader {
 
     /// A physically based shader.
     /// <https://stereokit.net/Pages/StereoKit/Shader/PBR.html>
+    ///
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -357,6 +381,7 @@ impl Shader {
 
     /// Same as ShaderPBR, but with a discard clip for transparency.
     /// <https://stereokit.net/Pages/StereoKit/Shader/PBRClip.html>
+    ///
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
