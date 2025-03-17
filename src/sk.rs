@@ -577,7 +577,6 @@ pub enum QuitReason {
 }
 
 /// Non canonical structure whose purpose is to expose infos for ISteppers.
-/// This one is the Android version
 #[allow(dead_code)]
 #[derive(Debug)]
 pub struct SkInfo {
