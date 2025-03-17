@@ -104,8 +104,19 @@ pub mod mesh;
 /// [![ModelNode](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_node.jpeg)](model::ModelNode)
 pub mod model;
 
+/// Prelude for StereoKit-rust. The basis for all StereoKit-rust programs.
 pub mod prelude;
 
+/// RenderList related structs and functions.
+///
+/// ## Examples
+/// which are also unit tests:
+///
+/// [![RenderList](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_list.jpeg)](render_list::RenderList)
+/// [![RenderList add mesh](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_list_add_mesh.jpeg)](render_list::RenderList::add_mesh)
+/// [![RenderList add model](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_list_add_model.jpeg)](render_list::RenderList::add_model)
+/// [![RenderList draw now](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_list_draw_now.jpeg)](render_list::RenderList::draw_now)
+/// [![RenderList push](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_list_push.jpeg)](render_list::RenderList::push)
 pub mod render_list;
 
 /// Shader related structs and functions.

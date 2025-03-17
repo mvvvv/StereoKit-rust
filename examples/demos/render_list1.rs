@@ -94,7 +94,7 @@ impl RenderList1 {
     /// Called from IStepper::step after check_event, here you can draw your UI
     fn draw(&mut self, token: &MainThreadToken) {
         if self.clear_primary {
-            self.primary.clear()
+            self.primary.clear();
         };
 
         self.list.draw_now(
