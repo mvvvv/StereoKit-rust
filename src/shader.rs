@@ -12,7 +12,7 @@ use std::{
 /// shader code or something sometimes!
 /// <https://stereokit.net/Pages/StereoKit/Shader.html>
 ///
-/// see also [`../material::Material`]
+/// see also [`crate::material::Material`]
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
