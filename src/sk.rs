@@ -23,7 +23,7 @@ use winit::platform::android::{
 };
 
 #[cfg(feature = "event-loop")]
-use crate::framework::{StepperAction, StepperId, Steppers};
+use crate::framework::{StepperAction, Steppers};
 #[cfg(feature = "event-loop")]
 use std::collections::VecDeque;
 #[cfg(feature = "event-loop")]
@@ -35,6 +35,8 @@ use winit::{
 /// Specifies a type of display mode StereoKit uses, like Mixed Reality headset display vs. a PC display, or even just
 /// rendering to an offscreen surface, or not rendering at all!
 /// <https://stereokit.net/Pages/StereoKit/DisplayMode.html>
+///
+/// see also: [`Sk::get_active_display_mode`]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
 pub enum DisplayMode {
@@ -50,6 +52,8 @@ pub enum DisplayMode {
 /// Which operation mode should we use for this app? Default is XR, and by default the app will fall back to Simulator
 /// if XR fails or is unavailable.
 /// <https://stereokit.net/Pages/StereoKit/AppMode.html>
+///
+/// see also: [`SkSettings::mode`]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
 pub enum AppMode {
@@ -69,6 +73,8 @@ pub enum AppMode {
 
 /// This is used to determine what kind of depth buffer StereoKit uses!
 /// <https://stereokit.net/Pages/StereoKit/DepthMode.html>
+///
+/// see also: [`SkSettings::depth_mode`]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
 pub enum DepthMode {
@@ -91,6 +97,8 @@ pub enum DepthMode {
 /// but some VR headsets provide passthrough video, and can support Opaque as well as Blend, like the Varjo.
 /// Transparent AR displays like the HoloLens would be Additive.
 /// <https://stereokit.net/Pages/StereoKit/DisplayBlend.html>
+///
+/// see also [`SkSettings::blend_preference`]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
 pub enum DisplayBlend {
@@ -112,7 +120,22 @@ pub enum DisplayBlend {
 
 /// Information about a system’s capabilities and properties!
 /// <https://stereokit.net/Pages/StereoKit/SystemInfo.html>
-#[derive(Default, Debug, Clone)]
+///
+/// see also: [`SkInfo::get_system`] [`Sk::get_system`]
+/// ### Examples
+/// ```
+/// use stereokit_rust::sk::{Sk, SkSettings, SystemInfo, AppMode};
+/// use stereokit_rust::system::LogLevel;
+///
+/// let mut settings = SkSettings::default();
+/// settings.app_name("Test").mode(AppMode::Offscreen);
+/// let sk = Sk::init(&settings).unwrap();
+/// let system_info: SystemInfo = sk.get_system();
+/// // 0 everywhere:
+/// assert_eq!(system_info, SystemInfo::default());
+/// Sk::shutdown();
+/// ```
+#[derive(Default, Debug, Clone, PartialEq)]
 #[repr(C)]
 pub struct SystemInfo {
     display_width: i32,
@@ -139,8 +162,8 @@ impl SystemInfo {
     }
 
     /// Does the device we’re currently on have the spatial graph bridge extension? The extension is provided through
-    /// the function World.FromSpatialNode. This allows OpenXR to talk with certain windows APIs, such as the QR code
-    /// API that provides Graph Node GUIDs for the pose.
+    /// the function [`crate::system::World::from_spatial_node`]. This allows OpenXR to talk with certain windows APIs, such
+    /// as the QR code API that provides Graph Node GUIDs for the pose.
     /// <https://stereokit.net/Pages/StereoKit/SystemInfo/spatialBridgePresent.html>
     pub fn get_spatial_bridge_present(&self) -> bool {
         self.spatial_bridge_present != 0
@@ -167,14 +190,14 @@ impl SystemInfo {
     }
 
     /// Does this device support world occlusion of digital objects? If this is true, then World.OcclusionEnabled can
-    /// be set to true, and World.OcclusionMaterial can be modified.
+    /// be set to true, and [`crate::system::World::occlusion_material`] can be modified.
     /// <https://stereokit.net/Pages/StereoKit/SystemInfo/worldOcclusionPresent.html>
     pub fn get_world_occlusion_present(&self) -> bool {
         self.world_occlusion_present != 0
     }
 
-    /// Can this device get ray intersections from the environment? If this is true, then World.RaycastEnabled can be
-    /// set to true, and World.Raycast can be used.
+    /// Can this device get ray intersections from the environment? If this is true, then [`crate::system::World::raycast_enabled`]
+    /// can be set to true, and [`crate::system::World::raycast`] can be used.
     /// <https://stereokit.net/Pages/StereoKit/SystemInfo/worldRaycastPresent.html>
     pub fn get_world_raycast_present(&self) -> bool {
         self.world_raycast_present != 0
@@ -185,6 +208,8 @@ impl SystemInfo {
 /// not all runtimes support each feature. StereoKit will provide reasonable fallback behavior in the event the origin
 /// mode isn’t directly supported.
 /// <https://stereokit.net/Pages/StereoKit/OriginMode.html>
+///
+/// se also [`SkSettings::origin`] [`crate::system::World::get_origin_mode`]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
 pub enum OriginMode {
@@ -207,6 +232,8 @@ pub enum OriginMode {
 /// or hidden. This can be important since apps may still run and render when unfocused, as the app may still be
 /// visible behind the app that does have focus.
 /// <https://stereokit.net/Pages/StereoKit/AppFocus.html>
+///
+/// see also [`Sk::get_app_focus`]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(C)]
 pub enum AppFocus {
@@ -224,6 +251,8 @@ pub enum AppFocus {
 /// pause, stop playing sound, and consume as little power as possible, but some scenarios such as multiplayer games may
 /// need the app to continue running.
 /// <https://stereokit.net/Pages/StereoKit/StandbyMode.html>
+///
+/// see also [`SkSettings::standby_mode`]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(C)]
 pub enum StandbyMode {
@@ -277,6 +306,37 @@ pub const DEFAULT_NAME: *const c_char = {
 
 /// StereoKit initialization settings! Setup SkSettings with your data before calling SkSetting.Init().
 /// <https://stereokit.net/Pages/StereoKit/SKSettings.html>
+///
+/// see also [`Sk::init`] [`Sk::get_settings`] [`SkInfo::settings_from`] [`sk_init`]
+/// ### Examples
+/// ```
+/// use stereokit_rust::sk::{Sk, SkSettings, AppMode, DisplayBlend, DepthMode, OriginMode, StandbyMode};
+/// use stereokit_rust::system::LogLevel;
+///
+/// let mut settings = SkSettings::default();
+/// settings.app_name("Test").mode(AppMode::Offscreen);
+/// let sk = Sk::init(&settings).expect("StereoKit should initialize");
+/// let settings = sk.get_settings();
+/// assert_eq!(settings.mode,                        AppMode::Offscreen);
+/// assert_eq!(settings.blend_preference,            DisplayBlend::None);
+/// assert_eq!(settings.no_flatscreen_fallback,      0);
+/// assert_eq!(settings.depth_mode,                  DepthMode::Balanced);
+/// assert_eq!(settings.log_filter,                  LogLevel::None);
+/// assert_eq!(settings.overlay_app,                 0);
+/// assert_eq!(settings.overlay_priority,            0);
+/// assert_eq!(settings.flatscreen_pos_x,            0);
+/// assert_eq!(settings.flatscreen_pos_y,            0);
+/// assert_eq!(settings.flatscreen_width,            1280);
+/// assert_eq!(settings.flatscreen_height,           720);
+/// assert_eq!(settings.disable_desktop_input_window,0);
+/// assert_eq!(settings.disable_unfocused_sleep,     0);
+/// assert_eq!(settings.render_scaling,              1.0);
+/// assert_eq!(settings.render_multisample,          1);
+/// assert_eq!(settings.origin,                      OriginMode::Local);
+/// assert_eq!(settings.omit_empty_frames,           0);
+/// assert_eq!(settings.standby_mode,                StandbyMode::Pause);
+/// Sk::shutdown();
+/// ```
 #[derive(Debug, Clone)]
 #[repr(C)]
 pub struct SkSettings {
@@ -528,13 +588,74 @@ impl SkSettings {
 }
 #[cfg(feature = "event-loop")]
 impl SkSettings {
-    /// Initialise Sk with the given settings parameter (here for android which needs an AndroidApp)
+    /// Initialize StereoKit with the given settings (here for Android platform)
+    /// This should be done after Sk::poll_first_event(...) has been called in the main thread.
+    /// <https://stereokit.net/Pages/StereoKit/SK/Initialize.html>
+    /// * `app` - The AndroidApp instance to use for initialization given by android_main() from <https://github.com/rust-mobile>
+    ///
+    /// see also [`Sk::init_with_event_loop`]
     #[cfg(target_os = "android")]
     pub fn init_with_event_loop(&mut self, app: AndroidApp) -> Result<(Sk, EventLoop<StepperAction>), StereoKitError> {
         Sk::init_with_event_loop(self, app)
     }
 
-    /// Initialise Sk with the given settings parameter (here for non android platform)
+    /// Initialise Sk with the given settings parameter (here for non Android platform)
+    /// <https://stereokit.net/Pages/StereoKit/SK/Initialize.html>
+    ///
+    /// see also [`Sk::init_with_event_loop`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::{prelude::*, system::{LogLevel,Renderer}, framework::SkClosures,
+    ///                      maths::{Vec3, Matrix, Pose} ,tools::title::Title, util::named_colors};
+    /// use stereokit_rust::sk::{Sk, SkSettings, AppMode, DisplayBlend, DepthMode,
+    ///                          OriginMode, StandbyMode, QuitReason};
+    ///
+    /// let mut settings = SkSettings::default();
+    /// settings
+    ///     .app_name("Test")
+    ///     .mode(AppMode::Offscreen)
+    ///     .origin(OriginMode::Floor)
+    ///     .render_multisample(4)
+    ///     .render_scaling(0.8)
+    ///     .depth_mode(DepthMode::D32)
+    ///     .omit_empty_frames(true)
+    ///     .log_filter(LogLevel::Diagnostic)
+    ///     .no_flatscreen_fallback(true);
+    ///
+    /// let (mut sk, event_loop) = settings.init_with_event_loop()
+    ///                                .expect("StereoKit should initialize");
+    ///
+    /// let mut title = Title::new("Sk basic example", Some(named_colors::BLUE), None, None);
+    /// title.transform = Matrix::tr(&([0.5, 0.5, -1.9].into()),
+    ///                              &([0.0, 200.0, 0.0].into()));
+    /// sk.send_event(StepperAction::add("Title_blue_ID1", title));
+    ///
+    /// let mut iter = 0;
+    /// let number_of_steps = 3;
+    /// let filename_scr = "screenshots/sk_basic_example.jpeg";
+    /// SkClosures::new(sk, |sk, token|  {
+    ///     // Main loop where we draw stuff and do things!!
+    ///     if iter > number_of_steps {sk.quit(None)}
+    ///
+    ///     if iter == number_of_steps {
+    ///         // render screenshot
+    ///         Renderer::screenshot(token, filename_scr, 90, Pose::look_at(Vec3::Z, Vec3::ZERO),
+    ///             200, 200, Some(99.0) );
+    ///     }
+    ///
+    ///     iter+=1;
+    /// })
+    /// .shutdown(|sk| {
+    ///    // This is called when the app is shutting down
+    ///     assert_eq!(sk.get_quit_reason(), QuitReason::User);
+    ///     Log::info(format!("QuitReason is {:?}", sk.get_quit_reason()));
+    /// })
+    /// .run(event_loop);
+    ///
+    /// Sk::shutdown();
+    ///
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sk_basic_example.jpeg" alt="screenshot" width="200">
     #[cfg(not(target_os = "android"))]
     pub fn init_with_event_loop(&mut self) -> Result<(Sk, EventLoop<StepperAction>), StereoKitError> {
         Sk::init_with_event_loop(self)
@@ -542,11 +663,60 @@ impl SkSettings {
 }
 #[cfg(feature = "no-event-loop")]
 impl SkSettings {
+    /// Initialize StereoKit with the given settings (here for Android)
+    /// This should be done after Sk::poll_first_event(...) has been called in the main thread.
+    /// <https://stereokit.net/Pages/StereoKit/SK/Initialize.html>
+    /// * `app` - The AndroidApp instance to use for initialization given by android_main() from <https://github.com/rust-mobile>
+    ///
+    /// see also [Sk::init]
     #[cfg(target_os = "android")]
     pub fn init(&mut self, app: AndroidApp) -> Result<Sk, StereoKitError> {
         Sk::init(self, app)
     }
 
+    /// Initialize StereoKit with the given settings (here for non Android platform)
+    /// <https://stereokit.net/Pages/StereoKit/SK/Initialize.html>
+    ///
+    /// see also [Sk::init]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::{prelude::*, system::LogLevel};
+    /// use stereokit_rust::sk::{Sk, SkSettings, AppMode, DisplayBlend, DepthMode,
+    ///                          OriginMode, StandbyMode, QuitReason};
+    ///
+    /// let mut settings = SkSettings::default();
+    /// settings
+    ///     .app_name("Test")
+    ///     .mode(AppMode::Offscreen)
+    ///     .origin(OriginMode::Floor)
+    ///     .render_multisample(4)
+    ///     .render_scaling(0.8)
+    ///     .depth_mode(DepthMode::D32)
+    ///     .omit_empty_frames(true)
+    ///     .log_filter(LogLevel::Diagnostic)
+    ///     .no_flatscreen_fallback(true);
+    ///
+    /// let sk = settings.init().expect("StereoKit should initialize");
+    /// let settings = sk.get_settings();
+    /// assert_eq!(settings.mode,                        AppMode::Offscreen);
+    /// assert_eq!(settings.blend_preference,            DisplayBlend::None);
+    /// assert_eq!(settings.origin,                      OriginMode::Floor);
+    /// assert_eq!(settings.standby_mode,                StandbyMode::Pause);
+    ///
+    /// let mut iter = 0;
+    /// let number_of_steps = 3;
+    /// while let Some(token) = sk.step() {
+    ///     // Main loop where we draw stuff and do things!!
+    ///     if iter > number_of_steps {sk.quit(None)}
+    ///
+    ///     //model.draw(token,  transform ,  None, None);
+    ///     //mesh.draw(token, &material,transform, None, None);
+    ///
+    ///     iter+=1;
+    /// }
+    ///
+    /// Sk::shutdown();
+    /// ```
     #[cfg(not(target_os = "android"))]
     pub fn init(&mut self) -> Result<Sk, StereoKitError> {
         Sk::init(self)
@@ -562,7 +732,7 @@ impl SkSettings {
 /// Provides a reason on why StereoKit has quit.
 /// <https://stereokit.net/Pages/StereoKit/QuitReason.html>
 ///
-/// see also: [`Sk::quit`] [StepperAction::quit] [`Sk::get_quit_reason`]
+/// see also: [`Sk::quit`] [`Sk::get_quit_reason`]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
 pub enum QuitReason {
@@ -578,9 +748,45 @@ pub enum QuitReason {
     SessionLost = 4,
 }
 
-/// Non canonical structure whose purpose is to expose infos for ISteppers.
+/// Non canonical structure whose purpose is to expose infos far from [`Sk`]
 ///
 /// see also: [`Sk::get_sk_info_clone`]
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::sk::{Sk, SkSettings, AppMode, SkInfo};
+/// use stereokit_rust::{system::LogLevel, ui::Ui, maths::Pose};
+///
+/// let sk_info = Some(sk.get_sk_info_clone());
+/// let settings = SkInfo::settings_from(&sk_info);
+/// assert_eq!(settings.mode, AppMode::Offscreen);
+///
+/// let system = SkInfo::system_from(&sk_info);
+/// assert_eq!(system.get_display_width(), 0);
+///
+/// #[cfg(feature = "event-loop")]
+/// {
+///     use stereokit_rust::tools::screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW};
+///     // send event
+///     SkInfo::send_event(&sk_info,
+///                    StepperAction::add_default::<ScreenshotViewer>("SCR_ID1"));
+///    
+///     // get event_loop_proxy clone to use in other threads
+///     let event_loop_proxy = SkInfo::event_loop_proxy_from(&sk_info);
+///
+///     // get a closure, ready to send an event with a given value
+///     let show_screenshot = SkInfo::get_message_closure(sk_info,
+///                               "SCR_ID1", SHOW_SCREENSHOT_WINDOW);
+///     let mut window_pose = Pose::IDENTITY;
+///     test_steps!(// !!!! Get a proper main loop !!!!
+///         Ui::window_begin("Default Font", &mut window_pose, None, None, None);
+///         if Ui::button("Show screenshot", None) {
+///             show_screenshot("true".into())
+///         }
+///         Ui::window_end();
+///     );
+/// }
+/// ```
 #[allow(dead_code)]
 #[derive(Debug)]
 pub struct SkInfo {
@@ -596,7 +802,8 @@ impl SkInfo {
     /// This is a copy of the settings that StereoKit was initialized with, so you can refer back to them a little
     /// easier.  Some of these values will be different than provided, as StereoKit will resolve some default values
     /// based on the platform capabilities or internal preference. These are read only, and keep in mind that some
-    /// settings are only requests! Check SK.System and other properties for the current state of StereoKit.
+    /// settings are only requests! Check [`Sk::get_system`] and other properties for the current state of StereoKit.
+    /// [`SkInfo::settings_from`] is more easy to use.
     /// <https://stereokit.net/Pages/StereoKit/SK/Settings.html>
     pub fn get_settings(&self) -> SkSettings {
         self.settings.clone()
@@ -604,12 +811,14 @@ impl SkInfo {
 
     /// This structure contains information about the current system and its capabilities. There’s a lot of different MR
     /// devices, so it’s nice to have code for systems with particular characteristics!
+    /// [`SkInfo::system_from`] is more easy to use.
     /// <https://stereokit.net/Pages/StereoKit/SK/System.html>
     pub fn get_system(&self) -> SystemInfo {
         self.system_info.clone()
     }
 
-    /// Get an event_loop_proxy clone to send events
+    /// Get an event_loop_proxy clone to send events.
+    /// [`SkInfo::event_loop_proxy_from`] is more easy to use.
     #[cfg(feature = "event-loop")]
     pub fn get_event_loop_proxy(&self) -> Option<EventLoopProxy<StepperAction>> {
         self.event_loop_proxy.clone()
@@ -626,6 +835,9 @@ impl SkInfo {
     /// based on the platform capabilities or internal preference. These are read only, and keep in mind that some
     /// settings are only requests! Check SK.System and other properties for the current state of StereoKit.
     /// <https://stereokit.net/Pages/StereoKit/SK/Settings.html>
+    /// * `sk_info` - The SkInfo smart pointer to get the settings from
+    ///
+    /// see also [`Sk::get_settings`]
     pub fn settings_from(sk_info: &Option<Rc<RefCell<SkInfo>>>) -> SkSettings {
         if sk_info.is_none() {
             Log::err("The stepper must be initialized. SkInfo::setting_from(??) returns an invalid default value.");
@@ -639,6 +851,9 @@ impl SkInfo {
     /// This structure contains information about the current system and its capabilities. There’s a lot of different MR
     /// devices, so it’s nice to have code for systems with particular characteristics!
     /// <https://stereokit.net/Pages/StereoKit/SK/System.html>
+    /// * `sk_info` - The SkInfo smart pointer to get the SystemInfo from.
+    ///
+    /// see also [`Sk::get_system`]
     pub fn system_from(sk_info: &Option<Rc<RefCell<SkInfo>>>) -> SystemInfo {
         if sk_info.is_none() {
             Log::err("The stepper must be initialized. SkInfo::system_from(??) returns an invalid default value.");
@@ -650,6 +865,40 @@ impl SkInfo {
     }
 
     /// Get an event_loop_proxy clone to send events
+    /// * `sk_info` - The SkInfo smart pointer to get the event_loop_proxy from.
+    ///
+    /// see also [`Sk::get_sk_info_clone`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::sk::{Sk, SkSettings, AppMode, SkInfo, QuitReason};
+    /// use stereokit_rust::framework::SkClosures;
+    /// use std::thread;
+    /// use std::time::Duration;
+    ///
+    /// let sk_info = Some(sk.get_sk_info_clone());
+    /// let event_loop_proxy = SkInfo::event_loop_proxy_from(&sk_info);
+    ///
+    /// // Spawn a new thread to send an event after a delay
+    /// let handle = thread::spawn(move || {
+    ///     thread::sleep(Duration::from_millis(100));
+    ///     if let Some(proxy) = event_loop_proxy {
+    ///         proxy.send_event(StepperAction::quit("thread", "I'm done!")).unwrap();
+    ///     }
+    /// });
+    ///
+    /// SkClosures::new(sk, |sk, token|  {
+    ///     // Only the thread can stop this test
+    ///     // model.draw(token, Matrix::IDENTITY, None, None);
+    /// })
+    /// .shutdown(|sk| {
+    ///     assert_eq!(sk.get_quit_reason(), QuitReason::User);
+    /// })
+    /// .run(event_loop);
+    ///
+    /// // If we are here the thread has finished
+    /// handle.join().unwrap();
+    /// ```
     #[cfg(feature = "event-loop")]
     pub fn event_loop_proxy_from(sk_info: &Option<Rc<RefCell<SkInfo>>>) -> Option<EventLoopProxy<StepperAction>> {
         if sk_info.is_none() {
@@ -662,7 +911,10 @@ impl SkInfo {
     }
 
     /// Send a StepperAction to the event loop
-    /// sk_info must be a valid value
+    /// * `sk_info` - The SkInfo smart pointer to get the event loop proxy from
+    /// * `message` - The StepperAction to send to the event loop
+    ///
+    /// see also [`SkInfo::get_message_closure`]
     #[cfg(feature = "event-loop")]
     pub fn send_event(sk_info: &Option<Rc<RefCell<SkInfo>>>, message: StepperAction) {
         if let Some(proxy) = Self::event_loop_proxy_from(sk_info) {
@@ -675,12 +927,17 @@ impl SkInfo {
     /// Get a closure to send a message to the event loop from a given ID for a given key. This is useful for
     /// HandMenuRadial for example.
     ///
+    /// see also [`SkInfo::send_event`]
     /// see examples/demos/hand_menu_radial1.rs
     #[cfg(feature = "event-loop")]
-    pub fn get_message_closure(sk_info: Option<Rc<RefCell<SkInfo>>>, id: StepperId, key: &str) -> impl Fn(String) {
+    pub fn get_message_closure(
+        sk_info: Option<Rc<RefCell<SkInfo>>>,
+        id: impl AsRef<str>,
+        key: &str,
+    ) -> impl Fn(String) {
         let sk_info = sk_info.clone();
         let key = key.to_string();
-        let id = id.clone();
+        let id = id.as_ref().to_string();
         Box::new(move |value: String| {
             SkInfo::send_event(&sk_info, StepperAction::event(id.as_str(), &key, &value));
         })
@@ -688,14 +945,22 @@ impl SkInfo {
 }
 
 /// A token you only find on the main thread. It is required to call rendering functions
+///
+/// see also [`Sk::step`]
 pub struct MainThreadToken {
+    /// Event report of one step
+    ///
+    /// see also [`Sk::step`] [`check_event`](`crate::IStepper`) [`crate::framework::IStepper::step`]
     #[cfg(feature = "event-loop")]
     pub(crate) event_report: Vec<StepperAction>,
 }
 
 #[cfg(feature = "event-loop")]
 impl MainThreadToken {
-    /// Get the event_report of this step
+    /// Get the event report of this step. You don't have to call this function if you use the derive macro
+    /// [`crate::IStepper`] and implement the `check_event` function.
+    ///
+    /// see also [`Sk::step`] [`check_event`](`crate::IStepper`)
     pub fn get_event_report(&self) -> &Vec<StepperAction> {
         &self.event_report
     }
@@ -704,10 +969,14 @@ impl MainThreadToken {
 /// This class contains functions for running the StereoKit library!
 /// <https://stereokit.net/Pages/StereoKit/SK.html>
 pub struct Sk {
+    /// Where to find information about the current system
     sk_info: Rc<RefCell<SkInfo>>,
+    /// The main thread token
     token: MainThreadToken,
+    /// The current pool of ISteppers.
     #[cfg(feature = "event-loop")]
     pub(crate) steppers: Steppers,
+    /// Some actions to run on the main thread.
     #[cfg(feature = "event-loop")]
     pub(crate) actions: VecDeque<Box<dyn FnMut()>>,
 }
@@ -716,7 +985,7 @@ impl Sk {
     /// OpenXR won't leave IDLE state if we do not purge the first events :
     /// PostSessionStateChange: XR_SESSION_STATE_IDLE -> XR_SESSION_STATE_READY
     ///
-    /// This must be done in the main thread
+    /// This must be done in the main thread. see [`Sk::init`]
     #[cfg(target_os = "android")]
     pub fn poll_first_events(app: &AndroidApp) {
         let mut ready_to_go = false;
@@ -738,7 +1007,13 @@ impl Sk {
         }
     }
 
-    /// This should be done in a secondary thread after Sk::poll_first_event(...) has been called in the main thread
+    /// Initialize StereoKit with the given settings (here for Android platform)
+    /// This should be done after Sk::poll_first_event(...) has been called in the main thread.
+    /// <https://stereokit.net/Pages/StereoKit/SK/Initialize.html>
+    /// * `settings` - The settings to use for initialization
+    /// * `app` - The AndroidApp instance to use for initialization given by android_main() from <https://github.com/rust-mobile>
+    ///
+    /// It is best to use [`SkSettings::init`]
     #[cfg(feature = "no-event-loop")]
     #[cfg(target_os = "android")]
     pub fn init(settings: &mut SkSettings, app: AndroidApp) -> Result<Sk, StereoKitError> {
@@ -784,6 +1059,13 @@ impl Sk {
         }
     }
 
+    /// Initialize StereoKit with the given settings (here for non Android platform)
+    /// Even if this function can be called with the feature `event_loop` (for tests) it is more logical to use
+    /// `init_with_event_loop`.
+    /// <https://stereokit.net/Pages/StereoKit/SK/Initialize.html>
+    /// * `settings` - The settings to use for initialization
+    ///
+    /// It is best to use `SkSettings::init` see example with [`Sk::step`]
     #[cfg(not(target_os = "android"))]
     pub fn init(settings: &SkSettings) -> Result<Sk, StereoKitError> {
         match unsafe {
@@ -815,9 +1097,38 @@ impl Sk {
         }
     }
 
-    /// Steps all StereoKit systems
+    /// Steps all StereoKit systems, and inserts user code via callback between the appropriate system updates.
+    /// For feature `event-loop` you don't have to call this yourself thanks to `SkClosures`.
+    /// <https://stereokit.net/Pages/StereoKit/SK/Step.html>
     ///
-    /// see also [`crate::sk::sk_step`]
+    /// Returns `None` If an exit message is received from the platform, or SK.Quit() is called. Or the MainThreadToken
+    /// if a step is to be drawn.
+    /// see also [`sk_step`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::{prelude::*, system::LogLevel};
+    /// use stereokit_rust::sk::{Sk, SkSettings, AppMode, QuitReason};
+    ///
+    /// let mut settings = SkSettings::default();
+    /// settings
+    ///     .app_name("Test")
+    ///     .mode(AppMode::Offscreen);
+    ///
+    /// let sk = Sk::init(&settings).expect("StereoKit should initialize");
+    ///
+    /// let mut iter = 0;
+    /// let number_of_steps = 3;
+    /// while let Some(token) = sk.step() {
+    ///     // Main loop where we draw stuff and do things!!
+    ///     if iter > number_of_steps {sk.quit(None)}
+    ///
+    ///     //model.draw(token,  transform ,  None, None);
+    ///     //mesh.draw(token, &material,transform, None, None);
+    ///
+    ///     iter+=1;
+    /// }
+    /// Sk::shutdown();
+    /// ```
     pub fn step(&self) -> Option<&MainThreadToken> {
         if unsafe { sk_step(None) } == 0 {
             return None;
@@ -826,6 +1137,7 @@ impl Sk {
         Some(&self.token)
     }
 
+    /// Returns the MainThreadToken that is used to draw stuff.
     pub fn main_thread_token(&mut self) -> &MainThreadToken {
         &self.token
     }
@@ -834,7 +1146,15 @@ impl Sk {
     /// initialized.
     /// <https://stereokit.net/Pages/StereoKit/SK/ActiveDisplayMode.html>
     ///
-    /// see also [`crate::sk::sk_active_display_mode`]
+    /// see also [`sk_active_display_mode`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::sk::DisplayMode;
+    ///
+    /// let display_mode: DisplayMode = sk.get_active_display_mode();
+    /// assert_eq!(display_mode, DisplayMode::Flatscreen);
+    /// ```
     pub fn get_active_display_mode(&self) -> DisplayMode {
         unsafe { sk_active_display_mode() }
     }
@@ -844,13 +1164,35 @@ impl Sk {
     /// visible behind the app that does have focus.
     /// <https://stereokit.net/Pages/StereoKit/SK/AppFocus.html>
     ///
-    /// see also [`crate::sk::sk_app_focus`]
+    /// see also [`sk_app_focus`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::sk::AppFocus;
+    ///
+    /// let display_mode: AppFocus = sk.get_app_focus();
+    /// assert_eq!(display_mode, AppFocus::Active);
+    /// ```
     pub fn get_app_focus(&self) -> AppFocus {
         unsafe { sk_app_focus() }
     }
 
     /// Return a clone of SkInfo smart pointer
     /// <https://stereokit.net/Pages/StereoKit/SK.html>
+    ///
+    /// see also [`Sk::get_settings`] [`Sk::get_system`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::sk::{Sk, SkSettings, AppMode, SkInfo};
+    ///
+    /// let sk_info = Some(sk.get_sk_info_clone());
+    /// let settings = SkInfo::settings_from(&sk_info);
+    /// assert_eq!(settings.mode, AppMode::Offscreen);
+    ///
+    /// let system = SkInfo::system_from(&sk_info);
+    /// assert_eq!(system.get_display_width(), 0);
+    /// ```
     pub fn get_sk_info_clone(&self) -> Rc<RefCell<SkInfo>> {
         self.sk_info.clone()
     }
@@ -860,6 +1202,16 @@ impl Sk {
     /// based on the platform capabilities or internal preference. These are read only, and keep in mind that some
     /// settings are only requests! Check SK.System and other properties for the current state of StereoKit.
     /// <https://stereokit.net/Pages/StereoKit/SK/Settings.html>
+    ///
+    /// see also [`sk_get_settings`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::sk::{Sk, SkSettings, AppMode};
+    ///
+    /// let settings: SkSettings = sk.get_settings();
+    /// assert_eq!(settings.mode, AppMode::Offscreen);
+    /// ```
     pub fn get_settings(&self) -> SkSettings {
         unsafe { sk_get_settings() }
     }
@@ -867,6 +1219,16 @@ impl Sk {
     /// This structure contains information about the current system and its capabilities. There’s a lot of different MR
     /// devices, so it’s nice to have code for systems with particular characteristics!
     /// <https://stereokit.net/Pages/StereoKit/SK/System.html>
+    ///
+    /// see also [`sk_system_info`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::sk::{Sk, SystemInfo};
+    ///
+    /// let system_info: SystemInfo = sk.get_system();
+    /// assert_eq!(system_info.get_display_height(), 0);
+    /// ```
     pub fn get_system(&self) -> SystemInfo {
         unsafe { sk_system_info() }
     }
@@ -875,7 +1237,13 @@ impl Sk {
     /// Major.mInor.Patch.pre-Release
     /// <https://stereokit.net/Pages/StereoKit/SK/VersionId.html>
     ///
-    /// see also [`crate::sk::sk_version_id`]
+    /// see also [`sk_version_id`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    ///
+    /// assert_ne!(sk.get_version_id(), 0x0);
+    /// ```
     pub fn get_version_id(&self) -> u64 {
         unsafe { sk_version_id() }
     }
@@ -883,7 +1251,13 @@ impl Sk {
     /// Human-readable version name embedded in the StereoKitC library.
     /// <https://stereokit.net/Pages/StereoKit/SK/VersionName.html>
     ///
-    /// see also [`crate::sk::sk_version_name`]
+    /// see also [`sk_version_name`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    ///
+    /// assert_ne!(sk.get_version_name(), "3");
+    /// ```
     pub fn get_version_name(&self) -> &str {
         unsafe { CStr::from_ptr(sk_version_name()) }.to_str().unwrap()
     }
@@ -891,9 +1265,22 @@ impl Sk {
     /// Lets StereoKit know it should quit! It’ll finish the current frame, and after that Step will return that it
     /// wants to exit.
     /// <https://stereokit.net/Pages/StereoKit/SK/Quit.html>
-    /// * quit_reason - if None has default value of QuitReason::User
+    /// * `quit_reason` - if None has default value of QuitReason::User
     ///
-    /// see also [`crate::sk::sk_quit`]
+    /// see also [`sk_quit`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::sk::QuitReason;
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     // Here we can draw some stuff.
+    ///     //model.draw(token, Matrix::IDENTITY, None, None);
+    ///
+    ///     // Quit the app at first step
+    ///     sk.quit(Some(QuitReason::Error));
+    /// );
+    /// ```
     pub fn quit(&self, quit_reason: Option<QuitReason>) {
         let quit_reason = quit_reason.unwrap_or(QuitReason::User);
         unsafe { sk_quit(quit_reason) }
@@ -902,16 +1289,46 @@ impl Sk {
     /// This tells the reason why StereoKit has quit and
     /// developer can take appropriate action to debug.
     /// <https://stereokit.net/Pages/StereoKit/SK/QuitReason.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::sk::QuitReason;
+    ///
+    /// // Quit the app before a single step.
+    /// sk.quit(Some(QuitReason::User));
+    ///
+    /// // a single step.
+    /// sk.step();
+    ///
+    /// assert_eq!(sk.get_quit_reason(), QuitReason::User);
+    /// ```
     pub fn get_quit_reason(&self) -> QuitReason {
         unsafe { sk_get_quit_reason() }
     }
 
     /// Cleans up all StereoKit initialized systems. Release your own StereoKit created assets before calling this. This
-    /// is for cleanup only, and should not be used to exit the application, use SK.Quit for that instead. Calling this
-    /// function is unnecessary if using SK.Run, as it is called automatically there.
+    /// is for cleanup only, and should not be used to exit the application, use [`Sk::quit`] for that instead. Calling
+    /// this function is unnecessary if using [`sk_run_data`]`, as it is called automatically there.
     /// <https://stereokit.net/Pages/StereoKit/SK/Shutdown.html>
     ///
-    /// see also [`crate::sk::sk_shutdown`]
+    /// see also [`sk_shutdown`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::sk::QuitReason;
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     // Here we can draw some stuff.
+    ///     //model.draw(token, Matrix::IDENTITY, None, None);
+    ///
+    ///     // Quit the app at first step
+    ///     sk.quit(Some(QuitReason::Error));
+    /// );
+    ///
+    /// // Shutdown StereoKit
+    /// Sk::shutdown();
+    /// ```
     pub fn shutdown() {
         unsafe { sk_shutdown() }
         if cfg!(target_os = "android") {
@@ -924,10 +1341,12 @@ impl Sk {
 #[cfg(feature = "event-loop")]
 impl Sk {
     /// Initializes StereoKit window, default resources, systems, etc.
-    /// Android Plaforms only
+    /// Here for Android plaforms
     /// <https://stereokit.net/Pages/StereoKit/SK/Initialize.html>
+    /// * `settings` - The settings to use for initialization
+    /// * `app` - The AndroidApp instance to use for initialization given by android_main() from <https://github.com/rust-mobile>
     ///
-    /// see also [`crate::sk::sk_init`]
+    /// It is best to use [`SkSettings::init_with_event_loop`] see also [`sk_init`] [`crate::event_loop::SkClosures`]
     #[cfg(target_os = "android")]
     pub fn init_with_event_loop(
         settings: &mut SkSettings,
@@ -977,10 +1396,11 @@ impl Sk {
     }
 
     /// Initializes StereoKit window, default resources, systems, etc.
-    /// Non Android platforms !!
+    /// Here for non Android platforms!
     /// <https://stereokit.net/Pages/StereoKit/SK/Initialize.html>
+    /// * `settings` - The settings to use for initialization.
     ///
-    /// see also [`crate::sk::sk_init`]
+    /// It is best to use [`SkSettings::init_with_event_loop`] see also [`sk_init`] [`crate::framework::SkClosures`]    
     #[cfg(not(target_os = "android"))]
     pub fn init_with_event_loop(settings: &mut SkSettings) -> Result<(Sk, EventLoop<StepperAction>), StereoKitError> {
         let event_loop = EventLoop::<StepperAction>::with_user_event().build()?;
@@ -1020,6 +1440,9 @@ impl Sk {
 
     /// This is a non canonical function that let you swap the current steppers with a new set of steppers
     /// <https://stereokit.net/Pages/StereoKit.Framework/IStepper.html>
+    /// * `steppers` - The new set of steppers to use. This will contain the previous steppers so take care of them.
+    ///
+    /// see example in [`Steppers`]
     pub fn swap_steppers(&mut self, steppers: &mut Steppers) {
         std::mem::swap(&mut self.steppers, steppers);
     }
@@ -1027,11 +1450,65 @@ impl Sk {
     /// This will queue up some code to be run on StereoKit’s main thread! Immediately after StereoKit’s Step, all
     /// callbacks registered here will execute, and then removed from the list.
     /// <https://stereokit.net/Pages/StereoKit/SK/ExecuteOnMain.html>
+    /// * `action` - Some code to run! This Action will persist in a list until after Step, at which point it is removed
+    ///   and dropped.
+    ///
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::sk::{SkInfo, QuitReason};
+    ///
+    /// let sk_info = Some(sk.get_sk_info_clone());
+    /// sk.execute_on_main(move || {
+    ///     SkInfo::send_event(&sk_info, StepperAction::quit("main", "I'm done!"));
+    /// });
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     // Quit the app after a single step.
+    /// );
+    ///
+    /// // 3 steps later we are out
+    /// assert_eq!(iter, 3);
+    /// ```
     pub fn execute_on_main<F: FnMut() + 'static>(&mut self, action: F) {
         self.actions.push_back(Box::new(action))
     }
 
-    /// convenient way to push some Add steppers action
+    /// Convenient way to push some steppers action.
+    /// * `action` - the action to push
+    ///
+    /// see also [`SkInfo::send_event`] [`winit::event_loop::EventLoopProxy::send_event`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{sk::{SkInfo, QuitReason},
+    ///                      tools::{screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW},
+    ///                              title::Title}};
+    ///
+    /// sk.send_event(StepperAction::add_default::<ScreenshotViewer>("SCR_ID1"));
+    /// sk.send_event(StepperAction::event("main", SHOW_SCREENSHOT_WINDOW, "true"));
+    ///
+    /// let title = Title::new("Title", None, None, None);
+    /// sk.send_event(StepperAction::add("TITLE_ID1", title));
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if (iter == 1) {
+    ///         assert_eq!(sk.get_steppers_count(), 2);
+    ///         // Remove the screenshot viewer after 1 steps.
+    ///         sk.send_event(StepperAction::remove("SCR_ID1"));
+    ///     } else if (iter == 2) {
+    ///         assert_eq!(sk.get_steppers_count(), 1);
+    ///         // Remove the all the Title ISteppers after 2 steps.
+    ///         sk.send_event(StepperAction::remove_all(std::any::TypeId::of::<Title>()));
+    ///     } else if (iter == 3) {
+    ///         assert_eq!(sk.get_steppers_count(), 0);
+    ///         sk.send_event(StepperAction::quit("main", "I'm done!"));
+    ///     }
+    /// );
+    ///
+    /// // 6 steps later we are out
+    /// assert_eq!(iter, number_of_steps + 3);
+    /// ```
     pub fn send_event(&mut self, action: StepperAction) {
         self.steppers.send_event(action);
     }
@@ -1039,18 +1516,117 @@ impl Sk {
     /// The number of ISteppers registered in the current [Steppers]. This does not include
     /// Steppers that have been added, but are not yet initialized. Stepper initialization happens at the beginning of
     /// the frame, before the app's Step.
-    pub fn get_steppers_count(&mut self) -> usize {
+    ///
+    /// see also [`Steppers`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{tools::{screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW},
+    ///                              title::Title}};
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter == 0 {
+    ///         assert_eq!(sk.get_steppers_count(), 0);
+    ///         sk.send_event(StepperAction::add_default::<ScreenshotViewer>("SCR_ID1"));
+    ///     } else if iter == 1 {
+    ///         assert_eq!(sk.get_steppers_count(), 1);
+    ///         let title = Title::new("Title", None, None, None);
+    ///         sk.send_event(StepperAction::add("TITLE_ID1", title));
+    ///     } else if iter == 2 {
+    ///         assert_eq!(sk.get_steppers_count(), 2);
+    ///         sk.send_event(StepperAction::remove("TITLE_ID1"));
+    ///     } else if iter < number_of_steps + 2 {
+    ///         assert_eq!(sk.get_steppers_count(), 1);
+    ///     } else {
+    ///         assert_eq!(sk.get_steppers_count(), 0);
+    ///     }
+    /// );
+    ///
+    /// // 6 steps later we are out
+    /// assert_eq!(iter, number_of_steps + 3);
+    /// ```
+    pub fn get_steppers_count(&self) -> usize {
         self.steppers.get_count()
     }
 
-    /// An enumerable list of all currently active ISteppers registered with StereoKit. This does not include Steppers
+    /// Currently active ISteppers registered with [`Sk`]. This does not include Steppers
     /// that have been added, but are not yet initialized. Stepper initialization happens at the beginning of the frame,
     /// before the app's Step.
-    pub fn get_steppers(&mut self) -> &Steppers {
+    ///
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{tools::{screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW},
+    ///                              title::Title}};
+    ///
+    /// sk.send_event(StepperAction::add_default::<ScreenshotViewer>("SCR_ID1"));
+    ///
+    /// let title = Title::new("Title", None, None, None);
+    /// sk.send_event(StepperAction::add("TITLE_ID1", title));
+    ///
+    ///
+    /// let steppers = sk.get_steppers();
+    /// assert_eq!(steppers.get_count(), 0);
+    /// assert_eq!(sk.get_steppers_count(), 0);
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter <= number_of_steps + 1 {
+    ///         let steppers = sk.get_steppers();
+    ///         assert_eq!(steppers.get_count(), 2);
+    ///         assert_eq!(sk.get_steppers_count(), 2);
+    ///
+    ///         let stepper_list = steppers.get_stepper_handlers();
+    ///         for (iter, stepper) in stepper_list.iter().enumerate() {
+    ///             match iter {
+    ///                 0 => assert_eq!(stepper.get_id(), "SCR_ID1"),
+    ///                 1 => assert_eq!(stepper.get_id(), "TITLE_ID1"),
+    ///                 _ => panic!("Only 2 steppers should be present"),
+    ///             }
+    ///         }
+    ///     } else {
+    ///        let steppers = sk.get_steppers();
+    ///        assert_eq!(steppers.get_count(), 0);
+    ///        assert_eq!(sk.get_steppers_count(), 0);
+    ///     }
+    /// );
+    /// ```
+    pub fn get_steppers(&self) -> &Steppers {
         &self.steppers
     }
 
     /// Get an event_loop_proxy clone to send events
+    ///
+    /// see also [`SkInfo::event_loop_proxy_from`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::sk::{Sk, SkSettings, AppMode, SkInfo, QuitReason};
+    /// use stereokit_rust::framework::SkClosures;
+    /// use std::thread;
+    /// use std::time::Duration;
+    ///
+    /// let event_loop_proxy = sk.get_event_loop_proxy();
+    ///
+    /// // Spawn a new thread to send an event after a delay
+    /// let handle = thread::spawn(move || {
+    ///     thread::sleep(Duration::from_millis(100));
+    ///     if let Some(proxy) = event_loop_proxy {
+    ///         proxy.send_event(StepperAction::quit("thread", "I'm done!")).unwrap();
+    ///     }
+    /// });
+    ///
+    /// SkClosures::new(sk, |sk, token|  {
+    ///     // Only the thread can stop this test
+    ///     // model.draw(token, Matrix::IDENTITY, None, None);
+    /// })
+    /// .shutdown(|sk| {
+    ///     assert_eq!(sk.get_quit_reason(), QuitReason::User);
+    /// })
+    /// .run(event_loop);
+    ///
+    /// // If we are here the thread has finished
+    /// handle.join().unwrap();
+    /// ```
     pub fn get_event_loop_proxy(&self) -> Option<EventLoopProxy<StepperAction>> {
         let sk = self.sk_info.as_ref();
         sk.borrow().get_event_loop_proxy()
@@ -1059,7 +1635,7 @@ impl Sk {
     /// Steps all StereoKit systems, and inserts user code via callback between the appropriate system updates.
     /// <https://stereokit.net/Pages/StereoKit/SK/Step.html>
     ///
-    /// see also [`crate::sk::sk_step`]
+    /// see also [`sk_step`]
     #[deprecated(since = "0.40.0", note = "see [crate::framework::SkClosures] instead")]
     pub fn step_looped<F: FnMut(&mut Sk)>(&mut self, on_step: &mut F) -> bool {
         if unsafe { sk_step(None) } == 0 {
@@ -1082,7 +1658,7 @@ impl Sk {
     // or android ones having a _main() derived with #ndk-glue (warning ndk-glue is deprecated)
     // <https://stereokit.net/Pages/StereoKit/SK/Run.html>
     //
-    // see also [`crate::sk::sk_run_data`]
+    // see also [`sk_run_data`]
     // pub fn run_raw<U: FnMut(&mut Sk), S: FnMut(&mut Sk)>(mut self, mut on_step: U, mut on_shutdown: S) {
     //     while self.step(&mut on_step) {}
     //     on_shutdown(&mut self);
@@ -1093,7 +1669,7 @@ impl Sk {
     // or android ones having a _main() derived with #ndk-glue (warning ndk-glue is deprecated)
     // <https://stereokit.net/Pages/StereoKit/SK.html>
     //
-    // see also [`crate::sk::sk_run_data`]
+    // see also [`sk_run_data`]
     // pub fn run_basic<U: FnMut(&mut Sk), S: FnMut(&mut Sk)>(mut self, mut on_update: U, mut on_shutdown: S) {
     //     let mut update_ref: (&mut U, &mut &mut Sk) = (&mut on_update, &mut &mut self);
     //     let update_raw = &mut update_ref as *mut (&mut U, &mut &mut Sk) as *mut c_void;
@@ -1111,7 +1687,7 @@ impl Sk {
     /// This method is a basic way to handle event_loop. You can, instead, implement this loop in your main thread.
     /// <https://stereokit.net/Pages/StereoKit/SK/Run.html>
     ///
-    /// see also [`crate::sk::sk_run_data`]
+    /// see also [`sk_run_data`]
     #[deprecated(since = "0.40.0", note = "see [crate::framework::SkClosures] instead")]
     pub fn run<U: FnMut(&mut Sk), S: FnMut(&mut Sk)>(
         mut self,

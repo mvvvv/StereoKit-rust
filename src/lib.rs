@@ -127,6 +127,17 @@ pub mod render_list;
 /// [![Shader](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/shaders.jpeg)](shader::Shader)
 pub mod shader;
 
+/// StereoKit-rust specific structs and functions.
+///
+/// ## Examples
+/// which are also unit tests:
+///
+/// [![Sk basic example](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sk_basic_example.jpeg)](sk::SkSettings::init_with_event_loop)
+#[cfg(feature = "event-loop")]
+pub mod sk;
+
+/// StereoKit-rust specific structs and functions.
+#[cfg(feature = "no-event-loop")]
 pub mod sk;
 
 pub mod sound;
