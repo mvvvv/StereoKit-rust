@@ -298,7 +298,7 @@ unsafe extern "C" {
     pub fn sk_get_quit_reason() -> QuitReason;
 }
 
-/// Default name of the applications
+/// Default name of the applications is `StereoKitApp`
 pub const DEFAULT_NAME: *const c_char = {
     const BYTES: &[u8] = b"StereoKitApp\0";
     BYTES.as_ptr().cast()
@@ -1059,7 +1059,7 @@ impl Sk {
         }
     }
 
-    /// Initialize StereoKit with the given settings (here for non Android platform)
+    /// Initialize StereoKit with the given settings (here for non Android platform).
     /// Even if this function can be called with the feature `event_loop` (for tests) it is more logical to use
     /// `init_with_event_loop`.
     /// <https://stereokit.net/Pages/StereoKit/SK/Initialize.html>
