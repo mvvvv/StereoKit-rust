@@ -4,9 +4,9 @@ use crate::{
     system::IAsset,
 };
 use std::{
-    ffi::{CStr, CString},
+    ffi::{CStr, CString, c_char},
     path::Path,
-    ptr::NonNull,
+    ptr::{NonNull, null_mut},
 };
 
 /// This class represents a sound effect! Excellent for blips and bloops and little clips that you might play around
@@ -16,13 +16,51 @@ use std::{
 /// simulate this same effect on your development PC, you need to enable spatial sound on your audio endpoint. To do
 /// this, right click the speaker icon in your system tray, navigate to “Spatial sound”, and choose “Windows Sonic for
 /// Headphones.” For more information, visit <https://docs.microsoft.com/en-us/windows/win32/coreaudio/spatial-sound>
-///<https://stereokit.net/Pages/StereoKit/Sound.html>
-/// ## Examples
+/// <https://stereokit.net/Pages/StereoKit/Sound.html>
 ///
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{maths::{Vec3, Quat, Matrix}, mesh::Mesh, material::Material,  
+///                      sound::Sound, util::named_colors};
 ///
+/// let mesh = Mesh::generate_cube(Vec3::ONE * 1.6, None);
+/// let material = Material::unlit().copy_for_tex("textures/sound.jpeg", true, None)
+///                    .expect("sound.jpeg should be there");
+/// let mut position = Vec3::new(-0.5, 0.0, 0.5);
+/// let rotation = Quat::from_angles(45.0, 45.0, 45.0);
+///
+/// let mut plane_sound = Sound::from_file("sounds/plane_engine.mp3")
+///                          .expect("plane_engine.mp3 should be there");
+/// plane_sound.id("sound_plane").decibels(70.0);
+///
+/// let mut plane_sound_inst = plane_sound.play(position, Some(1.0));
+///
+/// number_of_steps = 4000;
+/// filename_scr = "screenshots/sound.jpeg";
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+///     let transform = Matrix::tr(&position, &rotation);
+///     mesh.draw(token, &material, transform, Some(named_colors::CYAN.into()), None);
+///     if iter == 0 {
+///         assert!(plane_sound_inst.is_playing());
+///         position = Vec3::new(0.0, 0.0, -1.0);
+///         plane_sound_inst
+///             .position(position)
+///             .volume(0.5);
+///     } else if iter == 2999 {
+///         assert!(plane_sound_inst.is_playing());
+///         assert_eq!(plane_sound_inst.get_position(), Vec3::new(0.0, 0.0, -1.0));
+///         assert_eq!(plane_sound_inst.get_volume(), 0.5);
+///         plane_sound_inst.stop();
+///         assert!(!plane_sound_inst.is_playing());
+///    }
+/// );
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sound.jpeg" alt="screenshot" width="200">
 #[repr(C)]
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Sound(pub NonNull<_SoundT>);
+
 impl Drop for Sound {
     fn drop(&mut self) {
         unsafe { sound_release(self.0.as_ptr()) };
@@ -33,21 +71,25 @@ impl AsRef<Sound> for Sound {
         self
     }
 }
+
+/// StereoKit internal type.
 #[repr(C)]
 #[derive(Debug)]
 pub struct _SoundT {
     _unused: [u8; 0],
 }
+
+/// StereoKit ffi type.
 pub type SoundT = *mut _SoundT;
 
 unsafe impl Send for Sound {}
 unsafe impl Sync for Sound {}
 
 unsafe extern "C" {
-    pub fn sound_find(id: *const ::std::os::raw::c_char) -> SoundT;
-    pub fn sound_set_id(sound: SoundT, id: *const ::std::os::raw::c_char);
-    pub fn sound_get_id(sound: SoundT) -> *const ::std::os::raw::c_char;
-    pub fn sound_create(filename_utf8: *const ::std::os::raw::c_char) -> SoundT;
+    pub fn sound_find(id: *const c_char) -> SoundT;
+    pub fn sound_set_id(sound: SoundT, id: *const c_char);
+    pub fn sound_get_id(sound: SoundT) -> *const c_char;
+    pub fn sound_create(filename_utf8: *const c_char) -> SoundT;
     pub fn sound_create_stream(buffer_duration: f32) -> SoundT;
     pub fn sound_create_samples(in_arr_samples_at_48000s: *const f32, sample_count: u64) -> SoundT;
     pub fn sound_generate(
@@ -89,10 +131,41 @@ impl Sound {
     /// stream, or playing audio from a source streaming over the network, or even procedural sounds that are generated on the fly!
     /// Use stream sounds with the WriteSamples and ReadSamples functions.
     /// <https://stereokit.net/Pages/StereoKit/Sound/CreateStream.html>
-    /// * stream_buffer_duration - How much audio time should this stream be able to hold without writing back over
+    /// * `stream_buffer_duration` - How much audio time should this stream be able to hold without writing back over
     ///   itself?
     ///
-    /// see also [`crate::sound::sound_create_stream`]
+    /// see also [`sound_create_stream`] [`Sound::from_samples`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::sound::Sound;
+    ///
+    /// let mut stream_sound = Sound::create_stream(0.5).
+    ///                            expect("A sound stream should be created");
+    /// assert!(stream_sound.get_id().starts_with("auto/sound_"));
+    /// stream_sound.id("sound_stream");
+    ///
+    /// let mut samples: Vec<f32> = vec![0.0; 48000];
+    /// for i in 0..48000 {
+    ///     samples[i] = (i as f32 / 48000.0).sin();
+    /// }
+    /// stream_sound.write_samples(samples.as_slice(), Some(48000));
+    /// assert_eq!(stream_sound.get_duration(), 0.5);
+    ///
+    /// let mut stream_sound_inst = stream_sound.play([0.0, 0.0, -0.5], Some(0.5));
+    ///
+    /// filename_scr = "screenshots/sound_stream.jpeg";
+    /// number_of_steps = 100000;
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter == 0 {
+    ///         assert!(stream_sound_inst.is_playing());
+    ///     } else if iter == 100000 - 2 {
+    ///         assert!(stream_sound_inst.is_playing());
+    ///         stream_sound_inst.stop();
+    ///         assert!(!stream_sound_inst.is_playing());
+    ///     }
+    /// );
+    /// ```
     pub fn create_stream(stream_buffer_duration: f32) -> Result<Sound, StereoKitError> {
         Ok(Sound(
             NonNull::new(unsafe { sound_create_stream(stream_buffer_duration) })
@@ -102,8 +175,30 @@ impl Sound {
 
     /// Loads a sound effect from file! Currently, StereoKit supports .wav and .mp3 files. Audio is converted to mono.
     /// <https://stereokit.net/Pages/StereoKit/Sound/FromFile.html>
+    /// * `file_utf8` - Name of the audio file! Supports .wav and .mp3 files.
     ///
-    /// see also [`crate::sound::sound_create`]
+    /// see also [`sound_create`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Vec3, sound::Sound};
+    ///
+    /// let mut position = Vec3::new(-0.5, 0.0, 0.5);
+    ///
+    /// let mut plane_sound = Sound::from_file("sounds/no.wav")
+    ///                           .expect("no.wav should be in the sounds folder");
+    /// assert_eq!(plane_sound.get_id(), "sounds/no.wav");
+    /// plane_sound.id("sound_plane").decibels(90.0);
+    ///
+    /// let mut plane_sound_inst = plane_sound.play(position, Some(1.0));
+    ///
+    /// number_of_steps = 100000;
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter < 10000 {
+    ///         assert!(plane_sound_inst.is_playing());
+    ///     }
+    /// );
+    /// ```
     pub fn from_file(file_utf8: impl AsRef<Path>) -> Result<Sound, StereoKitError> {
         let path_buf = file_utf8.as_ref().to_path_buf();
         let c_str = CString::new(path_buf.clone().to_str().ok_or(StereoKitError::SoundFile(path_buf.clone()))?)?;
@@ -116,8 +211,29 @@ impl Sound {
     /// This function will create a sound from an array of samples. Values should range from -1 to +1, and there should
     /// be 48,000 values per second of audio.
     /// <https://stereokit.net/Pages/StereoKit/Sound/FromSamples.html>
+    /// * `in_arr_samples_at_48000s` - Values should range from -1 to +1, and there should be 48,000 per second of audio.
     ///
-    /// see also [`crate::sound::sound_create_samples`]
+    /// see also [`sound_create_samples`] [`Sound::write_samples`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::sound::Sound;
+    ///
+    /// let mut samples: Vec<f32> = vec![0.0; 48000];
+    /// for i in 0..48000 {
+    ///     samples[i] = (i as f32 / 48000.0).sin();
+    /// }
+    /// let mut sound = Sound::from_samples(&samples)
+    ///                     .expect("Sound should be created from samples");
+    /// assert!(sound.get_id().starts_with("auto/sound_"));
+    /// sound.id("sound_samples");
+    ///
+    /// let mut sound_inst = sound.play([0.0, 0.0, -0.5], Some(0.5));
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     assert!(sound_inst.is_playing());
+    /// );
+    /// ```
     pub fn from_samples(in_arr_samples_at_48000s: &[f32]) -> Result<Sound, StereoKitError> {
         Ok(Sound(
             NonNull::new(unsafe {
@@ -130,8 +246,33 @@ impl Sound {
     /// This function will generate a sound from a function you provide! The function is called once for each sample in
     /// the duration. As an example, it may be called 48,000 times for each second of duration.
     /// <https://stereokit.net/Pages/StereoKit/Sound/Generate.html>
+    /// * `generator` - This function takes a time value as an argument, which will range from 0-duration, and should
+    ///   return a value from -1 - +1 representing the audio wave at that point in time.
+    /// * `duration` - The duration of the sound in seconds.
     ///
-    /// see also [`crate::sound::sound_generate`]
+    /// see also [`sound_generate`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::sound::Sound;
+    ///
+    /// unsafe extern "C" fn generator(sample_time: f32) -> f32 {
+    ///     (sample_time * 440.0 * 2.0 * std::f32::consts::PI).sin()
+    /// }
+    /// let mut sound = Sound::generate(generator, 1.0)
+    ///                     .expect("Sound should be created from generator");
+    /// assert!(sound.get_id().starts_with("auto/sound_"));
+    /// sound.id("sound_generator");
+    ///
+    /// let mut sound_inst = sound.play([0.0, 0.0, -0.5], Some(0.5));
+    ///
+    /// number_of_steps = 100000;
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter < 10000 {
+    ///         assert!(sound_inst.is_playing());
+    ///     }
+    /// );
+    /// ```
     pub fn generate(generator: unsafe extern "C" fn(f32) -> f32, duration: f32) -> Result<Sound, StereoKitError> {
         Ok(Sound(
             NonNull::new(unsafe { sound_generate(Some(generator), duration) })
@@ -141,8 +282,23 @@ impl Sound {
 
     /// ooks for a Sound asset that’s already loaded, matching the given id!
     /// <https://stereokit.net/Pages/StereoKit/Sound/Find.html>
+    /// * `id` - Which Sound are you looking for?
     ///
-    /// see also [`crate::sound::sound_find`]
+    /// see also [`sound_find`] [`Sound::clone_ref`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::sound::Sound;
+    ///
+    /// let mut plane_sound = Sound::from_file("sounds/plane_engine.mp3")
+    ///                           .expect("plane_engine.mp3 should be in the sounds folder");
+    /// plane_sound.id("sound_plane").decibels(70.0);
+    ///
+    /// let same_sound = Sound::find("sound_plane")
+    ///                             .expect("sound_plane should be found");
+    /// assert_eq!(plane_sound.get_id(), same_sound.get_id());
+    /// assert_eq!(plane_sound, same_sound);
+    /// ```
     pub fn find<S: AsRef<str>>(id: S) -> Result<Sound, StereoKitError> {
         let cstr_id = CString::new(id.as_ref())?;
         Ok(Sound(
@@ -155,16 +311,47 @@ impl Sound {
     /// calling find() method.
     /// <https://stereokit.net/Pages/StereoKit/Sound/Find.html>
     ///
-    /// see also [`crate::sound::sound_find()`]
+    /// see also [`sound_find`] [`Sound::find`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::sound::Sound;
+    ///
+    /// let mut plane_sound = Sound::from_file("sounds/plane_engine.mp3")
+    ///                           .expect("plane_engine.mp3 should be in the sounds folder");
+    ///
+    /// let same_sound =  plane_sound.clone_ref();
+    ///
+    /// assert_eq!(plane_sound.get_id(), same_sound.get_id());
+    /// assert_eq!(plane_sound, same_sound);
+    /// ```
     pub fn clone_ref(&self) -> Sound {
         Sound(NonNull::new(unsafe { sound_find(sound_get_id(self.0.as_ptr())) }).expect("<asset>::clone_ref failed!"))
     }
 
-    /// sets the unique identifier of this asset resource! This can be helpful for debugging,
+    /// Sets the unique identifier of this asset resource! This can be helpful for debugging,
     /// managing your assets, or finding them later on!
-    ///<https://stereokit.net/Pages/StereoKit/Sound/Id.html>
+    /// <https://stereokit.net/Pages/StereoKit/Sound/Id.html>
     ///
-    /// see also [`crate::sound::sound_set_id`]
+    /// see also [`sound_set_id`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::sound::Sound;
+    ///
+    /// // A sound from a file will have its file path as its id
+    /// let mut plane_sound = Sound::from_file("sounds/plane_engine.mp3")
+    ///                           .expect("plane_engine.mp3 should be in the sounds folder");
+    /// assert_eq!(plane_sound.get_id(), "sounds/plane_engine.mp3");
+    /// plane_sound.id("plane_sound");
+    /// assert_eq!(plane_sound.get_id(), "plane_sound");
+    ///
+    /// // A sound other than from a file will have an auto id
+    /// let mut stream_sound = Sound::create_stream(0.5).
+    ///                            expect("A sound stream should be created");
+    /// assert!(stream_sound.get_id().starts_with("auto/sound_"));
+    /// stream_sound.id("sound_stream");
+    /// ```
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
         let cstr_id = CString::new(id.as_ref()).unwrap();
         unsafe { sound_set_id(self.0.as_ptr(), cstr_id.as_ptr()) };
@@ -176,9 +363,32 @@ impl Sound {
     /// cues. So make sure the position is where you want people to think it’s from! Currently, if this sound is playing
     /// somewhere else, it’ll be canceled, and moved to this location.
     /// <https://stereokit.net/Pages/StereoKit/Sound/Play.html>
-    /// * volume - if None will have default value of 1.0
+    /// * `at` - World space location for the audio to play at.
+    /// * `volume` - Volume modifier for the effect! 1 means full volume, and 0 means completely silent. If None will
+    ///   have default value of 1.0
     ///
-    /// see also [`crate::sound::sound_play`]
+    /// see also [`sound_play`] [`SoundInst::position`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Vec3, sound::Sound};
+    ///
+    /// let mut position = Vec3::new(-0.5, 0.0, 0.5);
+    ///
+    /// let mut plane_sound = Sound::from_file("sounds/plane_engine.mp3").
+    ///                           expect("A sound should be created");
+    /// plane_sound.id("sound_plane").decibels(70.0);
+    ///
+    /// let mut plane_sound_inst = plane_sound.play(position, Some(1.0));
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     assert!(plane_sound_inst.is_playing());
+    ///     if iter == 2 {
+    ///        // Move the sound to the other side
+    ///        plane_sound_inst.position(Vec3::new(0.5, 0.0, 0.5));
+    ///     }
+    /// );
+    /// ```
     pub fn play(&self, at: impl Into<Vec3>, volume: Option<f32>) -> SoundInst {
         let volume = volume.unwrap_or(1.0);
         unsafe { sound_play(self.0.as_ptr(), at.into(), volume) }
@@ -186,7 +396,31 @@ impl Sound {
 
     /// <https://stereokit.net/Pages/StereoKit/Sound/Decibels.html>
     ///
-    /// see also [`crate::sound::sound_set_decibels`]
+    /// see also [`sound_set_decibels`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Vec3, sound::Sound};
+    ///
+    /// let mut position = Vec3::new(-0.5, 0.0, 0.5);
+    ///
+    /// let mut plane_sound = Sound::from_file("sounds/plane_engine.mp3").
+    ///                           expect("A sound should be created");
+    /// plane_sound.id("sound_plane").decibels(70.0);
+    ///
+    /// let mut plane_sound_inst = plane_sound.play(position, Some(1.0));
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     assert!(plane_sound_inst.is_playing());
+    ///     if iter == 1 {
+    ///         // Change decibel for all instances
+    ///          assert_eq!(plane_sound.get_decibels(), 70.0);
+    ///         plane_sound.decibels(10.0);
+    ///     } else if iter == 2 {
+    ///         assert_eq!(plane_sound.get_decibels(), 10.0);
+    ///     }
+    /// );
+    /// ```
     pub fn decibels(&self, decibels: f32) {
         unsafe { sound_set_decibels(self.0.as_ptr(), decibels) }
     }
@@ -194,11 +428,42 @@ impl Sound {
     /// This will read samples from the sound stream, starting from the first unread sample. Check UnreadSamples for how
     /// many samples are available to read.
     /// <https://stereokit.net/Pages/StereoKit/Sound/ReadSamples.html>
+    /// * `out_arr_samples` - A pre-allocated buffer to read the samples into! This function will stop reading when this
+    ///   buffer is full, or when the sound runs out of unread samples.
+    /// * `sample_count` - The maximum number of samples to read, this should be less than or equal to the number of
+    ///   samples the sampleBuffer can contain.
     ///
-    /// see also [`crate::sound::sound_read_samples`]
-    #[allow(clippy::not_unsafe_ptr_arg_deref)]
-    pub fn read_samples(&self, out_arr_samples: *mut f32, sample_count: u64) -> u64 {
-        unsafe { sound_read_samples(self.0.as_ptr(), out_arr_samples, sample_count) }
+    /// see also [`sound_read_samples`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::sound::Sound;
+    ///
+    /// // Half of the samples won't be kept in the buffer (0.5 instead of 1.0)
+    /// let mut stream_sound = Sound::create_stream(0.5).
+    ///                            expect("A sound stream should be created");
+    ///
+    /// let mut samples: Vec<f32> = vec![0.0; 48000];
+    /// for i in 0..48000 {
+    ///     samples[i] = (i as f32 / 48000.0).sin();
+    /// }
+    /// stream_sound.write_samples(samples.as_slice(), Some(48000));
+    ///
+    /// assert_eq!(stream_sound.get_unread_samples(), 24000);
+    ///
+    /// let mut read_samples: Vec<f32> = vec![0.0; 48000];
+    /// let read_count = stream_sound.read_samples(read_samples.as_mut_slice(), Some(48000));
+    /// assert_eq!(read_count, 24000);
+    /// for i in 0..24000 {
+    ///     assert_eq!(samples[i], read_samples[i]);
+    /// }
+    ///
+    /// let read_count = stream_sound.read_samples(read_samples.as_mut_slice(), Some(48000));
+    /// assert_eq!(read_count, 0);
+    /// ```
+    pub fn read_samples(&self, out_arr_samples: &mut [f32], sample_count: Option<u64>) -> u64 {
+        let sample_count = sample_count.unwrap_or(out_arr_samples.len() as u64);
+        unsafe { sound_read_samples(self.0.as_ptr(), out_arr_samples.as_mut_ptr(), sample_count) }
     }
 
     /// Only works if this Sound is a stream type! This writes a number of audio samples to the sample buffer, and
@@ -210,17 +475,38 @@ impl Sound {
     /// This variation of the method bypasses marshalling memory into C#, so it is the most optimal way to copy sound
     /// data if your source is already in native memory!
     /// <https://stereokit.net/Pages/StereoKit/Sound/WriteSamples.html>
+    /// * `in_arr_samples` - An array of audio samples, where each sample is between -1 and +1.
+    /// * `sample_count` - You can use this to write only a subset of the samples in the array, rather than the entire
+    ///   array!
     ///
-    /// see also [`crate::sound::sound_write_samples`]
-    #[allow(clippy::not_unsafe_ptr_arg_deref)]
-    pub fn write_samples(&self, in_arr_samples: *const f32, sample_count: u64) {
-        unsafe { sound_write_samples(self.0.as_ptr(), in_arr_samples, sample_count) };
+    /// see also [`sound_write_samples`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::sound::Sound;
+    ///
+    /// // Half of the samples won't be kept in the buffer (0.5 instead of 1.0)
+    /// let mut stream_sound = Sound::create_stream(1.0).
+    ///                            expect("A sound stream should be created");
+    ///
+    /// let mut samples: Vec<f32> = vec![0.0; 48000];
+    /// for i in 0..48000 {
+    ///     samples[i] = (i as f32 / 48000.0).sin();
+    /// }
+    /// stream_sound.write_samples(samples.as_slice(), Some(48000));
+    ///
+    /// assert_eq!(stream_sound.get_unread_samples(), 48000);
+    /// ```
+    pub fn write_samples(&self, in_arr_samples: &[f32], sample_count: Option<u64>) {
+        let sample_count = sample_count.unwrap_or(in_arr_samples.len() as u64);
+        unsafe { sound_write_samples(self.0.as_ptr(), in_arr_samples.as_ptr(), sample_count) };
     }
 
     /// The id of this sound
     /// <https://stereokit.net/Pages/StereoKit/Sound/Id.html>
     ///
-    /// see also [`crate::sound::sound_get_id`]
+    /// see also [`sound_get_id`]
+    /// see example in [`Sound::id`]
     pub fn get_id(&self) -> &str {
         unsafe { CStr::from_ptr(sound_get_id(self.0.as_ptr())) }.to_str().unwrap()
     }
@@ -228,7 +514,34 @@ impl Sound {
     /// This is the current position of the playback cursor, measured in samples from the start of the audio data.
     /// <https://stereokit.net/Pages/StereoKit/Sound/CursorSamples.html>
     ///
-    /// see also [`crate::sound::sound_cursor_samples`]
+    /// see also [`sound_cursor_samples`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::sound::Sound;
+    ///
+    /// let mut samples: Vec<f32> = vec![0.0; 48000];
+    /// for i in 0..48000 {
+    ///     samples[i] = (i as f32 / 48000.0).sin();
+    /// }
+    /// let mut sound = Sound::from_samples(&samples)
+    ///                     .expect("Sound should be created from samples");
+    ///
+    /// assert_eq!(sound.get_cursor_samples(), 0);
+    ///
+    /// let mut sound_inst = sound.play([0.0, 0.0, -0.5], Some(0.5));
+    /// sound_inst.stop();
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter == 1 {
+    ///         assert_eq!(sound.get_total_samples(), 48000);
+    ///         assert_eq!(sound.get_cursor_samples(), 0);
+    ///         sound.write_samples(&samples, None);
+    ///     } else if iter == 2 {
+    ///        assert_eq!(sound.get_cursor_samples(), 0);
+    ///     }
+    /// );
+    ///
     pub fn get_cursor_samples(&self) -> u64 {
         unsafe { sound_cursor_samples(self.0.as_ptr()) }
     }
@@ -236,14 +549,32 @@ impl Sound {
     /// This will return the total length of the sound in seconds.
     /// <https://stereokit.net/Pages/StereoKit/Sound/Duration.html>
     ///
-    /// see also [`crate::sound::sound_duration`]
+    /// see also [`sound_duration`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::sound::Sound;
+    ///
+    /// let mut samples: Vec<f32> = vec![0.0; 48000];
+    /// for i in 0..48000 {
+    ///     samples[i] = (i as f32 / 48000.0).sin();
+    /// }
+    /// let mut sound = Sound::from_samples(&samples)
+    ///                     .expect("Sound should be created from samples");
+    /// assert_eq!(sound.get_duration(), 1.0);
+    ///
+    /// let mut sound_file = Sound::from_file("sounds/no.wav")
+    ///                          .expect("Sound should be created from file");
+    /// assert_eq!(sound_file.get_duration(), 1.4830834);
+    /// ```
     pub fn get_duration(&self) -> f32 {
         unsafe { sound_duration(self.0.as_ptr()) }
     }
 
     /// <https://stereokit.net/Pages/StereoKit/Sound/Decibels.html>
     ///
-    /// see also [`crate::sound::sound_get_decibels`]
+    /// see also [`sound_get_decibels`]
+    /// see example in [`Sound::decibels`]
     pub fn get_decibels(&self) -> f32 {
         unsafe { sound_get_decibels(self.0.as_ptr()) }
     }
@@ -252,7 +583,26 @@ impl Sound {
     /// per second for all audio.
     /// <https://stereokit.net/Pages/StereoKit/Sound/TotalSamples.html>
     ///
-    /// see also [`crate::sound::sound_total_samples`]
+    /// see also [`sound_total_samples`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::sound::Sound;
+    ///
+    /// let mut samples: Vec<f32> = vec![0.0; 48000];
+    /// for i in 0..48000 {
+    ///     samples[i] = (i as f32 / 48000.0).sin();
+    /// }
+    /// let mut sound = Sound::from_samples(&samples)
+    ///                     .expect("Sound should be created from samples");
+    /// assert_eq!(sound.get_total_samples(), 48000);
+    ///
+    /// let mut sound_file = Sound::from_file("sounds/no.wav")
+    ///                          .expect("Sound should be created from file");
+    /// assert_eq!(sound_file.get_duration(), 1.4830834);
+    /// // 1.4830834 * 48000 = 71188
+    /// assert_eq!(sound_file.get_total_samples(), 71188);
+    /// ```
     pub fn get_total_samples(&self) -> u64 {
         unsafe { sound_total_samples(self.0.as_ptr()) }
     }
@@ -262,7 +612,29 @@ impl Sound {
     /// sounds, all other sound types will just return 0.
     /// <https://stereokit.net/Pages/StereoKit/Sound/UnreadSamples.html>
     ///
-    /// see also [`crate::sound::sound_unread_samples`]
+    /// see also [`sound_unread_samples`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::sound::Sound;
+    ///
+    /// // Half of the samples won't be kept in the buffer (0.5 instead of 1.0)
+    /// let mut stream_sound = Sound::create_stream(1.0).
+    ///                            expect("A sound stream should be created");
+    ///
+    /// let mut samples: Vec<f32> = vec![0.0; 48000];
+    /// for i in 0..48000 {
+    ///     samples[i] = (i as f32 / 48000.0).sin();
+    /// }
+    /// stream_sound.write_samples(samples.as_slice(), Some(48000));
+    ///
+    /// assert_eq!(stream_sound.get_unread_samples(), 48000);
+    ///
+    /// let mut read_samples: Vec<f32> = vec![0.0; 48000];
+    /// let read_count = stream_sound.read_samples(read_samples.as_mut_slice(), Some(48000));
+    /// assert_eq!(read_count, 48000);
+    /// assert_eq!(stream_sound.get_unread_samples(), 0);
+    /// ```
     pub fn get_unread_samples(&self) -> u64 {
         unsafe { sound_unread_samples(self.0.as_ptr()) }
     }
@@ -270,6 +642,22 @@ impl Sound {
     /// A default click sound that lasts for 300ms. It’s a procedurally generated sound based on a mouse press, with
     /// extra low frequencies in it.
     /// <https://stereokit.net/Pages/StereoKit/Sound/Click.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Vec3, sound::Sound};
+    ///
+    /// let mut click_sound = Sound::click();
+    /// assert_eq!(click_sound.get_id(), "default/sound_click");
+    ///
+    /// let mut click_sound_inst = click_sound.play([0.0, 0.0, -0.5], Some(0.5));
+    ///
+    /// number_of_steps = 100;
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     assert!(click_sound_inst.is_playing());
+    /// );
+    /// ```
     pub fn click() -> Self {
         let cstr_id = CString::new("default/sound_click").unwrap();
         Sound(NonNull::new(unsafe { sound_find(cstr_id.as_ptr()) }).unwrap())
@@ -278,6 +666,22 @@ impl Sound {
     /// A default unclick sound that lasts for 300ms. It’s a procedurally generated sound based on a mouse press, with
     /// extra low frequencies in it.
     /// <https://stereokit.net/Pages/StereoKit/Sound/Unclick.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Vec3, sound::Sound};
+    ///
+    /// let mut unclick_sound = Sound::unclick();
+    /// assert_eq!(unclick_sound.get_id(), "default/sound_unclick");
+    ///
+    /// let mut unclick_sound_inst = unclick_sound.play([0.0, 0.0, -0.5], Some(0.5));
+    ///
+    /// number_of_steps = 100;
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     assert!(unclick_sound_inst.is_playing());
+    /// );
+    /// ```
     pub fn unclick() -> Self {
         let cstr_id = CString::new("default/sound_unclick").unwrap();
         Sound(NonNull::new(unsafe { sound_find(cstr_id.as_ptr()) }).unwrap())
@@ -285,6 +689,22 @@ impl Sound {
 
     /// A default grab sound
     /// <https://stereokit.net/Pages/StereoKit/Sound.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Vec3, sound::Sound};
+    ///
+    /// let mut grab_sound = Sound::grab();
+    /// assert_eq!(grab_sound.get_id(), "default/sound_grab");
+    ///
+    /// let mut grab_sound_inst = grab_sound.play([0.0, 0.0, -0.5], Some(0.5));
+    ///
+    /// number_of_steps = 100;
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     assert!(grab_sound_inst.is_playing());
+    /// );
+    /// ```
     pub fn grab() -> Self {
         let cstr_id = CString::new("default/sound_grab").unwrap();
         Sound(NonNull::new(unsafe { sound_find(cstr_id.as_ptr()) }).unwrap())
@@ -292,10 +712,85 @@ impl Sound {
 
     /// A default ungrab sound
     /// <https://stereokit.net/Pages/StereoKit/Sound.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Vec3, sound::Sound};
+    ///
+    /// let mut ungrab_sound = Sound::ungrab();
+    /// assert_eq!(ungrab_sound.get_id(), "default/sound_ungrab");
+    ///
+    /// let mut ungrab_sound_inst = ungrab_sound.play([0.0, 0.0, -0.5], Some(0.5));
+    ///
+    /// number_of_steps = 100;
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     assert!(ungrab_sound_inst.is_playing());
+    /// );
+    /// ```
     pub fn ungrab() -> Self {
         let cstr_id = CString::new("default/sound_ungrab").unwrap();
         Sound(NonNull::new(unsafe { sound_find(cstr_id.as_ptr()) }).unwrap())
     }
+}
+
+/// This represents a play instance of a Sound! You can get one when you call Sound::play(). This allows you to do things
+/// like cancel a piece of audio early, or change the volume and position of it as it’s playing.
+/// <https://stereokit.net/Pages/StereoKit/SoundInst.html>
+///
+/// see also: [`Sound`]
+/// /// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{maths::{Vec3, Matrix}, mesh::Mesh, material::Material,
+///                      sound::Sound, util::named_colors};
+///
+/// let sphere = Mesh::generate_sphere(0.5, None);
+/// let material = Material::pbr().copy_for_tex("textures/sound.jpeg", true, None)
+///                    .expect("sound.jpeg should be there");
+/// let mut position1 = Vec3::new(-0.5, 0.0, 0.5);
+/// let mut position2 = Vec3::new( 0.5, 0.0, 0.5);
+///
+/// let mut plane_sound1 = Sound::from_file("sounds/no.wav")
+///                           .expect("no.wav should be there");
+/// plane_sound1.id("sound_plane1").decibels(70.0);
+/// let mut plane_sound_inst1 = plane_sound1.play(position1, Some(1.0));
+///
+/// let mut plane_sound2 = Sound::from_file("sounds/no.wav")
+///                           .expect("no.wav should be there");
+/// plane_sound2.id("sound_plane2").decibels(70.0);
+/// let mut plane_sound_inst2 = plane_sound2.play(position2, Some(1.0));
+/// plane_sound_inst2.stop();
+///
+/// number_of_steps = 100000;
+/// filename_scr = "screenshots/sound_inst.jpeg";
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+///     let transform1 = Matrix::t(position1);
+///     let transform2 = Matrix::t(position2);
+///     sphere.draw(token, &material, transform1, Some(named_colors::PINK.into()), None  );
+///     sphere.draw(token, &material, transform2, Some(named_colors::LIGHT_GREEN.into()), None  );
+///
+///     if iter == 0 {
+///         assert!(plane_sound_inst1.is_playing());
+///         assert!(!plane_sound_inst2.is_playing());
+///         position1 = Vec3::new(-0.3, 0.0, 0.3);
+///         plane_sound_inst1
+///             .position(position1)
+///             .volume(0.5);
+///     } else if iter == 9999 {
+///         assert!(plane_sound_inst1.is_playing());
+///         position2 = Vec3::new(0.3, 0.0, 0.3);
+///         plane_sound_inst2 = plane_sound2.play(position2, Some(1.0));
+///         assert!(plane_sound_inst2.is_playing());
+///    }
+/// );
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sound_inst.jpeg" alt="screenshot" width="200">
+#[repr(C)]
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct SoundInst {
+    pub _id: u16,
+    pub _slot: i16,
 }
 
 unsafe extern "C" {
@@ -308,18 +803,27 @@ unsafe extern "C" {
     pub fn sound_inst_get_intensity(sound_inst: SoundInst) -> f32;
 }
 
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct SoundInst {
-    pub _id: u16,
-    pub _slot: i16,
-}
-
 impl SoundInst {
     /// This stops the sound early if it’s still playing. consume the SoundInst as it will not be playable again.
     /// <https://stereokit.net/Pages/StereoKit/SoundInst/Stop.html>
     ///
-    /// see also [`crate::sound::sound_inst_stop`]
+    /// see also [`sound_inst_stop`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Vec3, sound::Sound};
+    ///
+    /// let mut plane_sound = Sound::from_file("sounds/plane_engine.mp3").
+    ///                           expect("A sound should be created");
+    /// let mut plane_sound_inst = plane_sound.play([0.0, 0.0, 0.0], Some(1.0));
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter == 1 {
+    ///         plane_sound_inst.stop();
+    ///         assert!(!plane_sound_inst.is_playing());
+    ///     }
+    /// );
+    /// ```
     pub fn stop(self) {
         unsafe { sound_inst_stop(self) }
     }
@@ -328,7 +832,27 @@ impl SoundInst {
     /// valid, the position will be at zero.
     /// <https://stereokit.net/Pages/StereoKit/SoundInst/Position.html>
     ///
-    /// see also [`crate::sound::sound_inst_set_pos`]
+    /// see also [`sound_inst_set_pos`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Vec3, sound::Sound};
+    ///
+    /// let mut position = Vec3::new(-2.5, 0.0, 0.5);
+    ///
+    /// let mut plane_sound = Sound::from_file("sounds/plane_engine.mp3").
+    ///                           expect("A sound should be created");
+    /// plane_sound.id("sound_plane").decibels(70.0);
+    ///
+    /// let mut plane_sound_inst = plane_sound.play(position, None);
+    /// assert_eq!(plane_sound_inst.get_position(), position);
+    ///
+    /// number_of_steps = 100000;
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     position += Vec3::new(0.0001, 0.0, 0.0);
+    ///     plane_sound_inst.position(position);
+    /// );
+    /// ```
     pub fn position(&mut self, at: impl Into<Vec3>) -> &mut Self {
         unsafe { sound_inst_set_pos(*self, at.into()) }
         self
@@ -337,7 +861,28 @@ impl SoundInst {
     /// The volume multiplier of this Sound instance! A number between 0 and 1, where 0 is silent, and 1 is full volume.
     /// <https://stereokit.net/Pages/StereoKit/SoundInst/Volume.html>
     ///
-    /// see also [`crate::sound::sound_inst_set_volume`]
+    /// see also [`sound_inst_set_volume`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Vec3, sound::Sound};
+    ///
+    /// let mut position = Vec3::new(0.0, 0.0, 0.5);
+    /// let mut volume = 0.0;
+    ///
+    /// let mut plane_sound = Sound::from_file("sounds/plane_engine.mp3").
+    ///                           expect("A sound should be created");
+    /// plane_sound.id("sound_plane");
+    ///
+    /// let mut plane_sound_inst = plane_sound.play(position, None);
+    /// plane_sound_inst.volume(0.005);
+    ///
+    /// number_of_steps = 100000;
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     volume += 0.00001;
+    ///     plane_sound_inst.volume(volume);
+    /// );
+    /// ```
     pub fn volume(&mut self, volume: f32) -> &mut Self {
         unsafe { sound_inst_set_volume(*self, volume) }
         self
@@ -347,7 +892,8 @@ impl SoundInst {
     /// valid, the position will be at zero.
     /// <https://stereokit.net/Pages/StereoKit/SoundInst/Position.html>
     ///
-    /// see also [`crate::sound::sound_inst_get_pos`]
+    /// see also [`sound_inst_get_pos`]
+    /// see example in [`SoundInst::position`]
     pub fn get_position(&self) -> Vec3 {
         unsafe { sound_inst_get_pos(*self) }
     }
@@ -355,7 +901,8 @@ impl SoundInst {
     /// The volume multiplier of this Sound instance! A number between 0 and 1, where 0 is silent, and 1 is full volume.
     /// <https://stereokit.net/Pages/StereoKit/SoundInst/Volume.html>
     ///
-    /// see also [`crate::sound::sound_inst_get_volume`]
+    /// see also [`sound_inst_get_volume`]
+    /// see example in [`SoundInst::volume`]
     pub fn get_volume(&self) -> f32 {
         unsafe { sound_inst_get_volume(*self) }
     }
@@ -364,7 +911,25 @@ impl SoundInst {
     /// position or volume settings, and is straight from the audio file's data.
     /// <https://stereokit.net/Pages/StereoKit/SoundInst/Intensity.html>
     ///
-    /// see also [`crate::sound::sound_inst_get_intensity`]
+    /// see also [`sound_inst_get_intensity`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Vec3, sound::Sound};
+    ///
+    /// let mut plane_sound = Sound::from_file("sounds/plane_engine.mp3").
+    ///                           expect("A sound should be created");
+    /// plane_sound.id("sound_plane").decibels(70.0);
+    ///
+    /// let mut plane_sound_inst = plane_sound.play([0.0, 0.0, 0.0], Some(1.0));
+    /// plane_sound_inst.volume(1.0);
+    ///
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     assert_eq!(plane_sound_inst.get_intensity(), 0.0);
+    ///     plane_sound_inst.stop();
+    /// );
+    /// ```
     pub fn get_intensity(&self) -> f32 {
         unsafe { sound_inst_get_intensity(*self) }
     }
@@ -373,8 +938,149 @@ impl SoundInst {
     /// new data in them, and they’re just idling at the end of their data.
     /// <https://stereokit.net/Pages/StereoKit/SoundInst/IsPlaying.html>
     ///
-    /// see also [`crate::sound::sound_inst_is_playing`]
+    /// see also [`sound_inst_is_playing`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Vec3, sound::Sound};
+    ///
+    /// let mut plane_sound = Sound::from_file("sounds/plane_engine.mp3").
+    ///                           expect("A sound should be created");
+    /// let mut plane_sound_inst = plane_sound.play([0.0, 0.0, 0.0], Some(1.0));
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter == 1 {
+    ///         assert!(plane_sound_inst.is_playing());
+    ///         plane_sound_inst.stop();
+    ///     } else if iter > 1 {
+    ///         assert!(!plane_sound_inst.is_playing());
+    ///     }
+    /// );
+    /// ```
     pub fn is_playing(&self) -> bool {
         unsafe { sound_inst_is_playing(*self) != 0 }
+    }
+}
+
+/// This class provides access to the hardware’s microphone, and stores it in a Sound stream. Start and Stop recording,
+/// and check the Sound property for the results! Remember to ensure your application has microphone permissions enabled!
+/// <https://stereokit.net/Pages/StereoKit/Microphone.html>
+///
+/// see also: [`Sound`]
+/// /// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{maths::{Vec3, Matrix}, mesh::Mesh, material::Material,
+///                      sound::{Sound, Microphone}, util::named_colors};
+///
+/// let sphere = Mesh::generate_cube(Vec3::ONE * 0.5, None);
+/// let material = Material::pbr().copy_for_tex("textures/micro.jpeg", true, None)
+///                    .expect("sound.jpeg should be there");
+/// let mut position = Vec3::new( 0.0, 0.0, 0.5);
+/// let transform = Matrix::t(position);
+///
+/// let micros = Microphone::get_devices();
+///
+/// if micros.len() > 0 {
+///     let first_in_list = micros[0].clone();
+///     if Microphone::start(Some(first_in_list)) {
+///         assert!(Microphone::is_recording());
+///     } else {
+///         assert!(!Microphone::is_recording());
+///     }
+/// }
+///
+/// number_of_steps = 2000;
+/// filename_scr = "screenshots/microphone.jpeg";
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+///     sphere.draw(token, &material, transform, Some(named_colors::LIGHT_BLUE.into()), None  );
+///     if iter == 1990 && Microphone::is_recording() {
+///         let micro_sound = Microphone::get_sound();
+///         let mut read_samples: Vec<f32> = vec![0.0; 48000];
+///         let recorded_data = micro_sound.read_samples(read_samples.as_mut_slice(), None);
+///         assert_eq!(recorded_data, 0);
+///         Microphone::stop();
+///     }
+/// );
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/microphone.jpeg" alt="screenshot" width="200">
+#[repr(C)]
+#[derive(Debug, PartialEq)]
+pub struct Microphone {
+    sound: Sound,
+}
+
+unsafe extern "C" {
+    pub fn mic_get_stream() -> SoundT;
+    pub fn mic_is_recording() -> Bool32T;
+    pub fn mic_device_count() -> i32;
+    pub fn mic_device_name(index: i32) -> *const c_char;
+    pub fn mic_start(device_name: *const c_char) -> Bool32T;
+    pub fn mic_stop();
+}
+
+impl Microphone {
+    /// This is the sound stream of the Microphone when it is recording. This Asset is created the first time it is
+    /// accessed via this property, or during Start, and will persist. It is re-used for the Microphone stream if you
+    /// start/stop/switch devices.
+    /// <https://stereokit.net/Pages/StereoKit/Microphone/Sound.html>
+    ///
+    /// see also [`mic_get_stream`]
+    pub fn get_sound() -> Sound {
+        NonNull::new(unsafe { mic_get_stream() }).map(Sound).expect("Microphone sound not found")
+    }
+
+    /// Is the microphone currently recording?
+    /// <https://stereokit.net/Pages/StereoKit/Microphone/IsRecording.html>
+    ///
+    /// see also [`mic_is_recording`]
+    pub fn is_recording() -> bool {
+        unsafe { mic_is_recording() != 0 }
+    }
+
+    /// Constructs a list of valid Microphone devices attached to the system. These names can be passed into Start to
+    /// select a specific device to record from. It’s recommended to cache this list if you’re using it frequently, as
+    /// this list is constructed each time you call it.
+    ///
+    /// It’s good to note that a user might occasionally plug or unplug microphone devices from their system, so this
+    /// list may occasionally change.
+    /// <https://stereokit.net/Pages/StereoKit/Microphone/GetDevices.html>
+    ///
+    /// see also [`mic_device_count`] [`mic_device_name`]
+    pub fn get_devices() -> Vec<String> {
+        let mut devices = Vec::new();
+        for iter in 0..unsafe { mic_device_count() } {
+            let device_name = unsafe { CStr::from_ptr(mic_device_name(iter)) }.to_str().unwrap().to_string();
+            devices.push(device_name);
+        }
+        devices
+    }
+
+    /// This begins recording audio from the Microphone! Audio is stored in Microphone.Sound as a stream of audio. If
+    /// the Microphone is already recording with a different device, it will stop the previous recording and start again
+    /// with the new device.
+    ///
+    /// If null is provided as the device, then they system’s default input device will be used. Some systems may not
+    /// provide access to devices other than the system’s default.
+    /// <https://stereokit.net/Pages/StereoKit/Microphone/Start.html>
+    /// * `device_name` - The name of the microphone device to use, as seen in the GetDevices list. None will use the
+    ///   system’s default device preference.
+    ///
+    /// see also [`mic_start`] [`Microphone::get_devices`] [`Microphone::stop`]
+    pub fn start(device_name: Option<String>) -> bool {
+        if let Some(device_name) = device_name {
+            if !device_name.is_empty() {
+                let cstr = CString::new(device_name).unwrap();
+                return unsafe { mic_start(cstr.as_ptr() as *const c_char) != 0 };
+            }
+        }
+        // Here we call for a null_mut device_name
+        unsafe { mic_start(null_mut() as *const c_char) != 0 }
+    }
+
+    /// Stops recording audio from the microphone.
+    /// <https://stereokit.net/Pages/StereoKit/Microphone/Stop.html>
+    pub fn stop() {
+        unsafe { mic_stop() }
     }
 }
