@@ -9,8 +9,8 @@ use stereokit_rust::{
     system::{AssetType, Assets, Lines, Text, TextAlign, TextStyle},
     tex::Tex,
     util::{
-        named_colors::{BLACK, BLUE, CYAN, LIGHT_BLUE, WHITE, YELLOW},
         Color128, Gradient,
+        named_colors::{BLACK, BLUE, CYAN, LIGHT_BLUE, WHITE, YELLOW},
     },
 };
 
@@ -43,7 +43,6 @@ unsafe impl Send for Sprite1 {}
 impl Default for Sprite1 {
     fn default() -> Self {
         //---- Textures
-
         let mut gradient = Gradient::new(None);
         gradient
             .add(Color128::BLACK_TRANSPARENT, 0.0)

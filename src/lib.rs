@@ -150,6 +150,28 @@ pub mod sk;
 /// [![Microphone](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/microphone.jpeg)](sound::Microphone)
 pub mod sound;
 
+/// Sprite specific structs and functions.
+///
+/// ## Examples
+/// which are also unit tests:
+///
+/// [![Sprite](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite.jpeg)](sprite::Sprite)
+/// [![Sprite from Tex](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_from_tex.jpeg)](sprite::Sprite::from_tex)
+/// [![Sprite from File](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_from_file.jpeg)](sprite::Sprite::from_file)
+/// [![Sprite draw](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_draw.jpeg)](sprite::Sprite::draw)
+/// [![Sprite grid](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_grid.jpeg)](sprite::Sprite::grid)
+/// [![Sprite list](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_list.jpeg)](sprite::Sprite::list)
+/// [![Sprite arrow left](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_arrow_left.jpeg)](sprite::Sprite::arrow_left)
+/// [![Sprite arrow right](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_arrow_right.jpeg)](sprite::Sprite::arrow_right)
+/// [![Sprite arrow up](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_arrow_up.jpeg)](sprite::Sprite::arrow_up)
+/// [![Sprite arrow down](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_arrow_down.jpeg)](sprite::Sprite::arrow_down)
+/// [![Sprite radio off](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_radio_off.jpeg)](sprite::Sprite::radio_off)
+/// [![Sprite radio on](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_radio_on.jpeg)](sprite::Sprite::radio_on)
+/// [![Sprite toggle off](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_toggle_off.jpeg)](sprite::Sprite::toggle_off)
+/// [![Sprite toggle on](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_toggle_on.jpeg)](sprite::Sprite::toggle_on)
+/// [![Sprite backspace](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_backspace.jpeg)](sprite::Sprite::backspace)
+/// [![Sprite close](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_close.jpeg)](sprite::Sprite::close)
+/// [![Sprite shift](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_shift.jpeg)](sprite::Sprite::shift)
 pub mod sprite;
 
 pub mod system;

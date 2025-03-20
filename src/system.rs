@@ -3378,41 +3378,43 @@ impl TextStyle {
     }
 }
 
-/// An enum for describing alignment or positioning
-/// <https://stereokit.net/Pages/StereoKit/TextAlign.html>
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-#[repr(u32)]
-pub enum TextAlign {
-    /// On the x axis, this item should start on the left.
-    XLeft = 1,
-    /// On the y axis, this item should start at the top.
-    YTop = 2,
-    /// On the x axis, the item should be centered.
-    XCenter = 4,
-    /// On the y axis, the item should be centered.
-    YCenter = 8,
-    /// On the x axis, this item should start on the right.
-    XRight = 16,
-    /// On the y axis, this item should start on the bottom.
-    YBottom = 32,
-    /// Center on both X and Y axes. This is a combination of XCenter and YCenter.
-    Center = 12,
-    /// Start on the left of the X axis, center on the Y axis. This is a combination of XLeft and YCenter.
-    CenterLeft = 9,
-    /// Start on the right of the X axis, center on the Y axis. This is a combination of XRight and YCenter.
-    CenterRight = 24,
-    /// Center on the X axis, and top on the Y axis. This is a combination of XCenter and YTop.
-    TopCenter = 6,
-    /// Start on the left of the X axis, and top on the Y axis. This is a combination of XLeft and YTop.
-    TopLeft = 3,
-    /// Start on the right of the X axis, and top on the Y axis. This is a combination of XRight and YTop.
-    TopRight = 18,
-    /// Center on the X axis, and bottom on the Y axis. This is a combination of XCenter and YBottom.
-    BottomCenter = 36,
-    /// Start on the left of the X axis, and bottom on the Y axis. This is a combination of XLeft and YBottom.
-    BottomLeft = 33,
-    /// Start on the right of the X axis, and bottom on the Y axis.This is a combination of XRight and YBottom.
-    BottomRight = 48,
+bitflags::bitflags! {
+    /// An enum for describing alignment or positioning
+    /// <https://stereokit.net/Pages/StereoKit/TextAlign.html>
+    #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+    #[repr(C)]
+    pub struct TextAlign: u32 {
+        /// On the x axis, this item should start on the left.
+        const XLeft = 1 << 0;
+        /// On the y axis, this item should start at the top.
+        const YTop = 1 << 1;
+        /// On the x axis, the item should be centered.
+        const XCenter = 1 << 2;
+        /// On the y axis, the item should be centered.
+        const YCenter = 1 << 3;
+        /// On the x axis, this item should start on the right.
+        const XRight = 1 << 4;
+        /// On the y axis, this item should start on the bottom.
+        const YBottom = 1 << 5;
+        /// Center on both X and Y axes. This is a combination of XCenter and YCenter.
+        const Center = Self::XCenter.bits() | Self::YCenter.bits();
+        /// Start on the left of the X axis, center on the Y axis. This is a combination of XLeft and YCenter.
+        const CenterLeft = Self::XLeft.bits() | Self::YCenter.bits();
+        /// Start on the right of the X axis, center on the Y axis. This is a combination of XRight and YCenter.
+        const CenterRight = Self::XRight.bits() | Self::YCenter.bits();
+        /// Center on the X axis, and top on the Y axis. This is a combination of XCenter and YTop.
+        const TopCenter = Self::XCenter.bits() | Self::YTop.bits();
+        /// Start on the left of the X axis, and top on the Y axis. This is a combination of XLeft and YTop.
+        const TopLeft = Self::XLeft.bits() | Self::YTop.bits();
+        /// Start on the right of the X axis, and top on the Y axis. This is a combination of XRight and YTop.
+        const TopRight = Self::XRight.bits() | Self::YTop.bits();
+        /// Center on the X axis, and bottom on the Y axis. This is a combination of XCenter and YBottom.
+        const BottomCenter = Self::XCenter.bits() | Self::YBottom.bits();
+        /// Start on the left of the X axis, and bottom on the Y axis. This is a combination of XLeft and YBottom.
+        const BottomLeft = Self::XLeft.bits() | Self::YBottom.bits();
+        /// Start on the right of the X axis, and bottom on the Y axis.This is a combination of XRight and YBottom.
+        const BottomRight = Self::XRight.bits() | Self::YBottom.bits();
+    }
 }
 
 bitflags::bitflags! {
@@ -3433,7 +3435,7 @@ bitflags::bitflags! {
         const Exact = 8;
         /// The text will ignore the containing space, and just keep on going.
         const Overflow = 16;
-}
+    }
 }
 
 /// Soft keyboard layouts are often specific to the type of text that they’re editing! This enum is a collection of
