@@ -159,6 +159,7 @@ pub mod sound;
 /// [![Sprite from Tex](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_from_tex.jpeg)](sprite::Sprite::from_tex)
 /// [![Sprite from File](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_from_file.jpeg)](sprite::Sprite::from_file)
 /// [![Sprite draw](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_draw.jpeg)](sprite::Sprite::draw)
+///
 /// [![Sprite grid](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_grid.jpeg)](sprite::Sprite::grid)
 /// [![Sprite list](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_list.jpeg)](sprite::Sprite::list)
 /// [![Sprite arrow left](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_arrow_left.jpeg)](sprite::Sprite::arrow_left)
