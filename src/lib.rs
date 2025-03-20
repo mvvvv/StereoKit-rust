@@ -147,7 +147,6 @@ pub mod sk;
 ///
 /// [![Sound](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sound.jpeg)](sound::Sound)
 /// [![SoundInst](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sound_inst.jpeg)](sound::SoundInst)
-/// [![Microphone](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/microphone.jpeg)](sound::Microphone)
 pub mod sound;
 
 /// Sprite specific structs and functions.
@@ -175,6 +174,12 @@ pub mod sound;
 /// [![Sprite shift](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_shift.jpeg)](sprite::Sprite::shift)
 pub mod sprite;
 
+/// Sprite specific structs and functions.
+///
+/// ## Examples
+/// which are also unit tests:
+///
+/// [![Microphone](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/microphone.jpeg)](system::Microphone)
 pub mod system;
 
 pub mod tex;
