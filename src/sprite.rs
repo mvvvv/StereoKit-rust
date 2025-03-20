@@ -583,12 +583,12 @@ impl Sprite {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!();
-    /// use stereokit_rust::{sprite::Sprite, maths::Matrix, system::TextAlign};
+    /// use stereokit_rust::{sprite::Sprite, maths::{Vec3, Matrix}, system::TextAlign};
     ///
     /// let sprite = Sprite::arrow_left();
     /// assert_eq!(sprite.get_id(), "sk/ui/arrow_left");
     ///
-    /// width_scr = 48; height_scr = 48; fov_scr = 65.0;
+    /// width_scr = 48; height_scr = 48; fov_scr = 65.0; from_scr = Vec3::NEG_Z;
     /// filename_scr = "screenshots/sprite_arrow_left.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     sprite.draw(token, Matrix::IDENTITY, TextAlign::Center, None);
@@ -606,12 +606,12 @@ impl Sprite {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!();
-    /// use stereokit_rust::{sprite::Sprite, maths::Matrix, system::TextAlign};
+    /// use stereokit_rust::{sprite::Sprite, maths::{Vec3, Matrix}, system::TextAlign};
     ///
     /// let sprite = Sprite::arrow_right();
     /// assert_eq!(sprite.get_id(), "sk/ui/arrow_right");
     ///
-    /// width_scr = 48; height_scr = 48; fov_scr = 65.0;
+    /// width_scr = 48; height_scr = 48; fov_scr = 65.0; from_scr = Vec3::NEG_Z;
     /// filename_scr = "screenshots/sprite_arrow_right.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     sprite.draw(token, Matrix::IDENTITY, TextAlign::Center, None);
