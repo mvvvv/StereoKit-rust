@@ -2322,29 +2322,69 @@ impl Log {
 }
 
 /// This class provides access to the hardware’s microphone, and stores it in a Sound stream. Start and Stop recording,
-/// and check the Sound property for the results! Remember to ensure your application has microphone permissions
-/// enabled!
+/// and check the Sound property for the results! Remember to ensure your application has microphone permissions enabled!
 /// <https://stereokit.net/Pages/StereoKit/Microphone.html>
 ///
-///## Examples
-pub struct Microphone;
+/// see also: [`Sound`]
+/// /// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{maths::{Vec3, Matrix}, mesh::Mesh, material::Material,
+///                      sound::Sound, system::Microphone, util::named_colors};
+///
+/// let sphere = Mesh::generate_cube(Vec3::ONE * 0.5, None);
+/// let material = Material::pbr().copy_for_tex("textures/micro.jpeg", true, None)
+///                    .expect("sound.jpeg should be there");
+/// let mut position = Vec3::new( 0.0, 0.0, 0.5);
+/// let transform = Matrix::t(position);
+///
+/// let micros = Microphone::get_devices();
+///
+/// if micros.len() > 0 {
+///     let first_in_list = micros[0].clone();
+///     if Microphone::start(Some(first_in_list)) {
+///         assert!(Microphone::is_recording());
+///     } else {
+///         assert!(!Microphone::is_recording());
+///     }
+/// }
+///
+/// number_of_steps = 2000;
+/// filename_scr = "screenshots/microphone.jpeg";
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+///     sphere.draw(token, &material, transform, Some(named_colors::LIGHT_BLUE.into()), None  );
+///     if iter == 1990 && Microphone::is_recording() {
+///         let micro_sound = Microphone::sound().expect("Microphone should be recording");
+///         let mut read_samples: Vec<f32> = vec![0.0; 48000];
+///         let recorded_data = micro_sound.read_samples(read_samples.as_mut_slice(), None);
+///         Microphone::stop();
+///         //assert_ne!(recorded_data, 0);
+///     }
+/// );
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/microphone.jpeg" alt="screenshot" width="200">
+#[repr(C)]
+#[derive(Debug, PartialEq)]
+pub struct Microphone {
+    sound: Sound,
+}
 
 unsafe extern "C" {
+    pub fn mic_get_stream() -> SoundT;
+    pub fn mic_is_recording() -> Bool32T;
     pub fn mic_device_count() -> i32;
     pub fn mic_device_name(index: i32) -> *const c_char;
     pub fn mic_start(device_name: *const c_char) -> Bool32T;
     pub fn mic_stop();
-    pub fn mic_get_stream() -> SoundT;
-    pub fn mic_is_recording() -> Bool32T;
 }
 
 impl Microphone {
-    /// This is the sound stream of the Microphone when it is recording. ~~This Asset is created the first time it is
-    /// accessed via this property, or during Start, and will persist.~~ It is re-used for the Microphone stream if you
+    /// This is the sound stream of the Microphone when it is recording. This Asset is created the first time it is
+    /// accessed via this property, or during Start, and will persist. It is re-used for the Microphone stream if you
     /// start/stop/switch devices.
     /// <https://stereokit.net/Pages/StereoKit/Microphone/Sound.html>
     ///
-    /// see also [crate::system::mic_get_stream]
+    /// see also [mic_get_stream]
     pub fn sound() -> Result<Sound, StereoKitError> {
         Ok(Sound(
             NonNull::new(unsafe { mic_get_stream() })
@@ -2352,15 +2392,15 @@ impl Microphone {
         ))
     }
 
-    /// Tells if the Microphone is currently recording audio.
+    /// Is the microphone currently recording?
     /// <https://stereokit.net/Pages/StereoKit/Microphone/IsRecording.html>
     ///
-    /// see also [crate::system::mic_get_stream]
+    /// see also [`mic_is_recording`]
     pub fn is_recording() -> bool {
         unsafe { mic_is_recording() != 0 }
     }
 
-    /// Constructs a list of valid Microphone devices attached to the system. These names can be passed into start to
+    /// Constructs a list of valid Microphone devices attached to the system. These names can be passed into Start to
     /// select a specific device to record from. It’s recommended to cache this list if you’re using it frequently, as
     /// this list is constructed each time you call it.
     ///
@@ -2368,34 +2408,42 @@ impl Microphone {
     /// list may occasionally change.
     /// <https://stereokit.net/Pages/StereoKit/Microphone/GetDevices.html>
     ///
-    /// see also [crate::system::mic_device_count][crate::system::mic_device_name]
+    /// see also [`mic_device_count`] [`mic_device_name`]
     pub fn get_devices() -> Vec<String> {
         let mut devices = Vec::new();
-        for i in 0..unsafe { mic_device_count() } {
-            let name = unsafe { CStr::from_ptr(mic_device_name(i)).to_str().unwrap() };
-            devices.push(name.to_string());
+        for iter in 0..unsafe { mic_device_count() } {
+            let device_name = unsafe { CStr::from_ptr(mic_device_name(iter)) }.to_str().unwrap().to_string();
+            devices.push(device_name);
         }
         devices
     }
 
     /// This begins recording audio from the Microphone! Audio is stored in Microphone.Sound as a stream of audio. If
     /// the Microphone is already recording with a different device, it will stop the previous recording and start again
-    ///  with the new device.
+    /// with the new device.
     ///
     /// If null is provided as the device, then they system’s default input device will be used. Some systems may not
     /// provide access to devices other than the system’s default.
     /// <https://stereokit.net/Pages/StereoKit/Microphone/Start.html>
+    /// * `device_name` - The name of the microphone device to use, as seen in the GetDevices list. None will use the
+    ///   system’s default device preference.
     ///
-    /// see also [crate::system::mic_start]
-    pub fn start(device_name: impl AsRef<str>) -> bool {
-        let c_str = CString::new(device_name.as_ref()).unwrap();
-        unsafe { mic_start(c_str.as_ptr()) != 0 }
+    /// see also [`mic_start`] [`Microphone::get_devices`] [`Microphone::stop`]
+    pub fn start(device_name: Option<String>) -> bool {
+        if let Some(device_name) = device_name {
+            if !device_name.is_empty() {
+                let cstr = CString::new(device_name).unwrap();
+                return unsafe { mic_start(cstr.as_ptr() as *const c_char) != 0 };
+            }
+        }
+        // Here we call for a null_mut device_name
+        unsafe { mic_start(null_mut() as *const c_char) != 0 }
     }
 
-    /// If the Microphone is recording, this will stop it.
+    /// Stops recording audio from the microphone.
     /// <https://stereokit.net/Pages/StereoKit/Microphone/Stop.html>
     ///
-    /// see also [crate::system::mic_stop]
+    /// see also [mic_stop]
     pub fn stop() {
         unsafe { mic_stop() }
     }
