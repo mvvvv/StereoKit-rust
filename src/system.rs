@@ -40,6 +40,8 @@ pub trait IAsset {
 /// StereoKit uses an asynchronous loading system to prevent assets from blocking execution! This means that asset
 /// loading systems will return an asset to you right away, even though it is still being processed in the background.
 /// <https://stereokit.net/Pages/StereoKit/AssetState.html>
+///
+/// see also: [`Tex::get_asset_state`]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(C)]
 pub enum AssetState {
@@ -68,6 +70,8 @@ pub enum AssetState {
 ///
 /// None -> No type, this may come from some kind of invalid Asset id.
 /// <https://stereokit.net/Pages/StereoKit/AssetType.html>
+///
+/// see also [`Assets`] [`Asset`]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
 pub enum AssetType {
@@ -87,6 +91,40 @@ pub enum AssetType {
 
 /// If you want to manage loading assets, this is the class for you!
 ///  <https://stereokit.net/Pages/StereoKit/Assets.html>
+///
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{maths::Matrix,  system::{Assets, AssetType, Asset, TextAlign},
+///                      sprite::Sprite};
+///
+/// let my_sprite = Sprite::from_file("textures/open_gltf.jpeg", None, None)
+///                   .expect("open_gltf.jpeg should be able to create sprite");
+///
+/// for asset in Assets::all().filter(|s| !s.to_string().contains(" default/")) {
+///     if let Asset::Sprite(sprite) = asset {
+///         if !sprite.get_id().starts_with("sk/ui/") {
+///             assert_eq!(sprite, my_sprite);
+///         }
+///     }
+/// }
+///
+/// for asset in Assets::all_of_type(AssetType::Sprite) {
+///     if let Asset::Sprite(sprite) = asset {
+///         if !sprite.get_id().starts_with("sk/ui/") {
+///             assert_eq!(sprite, my_sprite);
+///         }
+///     } else {
+///         panic!("asset should be a sprite");
+///     }
+/// }
+///
+/// filename_scr = "screenshots/assets.jpeg"; fov_scr= 55.0;
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+///     my_sprite.draw(token, Matrix::IDENTITY, TextAlign::Center, None);
+/// );
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/assets.jpeg" alt="screenshot" width="200">
 pub struct Assets;
 
 pub type AssetT = *mut c_void;
@@ -108,6 +146,8 @@ unsafe extern "C" {
 }
 
 /// Non-canonical structure to store an asset and avoid reducer `Box<dyn Asset>`
+///
+/// see also [`AssetType`] [`Assets`]
 #[derive(Debug)]
 pub enum Asset {
     None,
@@ -143,13 +183,13 @@ impl fmt::Display for Asset {
     }
 }
 
-/// Iterator on assets
+/// Iterator on [`Assets`] producing some [`Asset`]
 ///
 /// see also [Assets::all][Assets::all_of_type]
 #[derive(Debug, Copy, Clone)]
 pub struct AssetIter {
     index: i32,
-    asset_type: AssetType,
+    pub asset_type: AssetType,
 }
 
 impl Iterator for AssetIter {
@@ -2349,7 +2389,6 @@ impl Log {
 ///     }
 /// }
 ///
-/// number_of_steps = 2000;
 /// filename_scr = "screenshots/microphone.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
 ///     sphere.draw(token, &material, transform, Some(named_colors::LIGHT_BLUE.into()), None  );

@@ -481,7 +481,6 @@ impl RenderList {
     ///     .add_mesh(&cylinder2, &cylinder_mat, Matrix::IDENTITY, named_colors::FUCHSIA,None)
     ///     .add_mesh(&screen,    &render_mat,   transform_screen, named_colors::GRAY, None);
     ///
-    /// number_of_steps = 999;
     /// filename_scr = "screenshots/render_list_draw_now.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     screen.draw(token, &render_mat, Matrix::IDENTITY, None, None);

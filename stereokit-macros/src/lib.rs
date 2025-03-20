@@ -208,6 +208,7 @@ pub fn test_init_sk(_input: TokenStream) -> TokenStream {
 pub fn test_screenshot(input: TokenStream) -> TokenStream {
     let input: proc_macro2::TokenStream = input.into();
     let expanded = quote! {
+        stereokit_rust::system::Assets::block_for_priority(i32::MAX);
         let mut iter = 0;
         #[cfg(feature = "no-event-loop")]
         {

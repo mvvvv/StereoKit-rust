@@ -179,6 +179,7 @@ pub mod sprite;
 /// ## Examples
 /// which are also unit tests:
 ///
+/// [![Assets](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/assets.jpeg)](system::Assets)
 /// [![Microphone](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/microphone.jpeg)](system::Microphone)
 pub mod system;
 

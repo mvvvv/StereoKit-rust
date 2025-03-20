@@ -66,7 +66,6 @@ pub enum SpriteType {
 ///
 /// let material = Material::pbr();
 ///
-/// let number_of_steps = 2000;
 /// filename_scr = "screenshots/sprite.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
 ///     sprite1.draw(token, transform1, TextAlign::Center, None);
@@ -225,7 +224,6 @@ impl Sprite {
     /// assert_eq!(sprite.get_normalized_dimensions().x, 1.0);
     /// assert_eq!(sprite.get_normalized_dimensions().y, 1.0);
     ///
-    /// number_of_steps = 2000;
     /// filename_scr = "screenshots/sprite_from_file.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     sprite.draw(token, Matrix::IDENTITY, TextAlign::XRight,  None);
