@@ -39,7 +39,7 @@ pub enum SpriteType {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{maths::{Vec3, Matrix}, sprite::{Sprite, SpriteType}, material::Material,
+/// use stereokit_rust::{maths::{Vec3, Matrix}, sprite::{Sprite, SpriteType},
 ///                      tex::Tex, util::{Gradient, Color128, named_colors}, system::TextAlign};
 /// let mut gradient = Gradient::new(None);
 /// gradient
@@ -59,12 +59,10 @@ pub enum SpriteType {
 /// let sprite4 = Sprite::from_tex(&tex_particule2, None, None)
 ///                   .expect("Should be able to create sprite");
 ///
-/// let transform1 = Matrix::t([-0.7, 0.4, 0.0]);
-/// let transform2 = Matrix::t([ 0.7, 0.4, 0.0]);
-/// let transform3 = Matrix::t([-0.7,-0.4, 0.0]);
-/// let transform4 = Matrix::t([ 0.7,-0.4, 0.0]);
-///
-/// let material = Material::pbr();
+/// let transform1 = Matrix::t([-0.7, 0.4, 0.0]) * Matrix::Y_180;
+/// let transform2 = Matrix::t([ 0.7, 0.4, 0.0]) * Matrix::Y_180;
+/// let transform3 = Matrix::t([-0.7,-0.4, 0.0]) * Matrix::Y_180;
+/// let transform4 = Matrix::t([ 0.7,-0.4, 0.0]) * Matrix::Y_180;
 ///
 /// filename_scr = "screenshots/sprite.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
@@ -173,10 +171,10 @@ impl Sprite {
     ///
     /// filename_scr = "screenshots/sprite_from_tex.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     sprite.draw(token, Matrix::IDENTITY, TextAlign::XRight,  None);
-    ///     sprite.draw(token, Matrix::IDENTITY, TextAlign::XLeft,   Some(named_colors::BLUE.into()));
-    ///     sprite.draw(token, Matrix::IDENTITY, TextAlign::YTop,    Some(named_colors::RED.into()));
-    ///     sprite.draw(token, Matrix::IDENTITY, TextAlign::YBottom, Some(named_colors::GREEN.into()));
+    ///     sprite.draw(token, Matrix::Y_180, TextAlign::XRight,  None);
+    ///     sprite.draw(token, Matrix::Y_180, TextAlign::XLeft,   Some(named_colors::BLUE.into()));
+    ///     sprite.draw(token, Matrix::Y_180, TextAlign::YTop,    Some(named_colors::RED.into()));
+    ///     sprite.draw(token, Matrix::Y_180, TextAlign::YBottom, Some(named_colors::GREEN.into()));
     /// );
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_from_tex.jpeg" alt="screenshot" width="200">
@@ -226,10 +224,10 @@ impl Sprite {
     ///
     /// filename_scr = "screenshots/sprite_from_file.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     sprite.draw(token, Matrix::IDENTITY, TextAlign::XRight,  None);
-    ///     sprite.draw(token, Matrix::IDENTITY, TextAlign::XLeft,   Some(named_colors::BLUE.into()));
-    ///     sprite.draw(token, Matrix::IDENTITY, TextAlign::YTop,    Some(named_colors::RED.into()));
-    ///     sprite.draw(token, Matrix::IDENTITY, TextAlign::YBottom, Some(named_colors::GREEN.into()));
+    ///     sprite.draw(token, Matrix::Y_180, TextAlign::XRight,  None);
+    ///     sprite.draw(token, Matrix::Y_180, TextAlign::XLeft,   Some(named_colors::BLUE.into()));
+    ///     sprite.draw(token, Matrix::Y_180, TextAlign::YTop,    Some(named_colors::RED.into()));
+    ///     sprite.draw(token, Matrix::Y_180, TextAlign::YBottom, Some(named_colors::GREEN.into()));
     /// );
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_from_file.jpeg" alt="screenshot" width="200">
@@ -367,10 +365,10 @@ impl Sprite {
     ///
     /// filename_scr = "screenshots/sprite_draw.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     sprite.draw(token, Matrix::IDENTITY, TextAlign::TopLeft,     None);
-    ///     sprite.draw(token, Matrix::IDENTITY, TextAlign::TopRight,    Some(named_colors::BLUE.into()));
-    ///     sprite.draw(token, Matrix::IDENTITY, TextAlign::BottomLeft,  Some(named_colors::RED.into()));
-    ///     sprite.draw(token, Matrix::IDENTITY, TextAlign::BottomRight, Some(named_colors::GREEN.into()));
+    ///     sprite.draw(token, Matrix::Y_180, TextAlign::TopLeft,     None);
+    ///     sprite.draw(token, Matrix::Y_180, TextAlign::TopRight,    Some(named_colors::BLUE.into()));
+    ///     sprite.draw(token, Matrix::Y_180, TextAlign::BottomLeft,  Some(named_colors::RED.into()));
+    ///     sprite.draw(token, Matrix::Y_180, TextAlign::BottomRight, Some(named_colors::GREEN.into()));
     /// );
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_draw.jpeg" alt="screenshot" width="200">
@@ -494,7 +492,7 @@ impl Sprite {
     /// width_scr = 48; height_scr = 48; fov_scr = 65.0;
     /// filename_scr = "screenshots/sprite_radio_on.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     sprite.draw(token, Matrix::IDENTITY, TextAlign::Center, None);
+    ///     sprite.draw(token, Matrix::Y_180, TextAlign::Center, None);
     /// );
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_radio_on.jpeg" alt="screenshot" width="48">
@@ -518,7 +516,7 @@ impl Sprite {
     /// width_scr = 48; height_scr = 48; fov_scr = 65.0;
     /// filename_scr = "screenshots/sprite_radio_off.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     sprite.draw(token, Matrix::IDENTITY, TextAlign::Center, None);
+    ///     sprite.draw(token, Matrix::Y_180, TextAlign::Center, None);
     /// );
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_radio_off.jpeg" alt="screenshot" width="48">
@@ -543,7 +541,7 @@ impl Sprite {
     /// width_scr = 48; height_scr = 48; fov_scr = 65.0;
     /// filename_scr = "screenshots/sprite_toggle_on.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     sprite.draw(token, Matrix::IDENTITY, TextAlign::Center, None);
+    ///     sprite.draw(token, Matrix::Y_180, TextAlign::Center, None);
     /// );
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_toggle_on.jpeg" alt="screenshot" width="48">
@@ -568,7 +566,7 @@ impl Sprite {
     /// width_scr = 48; height_scr = 48; fov_scr = 65.0;
     /// filename_scr = "screenshots/sprite_toggle_off.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     sprite.draw(token, Matrix::IDENTITY, TextAlign::Center, None);
+    ///     sprite.draw(token, Matrix::Y_180, TextAlign::Center, None);
     /// );
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_toggle_off.jpeg" alt="screenshot" width="48">
@@ -588,10 +586,10 @@ impl Sprite {
     /// let sprite = Sprite::arrow_left();
     /// assert_eq!(sprite.get_id(), "sk/ui/arrow_left");
     ///
-    /// width_scr = 48; height_scr = 48; fov_scr = 65.0; from_scr = Vec3::NEG_Z;
+    /// width_scr = 48; height_scr = 48; fov_scr = 65.0;
     /// filename_scr = "screenshots/sprite_arrow_left.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     sprite.draw(token, Matrix::IDENTITY, TextAlign::Center, None);
+    ///     sprite.draw(token, Matrix::Y_180, TextAlign::Center, None);
     /// );
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_arrow_left.jpeg" alt="screenshot" width="48">
@@ -611,10 +609,10 @@ impl Sprite {
     /// let sprite = Sprite::arrow_right();
     /// assert_eq!(sprite.get_id(), "sk/ui/arrow_right");
     ///
-    /// width_scr = 48; height_scr = 48; fov_scr = 65.0; from_scr = Vec3::NEG_Z;
+    /// width_scr = 48; height_scr = 48; fov_scr = 65.0;
     /// filename_scr = "screenshots/sprite_arrow_right.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     sprite.draw(token, Matrix::IDENTITY, TextAlign::Center, None);
+    ///     sprite.draw(token, Matrix::Y_180, TextAlign::Center, None);
     /// );
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_arrow_right.jpeg" alt="screenshot" width="48">
@@ -637,7 +635,7 @@ impl Sprite {
     /// width_scr = 48; height_scr = 48; fov_scr = 65.0;
     /// filename_scr = "screenshots/sprite_arrow_up.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     sprite.draw(token, Matrix::IDENTITY, TextAlign::Center, None);
+    ///     sprite.draw(token, Matrix::Y_180, TextAlign::Center, None);
     /// );
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_arrow_up.jpeg" alt="screenshot" width="48">
@@ -660,7 +658,7 @@ impl Sprite {
     /// width_scr = 48; height_scr = 48; fov_scr = 65.0;
     /// filename_scr = "screenshots/sprite_arrow_down.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     sprite.draw(token, Matrix::IDENTITY, TextAlign::Center, None);
+    ///     sprite.draw(token, Matrix::Y_180, TextAlign::Center, None);
     /// );
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_arrow_down.jpeg" alt="screenshot" width="48">
@@ -684,7 +682,7 @@ impl Sprite {
     /// width_scr = 48; height_scr = 48; fov_scr = 65.0;
     /// filename_scr = "screenshots/sprite_backspace.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     sprite.draw(token, Matrix::IDENTITY, TextAlign::Center, None);
+    ///     sprite.draw(token, Matrix::Y_180, TextAlign::Center, None);
     /// );
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_backspace.jpeg" alt="screenshot" width="48">
@@ -708,7 +706,7 @@ impl Sprite {
     /// width_scr = 48; height_scr = 48; fov_scr = 65.0;
     /// filename_scr = "screenshots/sprite_shift.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     sprite.draw(token, Matrix::IDENTITY, TextAlign::Center, None);
+    ///     sprite.draw(token, Matrix::Y_180, TextAlign::Center, None);
     /// );
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_shift.jpeg" alt="screenshot" width="48">
@@ -731,7 +729,7 @@ impl Sprite {
     /// width_scr = 48; height_scr = 48; fov_scr = 65.0;
     /// filename_scr = "screenshots/sprite_close.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     sprite.draw(token, Matrix::IDENTITY, TextAlign::Center, None);
+    ///     sprite.draw(token, Matrix::Y_180, TextAlign::Center, None);
     /// );
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_close.jpeg" alt="screenshot" width="48">
@@ -753,7 +751,7 @@ impl Sprite {
     /// width_scr = 48; height_scr = 48; fov_scr = 65.0;
     /// filename_scr = "screenshots/sprite_list.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     sprite.draw(token, Matrix::IDENTITY, TextAlign::Center, None);
+    ///     sprite.draw(token, Matrix::Y_180, TextAlign::Center, None);
     /// );
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_list.jpeg" alt="screenshot" width="48">
@@ -775,7 +773,7 @@ impl Sprite {
     /// width_scr = 48; height_scr = 48; fov_scr = 65.0;
     /// filename_scr = "screenshots/sprite_grid.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     sprite.draw(token, Matrix::IDENTITY, TextAlign::Center, None);
+    ///     sprite.draw(token, Matrix::Y_180, TextAlign::Center, None);
     /// );
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_grid.jpeg" alt="screenshot" width="48">

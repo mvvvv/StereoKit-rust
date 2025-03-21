@@ -1137,16 +1137,28 @@ impl Vec4 {
     pub const X: Vec4 = Vec4 { x: 1.0, y: 0.0, z: 0.0, w: 0.0 };
 
     /// A normalized Vector that points down the Y axis, this is the same as new Vec4(0,1,0,0).
-    /// <https://stereokit.net/Pages/StereoKit/Vec4/UnitX.html>    
+    /// <https://stereokit.net/Pages/StereoKit/Vec4/UnitY.html>    
     pub const Y: Vec4 = Vec4 { x: 0.0, y: 1.0, z: 0.0, w: 0.0 };
 
-    /// A normalized Vector that points down the 2 axis, this is the same as new Vec4(0,0,1,0).
-    /// <https://stereokit.net/Pages/StereoKit/Vec4/UnitX.html>    
+    /// A normalized Vector that points down the Z axis, this is the same as new Vec4(0,0,1,0).
+    /// <https://stereokit.net/Pages/StereoKit/Vec4/UnitZ.html>    
     pub const Z: Vec4 = Vec4 { x: 0.0, y: 0.0, z: 1.0, w: 0.0 };
 
     /// A normalized Vector that points down the W axis, this is the same as new Vec4(0,0,0,1).
     /// <https://stereokit.net/Pages/StereoKit/Vec4/UnitW.html>
     pub const W: Vec4 = Vec4 { x: 0.0, y: 0.0, z: 0.0, w: 1.0 };
+
+    /// A normalized Vector that points up the X axis, this is the same as new Vec4(1,0,0,0).
+    pub const NEG_X: Vec4 = Vec4 { x: -1.0, y: 0.0, z: 0.0, w: 0.0 };
+
+    /// A normalized Vector that points up the Y axis, this is the same as new Vec4(0,1,0,0).
+    pub const NEG_Y: Vec4 = Vec4 { x: 0.0, y: -1.0, z: 0.0, w: 0.0 };
+
+    /// A normalized Vector that points up the Z axis, this is the same as new Vec4(0,0,1,0).
+    pub const NEG_Z: Vec4 = Vec4 { x: 0.0, y: 0.0, z: -1.0, w: 0.0 };
+
+    /// A normalized Vector that points up the W axis, this is the same as new Vec4(0,0,0,1).
+    pub const NEG_W: Vec4 = Vec4 { x: 0.0, y: 0.0, z: 0.0, w: -1.0 };
 
     /// <https://stereokit.net/Pages/StereoKit/Vec4/Vec4.html>
     #[inline]
@@ -1906,6 +1918,9 @@ unsafe extern "C" {
 impl Matrix {
     /// Identity matrix made of [[Vec4::X, Vec4::Y, Vec4::Z, Vec4::W]]
     pub const IDENTITY: Matrix = Matrix { row: [Vec4::X, Vec4::Y, Vec4::Z, Vec4::W] };
+
+    /// Identity matrix rotated 90 degrees around the Y axis made of [[Vec4::NEG_X, Vec4::Y, Vec4::NEG_Z, Vec4::W]]
+    pub const Y_180: Matrix = Matrix { row: [Vec4::NEG_X, Vec4::Y, Vec4::NEG_Z, Vec4::W] };
 
     /// Null or Zero matrix made of [[Vec4::ZERO, Vec4::ZERO, Vec4::ZERO, Vec4::ZERO]]
     pub const NULL: Matrix = Matrix { row: [Vec4::ZERO, Vec4::ZERO, Vec4::ZERO, Vec4::ZERO] };
