@@ -121,7 +121,7 @@ pub enum AssetType {
 ///
 /// filename_scr = "screenshots/assets.jpeg"; fov_scr= 55.0;
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
-///     my_sprite.draw(token, Matrix::IDENTITY, TextAlign::Center, None);
+///     my_sprite.draw(token, Matrix::Y_180, TextAlign::Center, None);
 /// );
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/assets.jpeg" alt="screenshot" width="200">
@@ -185,7 +185,7 @@ impl fmt::Display for Asset {
 
 /// Iterator on [`Assets`] producing some [`Asset`]
 ///
-/// see also [Assets::all][Assets::all_of_type]
+/// see also [`Assets::all`] [`Assets::all_of_type`]
 #[derive(Debug, Copy, Clone)]
 pub struct AssetIter {
     index: i32,
@@ -271,12 +271,79 @@ impl Assets {
 
     /// This is an iterator upon all assets loaded by StereoKit at the current moment.
     /// <https://stereokit.net/Pages/StereoKit/Assets/All.html>
+    ///
+    /// see also [`AssetIter`] [`Asset`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Matrix,  system::{Assets, AssetType, Asset, TextAlign},
+    ///                      sprite::Sprite};
+    ///
+    /// let my_sprite = Sprite::from_file("textures/open_gltf.jpeg", None, None)
+    ///                   .expect("open_gltf.jpeg should be able to create sprite");
+    ///
+    /// let all = Assets::all();
+    ///
+    /// let mut sprite_count = 0    ; let mut texture_count = 0;
+    /// let mut model_count = 0     ; let mut sound_count = 0;
+    /// let mut material_count = 0  ; let mut shader_count = 0;
+    /// let mut font_count = 0      ; let mut other_count = 0;
+    /// let mut mesh_count = 0      ; let mut render_list_count = 0;
+    /// for asset in all {
+    ///     match asset {
+    ///         Asset::Sprite(sprite) => sprite_count += 1,
+    ///         Asset::Model(model) => model_count +=1,
+    ///         Asset::Sound(sound) => sound_count +=1,
+    ///         Asset::Tex(texture) => texture_count +=1,
+    ///         Asset::Material(material) => material_count +=1,
+    ///         Asset::Font(font) => font_count +=1,
+    ///         Asset::Mesh(mesh) => mesh_count +=1,
+    ///         Asset::Shader(shader) => shader_count +=1,
+    ///         Asset::RenderList(render_list) => render_list_count +=1,
+    ///     _  => other_count +=1,  
+    ///
+    ///     }
+    /// }
+    /// assert_eq!(sprite_count,    13 + 1 );
+    /// assert_eq!(texture_count,   23 + 1 );
+    /// assert_eq!(model_count,     2);
+    /// assert_eq!(sound_count,     5);
+    /// assert_eq!(material_count,  36 + 1 );
+    /// assert_eq!(shader_count,    15);
+    /// assert_eq!(font_count,      1);
+    /// assert_eq!(mesh_count,  26);
+    /// assert_eq!(render_list_count, 1);
+    /// assert_eq!(other_count, 0);
+    /// ```
     pub fn all() -> AssetIter {
         AssetIter::iterate(None)
     }
 
     /// This is an iterator upon all assets matching the specified type.
     /// <https://stereokit.net/Pages/StereoKit/Assets/Type.html>
+    /// * `asset_type` - Any [`IAsset`] type
+    ///
+    /// see also [`AssetIter`] [`Asset`] [`IAsset`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::{Assets, AssetType, Asset},
+    ///                      sprite::Sprite};
+    ///
+    /// let my_sprite = Sprite::from_file("textures/open_gltf.jpeg", None, None)
+    ///                   .expect("open_gltf.jpeg should be able to create sprite");
+    ///
+    /// let all = Assets::all_of_type(AssetType::Sprite);
+    ///
+    /// let mut sprite_count = 0;
+    /// for asset in all {
+    ///     match asset {
+    ///         Asset::Sprite(sprite) => sprite_count += 1,
+    ///         _ => panic!("asset should be a sprite"),
+    ///     }
+    /// }
+    /// assert_eq!(sprite_count, 13 + 1);
+    /// ```
     pub fn all_of_type(asset_type: AssetType) -> AssetIter {
         AssetIter::iterate(Some(asset_type))
     }
@@ -284,7 +351,21 @@ impl Assets {
     /// This is the index of the current asset loading task. Note that to load one asset, multiple tasks are generated.
     /// <https://stereokit.net/Pages/StereoKit/Assets/CurrentTask.html>
     ///
-    /// see also [`crate::system::assets_current_task``]
+    /// see also [`assets_current_task`] [`Assets::total_tasks`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::Assets, sprite::Sprite};
+    /// let my_sprite = Sprite::from_file("textures/open_gltf.jpeg", None, None)
+    ///                   .expect("open_gltf.jpeg should be able to create sprite");
+    ///
+    /// number_of_steps = 200;
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     let current_task = Assets::current_task();
+    ///     assert_eq!(current_task, 0);
+    ///     assert_eq!(Assets::total_tasks(), 1);
+    /// );
+    /// ```
     pub fn current_task() -> i32 {
         unsafe { assets_current_task() }
     }
@@ -293,7 +374,20 @@ impl Assets {
     /// to wait until all tasks within a certain priority range have been completed.
     /// <https://stereokit.net/Pages/StereoKit/Assets/CurrentTaskPriority.html>
     ///
-    /// see also [crate::system::assets_current_task_priority]
+    /// see also [`assets_current_task_priority`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::Assets, sprite::Sprite};
+    ///
+    /// let my_sprite = Sprite::from_file("textures/open_gltf.jpeg", None, None)
+    ///                   .expect("open_gltf.jpeg should be able to create sprite");
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     let current_task_priority  = Assets::current_task_priority();
+    ///     assert_eq!(current_task_priority, 10);
+    /// );
+    /// ```
     pub fn current_task_priority() -> i32 {
         unsafe { assets_current_task_priority() }
     }
@@ -302,7 +396,23 @@ impl Assets {
     /// pending tasks. Note that to load one asset, multiple tasks are generated.
     /// <https://stereokit.net/Pages/StereoKit/Assets/TotalTasks.html>
     ///
-    /// see also [crate::system::assets_total_tasks]
+    /// see also [`assets_total_tasks`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::Assets, sprite::Sprite};
+    ///
+    /// let my_sprite1 = Sprite::from_file("textures/open_gltf.jpeg", None, None)
+    ///                   .expect("open_gltf.jpeg should be able to create sprite");
+    ///
+    /// let my_sprite2 = Sprite::from_file("textures/log_viewer.jpeg", None, None)
+    ///                   .expect("log_viewer.jpeg should be able to create sprite");
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     let total_tasks  = Assets::total_tasks();
+    ///     assert_eq!(total_tasks, 2);
+    /// );
+    /// ```
     pub fn total_tasks() -> i32 {
         unsafe { assets_total_tasks() }
     }
@@ -311,7 +421,28 @@ impl Assets {
     /// loading. To block until all assets are loaded, pass in i32::MAX for the priority.
     /// <https://stereokit.net/Pages/StereoKit/Assets/BlockForPriority.html>
     ///
-    /// see also [crate::system::assets_block_for_priority]
+    /// see also [`assets_block_for_priority`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix},  system::{Assets, AssetState}, tex::Tex,
+    ///                      material::Material, mesh::Mesh, model::Model, util::named_colors};
+    ///
+    /// // The model is loaded asynchronously, so we need to wait for it to be loaded before we can screenshot it.
+    /// let model = Model::from_file("cuve.glb", None)
+    ///                 .expect("mobiles.gltf should be a valid model");
+    /// let transform = Matrix::trs(&([0.15, -0.75, -1.0].into()),
+    ///                             &([0.0, 110.0, 0.0].into()),
+    ///                             &(Vec3::ONE * 0.40));
+    ///
+    /// Assets::block_for_priority(i32::MAX);
+    ///
+    /// filename_scr = "screenshots/assets_block_for_priority.jpeg";
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     model.draw(token, transform, Some(named_colors::MISTY_ROSE.into()), None);
+    /// );
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/assets_block_for_priority.jpeg" alt="screenshot" width="200">
     pub fn block_for_priority(priority: i32) {
         unsafe { assets_block_for_priority(priority) }
     }
@@ -319,6 +450,8 @@ impl Assets {
 
 /// This describes what technology is being used to power StereoKit’s XR backend.
 /// <https://stereokit.net/Pages/StereoKit/BackendXRType.html>
+///
+/// see also [`Backend::xr_type`]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
 pub enum BackendXRType {
@@ -337,6 +470,8 @@ pub enum BackendXRType {
 
 /// This describes the platform that StereoKit is running on.
 /// <https://stereokit.net/Pages/StereoKit/BackendPlatform.html>
+///
+/// see also [`Backend::platform`]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
 pub enum BackendPlatform {
@@ -354,6 +489,8 @@ pub enum BackendPlatform {
 
 /// This describes the graphics API thatStereoKit is using for rendering.
 /// <https://stereokit.net/Pages/StereoKit/BackendGraphics.html>
+///
+/// see also [`Backend::graphics`]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
 pub enum BackendGraphics {
@@ -374,6 +511,7 @@ pub enum BackendGraphics {
     WebGL = 5,
 }
 
+/// XrInstance type
 pub type OpenXRHandleT = u64;
 
 /// This class exposes some of StereoKit’s backend functionality. This allows for tighter integration with certain
@@ -381,8 +519,30 @@ pub type OpenXRHandleT = u64;
 /// availability checks.
 ///  
 /// <https://stereokit.net/Pages/StereoKit/Backend.html>
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::system::{Backend, BackendGraphics, BackendPlatform, BackendXRType, BackendOpenXR};
+///
+/// let graphics = Backend::graphics();
+/// let platform = Backend::platform();
+/// let xr_type = Backend::xr_type();
+///
+/// if cfg!(target_os = "windows") {
+///     assert_eq!(graphics, BackendGraphics::D3D11);
+///     assert_eq!(platform, BackendPlatform::Win32);
+/// } else {
+///     assert_eq!(graphics, BackendGraphics::OpenGLESEGL);
+///     assert_eq!(platform, BackendPlatform::Linux);
+/// }
+/// assert_eq!(xr_type, BackendXRType::None);
+///
+/// assert_eq!(BackendOpenXR::eyes_sample_time(), 0);
+/// ```
 pub struct Backend;
+
 pub type VoidFunction = unsafe extern "system" fn();
+
 unsafe extern "C" {
     pub fn backend_xr_get_type() -> BackendXRType;
     pub fn backend_openxr_get_instance() -> OpenXRHandleT;
@@ -439,7 +599,19 @@ impl Backend {
     /// and a flavor of OpenGL for Linux, Android, and Web.
     /// <https://stereokit.net/Pages/StereoKit/Backend/Graphics.html>
     ///
-    /// see also [crate::system::backend_graphics_get]
+    /// see also [`backend_graphics_get`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::{Backend, BackendGraphics};
+    ///
+    /// let graphics = Backend::graphics();
+    /// if cfg!(target_os = "windows") {
+    ///     assert_eq!(graphics, BackendGraphics::D3D11);
+    /// } else {
+    ///     assert_eq!(graphics, BackendGraphics::OpenGLESEGL);
+    /// }
+    /// ```
     pub fn graphics() -> BackendGraphics {
         unsafe { backend_graphics_get() }
     }
@@ -448,7 +620,19 @@ impl Backend {
     /// available to the app.
     /// <https://stereokit.net/Pages/StereoKit/Backend/Platform.html>
     ///
-    /// see also [crate::system::backend_platform_get]
+    /// see also [`backend_platform_get`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::{Backend, BackendPlatform};
+    ///
+    /// let platform = Backend::platform();
+    /// if cfg!(target_os = "windows") {
+    ///     assert_eq!(platform, BackendPlatform::Win32);
+    /// } else {
+    ///     assert_eq!(platform, BackendPlatform::Linux);
+    /// }
+    /// ```
     pub fn platform() -> BackendPlatform {
         unsafe { backend_platform_get() }
     }
@@ -457,7 +641,15 @@ impl Backend {
     /// but if you’re running the flatscreen Simulator, or running in the web with WebXR, then this will reflect that.
     /// <https://stereokit.net/Pages/StereoKit/Backend/XRType.html>
     ///
-    /// see also [crate::system::backend_xr_get_type]
+    /// see also [`backend_xr_get_type`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::{Backend, BackendXRType};
+    ///
+    /// let xr_type = Backend::xr_type();
+    /// assert_eq!(xr_type, BackendXRType::None);
+    /// ```
     pub fn xr_type() -> BackendXRType {
         unsafe { backend_xr_get_type() }
     }
@@ -474,13 +666,71 @@ impl Backend {
 /// These properties may best be used with some external OpenXR binding library, but you may get some limited mileage
 /// with the API as provided here.
 /// <https://stereokit.net/Pages/StereoKit/Backend.OpenXR.html>
+///
+/// see implementations in [`crate::tools::passthrough_fb_ext`] [`crate::tools::os_api`]
+/// ### Examples
+/// ```
+/// use stereokit_rust::system::{Backend, BackendOpenXR, BackendXRType};
+///
+/// // This must be set before initializing StereoKit.
+/// BackendOpenXR::use_minimum_exts(false);
+/// BackendOpenXR::exclude_ext("XR_EXT_hand_tracking");
+/// BackendOpenXR::request_ext("XR_EXT_hand_tracking");
+///
+/// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+///
+///
+/// // These are result when not running in an OpenXR environment:
+/// assert_eq!( Backend::xr_type(), BackendXRType::None);
+/// assert_ne!( Backend::xr_type(), BackendXRType::OpenXR);
+///
+/// let eyes_sample_time = BackendOpenXR::eyes_sample_time();
+/// assert_eq!(eyes_sample_time, 0);
+///
+/// let instance = BackendOpenXR::instance();
+/// assert_eq!(instance, 0);
+///
+/// let session = BackendOpenXR::session();
+/// assert_eq!(session, 0);
+///
+/// let space = BackendOpenXR::space();
+/// assert_eq!(space, 0);
+///
+/// let system_id = BackendOpenXR::system_id();
+/// assert_eq!(system_id, 0);
+///
+/// let time = BackendOpenXR::time();
+/// assert_eq!(time, 0);
+///
+/// let ext_enabled = BackendOpenXR::ext_enabled("XR_EXT_hand_tracking");
+/// assert_eq!(ext_enabled, false);
+///
+/// let get_function_ptr = BackendOpenXR::get_function_ptr("xrGetHandTrackerEXT");
+/// assert_eq!(get_function_ptr, None);
+///
+/// let get_function = BackendOpenXR::get_function::<unsafe extern "C" fn()>("xrGetHandTrackerEXT");
+/// assert_eq!(get_function, None);
+///
+/// BackendOpenXR::set_hand_joint_scale(1.0);
+///
+/// // using openxrs crate:
+/// // let mut xr_composition_layer_x = XrCompositionLayerProjection{
+/// //     ty: XrStructureType::XR_TYPE_COMPOSITION_LAYER_PROJECTION,
+/// //     next: std::ptr::null(),
+/// //     layer_flags: XrCompositionLayerFlags::empty(),
+/// //     space: 0,
+/// //     view_count: 0,
+/// //     views: [XrCompositionLayerProjectionView::default(); 0],
+/// // };
+/// // BackendOpenXR::add_composition_layer(&mut xr_composition_layer_x, 0);
+/// ```
 pub struct BackendOpenXR;
 
 impl BackendOpenXR {
-    /// Type: XrTime. This is the OpenXR time of the eye tracker sample associated with the current value of .
+    /// Type: XrTime. This is the OpenXR time of the eye tracker sample associated with the current value of.
     /// <https://stereokit.net/Pages/StereoKit/Backend.OpenXR/EyesSampleTime.html>
     ///
-    /// see also [crate::system::backend_openxr_get_eyes_sample_time]
+    /// see also [`backend_openxr_get_eyes_sample_time`]
     pub fn eyes_sample_time() -> i64 {
         unsafe { backend_openxr_get_eyes_sample_time() }
     }
@@ -488,7 +738,7 @@ impl BackendOpenXR {
     /// Type: XrInstance. StereoKit’s instance handle, valid after Sk.initialize.
     /// <https://stereokit.net/Pages/StereoKit/Backend.OpenXR/Instance.html>
     ///
-    /// see also [crate::system::backend_openxr_get_instance]
+    /// see also [`backend_openxr_get_instance`]
     pub fn instance() -> OpenXRHandleT {
         unsafe { backend_openxr_get_instance() }
     }
@@ -497,7 +747,7 @@ impl BackendOpenXR {
     /// not be started quite so early.
     /// <https://stereokit.net/Pages/StereoKit/Backend.OpenXR/Session.html>
     ///
-    /// see also [crate::system::backend_openxr_get_session]
+    /// see also [`backend_openxr_get_session`]
     pub fn session() -> OpenXRHandleT {
         unsafe { backend_openxr_get_session() }
     }
@@ -506,7 +756,7 @@ impl BackendOpenXR {
     /// from XR_REFERENCE_SPACE_TYPE_UNBOUNDED_MSFT or XR_REFERENCE_SPACE_TYPE_LOCAL.
     /// <https://stereokit.net/Pages/StereoKit/Backend.OpenXR/Space.html>
     ///
-    /// see also [crate::system::backend_openxr_get_space]
+    /// see also [`backend_openxr_get_space`]
     pub fn space() -> OpenXRHandleT {
         unsafe { backend_openxr_get_space() }
     }
@@ -515,7 +765,7 @@ impl BackendOpenXR {
     /// xrGetSystem with XR_FORM_FACTOR_HEAD_MOUNTED_DISPLAY.
     /// <https://stereokit.net/Pages/StereoKit/Backend.OpenXR/SystemId.html>
     ///
-    /// see also [crate::system::backend_openxr_get_system_id]
+    /// see also [`backend_openxr_get_system_id`]
     pub fn system_id() -> OpenXRHandleT {
         unsafe { backend_openxr_get_system_id() }
     }
@@ -523,7 +773,7 @@ impl BackendOpenXR {
     /// Type: XrTime. This is the OpenXR time for the current frame, and is available after Sk.initialize.
     /// <https://stereokit.net/Pages/StereoKit/Backend.OpenXR/Time.html>
     ///
-    /// see also [crate::system::backend_openxr_get_time]
+    /// see also [`backend_openxr_get_time`]
     pub fn time() -> i64 {
         unsafe { backend_openxr_get_time() }
     }
@@ -533,7 +783,7 @@ impl BackendOpenXR {
     /// request automatically.
     /// <https://stereokit.net/Pages/StereoKit/Backend.OpenXR/UseMinimumExts.html>
     ///
-    /// see also [crate::system::backend_openxr_use_minimum_exts]
+    /// see also [`backend_openxr_use_minimum_exts`]
     pub fn use_minimum_exts(value: bool) {
         unsafe { backend_openxr_use_minimum_exts(value as Bool32T) }
     }
@@ -541,8 +791,12 @@ impl BackendOpenXR {
     /// This allows you to add XrCompositionLayers to the list that StereoKit submits to xrEndFrame. You must call this
     /// every frame you wish the layer to be included.
     /// <https://stereokit.net/Pages/StereoKit/Backend.OpenXR/AddCompositionLayer.html>
+    /// * `xr_composition_layer_x` - A serializable XrCompositionLayer struct that follows the
+    ///   XrCompositionLayerBaseHeader data pattern.
+    /// * `sort_order` - An sort order value for sorting with other composition layers in the list. The primary
+    ///   projection layer that StereoKit renders to is at 0, -1 would be before it, and +1 would be after.
     ///
-    /// see also [crate::system::backend_openxr_composition_layer]
+    /// see also [`backend_openxr_composition_layer`]
     pub fn add_composition_layer<T>(xr_composition_layer_x: &mut T, sort_order: i32) {
         let size = size_of::<T>();
         let ptr = xr_composition_layer_x as *mut _ as *mut c_void;
@@ -551,8 +805,9 @@ impl BackendOpenXR {
 
     /// This adds an item to the chain of objects submitted to StereoKit’s xrEndFrame call!
     /// <https://stereokit.net/Pages/StereoKit/Backend.OpenXR/AddEndFrameChain.html>
+    /// * `xr_base_header` - An OpenXR object that will be chained into the xrEndFrame call.
     ///
-    /// see also [crate::system::backend_openxr_end_frame_chain]
+    /// see also [`backend_openxr_end_frame_chain`]
     pub fn add_end_frame_chain<T>(xr_base_header: &mut T) {
         let size = size_of::<T>();
         let ptr = xr_base_header as *mut _ as *mut c_void;
@@ -563,8 +818,9 @@ impl BackendOpenXR {
     /// not available on the device. It will also be excluded even if you explicitly requested it with RequestExt
     /// earlier, or afterwards. This MUST be called before SK.Initialize.
     /// <https://stereokit.net/Pages/StereoKit/Backend.OpenXR/ExcludeExt.html>
+    /// * `extension_name` - The extension name as listed in the OpenXR spec. For example: “XR_EXT_hand_tracking”.
     ///
-    /// see also [crate::system::backend_openxr_ext_exclude]
+    /// see also [`backend_openxr_ext_exclude`]
     pub fn exclude_ext(extension_name: impl AsRef<str>) {
         let c_str = CString::new(extension_name.as_ref()).unwrap();
         unsafe { backend_openxr_ext_exclude(c_str.as_ptr()) }
@@ -574,8 +830,9 @@ impl BackendOpenXR {
     /// entirely possible that your extension will not load on certain runtimes, so be sure to check ExtEnabled to see
     /// if it’s available to use.
     /// <https://stereokit.net/Pages/StereoKit/Backend.OpenXR/RequestExt.html>
+    /// * `extension_name` - The extension name as listed in the OpenXR spec. For example: “XR_EXT_hand_tracking”.
     ///
-    /// see also [crate::system::backend_openxr_ext_request]
+    /// see also [`backend_openxr_ext_request`]
     pub fn request_ext(extension_name: impl AsRef<str>) {
         let c_str = CString::new(extension_name.as_ref()).unwrap();
         unsafe { backend_openxr_ext_request(c_str.as_ptr()) }
@@ -584,8 +841,9 @@ impl BackendOpenXR {
     /// This tells if an OpenXR extension has been requested and successfully loaded by the runtime. This MUST only be
     /// called after SK.Initialize.
     /// <https://stereokit.net/Pages/StereoKit/Backend.OpenXR/ExtEnabled.html>
+    /// * `extension_name` - The extension name as listed in the OpenXR spec. For example: “XR_EXT_hand_tracking”.
     ///
-    /// see also [crate::system::backend_openxr_ext_enabled]
+    /// see also [`backend_openxr_ext_enabled`]
     pub fn ext_enabled(extension_name: impl AsRef<str>) -> bool {
         if Backend::xr_type() == BackendXRType::OpenXR {
             let c_str = CString::new(extension_name.as_ref()).unwrap();
@@ -598,8 +856,9 @@ impl BackendOpenXR {
     /// This is basically xrGetInstanceProcAddr from OpenXR, you can use this to get and call functions from an
     /// extension you’ve loaded.
     /// <https://stereokit.net/Pages/StereoKit/Backend.OpenXR/GetFunctionPtr.html>
+    /// * `function_name` - The name of the function to get the pointer for.
     ///
-    /// see also [crate::system::backend_openxr_get_function]
+    /// see also [`backend_openxr_get_function`]
     pub fn get_function_ptr(function_name: impl AsRef<str>) -> Option<VoidFunction> {
         let c_str = CString::new(function_name.as_ref()).unwrap();
         unsafe { backend_openxr_get_function(c_str.as_ptr()) }
@@ -608,8 +867,9 @@ impl BackendOpenXR {
     /// This is basically xrGetInstanceProcAddr from OpenXR, you can use this to get and call functions from an
     /// extension you’ve loaded.
     /// <https://stereokit.net/Pages/StereoKit/Backend.OpenXR/GetFunctionPtr.html>
+    /// * `function_name` - The name of the function to get the pointer for.
     ///
-    /// see also [crate::system::backend_openxr_get_function]
+    /// see also [`backend_openxr_get_function`]
     pub fn get_function<T>(function_name: impl AsRef<str>) -> Option<T> {
         let c_str = CString::new(function_name.as_ref()).unwrap();
         let function = unsafe { backend_openxr_get_function(c_str.as_ptr()) };
@@ -619,8 +879,10 @@ impl BackendOpenXR {
     /// This sets a scaling value for joints provided by the articulated hand extension. Some systems just don’t seem to
     /// get their joint sizes right!
     /// <https://stereokit.net/Pages/StereoKit/Backend.OpenXR/SetHandJointScale.html>
+    /// * `joint_scale_factor` - 1 being the default value, 2 being twice as large as normal, and 0.5 being half as big
+    ///   as normal.
     ///
-    /// see also [crate::system::backend_openxr_set_hand_joint_scale]
+    /// see also [`backend_openxr_set_hand_joint_scale`]
     pub fn set_hand_joint_scale(joint_scale_factor: f32) {
         unsafe { backend_openxr_set_hand_joint_scale(joint_scale_factor) }
     }
@@ -628,7 +890,26 @@ impl BackendOpenXR {
 
 /// This class contains variables that may be useful for interop with the Android operating system, or other Android
 /// libraries.
+///
+/// see also `SkInfo::get_android_app`
 /// <https://stereokit.net/Pages/StereoKit/Backend.Android.html>
+///
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::system::BackendAndroid;
+///
+/// // These are results for a non Android environment:
+///
+/// let activity = BackendAndroid::activity();
+/// assert_eq!(activity, std::ptr::null_mut());
+///
+/// let java_vm = BackendAndroid::java_vm();
+/// assert_eq!(java_vm, std::ptr::null_mut());
+///
+/// let jni_environment = BackendAndroid::jni_environment();
+/// assert_eq!(jni_environment, std::ptr::null_mut());
+/// ```
 pub struct BackendAndroid;
 
 impl BackendAndroid {
@@ -636,7 +917,7 @@ impl BackendAndroid {
     /// systems.
     /// <https://stereokit.net/Pages/StereoKit/Backend.Android/Activity.html>
     ///
-    /// see also [crate::system::backend_android_get_activity]
+    /// see also [`backend_android_get_activity`]
     pub fn activity() -> *mut c_void {
         unsafe { backend_android_get_activity() }
     }
@@ -645,7 +926,7 @@ impl BackendAndroid {
     /// systems.
     /// <https://stereokit.net/Pages/StereoKit/Backend.Android/JavaVM.html>
     ///
-    /// see also [crate::system::backend_android_get_java_vm]
+    /// see also [`backend_android_get_java_vm`]
     pub fn java_vm() -> *mut c_void {
         unsafe { backend_android_get_java_vm() }
     }
@@ -654,7 +935,7 @@ impl BackendAndroid {
     /// systems.
     /// <https://stereokit.net/Pages/StereoKit/Backend.Android/JNIEnvironment.html>
     ///
-    /// see also [crate::system::backend_android_get_jni_env]
+    /// see also [`backend_android_get_jni_env`]
     pub fn jni_environment() -> *mut c_void {
         unsafe { backend_android_get_jni_env() }
     }
@@ -663,13 +944,31 @@ impl BackendAndroid {
 /// When using Direct3D11 for rendering, this contains a number of variables that may be useful for doing advanced
 /// rendering tasks. This is the default rendering backend on Windows.
 /// <https://stereokit.net/Pages/StereoKit/Backend.D3D11.html>
+///
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::system::BackendD3D11;
+/// let d3d_context = BackendD3D11::d3d_context();
+/// let d3d_device = BackendD3D11::d3d_device();
+///
+/// if cfg!(target_os = "windows") {
+///     // These are results for a D3D11 environment:
+///     assert_ne!(d3d_context, std::ptr::null_mut());
+///     assert_ne!(d3d_device, std::ptr::null_mut());
+/// } else {
+///     // These are results for a non D3D11 environment:
+///     assert_eq!(d3d_context, std::ptr::null_mut());
+///     assert_eq!(d3d_device, std::ptr::null_mut());
+/// }
+/// ```
 pub struct BackendD3D11;
 
 impl BackendD3D11 {
     /// This is the main ID3D11DeviceContext* StereoKit uses for rendering.
     /// <https://stereokit.net/Pages/StereoKit/Backend.D3D11/D3DContext.html>
     ///
-    /// see also [crate::system::backend_d3d11_get_d3d_context]
+    /// see also [`backend_d3d11_get_d3d_context`]
     pub fn d3d_context() -> *mut c_void {
         unsafe { backend_d3d11_get_d3d_context() }
     }
@@ -677,7 +976,7 @@ impl BackendD3D11 {
     /// This is the main ID3D11Device* StereoKit uses for rendering.
     /// <https://stereokit.net/Pages/StereoKit/Backend.D3D11/D3DDevice.html>
     ///
-    /// see also [crate::system::backend_d3d11_get_d3d_device]
+    /// see also [`backend_d3d11_get_d3d_device`]
     pub fn d3d_device() -> *mut c_void {
         unsafe { backend_d3d11_get_d3d_device() }
     }
@@ -687,13 +986,25 @@ impl BackendD3D11 {
 /// doing advanced rendering tasks. This is Windows only, and requires gloabally defining SKG_FORCE_OPENGL when building
 /// the core StereoKitC library.
 /// <https://stereokit.net/Pages/StereoKit/Backend.OpenGL_WGL.html>
+///
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::system::BackendOpenGLWGL;
+/// let hdc = BackendOpenGLWGL::hdc();
+/// let hglrc = BackendOpenGLWGL::hglrc();
+///
+/// // These are results for a non OpenGLWGL environment:
+/// assert_eq!(hdc, std::ptr::null_mut());
+/// assert_eq!(hglrc, std::ptr::null_mut());
+/// ```
 pub struct BackendOpenGLWGL;
 
 impl BackendOpenGLWGL {
     /// This is the Handle to Device Context HDC StereoKit uses with wglMakeCurrent.
     /// <https://stereokit.net/Pages/StereoKit/Backend.OpenGL_WGL/HDC.html>
     ///
-    /// see also [crate::system::backend_opengl_wgl_get_hdc]
+    /// see also [`backend_opengl_wgl_get_hdc`]
     pub fn hdc() -> *mut c_void {
         unsafe { backend_opengl_wgl_get_hdc() }
     }
@@ -701,7 +1012,7 @@ impl BackendOpenGLWGL {
     /// This is the Handle to an OpenGL Rendering Context HGLRC StereoKit uses with wglMakeCurrent.
     /// <https://stereokit.net/Pages/StereoKit/Backend.OpenGL_WGL/HGLRC.html>
     ///
-    /// see also [crate::system::backend_opengl_wgl_get_hglrc]
+    /// see also [`backend_opengl_wgl_get_hglrc`]
     pub fn hglrc() -> *mut c_void {
         unsafe { backend_opengl_wgl_get_hglrc() }
     }
@@ -711,13 +1022,29 @@ impl BackendOpenGLWGL {
 /// doing advanced rendering tasks. This is the default rendering backend for Android, and Linux builds can be
 /// configured to use this with the SK_LINUX_EGL cmake option when building the core StereoKitC library.
 /// <https://stereokit.net/Pages/StereoKit/Backend.OpenGLES_EGL.html>
+///
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::system::BackendOpenGLESEGL;
+///
+/// if cfg!(target_os = "linux") {
+///     // These are results for a OpenGLESEGL environment:
+///
+///     let context = BackendOpenGLESEGL::context();
+///     assert_ne!(context, std::ptr::null_mut());
+///
+///     let display = BackendOpenGLESEGL::display();
+///     assert_ne!(display, std::ptr::null_mut());
+/// }
+/// ```
 pub struct BackendOpenGLESEGL;
 
 impl BackendOpenGLESEGL {
     /// This is the EGLContext StereoKit receives from eglCreateContext.
     /// <https://stereokit.net/Pages/StereoKit/Backend.OpenGLES_EGL/Context.html>
     ///
-    /// see also [crate::system::backend_opengl_egl_get_context]
+    /// see also [`backend_opengl_egl_get_context`]
     pub fn context() -> *mut c_void {
         unsafe { backend_opengl_egl_get_context() }
     }
@@ -725,7 +1052,7 @@ impl BackendOpenGLESEGL {
     /// This is the EGLDisplay StereoKit receives from eglGetDisplay
     /// <https://stereokit.net/Pages/StereoKit/Backend.OpenGLES_EGL/Display.html>
     ///
-    /// see also [crate::system::backend_opengl_egl_get_display]
+    /// see also [`backend_opengl_egl_get_display`]
     pub fn display() -> *mut c_void {
         unsafe { backend_opengl_egl_get_display() }
     }
@@ -735,6 +1062,8 @@ impl BackendOpenGLESEGL {
 /// stack, this can be used to change the behavior of how parent hierarchy items
 /// will affect the item being added to the top of the stack.
 /// <https://stereokit.net/Pages/StereoKit/HierarchyParent.html>
+///
+/// see also [`Hierarchy`]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
 pub enum HierarchyParent {
@@ -756,6 +1085,42 @@ pub enum HierarchyParent {
 /// reasons, you’ll want to ensure there are no matrices in the hierarchy stack, or that the hierarchy is disabled!
 /// It’ll save you a matrix multiplication in that case :)
 /// <https://stereokit.net/Pages/StereoKit/Hierarchy.html>
+///
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{maths::Matrix, system::{Hierarchy, HierarchyParent}, mesh::Mesh,
+///                      material::Material, util::named_colors};
+///
+/// let sphere = Mesh::generate_sphere(0.2, None);
+/// let material = Material::pbr();
+/// let transform = Matrix::t([0.4, 0.4, 0.4]);
+///
+/// filename_scr = "screenshots/hierarchy.jpeg";
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+///     sphere.draw(token, &material, transform, None, None);
+///
+///     assert!(Hierarchy::is_enabled(&token));
+///
+///     Hierarchy::push(token, Matrix::t([0.0, -0.5, -0.5]), None);
+///     sphere.draw(token, &material, transform, Some(named_colors::RED.into()), None);
+///     assert_eq!(Hierarchy::to_local_point(&token, [0.4, 0.4, 0.4]), [0.4, 0.9, 0.9].into());
+///     assert_eq!(Hierarchy::to_world_point(&token, [0.4, 0.9, 0.9]), [0.4, 0.4, 0.4].into());
+///     Hierarchy::pop(token);
+///
+///     Hierarchy::push(token, Matrix::t([-0.5, -0.5, 0.25]), Some(HierarchyParent::Ignore));
+///     sphere.draw(token, &material, transform, Some(named_colors::GREEN.into()), None);
+///     assert_eq!(Hierarchy::to_local_point(&token, [0.4, 0.4, 0.4]), [0.9, 0.9, 0.15].into());
+///     assert_eq!(Hierarchy::to_world_point(&token, [0.9, 0.9, 0.15]), [0.4, 0.4, 0.4].into());
+///
+///     Hierarchy::enabled(token, false);
+///     sphere.draw(token, &material, Matrix::IDENTITY, Some(named_colors::BLUE.into()), None);
+///     assert_eq!(Hierarchy::to_local_point(&token, [0.4, 0.4, 0.4]), [0.4, 0.4, 0.4].into());
+///     Hierarchy::enabled(token, true);
+///     Hierarchy::pop(&token);
+/// );
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/hierarchy.jpeg" alt="screenshot" width="200">
 pub struct Hierarchy;
 
 unsafe extern "C" {
@@ -782,7 +1147,7 @@ impl Hierarchy {
     /// Hierarchy stack.
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/Enabled.html>
     ///
-    /// see also [crate::system::hierarchy_set_enabled]
+    /// see also [`hierarchy_set_enabled`] [`Hierarchy::is_enabled`]
     pub fn enabled(_token: &MainThreadToken, enable: bool) {
         unsafe { hierarchy_set_enabled(enable as Bool32T) }
     }
@@ -791,7 +1156,7 @@ impl Hierarchy {
     /// Hierarchy stack.
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/Enabled.html>
     ///
-    /// see also [crate::system::hierarchy_is_enabled]
+    /// see also [hierarchy_is_enabled] [`Hierarchy::enabled`]
     pub fn is_enabled(_token: &MainThreadToken) -> bool {
         unsafe { hierarchy_is_enabled() != 0 }
     }
@@ -799,7 +1164,7 @@ impl Hierarchy {
     /// Removes the top Matrix from the stack!
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/Pop.html>
     ///
-    /// see also [crate::system::hierarchy_pop]
+    /// see also [`hierarchy_pop`] [`Hierarchy::push`]
     pub fn pop(_token: &MainThreadToken) {
         unsafe { hierarchy_pop() }
     }
@@ -808,12 +1173,12 @@ impl Hierarchy {
     /// will now be combined with this Matrix to make it relative to the current hierarchy. Use Hierarchy.pop to remove
     /// it from the Hierarchy stack! All Push calls must have an accompanying Pop call.
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/Push.html>
-    /// * parent_behavior - This determines how this matrix combines with the parent matrix below it. Normal behavior
+    /// * `parent_behavior` - This determines how this matrix combines with the parent matrix below it. Normal behavior
     ///   is to "inherit" the parent matrix, but there are cases where you may wish to entirely ignore the parent
     ///   transform. For example, if you're in UI space, and wish to do some world space rendering. If None, has default
     ///   value "Inherit"
     ///
-    /// see also [crate::system::hierarchy_push]
+    /// see also [`hierarchy_push`] [`Hierarchy::pop`]
     pub fn push<M: Into<Matrix>>(_token: &MainThreadToken, transform: M, parent_behavior: Option<HierarchyParent>) {
         let parent_behavior = parent_behavior.unwrap_or(HierarchyParent::Inherit);
         unsafe { hierarchy_push(&transform.into(), parent_behavior) }
@@ -821,44 +1186,121 @@ impl Hierarchy {
 
     /// Converts a world space point into the local space of the current Hierarchy stack!
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/ToLocal.html>
-    /// * world_point - A point in world space.
+    /// * `world_point` - A point in world space.
     ///
     /// Returns the provided point now in local hierarchy space
+    /// see also [`hierarchy_to_local_point`] [`Hierarchy::to_world_point`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Matrix, system::{Hierarchy, HierarchyParent}};
     ///
-    /// see also [crate::system::hierarchy_to_local_point]
+    /// test_steps! { // !!!! Get a proper main loop !!!!
+    ///     Hierarchy::push(token, Matrix::t([0.0, -0.5, -0.5]), None);
+    ///     assert_eq!(Hierarchy::to_local_point(token, [0.4, 0.4, 0.4]), [0.4, 0.9, 0.9].into());
+    ///     assert_eq!(Hierarchy::to_world_point(token, [0.4, 0.9, 0.9]), [0.4, 0.4, 0.4].into());
+    ///     Hierarchy::pop(token);
+    /// }
+    /// ```
     pub fn to_local_point<V: Into<Vec3>>(_token: &MainThreadToken, world_point: V) -> Vec3 {
         unsafe { hierarchy_to_local_point(&world_point.into()) }
     }
 
     /// Converts a world space rotation into the local space of the current Hierarchy stack!
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/ToLocal.html>
-    /// * world_orientation - A rotation in world space
+    /// * `world_orientation` - A rotation in world space
     ///
     /// Returns the provided rotation now in local hierarchy space
+    /// see also [`hierarchy_to_local_rotation`] [`Hierarchy::to_world_rotation`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Matrix, Quat, Vec3}, system::{Hierarchy, HierarchyParent}};
     ///
-    /// see also [crate::system::hierarchy_to_local_rotation]
+    /// test_steps! { // !!!! Get a proper main loop !!!!
+    ///     Hierarchy::push(token, Matrix::r([0.0, 0.0, 180.0]), None);
+    ///     let local: Vec3 = Hierarchy::to_local_rotation(token, [90.0, 180.0, 0.0])
+    ///                           .to_angles_degrees().into();
+    ///     assert_eq!(local, [-90.0, 0.0, 0.0].into());
+    ///
+    ///     let world: Vec3 = Hierarchy::to_world_rotation(token, [90.0, 180.0, 0.0])
+    ///                           .to_angles_degrees().into();
+    ///     assert_eq!(world, [-90.0, 0.0, 0.0].into());
+    ///     Hierarchy::pop(token);
+    /// }
+    /// ```
     pub fn to_local_rotation<Q: Into<Quat>>(_token: &MainThreadToken, world_orientation: Q) -> Quat {
         unsafe { hierarchy_to_local_rotation(&world_orientation.into()) }
     }
 
     /// Converts a world pose relative to the current hierarchy stack into local space!
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/ToLocal.html>
-    /// * world_pose - A pose in world space.
+    /// * `world_pose` - A pose in world space.
     ///
     /// Returns the provided pose now in local hierarchy space!
+    /// see also [`hierarchy_to_local_pose`] [Hierarchy::to_local_pose]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Matrix, Quat, Pose}, system::{Hierarchy, HierarchyParent}};
     ///
-    /// see also [crate::system::hierarchy_to_local_pose]
+    /// test_steps! { // !!!! Get a proper main loop !!!!
+    ///     Hierarchy::push(token, Matrix::t([0.0, -0.5, -0.5]), None);
+    ///     let pose = Pose::new([10.0, 20.0, 30.0], None);
+    ///     assert_eq!(Hierarchy::to_local_pose(token, pose), Pose::new([10.0, 20.5, 30.5], None));
+    ///     assert_eq!(Hierarchy::to_world_pose(token, Pose::new([10.0, 20.5, 30.5], None)), pose);
+    ///     Hierarchy::pop(token);
+    /// }
+    /// ```
     pub fn to_local_pose<P: Into<Pose>>(_token: &MainThreadToken, world_pose: P) -> Pose {
         unsafe { hierarchy_to_local_pose(&world_pose.into()) }
     }
 
     /// Converts a world ray relative to the current hierarchy stack into local space!
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/ToLocal.html>
-    /// * world_ray - A ray in world space
+    /// * `world_ray` - A ray in world space
     ///
     /// Returns the provided ray now in local hierarchy space
+    /// see also [`hierarchy_to_local_ray`] [`Hierarchy::to_world_ray`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix, Quat, Ray}, system::{Lines, Hierarchy},
+    ///     util::{named_colors}, mesh::Mesh, material::{Material, Cull}};
     ///
-    /// see also [crate::system::hierarchy_to_local_ray]
+    /// // Create Meshes
+    /// let cube = Mesh::generate_cube(Vec3::ONE * 0.8, None);
+    /// let sphere = Mesh::generate_sphere(1.0, Some(4));
+    ///
+    /// let material = Material::pbr().copy();
+    /// let transform = Matrix::r(Quat::from_angles(40.0, 50.0, 20.0));
+    /// let inv = transform.get_inverse();
+    ///
+    /// let ray = Ray::new([1.0, 2.0, 2.5 ], [-1.0, -2.0, -2.25]);
+    ///
+    /// filename_scr = "screenshots/hierarchy_ray.jpeg";
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     let world_space_ray = Hierarchy::to_world_ray(token, ray);
+    ///     assert_eq!(world_space_ray, ray);
+    ///     Lines::add_ray(token, world_space_ray, 2.2, named_colors::WHITE, None, 0.02);
+    ///
+    ///     Hierarchy::push(token, transform, None);
+    ///     let local_transform = Matrix::t([-0.1, 0.1, 0.1]);
+    ///     cube.draw(token, &material, local_transform, Some(named_colors::MAGENTA.into()), None);
+    ///
+    ///     let local_space_ray = Hierarchy::to_local_ray(token, world_space_ray);
+    ///     let mesh_space_ray = local_transform.get_inverse().transform_ray(local_space_ray);
+    ///     let (contact_cube, ind_cube) = cube.intersect( mesh_space_ray, Some(Cull::Back))
+    ///                                        .expect("Ray should touch cube");
+    ///     assert_eq!(ind_cube, 15);
+    ///
+    ///     let local_contact_cube = local_transform.transform_point(contact_cube);
+    ///     let transform_contact = Matrix::ts(local_contact_cube, Vec3::ONE * 0.1);
+    ///     sphere.draw(token, &material, transform_contact, Some(named_colors::YELLOW.into()), None );
+    ///     Hierarchy::pop(token);
+    /// );
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/hierarchy_ray.jpeg" alt="screenshot" width="200">
     pub fn to_local_ray<R: Into<Ray>>(_token: &MainThreadToken, world_ray: R) -> Ray {
         unsafe { hierarchy_to_local_ray(world_ray.into()) }
     }
@@ -866,55 +1308,71 @@ impl Hierarchy {
     /// Converts a world space direction into the local space of the current Hierarchy stack! This excludes the
     /// translation component normally applied to vectors, so it’s still a valid direction.
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/ToLocalDirection.html>
-    /// * world_direction - A direction in world space
+    /// * `world_direction` - A direction in world space
     ///
     /// Returns the provided direction now in local hierarchy space
+    /// see also [`hierarchy_to_local_direction`] [`Hierarchy::to_world_direction`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Matrix, Vec3}, system::{Hierarchy, HierarchyParent}};
     ///
-    /// see also [crate::system::hierarchy_to_local_direction]
+    /// test_steps! { // !!!! Get a proper main loop !!!!
+    ///     Hierarchy::push(token, Matrix::r([0.0, 0.0, 180.0]), None);
+    ///     assert_eq!(Hierarchy::to_local_direction(token, [1.0, 0.0, 0.0]), [-1.0, 0.0, 0.0].into());
+    ///     assert_eq!(Hierarchy::to_world_direction(token, [-1.0, 0.0, 0.0]), [1.0, 0.0, 0.0].into());
+    ///     Hierarchy::pop(token);
+    /// }
+    /// ```
+    /// see also [`hierarchy_to_local_direction`] [`hierarchy_to_world_direction`]
     pub fn to_local_direction<V: Into<Vec3>>(_token: &MainThreadToken, world_direction: V) -> Vec3 {
         unsafe { hierarchy_to_local_direction(&world_direction.into()) }
     }
 
     /// Converts a local point relative to the current hierarchy stack into world space!
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/ToWorld.html>
-    /// * local_point - A point in local space
+    /// * `local_point` - A point in local space
     ///
     /// Returns the provided point now in world space
     ///
-    /// see also [crate::system::hierarchy_to_world_point]
+    /// see also [`hierarchy_to_world_point`]
+    /// see example in [`Hierarchy::to_local_point`]
     pub fn to_world_point<V: Into<Vec3>>(_token: &MainThreadToken, local_point: V) -> Vec3 {
         unsafe { hierarchy_to_world_point(&local_point.into()) }
     }
 
     /// Converts a local rotation relative to the current hierarchy stack into world space!
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/ToWorld.html>
-    /// * local_orientaion - A rotation in local space
+    /// * `local_orientaion` - A rotation in local space
     ///
     /// Returns the provided rotation now in world space
     ///
-    /// see also [crate::system::hierarchy_to_world_rotation]
+    /// see also [`hierarchy_to_world_rotation`]
+    /// see example in [`Hierarchy::to_local_rotation`]
     pub fn to_world_rotation<Q: Into<Quat>>(_token: &MainThreadToken, local_orientation: Q) -> Quat {
         unsafe { hierarchy_to_world_rotation(&local_orientation.into()) }
     }
 
     /// Converts a local pose relative to the current hierarchy stack into world space!
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/ToWorld.html>
-    /// * local_pose - A pose in local space
+    /// * `local_pose` - A pose in local space
     ///
     /// Returns the provided pose now in world space
     ///
-    /// see also [crate::system::hierarchy_to_world_pose]
+    /// see also [`hierarchy_to_world_pose`]
+    /// see example in [`Hierarchy::to_local_pose`]
     pub fn to_world_pose<P: Into<Pose>>(_token: &MainThreadToken, local_pose: P) -> Pose {
         unsafe { hierarchy_to_world_pose(&local_pose.into()) }
     }
 
     /// Converts a local ray relative to the current hierarchy stack into world space!
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/ToWorld.html>
-    /// * local_ray - A ray in local space
+    /// * `local_ray` - A ray in local space
     ///
     /// Returns the provided ray now in world space
     ///
-    /// see also [crate::system::hierarchy_to_world_ray]
+    /// see also [`hierarchy_to_world_ray`]
+    /// see example in [`Hierarchy::to_local_ray`]
     pub fn to_world_ray<P: Into<Ray>>(_token: &MainThreadToken, local_ray: P) -> Ray {
         unsafe { hierarchy_to_world_ray(local_ray.into()) }
     }
@@ -922,11 +1380,12 @@ impl Hierarchy {
     /// Converts a local direction relative to the current hierarchy stack into world space! This excludes the
     /// translation component normally applied to vectors, so it’s still a valid direction.
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/ToWorldDirection.html>
-    /// * local_direction - A direction in local space
+    /// * `local_direction` - A direction in local space
     ///
     /// Returns the provided direction now in world space
     ///
-    /// see also [crate::system::hierarchy_to_world_direction]
+    /// see also [`hierarchy_to_world_direction`]
+    /// see example in [`Hierarchy::to_local_direction`]
     pub fn to_world_direction<V: Into<Vec3>>(_token: &MainThreadToken, local_direction: V) -> Vec3 {
         unsafe { hierarchy_to_world_direction(&local_direction.into()) }
     }
@@ -936,6 +1395,8 @@ bitflags::bitflags! {
 /// What type of device is the source of the pointer? This is a bit-flag that can contain some input source family
 /// information.
 /// <https://stereokit.net/Pages/StereoKit/InputSource.html>
+///
+/// see also [`Pointer`] [`Input`]
     #[derive(Debug, Copy, Clone, PartialEq, Eq)]
     #[repr(C)]
     pub struct InputSource: u32 {
@@ -959,8 +1420,11 @@ bitflags::bitflags! {
         const CanPress = 256;
     }
 }
+
 /// An enum for indicating which hand to use!
 /// <https://stereokit.net/Pages/StereoKit/Handed.html>
+///
+/// see also [Hand] [Controller]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
 pub enum Handed {
@@ -972,9 +1436,12 @@ pub enum Handed {
     /// much clearer when you can loop Hand.Max times instead.
     Max = 2,
 }
+
 bitflags::bitflags! {
     /// A bit-flag for the current state of a button input.
     /// <https://stereokit.net/Pages/StereoKit/BtnState.html>
+    ///
+    /// see also [`Input`] |`Ui`]
     #[derive(Default, Debug, Copy, Clone, PartialEq, Eq, PartialOrd)]
     #[repr(C)]
     pub struct BtnState: u32 {
@@ -1291,7 +1758,7 @@ impl Hand {
     /// overtop of other elements.
     /// <https://stereokit.net/Pages/StereoKit/Hand/Material.html>
     ///
-    /// see also [`crate::system::input_hand_material`]
+    /// see also [`input_hand_material`]
     pub fn material(&mut self, material: impl AsRef<Material>) -> &mut Self {
         unsafe { input_hand_material(self.handed, material.as_ref().0.as_ptr()) }
         self
@@ -1301,7 +1768,7 @@ impl Hand {
     /// own, or don’t need the hand itself to be visible.
     /// <https://stereokit.net/Pages/StereoKit/Hand/Visible.html>
     ///
-    /// see also [`crate::system::input_hand_visible`]
+    /// see also [`input_hand_visible`]
     pub fn visible(&mut self, visible: bool) -> &mut Self {
         unsafe { input_hand_visible(self.handed, visible as Bool32T) }
         self
@@ -1485,7 +1952,7 @@ impl Mouse {
     /// Ray representing the position and orientation that the current Input.Mouse.pos is pointing in.
     /// <https://stereokit.net/Pages/StereoKit/Mouse/Ray.html>
     ///
-    /// see also [`crate::system::ray_from_mouse`]
+    /// see also [`ray_from_mouse`]
     pub fn get_ray(&self) -> Ray {
         let mut out_ray = Ray::default();
         unsafe { ray_from_mouse(self.pos, &mut out_ray) };
@@ -1666,7 +2133,7 @@ impl Input {
     /// * model - The Model to use to represent the controller.
     ///   None is valid, and will restore SK's default model.
     ///
-    ///  see also [`crate::system::input_controller_model_set`]    
+    ///  see also [`input_controller_model_set`]    
     pub fn set_controller_model(handed: Handed, model: Option<Model>) {
         match model {
             Some(model) => unsafe { input_controller_model_set(handed, model.0.as_ptr()) },
@@ -1681,7 +2148,7 @@ impl Input {
     /// * handed - The handedness of the controller to get the state of.
     ///
     /// Returns a reference to a class that contains state information  about the indicated controller.
-    /// see also [`crate::system::input_controller`]    
+    /// see also [`input_controller`]    
     pub fn controller(handed: Handed) -> Controller {
         unsafe { *input_controller(handed) }
     }
@@ -1693,7 +2160,7 @@ impl Input {
     /// * event_ types - The event type to simulate, this is a bit flag.
     /// * pointer - The pointer data to pass along with this simulated input event.
     ///
-    /// see also [`crate::system::input_fire_event`]    
+    /// see also [`input_fire_event`]    
     pub fn fire_event(event_source: InputSource, event_types: BtnState, pointer: &Pointer) {
         unsafe { input_fire_event(event_source, event_types, pointer) };
     }
@@ -1708,7 +2175,7 @@ impl Input {
     /// * handed - Do you want the left or the right hand? 0 is left, and 1 is right.
     ///
     /// Returns a copy of the entire set of hand data!
-    /// see also [`crate::system::input_hand`]    
+    /// see also [`input_hand`]    
     pub fn hand(handed: Handed) -> Hand {
         unsafe { *input_hand(handed) }
     }
@@ -1717,7 +2184,7 @@ impl Input {
     /// <https://stereokit.net/Pages/StereoKit/Input/HandClearOverride.html>
     /// * hand - Which hand are we clearing the override on?
     ///
-    /// see also [`crate::system::input_hand_override`]    
+    /// see also [`input_hand_override`]    
     pub fn hand_clear_override(hand: Handed) {
         unsafe { input_hand_override(hand, null()) };
     }
@@ -1730,7 +2197,7 @@ impl Input {
     /// * joints - A 2D array of 25 joints that should be used as StereoKit's hand information. See `Hand.fingers`
     ///   for more information.
     ///
-    /// see also [`crate::system::input_hand_override`]    
+    /// see also [`input_hand_override`]    
     pub fn hand_override(hand: Handed, joints: &[HandJoint]) {
         unsafe { input_hand_override(hand, joints.as_ptr()) };
     }
@@ -1741,7 +2208,7 @@ impl Input {
     /// * hand - The hand to assign the Material to. If Handed::Max, this will set the value for both hands.
     /// * material - The new material. If None, will reset to the default value
     ///
-    /// see also [`crate::system::input_hand_material`]    
+    /// see also [`input_hand_material`]    
     pub fn hand_material(hand: Handed, material: Option<Material>) {
         match material {
             Some(material) => unsafe { input_hand_material(hand, material.0.as_ptr()) },
@@ -1762,7 +2229,7 @@ impl Input {
     ///   it's only a single key pose.
     ///
     /// Returns the id of the hand sim pose, so it can be removed later.
-    /// see also [`crate::system::input_hand_sim_pose_add`]    
+    /// see also [`input_hand_sim_pose_add`]    
     pub fn hand_sim_pose_add(
         hand_joints_palm_relative_25: &[Pose],
         button1: ControllerKey,
@@ -1784,7 +2251,7 @@ impl Input {
     /// This clears all registered hand simulation poses, including the ones that StereoKit registers by default!
     /// <https://stereokit.net/Pages/StereoKit/Input/HandSimPoseClear.html>
     ///
-    /// see also [`crate::system::input_hand_sim_pose_clear`]    
+    /// see also [`input_hand_sim_pose_clear`]    
     pub fn hand_sim_pose_clear() {
         unsafe { input_hand_sim_pose_clear() };
     }
@@ -1793,7 +2260,7 @@ impl Input {
     /// <https://stereokit.net/Pages/StereoKit/Input/HandSimPoseRemove.html>
     /// * id - Any valid or invalid hand sim pose id.
     ///
-    /// see also [`crate::system::input_hand_sim_pose_remove`]    
+    /// see also [`input_hand_sim_pose_remove`]    
     pub fn hand_sim_pose_remove(id: HandSimId) {
         unsafe { input_hand_sim_pose_remove(id) };
     }
@@ -1805,7 +2272,7 @@ impl Input {
     /// * hand - Do  you want the left or right hand? 0 is left, and 1 is right.
     ///
     /// Returns information about hand tracking data source.
-    /// see also [`crate::system::input_hand_source`]    
+    /// see also [`input_hand_source`]    
     pub fn hand_source(hand: Handed) -> HandSource {
         unsafe { input_hand_source(hand) }
     }
@@ -1816,7 +2283,7 @@ impl Input {
     /// * hand - If Handed.Max, this will set the value for  both hands.
     /// * visible - True, StereoKit renders this. False, it doesn't.
     ///
-    /// see also [`crate::system::input_hand_visible`]    
+    /// see also [`input_hand_visible`]    
     pub fn hand_visible(hand: Handed, visible: bool) {
         unsafe { input_hand_visible(hand, visible as Bool32T) };
     }
@@ -1827,7 +2294,7 @@ impl Input {
     /// <https://stereokit.net/Pages/StereoKit/Input/FingerGlow.html>
     /// * visible - True, StereoKit renders this. False, it doesn't.
     ///
-    /// see also [`crate::system::input_set_finger_glow`]    
+    /// see also [`input_set_finger_glow`]    
     pub fn finger_glow(visible: bool) {
         unsafe { input_set_finger_glow(visible as Bool32T) };
     }
@@ -1839,7 +2306,7 @@ impl Input {
     ///
     /// Returns a BtnState with a number of different bits of info about whether or not the key was pressed or released
     /// this frame.
-    /// see also [`crate::system::input_key`]    
+    /// see also [`input_key`]    
     pub fn key(key: Key) -> BtnState {
         unsafe { input_key(key) }
     }
@@ -1852,7 +2319,7 @@ impl Input {
     /// <https://stereokit.net/Pages/StereoKit/Input/KeyInjectPress.html>
     /// * key - The key to press.
     ///
-    /// see also [`crate::system::input_key_inject_press`]    
+    /// see also [`input_key_inject_press`]    
     pub fn key_inject_press(key: Key) {
         unsafe { input_key_inject_press(key) };
     }
@@ -1866,7 +2333,7 @@ impl Input {
     /// <https://stereokit.net/Pages/StereoKit/Input/KeyInjectRelease.html>
     /// * key - The key to release.
     ///
-    /// see also [`crate::system::input_key_inject_release`]    
+    /// see also [`input_key_inject_release`]    
     pub fn key_inject_release(key: Key) {
         unsafe { input_key_inject_release(key) };
     }
@@ -1877,7 +2344,7 @@ impl Input {
     /// * filter - Filter used to search for the Pointer. If None has default value of ANY.
     ///
     /// Returns the Pointer data.
-    /// see also [`crate::system::input_pointer`]    
+    /// see also [`input_pointer`]    
     pub fn pointer(index: i32, filter: Option<InputSource>) -> Pointer {
         let filter = filter.unwrap_or(InputSource::Any);
         unsafe { input_pointer(index, filter) }
@@ -1888,7 +2355,7 @@ impl Input {
     /// * filter - You can filter input sources using this bit flat. If None has default value of ANY
     ///
     /// Returns the number of Pointers StereoKit knows about that matches the given filter.
-    /// see also [`crate::system::input_pointer_count`]    
+    /// see also [`input_pointer_count`]    
     pub fn pointer_count(filter: Option<InputSource>) -> i32 {
         let filter = filter.unwrap_or(InputSource::Any);
         unsafe { input_pointer_count(filter) }
@@ -1903,7 +2370,7 @@ impl Input {
     /// <https://stereokit.net/Pages/StereoKit/Input/TextConsume.html>
     ///
     /// Returns the next character in this frame's list, or '\0' if none remain
-    /// see also [`crate::system::input_text_consume`]    
+    /// see also [`input_text_consume`]    
     pub fn text_consume() -> Option<char> {
         char::from_u32(unsafe { input_text_consume() })
     }
@@ -1914,7 +2381,7 @@ impl Input {
     /// everything with TextConsume, and then TextReset afterwards to reset the read list for the following UI.Input.
     /// <https://stereokit.net/Pages/StereoKit/Input/TextReset.html>
     ///
-    /// see also [`crate::system::input_text_reset`]    
+    /// see also [`input_text_reset`]    
     pub fn text_reset() {
         unsafe { input_text_reset() };
     }
@@ -1926,7 +2393,7 @@ impl Input {
     /// for that.
     /// <https://stereokit.net/Pages/StereoKit/Input/TextInjectChar.html>
     ///
-    /// see also [`crate::system::input_text_inject_char`]    
+    /// see also [`input_text_inject_char`]    
     pub fn text_inject_char(character: char) {
         unsafe { input_text_inject_char(character as u32) };
     }
@@ -1940,7 +2407,7 @@ impl Input {
     /// <https://stereokit.net/Pages/StereoKit/Input/TextInjectChar.html>
     /// * chars - A collection of characters to submit as text input.
     ///
-    /// see also [`crate::system::input_text_inject_char`]    
+    /// see also [`input_text_inject_char`]    
     pub fn text_inject_chars(str: impl AsRef<str>) {
         for character in str.as_ref().chars() {
             unsafe { input_text_inject_char(character as u32) }
@@ -1955,7 +2422,7 @@ impl Input {
     /// * event_types - What events do we want to listen for. This is a bit flag.
     /// * on_event - The callback to call when the event occurs!
     ///
-    /// see also [`crate::system::input_subscribe`]    
+    /// see also [`input_subscribe`]    
     pub fn subscribe(
         event_source: InputSource,
         event_types: BtnState,
@@ -1970,7 +2437,7 @@ impl Input {
     /// * event_types - The events this listener was originally registered for.
     /// * on_event - The callback this lisener originally used.
     ///
-    /// see also [`crate::system::input_unsubscribe`]    
+    /// see also [`input_unsubscribe`]    
     pub fn unsubscribe(
         event_source: InputSource,
         event_types: BtnState,
@@ -1998,7 +2465,7 @@ impl Input {
     /// independent of a left or right controller.
     /// <https://stereokit.net/Pages/StereoKit/Input/ControllerMenuButton.html>
     ///
-    /// see also [`crate::system::input_controller_menu`]    
+    /// see also [`input_controller_menu`]    
     pub fn get_controller_menu_button() -> BtnState {
         unsafe { input_controller_menu() }
     }
@@ -2012,7 +2479,7 @@ impl Input {
     /// holds down Alt.
     /// <https://stereokit.net/Pages/StereoKit/Input/Eyes.html>
     ///
-    /// see also [`crate::system::input_eyes`]    
+    /// see also [`input_eyes`]    
     pub fn get_eyes() -> Pose {
         unsafe { *input_eyes() }
     }
@@ -2029,7 +2496,7 @@ impl Input {
     ///
     ///  <https://stereokit.net/Pages/StereoKit/Input/EyesTracked.html>
     ///
-    /// see also [`crate::system::input_eyes_tracked`]    
+    /// see also [`input_eyes_tracked`]    
     pub fn get_eyes_tracked() -> BtnState {
         unsafe { input_eyes_tracked() }
     }
@@ -2038,7 +2505,7 @@ impl Input {
     /// center of the user’s head. Forward points the same way the user’s face is facing.
     /// <https://stereokit.net/Pages/StereoKit/Input/Head.html>
     ///
-    /// see also [`crate::system::input_eyes`]    
+    /// see also [`input_eyes`]    
     pub fn get_head() -> Pose {
         unsafe { *input_head() }
     }
@@ -2046,7 +2513,7 @@ impl Input {
     /// Information about this system’s mouse, or lack thereof!
     /// <https://stereokit.net/Pages/StereoKit/Input/Mouse.html>
     ///
-    /// see also [`crate::system::input_mouse`]    
+    /// see also [`input_mouse`]    
     pub fn get_mouse() -> Mouse {
         unsafe { *input_mouse() }
     }
@@ -2057,7 +2524,7 @@ impl Input {
     /// <https://stereokit.net/Pages/StereoKit/Input/FingerGlow.html>
     ///
     /// Returns true if StereoKit renders this. False, it doesn't.
-    /// see also [`crate::system::input_set_finger_glow`]  
+    /// see also [`input_set_finger_glow`]  
     pub fn get_finger_glow() -> bool {
         unsafe { input_get_finger_glow() != 0 }
     }
@@ -2092,7 +2559,7 @@ impl Lines {
     /// <https://stereokit.net/Pages/StereoKit/Lines/Add.html>
     /// * color_end - If None, uses color_start.
     ///
-    /// see also [crate::system::line_add]
+    /// see also [line_add]
     pub fn add<V: Into<Vec3>>(
         _token: &MainThreadToken,
         start: V,
@@ -2109,7 +2576,7 @@ impl Lines {
     /// <https://stereokit.net/Pages/StereoKit/Lines/Add.html>
     /// * color_end - If None, uses color_start.
     ///
-    /// see also [crate::system::line_add]
+    /// see also [line_add]
     pub fn add_ray<R: Into<Ray>>(
         _token: &MainThreadToken,
         ray: R,
@@ -2128,7 +2595,7 @@ impl Lines {
     /// <https://stereokit.net/Pages/StereoKit/Lines/Add.html>
     /// * color_end - If None, uses color_start.
     ///
-    /// see also [crate::system::line_add]
+    /// see also [line_add]
     pub fn add_list(_token: &MainThreadToken, points: &[LinePoint]) {
         unsafe { line_add_listv(points.as_ptr(), points.len() as i32) }
     }
@@ -2140,7 +2607,7 @@ impl Lines {
     /// * size - If None, is set to 1 cm
     /// * thickness - If None, will use a faster renderer with a thickness of one tenth of the size.
     ///
-    /// see also [crate::system::line_add]
+    /// see also [line_add]
     pub fn add_axis<P: Into<Pose>>(token: &MainThreadToken, at_pose: P, size: Option<f32>, thickness: Option<f32>) {
         let at_pose: Pose = at_pose.into();
         let size = size.unwrap_or(0.01);
@@ -2265,7 +2732,7 @@ unsafe extern "C" {
 
 /// Log subscribe trampoline
 ///
-/// see also [`crate::system::log_subscribe_data`]
+/// see also [`log_subscribe_data`]
 unsafe extern "C" fn log_trampoline<'a, F: FnMut(LogLevel, &str) + 'a>(
     context: *mut c_void,
     log_level: LogLevel,
@@ -2281,7 +2748,7 @@ impl Log {
     /// can safely be set before SK initialization.
     /// <https://stereokit.net/Pages/StereoKit/Log.html>
     ///
-    /// see also [`crate::system::log_set_filter`]
+    /// see also [`log_set_filter`]
     pub fn filter(filter: LogLevel) {
         unsafe { log_set_filter(filter) }
     }
@@ -2289,7 +2756,7 @@ impl Log {
     /// Set the colors
     /// <https://stereokit.net/Pages/StereoKit/Log.html>
     ///
-    /// see also [`crate::system::log_set_colors`]
+    /// see also [`log_set_colors`]
     pub fn colors(colors: LogColors) {
         unsafe { log_set_colors(colors) }
     }
@@ -2297,7 +2764,7 @@ impl Log {
     /// Writes a formatted line to the log using a LogLevel.Error severity level!
     /// <https://stereokit.net/Pages/StereoKit/Log.html>
     ///
-    /// see also [`crate::system::log_err`]
+    /// see also [`log_err`]
     pub fn err<S: AsRef<str>>(text: S) {
         let c_str = CString::new(text.as_ref()).unwrap();
         unsafe { log_err(c_str.as_ptr()) }
@@ -2306,7 +2773,7 @@ impl Log {
     /// Writes a formatted line to the log using a LogLevel.Inform severity level!
     /// <https://stereokit.net/Pages/StereoKit/Log.html>
     ///
-    /// see also [`crate::system::log_info`]
+    /// see also [`log_info`]
     pub fn info<S: AsRef<str>>(text: S) {
         let c_str = CString::new(text.as_ref()).unwrap();
         unsafe { log_info(c_str.as_ptr()) }
@@ -2315,7 +2782,7 @@ impl Log {
     /// Writes a formatted line to the log using a LogLevel.Warning severity level!
     /// <https://stereokit.net/Pages/StereoKit/Log.html>
     ///
-    /// see also [`crate::system::log_warn`]
+    /// see also [`log_warn`]
     pub fn warn<S: AsRef<str>>(text: S) {
         let c_str = CString::new(text.as_ref()).unwrap();
         unsafe { log_warn(c_str.as_ptr()) }
@@ -2324,7 +2791,7 @@ impl Log {
     /// Writes a formatted line to the log using a LogLevel.Diagnostic severity level!
     /// <https://stereokit.net/Pages/StereoKit/Log.html>
     ///
-    /// see also [`crate::system::log_diag`]
+    /// see also [`log_diag`]
     pub fn diag<S: AsRef<str>>(text: S) {
         let c_str = CString::new(text.as_ref()).unwrap();
         unsafe { log_diag(c_str.as_ptr()) }
@@ -2333,7 +2800,7 @@ impl Log {
     /// Writes a formatted line to the log with the specified severity level!
     /// <https://stereokit.net/Pages/StereoKit/Log.html>
     ///
-    /// see also [`crate::system::log_write`]
+    /// see also [`log_write`]
     pub fn write<S: AsRef<str>>(level: LogLevel, text: S) {
         let c_str = CString::new(text.as_ref()).unwrap();
         unsafe { log_write(level, c_str.as_ptr()) }
@@ -2344,7 +2811,7 @@ impl Log {
     /// before SK initialization.
     /// <https://stereokit.net/Pages/StereoKit/Log/Subscribe.html>
     ///
-    /// see also [`crate::system::log_subscribe`]    
+    /// see also [`log_subscribe`]    
     pub fn subscribe<'a, F: FnMut(LogLevel, &str) + 'a>(mut on_log: F) {
         let mut closure = &mut on_log;
         unsafe { log_subscribe(Some(log_trampoline::<F>), &mut closure as *mut _ as *mut c_void) }
@@ -2354,7 +2821,7 @@ impl Log {
     /// called before initialization.
     /// <https://stereokit.net/Pages/StereoKit/Log/Unsubscribe.html>
     ///
-    /// see also [`crate::system::log_unsubscribe`]    
+    /// see also [`log_unsubscribe`]    
     pub fn unsubscribe<'a, F: FnMut(LogLevel, &str) + 'a>(mut on_log: F) {
         let mut closure = &mut on_log;
         unsafe { log_unsubscribe(Some(log_trampoline::<F>), &mut closure as *mut _ as *mut c_void) }
@@ -2714,7 +3181,7 @@ impl Renderer {
     /// redirected walking, or just shifting the floor around.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/CameraRoot.html>
     ///
-    /// see also [`crate::system::render_set_cam_root`]
+    /// see also [`render_set_cam_root`]
     pub fn camera_root(transform: impl Into<Matrix>) {
         unsafe { render_set_cam_root(&transform.into()) }
     }
@@ -2722,7 +3189,7 @@ impl Renderer {
     /// This is the gamma space color the renderer will clear the screen to when beginning to draw a new frame.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/ClearColor.html>
     ///
-    /// see also [`crate::system::render_set_clear_color`]
+    /// see also [`render_set_clear_color`]
     pub fn clear_color(color_gamma: impl Into<Color128>) {
         unsafe { render_set_clear_color(color_gamma.into()) }
     }
@@ -2731,7 +3198,7 @@ impl Renderer {
     /// unavailable for transparent displays.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/EnableSky.html>
     ///
-    /// see also [`crate::system::render_enable_skytex`]
+    /// see also [`render_enable_skytex`]
     pub fn enable_sky(enable: bool) {
         unsafe { render_enable_skytex(enable as Bool32T) }
     }
@@ -2741,7 +3208,7 @@ impl Renderer {
     /// includes a RenderLayer as a parameter.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/LayerFilter.html>
     ///
-    /// see also [`crate::system::render_set_filter`]
+    /// see also [`render_set_filter`]
     pub fn layer_filter(filter: RenderLayer) {
         unsafe { render_set_filter(filter) }
     }
@@ -2752,7 +3219,7 @@ impl Renderer {
     /// this via SKSettings in initialization. This is a very costly change to make.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/Multisample.html>
     ///
-    /// see also [`crate::system::render_set_multisample`]
+    /// see also [`render_set_multisample`]
     pub fn multisample(level: i32) {
         unsafe { render_set_multisample(level) }
     }
@@ -2765,7 +3232,7 @@ impl Renderer {
     /// orthographic.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/Projection.html>
     ///
-    /// see also [`crate::system::render_set_projection`]
+    /// see also [`render_set_projection`]
     pub fn projection(projection: Projection) {
         unsafe { render_set_projection(projection) }
     }
@@ -2776,7 +3243,7 @@ impl Renderer {
     /// Consider if Viewport_scaling will work for you instead, and prefer that.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/Scaling.html>
     ///
-    /// see also [`crate::system::render_set_scaling`]
+    /// see also [`render_set_scaling`]
     pub fn scaling(scaling: f32) {
         unsafe { render_set_scaling(scaling) }
     }
@@ -2786,7 +3253,7 @@ impl Renderer {
     /// locked to the 0-1 range
     /// <https://stereokit.net/Pages/StereoKit/Renderer/ViewportScaling.html>
     ///
-    /// see also [`crate::system::render_set_viewport_scaling`]
+    /// see also [`render_set_viewport_scaling`]
     pub fn viewport_scaling(scaling: f32) {
         unsafe { render_set_viewport_scaling(scaling) }
     }
@@ -2795,7 +3262,7 @@ impl Renderer {
     /// one from Tex.FromEquirectangular or Tex.GenCubemap
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyLight.html>
     ///
-    /// see also [`crate::system::render_set_skylight`]
+    /// see also [`render_set_skylight`]
     pub fn skylight(sh: SphericalHarmonics) {
         unsafe { render_set_skylight(&sh) }
     }
@@ -2806,7 +3273,7 @@ impl Renderer {
     /// see Renderer.SkyLight.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyTex.html>
     ///
-    /// see also [`crate::system::render_set_skytex`]
+    /// see also [`render_set_skytex`]
     pub fn skytex(tex: impl AsRef<Tex>) {
         unsafe { render_set_skytex(tex.as_ref().0.as_ptr()) }
     }
@@ -2825,7 +3292,7 @@ impl Renderer {
     ///
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyMaterial.html>
     ///
-    /// see also [`crate::system::render_set_skymaterial`]
+    /// see also [`render_set_skymaterial`]
     pub fn skymaterial(material: impl AsRef<Material>) {
         unsafe { render_set_skymaterial(material.as_ref().0.as_ptr()) }
     }
@@ -2836,7 +3303,7 @@ impl Renderer {
     /// * color - If None has default value of WHITE
     /// * layer - If None has default value of RenderLayer::Layer0
     ///
-    /// see also [`crate::system::render_add_mesh`]
+    /// see also [`render_add_mesh`]
     pub fn add_mesh(
         _token: &MainThreadToken,
         mesh: impl AsRef<Mesh>,
@@ -2858,7 +3325,7 @@ impl Renderer {
     /// * color - If None has default value of WHITE
     /// * layer - If None has default value of RenderLayer::Layer0
     ///
-    /// see also [`crate::system::render_add_model`]
+    /// see also [`render_add_model`]
     pub fn add_model(
         _token: &MainThreadToken,
         model: impl AsRef<Model>,
@@ -2875,7 +3342,7 @@ impl Renderer {
     /// texture, and renders the material onto it to the texture.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/Blit.html>
     ///
-    /// see also [`crate::system::render_blit`]
+    /// see also [`render_blit`]
     pub fn blit(_token: &MainThreadToken, tex: impl AsRef<Tex>, material: impl AsRef<Material>) {
         unsafe { render_blit(tex.as_ref().0.as_ptr(), material.as_ref().0.as_ptr()) }
     }
@@ -2888,7 +3355,7 @@ impl Renderer {
     /// filter no longer updates with LayerFilter.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/OverrideCaptureFilter.html>
     ///
-    /// see also [`crate::system::render_override_capture_filter`]
+    /// see also [`render_override_capture_filter`]
     pub fn override_capture_filter(use_override_filter: bool, override_filter: RenderLayer) {
         unsafe { render_override_capture_filter(use_override_filter as Bool32T, override_filter) }
     }
@@ -2900,7 +3367,7 @@ impl Renderer {
     /// * clear - If None has default value of RenderClear::All
     /// * vieport - If None has default value of (0, 0, 0, 0)
     ///
-    /// see also [`crate::system::render_to`]
+    /// see also [`render_to`]
     pub fn render_to<M: Into<Matrix>>(
         _token: &MainThreadToken,
         to_render_target: impl AsRef<Tex>,
@@ -2934,7 +3401,7 @@ impl Renderer {
     ///   values above that should be fine.
     /// * tex - The texture to assign globally. Setting None here will clear any texture that is currently bound.
     ///
-    /// see also [`crate::system::render_global_texture`]
+    /// see also [`render_global_texture`]
     pub fn set_global_texture<M: Into<Matrix>>(_token: &MainThreadToken, texture_register: i32, tex: Option<Tex>) {
         if let Some(tex) = tex {
             unsafe { render_global_texture(texture_register, tex.0.as_ptr()) }
@@ -2951,7 +3418,7 @@ impl Renderer {
     /// * viewpoint - is Pose::look_at(from_point, looking_at_point)
     /// * field_of_view - If None will use default value of 90°
     ///
-    /// see also [`crate::system::render_screenshot`]
+    /// see also [`render_screenshot`]
     pub fn screenshot(
         _token: &MainThreadToken,
         filename: impl AsRef<Path>,
@@ -2977,7 +3444,7 @@ impl Renderer {
     /// * field_of_view - If None will use default value of 90°
     /// * tex_format - If None will use default value of TexFormat::RGBA32
     ///
-    /// see also [`crate::system::render_screenshot_capture`]
+    /// see also [`render_screenshot_capture`]
     pub fn screenshot_capture<F: FnMut(&[Color32], usize, usize)>(
         _token: &MainThreadToken,
         mut on_screenshot: F,
@@ -3009,7 +3476,7 @@ impl Renderer {
     /// * clear - If None wille use default value of All
     /// * tex_format - If None will use default value of TexFormat::RGBA32
     ///
-    /// see also [`crate::system::render_screenshot_viewpoint`]
+    /// see also [`render_screenshot_viewpoint`]
     #[allow(clippy::too_many_arguments)]
     pub fn screenshot_viewpoint<M: Into<Matrix>, F: FnMut(&[Color32], usize, usize)>(
         _token: &MainThreadToken,
@@ -3052,7 +3519,7 @@ impl Renderer {
     /// These values only affect perspective mode projection, which is the default projection mode.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SetClip.html>
     ///
-    /// see also [`crate::system::render_set_clip`]
+    /// see also [`render_set_clip`]
     pub fn set_clip(near_plane: f32, far_plane: f32) {
         unsafe { render_set_clip(near_plane, far_plane) }
     }
@@ -3062,7 +3529,7 @@ impl Renderer {
     /// This value only affects perspective mode projection, which is the default projection mode.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SetFOV.html>
     ///
-    /// see also [`crate::system::render_set_fov`]
+    /// see also [`render_set_fov`]
     pub fn set_fov(field_of_view: f32) {
         unsafe { render_set_fov(field_of_view) }
     }
@@ -3075,7 +3542,7 @@ impl Renderer {
     /// These values only affect orthographic mode projection, which is only available in flatscreen.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SetOrthoClip.html>
     ///
-    /// see also [`crate::system::render_set_ortho_clip`]
+    /// see also [`render_set_ortho_clip`]
     pub fn set_ortho_clip(near_plane: f32, far_plane: f32) {
         unsafe { render_set_ortho_clip(near_plane, far_plane) }
     }
@@ -3086,7 +3553,7 @@ impl Renderer {
     /// This value only affects orthographic mode projection, which is only available in flatscreen.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SetOrthoSize.html>
     ///
-    /// see also [`crate::system::render_set_ortho_size`]
+    /// see also [`render_set_ortho_size`]
     pub fn set_ortho_size(view_port_height_meters: f32) {
         unsafe { render_set_ortho_size(view_port_height_meters) }
     }
@@ -3096,7 +3563,7 @@ impl Renderer {
     /// redirected walking, or just shifting the floor around.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/CameraRoot.html>
     ///
-    /// see also [`crate::system::render_get_cam_root`]
+    /// see also [`render_get_cam_root`]
     pub fn get_camera_root() -> Matrix {
         unsafe { render_get_cam_root() }
     }
@@ -3106,7 +3573,7 @@ impl Renderer {
     /// Renderer.OverrideCaptureFilter.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/CaptureFilter.html>
     ///
-    /// see also [`crate::system::render_get_capture_filter`]
+    /// see also [`render_get_capture_filter`]
     pub fn get_capture_filter() -> RenderLayer {
         unsafe { render_get_capture_filter() }
     }
@@ -3114,7 +3581,7 @@ impl Renderer {
     /// This is the gamma space color the renderer will clear the screen to when beginning to draw a new frame.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/ClearColor.html>
     ///
-    /// see also [`crate::system::render_get_clear_color`]
+    /// see also [`render_get_clear_color`]
     pub fn get_clear_color() -> Color128 {
         unsafe { render_get_clear_color() }
     }
@@ -3123,7 +3590,7 @@ impl Renderer {
     /// unavailable for transparent displays.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/EnableSky.html>
     ///
-    /// see also [`crate::system::render_enabled_skytex`]
+    /// see also [`render_enabled_skytex`]
     pub fn get_enable_sky() -> bool {
         unsafe { render_enabled_skytex() != 0 }
     }
@@ -3131,7 +3598,7 @@ impl Renderer {
     /// This tells if CaptureFilter has been overridden to a specific value via Renderer.OverrideCaptureFilter.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/HasCaptureFilter.html>
     ///
-    /// see also [`crate::system::render_has_capture_filter`]
+    /// see also [`render_has_capture_filter`]
     pub fn has_capture_filter() -> bool {
         unsafe { render_has_capture_filter() != 0 }
     }
@@ -3141,7 +3608,7 @@ impl Renderer {
     /// includes a RenderLayer as a parameter.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/LayerFilter.html>
     ///
-    /// see also [`crate::system::render_get_filter`]
+    /// see also [`render_get_filter`]
     pub fn get_layer_filter() -> RenderLayer {
         unsafe { render_get_filter() }
     }
@@ -3152,7 +3619,7 @@ impl Renderer {
     /// this via SKSettings in initialization. This is a very costly change to make.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/Multisample.html>
     ///
-    /// see also [`crate::system::render_get_multisample`]
+    /// see also [`render_get_multisample`]
     pub fn get_multisample() -> i32 {
         unsafe { render_get_multisample() }
     }
@@ -3165,7 +3632,7 @@ impl Renderer {
     /// orthographic.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/Projection.html>
     ///
-    /// see also [`crate::system::render_get_projection`]
+    /// see also [`render_get_projection`]
     pub fn get_projection() -> Projection {
         unsafe { render_get_projection() }
     }
@@ -3177,7 +3644,7 @@ impl Renderer {
     /// instead, and prefer that.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/Scaling.html>
     ///
-    /// see also [`crate::system::render_get_scaling`]
+    /// see also [`render_get_scaling`]
     pub fn get_scaling() -> f32 {
         unsafe { render_get_scaling() }
     }
@@ -3187,7 +3654,7 @@ impl Renderer {
     /// locked to the 0-1 range
     /// <https://stereokit.net/Pages/StereoKit/Renderer/ViewportScaling.html>
     ///
-    /// see also [`crate::system::render_get_viewport_scaling`]
+    /// see also [`render_get_viewport_scaling`]
     pub fn get_viewport_scaling() -> f32 {
         unsafe { render_get_viewport_scaling() }
     }
@@ -3196,7 +3663,7 @@ impl Renderer {
     /// one from Tex.FromEquirectangular or Tex.GenCubemap
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyLight.html>
     ///
-    /// see also [`crate::system::render_get_skylight`]
+    /// see also [`render_get_skylight`]
     pub fn get_skylight() -> SphericalHarmonics {
         unsafe { render_get_skylight() }
     }
@@ -3207,7 +3674,7 @@ impl Renderer {
     /// see Renderer.SkyLight.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyTex.html>
     ///
-    /// see also [`crate::system::render_get_skytex`]
+    /// see also [`render_get_skytex`]
     pub fn get_skytex() -> Tex {
         Tex(NonNull::new(unsafe { render_get_skytex() }).unwrap())
     }
@@ -3226,7 +3693,7 @@ impl Renderer {
     ///
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyMaterial.html>
     ///
-    /// see also [`crate::system::render_get_skymaterial`]
+    /// see also [`render_get_skymaterial`]
     pub fn get_skymaterial() -> Material {
         Material(NonNull::new(unsafe { render_get_skymaterial() }).unwrap())
     }
@@ -3285,7 +3752,7 @@ impl TextStyle {
     /// * color_gamma - The gamma space color of the text style. This will be embedded in the vertex color of the
     ///   text mesh.
     ///
-    /// see also [`crate::system::text_make_style`]
+    /// see also [`text_make_style`]
     pub fn from_font(font: impl AsRef<Font>, layout_height_meters: f32, color_gamma: impl Into<Color128>) -> Self {
         unsafe { text_make_style(font.as_ref().0.as_ptr(), layout_height_meters, color_gamma.into()) }
     }
@@ -3302,7 +3769,7 @@ impl TextStyle {
     /// * color_gamma - The gamma space color of the text style. This will be embedded in the vertex color of the
     ///   text mesh.
     ///
-    /// see also [`crate::system::text_make_style_shader`]
+    /// see also [`text_make_style_shader`]
     pub fn from_font_and_shader(
         font: impl AsRef<Font>,
         layout_height_meters: f32,
@@ -3336,7 +3803,7 @@ impl TextStyle {
     /// * color_gamma - The gamma space color of the text style. This will be embedded in the vertex color of the
     ///   text mesh.
     ///
-    /// see also [`crate::system::text_make_style_mat`]
+    /// see also [`text_make_style_mat`]
     pub fn from_font_and_material(
         font: impl AsRef<Font>,
         layout_height_meters: f32,
@@ -3356,7 +3823,7 @@ impl TextStyle {
     /// Height of a text glyph in meters. StereoKit currently bases this on the letter ‘T’.
     /// <https://stereokit.net/Pages/StereoKit/TextStyle/CharHeight.html>
     ///
-    /// see also [`crate::system::text_style_set_layout_height`]
+    /// see also [`text_style_set_layout_height`]
     #[deprecated(since = "0.40.0", note = "please use TextStyle::layout_height")]
     pub fn char_height(&mut self, char_height: f32) {
         unsafe { text_style_set_layout_height(*self, char_height) }
@@ -3367,7 +3834,7 @@ impl TextStyle {
     /// does it represent the maximum possible height a glyph may extend upwards (use Text::size_render).
     /// <https://stereokit.net/Pages/StereoKit/TextStyle/LayoutHeight.html>
     ///
-    /// see also [`crate::system::text_style_set_layout_height`]
+    /// see also [`text_style_set_layout_height`]
     pub fn layout_height(&mut self, height_meters: f32) {
         unsafe { text_style_set_layout_height(*self, height_meters) }
     }
@@ -3377,7 +3844,7 @@ impl TextStyle {
     /// can lead to more consistency in the long run.
     /// <https://stereokit.net/Pages/StereoKit/TextStyle/TotalHeight.html>
     ///
-    /// see also [`crate::system::text_style_set_total_height`]
+    /// see also [`text_style_set_total_height`]
     pub fn total_height(&mut self, height_meters: f32) {
         unsafe { text_style_set_total_height(*self, height_meters) }
     }
@@ -3386,7 +3853,7 @@ impl TextStyle {
     /// character height. This is similar to CSS line-height, a value of 1.0 means the line takes _only_
     /// <https://stereokit.net/Pages/StereoKit/TextStyle/LineHeightPct.html>
     ///
-    /// see also [`crate::system::text_style_set_line_height_pct`]
+    /// see also [`text_style_set_line_height_pct`]
     pub fn line_height_pct(&mut self, height_percent: f32) {
         unsafe { text_style_set_line_height_pct(*self, height_percent) }
     }
@@ -3395,7 +3862,7 @@ impl TextStyle {
     /// you’re creating TextStyles with manually provided Materials, this Material may not be unique to this style.
     /// <https://stereokit.net/Pages/StereoKit/TextStyle/Material.html>
     ///
-    /// see also [`crate::system::text_style_get_material`]
+    /// see also [`text_style_get_material`]
     pub fn get_material(&self) -> Material {
         Material(NonNull::new(unsafe { text_style_get_material(*self) }).unwrap())
     }
@@ -3403,7 +3870,7 @@ impl TextStyle {
     /// Returns the maximum height of a text character using this style, in meters.
     /// <https://stereokit.net/Pages/StereoKit/TextStyle/CharHeight.html>
     ///
-    /// see also [`crate::system::text_style_get_layout_height`]
+    /// see also [`text_style_get_layout_height`]
     #[deprecated(since = "0.40.0", note = "please use get_layout_height")]
     pub fn get_char_height(&self) -> f32 {
         unsafe { text_style_get_layout_height(*self) }
@@ -3414,7 +3881,7 @@ impl TextStyle {
     /// does it represent the maximum possible height a glyph may extend upwards (use Text::size_render).
     /// <https://stereokit.net/Pages/StereoKit/TextStyle/LayoutHeight.html>
     ///
-    /// see also [`crate::system::text_style_get_layout_height`]
+    /// see also [`text_style_get_layout_height`]
     pub fn get_layout_height(&self) -> f32 {
         unsafe { text_style_get_layout_height(*self) }
     }
@@ -3424,7 +3891,7 @@ impl TextStyle {
     /// can lead to more consistency in the long run.
     /// <https://stereokit.net/Pages/StereoKit/TextStyle/TotalHeight.html>
     ///
-    /// see also [`crate::system::text_style_get_total_height`]
+    /// see also [`text_style_get_total_height`]
     pub fn get_total_height(&self) -> f32 {
         unsafe { text_style_get_total_height(*self) }
     }
@@ -3433,14 +3900,14 @@ impl TextStyle {
     /// character height. This is similar to CSS line-height, a value of 1.0 means the line takes _only_
     /// <https://stereokit.net/Pages/StereoKit/TextStyle/LineHeightPct.html>
     ///
-    /// see also [`crate::system::text_style_get_line_height_pct`]
+    /// see also [`text_style_get_line_height_pct`]
     pub fn get_line_height_pct(&self) -> f32 {
         unsafe { text_style_get_line_height_pct(*self) }
     }
     /// (meters) The height of a standard captial letter, such as 'H' or 'T'
     /// <https://stereokit.net/Pages/StereoKit/TextStyle/CapHeight.html>
     ///
-    /// see also [`crate::system::text_style_get_cap_height`]
+    /// see also [`text_style_get_cap_height`]
     pub fn get_cap_height(&self) -> f32 {
         unsafe { text_style_get_cap_height(*self) }
     }
@@ -3451,7 +3918,7 @@ impl TextStyle {
     /// (see Text::size_render), but this is not used when laying out characters.
     /// <https://stereokit.net/Pages/StereoKit/TextStyle/Ascender.html>
     ///
-    /// see also [`crate::system::text_style_get_ascender`]
+    /// see also [`text_style_get_ascender`]
     pub fn get_ascender(&self) -> f32 {
         unsafe { text_style_get_ascender(*self) }
     }
@@ -3459,7 +3926,7 @@ impl TextStyle {
     /// (meters) The layout descender of the font, this is the positive height below the baseline
     /// <https://stereokit.net/Pages/StereoKit/TextStyle/Descender.html>
     ///
-    /// see also [`crate::system::text_style_get_descender`]
+    /// see also [`text_style_get_descender`]
     pub fn get_descender(&self) -> f32 {
         unsafe { text_style_get_descender(*self) }
     }
@@ -3634,7 +4101,7 @@ impl Text {
     ///
     /// Returns a text style id for use with text rendering functions.
     ///
-    /// see also [`crate::system::text_make_style`]
+    /// see also [`text_make_style`]
     pub fn make_style(
         font: impl AsRef<Font>,
         layout_height_meters: f32,
@@ -3657,7 +4124,7 @@ impl Text {
     ///
     /// Returns a text style id for use with text rendering functions.
     ///
-    /// see also [`crate::system::text_make_style_shader`]
+    /// see also [`text_make_style_shader`]
     pub fn make_style_with_shader(
         font: impl AsRef<Font>,
         layout_height_meters: f32,
@@ -3692,7 +4159,7 @@ impl Text {
     ///
     /// Returns a text style id for use with text rendering functions.
     ///
-    /// see also [`crate::system::text_make_style_mat`]
+    /// see also [`text_make_style_mat`]
     pub fn make_style_with_material(
         font: impl AsRef<Font>,
         layout_height_meters: f32,
@@ -3717,7 +4184,7 @@ impl Text {
     /// * align - if None will use TextAlign::Center
     /// * off_? - if None will use 0.0
     ///
-    /// see also [`crate::system::text_add_at`]
+    /// see also [`text_add_at`]
     #[allow(clippy::too_many_arguments)]
     pub fn add_at(
         _token: &MainThreadToken,
@@ -3764,7 +4231,7 @@ impl Text {
     ///
     /// Returns the vertical space used by this text.
     ///
-    /// see also [`crate::system::text_add_in`]
+    /// see also [`text_add_in`]
     #[allow(clippy::too_many_arguments)]
     pub fn add_in(
         _token: &MainThreadToken,
@@ -3813,7 +4280,7 @@ impl Text {
     ///
     /// Returns size of the text in meters
     ///
-    /// see also [`crate::system::text_size_layout`] [`crate::system::text_size_layout_constrained`]
+    /// see also [`text_size_layout`] [`text_size_layout_constrained`]
     #[deprecated(since = "0.40.0", note = "please Text::use size_layout")]
     pub fn size(text: impl AsRef<str>, text_style: Option<TextStyle>, max_width: Option<f32>) -> Vec2 {
         let c_str = CString::new(text.as_ref()).unwrap();
@@ -3836,7 +4303,7 @@ impl Text {
     ///
     /// Returns size of the text in meters
     ///
-    /// see also [`crate::system::text_size_layout`] [`crate::system::text_size_layout_constrained`]
+    /// see also [`text_size_layout`] [`text_size_layout_constrained`]
     pub fn size_layout(text: impl AsRef<str>, text_style: Option<TextStyle>, max_width: Option<f32>) -> Vec2 {
         let c_str = CString::new(text.as_ref()).unwrap();
         let style = text_style.unwrap_or_default();
@@ -3857,7 +4324,7 @@ impl Text {
     ///
     /// Returns the sizeLayout modified to account for the size of the most extreme glyphs.
     ///
-    /// see also [`crate::system::text_size_layout`] [`crate::system::text_size_layout_constrained`]
+    /// see also [`text_size_layout`] [`text_size_layout_constrained`]
     pub fn size_render(size_layout: impl Into<Vec2>, text_style: Option<TextStyle>, y_offset: &mut f32) -> Vec2 {
         let style = text_style.unwrap_or_default();
         unsafe { text_size_render(size_layout.into(), style, y_offset) }
@@ -3947,7 +4414,7 @@ impl World {
     /// is asynchronous, so occlusion may not occur immediately after setting this flag.
     /// <https://stereokit.net/Pages/StereoKit/World/OcclusionEnabled.html>
     ///
-    /// see also [crate::system::world_set_occlusion_enabled]
+    /// see also [world_set_occlusion_enabled]
     pub fn occlusion_enabled(enabled: bool) {
         unsafe { world_set_occlusion_enabled(enabled as Bool32T) }
     }
@@ -3956,7 +4423,7 @@ impl World {
     /// visible anywhere. You can override this with whatever material you would like.
     /// <https://stereokit.net/Pages/StereoKit/World/OcclusionMaterial.html>
     ///
-    /// see also [crate::system::world_set_occlusion_material]
+    /// see also [world_set_occlusion_material]
     pub fn occlusion_material(material: impl AsRef<Material>) {
         unsafe { world_set_occlusion_material(material.as_ref().0.as_ptr()) }
     }
@@ -3966,7 +4433,7 @@ impl World {
     /// reference point.
     /// <https://stereokit.net/Pages/StereoKit/World/OriginOffset.html>
     ///
-    /// see also [crate::system::world_set_origin_offset]
+    /// see also [world_set_origin_offset]
     pub fn origin_offset(offset: impl Into<Pose>) {
         unsafe { world_set_origin_offset(offset.into()) }
     }
@@ -3977,7 +4444,7 @@ impl World {
     /// not be available immediately after setting this flag.
     /// <https://stereokit.net/Pages/StereoKit/World/RaycastEnabled.html>
     ///
-    /// see also [crate::system::world_set_raycast_enabled]
+    /// see also [world_set_raycast_enabled]
     pub fn raycast_enabled(enabled: bool) {
         unsafe { world_set_raycast_enabled(enabled as Bool32T) }
     }
@@ -3987,7 +4454,7 @@ impl World {
     /// always refresh as soon as the previous refresh finishes.
     /// <https://stereokit.net/Pages/StereoKit/World/RefreshInterval.html>
     ///
-    /// see also [crate::system::world_set_refresh_interval]
+    /// see also [world_set_refresh_interval]
     pub fn refresh_interval(speed: f32) {
         unsafe { world_set_refresh_interval(speed) }
     }
@@ -3997,7 +4464,7 @@ impl World {
     /// the center of where the most recent refresh occurred.
     /// <https://stereokit.net/Pages/StereoKit/World/RefreshRadius.html>
     ///
-    /// see also [crate::system::world_set_refresh_radius]
+    /// see also [world_set_refresh_radius]
     pub fn refresh_radius(distance: f32) {
         unsafe { world_set_refresh_radius(distance) }
     }
@@ -4006,7 +4473,7 @@ impl World {
     /// WorldRefresh enum for details.
     /// <https://stereokit.net/Pages/StereoKit/World/RefreshType.html>
     ///
-    /// see also [crate::system::world_set_refresh_type]
+    /// see also [world_set_refresh_type]
     pub fn refresh_type(refresh_type: WorldRefresh) {
         unsafe { world_set_refresh_type(refresh_type) }
     }
@@ -4017,7 +4484,7 @@ impl World {
     /// This method only works on UWP platforms, check Sk.System.perception_bridge_present to see if this is available.
     /// <https://stereokit.net/Pages/StereoKit/World/FromPerceptionAnchor.html>
     ///
-    /// see also [crate::system::world_from_perception_anchor]
+    /// see also [world_from_perception_anchor]
     #[allow(clippy::not_unsafe_ptr_arg_deref)]
     pub fn from_perception_anchor(perception_spatial_anchor: *mut c_void) -> Option<Pose> {
         let mut pose = Pose::IDENTITY;
@@ -4034,7 +4501,7 @@ impl World {
     /// with the Windows QR code package.
     /// <https://stereokit.net/Pages/StereoKit/World/FromSpatialNode.html>
     ///
-    /// see also [crate::system::world_try_from_spatial_graph]
+    /// see also [world_try_from_spatial_graph]
     pub fn from_spatial_node(
         spatial_graph_node_id: impl AsRef<str>,
         spatial_node_type: SpatialNodeType,
@@ -4057,7 +4524,7 @@ impl World {
     /// provided by the Microsoft HoloLens runtime.
     /// <https://stereokit.net/Pages/StereoKit/World/Raycast.html>
     ///
-    /// see also [crate::system::world_raycast]
+    /// see also [world_raycast]
     pub fn raycast(ray: impl Into<Ray>) -> Option<Ray> {
         let mut intersection = Ray::default();
         if unsafe { world_raycast(ray.into(), &mut intersection) != 0 } { Some(intersection) } else { None }
@@ -4067,7 +4534,7 @@ impl World {
     /// height! Not all systems have a boundary, so be sure to check World::has_bounds() first.
     /// <https://stereokit.net/Pages/StereoKit/World/BoundsPose.html>
     ///
-    /// see also [crate::system::world_get_bounds_pose]
+    /// see also [world_get_bounds_pose]
     pub fn get_bounds_pose() -> Pose {
         unsafe { world_get_bounds_pose() }
     }
@@ -4077,7 +4544,7 @@ impl World {
     /// exists at all!
     /// <https://stereokit.net/Pages/StereoKit/World/BoundsSize.html>
     ///
-    /// see also [crate::system::world_get_bounds_size]
+    /// see also [world_get_bounds_size]
     pub fn get_bounds_size() -> Vec2 {
         unsafe { world_get_bounds_size() }
     }
@@ -4086,7 +4553,7 @@ impl World {
     /// it’s always a good idea to check this first!
     /// <https://stereokit.net/Pages/StereoKit/World/HasBounds.html>
     ///
-    /// see also [crate::system::world_has_bounds]
+    /// see also [world_has_bounds]
     pub fn has_bounds() -> bool {
         unsafe { world_has_bounds() != 0 }
     }
@@ -4098,7 +4565,7 @@ impl World {
     /// is asynchronous, so occlusion may not occur immediately after setting this flag.
     /// <https://stereokit.net/Pages/StereoKit/World/OcclusionEnabled.html>
     ///
-    /// see also [crate::system::world_get_occlusion_enabled]
+    /// see also [world_get_occlusion_enabled]
     pub fn get_occlusion_enabled() -> bool {
         unsafe { world_get_occlusion_enabled() != 0 }
     }
@@ -4107,7 +4574,7 @@ impl World {
     /// visible anywhere. You can override this with whatever material you would like.
     /// <https://stereokit.net/Pages/StereoKit/World/OcclusionMaterial.html>
     ///
-    /// see also [crate::system::world_get_occlusion_material]
+    /// see also [world_get_occlusion_material]
     pub fn get_occlusion_material() -> Material {
         Material(NonNull::new(unsafe { world_get_occlusion_material() }).unwrap())
     }
@@ -4118,7 +4585,7 @@ impl World {
     /// different available modes.
     /// <https://stereokit.net/Pages/StereoKit/World/OriginMode.html>
     ///
-    /// see also [crate::system::world_get_origin_mode]
+    /// see also [world_get_origin_mode]
     pub fn get_origin_mode() -> OriginMode {
         unsafe { world_get_origin_mode() }
     }
@@ -4130,7 +4597,7 @@ impl World {
     /// gyroscopes/accelerometers, which don't really fail the same way positional tracking system can.
     /// <https://stereokit.net/Pages/StereoKit/World/Tracked.html>
     ///
-    /// see also [crate::system::world_get_tracked]
+    /// see also [world_get_tracked]
     pub fn get_tracked() -> BtnState {
         unsafe { world_get_tracked() }
     }
@@ -4140,7 +4607,7 @@ impl World {
     /// reference point.
     /// <https://stereokit.net/Pages/StereoKit/World/OriginOffset.html>
     ///
-    /// see also [crate::system::world_get_origin_offset]
+    /// see also [world_get_origin_offset]
     pub fn get_origin_offset() -> Pose {
         unsafe { world_get_origin_offset() }
     }
@@ -4151,7 +4618,7 @@ impl World {
     /// not be available immediately after setting this flag.
     /// <https://stereokit.net/Pages/StereoKit/World/RaycastEnabled.html>
     ///
-    /// see also [crate::system::world_get_raycast_enabled]
+    /// see also [world_get_raycast_enabled]
     pub fn get_raycast_enabled() -> bool {
         unsafe { world_get_raycast_enabled() != 0 }
     }
@@ -4161,7 +4628,7 @@ impl World {
     /// always refresh as soon as the previous refresh finishes.
     /// <https://stereokit.net/Pages/StereoKit/World/RefreshInterval.html>
     ///
-    /// see also [crate::system::world_get_refresh_interval]
+    /// see also [world_get_refresh_interval]
     pub fn get_refresh_interval() -> f32 {
         unsafe { world_get_refresh_interval() }
     }
@@ -4171,7 +4638,7 @@ impl World {
     /// the center of where the most recent refresh occurred.
     /// <https://stereokit.net/Pages/StereoKit/World/RefreshRadius.html>
     ///
-    /// see also [crate::system::world_get_refresh_radius]
+    /// see also [world_get_refresh_radius]
     pub fn get_refresh_radius() -> f32 {
         unsafe { world_get_refresh_radius() }
     }
@@ -4180,7 +4647,7 @@ impl World {
     /// WorldRefresh enum for details.
     /// <https://stereokit.net/Pages/StereoKit/World/RefreshType.html>
     ///
-    /// see also [crate::system::world_get_refresh_type]
+    /// see also [world_get_refresh_type]
     pub fn get_refresh_type() -> WorldRefresh {
         unsafe { world_get_refresh_type() }
     }

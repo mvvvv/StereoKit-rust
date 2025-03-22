@@ -180,6 +180,10 @@ pub mod sprite;
 /// which are also unit tests:
 ///
 /// [![Assets](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/assets.jpeg)](system::Assets)
+/// [![Assets block for priority](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/assets block_for_priority.jpeg)](system::Assets::block_for_priority)
+/// [![Hierarchy](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/hierarchy.jpeg)](system::Hierarchy)]]
+/// [![Hierarchy ray](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/hierarchy_ray.jpeg)](system::Hierarchy::to_local_ray)]
+///
 /// [![Microphone](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/microphone.jpeg)](system::Microphone)
 pub mod system;
 
