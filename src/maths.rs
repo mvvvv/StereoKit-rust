@@ -1600,6 +1600,43 @@ impl Quat {
         unsafe { quat_mul_vec(self, &point) }
     }
 
+    /// Get an array of the 3 angles in degrees of this Quat with x, y and z axis
+    /// <https://stereokit.net/Pages/StereoKit/Quat.html>
+    ///
+    /// see also [`quat_to_axis_angle`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Quat, Vec3};
+    ///
+    /// let quat = Quat::from_angles(90.0, 180.0, -180.0);
+    ///
+    /// let angles: Vec3  = quat.to_angles_degrees().into();
+    /// assert_eq!(angles, [-270.0, 0.0, 0.0].into());
+    /// ```
+    #[inline]
+    pub fn to_angles_degrees(&self) -> [f32; 3] {
+        let mut axis = Vec3::ZERO;
+        let mut rotation: f32 = 0.0;
+        unsafe { quat_to_axis_angle(*self, &mut axis, &mut rotation) };
+        axis.normalize();
+        [rotation * axis.x, rotation * axis.y, rotation * axis.z]
+    }
+
+    /// Get an array of the 3 angles in radians of this Quat with x, y and z axis
+    /// <https://stereokit.net/Pages/StereoKit/Quat.html>
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Quat, Vec3};
+    ///
+    /// let quat = Quat::from_angles(90.0, 0.0, 0.0);
+    /// let angles = quat.to_angles();
+    /// assert_eq!(angles, [1.5707964, 0.0, 0.0]);
+    /// ```
+    #[inline]
+    pub fn to_angles(&self) -> [f32; 3] {
+        self.to_angles_degrees().map(|x| x.to_radians())
+    }
+
     /// This rotates a point around the origin by the Quat.
     /// <https://stereokit.net/Pages/StereoKit/Quat/Rotate.html>
     /// * a - The Quat to use for rotation.
