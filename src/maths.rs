@@ -1538,6 +1538,9 @@ impl Quat {
     /// <https://stereokit.net/Pages/StereoKit/Quat/Identity.html>
     pub const IDENTITY: Self = Self { x: 0.0, y: 0.0, z: 0.0, w: 1.0 };
 
+    /// ZERO may be found when testing some [`crate::system::Input`], [`crate::system::Pointer`] or [`crate::system::Controller`]
+    pub const ZERO: Self = Self { x: 0.0, y: 0.0, z: 0.0, w: 0.0 };
+
     /// You may want to use static creation methods, like Quat::look_at, or Quat::IDENTITY instead of this one! Unless you
     /// know what you’re doing.
     /// <https://stereokit.net/Pages/StereoKit/Quat/Quat.html>
@@ -3378,14 +3381,19 @@ pub struct Pose {
 
 impl Default for Pose {
     /// Position is Vec3::ZERO, and orientation is Quat::IDENTITY (no rotation)
+    /// <https://stereokit.net/Pages/StereoKit/Pose/Identity.html>
     fn default() -> Self {
         Pose::IDENTITY
     }
 }
 
 impl Pose {
-    /// Origin with Quat::IDENTITY orientation
+    /// The default Pose: Origin with Quat::IDENTITY orientation.
+    /// <https://stereokit.net/Pages/StereoKit/Pose/Identity.html>
     pub const IDENTITY: Pose = Pose { position: Vec3::new(0.0, 0.0, 0.0), orientation: Quat::IDENTITY };
+
+    /// Zero may be encountered when testing some [`crate::system::Input`] [`crate::system::Pointer`] and [`crate::system::Controller`]
+    pub const ZERO: Pose = Pose { position: Vec3::new(0.0, 0.0, 0.0), orientation: Quat::ZERO };
 
     /// Basic initialization constructor! Just copies in the provided values directly, and uses Identity for the
     /// orientation.
@@ -3763,6 +3771,9 @@ unsafe extern "C" {
 }
 
 impl Ray {
+    /// Ray Zero is the default
+    pub const ZERO: Self = Ray { position: Vec3::ZERO, direction: Vec3::ZERO };
+
     /// Basic initialization constructor! Just copies the parameters into the fields.
     /// <https://stereokit.net/Pages/StereoKit/Ray/Ray.html>
     /// * position - The position or origin point of the Ray.

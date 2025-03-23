@@ -1442,6 +1442,16 @@ bitflags::bitflags! {
     /// <https://stereokit.net/Pages/StereoKit/BtnState.html>
     ///
     /// see also [`Input`] |`Ui`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::system::BtnState;
+    ///
+    /// let state = BtnState::Active | BtnState::JustActive;
+    /// assert!(state.contains(BtnState::Active));
+    /// assert!(state.contains(BtnState::JustActive));
+    /// assert!(!state.contains(BtnState::JustInactive));
+    /// assert!(!state.contains(BtnState::Changed));
+    /// ```
     #[derive(Default, Debug, Copy, Clone, PartialEq, Eq, PartialOrd)]
     #[repr(C)]
     pub struct BtnState: u32 {
@@ -1460,6 +1470,8 @@ bitflags::bitflags! {
     }
 }
 
+/// A collection of extension methods for the BtnState enum that makes bit-field checks a little easier.
+/// <https://stereokit.net/Pages/StereoKit/BtnStateExtensions.html>
 impl BtnState {
     /// Is the button pressed?
     /// <https://stereokit.net/Pages/StereoKit/BtnStateExtensions/IsActive.html>
@@ -1486,39 +1498,26 @@ impl BtnState {
     }
 }
 
-/// A collection of extension methods for the BtnState enum that makes bit-field checks a little easier.
-/// <https://stereokit.net/Pages/StereoKit/BtnStateExtensions.html>
-pub struct BtnStateExtension;
-
-impl BtnStateExtension {
-    /// Is the button pressed?
-    /// <https://stereokit.net/Pages/StereoKit/BtnStateExtensions/IsActive.html>
-    pub fn is_active(state: BtnState) -> bool {
-        (state & BtnState::Active) > BtnState::Inactive
-    }
-
-    /// Has the button just been pressed this frame?
-    /// <https://stereokit.net/Pages/StereoKit/BtnStateExtensions/IsJustActive.html>
-    pub fn is_just_active(state: BtnState) -> bool {
-        (state & BtnState::JustActive) > BtnState::Inactive
-    }
-
-    /// Has the button just been released this frame?
-    /// <https://stereokit.net/Pages/StereoKit/BtnStateExtensions/IsJustInactive.html>
-    pub fn is_just_inactive(state: BtnState) -> bool {
-        (state & BtnState::JustInactive) > BtnState::Inactive
-    }
-
-    /// Was the button either presses or released this frame?
-    /// <https://stereokit.net/Pages/StereoKit/BtnStateExtensions/IsChanged.html>
-    pub fn is_changed(state: BtnState) -> bool {
-        (state & BtnState::Changed) > BtnState::Inactive
-    }
-}
-
 /// This is the tracking state of a sensory input in the world, like a controller’s position sensor, or a QR code
 /// identified by a tracking system.
 /// <https://stereokit.net/Pages/StereoKit/TrackState.html>
+///
+/// see also [`Controller`]
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::system::{TrackState, Input, Handed};
+///
+/// let controller = Input::controller(Handed::Right);
+///
+/// assert_eq!(controller.tracked_pos, TrackState::Lost);
+/// assert_ne!(controller.tracked_pos, TrackState::Inferred);
+/// assert_ne!(controller.tracked_pos, TrackState::Known);
+///
+/// assert_eq!(controller.tracked_rot, TrackState::Lost);
+/// assert_ne!(controller.tracked_rot, TrackState::Inferred);
+/// assert_ne!(controller.tracked_rot, TrackState::Known);
+/// ```
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
 pub enum TrackState {
@@ -1536,6 +1535,33 @@ pub enum TrackState {
 
 /// Pointer is an abstraction of a number of different input sources, and a way to surface input events!
 /// <https://stereokit.net/Pages/StereoKit/Pointer.html>
+///
+/// see also [`Input`]
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{system::{Input, InputSource, Pointer, BtnState, Handed, TrackState},
+///                      maths::{Vec3, Quat, Pose, Ray}};
+///
+/// // By default we only have the 2 hands.
+/// assert_eq!(Input::pointer_count(None), 2);
+/// let pointer = Input::pointer(0, None);
+///
+/// assert_eq!(pointer.source, InputSource::Hand | InputSource::HandLeft | InputSource::CanPress);
+/// assert_eq!(pointer.state, BtnState::Inactive);
+/// assert_eq!(pointer.tracked, BtnState::Inactive);
+/// assert_eq!(pointer.orientation, Quat::ZERO);
+/// assert_eq!(pointer.ray, Ray::ZERO);
+/// assert_eq!(pointer.get_pose(), Pose::ZERO);
+///
+/// let hand_pointer = Input::pointer(1, Some(InputSource::Hand));
+/// assert_eq!(hand_pointer.source, InputSource::Hand | InputSource::HandRight | InputSource::CanPress);
+/// assert_eq!(pointer.state, BtnState::Inactive);
+/// assert_eq!(pointer.tracked, BtnState::Inactive);
+/// assert_eq!(pointer.orientation, Quat::ZERO);
+/// assert_eq!(pointer.ray, Ray::ZERO);
+/// assert_eq!(pointer.get_pose(), Pose::ZERO);
+/// ```
 #[derive(Debug, Copy, Clone)]
 #[repr(C)]
 pub struct Pointer {
@@ -1563,7 +1589,28 @@ impl Pointer {
 
 /// Contains information to represents a joint on the hand.
 /// <https://stereokit.net/Pages/StereoKit/HandJoint.html>
-#[derive(Debug, Copy, Clone)]
+///
+/// see also  [`Input::hand`] [`Hand::get`] [`FingerId`] [`JointId`]
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{system::{Input, Handed, FingerId, JointId},
+///                      maths::{Vec3, Quat, Pose, Ray}};
+///
+/// let hand = Input::hand(Handed::Left);
+/// let index_root = hand.get(FingerId::Index, JointId::Root);
+/// assert_eq!(index_root.position, Vec3 { x: -0.011, y: -0.038, z: 0.004 });
+///
+/// let hand = Input::hand(Handed::Right);
+/// let index_root = hand.get(FingerId::Index, JointId::Root);
+/// assert_eq!(index_root.position, Vec3 { x:  0.011, y: -0.038, z: 0.004 });
+///
+/// let index_tip = hand.get(FingerId::Index, JointId::Tip);
+/// assert_eq!(index_tip.position, Vec3 { x: 0.029, y: 0.097, z: -0.041 });
+/// assert_eq!(index_tip.orientation, Quat { x: -0.193, y: -0.004, z: 0.046, w: -0.98 });
+/// assert_eq!(index_tip.radius, 0.007);
+/// ```
+#[derive(Debug, Copy, Clone, PartialEq)]
 #[repr(C)]
 pub struct HandJoint {
     /// The center of the joint’s world space location.
@@ -1578,6 +1625,8 @@ pub struct HandJoint {
 
 /// Index values for each finger! From 0-4, from thumb to little finger.
 /// <https://stereokit.net/Pages/StereoKit/FingerId.html>
+///
+/// see also  [`Input::hand`] [`Hand::get`] [`JointId`]
 #[derive(Debug, Copy, Clone)]
 #[repr(u32)]
 pub enum FingerId {
@@ -1595,6 +1644,8 @@ pub enum FingerId {
 
 /// Here’s where hands get crazy! Technical terms, and watch out for the thumbs!
 /// <https://stereokit.net/Pages/StereoKit/JointId.html>
+///
+/// see also  [`Input::hand`] [`Hand::get`] [`FingerId`]
 #[derive(Debug, Copy, Clone)]
 #[repr(u32)]
 pub enum JointId {
@@ -1616,6 +1667,8 @@ pub enum JointId {
 /// true hand data such as that provided by a Leap Motion Controller, and simulated data that StereoKit provides when
 /// true hand data is not present.
 /// <https://stereokit.net/Pages/StereoKit/HandSource.html>
+///
+/// see also [`Input::hand_source`]
 #[derive(Debug, Copy, Clone)]
 #[repr(u32)]
 pub enum HandSource {
@@ -1635,12 +1688,82 @@ pub enum HandSource {
 
 /// Id of a simulated hand pose, for use with Input.HandSimPoseRemove
 /// <https://stereokit.net/Pages/StereoKit/HandSimId.html>
+///
+/// see also [`Input::hand_sim_pose_add`] [`Input::hand_sim_pose_remove`]
 pub type HandSimId = i32;
 
 #[derive(Debug, Copy, Clone)]
 #[repr(C)]
 /// Information about a hand!
 /// <https://stereokit.net/Pages/StereoKit/Hand.html>
+///
+/// see also [`Input::hand`]
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{system::{Hierarchy, Input, Handed, FingerId, JointId}, util::named_colors,
+///                      maths::{Vec3, Quat, Pose, Matrix}, mesh::Mesh, material::Material};
+///
+/// let hand = Input::hand(Handed::Left);
+/// let thumb_tip = hand.get(FingerId::Thumb, JointId::Tip);
+///
+/// let sphere = Mesh::generate_sphere(1.0, Some(12));
+/// let mut material_sphere = Material::pbr().copy();
+/// let main_transform = Matrix::tr(&([0.0, -0.05, 0.88].into()), &([0.0, 210.0, 0.0].into()));
+///
+/// filename_scr = "screenshots/hand.jpeg";
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+///     for finger in 0..5 {
+///         for joint in 0..5 {
+///             let joint_pos = hand.get_u(finger, joint);
+///             let transform = Matrix::ts(joint_pos.position, Vec3::ONE * joint_pos.radius);
+///             Hierarchy::push(token, main_transform, None);
+///                 sphere.draw(token, &material_sphere, transform, Some(named_colors::BLACK.into()), None);
+///             Hierarchy::pop(token);
+///         }
+///     }
+/// );
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/hand.jpeg" alt="screenshot" width="200">
+///
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{system::{Input, Handed, FingerId, JointId, BtnState, Hand, HandJoint},
+///                      maths::{Vec3, Quat, Pose}};
+///
+/// let hand = Input::hand(Handed::Left);
+/// let thumb_tip = hand.get(FingerId::Thumb, JointId::Tip);
+/// assert_eq!(thumb_tip.position, Vec3 { x: -0.072, y: 0.028, z: -0.055 });
+///
+/// let hand = Input::hand(Handed::Right);
+///
+/// let thumb_tip  = hand.get(FingerId::Thumb, JointId::Tip);
+/// let thumb_tip2 = hand.get_u(0,4);
+/// let thumb_tip3 = hand.fingers[FingerId::Thumb as usize][JointId::Tip as usize];
+/// assert_eq!(thumb_tip.position, Vec3 { x: 0.072, y: 0.028, z: -0.055 });
+/// assert_eq!(thumb_tip, thumb_tip2);
+/// assert_eq!(thumb_tip, thumb_tip3);
+///
+/// assert_eq!(hand.wrist,      Pose::ZERO);
+/// assert_eq!(hand.palm,       Pose::IDENTITY);
+/// assert_eq!(hand.aim,        Pose::ZERO);
+/// assert_eq!(hand.pinch_pt,   Vec3::ZERO);
+/// assert_eq!(hand.handed,     Handed::Right);
+/// assert_eq!(hand.tracked,    BtnState::Inactive);
+/// assert_eq!(hand.pinch,      BtnState::Inactive);
+/// assert_eq!(hand.grip,       BtnState::Inactive);
+/// assert_eq!(hand.aim_ready,  BtnState::Inactive);
+///
+/// assert_eq!(hand.is_gripped(), false);
+/// assert_eq!(hand.is_just_gripped(), false);
+/// assert_eq!(hand.is_just_ungripped(), false);
+/// assert_eq!(hand.is_pinched(), false);
+/// assert_eq!(hand.is_just_pinched(), false);
+/// assert_eq!(hand.is_just_unpinched(), false);
+/// assert_eq!(hand.is_tracked(), false);
+/// assert_eq!(hand.is_just_tracked(), false);
+/// assert_eq!(hand.is_just_untracked(), false);
+/// ```
 pub struct Hand {
     /// This is a 2D array with 25 HandJoints. You can get the right joint by finger*5 + joint
     pub fingers: [[HandJoint; 5usize]; 5usize],
@@ -1759,6 +1882,19 @@ impl Hand {
     /// <https://stereokit.net/Pages/StereoKit/Hand/Material.html>
     ///
     /// see also [`input_hand_material`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::{Input, Handed, Hand}, material::Material, util::Color128};
+    ///
+    /// let mut hand = Input::hand(Handed::Right);
+    ///
+    /// let mut material = Material::hand().copy();
+    /// material.color_tint(Color128::new(0.8, 0.5, 0.1, 1.0));
+    /// hand.material(&material);
+    ///
+    /// assert_ne!(material, Material::hand())
+    /// ```
     pub fn material(&mut self, material: impl AsRef<Material>) -> &mut Self {
         unsafe { input_hand_material(self.handed, material.as_ref().0.as_ptr()) }
         self
@@ -1777,6 +1913,8 @@ impl Hand {
 
 /// Represents an input from an XR headset’s controller!
 /// <https://stereokit.net/Pages/StereoKit/ControllerKey.html>
+///
+/// see also [`Input::hand_sim_pose_add`]
 #[derive(Debug, Copy, Clone)]
 #[repr(u32)]
 pub enum ControllerKey {
@@ -1800,6 +1938,60 @@ pub enum ControllerKey {
 /// This represents a physical controller input device! Tracking information, buttons, analog sticks and triggers!
 /// There’s also a Menu button that’s tracked separately at Input.ContollerMenu.
 /// <https://stereokit.net/Pages/StereoKit/Controller.html>
+///
+/// see also [`Input::controller`]
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{system::{Hierarchy, Input, Handed},
+///                      maths::{Matrix}, model::Model, material::Material};
+///
+/// let model_left = Input::get_controller_model(Handed::Left);
+/// let model_right = Input::get_controller_model(Handed::Right);
+/// let transform_left = Matrix::tr(&([-0.05, 0.0, 0.93].into()), &([90.0, 00.0, 0.0].into()));
+/// let transform_right = Matrix::tr(&([0.05, 0.0, 0.93].into()), &([90.0, 00.0, 0.0].into()));
+///
+/// filename_scr = "screenshots/controller.jpeg";
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+///     model_left.draw(token, transform_left, None, None);
+///     model_right.draw(token, transform_right, None, None);
+/// );
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/controller.jpeg" alt="screenshot" width="200">
+///
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{system::{Input, Handed, BtnState, TrackState},
+///                      maths::{Vec2, Vec3, Quat, Pose}};
+///
+/// let controller = Input::controller(Handed::Left);
+///
+/// let controller = Input::controller(Handed::Right);
+///
+/// assert_eq!(controller.pose,       Pose::ZERO);
+/// assert_eq!(controller.palm,       Pose::ZERO);
+/// assert_eq!(controller.aim,        Pose::ZERO);
+/// assert_eq!(controller.tracked,    BtnState::Inactive);
+/// assert_eq!(controller.tracked_pos, TrackState::Lost);
+/// assert_eq!(controller.tracked_rot, TrackState::Lost);
+/// assert_eq!(controller.x1,         BtnState::Inactive);
+/// assert_eq!(controller.x2,         BtnState::Inactive);
+/// assert_eq!(controller.trigger,    0.0);
+/// assert_eq!(controller.grip,       0.0);
+/// assert_eq!(controller.stick,      Vec2::ZERO);
+///
+/// assert_eq!(controller.is_just_tracked(), false);
+/// assert_eq!(controller.is_just_untracked(), false);
+/// assert_eq!(controller.is_stick_clicked(), false);
+/// assert_eq!(controller.is_stick_just_clicked(), false);
+/// assert_eq!(controller.is_tracked(), false);
+/// assert_eq!(controller.is_x1_just_pressed(), false);
+/// assert_eq!(controller.is_x1_just_unpressed(), false);
+/// assert_eq!(controller.is_x1_pressed(), false);
+/// assert_eq!(controller.is_x2_just_pressed(), false);
+/// assert_eq!(controller.is_x2_just_unpressed(), false);
+/// assert_eq!(controller.is_x2_pressed(), false);
+/// ```
 #[derive(Debug, Copy, Clone)]
 #[repr(C)]
 pub struct Controller {
@@ -1932,6 +2124,25 @@ impl Controller {
 
 /// This stores information about the mouse! What’s its state, where’s it pointed, do we even have one?
 /// <https://stereokit.net/Pages/StereoKit/Mouse.html>
+///
+/// see also [`Input::get_mouse`]
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{system::Input, maths::{Vec2, Vec3}};
+///
+/// let mouse = Input::get_mouse();
+///
+/// assert_eq!(mouse.is_available(),false);
+/// assert_eq!(mouse.pos,           Vec2::ZERO);
+/// assert_eq!(mouse.pos_change,    Vec2::ZERO);
+/// assert_eq!(mouse.scroll,        0.0);
+/// assert_eq!(mouse.scroll_change, 0.0);
+///
+/// assert_eq!(mouse.get_ray().position, Vec3::ZERO);
+/// // Warning: No ray if the mouse isn't available!
+/// // assert_eq!(mouse.get_ray().direction, Vec3::new(f32::NAN, f32::NAN, f32::NAN));
+/// ```
 #[derive(Debug, Copy, Clone)]
 #[repr(C)]
 pub struct Mouse {
@@ -1949,7 +2160,7 @@ pub struct Mouse {
 }
 
 impl Mouse {
-    /// Ray representing the position and orientation that the current Input.Mouse.pos is pointing in.
+    /// Ray representing the position and orientation that the current Input::get_mouse() is pointing in.
     /// <https://stereokit.net/Pages/StereoKit/Mouse/Ray.html>
     ///
     /// see also [`ray_from_mouse`]
@@ -1958,10 +2169,18 @@ impl Mouse {
         unsafe { ray_from_mouse(self.pos, &mut out_ray) };
         out_ray
     }
+
+    /// Is the mouse available ?
+    /// <https://stereokit.net/Pages/StereoKit/Mouse/Available.html>
+    pub fn is_available(&self) -> bool {
+        self.available != 0
+    }
 }
 
 /// A collection of system key codes, representing keyboard characters and mouse buttons. Based on VK codes.
 /// <https://stereokit.net/Pages/StereoKit/Key.html>
+///
+/// see also [`Input::key`] [`Input::key_inject_press`] [`Input::key_inject_release`] [`Input::hand_sim_pose_add`]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
 pub enum Key {
@@ -2128,9 +2347,9 @@ impl Input {
     /// Model SK uses by default may be provided from the OpenXR runtime depending on extension support, but if not, SK
     /// does have a default Model.
     /// Setting this to null will restore SK's default.
-    /// <https://stereokit.net/Pages/StereoKit/Input.html>
-    /// * handed - The hand to assign the Model to.
-    /// * model - The Model to use to represent the controller.
+    /// <https://stereokit.net/Pages/StereoKit/Input/ControllerModelSet.html>
+    /// * `handed` - The hand to assign the Model to.
+    /// * `model` - The Model to use to represent the controller.
     ///   None is valid, and will restore SK's default model.
     ///
     ///  see also [`input_controller_model_set`]    
