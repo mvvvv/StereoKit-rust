@@ -23,9 +23,9 @@ use std::{
 ///
 /// // Creating vertices with all fields specified
 /// let vertices = [
-///     Vertex::new(Vec3::ZERO,Vec3::UP,None,         Some(Color32::rgb(255, 0, 0))),
-///     Vertex::new(Vec3::X,   Vec3::UP,Some(Vec2::X),Some(Color32::rgb(255, 255, 0))),
-///     Vertex::new(Vec3::Y,   Vec3::UP,Some(Vec2::Y),Some(Color32::rgb(0, 0, 255))),
+///     Vertex::new(Vec3::ZERO,Vec3::UP,None,         Some(Color32::rgb(0, 0, 255))),
+///     Vertex::new(Vec3::X,   Vec3::UP,Some(Vec2::X),Some(Color32::rgb(255, 0, 0))),
+///     Vertex::new(Vec3::Y,   Vec3::UP,Some(Vec2::Y),Some(Color32::rgb(0,255, 0))),
 /// ];
 /// let indices = [0, 1, 2, 2, 1, 0];
 /// let mut mesh = Mesh::new();
