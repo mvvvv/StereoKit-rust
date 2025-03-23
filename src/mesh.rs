@@ -856,7 +856,7 @@ impl Mesh {
     ///     Vertex::new([-1.0, -1.0, 0.0].into(), Vec3::UP, None,            Some(named_colors::BLUE)),
     ///     Vertex::new([ 1.0, -1.0, 0.0].into(), Vec3::UP, Some(Vec2::X),   None),
     ///     Vertex::new([-1.0,  1.0, 0.0].into(), Vec3::UP, Some(Vec2::Y),   None),
-    ///     Vertex::new([ 1.0,  1.0, 0.0].into(), Vec3::UP, Some(Vec2::ONE), Some(named_colors::FUCHSIA)),
+    ///     Vertex::new([ 1.0,  1.0, 0.0].into(), Vec3::UP, Some(Vec2::ONE), Some(named_colors::YELLOW)),
     ///     ], true)
     ///    .set_inds(&[0, 1, 2, 2, 1, 3]);
     ///
