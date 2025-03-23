@@ -23,7 +23,7 @@ use std::{
 ///
 /// // Creating vertices with all fields specified
 /// let vertices = [
-///     Vertex::new(Vec3::ZERO,Vec3::UP,None,         Some(Color32::rgb(0, 0, 255))),
+///     Vertex::new(Vec3::ZERO,Vec3::UP,None,         Some(Color32::rgb(255, 0, 255))),
 ///     Vertex::new(Vec3::X,   Vec3::UP,Some(Vec2::X),Some(Color32::rgb(255, 0, 0))),
 ///     Vertex::new(Vec3::Y,   Vec3::UP,Some(Vec2::Y),Some(Color32::rgb(0,255, 0))),
 /// ];
@@ -856,7 +856,7 @@ impl Mesh {
     ///     Vertex::new([-1.0, -1.0, 0.0].into(), Vec3::UP, None,            Some(named_colors::BLUE)),
     ///     Vertex::new([ 1.0, -1.0, 0.0].into(), Vec3::UP, Some(Vec2::X),   None),
     ///     Vertex::new([-1.0,  1.0, 0.0].into(), Vec3::UP, Some(Vec2::Y),   None),
-    ///     Vertex::new([ 1.0,  1.0, 0.0].into(), Vec3::UP, Some(Vec2::ONE), Some(named_colors::RED)),
+    ///     Vertex::new([ 1.0,  1.0, 0.0].into(), Vec3::UP, Some(Vec2::ONE), Some(named_colors::FUCHSIA)),
     ///     ], true)
     ///    .set_inds(&[0, 1, 2, 2, 1, 3]);
     ///
