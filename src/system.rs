@@ -1669,7 +1669,7 @@ pub enum JointId {
 /// <https://stereokit.net/Pages/StereoKit/HandSource.html>
 ///
 /// see also [`Input::hand_source`]
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 #[repr(u32)]
 pub enum HandSource {
     /// There is currently no source of hand data! This means there are no tracked controllers, or active hand tracking
@@ -1715,8 +1715,8 @@ pub type HandSimId = i32;
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
 ///     for finger in 0..5 {
 ///         for joint in 0..5 {
-///             let joint_pos = hand.get_u(finger, joint);
-///             let transform = Matrix::ts(joint_pos.position, Vec3::ONE * joint_pos.radius);
+///             let joint_pose = hand.get_u(finger, joint);
+///             let transform = Matrix::ts(joint_pose.position, Vec3::ONE * joint_pose.radius);
 ///             Hierarchy::push(token, main_transform, None);
 ///                 sphere.draw(token, &material_sphere, transform, Some(named_colors::BLACK.into()), None);
 ///             Hierarchy::pop(token);
@@ -1925,7 +1925,7 @@ pub enum ControllerKey {
     /// The grip button on the controller, usually where the fingers that are not the index finger sit.
     Grip = 2,
     /// This is the lower of the two primary thumb buttons, sometimes labelled X, and sometimes A.
-    X1_ = 3,
+    X1 = 3,
     /// This is the upper of the two primary thumb buttons, sometimes labelled Y, and sometimes B.
     X2 = 4,
     /// This is when the thumbstick on the controller is actually pressed. This has nothing to do with the horizontal
@@ -2290,7 +2290,31 @@ pub enum Key {
 
 /// Input from the system come from this class! Hands, eyes, heads, mice and pointers!
 /// <https://stereokit.net/Pages/StereoKit/Input.html>
+///
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{system::{Input, InputSource, Handed},
+///                      maths::{Vec2, Vec3, Quat, Pose}};
+///
+/// let controller = Input::controller(Handed::Left);
+/// assert_eq!(controller.is_tracked(), false);
+///
+/// let hand = Input::hand(Handed::Right);
+/// assert_eq!(hand.is_tracked(), false);
+///
+/// let head = Input::get_head();
+/// assert_eq!(head , Pose::IDENTITY);
+///
+/// let mouse = Input::get_mouse();
+/// assert_eq!(mouse.is_available(), false);
+///
+/// assert_eq!(Input::pointer_count(None), 2);
+/// let pointer = Input::pointer(0, Some(InputSource::Hand));
+/// assert_eq!(pointer.source, InputSource::Hand | InputSource::HandLeft | InputSource::CanPress);
+/// ```
 pub struct Input;
+
 unsafe extern "C" {
     pub fn input_pointer_count(filter: InputSource) -> i32;
     pub fn input_pointer(index: i32, filter: InputSource) -> Pointer;
@@ -2346,13 +2370,29 @@ impl Input {
     /// When StereoKit is rendering the input source, this allows you to override the controller Model SK uses. The
     /// Model SK uses by default may be provided from the OpenXR runtime depending on extension support, but if not, SK
     /// does have a default Model.
-    /// Setting this to null will restore SK's default.
+    /// Setting this to None will restore SK's default.
     /// <https://stereokit.net/Pages/StereoKit/Input/ControllerModelSet.html>
     /// * `handed` - The hand to assign the Model to.
     /// * `model` - The Model to use to represent the controller.
     ///   None is valid, and will restore SK's default model.
     ///
-    ///  see also [`input_controller_model_set`]    
+    ///  see also [`input_controller_model_set`]  [`Input::get_controller_model`]  
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::{Input, Handed}, model::Model};
+    ///
+    /// assert_eq!(Input::get_controller_model(Handed::Left).get_id(), "default/model_controller_l");
+    ///
+    /// let model_left = Model::from_file("center.glb", None)
+    ///                     .expect("mobiles.gltf should be a valid model");
+    ///
+    /// Input::set_controller_model(Handed::Left, Some(model_left));
+    /// assert_eq!(Input::get_controller_model(Handed::Left).get_id(), "center.glb");
+    ///
+    /// Input::set_controller_model(Handed::Left, None);
+    /// assert_eq!(Input::get_controller_model(Handed::Left).get_id(), "default/model_controller_l");
+    /// ```
     pub fn set_controller_model(handed: Handed, model: Option<Model>) {
         match model {
             Some(model) => unsafe { input_controller_model_set(handed, model.0.as_ptr()) },
@@ -2364,10 +2404,20 @@ impl Input {
     /// present on the user’s physical controller. Controllers are also not guaranteed to be available on the system,
     /// and are never simulated.
     /// <https://stereokit.net/Pages/StereoKit/Input/Controller.html>
-    /// * handed - The handedness of the controller to get the state of.
+    /// * `handed` - The handedness of the controller to get the state of.
     ///
     /// Returns a reference to a class that contains state information  about the indicated controller.
     /// see also [`input_controller`]    
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::{Input, Handed, TrackState};
+    ///
+    /// let controller = Input::controller(Handed::Right);
+    ///
+    /// assert_eq!(controller.tracked_pos, TrackState::Lost);
+    /// assert_eq!(controller.tracked_rot, TrackState::Lost);
+    /// ```
     pub fn controller(handed: Handed) -> Controller {
         unsafe { *input_controller(handed) }
     }
@@ -2375,11 +2425,30 @@ impl Input {
     /// This function allows you to artifically insert an input event, simulating any device source and event type you
     /// want.
     /// <https://stereokit.net/Pages/StereoKit/Input/FireEvent.html>
-    /// * event_source -The event source to simulate, this is a bit flag.
-    /// * event_ types - The event type to simulate, this is a bit flag.
-    /// * pointer - The pointer data to pass along with this simulated input event.
+    /// * `event_source` - The event source to simulate, this is a bit flag.
+    /// * `event_types` - The event type to simulate, this is a bit flag.
+    /// * `pointer` - The pointer data to pass along with this simulated input event.
     ///
     /// see also [`input_fire_event`]    
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::{Input, InputSource, Pointer, BtnState, Handed, TrackState},
+    ///                      maths::{Vec3, Quat, Pose, Ray}};
+    ///
+    /// let pointer = Input::pointer(0, None);
+    /// assert_eq!(pointer.source, InputSource::Hand | InputSource::HandLeft | InputSource::CanPress);
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     assert_eq!(pointer.state, BtnState::Inactive);
+    ///     assert_eq!(pointer.tracked, BtnState::Inactive);
+    ///     if iter == 0 {    
+    ///         Input::fire_event(InputSource::CanPress, BtnState::Active, &pointer);
+    ///     } else if iter == 1 {
+    ///         Input::fire_event(InputSource::Hand | InputSource::HandLeft, BtnState::JustInactive, &pointer);
+    ///     }
+    /// );
+    /// ```
     pub fn fire_event(event_source: InputSource, event_types: BtnState, pointer: &Pointer) {
         unsafe { input_fire_event(event_source, event_types, pointer) };
     }
@@ -2391,19 +2460,54 @@ impl Input {
     /// it once and keep it around for the frame, or at least function, rather than asking for it again and again each
     /// time you want to touch something.
     /// <https://stereokit.net/Pages/StereoKit/Input/Hand.html>
-    /// * handed - Do you want the left or the right hand? 0 is left, and 1 is right.
+    /// * `handed` - Do you want the left or the right hand? 0 is left, and 1 is right.
     ///
     /// Returns a copy of the entire set of hand data!
     /// see also [`input_hand`]    
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::{Input, Handed, Hand, HandJoint, FingerId, JointId};
+    /// use stereokit_rust::maths::{Vec3, Quat, Pose};
+    ///
+    /// let hand = Input::hand(Handed::Left);
+    /// let thumb_tip = hand.get(FingerId::Thumb, JointId::Tip);
+    /// assert_eq!(thumb_tip.position, Vec3 { x: -0.072, y: 0.028, z: -0.055 });
+    ///
+    /// let hand = Input::hand(Handed::Right);
+    /// let thumb_tip = hand.get(FingerId::Thumb, JointId::Tip);
+    /// assert_eq!(thumb_tip.position, Vec3 { x: 0.072, y: 0.028, z: -0.055 });
+    /// ```
     pub fn hand(handed: Handed) -> Hand {
         unsafe { *input_hand(handed) }
     }
 
     /// Clear out the override status from Input::hand_override, and restore the user’s control over it again.
     /// <https://stereokit.net/Pages/StereoKit/Input/HandClearOverride.html>
-    /// * hand - Which hand are we clearing the override on?
+    /// * `hand` - Which hand are we clearing the override on?
     ///
     /// see also [`input_hand_override`]    
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::{Input, Handed, HandJoint, FingerId, JointId},
+    ///                      maths::{Vec3, Quat}};
+    ///
+    /// let mut hand_joints = [HandJoint { position: Vec3::ZERO, orientation: Quat::IDENTITY, radius: 0.0 }; 25];
+    ///
+    /// Input::hand_override(Handed::Left, &hand_joints);
+    ///
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter == 0 {
+    ///         let hand = Input::hand(Handed::Left);
+    ///         let thumb_tip = hand.get(FingerId::Thumb, JointId::Tip);
+    ///         assert_eq!(thumb_tip.position, Vec3::ZERO);
+    ///     } else if iter == 1 {
+    ///         Input::hand_clear_override(Handed::Left);
+    ///     }
+    /// );
+    /// ```
     pub fn hand_clear_override(hand: Handed) {
         unsafe { input_hand_override(hand, null()) };
     }
@@ -2412,11 +2516,12 @@ impl Input {
     /// so this is great for simulating input for testing purposes. It will remain overridden until you call
     /// Input::hand_clear_override.
     /// <https://stereokit.net/Pages/StereoKit/Input/HandOverride.html>
-    /// * hand - Which hand should be overridden?
-    /// * joints - A 2D array of 25 joints that should be used as StereoKit's hand information. See `Hand.fingers`
+    /// * `hand` - Which hand should be overridden?
+    /// * `joints` - A 2D array of 25 joints that should be used as StereoKit's hand information. See `Hand.fingers`
     ///   for more information.
     ///
-    /// see also [`input_hand_override`]    
+    /// see also [`input_hand_override`]
+    /// see example in [`Input::hand_clear_override`]
     pub fn hand_override(hand: Handed, joints: &[HandJoint]) {
         unsafe { input_hand_override(hand, joints.as_ptr()) };
     }
@@ -2424,10 +2529,30 @@ impl Input {
     /// Set the Material used to render the hand! The default material uses an offset of 10 to ensure it gets drawn
     /// overtop of other elements.
     /// <https://stereokit.net/Pages/StereoKit/Input/HandMaterial.html>
-    /// * hand - The hand to assign the Material to. If Handed::Max, this will set the value for both hands.
-    /// * material - The new material. If None, will reset to the default value
+    /// * `hand` - The hand to assign the Material to. If Handed::Max, this will set the value for both hands.
+    /// * `material` - The new material. If None, will reset to the default value
     ///
-    /// see also [`input_hand_material`]    
+    /// see also [`input_hand_material`] [`Material::hand`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::{Input, Handed}, util::named_colors,
+    ///                      material::Material};
+    ///
+    /// let mut hand_material = Material::hand().copy();
+    /// hand_material.color_tint(named_colors::YELLOW).id("My_hand_material");
+    /// Input::hand_material(Handed::Left, Some(hand_material));
+    ///
+    /// test_steps! ( // !!!! Get a proper main loop !!!!
+    ///     if iter == 0 {
+    ///         // Of course, Material::hand() is not modified.
+    ///         assert_eq!(Material::hand().get_id(), "default/material_hand");
+    ///     } else if iter == 1 {
+    ///         // The reason why Material::hand() should not be modified:
+    ///         Input::hand_material(Handed::Left, None);
+    ///     }
+    /// );
+    /// ```
     pub fn hand_material(hand: Handed, material: Option<Material>) {
         match material {
             Some(material) => unsafe { input_hand_material(hand, material.0.as_ptr()) },
@@ -2438,17 +2563,40 @@ impl Input {
     /// StereoKit will use controller inputs to simulate an articulated hand. This function allows you to add new
     /// simulated poses to different controller or keyboard buttons!
     /// <https://stereokit.net/Pages/StereoKit/Input/HandSimPoseAdd.html>
-    /// * hand_joints_palm_relative_25 - 25 joint poses, thumb to pinky, and root to tip with two duplicate poses for
+    /// * `hand_joints_palm_relative_25` - 25 joint poses, thumb to pinky, and root to tip with two duplicate poses for
     ///   the thumb root joint. These should be right handed, and relative to the palm joint.
-    /// * button1 - Controller button to activate this pose, can/ be None if this is a keyboard only pose.
-    /// * and_button2 - Second controller button required to activate this pose. First must also be pressed. Can be
+    /// * `button1` - Controller button to activate this pose, can/ be None if this is a keyboard only pose.
+    /// * `and_button2` - Second controller button required to activate this pose. First must also be pressed. Can be
     ///   None if it's only a single button pose.
-    /// * or_hotkey1 - Keyboard key to activate this pose, can be None if this is a controller only pose.
-    /// * and_hotkey2 - Second keyboard key required to activatethis pose. First must also be pressed. Can be None if
+    /// * `or_hotkey1` - Keyboard key to activate this pose, can be None if this is a controller only pose.
+    /// * `and_hotkey2` - Second keyboard key required to activatethis pose. First must also be pressed. Can be None if
     ///   it's only a single key pose.
     ///
     /// Returns the id of the hand sim pose, so it can be removed later.
     /// see also [`input_hand_sim_pose_add`]    
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::{Input, Handed, HandJoint, FingerId, JointId, ControllerKey, Key},
+    ///                      maths::{Vec3, Quat, Pose}};
+    ///
+    /// let hand_joints = [Pose::IDENTITY;25];
+    ///
+    /// let id = Input::hand_sim_pose_add(&hand_joints, ControllerKey::Trigger, ControllerKey::None_, Key::None, Key::None);
+    /// assert_eq!(id, 5);
+    ///
+    /// let hand = Input::hand(Handed::Left);
+    ///
+    /// Input::hand_sim_pose_remove(id);
+    ///
+    /// let id = Input::hand_sim_pose_add(&hand_joints, ControllerKey::Grip, ControllerKey::None_, Key::None, Key::None);
+    /// assert_eq!(id, 6);
+    ///
+    /// Input::hand_sim_pose_clear();
+    ///
+    /// let id = Input::hand_sim_pose_add(&hand_joints, ControllerKey::X1, ControllerKey::None_, Key::None, Key::None);
+    /// assert_eq!(id, 7);
+    /// ```
     pub fn hand_sim_pose_add(
         hand_joints_palm_relative_25: &[Pose],
         button1: ControllerKey,
@@ -2470,16 +2618,18 @@ impl Input {
     /// This clears all registered hand simulation poses, including the ones that StereoKit registers by default!
     /// <https://stereokit.net/Pages/StereoKit/Input/HandSimPoseClear.html>
     ///
-    /// see also [`input_hand_sim_pose_clear`]    
+    /// see also [`input_hand_sim_pose_clear`]   
+    /// see example in [`Input::hand_sim_pose_add`]
     pub fn hand_sim_pose_clear() {
         unsafe { input_hand_sim_pose_clear() };
     }
 
     /// Lets you remove an existing hand pose.
     /// <https://stereokit.net/Pages/StereoKit/Input/HandSimPoseRemove.html>
-    /// * id - Any valid or invalid hand sim pose id.
+    /// * `id` - Any valid or invalid hand sim pose id.
     ///
     /// see also [`input_hand_sim_pose_remove`]    
+    /// see example in [`Input::hand_sim_pose_add`]
     pub fn hand_sim_pose_remove(id: HandSimId) {
         unsafe { input_hand_sim_pose_remove(id) };
     }
@@ -2488,10 +2638,23 @@ impl Input {
     /// joints, and simulated hand joints that may not have the same range of mobility. Note that this may change during
     /// a session, the user may put down their controllers, automatically switching to hands, or visa versa.
     /// <https://stereokit.net/Pages/StereoKit/Input/HandSource.html>
-    /// * hand - Do  you want the left or right hand? 0 is left, and 1 is right.
+    /// * `hand` - Do  you want the left or right hand?
     ///
     /// Returns information about hand tracking data source.
     /// see also [`input_hand_source`]    
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::{Input, Handed, HandSource};
+    ///
+    /// // These are the normal values for Offscreen tests:
+    ///
+    /// let hand_source = Input::hand_source(Handed::Left);
+    /// assert_eq!(hand_source, HandSource::None);
+    ///
+    /// let hand_source = Input::hand_source(Handed::Right);
+    /// assert_eq!(hand_source, HandSource::None);
+    /// ```
     pub fn hand_source(hand: Handed) -> HandSource {
         unsafe { input_hand_source(hand) }
     }
@@ -2499,10 +2662,19 @@ impl Input {
     /// Sets whether or not StereoKit should render the hand for you. Turn this to false if you’re going to render your
     /// own, or don’t need the hand itself to be visible.
     /// <https://stereokit.net/Pages/StereoKit/Input/HandVisible.html>
-    /// * hand - If Handed.Max, this will set the value for  both hands.
-    /// * visible - True, StereoKit renders this. False, it doesn't.
+    /// * `hand` - If Handed.Max, this will set the value for  both hands.
+    /// * `visible` - True, StereoKit renders this. False, it doesn't.
     ///
     /// see also [`input_hand_visible`]    
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::{Input, Handed, HandSource};
+    ///
+    /// Input::hand_visible(Handed::Right, false);
+    /// Input::hand_visible(Handed::Max, false);
+    /// Input::hand_visible(Handed::Left, true);
+    /// ```
     pub fn hand_visible(hand: Handed, visible: bool) {
         unsafe { input_hand_visible(hand, visible as Bool32T) };
     }
@@ -2511,9 +2683,23 @@ impl Input {
     /// shader variable `sk_fingertip[2]` with the location of the pointer finger's tips. When false, or the hand is
     /// untracked, the location will be set to an unlikely faraway position.
     /// <https://stereokit.net/Pages/StereoKit/Input/FingerGlow.html>
-    /// * visible - True, StereoKit renders this. False, it doesn't.
+    /// * `visible` - True, StereoKit renders this. False, it doesn't.
     ///
     /// see also [`input_set_finger_glow`]    
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::{Input, Handed, HandSource};
+    ///
+    /// assert_eq!(Input::get_finger_glow(), true);
+    ///
+    /// Input::finger_glow(false);
+    ///
+    /// assert_eq!(Input::get_finger_glow(), false);
+    ///
+    /// Input::finger_glow(true);
+    /// assert_eq!(Input::get_finger_glow(), true);
+    /// ```
     pub fn finger_glow(visible: bool) {
         unsafe { input_set_finger_glow(visible as Bool32T) };
     }
@@ -2521,11 +2707,24 @@ impl Input {
     /// Keyboard key state! On desktop this is super handy, but even standalone MR devices can have bluetooth keyboards,
     /// or even just holographic system keyboards!
     /// <https://stereokit.net/Pages/StereoKit/Input/Key.html>
-    /// * key - The key to get the state of. Any key!
+    /// * `key` - The key to get the state of. Any key!
     ///
     /// Returns a BtnState with a number of different bits of info about whether or not the key was pressed or released
     /// this frame.
     /// see also [`input_key`]    
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::{Input, Key, BtnState};
+    ///
+    /// let key_state = Input::key(Key::A);
+    ///
+    /// assert_eq!(key_state, BtnState::Inactive);
+    /// assert_eq!(key_state.is_active(), false);
+    /// assert_eq!(key_state.is_just_active(), false);
+    /// assert_eq!(key_state.is_just_inactive(), false);
+    /// assert_eq!(key_state.is_changed(), false);
+    /// ```
     pub fn key(key: Key) -> BtnState {
         unsafe { input_key(key) }
     }
@@ -2536,9 +2735,32 @@ impl Input {
     /// This will not submit text to StereoKit’s text queue, and will not show up in places like UI.Input. For that, you
     /// must submit a TextInjectChar call.
     /// <https://stereokit.net/Pages/StereoKit/Input/KeyInjectPress.html>
-    /// * key - The key to press.
+    /// * `key` - The key to press.
     ///
     /// see also [`input_key_inject_press`]    
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::{Input, Key, BtnState}};
+    ///
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter == 0 {    
+    ///         assert_eq!(Input::key(Key::A).is_just_active(), false);
+    ///         Input::key_inject_press(Key::A);
+    ///     } else if iter == 1 {
+    ///         assert_eq!(Input::key(Key::A).is_just_active(), true);
+    ///         Input::key_inject_release(Key::A);
+    ///     } else if iter == 2 {
+    ///         Input::key_inject_release(Key::A);
+    ///         assert_eq!(Input::key(Key::A).is_just_inactive(), true);
+    ///         Input::key_inject_press(Key::A);
+    ///     } else if iter == 3 {
+    ///         assert_eq!(Input::key(Key::A).is_active(), true);
+    ///     }
+    /// );
+    /// assert_eq!(Input::key(Key::A).is_active(), true);
+    /// ```
     pub fn key_inject_press(key: Key) {
         unsafe { input_key_inject_press(key) };
     }
@@ -2550,20 +2772,38 @@ impl Input {
     /// This will not submit text to StereoKit’s text queue, and will not show up in places like UI.Input. For that, you
     /// must submit a TextInjectChar call.
     /// <https://stereokit.net/Pages/StereoKit/Input/KeyInjectRelease.html>
-    /// * key - The key to release.
+    /// * `key` - The key to release.
     ///
     /// see also [`input_key_inject_release`]    
+    /// see example [`Input::key_inject_press`]
     pub fn key_inject_release(key: Key) {
         unsafe { input_key_inject_release(key) };
     }
 
     /// This gets the pointer by filter based index.
     /// <https://stereokit.net/Pages/StereoKit/Input/Pointer.html>
-    /// * index - Index of the Pointer.
-    /// * filter - Filter used to search for the Pointer. If None has default value of ANY.
+    /// * `index` - Index of the Pointer.
+    /// * `filter` - Filter used to search for the Pointer. If None has default value of ANY.
     ///
     /// Returns the Pointer data.
     /// see also [`input_pointer`]    
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::{Input, InputSource, Pointer, BtnState, Handed, TrackState},
+    ///                      maths::{Vec3, Quat, Pose, Ray}};
+    ///
+    /// // By default we only have the 2 hands.
+    /// assert_eq!(Input::pointer_count(None), 2);
+    /// let pointer = Input::pointer(0, None);
+    ///
+    /// assert_eq!(pointer.source, InputSource::Hand | InputSource::HandLeft | InputSource::CanPress);
+    /// assert_eq!(pointer.state, BtnState::Inactive);
+    /// assert_eq!(pointer.tracked, BtnState::Inactive);
+    /// assert_eq!(pointer.orientation, Quat::ZERO);
+    /// assert_eq!(pointer.ray, Ray::ZERO);
+    /// assert_eq!(pointer.get_pose(), Pose::ZERO);
+    /// ```
     pub fn pointer(index: i32, filter: Option<InputSource>) -> Pointer {
         let filter = filter.unwrap_or(InputSource::Any);
         unsafe { input_pointer(index, filter) }
@@ -2571,16 +2811,17 @@ impl Input {
 
     /// The number of Pointer inputs that StereoKit is tracking that match the given filter.
     /// <https://stereokit.net/Pages/StereoKit/Input/PointerCount.html>
-    /// * filter - You can filter input sources using this bit flat. If None has default value of ANY
+    /// * `filter` - You can filter input sources using this bit flat. If None has default value of ANY
     ///
     /// Returns the number of Pointers StereoKit knows about that matches the given filter.
-    /// see also [`input_pointer_count`]    
+    /// see also [`input_pointer_count`]  
+    /// see example in [`Input::pointer`]  
     pub fn pointer_count(filter: Option<InputSource>) -> i32 {
         let filter = filter.unwrap_or(InputSource::Any);
         unsafe { input_pointer_count(filter) }
     }
 
-    /// Returns the next text character from the list of characters that have been entered this frame! Will return ‘\0’
+    /// Returns the next text character from the list of characters that have been entered this frame! Will return `\0`
     /// if there are no more characters left in the list. These are from the system’s text entry system, and so can be
     /// unicode, will repeat if their ‘key’ is held down, and could arrive from something like a copy/paste operation.
     ///
@@ -2588,8 +2829,31 @@ impl Input {
     /// Input::text_reset.
     /// <https://stereokit.net/Pages/StereoKit/Input/TextConsume.html>
     ///
-    /// Returns the next character in this frame's list, or '\0' if none remain
-    /// see also [`input_text_consume`]    
+    /// Returns the next character in this frame's list, or '\0' if none remain, or None if the value doesn't
+    /// match char.
+    /// see also [`input_text_consume`] [`char::from_u32`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::Input;
+    ///
+    /// // Simulate some text input
+    /// Input::text_inject_char('H');
+    /// Input::text_inject_char('i');
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter == 0 {
+    ///         assert_eq!(Input::text_consume(), Some('H'));
+    ///         assert_eq!(Input::text_consume(), Some('i'));
+    ///         Input::text_inject_char('!');
+    ///         assert_eq!(Input::text_consume(), Some('\0'));
+    ///     } else if iter == 1 {
+    ///         assert_eq!(Input::text_consume(), Some('!'));
+    ///     } else {
+    ///         assert_eq!(Input::text_consume(), Some('\0'));
+    ///     }
+    /// );
+    /// ```
     pub fn text_consume() -> Option<char> {
         char::from_u32(unsafe { input_text_consume() })
     }
@@ -2601,6 +2865,32 @@ impl Input {
     /// <https://stereokit.net/Pages/StereoKit/Input/TextReset.html>
     ///
     /// see also [`input_text_reset`]    
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::Input;
+    ///
+    /// // Simulate some text input
+    /// Input::text_inject_char('H');
+    /// Input::text_inject_char('i');
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter == 0 {
+    ///         assert_eq!(Input::text_consume(), Some('H'));
+    ///         assert_eq!(Input::text_consume(), Some('i'));
+    ///         Input::text_inject_char('!');
+    ///         assert_eq!(Input::text_consume(), Some('\0'));
+    ///         Input::text_reset();
+    ///         assert_eq!(Input::text_consume(), Some('H'));
+    ///         assert_eq!(Input::text_consume(), Some('i'));
+    ///         assert_eq!(Input::text_consume(), Some('\0'));
+    ///     } else if iter == 1 {
+    ///         assert_eq!(Input::text_consume(), Some('!'));
+    ///     } else {
+    ///         assert_eq!(Input::text_consume(), Some('\0'));
+    ///     }
+    /// );
+    /// ```
     pub fn text_reset() {
         unsafe { input_text_reset() };
     }
@@ -2611,8 +2901,31 @@ impl Input {
     /// This will not submit key press/release events to StereoKit’s input queue, use key_inject_press/_release
     /// for that.
     /// <https://stereokit.net/Pages/StereoKit/Input/TextInjectChar.html>
+    /// * `character` - An unsigned integer representing a single UTF32 character.
     ///
     /// see also [`input_text_inject_char`]    
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::Input;
+    ///
+    /// // Simulate some text input
+    /// Input::text_inject_char('H');
+    /// Input::text_inject_char('i');
+    /// Input::text_inject_char('!');
+    /// Input::text_inject_char('😬');
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter == 0 {
+    ///         assert_eq!(Input::text_consume(), Some('H'));
+    ///         assert_eq!(Input::text_consume(), Some('i'));
+    ///         assert_eq!(Input::text_consume(), Some('!'));
+    ///         assert_eq!(Input::text_consume(), Some('😬'));
+    ///     } else {
+    ///         assert_eq!(Input::text_consume(), Some('\0'));
+    ///     }
+    /// );
+    /// ```
     pub fn text_inject_char(character: char) {
         unsafe { input_text_inject_char(character as u32) };
     }
@@ -2624,9 +2937,28 @@ impl Input {
     /// This will not submit key press/release events to StereoKit’s input queue, use key_inject_press/_release
     /// for that.
     /// <https://stereokit.net/Pages/StereoKit/Input/TextInjectChar.html>
-    /// * chars - A collection of characters to submit as text input.
+    /// * `chars` - A collection of characters to submit as text input.
     ///
     /// see also [`input_text_inject_char`]    
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::Input;
+    ///
+    /// // Simulate some text input
+    /// Input::text_inject_chars("Hi!❤");
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter == 0 {
+    ///         assert_eq!(Input::text_consume(), Some('H'));
+    ///         assert_eq!(Input::text_consume(), Some('i'));
+    ///         assert_eq!(Input::text_consume(), Some('!'));
+    ///         assert_eq!(Input::text_consume(), Some('❤'));
+    ///     } else {
+    ///         assert_eq!(Input::text_consume(), Some('\0'));
+    ///     }
+    /// );
+    /// ```
     pub fn text_inject_chars(str: impl AsRef<str>) {
         for character in str.as_ref().chars() {
             unsafe { input_text_inject_char(character as u32) }
@@ -2637,11 +2969,36 @@ impl Input {
     /// Pointer that matches the position of that pointer at the moment the event occurred. This can be more accurate
     /// than polling for input data, since polling happens specifically at frame start.
     /// <https://stereokit.net/Pages/StereoKit/Input/Subscribe.html>
-    /// * event_source - What input sources do we want to listen for. This is a bit flag.
-    /// * event_types - What events do we want to listen for. This is a bit flag.
-    /// * on_event - The callback to call when the event occurs!
+    /// * `event_source` - What input sources do we want to listen for. This is a bit flag.
+    /// * `event_types` - What events do we want to listen for. This is a bit flag.
+    /// * `on_event` - The callback to call when the event occurs!
     ///
     /// see also [`input_subscribe`]    
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::{Input, InputSource, Pointer, BtnState, Handed};
+    ///
+    /// let pointer_left  = Input::pointer(0, None);
+    ///
+    /// unsafe extern "C" fn input_cb (source: InputSource, input_event: BtnState, in_pointer: *const Pointer) {
+    ///     let in_pointer = unsafe { *in_pointer };
+    ///     assert_eq!(source, InputSource::CanPress);
+    ///     assert_eq!(in_pointer.source, InputSource::Hand | InputSource::HandLeft | InputSource::CanPress);
+    ///     assert_eq!(input_event, BtnState::JustActive);
+    /// }
+    ///
+    /// number_of_steps = 8;
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter == 0 {    
+    ///         Input::subscribe (InputSource::CanPress, BtnState::JustActive, Some(input_cb));
+    ///     } if iter == 1 {
+    ///         Input::fire_event(InputSource::CanPress, BtnState::JustActive, &pointer_left);
+    ///     } else if iter == 8 {
+    ///         Input::unsubscribe(InputSource::Hand | InputSource::HandLeft, BtnState::JustInactive, Some(input_cb));
+    ///     }
+    /// );
+    /// ```
     pub fn subscribe(
         event_source: InputSource,
         event_types: BtnState,
@@ -2652,11 +3009,12 @@ impl Input {
 
     /// Unsubscribes a listener from input events.
     /// <https://stereokit.net/Pages/StereoKit/Input/Unsubscribe.html>
-    /// * event_source - The sources this listener was originally registered for.
-    /// * event_types - The events this listener was originally registered for.
-    /// * on_event - The callback this lisener originally used.
+    /// * `event_source` - The sources this listener was originally registered for.
+    /// * `event_types` - The events this listener was originally registered for.
+    /// * `on_event` - The callback this lisener originally used.
     ///
     /// see also [`input_unsubscribe`]    
+    /// see example in [`Input::subscribe`]
     pub fn unsubscribe(
         event_source: InputSource,
         event_types: BtnState,
@@ -2669,10 +3027,12 @@ impl Input {
     /// this will be a Model provided by OpenXR, or SK's fallback Model. This will never be null while SK is
     /// initialized.
     /// <https://stereokit.net/Pages/StereoKit/Input.html>
-    /// * handed - The hand of the controller Model to retreive.
+    /// * `handed` - The hand of the controller Model to retreive.
     ///
     /// Returns the current controller Model. By default, his will be a Model provided by OpenXR, or SK's fallback
     /// Model. This will never be null while SK is initialized.
+    /// see also [`input_controller_model_get`]
+    /// see example in [`Input::set_controller_model`]
     pub fn get_controller_model(handed: Handed) -> Model {
         match NonNull::new(unsafe { input_controller_model_get(handed) }) {
             Some(model) => Model(model),
@@ -2685,6 +3045,20 @@ impl Input {
     /// <https://stereokit.net/Pages/StereoKit/Input/ControllerMenuButton.html>
     ///
     /// see also [`input_controller_menu`]    
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::{Input, BtnState};
+    ///
+    /// assert_eq!(Input::get_controller_menu_button(), BtnState::Inactive);
+    /// assert_eq!(Input::get_controller_menu_button().is_just_active(), false);
+    ///
+    /// let button_state = Input::get_controller_menu_button();
+    /// assert_eq!(button_state.is_active(), false);
+    /// assert_eq!(button_state.is_just_active(), false);
+    /// assert_eq!(button_state.is_just_inactive(), false);
+    /// assert_eq!(button_state.is_changed(), false);
+    /// ```
     pub fn get_controller_menu_button() -> BtnState {
         unsafe { input_controller_menu() }
     }
@@ -2698,7 +3072,17 @@ impl Input {
     /// holds down Alt.
     /// <https://stereokit.net/Pages/StereoKit/Input/Eyes.html>
     ///
-    /// see also [`input_eyes`]    
+    /// see also [`input_eyes`] [`Input::get_eyes_tracked`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::{Input, BtnState}, maths::Pose};
+    ///
+    /// let eyes_pose = Input::get_eyes();
+    ///
+    /// assert_eq!(eyes_pose, Pose::IDENTITY);
+    /// assert_eq!(Input::get_eyes_tracked(), BtnState::Inactive)
+    /// ```
     pub fn get_eyes() -> Pose {
         unsafe { *input_eyes() }
     }
@@ -2715,7 +3099,19 @@ impl Input {
     ///
     ///  <https://stereokit.net/Pages/StereoKit/Input/EyesTracked.html>
     ///
-    /// see also [`input_eyes_tracked`]    
+    /// see also [`input_eyes_tracked`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::{Input, BtnState}, maths::Pose};
+    ///
+    /// let eyes_tracked = Input::get_eyes_tracked();
+    ///
+    /// assert_eq!(eyes_tracked.is_active(), false);
+    /// assert_eq!(eyes_tracked, BtnState::Inactive);
+    ///
+    /// assert_eq!(Input::get_eyes(),Pose::IDENTITY)
+    /// ```
     pub fn get_eyes_tracked() -> BtnState {
         unsafe { input_eyes_tracked() }
     }
@@ -2724,7 +3120,16 @@ impl Input {
     /// center of the user’s head. Forward points the same way the user’s face is facing.
     /// <https://stereokit.net/Pages/StereoKit/Input/Head.html>
     ///
-    /// see also [`input_eyes`]    
+    /// see also [`input_head`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::Input, maths::Pose};
+    ///
+    /// let head_pose = Input::get_head();
+    ///
+    /// assert_eq!(head_pose, Pose::IDENTITY);
+    /// ```
     pub fn get_head() -> Pose {
         unsafe { *input_head() }
     }
@@ -2733,6 +3138,23 @@ impl Input {
     /// <https://stereokit.net/Pages/StereoKit/Input/Mouse.html>
     ///
     /// see also [`input_mouse`]    
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::Input, maths::{Vec2, Vec3}};
+    ///
+    /// let mouse = Input::get_mouse();
+    ///
+    /// assert_eq!(mouse.is_available(),false);
+    /// assert_eq!(mouse.pos,           Vec2::ZERO);
+    /// assert_eq!(mouse.pos_change,    Vec2::ZERO);
+    /// assert_eq!(mouse.scroll,        0.0);
+    /// assert_eq!(mouse.scroll_change, 0.0);
+    ///
+    /// assert_eq!(mouse.get_ray().position, Vec3::ZERO);
+    /// // Warning: No ray if the mouse isn't available!
+    /// // assert_eq!(mouse.get_ray().direction, Vec3::new(f32::NAN, f32::NAN, f32::NAN));
+    /// ```
     pub fn get_mouse() -> Mouse {
         unsafe { *input_mouse() }
     }
@@ -2743,7 +3165,8 @@ impl Input {
     /// <https://stereokit.net/Pages/StereoKit/Input/FingerGlow.html>
     ///
     /// Returns true if StereoKit renders this. False, it doesn't.
-    /// see also [`input_set_finger_glow`]  
+    /// see also [`input_set_finger_glow`]
+    /// see example in [`Input::finger_glow`]
     pub fn get_finger_glow() -> bool {
         unsafe { input_get_finger_glow() != 0 }
     }
