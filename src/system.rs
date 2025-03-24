@@ -3175,6 +3175,14 @@ impl Input {
 /// Used to represent lines for the line drawing functions! This is just a snapshot of information about each individual
 /// point on a line.
 /// <https://stereokit.net/Pages/StereoKit/LinePoint.html>
+/// ### Examples
+/// ```
+/// use stereokit_rust::{system::LinePoint, util::named_colors};
+///
+/// let line_point = LinePoint::new( [0.1, 0.2, 0.3], 0.01, named_colors::CYAN);
+///
+/// assert_eq!(line_point, LinePoint {pt: [0.1, 0.2, 0.3].into(), thickness: 0.01, color: named_colors::CYAN});
+/// ```
 #[derive(Debug, Copy, Clone, PartialEq)]
 #[repr(C)]
 pub struct LinePoint {
@@ -3183,9 +3191,44 @@ pub struct LinePoint {
     pub color: Color32,
 }
 
+impl LinePoint {
+    /// Create a new LinePoint.
+    pub fn new(pt: impl Into<Vec3>, thickness: f32, color: Color32) -> Self {
+        Self { pt: pt.into(), thickness, color }
+    }
+}
+
 /// A line drawing class! This is an easy way to visualize lines or relationships between objects. The current
 /// implementation uses a quad strip that always faces the user, via vertex shader manipulation.
 /// <https://stereokit.net/Pages/StereoKit/Lines.html>
+///
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{maths::{Vec3, Pose, Ray}, system::{Lines, LinePoint},
+///                      util::{named_colors}};
+///
+/// let ray = Ray::new([-0.3, -0.8, 0.2], [1.0, 0.0, 0.0]);
+///
+/// let axis_pose = Pose::new([0.0, -0.35, 0.0], None);
+///
+/// filename_scr = "screenshots/lines.jpeg";
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+///     Lines::add(token, [0.7, 0.7, 0.2], [ 0.7,-0.7, 0.2], named_colors::LIME, None, 0.06);
+///     Lines::add(token, [0.7, 0.7, 0.2], [-0.7, 0.7, 0.2], named_colors::RED, None, 0.03);
+///
+///     Lines::add_list(token, &[
+///        LinePoint {pt: [-0.7,-0.7, 0.2].into(), thickness: 0.08, color: named_colors::FUCHSIA},
+///        LinePoint::new([-0.5,-0.1, 0.2], 0.08, named_colors::BLACK),
+///        LinePoint::new([-0.7, 0.7, 0.2], 0.01, named_colors::YELLOW),
+///     ]);
+///
+///     Lines::add_ray(token, ray, 0.6, named_colors::RED, None, 0.08 );
+///
+///     Lines::add_axis(token, axis_pose, Some(0.7), Some(0.04));
+/// );
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/lines.jpeg" alt="screenshot" width="200">
 pub struct Lines;
 
 unsafe extern "C" {
@@ -3199,9 +3242,26 @@ unsafe extern "C" {
 impl Lines {
     /// Adds a line to the environment for the current frame.
     /// <https://stereokit.net/Pages/StereoKit/Lines/Add.html>
-    /// * color_end - If None, uses color_start.
+    /// * `start` - The start of the line.
+    /// * `end` - The end of the line.
+    /// * `color_start` - Color for the start of the line, this is embedded in the vertex color of the line.
+    /// * `color_end` - Color for the end of the line, this is embedded in the vertex color of the line. If None,
+    ///   uses color_start.
+    /// * `thickness` - The thickness of the line.
     ///
     /// see also [line_add]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Pose, Ray}, system::{Lines, LinePoint},
+    ///                      util::{named_colors}};
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     Lines::add(token, [0.7, 0.7, 0.2], [ 0.7,-0.7, 0.2], named_colors::LIME, None, 0.06);
+    ///
+    ///     Lines::add(token, [0.7, 0.7, 0.2], [-0.7, 0.7, 0.2], named_colors::RED, None, 0.03);
+    /// );
+    /// ```
     pub fn add<V: Into<Vec3>>(
         _token: &MainThreadToken,
         start: V,
@@ -3216,9 +3276,32 @@ impl Lines {
 
     /// Adds a line based on a ray to the environment for the current frame.
     /// <https://stereokit.net/Pages/StereoKit/Lines/Add.html>
-    /// * color_end - If None, uses color_start.
+    /// * `ray` - The ray we want to visualize!
+    /// * `length` - How long should the ray be? Actual length will be ray.direction.Magnitude * length.
+    /// * `color_start` - Color for the start of the line, this is embedded in the vertex color of the line.
+    /// * `color_end` - Color for the end of the line, this is embedded in the vertex color of the line. If None,
+    ///   uses color_start.
+    /// * `thickness` - The thickness of the line.
     ///
     /// see also [line_add]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Ray}, system::{Lines, LinePoint},
+    ///                      util::{named_colors}};
+    ///
+    /// // axis at the origins:
+    /// let ray1 = Ray::new(Vec3::ZERO, Vec3::X);
+    /// let ray2 = Ray::new(Vec3::ZERO, Vec3::Y);
+    /// let ray3 = Ray::new(Vec3::ZERO, Vec3::Z);
+    ///
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     Lines::add_ray(token, ray1, 1.0, named_colors::WHITE, Some(named_colors::RED), 0.03 );
+    ///     Lines::add_ray(token, ray2, 1.0, named_colors::WHITE, Some(named_colors::GREEN), 0.03 );
+    ///     Lines::add_ray(token, ray2, 1.0, named_colors::WHITE, Some(named_colors::BLUE), 0.03 );
+    /// );
+    /// ```
     pub fn add_ray<R: Into<Ray>>(
         _token: &MainThreadToken,
         ray: R,
@@ -3235,9 +3318,24 @@ impl Lines {
     /// Adds a line from a list of line points to the environment. This does not close the path, so if you want it
     /// closed, you’ll have to add an extra point or two at the end yourself!
     /// <https://stereokit.net/Pages/StereoKit/Lines/Add.html>
-    /// * color_end - If None, uses color_start.
+    /// * `points` - An array of LinePoint.
     ///
     /// see also [line_add]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Pose, Ray}, system::{Lines, LinePoint},
+    ///                      util::{named_colors}};
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///
+    ///     Lines::add_list(token, &[
+    ///        LinePoint {pt: [-0.7,-0.7, 0.2].into(), thickness: 0.08, color: named_colors::FUCHSIA},
+    ///        LinePoint::new([-0.5,-0.1, 0.2], 0.08, named_colors::BLACK),
+    ///        LinePoint::new([-0.7, 0.7, 0.2], 0.01, named_colors::YELLOW),
+    ///     ]);
+    ///
+    /// );
+    /// ```
     pub fn add_list(_token: &MainThreadToken, points: &[LinePoint]) {
         unsafe { line_add_listv(points.as_ptr(), points.len() as i32) }
     }
@@ -3246,10 +3344,28 @@ impl Lines {
     /// the red line is +X, green is +Y, and blue is +Z. A white line is drawn along -Z to indicate the Forward vector
     /// of the pose (-Z is forward in StereoKit).
     /// <https://stereokit.net/Pages/StereoKit/Lines/AddAxis.html>
-    /// * size - If None, is set to 1 cm
-    /// * thickness - If None, will use a faster renderer with a thickness of one tenth of the size.
+    /// * `at_pose` - What position and orientation do we want this axis widget at?
+    /// * `size` - How long should the widget lines be, in meters? If None, has value of 1 cm
+    /// * `thickness` - How thick should the lines be, in meters? If None, will use a faster renderer with a thickness of
+    ///   one tenth of the size.
     ///
     /// see also [line_add]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Pose, Ray}, system::{Lines, LinePoint},
+    ///                      util::{named_colors}};
+    ///
+    /// // Axis at the origins:
+    /// let axis_pose = Pose::IDENTITY;
+    ///
+    /// filename_scr = "screenshots/lines.jpeg";
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///
+    ///     Lines::add_axis(token, axis_pose, Some(0.7), Some(0.02));
+    ///
+    /// );
+    /// ```
     pub fn add_axis<P: Into<Pose>>(token: &MainThreadToken, at_pose: P, size: Option<f32>, thickness: Option<f32>) {
         let at_pose: Pose = at_pose.into();
         let size = size.unwrap_or(0.01);

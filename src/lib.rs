@@ -185,6 +185,7 @@ pub mod sprite;
 /// [![Hierarchy ray](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/hierarchy_ray.jpeg)](system::Hierarchy::to_local_ray)
 /// [![Hand](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/hand.jpeg)](system::Hand)
 /// [![Controller](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/controller.jpeg)](system::Controller)
+/// [![Lines](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/lines.jpeg)](system::Lines)
 ///
 /// [![Microphone](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/microphone.jpeg)](system::Microphone)
 pub mod system;
