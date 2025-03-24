@@ -3359,8 +3359,7 @@ impl Lines {
     /// // Axis at the origins:
     /// let axis_pose = Pose::IDENTITY;
     ///
-    /// filename_scr = "screenshots/lines.jpeg";
-    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    /// test_steps!( // !!!! Get a proper main loop !!!!
     ///
     ///     Lines::add_axis(token, axis_pose, Some(0.7), Some(0.02));
     ///
