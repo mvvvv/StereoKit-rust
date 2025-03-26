@@ -9,7 +9,7 @@ use stereokit_rust::{
     tex::{SHCubemap, Tex, TexFormat, TexSample},
     tools::{fly_over::ENABLE_FLY_OVER, log_window::SHOW_LOG_WINDOW, screenshot::SHOW_SCREENSHOT_WINDOW},
     util::{
-        Color128, Gradient, ShLight, SphericalHarmonics,
+        Color128, Gradient, SHLight, SphericalHarmonics,
         named_colors::{BLACK, BLUE, BURLY_WOOD, LIGHT_BLUE, LIGHT_CYAN, RED, SEA_GREEN, STEEL_BLUE, WHITE, YELLOW},
     },
 };
@@ -219,7 +219,7 @@ impl HandMenuRadial1 {
             .add(BLACK, 0.7);
         let cube1 = SHCubemap::gen_cubemap_gradient(&gradient, Vec3::NEG_Z, 1);
 
-        let lights: [ShLight; 1] = [ShLight::new(Vec3::ONE, WHITE); 1];
+        let lights: [SHLight; 1] = [SHLight::new(Vec3::ONE, WHITE); 1];
         let sh = SphericalHarmonics::from_lights(&lights);
         let cube2 = SHCubemap::gen_cubemap_sh(sh, 15, 5.0, 0.02);
 
@@ -426,7 +426,7 @@ impl HandMenuRadial1 {
         // draw a floor if needed
         if self.show_floor {
             if self.show_shadows && self.floor == 5 {
-                let light_pos = Renderer::get_skylight().get_dominent_light_direction() * -500.0;
+                let light_pos = Renderer::get_sky_light().get_dominent_light_direction() * -500.0;
                 let camera = Matrix::tr(&light_pos, &Quat::look_at(light_pos, Vec3::ZERO, None));
                 //Log::diag(format!("Camera at {:}", &light_pos));
 

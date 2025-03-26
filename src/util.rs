@@ -1171,15 +1171,15 @@ impl Platform {
 
 /// A light source used for creating SphericalHarmonics data.
 /// <https://stereokit.net/Pages/StereoKit/SHLight.html>
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 #[repr(C)]
-pub struct ShLight {
+pub struct SHLight {
     /// Direction to the light source.
     pub dir_to: Vec3,
     /// Color of the light in linear space! Values here can exceed 1.
     pub color: Color128,
 }
-impl ShLight {
+impl SHLight {
     pub fn new(dir_to: impl Into<Vec3>, color: impl Into<Color128>) -> Self {
         Self { dir_to: dir_to.into(), color: color.into() }
     }
@@ -1193,14 +1193,14 @@ impl ShLight {
 /// entire scene. It’s a gross oversimplification, but looks quite good, and is really fast! That’s extremely great
 /// when you’re trying to hit 60fps, or even 144fps.
 /// <https://stereokit.net/Pages/StereoKit/SphericalHarmonics.html>
-#[derive(Debug, Default, Copy, Clone)]
+#[derive(Debug, Default, Copy, Clone, PartialEq)]
 #[repr(C)]
 pub struct SphericalHarmonics {
     pub coefficients: [Vec3; 9usize],
 }
 
 unsafe extern "C" {
-    pub fn sh_create(in_arr_lights: *const ShLight, light_count: i32) -> SphericalHarmonics;
+    pub fn sh_create(in_arr_lights: *const SHLight, light_count: i32) -> SphericalHarmonics;
     pub fn sh_brightness(ref_harmonics: *mut SphericalHarmonics, scale: f32);
     pub fn sh_add(ref_harmonics: *mut SphericalHarmonics, light_dir: Vec3, light_color: Vec3);
     pub fn sh_lookup(harmonics: *const SphericalHarmonics, normal: Vec3) -> Color128;
@@ -1210,8 +1210,8 @@ impl SphericalHarmonics {
     /// Creates a SphericalHarmonics approximation of the irradiance given from a set of directional lights!
     /// <https://stereokit.net/Pages/StereoKit/SphericalHarmonics/FromLights.html>
     ///
-    ///  see also [`crate::util::ShLight`]
-    pub fn from_lights(lights: &[ShLight]) -> Self {
+    ///  see also [`crate::util::SHLight`]
+    pub fn from_lights(lights: &[SHLight]) -> Self {
         unsafe { sh_create(lights.as_ptr(), lights.len() as i32) }
     }
 

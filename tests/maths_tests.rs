@@ -581,7 +581,7 @@ mod tests_matrix {
 
     #[test]
     fn test_matrix_orthographic() {
-        let ortho = Matrix::ortographic(10.0, 5.0, 0.1, 100.0);
+        let ortho = Matrix::orthographic(10.0, 5.0, 0.1, 100.0);
         unsafe {
             assert!((ortho.m[0] - 0.2).abs() < 0.0001);
             assert!((ortho.m[5] - 0.4).abs() < 0.0001);

@@ -1,20 +1,13 @@
 use crate::{
     font::Font,
     material::Cull,
-    maths::{units::CM, Matrix, Pose, Vec2, Vec3},
+    maths::{Matrix, Pose, Vec2, Vec3, units::CM},
     prelude::*,
-    system::{LogLevel, Text, TextAlign, TextFit, TextStyle},
+    system::{LogItem, LogLevel, Text, TextAlign, TextFit, TextStyle},
     ui::{Ui, UiCut},
     util::Color128,
 };
 use std::sync::Mutex;
-
-#[derive(Debug, Clone)]
-pub struct LogItem {
-    pub level: LogLevel,
-    pub text: String,
-    pub count: i32,
-}
 
 pub const SHOW_LOG_WINDOW: &str = "Tool_ShowLogWindow";
 

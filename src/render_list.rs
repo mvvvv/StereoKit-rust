@@ -317,7 +317,7 @@ impl RenderList {
     ///     Some(Color128::new(0.99, 0.3, 0.2, 0.5)),
     ///     Some(RenderClear::Color),
     ///     Rect::new(0.0, 0.0, 1.0, 1.0),
-    ///     Some(RenderLayer::Layer_all_third_person)
+    ///     Some(RenderLayer::AllThirdPerson),
     /// );
     ///
     /// filename_scr = "screenshots/render_list_add_mesh.jpeg";
@@ -393,7 +393,7 @@ impl RenderList {
     ///     Some(Color128::new(0.0, 0.3, 0.2, 0.5)),
     ///     Some(RenderClear::Color),
     ///     Rect::new(0.0, 0.0, 1.0, 1.0),
-    ///     Some(RenderLayer::Layer_all_first_person),
+    ///     Some(RenderLayer::AllFirstPerson),
     /// );
     ///
     /// filename_scr = "screenshots/render_list_add_model.jpeg";

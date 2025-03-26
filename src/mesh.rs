@@ -948,7 +948,7 @@ impl Mesh {
     ///     cylinder2.draw(token, &material , Matrix::IDENTITY, Some(named_colors::RED.into()),
     ///         Some(RenderLayer::Layer1));
     ///     cylinder3.draw(token, &material , Matrix::IDENTITY, Some(named_colors::GREEN.into()),
-    ///         Some(RenderLayer::Layer_third_person));
+    ///         Some(RenderLayer::ThirdPerson));
     /// );
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_draw.jpeg" alt="screenshot" width="200">

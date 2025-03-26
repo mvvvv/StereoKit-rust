@@ -517,7 +517,7 @@ impl Model {
     ///     model.draw(token, transform1, None, None);
     ///     model.draw(token, transform2, Some(named_colors::YELLOW.into()), None);
     ///     model.draw(token, transform3, Some(named_colors::BLACK.into()),
-    ///                Some(RenderLayer::Layer_first_person));
+    ///                Some(RenderLayer::FirstPerson));
     /// );
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_draw.jpeg" alt="screenshot" width="200">
@@ -576,7 +576,7 @@ impl Model {
     ///     model.draw_with_material(token, &material_ui,    transform1, None, None);
     ///     model.draw_with_material(token, &material_brick, transform2, None, None);
     ///     model.draw_with_material(token, &material_ui,    transform3, Some(named_colors::RED.into()),
-    ///                Some(RenderLayer::Layer_first_person));
+    ///                Some(RenderLayer::FirstPerson));
     /// );
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_draw_with_material.jpeg" alt="screenshot" width="200">

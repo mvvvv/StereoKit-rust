@@ -11,12 +11,13 @@ use stereokit_rust::{
     sound::{Sound, SoundInst},
     sprite::Sprite,
     system::{
-        Backend, BackendOpenXR, BackendXRType, BtnState, Input, Key, Lines, LogLevel, Projection, Renderer, Text,
+        Backend, BackendOpenXR, BackendXRType, BtnState, Input, Key, Lines, LogItem, LogLevel, Projection, Renderer,
+        Text,
     },
     tex::Tex,
     tools::{
         fly_over::FlyOver,
-        log_window::{LogItem, LogWindow},
+        log_window::LogWindow,
         notif::HudNotification,
         os_api::{
             get_all_display_refresh_rates, get_display_refresh_rate, get_env_blend_modes, set_display_refresh_rate,

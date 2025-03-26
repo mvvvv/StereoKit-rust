@@ -186,8 +186,9 @@ pub mod sprite;
 /// [![Hand](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/hand.jpeg)](system::Hand)
 /// [![Controller](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/controller.jpeg)](system::Controller)
 /// [![Lines](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/lines.jpeg)](system::Lines)
-///
 /// [![Microphone](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/microphone.jpeg)](system::Microphone)
+/// [![Renderer](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/renderer.jpeg)](system::Renderer)
+/// [![Screenshots capture](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/screenshot_capture.jpeg)](system::Renderer::screenshot_capture)
 pub mod system;
 
 pub mod tex;

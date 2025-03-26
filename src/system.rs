@@ -3411,6 +3411,8 @@ impl Lines {
 /// The log tool will write to the console with annotations for console colors, which helps with readability, but isn’t
 /// always supported. These are the options available for configuring those colors.
 /// <https://stereokit.net/Pages/StereoKit/LogColors.html>
+///
+/// see also [`Log`]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
 pub enum LogColors {
@@ -3425,7 +3427,7 @@ pub enum LogColors {
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
 pub enum LogLevel {
-    /// Default value (= to Diagnostic)
+    /// A default log level that indicates it has not yet been set
     None = 0,
     /// This is for diagnostic information, where you need to know details about what -exactly- is going on in the
     /// system. This info doesn’t surface by default.
@@ -3436,6 +3438,14 @@ pub enum LogLevel {
     Warning = 3,
     /// Danger Will Robinson! Something really bad just happened and needs fixing!
     Error = 4,
+}
+
+/// Non canonical structure used for subscribed callback
+#[derive(Debug, Clone)]
+pub struct LogItem {
+    pub level: LogLevel,
+    pub text: String,
+    pub count: i32,
 }
 
 /// A class for logging errors, warnings and information!
@@ -3457,13 +3467,29 @@ pub enum LogLevel {
 /// | cyn  | cyn    | Cyan        |
 /// | grn  | GRN    | Green       |
 /// | wht  | WHT    | White       |
+///
 /// <https://stereokit.net/Pages/StereoKit/Log.html>
 ///
-///## Examples
+/// ### Examples
 /// ```
-/// stereokit_rust::system::Log::info("model <~GRN>node count<~clr> : <~RED>6589<~clr> !!!");
+/// use stereokit_rust::system::{Log, LogColors, LogLevel};
+///
+/// Log::colors(LogColors::Ansi);
+/// Log::filter(LogLevel::Diagnostic);
+///
+/// Log::info("model <~GRN>node count<~clr> : <~RED>6589<~clr> !!!");
+///
+/// let value = 42;
+/// Log::diag(format!("My value is {}", value));
+///
+/// Log::warn("This is not very good!");
+///
+/// Log::err("This is very bad!!!");
+///
+/// Log::write(LogLevel::Diagnostic, format!("Again, my value is {}", 2));
 /// ```
 pub struct Log;
+
 unsafe extern "C" {
     pub fn log_diag(text: *const c_char);
     //pub fn log_diagf(text: *const c_char, ...);
@@ -3489,7 +3515,7 @@ unsafe extern "C" {
 
 /// Log subscribe trampoline
 ///
-/// see also [`log_subscribe_data`]
+/// see also [`Log::subscribe`]
 unsafe extern "C" fn log_trampoline<'a, F: FnMut(LogLevel, &str) + 'a>(
     context: *mut c_void,
     log_level: LogLevel,
@@ -3501,11 +3527,27 @@ unsafe extern "C" fn log_trampoline<'a, F: FnMut(LogLevel, &str) + 'a>(
 }
 
 impl Log {
-    /// What's the lowest level of severity logs to display on the console? Default is LogLevel.Info. This property
+    /// What's the lowest level of severity logs to display on the console? Default is LogLevel::Info. This property
     /// can safely be set before SK initialization.
     /// <https://stereokit.net/Pages/StereoKit/Log.html>
     ///
     /// see also [`log_set_filter`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::system::{Log, LogLevel};
+    ///
+    /// // Set the log filter to only show errors and above.
+    /// Log::filter(LogLevel::Error);
+    ///
+    /// // Set the log filter to only show warnings and above (errors)
+    /// Log::filter(LogLevel::Warning);
+    ///
+    /// // Set the log filter to only show infos and above (wanings and errors)
+    /// Log::filter(LogLevel::Inform);
+    ///
+    /// // Set the log filter to show every logs
+    /// Log::filter(LogLevel::Diagnostic);
+    /// ```
     pub fn filter(filter: LogLevel) {
         unsafe { log_set_filter(filter) }
     }
@@ -3514,6 +3556,16 @@ impl Log {
     /// <https://stereokit.net/Pages/StereoKit/Log.html>
     ///
     /// see also [`log_set_colors`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::system::{Log, LogColors};
+    ///
+    /// // Set the log colors to use ANSI color codes.
+    /// Log::colors(LogColors::Ansi);
+    ///
+    /// // Set the log colors to use no color codes.
+    /// Log::colors(LogColors::None);
+    /// ```
     pub fn colors(colors: LogColors) {
         unsafe { log_set_colors(colors) }
     }
@@ -3522,6 +3574,15 @@ impl Log {
     /// <https://stereokit.net/Pages/StereoKit/Log.html>
     ///
     /// see also [`log_err`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::system::Log;
+    ///
+    /// Log::err("This is very bad!!!");
+    ///
+    /// let value = 42;
+    /// Log::err(format!("My problematic value is {}", value));
+    /// ```
     pub fn err<S: AsRef<str>>(text: S) {
         let c_str = CString::new(text.as_ref()).unwrap();
         unsafe { log_err(c_str.as_ptr()) }
@@ -3531,6 +3592,15 @@ impl Log {
     /// <https://stereokit.net/Pages/StereoKit/Log.html>
     ///
     /// see also [`log_info`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::system::Log;
+    ///
+    /// Log::info("This is good!");
+    ///
+    /// let value = 42;
+    /// Log::info(format!("My value is {}", value));
+    /// ```
     pub fn info<S: AsRef<str>>(text: S) {
         let c_str = CString::new(text.as_ref()).unwrap();
         unsafe { log_info(c_str.as_ptr()) }
@@ -3540,6 +3610,15 @@ impl Log {
     /// <https://stereokit.net/Pages/StereoKit/Log.html>
     ///
     /// see also [`log_warn`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::system::Log;
+    ///
+    /// Log::warn("This is not very good!");
+    ///
+    /// let value = 42;
+    /// Log::warn(format!("My not so good value is {}", value));
+    /// ```
     pub fn warn<S: AsRef<str>>(text: S) {
         let c_str = CString::new(text.as_ref()).unwrap();
         unsafe { log_warn(c_str.as_ptr()) }
@@ -3549,6 +3628,15 @@ impl Log {
     /// <https://stereokit.net/Pages/StereoKit/Log.html>
     ///
     /// see also [`log_diag`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::system::Log;
+    ///
+    /// Log::diag("This is something to check!");
+    ///
+    /// let value = 42;
+    /// Log::diag(format!("My value to check is {}", value));
+    /// ```
     pub fn diag<S: AsRef<str>>(text: S) {
         let c_str = CString::new(text.as_ref()).unwrap();
         unsafe { log_diag(c_str.as_ptr()) }
@@ -3558,6 +3646,15 @@ impl Log {
     /// <https://stereokit.net/Pages/StereoKit/Log.html>
     ///
     /// see also [`log_write`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::system::{Log, LogLevel};
+    ///
+    /// Log::write(LogLevel::Diagnostic, "This is something to check!!!");
+    ///
+    /// let value = 42;
+    /// Log::write(LogLevel::Error, format!("My problematic value is {}", value));
+    /// ```
     pub fn write<S: AsRef<str>>(level: LogLevel, text: S) {
         let c_str = CString::new(text.as_ref()).unwrap();
         unsafe { log_write(level, c_str.as_ptr()) }
@@ -3568,7 +3665,32 @@ impl Log {
     /// before SK initialization.
     /// <https://stereokit.net/Pages/StereoKit/Log/Subscribe.html>
     ///
-    /// see also [`log_subscribe`]    
+    /// see also [`log_subscribe`] [`Log::unsubscribe`]   
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::system::{Log, LogLevel, LogItem};
+    /// use std::sync::{Arc, Mutex};
+    ///
+    /// /// Somewhere to copy the log
+    /// static LOG_LOG: Mutex<Vec<LogItem>> = Mutex::new(vec![]);
+    ///
+    /// let fn_mut = |level: LogLevel, log_text: &str| {
+    ///     let mut items = LOG_LOG.lock().unwrap();
+    ///     items.push(LogItem { level, text: log_text.to_owned(), count: 1 });
+    /// };
+    /// Log::subscribe( fn_mut );
+    ///
+    /// Log::info("This is an info message");
+    /// Log::warn("This is a warning message");
+    /// Log::err("This is an error message");
+    ///
+    /// let messages = LOG_LOG.lock().unwrap();
+    /// assert_eq!(messages.len(), 3);
+    /// assert_eq!(messages[0].level, LogLevel::Inform);
+    /// assert_eq!(messages[1].text, "This is a warning message");
+    ///
+    /// Log::unsubscribe( fn_mut );
+    /// ```
     pub fn subscribe<'a, F: FnMut(LogLevel, &str) + 'a>(mut on_log: F) {
         let mut closure = &mut on_log;
         unsafe { log_subscribe(Some(log_trampoline::<F>), &mut closure as *mut _ as *mut c_void) }
@@ -3578,7 +3700,8 @@ impl Log {
     /// called before initialization.
     /// <https://stereokit.net/Pages/StereoKit/Log/Unsubscribe.html>
     ///
-    /// see also [`log_unsubscribe`]    
+    /// see also [`log_unsubscribe`]
+    /// see example in [`Log::subscribe`]   
     pub fn unsubscribe<'a, F: FnMut(LogLevel, &str) + 'a>(mut on_log: F) {
         let mut closure = &mut on_log;
         unsafe { log_unsubscribe(Some(log_trampoline::<F>), &mut closure as *mut _ as *mut c_void) }
@@ -3716,6 +3839,8 @@ impl Microphone {
 /// example, if you are assembling a sheet of images, you may want to clear everything on the first image draw, but not
 /// clear on subsequent draws.
 /// <https://stereokit.net/Pages/StereoKit/RenderClear.html>
+///
+/// see also [`Renderer`]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
 pub enum RenderClear {
@@ -3735,7 +3860,8 @@ bitflags::bitflags! {
     /// avatar in a ‘mirror’ rendertarget, but not in the primary display. See Renderer.LayerFilter for configuring
     /// what the primary display renders.
     /// <https://stereokit.net/Pages/StereoKit/RenderLayer.html>
-
+    ///
+    /// see also [`Renderer`] [`Mesh::draw`] [`Model::draw`] [`Model::draw_mat`] [`RenderList`]
     #[derive(Debug, Copy, Clone, PartialEq, Eq)]
     #[repr(C)]
     pub struct RenderLayer: u32 {
@@ -3760,38 +3886,37 @@ bitflags::bitflags! {
         /// Render layer 9.
         const Layer9 = 1 << 9;
         /// The default VFX layer, StereoKit draws some non-standard mesh content using this flag, such as lines.
-        const Layer_VFX = 10;
+        const VFX = 10;
         /// For items that should only be drawn from the first person perspective. By default, this is enabled for
         /// renders that are from a 1st person viewpoint.
-        const Layer_first_person    = 1 << 11;
+        const FirstPerson    = 1 << 11;
         /// For items that should only be drawn from the third person perspective. By default, this is enabled for
         /// renders that are from a 3rd person viewpoint.
-        const Layer_third_person    = 1 << 12;
+        const ThirdPerson    = 1 << 12;
         /// This is a flag that specifies all possible layers. If you want to render all layers, then this is the layer
         ///  filter you would use. This is the default for render filtering.
-        const Layer_all = 0xFFFF;
+        const All = 0xFFFF;
         /// This is a combination of all layers that are not the VFX layer.
-        const Layer_all_regular = Self::Layer0.bits() | Self::Layer1.bits() | Self::Layer2.bits() | Self::Layer3.bits() | Self::Layer4.bits() | Self::Layer5.bits() | Self::Layer6.bits() | Self::Layer7.bits() | Self::Layer8.bits() | Self::Layer9.bits();
+        const AllRegular = Self::Layer0.bits() | Self::Layer1.bits() | Self::Layer2.bits() | Self::Layer3.bits() | Self::Layer4.bits() | Self::Layer5.bits() | Self::Layer6.bits() | Self::Layer7.bits() | Self::Layer8.bits() | Self::Layer9.bits();
         /// All layers except for the third person layer.
-        const Layer_all_first_person= Self::Layer_all.bits() & !Self::Layer_third_person.bits();
+        const AllFirstPerson = Self::All.bits() & !Self::ThirdPerson.bits();
         ///All layers except for the first person layer.
-        const Layer_all_third_person= Self::Layer_all.bits() & !Self::Layer_first_person.bits();
+        const AllThirdPerson = Self::All.bits() & !Self::FirstPerson.bits();
     }
 }
+
 impl Default for RenderLayer {
+    /// Layer_all is the default.
     fn default() -> Self {
-        RenderLayer::Layer_all
-    }
-}
-impl RenderLayer {
-    pub fn as_u32(&self) -> u32 {
-        self.bits()
+        RenderLayer::All
     }
 }
 
 /// The projection mode used by StereoKit for the main camera! You can use this with Renderer.Projection. These options
 /// are only available in flatscreen mode, as MR headsets provide very specific projection matrices.
 /// <https://stereokit.net/Pages/StereoKit/Projection.html>
+///
+/// see also [`Renderer`]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
 pub enum Projection {
@@ -3808,7 +3933,48 @@ pub enum Projection {
 /// surfaces! Even better, it’s entirely a static class, so you can call it from anywhere :)
 /// <https://stereokit.net/Pages/StereoKit/Renderer.html>
 ///
-///## Examples
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{system::{Renderer, RenderLayer}, maths::{Vec3, Matrix, Pose},
+///                      render_list::RenderList,
+///                      mesh::Mesh, model::Model, material::Material, util::named_colors};
+///
+/// let sun = Mesh::generate_sphere(5.0, None);
+/// let material = Material::pbr();
+/// let transform_sun = Matrix::t([-6.0, -4.0, -10.0]);
+///
+/// let plane = Model::from_file("plane.glb", None).expect("plane.glb should be there");
+/// let transform_plane = Matrix::trs(&([0.0, 0.2, -0.7].into()),
+///                                   &([0.0, 120.0, 0.0].into()),
+///                                   &(Vec3::ONE * 0.15));
+///
+/// // We want to replace the gray background with a dark blue sky:
+/// let mut primary = RenderList::primary();
+/// assert_eq!(primary.get_count(), 0);
+/// Renderer::clear_color(named_colors::BLUE);
+///
+/// filename_scr = "screenshots/renderer.jpeg";
+/// test_steps!( // !!!! Get a proper main loop !!!!
+///     
+///     primary.clear();
+///
+///     Renderer::add_mesh(token, &sun, &material, transform_sun,
+///         Some(named_colors::RED.into()), None);
+///
+///     Renderer::add_model(token, &plane, transform_plane,
+///         Some(named_colors::PINK.into()), Some(RenderLayer::FirstPerson));
+///
+///     Renderer::layer_filter(RenderLayer::All);
+///  
+///     if iter == number_of_steps {
+///         // This is the way test_screenshot!() works:
+///         Renderer::screenshot(token, filename_scr, 90, Pose::look_at(from_scr, at_scr),
+///             width_scr, height_scr, Some(fov_scr) );
+///     }
+/// );
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/renderer.jpeg" alt="screenshot" width="200">
 pub struct Renderer;
 
 unsafe extern "C" {
@@ -3939,14 +4105,51 @@ impl Renderer {
     /// <https://stereokit.net/Pages/StereoKit/Renderer/CameraRoot.html>
     ///
     /// see also [`render_set_cam_root`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Matrix, Vec3}, system::Renderer};
+    ///
+    /// let transform = Matrix::t([0.0, 0.0, -1.0]);
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     Renderer::camera_root(transform);
+    ///     let camera_root = Renderer::get_camera_root();
+    ///     assert_eq!(camera_root, transform);
+    /// );
+    /// ```
     pub fn camera_root(transform: impl Into<Matrix>) {
         unsafe { render_set_cam_root(&transform.into()) }
     }
 
     /// This is the gamma space color the renderer will clear the screen to when beginning to draw a new frame.
+    /// [`Color128::BLACK_TRANSPARENT`] is the default and is mandatory for some Passthrough solutions.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/ClearColor.html>
     ///
     /// see also [`render_set_clear_color`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::Renderer,
+    ///                      render_list::RenderList, util::{named_colors, Color128}};
+    ///
+    /// // We want to replace the gray background with a dark blue sky:
+    /// let mut primary = RenderList::primary();
+    /// assert_eq!(primary.get_count(), 0);
+    ///
+    ///
+    /// assert_eq!(Renderer::get_clear_color(), Color128::BLACK_TRANSPARENT);
+    /// Renderer::clear_color(named_colors::BLUE);
+    ///
+    /// filename_scr = "screenshots/renderer.jpeg";
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     
+    ///     primary.clear();
+    ///
+    ///     assert_eq!(Renderer::get_clear_color(), named_colors::BLUE.into());
+    ///
+    /// );
+    /// ```
     pub fn clear_color(color_gamma: impl Into<Color128>) {
         unsafe { render_set_clear_color(color_gamma.into()) }
     }
@@ -3955,7 +4158,20 @@ impl Renderer {
     /// unavailable for transparent displays.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/EnableSky.html>
     ///
-    /// see also [`render_enable_skytex`]
+    /// see also [`render_enable_skytex`] [`Renderer::clear_color`] [`crate::tex::SHCubemap`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::Renderer;
+    ///
+    /// assert_eq!(Renderer::get_enable_sky(), true);
+    ///
+    /// Renderer::enable_sky(false);
+    /// assert_eq!(Renderer::get_enable_sky(), false);
+    ///
+    /// Renderer::enable_sky(true);
+    /// assert_eq!(Renderer::get_enable_sky(), true);
+    /// ```
     pub fn enable_sky(enable: bool) {
         unsafe { render_enable_skytex(enable as Bool32T) }
     }
@@ -3966,6 +4182,19 @@ impl Renderer {
     /// <https://stereokit.net/Pages/StereoKit/Renderer/LayerFilter.html>
     ///
     /// see also [`render_set_filter`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::{Renderer, RenderLayer};
+    ///
+    /// assert_eq!(Renderer::get_layer_filter(), RenderLayer::AllFirstPerson);
+    ///
+    /// Renderer::layer_filter(RenderLayer::All);
+    /// assert_eq!(Renderer::get_layer_filter(), RenderLayer::All);
+    ///
+    /// Renderer::layer_filter(RenderLayer::AllFirstPerson);
+    /// assert_eq!(Renderer::get_layer_filter(), RenderLayer::AllFirstPerson);
+    /// ```
     pub fn layer_filter(filter: RenderLayer) {
         unsafe { render_set_filter(filter) }
     }
@@ -3973,10 +4202,23 @@ impl Renderer {
     /// Allows you to set the multisample (MSAA) level of the render surface. Valid values are 1, 2, 4, 8, 16, though
     /// some OpenXR runtimes may clamp this to lower values. Note that while this can greatly smooth out edges, it also
     /// greatly increases RAM usage and fill rate, so use it sparingly. Only works in XR mode. If known in advance, set
-    /// this via SKSettings in initialization. This is a very costly change to make.
+    /// this via [`crate::sk::SkSettings`] in initialization. This is a very costly change to make.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/Multisample.html>
     ///
     /// see also [`render_set_multisample`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::Renderer;
+    ///
+    /// assert_eq!(Renderer::get_multisample(), 1);
+    ///
+    /// Renderer::multisample(4);
+    /// assert_eq!(Renderer::get_multisample(), 4);
+    ///
+    /// Renderer::multisample(1);
+    /// assert_eq!(Renderer::get_multisample(), 1);
+    /// ```
     pub fn multisample(level: i32) {
         unsafe { render_set_multisample(level) }
     }
@@ -3985,22 +4227,48 @@ impl Renderer {
     /// orthographic projection. This may be of interest for some category of UI work, but is generally a niche piece of
     /// functionality.
     /// Swapping between perspective and orthographic will also switch the clipping planes and field of view to the
-    /// values associated with that mode. See SetClip/SetFov for perspective, and SetOrthoClip/SetOrthoSize for
+    /// values associated with that mode. See set_clip/set_fov for perspective, and set_ortho_clip/set_ortho_size for
     /// orthographic.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/Projection.html>
     ///
     /// see also [`render_set_projection`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::{Renderer, Projection};
+    ///
+    /// assert_eq!(Renderer::get_projection(), Projection::Perspective);
+    ///
+    /// Renderer::projection(Projection::Orthographic);
+    /// assert_eq!(Renderer::get_projection(), Projection::Orthographic);
+    ///
+    /// Renderer::projection(Projection::Perspective);
+    /// assert_eq!(Renderer::get_projection(), Projection::Perspective);
+    /// ```
     pub fn projection(projection: Projection) {
         unsafe { render_set_projection(projection) }
     }
 
     /// OpenXR has a recommended default for the main render surface, this value allows you to set SK’s surface to a
     /// multiple of the recommended size. Note that the final resolution may also be clamped or quantized. Only works in
-    /// XR mode. If known in advance, set this via SKSettings in initialization. This is a very costly change to make.
+    /// XR mode. If known in advance, set this via [`crate::sk::SkSettings`] in initialization. This is a very costly change to make.
     /// Consider if Viewport_scaling will work for you instead, and prefer that.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/Scaling.html>
     ///
     /// see also [`render_set_scaling`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::Renderer;
+    ///
+    /// assert_eq!(Renderer::get_scaling(), 1.0);
+    ///
+    /// Renderer::scaling(0.5);
+    /// assert_eq!(Renderer::get_scaling(), 0.5);
+    ///
+    /// Renderer::scaling(1.0);
+    /// assert_eq!(Renderer::get_scaling(), 1.0);
+    /// ```
     pub fn scaling(scaling: f32) {
         unsafe { render_set_scaling(scaling) }
     }
@@ -4011,36 +4279,79 @@ impl Renderer {
     /// <https://stereokit.net/Pages/StereoKit/Renderer/ViewportScaling.html>
     ///
     /// see also [`render_set_viewport_scaling`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::Renderer;
+    ///
+    /// assert_eq!(Renderer::get_viewport_scaling(), 1.0);
+    ///
+    /// Renderer::viewport_scaling(0.5);
+    /// assert_eq!(Renderer::get_viewport_scaling(), 0.5);
+    ///
+    /// Renderer::viewport_scaling(1.0);
+    /// assert_eq!(Renderer::get_viewport_scaling(), 1.0);
+    /// ```
     pub fn viewport_scaling(scaling: f32) {
         unsafe { render_set_viewport_scaling(scaling) }
     }
 
-    /// Sets the lighting information for the scene! You can build one through SphericalHarmonics.FromLights, or grab
-    /// one from Tex.FromEquirectangular or Tex.GenCubemap
+    /// Sets the lighting information for the scene! You can build one through [`SphericalHarmonics::from_lights`], or grab
+    /// one from [`crate::tex::SHCubemap`]
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyLight.html>
     ///
-    /// see also [`render_set_skylight`]
-    pub fn skylight(sh: SphericalHarmonics) {
-        unsafe { render_set_skylight(&sh) }
+    /// see also [`render_set_skylight`] [`crate::tex::SHCubemap`] [`crate::util::SHLight`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::Renderer, maths::Vec3,
+    ///                      util::{named_colors, SphericalHarmonics, SHLight}};
+    ///
+    /// let light1 = SHLight::new([0.0, 1.0, 0.0], named_colors::WHITE);
+    /// let light2 = SHLight::new([0.0, 0.0, 1.0], named_colors::WHITE);
+    ///
+    /// let mut sh = SphericalHarmonics::from_lights(&[light1, light2]);
+    ///
+    /// Renderer::sky_light(sh);
+    /// let sky_light = Renderer::get_sky_light();
+    ///
+    /// assert_eq!(sky_light, sh);
+    /// assert_eq!(sh.get_dominent_light_direction(),
+    ///            Vec3 { x: -0.0, y: -1.0, z: -1.0 }.get_normalized())
+    /// ```
+    pub fn sky_light(light_info: SphericalHarmonics) {
+        unsafe { render_set_skylight(&light_info) }
     }
 
     /// Set a cubemap skybox texture for rendering a background! This is only visible on Opaque displays, since
     /// transparent displays have the real world behind them already! StereoKit has a a default procedurally generated
-    /// skybox. You can load one with Tex.FromEquirectangular, Tex.GenCubemap. If you’re trying to affect the lighting,
-    /// see Renderer.SkyLight.
+    /// skybox. You can load one with [`crate::tex::SHCubemap`]. If you’re trying to affect the lighting,
+    /// see [`Renderer::sky_light`].
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyTex.html>
     ///
-    /// see also [`render_set_skytex`]
-    pub fn skytex(tex: impl AsRef<Tex>) {
+    /// see also [`render_set_skytex`] [`crate::tex::SHCubemap`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::Renderer, tex::{Tex, TexType}};
+    ///
+    /// let sky_tex = Tex::from_file("hdri/sky_dawn.jpeg", true, None)
+    ///                        .expect("sky.jpeg should be there");
+    /// Renderer::sky_tex(&sky_tex);
+    /// let sky_tex_get = Renderer::get_sky_tex();
+    ///
+    /// assert_eq!(sky_tex_get, sky_tex);
+    /// ```
+    pub fn sky_tex(tex: impl AsRef<Tex>) {
         unsafe { render_set_skytex(tex.as_ref().0.as_ptr()) }
     }
 
     /// This is the Material that StereoKit is currently using to draw the skybox! It needs a special shader that's
-    /// tuned for a full-screen quad. If you just want to change the skybox image, try setting `Renderer.SkyTex`
+    /// tuned for a full-screen quad. If you just want to change the skybox image, try setting [`Renderer::sky_tex`]
     /// instead.
     ///  
     /// This value will never be null! If you try setting this to null, it will assign SK's built-in default sky
-    /// material. If you want to turn off the skybox, see `Renderer.EnableSky` instead.
+    /// material. If you want to turn off the skybox, see [`Renderer::enable_sky`] instead.
     ///  
     /// Recommended Material settings would be:
     /// - DepthWrite: false
@@ -4049,18 +4360,56 @@ impl Renderer {
     ///
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyMaterial.html>
     ///
-    /// see also [`render_set_skymaterial`]
-    pub fn skymaterial(material: impl AsRef<Material>) {
+    /// see also [`render_set_skymaterial`] [`crate::tex::SHCubemap`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::Renderer, material::Material, util::named_colors};
+    ///
+    /// let material = Material::pbr().copy();
+    /// Renderer::sky_material(&material);
+    ///
+    /// let same_material = Renderer::get_sky_material();
+    /// assert_eq!(same_material, material);
+    /// ```
+    pub fn sky_material(material: impl AsRef<Material>) {
         unsafe { render_set_skymaterial(material.as_ref().0.as_ptr()) }
     }
 
     /// Adds a mesh to the render queue for this frame! If the Hierarchy has a transform on it, that transform is
     /// combined with the Matrix provided here.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/Add.html>
-    /// * color - If None has default value of WHITE
-    /// * layer - If None has default value of RenderLayer::Layer0
+    /// * `mesh` - A valid Mesh you wish to draw.
+    /// * `material` - A Material to apply to the Mesh.
+    /// * `transform` - A Matrix that will transform the mesh from Model Space into the current Hierarchy Space.
+    /// * `color` - A per-instance linear space color value to pass into the shader! Normally this gets used like a
+    ///   material tint. If you’re adventurous and don’t need per-instance colors, this is a great spot to pack in
+    ///   extra per-instance data for the shader! If None has default value of WHITE
+    /// * `layer` - All visuals are rendered using a layer bit-flag. By default, all layers are rendered, but this can be
+    ///   useful for filtering out objects for different rendering purposes! For example: rendering a mesh over the
+    ///   user’s head from a 3rd person perspective, but filtering it out from the 1st person perspective.If None has
+    ///   default value of RenderLayer::Layer0
     ///
-    /// see also [`render_add_mesh`]
+    /// see also [`render_add_mesh`] [`Mesh::draw`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::{Renderer, RenderLayer}, maths::{Vec3, Matrix},
+    ///                      mesh::Mesh, material::Material, util::named_colors};
+    ///
+    /// let sphere = Mesh::generate_sphere(0.5, None);
+    /// let material = Material::pbr();
+    /// let transform1 = Matrix::t([-0.5, 0.0, 0.0]);
+    /// let transform2 = Matrix::t([ 0.5, 0.0, -1.0]);
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///
+    ///     Renderer::add_mesh(token, &sphere, &material, transform1,
+    ///         Some(named_colors::RED.into()), Some(RenderLayer::Layer0));
+    ///
+    ///     Renderer::add_mesh(token, &sphere, &material, transform2, None, None);
+    /// );
+    /// ```
     pub fn add_mesh(
         _token: &MainThreadToken,
         mesh: impl AsRef<Mesh>,
@@ -4079,10 +4428,35 @@ impl Renderer {
     /// Adds a Model to the render queue for this frame! If the Hierarchy has a transform on it, that transform is
     /// combined with the Matrix provided here.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/Add.html>
-    /// * color - If None has default value of WHITE
-    /// * layer - If None has default value of RenderLayer::Layer0
+    /// * `model` -  	A valid Model you wish to draw.
+    /// * `transform` - A Matrix that will transform the Model from Model Space into the current Hierarchy Space.
+    /// * `color` - A per-instance linear space color value to pass into the shader! Normally this gets used like a
+    ///   material tint. If you’re adventurous and don’t need per-instance colors, this is a great spot to pack in
+    ///   extra per-instance data for the shader! If None has default value of WHITE
+    /// * `layer` - All visuals are rendered using a layer bit-flag. By default, all layers are rendered, but this can
+    ///   be useful for filtering out objects for different rendering purposes! For example: rendering a mesh over the
+    ///   user’s head from a 3rd person perspective, but filtering it out from the 1st person perspective. If None has
+    ///   default value of RenderLayer::Layer0
     ///
-    /// see also [`render_add_model`]
+    /// see also [`render_add_model`] [`Model::draw`] [`Model::draw_with_material`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::{Renderer, RenderLayer}, maths::{Vec3, Matrix},
+    ///                      model::Model, util::named_colors};
+    ///
+    /// let model = Model::from_file("plane.glb", None).expect("plane.glb should be there");
+    /// let transform1 = Matrix::t([-2.5, 0.0, -5.0]);
+    /// let transform2 = Matrix::t([ 2.5, 0.0, -5.0]);
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///
+    ///     Renderer::add_model(token, &model, transform1,
+    ///         Some(named_colors::RED.into()), Some(RenderLayer::Layer0));
+    ///
+    ///     Renderer::add_model(token, &model, transform2, None, None);
+    /// );
+    /// ```
     pub fn add_model(
         _token: &MainThreadToken,
         model: impl AsRef<Model>,
@@ -4098,21 +4472,64 @@ impl Renderer {
     /// Renders a Material onto a rendertarget texture! StereoKit uses a 4 vert quad stretched over the surface of the
     /// texture, and renders the material onto it to the texture.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/Blit.html>
+    /// * `to_render_target` - A texture that’s been set up as a render target!
+    /// * `material` - This material is rendered onto the texture! Set it up like you would if you were applying it to
+    ///   a plane, or quad mesh.
     ///
     /// see also [`render_blit`]
-    pub fn blit(_token: &MainThreadToken, tex: impl AsRef<Tex>, material: impl AsRef<Material>) {
-        unsafe { render_blit(tex.as_ref().0.as_ptr(), material.as_ref().0.as_ptr()) }
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::Renderer, material::Material, tex::Tex};
+    ///
+    /// let material = Material::pbr();
+    /// let tex = Tex::render_target(200,200, None, None, None)
+    ///                    .expect("RenderTarget should be created");
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     Renderer::blit(&tex, &material);
+    /// );
+    /// ```
+    pub fn blit(to_render_target: impl AsRef<Tex>, material: impl AsRef<Material>) {
+        unsafe { render_blit(to_render_target.as_ref().0.as_ptr(), material.as_ref().0.as_ptr()) }
     }
 
-    /// The CaptureFilter is a layer mask for Mixed Reality Capture, or 2nd person observer rendering. On HoloLens and
+    /// The capture_filter is a layer mask for Mixed Reality Capture, or 2nd person observer rendering. On HoloLens and
     /// WMR, this is the video rendering feature. This allows you to hide, or reveal certain draw calls when rendering
     /// video output.
     ///
-    /// By default, the CaptureFilter will always be the same as Render.LayerFilter, overriding this will mean this
-    /// filter no longer updates with LayerFilter.
+    /// By default, the capture_filter will always be the same as [`Renderer::layer_filter`], overriding this will mean this
+    /// filter no longer updates with layer_filter.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/OverrideCaptureFilter.html>
+    /// * `use_override_filter` - Enables (true) or disables (false) the overridden filter value provided here.
+    /// * `override_filter` - The filter for capture rendering to use. This is ignored if useOverrideFilter is false.
     ///
     /// see also [`render_override_capture_filter`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::{Renderer, RenderLayer},
+    ///                      maths::Matrix, mesh::Mesh, material::Material};
+    ///
+    /// let sphere = Mesh::generate_sphere(0.2, None);
+    /// let material = Material::pbr();
+    ///
+    /// assert_eq!(Renderer::has_capture_filter(), false);
+    /// assert_eq!(Renderer::get_capture_filter(), RenderLayer::AllFirstPerson);
+    ///
+    /// Renderer::override_capture_filter(true, RenderLayer::Layer1);
+    ///
+    /// assert_eq!(Renderer::has_capture_filter(), true);
+    /// assert_eq!(Renderer::get_capture_filter(), RenderLayer::Layer1);
+    ///
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     sphere.draw(token, &material, Matrix::IDENTITY, None, Some(RenderLayer::Layer1));
+    /// );
+    ///
+    /// Renderer::override_capture_filter(false, RenderLayer::Layer0);
+    /// assert_eq!(Renderer::has_capture_filter(), false);
+    /// ```
     pub fn override_capture_filter(use_override_filter: bool, override_filter: RenderLayer) {
         unsafe { render_override_capture_filter(use_override_filter as Bool32T, override_filter) }
     }
@@ -4120,11 +4537,55 @@ impl Renderer {
     /// This renders the current scene to the indicated rendertarget texture, from the specified viewpoint. This call
     /// enqueues a render that occurs immediately before the screen itself is rendered.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/RenderTo.html>
-    /// * layer_filter - If None has default value of RenderLayer::ALL
-    /// * clear - If None has default value of RenderClear::All
-    /// * vieport - If None has default value of (0, 0, 0, 0)
+    /// * `to_render_target` - The texture to which the scene will be rendered to. This must be a Rendertarget type
+    ///   texture.
+    /// * `camera` - A TRS matrix representing the location and orientation of the camera. This matrix gets inverted
+    ///   later on, so no need to do it yourself.
+    /// * `projection` - The projection matrix describes how the geometry is flattened onto the draw surface. Normally,
+    ///   you’d use Matrix::perspective, and occasionally Matrix::orthographic might be helpful as well.
+    /// * `layer_filter` - This is a bit flag that allows you to change which layers StereoKit renders for this particular
+    ///   render viewpoint. To change what layers a visual is on, use a Draw method that includes a RenderLayer as a
+    ///   parameter. If None has default value of RenderLayer::ALL
+    /// * `clear` - Describes if and how the rendertarget should be cleared before rendering. Note that clearing the
+    ///   target is unaffected by the viewport, so this will clean the entire surface! If None has default value of
+    ///   RenderClear::All
+    /// * `vieport` - Allows you to specify a region of the rendertarget to draw to! This is in normalized coordinates,
+    ///   0-1. If the width of this value is zero, then this will render to the entire texture. If None has default value
+    ///   of (0, 0, 0, 0)
     ///
     /// see also [`render_to`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::{Renderer, RenderLayer}, maths::{Vec3, Quat, Matrix},
+    ///                      render_list::RenderList, tex::{Tex, TexType, TexFormat},
+    ///                      mesh::Mesh, model::Model, material::Material, util::named_colors};
+    ///
+    /// let sun = Mesh::generate_sphere(5.0, None);
+    /// let material = Material::pbr();
+    /// let transform_sun = Matrix::t([-6.0, -1.0, -10.0]);
+    ///
+    /// let plane = Mesh::generate_plane_up([1.0,1.0], None, true);
+    /// let mut material = Material::unlit().copy();
+    /// let tex = Tex::render_target(200,200, None, None, None)
+    ///                    .expect("RenderTarget should be created");
+    /// material.diffuse_tex(&tex);
+    /// let transform_plane = Matrix::t([0.0, -0.55, 0.0]);
+    ///
+    /// let camera = Matrix::tr(&(Vec3::Z * 2.0), &Quat::look_at(Vec3::Z, Vec3::ZERO, None));
+    /// let projection = Matrix::perspective(90.0, 1.0, 0.1, 20.0);
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     
+    ///     Renderer::add_mesh(token, &sun, &material, transform_sun,
+    ///         Some(named_colors::RED.into()), None);
+    ///
+    ///     Renderer::add_mesh(token, &plane, &material, transform_plane,
+    ///         None, None);
+    ///
+    ///     Renderer::render_to(token, &tex, camera, projection, None, None, None);
+    /// );
+    /// ```
     pub fn render_to<M: Into<Matrix>>(
         _token: &MainThreadToken,
         to_render_target: impl AsRef<Tex>,
@@ -4134,7 +4595,7 @@ impl Renderer {
         clear: Option<RenderClear>,
         viewport: Option<Rect>,
     ) {
-        let layer_filter = layer_filter.unwrap_or(RenderLayer::Layer_all);
+        let layer_filter = layer_filter.unwrap_or(RenderLayer::All);
         let clear = clear.unwrap_or(RenderClear::All);
         let viewport = viewport.unwrap_or_default();
 
@@ -4154,12 +4615,29 @@ impl Renderer {
     /// use in reflections across all materials (register 11). It can be used for things like shadowmaps, wind data, etc.
     ///  Prefer a higher registers (11+) to prevent conflicting with normal Material textures.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SetGlobalTexture.html>
-    /// * texture_register - The texture resource register the texture will bind to. SK uses register 11 already, so
+    /// * `texture_register` - The texture resource register the texture will bind to. SK uses register 11 already, so
     ///   values above that should be fine.
-    /// * tex - The texture to assign globally. Setting None here will clear any texture that is currently bound.
+    /// * `tex` - The texture to assign globally. Setting None here will clear any texture that is currently bound.
     ///
     /// see also [`render_global_texture`]
-    pub fn set_global_texture<M: Into<Matrix>>(_token: &MainThreadToken, texture_register: i32, tex: Option<Tex>) {
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::{Renderer, RenderLayer}, tex::{Tex, TexFormat},
+    ///                      maths::Matrix, util::named_colors};
+    ///
+    /// let tex = Tex::from_file("hdri/sky_dawn.jpeg", true, None)
+    ///                    .expect("sky.jpeg should be a valid texture");
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter < 2 {
+    ///         Renderer::set_global_texture(token, 12, Some(&tex));
+    ///     } else {
+    ///         Renderer::set_global_texture(token, 12, None);
+    ///     }
+    /// );
+    /// ```
+    pub fn set_global_texture(_token: &MainThreadToken, texture_register: i32, tex: Option<&Tex>) {
         if let Some(tex) = tex {
             unsafe { render_global_texture(texture_register, tex.0.as_ptr()) }
         } else {
@@ -4171,11 +4649,17 @@ impl Renderer {
     /// resolution the same size as the screen’s surface. It’ll be saved as a JPEG or PNG file depending on the filename
     /// extension provided.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/Screenshot.html>
-    /// * file_quality - should be 90 in most of the case for 90%
-    /// * viewpoint - is Pose::look_at(from_point, looking_at_point)
-    /// * field_of_view - If None will use default value of 90°
+    /// * `filename` - Filename to write the screenshot to! This will be a PNG if the extension ends with (case
+    ///   insensitive) “.png”, and will be a 90 quality JPEG if it ends with anything else.
+    /// * `file_quality` - For JPEG files, this is the compression quality of the file from 0-100, 100 being highest
+    ///   quality, 0 being smallest size. SK uses a default of 90 here.
+    /// * `viewpoint` - is Pose::look_at(from_point, looking_at_point)
+    /// * `width` - Size of the screenshot horizontally, in pixels.
+    /// * `height`- Size of the screenshot vertically, in pixels
+    /// * `field_of_view` - The angle of the viewport, in degrees. If None will use default value of 90°
     ///
     /// see also [`render_screenshot`]
+    /// see example in [`Renderer`]
     pub fn screenshot(
         _token: &MainThreadToken,
         filename: impl AsRef<Path>,
@@ -4196,12 +4680,58 @@ impl Renderer {
     /// data directly from the render thread! You can use the color data directly by saving/processing it inside your
     /// callback, or you can keep the data alive for as long as it is referenced.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/Screenshot.html>
-    /// * on_screenshot : closure |&[Color32], width:usize, height:usize|
-    /// * viewpoint - is Pose::look_at(from_point, looking_at_point)
-    /// * field_of_view - If None will use default value of 90°
-    /// * tex_format - If None will use default value of TexFormat::RGBA32
+    /// * `on_screenshot` : closure |&[Color32], width:usize, height:usize|
+    /// * `viewpoint` - is Pose::look_at(from_point, looking_at_point)
+    /// * `width` - Size of the screenshot horizontally, in pixels.
+    /// * `height`- Size of the screenshot vertically, in pixels
+    /// * `field_of_view` - The angle of the viewport, in degrees. If None will use default value of 90°
+    /// * `tex_format` - The pixel format of the color data. If None will use default value of TexFormat::RGBA32
     ///
     /// see also [`render_screenshot_capture`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::{Renderer, RenderLayer}, maths::{Vec3, Quat, Pose, Matrix},
+    ///                      render_list::RenderList, tex::{Tex, TexType, TexFormat},
+    ///                      mesh::Mesh, model::Model, material::Material, util::named_colors};
+    ///
+    /// let sun = Mesh::generate_sphere(7.0, None);
+    /// let material = Material::pbr();
+    /// let transform_sun = Matrix::t([-6.0, 3.0, -10.0]);
+    ///
+    /// let plane = Mesh::generate_plane_up([1.0,1.0], None, true);
+    /// let mut material = Material::unlit().copy();
+    /// let mut tex = Tex::render_target(200,200, None, None, None)
+    ///                    .expect("RenderTarget should be created");
+    /// tex.id("CAPTURE_TEXTURE_ID");
+    /// material.diffuse_tex(&tex);
+    /// let transform_plane = Matrix::t([0.0, -0.55, 0.0]);
+    ///
+    /// let camera_pose = Pose::new([0.0, 0.0, 1.0], None);
+    ///
+    /// number_of_steps = 20;
+    /// filename_scr = "screenshots/screenshot_capture.jpeg";
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     
+    ///     Renderer::add_mesh(token, &sun, &material, transform_sun,
+    ///         Some(named_colors::RED.into()), None);
+    ///
+    ///     Renderer::add_mesh(token, &plane, &material, transform_plane,
+    ///         None, None);
+    ///
+    ///     Renderer::screenshot_capture( token,
+    ///         move |dots, width, height| {
+    ///             let tex = Tex::find("CAPTURE_TEXTURE_ID").ok();
+    ///             match tex {
+    ///                 Some(mut tex) => tex.set_colors32(width, height, dots),
+    ///                 None => panic!("CAPTURE_TEXTURE_ID not found!"),
+    ///             };
+    ///         },
+    ///         camera_pose, 200, 200, None, None
+    ///     );
+    /// );
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/screenshot_capture.jpeg" alt="screenshot" width="200">
     pub fn screenshot_capture<F: FnMut(&[Color32], usize, usize)>(
         _token: &MainThreadToken,
         mut on_screenshot: F,
@@ -4227,13 +4757,75 @@ impl Renderer {
         }
     }
 
-    /// <https://stereokit.net/Pages/StereoKit/Renderer/Screenshot.html>
-    /// * on_screenshot : closure |&[Color32], width:usize, height:usize|
-    /// * render_layer - If None will use default value of All
-    /// * clear - If None wille use default value of All
-    /// * tex_format - If None will use default value of TexFormat::RGBA32
+    /// Schedules a screenshot for the end of the frame! The view will be rendered from the given position at the given
+    /// point, with a resolution the same size as the screen’s surface. This overload allows for retrieval of the color
+    /// data directly from the render thread! You can use the color data directly by saving/processing it inside your
+    /// callback, or you can keep the data alive for as long as it is referenced.
+    ///  <https://stereokit.net/Pages/StereoKit/Renderer/Screenshot.html>
+    /// * `on_screenshot` : closure |&[Color32], width:usize, height:usize|
+    /// * `camera` - A TRS matrix representing the location and orientation of the camera. This matrix gets inverted
+    ///   later on, so no need to do it yourself.
+    /// * `projection` - The projection matrix describes how the geometry is flattened onto the draw surface. Normally,
+    ///   you’d use [`Matrix::perspective`], and occasionally [`Matrix::orthographic`] might be helpful as well.
+    /// * `width` - Size of the screenshot horizontally, in pixels.
+    /// * `height`- Size of the screenshot vertically, in pixels
+    /// * `render_layer` - This is a bit flag that allows you to change which layers StereoKit renders for this
+    ///   particular render viewpoint. To change what layers a visual is on, use a Draw method that includes a
+    ///   RenderLayer as a parameter. If None will use default value of All
+    /// * `clear` - Describes if and how the rendertarget should be cleared before rendering. Note that clearing the
+    ///   target is unaffected by the viewport, so this will clean the entire surface! If None wille use default value
+    ///   of All
+    /// * `viewport` - Allows you to specify a region of the rendertarget to draw to! This is in normalized coordinates,
+    ///   0-1. If the width of this value is zero, then this will render to the entire texture. If None has default value
+    ///   of (0, 0, 0, 0)
+    /// * `tex_format` - The pixel format of the color data. If None will use default value of TexFormat::RGBA32
     ///
     /// see also [`render_screenshot_viewpoint`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::{Renderer, RenderLayer}, maths::{Vec3, Quat, Pose, Matrix},
+    ///                      render_list::RenderList, tex::{Tex, TexType, TexFormat},
+    ///                      mesh::Mesh, model::Model, material::Material, util::named_colors};
+    ///
+    /// let sun = Mesh::generate_sphere(7.0, None);
+    /// let material = Material::pbr();
+    /// let transform_sun = Matrix::t([6.0, 3.0, -10.0]);
+    ///
+    /// let plane = Mesh::generate_plane_up([1.0,1.0], None, true);
+    /// let mut material = Material::unlit().copy();
+    /// let mut tex = Tex::gen_color(named_colors::VIOLET, 200, 200, TexType::Rendertarget, TexFormat::RGBA32);
+    ///
+    /// tex.id("CAPTURE_TEXTURE_ID");
+    /// material.diffuse_tex(&tex);
+    /// let transform_plane = Matrix::t([0.0, -0.55, 0.0]);
+    ///
+    /// let camera = Matrix::tr(&(Vec3::Z * 2.0), &Quat::look_at(Vec3::Z, Vec3::ZERO, None));
+    /// let projection = Matrix::perspective(90.0, 1.0, 0.1, 20.0);
+    ///
+    /// number_of_steps = 200;
+    /// filename_scr = "screenshots/screenshot_viewpoint.jpeg";
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     
+    ///     Renderer::add_mesh(token, &sun, &material, transform_sun,
+    ///         Some(named_colors::RED.into()), None);
+    ///
+    ///     Renderer::add_mesh(token, &plane, &material, transform_plane,
+    ///         None, None);
+    ///
+    ///     Renderer::screenshot_viewpoint( token,
+    ///         move |dots, width, height| {
+    ///             let tex = Tex::find("CAPTURE_TEXTURE_ID").ok();
+    ///             match tex {
+    ///                 Some(mut tex) => tex.set_colors32(width, height, dots),
+    ///                 None => panic!("CAPTURE_TEXTURE_ID not found!"),
+    ///             };
+    ///         },
+    ///         camera, projection, 200, 200, None, None, None, None
+    ///     );
+    /// );
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/screenshot_viewpoint.jpeg" alt="screenshot" width="200">
     #[allow(clippy::too_many_arguments)]
     pub fn screenshot_viewpoint<M: Into<Matrix>, F: FnMut(&[Color32], usize, usize)>(
         _token: &MainThreadToken,
@@ -4275,8 +4867,20 @@ impl Renderer {
     ///
     /// These values only affect perspective mode projection, which is the default projection mode.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SetClip.html>
+    /// * `near_plane` - The GPU discards pixels that are too close to the camera, this is that distance! It must be
+    ///   larger than zero, due to the projection math, which also means that numbers too close to zero will produce
+    ///   z-fighting artifacts. This has an enforced minimum of 0.001, but you should probably stay closer to 0.1.
+    /// * `far_plane` - At what distance from the camera does the GPU discard pixel? This is not true distance, but
+    ///   rather Z-axis distance from zero in View Space coordinates!
     ///
     /// see also [`render_set_clip`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::Renderer;
+    ///
+    /// Renderer::set_clip(0.01, 10.0);
+    /// ```
     pub fn set_clip(near_plane: f32, far_plane: f32) {
         unsafe { render_set_clip(near_plane, far_plane) }
     }
@@ -4285,8 +4889,16 @@ impl Renderer {
     ///
     /// This value only affects perspective mode projection, which is the default projection mode.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SetFOV.html>
+    /// * `field_of_view` - Vertical field of view in degrees.`
     ///
     /// see also [`render_set_fov`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::Renderer;
+    ///
+    /// Renderer::set_fov(120.0);
+    /// ```
     pub fn set_fov(field_of_view: f32) {
         unsafe { render_set_fov(field_of_view) }
     }
@@ -4298,8 +4910,20 @@ impl Renderer {
     ///
     /// These values only affect orthographic mode projection, which is only available in flatscreen.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SetOrthoClip.html>
+    /// * `near_plane` - The GPU discards pixels that are too close to the camera, this is that distance! It must be
+    ///   larger than zero, due to the projection math, which also means that numbers too close to zero will produce
+    ///   z-fighting artifacts. This has an enforced minimum of 0.001, but you should probably stay closer to 0.1.
+    /// * `far_plane` - At what distance from the camera does the GPU discard pixel? This is not true distance, but
+    ///   rather Z-axis distance from zero in View Space coordinates!
     ///
     /// see also [`render_set_ortho_clip`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::Renderer;
+    ///
+    /// Renderer::set_ortho_clip(0.01, 5.0);
+    /// ```
     pub fn set_ortho_clip(near_plane: f32, far_plane: f32) {
         unsafe { render_set_ortho_clip(near_plane, far_plane) }
     }
@@ -4309,8 +4933,16 @@ impl Renderer {
     ///
     /// This value only affects orthographic mode projection, which is only available in flatscreen.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SetOrthoSize.html>
+    /// * `viewport_height_meters` - The vertical size of the projection’s viewport, in meters.
     ///
     /// see also [`render_set_ortho_size`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::Renderer;
+    ///
+    /// Renderer::set_ortho_size(12.0);
+    /// ```
     pub fn set_ortho_size(view_port_height_meters: f32) {
         unsafe { render_set_ortho_size(view_port_height_meters) }
     }
@@ -4321,16 +4953,18 @@ impl Renderer {
     /// <https://stereokit.net/Pages/StereoKit/Renderer/CameraRoot.html>
     ///
     /// see also [`render_get_cam_root`]
+    /// see example in [`Renderer::camera_root`]
     pub fn get_camera_root() -> Matrix {
         unsafe { render_get_cam_root() }
     }
 
     /// This is the current render layer mask for Mixed Reality Capture, or 2nd person observer rendering. By default,
-    /// this is directly linked to Renderer.LayerFilter, but this behavior can be overridden via
-    /// Renderer.OverrideCaptureFilter.
+    /// this is directly linked to Renderer::layer_filter, but this behavior can be overridden via
+    /// Renderer::override_capture_filter.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/CaptureFilter.html>
     ///
     /// see also [`render_get_capture_filter`]
+    /// see example in [`Renderer::override_capture_filter`]
     pub fn get_capture_filter() -> RenderLayer {
         unsafe { render_get_capture_filter() }
     }
@@ -4339,6 +4973,7 @@ impl Renderer {
     /// <https://stereokit.net/Pages/StereoKit/Renderer/ClearColor.html>
     ///
     /// see also [`render_get_clear_color`]
+    /// see example in [`Renderer::clear_color`]
     pub fn get_clear_color() -> Color128 {
         unsafe { render_get_clear_color() }
     }
@@ -4348,14 +4983,16 @@ impl Renderer {
     /// <https://stereokit.net/Pages/StereoKit/Renderer/EnableSky.html>
     ///
     /// see also [`render_enabled_skytex`]
+    /// see example in [`Renderer::enable_sky`]
     pub fn get_enable_sky() -> bool {
         unsafe { render_enabled_skytex() != 0 }
     }
 
-    /// This tells if CaptureFilter has been overridden to a specific value via Renderer.OverrideCaptureFilter.
+    /// This tells if capture_filter has been overridden to a specific value via Renderer::override_capture_filter.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/HasCaptureFilter.html>
     ///
     /// see also [`render_has_capture_filter`]
+    /// see example in [`Renderer::override_capture_filter`]
     pub fn has_capture_filter() -> bool {
         unsafe { render_has_capture_filter() != 0 }
     }
@@ -4366,6 +5003,7 @@ impl Renderer {
     /// <https://stereokit.net/Pages/StereoKit/Renderer/LayerFilter.html>
     ///
     /// see also [`render_get_filter`]
+    /// see example in [`Renderer::layer_filter`]
     pub fn get_layer_filter() -> RenderLayer {
         unsafe { render_get_filter() }
     }
@@ -4373,10 +5011,11 @@ impl Renderer {
     /// Get the multisample (MSAA) level of the render surface. Valid values are 1, 2, 4, 8, 16, though
     /// some OpenXR runtimes may clamp this to lower values. Note that while this can greatly smooth out edges, it also
     /// greatly increases RAM usage and fill rate, so use it sparingly. Only works in XR mode. If known in advance, set
-    /// this via SKSettings in initialization. This is a very costly change to make.
+    /// this via [`crate::sk::SkSettings`] in initialization. This is a very costly change to make.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/Multisample.html>
     ///
     /// see also [`render_get_multisample`]
+    /// see example in [`Renderer::multisample`]
     pub fn get_multisample() -> i32 {
         unsafe { render_get_multisample() }
     }
@@ -4385,11 +5024,12 @@ impl Renderer {
     /// orthographic projection. This may be of interest for some category of UI work, but is generally a niche piece of
     /// functionality.
     /// Swapping between perspective and orthographic will also switch the clipping planes and field of view to the
-    /// values associated with that mode. See SetClip/SetFov for perspective, and SetOrthoClip/SetOrthoSize for
+    /// values associated with that mode. See set_clip/set_fov for perspective, and set_ortho_clip/set_ortho_size for
     /// orthographic.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/Projection.html>
     ///
     /// see also [`render_get_projection`]
+    /// see example in [`Renderer::projection`]
     pub fn get_projection() -> Projection {
         unsafe { render_get_projection() }
     }
@@ -4402,6 +5042,7 @@ impl Renderer {
     /// <https://stereokit.net/Pages/StereoKit/Renderer/Scaling.html>
     ///
     /// see also [`render_get_scaling`]
+    /// see example in [`Renderer::scaling`]
     pub fn get_scaling() -> f32 {
         unsafe { render_get_scaling() }
     }
@@ -4412,36 +5053,39 @@ impl Renderer {
     /// <https://stereokit.net/Pages/StereoKit/Renderer/ViewportScaling.html>
     ///
     /// see also [`render_get_viewport_scaling`]
+    /// see example in [`Renderer::viewport_scaling`]
     pub fn get_viewport_scaling() -> f32 {
         unsafe { render_get_viewport_scaling() }
     }
 
-    /// Gets the lighting information for the scene! You can build one through SphericalHarmonics.FromLights, or grab
-    /// one from Tex.FromEquirectangular or Tex.GenCubemap
+    /// Gets the lighting information for the scene! You can build one through SphericalHarmonics::from_lights, or grab
+    /// one from [`crate::tex::SHCubemap`].
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyLight.html>
     ///
     /// see also [`render_get_skylight`]
-    pub fn get_skylight() -> SphericalHarmonics {
+    /// see example in [`Renderer::sky_light`]
+    pub fn get_sky_light() -> SphericalHarmonics {
         unsafe { render_get_skylight() }
     }
 
     /// Get the cubemap skybox texture for rendering a background! This is only visible on Opaque displays, since
     /// transparent displays have the real world behind them already! StereoKit has a a default procedurally generated
-    /// skybox. You can load one with Tex.FromEquirectangular, Tex.GenCubemap. If you’re trying to affect the lighting,
-    /// see Renderer.SkyLight.
+    /// skybox. You can load one with [`crate::tex::SHCubemap`]. If you’re trying to affect the lighting,
+    /// see Renderer::sky_light.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyTex.html>
     ///
     /// see also [`render_get_skytex`]
-    pub fn get_skytex() -> Tex {
+    /// see example in [`Renderer::sky_tex`]
+    pub fn get_sky_tex() -> Tex {
         Tex(NonNull::new(unsafe { render_get_skytex() }).unwrap())
     }
 
     /// This is the Material that StereoKit is currently using to draw the skybox! It needs a special shader that's
-    /// tuned for a full-screen quad. If you just want to change the skybox image, try setting `Renderer.SkyTex`
+    /// tuned for a full-screen quad. If you just want to change the skybox image, try setting [`Renderer::sky_tex`]
     /// instead.
     ///  
     /// This value will never be null! If you try setting this to null, it will assign SK's built-in default sky
-    /// material. If you want to turn off the skybox, see `Renderer.EnableSky` instead.
+    /// material. If you want to turn off the skybox, see [`Renderer::enable_sky`] instead.
     ///  
     /// Recommended Material settings would be:
     /// - DepthWrite: false
@@ -4451,7 +5095,8 @@ impl Renderer {
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyMaterial.html>
     ///
     /// see also [`render_get_skymaterial`]
-    pub fn get_skymaterial() -> Material {
+    /// see example in [`Renderer::sky_material`]
+    pub fn get_sky_material() -> Material {
         Material(NonNull::new(unsafe { render_get_skymaterial() }).unwrap())
     }
 }
@@ -5337,7 +5982,7 @@ impl World {
     }
 
     /// The mode or “reference space” that StereoKit uses for determining its base origin. This is determined by the
-    /// initial value provided in SkSettings.origin, as well as by support from the underlying runtime. The mode
+    /// initial value provided in [`crate::sk::SkSettings.origin`], as well as by support from the underlying runtime. The mode
     /// reported here will not necessarily be the one requested in initialization, as fallbacks are implemented using
     /// different available modes.
     /// <https://stereokit.net/Pages/StereoKit/World/OriginMode.html>
