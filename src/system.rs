@@ -359,12 +359,10 @@ impl Assets {
     /// let my_sprite = Sprite::from_file("textures/open_gltf.jpeg", None, None)
     ///                   .expect("open_gltf.jpeg should be able to create sprite");
     ///
+    /// let current_task = Assets::current_task();
+    /// assert_eq!(Assets::total_tasks(), 1);
     /// number_of_steps = 200;
-    /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     let current_task = Assets::current_task();
-    ///     assert_eq!(current_task, 0);
-    ///     assert_eq!(Assets::total_tasks(), 1);
-    /// );
+    /// assert_eq!(current_task, 0);
     /// ```
     pub fn current_task() -> i32 {
         unsafe { assets_current_task() }
@@ -383,10 +381,8 @@ impl Assets {
     /// let my_sprite = Sprite::from_file("textures/open_gltf.jpeg", None, None)
     ///                   .expect("open_gltf.jpeg should be able to create sprite");
     ///
-    /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     let current_task_priority  = Assets::current_task_priority();
-    ///     assert_eq!(current_task_priority, 10);
-    /// );
+    /// let current_task_priority  = Assets::current_task_priority();
+    /// assert_eq!(current_task_priority, 10);
     /// ```
     pub fn current_task_priority() -> i32 {
         unsafe { assets_current_task_priority() }
