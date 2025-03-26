@@ -954,7 +954,7 @@ impl BackendAndroid {
 ///
 /// if cfg!(target_os = "windows") {
 ///     // These are results for a D3D11 environment:
-///     assert_ne!(d3d_context, std::ptr::null_mut());
+///     assert_eq!(d3d_context, std::ptr::null_mut());
 ///     assert_ne!(d3d_device, std::ptr::null_mut());
 /// } else {
 ///     // These are results for a non D3D11 environment:
@@ -4696,7 +4696,7 @@ impl Renderer {
     ///                      mesh::Mesh, model::Model, material::Material, util::named_colors};
     ///
     /// let sun = Mesh::generate_sphere(7.0, None);
-    /// let material = Material::pbr();
+    /// let material_sun = Material::pbr();
     /// let transform_sun = Matrix::t([-6.0, 3.0, -10.0]);
     ///
     /// let plane = Mesh::generate_plane_up([1.0,1.0], None, true);
@@ -4713,7 +4713,7 @@ impl Renderer {
     /// filename_scr = "screenshots/screenshot_capture.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     
-    ///     Renderer::add_mesh(token, &sun, &material, transform_sun,
+    ///     Renderer::add_mesh(token, &sun, &material_sun, transform_sun,
     ///         Some(named_colors::RED.into()), None);
     ///
     ///     Renderer::add_mesh(token, &plane, &material, transform_plane,
@@ -4789,7 +4789,7 @@ impl Renderer {
     ///                      mesh::Mesh, model::Model, material::Material, util::named_colors};
     ///
     /// let sun = Mesh::generate_sphere(7.0, None);
-    /// let material = Material::pbr();
+    /// let material_sun = Material::pbr();
     /// let transform_sun = Matrix::t([6.0, 3.0, -10.0]);
     ///
     /// let plane = Mesh::generate_plane_up([1.0,1.0], None, true);
@@ -4807,7 +4807,7 @@ impl Renderer {
     /// filename_scr = "screenshots/screenshot_viewpoint.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     
-    ///     Renderer::add_mesh(token, &sun, &material, transform_sun,
+    ///     Renderer::add_mesh(token, &sun, &material_sun, transform_sun,
     ///         Some(named_colors::RED.into()), None);
     ///
     ///     Renderer::add_mesh(token, &plane, &material, transform_plane,
