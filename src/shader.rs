@@ -143,7 +143,8 @@ impl Shader {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{shader::Shader};
-    /// let mut shader = Shader::from_file("shaders/brick_pbr.hlsl.sks").unwrap();
+    /// let mut shader = Shader::from_file("shaders/brick_pbr.hlsl.sks")
+    ///                              .expect("Brick shader should be there");
     /// shader.id("my_brick_shader");
     /// let mut shader_again = Shader::find("my_brick_shader");
     /// assert!(shader_again.is_ok(), "Failed to find shader");
@@ -167,7 +168,8 @@ impl Shader {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{shader::Shader};
-    /// let mut shader = Shader::from_file("shaders/brick_pbr.hlsl.sks").unwrap();
+    /// let mut shader = Shader::from_file("shaders/brick_pbr.hlsl.sks")
+    ///                              .expect("Brick shader should be there");
     /// shader.id("my_brick_shader");
     /// let mut shader_again = shader.clone_ref();
     /// assert_eq!(shader_again.get_id(), "my_brick_shader");
@@ -188,7 +190,8 @@ impl Shader {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{shader::Shader};
-    /// let mut shader = Shader::from_file("shaders/brick_pbr.hlsl.sks").unwrap();
+    /// let mut shader = Shader::from_file("shaders/brick_pbr.hlsl.sks")
+    ///                              .expect("Brick shader should be there");
     /// shader.id("my_brick_shader");
     /// assert_eq!(shader.get_id(), "my_brick_shader");
     /// ```
@@ -216,7 +219,8 @@ impl Shader {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{shader::Shader};
-    /// let shader = Shader::from_file("shaders/brick_pbr.hlsl.sks").unwrap();
+    /// let shader = Shader::from_file("shaders/brick_pbr.hlsl.sks")
+    ///                              .expect("Brick shader should be there");
     /// assert_eq!(shader.get_name(), "the_name_of_brick_pbr");
     /// ```
     pub fn get_name(&self) -> &str {

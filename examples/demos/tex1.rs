@@ -55,7 +55,7 @@ impl Tex1 {
 
 impl Default for Tex1 {
     fn default() -> Self {
-        //sk.world_set_occlusion_enabled(true);
+        //World::occlusion_enabled(true);
         let mut tex_default = Tex::from_file("textures/open_gltf.jpeg", true, None).unwrap();
         // !!! don't set an id here if you want to come back as the tex_default is saved as error_fallback
         Tex::set_error_fallback(&tex_default);

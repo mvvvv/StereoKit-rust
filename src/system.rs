@@ -4424,7 +4424,7 @@ impl Renderer {
     /// Adds a Model to the render queue for this frame! If the Hierarchy has a transform on it, that transform is
     /// combined with the Matrix provided here.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/Add.html>
-    /// * `model` -  	A valid Model you wish to draw.
+    /// * `model` -  A valid Model you wish to draw.
     /// * `transform` - A Matrix that will transform the Model from Model Space into the current Hierarchy Space.
     /// * `color` - A per-instance linear space color value to pass into the shader! Normally this gets used like a
     ///   material tint. If you’re adventurous and don’t need per-instance colors, this is a great spot to pack in
@@ -5101,6 +5101,44 @@ impl Renderer {
 /// through the application by encouraging devs to re-use styles throughout the project. See Text.MakeStyle for making a
 /// TextStyle object.
 /// <https://stereokit.net/Pages/StereoKit/TextStyle.html>
+///
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{system::{TextStyle, TextAlign, Text, Lines, Hierarchy},
+///                      font::Font, material::Material, mesh::Mesh, maths::{Vec3, Matrix},
+///                      util::named_colors::{WHITE, GOLD, GREEN, BLUE, RED, BLACK}};
+///
+/// let font = Font::default();
+/// let style = TextStyle::from_font(font, 0.88, WHITE);
+/// let text = "ÂjlD;";
+/// let size = Text::size_layout(text, Some(style), None);
+///
+/// let base_line_at   = -style.get_cap_height();
+/// let ascender_at    = base_line_at + style.get_ascender();
+/// let cap_height_at  = base_line_at + style.get_cap_height();
+/// let descender_at   = base_line_at - style.get_descender();
+/// let line_height_at = ascender_at - style.get_line_height_pct() * style. get_total_height();
+///
+/// let sizex = size.x;
+///
+/// let recenter = Matrix::t(Vec3::Y * 0.6);
+///
+/// filename_scr = "screenshots/text_style.jpeg"; fov_scr=110.0;
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+///    Hierarchy::push(token, recenter, None);
+///    Text::add_at(token, text, Matrix::Y_180, Some(style), Some(GOLD.into()),
+///             Some(TextAlign::TopCenter), Some(TextAlign::TopLeft), None, None, None);
+///    
+///    Lines::add(token, [sizex, ascender_at, 0.0],    [-sizex, ascender_at, 0.0],    GREEN, None, 0.03  );
+///    Lines::add(token, [sizex, base_line_at, 0.0],   [-sizex, base_line_at, 0.0],   WHITE, None, 0.03  );
+///    Lines::add(token, [sizex, cap_height_at, 0.0],  [-sizex, cap_height_at, 0.0],  BLACK, None, 0.03  );
+///    Lines::add(token, [sizex, descender_at, 0.0],   [-sizex, descender_at, 0.0],   BLUE, None, 0.03  );
+///    Lines::add(token, [sizex, line_height_at, 0.0], [-sizex, line_height_at, 0.0], RED, None, 0.03  );
+///    Hierarchy::pop(token);
+/// );
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/text_style.jpeg" alt="screenshot" width="200">
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(C)]
 pub struct TextStyle {
@@ -5145,12 +5183,24 @@ impl TextStyle {
     ///
     /// This fn will create an unique Material for this style based on Default.ShaderFont.
     /// <https://stereokit.net/Pages/StereoKit/TextStyle/FromFont.html>
-    /// * font - Font asset you want attached to this style.
-    /// * layout_height_meters - Height of a text glyph in meters. StereoKit currently bases this on CapHeight.
-    /// * color_gamma - The gamma space color of the text style. This will be embedded in the vertex color of the
+    /// * `font` - Font asset you want attached to this style.
+    /// * `layout_height_meters` - Height of a text glyph in meters. StereoKit currently bases this on CapHeight.
+    /// * `color_gamma` - The gamma space color of the text style. This will be embedded in the vertex color of the
     ///   text mesh.
     ///
     /// see also [`text_make_style`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::TextStyle, font::Font, util::named_colors};
+    ///
+    /// let font = Font::default();
+    ///
+    /// let text_style = TextStyle::from_font(&font, 0.02, named_colors::WHITE);
+    ///
+    /// assert_eq!(text_style.get_material().get_id(), "sk/text_style/2/material");
+    /// assert_eq!(text_style.get_layout_height(), 0.02);
+    /// ```
     pub fn from_font(font: impl AsRef<Font>, layout_height_meters: f32, color_gamma: impl Into<Color128>) -> Self {
         unsafe { text_make_style(font.as_ref().0.as_ptr(), layout_height_meters, color_gamma.into()) }
     }
@@ -5161,13 +5211,27 @@ impl TextStyle {
     ///
     /// This function will create an unique Material for this style based on the provided Shader.
     /// <https://stereokit.net/Pages/StereoKit/TextStyle/FromFont.html>
-    /// * font - Font asset you want attached to this style.
-    /// * layout_height_meters - Height of a text glyph in meters. StereoKit currently bases this on CapHeight.
-    /// * shader - This style will create and use a unique/ Material based on the Shader that you provide here.
-    /// * color_gamma - The gamma space color of the text style. This will be embedded in the vertex color of the
+    /// * `font` - Font asset you want attached to this style.
+    /// * `layout_height_meters` - Height of a text glyph in meters. StereoKit currently bases this on CapHeight.
+    /// * `shader` - This style will create and use a unique/ Material based on the Shader that you provide here.
+    /// * `color_gamma` - The gamma space color of the text style. This will be embedded in the vertex color of the
     ///   text mesh.
     ///
     /// see also [`text_make_style_shader`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::TextStyle, font::Font, util::named_colors, shader::Shader};
+    ///
+    /// let font = Font::default();
+    /// let shader = Shader::from_file("shaders/brick_pbr.hlsl.sks")
+    ///                          .expect("Brick_pbr should be a valid shader");
+    ///
+    /// let text_style = TextStyle::from_font_and_shader(&font, 0.02, shader, named_colors::WHITE);
+    ///
+    /// assert_eq!(text_style.get_material().get_id(), "sk/text_style/2/material");
+    /// assert_eq!(text_style.get_layout_height(), 0.02);
+    /// ```
     pub fn from_font_and_shader(
         font: impl AsRef<Font>,
         layout_height_meters: f32,
@@ -5192,16 +5256,29 @@ impl TextStyle {
     /// similar enough to re-use the material and save on draw calls. If you don’t know what that means, then prefer
     /// using the overload that takes a Shader, or takes neither a Shader nor a Material!
     /// <https://stereokit.net/Pages/StereoKit/TextStyle/FromFont.html>
-    /// * font - Font asset you want attached to this style.
-    /// * layout_height_meters - Height of a text glyph in meters. StereoKit currently bases this on CapHeight.
-    /// * material - Which material should be used to render the text with? Note that this does NOT duplicate the
+    /// * `font` - Font asset you want attached to this style.
+    /// * `layout_height_meters` - Height of a text glyph in meters. StereoKit currently bases this on CapHeight.
+    /// * `material` - Which material should be used to render the text with? Note that this does NOT duplicate the
     ///   material, so the text with? Note that this does NOT duplicate the material, so some parameters of this
     ///   Material instance will get overwritten, like the texture used for the glyph atlas. You should either use a new
     ///   Material, or a Material that was already used with this same font.
-    /// * color_gamma - The gamma space color of the text style. This will be embedded in the vertex color of the
+    /// * `color_gamma` - The gamma space color of the text style. This will be embedded in the vertex color of the
     ///   text mesh.
     ///
     /// see also [`text_make_style_mat`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::TextStyle, font::Font, util::named_colors, material::Material};
+    ///
+    /// let font = Font::default();
+    /// let material = Material::pbr().copy();
+    ///
+    /// let text_style = TextStyle::from_font_and_material(&font, 0.02, &material, named_colors::WHITE);
+    ///
+    /// assert_eq!(text_style.get_material(), material);
+    /// assert_eq!(text_style.get_layout_height(), 0.02);
+    /// ```
     pub fn from_font_and_material(
         font: impl AsRef<Font>,
         layout_height_meters: f32,
@@ -5233,6 +5310,19 @@ impl TextStyle {
     /// <https://stereokit.net/Pages/StereoKit/TextStyle/LayoutHeight.html>
     ///
     /// see also [`text_style_set_layout_height`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{font::Font, util::named_colors, system::TextStyle};
+    ///
+    /// let font = Font::default();
+    /// let mut text_style = TextStyle::from_font(font, 0.02, named_colors::WHITE);
+    /// assert_eq!(text_style.get_layout_height(), 0.02);
+    ///
+    /// text_style.layout_height(0.03);
+    ///
+    /// assert_eq!(text_style.get_layout_height(), 0.03);
+    /// ```
     pub fn layout_height(&mut self, height_meters: f32) {
         unsafe { text_style_set_layout_height(*self, height_meters) }
     }
@@ -5243,6 +5333,18 @@ impl TextStyle {
     /// <https://stereokit.net/Pages/StereoKit/TextStyle/TotalHeight.html>
     ///
     /// see also [`text_style_set_total_height`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{font::Font, util::named_colors, system::TextStyle};
+    ///
+    /// let font = Font::default();
+    /// let mut text_style = TextStyle::from_font(font, 0.02, named_colors::WHITE);
+    ///
+    /// text_style.total_height(0.03);
+    ///
+    /// assert_eq!(text_style.get_total_height(), 0.03);
+    /// ```
     pub fn total_height(&mut self, height_meters: f32) {
         unsafe { text_style_set_total_height(*self, height_meters) }
     }
@@ -5252,6 +5354,19 @@ impl TextStyle {
     /// <https://stereokit.net/Pages/StereoKit/TextStyle/LineHeightPct.html>
     ///
     /// see also [`text_style_set_line_height_pct`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{font::Font, util::named_colors, system::TextStyle};
+    ///
+    /// let font = Font::default();
+    /// let mut text_style = TextStyle::from_font(font, 0.02, named_colors::WHITE);
+    /// assert_eq!(text_style.get_layout_height(), 0.02);
+    ///
+    /// text_style.line_height_pct(30.0);
+    ///
+    /// assert_eq!(text_style.get_line_height_pct(), 30.0);
+    /// ```
     pub fn line_height_pct(&mut self, height_percent: f32) {
         unsafe { text_style_set_line_height_pct(*self, height_percent) }
     }
@@ -5261,6 +5376,7 @@ impl TextStyle {
     /// <https://stereokit.net/Pages/StereoKit/TextStyle/Material.html>
     ///
     /// see also [`text_style_get_material`]
+    /// see example in [`TextStyle::from_font_and material`]
     pub fn get_material(&self) -> Material {
         Material(NonNull::new(unsafe { text_style_get_material(*self) }).unwrap())
     }
@@ -5280,6 +5396,7 @@ impl TextStyle {
     /// <https://stereokit.net/Pages/StereoKit/TextStyle/LayoutHeight.html>
     ///
     /// see also [`text_style_get_layout_height`]
+    /// see example in [`TextStyle::layout_height`]
     pub fn get_layout_height(&self) -> f32 {
         unsafe { text_style_get_layout_height(*self) }
     }
@@ -5290,6 +5407,7 @@ impl TextStyle {
     /// <https://stereokit.net/Pages/StereoKit/TextStyle/TotalHeight.html>
     ///
     /// see also [`text_style_get_total_height`]
+    /// see example in [`TextStyle::total_height`]
     pub fn get_total_height(&self) -> f32 {
         unsafe { text_style_get_total_height(*self) }
     }
@@ -5299,6 +5417,7 @@ impl TextStyle {
     /// <https://stereokit.net/Pages/StereoKit/TextStyle/LineHeightPct.html>
     ///
     /// see also [`text_style_get_line_height_pct`]
+    /// see example in [`TextStyle::line_height_pct`]
     pub fn get_line_height_pct(&self) -> f32 {
         unsafe { text_style_get_line_height_pct(*self) }
     }
@@ -5306,6 +5425,17 @@ impl TextStyle {
     /// <https://stereokit.net/Pages/StereoKit/TextStyle/CapHeight.html>
     ///
     /// see also [`text_style_get_cap_height`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{font::Font, util::named_colors, system::TextStyle};
+    ///
+    /// let font = Font::default();
+    /// let mut text_style = TextStyle::from_font(font, 0.02, named_colors::WHITE);
+    /// assert_eq!(text_style.get_layout_height(), 0.02);
+    ///
+    /// assert_eq!(text_style.get_cap_height(), 0.02);
+    /// ```
     pub fn get_cap_height(&self) -> f32 {
         unsafe { text_style_get_cap_height(*self) }
     }
@@ -5317,6 +5447,17 @@ impl TextStyle {
     /// <https://stereokit.net/Pages/StereoKit/TextStyle/Ascender.html>
     ///
     /// see also [`text_style_get_ascender`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{font::Font, util::named_colors, system::TextStyle};
+    ///
+    /// let font = Font::default();
+    /// let mut text_style = TextStyle::from_font(font, 0.02, named_colors::WHITE);
+    /// assert_eq!(text_style.get_layout_height(), 0.02);
+    ///
+    /// assert_eq!(text_style.get_ascender(), 0.03);
+    /// ```
     pub fn get_ascender(&self) -> f32 {
         unsafe { text_style_get_ascender(*self) }
     }
@@ -5325,6 +5466,17 @@ impl TextStyle {
     /// <https://stereokit.net/Pages/StereoKit/TextStyle/Descender.html>
     ///
     /// see also [`text_style_get_descender`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{font::Font, util::named_colors, system::TextStyle};
+    ///
+    /// let font = Font::default();
+    /// let mut text_style = TextStyle::from_font(font, 0.02, named_colors::WHITE);
+    /// assert_eq!(text_style.get_layout_height(), 0.02);
+    ///
+    /// assert_ne!(text_style.get_descender(), 0.0);
+    /// ```
     pub fn get_descender(&self) -> f32 {
         unsafe { text_style_get_descender(*self) }
     }
@@ -5333,6 +5485,8 @@ impl TextStyle {
 bitflags::bitflags! {
     /// An enum for describing alignment or positioning
     /// <https://stereokit.net/Pages/StereoKit/TextAlign.html>
+    ///
+    /// see also [`Text`] [`crate::ui::Ui`] [`Sprite`]
     #[derive(Debug, Copy, Clone, PartialEq, Eq)]
     #[repr(C)]
     pub struct TextAlign: u32 {
@@ -5372,6 +5526,8 @@ bitflags::bitflags! {
 bitflags::bitflags! {
     /// This enum describes how text layout behaves within the space it is given.
     /// <https://stereokit.net/Pages/StereoKit/TextFit.html>
+    ///
+    /// see also [`Text`] [`crate::ui::Ui`]
     #[derive(Debug, Copy, Clone, PartialEq, Eq)]
     #[repr(C)]
     pub struct TextFit: u32 {
@@ -5393,6 +5549,8 @@ bitflags::bitflags! {
 /// Soft keyboard layouts are often specific to the type of text that they’re editing! This enum is a collection of
 /// common text contexts that SK can pass along to the OS’s soft keyboard for a more optimal layout.
 /// <https://stereokit.net/Pages/StereoKit/TextContext.html>
+///
+/// see also [`crate::ui::Ui::input`] [`crate::ui::Ui::input_at`] [`crate::util::Platform::keyboard_show`]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
 pub enum TextContext {
@@ -5409,6 +5567,35 @@ pub enum TextContext {
 /// A collection of functions for rendering and working with text. These are a lower level access to text rendering than
 /// the UI text functions, and are completely unaware of the UI code.
 /// <https://stereokit.net/Pages/StereoKit/Text.html>
+///
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{system::{ TextAlign, TextFit, Text, Lines, Hierarchy },
+///                      font::Font, material::Material, mesh::Mesh, maths::{Vec3, Matrix},
+///                      util::named_colors::{WHITE, GOLD, GREEN, RED}};
+///
+/// let font = Font::default();
+/// let style = Text::make_style(font, 0.28, WHITE);
+/// let transform1 = Matrix::t([0.7, 0.7, 0.0]) * Matrix::Y_180;
+/// let transform2 = Matrix::t([0.3, 0.1, 0.0]) * Matrix::Y_180;
+/// let transform3 = Matrix::t([-0.1,-0.5, 0.0]) * Matrix::Y_180;
+///
+/// filename_scr = "screenshots/text.jpeg"; fov_scr=110.0;
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+///    Text::add_at(token, "Many", transform1, Some(style), Some(GOLD.into()),
+///             Some(TextAlign::TopCenter), Some(TextAlign::TopLeft), None, None, None);
+///    
+///    let size = Text::add_in(token, "Texts!", transform2, [0.6, 0.6], TextFit::Squeeze,
+///             Some(style), Some(GREEN.into()), Some(TextAlign::Center), Some(TextAlign::TopLeft),
+///             None, Some(-0.3), Some(-0.3));
+///    assert_ne!(size , 0.0);
+///
+///    Text::add_at(token, "----/****", transform3, Some(style), None,
+///             None, None, None, None, None);
+/// );
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/text.jpeg" alt="screenshot" width="200">
 pub struct Text;
 
 unsafe extern "C" {
@@ -5492,14 +5679,26 @@ impl Text {
     ///
     /// This fn will create an unique Material for this style based on Default.ShaderFont.
     /// <https://stereokit.net/Pages/StereoKit/Text/MakeStyle.html>
-    /// * font - Font asset you want attached to this style.
-    /// * layout_height_meters- Height of a text glyph in meters. StereoKit currently bases this on CapHeight.
-    /// * color_gamma - The gamma space color of the text style. This will be embedded in the vertex color of the
+    /// * `font` - Font asset you want attached to this style.
+    /// * `layout_height_meters`- Height of a text glyph in meters. StereoKit currently bases this on CapHeight.
+    /// * `color_gamma` - The gamma space color of the text style. This will be embedded in the vertex color of the
     ///   text mesh.
     ///
     /// Returns a text style id for use with text rendering functions.
     ///
-    /// see also [`text_make_style`]
+    /// see also [`text_make_style`] same as [`TextStyle::from_font`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::Text, font::Font, util::named_colors};
+    ///
+    /// let font = Font::default();
+    ///
+    /// let text_style = Text::make_style(&font, 0.02, named_colors::WHITE);
+    ///
+    /// assert_eq!(text_style.get_material().get_id(), "sk/text_style/2/material");
+    /// assert_eq!(text_style.get_layout_height(), 0.02);
+    /// ```
     pub fn make_style(
         font: impl AsRef<Font>,
         layout_height_meters: f32,
@@ -5514,15 +5713,29 @@ impl Text {
     ///
     /// This function will create an unique Material for this style based on the provided Shader.
     /// <https://stereokit.net/Pages/StereoKit/Text/MakeStyle.html>
-    /// * font - Font asset you want attached to this style.
-    /// * layout_height_meters- Height of a text glyph in meters. StereoKit currently bases this on CapHeight.
-    /// * shader - This style will create and use a unique Material based on the Shader that you provide here
-    /// * color_gamma - The gamma space color of the text style. This will be embedded in the vertex color of the
+    /// * `font` - Font asset you want attached to this style.
+    /// * `layout_height_meters`- Height of a text glyph in meters. StereoKit currently bases this on CapHeight.
+    /// * `shader` - This style will create and use a unique Material based on the Shader that you provide here
+    /// * `color_gamma` - The gamma space color of the text style. This will be embedded in the vertex color of the
     ///   text mesh.
     ///
     /// Returns a text style id for use with text rendering functions.
     ///
-    /// see also [`text_make_style_shader`]
+    /// see also [`text_make_style_shader`] same as [`TextStyle::from_font_and_shader`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::Text, font::Font, util::named_colors, shader::Shader};
+    ///
+    /// let font = Font::default();
+    /// let shader = Shader::from_file("shaders/water_pbr.hlsl.sks")
+    ///                          .expect("Brick_pbr should be a valid shader");
+    ///
+    /// let text_style = Text::make_style_with_shader(&font, 0.02, shader, named_colors::WHITE);
+    ///
+    /// assert_eq!(text_style.get_material().get_id(), "sk/text_style/2/material");
+    /// assert_eq!(text_style.get_layout_height(), 0.02);
+    /// ```
     pub fn make_style_with_shader(
         font: impl AsRef<Font>,
         layout_height_meters: f32,
@@ -5547,17 +5760,31 @@ impl Text {
     /// similar enough to re-use the material and save on draw calls. If you don’t know what that means, then prefer
     /// using the overload that takes a Shader, or takes neither a Shader nor a Material!
     /// <https://stereokit.net/Pages/StereoKit/Text/MakeStyle.html>
-    /// * font - Font asset you want attached to this style.
-    /// * layout_height_meters- Height of a text glyph in meters. StereoKit currently bases this on CapHeight.
-    /// * material - Which material should be used to render the text with? Note that this does NOT duplicate the
+    /// * `font` - Font asset you want attached to this style.
+    /// * `layout_height_meters`- Height of a text glyph in meters. StereoKit currently bases this on CapHeight.
+    /// * `material` - Which material should be used to render the text with? Note that this does NOT duplicate the
     ///   material, so some parameters of this Material instance will get overwritten, like the texture used for the
     ///   glyph atlas. You should either use a new Material, or a Material that was already used with this same font.
-    /// * color_gamma - The gamma space color of the text style. This will be embedded in the vertex color of the
+    /// * `color_gamma` - The gamma space color of the text style. This will be embedded in the vertex color of the
     ///   text mesh.
     ///
     /// Returns a text style id for use with text rendering functions.
     ///
     /// see also [`text_make_style_mat`]
+    /// same as [`TextStyle::from_font_and_material`] same as [TextStyle::from_font_and_material]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::Text, font::Font, util::named_colors, material::Material};
+    ///
+    /// let font = Font::default();
+    /// let material = Material::pbr().copy();
+    ///
+    /// let text_style = Text::make_style_with_material(&font, 0.02, &material, named_colors::WHITE);
+    ///
+    /// assert_eq!(text_style.get_material(), material);
+    /// assert_eq!(text_style.get_layout_height(), 0.02);
+    /// ```
     pub fn make_style_with_material(
         font: impl AsRef<Font>,
         layout_height_meters: f32,
@@ -5576,13 +5803,43 @@ impl Text {
 
     /// Renders text at the given location! Must be called every frame you want this text to be visible.
     /// <https://stereokit.net/Pages/StereoKit/Text/Add.html>
-    /// * text_style - if None will use the TextStyle::default()
-    /// * vertex_tint_linear - if None will use Color128::WHITE
-    /// * position - if None will use TextAlign::Center
-    /// * align - if None will use TextAlign::Center
-    /// * off_? - if None will use 0.0
+    /// * `text` - What text should be drawn?
+    /// * `transform` - A Matrix representing the transform of the text mesh! Try Matrix::trs().
+    /// * `text_style` - Style information for rendering, see Text.MakeStyle or the TextStyle object. If None will use
+    ///   the TextStyle::default()
+    /// * `vertex_tint_linear` - The vertex color of the text gets multiplied by this color. This is a linear color
+    ///   value, not a gamma corrected color value. If None will use Color128::WHITE
+    /// * `position` - How should the text’s bounding rectangle be positioned relative to the transform? If None will
+    ///   use TextAlign::Center.
+    /// * `align` - How should the text be aligned within the text’s bounding rectangle? If None will use
+    ///   TextAlign::Center.
+    /// * `off_?` - An additional offset on the given axis. If None will use 0.0.
     ///
     /// see also [`text_add_at`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::{ TextAlign, TextFit, Text },
+    ///                      font::Font, maths::{Vec3, Matrix},
+    ///                      util::named_colors::{WHITE, GOLD, GREEN}};
+    ///
+    /// let font = Font::default();
+    /// let style = Text::make_style(font, 0.28, WHITE);
+    /// let transform1 = Matrix::t([0.7, 0.7, 0.0])  * Matrix::Y_180;
+    /// let transform2 = Matrix::t([0.3, 0.1, 0.0])  * Matrix::Y_180;
+    /// let transform3 = Matrix::t([-0.1,-0.5, 0.0]) * Matrix::Y_180;
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///    Text::add_at(token, "Many", transform1, Some(style), Some(GOLD.into()),
+    ///             Some(TextAlign::TopCenter), Some(TextAlign::TopLeft), None, None, None);
+    ///    
+    ///    Text::add_at(token, "Texts!", transform2, Some(style), Some(GREEN.into()),
+    ///             Some(TextAlign::Center), Some(TextAlign::TopLeft), None, None, Some(-0.3));
+    ///
+    ///    Text::add_at(token, "----/****", transform3, Some(style), None,
+    ///             None, None, None, None, None);
+    /// );
+    /// ```
     #[allow(clippy::too_many_arguments)]
     pub fn add_at(
         _token: &MainThreadToken,
@@ -5621,15 +5878,50 @@ impl Text {
 
     /// Renders text at the given location! Must be called every frame you want this text to be visible.
     /// <https://stereokit.net/Pages/StereoKit/Text/Add.html>
-    /// * text_style - if None will use the TextStyle::default()
-    /// * vertex_tint_linear - if None will use Color128::WHITE
-    /// * position - if None will use TextAlign::Center
-    /// * align - if None will use TextAlign::Center
-    /// * off_? - if None will use 0.0
+    /// * `text` - What text should be drawn?
+    /// * `transform` - A Matrix representing the transform of the text mesh! Try Matrix::trs().
+    /// * `size` - This is the Hierarchy space rectangle that the text should try to fit inside of. This allows for text
+    ///   wrapping or scaling based on the value provided to the ‘fit’ parameter.
+    /// * `text_fit` - Describe how the text should behave when one of its size dimensions conflicts with the provided
+    ///   ‘size’ parameter.
+    /// * `text_style` - Style information for rendering, see Text.MakeStyle or the TextStyle object. If None will use
+    ///   the TextStyle::default()
+    /// * `vertex_tint_linear` - The vertex color of the text gets multiplied by this color. This is a linear color
+    ///   value, not a gamma corrected color value. If None will use Color128::WHITE
+    /// * `position` - How should the text’s bounding rectangle be positioned relative to the transform? If None will
+    ///   use TextAlign::Center.
+    /// * `align` - How should the text be aligned within the text’s bounding rectangle? If None will use
+    ///   TextAlign::Center.
+    /// * `off_?` - An additional offset on the given axis. If None will use 0.0.
     ///
     /// Returns the vertical space used by this text.
     ///
     /// see also [`text_add_in`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::{ TextAlign, TextFit, Text},
+    ///                      font::Font, maths::{Vec3, Matrix},
+    ///                      util::named_colors::{WHITE, GOLD, GREEN}};
+    ///
+    /// let font = Font::default();
+    /// let style = Text::make_style(font, 0.28, WHITE);
+    /// let transform1 = Matrix::Y_180;
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///    let size = Text::add_in(token, "Many", transform1, [1.1, 1.0], TextFit::Wrap,
+    ///             Some(style), Some(GOLD.into()), Some(TextAlign::BottomRight),
+    ///             Some(TextAlign::TopLeft), None, None, None);
+    ///    
+    ///    let size = Text::add_in(token, "Texts!", transform1, [1.0, 1.0-size], TextFit::Clip,
+    ///             Some(style),None, None,
+    ///             None, None, None, None);
+    ///
+    ///    Text::add_in(token, "----/****", transform1, [0.3, 1.0-size], TextFit::Squeeze,
+    ///             Some(style), Some(GREEN.into()), Some(TextAlign::YTop),
+    ///             Some(TextAlign::Center),None, None, Some(-0.7));
+    /// );
+    /// ```
     #[allow(clippy::too_many_arguments)]
     pub fn add_in(
         _token: &MainThreadToken,
@@ -5694,14 +5986,38 @@ impl Text {
     /// meters when using the indicated style!  This does not include ascender and descender size, so rendering using
     /// this as a clipping size will result in ascenders and descenders getting clipped.
     /// <https://stereokit.net/Pages/StereoKit/Text/SizeLayout.html>
-    /// * text - Text you want to find the size of.
-    /// * text_style - if None will use the TextStyle::default()
-    /// * max_width - Width of the available space in meters if you need to know how much layout space text will take
+    /// * `text` - Text you want to find the size of.
+    /// * `text_style` - if None will use the TextStyle::default()
+    /// * `max_width` - Width of the available space in meters if you need to know how much layout space text will take
     ///   when constrained to a certain width? This will find it using the indicated text style!
     ///
     /// Returns size of the text in meters
     ///
     /// see also [`text_size_layout`] [`text_size_layout_constrained`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::{Text, TextStyle}, font::Font,
+    ///                      util::named_colors::{WHITE, GOLD, GREEN},
+    ///                      mesh::Mesh, material::{Material, Cull}, maths::Matrix};
+    ///
+    /// let font = Font::default();
+    /// let style = Text::make_style(font, 0.70, WHITE);
+    /// let transform1 = Matrix::Y_180;
+    /// let text = "Yo!";
+    ///
+    /// let size = Text::size_layout(text, Some(style), None);
+    /// let cube = Mesh::generate_cube([size.x, size.y, size.y], None);
+    /// let mut material = Material::pbr().copy();
+    /// material.face_cull(Cull::Front);
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///    Text::add_at(token, text, transform1, Some(style), Some(GOLD.into()),
+    ///             None, None, None, None, None);
+    ///    
+    ///    cube.draw(token, &material, transform1, Some(GREEN.into()), None);
+    /// );
+    /// ```
     pub fn size_layout(text: impl AsRef<str>, text_style: Option<TextStyle>, max_width: Option<f32>) -> Vec2 {
         let c_str = CString::new(text.as_ref()).unwrap();
         let style = text_style.unwrap_or_default();
@@ -5715,14 +6031,41 @@ impl Text {
     /// This modifies a text layout size to include the tallest and lowest possible values for the glyphs in this font.
     /// This is for when you need to be careful about avoiding clipping that would happen if you only used the layout size.
     /// <https://stereokit.net/Pages/StereoKit/Text/SizeRender.html>
-    /// * size_layout - A size previously calculated using `Text.SizeLayout`.
-    /// * text_style -The same style as used for calculating the sizeLayout. If None will use the TextStyle::default()
-    /// * y_offset - Since the render size will ascend from the initial position, this will be the offset from the
+    /// * `size_layout` - A size previously calculated using `Text.SizeLayout`.
+    /// * `text_style` -The same style as used for calculating the sizeLayout. If None will use the TextStyle::default()
+    /// * `y_offset` - Since the render size will ascend from the initial position, this will be the offset from the
     ///   initial position upwards. You should add it to your Y position.
     ///
     /// Returns the sizeLayout modified to account for the size of the most extreme glyphs.
     ///
     /// see also [`text_size_layout`] [`text_size_layout_constrained`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::{Text, TextStyle}, font::Font,
+    ///                      util::named_colors::{WHITE, GOLD, GREEN},
+    ///                      mesh::Mesh, material::{Material, Cull}, maths::Matrix};
+    ///
+    /// let font = Font::default();
+    /// let style = Text::make_style(font, 0.45, WHITE);
+    /// let transform_text = Matrix::Y_180;
+    /// let text = "Yo!";
+    ///
+    /// let size = Text::size_layout(text, Some(style), None);
+    /// let mut render_yoff = 0.0;
+    /// let render_size = Text::size_render(size, Some(style), &mut render_yoff);
+    /// let cube = Mesh::generate_cube([render_size.x, render_size.y, render_size.y], None);
+    /// let transform_cube = Matrix::t([0.0, render_yoff/2.0, 0.0]);
+    /// let mut material = Material::pbr().copy();
+    /// material.face_cull(Cull::Front);
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///    Text::add_at(token, text, transform_text, Some(style), Some(GOLD.into()),
+    ///             None, None, None, None, None);
+    ///    
+    ///    cube.draw(token, &material, transform_cube, Some(GREEN.into()), None);
+    /// );
+    /// ```
     pub fn size_render(size_layout: impl Into<Vec2>, text_style: Option<TextStyle>, y_offset: &mut f32) -> Vec2 {
         let style = text_style.unwrap_or_default();
         unsafe { text_size_render(size_layout.into(), style, y_offset) }
@@ -5732,6 +6075,8 @@ impl Text {
 /// A settings flag that lets you describe the behavior of how StereoKit will refresh data about the world mesh, if
 /// applicable. This is used with World.RefreshType.
 /// <https://stereokit.net/Pages/StereoKit/WorldRefresh.html>
+///
+/// see also [`World`]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
 pub enum WorldRefresh {
@@ -5746,6 +6091,8 @@ pub enum WorldRefresh {
 /// For use with World::from_spatial_node, this indicates the type of
 /// node that's being bridged with OpenXR.
 /// <https://stereokit.net/Pages/StereoKit/SpatialNodeType.html>
+///
+/// see also [`World`]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
 pub enum SpatialNodeType {
@@ -5807,12 +6154,32 @@ unsafe extern "C" {
 impl World {
     /// Off by default. This tells StereoKit to load up and display an occlusion surface that allows the real world to
     /// occlude the application’s digital content! Most systems may allow you to customize the visual appearance of this
-    /// occlusion surface via the World::occlusion_material. Check SK::System::world_occlusion_present to see if
+    /// occlusion surface via the World::occlusion_material. Check [`crate::sk::SystemInfo::get_world_occlusion_present`] to see if
     /// occlusion can be enabled. This will reset itself to false if occlusion isn’t possible. Loading occlusion data
     /// is asynchronous, so occlusion may not occur immediately after setting this flag.
     /// <https://stereokit.net/Pages/StereoKit/World/OcclusionEnabled.html>
     ///
     /// see also [world_set_occlusion_enabled]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::World};
+    ///
+    /// let occlusion_is_present = sk.get_system().get_world_occlusion_present();
+    ///
+    /// // By default, occlusion is disabled.
+    /// assert_eq!(World::get_occlusion_enabled(), false);
+    ///
+    /// World::occlusion_enabled(true);
+    /// if occlusion_is_present {
+    ///     assert_eq!(World::get_occlusion_enabled(), true);
+    /// } else {
+    ///     assert_eq!(World::get_occlusion_enabled(), false);
+    /// }
+    ///
+    /// World::occlusion_enabled(false);
+    /// assert_eq!(World::get_occlusion_enabled(), false);
+    /// ```
     pub fn occlusion_enabled(enabled: bool) {
         unsafe { world_set_occlusion_enabled(enabled as Bool32T) }
     }
@@ -5822,6 +6189,29 @@ impl World {
     /// <https://stereokit.net/Pages/StereoKit/World/OcclusionMaterial.html>
     ///
     /// see also [world_set_occlusion_material]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::World, util::named_colors, material::Material};
+    ///
+    /// let occlusion_is_present = sk.get_system().get_world_occlusion_present();
+    ///
+    /// assert_eq!(World::get_occlusion_material().get_id(), "sk/world/material");
+    ///
+    /// let mut material = Material::unlit().copy();
+    /// material.color_tint(named_colors::RED);
+    ///
+    /// World::occlusion_enabled(true);
+    /// World::occlusion_material(&material);
+    ///
+    /// if occlusion_is_present {
+    ///     assert_eq!(World::get_occlusion_enabled(), true);
+    ///     assert_eq!(World::get_occlusion_material(), material);
+    /// } else {
+    ///     assert_eq!(World::get_occlusion_enabled(), false);
+    ///     assert_eq!(World::get_occlusion_material(), material);
+    /// }
+    /// ```
     pub fn occlusion_material(material: impl AsRef<Material>) {
         unsafe { world_set_occlusion_material(material.as_ref().0.as_ptr()) }
     }
@@ -5831,18 +6221,48 @@ impl World {
     /// reference point.
     /// <https://stereokit.net/Pages/StereoKit/World/OriginOffset.html>
     ///
-    /// see also [world_set_origin_offset]
+    /// see also [world_set_origin_offset] [`crate::sk::SkSettings::origin`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Pose}, system::World};
+    ///
+    /// assert_eq!(World::get_origin_offset(), Pose::ZERO);
+    ///
+    /// let offset = Pose::new([0.0, 0.0, 0.01], None);
+    /// if false {World::origin_offset(offset);}
+    /// ```
     pub fn origin_offset(offset: impl Into<Pose>) {
         unsafe { world_set_origin_offset(offset.into()) }
     }
 
     /// Off by default. This tells StereoKit to load up collision meshes for the environment, for use with
-    /// World::raycast. Check SK::System::world_raycast_present to see if raycasting can be enabled. This will reset
+    /// World::raycast. Check [`crate::sk::SystemInfo::get_world_raycast_present`] to see if raycasting can be enabled. This will reset
     /// itself to false if raycasting isn’t possible. Loading raycasting data is asynchronous, so collision surfaces may
     /// not be available immediately after setting this flag.
     /// <https://stereokit.net/Pages/StereoKit/World/RaycastEnabled.html>
     ///
     /// see also [world_set_raycast_enabled]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::World;
+    ///
+    /// let raycast_is_present = sk.get_system().get_world_raycast_present();
+    ///
+    /// assert_eq!(World::get_raycast_enabled(), false);
+    ///
+    /// World::raycast_enabled(true);
+    ///
+    /// if raycast_is_present {
+    ///     assert_eq!(World::get_raycast_enabled(), true);
+    /// } else {
+    ///     assert_eq!(World::get_raycast_enabled(), false);
+    /// }
+    /// World::raycast_enabled(false);
+    /// assert_eq!(World::get_raycast_enabled(), false);
+    ///
+    /// ```
     pub fn raycast_enabled(enabled: bool) {
         unsafe { world_set_raycast_enabled(enabled as Bool32T) }
     }
@@ -5853,6 +6273,24 @@ impl World {
     /// <https://stereokit.net/Pages/StereoKit/World/RefreshInterval.html>
     ///
     /// see also [world_set_refresh_interval]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::World;
+    ///
+    /// let occlusion_is_present = sk.get_system().get_world_occlusion_present();
+    ///
+    /// World::occlusion_enabled(true);
+    /// World:: refresh_interval(0.01);
+    ///
+    /// if occlusion_is_present {
+    ///     assert_eq!(World::get_occlusion_enabled(), true);
+    ///     assert_eq!(World::get_refresh_interval(), 0.01);
+    /// } else {
+    ///     assert_eq!(World::get_occlusion_enabled(), false);
+    ///     assert_eq!(World::get_refresh_interval(), 0.0);
+    /// }
+    /// ```
     pub fn refresh_interval(speed: f32) {
         unsafe { world_set_refresh_interval(speed) }
     }
@@ -5863,6 +6301,24 @@ impl World {
     /// <https://stereokit.net/Pages/StereoKit/World/RefreshRadius.html>
     ///
     /// see also [world_set_refresh_radius]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::World;
+    ///
+    /// let occlusion_is_present = sk.get_system().get_world_occlusion_present();
+    ///
+    /// World::occlusion_enabled(true);
+    /// World:: refresh_radius(3.5);
+    ///
+    /// if occlusion_is_present {
+    ///     assert_eq!(World::get_occlusion_enabled(), true);
+    ///     assert_eq!(World::get_refresh_radius(), 3.5);
+    /// } else {
+    ///     assert_eq!(World::get_occlusion_enabled(), false);
+    ///     assert_eq!(World::get_refresh_radius(), 0.0);
+    /// }
+    /// ```
     pub fn refresh_radius(distance: f32) {
         unsafe { world_set_refresh_radius(distance) }
     }
@@ -5872,6 +6328,24 @@ impl World {
     /// <https://stereokit.net/Pages/StereoKit/World/RefreshType.html>
     ///
     /// see also [world_set_refresh_type]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::{World, WorldRefresh};
+    ///
+    /// let occlusion_is_present = sk.get_system().get_world_occlusion_present();
+    ///
+    /// World::occlusion_enabled(true);
+    /// World::refresh_type(WorldRefresh::Timer);
+    ///
+    /// if occlusion_is_present {
+    ///     assert_eq!(World::get_occlusion_enabled(), true);
+    ///     assert_eq!(World::get_refresh_type(), WorldRefresh::Timer);
+    /// } else {
+    ///     assert_eq!(World::get_occlusion_enabled(), false);
+    ///     assert_eq!(World::get_refresh_type(), WorldRefresh::Area);
+    /// }
+    /// ```
     pub fn refresh_type(refresh_type: WorldRefresh) {
         unsafe { world_set_refresh_type(refresh_type) }
     }
@@ -5898,8 +6372,25 @@ impl World {
     /// Sk::System::spatial_bridge_present to see if this is available to use. Currently only on HoloLens, good for use
     /// with the Windows QR code package.
     /// <https://stereokit.net/Pages/StereoKit/World/FromSpatialNode.html>
+    /// * `spatial_graph_node_id` - A Windows Mirage spatial node GUID acquired from a windows MR API call.
+    /// * `spatial_node_type` - Type of spatial node to locate.
+    /// * `qpc_time` : A windows performance counter timestamp at which the node should be located, obtained from
+    ///   another API or with System.Diagnostics.Stopwatch.GetTimestamp().
     ///
     /// see also [world_try_from_spatial_graph]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::{World, SpatialNodeType};
+    ///
+    /// let spatial_bridge_is_present = sk.get_system().get_spatial_bridge_present();
+    ///
+    /// World::refresh_radius(3.5);
+    ///
+    /// if spatial_bridge_is_present {
+    ///     World::from_spatial_node("A test", SpatialNodeType::Static, 0);
+    /// }
+    /// ```
     pub fn from_spatial_node(
         spatial_graph_node_id: impl AsRef<str>,
         spatial_node_type: SpatialNodeType,
@@ -5921,28 +6412,78 @@ impl World {
     /// watertight collection of low resolution meshes calculated by the Scene Understanding extension, which is only
     /// provided by the Microsoft HoloLens runtime.
     /// <https://stereokit.net/Pages/StereoKit/World/Raycast.html>
+    /// * `ray` - A world space ray that you’d like to try intersecting with the world mesh.
     ///
+    /// Returns The location of the intersection, and direction of the world’s surface at that point if found.
     /// see also [world_raycast]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::World, maths::{Vec3,Ray}};
+    ///
+    /// let raycast_is_present = sk.get_system().get_world_raycast_present();
+    ///
+    /// assert_eq!(World::get_raycast_enabled(), false);
+    ///
+    /// World::raycast_enabled(true);
+    /// let ray = Ray::new(Vec3::ZERO, Vec3::ONE);
+    ///
+    /// if raycast_is_present {
+    ///     assert_eq!(World::raycast(ray), None);
+    /// } else {
+    ///     assert_eq!(World::raycast(ray), None);
+    /// }
+    /// ```
     pub fn raycast(ray: impl Into<Ray>) -> Option<Ray> {
         let mut intersection = Ray::default();
         if unsafe { world_raycast(ray.into(), &mut intersection) != 0 } { Some(intersection) } else { None }
     }
 
     /// This is the orientation and center point of the system’s boundary/guardian. This can be useful to find the floor
-    /// height! Not all systems have a boundary, so be sure to check World::has_bounds() first.
+    /// height! Not all systems have a boundary, so be sure to check [`World::has_bounds`] first.
     /// <https://stereokit.net/Pages/StereoKit/World/BoundsPose.html>
     ///
     /// see also [world_get_bounds_pose]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::World, maths::Pose};
+    ///
+    /// let bounds_pose = World::get_bounds_pose();
+    ///
+    /// if World::has_bounds(){
+    ///     // These are results for a non OpenXR environment:
+    ///     assert_eq!(bounds_pose, Pose::IDENTITY);
+    /// } else {
+    ///     // These are results for a non OpenXR environment:
+    ///     assert_eq!(bounds_pose, Pose::IDENTITY);
+    /// }
+    /// ```
     pub fn get_bounds_pose() -> Pose {
         unsafe { world_get_bounds_pose() }
     }
 
     /// This is the size of a rectangle within the play boundary/guardian’s space, in meters if one exists. Check
-    /// World.BoundsPose for the center point and orientation of the boundary, and check World.HasBounds to see if it
+    /// [`World::get_bounds_pose`] for the center point and orientation of the boundary, and check [`World::has_bounds`] to see if it
     /// exists at all!
     /// <https://stereokit.net/Pages/StereoKit/World/BoundsSize.html>
     ///
     /// see also [world_get_bounds_size]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::World, maths::Vec2};
+    ///
+    /// let bounds_size = World::get_bounds_size();
+    ///
+    /// if World::has_bounds(){
+    ///     // These are results for a non OpenXR environment:
+    ///     assert_ne!(bounds_size, Vec2::ZERO);
+    /// } else {
+    ///     // These are results for a non OpenXR environment:
+    ///     assert_eq!(bounds_size, Vec2::ZERO);
+    /// }
+    /// ```
     pub fn get_bounds_size() -> Vec2 {
         unsafe { world_get_bounds_size() }
     }
@@ -5952,6 +6493,7 @@ impl World {
     /// <https://stereokit.net/Pages/StereoKit/World/HasBounds.html>
     ///
     /// see also [world_has_bounds]
+    /// see example in [`World::get_bounds_size`] [`World::get_bounds_pose`]
     pub fn has_bounds() -> bool {
         unsafe { world_has_bounds() != 0 }
     }
@@ -5964,6 +6506,7 @@ impl World {
     /// <https://stereokit.net/Pages/StereoKit/World/OcclusionEnabled.html>
     ///
     /// see also [world_get_occlusion_enabled]
+    /// see example in [`World::occlusion_enabled`]
     pub fn get_occlusion_enabled() -> bool {
         unsafe { world_get_occlusion_enabled() != 0 }
     }
@@ -5973,6 +6516,7 @@ impl World {
     /// <https://stereokit.net/Pages/StereoKit/World/OcclusionMaterial.html>
     ///
     /// see also [world_get_occlusion_material]
+    /// see example in [`World::occlusion_material`]
     pub fn get_occlusion_material() -> Material {
         Material(NonNull::new(unsafe { world_get_occlusion_material() }).unwrap())
     }
@@ -5984,6 +6528,17 @@ impl World {
     /// <https://stereokit.net/Pages/StereoKit/World/OriginMode.html>
     ///
     /// see also [world_get_origin_mode]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::World;
+    ///
+    /// let origin_mode_init = sk.get_settings().origin;
+    ///
+    /// let origin_mode = World::get_origin_mode();
+    ///
+    /// assert_eq!(origin_mode_init, origin_mode);
+    /// ```
     pub fn get_origin_mode() -> OriginMode {
         unsafe { world_get_origin_mode() }
     }
@@ -5996,6 +6551,15 @@ impl World {
     /// <https://stereokit.net/Pages/StereoKit/World/Tracked.html>
     ///
     /// see also [world_get_tracked]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::{World, BtnState};
+    ///
+    /// let is_tracked = World::get_tracked();
+    ///
+    /// assert_eq!(is_tracked, BtnState::Active);
+    /// ```
     pub fn get_tracked() -> BtnState {
         unsafe { world_get_tracked() }
     }
@@ -6006,6 +6570,7 @@ impl World {
     /// <https://stereokit.net/Pages/StereoKit/World/OriginOffset.html>
     ///
     /// see also [world_get_origin_offset]
+    /// see example in [`World::origin_offset`]
     pub fn get_origin_offset() -> Pose {
         unsafe { world_get_origin_offset() }
     }
@@ -6017,6 +6582,7 @@ impl World {
     /// <https://stereokit.net/Pages/StereoKit/World/RaycastEnabled.html>
     ///
     /// see also [world_get_raycast_enabled]
+    /// see example in [`World::raycast_enabled`]
     pub fn get_raycast_enabled() -> bool {
         unsafe { world_get_raycast_enabled() != 0 }
     }
@@ -6027,6 +6593,7 @@ impl World {
     /// <https://stereokit.net/Pages/StereoKit/World/RefreshInterval.html>
     ///
     /// see also [world_get_refresh_interval]
+    /// see example in [`World::refresh_interval`]
     pub fn get_refresh_interval() -> f32 {
         unsafe { world_get_refresh_interval() }
     }
@@ -6037,6 +6604,7 @@ impl World {
     /// <https://stereokit.net/Pages/StereoKit/World/RefreshRadius.html>
     ///
     /// see also [world_get_refresh_radius]
+    /// see example in [`World::refresh_radius`]
     pub fn get_refresh_radius() -> f32 {
         unsafe { world_get_refresh_radius() }
     }
@@ -6046,6 +6614,7 @@ impl World {
     /// <https://stereokit.net/Pages/StereoKit/World/RefreshType.html>
     ///
     /// see also [world_get_refresh_type]
+    /// see example in [`World::refresh_type`]
     pub fn get_refresh_type() -> WorldRefresh {
         unsafe { world_get_refresh_type() }
     }

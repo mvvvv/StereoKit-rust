@@ -5,7 +5,7 @@ use stereokit_rust::{
     mesh::{Mesh, Vertex},
     prelude::*,
     shader::Shader,
-    system::{Text, TextStyle},
+    system::{Text, TextStyle, World},
     tex::Tex,
     ui::{Ui, UiMove, UiWin},
     util::{
@@ -19,6 +19,8 @@ use stereokit_rust::{
 pub struct Shader1 {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
+    shutdown_completed: bool,
+
     pub transform_mesh: Matrix,
     pub transform_plane: Matrix,
     pub transform_water2: Matrix,
@@ -114,6 +116,8 @@ impl Default for Shader1 {
         Self {
             id: "Shader1".to_string(),
             sk_info: None,
+            shutdown_completed: false,
+
             transform_mesh,
             transform_plane,
             transform_water2,
@@ -136,6 +140,7 @@ impl Default for Shader1 {
 impl Shader1 {
     /// Called from IStepper::initialize here you can abort the initialization by returning false
     fn start(&mut self) -> bool {
+        World::occlusion_enabled(true);
         true
     }
 
@@ -183,5 +188,13 @@ impl Shader1 {
             None,
             None,
         );
+    }
+
+    fn close(&mut self, triggering: bool) -> bool {
+        if triggering {
+            World::occlusion_enabled(false);
+            self.shutdown_completed = true;
+        }
+        self.shutdown_completed
     }
 }
