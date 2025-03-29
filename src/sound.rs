@@ -25,7 +25,7 @@ use std::{
 ///                      sound::Sound, util::named_colors};
 ///
 /// let mesh = Mesh::generate_cube(Vec3::ONE * 1.6, None);
-/// let material = Material::unlit().copy_for_tex("textures/sound.jpeg", true, None)
+/// let material = Material::unlit().tex_file_copy("textures/sound.jpeg", true, None)
 ///                    .expect("sound.jpeg should be there");
 /// let mut position = Vec3::new(-0.5, 0.0, 0.5);
 /// let rotation = Quat::from_angles(45.0, 45.0, 45.0);
@@ -746,7 +746,7 @@ impl Sound {
 ///                      sound::Sound, util::named_colors};
 ///
 /// let sphere = Mesh::generate_sphere(0.5, None);
-/// let material = Material::pbr().copy_for_tex("textures/sound.jpeg", true, None)
+/// let material = Material::pbr().tex_file_copy("textures/sound.jpeg", true, None)
 ///                    .expect("sound.jpeg should be there");
 /// let mut position1 = Vec3::new(-0.5, 0.0, 0.5);
 /// let mut position2 = Vec3::new( 0.5, 0.0, 0.5);

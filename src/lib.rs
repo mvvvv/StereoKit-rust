@@ -34,7 +34,7 @@ pub mod font;
 /// StereoKit’s core functionality does. This corresponds to the C# namespace:
 /// <https://stereokit.net/Pages/StereoKit.Framework.html>
 /// - An event loop manager based on Winit.
-/// - HandMenuRadial related structs and functions.
+/// - HandMenuRadial related structs, enums and functions.
 ///
 /// ## Examples
 /// which are also unit tests:
@@ -46,7 +46,7 @@ pub mod font;
 /// [![StepperClosures](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/stepper_closures.jpeg)](framework::StepperClosures)
 pub mod framework;
 
-/// Material related structs and functions.
+/// Material specific structs, enums and functions.
 ///
 /// ## Examples
 /// which are also unit tests:
@@ -57,7 +57,7 @@ pub mod framework;
 /// [![Material Parameter Info](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/param_infos.jpeg)](material::ParamInfos)
 pub mod material;
 
-/// Vec2, 3 and4, Quat and Matrix, Bounds, Plane and Ray related structs and functions.
+/// Vec2, 3 and4, Quat and Matrix, Bounds, Plane and Ray related structs, enums and functions.
 ///
 /// ## Examples
 /// which are also unit tests:
@@ -72,7 +72,7 @@ pub mod material;
 /// [![Intersect Model](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/intersect_model.jpeg)](maths::Ray::intersect_model)
 pub mod maths;
 
-/// Mesh related structs and functions.
+/// Mesh related structs, enums and functions.
 ///
 /// ## Examples
 /// which are also unit tests:
@@ -86,7 +86,7 @@ pub mod maths;
 /// [![Mesh intersect](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_intersect.jpeg)](mesh::Mesh::intersect)
 pub mod mesh;
 
-/// Model related structs and functions.
+/// Model specific structs, enums and functions.
 ///
 /// ## Examples
 /// which are also unit tests:
@@ -107,7 +107,7 @@ pub mod model;
 /// Prelude for StereoKit-rust. The basis for all StereoKit-rust programs.
 pub mod prelude;
 
-/// RenderList related structs and functions.
+/// RenderList related structs, enums and functions.
 ///
 /// ## Examples
 /// which are also unit tests:
@@ -119,7 +119,7 @@ pub mod prelude;
 /// [![RenderList push](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_list_push.jpeg)](render_list::RenderList::push)
 pub mod render_list;
 
-/// Shader related structs and functions.
+/// Shader specific structs, enums and functions.
 ///
 /// ## Examples
 /// which are also unit tests:
@@ -127,7 +127,7 @@ pub mod render_list;
 /// [![Shader](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/shaders.jpeg)](shader::Shader)
 pub mod shader;
 
-/// StereoKit-rust specific structs and functions.
+/// Sk related structs, enums and functions.
 ///
 /// ## Examples
 /// which are also unit tests:
@@ -136,11 +136,11 @@ pub mod shader;
 #[cfg(feature = "event-loop")]
 pub mod sk;
 
-/// StereoKit-rust specific structs and functions.
+/// StereoKit-rust specific structs, enums and functions.
 #[cfg(feature = "no-event-loop")]
 pub mod sk;
 
-/// Sound specific structs and functions.
+/// Sound specific structs, enums and functions.
 ///
 /// ## Examples
 /// which are also unit tests:
@@ -149,7 +149,7 @@ pub mod sk;
 /// [![SoundInst](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sound_inst.jpeg)](sound::SoundInst)
 pub mod sound;
 
-/// Sprite specific structs and functions.
+/// Sprite related structs, enums and functions.
 ///
 /// ## Examples
 /// which are also unit tests:
@@ -174,7 +174,7 @@ pub mod sound;
 /// [![Sprite shift](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_shift.jpeg)](sprite::Sprite::shift)
 pub mod sprite;
 
-/// Sprite specific structs and functions.
+/// Sprite specific structs, enums and functions.
 ///
 /// ## Examples
 /// which are also unit tests:
@@ -193,6 +193,13 @@ pub mod sprite;
 /// [![Text](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/text.jpeg)](system::Text)
 pub mod system;
 
+/// Tex related structs, enums and functions.
+///
+/// ## Examples
+/// which are also unit tests:
+///
+/// [![Tex](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/tex.jpeg)](tex::Tex)
+/// [![Tex gen_particle](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/tex_gen_particle.jpeg)](tex::Tex::gen_particle)
 pub mod tex;
 
 pub mod tools;

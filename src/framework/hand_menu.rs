@@ -346,7 +346,7 @@ pub const HAND_MENU_RADIAL_FOCUS: &str = "hand_menu_radial_focus";
 ///
 /// // nice icon
 /// let mut menu_ico = Material::pbr_clip()
-///     .copy_for_tex("icons/hamburger.png", true, None).unwrap_or_default();
+///     .tex_file_copy("icons/hamburger.png", true, None).unwrap_or_default();
 /// menu_ico.clip_cutoff(0.1);
 ///
 /// //---Create then load hand menu radial

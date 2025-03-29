@@ -384,14 +384,15 @@ impl Material {
     ///
     /// let material1 = Material::unlit().copy();
     /// let material2 = Material::unlit().copy();
-    /// let mut material3 = Material::unlit().copy_for_tex("textures/open_gltf.jpeg", true, None).unwrap();
+    /// let mut material3 = Material::unlit().tex_file_copy("textures/open_gltf.jpeg", true, None)
+    ///                    .expect("open_gltf.jpeg should load");
     ///
     /// assert_eq!(&material1.get_all_param_info().get_texture("diffuse").unwrap().get_id(),
     ///            &material2.get_all_param_info().get_texture("diffuse").unwrap().get_id());
     /// assert_ne!(&material2.get_all_param_info().get_texture("diffuse").unwrap().get_id(),
     ///            &material3.get_all_param_info().get_texture("diffuse").unwrap().get_id());
     /// ```
-    pub fn copy_for_tex(
+    pub fn tex_file_copy(
         &mut self,
         tex_file_name: impl AsRef<Path>,
         srgb_data: bool,
@@ -406,6 +407,38 @@ impl Material {
             }
             Err(err) => Err(StereoKitError::TexFile(tex_file_name.as_ref().to_path_buf(), err.to_string())),
         }
+    }
+
+    /// Non-canonical function of convenience!! Use this for Icons and other Ui Images
+    /// Copy a Material and set a Tex image to its diffuse_tex. If the Tex fails to load, an error will be returned,
+    /// if so you can use unwrap_or_default() to get the default.
+    /// <https://stereokit.net/Pages/StereoKit/Tex/FromFile.html>
+    /// * `tex_file_name` - The file name of the texture to load.
+    /// * `srgb_data` - If true, the texture will be loaded as sRGB data.
+    /// * `priority` - The priority sort order for this asset in the async loading system. Lower values mean loading
+    ///   sooner.
+    ///
+    /// see also [Material::diffuse_tex] [`material_create`][`material_set_id`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{material::Material, tex::Tex};
+    ///
+    /// let material1 = Material::unlit().copy();
+    /// let material2 = Material::unlit().copy();
+    /// let tex = Tex::from_file("textures/open_gltf.jpeg", true, None)
+    ///                    .expect("open_gltf.jpeg should load");
+    /// let mut material3 = Material::unlit().tex_copy(tex);
+    ///
+    /// assert_eq!(&material1.get_all_param_info().get_texture("diffuse").unwrap().get_id(),
+    ///            &material2.get_all_param_info().get_texture("diffuse").unwrap().get_id());
+    /// assert_ne!(&material2.get_all_param_info().get_texture("diffuse").unwrap().get_id(),
+    ///            &material3.get_all_param_info().get_texture("diffuse").unwrap().get_id());
+    /// ```
+    pub fn tex_copy(&mut self, tex: impl AsRef<Tex>) -> Material {
+        let mut mat = self.copy();
+        mat.diffuse_tex(tex);
+        mat
     }
 
     /// Set a new id to the material.
@@ -499,7 +532,7 @@ impl Material {
     /// is usually the base color that the shader works with. This represents the texture param ‘diffuse’.
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
-    /// see also [`Material::copy_for_tex`]
+    /// see also [`Material::tex_file_copy`]
     /// see also [`material_set_param`]
     /// ### Examples
     /// ```
@@ -565,7 +598,7 @@ impl Material {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{util::named_colors, material::Material, tex::Tex};
     ///
-    /// let mut material = Material::pbr_clip().copy_for_tex("textures/water/bump_large.ktx2", true, Some(0)).unwrap();
+    /// let mut material = Material::pbr_clip().tex_file_copy("textures/water/bump_large.ktx2", true, Some(0)).unwrap();
     ///
     /// let tex = Tex::from_file("textures/water/bump_large_inverse.ktx2", true, None).unwrap();
     /// material.emission_tex(&tex).emission_factor(named_colors::RED);
@@ -622,7 +655,7 @@ impl Material {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{material::Material, tex::Tex};
     ///
-    /// let mut material = Material::pbr_clip().copy_for_tex("textures/parquet2/parquet2.ktx2", true, Some(0)).unwrap();
+    /// let mut material = Material::pbr_clip().tex_file_copy("textures/parquet2/parquet2.ktx2", true, Some(0)).unwrap();
     ///
     /// let tex = Tex::from_file("textures/parquet2/parquet2metal.ktx2", true, None).unwrap();
     /// material.metal_tex(&tex).metallic_amount(0.68);
@@ -687,7 +720,7 @@ impl Material {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{material::Material, tex::Tex};
     ///
-    /// let mut material = Material::pbr().copy_for_tex("textures/parquet2/parquet2.ktx2", true, None).unwrap();
+    /// let mut material = Material::pbr().tex_file_copy("textures/parquet2/parquet2.ktx2", true, None).unwrap();
     ///
     /// let tex = Tex::from_file("textures/parquet2/parquet2ao.ktx2", true, None).unwrap();
     /// material.occlusion_tex(&tex);

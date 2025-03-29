@@ -19,6 +19,8 @@ bitflags::bitflags! {
     /// that tell StereoKit what type of texture we want; and how the application
     /// might use it!
     /// <https://stereokit.net/Pages/StereoKit/TexType.html>
+    ///
+    /// see also [`Tex`]
     #[derive(Debug, Copy, Clone, PartialEq, Eq)]
     #[repr(C)]
     pub struct TexType: u32 {
@@ -56,6 +58,8 @@ impl TexType {
 /// What type of color information will the texture contain? A
 /// good default here is Rgba32.
 /// <https://stereokit.net/Pages/StereoKit/TexFormat.html>
+///
+/// see also [`Tex`] [`crate::system::Renderer`]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u32)]
 pub enum TexFormat {
@@ -141,6 +145,8 @@ pub enum TexFormat {
 /// <https://medium.com/@bgolus/sharper-mipmapping-using-shader-based-supersampling-ed7aadb47bec>
 /// by graphics wizard Ben Golus.
 /// <https://stereokit.net/Pages/StereoKit/TexSample.html>
+///
+/// see also [`Tex`]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u32)]
 pub enum TexSample {
@@ -157,6 +163,8 @@ pub enum TexSample {
 /// that's outside the texture?? Believe it or not, this happens plenty
 /// often!
 ///<https://stereokit.net/Pages/StereoKit/TexAddress.html>
+///
+/// see also [`Tex`]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u32)]
 pub enum TexAddress {
@@ -176,24 +184,69 @@ pub enum TexAddress {
 /// load any image format that stb_image can, (jpg, png, tga, bmp, psd, gif, hdr, pic, ktx2) plus more later on, and you
 /// can also create textures procedurally.
 /// <https://stereokit.net/Pages/StereoKit/Tex.html>
+///
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{maths::{Vec3, Matrix, Quat}, util::{named_colors,Color32},
+///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
+///
+/// let tex_left = Tex::from_file("textures/open_gltf.jpeg", true, None)
+///                              .expect("open_gltf.jpeg should be there");
+///
+/// let mut tex_right = Tex::gen_color(named_colors::RED, 1, 1, TexType::Image, TexFormat::RGBA32);
+///
+/// let mut tex_back = Tex::gen_particle(128, 128, 0.2, None);
+///
+/// let mut tex_floor = Tex::new(TexType::Image, TexFormat::RGBA32, "My_tex_ID");
+///
+/// let plane_mesh = Mesh::generate_plane_up([1.0,1.0], None, true);
+/// let material_left  = Material::pbr().tex_copy(tex_left);
+/// let material_right = Material::pbr().tex_copy(tex_right);
+/// let material_back  = Material::unlit_clip().tex_copy(tex_back);
+/// let material_floor = Material::pbr().tex_copy(tex_floor);
+///
+/// let transform_left  = Matrix::tr(&([-0.5, 0.0, 0.0].into()),
+///                                 &([0.0, 0.0, 90.0].into()));
+/// let transform_right = Matrix::tr(&([ 0.5, 0.0, 0.0].into()),
+///                                 &([0.0, 0.0, -90.0].into()));
+/// let transform_back  = Matrix::tr(&([ 0.0, 0.0,-0.5].into()),
+///                                 &([90.0, 0.0, 0.0].into()));
+/// let transform_floor = Matrix::t(  [0.0, -0.5, 0.0]);
+///
+/// filename_scr = "screenshots/tex.jpeg";
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+///     plane_mesh.draw(token, &material_left,  transform_left,  None, None);
+///     plane_mesh.draw(token, &material_right, transform_right, None, None);
+///     plane_mesh.draw(token, &material_back,  transform_back,  None, None);
+///     plane_mesh.draw(token, &material_floor, transform_floor, None, None);
+/// );
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/tex.jpeg" alt="screenshot" width="200">
 #[repr(C)]
 #[derive(Debug, PartialEq)]
 pub struct Tex(pub NonNull<_TexT>);
+
 impl Drop for Tex {
     fn drop(&mut self) {
         unsafe { tex_release(self.0.as_ptr()) };
     }
 }
+
 impl AsRef<Tex> for Tex {
     fn as_ref(&self) -> &Tex {
         self
     }
 }
+
+/// StereoKit internal type.
 #[repr(C)]
 #[derive(Debug)]
 pub struct _TexT {
     _unused: [u8; 0],
 }
+
+/// StereoKit ffi type.
 pub type TexT = *mut _TexT;
 
 unsafe impl Send for Tex {}
@@ -316,8 +369,9 @@ impl IAsset for Tex {
     }
 }
 
-/// A Default texture is asked when a Tex creation or find returned an error.
 impl Default for Tex {
+    /// A Default texture may be asked when a Tex creation or find returned an error. [`Tex::error()`] is a good default
+    /// value.
     fn default() -> Self {
         Self::error()
     }
@@ -326,10 +380,41 @@ impl Default for Tex {
 impl Tex {
     /// Sets up an empty texture container! Fill it with data using SetColors next! Creates a default unique asset Id.
     /// <https://stereokit.net/Pages/StereoKit/Tex/Tex.html>
+    /// * `texture_type` - What type of texture is it? Just a 2D Image? A Cubemap? Should it have mip-maps?
+    /// * `format` - What information is the texture composed of? 32 bit colors, 64 bit colors, etc.
     ///
-    /// see also [`crate::tex::tex_create`]
-    pub fn new<S: AsRef<str>>(r#type: TexType, format: TexFormat, id: S) -> Tex {
-        let tex = Tex(NonNull::new(unsafe { tex_create(r#type, format) }).unwrap());
+    /// see also [`tex_create`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::{named_colors, Color32, Color128},
+    ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
+    ///
+    /// let plane_mesh = Mesh::generate_plane_up([1.0,1.0], None, true);
+    ///
+    /// let mut color_dots = [named_colors::CYAN; 128 * 128];
+    /// let mut tex_left = Tex::new(TexType::Image, TexFormat::RGBA32, "tex_left_ID");
+    /// tex_left.set_colors32(128, 128, &color_dots);
+    ///
+    /// let mut color_dots = [Color128::new(0.5, 0.75, 0.25, 1.0); 128 * 128];
+    /// let mut tex_right = Tex::new(TexType::Image, TexFormat::RGBA128, "tex_right_ID");
+    /// tex_right.set_colors128(128, 128, &color_dots);
+    ///
+    /// let material_left  = Material::pbr().tex_copy(tex_left);
+    /// let material_right = Material::pbr().tex_copy(tex_right);
+    ///
+    /// let transform_left  = Matrix::tr(&([-0.5, 0.0, 0.0].into()),
+    ///                                  &([0.0, -45.0, 90.0].into()));
+    /// let transform_right = Matrix::tr(&([ 0.5, 0.0, 0.0].into()),
+    ///                                  &([0.0, 45.0, -90.0].into()));
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     plane_mesh.draw(token, &material_left,  transform_left,  None, None);
+    ///     plane_mesh.draw(token, &material_right, transform_right, None, None);
+    /// );
+    /// ```
+    pub fn new<S: AsRef<str>>(texture_type: TexType, format: TexFormat, id: S) -> Tex {
+        let tex = Tex(NonNull::new(unsafe { tex_create(texture_type, format) }).unwrap());
         let c_str = CString::new(id.as_ref()).unwrap();
         unsafe { tex_set_id(tex.0.as_ptr(), c_str.as_ptr()) };
         tex
@@ -339,9 +424,43 @@ impl Tex {
     /// gif, hdr, pic, ktx2.
     /// Asset Id will be the same as the filename.
     /// <https://stereokit.net/Pages/StereoKit/Tex/FromMemory.html>
-    /// * priority - If None will be set to 10
+    /// * `data` - The binary data of an image file, this is NOT a raw RGB color array!
+    /// * `srgb_data` - Is this image color data in sRGB format, or is it normal/metal/rough/data that’s not for direct
+    ///   display? sRGB colors get converted to linear color space on the graphics card, so getting this right can have
+    ///   a big impact on visuals.
+    /// * `priority` - The priority sort order for this asset in the async loading system. Lower values mean loading
+    ///   sooner. If None will be set to 10
     ///
-    /// see also [`crate::tex::tex_create_mem`]
+    /// see also [`tex_create_mem`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix},
+    ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
+    ///
+    /// let plane_mesh = Mesh::generate_plane_up([1.0,1.0], None, true);
+    ///
+    /// let left_data  = std::include_bytes!("../assets/textures/open_gltf.jpeg");
+    /// let right_data = std::include_bytes!("../assets/textures/log_viewer.jpeg");
+    ///
+    /// let tex_left  = Tex::from_memory(left_data, true, None)
+    ///                          .expect("open_gltf.jpeg should be loaded");
+    /// let tex_right = Tex::from_memory(right_data, true, None)
+    ///                          .expect("open_gltf.jpeg should be loaded");
+    ///
+    /// let material_left  = Material::pbr().tex_copy(tex_left);
+    /// let material_right = Material::pbr().tex_copy(tex_right);
+    ///
+    /// let transform_left  = Matrix::tr(&([-0.5, 0.0, 0.0].into()),
+    ///                                  &([0.0, -45.0, 90.0].into()));
+    /// let transform_right = Matrix::tr(&([ 0.5, 0.0, 0.0].into()),
+    ///                                  &([0.0, 45.0, -90.0].into()));
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     plane_mesh.draw(token, &material_left,  transform_left,  None, None);
+    ///     plane_mesh.draw(token, &material_right, transform_right, None, None);
+    /// );
+    /// ```
     pub fn from_memory(data: &[u8], srgb_data: bool, priority: Option<i32>) -> Result<Tex, StereoKitError> {
         let priority = priority.unwrap_or(10);
         Ok(Tex(NonNull::new(unsafe {
@@ -353,9 +472,41 @@ impl Tex {
     /// Loads an image file directly into a texture! Supported formats are: jpg, png, tga, bmp, psd, gif, hdr, pic, ktx2.
     /// Asset Id will be the same as the filename.
     /// <https://stereokit.net/Pages/StereoKit/Tex/FromFile.html>
-    /// * priority - If None will be set to 10
+    /// * `file_utf8` - An absolute filename, or a filename relative to the assets folder. Supports jpg, png, tga, bmp,
+    ///   psd, gif, hdr, pic, ktx2.
+    /// * `srgb_data` - Is this image color data in sRGB format, or is it normal/metal/rough/data that’s not for direct
+    ///   display? sRGB colors get converted to linear color space on the graphics card, so getting this right can have
+    ///   a big impact on visuals.
+    /// * `priority` - The priority sort order for this asset in the async loading system. Lower values mean loading
+    ///   sooner. If None will be set to 10
     ///
-    /// see also [`crate::tex::tex_create_file`]
+    /// see also [`tex_create_file`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix},
+    ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
+    ///
+    /// let plane_mesh = Mesh::generate_plane_up([1.0,1.0], None, true);
+    ///
+    /// let tex_left  = Tex::from_file("textures/open_gltf.jpeg", true, None)
+    ///                          .expect("open_gltf.jpeg should be there");
+    /// let tex_right = Tex::from_file("textures/log_viewer.jpeg", true, None)
+    ///                          .expect("log_viewer.jpeg should be there");
+    ///
+    /// let material_left  = Material::pbr().tex_copy(tex_left);
+    /// let material_right = Material::pbr().tex_copy(tex_right);
+    ///
+    /// let transform_left  = Matrix::tr(&([-0.5, 0.0, 0.0].into()),
+    ///                                  &([0.0, -45.0, 90.0].into()));
+    /// let transform_right = Matrix::tr(&([ 0.5, 0.0, 0.0].into()),
+    ///                                  &([0.0, 45.0, -90.0].into()));
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     plane_mesh.draw(token, &material_left,  transform_left,  None, None);
+    ///     plane_mesh.draw(token, &material_right, transform_right, None, None);
+    /// );
+    /// ```
     pub fn from_file(
         file_utf8: impl AsRef<Path>,
         srgb_data: bool,
@@ -378,9 +529,36 @@ impl Tex {
     /// Supported formats are: jpg, png, tga, bmp, psd, gif, hdr, pic, ktx2. Asset Id will be the hash of all the
     /// filenames merged consecutively.
     /// <https://stereokit.net/Pages/StereoKit/Tex/FromFiles.html>
-    /// * priority - If None will be set to 10
+    /// * `files_utf8` - An absolute filenames, or filenames relative to the assets folder. Supports jpg, png, tga, bmp,
+    ///   psd, gif, hdr, pic, ktx2.
+    /// * `srgb_data` - Is this image color data in sRGB format, or is it normal/metal/rough/data that’s not for direct
+    ///   display? sRGB colors get converted to linear color space on the graphics card, so getting this right can have
+    ///   a big impact on visuals.
+    /// * `priority` - The priority sort order for this asset in the async loading system. Lower values mean loading
+    ///   sooner. If None will be set to 10    
     ///
-    /// see also [`crate::tex::tex_create_file`]
+    /// see also [`tex_create_file`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix},
+    ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
+    ///
+    /// let plane_mesh = Mesh::generate_plane_up([1.0,1.0], None, true);
+    ///
+    /// let tex  = Tex::from_files(&["textures/open_gltf.jpeg",
+    ///                                   "textures/log_viewer.jpeg"], true, Some(100))
+    ///                          .expect("files should be there");
+    ///
+    /// let material  = Material::pbr().tex_copy(tex);
+    ///
+    /// let transform  = Matrix::tr(&([-0.5, 0.0, 0.0].into()),
+    ///                             &([0.0, -45.0, 90.0].into()));
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     plane_mesh.draw(token, &material,  transform,  None, None);
+    /// );
+    /// ```
     pub fn from_files<P: AsRef<Path>>(
         files_utf8: &[P],
         srgb_data: bool,
@@ -413,22 +591,49 @@ impl Tex {
     /// Creates a texture and sets the texture’s pixels using a color array! This will be an image of type TexType.Image,
     /// and a format of TexFormat.Rgba32 or TexFormat.Rgba32Linear depending on the value of the sRGBData parameter.
     /// <https://stereokit.net/Pages/StereoKit/Tex/FromColors.html>
+    /// * `colors` - An array of 32 bit colors, should be a length of width*height.
+    /// * `width` - Width in pixels of the texture. Powers of two are generally best!
+    /// * `height` - Height in pixels of the texture. Powers of two are generally best!
+    /// * `srgb_data` - s this image color data in sRGB format, or is it normal/metal/rough/data that’s not for direct
+    ///   display? sRGB colors get converted to linear color space on the graphics card, so getting this right can have
+    ///   a big impact on visuals.
     ///
-    ///  see also [`crate::tex::tex_create_color32`] [`crate::tex::Tex::gen_color`]
+    /// see also [`tex_create_color32`] [`Tex::gen_color`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::{named_colors, Color32},
+    ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
+    ///
+    /// let plane_mesh = Mesh::generate_plane_up([1.0,1.0], None, true);
+    ///
+    /// let color_dots = [named_colors::RED; 128 * 128];
+    /// let tex = Tex::from_color32(&color_dots, 128, 128, true)
+    ///                            .expect("Tex should be created");
+    ///
+    /// let material  = Material::pbr().tex_copy(tex);
+    ///
+    /// let transform  = Matrix::tr(&([-0.5, 0.0, 0.0].into()),
+    ///                             &([0.0, -45.0, 90.0].into()));
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     plane_mesh.draw(token, &material,  transform,  None, None);
+    /// );
+    /// ```
     pub fn from_color32(
-        in_arr_data: &[Color32],
+        colors: &[Color32],
         width: usize,
         height: usize,
         srgb_data: bool,
     ) -> Result<Tex, StereoKitError> {
-        if width * height != { in_arr_data }.len() {
+        if width * height != { colors }.len() {
             return Err(StereoKitError::TexColor(
-                format!("{}x{} differ from {}", height, width, { in_arr_data }.len()),
+                format!("{}x{} differ from {}", height, width, { colors }.len()),
                 "tex_create_color32 failed".to_string(),
             ));
         }
         Ok(Tex(NonNull::new(unsafe {
-            tex_create_color32(in_arr_data.as_ptr() as *mut Color32, width as i32, height as i32, srgb_data as i32)
+            tex_create_color32(colors.as_ptr() as *mut Color32, width as i32, height as i32, srgb_data as i32)
         })
         .ok_or(StereoKitError::TexColor(
             format!("{}x{}", height, width),
@@ -441,24 +646,51 @@ impl Tex {
     /// Texture and use SetColors for more flexibility. This will be an image of type TexType.Image, and a format of
     /// TexFormat. Rgba32 or TexFormat.Rgba32Linear depending on the value of the sRGBData parameter.
     /// <https://stereokit.net/Pages/StereoKit/Tex/FromColors.html>
+    /// * `colors` - An array of 128 bit colors, should be a length of width*height.
+    /// * `width` - Width in pixels of the texture. Powers of two are generally best!
+    /// * `height` - Height in pixels of the texture. Powers of two are generally best!
+    /// * `srgb_data` - s this image color data in sRGB format, or is it normal/metal/rough/data that’s not for direct
+    ///   display? sRGB colors get converted to linear color space on the graphics card, so getting this right can have
+    ///   a big impact on visuals.
     ///
-    /// The color conversion from 128 to 32 may crash if the data do not contains color128.
+    /// Important: The color conversion from 128 to 32 may crash if the data do not contains color128.
     ///
-    ///  see also [`crate::tex::tex_create_color128`] [`crate::tex::Tex::gen_color()`]
+    ///  see also [`tex_create_color128`] [`Tex::gen_color()`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::{named_colors, Color128},
+    ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
+    ///
+    /// let plane_mesh = Mesh::generate_plane_up([1.0,1.0], None, true);
+    ///
+    /// let color_dots = [Color128::new(0.1, 0.2, 0.5, 1.0); 128 * 128];
+    /// let tex = Tex::from_color128(&color_dots, 128, 128, true)
+    ///                            .expect("Tex should be created");
+    ///
+    /// let material  = Material::pbr().tex_copy(tex);
+    ///
+    /// let transform  = Matrix::tr(&([-0.5, 0.0, 0.0].into()),
+    ///                             &([0.0, -45.0, 90.0].into()));
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     plane_mesh.draw(token, &material,  transform,  None, None);
+    /// );
+    /// ```
     pub fn from_color128(
-        in_arr_data: &[Color128],
+        colors: &[Color128],
         width: usize,
         height: usize,
         srgb_data: bool,
     ) -> Result<Tex, StereoKitError> {
-        if width * height != { in_arr_data }.len() {
+        if width * height != { colors }.len() {
             return Err(StereoKitError::TexColor(
-                format!("{}x{} differ from {}", height, width, { in_arr_data }.len()),
+                format!("{}x{} differ from {}", height, width, { colors }.len()),
                 "tex_create_color128 failed".to_string(),
             ));
         }
         Ok(Tex(NonNull::new(unsafe {
-            tex_create_color128(in_arr_data.as_ptr() as *mut Color128, width as i32, height as i32, srgb_data as i32)
+            tex_create_color128(colors.as_ptr() as *mut Color128, width as i32, height as i32, srgb_data as i32)
         })
         .ok_or(StereoKitError::TexColor(
             format!("{}x{}", height, width),
@@ -469,16 +701,38 @@ impl Tex {
     /// This will assemble a texture ready for rendering to! It creates a render target texture with no mip maps and a
     /// depth buffer attached.
     /// <https://stereokit.net/Pages/StereoKit/Tex/RenderTarget.html>
-    /// * width - in pixels
-    /// * height - in pixels
-    /// * multisample - Multisample level, or MSAA. This should be 1, 2, 4, 8, or 16. The results will have moother
+    /// * `width` - in pixels
+    /// * `height` - in pixels
+    /// * `multisample` - Multisample level, or MSAA. This should be 1, 2, 4, 8, or 16. The results will have moother
     ///   edges with higher values, but will cost more RAM and time to render. Note that GL platforms cannot trivially
-    ///   draw a multisample > 1 texture in a shader.
-    /// * color_format - The format of the color surface.
-    /// * depth _format - The format of the depth buffer. If this is None, no depth buffer will be attached to this
+    ///   draw a multisample > 1 texture in a shader. If this is None, the default is 1.
+    /// * `color_format` - The format of the color surface. If this is None, the default is RGBA32.
+    /// * `depth_format` - The format of the depth buffer. If this is TexFormat::None, no depth buffer will be attached
+    ///   to this. If this is None, the default is Depth16.
     ///   rendertarget.
     ///
-    ///  see also [`crate::tex::tex_create_rendertarget()`]
+    ///  see also [`tex_create_rendertarget()`]
+    ///
+    ///  see also [`tex_get_data`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::{named_colors, Color32},
+    ///                      system::Renderer,
+    ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
+    ///
+    /// let plane_mesh = Mesh::generate_plane_up([1.0,1.0], None, true);
+    ///
+    /// let tex = Tex::render_target(128, 128, Some(2), Some(TexFormat::RGBA32), None)
+    ///                            .expect("Tex should be created");
+    ///
+    /// let material  = Material::pbr().tex_copy(&tex);
+    ///
+    /// let transform  = Matrix::tr(&([-0.5, 0.0, 0.0].into()),
+    ///                             &([0.0, -45.0, 90.0].into()));
+    ///
+    /// Renderer::blit(&tex, &material);
+    /// ```
     pub fn render_target(
         width: usize,
         height: usize,
@@ -501,20 +755,93 @@ impl Tex {
     /// This generates a solid color texture of the given dimensions. Can be quite nice for creating placeholder textures!
     /// Make sure to match linear/gamma colors with the correct format.
     /// <https://stereokit.net/Pages/StereoKit/Tex/GenColor.html>
+    /// * `color` - The color to use for the texture. This is interpreted slightly differently based on what TexFormat
+    ///   gets used.
+    /// * `width` - Width of the final texture, in pixels.
+    /// * `height` - Height of the final texture, in pixels.
+    /// * `tex_type` - Not all types here are applicable, but TexType.Image or TexType::ImageNomips are good options here.
+    /// * `format` - Not all formats are supported, but this does support a decent range. The provided color is
+    ///   interpreted slightly different depending on this format.
     ///
-    ///  see also [`crate::tex::tex_gen_color`]
-    pub fn gen_color(color: impl Into<Color128>, width: i32, height: i32, type_: TexType, format: TexFormat) -> Tex {
-        Tex(NonNull::new(unsafe { tex_gen_color(color.into(), width, height, type_, format) }).unwrap())
+    ///  see also [`tex_gen_color`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::{named_colors, Color128},
+    ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
+    ///
+    /// let plane_mesh = Mesh::generate_plane_up([1.0,1.0], None, true);
+    ///
+    /// let tex_err = Tex::gen_color(named_colors::RED, 128, 128, TexType::Image, TexFormat::RGBA32);
+    /// Tex::set_error_fallback(&tex_err);
+    ///
+    /// let tex =  Tex::gen_color(Color128::new(0.1, 0.2, 0.5, 1.0), 128, 128, TexType::Image, TexFormat::RGBA128);
+    ///
+    /// let material  = Material::pbr().tex_copy(tex);
+    ///
+    /// let transform  = Matrix::tr(&([-0.5, 0.0, 0.0].into()),
+    ///                             &([0.0, -45.0, 90.0].into()));
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     plane_mesh.draw(token, &material,  transform,  None, None);
+    /// );
+    /// ```
+    pub fn gen_color(color: impl Into<Color128>, width: i32, height: i32, tex_type: TexType, format: TexFormat) -> Tex {
+        Tex(NonNull::new(unsafe { tex_gen_color(color.into(), width, height, tex_type, format) }).unwrap())
     }
 
     /// Generates a ‘radial’ gradient that works well for particles, blob shadows, glows, or various other things.
     /// The roundness can be used to change the shape from round, ‘1’, to star-like, ‘0’. Default color is transparent white to opaque white,
     /// but this can be configured by providing a Gradient of your own.
     /// <https://stereokit.net/Pages/StereoKit/Tex/GenParticle.html>
-    /// * gradient_linear : A color gradient that starts with the background/outside at 0, and progresses to the center
-    ///   at 1. If None, use a white gradient.
+    /// * `width` - Width of the final texture, in pixels.
+    /// * `height` - Height of the final texture, in pixels.
+    /// * `gradient_linear` : A color gradient that starts with the background/outside at 0, and progresses to the center
+    ///   at 1. If None, will use a white gradient.
     ///
-    ///  see also [`crate::tex::tex_gen_particle`]
+    ///  see also [`tex_gen_particle`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix, Quat},
+    ///                      util::{named_colors, Gradient, GradientKey, Color128},
+    ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
+    ///
+    /// let mut keys = [
+    ///     GradientKey::new(Color128::BLACK_TRANSPARENT, 0.0),
+    ///     GradientKey::new(named_colors::RED, 0.1),
+    ///     GradientKey::new(named_colors::CYAN, 0.4),
+    ///     GradientKey::new(named_colors::YELLOW, 0.5),
+    ///     GradientKey::new(Color128::BLACK, 0.7)];
+    ///
+    /// let tex_back  = Tex::gen_particle(128, 128, 0.15, Some(Gradient::new(Some(&keys))));
+    /// let tex_floor = Tex::gen_particle(128, 128, 0.3, Some(Gradient::new(Some(&keys))));
+    /// let tex_right  = Tex::gen_particle(128, 128, 0.6, Some(Gradient::new(Some(&keys))));
+    /// let tex_left = Tex::gen_particle(128, 128, 0.9, Some(Gradient::new(Some(&keys))));
+    ///
+    /// let plane_mesh = Mesh::generate_plane_up([1.0,1.0], None, true);
+    /// let material_left  = Material::unlit_clip().tex_copy(tex_left);
+    /// let material_right = Material::unlit_clip().tex_copy(tex_right);
+    /// let material_back  = Material::unlit_clip().tex_copy(tex_back);
+    /// let material_floor = Material::unlit_clip().tex_copy(tex_floor);
+    ///
+    /// let transform_left  = Matrix::tr(&([-0.5, 0.0, 0.0].into()),
+    ///                                 &([0.0, 0.0, 90.0].into()));
+    /// let transform_right = Matrix::tr(&([ 0.5, 0.0, 0.0].into()),
+    ///                                 &([0.0, 0.0, -90.0].into()));
+    /// let transform_back  = Matrix::tr(&([ 0.0, 0.0,-0.5].into()),
+    ///                                 &([90.0, 0.0, 0.0].into()));
+    /// let transform_floor = Matrix::t(  [0.0, -0.5, 0.0]);
+    ///
+    /// filename_scr = "screenshots/tex_gen_particle.jpeg";
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     plane_mesh.draw(token, &material_left,  transform_left,  None, None);
+    ///     plane_mesh.draw(token, &material_right, transform_right, None, None);
+    ///     plane_mesh.draw(token, &material_back,  transform_back,  None, None);
+    ///     plane_mesh.draw(token, &material_floor, transform_floor, None, None);
+    /// );
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/tex_gen_particle.jpeg" alt="screenshot" width="200">
     pub fn gen_particle(width: i32, height: i32, roundness: f32, gradient_linear: Option<Gradient>) -> Tex {
         let gradient_linear = match gradient_linear {
             Some(gl) => gl,
@@ -533,7 +860,7 @@ impl Tex {
     /// loaded will cause the app to block until it is loaded.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetLoadingFallback.html>
     ///
-    ///  see also [`crate::tex::tex_set_loading_fallback`]
+    ///  see also [`tex_set_loading_fallback`]
     pub fn set_loading_fallback<T: AsRef<Tex>>(fallback: T) {
         unsafe { tex_set_loading_fallback(fallback.as_ref().0.as_ptr()) };
     }
@@ -542,7 +869,7 @@ impl Tex {
     /// fully loaded will cause the app to block until it is loaded.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetErrorFallback.html>
     ///
-    ///  see also [`crate::tex::tex_set_error_fallback`]
+    ///  see also [`tex_set_error_fallback`]
     pub fn set_error_fallback<T: AsRef<Tex>>(fallback: T) {
         unsafe { tex_set_error_fallback(fallback.as_ref().0.as_ptr()) };
     }
@@ -550,7 +877,7 @@ impl Tex {
     /// Looks for a Material asset that’s already loaded, matching the given id!
     /// <https://stereokit.net/Pages/StereoKit/Tex/Find.html>
     ///
-    /// see also [`crate::tex::tex_find`]
+    /// see also [`tex_find`]
     pub fn find<S: AsRef<str>>(id: S) -> Result<Tex, StereoKitError> {
         let c_str = CString::new(id.as_ref()).map_err(|_| StereoKitError::TexCString(id.as_ref().into()))?;
         Ok(Tex(
@@ -564,7 +891,7 @@ impl Tex {
     /// * tex_format - Format of the copy - If None has default value of TexFormat::None.
     ///
     /// Returns the copie of this texture if successful
-    ///  see also [`crate::tex::tex_copy`]
+    ///  see also [`tex_copy`]
     pub fn copy(&self, tex_type: Option<TexType>, tex_format: Option<TexFormat>) -> Result<Tex, StereoKitError> {
         let type_ = tex_type.unwrap_or(TexType::Image);
         let format = tex_format.unwrap_or(TexFormat::None);
@@ -576,7 +903,7 @@ impl Tex {
     /// calling find() method.
     /// <https://stereokit.net/Pages/StereoKit/Tex/Find.html>
     ///
-    /// see also [`crate::tex::tex_find()`]
+    /// see also [`tex_find()`]
     pub fn clone_ref(&self) -> Tex {
         Tex(NonNull::new(unsafe { tex_find(tex_get_id(self.0.as_ptr())) }).expect("<asset>::clone_ref failed!"))
     }
@@ -584,7 +911,7 @@ impl Tex {
     /// Set a new id to the texture.
     /// <https://stereokit.net/Pages/StereoKit/Tex/Id.html>
     ///
-    /// see also [`crate::tex::tex_set_id`]
+    /// see also [`tex_set_id`]
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
         let c_str = CString::new(id.as_ref()).unwrap();
         unsafe { tex_set_id(self.0.as_ptr(), c_str.as_ptr()) };
@@ -595,7 +922,7 @@ impl Tex {
     /// for use when rendering to it.
     /// <https://stereokit.net/Pages/StereoKit/Tex/AddZBuffer.html>
     ///
-    /// see also [`crate::tex::tex_add_zbuffer`]
+    /// see also [`tex_add_zbuffer`]
     pub fn add_zbuffer(&mut self, depth_format: TexFormat) -> &mut Self {
         unsafe { tex_add_zbuffer(self.0.as_ptr(), depth_format) };
         self
@@ -607,7 +934,7 @@ impl Tex {
     /// be the same as the filename.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetMemory.html>
     ///
-    /// see also [`crate::tex::tex_set_mem`]
+    /// see also [`tex_set_mem`]
     pub fn set_memory(&mut self, data: &[u8], srgb_data: bool, blocking: i32, priority: i32) -> &mut Self {
         unsafe {
             tex_set_mem(
@@ -630,7 +957,7 @@ impl Tex {
     /// Warning: The color data type must be compliant with the format of the texture.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetColors.html>
     ///
-    /// see also [`crate::tex::tex_set_colors`]
+    /// see also [`tex_set_colors`]
     #[allow(clippy::not_unsafe_ptr_arg_deref)]
     pub fn set_colors(&mut self, width: usize, height: usize, data: *mut std::os::raw::c_void) -> &mut Self {
         unsafe { tex_set_colors(self.0.as_ptr(), width as i32, height as i32, data) };
@@ -647,7 +974,7 @@ impl Tex {
     /// (see [Tex::get_asset_state]) or the size is
     /// inconsistent or the format is incompatible.
     ///
-    /// see also [`crate::tex::tex_set_colors`]
+    /// see also [`tex_set_colors`]
     pub fn set_colors32(&mut self, width: usize, height: usize, data: &[Color32]) -> &mut Self {
         match self.get_format() {
             Some(TexFormat::RGBA32) => (),
@@ -690,7 +1017,7 @@ impl Tex {
     /// Warning, instead of [Tex::set_colors], this call may not be done if the asset is not loaded
     /// (see [Tex::get_asset_state]) or the size is inconsistent or the format is incompatible.
     ///
-    /// see also [`crate::tex::tex_set_colors`]
+    /// see also [`tex_set_colors`]
     pub fn set_colors128(&mut self, width: usize, height: usize, data: &[Color128]) -> &mut Self {
         match self.get_format() {
             Some(TexFormat::RGBA128) => (),
@@ -732,7 +1059,7 @@ impl Tex {
     /// (see [Tex::get_asset_state]) or the size is
     /// inconsistent or the format is incompatible.
     ///
-    /// see also [`crate::tex::tex_set_colors`]
+    /// see also [`tex_set_colors`]
     pub fn set_colors_r8(&mut self, width: usize, height: usize, data: &[u8]) -> &mut Self {
         match self.get_format() {
             Some(TexFormat::R8) => (),
@@ -776,7 +1103,7 @@ impl Tex {
     /// (see [Tex::get_asset_state]) or the size is
     /// inconsistent or the format is incompatible.
     ///
-    /// see also [`crate::tex::tex_set_colors`]
+    /// see also [`tex_set_colors`]
     pub fn set_colors_u8(&mut self, width: usize, height: usize, data: &[u8], color_size: usize) -> &mut Self {
         if width * height * color_size != data.len() {
             Log::err(format!(
@@ -804,7 +1131,7 @@ impl Tex {
     /// Warning, instead of [Tex::set_colors], this call may not be done if the asset is not loaded
     /// (see [Tex::get_asset_state]) or the size is inconsistent or the format is incompatible.
     ///
-    /// see also [`crate::tex::tex_set_colors`]
+    /// see also [`tex_set_colors`]
     pub fn set_colors_r16(&mut self, width: usize, height: usize, data: &[u16]) -> &mut Self {
         match self.get_format() {
             Some(TexFormat::R16f) => (),
@@ -845,7 +1172,7 @@ impl Tex {
     /// Warning, instead of [Tex::set_colors], this call may not be done if the asset is not loaded
     /// (see [Tex::get_asset_state]) or the size is inconsistent or the format is incompatible.
     ///
-    /// see also [`crate::tex::tex_set_colors`]
+    /// see also [`tex_set_colors`]
     pub fn set_colors_r32(&mut self, width: usize, height: usize, data: &[f32]) -> &mut Self {
         match self.get_format() {
             Some(TexFormat::R32) => (),
@@ -882,7 +1209,7 @@ impl Tex {
     /// textures, this will always be null.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetZBuffer.html>
     ///
-    /// see also [`crate::tex::tex_set_zbuffer`]
+    /// see also [`tex_set_zbuffer`]
     pub fn set_zbuffer(&mut self, tex: Option<Tex>) -> &mut Self {
         if let Some(tex) = tex {
             unsafe { tex_set_zbuffer(self.0.as_ptr(), tex.0.as_ptr()) }
@@ -897,7 +1224,7 @@ impl Tex {
     /// feature.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetNativeSurface.html>
     ///
-    /// see also [`crate::tex::tex_set_surface`]
+    /// see also [`tex_set_surface`]
     #[allow(clippy::not_unsafe_ptr_arg_deref)]
     #[allow(clippy::too_many_arguments)]
     pub fn set_native_surface(
@@ -932,7 +1259,7 @@ impl Tex {
     /// to it.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetSize.html>
     ///
-    /// see also [`crate::tex::tex_set_colors`]
+    /// see also [`tex_set_colors`]
     pub fn set_size(&mut self, width: usize, height: usize) -> &mut Self {
         unsafe { tex_set_colors(self.0.as_ptr(), width as i32, height as i32, null_mut()) };
         self
@@ -943,7 +1270,7 @@ impl Tex {
     /// metal/rough map.
     /// <https://stereokit.net/Pages/StereoKit/Tex/FallbackOverride.html>
     ///
-    ///  see also [`crate::tex::tex_set_fallback`]
+    ///  see also [`tex_set_fallback`]
     pub fn fallback_override<T: AsRef<Tex>>(&mut self, fallback: T) -> &mut Self {
         unsafe { tex_set_fallback(self.0.as_ptr(), fallback.as_ref().0.as_ptr()) };
         self
@@ -953,7 +1280,7 @@ impl Tex {
     /// color to grab from the texture? Default is Linear.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SampleMode.html>
     ///
-    ///  see also [`crate::tex::tex_set_sample`]
+    ///  see also [`tex_set_sample`]
     pub fn sample_mode(&mut self, sample: TexSample) -> &mut Self {
         unsafe { tex_set_sample(self.0.as_ptr(), sample) };
         self
@@ -963,7 +1290,7 @@ impl Tex {
     /// Do we Wrap to the other side? Clamp it between 0-1, or just keep Mirroring back and forth? Wrap is the default.
     /// <https://stereokit.net/Pages/StereoKit/Tex/AddressMode.html>
     ///
-    ///  see also [`crate::tex::tex_set_address`]
+    ///  see also [`tex_set_address`]
     pub fn address_mode(&mut self, address_mode: TexAddress) -> &mut Self {
         unsafe { tex_set_address(self.0.as_ptr(), address_mode) };
         self
@@ -974,7 +1301,7 @@ impl Tex {
     /// <https://stereokit.net/Pages/StereoKit/Tex/Anisoptropy.html>
     /// <https://stereokit.net/Pages/StereoKit/Tex/Anisotropy.html>
     ///
-    ///  see also [`crate::tex::tex_set_anisotropy`]
+    ///  see also [`tex_set_anisotropy`]
     pub fn anisotropy(&mut self, anisotropy_level: i32) -> &mut Self {
         unsafe { tex_set_anisotropy(self.0.as_ptr(), anisotropy_level) };
         self
@@ -984,7 +1311,7 @@ impl Tex {
     /// finding them later on!
     /// <https://stereokit.net/Pages/StereoKit/Tex/Id.html>
     ///
-    /// see also [`crate::tex::tex_get_id`]
+    /// see also [`tex_get_id`]
     pub fn get_id(&self) -> &str {
         unsafe { CStr::from_ptr(tex_get_id(self.0.as_ptr())) }.to_str().unwrap()
     }
@@ -993,7 +1320,7 @@ impl Tex {
     /// an error occured, and what type of error it may have been.
     /// <https://stereokit.net/Pages/StereoKit/Tex/AssetState.html>
     ///
-    /// see also [`crate::tex::tex_asset_state`]
+    /// see also [`tex_asset_state`]
     pub fn get_asset_state(&self) -> AssetState {
         unsafe { tex_asset_state(self.0.as_ptr()) }
     }
@@ -1002,7 +1329,7 @@ impl Tex {
     /// LoadedMeta so None will be return instead
     /// <https://stereokit.net/Pages/StereoKit/Tex/Format.html>
     ///
-    /// see also [`crate::tex::tex_get_format`]
+    /// see also [`tex_get_format`]
     pub fn get_format(&self) -> Option<TexFormat> {
         match self.get_asset_state() {
             AssetState::Loaded => (),
@@ -1018,7 +1345,7 @@ impl Tex {
     /// textures, this will always be null.
     /// <https://stereokit.net/Pages/StereoKit/Tex/GetZBuffer.html>
     ///
-    /// see also [`crate::tex::tex_get_zbuffer`]
+    /// see also [`tex_get_zbuffer`]
     pub fn get_zbuffer(&self) -> Option<Tex> {
         NonNull::new(unsafe { tex_get_zbuffer(self.0.as_ptr()) }).map(Tex)
     }
@@ -1028,7 +1355,7 @@ impl Tex {
     /// call will block execution until the texture is loaded, if it is not already.
     /// <https://stereokit.net/Pages/StereoKit/Tex/GetNativeSurface.html>
     ///
-    /// see also [`crate::tex::tex_get_surface`]
+    /// see also [`tex_get_surface`]
     pub fn get_native_surface(&self) -> *mut c_void {
         unsafe { tex_get_surface(self.0.as_ptr()) }
     }
@@ -1037,7 +1364,7 @@ impl Tex {
     /// will be return instead
     /// <https://stereokit.net/Pages/StereoKit/Tex/Width.html>
     ///
-    /// see also [`crate::tex::tex_get_width`]
+    /// see also [`tex_get_width`]
     pub fn get_width(&self) -> Option<usize> {
         match self.get_asset_state() {
             AssetState::Loaded => (),
@@ -1052,7 +1379,7 @@ impl Tex {
     /// will be return instead
     /// <https://stereokit.net/Pages/StereoKit/Tex/Height.html>
     ///
-    /// see also [`crate::tex::tex_get_height`]
+    /// see also [`tex_get_height`]
     pub fn get_height(&self) -> Option<usize> {
         match self.get_asset_state() {
             AssetState::Loaded => (),
@@ -1065,7 +1392,7 @@ impl Tex {
 
     /// Non-canon function which returns a tuple made of (width, heigh, size) of the corresponding texture.
     ///
-    /// use mip < 0 for textures using [`crate::tex::TexType::ImageNomips`]
+    /// use mip < 0 for textures using [`TexType::ImageNomips`]
     ///
     /// use mip >=0 to retrieve the info about one MIP of the texture
     ///
@@ -1117,7 +1444,7 @@ impl Tex {
     ///
     /// The function [`Tex::get_data_infos`] may help you to shape the right receiver.
     ///
-    /// see also [`crate::tex::tex_get_data`]
+    /// see also [`tex_get_data`]
     pub fn get_color_data<T>(&self, color_data: &[T], mut mip_level: i8) -> bool {
         let size_of_color = std::mem::size_of_val(color_data);
         let (width, height, size_test) = match self.get_data_infos(mip_level) {
@@ -1162,7 +1489,7 @@ impl Tex {
     ///
     /// The function [`Tex::get_data_infos`] may help you to shape the right receiver.
     ///
-    /// see also [`crate::tex::tex_get_data`]
+    /// see also [`tex_get_data`]
     pub fn get_u8_color_data(&self, color_data: &[u8], color_size: usize, mut mip_level: i8) -> bool {
         let size_of_color = std::mem::size_of_val(color_data);
         let (width, height, size_test) = match self.get_data_infos(mip_level) {
@@ -1202,7 +1529,7 @@ impl Tex {
     /// color to grab from the texture? Default is Linear.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SampleMode.html>
     ///
-    /// see also [`crate::tex::tex_get_sample`]
+    /// see also [`tex_get_sample`]
     pub fn get_sample_mode(&self) -> TexSample {
         unsafe { tex_get_sample(self.0.as_ptr()) }
     }
@@ -1212,7 +1539,7 @@ impl Tex {
     /// default.
     /// <https://stereokit.net/Pages/StereoKit/Tex/AddressMode.html>
     ///
-    /// see also [`crate::tex::tex_get_address`]
+    /// see also [`tex_get_address`]
     pub fn get_address_mode(&self) -> TexAddress {
         unsafe { tex_get_address(self.0.as_ptr()) }
     }
@@ -1222,7 +1549,7 @@ impl Tex {
     /// <https://stereokit.net/Pages/StereoKit/Tex/Anisoptropy.html>
     /// <https://stereokit.net/Pages/StereoKit/Tex/Anisotropy.html>
     ///
-    /// see also [`crate::tex::tex_get_anisotropy`]
+    /// see also [`tex_get_anisotropy`]
     pub fn get_anisotropy(&self) -> i32 {
         unsafe { tex_get_anisotropy(self.0.as_ptr()) }
     }
@@ -1231,7 +1558,7 @@ impl Tex {
     /// This will be a blocking call if AssetState is less than LoadedMeta so None will be return instead.
     /// <https://stereokit.net/Pages/StereoKit/Tex/Mips.html>
     ///
-    /// see also [`crate::tex::tex_get_mips`]
+    /// see also [`tex_get_mips`]
     pub fn get_mips(&self) -> Option<i32> {
         match self.get_asset_state() {
             AssetState::Loaded => (),
@@ -1245,7 +1572,7 @@ impl Tex {
     /// Get the associated lighting extracted from the cubemap.
     /// <https://stereokit.net/Pages/StereoKit/Tex/CubemapLighting.html>
     ///
-    /// see also [`crate::tex::tex_gen_cubemap_sh`]
+    /// see also [`tex_gen_cubemap_sh`]
     pub fn get_cubemap_lighting(&self) -> SHCubemap {
         SHCubemap {
             sh: unsafe { tex_get_cubemap_lighting(self.0.as_ptr()) },
@@ -1310,7 +1637,7 @@ impl Tex {
 /// fluent syntax for Texture cubemap
 /// <https://stereokit.net/Pages/StereoKit/Tex.html>
 ///
-/// see also [`crate::tex::Tex`] [crate::util::SphericalHarmonics]
+/// see also [`Tex`] [crate::util::SphericalHarmonics]
 #[derive(Debug)]
 pub struct SHCubemap {
     pub sh: SphericalHarmonics,
@@ -1323,7 +1650,7 @@ impl SHCubemap {
     /// the equirectangular image.
     /// <https://stereokit.net/Pages/StereoKit/Tex/FromCubemapEquirectangular.html>
     ///
-    /// see also [`crate::tex::tex_create_cubemap_file`]
+    /// see also [`tex_create_cubemap_file`]
     #[deprecated(since = "0.40.0", note = "please use `from_cubemap` instead")]
     pub fn from_cubemap_equirectangular(
         equirectangular_file_utf8: impl AsRef<Path>,
@@ -1349,7 +1676,7 @@ impl SHCubemap {
     ///
     /// Returns a [SHCubemap]
     ///
-    /// see also [`crate::tex::tex_create_cubemap_file`]
+    /// see also [`tex_create_cubemap_file`]
     pub fn from_cubemap(
         cubemap_file: impl AsRef<Path>,
         srgb_data: bool,
@@ -1379,7 +1706,7 @@ impl SHCubemap {
     ///   sooner.
     ///
     /// Returns a SHCubemap from the given files, or Err if any failed to load.
-    /// see also [`crate::tex::tex_create_cubemap_files`]
+    /// see also [`tex_create_cubemap_files`]
     pub fn from_cubemap_files<P: AsRef<Path>>(
         files_utf8: &[P; 6],
         srgb_data: bool,
@@ -1414,7 +1741,7 @@ impl SHCubemap {
     /// you can set via Renderer.SkyTex.
     /// <https://stereokit.net/Pages/StereoKit/Tex/GenCubemap.html>
     ///
-    /// see also [`crate::tex::tex_gen_cubemap`]
+    /// see also [`tex_gen_cubemap`]
     pub fn gen_cubemap_gradient(
         gradient: impl AsRef<Gradient>,
         gradient_dir: impl Into<Vec3>,
@@ -1433,7 +1760,7 @@ impl SHCubemap {
     /// warning ! The SphericalHarmonics is moved to the result struct.
     /// <https://stereokit.net/Pages/StereoKit/Tex/GenCubemap.html>
     ///
-    /// see also [`crate::tex::tex_gen_cubemap_sh`]
+    /// see also [`tex_gen_cubemap_sh`]
     pub fn gen_cubemap_sh(
         lookup: SphericalHarmonics,
         face_size: i32,
@@ -1450,7 +1777,7 @@ impl SHCubemap {
     /// Get the associated lighting extracted from the cubemap.
     /// <https://stereokit.net/Pages/StereoKit/Tex/CubemapLighting.html>
     ///
-    /// see also [`crate::tex::tex_gen_cubemap_sh`]
+    /// see also [`tex_gen_cubemap_sh`]
     pub fn get_cubemap_lighting(cubemap_texture: impl AsRef<Tex>) -> SHCubemap {
         SHCubemap {
             sh: unsafe { tex_get_cubemap_lighting(cubemap_texture.as_ref().0.as_ptr()) },
@@ -1485,7 +1812,7 @@ impl SHCubemap {
     /// Enabled or disabled the rendering of the skytex cubemap texture
     /// <https://stereokit.net/Pages/StereoKit/Renderer/EnableSky.html>
     ///
-    /// see also see also [`crate::system::Renderer`] [`crate::tex::Tex`]
+    /// see also see also [`crate::system::Renderer`] [`Tex`]
     pub fn render_enabled_skytex(&mut self, enable: bool) -> &mut Self {
         unsafe { render_enable_skytex(enable as Bool32T) };
         self
@@ -1493,7 +1820,7 @@ impl SHCubemap {
 
     /// Get the cubemap tuple
     ///
-    /// see also [`crate::tex::Tex`] [`crate::util::SphericalHarmonics`]
+    /// see also [`Tex`] [`crate::util::SphericalHarmonics`]
     pub fn get(&self) -> (SphericalHarmonics, Tex) {
         (self.sh, Tex(NonNull::new(unsafe { tex_find(tex_get_id(self.tex.0.as_ptr())) }).unwrap()))
     }

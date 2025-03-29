@@ -3716,7 +3716,7 @@ impl Log {
 ///                      sound::Sound, system::Microphone, util::named_colors};
 ///
 /// let sphere = Mesh::generate_cube(Vec3::ONE * 0.5, None);
-/// let material = Material::pbr().copy_for_tex("textures/micro.jpeg", true, None)
+/// let material = Material::pbr().tex_file_copy("textures/micro.jpeg", true, None)
 ///                    .expect("sound.jpeg should be there");
 /// let mut position = Vec3::new( 0.0, 0.0, 0.5);
 /// let transform = Matrix::t(position);

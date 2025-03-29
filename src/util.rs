@@ -322,7 +322,7 @@ impl Mul<Color128> for f32 {
 /// results. It’s best to think of a Color32 as an optimized end stage format of a color.
 /// <https://stereokit.net/Pages/StereoKit/Color32.html>
 ///
-/// See also [Color128]
+/// see also [Color128]
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Default, PartialEq)]
 pub struct Color32 {
@@ -748,6 +748,7 @@ impl GradientKey {
 /// high accuracy blend!
 /// <https://stereokit.net/Pages/StereoKit/Gradient.html>
 pub struct Gradient(pub NonNull<_GradientT>);
+
 impl Drop for Gradient {
     fn drop(&mut self) {
         unsafe { gradient_destroy(self.0.as_ptr()) };

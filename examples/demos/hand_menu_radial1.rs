@@ -186,17 +186,17 @@ impl HandMenuRadial1 {
         let change_floor4 = SkInfo::get_message_closure(sk_info.clone(), id.clone(), CHANGE_FLOOR);
         let change_floor5 = SkInfo::get_message_closure(sk_info.clone(), id.clone(), CHANGE_FLOOR);
 
-        let mut menu_ico = Material::pbr_clip().copy_for_tex("icons/hamburger.png", true, None).unwrap_or_default();
+        let mut menu_ico = Material::pbr_clip().tex_file_copy("icons/hamburger.png", true, None).unwrap_or_default();
         menu_ico.clip_cutoff(0.1);
 
         let mut screenshot_ico =
-            Material::pbr_clip().copy_for_tex("icons/screenshot.png", true, None).unwrap_or_default();
+            Material::pbr_clip().tex_file_copy("icons/screenshot.png", true, None).unwrap_or_default();
         screenshot_ico.clip_cutoff(0.1);
 
-        let mut log_ico = Material::pbr_clip().copy_for_tex("icons/log_viewer.png", true, None).unwrap_or_default();
+        let mut log_ico = Material::pbr_clip().tex_file_copy("icons/log_viewer.png", true, None).unwrap_or_default();
         log_ico.clip_cutoff(0.1);
 
-        let mut fly_over_ico = Material::pbr_clip().copy_for_tex("icons/fly_over.png", true, None).unwrap_or_default();
+        let mut fly_over_ico = Material::pbr_clip().tex_file_copy("icons/fly_over.png", true, None).unwrap_or_default();
         fly_over_ico.clip_cutoff(0.1);
 
         //---- Sky domes and floor
