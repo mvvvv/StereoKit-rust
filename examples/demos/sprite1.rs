@@ -6,7 +6,7 @@ use stereokit_rust::{
     maths::{Matrix, Quat, Vec3, Vec4},
     prelude::*,
     sprite::{Sprite, SpriteType},
-    system::{AssetType, Assets, Lines, Text, TextAlign, TextStyle},
+    system::{AssetType, Assets, Lines, Pivot, Text, TextStyle},
     tex::Tex,
     util::{
         Color128, Gradient,
@@ -125,20 +125,18 @@ impl Sprite1 {
     /// Called from IStepper::step after check_event, here you can draw your UI
     fn draw(&mut self, token: &MainThreadToken) {
         self.sprite1
-            .draw(token, Mat4::from_translation(glam::Vec3::new(-2.5, 1.5, -2.5)), TextAlign::Center, None);
+            .draw(token, Mat4::from_translation(glam::Vec3::new(-2.5, 1.5, -2.5)), Pivot::Center, None);
 
         self.sprite_ico.draw(
             token,
             Mat4::from_rotation_translation(glam::Quat::from_rotation_y(PI), glam::Vec3::new(0.0, 1.5, -2.5)),
-            TextAlign::BottomCenter,
+            Pivot::BottomCenter,
             None,
         );
 
-        self.sprite3
-            .draw(token, Mat4::from_translation(glam::Vec3::new(2.5, 1.5, -2.5)), TextAlign::YTop, None);
+        self.sprite3.draw(token, Mat4::from_translation(glam::Vec3::new(2.5, 1.5, -2.5)), Pivot::YTop, None);
 
-        self.sprite4
-            .draw(token, Mat4::from_translation(glam::Vec3::new(0.0, 3.5, -2.5)), TextAlign::YTop, None);
+        self.sprite4.draw(token, Mat4::from_translation(glam::Vec3::new(0.0, 3.5, -2.5)), Pivot::YTop, None);
 
         Text::add_at(
             token,

@@ -95,7 +95,7 @@ pub enum AssetType {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{maths::Matrix,  system::{Assets, AssetType, Asset, TextAlign},
+/// use stereokit_rust::{maths::Matrix, system::{Assets, AssetType, Asset, Pivot},
 ///                      sprite::Sprite};
 ///
 /// let my_sprite = Sprite::from_file("textures/open_gltf.jpeg", None, None)
@@ -121,7 +121,7 @@ pub enum AssetType {
 ///
 /// filename_scr = "screenshots/assets.jpeg"; fov_scr= 55.0;
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
-///     my_sprite.draw(token, Matrix::Y_180, TextAlign::Center, None);
+///     my_sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
 /// );
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/assets.jpeg" alt="screenshot" width="200">
@@ -276,7 +276,7 @@ impl Assets {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::Matrix,  system::{Assets, AssetType, Asset, TextAlign},
+    /// use stereokit_rust::{maths::Matrix,  system::{Assets, AssetType, Asset},
     ///                      sprite::Sprite};
     ///
     /// let my_sprite = Sprite::from_file("textures/open_gltf.jpeg", None, None)
@@ -5105,7 +5105,7 @@ impl Renderer {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{system::{TextStyle, TextAlign, Text, Lines, Hierarchy},
+/// use stereokit_rust::{system::{TextStyle, Pivot, Align, Text, Lines, Hierarchy},
 ///                      font::Font, material::Material, mesh::Mesh, maths::{Vec3, Matrix},
 ///                      util::named_colors::{WHITE, GOLD, GREEN, BLUE, RED, BLACK}};
 ///
@@ -5128,7 +5128,7 @@ impl Renderer {
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
 ///    Hierarchy::push(token, recenter, None);
 ///    Text::add_at(token, text, Matrix::Y_180, Some(style), Some(GOLD.into()),
-///             Some(TextAlign::TopCenter), Some(TextAlign::TopLeft), None, None, None);
+///             Some(Pivot::TopCenter), Some(Align::TopLeft), None, None, None);
 ///    
 ///    Lines::add(token, [sizex, ascender_at, 0.0],    [-sizex, ascender_at, 0.0],    GREEN, None, 0.03  );
 ///    Lines::add(token, [sizex, base_line_at, 0.0],   [-sizex, base_line_at, 0.0],   WHITE, None, 0.03  );
@@ -5483,13 +5483,62 @@ impl TextStyle {
 }
 
 bitflags::bitflags! {
-    /// An enum for describing alignment or positioning
-    /// <https://stereokit.net/Pages/StereoKit/TextAlign.html>
+    /// A bit-flag enum for describing alignment or positioning. Items can be combined using the '|' operator, like so:
+    /// `let alignment = Align::YTop | Align::XLeft;`.
+    /// Avoid combining multiple items of the same axis. There are also a complete list of valid bit flag combinations!
+    /// These are the values without an axis listed in their names, 'TopLeft', 'BottomCenter',
+    /// etc.
+    /// <https://stereokit.net/Pages/StereoKit/Align.html>
     ///
-    /// see also [`Text`] [`crate::ui::Ui`] [`Sprite`]
+    /// see also [`Text`] [`crate::ui::Ui`]
     #[derive(Debug, Copy, Clone, PartialEq, Eq)]
     #[repr(C)]
-    pub struct TextAlign: u32 {
+    pub struct Align: u32 {
+        /// On the x axis, this item should start on the left.
+        const XLeft = 1 << 0;
+        /// On the y axis, this item should start at the top.
+        const YTop = 1 << 1;
+        /// On the x axis, the item should be centered.
+        const XCenter = 1 << 2;
+        /// On the y axis, the item should be centered.
+        const YCenter = 1 << 3;
+        /// On the x axis, this item should start on the right.
+        const XRight = 1 << 4;
+        /// On the y axis, this item should start on the bottom.
+        const YBottom = 1 << 5;
+        /// Center on both X and Y axes. This is a combination of XCenter and YCenter.
+        const Center = Self::XCenter.bits() | Self::YCenter.bits();
+        /// Start on the left of the X axis, center on the Y axis. This is a combination of XLeft and YCenter.
+        const CenterLeft = Self::XLeft.bits() | Self::YCenter.bits();
+        /// Start on the right of the X axis, center on the Y axis. This is a combination of XRight and YCenter.
+        const CenterRight = Self::XRight.bits() | Self::YCenter.bits();
+        /// Center on the X axis, and top on the Y axis. This is a combination of XCenter and YTop.
+        const TopCenter = Self::XCenter.bits() | Self::YTop.bits();
+        /// Start on the left of the X axis, and top on the Y axis. This is a combination of XLeft and YTop.
+        const TopLeft = Self::XLeft.bits() | Self::YTop.bits();
+        /// Start on the right of the X axis, and top on the Y axis. This is a combination of XRight and YTop.
+        const TopRight = Self::XRight.bits() | Self::YTop.bits();
+        /// Center on the X axis, and bottom on the Y axis. This is a combination of XCenter and YBottom.
+        const BottomCenter = Self::XCenter.bits() | Self::YBottom.bits();
+        /// Start on the left of the X axis, and bottom on the Y axis. This is a combination of XLeft and YBottom.
+        const BottomLeft = Self::XLeft.bits() | Self::YBottom.bits();
+        /// Start on the right of the X axis, and bottom on the Y axis.This is a combination of XRight and YBottom.
+        const BottomRight = Self::XRight.bits() | Self::YBottom.bits();
+    }
+}
+
+bitflags::bitflags! {
+    /// A bit-flag enum for describing alignment or positioning. Items can be combined using the '|' operator, like so:
+    /// `let alignment = Pivot::YTop | Pivot::XLeft;`.
+    /// Avoid combining multiple items of the same axis. There are also a complete list of valid bit flag combinations!
+    /// These are the values without an axis listed in their names, 'TopLeft', 'BottomCenter',
+    /// etc.
+    /// <https://stereokit.net/Pages/StereoKit/Pivot.html>
+    ///
+    /// see also [`Text`] [`Sprite`]
+    #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+    #[repr(C)]
+    pub struct Pivot: u32 {
         /// On the x axis, this item should start on the left.
         const XLeft = 1 << 0;
         /// On the y axis, this item should start at the top.
@@ -5571,7 +5620,7 @@ pub enum TextContext {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{system::{ TextAlign, TextFit, Text, Lines, Hierarchy },
+/// use stereokit_rust::{system::{ Pivot, Align, TextFit, Text, Lines, Hierarchy },
 ///                      font::Font, material::Material, mesh::Mesh, maths::{Vec3, Matrix},
 ///                      util::named_colors::{WHITE, GOLD, GREEN, RED}};
 ///
@@ -5584,10 +5633,10 @@ pub enum TextContext {
 /// filename_scr = "screenshots/text.jpeg"; fov_scr=110.0;
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
 ///    Text::add_at(token, "Many", transform1, Some(style), Some(GOLD.into()),
-///             Some(TextAlign::TopCenter), Some(TextAlign::TopLeft), None, None, None);
+///             Some(Pivot::TopCenter), Some(Align::TopLeft), None, None, None);
 ///    
 ///    let size = Text::add_in(token, "Texts!", transform2, [0.6, 0.6], TextFit::Squeeze,
-///             Some(style), Some(GREEN.into()), Some(TextAlign::Center), Some(TextAlign::TopLeft),
+///             Some(style), Some(GREEN.into()), Some(Pivot::Center), Some(Align::TopLeft),
 ///             None, Some(-0.3), Some(-0.3));
 ///    assert_ne!(size , 0.0);
 ///
@@ -5603,8 +5652,8 @@ unsafe extern "C" {
         text_utf8: *const c_char,
         transform: *const Matrix,
         style: TextStyle,
-        position: TextAlign,
-        align: TextAlign,
+        position: Pivot,
+        align: Align,
         off_x: f32,
         off_y: f32,
         off_z: f32,
@@ -5614,8 +5663,8 @@ unsafe extern "C" {
         text_utf16: *const c_ushort,
         transform: *const Matrix,
         style: TextStyle,
-        position: TextAlign,
-        align: TextAlign,
+        position: Pivot,
+        align: Align,
         off_x: f32,
         off_y: f32,
         off_z: f32,
@@ -5627,8 +5676,8 @@ unsafe extern "C" {
         size: Vec2,
         fit: TextFit,
         style: TextStyle,
-        position: TextAlign,
-        align: TextAlign,
+        position: Pivot,
+        align: Align,
         off_x: f32,
         off_y: f32,
         off_z: f32,
@@ -5640,8 +5689,8 @@ unsafe extern "C" {
         size: Vec2,
         fit: TextFit,
         style: TextStyle,
-        position: TextAlign,
-        align: TextAlign,
+        position: Pivot,
+        align: Align,
         off_x: f32,
         off_y: f32,
         off_z: f32,
@@ -5658,8 +5707,8 @@ unsafe extern "C" {
         char_index: i32,
         opt_size: *mut Vec2,
         fit: TextFit,
-        position: TextAlign,
-        align: TextAlign,
+        position: Pivot,
+        align: Align,
     ) -> Vec2;
     pub fn text_char_at_16(
         text_utf16: *const c_ushort,
@@ -5667,8 +5716,8 @@ unsafe extern "C" {
         char_index: i32,
         opt_size: *mut Vec2,
         fit: TextFit,
-        position: TextAlign,
-        align: TextAlign,
+        position: Pivot,
+        align: Align,
     ) -> Vec2;
 }
 
@@ -5810,16 +5859,16 @@ impl Text {
     /// * `vertex_tint_linear` - The vertex color of the text gets multiplied by this color. This is a linear color
     ///   value, not a gamma corrected color value. If None will use Color128::WHITE
     /// * `position` - How should the text’s bounding rectangle be positioned relative to the transform? If None will
-    ///   use TextAlign::Center.
+    ///   use Pivot::Center.
     /// * `align` - How should the text be aligned within the text’s bounding rectangle? If None will use
-    ///   TextAlign::Center.
+    ///   Align::Center.
     /// * `off_?` - An additional offset on the given axis. If None will use 0.0.
     ///
     /// see also [`text_add_at`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{system::{ TextAlign, TextFit, Text },
+    /// use stereokit_rust::{system::{Pivot, Align, TextFit, Text},
     ///                      font::Font, maths::{Vec3, Matrix},
     ///                      util::named_colors::{WHITE, GOLD, GREEN}};
     ///
@@ -5831,10 +5880,10 @@ impl Text {
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///    Text::add_at(token, "Many", transform1, Some(style), Some(GOLD.into()),
-    ///             Some(TextAlign::TopCenter), Some(TextAlign::TopLeft), None, None, None);
+    ///             Some(Pivot::TopCenter), Some(Align::TopLeft), None, None, None);
     ///    
     ///    Text::add_at(token, "Texts!", transform2, Some(style), Some(GREEN.into()),
-    ///             Some(TextAlign::Center), Some(TextAlign::TopLeft), None, None, Some(-0.3));
+    ///             Some(Pivot::Center), Some(Align::TopLeft), None, None, Some(-0.3));
     ///
     ///    Text::add_at(token, "----/****", transform3, Some(style), None,
     ///             None, None, None, None, None);
@@ -5847,8 +5896,8 @@ impl Text {
         transform: impl Into<Matrix>,
         text_style: Option<TextStyle>,
         vertex_tint_linear: Option<Color128>,
-        position: Option<TextAlign>,
-        align: Option<TextAlign>,
+        position: Option<Pivot>,
+        align: Option<Align>,
         off_x: Option<f32>,
         off_y: Option<f32>,
         off_z: Option<f32>,
@@ -5856,8 +5905,8 @@ impl Text {
         let c_str = CString::new(text.as_ref()).unwrap();
         let style = text_style.unwrap_or_default();
         let vertex_tint_linear = vertex_tint_linear.unwrap_or(Color128::WHITE);
-        let position = position.unwrap_or(TextAlign::Center);
-        let align = align.unwrap_or(TextAlign::Center);
+        let position = position.unwrap_or(Pivot::Center);
+        let align = align.unwrap_or(Align::Center);
         let off_x = off_x.unwrap_or(0.0);
         let off_y = off_y.unwrap_or(0.0);
         let off_z = off_z.unwrap_or(0.0);
@@ -5889,9 +5938,9 @@ impl Text {
     /// * `vertex_tint_linear` - The vertex color of the text gets multiplied by this color. This is a linear color
     ///   value, not a gamma corrected color value. If None will use Color128::WHITE
     /// * `position` - How should the text’s bounding rectangle be positioned relative to the transform? If None will
-    ///   use TextAlign::Center.
+    ///   use Pivot::Center.
     /// * `align` - How should the text be aligned within the text’s bounding rectangle? If None will use
-    ///   TextAlign::Center.
+    ///   Align::Center.
     /// * `off_?` - An additional offset on the given axis. If None will use 0.0.
     ///
     /// Returns the vertical space used by this text.
@@ -5900,7 +5949,7 @@ impl Text {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{system::{ TextAlign, TextFit, Text},
+    /// use stereokit_rust::{system::{ Align, Pivot, TextFit, Text},
     ///                      font::Font, maths::{Vec3, Matrix},
     ///                      util::named_colors::{WHITE, GOLD, GREEN}};
     ///
@@ -5910,16 +5959,16 @@ impl Text {
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///    let size = Text::add_in(token, "Many", transform1, [1.1, 1.0], TextFit::Wrap,
-    ///             Some(style), Some(GOLD.into()), Some(TextAlign::BottomRight),
-    ///             Some(TextAlign::TopLeft), None, None, None);
+    ///             Some(style), Some(GOLD.into()), Some(Pivot::BottomRight),
+    ///             Some(Align::TopLeft), None, None, None);
     ///    
     ///    let size = Text::add_in(token, "Texts!", transform1, [1.0, 1.0-size], TextFit::Clip,
     ///             Some(style),None, None,
     ///             None, None, None, None);
     ///
     ///    Text::add_in(token, "----/****", transform1, [0.3, 1.0-size], TextFit::Squeeze,
-    ///             Some(style), Some(GREEN.into()), Some(TextAlign::YTop),
-    ///             Some(TextAlign::Center),None, None, Some(-0.7));
+    ///             Some(style), Some(GREEN.into()), Some(Pivot::YTop),
+    ///             Some(Align::Center),None, None, Some(-0.7));
     /// );
     /// ```
     #[allow(clippy::too_many_arguments)]
@@ -5931,8 +5980,8 @@ impl Text {
         fit: TextFit,
         text_style: Option<TextStyle>,
         vertex_tint_linear: Option<Color128>,
-        position: Option<TextAlign>,
-        align: Option<TextAlign>,
+        position: Option<Pivot>,
+        align: Option<Align>,
         off_x: Option<f32>,
         off_y: Option<f32>,
         off_z: Option<f32>,
@@ -5940,8 +5989,8 @@ impl Text {
         let c_str = CString::new(text.as_ref()).unwrap();
         let style = text_style.unwrap_or_default();
         let vertex_tint_linear = vertex_tint_linear.unwrap_or(Color128::WHITE);
-        let position = position.unwrap_or(TextAlign::Center);
-        let align = align.unwrap_or(TextAlign::Center);
+        let position = position.unwrap_or(Pivot::Center);
+        let align = align.unwrap_or(Align::Center);
         let off_x = off_x.unwrap_or(0.0);
         let off_y = off_y.unwrap_or(0.0);
         let off_z = off_z.unwrap_or(0.0);

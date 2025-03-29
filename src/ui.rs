@@ -6,7 +6,7 @@ use crate::{
     model::{Model, ModelT},
     sound::{Sound, SoundT},
     sprite::{Sprite, SpriteT},
-    system::{BtnState, Handed, HierarchyParent, Log, TextAlign, TextContext, TextFit, TextStyle},
+    system::{Align, BtnState, Handed, HierarchyParent, Log, TextContext, TextFit, TextStyle},
     util::{Color32, Color128},
 };
 use std::{
@@ -534,21 +534,21 @@ unsafe extern "C" {
         scroll: *mut Vec2,
         scroll_direction: UiScroll,
         height: f32,
-        text_align: TextAlign,
+        text_align: Align,
     ) -> Bool32T;
     pub fn ui_text_16(
         text: *const c_ushort,
         scroll: *mut Vec2,
         scroll_direction: UiScroll,
         height: f32,
-        text_align: TextAlign,
+        text_align: Align,
     ) -> Bool32T;
     pub fn ui_text_sz(
         text: *const c_char,
         scroll: *mut Vec2,
         scroll_direction: UiScroll,
         size: Vec2,
-        text_align: TextAlign,
+        text_align: Align,
         fit: TextFit,
     ) -> Bool32T;
     pub fn ui_text_sz_16(
@@ -556,14 +556,14 @@ unsafe extern "C" {
         scroll: *mut Vec2,
         scroll_direction: UiScroll,
         size: Vec2,
-        text_align: TextAlign,
+        text_align: Align,
         fit: TextFit,
     ) -> Bool32T;
     pub fn ui_text_at(
         text: *const c_char,
         scroll: *mut Vec2,
         scroll_direction: UiScroll,
-        text_align: TextAlign,
+        text_align: Align,
         fit: TextFit,
         window_relative_pos: Vec3,
         size: Vec2,
@@ -572,7 +572,7 @@ unsafe extern "C" {
         text: *const c_ushort,
         scroll: *mut Vec2,
         scroll_direction: UiScroll,
-        text_align: TextAlign,
+        text_align: Align,
         fit: TextFit,
         window_relative_pos: Vec3,
         size: Vec2,
@@ -2244,7 +2244,7 @@ impl Ui {
     /// * scrollDirection - What scroll bars are allowed to show on this text? Vertical, horizontal, both?
     /// * height - The vertical height of this Text element.
     /// * width - if not specified it will automatically take the remainder of the current layout.
-    /// * text_align - Where should the text position itself within its bounds? Default is TextAlign::TopLeft is how most
+    /// * text_align - Where should the text position itself within its bounds? Default is Align::TopLeft is how most
     ///   european language are aligned.
     /// * fit - Describe how the text should behave when one of its size dimensions conflicts with the provided ‘size’
     ///   parameter. Ui::text uses TextFit::Wrap by default and this scrolling overload will always add `TextFit.Clip`
@@ -2258,13 +2258,13 @@ impl Ui {
         scroll_direction: Option<UiScroll>,
         height: Option<f32>,
         width: Option<f32>,
-        text_align: Option<TextAlign>,
+        text_align: Option<Align>,
         fit: Option<TextFit>,
     ) -> bool {
         let cstr = CString::new(text.as_ref()).unwrap();
         let scroll_direction = scroll_direction.unwrap_or(UiScroll::None);
         let height = height.unwrap_or(0.0);
-        let text_align = text_align.unwrap_or(TextAlign::TopLeft);
+        let text_align = text_align.unwrap_or(Align::TopLeft);
         let fit = fit.unwrap_or(TextFit::Wrap);
         if let Some(width) = width {
             let size = Vec2::new(width, height);
@@ -2286,7 +2286,7 @@ impl Ui {
     /// wrap once it fills the entire layout! Text uses the UI’s current font settings, which can be changed with
     /// Ui::push/pop_text_style.
     /// <https://stereokit.net/Pages/StereoKit/UI/TextAt.html>
-    /// * text_align - Where should the text position itself within its bounds? TextAlign::TopLeft is how most
+    /// * text_align - Where should the text position itself within its bounds? Align::TopLeft is how most
     ///   european language are aligned.
     /// * fit - Describe how the text should behave when one of its size dimensions conflicts with the provided ‘size’
     ///   parameter. Ui::text uses TextFit::Wrap by default.
@@ -2298,7 +2298,7 @@ impl Ui {
         text: impl AsRef<str>,
         scroll: Option<&mut Vec2>,
         scroll_direction: Option<UiScroll>,
-        text_align: TextAlign,
+        text_align: Align,
         fit: TextFit,
         top_left_corner: impl Into<Vec3>,
         size: impl Into<Vec2>,

@@ -5,8 +5,7 @@ use crate::{
     prelude::*,
     sound::Sound,
     system::{
-        Backend, BackendXRType, FingerId, Hand, Handed, Hierarchy, Input, JointId, Key, Lines, Text, TextAlign,
-        TextStyle,
+        Align, Backend, BackendXRType, FingerId, Hand, Handed, Hierarchy, Input, JointId, Key, Lines, Text, TextStyle,
     },
     tex::Tex,
     ui::{Ui, UiColor},
@@ -57,7 +56,7 @@ impl HandMenuItem {
             None,
             None,
             None,
-            Some(TextAlign::BottomCenter),
+            Some(Align::BottomCenter),
             None,
             None,
             None,

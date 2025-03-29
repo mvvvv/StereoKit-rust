@@ -1,9 +1,9 @@
 use stereokit_rust::{
     font::Font,
-    maths::{units::CM, Matrix, Pose, Quat, Vec2, Vec3},
+    maths::{Matrix, Pose, Quat, Vec2, Vec3, units::CM},
     prelude::*,
     sprite::Sprite,
-    system::{Text, TextAlign, TextFit, TextStyle},
+    system::{Align, Text, TextFit, TextStyle},
     ui::{Ui, UiBtnLayout, UiScroll},
     util::named_colors::{RED, WHITE},
 };
@@ -159,7 +159,7 @@ impl Text2 {
             TEXTO,
             Some(&mut self.scroll4),
             Some(UiScroll::Both),
-            TextAlign::TopLeft,
+            Align::TopLeft,
             TextFit::Overflow,
             Vec3::new(0.016, -0.40, -0.03),
             Vec2::new(0.18, 0.1),

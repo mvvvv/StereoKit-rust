@@ -1,14 +1,14 @@
 use stereokit_rust::{
     font::Font,
     material::Material,
-    maths::{units::CM, Matrix, Pose, Quat, Vec2, Vec3},
+    maths::{Matrix, Pose, Quat, Vec2, Vec3, units::CM},
     mesh::Mesh,
     prelude::*,
-    system::{BtnState, Text, TextAlign, TextStyle},
+    system::{BtnState, Pivot, Text, TextStyle},
     ui::{IdHashT, Ui, UiColor, UiCorner, UiLathePt, UiSliderData, UiVisual},
     util::{
+        Color32, Color128, Time,
         named_colors::{CYAN, DARK_BLUE, ORCHID, RED, YELLOW},
-        Color128, Color32, Time,
     },
 };
 
@@ -174,7 +174,7 @@ impl Ui1 {
             Matrix::t(Vec3::new(layout.center.x, layout.center.y, -(out_finger_offset + 0.002))),
             Some(Ui::get_text_style()),
             None,
-            Some(TextAlign::Center),
+            Some(Pivot::Center),
             None,
             None,
             None,
@@ -215,7 +215,7 @@ impl Ui1 {
             Matrix::t(Vec3::new(layout.center.x, layout.center.y, -(out_finger_offset + 0.002))),
             Some(Ui::get_text_style()),
             None,
-            Some(TextAlign::Center),
+            Some(Pivot::Center),
             None,
             None,
             None,
