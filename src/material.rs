@@ -427,7 +427,7 @@ impl Material {
     /// let material1 = Material::unlit().copy();
     /// let material2 = Material::unlit().copy();
     /// let tex = Tex::from_file("textures/open_gltf.jpeg", true, None)
-    ///                    .expect("open_gltf.jpeg should load");
+    ///                    .expect("tex should be created");
     /// let mut material3 = Material::unlit().tex_copy(tex);
     ///
     /// assert_eq!(&material1.get_all_param_info().get_texture("diffuse").unwrap().get_id(),
@@ -542,7 +542,8 @@ impl Material {
     /// let mut material = Material::unlit().copy();
     /// let default_tex = material.get_all_param_info().get_texture("diffuse").unwrap();
     ///
-    /// let tex = Tex::from_file("textures/open_gltf.jpeg", true, None).unwrap();
+    /// let tex = Tex::from_file("textures/open_gltf.jpeg", true, None)
+    ///                    .expect("tex should be created");
     /// material.diffuse_tex(&tex);
     ///
     /// assert_eq!(&material.get_all_param_info().get_texture("diffuse").unwrap().get_id(),
@@ -600,7 +601,8 @@ impl Material {
     ///
     /// let mut material = Material::pbr_clip().tex_file_copy("textures/water/bump_large.ktx2", true, Some(0)).unwrap();
     ///
-    /// let tex = Tex::from_file("textures/water/bump_large_inverse.ktx2", true, None).unwrap();
+    /// let tex = Tex::from_file("textures/water/bump_large_inverse.ktx2", true, None)
+    ///                    .expect("tex should be created");
     /// material.emission_tex(&tex).emission_factor(named_colors::RED);
     ///
     /// assert_eq!(&material.get_all_param_info().get_texture("emission").unwrap().get_id(),
@@ -657,7 +659,8 @@ impl Material {
     ///
     /// let mut material = Material::pbr_clip().tex_file_copy("textures/parquet2/parquet2.ktx2", true, Some(0)).unwrap();
     ///
-    /// let tex = Tex::from_file("textures/parquet2/parquet2metal.ktx2", true, None).unwrap();
+    /// let tex = Tex::from_file("textures/parquet2/parquet2metal.ktx2", true, None)
+    ///                    .expect("tex should be created");
     /// material.metal_tex(&tex).metallic_amount(0.68);
     ///
     /// assert_eq!(&material.get_all_param_info().get_texture("metal").unwrap().get_id(),
@@ -690,7 +693,8 @@ impl Material {
     ///
     /// let mut material = Material::from_file("shaders/water_pbr2.hlsl.sks", None).unwrap();
     ///
-    /// let tex = Tex::from_file("textures/water/bump_large.ktx2", true, None).unwrap();
+    /// let tex = Tex::from_file("textures/water/bump_large.ktx2", true, None)
+    ///                    .expect("tex should be created");
     /// material.normal_tex(&tex);
     ///
     /// assert_eq!(&material.get_all_param_info().get_texture("normal").unwrap().get_id(),
@@ -722,7 +726,8 @@ impl Material {
     ///
     /// let mut material = Material::pbr().tex_file_copy("textures/parquet2/parquet2.ktx2", true, None).unwrap();
     ///
-    /// let tex = Tex::from_file("textures/parquet2/parquet2ao.ktx2", true, None).unwrap();
+    /// let tex = Tex::from_file("textures/parquet2/parquet2ao.ktx2", true, None)
+    ///                    .expect("tex should be created");
     /// material.occlusion_tex(&tex);
     ///
     /// assert_eq!(&material.get_all_param_info().get_texture("occlusion").unwrap().get_id(),
@@ -1785,7 +1790,8 @@ impl<'a> ParamInfos<'a> {
     /// let mut material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
     /// let mut param_infos = material.get_all_param_info();
     /// assert_ne!( param_infos.get_texture("metal").unwrap(), Tex::default() );
-    /// let metal_tex = Tex::from_file("textures/open_gltf.jpeg", true, None).unwrap();
+    /// let metal_tex = Tex::from_file("textures/open_gltf.jpeg", true, None)
+    ///                    .expect("tex should be created");
     /// param_infos.set_texture("metal", &metal_tex);
     /// assert_eq!( param_infos.get_texture("metal").unwrap(), metal_tex );
     /// ```

@@ -4332,7 +4332,7 @@ impl Renderer {
     /// use stereokit_rust::{system::Renderer, tex::{Tex, TexType}};
     ///
     /// let sky_tex = Tex::from_file("hdri/sky_dawn.jpeg", true, None)
-    ///                        .expect("sky.jpeg should be there");
+    ///                        .expect("sky_tex should be created");
     /// Renderer::sky_tex(&sky_tex);
     /// let sky_tex_get = Renderer::get_sky_tex();
     ///
@@ -4623,7 +4623,7 @@ impl Renderer {
     ///                      maths::Matrix, util::named_colors};
     ///
     /// let tex = Tex::from_file("hdri/sky_dawn.jpeg", true, None)
-    ///                    .expect("sky.jpeg should be a valid texture");
+    ///                    .expect("tex should be created");
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     if iter < 2 {

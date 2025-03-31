@@ -123,14 +123,18 @@ impl Default for Tex1 {
         let color_dots128 = raw_dots128.as_slice();
 
         let mut tex_color_32a = Tex::new(TexType::Image, TexFormat::RGBA32, "tex_color");
-        tex_color_32a
-            .id("tex_color32a")
-            .set_colors(width, height, color_dots.as_ptr() as *mut std::os::raw::c_void);
+        unsafe {
+            tex_color_32a
+                .id("tex_color32a")
+                .set_colors(width, height, color_dots.as_ptr() as *mut std::os::raw::c_void)
+        };
 
         let mut tex_color_32b = Tex::gen_color(BLUE, 10, 10, TexType::Dynamic, TexFormat::RGBA32);
-        tex_color_32b
-            .id("tex_color32b")
-            .set_colors(width, height, color_dots.as_ptr() as *mut std::os::raw::c_void);
+        unsafe {
+            tex_color_32b
+                .id("tex_color32b")
+                .set_colors(width, height, color_dots.as_ptr() as *mut std::os::raw::c_void)
+        };
 
         let mut tex_color_32c = Tex::from_color32(color_dots, width, height, true).unwrap();
         tex_color_32c.id("tex_color32c");
@@ -138,7 +142,7 @@ impl Default for Tex1 {
         tex_color_32d.id("tex_color32d");
         let tex_vide = Tex::new(TexType::ImageNomips, TexFormat::RGBA128, "tex_vide");
         let tex_vide2 = Tex::new(TexType::ImageNomips, TexFormat::R8, "tex_vide2");
-        let tex_vide3 = Tex::new(TexType::ImageNomips, TexFormat::R16f, "tex_vide3");
+        let tex_vide3 = Tex::new(TexType::ImageNomips, TexFormat::R16u, "tex_vide3");
         let tex_vide4 = Tex::new(TexType::ImageNomips, TexFormat::R32, "tex_vide4");
 
         let mut gradient = Gradient::new(None);

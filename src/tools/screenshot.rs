@@ -248,7 +248,7 @@ impl ScreenshotViewer {
                                 Log::diag(format!("size is {}", size * 4));
                                 let data = vec![0u8; size * 4];
                                 let data_slice = data.as_slice();
-                                if tex.get_u8_color_data(data_slice, 4, 0) {
+                                if tex.get_color_data_u8(data_slice, 4, 0) {
                                     match File::create(&name) {
                                         // Vive le format RGBA !!! https://github.com/bzotto/rgba_bitmap
                                         Ok(mut file) => {
