@@ -49,7 +49,7 @@ fn main() {
             circle.draw(token, &material_circle,  Matrix::IDENTITY, None, None);
         );
     }
-    Sk::shutdown();
+    //Sk::shutdown();
 }
 
 #[cfg(feature = "no-event-loop")]
@@ -84,7 +84,7 @@ fn main() {
             circle.draw(token, &material_circle,  Matrix::IDENTITY, None, None);
         );
     }
-    Sk::shutdown();
+    //Sk::shutdown();
 }
 
 pub fn input_subscribe() -> (Pointer, unsafe extern "C" fn(InputSource, BtnState, *const Pointer)) {
