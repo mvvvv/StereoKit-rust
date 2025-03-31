@@ -15,45 +15,75 @@ fn main() {
         system::{BtnState, Input, InputSource},
     };
 
-    let (pointer, input_cb) = input_subscribe();
-    let id = hand_menu_radial0(Some(sk.get_sk_info_clone()));
-    let (circle, material_circle) = material1();
+    {
+        let (pointer, input_cb) = input_subscribe();
+        let id = hand_menu_radial0(Some(sk.get_sk_info_clone()));
+        let (circle, material_circle) = material1();
 
-    number_of_steps = 10;
-    test_steps!( // !!!! Get a proper main loop !!!!
+        number_of_steps = 10;
+        test_steps!( // !!!! Get a proper main loop !!!!
 
-        // testing input
-        assert_eq!(pointer.state, BtnState::Inactive);
-        assert_eq!(pointer.tracked, BtnState::Inactive);
-        if iter == 0 {
-            Input::subscribe(InputSource::CanPress, BtnState::JustActive, Some(input_cb));
-            Input::fire_event(InputSource::CanPress, BtnState::JustActive, &pointer);
-        } else if iter == 1 {
-             Input::fire_event(pointer.source, BtnState::JustActive, &pointer);
-        } else if iter == 8 {
-            Input::unsubscribe(InputSource::CanPress, BtnState::JustInactive, Some(input_cb));
-        }
+            // testing input
+            assert_eq!(pointer.state, BtnState::Inactive);
+            assert_eq!(pointer.tracked, BtnState::Inactive);
+            if iter == 0 {
+                Input::subscribe(InputSource::CanPress, BtnState::JustActive, Some(input_cb));
+                Input::fire_event(InputSource::CanPress, BtnState::JustActive, &pointer);
+            } else if iter == 1 {
+                 Input::fire_event(pointer.source, BtnState::JustActive, &pointer);
+            } else if iter == 8 {
+                Input::unsubscribe(InputSource::CanPress, BtnState::JustInactive, Some(input_cb));
+            }
 
-        // testing hand_menu_radial0
-        if iter == 1 {
-            SkInfo::send_event(&Some(sk.get_sk_info_clone()),
-            StepperAction::event(id.as_str(), HAND_MENU_RADIAL_FOCUS, &true.to_string()));
-        }
-        if iter == 8 {
-            SkInfo::send_event(&Some(sk.get_sk_info_clone()),
-            StepperAction::remove(id.clone()));
-        }
+            // testing hand_menu_radial0
+            if iter == 1 {
+                SkInfo::send_event(&Some(sk.get_sk_info_clone()),
+                StepperAction::event(id.as_str(), HAND_MENU_RADIAL_FOCUS, &true.to_string()));
+            }
+            if iter == 8 {
+                SkInfo::send_event(&Some(sk.get_sk_info_clone()),
+                StepperAction::remove(id.clone()));
+            }
 
-        // testing material1
-        circle.draw(token, &material_circle,  Matrix::IDENTITY, None, None);
-    );
-    //Sk::shutdown();
+            // testing material1
+            circle.draw(token, &material_circle,  Matrix::IDENTITY, None, None);
+        );
+    }
+    Sk::shutdown();
 }
 
 #[cfg(feature = "no-event-loop")]
 fn main() {
-    use stereokit_rust::sk::Sk;
-    material1();
+    stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    use stereokit_rust::{
+        maths::Matrix,
+        system::{BtnState, Input, InputSource},
+    };
+
+    {
+        let (pointer, input_cb) = input_subscribe();
+        let (circle, material_circle) = material1();
+
+        number_of_steps = 10;
+        test_steps!( // !!!! Get a proper main loop !!!!
+
+            // testing input
+            assert_eq!(pointer.state, BtnState::Inactive);
+            assert_eq!(pointer.tracked, BtnState::Inactive);
+            if iter == 0 {
+                Input::subscribe(InputSource::CanPress, BtnState::JustActive, Some(input_cb));
+                Input::fire_event(InputSource::CanPress, BtnState::JustActive, &pointer);
+            } else if iter == 1 {
+                 Input::fire_event(pointer.source, BtnState::JustActive, &pointer);
+            } else if iter == 8 {
+                Input::unsubscribe(InputSource::CanPress, BtnState::JustInactive, Some(input_cb));
+            }
+
+
+            // testing material1
+            circle.draw(token, &material_circle,  Matrix::IDENTITY, None, None);
+        );
+    }
     Sk::shutdown();
 }
 

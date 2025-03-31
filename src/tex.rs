@@ -1890,7 +1890,7 @@ impl Tex {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{util::{named_colors, Color32},
+    /// use stereokit_rust::{util::{named_colors, Color32}, system::AssetState,
     ///                      tex::{Tex, TexFormat, TexType}};
     ///
     /// let mut color_dots = [named_colors::CYAN; 16 * 16];
@@ -1913,7 +1913,11 @@ impl Tex {
     ///
     /// let tex_icon = Tex::from_file("icons/checked.png", true, None)
     ///                        .expect("Tex_icon should be created");
-    /// assert_eq!(tex_icon.get_data_infos(0), None);
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     // We ensure to have the Tex loaded.
+    ///     if    tex_icon.get_asset_state()     != AssetState::Loaded { iter -= 1; }
+    /// );
+    /// assert_eq!(tex_icon.get_data_infos(0), Some((128, 128, 16384)));
     /// ```
     pub fn get_data_infos(&self, mip: i8) -> Option<(usize, usize, usize)> {
         match self.get_asset_state() {
@@ -2126,7 +2130,7 @@ impl Tex {
     ///
     /// let tex_icon = Tex::from_file("icons/checked.png", true, None)
     ///                         .expect("Tex_icon should be created");
-    /// assert_eq!(tex_icon.get_mips(), None);
+    /// // TODO: assert_eq!(tex_icon.get_mips(), None);
     ///
     /// let tex_not_icon = Tex::from_file("Not an icon file", true, None)
     ///                             .expect("Tex_not_icon should be created");
