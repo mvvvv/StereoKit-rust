@@ -8,6 +8,38 @@ use crate::{
 
 pub const ENABLE_FLY_OVER: &str = "Tool_EnableFlyOver";
 
+/// FlyOver is a tool that allows you to fly around the scene using the controller sticks.
+/// ### Fields that can be changed before initialization:
+/// * `move_speed` - The speed at which the camera moves. Default is 2.0.
+/// * `rotate_speed` - The speed at which the camera rotates. Default is 90.0°
+/// * `enabled` - Whether the tool is enabled or not at start. Default is true.
+///
+/// ### Events this stepper is listening to:
+/// * `ENABLE_FLY_OVER` - Event that triggers when the tool is enabled ("true") or disabled ("false").
+///
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{maths::{Vec3, Matrix},
+///                      tools::fly_over::{FlyOver, ENABLE_FLY_OVER},
+///                      system::Input, system::{Key, Pivot}, sprite::Sprite};
+///
+/// let sprite = Sprite::from_file("icons/fly_over.png", None, Some("MY_ID"))
+///                          .expect("fly_over.png should be able to create sprite");
+///
+/// let mut fly_over = FlyOver::default();
+/// sk.send_event(StepperAction::add_default::<FlyOver>("FlyOver"));
+///
+/// filename_scr = "screenshots/fly_over.jpeg"; fov_scr = 45.0;
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
+///     Input::key_inject_press(Key::Left);
+///     if iter == number_of_steps  {
+///        sk.send_event(StepperAction::event( "main", ENABLE_FLY_OVER, "false",));
+///     }
+/// );
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/fly_over.jpeg" alt="screenshot" width="200">
 #[derive(IStepper)]
 pub struct FlyOver {
     id: StepperId,

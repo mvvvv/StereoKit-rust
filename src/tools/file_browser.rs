@@ -13,7 +13,50 @@ pub const FILE_BROWSER_OPEN: &str = "File_Browser_open";
 
 /// A basic file browser to open existing file on PC and Android. Must be launched by an other stepper which has to be
 /// set in caller.
-
+/// ### Fields that can be changed before initialization:
+/// * `caller` - The id of the stepper that launched the file browser and is waiting for a FILE_BROWSER_OPEN message.
+/// * `dir` - The directory to show.
+/// * `exts` - The file extensions to filter.
+/// * `window_pose` - The pose where to show the file browser window.
+/// * `window_size` - The size of the file browser window. Default is Vec2{x: 0.5, y: 0.0}.
+/// * `close_on_select` - If true, the file browser will close when a file is selected. Default is true.
+///
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{maths::{Vec2, Vec3}, sk::SkInfo, ui::Ui, tools::os_api::get_external_path,
+///     tools::file_browser::{FileBrowser, FILE_BROWSER_OPEN}, };
+///
+/// let id = "main".to_string();
+/// const BROWSER_SUFFIX: &str = "_file_browser";
+/// let mut file_browser = FileBrowser::default();
+/// let sk_info  = Some(sk.get_sk_info_clone());
+///
+/// if cfg!(target_os = "android") {
+///     if let Some(img_dir) = get_external_path(&sk_info) {
+///         file_browser.dir = img_dir;
+///     }
+/// }
+/// if !file_browser.dir.exists() {
+///     file_browser.dir = std::env::current_dir().unwrap_or_default().join("tests");
+/// }
+/// file_browser.caller = id.clone();
+/// file_browser.window_pose = Ui::popup_pose([-0.02, 0.04, 1.40]);
+/// file_browser.window_size = Vec2{x: 0.16, y: 0.0};
+/// SkInfo::send_event(&sk_info, StepperAction::add(id.clone() + BROWSER_SUFFIX, file_browser));
+///
+/// filename_scr = "screenshots/file_browser.jpeg";
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+///     for event in token.get_event_report() {
+///         if let StepperAction::Event(stepper_id, key, value) = event{
+///             if stepper_id == &id && key.eq(FILE_BROWSER_OPEN) {
+///                println!("Selected file: {}", value);
+///             }   
+///         }
+///     }
+/// );
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/file_browser.jpeg" alt="screenshot" width="200">
 #[derive(IStepper)]
 pub struct FileBrowser {
     id: StepperId,

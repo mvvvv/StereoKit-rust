@@ -12,6 +12,8 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::{cell::RefCell, rc::Rc};
 
+/// When browsing files because of Android we need this API.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PathEntry {
     File(OsString),
     Dir(OsString),
@@ -32,7 +34,12 @@ pub fn get_assets_dir() -> String {
     std::env::var("SK_RUST_ASSETS_DIR").unwrap_or("assets".into())
 }
 
-/// Read all the assets of a given assets sub directory
+/// Read all the assets of a given assets sub directory.
+/// * `sk_info` - The SkInfo smart pointer
+/// * `sub_dir` - The sub directory of the assets directory.
+/// * `file_extensions` - The file extensions to filter by.
+///
+/// Returns a vector of PathEntry.
 #[cfg(target_os = "android")]
 pub fn get_assets(
     sk_info: &Option<Rc<RefCell<SkInfo>>>,
@@ -80,7 +87,42 @@ pub fn get_assets(
     vec
 }
 
-/// Read all the assets of a given assets sub directory
+/// Read all the assets of a given assets sub directory.
+/// * `sk_info` - The SkInfo smart pointer
+/// * `sub_dir` - The sub directory of the assets directory.
+/// * `file_extensions` - The file extensions to filter by.
+///
+/// Returns a vector of PathEntry.
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{tools::os_api::{get_assets, PathEntry}, include_asset_tree};
+///
+/// let sk_info  = Some(sk.get_sk_info_clone());
+///
+/// const ASSET_DIR: &[&str] = include_asset_tree!("assets");
+///
+/// let mut file_found = false;
+/// let exts = vec![".png".into(), ".jpg".into(), ".jpeg".into()];
+/// for dir_name_str in ASSET_DIR {
+///     let dir_name_str = if dir_name_str.starts_with("assets/") {
+///         &dir_name_str[7..] // remove "assets/" from the path
+///     } else {
+///         &dir_name_str[6..]  // remove "assets" from the path
+///     };
+///     println!("{} :", dir_name_str);
+///     let mut asset_sub_dir = std::path::PathBuf::new();
+///     asset_sub_dir.push(dir_name_str);
+///     for file in get_assets(&sk_info, asset_sub_dir, &exts) {
+///         println!("--- {:?}", file);
+///         if let PathEntry::File(file) = file {
+///             if file.into_string().unwrap_or_default()
+///                    .ends_with("log_viewer.png") { file_found = true}
+///         }
+///     }
+/// }
+/// assert!(file_found);
+/// ```
 #[cfg(not(target_os = "android"))]
 pub fn get_assets(
     _sk_info: &Option<Rc<RefCell<SkInfo>>>,
@@ -145,7 +187,7 @@ pub fn get_internal_path(sk_info: &Option<Rc<RefCell<SkInfo>>>) -> Option<PathBu
     app.internal_data_path()
 }
 
-/// Get the path to internal data directory for non android
+/// Get the path to external data directory for non android
 #[cfg(not(target_os = "android"))]
 pub fn get_internal_path(_sk_info: &Option<Rc<RefCell<SkInfo>>>) -> Option<PathBuf> {
     None
@@ -164,7 +206,7 @@ pub fn get_external_path(sk_info: &Option<Rc<RefCell<SkInfo>>>) -> Option<PathBu
     app.external_data_path()
 }
 
-/// Get the path to internal data directory for non android (assets)
+/// Get the path to external data directory for non android (assets)
 #[cfg(not(target_os = "android"))]
 pub fn get_external_path(_sk_info: &Option<Rc<RefCell<SkInfo>>>) -> Option<PathBuf> {
     use std::env;
@@ -205,6 +247,27 @@ pub fn open_asset(sk_info: &Option<Rc<RefCell<SkInfo>>>, asset_path: impl AsRef<
 }
 
 /// Open an asset like a file
+/// * `sk_info` - The SkInfo smart pointer
+/// * `asset_path` - The path to the asset.
+///
+/// Returns a File if the asset was opened successfully, None otherwise.
+///
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::tools::os_api::open_asset;
+/// use std::io::Read;
+///
+/// let sk_info  = Some(sk.get_sk_info_clone());
+///
+/// let asset_path = "textures/readme.md";
+///
+/// let mut file = open_asset(&sk_info, asset_path).expect("File readme should be opened");
+///
+/// let mut buffer = String::new();
+/// file.read_to_string(&mut buffer).expect("File readme should be read");
+/// assert!(buffer.starts_with("# Images"));
+/// ```
 #[cfg(not(target_os = "android"))]
 pub fn open_asset(_sk_info: &Option<Rc<RefCell<SkInfo>>>, asset_path: impl AsRef<Path>) -> Option<File> {
     use std::env;
@@ -215,15 +278,50 @@ pub fn open_asset(_sk_info: &Option<Rc<RefCell<SkInfo>>>, asset_path: impl AsRef
 }
 
 /// Read the files and eventually the sub directory of a given directory
+/// * `_sk_info` - The SkInfo smart pointer
+/// * `dir` - The directory to read.
+/// * `file_extensions` - The file extensions to filter by.
+/// * `show_other_dirs` - If true, the sub directories will be shown.
+///
+/// Returns a vector of PathEntry.
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::tools::os_api::{get_files, PathEntry};
+///
+/// let sk_info  = Some(sk.get_sk_info_clone());
+///
+/// let mut file_found = false;
+/// let mut dir_found = false;
+/// let exts = vec![".png".into(), ".jpg".into(), ".jpeg".into()];
+/// let mut asset_sub_dir = std::path::PathBuf::new();
+/// asset_sub_dir.push("assets/textures");
+/// for file in get_files(&sk_info, asset_sub_dir, &exts, true) {
+///     println!("--- {:?}", file);
+///     match file {
+///         PathEntry::File(file) => {
+///             if file.into_string().unwrap_or_default()
+///                    .ends_with("log_viewer.jpeg") { file_found = true }
+///         }
+///         PathEntry::Dir(dir) => {
+///             if dir.into_string().unwrap_or_default()
+///                   .ends_with("water") { dir_found = true }
+///         }
+///     }
+/// }
+/// assert!(file_found);
+/// assert!(dir_found);
+/// ```
 pub fn get_files(
     _sk_info: &Option<Rc<RefCell<SkInfo>>>,
     dir: PathBuf,
     file_extensions: &Vec<String>,
-    show_other_dirs: bool,
+    show_sub_dirs: bool,
 ) -> Vec<PathEntry> {
     use std::fs::read_dir;
     let mut exts = vec![];
     for extension in file_extensions {
+        let extension = extension[1..].to_string();
         exts.push(OsString::from(extension));
     }
     let mut vec = vec![];
@@ -241,7 +339,7 @@ pub fn get_files(
                             vec.push(PathEntry::File(file.file_name()))
                         }
                     }
-                } else if show_other_dirs && file.path().is_dir() {
+                } else if show_sub_dirs && file.path().is_dir() {
                     vec.push(PathEntry::Dir(file.file_name()))
                 }
             }
@@ -250,7 +348,7 @@ pub fn get_files(
     vec
 }
 
-/// Open winit IME keyboard
+/// Open winit IME keyboard. Does nothing on Quest
 #[cfg(target_os = "android")]
 pub fn show_soft_input_ime(sk_info: &Option<Rc<RefCell<SkInfo>>>, show: bool) -> bool {
     if sk_info.is_none() {
@@ -273,7 +371,7 @@ pub fn show_soft_input_ime(_sk_info: &Option<Rc<RefCell<SkInfo>>>, _show: bool) 
     false
 }
 
-/// Open Android IMS keyboard
+/// Open Android IMS keyboard. This doesn't work for accentuated characters.
 #[cfg(target_os = "android")]
 pub fn show_soft_input(show: bool) -> bool {
     use jni::objects::JValue;
@@ -372,6 +470,36 @@ pub fn show_soft_input(_show: bool) -> bool {
 pub const USUAL_FPS_SUSPECTS: [i32; 12] = [30, 60, 72, 80, 90, 100, 110, 120, 144, 165, 240, 360];
 
 /// Return and maybe Log all the display refresh rates available.
+/// * `with_log` - If true, log the refresh rates available
+///
+/// ### Examples
+/// ```
+/// use stereokit_rust::system::BackendOpenXR;
+/// BackendOpenXR::request_ext("XR_FB_display_refresh_rate");
+///
+/// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+///
+/// use stereokit_rust::tools::os_api::{get_all_display_refresh_rates,
+///                                     get_display_refresh_rate,
+///                                     set_display_refresh_rate};
+///
+/// let refresh_rate_editable = BackendOpenXR::ext_enabled("XR_FB_display_refresh_rate");
+/// if refresh_rate_editable {
+///     let rates = get_all_display_refresh_rates(true);
+///     assert!(!rates.is_empty());
+///     let rate = get_display_refresh_rate().unwrap_or(0.0);
+///     assert!(rate >= 20.0);
+///     assert!(set_display_refresh_rate(60.0, true));
+///     let rate = get_display_refresh_rate().unwrap_or(0.0);
+///     assert_eq!(rate, 60.0);
+/// } else {
+///     let rates = get_all_display_refresh_rates(true);
+///     // assert!(rates.len(), 5); // with 5 value 0.0
+///     let rate = get_display_refresh_rate();
+///     assert_eq!(rate , None);
+///     assert_eq!(set_display_refresh_rate(60.0, true), false);
+/// }
+/// ```
 pub fn get_all_display_refresh_rates(with_log: bool) -> Vec<f32> {
     let mut array = [0.0; 40];
     let mut count = 5u32;
@@ -416,8 +544,11 @@ pub fn get_all_display_refresh_rates(with_log: bool) -> Vec<f32> {
     array[0..(count as usize)].into()
 }
 
-/// Get the display rates available from the given list
-/// (see also USUAL_FPS_SUSPECT)
+/// Get the display rates available from the given list. See [`USUAL_FPS_SUSPECTS`])
+/// * `fps_to_get` - The list of fps to test.
+/// * `with_log` - If true, will log the available rates.
+///
+/// see also [`get_all_display_refresh_rates`]
 pub fn get_display_refresh_rates(fps_to_get: &[i32], with_log: bool) -> Vec<f32> {
     let default_refresh_rate = get_display_refresh_rate();
     let mut available_rates = vec![];
@@ -439,7 +570,10 @@ pub fn get_display_refresh_rates(fps_to_get: &[i32], with_log: bool) -> Vec<f32>
     available_rates
 }
 
-/// Get the current display rate if possible
+/// Get the current display rate if possible.
+///
+/// see also [`set_display_refresh_rate`]
+/// see example in [`get_all_display_refresh_rates`]
 pub fn get_display_refresh_rate() -> Option<f32> {
     if BackendOpenXR::ext_enabled("XR_FB_display_refresh_rate") {
         if let Some(get_default_rate) =
@@ -462,9 +596,13 @@ pub fn get_display_refresh_rate() -> Option<f32> {
     }
 }
 
-/// set the current display rate if possible.
-/// Possible values on Quest are 60 - 80 - 72 - 90 - 120
+/// Set the current display rate if possible.
+/// Possible values on Quest and WiVRn are 60 - 80 - 72 - 80 - 90 - 120
 /// returns true if the given value was accepted
+/// * `rate` - the rate to set
+/// * `with_log` - if true, will log the error if the rate was not accepted.
+///
+/// see example in [`get_all_display_refresh_rates`]
 pub fn set_display_refresh_rate(rate: f32, with_log: bool) -> bool {
     if BackendOpenXR::ext_enabled("XR_FB_display_refresh_rate") {
         //>>>>>>>>>>> Set the value
@@ -488,8 +626,44 @@ pub fn set_display_refresh_rate(rate: f32, with_log: bool) -> bool {
         false
     }
 }
-/// Get the list of environnement blend_modes available on this device
-/// see also [`crate::util::Device::valid_blend()`]
+
+/// Get the list of environnement blend_modes available on this device.
+/// * `with_log` - if true, will log the available blend modes.
+///
+/// see also [`crate::util::Device::valid_blend`]
+///
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+///
+/// use stereokit_rust::{tools::os_api::get_env_blend_modes, util::Device, sk::DisplayBlend};
+/// use openxr_sys::EnvironmentBlendMode;
+///
+/// let blend_modes = get_env_blend_modes(true);
+/// if blend_modes.len() > 0 {
+///     assert!(blend_modes.contains(&EnvironmentBlendMode::OPAQUE));
+///     if blend_modes.contains(&EnvironmentBlendMode::ADDITIVE)
+///     || blend_modes.contains(&EnvironmentBlendMode::ALPHA_BLEND)
+///     {
+///        println!("Passthrough available !!");
+///        // we can activate passthrough:
+///        Device::display_blend(DisplayBlend::AnyTransparent);
+///     }
+/// } else {
+///     // Simplest way to check if passthrough is available:
+///     assert_eq!(Device::valid_blend(DisplayBlend::AnyTransparent), false);
+/// }
+///
+/// test_steps!( // !!!! Get a proper main loop !!!!
+///     if iter == 0 {
+///         // activate passthrough if available
+///         Device::display_blend(DisplayBlend::AnyTransparent);
+///     } else if iter == 1 {
+///         // deactivate passthrough
+///         Device::display_blend(DisplayBlend::Opaque);
+///     }
+/// );
+/// ```
 pub fn get_env_blend_modes(with_log: bool) -> Vec<EnvironmentBlendMode> {
     //>>>>>>>>>>> Get the env blend mode
     let mut count = 0u32;

@@ -32,6 +32,48 @@ pub const CAPTURE_TEXTURE_ID: &str = "Uniq_ScreenshotTexture";
 const BROWSER_SUFFIX: &str = "_file_browser";
 
 /// A simple screenshot viewer to take / save / display screenshots.
+/// ### Fields that can be changed before initialization:
+/// * `picture_size` - The size of the picture to take. Default is Vec2::new(800.0, 600.0).
+/// * `field_of_view` - The field of view of the camera. Default is 90.0.
+/// * `windows_pose` - The initial pose of the window.
+/// * `window_size` - The size of the window. Default is Vec2::new(42.0, 37.0) * CM.
+/// * `enabled` - If the screenshot viewer is enabled at start. Default is `true`
+///
+/// ### Events this stepper is listening to:
+/// * `SHOW_SCREENSHOT_WINDOW` - Event that triggers when the window is visible ("true") or hidden ("false").
+/// * `FILE_BROWSER_OPEN` - Event that triggers when a file as been selected with the file browser. You can use this
+///   event too if you want to load a screenshot.
+///
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{maths::Vec3, sk::SkInfo, ui::Ui,
+///                      tools::{file_browser::FILE_BROWSER_OPEN,
+///                              screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW}}};
+///
+/// let sk_info  = Some(sk.get_sk_info_clone());
+///
+/// let mut screenshot_viewer = ScreenshotViewer::default();
+/// screenshot_viewer.window_pose = Ui::popup_pose([0.0, 0.15, 1.3]);
+/// sk.send_event(StepperAction::add("ScrViewer", screenshot_viewer));
+///
+/// let screenshot_path = std::env::current_dir().unwrap().join("assets/textures/screenshot.raw");
+/// assert!(screenshot_path.exists());
+/// let scr_file = screenshot_path.to_str().expect("String should be valid");
+///
+/// number_of_steps = 4;
+/// filename_scr = "screenshots/screenshot_viewer.jpeg";
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+///     if iter == 0 {
+///        sk.send_event(StepperAction::event( "main", SHOW_SCREENSHOT_WINDOW,"false",));
+///     } else if iter == 1 {
+///        sk.send_event(StepperAction::event( "main", SHOW_SCREENSHOT_WINDOW,"true",));
+///        // The image is not visible at the next step, but at the step after.
+///        sk.send_event(StepperAction::event( "ScrViewer", FILE_BROWSER_OPEN, scr_file));
+///     }
+/// );
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/screenshot_viewer.jpeg" alt="screenshot" width="200">
 #[derive(IStepper)]
 pub struct ScreenshotViewer {
     id: StepperId,
@@ -41,7 +83,7 @@ pub struct ScreenshotViewer {
 
     pub picture_size: Vec2,
     pub field_of_view: f32,
-    pub pose: Pose,
+    pub window_pose: Pose,
     pub window_size: Vec2,
     tex: Tex,
     screen: Option<Sprite>,
@@ -62,7 +104,7 @@ impl Default for ScreenshotViewer {
 
             picture_size,
             field_of_view: 90.0,
-            pose: Pose::new(Vec3::new(-0.7, 1.0, -0.3), Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0)))),
+            window_pose: Pose::new(Vec3::new(-0.7, 1.0, -0.3), Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0)))),
             window_size: Vec2::new(42.0, 37.0) * CM,
             tex,
             screen: None,
@@ -103,6 +145,7 @@ impl ScreenshotViewer {
             let mut file_name = FILE_NAME.lock().unwrap();
             file_name.clear();
             file_name.push_str(value);
+            self.screen = None;
         }
     }
 
@@ -112,7 +155,7 @@ impl ScreenshotViewer {
             return;
         };
 
-        Ui::window_begin("Screenshot", &mut self.pose, Some(self.window_size), None, None);
+        Ui::window_begin("Screenshot", &mut self.window_pose, Some(self.window_size), None, None);
         if let Some(sprite) = &self.screen {
             Ui::image(sprite, Vec2::new(0.4, 0.3));
         } else {
@@ -162,7 +205,6 @@ impl ScreenshotViewer {
         }
         Ui::hseparator();
         if Ui::button("Open", None) {
-            self.screen = None;
             if true {
                 let mut file_browser = FileBrowser::default();
 
@@ -177,31 +219,28 @@ impl ScreenshotViewer {
                 file_browser.caller = self.id.clone();
                 file_browser.window_pose = Ui::popup_pose(Vec3::ZERO);
                 SkInfo::send_event(&self.sk_info, StepperAction::add(self.id.clone() + BROWSER_SUFFIX, file_browser));
-            } else {
-                self.screen = None;
-                if !Platform::get_file_picker_visible() {
-                    Platform::file_picker_sz(
-                        PickerMode::Open,
-                        move |ok, file_name| {
-                            let mut name = FILE_NAME.lock().unwrap();
-                            name.clear();
-                            if ok {
-                                Log::diag(format!("Open screenshot {}", file_name));
-                                name.push_str(file_name);
-                                Platform::file_picker_close();
-                            } else {
-                                // großen tricherie
-                                name.push_str("aaa.raw");
-                            }
-                        },
-                        &SCREENSHOT_FORMATS,
-                    )
-                }
+            } else if !Platform::get_file_picker_visible() {
+                Platform::file_picker_sz(
+                    PickerMode::Open,
+                    move |ok, file_name| {
+                        let mut name = FILE_NAME.lock().unwrap();
+                        name.clear();
+                        if ok {
+                            Log::diag(format!("Open screenshot {}", file_name));
+                            name.push_str(file_name);
+                            Platform::file_picker_close();
+                        } else {
+                            // großen tricherie
+                            name.push_str("aaa.raw");
+                        }
+                    },
+                    &SCREENSHOT_FORMATS,
+                )
             }
         }
         Ui::same_line();
         if Ui::button("Take Screenshot", None) {
-            let mut camera_at = self.pose;
+            let mut camera_at = self.window_pose;
             camera_at.orientation = Quat::look_dir(camera_at.get_forward() * -1.0);
             let width_i = self.picture_size.x as i32;
             let height_i = self.picture_size.y as i32;

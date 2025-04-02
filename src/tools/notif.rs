@@ -8,6 +8,30 @@ use crate::{
 };
 
 /// A simple notification to display a text for a given duration in second.
+/// ### Fields that can be changed before initialization:
+/// * `text` - The text to display. Default is "???".
+/// * `duration` - The duration in seconds to display the text. Default is 5.0.
+/// * `position` - The position of the text. Default is Vec3::new(0.0, -0.2, -0.2).
+/// * `text_style` - The style of the text. Default is a black text with a size of 0.03 and a shader from "shaders/hud_text.hlsl.sks".
+///
+/// ### Events this stepper is listening to:
+/// None, This stepper does not listen to any event.
+///
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::tools::notif::HudNotification;
+///
+/// let mut hud_notif = HudNotification::default();
+/// hud_notif.text = "Notification!".into();
+/// hud_notif.text_style.layout_height(0.2);
+/// sk.send_event(StepperAction::add("HudNotification1", hud_notif));
+///
+/// filename_scr = "screenshots/hud_notification.jpeg";
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+/// );
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/hud_notification.jpeg" alt="screenshot" width="200">
 #[derive(IStepper)]
 pub struct HudNotification {
     id: StepperId,

@@ -11,13 +11,58 @@ use std::sync::Mutex;
 
 pub const SHOW_LOG_WINDOW: &str = "Tool_ShowLogWindow";
 
+/// A simple log window to display the logs.
+/// ### Fields that can be changed before initialization:
+/// * `log_log` - The log mutex to listen to.
+/// * `enabled` - Whether the tool is enabled or not at start.
+/// * `window_pose` - The pose where to show the log window.
+/// * `x_len` - The width in number of characters.
+/// * `y_len` - The height of the log window in number of lines.
+///
+/// ### Events this stepper is listening to:
+/// * `SHOW_LOG_WINDOW` - Event that triggers when the window is visible ("true") or hidden ("false").
+///
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{maths::Vec3, ui::Ui,
+///                      tools::log_window::{LogWindow, basic_log_fmt, SHOW_LOG_WINDOW},
+///                      system::{LogLevel, LogItem,  Log}};
+/// use std::sync::Mutex;
+///
+/// // Somewhere to copy the log
+/// static LOG_LOG: Mutex<Vec<LogItem>> = Mutex::new(vec![]);
+/// let fn_mut = |level: LogLevel, log_text: &str| {
+///    let mut items = LOG_LOG.lock().unwrap();
+///    basic_log_fmt(level, log_text, 20, items);
+/// };
+/// Log::subscribe(fn_mut);
+/// let mut log_window = LogWindow::new(&LOG_LOG);
+/// log_window.window_pose = Ui::popup_pose([0.0, 0.04, 1.40]);
+/// log_window.x_len = 20.0;
+/// log_window.y_len = 4.0;
+///
+/// sk.send_event(StepperAction::add("LogWindow", log_window));
+///
+/// filename_scr = "screenshots/log_window.jpeg";
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+///     if iter == 0  {
+///         Log::info("Info log message");
+///         Log::warn("Warning log message");
+///         Log::err ("Error log message");
+///     } else  if iter == number_of_steps  {
+///        sk.send_event(StepperAction::event( "main", SHOW_LOG_WINDOW, "false",));
+///     }
+/// );
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/log_window.jpeg" alt="screenshot" width="200">
 #[derive(IStepper)]
 pub struct LogWindow<'a> {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
     pub enabled: bool,
 
-    pub pose: Pose,
+    pub window_pose: Pose,
     pub x_len: f32,
     pub y_len: f32,
     style_diag: TextStyle,
@@ -50,7 +95,7 @@ impl<'a> LogWindow<'a> {
             sk_info: None,
             enabled,
 
-            pose,
+            window_pose: pose,
             x_len,
             y_len,
             style_diag,
@@ -76,7 +121,7 @@ impl<'a> LogWindow<'a> {
     }
     /// Called from IStepper::step, after check_event here you can draw your UI
     fn draw(&mut self, token: &MainThreadToken) {
-        Ui::window_begin("Log", &mut self.pose, Some(Vec2::new(self.x_len, 0.0) * CM), None, None);
+        Ui::window_begin("Log", &mut self.window_pose, Some(Vec2::new(self.x_len, 0.0) * CM), None, None);
         self.draw_logs(token);
         Ui::hseparator();
         Ui::window_end();
@@ -160,5 +205,35 @@ impl<'a> LogWindow<'a> {
             }
         }
         Ui::layout_pop();
+    }
+}
+
+/// A basic log formatter that splits long lines and counts repeated lines.
+/// * `level` - The log level.
+/// * `log_text` - The log text.
+/// * `line_len` - The maximum length of a line.
+pub fn basic_log_fmt(
+    level: LogLevel,
+    log_text: &str,
+    line_len: usize,
+    mut items: std::sync::MutexGuard<'_, Vec<LogItem>>,
+) {
+    for line_text in log_text.lines() {
+        let subs = line_text.as_bytes().chunks(line_len);
+        for (pos, sub_line) in subs.enumerate() {
+            if let Ok(mut sub_string) = String::from_utf8(sub_line.to_vec()) {
+                if pos > 0 {
+                    sub_string.insert_str(0, "»»»»");
+                }
+                if let Some(item) = items.last_mut() {
+                    if item.text == sub_string {
+                        item.count += 1;
+                        continue;
+                    }
+                }
+
+                items.push(LogItem { level, text: sub_string.to_owned(), count: 1 });
+            };
+        }
     }
 }

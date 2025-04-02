@@ -19,14 +19,22 @@ use std::ptr::null_mut;
 /// The StepperAction to trigger with the value "0"/"1" to Deactivate/Activate the passthrough.
 pub const PASSTHROUGH_FLIP: &str = "PassthroughFlip";
 
+/// **Not needed anymore see [`crate::tools::os_api::get_env_blend_modes`] instead!**
 ///
+/// A stepper to manage the passthrough with the XR_FB_passthrough extension for the Quests.
 ///
 ///  This is a rust copycat of <https://github.com/StereoKit/StereoKit/blob/master/Examples/StereoKitTest/Tools/PassthroughFBExt.cs>
-///
 ///
 /// Use PassthroughFbExt::new(true) instead of Default if you want to have it at start up.
 ///
 ///
+/// ### Fields that can be changed before initialization:
+/// None
+///
+/// ### Events this stepper is listening to:
+/// * `PASSTHROUGH_FLIP` - Deactivate("0")/Activate the passthrough.
+///
+/// ### Examples
 /// ```
 /// // The folowing line must be added before initializing sk:
 /// stereokit_rust::system::BackendOpenXR::request_ext("XR_FB_passthrough");
@@ -66,7 +74,6 @@ pub const PASSTHROUGH_FLIP: &str = "PassthroughFlip";
 ///          Log::diag("Deactivate passthrough");
 ///      }
 ///      sk.send_event(StepperAction::event("main".into(), PASSTHROUGH_FLIP, string_value))
-///      
 ///  }
 /// ```
 

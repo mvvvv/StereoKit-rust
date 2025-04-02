@@ -5,7 +5,30 @@ use crate::{
     system::{Text, TextStyle},
     util::{Color32, named_colors},
 };
+
 /// Title is a basic Stepper to show a big title in the scene.
+/// ### Fields that can be changed before initialization:
+/// * `transform` - The transform of the text. Default is [0.0, 1.0, -0.5] * Y_180°
+/// * `text` - The text to display. Default is "Title".
+/// * `text_style` - The style of the text. Default is a white text with a size of 0.5 and the default font.
+///
+/// ### Events this stepper is listening to:
+/// None, This stepper does not listen to any event.
+///
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{tools::title::Title, util::named_colors, maths::Matrix};
+///
+/// let mut title = Title::new("My Title", Some(named_colors::RED), None, None);
+/// title.transform = Matrix::tr(&([-0.2, 0.0, -0.3].into()), &([0.0, 160.0, 0.0].into()));
+/// sk.send_event(StepperAction::add("Title", title));
+///
+/// filename_scr = "screenshots/title.jpeg";
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+/// );
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/title.jpeg" alt="screenshot" width="200">
 #[derive(IStepper, Clone)]
 pub struct Title {
     id: StepperId,
@@ -13,7 +36,7 @@ pub struct Title {
 
     pub transform: Matrix,
     pub text: String,
-    text_style: Option<TextStyle>,
+    pub text_style: Option<TextStyle>,
 }
 
 unsafe impl Send for Title {}

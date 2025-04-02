@@ -1,14 +1,31 @@
 use std::{
     ffi::OsStr,
-    fs::{self, create_dir, File},
+    fs::{self, File, create_dir},
     io::{self, BufRead, Error},
     path::{Path, PathBuf},
-    process::{exit, Command},
+    process::{Command, exit},
 };
 
 use crate::tools::os_api::{get_assets_dir, get_shaders_sks_dir, get_shaders_source_dir};
 
-/// Reaching the skshaderc of this platform
+/// Reaching the skshaderc of this platform.
+/// * `bin_dir` - The directory of the binaries.
+/// * `with_wine` - Whether to use wine to run skshaderc.exe on linux.
+///
+/// Returns the path to the skshaderc executable.
+///
+/// # Examples
+/// ```
+/// use std::path::PathBuf;
+/// use stereokit_rust::tools::build_tools::get_skshaderc;
+/// let bin_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+/// let skshaderc_path = get_skshaderc(bin_dir.clone(), false);
+/// assert!(skshaderc_path.exists());
+///
+/// let skshaderc_exe_path = get_skshaderc(bin_dir, true);
+/// assert!(skshaderc_exe_path.exists());
+/// assert!(skshaderc_exe_path.ends_with("skshaderc.exe"));
+/// ```
 pub fn get_skshaderc(bin_dir: PathBuf, with_wine: bool) -> PathBuf {
     let target_os = if with_wine {
         "win32"
@@ -43,7 +60,13 @@ pub fn get_skshaderc(bin_dir: PathBuf, with_wine: bool) -> PathBuf {
     skshaderc
 }
 
-/// compile hsls file to sks
+/// Compile hsls file to sks. See config.toml to change the default values.
+/// * `project_dir` - The directory of the project. By default it's  the current directory where `shaderc_src` directory
+///   is.
+/// * `target_dir` - The directory where the sks files will be generated. By default it's the `assets/shaders/`
+///   directory.
+/// * `options` - The options to pass to skshaderc except -i and -o  that are `project_dir` and `target_dir`.
+/// * `with_wine` - If true, use wine to run `skshaderc.exe` on linux.
 pub fn compile_hlsl(
     project_dir: PathBuf,
     target_dir: Option<PathBuf>,
@@ -133,7 +156,9 @@ pub fn compile_hlsl(
     Ok(true)
 }
 
-/// Recursive fn to copy all the content of a directory
+/// Recursive fn to copy all the content of a directory to another one.
+/// * `src` - The source directory.
+/// * `dst` - The destination directory.
 pub fn copy_tree(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> std::io::Result<()> {
     if let Err(_err) = fs::create_dir(&dst) {}
     for entry in fs::read_dir(src)?.flatten() {
@@ -147,9 +172,18 @@ pub fn copy_tree(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> std::io::Resul
     Ok(())
 }
 
-/// Reading a Cargo.toml file, looking for a name
+/// Reading Cargo.toml file of the current dir, looking for a \[package\]/name field and returning its value.
+///
+/// Returns the name of the package as a String or an Error.
+/// ### Examples
+/// ```
+/// use stereokit_rust::tools::build_tools::get_cargo_name;
+/// // Create a dummy Cargo.toml file for testing
+/// let name = get_cargo_name().expect("name should be found");
+/// assert_eq!(name, "stereokit-rust");
+/// ```
 pub fn get_cargo_name() -> Result<String, Error> {
-    // File Cargo.toùm must exist in the current path
+    // File Cargo.toml must exist in the current path
     let lines = {
         let file = File::open("./Cargo.toml")?;
         io::BufReader::new(file).lines()

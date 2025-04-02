@@ -204,6 +204,17 @@ pub mod system;
 /// [![SHCubemap](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sh_cubemap.jpeg)](tex::SHCubemap)
 pub mod tex;
 
+/// Many `non-canonical`` tools related structs, enums and functions.
+///
+/// ## Examples
+/// which are also unit tests:
+///
+/// [![FileBrowser](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/file_browser.jpeg)](tools::file_browser::FileBrowser)
+/// [![FlyOver](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/fly_over.jpeg)](tools::fly_over::FlyOver)
+/// [![Log window](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/log_window.jpeg)](tools::log_window::LogWindow)
+/// [![Hud Notification](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/hud_notification.jpeg)](tools::notif::HudNotification)
+/// [![Screenshot viewer](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/screenshot_viewer.jpeg)](tools::screenshot::ScreenshotViewer)
+/// [![Title](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/title.jpeg)](tools::title::Title)
 pub mod tools;
 
 pub mod ui;

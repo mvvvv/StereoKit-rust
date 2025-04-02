@@ -11,7 +11,7 @@ use stereokit_rust::{
     sprite::Sprite,
     system::{Assets, Handed, Input, Renderer, Text, TextStyle},
     tex::Tex,
-    tools::os_api::{get_assets, PathEntry},
+    tools::os_api::{PathEntry, get_assets},
     ui::{Ui, UiBtnLayout},
     util::named_colors::{RED, YELLOW},
 };
@@ -117,7 +117,7 @@ impl Asset1 {
             self.asset_selected = 0;
         }
 
-        let mut new_asset_file = None;
+        let mut new_asset_files = None;
 
         // The window to select existing model in this crate
         let window_text = if self.exts.is_empty() {
@@ -162,7 +162,7 @@ impl Asset1 {
                 //---back button
                 if Ui::button("..", None) {
                     self.asset_sub_dir.pop();
-                    new_asset_file = Some(get_assets(&self.sk_info, self.asset_sub_dir.clone(), &self.exts));
+                    new_asset_files = Some(get_assets(&self.sk_info, self.asset_sub_dir.clone(), &self.exts));
                 }
             }
         }
@@ -182,13 +182,13 @@ impl Asset1 {
                     Ui::same_line();
                     if Ui::button(name, None) {
                         self.asset_sub_dir.push(name);
-                        new_asset_file = Some(get_assets(&self.sk_info, self.asset_sub_dir.clone(), &self.exts));
+                        new_asset_files = Some(get_assets(&self.sk_info, self.asset_sub_dir.clone(), &self.exts));
                     }
                 }
             }
         }
 
-        if let Some(new_value) = new_asset_file {
+        if let Some(new_value) = new_asset_files {
             self.asset_files = new_value;
             self.asset_selected = 0;
         }
