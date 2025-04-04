@@ -159,7 +159,7 @@ impl Text1 {
                 }
             }
 
-            if self.android_keyboard && Platform::get_keyboard_visible() {
+            if self.android_keyboard && Platform::is_keyboard_visible() {
                 Platform::keyboard_show(false, TextContext::Text);
                 Input::key_inject_press(Key::Left);
                 Input::key_inject_release(Key::Left);
@@ -177,7 +177,7 @@ impl Text1 {
             //     }
             // }
 
-            // if self.android_keyboard_ime && Platform::get_keyboard_visible() {
+            // if self.android_keyboard_ime && Platform::is_keyboard_visible() {
             //     Platform::keyboard_show(false, TextContext::Text);
             //     Input::key_inject_press(Key::Left);
             //     Input::key_inject_release(Key::Left);

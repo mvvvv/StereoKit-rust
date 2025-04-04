@@ -219,6 +219,7 @@ pub mod tools;
 
 pub mod ui;
 
+/// Many utility structs, enums and functions.
 pub mod util;
 
 /// Some of the errors you might encounter when using StereoKit-rust.
@@ -295,8 +296,10 @@ pub enum StereoKitError {
     SkInitEventLoop(#[from] winit::error::EventLoopError),
     #[error("failed to get a string from native C {0}")]
     CStrError(String),
-    #[error("failed to read a file {0}")]
-    ReadFileError(String),
+    #[error("failed to read a file {0}: {1}")]
+    ReadFileError(PathBuf, String),
+    #[error("failed to write a file {0}: {1}")]
+    WriteFileError(PathBuf, String),
     #[error("Directory {0} do not exist or is not a directory")]
     DirectoryError(String),
     #[error(transparent)]
