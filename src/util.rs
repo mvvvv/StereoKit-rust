@@ -1882,7 +1882,7 @@ impl Platform {
     /// Platform::file_picker.
     /// <https://stereokit.net/Pages/StereoKit/Platform/WriteFile.html>
     /// * `filename` - The path to the file to write.
-    /// * `text` -  	A string to write to the file. This gets converted to a UTF-8 encoding.
+    /// * `text` -  A string to write to the file. This gets converted to a UTF-8 encoding.
     ///
     /// see also [`platform_write_file_text`]
     /// ### Examples

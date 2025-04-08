@@ -1694,8 +1694,8 @@ impl Quat {
     /// * from - Position of where the 'object' is.
     /// * at - The position you want the 'object' to look at.
     /// * up - Look From/At positions describe X and Y axis rotation well, but leave Z Axis/Roll
-    ///        undefined. Providing an upDirection vector helps to indicate roll around the From/At line. If None : up
-    ///        direction will be (0,1,0), to prevent roll.    
+    ///   undefined. Providing an upDirection vector helps to indicate roll around the From/At line. If None : up
+    ///   direction will be (0,1,0), to prevent roll.    
     ///
     /// see also [`quat_lookat`][`quat_lookat_up`]
     #[inline]
