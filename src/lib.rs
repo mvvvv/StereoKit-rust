@@ -221,6 +221,7 @@ pub mod tools;
 ///
 /// ## Examples
 /// which are also unit tests:
+///
 /// [![Ui](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui.jpeg)](ui::Ui)
 /// [![Ui color_scheme](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_color_scheme.jpeg)](ui::Ui::color_scheme)
 /// [![Ui button](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_button.jpeg)](ui::Ui::button)
@@ -250,7 +251,7 @@ pub mod tools;
 /// [![Ui text](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_text.jpeg)](ui::Ui::text)
 /// [![Ui toggle](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_toggle.jpeg)](ui::Ui::toggle)
 /// [![Ui vslider](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_vslider.jpeg)](ui::Ui::vslider)
-/// [![Ui window_begin](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_window_begin.jpeg)](ui::Ui::window_begin)
+/// [![Ui window](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_window.jpeg)](ui::Ui::window_begin)
 pub mod ui;
 
 /// Many utility structs, enums and functions.
