@@ -4082,7 +4082,7 @@ impl Ui {
     ///
     /// filename_scr = "screenshots/ui_toggle.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Radio", &mut window_pose, None, None, None);
+    ///     Ui::window_begin("Toggle button", &mut window_pose, None, None, None);
     ///     Ui::toggle_img("A", &mut choiceA, &off, &on, Some(UiBtnLayout::Right),
     ///                    Some([0.06, 0.05].into()));
     ///     Ui::same_line();
