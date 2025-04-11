@@ -150,8 +150,7 @@ impl Text1 {
         Ui::next_line();
 
         if cfg!(target_os = "android") {
-            if let Some(new_value) = Ui::toggle("Android Keyboard", self.android_keyboard, None) {
-                self.android_keyboard = new_value;
+            if let Some(new_value) = Ui::toggle("Android Keyboard", &mut self.android_keyboard, None) {
                 if new_value {
                     Platform::force_fallback_keyboard(false);
                 } else {
@@ -185,7 +184,7 @@ impl Text1 {
             // }
         }
         Ui::same_line();
-        if let Some(new_value) = Ui::toggle("French keyboard", self.keyboard_layout_fr, None) {
+        if let Some(new_value) = Ui::toggle("French keyboard", &mut self.keyboard_layout_fr, None) {
             self.keyboard_layout_fr = true; // we can't reverse right now ^_^
             let keyboard_layouts = vec![FR_KEY_TEXT, FR_KEY_TEXT_SHIFT, FR_KEY_TEXT_ALT];
             if new_value {
@@ -221,7 +220,7 @@ impl Text1 {
         Ui::push_text_style(self.text_style_test);
         //Ui::push_preserve_keyboard(true);
         if let Some(new_value) =
-            Ui::input("Text_Sample", &self.text_sample, Some(Vec2::new(0.77, 0.8)), Some(self.text_context))
+            Ui::input("Text_Sample", &mut self.text_sample, Some(Vec2::new(0.77, 0.8)), Some(self.text_context))
         {
             self.text_sample = new_value;
         }

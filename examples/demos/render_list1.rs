@@ -109,8 +109,7 @@ impl RenderList1 {
 
         Ui::window_begin("Render Lists", &mut self.window_pose, Some(Vec2::new(0.23, 0.35)), None, None);
         Ui::label(format!("Render items: {}/{}", self.primary.get_count(), self.primary.get_prev_count()), None, true);
-        if let Some(value) = Ui::toggle("Clear", self.clear_primary, None) {
-            self.clear_primary = value;
+        if let Some(value) = Ui::toggle("Clear", &mut self.clear_primary, None) {
             if value {
                 self.perspective = Matrix::perspective_focal(Vec2::ONE * 2048.0, 100000.0, 0.01, 1010.0)
             } else {

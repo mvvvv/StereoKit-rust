@@ -280,8 +280,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
         Ui::same_line();
         Ui::panel_begin(None);
         if passthough_blend_enabled {
-            if let Some(new_value) = Ui::toggle("Passthrough MR", passthrough, None) {
-                passthrough = new_value;
+            if let Some(new_value) = Ui::toggle("Passthrough MR", &mut passthrough, None) {
                 if new_value {
                     Log::diag("Activate passthrough");
                     sk.send_event(StepperAction::event("main", SHOW_FLOOR, "false"));

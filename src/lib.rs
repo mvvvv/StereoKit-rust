@@ -217,6 +217,40 @@ pub mod tex;
 /// [![Title](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/title.jpeg)](tools::title::Title)
 pub mod tools;
 
+/// The UI module is a collection of functions and structs that allow you to create a user interface.
+///
+/// ## Examples
+/// which are also unit tests:
+/// [![Ui](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui.jpeg)](ui::Ui)
+/// [![Ui color_scheme](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_color_scheme.jpeg)](ui::Ui::color_scheme)
+/// [![Ui button](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_button.jpeg)](ui::Ui::button)
+/// [![Ui slider_behavior](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_slider_behavior.jpeg)](ui::Ui::slider_behavior)
+/// [![Ui button_img](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_button_img.jpeg)](ui::Ui::button_img)
+/// [![Ui button_round](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_button_round.jpeg)](ui::Ui::button_round)
+/// [![Ui handle](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_handle.jpeg)](ui::Ui::handle)
+/// [![Ui handle_begin](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_handle_begin.jpeg)](ui::Ui::handle_begin)
+/// [![Ui hseparator](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_hseparator.jpeg)](ui::Ui::hseparator)
+/// [![Ui hslider](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_hslider.jpeg)](ui::Ui::hslider)
+/// [![Ui image](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_image.jpeg)](ui::Ui::image)
+/// [![Ui input](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_input.jpeg)](ui::Ui::input)
+/// [![Ui label](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_label.jpeg)](ui::Ui::label)
+/// [![Ui layout_area](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_layout_area.jpeg)](ui::Ui::layout_area)
+/// [![Ui layout_push](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_layout_push.jpeg)](ui::Ui::layout_push)
+/// [![Ui model](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_model.jpeg)](ui::Ui::model)
+/// [![Ui panel_at](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_panel_at.jpeg)](ui::Ui::panel_at)
+/// [![Ui panel_begin](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_panel_begin.jpeg)](ui::Ui::panel_begin)
+/// [![Ui progress_bar_at](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_progress_bar_at.jpeg)](ui::Ui::progress_bar_at)
+/// [![Ui push_surface](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_push_surface.jpeg)](ui::Ui::push_surface)
+/// [![Ui push_text_style](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_push_text_style.jpeg)](ui::Ui::push_text_style)
+/// [![Ui push_tint](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_push_tint.jpeg)](ui::Ui::push_tint)
+/// [![Ui gen_quadrant_mesh](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_gen_quadrant_mesh.jpeg)](ui::Ui::gen_quadrant_mesh)
+/// [![Ui radio button](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_radio.jpeg)](ui::Ui::radio_img)
+/// [![Ui draw_element](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_draw_element.jpeg)](ui::Ui::draw_element)
+/// [![Ui set_theme_color](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_set_theme_color.jpeg)](ui::Ui::set_theme_color)  
+/// [![Ui text](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_text.jpeg)](ui::Ui::text)
+/// [![Ui toggle](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_toggle.jpeg)](ui::Ui::toggle)
+/// [![Ui vslider](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_vslider.jpeg)](ui::Ui::vslider)
+/// [![Ui window_begin](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_window_begin.jpeg)](ui::Ui::window_begin)
 pub mod ui;
 
 /// Many utility structs, enums and functions.
