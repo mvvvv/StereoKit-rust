@@ -2089,7 +2089,7 @@ impl SphericalHarmonics {
     /// let light2 = SHLight::new([0.25, 0.25, 0.25], named_colors::RED);
     ///
     /// let sh = SphericalHarmonics::from_lights(&[light0, light1, light2]);
-    /// //TODO: assert_eq!(sh.get_sample(Vec3::UP), named_colors::RED.into());
+    ///
     /// assert_eq!(sh.get_sample(Vec3::UP), Color128 { r: 2.2098913, g: 0.0, b: 0.0, a: 1.0 });
     /// assert_eq!(sh.get_dominent_light_direction(), -Vec3::ONE.get_normalized());
     /// ```
@@ -2113,7 +2113,7 @@ impl SphericalHarmonics {
     /// let coefficient = sh0.coefficients;
     ///
     /// let sh = SphericalHarmonics::new(coefficient);
-    /// //TODO: assert_eq!(sh.get_sample([1.0, 0.0, 1.0]), named_colors::RED.into());
+    ///
     /// assert_eq!(sh.get_sample([1.0, 0.0, 1.0]), Color128 { r: 11.453729, g: 0.0, b: 0.0, a: 1.0 });
     /// assert_eq!(sh.get_dominent_light_direction(), Vec3::new(-1.0, 0.0, -1.0).get_normalized());
     /// ```
@@ -2140,7 +2140,6 @@ impl SphericalHarmonics {
     ///   .add([0.0, 1.0, 0.0], named_colors::GREEN)
     ///   .add([0.0, 0.0, 1.0], named_colors::BLUE);
     ///
-    /// // TODO:
     /// assert_eq!(sh.get_sample([1.0, 0.0, 1.0]), Color128 { r: 11.453729, g: -0.2956792, b: 4.4505944, a: 1.0 });
     /// assert_eq!(sh.get_dominent_light_direction(), Vec3 { x: -0.21951628, y: -0.21670417, z: -0.95123714 });
     ///```
@@ -2168,7 +2167,6 @@ impl SphericalHarmonics {
     /// sh.add([1.0, 0.0, 1.0], named_colors::RED)
     ///   .brightness(0.5);
     ///
-    /// // TODO:
     /// assert_eq!(sh.get_sample([1.0, 0.0, 1.0]), Color128 { r: 5.726864, g: 0.0, b: 0.0, a: 1.0 });
     /// assert_eq!(sh.get_dominent_light_direction(), Vec3::new(-1.0, 0.0, -1.0).get_normalized());
     ///

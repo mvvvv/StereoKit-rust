@@ -2640,17 +2640,11 @@ impl Ui {
     ///     Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);
     ///     Ui::label("panel 2", None, false);
     ///     Ui::layout_pop();
-    ///     assert_eq!(Ui::get_layout_last(),
-    ///         Bounds { center: Vec3 { x: -0.02382, y: -0.035, z: 0.0 },
-    ///                  dimensions: Vec3 { x: 0.06765, y: 0.05, z: 0.0 } });
     ///
     ///     Ui::layout_push_cut( UiCut::Bottom, 0.08, false);
     ///     Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);
     ///     Ui::label("panel 3", None, false);
     ///     Ui::layout_pop();
-    ///     assert_eq!(Ui::get_layout_last(),
-    ///         Bounds { center: Vec3 { x: 0.0661, y: -0.075, z: 0.0 },
-    ///                  dimensions: Vec3 { x: 0.0476, y: 0.03, z: 0.0 } });    
     ///
     ///     Ui::window_end();
     /// );
@@ -4617,7 +4611,38 @@ impl Ui {
     /// <https://stereokit.net/Pages/StereoKit/UI/LayoutLast.html>
     ///
     /// see also [`ui_layout_last`]
-    /// see example in [`Ui::panel_at`]
+    /// ### Examples TODO: Very very slow under Windows
+    /// ```no_run
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{ui::{Ui, UiPad, UiCut}, maths::{Vec2, Vec3, Pose, Bounds}};
+    ///
+    /// let mut window_pose = Pose::new(
+    ///     [0.01, 0.055, 0.90], Some([0.0, 185.0, 0.0].into()));
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     Ui::window_begin("Panel at", &mut window_pose, Some([0.2, 0.15].into()), None, None);
+    ///     Ui::panel_at([0.11, -0.01, 0.0], [0.08, 0.03], Some(UiPad::None));
+    ///     Ui::label("panel 1", None, false);
+    ///
+    ///     Ui::layout_push_cut( UiCut::Right, 0.1, true);
+    ///     Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);
+    ///     Ui::label("panel 2", None, false);
+    ///     Ui::layout_pop();
+    ///     assert_eq!(Ui::get_layout_last(),
+    ///         Bounds { center: Vec3 { x: -0.02382, y: -0.035, z: 0.0 },
+    ///                  dimensions: Vec3 { x: 0.06765, y: 0.05, z: 0.0 } });
+    ///
+    ///     Ui::layout_push_cut( UiCut::Bottom, 0.08, false);
+    ///     Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);
+    ///     Ui::label("panel 3", None, false);
+    ///     Ui::layout_pop();
+    ///     assert_eq!(Ui::get_layout_last(),
+    ///         Bounds { center: Vec3 { x: 0.0661, y: -0.075, z: 0.0 },
+    ///                  dimensions: Vec3 { x: 0.0476, y: 0.03, z: 0.0 } });    
+    ///
+    ///     Ui::window_end();
+    /// );
+    /// ```
     pub fn get_layout_last() -> Bounds {
         unsafe { ui_layout_last() }
     }
