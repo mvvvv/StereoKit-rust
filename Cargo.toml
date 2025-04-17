@@ -76,8 +76,8 @@ harness = false
 
 [package.metadata.android]
 package = "com.stereokit.rust_binding.demos"
-#build_targets = ["aarch64-linux-android"]
-build_targets = ["aarch64-linux-android","x86_64-linux-android"]
+build_targets = ["aarch64-linux-android"]
+#build_targets = ["aarch64-linux-android","x86_64-linux-android"]
 apk_label = "Stereokit-rust-demos"
 assets = "./assets"
 resources = "./res"

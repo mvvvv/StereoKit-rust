@@ -38,8 +38,45 @@ fn has_field(field_name: &str, input: &DeriveInput) -> bool {
 ///     **fn close(&mut self, triggering:bool) -> bool**
 ///     where you can close your resources.
 ///     
+/// ### Examples
+/// ```ignore
+/// use stereokit_rust::{prelude::*, material::Material, maths::{Matrix, Quat, Vec3},
+///                      mesh::Mesh, util::{named_colors, Time}};
+/// #[derive(IStepper)]
+/// pub struct MyStepper {
+///     id: StepperId,
+///     sk_info: Option<Rc<RefCell<SkInfo>>>,
 ///
-/// see the example CStepper in the examples/demos/c_stepper.rs
+///     transform: Matrix,
+///     round_cube: Mesh,
+///     material: Material,
+/// }
+/// impl Default for MyStepper {
+///     fn default() -> Self {
+///         Self {
+///             id: "MyStepper".to_string(),
+///             sk_info: None,
+///
+///             transform: Matrix::IDENTITY,
+///             round_cube: Mesh::generate_rounded_cube(Vec3::ONE / 5.0, 0.2, Some(16)),
+///             material: Material::pbr().copy(),
+///         }
+///     }
+/// }
+/// impl MyStepper {
+///     fn start(&mut self) -> bool {
+///         self.transform = Matrix::r([0.0, 10.0 * Time::get_stepf(), 0.0]);
+///        self.material.color_tint(named_colors::BLUE);
+///         true
+///     }
+///     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
+///     fn draw(&mut self, token: &MainThreadToken) {
+///         self.round_cube.draw(token, &self.material, self.transform, None, None);
+///     }
+/// }
+///  ```
+///
+/// see also the example CStepper in the examples/demos/c_stepper.rs
 #[proc_macro_derive(IStepper)]
 pub fn derive_istepper(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -120,6 +157,16 @@ pub fn derive_istepper(input: TokenStream) -> TokenStream {
 
 /// Embed the tree of the assets sub-directories in your crate.
 /// useful if you want to browse some assets
+/// * `body` - the path of the assets sub-directory.
+///
+/// ### Example
+/// ``` ignore
+/// use stereokit_macros::include_asset_tree;
+/// const ASSET_DIR: &[&str] = include_asset_tree!("assets");
+///
+/// assert_eq!(ASSET_DIR[0], "assets");
+/// assert_eq!(ASSET_DIR[1], "assets/textures");
+/// ```
 #[proc_macro]
 pub fn include_asset_tree(body: TokenStream) -> TokenStream {
     let mut vec_path = vec![];
@@ -149,6 +196,7 @@ pub fn include_asset_tree(body: TokenStream) -> TokenStream {
     // .collect()
 }
 
+/// Dive into a sub directory and get all sub directories.
 fn get_sub_dirs(path_assets: PathBuf, sub_path: &Path) -> Vec<String> {
     let mut vec_path = vec![];
     if path_assets.exists() && path_assets.is_dir() {
@@ -169,21 +217,23 @@ fn get_sub_dirs(path_assets: PathBuf, sub_path: &Path) -> Vec<String> {
     vec_path
 }
 
-#[proc_macro]
 /// Initialize sk (and eventually event_loop) for a test.
 ///
-/// If you intend to run a main loop, with test_screenshot!(...) or test_steps!(...) here some variables you may use:
-/// * number_of_steps - Default is 1, you can change this value before the main loop
-/// * token - the MainThreadToken you need to draw in the main_loop
-/// * iter - The step number in the main_loop. [0..number_of_steps]
+/// If you intend to run a main loop, with `test_screenshot!(...)` or `test_steps!(...)` here some variables you may use:
+/// * `number_of_steps` - Default is 3, you can change this value before the main loop.
+/// * `token` - the MainThreadToken you need to draw in the main_loop.
+/// * `iter` - The step number in the main_loop. [0..number_of_steps + 2].
 ///
-/// If you intend to take a screenshot with test_screenshot!(...) there is also those variables to change before the
+/// If you intend to take a screenshot with `test_screenshot!(...)` there is also those variables to change before the
 /// main loop:
-/// * width_scr - width of the screenshot (default is 200)
-/// * height_scr - height of the screenshot (default is 200)
-/// * fov_scr - fov of the screenshot (default is 99.0)
-/// * from_scr - Position of the camera (default is Vec3::Z)
-/// * at_scr - Point looked at by the camera (default is Vec3::ZERO)
+/// * `width_scr` - width of the screenshot (default is 200)
+/// * `height_scr` - height of the screenshot (default is 200)
+/// * `fov_scr` - fov of the screenshot (default is 99.0)
+/// * `from_scr` - Position of the camera (default is Vec3::Z)
+/// * `at_scr` - Point looked at by the camera (default is Vec3::ZERO)
+///
+/// most of the examples of this doc use this macro.
+#[proc_macro]
 pub fn test_init_sk(_input: TokenStream) -> TokenStream {
     let expanded = quote! {
         use stereokit_rust::{*, prelude::*, test_screenshot, test_steps};
@@ -203,8 +253,8 @@ pub fn test_init_sk(_input: TokenStream) -> TokenStream {
 }
 
 #[proc_macro]
-/// Run a main_loop then take a screenshot when the number_of_steps is reached
-/// see [`crate::test_init_sk!`] for the details
+/// Run a main_loop then take a screenshot when `iter` equal the `number_of_steps.
+/// see [`crate::test_init_sk!`] for the details.
 pub fn test_screenshot(input: TokenStream) -> TokenStream {
     let input: proc_macro2::TokenStream = input.into();
     let expanded = quote! {
@@ -238,14 +288,13 @@ pub fn test_screenshot(input: TokenStream) -> TokenStream {
                 }
             }).run(event_loop);
         }
-
     };
 
     TokenStream::from(expanded)
 }
 
 #[proc_macro]
-/// Run a main_loop until the number_of_steps is reached
+/// Run a main_loop until `iter` equal the number_of_steps.
 /// see [`crate::test_init_sk!`] for the details
 pub fn test_steps(input: TokenStream) -> TokenStream {
     let input: proc_macro2::TokenStream = input.into();

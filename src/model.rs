@@ -528,10 +528,7 @@ impl Model {
         color_linear: Option<Color128>,
         layer: Option<RenderLayer>,
     ) {
-        let color_linear = match color_linear {
-            Some(c) => c,
-            None => Color128::WHITE,
-        };
+        let color_linear = color_linear.unwrap_or(Color128::WHITE);
         let layer = layer.unwrap_or(RenderLayer::Layer0);
         unsafe { model_draw(self.0.as_ptr(), transform.into(), color_linear, layer) };
     }

@@ -559,6 +559,19 @@ impl From<Vec3> for [f32; 3] {
 ///  Warning: Equality with a precision of 0.1 millimeter
 impl PartialEq for Vec3 {
     ///  Warning: Equality with a precision of 0.1 millimeter
+    /// ### Example
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    /// assert_eq!(
+    ///              Vec3 { x: 0.045863353, y: 0.030000005, z: 0.0 } ,
+    ///              Vec3 { x: 0.045863353, y: 0.030000005, z: 0.0 } );
+    /// ```
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    /// assert_ne!(
+    ///              Vec3 { x: 10.045863353, y: 0.030000005, z: 0.0 } ,
+    ///              Vec3 { x: 0.045863353, y: 0.030000005, z: 0.0 } );
+    /// ```
     fn eq(&self, other: &Self) -> bool {
         ((self.x - other.x).abs() < 0.0001)
             && ((self.y - other.y).abs() < 0.0001)

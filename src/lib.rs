@@ -1,7 +1,220 @@
-/// StereoKit-rust is a Rust binding for the StereoKit C API. It allows you to create VR applications with ease.
-/// [![GitHub](https://github.com/mvvvv/StereoKit-rust/blob/master/StereoKit-rust.png)](https://github.com/mvvvv/StereoKit-rust/)
-///
-///
+//! StereoKit-rust is a binding for the [StereoKit](https://StereoKit.net) C API.
+//! If the name of this crate contains "_rust" (not great for a Rust crate, we agree) it is to emphasize the fact that
+//! StereoKit is first and foremost a C, C++, C# project.
+//! StereoKit allows you to create VR/MR applications with ease on every headset platforms that run OpenXR.
+//! <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/StereoKit-rust.png" alt="screenshot" width="300">
+//!
+//! [StereoKit-rust GitHub repository](https://github.com/mvvvv/StereoKit-rust/) /
+//! [StereoKit GitHub repository](https://github.com/StereoKit/StereoKit/)
+//!
+//! # How to read this documentation
+//! If you already know the name of what you are looking for, the fastest way to
+//! find it is to use the <a href="#" onclick="window.searchState.focus();">search
+//! bar</a> at the top of the page.
+//! Otherwise, you may want to jump to one of these useful sections:
+//! * [Installation](#installation)
+//! * [Usage](#usage)
+//! * [Examples](#examples)
+//! * [How to build and test your application](#how-to-build-and-test-your-application)
+//! * [StereoKit-rust modules](#modules)
+//! * [StereoKit-rust Macros](#macros)
+//!
+//! # Installation:
+//! StereoKit-rust is a binding and therefore requires some tools and libraries to compile StereoKitC:
+//! * On `Windows` get the following tools and dev libraries : "`CMake`", "`Visual Studio Build Tools 2022(Developpment
+//!   Desktop C++)`" and "`DotNet SDK v8+`".
+//! * On `Non Windows platforms` get the following tools and dev libraries : `clang` `cmake` `lld` `ninja-build` `libx11-dev`
+//!   `libxfixes-dev` `libegl-dev` `libgbm-dev` `libfontconfig-dev` `libxkbcommon-x11-0` `libxkbcommon0`.
+//! * Installing the stereokit_rust tools with `cargo install -F event-loop stereokit_rust` should help you to check
+//!   the missing dependencies.
+//!
+//! # Usage
+//! You have to chose between `event-loop` and `no-event-loop` features. The feature `no-event-loop` is the
+//! lighter but you can't use the [`framework`].
+//!
+//! Using `event-loop` your `Cargo.toml` should contain the following lines:
+//! ```toml
+//! [lib]
+//! crate-type = ["lib", "cdylib"]
+//!
+//! [dependencies]
+//! stereokit-rust = { version = "0.40", features= ["event-loop"] }
+//! winit = { version = "0.30", features = [ "android-native-activity" ] }
+//!
+//! [target.'cfg(target_os = "android")'.dependencies]
+//! stereokit-rust = { version = "0.40" , features = ["event-loop", "build-dynamic-openxr"] }
+//! log = "0.4"
+//! android_logger = "0.15"
+//! ndk-context = "0.1.1"
+//! ndk = "0.9.0"
+//! ```
+//!
+//! # Examples
+//! Here is a simple "Hello World" StereoKit-rust app for all platforms:
+//!
+//! In `main.rs`, if you intend to build a PC VR/MR app:
+//! ```
+//! #[allow(dead_code)]
+//! #[cfg(not(target_os = "android"))]
+//! fn main() {
+//!     use stereokit_rust::sk::SkSettings;
+//!     // Initialize StereoKit with default settings
+//!     let mut settings = SkSettings::default();
+//!     settings.app_name("Test");
+//!     # settings.mode(stereokit_rust::sk::AppMode::Offscreen);
+//!     let (sk, event_loop) = settings.init_with_event_loop()
+//!         .expect("Should initialize StereoKit");
+//!     the_main(sk, event_loop);
+//! }
+//! # use stereokit_rust::prelude::*;
+//! # use winit::event_loop::EventLoop;
+//! # pub fn the_main(sk: Sk, event_loop: EventLoop<StepperAction>) {}
+//! ```
+//!
+//! In `lib.rs` where you can remove the `target_os = "android" code` if you don't want to build for Android:
+//! ```
+//! use stereokit_rust::{framework::SkClosures, prelude::*, sk::Sk, ui::Ui};
+//! use winit::event_loop::EventLoop;
+//!
+//! #[unsafe(no_mangle)]
+//! #[cfg(target_os = "android")]
+//! pub fn android_main(app: AndroidApp) {
+//!     use stereokit_rust::sk::SkSettings;
+//!     // Initialize StereoKit with default settings
+//!     let mut settings = SkSettings::default();
+//!     settings.app_name("Test");
+//!     android_logger::init_once(
+//!         android_logger::Config::default()
+//!               .with_max_level(log::LevelFilter::Debug)
+//!               .with_tag("STKit-rs"),
+//!     );
+//!     let (sk, event_loop) = settings.init_with_event_loop(app).unwrap();
+//!     the_main(sk, event_loop);
+//! }
+//!
+//! /// Main function for All!
+//! pub fn the_main(sk: Sk, event_loop: EventLoop<StepperAction>) {
+//!     // Create a grabbable window with a button to exit the application
+//!     let mut window_pose = Ui::popup_pose([0.0, -0.4, 0.0]);
+//!     // Main loop
+//!     SkClosures::new(sk, |sk, _token| {
+//!         // Exit button
+//!         Ui::window_begin("Hello world!", &mut window_pose, None, None, None);
+//!         if Ui::button("Exit", None) {
+//!             sk.quit(None)
+//!         }
+//!         Ui::window_end();
+//!     })
+//!     .run(event_loop);
+//! }
+//! ```
+//!
+//! Hundreds of examples (which are also unit tests) are available in this documentation. If you like to learn by
+//! examples, watch the modules in the following order: [`sk`], [`mesh`], [`model`], [`maths`], [`ui`], [`framework`],
+//! [`tools`], [`sound`], [`system`], [`material`], [`shader`], [`tex`], [`sprite`], [`font`], [`render_list`].
+//!
+//! # How to build and test your application:
+//!
+//! * [Building your PC VR/MR app](#building-your-pc-vrmr-app).
+//! * [Building your Android VR/MR app](#building-your-android-vrmr-app).
+//! * [Building your Windows GNU PC VR/MR app](#building-your-windows-gnu-pc-vrmr-app).
+//! * [Building your Linux AARCH64 PC VR/MR app](#building-your-linux-aarch64-pc-vrmr-app).
+//! * [Building your Linux X86_64 PC VR/MR app](#building-your-linux-x86_64-pc-vrmr-app).
+//!
+//! ## Building your PC VR/MR app:
+//! * Launch `cargo run` to compile and run your app in debug mode on your PC with or without a headset.
+//! * Launch `cargo build_sk_rs <build_directory>` to compile your app & assets in release mode for your PC.
+//!
+//! To test with your headset, make sure you have [OpenXR installed](https://www.khronos.org/openxr/) with an active
+//! runtine (SteamVR, Monado, WiVRn, ALVR ...).
+//!
+//! ## Building your Android VR/MR app:
+//! This can be done from a PC running Windows, Mac or Linux:
+//! * Install [sdkmanager](https://developer.android.com/studio/command-line/sdkmanager) (or Android Studio if you
+//!   intend to use it). You'll need a Java JDK (v17 is fine).
+//! * Using sdkmanager, install platform-tools(v32), latest build-tools and the latest ndk.
+//! * Set ANDROID_HOME environment variable to its path (this path contains the `build_tools` directory).
+//! * Set the NDK path (which ends with it's version number) into ANDROID_NDK_ROOT environment variable.
+//! * Install [Ninja](https://ninja-build.org/)
+//! * Check that `adb` ($ANDROID_HOME/platform_tools/adb) is connecting to your headset.
+//! * Download the target: `rustup target add aarch64-linux-android` for most of the existing android headsets.
+//! * Create a keystore for signing your app (using keytool or Android Studio).
+//! ##### If you don't need some java/kotlin code, you can use cargo-apk  (cargo-xbuild should be an alternative but is missing some documentation):
+//!   - Install: `cargo install cargo-apk`.
+//!   - The manifest file will be generated from the `Cargo.toml` (see the `package.metadata.android` section). Here are
+//!     some examples:
+//!     - [StereoKit-template](https://github.com/mvvvv/stereokit-template/blob/main/Cargo.toml#L27)
+//!     - [StereoKit-rust](https://github.com/mvvvv/StereoKit-rust/blob/master/Cargo.toml#L77)
+//!   - Set the path and password to your keystore in the `Cargo.toml` [package.metadata.android.signing.release] or
+//!     in the CARGO_APK_RELEASE_KEYSTORE and  `CARGO_APK_RELEASE_KEYSTORE_PASSWORD` environment variables.
+//!   - Launch the debug on your headset: `cargo apk run --lib`
+//!   - Generate the release apk: `cargo apk build --lib --release`. The apk will be in `target/release/apk/`.
+//! ##### Otherwise, you have to use gradle with cargo-ndk:
+//!   - Install: `cargo install cargo-ndk`.
+//!   - Clone or extract a ZIP of [gradle template](https://github.com/mvvvv/stereokit-template/tree/gradle).
+//!   - Name your project in the `package.name` entry in `Cargo.toml`.
+//!   - Set `cargo.libName` (same as `package.name` from `Cargo.toml`), `android.applicationId` and `android.main` in
+//!     `gradle.properties`.
+//!   - In `app/src/main/AndroidManifest.xml` Delete or modify the path and package's name of `MainActivity.java` (your
+//!     choice impacts android.main ↑ and android:hasCode attribute).
+//!   - Store your keystore values in one of the hidden gradle properties files (ie. `~/.gradle/gradle.properties`)
+//!     to store and forget the confidential values:
+//!     - RELEASE_STORE_FILE=/home/**/**/my_release_key.keystore
+//!     - RELEASE_STORE_PASSWORD=******
+//!     - RELEASE_KEY_ALIAS=*****
+//!     - RELEASE_KEY_PASSWORD=******
+//!   - If any, remove the .git folder.
+//!   - Launch the debug on your connected headset:
+//!     - On Windows, launch: `./gradlew.bat run && cmd /c logcat.cmd` or `(./gradlew.bat run) -and (cmd /c logcat.cmd)`
+//!     - On others, launch: `./gradlew run && logcat.cmd`
+//!   - Generate the release apk: `./gradlew buildRelease`. The apk will be in `app/build/outputs/apk/release`
+//!
+//! ## Building your Windows GNU PC VR/MR app:
+//! Thanks to Steam Proton, you can run your Windows exe on Linux. It's even better than native build thanks to D3D11
+//! to Vulkan translation. Knowing that, we work to build Windows exe on Linux using GNU toolchain.
+//! Build your app for Windows_x64 using GNU toolchain from Linux and Windows (and probably Mac).
+//! * Install mingw64-w64 (MSYS2 on windows)
+//! * Add the rust target gnu for windows:`rustup target add x86_64-pc-windows-gnu`
+//! * On 'Non Windows OS': we need wine to compile the shaders
+//!   - Install wine and winetricks.
+//!   - Install needed tools and libs: `winetricks corefonts d3dx9 d3dcompiler_47`
+//! * Create a directory where necessary libs will be stored (i.e. ../x64-mingw-libs/) then add a link to the DLLs or
+//!   static libs(*.a) the build will need after or during its creation. Example on Ubuntu 24.XX:
+//!   - If you want to use DLLs:
+//!      - `ln -s /usr/lib/gcc/x86_64-w64-mingw32/13-win32/libgcc_s_seh-1.dll ../x64-mingw-libs/`
+//!      - `ln -s /usr/lib/gcc/x86_64-w64-mingw32/13-win32/libstdc++-6.dll ../x64-mingw-libs/`
+//!   - If you want to use static libs:
+//!      - `ln -s /usr/lib/gcc/x86_64-w64-mingw32/13-win32/libgcc.a ../x64-mingw-libs/libgcc_eh.a`
+//! * Launch: `cargo build_sk_rs --x64-win-gnu ../x64-mingw-libs/ <the path of your exportable repository>`
+//! * To run your your_app.exe on Linux:
+//!   - Add a non-steam game to your library then launch it when WiVRn or SteamVR are started.
+//!   - If you only need the simulator: `wine your_app.exe`.
+//!
+//! ## Building your Linux aarch64 PC VR/MR app:
+//! If you are on aarch64 linux you just have to follow the instructions in [Building your PC VR/MR app](#building-your-pc-vrmr-app).
+//! If you are on a x86_64 architecture you are able to cross-compile your app for aarch64:
+//! * Install g++-aarch64-linux-gnu
+//! * Get the libraries `libx11-dev:arm64` `libxfixes-dev:arm64` `libegl-dev:arm64` `libgbm-dev:arm64` `libfontconfig-dev:arm64`.
+//!   On Ubuntu 24:XX this can be done by adding a foreign architecture `dpkg --add-architecture arm64` with depot
+//!   `http://ports.ubuntu.com/ubuntu-ports`. To avoid errors during `apt update` you'll have to precise the architectures
+//!   of all depots in `/etc/apt/sources.list.d/ubuntu.sources`
+//! * Add the rust target aarch64 for linux:`rustup target add aarch64-unknown-linux-gnu`
+//! * Add a section `[target.aarch64-unknown-linux-gnu]` in your config.toml for setting `linker = "aarch64-linux-gnu-gcc"`
+//! * Launch `cargo build_sk_rs --aarch64-linux <the path of your exportable repository>`
+//!
+//! ## Building your Linux x86_64 PC VR/MR app:
+//! If you are on x86_64 linux you just have to follow the instructions in [Building your PC VR/MR app](#building-your-pc-vrmr-app).
+//! If you are on aarch64 architecture you should be able to cross-compile for x86_64:
+//! (This hasn't been tested yet, if you're interested in testing it, please let us now)
+//! * Install g++-x86-64-linux-gnu
+//! * Get the libraries `libx11-dev:amd64` `libxfixes-dev:amd64` `libegl-dev:amd64` `libgbm-dev:amd64` `libfontconfig-dev:amd64`.
+//!   On Ubuntu 24:XX this can be done by adding a foreign architecture `dpkg --add-architecture amd64` with depot
+//!   `http://ports.ubuntu.com/ubuntu-ports`. To avoid errors during `apt update` you'll have to precise the architectures
+//!   of all depots in `/etc/apt/sources.list.d/ubuntu.sources`
+//! * Add the rust target aarch64 for linux:`rustup target add x86_64-unknown-linux-gnu`
+//! * Add a section `[target.x86_64-unknown-linux-gnu]` in your config.toml for setting `linker = "x86_64-linux-gnu-gcc"`
+//! * Launch `cargo build_sk_rs --x64-linux <the path of your exportable repository>`.
+
 use std::{ffi::NulError, path::PathBuf};
 
 #[cfg(feature = "event-loop")]
