@@ -71,7 +71,7 @@ impl Default for RenderList1 {
             at,
             quad,
             perspective,
-            transform: Matrix::tr(&((Vec3::NEG_Z * 2.5) + Vec3::Y), &Quat::from_angles(0.0, 180.0, 0.0)),
+            transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, Quat::from_angles(0.0, 180.0, 0.0)),
             text: "RenderList1".to_owned(),
             text_style: Text::make_style(Font::default(), 0.3, RED),
         }
@@ -121,7 +121,7 @@ impl RenderList1 {
         self.quad.draw(
             token,
             &self.render_mat,
-            Matrix::ts(b.center + Vec3::new(-0.05, -0.05, -0.004), b.dimensions.xy1()),
+            Matrix::t_s(b.center + Vec3::new(-0.05, -0.05, -0.004), b.dimensions.xy1()),
             None,
             None,
         );

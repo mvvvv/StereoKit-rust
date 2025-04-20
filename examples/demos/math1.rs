@@ -37,9 +37,9 @@ unsafe impl Send for Math1 {}
 impl Default for Math1 {
     /// Creates a new instance of Math1 with default values.
     fn default() -> Self {
-        let transform_ico_sphere = Matrix::ts(Vec3::NEG_Z * 0.5 + Vec3::X + Vec3::Y * 1.5, Vec3::ONE * 0.3);
+        let transform_ico_sphere = Matrix::t_s(Vec3::NEG_Z * 0.5 + Vec3::X + Vec3::Y * 1.5, Vec3::ONE * 0.3);
         let model_pose = Pose::new(Vec3::NEG_Z + Vec3::Y * 1.0, None);
-        let transform_text = Matrix::tr(&((Vec3::NEG_Z * 2.5) + Vec3::Y * 2.0), &Quat::from_angles(0.0, 180.0, 0.0));
+        let transform_text = Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y * 2.0, Quat::from_angles(0.0, 180.0, 0.0));
         let material = Material::pbr();
         let model = Model::from_mesh(Mesh::generate_sphere(SPHERE_RADIUS * 2.0, Some(16)), &material);
         let little_sphere = Mesh::generate_sphere(0.02, None);
@@ -127,7 +127,7 @@ impl Math1 {
         // Add little_sphere to the floor if pointed by the ray
         let plane = Plane::new(Vec3::Y, 0.0);
         if let Some(out_plane) = ray.intersect_plane(plane) {
-            let sphere_transform = Matrix::ts(out_plane, Vec3::ONE * 8.0);
+            let sphere_transform = Matrix::t_s(out_plane, Vec3::ONE * 8.0);
             self.little_sphere.draw(token, &self.material, sphere_transform, Some(WHITE.into()), None);
         }
 

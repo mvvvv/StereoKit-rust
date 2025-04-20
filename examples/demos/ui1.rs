@@ -59,9 +59,9 @@ impl Default for Ui1 {
         Self {
             id: "Ui1".to_string(),
             sk_info: None,
-            transform: Matrix::tr(
-                &((Vec3::NEG_Z * 2.5) + Vec3::Y), //
-                &Quat::from_angles(0.0, 180.0, 0.0),
+            transform: Matrix::t_r(
+                (Vec3::NEG_Z * 2.5) + Vec3::Y, //
+                Quat::from_angles(0.0, 180.0, 0.0),
             ),
             window_demo_pose: Pose::new(
                 Vec3::new(0.0, 1.5, -1.3), //
@@ -164,7 +164,7 @@ impl Ui1 {
         Mesh::cube().draw(
             token,
             &self.ui_material,
-            Matrix::ts(layout.center, layout.dimensions),
+            Matrix::t_s(layout.center, layout.dimensions),
             Some(Ui::get_element_color(slot, Ui::get_anim_focus(id, out_focus_state, out_button_state))),
             None,
         );

@@ -494,7 +494,7 @@ mod tests_quat {
     fn test_quat_mul() {
         let q1 = Quat::from_angles(0.0, 90.0, 0.0); // Rotate 90 degrees around Y
         let q2 = Quat::from_angles(90.0, 0.0, 0.0); // Rotate 90 degrees around X
-        let q_mul = q1.mul(&q2);
+        let q_mul = q1.mul(q2);
         assert!((q_mul.x - 0.5).abs() < 0.00001);
         assert!((q_mul.y - 0.5).abs() < 0.00001);
         assert!((q_mul.z - 0.5).abs() < 0.00001);
@@ -657,7 +657,7 @@ mod tests_matrix {
 
     #[test]
     fn test_matrix_tr() {
-        let tr = Matrix::tr(&Vec3::new(1.0, 2.0, 3.0), &Quat::from_angles(0.0, 90.0, 0.0));
+        let tr = Matrix::t_r(Vec3::new(1.0, 2.0, 3.0), Quat::from_angles(0.0, 90.0, 0.0));
         unsafe {
             assert!((tr.m[12] - 1.0).abs() < 0.0001);
             assert!((tr.m[13] - 2.0).abs() < 0.0001);
@@ -671,7 +671,7 @@ mod tests_matrix {
 
     #[test]
     fn test_matrix_ts() {
-        let ts = Matrix::ts(Vec3::new(1.0, 2.0, 3.0), Vec3::new(2.0, 3.0, 4.0));
+        let ts = Matrix::t_s(Vec3::new(1.0, 2.0, 3.0), Vec3::new(2.0, 3.0, 4.0));
         unsafe {
             assert_eq!(ts.m[0], 2.0);
             assert_eq!(ts.m[5], 3.0);
@@ -684,7 +684,7 @@ mod tests_matrix {
 
     #[test]
     fn test_matrix_trs() {
-        let trs = Matrix::trs(&Vec3::new(1.0, 2.0, 3.0), &Quat::from_angles(0.0, 90.0, 0.0), &Vec3::new(2.0, 3.0, 4.0));
+        let trs = Matrix::t_r_s(Vec3::new(1.0, 2.0, 3.0), Quat::from_angles(0.0, 90.0, 0.0), Vec3::new(2.0, 3.0, 4.0));
         unsafe {
             assert!((trs.m[12] - 1.0).abs() < 0.0001);
             assert!((trs.m[13] - 2.0).abs() < 0.0001);
@@ -702,7 +702,7 @@ mod tests_matrix {
         let translation = Vec3::new(1.0, 2.0, 3.0);
         let rotation = Quat::from_angles(0.0, 90.0, 0.0);
         let scale = Vec3::new(2.0, 3.0, 4.0);
-        Matrix::trs_to_pointer(&translation, &rotation, &scale, &mut m);
+        m.update_t_r_s(&translation, &rotation, &scale);
         unsafe {
             assert!((m.m[12] - 1.0).abs() < 0.0001);
             assert!((m.m[13] - 2.0).abs() < 0.0001);
@@ -716,7 +716,7 @@ mod tests_matrix {
 
     #[test]
     fn test_matrix_invert() {
-        let mut m = Matrix::trs(&Vec3::new(1.0, 0.0, 0.0), &Quat::IDENTITY, &Vec3::ONE);
+        let mut m = Matrix::t_r_s(Vec3::new(1.0, 0.0, 0.0), Quat::IDENTITY, Vec3::ONE);
         m.invert();
         unsafe {
             assert_eq!(m.m[12], -1.0);
@@ -768,7 +768,7 @@ mod tests_matrix {
 
     #[test]
     fn test_matrix_decompose() {
-        let m = Matrix::trs(&Vec3::new(1.0, 2.0, 3.0), &Quat::from_angles(0.0, 90.0, 0.0), &Vec3::new(2.0, 3.0, 4.0));
+        let m = Matrix::t_r_s(Vec3::new(1.0, 2.0, 3.0), Quat::from_angles(0.0, 90.0, 0.0), Vec3::new(2.0, 3.0, 4.0));
         let (pos, scale, rot) = m.decompose().unwrap();
         assert!((pos.x - 1.0).abs() < 0.0001);
         assert!((pos.y - 2.0).abs() < 0.0001);
@@ -784,7 +784,7 @@ mod tests_matrix {
 
     #[test]
     fn test_matrix_decompose_to_ptr() {
-        let m = Matrix::trs(&Vec3::new(1.0, 2.0, 3.0), &Quat::from_angles(0.0, 90.0, 0.0), &Vec3::new(2.0, 3.0, 4.0));
+        let m = Matrix::t_r_s(Vec3::new(1.0, 2.0, 3.0), Quat::from_angles(0.0, 90.0, 0.0), Vec3::new(2.0, 3.0, 4.0));
         let mut position: Vec3 = Vec3 { x: 0.0, y: 0.0, z: 0.0 };
         let mut scale: Vec3 = Vec3 { x: 0.0, y: 0.0, z: 0.0 };
         let mut orientation: Quat = Quat { x: 0.0, y: 0.0, z: 0.0, w: 0.0 };
@@ -856,7 +856,7 @@ mod tests_matrix {
 
     #[test]
     fn test_matrix_get_inverse() {
-        let m = Matrix::trs(&Vec3::new(1.0, 0.0, 0.0), &Quat::IDENTITY, &Vec3::ONE);
+        let m = Matrix::t_r_s(Vec3::new(1.0, 0.0, 0.0), Quat::IDENTITY, Vec3::ONE);
         let inv = m.get_inverse();
         unsafe {
             assert_eq!(inv.m[12], -1.0);
@@ -868,7 +868,7 @@ mod tests_matrix {
 
     #[test]
     fn test_matrix_get_inverse_to_ptr() {
-        let m = Matrix::trs(&Vec3::new(1.0, 0.0, 0.0), &Quat::IDENTITY, &Vec3::ONE);
+        let m = Matrix::t_r_s(Vec3::new(1.0, 0.0, 0.0), Quat::IDENTITY, Vec3::ONE);
         let mut inv = Matrix::NULL;
         m.get_inverse_to_ptr(&mut inv);
         unsafe {
@@ -881,7 +881,7 @@ mod tests_matrix {
 
     #[test]
     fn test_matrix_get_pose() {
-        let m = Matrix::trs(&Vec3::new(1.0, 2.0, 3.0), &Quat::from_angles(0.0, 90.0, 0.0), &Vec3::ONE);
+        let m = Matrix::t_r_s(Vec3::new(1.0, 2.0, 3.0), Quat::from_angles(0.0, 90.0, 0.0), Vec3::ONE);
         let p = m.get_pose();
 
         assert!((p.position.x - 1.0).abs() < 0.0001);
@@ -912,7 +912,7 @@ mod tests_matrix {
 
     #[test]
     fn test_matrix_get_translation() {
-        let m = Matrix::trs(&Vec3::new(1.0, 2.0, 3.0), &Quat::IDENTITY, &Vec3::ONE);
+        let m = Matrix::t_r_s(Vec3::new(1.0, 2.0, 3.0), Quat::IDENTITY, Vec3::ONE);
         let v = m.get_translation();
         assert_eq!(v, Vec3::new(1.0, 2.0, 3.0));
     }

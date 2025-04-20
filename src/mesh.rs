@@ -749,11 +749,11 @@ impl Mesh {
     /// material_after.color_tint(named_colors::RED);
     ///
     /// let bounds = sphere.get_bounds();
-    /// let transform_before = Matrix::ts( bounds.center, bounds.dimensions);
+    /// let transform_before = Matrix::t_s( bounds.center, bounds.dimensions);
     ///
     /// sphere.bounds( Bounds::bounds_centered(Vec3::ONE * 0.7));
     /// let new_bounds = sphere.get_bounds();
-    /// let transform_after = Matrix::ts( new_bounds.center, new_bounds.dimensions);
+    /// let transform_after = Matrix::t_s( new_bounds.center, new_bounds.dimensions);
     ///
     /// filename_scr = "screenshots/mesh_bounds.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
@@ -1162,7 +1162,7 @@ impl Mesh {
     ///     .expect("Ray should touch cube");
     /// assert_eq!(ind_cube, 12);
     ///
-    /// let transform_contact_cube = Matrix::ts(
+    /// let transform_contact_cube = Matrix::t_s(
     ///     transform.transform_point(contact_cube), Vec3::ONE * 0.1);
     ///
     /// filename_scr = "screenshots/mesh_intersect.jpeg";

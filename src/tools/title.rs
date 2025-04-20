@@ -21,7 +21,7 @@ use crate::{
 /// use stereokit_rust::{tools::title::Title, util::named_colors, maths::Matrix};
 ///
 /// let mut title = Title::new("My Title", Some(named_colors::RED), None, None);
-/// title.transform = Matrix::tr(&([-0.2, 0.0, -0.3].into()), &([0.0, 160.0, 0.0].into()));
+/// title.transform = Matrix::t_r([-0.2, 0.0, -0.3], [0.0, 160.0, 0.0]);
 /// sk.send_event(StepperAction::add("Title", title));
 ///
 /// filename_scr = "screenshots/title.jpeg";
@@ -49,7 +49,7 @@ impl Default for Title {
             id: "Title".to_string(),
             sk_info: None,
 
-            transform: Matrix::tr(&((Vec3::NEG_Z * 0.5) + Vec3::Y), &Quat::from_angles(0.0, 180.0, 0.0)),
+            transform: Matrix::t_r((Vec3::NEG_Z * 0.5) + Vec3::Y, Quat::from_angles(0.0, 180.0, 0.0)),
             text: "Title".to_owned(),
             text_style: None,
         }

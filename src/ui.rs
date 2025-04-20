@@ -3183,9 +3183,7 @@ impl Ui {
     ///     [0.01, 0.025, 0.948], Some([0.0, 185.0, 0.0].into()));
     ///
     /// let material = Material::pbr();
-    /// let transform1 = Matrix::trs(&([-0.1, 0.0, 0.74].into()),
-    ///                              &([0.0, 130.0, 0.0].into()),
-    ///                              &([3.0, 1.0, 0.05].into()));
+    /// let transform1 = Matrix::t_r_s([-0.1, 0.0, 0.74], [0.0, 130.0, 0.0], [3.0, 1.0, 0.05]);
     ///
     /// let mut mesh = Mesh::generate_cube([1.0, 1.0, 1.0], None);
     /// Ui::quadrant_size_mesh(&mut mesh, 0.20);
@@ -3223,16 +3221,15 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::{Ui, UiCorner, UiVisual, UiLathePt}, maths::{Vec2, Vec3, Pose, Matrix},
+    /// use stereokit_rust::{ui::{Ui, UiCorner, UiVisual, UiLathePt},
+    ///                      maths::{Vec2, Vec3, Pose, Matrix},
     ///                      mesh::Mesh, material::Material, util::named_colors};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.025, 0.948], Some([0.0, 185.0, 0.0].into()));
     ///
     /// let material = Material::pbr();
-    /// let transform1 = Matrix::trs(&([-0.1, 0.0, 0.74].into()),
-    ///                              &([0.0, 130.0, 0.0].into()),
-    ///                              &([3.0, 1.0, 0.05].into()));
+    /// let transform1 = Matrix::t_r_s([-0.1, 0.0, 0.74], [0.0, 130.0, 0.0], [3.0, 1.0, 0.05]);
     ///
     /// let mut mesh = Mesh::generate_cube([1.0, 1.0, 1.0], None);
     /// let mut verts = mesh.get_verts();

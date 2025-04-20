@@ -45,7 +45,7 @@ impl Default for Text2 {
             id: "Text2".to_string(),
             sk_info: None,
 
-            transform: Matrix::tr(&((Vec3::NEG_Z * -2.5) + Vec3::Y), &Quat::from_angles(0.0, 180.0, 0.0)),
+            transform: Matrix::t_r((Vec3::NEG_Z * -2.5) + Vec3::Y, Quat::from_angles(0.0, 180.0, 0.0)),
             window_demo_pose: Pose::new(Vec3::new(0.0, 1.5, -1.3), Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0)))),
             demo_win_width: 40.0 * CM,
             font_selected: 1,

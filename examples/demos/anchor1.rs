@@ -31,7 +31,7 @@ impl Default for Anchor1 {
             id: "Anchor1".to_string(),
             sk_info: None,
 
-            transform: Matrix::tr(&((Vec3::NEG_Z * 2.5) + Vec3::Y), &Quat::from_angles(0.0, 180.0, 0.0)),
+            transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, Quat::from_angles(0.0, 180.0, 0.0)),
             window_pose: Pose::new(Vec3::NEG_Z * 0.5 + Vec3::Y * 1.5, Some(Quat::from_angles(0.0, 180.0, 0.0))),
             anchors: vec![],
             ui_box_material: Material::ui_box(),

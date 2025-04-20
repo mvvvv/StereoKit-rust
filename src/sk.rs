@@ -626,8 +626,7 @@ impl SkSettings {
     ///                                .expect("StereoKit should initialize");
     ///
     /// let mut title = Title::new("Sk basic example", Some(named_colors::BLUE), None, None);
-    /// title.transform = Matrix::tr(&([0.5, 0.5, -1.9].into()),
-    ///                              &([0.0, 200.0, 0.0].into()));
+    /// title.transform = Matrix::t_r([0.5, 0.5, -1.9], [0.0, 200.0, 0.0]);
     /// sk.send_event(StepperAction::add("Title_blue_ID1", title));
     ///
     /// let mut iter = 0;

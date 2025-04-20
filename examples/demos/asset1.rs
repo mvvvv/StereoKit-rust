@@ -52,7 +52,7 @@ impl Default for Asset1 {
             sk_info: None,
             shutdown_completed: false,
 
-            transform: Matrix::tr(&((Vec3::NEG_Z * 2.5) + Vec3::Y), &Quat::from_angles(0.0, 180.0, 0.0)),
+            transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, Quat::from_angles(0.0, 180.0, 0.0)),
             asset_pose: Pose::new(Vec3::new(0.0, 1.3, -0.3), None),
             asset_scale: Vec3::ONE * 0.02,
             model_to_show: None,

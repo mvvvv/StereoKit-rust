@@ -72,8 +72,7 @@ impl Default for Anim1 {
             true,
         );
 
-        let transform =
-            Matrix::trs(&(Vec3::new(0.0, 4.5, -2.0)), &Quat::from_angles(90.0, 0.0, 0.0), &(Vec3::ONE * 0.25));
+        let transform = Matrix::t_r_s(Vec3::new(0.0, 4.5, -2.0), Quat::from_angles(90.0, 0.0, 0.0), Vec3::ONE * 0.25);
 
         let render_now = true;
         let stage = 0;

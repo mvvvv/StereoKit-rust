@@ -37,7 +37,7 @@ impl IStepper for BStepper {
         self.id = id;
         self.sk_info = Some(sk_info);
 
-        let mut transform = Matrix::tr(&((Vec3::NEG_Z * 2.5) + Vec3::Y), &Quat::from_angles(0.0, 180.0, 0.0));
+        let mut transform = Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, Quat::from_angles(0.0, 180.0, 0.0));
         let mut round_cube = Mesh::generate_rounded_cube(Vec3::ONE / 5.0, 0.005, Some(16));
         round_cube.id("round_cube BStepper");
         let text_style = Some(Text::make_style(Font::default(), 0.3, RED));
@@ -45,7 +45,7 @@ impl IStepper for BStepper {
 
         self.closures.set(
             move |token| {
-                transform *= Matrix::t(Vec3::Z * 0.2 * Time::get_stepf());
+                transform *= Matrix::t(Vec3::NEG_Z * 0.2 * Time::get_stepf());
                 Renderer::add_mesh(token, &round_cube, Material::pbr(), transform, Some(RED.into()), None);
                 Text::add_at(token, &text, transform, text_style, None, None, None, None, None, None);
                 // (1) You can't do that here: self.text = "youpi".into();

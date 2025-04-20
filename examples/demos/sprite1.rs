@@ -141,7 +141,7 @@ impl Sprite1 {
         Text::add_at(
             token,
             &self.title,
-            Matrix::tr(&Vec3::new(0.0, 1.0, -4.0), &Quat::from_angles(0.0, 180.0, 0.0)),
+            Matrix::t_r(Vec3::new(0.0, 1.0, -4.0), Quat::from_angles(0.0, 180.0, 0.0)),
             Some(self.text_style),
             None,
             None,

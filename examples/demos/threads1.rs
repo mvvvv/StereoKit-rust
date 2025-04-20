@@ -2,8 +2,8 @@ use super::a_stepper::AStepper;
 use std::{
     any::TypeId,
     sync::{
-        atomic::{AtomicBool, Ordering},
         Arc,
+        atomic::{AtomicBool, Ordering},
     },
     thread, time,
 };
@@ -12,7 +12,7 @@ use stereokit_rust::{
     maths::{Matrix, Quat, Vec3},
     prelude::*,
     system::{Text, TextStyle},
-    util::{named_colors::GREEN_YELLOW, Time},
+    util::{Time, named_colors::GREEN_YELLOW},
 };
 
 #[derive(IStepper)]
@@ -39,7 +39,7 @@ impl Default for Threads1 {
 
             run_for_ever: Arc::new(AtomicBool::new(true)),
             join_handle: None,
-            transform: Matrix::tr(&((Vec3::NEG_Z * 3.5) + Vec3::Y), &Quat::from_angles(0.0, 180.0, 0.0)),
+            transform: Matrix::t_r((Vec3::NEG_Z * 3.5) + Vec3::Y, Quat::from_angles(0.0, 180.0, 0.0)),
             text: "Threads1".into(),
             text_style: Text::make_style(Font::default(), 0.3, GREEN_YELLOW),
         }
@@ -61,10 +61,10 @@ impl Threads1 {
                 let random = ((Time::get_totalf() * 100.0) % 1000.0) / 600.0;
                 let id_str = "Test ".to_string() + &id.to_string();
                 a.text.clone_from(&id_str);
-                a.transform = Matrix::trs(
-                    &Vec3::new(random, 1.0 + random, -1.0 - random),
-                    &Quat::from_angles(0.0, 180.0, 0.0),
-                    &(Vec3::ONE * 0.2),
+                a.transform = Matrix::t_r_s(
+                    Vec3::new(random, 1.0 + random, -1.0 - random),
+                    Quat::from_angles(0.0, 180.0, 0.0),
+                    Vec3::ONE * 0.2,
                 );
                 if let Err(error) = event_loop_proxy1.send_event(StepperAction::add(&id_str, a)) {
                     Log::err(format!("Thread1, can't send_event add {} : {}", id_str, error));

@@ -82,22 +82,22 @@ impl Default for Shader1 {
             .set_bool("use_occlusion", true);
 
         //---- Transform Matrices.
-        let transform_mesh = Matrix::trs(
-            &((Vec3::NEG_Z * 1.0) + Vec3::X + Vec3::Y * 1.4),
-            &Quat::from_angles(90.0, 0.0, 0.0),
-            &(Vec3::ONE * 0.3),
+        let transform_mesh = Matrix::t_r_s(
+            (Vec3::NEG_Z * 1.0) + Vec3::X + Vec3::Y * 1.4,
+            Quat::from_angles(90.0, 0.0, 0.0),
+            Vec3::ONE * 0.3,
         );
 
-        let transform_plane = Matrix::tr(&(Vec3::new(0.2, 1.2, -1.0)), &Quat::from_angles(90.0, 0.0, 0.0));
+        let transform_plane = Matrix::t_r(Vec3::new(0.2, 1.2, -1.0), Quat::from_angles(90.0, 0.0, 0.0));
         let pose_progress = Pose::new(Vec3::new(0.1, 1.5, -1.0), Some(Quat::from_angles(0.0, 180.0, 0.0)));
 
         let transform_water2 =
-            Matrix::tr(&((Vec3::NEG_Z * 1.0) + Vec3::X * 0.2 + Vec3::Y * 0.2), &Quat::from_angles(0.0, 180.0, 0.0));
+            Matrix::t_r((Vec3::NEG_Z * 1.0) + Vec3::X * 0.2 + Vec3::Y * 0.2, Quat::from_angles(0.0, 180.0, 0.0));
 
         let transform_brick =
-            Matrix::tr(&((Vec3::NEG_Z * 1.0) + Vec3::X * 1.5 + Vec3::Y * 0.2), &Quat::from_angles(0.0, 180.0, 0.0));
+            Matrix::t_r((Vec3::NEG_Z * 1.0) + Vec3::X * 1.5 + Vec3::Y * 0.2, Quat::from_angles(0.0, 180.0, 0.0));
 
-        let transform_text = Matrix::tr(&(Vec3::ONE * -0.2), &Quat::from_angles(0.0, 180.0, 0.0));
+        let transform_text = Matrix::t_r(Vec3::ONE * -0.2, Quat::from_angles(0.0, 180.0, 0.0));
 
         //----- Meshes
         let vertices = [

@@ -1,13 +1,13 @@
 use stereokit_rust::{
     font::Font,
     material::Material,
-    maths::{units::M, Matrix, Pose, Quat, Vec3},
+    maths::{Matrix, Pose, Quat, Vec3, units::M},
     mesh::Mesh,
     model::Model,
     prelude::*,
     sound::{Sound, SoundInst},
     system::{Renderer, Text, TextStyle},
-    util::{named_colors::RED, Time},
+    util::{Time, named_colors::RED},
 };
 
 /// The Biplane1 stepper a flying plane
@@ -66,7 +66,7 @@ impl Default for Biplane1 {
             plane_sound,
             plane_sound_inst: None,
             material: Material::pbr(),
-            transform: Matrix::tr(&((Vec3::NEG_Z * 2.5) + Vec3::Y), &Quat::from_angles(0.0, 180.0, 0.0)),
+            transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, Quat::from_angles(0.0, 180.0, 0.0)),
             text: "Biplane1".to_owned(),
             text_style: None,
         }

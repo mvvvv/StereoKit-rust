@@ -134,7 +134,7 @@ impl Default for HandMenuRadial1 {
             Mesh::generate_plane(Vec2::new(40.0, 40.0), Vec3::UP, Vec3::FORWARD, None, true),
             &clean_tile,
         );
-        let floor_transform = Matrix::tr(&Vec3::new(0.0, 0.0, 0.0), &Quat::IDENTITY);
+        let floor_transform = Matrix::t_r(Vec3::new(0.0, 0.0, 0.0), Quat::IDENTITY);
 
         Self {
             id: "HandMenuRadial1".to_string(),
@@ -427,7 +427,7 @@ impl HandMenuRadial1 {
         if self.show_floor {
             if self.show_shadows && self.floor == 5 {
                 let light_pos = Renderer::get_sky_light().get_dominent_light_direction() * -500.0;
-                let camera = Matrix::tr(&light_pos, &Quat::look_at(light_pos, Vec3::ZERO, None));
+                let camera = Matrix::t_r(light_pos, Quat::look_at(light_pos, Vec3::ZERO, None));
                 //Log::diag(format!("Camera at {:}", &light_pos));
 
                 // let mut list = RenderList::primary();

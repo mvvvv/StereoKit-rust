@@ -272,9 +272,7 @@ impl Model {
     /// let my_bytes = std::include_bytes!("../assets/plane.glb");
     ///
     /// let model = Model::from_memory("my_bytes_center.glb", my_bytes, None).unwrap().copy();
-    /// let transform = Matrix::trs(&(Vec3::Y * 0.10),
-    ///                             &([0.0, 110.0, 0.0].into()),
-    ///                             &(Vec3::ONE * 0.09));
+    /// let transform = Matrix::t_r_s(Vec3::Y * 0.10, [0.0, 110.0, 0.0], Vec3::ONE * 0.09);
     ///
     /// filename_scr = "screenshots/model_from_memory.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
@@ -316,9 +314,7 @@ impl Model {
     ///
     /// let model = Model::from_file("center.glb", None)
     ///                              .expect("Could not load model").copy();
-    /// let transform = Matrix::trs(&(Vec3::NEG_Y * 0.40),
-    ///                             &([0.0, 190.0, 0.0].into()),
-    ///                             &(Vec3::ONE * 0.25));
+    /// let transform = Matrix::t_r_s(Vec3::NEG_Y * 0.40, [0.0, 190.0, 0.0], Vec3::ONE * 0.25);
     ///
     /// filename_scr = "screenshots/model_from_file.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
@@ -462,14 +458,14 @@ impl Model {
     /// material_after.color_tint(named_colors::RED);
     ///
     /// let bounds = model.get_bounds();
-    /// let transform_before = Matrix::ts( bounds.center, bounds.dimensions);
+    /// let transform_before = Matrix::t_s( bounds.center, bounds.dimensions);
     /// assert_eq!(bounds.center, Vec3::ZERO);
     /// assert_eq!(bounds.dimensions, Vec3::ONE * 0.9);
     ///
     /// // let's reduce the bounds to the upper cube only
     /// model.bounds( Bounds::new([0.30, 0.30, 0.30].into(), Vec3::ONE * 0.301));
     /// let new_bounds = model.get_bounds();
-    /// let transform_after = Matrix::ts( new_bounds.center, new_bounds.dimensions);
+    /// let transform_after = Matrix::t_s( new_bounds.center, new_bounds.dimensions);
     ///
     /// filename_scr = "screenshots/model_bounds.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
@@ -505,10 +501,8 @@ impl Model {
     ///                      system::RenderLayer};
     ///
     /// let model = Model::from_file("center.glb", None)
-    ///                              .expect("Could not load model").copy();
-    /// let transform1 = Matrix::trs(&([-0.70, -0.70, 0.0].into()),
-    ///                              &([0.0, 190.0, 0.0].into()),
-    ///                              &(Vec3::ONE * 0.25));
+    ///                        .expect("Could not load model").copy();
+    /// let transform1 = Matrix::t_r_s([-0.70, -0.70, 0.0], [0.0, 190.0, 0.0], [0.25, 0.25, 0.25]);
     /// let transform2 = transform1 * Matrix::t(Vec3::X * 0.70);
     /// let transform3 = transform2 * Matrix::t(Vec3::X * 0.70);
     ///
@@ -554,10 +548,8 @@ impl Model {
     ///                      material::Material, system::RenderLayer};
     ///
     /// let model = Model::from_file("cuve.glb", None)
-    ///                              .expect("Could not load model").copy();
-    /// let transform1 = Matrix::trs(&([-0.50, -0.10, 0.0].into()),
-    ///                              &([45.0, 0.0, 0.0].into()),
-    ///                              &(Vec3::ONE * 0.07));
+    ///                        .expect("Could not load model").copy();
+    /// let transform1 = Matrix::t_r_s([-0.50, -0.10, 0.0], [45.0, 0.0, 0.0], [0.07, 0.07, 0.07]);
     /// let transform2 = transform1 * Matrix::t(Vec3::X * 0.70);
     /// let transform3 = transform2 * Matrix::t(Vec3::X * 0.70);
     ///
@@ -815,7 +807,7 @@ impl Model {
     ///                 .get_all_param_info().set_float("border_size", 0.025);
     ///
     /// let bounds = model.get_bounds();
-    /// let transform_before = transform_model * Matrix::ts( bounds.center, bounds.dimensions);
+    /// let transform_before = transform_model * Matrix::t_s( bounds.center, bounds.dimensions);
     ///
     /// filename_scr = "screenshots/model_intersect.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
@@ -896,9 +888,7 @@ impl Model {
 ///
 /// let model = Model::from_file("center.glb", None)
 ///                              .expect("Could not load model").copy();
-/// let transform = Matrix::trs(&(Vec3::NEG_Y * 0.40),
-///                             &([0.0, 190.0, 0.0].into()),
-///                             &(Vec3::ONE * 0.25));
+/// let transform = Matrix::t_r_s(Vec3::NEG_Y * 0.40, [0.0, 190.0, 0.0], Vec3::ONE * 0.25);
 ///
 /// let mut anims = model.get_anims();
 /// assert_eq!(anims.get_count(), 1);
@@ -1348,9 +1338,7 @@ impl<'a> Anims<'a> {
 ///
 /// let model = Model::from_file("center.glb", None)
 ///                           .expect("Could not load model").copy();
-/// let transform = Matrix::trs(&(Vec3::NEG_Y * 0.40),
-///                             &([0.0, 190.0, 0.0].into()),
-///                             &(Vec3::ONE * 0.25));
+/// let transform = Matrix::t_r_s(Vec3::NEG_Y * 0.40, [0.0, 190.0, 0.0], Vec3::ONE * 0.25);
 ///
 /// let mut nodes = model.get_nodes();
 ///
@@ -1835,7 +1823,7 @@ impl<'a> Nodes<'a> {
 /// let transform1 = Matrix::t( [-0.7,-0.5, 0.0]);
 /// let transform2 = Matrix::t( [ 0.0, 0.0, 0.0]);
 /// let transform3 = Matrix::t( [ 0.7, 0.5, 0.0]);
-/// let trans_mini = Matrix::ts([ 0.0, 0.0, 0.5].into(), Vec3::ONE * 0.15);
+/// let trans_mini = Matrix::t_s([ 0.0, 0.0, 0.5].into(), Vec3::ONE * 0.15);
 ///
 /// let material = Material::pbr();
 ///

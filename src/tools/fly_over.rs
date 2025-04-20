@@ -129,12 +129,11 @@ impl FlyOver {
             }
 
             shift += head.orientation * move_v * Time::get_step_unscaledf() * speed_accelerator * self.reverse;
-            camera_root = Matrix::tr(&shift, &camera_pose.orientation);
+            camera_root.update_t_r(&shift, &camera_pose.orientation);
             Renderer::camera_root(camera_root);
         }
 
         //----- rotate
-
         let rotate_stick = Input::controller(Handed::Right).stick;
         let rotate_val = Vec2::dot(rotate_stick, Vec2::X);
 

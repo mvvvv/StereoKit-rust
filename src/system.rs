@@ -427,9 +427,7 @@ impl Assets {
     /// // The model is loaded asynchronously, so we need to wait for it to be loaded before we can screenshot it.
     /// let model = Model::from_file("cuve.glb", None)
     ///                 .expect("mobiles.gltf should be a valid model");
-    /// let transform = Matrix::trs(&([0.15, -0.75, -1.0].into()),
-    ///                             &([0.0, 110.0, 0.0].into()),
-    ///                             &(Vec3::ONE * 0.40));
+    /// let transform = Matrix::t_r_s([0.15, -0.75, -1.0], [0.0, 110.0, 0.0], [0.4, 0.4, 0.4]);
     ///
     /// Assets::block_for_priority(i32::MAX);
     ///
@@ -1291,7 +1289,7 @@ impl Hierarchy {
     ///     assert_eq!(ind_cube, 15);
     ///
     ///     let local_contact_cube = local_transform.transform_point(contact_cube);
-    ///     let transform_contact = Matrix::ts(local_contact_cube, Vec3::ONE * 0.1);
+    ///     let transform_contact = Matrix::t_s(local_contact_cube, Vec3::ONE * 0.1);
     ///     sphere.draw(token, &material, transform_contact, Some(named_colors::YELLOW.into()), None );
     ///     Hierarchy::pop(token);
     /// );
@@ -1705,14 +1703,14 @@ pub type HandSimId = i32;
 ///
 /// let sphere = Mesh::generate_sphere(1.0, Some(12));
 /// let mut material_sphere = Material::pbr().copy();
-/// let main_transform = Matrix::tr(&([0.0, -0.05, 0.88].into()), &([0.0, 210.0, 0.0].into()));
+/// let main_transform = Matrix::t_r([0.0, -0.05, 0.88], [0.0, 210.0, 0.0]);
 ///
 /// filename_scr = "screenshots/hand.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
 ///     for finger in 0..5 {
 ///         for joint in 0..5 {
 ///             let joint_pose = hand.get_u(finger, joint);
-///             let transform = Matrix::ts(joint_pose.position, Vec3::ONE * joint_pose.radius);
+///             let transform = Matrix::t_s(joint_pose.position, Vec3::ONE * joint_pose.radius);
 ///             Hierarchy::push(token, main_transform, None);
 ///                 sphere.draw(token, &material_sphere, transform, Some(named_colors::BLACK.into()), None);
 ///             Hierarchy::pop(token);
@@ -1944,8 +1942,8 @@ pub enum ControllerKey {
 ///
 /// let model_left = Input::get_controller_model(Handed::Left);
 /// let model_right = Input::get_controller_model(Handed::Right);
-/// let transform_left = Matrix::tr(&([-0.05, 0.0, 0.93].into()), &([90.0, 00.0, 0.0].into()));
-/// let transform_right = Matrix::tr(&([0.05, 0.0, 0.93].into()), &([90.0, 00.0, 0.0].into()));
+/// let transform_left = Matrix::t_r([-0.05, 0.0, 0.93], [90.0, 00.0, 0.0]);
+/// let transform_right = Matrix::t_r([0.05, 0.0, 0.93], [90.0, 00.0, 0.0]);
 ///
 /// filename_scr = "screenshots/controller.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
@@ -3941,9 +3939,7 @@ pub enum Projection {
 /// let transform_sun = Matrix::t([-6.0, -4.0, -10.0]);
 ///
 /// let plane = Model::from_file("plane.glb", None).expect("plane.glb should be there");
-/// let transform_plane = Matrix::trs(&([0.0, 0.2, -0.7].into()),
-///                                   &([0.0, 120.0, 0.0].into()),
-///                                   &(Vec3::ONE * 0.15));
+/// let transform_plane = Matrix::t_r_s([0.0, 0.2, -0.7], [0.0, 120.0, 0.0], [0.15, 0.15, 0.15]);
 ///
 /// // We want to replace the gray background with a dark blue sky:
 /// let mut primary = RenderList::primary();
@@ -4568,7 +4564,7 @@ impl Renderer {
     /// material.diffuse_tex(&tex);
     /// let transform_plane = Matrix::t([0.0, -0.55, 0.0]);
     ///
-    /// let camera = Matrix::tr(&(Vec3::Z * 2.0), &Quat::look_at(Vec3::Z, Vec3::ZERO, None));
+    /// let camera = Matrix::t_r(Vec3::Z * 2.0, Quat::look_at(Vec3::Z, Vec3::ZERO, None));
     /// let projection = Matrix::perspective(90.0, 1.0, 0.1, 20.0);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
@@ -4796,7 +4792,7 @@ impl Renderer {
     /// material.diffuse_tex(&tex);
     /// let transform_plane = Matrix::t([0.0, -0.55, 0.0]);
     ///
-    /// let camera = Matrix::tr(&(Vec3::Z * 2.0), &Quat::look_at(Vec3::Z, Vec3::ZERO, None));
+    /// let camera = Matrix::t_r(Vec3::Z * 2.0, Quat::look_at(Vec3::Z, Vec3::ZERO, None));
     /// let projection = Matrix::perspective(90.0, 1.0, 0.1, 20.0);
     ///
     /// number_of_steps = 200;
@@ -5854,7 +5850,7 @@ impl Text {
     /// Renders text at the given location! Must be called every frame you want this text to be visible.
     /// <https://stereokit.net/Pages/StereoKit/Text/Add.html>
     /// * `text` - What text should be drawn?
-    /// * `transform` - A Matrix representing the transform of the text mesh! Try Matrix::trs().
+    /// * `transform` - A Matrix representing the transform of the text mesh! Try Matrix::t_r_s().
     /// * `text_style` - Style information for rendering, see Text.MakeStyle or the TextStyle object. If None will use
     ///   the TextStyle::default()
     /// * `vertex_tint_linear` - The vertex color of the text gets multiplied by this color. This is a linear color
@@ -5929,7 +5925,7 @@ impl Text {
     /// Renders text at the given location! Must be called every frame you want this text to be visible.
     /// <https://stereokit.net/Pages/StereoKit/Text/Add.html>
     /// * `text` - What text should be drawn?
-    /// * `transform` - A Matrix representing the transform of the text mesh! Try Matrix::trs().
+    /// * `transform` - A Matrix representing the transform of the text mesh! Try Matrix::t_r_s().
     /// * `size` - This is the Hierarchy space rectangle that the text should try to fit inside of. This allows for text
     ///   wrapping or scaling based on the value provided to the ‘fit’ parameter.
     /// * `text_fit` - Describe how the text should behave when one of its size dimensions conflicts with the provided

@@ -70,7 +70,7 @@ impl Default for HudNotification {
 impl HudNotification {
     /// Called from IStepper::initialize here you can abort the initialization by returning false
     fn start(&mut self) -> bool {
-        self.transform_text = Matrix::tr(&self.position, &Quat::from_angles(0.0, 180.0, 0.0));
+        self.transform_text = Matrix::t_r(self.position, Quat::from_angles(0.0, 180.0, 0.0));
         true
     }
 

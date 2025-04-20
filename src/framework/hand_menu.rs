@@ -52,7 +52,7 @@ impl HandMenuItem {
         Text::add_at(
             token,
             &self.name,
-            Matrix::ts(at, scale),
+            Matrix::t_s(at, scale),
             None,
             None,
             None,
@@ -704,7 +704,7 @@ impl HandMenuRadial {
             let mut at = Vec3::angle_xy(curr_angle + half_step, 0.0) * Self::MID_DIST;
             at.z = depth;
 
-            let r = Matrix::tr(&Vec3::new(0.0, 0.0, depth), &Quat::from_angles(0.0, 0.0, curr_angle));
+            let r = Matrix::t_r(Vec3::new(0.0, 0.0, depth), Quat::from_angles(0.0, 0.0, curr_angle));
             self.background.draw(
                 token,
                 Material::ui(),
@@ -729,9 +729,9 @@ impl HandMenuRadial {
                         HandMenuAction::Back => self.child_indicator.draw(
                             token,
                             Material::ui(),
-                            Matrix::tr(
-                                &Vec3::new(0.0, 0.0, depth),
-                                &Quat::from_angles(0.0, 0.0, curr_angle + half_step),
+                            Matrix::t_r(
+                                Vec3::new(0.0, 0.0, depth),
+                                Quat::from_angles(0.0, 0.0, curr_angle + half_step),
                             ),
                             None,
                             None,
@@ -747,9 +747,9 @@ impl HandMenuRadial {
                             self.img_frame.draw(
                                 token,
                                 checked_material,
-                                Matrix::tr(
-                                    &Vec3::new(0.0, 0.0, depth - 0.01),
-                                    &Quat::from_angles(0.0, 0.0, curr_angle + half_step),
+                                Matrix::t_r(
+                                    Vec3::new(0.0, 0.0, depth - 0.01),
+                                    Quat::from_angles(0.0, 0.0, curr_angle + half_step),
                                 ),
                                 None,
                                 None,
@@ -764,7 +764,7 @@ impl HandMenuRadial {
                     self.child_indicator.draw(
                         token,
                         Material::ui(),
-                        Matrix::tr(&Vec3::new(0.0, 0.0, depth), &Quat::from_angles(0.0, 0.0, curr_angle + half_step)),
+                        Matrix::t_r(Vec3::new(0.0, 0.0, depth), Quat::from_angles(0.0, 0.0, curr_angle + half_step)),
                         None,
                         None,
                     );
@@ -774,7 +774,7 @@ impl HandMenuRadial {
                 self.img_frame.draw(
                     token,
                     image_material,
-                    Matrix::tr(&Vec3::new(0.0, 0.0, depth), &Quat::from_angles(0.0, 0.0, curr_angle + half_step)),
+                    Matrix::t_r(Vec3::new(0.0, 0.0, depth), Quat::from_angles(0.0, 0.0, curr_angle + half_step)),
                     None,
                     None,
                 );

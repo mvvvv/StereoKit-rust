@@ -41,7 +41,7 @@ impl Default for HandMenuRadial0 {
             value_selected: Rc::new(RefCell::new(String::from("One!"))),
             show_value: Rc::new(RefCell::new(true)),
 
-            transform: Matrix::tr(&((Vec3::NEG_Z * 2.5) + Vec3::Y), &Quat::from_angles(0.0, 180.0, 0.0)),
+            transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, Quat::from_angles(0.0, 180.0, 0.0)),
             text: "HandMenuRadial0".to_owned(),
             text_style: None,
         }

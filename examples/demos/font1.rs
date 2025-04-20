@@ -49,7 +49,7 @@ impl Default for Font1 {
             emoji_style,
             text_style,
             window_pose,
-            transform: Matrix::tr(&((Vec3::NEG_Z * 2.5) + Vec3::Y), &Quat::from_angles(0.0, 180.0, 0.0)),
+            transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, Quat::from_angles(0.0, 180.0, 0.0)),
             text: "Font1".to_owned(),
             title_style: None,
         }

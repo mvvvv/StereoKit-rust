@@ -203,12 +203,9 @@ pub enum TexAddress {
 /// let material_back  = Material::unlit_clip().tex_copy(tex_back);
 /// let material_floor = Material::pbr().tex_copy(tex_floor);
 ///
-/// let transform_left  = Matrix::tr(&([-0.5, 0.0, 0.0].into()),
-///                                 &([0.0, 0.0, 90.0].into()));
-/// let transform_right = Matrix::tr(&([ 0.5, 0.0, 0.0].into()),
-///                                 &([0.0, 0.0, -90.0].into()));
-/// let transform_back  = Matrix::tr(&([ 0.0, 0.0,-0.5].into()),
-///                                 &([90.0, 0.0, 0.0].into()));
+/// let transform_left  = Matrix::t_r([-0.5, 0.0, 0.0], [0.0, 0.0, 90.0]);
+/// let transform_right = Matrix::t_r([ 0.5, 0.0, 0.0], [0.0, 0.0,-90.0]);
+/// let transform_back  = Matrix::t_r([ 0.0, 0.0,-0.5], [90.0, 0.0, 0.0]);
 /// let transform_floor = Matrix::t(  [0.0, -0.5, 0.0]);
 ///
 /// filename_scr = "screenshots/tex.jpeg";
@@ -400,10 +397,8 @@ impl Tex {
     /// let material_left  = Material::pbr().tex_copy(tex_left);
     /// let material_right = Material::pbr().tex_copy(tex_right);
     ///
-    /// let transform_left  = Matrix::tr(&([-0.5, 0.0, 0.0].into()),
-    ///                                  &([0.0, -45.0, 90.0].into()));
-    /// let transform_right = Matrix::tr(&([ 0.5, 0.0, 0.0].into()),
-    ///                                  &([0.0, 45.0, -90.0].into()));
+    /// let transform_left  = Matrix::t_r([-0.5, 0.0, 0.0], [0.0,-45.0, 90.0]);
+    /// let transform_right = Matrix::t_r([ 0.5, 0.0, 0.0], [0.0, 45.0,-90.0]);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     plane_mesh.draw(token, &material_left,  transform_left,  None, None);
@@ -448,10 +443,8 @@ impl Tex {
     /// let material_left  = Material::pbr().tex_copy(tex_left);
     /// let material_right = Material::pbr().tex_copy(tex_right);
     ///
-    /// let transform_left  = Matrix::tr(&([-0.5, 0.0, 0.0].into()),
-    ///                                  &([0.0, -45.0, 90.0].into()));
-    /// let transform_right = Matrix::tr(&([ 0.5, 0.0, 0.0].into()),
-    ///                                  &([0.0, 45.0, -90.0].into()));
+    /// let transform_left  = Matrix::t_r([-0.5, 0.0, 0.0], [0.0,-45.0, 90.0]);
+    /// let transform_right = Matrix::t_r([ 0.5, 0.0, 0.0], [0.0, 45.0,-90.0]);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     plane_mesh.draw(token, &material_left,  transform_left,  None, None);
@@ -497,10 +490,8 @@ impl Tex {
     /// let material_right = Material::pbr().tex_copy(&tex_right);
     /// let material_floor = Material::pbr().tex_copy(&tex_floor);
     ///
-    /// let transform_left  = Matrix::tr(&([-0.5, 0.0, 0.0].into()),
-    ///                                  &([0.0, -45.0, 90.0].into()));
-    /// let transform_right = Matrix::tr(&([ 0.5, 0.0, 0.0].into()),
-    ///                                  &([0.0, 45.0, -90.0].into()));
+    /// let transform_left  = Matrix::t_r([-0.5, 0.0, 0.0], [0.0,-45.0, 90.0]);
+    /// let transform_right = Matrix::t_r([ 0.5, 0.0, 0.0], [0.0, 45.0,-90.0]);
     /// let transform_floor = Matrix::t(  [0.0, -0.5, 0.0]);
     ///
     /// filename_scr = "screenshots/tex_from_file.jpeg";
@@ -564,8 +555,7 @@ impl Tex {
     ///
     /// let material  = Material::pbr().tex_copy(tex);
     ///
-    /// let transform  = Matrix::tr(&([-0.5, 0.0, 0.0].into()),
-    ///                             &([0.0, -45.0, 90.0].into()));
+    /// let transform  = Matrix::t_r([-0.5, 0.0, 0.0], [0.0, -45.0, 90.0]);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     plane_mesh.draw(token, &material,  transform,  None, None);
@@ -625,8 +615,7 @@ impl Tex {
     ///
     /// let material  = Material::pbr().tex_copy(tex);
     ///
-    /// let transform  = Matrix::tr(&([-0.5, 0.0, 0.0].into()),
-    ///                             &([0.0, -45.0, 90.0].into()));
+    /// let transform  = Matrix::t_r([-0.5, 0.0, 0.0], [0.0, -45.0, 90.0]);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     plane_mesh.draw(token, &material,  transform,  None, None);
@@ -682,8 +671,7 @@ impl Tex {
     ///
     /// let material  = Material::pbr().tex_copy(tex);
     ///
-    /// let transform  = Matrix::tr(&([-0.5, 0.0, 0.0].into()),
-    ///                             &([0.0, -45.0, 90.0].into()));
+    /// let transform  = Matrix::t_r([-0.5, 0.0, 0.0], [0.0, -45.0, 90.0]);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     plane_mesh.draw(token, &material,  transform,  None, None);
@@ -740,8 +728,7 @@ impl Tex {
     ///
     /// let material  = Material::pbr().tex_copy(&tex);
     ///
-    /// let transform  = Matrix::tr(&([-0.5, 0.0, 0.0].into()),
-    ///                             &([0.0, -45.0, 90.0].into()));
+    /// let transform  = Matrix::t_r([-0.5, 0.0, 0.0], [0.0, -45.0, 90.0]);
     ///
     /// Renderer::blit(&tex, &material);
     /// ```
@@ -791,8 +778,7 @@ impl Tex {
     ///
     /// let material  = Material::pbr().tex_copy(tex);
     ///
-    /// let transform  = Matrix::tr(&([-0.5, 0.0, 0.0].into()),
-    ///                             &([0.0, -45.0, 90.0].into()));
+    /// let transform  = Matrix::t_r([-0.5, 0.0, 0.0], [0.0, -45.0, 90.0]);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     plane_mesh.draw(token, &material,  transform,  None, None);
@@ -837,12 +823,9 @@ impl Tex {
     /// let material_back  = Material::unlit_clip().tex_copy(tex_back);
     /// let material_floor = Material::unlit_clip().tex_copy(tex_floor);
     ///
-    /// let transform_left  = Matrix::tr(&([-0.5, 0.0, 0.0].into()),
-    ///                                 &([0.0, 0.0, 90.0].into()));
-    /// let transform_right = Matrix::tr(&([ 0.5, 0.0, 0.0].into()),
-    ///                                 &([0.0, 0.0, -90.0].into()));
-    /// let transform_back  = Matrix::tr(&([ 0.0, 0.0,-0.5].into()),
-    ///                                 &([90.0, 0.0, 0.0].into()));
+    /// let transform_left  = Matrix::t_r([-0.5, 0.0, 0.0], [0.0, 0.0, 90.0]);
+    /// let transform_right = Matrix::t_r([ 0.5, 0.0, 0.0], [0.0, 0.0, -90.0]);
+    /// let transform_back  = Matrix::t_r([ 0.0, 0.0,-0.5], [90.0, 0.0, 0.0]);
     /// let transform_floor = Matrix::t(  [0.0, -0.5, 0.0]);
     ///
     /// filename_scr = "screenshots/tex_gen_particle.jpeg";
@@ -1068,8 +1051,7 @@ impl Tex {
     ///
     /// let plane_mesh = Mesh::generate_plane_up([1.0,1.0], None, true);
     /// let material  = Material::pbr().tex_copy(&tex);
-    /// let transform  = Matrix::tr(&([-0.5, 0.0, 0.0].into()),
-    ///                             &([0.0, -45.0, 90.0].into()));
+    /// let transform  = Matrix::t_r([-0.5, 0.0, 0.0], [0.0, -45.0, 90.0]);
     ///
     /// Renderer::blit(&tex, &material);
     /// ```

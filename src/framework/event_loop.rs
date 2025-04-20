@@ -43,8 +43,7 @@ enum SleepPhase {
 /// let model = Model::from_file("cuve.glb", None).expect("Missing cube.glb").copy();
 /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None)
 ///     .expect("Missing shader");
-/// let transform = Matrix::tr(&([0.0, 0.0, -6.5].into()),
-///                            &([90.0, 0.0, 0.0].into()));
+/// let transform = Matrix::t_r([0.0, 0.0, -6.5], [90.0, 0.0, 0.0]);
 ///
 /// let mut title = Title::new("SkClosures", None, None, None);
 /// sk.send_event(StepperAction::add("Title_ID", title));
@@ -526,8 +525,7 @@ pub trait IStepper {
 /// use std::any::TypeId; // we need this to remove all the steppers of a given type.
 ///
 /// let mut title = Title::new("StepperActions", Some(named_colors::GREEN), None, None);
-/// title.transform = Matrix::tr(&([-1.0, 0.0, -1.5].into()),
-///                              &([0.0, 155.0, 0.0].into()));
+/// title.transform = Matrix::t_r([-1.0, 0.0, -1.5], [0.0, 155.0, 0.0]);
 /// sk.send_event(StepperAction::add("Title_green_ID", title.clone()));
 ///
 /// sk.send_event(StepperAction::add_default::<Title>("Title_white_ID"));
@@ -633,8 +631,7 @@ impl StepperAction {
     /// use std::any::TypeId; // we need this to remove all the steppers of a given type.
     ///
     /// let mut title = Title::new("Stepper 1", Some(named_colors::GREEN), None, None);
-    /// title.transform = Matrix::tr(&([0.0, 0.0, -1.0].into()),
-    ///                              &([0.0, 135.0, 0.0].into()));
+    /// title.transform = Matrix::t_r([0.0, 0.0, -1.0], [0.0, 135.0, 0.0]);
     /// sk.send_event(StepperAction::add("Title_green_ID", title.clone()));
     ///
     /// test_steps!(  // !!!! Get a proper main loop !!!!
@@ -822,12 +819,10 @@ pub const ISTEPPER_REMOVED: &str = "IStepper_Removed";
 /// let mut steppers = Steppers::new(sk.get_sk_info_clone());
 ///
 /// let mut title = Title::new("Steppers", Some(named_colors::BLUE), None, None);
-/// title.transform = Matrix::tr(&([-0.5, 0.5, -1.5].into()),
-///                              &([0.0, 155.0, 0.0].into()));
+/// title.transform = Matrix::t_r([-0.5, 0.5, -1.5], [0.0, 155.0, 0.0]);
 /// steppers.send_event(StepperAction::add("Title_blue_ID1", title.clone()));
 ///
-/// title.transform = Matrix::tr(&([-0.5, -0.5, -1.5].into()),
-///                              &([0.0, 245.0, 0.0].into()));
+/// title.transform = Matrix::t_r([-0.5, -0.5, -1.5], [0.0, 245.0, 0.0]);
 /// // We may use the same ID for different steppers
 /// steppers.send_event(StepperAction::add("Title_blue_ID2", title.clone()));
 /// sk      .send_event(StepperAction::add("Title_blue_ID2", title.clone()));
@@ -1166,7 +1161,8 @@ impl Steppers {
 /// ```
 /// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{font::Font, framework::StepperClosures, material::Material,
-///        maths::{Matrix, Quat, Vec3},mesh::Mesh, system::{Renderer, Text},util::{Time, named_colors},};
+///                      maths::{Matrix, Quat, Vec3},mesh::Mesh, system::{Renderer, Text},
+///                      util::{Time, named_colors},};
 ///
 /// pub struct BStepper {
 ///     id: StepperId,
@@ -1195,7 +1191,7 @@ impl Steppers {
 ///         self.id = id;
 ///         self.sk_info = Some(sk_info);
 ///
-///         let mut transform = Matrix::tr(&((Vec3::NEG_Z * 0.5) + Vec3::Y), &Quat::from_angles(0.0, 180.0, 0.0));
+///         let mut transform = Matrix::t_r([0.0, 1.0, -0.5], [0.0, 180.0, 0.0]);
 ///         let mut round_cube = Mesh::generate_rounded_cube(Vec3::ONE / 5.0, 0.005, Some(16));
 ///         round_cube.id("round_cube BStepper");
 ///         let text_style = Some(Text::make_style(Font::default(), 0.3, named_colors::GOLD));
@@ -1205,7 +1201,8 @@ impl Steppers {
 ///             move |token| {
 ///                 Renderer::add_mesh(token, &round_cube, Material::pbr(),
 ///                                    transform, Some(named_colors::RED.into()), None);
-///                 Text::add_at(token, &text, transform, text_style, None, None, None, None, None, None);
+///                 Text::add_at(token, &text, transform, text_style,
+///                              None, None, None, None, None, None);
 ///                 // (1) You cannot do that here: self.text = "youpi".into();
 ///             },
 ///             || Log::diag("Closing Stepper B !!!"),

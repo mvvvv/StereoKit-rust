@@ -29,6 +29,7 @@ use std::{
 ///                    .expect("sound.jpeg should be there");
 /// let mut position = Vec3::new(-0.5, 0.0, 0.5);
 /// let rotation = Quat::from_angles(45.0, 45.0, 45.0);
+/// let mut transform = Matrix::IDENTITY;
 ///
 /// let mut plane_sound = Sound::from_file("sounds/plane_engine.mp3")
 ///                          .expect("plane_engine.mp3 should be there");
@@ -39,7 +40,7 @@ use std::{
 /// number_of_steps = 4000;
 /// filename_scr = "screenshots/sound.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
-///     let transform = Matrix::tr(&position, &rotation);
+///     transform.update_t_r(&position, &rotation);
 ///     mesh.draw(token, &material, transform, Some(named_colors::CYAN.into()), None);
 ///     if iter == 0 {
 ///         assert!(plane_sound_inst.is_playing());

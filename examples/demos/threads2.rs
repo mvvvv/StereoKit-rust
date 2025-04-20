@@ -1,7 +1,7 @@
 use std::{
     sync::{
-        atomic::{AtomicBool, Ordering},
         Arc,
+        atomic::{AtomicBool, Ordering},
     },
     thread::{self, JoinHandle},
     time,
@@ -14,7 +14,7 @@ use stereokit_rust::{
     prelude::*,
     shader::Shader,
     system::{Text, TextStyle},
-    util::{named_colors::GREEN_YELLOW, Color128},
+    util::{Color128, named_colors::GREEN_YELLOW},
 };
 
 #[derive(IStepper)]
@@ -49,7 +49,7 @@ impl Default for Threads2 {
             run_for_ever2,
             thread_blinker: None,
             transform_model: Matrix::t(Vec3::new(0.0, 1.0, -0.6)),
-            transform: Matrix::tr(&((Vec3::NEG_Z * 3.5) + Vec3::Y), &Quat::from_angles(0.0, 180.0, 0.0)),
+            transform: Matrix::t_r((Vec3::NEG_Z * 3.5) + Vec3::Y, Quat::from_angles(0.0, 180.0, 0.0)),
             text: "Threads2".into(),
             text_style: Text::make_style(Font::default(), 0.3, GREEN_YELLOW),
         }

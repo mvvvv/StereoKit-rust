@@ -11,23 +11,24 @@ use std::{
 /// Native code use this as bool
 pub type Bool32T = i32;
 
-/// Blends (Linear Interpolation) between two scalars, based
-/// on a 'blend' value, where 0 is a, and 1 is b. Doesn't clamp
+/// Blends (Linear Interpolation) between two scalars, based on a 'blend' value, where 0 is a, and 1 is b. Doesn't clamp
 /// percent for you.
-/// <https://stereokit.net/Pages/SKMath/Lerp.html>
-/// * a - First item in the blend, or '0.0' blend.
-/// * b - Second item in the blend, or '1.0' blend.
-/// * t - A blend value between 0 and 1. Can be outside   this range, it'll just interpolate outside of the a, b range.
+/// <https://stereokit.net/Pages/StereoKit/SKMath/Lerp.html>
+/// * `a` - First item in the blend, or '0.0' blend.
+/// * `b` - Second item in the blend, or '1.0' blend.
+/// * `t` - A blend value between 0 and 1. Can be outside   this range, it'll just interpolate outside of the a, b range.
+///
+/// Returns an unclamped blend of a and b.
+/// see also [`crate::util::Color128::lerp`]
 pub fn lerp(a: f32, b: f32, t: f32) -> f32 {
     a + (b - a) * t
 }
 
-/// Calculates the minimum angle 'distance' between two
-/// angles. This covers wraparound cases like: the minimum distance
+/// Calculates the minimum angle 'distance' between two angles. This covers wraparound cases like: the minimum distance
 /// between 10 and 350 is 20.
-/// <https://stereokit.net/Pages/SKMath/AngleDist.html>
-/// * a - First angle, in degrees.
-/// * b - Second angle, in degrees.
+/// <https://stereokit.net/Pages/StereoKit/SKMath/AngleDist.html>
+/// * `a` - First angle, in degrees.
+/// * `b` - Second angle, in degrees.
 ///   
 /// returns : Degrees 0-180, the minimum angle between a and b.
 pub fn angle_dist(a: f32, b: f32) -> f32 {
@@ -36,34 +37,26 @@ pub fn angle_dist(a: f32, b: f32) -> f32 {
 }
 
 pub mod units {
-    /// Converts centimeters to meters. There are 100cm in 1m. In StereoKit
-    /// 1 unit is also 1 meter, so `25 * Units.cm2m == 0.25`, 25 centimeters is .25
-    /// meters/units.
+    /// Converts centimeters to meters. There are 100cm in 1m. In StereoKit 1 unit is also 1 meter,
+    /// so `25 * Units.cm2m == 0.25`, 25 centimeters is .25 meters/units.
     pub const CM2M: f32 = 0.01;
-    /// Converts millimeters to meters. There are 1000mm in 1m. In StereoKit
-    /// 1 unit is 1 meter, so `250 * Units.mm2m == 0.25`, 250 millimeters is .25
-    /// meters/units.
+    /// Converts millimeters to meters. There are 1000mm in 1m. In StereoKit 1 unit is 1 meter,
+    /// so `250 * Units.mm2m == 0.25`, 250 millimeters is .25 meters/units.
     pub const MM2M: f32 = 0.001;
-    ///Converts meters to centimeters. There are 100cm in 1m, so this just
-    /// multiplies by 100.
+    ///Converts meters to centimeters. There are 100cm in 1m, so this just multiplies by 100.
     pub const M2CM: f32 = 100.0;
-    ///Converts meters to millimeters. There are 1000mm in 1m, so this just
-    /// multiplies by 1000.
+    ///Converts meters to millimeters. There are 1000mm in 1m, so this just multiplies by 1000.
     pub const M2MM: f32 = 1000.0;
 
-    /// Converts centimeters to meters. There are 100cm in 1m. In StereoKit
-    /// 1 unit is also 1 meter, so `25 * U.cm == 0.25`, 25 centimeters is .25
-    /// meters/units.
+    /// Converts centimeters to meters. There are 100cm in 1m. In StereoKit 1 unit is also 1 meter,
+    /// so `25 * U.cm == 0.25`, 25 centimeters is .25 meters/units.
     pub const CM: f32 = 0.01;
-    /// Converts millimeters to meters. There are 1000mm in 1m. In StereoKit
-    /// 1 unit is 1 meter, so `250 * Units.mm2m == 0.25`, 250 millimeters is .25
-    /// meters/units.
+    /// Converts millimeters to meters. There are 1000mm in 1m. In StereoKit 1 unit is 1 meter,
+    /// so `250 * Units.mm2m == 0.25`, 250 millimeters is .25 meters/units.
     pub const MM: f32 = 0.001;
-    /// StereoKit's default unit is meters, but sometimes it's
-    /// nice to be explicit!
+    /// StereoKit's default unit is meters, but sometimes it's nice to be explicit!
     pub const M: f32 = 1.0;
-    /// Converts meters to kilometers. There are 1000m in 1km,
-    /// so this just multiplies by 1000.
+    /// Converts meters to kilometers. There are 1000m in 1km, so this just multiplies by 1000.
     pub const KM: f32 = 1000.0;
 }
 
@@ -119,6 +112,18 @@ impl From<[f32; 2]> for Vec2 {
 ///  Warning: Equality with a precision of 0.1 millimeter
 impl PartialEq for Vec2 {
     ///  Warning: Equality with a precision of 0.1 millimeter
+    /// ```
+    /// use stereokit_rust::maths::Vec2;
+    /// assert_eq!(
+    ///              Vec2 { x: 0.045863353, y: 0.030000005 } ,
+    ///              Vec2 { x: 0.045863353, y: 0.030000005 } );
+    /// ```
+    /// ```
+    /// use stereokit_rust::maths::Vec2;
+    /// assert_ne!(
+    ///              Vec2 { x: 10.045863353, y: 0.030000005 } ,
+    ///              Vec2 { x: 0.045863353, y: 0.030000005 } );
+    /// ```
     fn eq(&self, other: &Self) -> bool {
         ((self.x - other.x).abs() < 0.0001) && ((self.y - other.y).abs() < 0.0001)
     }
@@ -157,6 +162,26 @@ impl Vec2 {
     /// Returns the counter-clockwise degrees from `[1,0]`. Resulting value is between 0 and 360. Vector does not need
     /// to be normalized.
     /// <https://stereokit.net/Pages/StereoKit/Vec2/Angle.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec2;
+    ///
+    /// let vec2 = Vec2::new(1.0, 1.0);
+    /// assert_eq!(vec2.angle(), 45.0);
+    ///
+    /// let vec2 = Vec2::new(0.0, 1.0);
+    /// assert_eq!(vec2.angle(), 90.0);
+    ///
+    /// let vec2 = Vec2::new(-1.0, 1.0);
+    /// assert_eq!(vec2.angle(), 135.0);
+    ///
+    /// let vec2 = Vec2::new(-1.0, 0.0);
+    /// assert_eq!(vec2.angle(), 180.0);
+    ///
+    /// let vec2 = Vec2::new(-1.0, -1.0);
+    /// assert_eq!(vec2.angle(), 225.0);
+    /// ```
     #[inline]
     pub fn angle(&self) -> f32 {
         let mut result = self.y.atan2(self.x).to_degrees();
@@ -169,8 +194,20 @@ impl Vec2 {
     /// Checks if a point is within a certain radius of this one. This is an easily readable shorthand of the squared
     /// distance check.
     /// <https://stereokit.net/Pages/StereoKit/Vec2/InRadius.html>
-    /// * point - The point to check against.
-    /// * radius - The distance to check within.
+    /// * `point` - The point to check against.
+    /// * `radius` - The distance to check within.
+    ///
+    /// Returns true if the points are within radius of each other, false not.
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec2;
+    ///
+    /// let vec2 = Vec2::new(1.0, 1.0);
+    /// let vec2_in = Vec2::new(1.1, 1.1);
+    /// let vec2_out = Vec2::new(2.0, 2.0);
+    /// assert!(vec2.in_radius(vec2_in, 0.2));
+    /// assert!(!vec2.in_radius(vec2_out, 0.2));
+    /// ```
     #[inline]
     pub fn in_radius(&self, point: Self, radius: f32) -> bool {
         Self::distance(*self, point) <= radius
@@ -179,6 +216,17 @@ impl Vec2 {
     /// Turns this vector into a normalized vector (vector with a length of 1) from the current vector. Will not work
     /// properly if the vector has a length of zero. Vec2::get_normalized is faster.
     /// <https://stereokit.net/Pages/StereoKit/Vec2/Normalize.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec2;
+    ///
+    /// let mut vec2 = Vec2::new(1.0, 1.0);
+    /// assert!((vec2.length() - 1.4142135).abs() < f32::EPSILON);
+    ///
+    /// vec2.normalize();
+    /// assert!((vec2.length() - 1.0).abs() < f32::EPSILON);
+    /// ```
     #[inline]
     pub fn normalize(&mut self) {
         let n = *self * (self.length().recip());
@@ -189,6 +237,14 @@ impl Vec2 {
     /// This is the length of the vector! Or the distance from the origin to this point. Uses f32::sqrt, so it’s not
     /// dirt cheap or anything.
     /// <https://stereokit.net/Pages/StereoKit/Vec2/Length.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec2;
+    ///
+    /// let vec2 = Vec2::new(1.0, 1.0);
+    /// assert_eq!(vec2.length(), (2.0f32).sqrt());
+    /// ```
     #[inline]
     pub fn length(&self) -> f32 {
         Self::dot(*self, *self).sqrt()
@@ -197,6 +253,14 @@ impl Vec2 {
     /// This is the squared length/magnitude of the vector! It skips the Sqrt call, and just gives you the squared
     /// version for speedy calculations that can work with it squared.
     /// <https://stereokit.net/Pages/StereoKit/Vec2/LengthSq.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec2;
+    ///
+    /// let vec2 = Vec2::new(1.0, 1.0);
+    /// assert_eq!(vec2.length_sq(), 2.0);
+    /// ```
     #[inline]
     pub fn length_sq(&self) -> f32 {
         Self::dot(*self, *self)
@@ -205,6 +269,14 @@ impl Vec2 {
     /// Magnitude is the length of the vector! Or the distance from the origin to this point. Uses f32::sqrt, so it’s
     /// not dirt cheap or anything.
     /// <https://stereokit.net/Pages/StereoKit/Vec2/Magnitude.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec2;
+    ///
+    /// let vec2 = Vec2::new(1.0, 1.0);
+    /// assert_eq!(vec2.length(), vec2.magnitude());
+    /// ```
     #[inline]
     pub fn magnitude(&self) -> f32 {
         self.length()
@@ -213,6 +285,14 @@ impl Vec2 {
     /// This is the squared magnitude of the vector! It skips the Sqrt call, and just gives you the squared version for
     /// speedy calculations that can work with it squared. Vec2::length_squared is faster
     /// <https://stereokit.net/Pages/StereoKit/Vec2/MagnitudeSq.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec2;
+    ///
+    /// let vec2 = Vec2::new(1.0, 1.0);
+    /// assert_eq!(vec2.length_sq(), vec2.magnitude_sq());
+    /// ```
     #[inline]
     pub fn magnitude_sq(&self) -> f32 {
         self.length_sq()
@@ -221,6 +301,14 @@ impl Vec2 {
     /// Creates a normalized vector (vector with a length of 1) from the current vector. Will not work properly if the
     /// vector has a length of zero.
     /// <https://stereokit.net/Pages/StereoKit/Vec2/Normalized.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec2;
+    ///
+    /// let vec2 = Vec2::new(1.0, 1.0);
+    /// assert!((vec2.get_normalized().length() - 1.0).abs() < f32::EPSILON);
+    /// ```
     #[inline]
     pub fn get_normalized(&self) -> Self {
         *self * (self.length().recip())
@@ -228,6 +316,14 @@ impl Vec2 {
 
     /// Promotes this Vec2 to a Vec3, using 0 for the Y axis.
     /// <https://stereokit.net/Pages/StereoKit/Vec2/X0Y.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec2, Vec3};
+    ///
+    /// let vec2 = Vec2::new(1.0, 1.0);
+    /// assert_eq!(vec2.x0y(), Vec3::new(1.0, 0.0, 1.0));
+    /// ```
     #[inline]
     pub fn x0y(&self) -> Vec3 {
         Vec3 { x: self.x, y: 0.0, z: self.y }
@@ -235,6 +331,14 @@ impl Vec2 {
 
     /// Promotes this Vec2 to a Vec3, using 0 for the Z axis.
     /// <https://stereokit.net/Pages/StereoKit/Vec2/XY0.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec2, Vec3};
+    ///
+    /// let vec2 = Vec2::new(1.0, 1.0);
+    /// assert_eq!(vec2.xy0(), Vec3::new(1.0, 1.0, 0.0));
+    /// ```
     #[inline]
     pub fn xy0(&self) -> Vec3 {
         Vec3 { x: self.x, y: self.y, z: 0.0 }
@@ -242,6 +346,14 @@ impl Vec2 {
 
     /// A transpose swizzle property, returns (y,x)
     /// <https://stereokit.net/Pages/StereoKit/Vec2/YX.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec2, Vec3};
+    ///
+    /// let vec2 = Vec2::new(1.1, 1.2);
+    /// assert_eq!(vec2.yx(), Vec2::new(1.2, 1.1));
+    /// ```
     #[inline]
     pub fn yx(&self) -> Self {
         Self { x: self.y, y: self.x }
@@ -251,8 +363,31 @@ impl Vec2 {
     /// of A, and negative if B is clockwise (right) of A. Vectors do not need to be normalized. NOTE: Since this will
     /// return a positive or negative angle, order of parameters matters!
     /// <https://stereokit.net/Pages/StereoKit/Vec2/AngleBetween.html>
-    /// * a - The first, initial vector, A. Does not need to be normalized.
-    /// * b - The second, final vector, B. Does not need to be normalized.
+    /// * `a` - The first, initial vector, A. Does not need to be normalized.
+    /// * `b` - The second, final vector, B. Does not need to be normalized.
+    ///
+    /// Returns a signed angle between two vectors in degrees! Sign will be positive if B is counter-clockwise (left)
+    /// of A, and negative if B is clockwise (right) of A.
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec2;
+    ///
+    /// let vec2_a = Vec2::new(1.0, 0.0);
+    /// let vec2_b = Vec2::new(0.0, 1.0);
+    /// assert_eq!(Vec2::angle_between(vec2_a, vec2_b), 90.0);
+    ///
+    /// let vec2_a = Vec2::new(1.0, 0.0);
+    /// let vec2_b = Vec2::new(0.0, -1.0);
+    /// assert_eq!(Vec2::angle_between(vec2_a, vec2_b), 90.0);
+    ///
+    /// let vec2_a = Vec2::new(1.0, 0.0);
+    /// let vec2_b = Vec2::new(-1.0, 0.0);
+    /// assert_eq!(Vec2::angle_between(vec2_a, vec2_b), 180.0);
+    ///
+    /// let vec2_a = Vec2::new(1.0, 0.0);
+    /// let vec2_b = Vec2::new(1.0, 0.0);
+    /// assert_eq!(Vec2::angle_between(vec2_a, vec2_b), 0.0);
+    /// ```
     #[inline]
     pub fn angle_between(a: Self, b: Self) -> f32 {
         (Self::dot(a, b) / (a.length_sq() * b.length_sq()).sqrt()).acos().to_degrees()
@@ -260,6 +395,18 @@ impl Vec2 {
 
     /// Creates a normalized delta vector that points out from an origin point to a target point!
     /// <https://stereokit.net/Pages/StereoKit/Vec2/Direction.html>
+    /// * `to` - The target point.
+    /// * `from` - And the origin point!
+    ///
+    /// Returns direction from one point to another.
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec2;
+    ///
+    /// let vec2_a = Vec2::new(1.0, 0.0);
+    /// let vec2_b = Vec2::new(0.0, 1.0);
+    /// assert_eq!(Vec2::direction(vec2_b, vec2_a), Vec2::new(-0.70710677, 0.70710677));
+    /// ```
     #[inline]
     pub fn direction(to: Self, from: Self) -> Self {
         (to - from).get_normalized()
@@ -268,8 +415,18 @@ impl Vec2 {
     /// Calculates the distance between two points in space! Make sure they’re in the same coordinate space! Uses a Sqrt,
     /// so it’s not blazing fast, prefer DistanceSq when possible.
     /// <https://stereokit.net/Pages/StereoKit/Vec2/Distance.html>
-    /// * a - The first point.
-    /// * b - The second point.
+    /// * `a` - The first point.
+    /// * `b` - And the second point.
+    ///
+    /// Returns distance between the two points.
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec2;
+    ///
+    /// let vec2_a = Vec2::new(1.0, 0.0);
+    /// let vec2_b = Vec2::new(0.0, 1.0);
+    /// assert_eq!(Vec2::distance(vec2_a, vec2_b), (2.0f32).sqrt());
+    /// ```
     #[inline]
     pub fn distance(a: Self, b: Self) -> f32 {
         (a - b).length()
@@ -278,8 +435,18 @@ impl Vec2 {
     /// Calculates the distance between two points in space, but leaves them squared! Make sure they’re in the same
     /// coordinate space! This is a fast function :)
     /// <https://stereokit.net/Pages/StereoKit/Vec2/DistanceSq.html>
-    /// - a - The first point.
-    /// - b - The second point.
+    /// - `a` - The first point.
+    /// - `b` - The second point.
+    ///
+    /// Returns distance between the two points, but squared.
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec2;
+    ///
+    /// let vec2_a = Vec2::new(1.0, 0.0);
+    /// let vec2_b = Vec2::new(0.0, 1.0);
+    /// assert_eq!(Vec2::distance_sq(vec2_a, vec2_b), 2.0);
+    /// ```
     #[inline]
     pub fn distance_sq(a: Self, b: Self) -> f32 {
         (a - b).length_sq()
@@ -287,11 +454,28 @@ impl Vec2 {
 
     /// The dot product is an extremely useful operation! One major use is to determine how similar two vectors are.
     /// If the vectors are Unit vectors (magnitude/length of 1), then the result will be 1 if the vectors are the same,
-    /// -1 if they’re opposite, and a gradient in-between with 0 being perpendicular. See [Freya Holmer’s excellent
-    /// visualization of this concept](<https://twitter.com/FreyaHolmer/status/1200807790580768768>)
+    /// -1 if they’re opposite, and a gradient in-between with 0 being perpendicular.
     /// <https://stereokit.net/Pages/StereoKit/Vec2/Dot.html>
-    /// * a - The first vector.
-    /// * b - The second vector.
+    /// * `a` - The first vector.
+    /// * `b` - The second vector.
+    ///
+    /// Returns the dot product!
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec2;
+    ///
+    /// let vec2_a = Vec2::new(1.0, 0.0);
+    /// let vec2_b = Vec2::new(0.0, 1.0);
+    /// assert_eq!(Vec2::dot(vec2_a, vec2_b), 0.0);
+    ///
+    /// let vec2_a = Vec2::new(1.0, 0.0);
+    /// let vec2_b = Vec2::new(1.0, 0.0);
+    /// assert_eq!(Vec2::dot(vec2_a, vec2_b), 1.0);
+    ///
+    /// let vec2_a = Vec2::new(1.0, 0.0);
+    /// let vec2_b = Vec2::new(-1.0, 0.0);
+    /// assert_eq!(Vec2::dot(vec2_a, vec2_b), -1.0);
+    /// ```
     #[inline]
     pub fn dot(a: Self, b: Self) -> f32 {
         (a.x * b.x) + (a.y * b.y)
@@ -300,7 +484,25 @@ impl Vec2 {
     /// Creates a vector pointing in the direction of the angle, with a length of 1. Angles are counter-clockwise, and
     /// start from (1,0), so an angle of 90 will be (0,1).
     /// <https://stereokit.net/Pages/StereoKit/Vec2/FromAngle.html>
-    /// * degrees - Counter-clockwise angle from(1,0) in degrees.
+    /// * `degrees` - Counter-clockwise angle from(1,0) in degrees.
+    ///
+    /// Returns a unit vector (length of 1), pointing towards degrees.
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec2;
+    ///
+    /// let vec2 = Vec2::from_angles(0.0);
+    /// assert_eq!(vec2, Vec2::new(1.0, 0.0));
+    ///
+    /// let vec2 = Vec2::from_angles(90.0);
+    /// assert_eq!(vec2, Vec2::new(0.0, 1.0));
+    ///
+    /// let vec2 = Vec2::from_angles(180.0);
+    /// assert_eq!(vec2, Vec2::new(-1.0, 0.0));
+    ///
+    /// let vec2 = Vec2::from_angles(270.0);
+    /// assert_eq!(vec2, Vec2::new(0.0, -1.0));
+    /// ```
     #[inline]
     pub fn from_angles(degree: f32) -> Self {
         Self { x: degree.to_radians().cos(), y: degree.to_radians().sin() }
@@ -309,9 +511,19 @@ impl Vec2 {
     /// Blends (Linear Interpolation) between two vectors, based on a ‘blend’ value, where 0 is a, and 1 is b.
     /// Doesn’t clamp percent for you.
     /// <https://stereokit.net/Pages/StereoKit/Vec2/Lerp.html>
-    /// * a - The first vector to blend, or '0.0' blend.
-    /// * b - The second vector to blend, or '1.0' blend.
-    /// * blend - A value between 0 and 1. Can be outside this range, it’ll just interpolate outside of the a, b range.
+    /// * `a` - The first vector to blend, or '0.0' blend.
+    /// * `b` - The second vector to blend, or '1.0' blend.
+    /// * `blend` - A value between 0 and 1. Can be outside this range, it’ll just interpolate outside of the a, b range.
+    ///
+    /// Returns an unclamped blend of a and b.
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec2;
+    ///
+    /// let vec2_a = Vec2::new(1.0, 0.0);
+    /// let vec2_b = Vec2::new(0.0, 1.0);
+    /// assert_eq!(Vec2::lerp(vec2_a, vec2_b, 0.5), Vec2::new(0.5, 0.5));
+    /// ```
     #[inline]
     pub fn lerp(a: Self, b: Self, blend: f32) -> Self {
         a + ((b - a) * blend)
@@ -319,8 +531,18 @@ impl Vec2 {
 
     /// Returns a vector where each elements is the maximum value for each corresponding pair.
     /// <https://stereokit.net/Pages/StereoKit/Vec2/Max.html>
-    /// * a - Order isn't important here.
-    /// * b - Order isn't important here.
+    /// * `a` - Order isn't important here.
+    /// * `b` - Order isn't important here.
+    ///
+    /// Returns the maximum value for each corresponding vector pair.
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec2;
+    ///
+    /// let vec2_a = Vec2::new(1.0, 0.5);
+    /// let vec2_b = Vec2::new(0.9, 1.2);
+    /// assert_eq!(Vec2::max(vec2_a, vec2_b), Vec2::new(1.0, 1.2));
+    /// ```
     #[inline]
     pub fn max(a: Self, b: Self) -> Self {
         Self { x: f32::max(a.x, b.x), y: f32::max(a.y, b.y) }
@@ -328,14 +550,32 @@ impl Vec2 {
 
     /// Returns a vector where each elements is the minimum value for each corresponding pair.
     /// <https://stereokit.net/Pages/StereoKit/Vec2/Min.html>
-    /// * a - Order isn't important here.
-    /// * b - Order isn't important here.
+    /// * `a` - Order isn't important here.
+    /// * `b` - Order isn't important here.
+    ///
+    /// Returns the minimum value for each corresponding vector pair.
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec2;
+    ///
+    /// let vec2_a = Vec2::new(1.0, 0.2);
+    /// let vec2_b = Vec2::new(0.1, 1.0);
+    /// assert_eq!(Vec2::min(vec2_a, vec2_b), Vec2::new(0.1, 0.2));
+    /// ```
     #[inline]
     pub fn min(a: Self, b: Self) -> Self {
         Self { x: f32::min(a.x, b.x), y: f32::min(a.y, b.y) }
     }
 
     /// Absolute value of each component, this may be usefull in some case
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec2;
+    ///
+    /// let vec2 = Vec2::new(-1.4, 1.2);
+    /// assert_eq!(vec2.abs(), Vec2::new(1.4, 1.2));
+    /// ```
     #[inline]
     pub fn abs(&self) -> Self {
         Self { x: self.x.abs(), y: self.y.abs() }
@@ -345,6 +585,15 @@ impl Vec2 {
 impl Display for Vec2 {
     /// Mostly for debug purposes, this is a decent way to log or inspect the vector in debug mode. Looks like “[x, y]”
     /// <https://stereokit.net/Pages/StereoKit/Vec2/ToString.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec2;
+    ///
+    /// let vec2 = Vec2::new(1.0, 1.0);
+    /// assert_eq!(vec2.to_string(), "[x:1, y:1]");
+    /// ```
+    #[inline]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "[x:{}, y:{}]", self.x, self.y)
     }
@@ -353,6 +602,15 @@ impl Display for Vec2 {
 /// <https://stereokit.net/Pages/StereoKit/Vec2/op_Division.html>
 impl Div<Vec2> for Vec2 {
     type Output = Self;
+
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec2;
+    ///
+    /// let vec2_a = Vec2::new(1.0, 2.0);
+    /// let vec2_b = Vec2::new(2.0, 4.0);
+    /// assert_eq!(vec2_a / vec2_b, Vec2::new(0.5, 0.5));
+    /// ```
     #[inline]
     fn div(self, rhs: Self) -> Self::Output {
         Self { x: self.x.div(rhs.x), y: self.y.div(rhs.y) }
@@ -362,6 +620,15 @@ impl Div<Vec2> for Vec2 {
 /// A component-wise vector division.
 /// <https://stereokit.net/Pages/StereoKit/Vec2/op_Division.html>
 impl DivAssign<Vec2> for Vec2 {
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec2;
+    ///
+    /// let mut vec2_a = Vec2::new(1.0, 2.0);
+    /// let vec2_b = Vec2::new(2.0, 4.0);
+    /// vec2_a /= vec2_b;
+    /// assert_eq!(vec2_a, Vec2::new(0.5, 0.5));
+    /// ```
     #[inline]
     fn div_assign(&mut self, rhs: Self) {
         self.x.div_assign(rhs.x);
@@ -373,6 +640,14 @@ impl DivAssign<Vec2> for Vec2 {
 /// <https://stereokit.net/Pages/StereoKit/Vec2/op_Division.html>
 impl Div<f32> for Vec2 {
     type Output = Self;
+
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec2;
+    ///
+    /// let vec2_a = Vec2::new(1.0, 2.0);
+    /// assert_eq!(vec2_a / 2.0, Vec2::new(0.5, 1.0));
+    /// ```
     #[inline]
     fn div(self, rhs: f32) -> Self::Output {
         Self { x: self.x.div(rhs), y: self.y.div(rhs) }
@@ -382,6 +657,14 @@ impl Div<f32> for Vec2 {
 /// A component-wise vector division.
 /// <https://stereokit.net/Pages/StereoKit/Vec2/op_Division.html>
 impl DivAssign<f32> for Vec2 {
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec2;
+    ///
+    /// let mut vec2_a = Vec2::new(1.0, 2.0);
+    /// vec2_a /= 2.0;
+    /// assert_eq!(vec2_a, Vec2::new(0.5, 1.0));
+    /// ```
     #[inline]
     fn div_assign(&mut self, rhs: f32) {
         self.x.div_assign(rhs);
@@ -393,6 +676,14 @@ impl DivAssign<f32> for Vec2 {
 /// <https://stereokit.net/Pages/StereoKit/Vec2/op_Division.html>
 impl Div<Vec2> for f32 {
     type Output = Vec2;
+
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec2;
+    ///
+    /// let vec2_a = Vec2::new(1.0, 2.0);
+    /// assert_eq!(2.0 / vec2_a, Vec2::new(2.0, 1.0));
+    /// ```
     #[inline]
     fn div(self, rhs: Vec2) -> Self::Output {
         Vec2 { x: self.div(rhs.x), y: self.div(rhs.y) }
@@ -403,6 +694,15 @@ impl Div<Vec2> for f32 {
 /// <https://stereokit.net/Pages/StereoKit/Vec2/op_Multiply.html>
 impl Mul<Vec2> for Vec2 {
     type Output = Self;
+
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec2;
+    ///
+    /// let vec2_a = Vec2::new(1.0, 2.0);
+    /// let vec2_b = Vec2::new(2.0, 4.0);
+    /// assert_eq!(vec2_a * vec2_b, Vec2::new(2.0, 8.0));
+    /// ```
     #[inline]
     fn mul(self, rhs: Self) -> Self::Output {
         Self { x: self.x.mul(rhs.x), y: self.y.mul(rhs.y) }
@@ -412,6 +712,15 @@ impl Mul<Vec2> for Vec2 {
 /// A component-wise vector multiplication, same thing as a non-uniform scale. NOT a dot product! Commutative.
 /// <https://stereokit.net/Pages/StereoKit/Vec2/op_Multiply.html>
 impl MulAssign<Vec2> for Vec2 {
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec2;
+    ///
+    /// let vec2_a = Vec2::new(1.0, 2.0);
+    /// let mut vec2_b = Vec2::new(2.0, 4.0);
+    /// vec2_b *= vec2_a;
+    /// assert_eq!(vec2_b, Vec2::new(2.0, 8.0));
+    /// ```
     #[inline]
     fn mul_assign(&mut self, rhs: Self) {
         self.x.mul_assign(rhs.x);
@@ -423,6 +732,14 @@ impl MulAssign<Vec2> for Vec2 {
 /// <https://stereokit.net/Pages/StereoKit/Vec2/op_Multiply.html>
 impl Mul<f32> for Vec2 {
     type Output = Self;
+
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec2;
+    ///
+    /// let vec2_a = Vec2::new(1.0, 2.0);
+    /// assert_eq!(vec2_a * 2.0, Vec2::new(2.0, 4.0));
+    /// ```
     #[inline]
     fn mul(self, rhs: f32) -> Self::Output {
         Self { x: self.x.mul(rhs), y: self.y.mul(rhs) }
@@ -432,6 +749,14 @@ impl Mul<f32> for Vec2 {
 /// A component-wise vector multiplication, same thing as a non-uniform scale. NOT a dot product! Commutative.
 /// <https://stereokit.net/Pages/StereoKit/Vec2/op_Multiply.html>
 impl MulAssign<f32> for Vec2 {
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec2;
+    ///
+    /// let mut vec2_a = Vec2::new(1.0, 2.0);
+    /// vec2_a *= 2.0;
+    /// assert_eq!(vec2_a, Vec2::new(2.0, 4.0));
+    ///```
     #[inline]
     fn mul_assign(&mut self, rhs: f32) {
         self.x.mul_assign(rhs);
@@ -443,6 +768,14 @@ impl MulAssign<f32> for Vec2 {
 /// <https://stereokit.net/Pages/StereoKit/Vec2/op_Multiply.html>
 impl Mul<Vec2> for f32 {
     type Output = Vec2;
+
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec2;
+    ///
+    /// let vec2_a = Vec2::new(1.0, 2.0);
+    /// assert_eq!(2.0 * vec2_a, Vec2::new(2.0, 4.0));
+    /// ```
     #[inline]
     fn mul(self, rhs: Vec2) -> Self::Output {
         Vec2 { x: self.mul(rhs.x), y: self.mul(rhs.y) }
@@ -453,6 +786,15 @@ impl Mul<Vec2> for f32 {
 /// <https://stereokit.net/Pages/StereoKit/Vec2/op_Addition.html>
 impl Add<Vec2> for Vec2 {
     type Output = Self;
+
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec2;
+    ///
+    /// let vec2_a = Vec2::new(1.0, 2.0);
+    /// let vec2_b = Vec2::new(2.0, 4.0);
+    /// assert_eq!(vec2_a + vec2_b, Vec2::new(3.0, 6.0));
+    /// ```
     #[inline]
     fn add(self, rhs: Self) -> Self::Output {
         Self { x: self.x.add(rhs.x), y: self.y.add(rhs.y) }
@@ -462,6 +804,15 @@ impl Add<Vec2> for Vec2 {
 /// Adds matching components together. Commutative.
 /// <https://stereokit.net/Pages/StereoKit/Vec2/op_Addition.html>
 impl AddAssign<Vec2> for Vec2 {
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec2;
+    ///
+    /// let mut vec2_a = Vec2::new(1.0, 2.0);
+    /// let vec2_b = Vec2::new(2.0, 4.0);
+    /// vec2_a += vec2_b;
+    /// assert_eq!(vec2_a, Vec2::new(3.0, 6.0));
+    /// ```
     #[inline]
     fn add_assign(&mut self, rhs: Self) {
         self.x.add_assign(rhs.x);
@@ -473,6 +824,15 @@ impl AddAssign<Vec2> for Vec2 {
 /// <https://stereokit.net/Pages/StereoKit/Vec2/op_Subtraction.html>
 impl Sub<Vec2> for Vec2 {
     type Output = Self;
+
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec2;
+    ///
+    /// let vec2_a = Vec2::new(1.0, 2.0);
+    /// let vec2_b = Vec2::new(2.0, 4.0);
+    /// assert_eq!(vec2_a - vec2_b, Vec2::new(-1.0, -2.0));
+    /// ```
     #[inline]
     fn sub(self, rhs: Self) -> Self::Output {
         Self { x: self.x.sub(rhs.x), y: self.y.sub(rhs.y) }
@@ -482,6 +842,15 @@ impl Sub<Vec2> for Vec2 {
 /// Subtracts matching components from eachother. Not commutative.
 /// <https://stereokit.net/Pages/StereoKit/Vec2/op_Subtraction.html>
 impl SubAssign<Vec2> for Vec2 {
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec2;
+    ///
+    /// let mut vec2_a = Vec2::new(1.0, 2.0);
+    /// let vec2_b = Vec2::new(2.0, 4.0);
+    /// vec2_a -= vec2_b;
+    /// assert_eq!(vec2_a, Vec2::new(-1.0, -2.0));
+    /// ```
     #[inline]
     fn sub_assign(&mut self, rhs: Vec2) {
         self.x.sub_assign(rhs.x);
@@ -493,6 +862,13 @@ impl SubAssign<Vec2> for Vec2 {
 /// <https://stereokit.net/Pages/StereoKit/Vec2/op_UnaryNegation.html>
 impl Neg for Vec2 {
     type Output = Self;
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec2;
+    ///
+    /// let vec2_a = Vec2::new(1.0, 2.0);
+    /// assert_eq!(-vec2_a, Vec2::new(-1.0, -2.0));
+    /// ```
     #[inline]
     fn neg(self) -> Self::Output {
         self * -1.0
@@ -642,8 +1018,19 @@ impl Vec3 {
     /// Checks if a point is within a certain radius of this one. This is an easily readable shorthand of the squared
     /// distance check.
     /// <https://stereokit.net/Pages/StereoKit/Vec3/InRadius.html>
-    /// * point- The point to check against.
-    /// * radius - The radius to check within.
+    /// * `point`- The point to check against.
+    /// * `radius` - The radius to check within.
+    ///
+    /// Returns true if the points are within radius of each other, false not.
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    ///
+    /// let vec3_a = Vec3::new(1.0, 2.0, 3.0);
+    /// let vec3_b = Vec3::new(2.0, 4.0, 6.0);
+    /// assert_eq!(vec3_a.in_radius(vec3_b, 5.0), true);
+    /// assert_eq!(vec3_a.in_radius(vec3_b, 2.0), false);
+    /// ```
     #[inline]
     pub fn in_radius(&self, point: Self, radius: f32) -> bool {
         Self::distance(*self, point) <= radius
@@ -652,6 +1039,15 @@ impl Vec3 {
     /// Turns this vector into a normalized vector (vector with a length of 1) from the current vector. Will not work
     /// properly if the vector has a length of zero. Vec3::get_normalized is faster.
     /// <https://stereokit.net/Pages/StereoKit/Vec3/Normalize.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    ///
+    /// let mut vec3_a = Vec3::new(1.0, 2.0, 3.0);
+    /// vec3_a.normalize();
+    /// assert_eq!(vec3_a, Vec3::new(0.26726124, 0.5345225, 0.8017837));
+    /// ```
     #[inline]
     pub fn normalize(&mut self) {
         let n = *self * (self.length().recip());
@@ -663,6 +1059,14 @@ impl Vec3 {
     /// This is the length, or magnitude of the vector! The distance from the origin to this point.
     /// Uses f32::sqrt, so it’s not dirt cheap or anything.
     /// <https://stereokit.net/Pages/StereoKit/Vec3/Length.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    ///
+    /// let vec3_a = Vec3::new(1.0, 2.0, 3.0);
+    /// assert_eq!(vec3_a.length(), 3.7416575);
+    /// ```
     #[inline]
     pub fn length(&self) -> f32 {
         Self::dot(*self, *self).sqrt()
@@ -671,6 +1075,14 @@ impl Vec3 {
     /// This is the squared length of the vector! It skips the Sqrt call, and just gives you the squared version for
     /// speedy calculations that can work with it squared.
     /// <https://stereokit.net/Pages/StereoKit/Vec3/LengthSq.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    ///
+    /// let vec3_a = Vec3::new(1.0, 2.0, 3.0);
+    /// assert_eq!(vec3_a.length_sq(), 14.0);
+    /// ```
     #[inline]
     pub fn length_sq(&self) -> f32 {
         Self::dot(*self, *self)
@@ -679,6 +1091,14 @@ impl Vec3 {
     /// Magnitude is the length of the vector! The distance from the origin to this point. Uses f32::sqrt, so it’s not
     /// dirt cheap or anything.
     /// <https://stereokit.net/Pages/StereoKit/Vec3/Magnitude.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    ///
+    /// let vec3_a = Vec3::new(1.0, 2.0, 3.0);
+    /// assert_eq!(vec3_a.length(), 3.7416575);
+    /// ```
     #[inline]
     pub fn magnitude(&self) -> f32 {
         self.length()
@@ -687,6 +1107,14 @@ impl Vec3 {
     /// This is the squared magnitude of the vector! It skips the Sqrt call, and just gives you the squared version for
     /// speedy calculations that can work with it squared.
     /// <https://stereokit.net/Pages/StereoKit/Vec3/MagnitudeSq.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    ///
+    /// let vec3_a = Vec3::new(1.0, 2.0, 3.0);
+    /// assert_eq!(vec3_a.magnitude_squared(), 14.0);
+    /// ```
     #[inline]
     pub fn magnitude_squared(&self) -> f32 {
         self.length_sq()
@@ -695,6 +1123,14 @@ impl Vec3 {
     /// Creates a normalized vector (vector with a length of 1) from the current vector. Will not work properly if the
     /// vector has a length of zero.
     /// <https://stereokit.net/Pages/StereoKit/Vec3/Normalized.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    ///
+    /// let vec3_a = Vec3::new(1.0, 2.0, 3.0);
+    /// assert_eq!(vec3_a.get_normalized(), Vec3::new(0.26726124, 0.5345225, 0.8017837));
+    /// ```
     #[inline]
     pub fn get_normalized(&self) -> Self {
         *self * (self.length().recip())
@@ -702,6 +1138,14 @@ impl Vec3 {
 
     /// This returns a Vec3 that has been flattened to 0 on the Y axis. No other changes are made.
     /// <https://stereokit.net/Pages/StereoKit/Vec3/X0Z.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    ///
+    /// let vec3_a = Vec3::new(1.0, 2.0, 3.0);
+    /// assert_eq!(vec3_a.x0z(), Vec3::new(1.0, 0.0, 3.0));
+    /// ```
     #[inline]
     pub fn x0z(&self) -> Self {
         Self { x: self.x, y: 0.0, z: self.z }
@@ -709,6 +1153,14 @@ impl Vec3 {
 
     /// This returns a Vec3 that has been flattened to 0 on the Z axis. No other changes are made.
     /// <https://stereokit.net/Pages/StereoKit/Vec3/XY0.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    ///
+    /// let vec3_a = Vec3::new(1.0, 2.0, 3.0);
+    /// assert_eq!(vec3_a.xy0(), Vec3::new(1.0, 2.0, 0.0));
+    /// ```
     #[inline]
     pub fn xy0(&self) -> Self {
         Self { x: self.x, y: self.y, z: 0.0 }
@@ -716,6 +1168,14 @@ impl Vec3 {
 
     /// This returns a Vec3 that has been set to 1 on the Z axis. No other changes are made
     /// <https://stereokit.net/Pages/StereoKit/Vec3/XY1.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    ///
+    /// let vec3_a = Vec3::new(1.0, 2.0, 3.0);
+    /// assert_eq!(vec3_a.xy1(), Vec3::new(1.0, 2.0, 1.0));
+    /// ```
     #[inline]
     pub fn xy1(&self) -> Self {
         Self { x: self.x, y: self.y, z: 1.0 }
@@ -723,6 +1183,14 @@ impl Vec3 {
 
     /// This extracts the Vec2 from the X and Y axes.
     /// <https://stereokit.net/Pages/StereoKit/Vec3.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec2, Vec3};
+    ///
+    /// let vec3_a = Vec3::new(1.0, 2.0, 3.0);
+    /// assert_eq!(vec3_a.xy(), Vec2::new(1.0, 2.0));
+    /// ```
     #[inline]
     pub fn xy(&self) -> Vec2 {
         Vec2::new(self.x, self.y)
@@ -730,6 +1198,14 @@ impl Vec3 {
 
     /// This extracts the Vec2 from the Y and Z axes.
     /// <https://stereokit.net/Pages/StereoKit/Vec3/YZ.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec2, Vec3};
+    ///
+    /// let vec3_a = Vec3::new(1.0, 2.0, 3.0);
+    /// assert_eq!(vec3_a.yz(), Vec2::new(2.0, 3.0));
+    /// ```
     #[inline]
     pub fn yz(&self) -> Vec2 {
         Vec2::new(self.y, self.z)
@@ -737,6 +1213,14 @@ impl Vec3 {
 
     /// This extracts the Vec2 from the X and Z axes.
     /// <https://stereokit.net/Pages/StereoKit/Vec3.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec2, Vec3};
+    ///
+    /// let vec3_a = Vec3::new(1.0, 2.0, 3.0);
+    /// assert_eq!(vec3_a.xz(), Vec2::new(1.0, 3.0));
+    /// ```
     #[inline]
     pub fn xz(&self) -> Vec2 {
         Vec2::new(self.x, self.z)
@@ -745,8 +1229,23 @@ impl Vec3 {
     /// Calculates the angle between two vectors in degrees! Vectors do not need to be normalized, and the result will
     /// always be positive.
     /// <https://stereokit.net/Pages/StereoKit/Vec3/AngleBetween.html>
-    /// * a - The first, initial vector, A. Does not need to be normalized.
-    /// * b - The second vector, B, that we're finding the angle to. Does not need to be normalized.
+    /// * `a` - The first, initial vector, A. Does not need to be normalized.
+    /// * `b` - The second vector, B, that we're finding the angle to. Does not need to be normalized.
+    ///
+    /// Returns a positive angle between two vectors in degrees!
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    ///
+    /// let vec3_b = Vec3::new(0.0, 1.0, 0.0);
+    /// assert_eq!(Vec3::angle_between(Vec3::X, vec3_b), 90.0);
+    ///
+    /// let vec3_c = Vec3::new(-1.0, 0.0, 0.0);
+    /// assert_eq!(Vec3::angle_between(Vec3::X, vec3_c), 180.0);
+    ///
+    /// let vec3_d = Vec3::new(1.0, 0.0, 1.0);
+    /// assert_eq!(Vec3::angle_between(Vec3::X, vec3_d), 45.0);
+    /// ```
     #[inline]
     pub fn angle_between(a: Self, b: Self) -> f32 {
         (Self::dot(a, b) / (a.length_sq() * b.length_sq()).sqrt()).acos().to_degrees()
@@ -755,8 +1254,20 @@ impl Vec3 {
     /// Creates a vector that points out at the given 2D angle! This creates the vector on the XY plane, and allows you
     /// to specify a constant z value.
     /// <https://stereokit.net/Pages/StereoKit/Vec3/AngleXY.html>
-    /// * angle_deg - The angle in degrees, starting from the (1,0) at 0, and continuing to (0,1) at 90, etc.
-    /// * z - The constant Z value for this vector.
+    /// * `angle_deg` - The angle in degrees, starting from the (1,0) at 0, and continuing to (0,1) at 90, etc.
+    /// * `z` - The constant Z value for this vector.
+    ///
+    /// Returns a vector pointing at the given angle! If z is zero, this will be a normalized vector (vector with
+    /// a length of 1).
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    ///
+    /// let angle = 45.0;
+    /// let z = 0.0;
+    /// let vector = Vec3::angle_xy(angle, z);
+    /// assert_eq!(vector, Vec3::new(0.70710677, 0.70710677, 0.0));
+    /// ```
     #[inline]
     pub fn angle_xy(angle_deg: f32, z: f32) -> Vec3 {
         Self { x: angle_deg.to_radians().cos(), y: angle_deg.to_radians().sin(), z }
@@ -765,8 +1276,17 @@ impl Vec3 {
     /// Creates a vector that points out at the given 2D angle! This creates the vector on the XZ plane, and allows you
     /// to specify a constant y value.
     /// <https://stereokit.net/Pages/StereoKit/Vec3/AngleXZ.html>
-    /// * angle_deg - The angle in degrees, starting from the (1,0) at 0, and continuing to (0,1) at 90, etc.
-    /// * y - The constant Y value for this vector.
+    /// * `angle_deg` - The angle in degrees, starting from the (1,0) at 0, and continuing to (0,1) at 90, etc.
+    /// * `y` - The constant Y value for this vector.
+    ///
+    /// Returns A Vector pointing at the given angle! If y is zero, this will be a normalized vector (vector with a
+    /// length of 1).
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    /// let vec = Vec3::angle_xz(90.0, 0.0);
+    /// assert_eq!(vec, Vec3::new(0.0, 0.0, 1.0));
+    /// ```
     #[inline]
     pub fn angle_xz(angle_deg: f32, y: f32) -> Self {
         Self { x: angle_deg.to_radians().cos(), y, z: angle_deg.to_radians().sin() }
@@ -774,9 +1294,10 @@ impl Vec3 {
 
     /// The cross product of two vectors!
     /// <https://stereokit.net/Pages/StereoKit/Vec3/Cross.html>
-    /// * a - The first vector.
-    /// * b - The second vector.
+    /// * `a` - The first vector.
+    /// * `b` - The second vector.
     ///
+    /// Returns is **not** a unit vector, even if both ‘a’ and ‘b’ are unit vectors.
     /// see also [`vec3_cross`]
     /// ### Examples
     ///```
@@ -825,8 +1346,19 @@ impl Vec3 {
 
     /// Creates a normalized delta vector that points out from an origin point to a target point!
     /// <https://stereokit.net/Pages/StereoKit/Vec3/Direction.html>
-    /// * to - The target point.
-    /// * from - The origin point.
+    /// * `to` - The target point.
+    /// * `from` - The origin point.
+    ///
+    /// Returns direction from one point to another.
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    ///
+    /// let a = Vec3::new(1.0, 2.0, 3.0);
+    /// let b = Vec3::new(4.0, 5.0, 6.0);
+    /// let direction = Vec3::direction(a, b);
+    /// assert_eq!(direction, Vec3 { x: -0.57735026, y: -0.57735026, z: -0.57735026 });
+    /// ```
     #[inline]
     pub fn direction(to: Self, from: Self) -> Self {
         (to - from).get_normalized()
@@ -835,8 +1367,19 @@ impl Vec3 {
     /// Calculates the distance between two points in space! Make sure they’re in the same coordinate space! Uses a
     /// Sqrt, so it’s not blazing fast, prefer DistanceSq when possible.
     /// <https://stereokit.net/Pages/StereoKit/Vec3/Distance.html>
-    /// * a - The first point.
-    /// * b - The second point.
+    /// * `a` - The first point.
+    /// * `b` - The second point.
+    ///
+    /// Returns the distance between the two points.
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    ///
+    /// let a = Vec3 { x: 1.0, y: 2.0, z: 3.0 };
+    /// let b = Vec3 { x: 4.0, y: 5.0, z: 6.0 };
+    /// let distance = Vec3::distance(a, b);
+    /// assert_eq!(distance, 5.196152);
+    /// ```
     #[inline]
     pub fn distance(a: Self, b: Self) -> f32 {
         (a - b).length()
@@ -845,6 +1388,19 @@ impl Vec3 {
     /// Calculates the distance between two points in space, but leaves them squared! Make sure they’re in the same
     /// coordinate space! This is a fast function :)
     /// <https://stereokit.net/Pages/StereoKit/Vec3/DistanceSq.html>
+    /// * `a` - The first point.
+    /// * `b` - The second point.
+    ///
+    /// Returns the distance between the two points, but squared.
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    ///
+    /// let a = Vec3::new(1.0, 2.0, 3.0);
+    /// let b = Vec3::new(4.0, 5.0, 6.0);
+    /// let distance = Vec3::distance_sq(a, b);
+    /// assert_eq!(distance, 27.0);
+    /// ```
     #[inline]
     pub fn distance_sq(a: Self, b: Self) -> f32 {
         (a - b).length_sq()
@@ -855,8 +1411,19 @@ impl Vec3 {
     /// if they’re opposite, and a gradient in-between with 0 being perpendicular.  See [Freya Holmer’s excellent
     /// visualization of this concept](<https://twitter.com/FreyaHolmer/status/1200807790580768768>)
     /// <https://stereokit.net/Pages/StereoKit/Vec3/Dot.html>
-    /// * a - The first vector.
-    /// * b - The second vector.
+    /// * `a` - The first vector.
+    /// * `b` - The second vector.
+    ///
+    /// Returns the dot product of the two vectors.
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    ///
+    /// let a = Vec3::new(1.0, 0.0, 1.0);
+    /// let b = Vec3::new(1.0, 1.0, 0.0);
+    /// let dot_product = Vec3::dot(a, b);
+    /// assert_eq!(dot_product, 1.0);
+    /// ```
     #[inline]
     pub fn dot(a: Self, b: Self) -> f32 {
         (a.x * b.x) + (a.y * b.y) + (a.z * b.z)
@@ -865,10 +1432,23 @@ impl Vec3 {
     /// Blends (Linear Interpolation) between two vectors, based on a ‘blend’ value, where 0 is a, and 1 is b. Doesn’t
     /// clamp percent for you.
     /// <https://stereokit.net/Pages/StereoKit/Vec3/Lerp.html>
-    /// * a - First item in the blend, or '0.0' blend.
-    /// * b - Second item in the blend, or '1.0' blend.
-    /// * blend - The blend value between 0 and 1. Can be outside this range, it’ll just interpolate outside of the a,
+    /// * `a` - First item in the blend, or '0.0' blend.
+    /// * `b` - Second item in the blend, or '1.0' blend.
+    /// * `blend` - The blend value between 0 and 1. Can be outside this range, it’ll just interpolate outside of the a,
     ///   b range.
+    ///
+    /// Returns a blend value between 0 and 1. Can be outside this range, it’ll just interpolate outside of the a, b
+    /// range.
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    ///
+    /// let a = Vec3::new(1.0, 2.0, 3.0);
+    /// let b = Vec3::new(4.0, 5.0, 6.0);
+    /// let blend = 0.25;
+    /// let result = Vec3::lerp(a, b, blend);
+    /// assert_eq!(result, Vec3::new(1.75, 2.75, 3.75));
+    /// ```
     #[inline]
     pub fn lerp(a: Self, b: Self, blend: f32) -> Self {
         a + ((b - a) * blend)
@@ -876,8 +1456,19 @@ impl Vec3 {
 
     /// Returns a vector where each elements is the maximum value for each corresponding pair.
     /// <https://stereokit.net/Pages/StereoKit/Vec3/Max.html>
-    /// * a - Order isn't important here.
-    /// * b - Order isn't important here.
+    /// * `a` - Order isn't important here.
+    /// * `b` - Order isn't important here.
+    ///
+    /// Returns the maximum value for each corresponding vector pair.
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    ///
+    /// let a = Vec3::new(1.0, 6.0, 3.0);
+    /// let b = Vec3::new(4.0, 5.0, 6.0);
+    /// let result = Vec3::max(a, b);
+    /// assert_eq!(result, Vec3::new(4.0, 6.0, 6.0));
+    /// ```
     #[inline]
     pub fn max(a: Self, b: Self) -> Self {
         Self { x: f32::max(a.x, b.x), y: f32::max(a.y, b.y), z: f32::max(a.z, b.z) }
@@ -885,8 +1476,19 @@ impl Vec3 {
 
     /// Returns a vector where each elements is the minimum value for each corresponding pair.
     /// <https://stereokit.net/Pages/StereoKit/Vec3/Min.html>
-    /// * a - Order isn't important here.
-    /// * b - Order isn't important here.
+    /// * `a` - Order isn't important here.
+    /// * `b` - Order isn't important here.
+    ///
+    /// Returns the minimum value for each corresponding vector pair.
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    ///
+    /// let a = Vec3::new(1.0, 2.0, 3.0);
+    /// let b = Vec3::new(4.0, 1.0, 6.0);
+    /// let result = Vec3::min(a, b);
+    /// assert_eq!(result, Vec3::new(1.0, 1.0, 3.0));
+    /// ```
     #[inline]
     pub fn min(a: Self, b: Self) -> Self {
         Self { x: f32::min(a.x, b.x), y: f32::min(a.y, b.y), z: f32::min(a.z, b.z) }
@@ -898,20 +1500,54 @@ impl Vec3 {
     /// If you consider a forward vector and an up vector, then the direction to the right is pretty trivial to imagine
     /// in relation to those vectors!
     /// <https://stereokit.net/Pages/StereoKit/Vec3/PerpendicularRight.html>
-    /// * forward - What way are you facing?
-    /// * up - Which direction is up?
+    /// * `forward` - What way are you facing?
+    /// * `up` - Which direction is up?
+    ///
+    /// Returns your direction to the right! Result is -not- a unit vector, even if both ‘forward’ and ‘up’ are unit
+    /// vectors.
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    ///
+    /// let forward = Vec3::new(0.0, 0.0, -1.0);
+    /// let up = Vec3::new(0.0, 1.0, 0.0);
+    /// let right = Vec3::perpendicular_right(forward, up);
+    /// assert_eq!(right, Vec3::new(1.0, 0.0, 0.0));
+    ///
+    /// // The same with constants:
+    /// let forward = Vec3::FORWARD;
+    /// let up = Vec3::UP;
+    /// let right = Vec3::perpendicular_right(forward, up);
+    /// assert_eq!(right, Vec3::RIGHT);
+    /// ```
     #[inline]
     pub fn perpendicular_right(forward: Self, up: Self) -> Self {
         Self::cross(forward, up)
     }
 
     /// Absolute value of each component, this may be usefull in some case
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    ///
+    /// let v = Vec3::new(-1.0, 2.0, -3.0);
+    /// assert_eq!(v.abs(), Vec3::new(1.0, 2.0, 3.0));
+    /// ```
     #[inline]
     pub fn abs(&self) -> Self {
         Self { x: self.x.abs(), y: self.y.abs(), z: self.z.abs() }
     }
 
     /// get an array
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    ///
+    /// let v = Vec3::new(1.0, 2.0, 3.0);
+    /// assert_eq!(v.to_array(), [1.0, 2.0, 3.0]);
+    ///```
     #[inline]
     pub const fn to_array(&self) -> [f32; 3] {
         [self.x, self.y, self.z]
@@ -922,6 +1558,13 @@ impl Display for Vec3 {
     /// Mostly for debug purposes, this is a decent way to log or inspect the vector in debug mode.
     /// Looks like “[x, y, z]”
     /// <https://stereokit.net/Pages/StereoKit/Vec3/ToString.html>
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    ///
+    /// let v = Vec3::new(1.0, 2.0, 3.0);
+    /// assert_eq!(v.to_string(), "[x:1, y:2, z:3]");
+    /// ```
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "[x:{}, y:{}, z:{}]", self.x, self.y, self.z)
     }
@@ -930,6 +1573,14 @@ impl Display for Vec3 {
 /// <https://stereokit.net/Pages/StereoKit/Vec3/op_Division.html>
 impl Div<Vec3> for Vec3 {
     type Output = Self;
+
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    ///
+    /// let v = Vec3::new(1.0, 2.0, 3.0) / Vec3::new(2.0, 2.0, 2.0);
+    /// assert_eq!(v, Vec3::new(0.5, 1.0, 1.5));
+    /// ```
     #[inline]
     fn div(self, rhs: Self) -> Self::Output {
         Self { x: self.x.div(rhs.x), y: self.y.div(rhs.y), z: self.z.div(rhs.z) }
@@ -939,6 +1590,14 @@ impl Div<Vec3> for Vec3 {
 /// A component-wise vector division.
 /// <https://stereokit.net/Pages/StereoKit/Vec3/op_Division.html>
 impl DivAssign<Vec3> for Vec3 {
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    ///
+    /// let mut v = Vec3::new(1.0, 2.0, 3.0);
+    /// v /= Vec3::new(2.0, 2.0, 2.0);
+    /// assert_eq!(v, Vec3::new(0.5, 1.0, 1.5));
+    /// ```
     #[inline]
     fn div_assign(&mut self, rhs: Self) {
         self.x.div_assign(rhs.x);
@@ -951,6 +1610,15 @@ impl DivAssign<Vec3> for Vec3 {
 /// <https://stereokit.net/Pages/StereoKit/Vec3/op_Division.html>
 impl Div<f32> for Vec3 {
     type Output = Self;
+
+    /// ## Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    ///
+    /// let v = Vec3::new(1.0, 2.0, 3.0);
+    /// let v = v / 2.0;
+    /// assert_eq!(v, Vec3::new(0.5, 1.0, 1.5));
+    /// ```
     #[inline]
     fn div(self, rhs: f32) -> Self::Output {
         Self { x: self.x.div(rhs), y: self.y.div(rhs), z: self.z.div(rhs) }
@@ -960,6 +1628,14 @@ impl Div<f32> for Vec3 {
 /// A component-wise vector division.
 /// <https://stereokit.net/Pages/StereoKit/Vec3/op_Division.html>
 impl DivAssign<f32> for Vec3 {
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    ///
+    /// let mut v = Vec3::new(1.0, 2.0, 3.0);
+    /// v /= 2.0;
+    /// assert_eq!(v, Vec3::new(0.5, 1.0, 1.5));
+    /// ```
     #[inline]
     fn div_assign(&mut self, rhs: f32) {
         self.x.div_assign(rhs);
@@ -972,6 +1648,15 @@ impl DivAssign<f32> for Vec3 {
 /// <https://stereokit.net/Pages/StereoKit/Vec3/op_Division.html>
 impl Div<Vec3> for f32 {
     type Output = Vec3;
+
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    ///
+    /// let v = Vec3::new(1.0, 2.0, 3.0);
+    /// let v = v / Vec3::new(2.0, 2.0, 2.0);
+    /// assert_eq!(v, Vec3::new(0.5, 1.0, 1.5));
+    /// ```
     #[inline]
     fn div(self, rhs: Vec3) -> Self::Output {
         Vec3 { x: self.div(rhs.x), y: self.div(rhs.y), z: self.div(rhs.z) }
@@ -982,6 +1667,16 @@ impl Div<Vec3> for f32 {
 /// <https://stereokit.net/Pages/StereoKit/Vec3/op_Multiply.html>
 impl Mul<Vec3> for Vec3 {
     type Output = Self;
+
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    ///
+    /// let a = Vec3::new(1.0, 2.0, 3.0);
+    /// let b = Vec3::new(4.0, 5.0, 6.0);
+    /// let c = a * b;
+    /// assert_eq!(c, Vec3::new(4.0, 10.0, 18.0));
+    /// ```
     #[inline]
     fn mul(self, rhs: Self) -> Self::Output {
         Self { x: self.x.mul(rhs.x), y: self.y.mul(rhs.y), z: self.z.mul(rhs.z) }
@@ -991,6 +1686,15 @@ impl Mul<Vec3> for Vec3 {
 /// A component-wise vector multiplication, same thing as a non-uniform scale. NOT a dot or cross product! Commutative.
 /// <https://stereokit.net/Pages/StereoKit/Vec3/op_Multiply.html>
 impl MulAssign<Vec3> for Vec3 {
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    ///
+    /// let mut a = Vec3::new(1.0, 2.0, 3.0);
+    /// let b = Vec3::new(4.0, 5.0, 6.0);
+    /// a *= b;
+    /// assert_eq!(a, Vec3::new(4.0, 10.0, 18.0));
+    /// ```
     #[inline]
     fn mul_assign(&mut self, rhs: Self) {
         self.x.mul_assign(rhs.x);
@@ -1003,6 +1707,15 @@ impl MulAssign<Vec3> for Vec3 {
 /// <https://stereokit.net/Pages/StereoKit/Vec3/op_Multiply.html>
 impl Mul<f32> for Vec3 {
     type Output = Self;
+
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    ///
+    /// let a = Vec3::new(1.0, 2.0, 3.0);
+    /// let b = a * 2.0;
+    /// assert_eq!(b, Vec3::new(2.0, 4.0, 6.0));
+    /// ```
     #[inline]
     fn mul(self, rhs: f32) -> Self::Output {
         Self { x: self.x.mul(rhs), y: self.y.mul(rhs), z: self.z.mul(rhs) }
@@ -1012,6 +1725,14 @@ impl Mul<f32> for Vec3 {
 /// A component-wise vector multiplication, same thing as a non-uniform scale. NOT a dot or cross product! Commutative.
 /// <https://stereokit.net/Pages/StereoKit/Vec3/op_Multiply.html>
 impl MulAssign<f32> for Vec3 {
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    ///
+    /// let mut a = Vec3::new(1.0, 2.0, 3.0);
+    /// a *= 2.0;
+    /// assert_eq!(a, Vec3::new(2.0, 4.0, 6.0));
+    /// ```
     #[inline]
     fn mul_assign(&mut self, rhs: f32) {
         self.x.mul_assign(rhs);
@@ -1024,6 +1745,15 @@ impl MulAssign<f32> for Vec3 {
 /// <https://stereokit.net/Pages/StereoKit/Vec3/op_Multiply.html>
 impl Mul<Vec3> for f32 {
     type Output = Vec3;
+
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    ///
+    /// let a = 2.0 * Vec3::new(1.0, 2.0, 3.0);
+    /// let b = Vec3::new(2.0, 4.0, 6.0);
+    /// assert_eq!(a, b);
+    /// ```
     #[inline]
     fn mul(self, rhs: Vec3) -> Self::Output {
         Vec3 { x: self.mul(rhs.x), y: self.mul(rhs.y), z: self.mul(rhs.z) }
@@ -1034,6 +1764,16 @@ impl Mul<Vec3> for f32 {
 /// <https://stereokit.net/Pages/StereoKit/Vec3/op_Addition.html>
 impl Add<Vec3> for Vec3 {
     type Output = Self;
+
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    ///
+    /// let a = Vec3::new(1.0, 2.0, 3.0);
+    /// let b = Vec3::new(4.0, 5.0, 6.0);
+    /// let c = a + b;
+    /// assert_eq!(c, Vec3::new(5.0, 7.0, 9.0));
+    /// ```
     #[inline]
     fn add(self, rhs: Self) -> Self::Output {
         Self { x: self.x.add(rhs.x), y: self.y.add(rhs.y), z: self.z.add(rhs.z) }
@@ -1043,6 +1783,15 @@ impl Add<Vec3> for Vec3 {
 /// Adds matching components together. Commutative.
 /// <https://stereokit.net/Pages/StereoKit/Vec3/op_Addition.html>
 impl AddAssign<Vec3> for Vec3 {
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    ///
+    /// let mut a = Vec3::new(1.0, 2.0, 3.0);
+    /// let b = Vec3::new(4.0, 5.0, 6.0);
+    /// a += b;
+    /// assert_eq!(a, Vec3::new(5.0, 7.0, 9.0));
+    /// ```
     #[inline]
     fn add_assign(&mut self, rhs: Self) {
         self.x.add_assign(rhs.x);
@@ -1053,6 +1802,16 @@ impl AddAssign<Vec3> for Vec3 {
 
 impl Sub<Vec3> for Vec3 {
     type Output = Self;
+
+    /// ## Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    ///
+    /// let a = Vec3::new(1.0, 2.0, 3.0);
+    /// let b = Vec3::new(4.0, 5.0, 6.0);
+    /// let c = a - b;
+    /// assert_eq!(c, Vec3::new(-3.0, -3.0, -3.0));
+    /// ```
     #[inline]
     fn sub(self, rhs: Self) -> Self::Output {
         Self { x: self.x.sub(rhs.x), y: self.y.sub(rhs.y), z: self.z.sub(rhs.z) }
@@ -1062,6 +1821,15 @@ impl Sub<Vec3> for Vec3 {
 /// Subtracts matching components from eachother. Not commutative.
 /// <https://stereokit.net/Pages/StereoKit/Vec3/op_Subtraction.html>
 impl SubAssign<Vec3> for Vec3 {
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    ///
+    /// let mut a = Vec3::new(1.0, 3.0, 1.0);
+    /// let b = Vec3::new(0.5, 0.5, 0.5);
+    /// a -= b;
+    /// assert_eq!(a, Vec3::new(0.5, 2.5, 0.5));
+    /// ```
     #[inline]
     fn sub_assign(&mut self, rhs: Vec3) {
         self.x.sub_assign(rhs.x);
@@ -1074,6 +1842,15 @@ impl SubAssign<Vec3> for Vec3 {
 /// <https://stereokit.net/Pages/StereoKit/Vec3/op_UnaryNegation.html>
 impl Neg for Vec3 {
     type Output = Self;
+
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec3;
+    ///
+    /// let a = Vec3::new(1.0, 2.0, 3.0);
+    /// let b = -a;
+    /// assert_eq!(b, Vec3::new(-1.0, -2.0, -3.0));
+    /// ```
     #[inline]
     fn neg(self) -> Self::Output {
         self * -1.0
@@ -1181,6 +1958,15 @@ impl Vec4 {
 
     /// This extracts the Vec2 from the X and Y axes.
     /// <https://stereokit.net/Pages/StereoKit/Vec4/XY.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec2, Vec4};
+    ///
+    /// let v = Vec4::new(1.0, 2.0, 3.0, 4.0);
+    /// let xy = v.xy();
+    /// assert_eq!(xy, Vec2::new(1.0, 2.0));
+    /// ```
     #[inline]
     pub fn xy(&self) -> Vec2 {
         Vec2::new(self.x, self.y)
@@ -1188,6 +1974,15 @@ impl Vec4 {
 
     /// This extracts the Vec2 from the Y and Z axes.
     /// <https://stereokit.net/Pages/StereoKit/Vec4/YZ.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec2, Vec4};
+    ///
+    /// let v = Vec4::new(1.0, 2.0, 3.0, 4.0);
+    /// let yz = v.yz();
+    /// assert_eq!(yz, Vec2::new(2.0, 3.0));
+    /// ```
     #[inline]
     pub fn yz(&self) -> Vec2 {
         Vec2::new(self.y, self.z)
@@ -1195,6 +1990,15 @@ impl Vec4 {
 
     /// This extracts the Vec2 from the X and Z axes.
     /// <https://stereokit.net/Pages/StereoKit/Vec4/XZ.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec2, Vec4};
+    ///
+    /// let v = Vec4::new(1.0, 2.0, 3.0, 4.0);
+    /// let xz = v.xz();
+    /// assert_eq!(xz, Vec2::new(1.0, 3.0));
+    /// ```
     #[inline]
     pub fn xz(&self) -> Vec2 {
         Vec2::new(self.x, self.z)
@@ -1202,6 +2006,15 @@ impl Vec4 {
 
     /// This extracts the Vec2 from the Z and W axes.
     /// <https://stereokit.net/Pages/StereoKit/Vec4/ZW.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec2, Vec4};
+    ///
+    /// let v = Vec4::new(1.0, 2.0, 3.0, 4.0);
+    /// let zw = v.zw();
+    /// assert_eq!(zw, Vec2::new(3.0, 4.0));
+    /// ```
     #[inline]
     pub fn zw(&self) -> Vec2 {
         Vec2::new(self.z, self.w)
@@ -1209,6 +2022,15 @@ impl Vec4 {
 
     /// This extracts a Vec3 from the X, Y, and Z axes.
     /// <https://stereokit.net/Pages/StereoKit/Vec4/XYZ.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Vec4};
+    ///
+    /// let v = Vec4::new(1.0, 2.0, 3.0, 4.0);
+    /// let v3 = v.xyz();
+    /// assert_eq!(v3, Vec3::new(1.0, 2.0, 3.0));
+    /// ```
     #[inline]
     pub fn xyz(&self) -> Vec3 {
         Vec3::new(self.x, self.y, self.z)
@@ -1218,7 +2040,14 @@ impl Vec4 {
     /// Vec4, or visa versa, who am I to judge?
     /// <https://stereokit.net/Pages/StereoKit/Vec4/Quat.html>
     ///
-    /// see also [`matrix_extract_translation`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec4, Quat};
+    ///
+    /// let vec4 = Vec4::new(1.0, 2.0, 3.0, 4.0);
+    /// let quat = vec4.get_as_quat();
+    /// assert_eq!(quat, Quat::new(1.0, 2.0, 3.0, 4.0));
+    /// ```
     #[inline]
     pub fn get_as_quat(&self) -> Quat {
         Quat { x: self.x, y: self.y, z: self.z, w: self.w }
@@ -1227,6 +2056,14 @@ impl Vec4 {
     /// This is the squared length/magnitude of the vector! It skips the Sqrt call, and just gives you the squared
     /// version for speedy calculations that can work with it squared.
     /// <https://stereokit.net/Pages/StereoKit/Vec4.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec4;
+    ///
+    /// let v = Vec4::new(1.0, 2.0, 3.0, 4.0);
+    /// assert_eq!(v.length_sq(), 30.0);
+    /// ```
     #[inline]
     pub fn length_sq(&self) -> f32 {
         Self::dot(*self, *self)
@@ -1235,8 +2072,19 @@ impl Vec4 {
     /// What’s a dot product do for 4D vectors, you might ask? Well, I’m no mathematician, so hopefully you are! I’ve
     /// never used it before. Whatever you’re doing with this function, it’s SIMD fast!
     /// <https://stereokit.net/Pages/StereoKit/Vec4/Dot.html>
-    /// * a - The first vector.
-    /// * b - The second vector.
+    /// * `a` - The first vector.
+    /// * `b` - The second vector.
+    ///
+    /// Returns the dot product of the two vectors.
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec4;
+    ///
+    /// let a = Vec4::new(1.0, 2.0, 3.0, 4.0);
+    /// let b = Vec4::new(5.0, 6.0, 7.0, 8.0);
+    /// let result = Vec4::dot(a, b);
+    /// assert_eq!(result, 70.0);
+    /// ```
     #[inline]
     pub fn dot(a: Self, b: Self) -> f32 {
         (a.x * b.x) + (a.y * b.y) + (a.z * b.z) + (a.w * b.w)
@@ -1245,10 +2093,20 @@ impl Vec4 {
     /// Blends (Linear Interpolation) between two vectors, based on a ‘blend’ value, where 0 is a, and 1 is b. Doesn’t
     /// clamp percent for you.
     /// <https://stereokit.net/Pages/StereoKit/Vec4/Lerp.html>
-    /// * a - First item in the blend, or '0.0 blend.
-    /// * b - Second item in the blend, or '1.0 blend.
-    /// * blend - A blend value between 0 and 1. Can be outside this range, it’ll just interpolate outside of the a, b
+    /// * `a` - First item in the blend, or '0.0 blend.
+    /// * `b` - Second item in the blend, or '1.0 blend.
+    /// * `blend` - A blend value between 0 and 1. Can be outside this range, it’ll just interpolate outside of the a, b
     ///   range.
+    ///
+    /// Returns an unclamped blend of a and b.
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec4;
+    /// let a = Vec4::new(0.0, 0.0, 0.0, 0.0);
+    /// let b = Vec4::new(1.0, 1.0, 1.0, 1.0);
+    /// let result = Vec4::lerp(a, b, 0.75);
+    /// assert_eq!(result, Vec4::new(0.75, 0.75, 0.75, 0.75));
+    /// ```
     #[inline]
     pub fn lerp(a: Self, b: Self, blend: f32) -> Self {
         a + ((b - a) * blend)
@@ -1256,8 +2114,19 @@ impl Vec4 {
 
     /// Returns a vector where each elements is the maximum value for each corresponding pair.
     /// <https://stereokit.net/Pages/StereoKit/Vec4/Max.html>
-    /// * a - Order isn't important here.
-    /// * b - Order isn't important here.
+    /// * `a` - Order isn't important here.
+    /// * `b` - Order isn't important here.
+    ///
+    /// Returns a vector where each elements is the maximum value for each corresponding pair.
+    /// #### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec4;
+    ///
+    /// let a = Vec4::new(1.0, 2.0, 3.0, 4.0);
+    /// let b = Vec4::new(4.0, 3.0, 2.0, 1.0);
+    /// let c = Vec4::max(a, b);
+    /// assert_eq!(c, Vec4::new(4.0, 3.0, 3.0, 4.0));
+    /// ```
     #[inline]
     pub fn max(a: Self, b: Self) -> Self {
         Self { x: f32::max(a.x, b.x), y: f32::max(a.y, b.y), z: f32::max(a.z, b.z), w: f32::max(a.w, b.w) }
@@ -1265,8 +2134,19 @@ impl Vec4 {
 
     /// Returns a vector where each elements is the minimum value for each corresponding pair.
     /// <https://stereokit.net/Pages/StereoKit/Vec4/Min.html>
-    /// * a - Order isn't important here.
-    /// * b - Order isn't important here.
+    /// * `a` - Order isn't important here.
+    /// * `b` - Order isn't important here.
+    ///
+    /// Returns a new vector with the minimum values.
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec4;
+    ///
+    /// let a = Vec4::new(1.0, 2.0, 3.0, 4.0);
+    /// let b = Vec4::new(4.0, 3.0, 2.0, 1.0);
+    /// let c = Vec4::min(a, b);
+    /// assert_eq!(c, Vec4::new(1.0, 2.0, 2.0, 1.0));
+    /// ```
     #[inline]
     pub fn min(a: Self, b: Self) -> Self {
         Self { x: f32::min(a.x, b.x), y: f32::min(a.y, b.y), z: f32::min(a.z, b.z), w: f32::min(a.w, b.w) }
@@ -1276,7 +2156,15 @@ impl Vec4 {
 impl Display for Vec4 {
     /// Mostly for debug purposes, this is a decent way to log or inspect the vector in debug mode. Looks
     /// like “[x, y, z, w]”
-    /// <https://stereokit.net/Pages/StereoKit/Bounds/ToString.html>
+    /// <https://stereokit.net/Pages/StereoKit/Vec4/ToString.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec4;
+    ///
+    /// let v = Vec4::new(1.0, 2.2, 3.0, 4.0);
+    /// assert_eq!(format!("{}", v), "[x:1, y:2.2, z:3, w:4]");
+    /// ```
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "[x:{}, y:{}, z:{}, w:{}]", self.x, self.y, self.z, self.w)
     }
@@ -1285,6 +2173,16 @@ impl Display for Vec4 {
 /// <https://stereokit.net/Pages/StereoKit/Vec4/op_Division.html>
 impl Div<Vec4> for Vec4 {
     type Output = Self;
+
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec4;
+    ///
+    /// let a = Vec4::new(1.0, 2.0, 3.0, 4.0);
+    /// let b = Vec4::new(2.0, 2.0, 2.0, 2.0);
+    /// let c = a / b;
+    /// assert_eq!(c, Vec4::new(0.5, 1.0, 1.5, 2.0));
+    /// ```
     #[inline]
     fn div(self, rhs: Self) -> Self::Output {
         Self { x: self.x.div(rhs.x), y: self.y.div(rhs.y), z: self.z.div(rhs.z), w: self.w.div(rhs.w) }
@@ -1294,6 +2192,15 @@ impl Div<Vec4> for Vec4 {
 /// A component-wise vector division.
 /// <https://stereokit.net/Pages/StereoKit/Vec4/op_Division.html>
 impl DivAssign<Vec4> for Vec4 {
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::*;
+    ///
+    /// let mut a = Vec4::new(1.0, 2.0, 3.0, 4.0);
+    /// let b = Vec4::new(2.0, 2.0, 2.0, 2.0);
+    /// a /= b;
+    /// assert_eq!(a, Vec4::new(0.5, 1.0, 1.5, 2.0));
+    /// ```
     #[inline]
     fn div_assign(&mut self, rhs: Self) {
         self.x.div_assign(rhs.x);
@@ -1307,6 +2214,15 @@ impl DivAssign<Vec4> for Vec4 {
 /// <https://stereokit.net/Pages/StereoKit/Vec4/op_Division.html>
 impl Div<f32> for Vec4 {
     type Output = Self;
+
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec4;
+    ///
+    /// let a = Vec4::new(1.0, 2.0, 3.0, 4.0);
+    /// let b = a / 2.0;
+    /// assert_eq!(b, Vec4::new(0.5, 1.0, 1.5, 2.0));
+    /// ```
     #[inline]
     fn div(self, rhs: f32) -> Self::Output {
         Self { x: self.x.div(rhs), y: self.y.div(rhs), z: self.z.div(rhs), w: self.w.div(rhs) }
@@ -1316,6 +2232,14 @@ impl Div<f32> for Vec4 {
 /// A component-wise vector division.
 /// <https://stereokit.net/Pages/StereoKit/Vec4/op_Division.html>
 impl DivAssign<f32> for Vec4 {
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec4;
+    ///
+    /// let mut v = Vec4::new(1.0, 2.0, 3.0, 4.0);
+    /// v /= 2.0;
+    /// assert_eq!(v, Vec4::new(0.5, 1.0, 1.5, 2.0));
+    /// ```
     #[inline]
     fn div_assign(&mut self, rhs: f32) {
         self.x.div_assign(rhs);
@@ -1329,6 +2253,15 @@ impl DivAssign<f32> for Vec4 {
 /// <https://stereokit.net/Pages/StereoKit/Vec4/op_Division.html>
 impl Div<Vec4> for f32 {
     type Output = Vec4;
+
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec4;
+    ///
+    /// let a = Vec4::new(1.0, 7.0, 3.0, 4.0);
+    /// let b = a / 2.0;
+    /// assert_eq!(b, Vec4::new(0.5, 3.5, 1.5, 2.0));
+    /// ```
     #[inline]
     fn div(self, rhs: Vec4) -> Self::Output {
         Vec4 { x: self.div(rhs.x), y: self.div(rhs.y), z: self.div(rhs.z), w: self.div(rhs.w) }
@@ -1339,6 +2272,16 @@ impl Div<Vec4> for f32 {
 /// <https://stereokit.net/Pages/StereoKit/Vec4/op_Multiply.html>
 impl Mul<Vec4> for Vec4 {
     type Output = Self;
+
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec4;
+    ///
+    /// let a = Vec4::new(1.0, 2.0, 3.0, 5.0);
+    /// let b = Vec4::new(2.0, 3.0, 4.0, 6.0);
+    /// let c = a * b;
+    /// assert_eq!(c, Vec4::new(2.0, 6.0, 12.0, 30.0));
+    /// ```
     #[inline]
     fn mul(self, rhs: Self) -> Self::Output {
         Self { x: self.x.mul(rhs.x), y: self.y.mul(rhs.y), z: self.z.mul(rhs.z), w: self.w.mul(rhs.w) }
@@ -1348,6 +2291,15 @@ impl Mul<Vec4> for Vec4 {
 /// A component-wise vector multiplication, same thing as a non-uniform scale. NOT a dot or cross product! Commutative.
 /// <https://stereokit.net/Pages/StereoKit/Vec4/op_Multiply.html>
 impl MulAssign<Vec4> for Vec4 {
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec4;
+    ///
+    /// let mut a = Vec4::new(1.0, 2.0, 3.0, 5.0);
+    /// let b = Vec4::new(2.0, 3.0, 4.0, 6.0);
+    /// a *= b;
+    /// assert_eq!(a, Vec4::new(2.0, 6.0, 12.0, 30.0));
+    /// ```
     #[inline]
     fn mul_assign(&mut self, rhs: Self) {
         self.x.mul_assign(rhs.x);
@@ -1361,6 +2313,15 @@ impl MulAssign<Vec4> for Vec4 {
 /// <https://stereokit.net/Pages/StereoKit/Vec4/op_Multiply.html>
 impl Mul<f32> for Vec4 {
     type Output = Self;
+
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec4;
+    ///
+    /// let a = Vec4::new(1.0, 2.0, 3.0, 5.0);
+    /// let b = a * 2.0;
+    /// assert_eq!(b, Vec4::new(2.0, 4.0, 6.0, 10.0));
+    /// ```
     #[inline]
     fn mul(self, rhs: f32) -> Self::Output {
         Self { x: self.x.mul(rhs), y: self.y.mul(rhs), z: self.z.mul(rhs), w: self.w.mul(rhs) }
@@ -1370,6 +2331,14 @@ impl Mul<f32> for Vec4 {
 /// A component-wise vector multiplication, same thing as a non-uniform scale. NOT a dot or cross product! Commutative.
 /// <https://stereokit.net/Pages/StereoKit/Vec4/op_Multiply.html>
 impl MulAssign<f32> for Vec4 {
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec4;
+    ///
+    /// let mut a = Vec4::new(1.0, 2.0, 7.0, 5.0);
+    /// a *= 2.0;
+    /// assert_eq!(a, Vec4::new(2.0, 4.0, 14.0, 10.0));
+    /// ```
     #[inline]
     fn mul_assign(&mut self, rhs: f32) {
         self.x.mul_assign(rhs);
@@ -1383,6 +2352,16 @@ impl MulAssign<f32> for Vec4 {
 /// <https://stereokit.net/Pages/StereoKit/Vec4/op_Multiply.html>
 impl Mul<Vec4> for f32 {
     type Output = Vec4;
+
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec4;
+    ///
+    /// let a = 2.0;
+    /// let b = Vec4::new(2.0, 3.0, 4.0, 6.0);
+    /// let c = a * b;
+    /// assert_eq!(c, Vec4::new(4.0, 6.0, 8.0, 12.0));
+    /// ```
     #[inline]
     fn mul(self, rhs: Vec4) -> Self::Output {
         Vec4 { x: self.mul(rhs.x), y: self.mul(rhs.y), z: self.mul(rhs.z), w: self.mul(rhs.w) }
@@ -1393,6 +2372,16 @@ impl Mul<Vec4> for f32 {
 /// <https://stereokit.net/Pages/StereoKit/Vec4/op_Addition.html>
 impl Add<Vec4> for Vec4 {
     type Output = Self;
+
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec4;
+    ///
+    /// let a = Vec4::new(1.0, 2.0, 3.0, 5.0);
+    /// let b = Vec4::new(2.0, 3.0, 4.0, 6.0);
+    /// let c = a + b;
+    /// assert_eq!(c, Vec4::new(3.0, 5.0, 7.0, 11.0));
+    /// ```
     #[inline]
     fn add(self, rhs: Self) -> Self::Output {
         Self { x: self.x.add(rhs.x), y: self.y.add(rhs.y), z: self.z.add(rhs.z), w: self.w.add(rhs.w) }
@@ -1402,6 +2391,15 @@ impl Add<Vec4> for Vec4 {
 /// Adds matching components together. Commutative.
 /// <https://stereokit.net/Pages/StereoKit/Vec4/op_Addition.html>
 impl AddAssign<Vec4> for Vec4 {
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec4;
+    ///
+    /// let mut v1 = Vec4::new(1.0, 2.0, 3.0, 4.0);
+    /// let v2 = Vec4::new(5.0, 6.0, 7.0, 8.0);
+    /// v1 += v2;
+    /// assert_eq!(v1, Vec4::new(6.0, 8.0, 10.0, 12.0));
+    /// ```
     #[inline]
     fn add_assign(&mut self, rhs: Self) {
         self.x.add_assign(rhs.x);
@@ -1413,6 +2411,16 @@ impl AddAssign<Vec4> for Vec4 {
 
 impl Sub<Vec4> for Vec4 {
     type Output = Self;
+
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec4;
+    ///
+    /// let a = Vec4::new(1.0, 2.0, 3.0, 4.0);
+    /// let b = Vec4::new(4.0, 3.0, 2.0, 1.0);
+    /// let c = a - b;
+    /// assert_eq!(c, Vec4::new(-3.0, -1.0, 1.0, 3.0));
+    /// ```
     #[inline]
     fn sub(self, rhs: Self) -> Self::Output {
         Self { x: self.x.sub(rhs.x), y: self.y.sub(rhs.y), z: self.z.sub(rhs.z), w: self.w.sub(rhs.w) }
@@ -1422,6 +2430,15 @@ impl Sub<Vec4> for Vec4 {
 /// Subtracts matching components from eachother. Not commutative.
 /// <https://stereokit.net/Pages/StereoKit/Vec4/op_Subtraction.html>
 impl SubAssign<Vec4> for Vec4 {
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec4;
+    ///
+    /// let mut v1 = Vec4::new(1.0, 2.0, 3.0, 4.0);
+    /// let v2 = Vec4::new(1.0, 2.0, 3.0, 4.0);
+    /// v1 -= v2;
+    /// assert_eq!(v1, Vec4::new(0.0, 0.0, 0.0, 0.0));
+    /// ```
     #[inline]
     fn sub_assign(&mut self, rhs: Vec4) {
         self.x.sub_assign(rhs.x);
@@ -1435,6 +2452,15 @@ impl SubAssign<Vec4> for Vec4 {
 /// <https://stereokit.net/Pages/StereoKit/Vec4/op_UnaryNegation.html>
 impl Neg for Vec4 {
     type Output = Self;
+
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Vec4;
+    ///
+    /// let v = Vec4::new(1.0, 2.0, 3.0, 4.0);
+    /// let neg_v = -v;
+    /// assert_eq!(neg_v, Vec4::new(-1.0, -2.0, -3.0, -4.0));
+    /// ```
     #[inline]
     fn neg(self) -> Self::Output {
         self * -1.0
@@ -1523,12 +2549,22 @@ impl Default for Quat {
 
 ///  Warning: Equality with a precision of 0.000001
 impl PartialEq for Quat {
-    ///  Warning: Equality with a precision of 0.000001
+    ///  Warning: Equality with a precision of 0.00001
+    /// ### Example
+    /// ```
+    /// use stereokit_rust::maths::Quat;
+    ///
+    /// let q0 = Quat::new(1.00002, 2.0, 3.0, 4.0);
+    /// let q1 = Quat::new(1.000001, 2.000001, 3.000001, 4.0);
+    /// let q2 = Quat::new(1.0, 2.0, 3.0, 4.0);
+    /// assert_ne!(q0, q1);
+    /// assert_eq!(q1, q2);
+    /// ```
     fn eq(&self, other: &Self) -> bool {
-        ((self.x - other.x).abs() < 0.000001)
-            && ((self.y - other.y).abs() < 0.000001)
-            && ((self.z - other.z).abs() < 0.000001)
-            && ((self.w - other.w).abs() < 0.000001)
+        ((self.x - other.x).abs() < 0.00001)
+            && ((self.y - other.y).abs() < 0.00001)
+            && ((self.z - other.z).abs() < 0.00001)
+            && ((self.w - other.w).abs() < 0.00001)
     }
 }
 
@@ -1567,6 +2603,14 @@ impl Quat {
     /// <https://stereokit.net/Pages/StereoKit/Quat/Invert.html>
     ///
     /// see also [`Quat::get_inverse`] [`quat_inverse`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Quat;
+    ///
+    /// let mut q = Quat::new(1.0, 2.0, 3.0, 4.0);
+    /// q.invert();
+    /// assert_eq!(q,  Quat { x: -0.033333335, y: -0.06666667, z: -0.1, w: 0.13333334 });
+    /// ```
     #[inline]
     pub fn invert(&mut self) -> &mut Self {
         let m = unsafe { quat_inverse(self) };
@@ -1582,6 +2626,14 @@ impl Quat {
     /// <https://stereokit.net/Pages/StereoKit/Quat/Normalize.html>
     ///
     /// see also [`Quat::get_normalized`] [`quat_normalize`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Quat;
+    ///
+    /// let mut q = Quat::new(1.0, 2.0, 3.0, 4.0);
+    /// q.normalize();
+    /// assert_eq!(q, Quat::new(0.18257419, 0.36514837, 0.54772256, 0.73029674));
+    /// ```
     #[inline]
     pub fn normalize(&mut self) -> &mut Self {
         let m = unsafe { quat_normalize(self) };
@@ -1594,8 +2646,21 @@ impl Quat {
 
     /// Rotates a quaternion making it relative to another rotation while preserving it’s “Length”!
     /// <https://stereokit.net/Pages/StereoKit/Quat/Relative.html>
+    /// * `to` - The relative quaternion.
     ///
+    /// Returns this quaternion made relative to another rotation.
     /// see also [`quat_mul`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Quat;
+    ///
+    /// let mut q = Quat::from_angles(0.0, 90.0, 0.0);
+    /// assert_eq!(q, Quat { x: 0.0, y: 0.70710677, z: 0.0, w: 0.7071067 });
+    ///
+    /// let to = Quat::from_angles(0.0, 0.0, 90.0);
+    /// q.relative(to);
+    /// assert_eq!(q, Quat { x: 0.70710677, y: 0.0, z: 0.0, w: 0.7071067 });
+    /// ```
     #[inline]
     pub fn relative(&mut self, to: Self) -> &mut Self {
         let m = to.mul(*self).mul(to.get_inverse());
@@ -1608,9 +2673,19 @@ impl Quat {
 
     /// This rotates a point around the origin by the Quat.
     /// <https://stereokit.net/Pages/StereoKit/Quat/Rotate.html>
-    /// * point - The point to rotate around the origin.
+    /// * `point` - The point to rotate around the origin.
     ///
+    /// Returns the rotated point.
     /// see also [`quat_mul_vec`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Quat};
+    ///
+    /// let q = Quat::from_angles(0.0, 90.0, 0.0);
+    /// let point = Vec3::new(1.0, 0.0, 0.0);
+    /// let rotated_point = q.rotate_point(point);
+    /// assert_eq!(rotated_point, Vec3::new(0.0, 0.0, -1.0));
+    /// ```
     #[inline]
     pub fn rotate_point(&self, point: Vec3) -> Vec3 {
         unsafe { quat_mul_vec(self, &point) }
@@ -1640,6 +2715,7 @@ impl Quat {
 
     /// Get an array of the 3 angles in radians of this Quat with x, y and z axis
     /// <https://stereokit.net/Pages/StereoKit/Quat.html>
+    ///
     /// ### Examples
     /// ```
     /// use stereokit_rust::maths::{Quat, Vec3};
@@ -1655,22 +2731,48 @@ impl Quat {
 
     /// This rotates a point around the origin by the Quat.
     /// <https://stereokit.net/Pages/StereoKit/Quat/Rotate.html>
-    /// * a - The Quat to use for rotation.
-    /// * point - The point to rotate around the origin.
+    /// * `a` - The Quat to use for rotation.
+    /// * `point` - The point to rotate around the origin.
     ///
-    /// see also [`quat_mul_vec`]
+    /// Returns the rotated point.
+    /// see also [`quat_mul_vec`] operator '*' [`Quat::rotate_point`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Quat};
+    ///
+    /// let a = Quat::from_angles(0.0, 90.0, 0.0);
+    /// let point = Vec3::new(1.0, 0.0, 0.0);
+    /// let result1 = a * point;
+    /// let result2 = Quat::rotate(a, point);
+    /// let result3 = a.rotate_point(point);
+    /// assert_eq!(result1, result2);
+    /// assert_eq!(result2, result3);
+    /// assert_eq!(result1, Vec3::new(0.0, 0.0, -1.0));
+    /// ```
     #[inline]
-    pub fn rotate(a: Self, point: Vec3) -> Vec3 {
+    pub fn rotate(a: Quat, point: Vec3) -> Vec3 {
         unsafe { quat_mul_vec(&a, &point) }
     }
 
     /// Creates a quaternion that goes from one rotation to another.
     /// <https://stereokit.net/Pages/StereoKit/Quat/Delta.html>
-    /// * from - The origin rotation.
-    /// * to - The target rotation.
+    /// * `from` - The origin rotation.
+    /// * `to` - The target rotation.
     ///
-    /// see also `-`` operator
-    /// see also [`quat_difference`]
+    /// Returns the quaternion between from and to.
+    /// see also `-` operator [`quat_difference`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Quat;
+    ///
+    /// let from = Quat::from_angles(180.0, 0.0, 0.0);
+    /// let to = Quat::from_angles(0.0, 180.0, 0.0);
+    /// let delta = Quat::delta(from, to);
+    /// assert_eq!(delta, Quat::from_angles(0.0, 0.0, 180.0));
+    ///
+    /// let delta_b = from - to;
+    /// assert_eq!(delta_b, delta);
+    /// ```
     #[inline]
     pub fn delta(from: Self, to: Self) -> Self {
         unsafe { quat_difference(&from, &to) }
@@ -1679,8 +2781,19 @@ impl Quat {
     /// Creates a rotation that goes from one direction to another. Which is comes in handy when trying to roll
     /// something around with position data.
     /// <https://stereokit.net/Pages/StereoKit/Quat/Delta.html>
-    /// * from - The origin direction.
-    /// * to - The target direction.
+    /// * `from` - The origin direction.
+    /// * `to` - The target direction.
+    ///
+    /// Returns the quaternion between the two directions.
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Quat, Vec3};
+    ///
+    /// let from = Vec3::new(1.0, 0.0, 0.0);
+    /// let to = Vec3::new(0.0, 0.0, 1.0);
+    /// let delta = Quat::delta_dir(from, to);
+    /// assert_eq!(delta, Quat::from_angles(0.0, -90.0, 0.0));
+    /// ```
     #[inline]
     pub fn delta_dir(from: Vec3, to: Vec3) -> Self {
         let c = Vec3::cross(from, to);
@@ -1688,13 +2801,23 @@ impl Quat {
         *(out.normalize())
     }
 
-    /// Creates a Roll/Pitch/Yaw rotation (applied in that order) from the provided angles in degrees!
+    /// Creates a Roll/Pitch/Yaw rotation (applied in that order) from the provided angles in degrees! There is also a
+    /// From<[f32; 3]> for Quat implementation that does the same thing.
     /// <https://stereokit.net/Pages/StereoKit/Quat/FromAngles.html>
-    /// * pitch_x_deg - The angle to rotate around the X-axis in degrees.
-    /// * yaw_y_deg - The angle to rotate around the Y-axis in degrees.
-    /// * roll_z_deg - The angle to rotate around the Z-axis in degrees.
+    /// * `pitch_x_deg` - The angle to rotate around the X-axis in degrees.
+    /// * `yaw_y_deg` - The angle to rotate around the Y-axis in degrees.
+    /// * `roll_z_deg` - The angle to rotate around the Z-axis in degrees.
     ///
-    /// see also [`quat_from_angles`]
+    /// Returns a quaternion representing the given Roll/Pitch/Yaw rotation!
+    /// see also [`quat_from_angles`] [`Quat::from`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Quat;
+    ///
+    /// let quat = Quat::from_angles(45.0, 30.0, 60.0);
+    /// let quat2: Quat = [45.0, 30.0, 60.0].into();
+    /// assert_eq!(quat, quat2);
+    /// ```
     #[inline]
     pub fn from_angles(pitch_x_deg: f32, yaw_y_deg: f32, roll_z_deg: f32) -> Self {
         unsafe { quat_from_angles(pitch_x_deg, yaw_y_deg, roll_z_deg) }
@@ -1704,13 +2827,27 @@ impl Quat {
     /// style rotation, or other facing behavior when you know where an object is, and where you want it to look at.
     /// This rotation works best when applied to objects that face Vec3.Forward in their resting/model space pose.
     /// <https://stereokit.net/Pages/StereoKit/Quat/LookAt.html>
-    /// * from - Position of where the 'object' is.
-    /// * at - The position you want the 'object' to look at.
-    /// * up - Look From/At positions describe X and Y axis rotation well, but leave Z Axis/Roll
+    /// * `from` - Position of where the 'object' is.
+    /// * `at` - The position you want the 'object' to look at.
+    /// * `up` - Look From/At positions describe X and Y axis rotation well, but leave Z Axis/Roll
     ///   undefined. Providing an upDirection vector helps to indicate roll around the From/At line. If None : up
     ///   direction will be (0,1,0), to prevent roll.    
     ///
+    /// Returns a rotation that describes looking from a point, towards another point.
     /// see also [`quat_lookat`][`quat_lookat_up`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Quat, Vec3};
+    ///
+    /// let from = Vec3::new(1.0, 0.0, 0.0);
+    /// let at = Vec3::new(0.0, 0.0, 1.0);
+    /// let up = Vec3::new(0.0, 1.0, 0.0);
+    /// let quat = Quat::look_at(from, at, Some(up));
+    /// assert_eq!(quat, Quat::from_angles(0.0, 135.0, 0.0));
+    ///
+    /// let quat = Quat::look_at(from, at, None);
+    /// assert_eq!(quat, Quat::from_angles(0.0, 135.0, 0.0));
+    /// ```
     #[inline]
     pub fn look_at<V: Into<Vec3>>(from: V, at: V, up: Option<Vec3>) -> Self {
         let from = from.into();
@@ -1725,9 +2862,18 @@ impl Quat {
     /// behavior! This rotation works best when applied to objects that face Vec3.Forward in their resting/model space
     /// pose.
     /// <https://stereokit.net/Pages/StereoKit/Quat/LookDir.html>
-    /// * direction - The direction the rotation should be looking. Doesn't need to be normalized.
+    /// * `direction` - The direction the rotation should be looking. Doesn't need to be normalized.
     ///
+    /// Returns a  rotation that describes looking towards a direction.
     /// see also [`quat_lookat`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Quat, Vec3};
+    ///
+    /// let direction = Vec3::new(1.0, 0.0, 0.0);
+    /// let quat = Quat::look_dir(direction);
+    /// assert_eq!(quat, Quat::from_angles(0.0, 270.0, 0.0));
+    /// ```
     #[inline]
     pub fn look_dir<V: Into<Vec3>>(direction: V) -> Self {
         let direction = direction.into();
@@ -1737,11 +2883,21 @@ impl Quat {
     /// Spherical Linear interpolation. Interpolates between two quaternions! Both Quats should be normalized/unit
     /// quaternions, or you may get unexpected results.
     /// <https://stereokit.net/Pages/StereoKit/Quat/Slerp.html>
-    /// * a - Start quaternion, should be normalized/unit length.
-    /// * b - End quaternion, should be normalized/unit length.
-    /// * slerp - The interpolation amount! This’ll be a if 0, and b if 1. Unclamped.
+    /// * `a` - Start quaternion, should be normalized/unit length.
+    /// * `b` - End quaternion, should be normalized/unit length.
+    /// * `slerp` - The interpolation amount! This’ll be a if 0, and b if 1. Unclamped.
     ///
+    /// Returns a blend between the two quaternions!
     /// see also [`quat_slerp`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Quat;
+    ///
+    /// let a = Quat::from_angles(0.0, 0.0, 0.0);
+    /// let b = Quat::from_angles(0.0, 0.0, 90.0);
+    /// let result = Quat::slerp(a, b, 0.25);
+    /// assert_eq!(result, Quat::from_angles(0.0, 0.0, 22.5));
+    /// ```
     #[inline]
     pub fn slerp(a: Self, b: Self, slerp: f32) -> Self {
         unsafe { quat_slerp(&a, &b, slerp) }
@@ -1751,6 +2907,14 @@ impl Quat {
     /// <https://stereokit.net/Pages/StereoKit/Quat/Inverse.html>
     ///
     /// see also [`quat_inverse`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Quat;
+    ///
+    /// let q = Quat::from_angles(90.0, 0.0, 0.0);
+    /// let q_inv = q.get_inverse();
+    /// assert_eq!(q_inv, Quat::from_angles(-90.0, 0.0, 0.0));
+    /// ```
     #[inline]
     pub fn get_inverse(&self) -> Self {
         unsafe { quat_inverse(self) }
@@ -1760,6 +2924,15 @@ impl Quat {
     /// <https://stereokit.net/Pages/StereoKit/Quat/Normalized.html>
     ///
     /// see also [`quat_normalize`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Quat;
+    ///
+    /// let q = Quat::new(2.0, 0.0, 0.0, 0.0);
+    /// let normalized = q.get_normalized();
+    /// assert_eq!(normalized, Quat::new(1.0, 0.0, 0.0, 0.0));
+    /// assert_eq!(normalized, Quat::from_angles(180.0, 0.0, 0.0));
+    /// ```
     #[inline]
     pub fn get_normalized(&self) -> Self {
         unsafe { quat_normalize(self) }
@@ -1768,6 +2941,18 @@ impl Quat {
     /// A Vec4 and a Quat are only really different by name and purpose. So, if you need to do Quat math with your
     /// Vec4, or visa versa, who am I to judge?
     /// <https://stereokit.net/Pages/StereoKit/Quat/Vec4.html>
+    ///
+    /// see also [`Quat::from`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Quat, Vec4};
+    ///
+    /// let quat = Quat::new(1.0, 2.0, 3.0, 4.0);
+    /// let vec4 = Vec4::new(1.0, 2.0, 3.0, 4.0);
+    /// assert_eq!(vec4, quat.get_as_vec4());
+    /// assert_eq!(vec4, quat.into());
+    /// assert_eq!(quat, vec4.into());
+    /// ```
     #[inline]
     pub fn get_as_vec4(&self) -> Vec4 {
         Vec4 { x: self.x, y: self.y, z: self.z, w: self.w }
@@ -1775,19 +2960,40 @@ impl Quat {
 
     /// This is the combination of rotations a and b. Note that order matters h
     /// <https://stereokit.net/Pages/StereoKit/Quat/op_Multiply.html>
-    /// see also * operator
     ///
-    /// see also [`quat_mul`]
+    /// see also `*` operator [`quat_mul`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Quat;
+    ///
+    /// let a = Quat::from_angles(180.0, 0.0, 0.0);
+    /// let b = Quat::from_angles(0.0, 180.0, 0.0);
+    /// let c = a * b;
+    /// let d = a.mul(b);
+    /// assert_eq!(c, Quat::from_angles(0.0, 0.0, -180.0));
+    /// assert_eq!(d, Quat::from_angles(0.0, 0.0, -180.0));
+    /// ```
     #[inline]
-    pub fn mul(&self, rhs: &Self) -> Self {
-        unsafe { quat_mul(self, rhs) }
+    pub fn mul(&self, rhs: Self) -> Self {
+        unsafe { quat_mul(self, &rhs) }
     }
 
     /// This rotates a point around the origin by the Quat.
     /// <https://stereokit.net/Pages/StereoKit/Quat/op_Multiply.html>
-    /// see also * operator
     ///
-    /// see also [`quat_mul_vec`]
+    /// see also `*` operator [`quat_mul_vec`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Quat, Vec3};
+    ///
+    /// let q = Quat::from_angles(0.0, 90.0, 0.0);
+    /// let v = Vec3::new(1.0, 0.0, 0.0);
+    /// let result = q.mul_vec3(v);
+    /// assert_eq!(result, Vec3::new(0.0, 0.0, -1.0));
+    ///
+    /// let result_b = q * v;
+    /// assert_eq!(result_b, result);
+    /// ```
     #[inline]
     pub fn mul_vec3<V: Into<Vec3>>(&self, rhs: V) -> Vec3 {
         let rhs = rhs.into();
@@ -1795,6 +3001,15 @@ impl Quat {
     }
 
     /// get an array
+    ///
+    /// see also [`Quat::from`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Quat;
+    ///
+    /// let q = Quat::new(1.0, 2.0, 3.0, 4.0);
+    /// assert_eq!(q.to_array(), [1.0, 2.0, 3.0, 4.0]);
+    /// ```
     #[inline]
     pub const fn to_array(&self) -> [f32; 4] {
         [self.x, self.y, self.z, self.w]
@@ -1805,6 +3020,14 @@ impl Display for Quat {
     /// Mostly for debug purposes, this is a decent way to log or inspect the vector in debug mode. Looks
     /// like “[x, y, z, w]”
     /// <https://stereokit.net/Pages/StereoKit/Quat/ToString.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Quat;
+    ///
+    /// let quat = Quat::new(1.0, 2.0, 3.3, 4.0);
+    /// assert_eq!(format!("{}", quat), "[x:1, y:2, z:3.3, w:4]");
+    /// ```
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "[x:{}, y:{}, z:{}, w:{}]", self.x, self.y, self.z, self.w)
     }
@@ -1816,6 +3039,16 @@ impl Display for Quat {
 /// see also [`quat_mul`]
 impl Mul<Quat> for Quat {
     type Output = Self;
+
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Quat;
+    ///
+    /// let a = Quat::from_angles(180.0, 0.0, 0.0);
+    /// let b = Quat::from_angles(0.0, 180.0, 0.0);
+    /// let c = Quat::from_angles(0.0, 0.0, -180.0);
+    /// assert_eq!(a * b, c);
+    /// ```
     #[inline]
     fn mul(self, rhs: Self) -> Self::Output {
         unsafe { quat_mul(&self, &rhs) }
@@ -1827,6 +3060,15 @@ impl Mul<Quat> for Quat {
 ///
 /// see also [`quat_mul`]
 impl MulAssign<Quat> for Quat {
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Quat;
+    ///
+    /// let mut q = Quat::new(1.0, 0.0, 0.0, 0.0);
+    /// let r = Quat::new(0.0, 1.0, 0.0, 0.0);
+    /// q *= r;
+    /// assert_eq!(q, Quat::new(0.0, 0.0, -1.0, 0.0));
+    /// ```
     #[inline]
     fn mul_assign(&mut self, rhs: Quat) {
         *self = unsafe { quat_mul(self, &rhs) }
@@ -1840,6 +3082,14 @@ impl MulAssign<Quat> for Quat {
 impl Mul<Vec3> for Quat {
     type Output = Vec3;
 
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Quat, Vec3};
+    ///
+    /// let q = Quat::from_angles(0.0, 90.0, 0.0);
+    /// let v = Vec3::new(1.0, 0.0, 0.0);
+    /// assert_eq!(q * v, Vec3::new(0.0, 0.0, -1.0));
+    /// ```
     fn mul(self, rhs: Vec3) -> Self::Output {
         unsafe { quat_mul_vec(&self, &rhs) }
     }
@@ -1853,6 +3103,16 @@ impl Mul<Vec3> for Quat {
 impl Sub<Quat> for Quat {
     type Output = Self;
 
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Quat;
+    ///
+    /// let from = Quat::from_angles(180.0, 0.0, 0.0);
+    /// let to = Quat::from_angles(0.0, 180.0, 0.0);
+    /// let delta = Quat::delta(from, to);
+    /// assert_eq!(delta, Quat::from_angles(0.0, 0.0, 180.0));
+    /// assert_eq!(from - to, delta);
+    /// ```
     fn sub(self, rhs: Self) -> Self::Output {
         unsafe { quat_difference(&self, &rhs) }
     }
@@ -1883,9 +3143,7 @@ impl Sub<Quat> for Quat {
 /// use stereokit_rust::{maths::{Vec3, Quat, Matrix}, model::Model};
 ///
 /// let model = Model::from_file("center.glb", None).unwrap().copy();
-/// let transform = Matrix::trs( &(Vec3::NEG_Y * 0.7),
-///                              &([0.0, 155.0, 10.0].into()),
-///                              &(Vec3::ONE * 0.3) );
+/// let transform = Matrix::t_r_s(Vec3::NEG_Y * 0.7, [0.0, 155.0, 10.0], Vec3::ONE * 0.3);
 ///
 /// filename_scr = "screenshots/matrix.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
@@ -1919,7 +3177,14 @@ impl std::fmt::Debug for Matrix {
 
 ///  Warning: Equality with a precision of 0.1 millimeter
 impl PartialEq for Matrix {
-    ///  Warning: Equality with a precision of 0.1 millimeter
+    /// Warning: Equality with a precision of 0.00001
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Matrix;
+    ///
+    /// let matrix = Matrix::IDENTITY;
+    /// assert_eq!(matrix, Matrix::IDENTITY);
+    /// ```
     fn eq(&self, other: &Self) -> bool {
         unsafe {
             self.row[0] == other.row[0]
@@ -1972,7 +3237,8 @@ impl Matrix {
     /// Identity matrix made of [[Vec4::X, Vec4::Y, Vec4::Z, Vec4::W]]
     pub const IDENTITY: Matrix = Matrix { row: [Vec4::X, Vec4::Y, Vec4::Z, Vec4::W] };
 
-    /// Identity matrix rotated 90 degrees around the Y axis made of [[Vec4::NEG_X, Vec4::Y, Vec4::NEG_Z, Vec4::W]]
+    /// Identity matrix rotated 180 degrees around the Y axis made of [[Vec4::NEG_X, Vec4::Y, Vec4::NEG_Z, Vec4::W]]
+    /// This is mainly used for test screenshots, but it can be useful for other things too!
     pub const Y_180: Matrix = Matrix { row: [Vec4::NEG_X, Vec4::Y, Vec4::NEG_Z, Vec4::W] };
 
     /// Null or Zero matrix made of [[Vec4::ZERO, Vec4::ZERO, Vec4::ZERO, Vec4::ZERO]]
@@ -1981,14 +3247,24 @@ impl Matrix {
     /// This creates a matrix used for projecting 3D geometry onto a 2D surface for rasterization. Orthographic
     /// projection matrices will preserve parallel lines. This is great for 2D scenes or content.
     /// <https://stereokit.net/Pages/StereoKit/Matrix/Orthographic.html>
-    /// * width - in meters, of the area that will  be projected.
-    /// * height - The height, in meters, of the area that will be projected
-    /// * near_clip - Anything closer than this distance (in meters) will be discarded. Must not be zero, and if you
+    /// * `width` - in meters, of the area that will  be projected.
+    /// * `height` - The height, in meters, of the area that will be projected
+    /// * `near_clip` - Anything closer than this distance (in meters) will be discarded. Must not be zero, and if you
     ///   make this too small, you may experience glitching in your depth buffer.
-    /// * far_clip - Anything further than this distance (in meters) will be discarded. For low resolution depth
+    /// * `far_clip` - Anything further than this distance (in meters) will be discarded. For low resolution depth
     ///   buffers, this should not be too far away, or you'll see bad z-fighting artifacts.    
     ///
     /// Returns the final orthographic Matrix.
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Matrix};
+    ///
+    /// let translate = Matrix::orthographic(1.0, 1.0, 0.1, 100.0);
+    /// let point = Vec3::new(1.0, 2.0, 3.0);
+    ///
+    /// let projection = translate * point;
+    /// assert_eq!(projection, Vec3 { x: 2.0, y: 4.0, z: -0.03103103 });
+    /// ```
     /// see also [`matrix_orthographic`]
     #[inline]
     pub fn orthographic(width: f32, height: f32, near_clip: f32, far_clip: f32) -> Self {
@@ -1999,15 +3275,25 @@ impl Matrix {
     /// projection matrices will cause parallel lines to converge at the horizon. This is great for normal looking
     /// content.
     /// <https://stereokit.net/Pages/StereoKit/Matrix/Perspective.html>
-    /// * fov_degrees - This is the vertical field of view of the perspective matrix, units are in degrees.
-    /// * aspect_ratio - The projection surface's width/height.
-    /// * near_clip - Anything closer than this distance (in meters) will be discarded. Must not be zero, and if you
+    /// * `fov_degrees` - This is the vertical field of view of the perspective matrix, units are in degrees.
+    /// * `aspect_ratio` - The projection surface's width/height.
+    /// * `near_clip` - Anything closer than this distance (in meters) will be discarded. Must not be zero, and if you
     ///   make this too small, you may experience glitching in your depth buffer.
-    /// * far_clip - Anything further than this distance (in meters) will be discarded. For low resolution depth
+    /// * `far_clip` - Anything further than this distance (in meters) will be discarded. For low resolution depth
     ///   buffers, this should not be too far away, or you'll see bad z-fighting artifacts.    
     ///
     /// Returns the final perspective matrix.
     /// see also [`matrix_perspective`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Matrix};
+    ///
+    /// let translate = Matrix::perspective(90.0, 1.0, 0.1, 100.0);
+    /// let point = Vec3::new(1.0, 2.0, 3.0);
+    ///
+    /// let projection = translate * point;
+    /// assert_eq!(projection,  Vec3 { x: 72.946686, y: 145.89337, z: -3.1031032 });
+    /// ```
     #[inline]
     pub fn perspective(fov_degrees: f32, aspect_ratio: f32, near_clip: f32, far_clip: f32) -> Self {
         unsafe { matrix_perspective(fov_degrees.to_radians(), aspect_ratio, near_clip, far_clip) }
@@ -2016,12 +3302,12 @@ impl Matrix {
     /// This creates a matrix used for projecting 3D geometry onto a 2D surface for rasterization. With the known camera
     /// intrinsics, you can replicate its perspective!
     /// <https://stereokit.net/Pages/StereoKit/Matrix/Perspective.html>
-    /// * image_resolution - The resolution of the image. This should be the image's width and height in pixels.
-    /// * focal_length_px - The focal length of camera in pixels, with image coordinates +X (pointing right) and +Y
+    /// * `image_resolution` - The resolution of the image. This should be the image's width and height in pixels.
+    /// * `focal_length_px` - The focal length of camera in pixels, with image coordinates +X (pointing right) and +Y
     ///   (pointing up).
-    /// * near_clip - Anything closer than this distance (in meters) will be discarded. Must not be zero, and if you
+    /// * `near_clip` - Anything closer than this distance (in meters) will be discarded. Must not be zero, and if you
     ///   make this too small, you may experience glitching in your depth buffer.
-    /// * far_clip - Anything further than this distance (in meters) will be discarded. For low resolution depth
+    /// * `far_clip` - Anything further than this distance (in meters) will be discarded. For low resolution depth
     ///   buffers, this should not be too far away, or you'll see bad z-fighting artifacts.
     ///
     /// Returns the final perspective matrix.
@@ -2032,6 +3318,17 @@ impl Matrix {
     /// multiply it by the near clip distance to find a near plane that is parallel.
     ///
     /// see also [`matrix_perspective`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec2, Vec3, Matrix};
+    ///
+    /// let translate = Matrix::perspective_focal(Vec2::new(1.0, 1.0), 1.0, 0.1, 100.0);
+    /// let point = Vec3::new(1.0, 2.0, 3.0);
+    ///
+    /// let projection = translate * point;
+    /// assert_eq!(projection,  Vec3 { x: 2.0, y: 4.0, z: -3.1031032 });
+    /// ```
+    #[inline]
     pub fn perspective_focal(image_resolution: Vec2, focal_length_px: f32, near_clip: f32, far_clip: f32) -> Self {
         let near_plane_dimensions = image_resolution / focal_length_px * near_clip;
 
@@ -2063,9 +3360,29 @@ impl Matrix {
         }
     }
 
+    /// A transformation that describes one position looking at another point. This is particularly useful for
+    /// describing camera transforms!
     /// <https://stereokit.net/Pages/StereoKit/Matrix/LookAt.html>
     ///
     /// see also [`matrix_r`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Matrix};
+    ///
+    /// let from = Vec3::new(1.0, 0.0, 0.0);
+    /// let at = Vec3::new(0.0, 0.0, 0.0);
+    /// let up = Vec3::new(0.0, 1.0, 0.0);
+    /// let transform = Matrix::look_at(from, at, Some(up));
+    /// assert_eq!(transform, Matrix::from([
+    ///     0.0, 0.0, 1.0, 0.0,
+    ///     0.0, 1.0, 0.0, 0.0,
+    ///     1.0, 0.0, 0.0, 0.0,
+    ///     0.0, 0.0,-1.0, 1.0,
+    /// ]));
+    ///
+    /// let transform_b = Matrix::look_at(from, at, None);
+    /// assert_eq!(transform, transform_b);
+    /// ```
     #[inline]
     pub fn look_at(from: Vec3, at: Vec3, up: Option<Vec3>) -> Self {
         let up = up.unwrap_or(Vec3::UP);
@@ -2097,77 +3414,399 @@ impl Matrix {
         }
     }
 
-    /// Create a rotation matrix from a Quaternion.
+    /// Create a rotation matrix from a Quaternion. Consider using [`Matrix::update_r`] when you have to recalculate
+    /// Matrix at each steps in main loop.
     /// <https://stereokit.net/Pages/StereoKit/Matrix/R.html>
-    /// * rotation - The quaternion describing the rotation for this transform.
+    /// * `rotation` - The quaternion describing the rotation for this transform.
     ///
-    /// see also [`matrix_r`]
+    /// returns a Matrix that will rotate by the provided Quaternion orientation.
+    /// see also [`matrix_r`] [`Matrix::update_r`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Quat, Matrix};
+    ///
+    /// let rotation = Quat::from_angles(90.0, 0.0, 0.0);
+    /// let matrix = Matrix::r(rotation);
+    /// assert_eq!(matrix, Matrix::from([
+    ///     1.0, 0.0, 0.0, 0.0,
+    ///     0.0, 0.0, 1.0, 0.0,
+    ///     0.0,-1.0, 0.0, 0.0,
+    ///     0.0, 0.0, 0.0, 1.0,
+    /// ]));
+    ///
+    /// let rotation = Quat::from_angles(0.0, 90.0, 0.0);
+    /// let matrix = Matrix::r(rotation);
+    /// assert_eq!(matrix, Matrix::from([
+    ///     0.0, 0.0, -1.0, 0.0,
+    ///     0.0, 1.0,  0.0, 0.0,
+    ///     1.0, 0.0,  0.0, 0.0,
+    ///     0.0, 0.0,  0.0, 1.0,
+    /// ]));
+    ///
+    /// ```
     #[inline]
     pub fn r<Q: Into<Quat>>(rotation: Q) -> Self {
         unsafe { matrix_r(rotation.into()) }
     }
 
-    /// Creates a scaling Matrix, where scale can be different on each axis (non-uniform).
-    /// <https://stereokit.net/Pages/StereoKit/Matrix/S.html>
-    /// * scale - How much larger or smaller this transform makes things. Vec3::ONE is the default.
+    /// Create a rotation matrix from a Quaternion.
+    /// <https://stereokit.net/Pages/StereoKit/Matrix/R.html>
+    /// * `rotation` - The quaternion describing the rotation for this transform.
     ///
-    /// see also [`matrix_s`]
+    /// see also [`matrix_trs_out`] [`Matrix::r`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Quat, Matrix}, mesh::Mesh, material::Material,
+    ///                      util::Time};
+    ///
+    /// let mesh = Mesh::cube();
+    /// let material = Material::pbr();
+    ///
+    /// let mut transform = Matrix::IDENTITY;
+    /// let mut delta_rotate = 90.0;
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     delta_rotate = (delta_rotate + 10.0  * Time::get_stepf()) % 360.0;
+    ///     let rotation = Quat::from_angles(0.0, delta_rotate, 0.0);
+    ///
+    ///     transform.update_r(&rotation);
+    ///
+    ///     mesh.draw(token, &material, transform, None, None);
+    ///     assert_eq!(transform, Matrix::r(rotation));
+    /// );
+    #[inline]
+    pub fn update_r(&mut self, rotation: &Quat) {
+        unsafe { matrix_trs_out(self, &Vec3::ZERO, rotation, &Vec3::ONE) }
+    }
+
+    /// Creates a scaling Matrix, where scale can be different on each axis (non-uniform).Consider using
+    /// [`Matrix::update_s`] when you have to recalculate Matrix at each steps in main loop.
+    /// <https://stereokit.net/Pages/StereoKit/Matrix/S.html>
+    /// * `scale` - How much larger or smaller this transform makes things. Vec3::ONE is the default.
+    ///
+    /// Returns a non-uniform scaling matrix.
+    /// see also [`matrix_s`] [`Matrix::update_s`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Matrix};
+    ///
+    /// let scale = Matrix::s(Vec3::new(2.0, 3.0, 4.0));
+    /// let point = Vec3::new(1.0, 1.0, 1.0);
+    /// let scaled_point = scale * point;
+    /// assert_eq!(scaled_point, Vec3::new(2.0, 3.0, 4.0));
+    /// ```
     #[inline]
     pub fn s<V: Into<Vec3>>(scale: V) -> Self {
         unsafe { matrix_s(scale.into()) }
     }
 
-    /// Translate. Creates a translation Matrix!
-    /// <https://stereokit.net/Pages/StereoKit/Matrix/T.html>
-    /// * translation - Move an object by this amount.
+    /// Creates a scaling Matrix, where scale can be different on each axis (non-uniform).
+    /// <https://stereokit.net/Pages/StereoKit/Matrix/S.html>
+    /// * `scale` - How much larger or smaller this transform makes things. Vec3::ONE is the default.
     ///
-    /// see also [`matrix_t`]
+    /// see also [`matrix_trs_out`] [`Matrix::s`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Quat, Matrix}, mesh::Mesh, material::Material,
+    ///                      util::Time};
+    ///
+    /// let mesh = Mesh::cube();
+    /// let material = Material::pbr();
+    ///
+    /// let mut transform = Matrix::IDENTITY;
+    /// let mut delta_scale = 2.0;
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     let scale = Vec3::ONE * (delta_scale * Time::get_stepf()).cos();
+    ///
+    ///     transform.update_s(&scale);
+    ///
+    ///     mesh.draw(token, &material, transform, None, None);
+    ///     assert_eq!(transform, Matrix::s(scale));
+    /// );
+    /// ```
+    #[inline]
+    pub fn update_s(&mut self, scale: &Vec3) {
+        unsafe { matrix_trs_out(self, &Vec3::ZERO, &Quat::IDENTITY, scale) }
+    }
+
+    /// Translate. Creates a translation Matrix! Consider using [`Matrix::update_t`] when you have to recalculate
+    /// Matrix at each steps in main loop.
+    /// <https://stereokit.net/Pages/StereoKit/Matrix/T.html>
+    /// * `translation` - Move an object by this amount.
+    ///
+    /// Returns a Matrix containing a simple translation!
+    /// see also [`matrix_t`] [`Matrix::update_t`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Matrix};
+    ///
+    /// let translation = Matrix::t(Vec3::new(1.0, 2.0, 3.0));
+    /// let point = Vec3::new(0.0, 0.0, 0.0);
+    /// let translated_point = translation * point;
+    /// assert_eq!(translated_point, Vec3::new(1.0, 2.0, 3.0));
+    /// ```    
     #[inline]
     pub fn t<V: Into<Vec3>>(translation: V) -> Self {
         unsafe { matrix_t(translation.into()) }
     }
 
+    /// Translate. Creates a translation Matrix!
+    /// <https://stereokit.net/Pages/StereoKit/Matrix/T.html>
+    /// * `translation` - Move an object by this amount.
+    ///
+    /// see also [`matrix_trs_out`] [`Matrix::t`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Quat, Matrix}, mesh::Mesh, material::Material,
+    ///                      util::Time};
+    ///
+    /// let mesh = Mesh::cube();
+    /// let material = Material::pbr();
+    ///
+    /// let mut transform = Matrix::IDENTITY;
+    /// let mut position = Vec3::ZERO;
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     position += Vec3::NEG_Z * Time::get_stepf();
+    ///
+    ///     transform.update_t(&position);
+    ///
+    ///     mesh.draw(token, &material, transform, None, None);
+    ///     assert_eq!(transform, Matrix::t(position));
+    /// );
+    /// ```
+    #[inline]
+    pub fn update_t(&mut self, translation: &Vec3) {
+        unsafe { matrix_trs_out(self, translation, &Quat::IDENTITY, &Vec3::ONE) }
+    }
+
     /// Translate, Rotate. Creates a transform Matrix using these components!
     /// <https://stereokit.net/Pages/StereoKit/Matrix/TR.html>
-    /// * translation - Move an object by this amount.
-    /// * rotation - The quaternion describing the rotation for this transform.
+    /// * `translation` - Move an object by this amount.
+    /// * `rotation` - The quaternion describing the rotation for this transform.
     ///
+    /// Returns a Matrix that combines translation and rotation information into a single Matrix!
     /// see also [`matrix_trs`]
+    #[deprecated(since = "0.40.0", note = "please use Matrix::t_r or Matrix::update_t_r")]
     #[inline]
     pub fn tr(translation: &Vec3, rotation: &Quat) -> Self {
         unsafe { matrix_trs(translation, rotation, &Vec3::ONE) }
     }
 
+    /// Translate, Rotate. Creates a transform Matrix using these components! Consider using
+    /// [`Matrix::update_t_r`] when you have to recalculate Matrix at each steps in main loop.
+    /// <https://stereokit.net/Pages/StereoKit/Matrix/TR.html>
+    /// * `translation` - Move an object by this amount.
+    /// * `rotation` - The quaternion describing the rotation for this transform.
+    ///
+    /// Returns a Matrix that combines translation and rotation information into a single Matrix!
+    /// see also [`matrix_trs`] [`Matrix::update_t_r`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Matrix};
+    ///
+    /// let transform = Matrix::t_r([1.0, 2.0, 3.0], [0.0, 180.0, 0.0]);
+    /// let point = Vec3::new(1.0, 1.0, 1.0);
+    /// let transformed_point = transform * point;
+    /// assert_eq!(transformed_point, Vec3::new(0.0, 3.0, 2.0));
+    /// ```
+    #[inline]
+    pub fn t_r<V: Into<Vec3>, Q: Into<Quat>>(translation: V, rotation: Q) -> Self {
+        unsafe { matrix_trs(&translation.into(), &rotation.into(), &Vec3::ONE) }
+    }
+
+    /// Translate, Rotate. Creates a transform Matrix using these components!
+    /// <https://stereokit.net/Pages/StereoKit/Matrix/TR.html>
+    /// * `translation` - Move an object by this amount.
+    /// * `rotation` - The quaternion describing the rotation for this transform.
+    ///
+    /// see also [`matrix_trs_out`] [`Matrix::t_r`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Quat, Matrix}, mesh::Mesh, material::Material,
+    ///                      util::Time};
+    ///
+    /// let mesh = Mesh::cube();
+    /// let material = Material::pbr();
+    ///
+    /// let mut transform = Matrix::IDENTITY;
+    /// let mut position = Vec3::ZERO;
+    /// let mut delta_rotate = 90.0;
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     position += Vec3::NEG_Z * Time::get_stepf();
+    ///     delta_rotate = (delta_rotate + 10.0  * Time::get_stepf()) % 360.0;
+    ///     let rotation = Quat::from_angles(0.0, delta_rotate, 0.0);
+    ///
+    ///     transform.update_t_r(&position, &rotation);
+    ///
+    ///     mesh.draw(token, &material, transform, None, None);
+    ///     assert_eq!(transform, Matrix::t_r(position, rotation));
+    /// );
+    #[inline]
+    pub fn update_t_r(&mut self, translation: &Vec3, rotation: &Quat) {
+        unsafe { matrix_trs_out(self, translation, rotation, &Vec3::ONE) }
+    }
+
     /// Translate, Scale. Creates a transform Matrix using these components!
     /// <https://stereokit.net/Pages/StereoKit/Matrix/TS.html>
-    /// * translation - Move an object by this amount.
-    /// * scale - How much larger or smaller this transform makes things. Vec3::ONE is the default.
+    /// * `translation` - Move an object by this amount.
+    /// * `scale` - How much larger or smaller this transform makes things. Vec3::ONE is the default.
     ///
+    /// Returns a Matrix that combines translation and rotation information into a single Matrix!
     /// see also [`matrix_ts`]
+    #[deprecated(since = "0.40.0", note = "please use Matrix::t_s or Matrix::update_t_s")]
     #[inline]
     pub fn ts<V: Into<Vec3>>(translation: V, scale: V) -> Self {
         unsafe { matrix_ts(translation.into(), scale.into()) }
     }
 
+    /// Translate, Scale. Creates a transform Matrix using these components! Consider using
+    /// [`Matrix::update_t_s`] when you have to recalculate Matrix at each steps in main loop.
+    /// <https://stereokit.net/Pages/StereoKit/Matrix/TS.html>
+    /// * `translation` - Move an object by this amount.
+    /// * `scale` - How much larger or smaller this transform makes things. Vec3::ONE is the default.
+    ///
+    /// Returns a Matrix that combines translation and rotation information into a single Matrix!
+    /// see also [`matrix_ts`] [`Matrix::update_t_s`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Matrix};
+    ///
+    /// let transform = Matrix::t_s([1.0, 2.0, 3.0], [2.0, 2.0, 2.0]);
+    /// let point = Vec3::new(1.0, 1.0, 1.0);
+    /// let transformed_point = transform * point;
+    /// assert_eq!(transformed_point, Vec3::new(3.0, 4.0, 5.0));
+    /// ```
+    #[inline]
+    pub fn t_s<V: Into<Vec3>>(translation: V, scale: V) -> Self {
+        unsafe { matrix_ts(translation.into(), scale.into()) }
+    }
+
+    /// Translate, Scale. Creates a transform Matrix using these components!
+    /// <https://stereokit.net/Pages/StereoKit/Matrix/TS.html>
+    /// * `translation` - Move an object by this amount.
+    /// * `scale` - How much larger or smaller this transform makes things. Vec3::ONE is the default.
+    ///
+    /// Returns a Matrix that combines translation and rotation information into a single Matrix!
+    /// see also [`matrix_trs_out`] [`Matrix::t_s`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Quat, Matrix}, mesh::Mesh, material::Material,
+    ///                      util::Time};
+    ///
+    /// let mesh = Mesh::cube();
+    /// let material = Material::pbr();
+    ///
+    /// let mut transform = Matrix::IDENTITY;
+    /// let mut position = Vec3::ZERO;
+    /// let mut delta_scale = 2.0;
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     position += Vec3::NEG_Z * Time::get_stepf();
+    ///     let scale = Vec3::ONE * (delta_scale * Time::get_stepf()).cos();
+    ///
+    ///     transform.update_t_s(&position, &scale);
+    ///
+    ///     mesh.draw(token, &material, transform, None, None);
+    ///     assert_eq!(transform, Matrix::t_s(position, scale));
+    /// );
+    /// ```
+    #[inline]
+    pub fn update_t_s(&mut self, translation: &Vec3, scale: &Vec3) {
+        unsafe { matrix_trs_out(self, translation, &Quat::IDENTITY, scale) }
+    }
+
     /// Translate, Rotate, Scale. Creates a transform Matrix using all these components!
     /// <https://stereokit.net/Pages/StereoKit/Matrix/TRS.html>
-    /// * translation - Move an object by this amount.
-    /// * rotation - The quaternion describing the rotation for this transform.
-    /// * scale - How much larger or smaller this transform makes things. Vec3::ONE is a good default.
+    /// * `translation` - Move an object by this amount.
+    /// * `rotation` - The quaternion describing the rotation for this transform.
+    /// * `scale` - How much larger or smaller this transform makes things. Vec3::ONE is a good default.
     ///
+    /// Returns a Matrix that combines translation, rotation and scale information into a single Matrix!
     /// see also [`matrix_trs`]
+    #[deprecated(since = "0.40.0", note = "please use Matrix::t_r_s or Matrix::update_t_r_s")]
     #[inline]
     pub fn trs(translation: &Vec3, rotation: &Quat, scale: &Vec3) -> Self {
         unsafe { matrix_trs(translation, rotation, scale) }
     }
 
+    /// Translate, Rotate, Scale. Creates a transform Matrix using all these components! Consider using
+    /// [`Matrix::update_t_r_s`] when you have to recalculate Matrix at each steps in main loop.
+    /// <https://stereokit.net/Pages/StereoKit/Matrix/TRS.html>
+    /// * `translation` - Move an object by this amount.
+    /// * `rotation` - The quaternion describing the rotation for this transform.
+    /// * `scale` - How much larger or smaller this transform makes things. Vec3::ONE is a good default.
+    ///
+    /// Returns a Matrix that combines translation, rotation and scale information into a single Matrix!
+    /// see also [`matrix_trs`] [`Matrix::update_t_r_s`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Matrix};
+    ///
+    /// let transform = Matrix::t_r_s([1.0, 2.0, 3.0], [0.0, 180.0, 0.0], [2.0, 2.0, 2.0]);
+    /// let point = Vec3::new(1.0, 1.0, 1.0);
+    /// let transformed_point = transform * point;
+    /// assert_eq!(transformed_point, Vec3::new(-1.0, 4.0, 1.0));
+    /// ```
+    #[inline]
+    pub fn t_r_s<V: Into<Vec3>, Q: Into<Quat>>(translation: V, rotation: Q, scale: V) -> Self {
+        unsafe { matrix_trs(&translation.into(), &rotation.into(), &scale.into()) }
+    }
+
+    /// Translate, Rotate, Scale. Creates a transform Matrix using all these components!
+    /// <https://stereokit.net/Pages/StereoKit/Matrix/TRS.html>
+    /// * `translation` - Move an object by this amount.
+    /// * `rotation` - The quaternion describing the rotation for this transform.
+    /// * `scale` - How much larger or smaller this transform makes things. Vec3::ONE is a good default.
+    ///
+    /// Returns a Matrix that combines translation, rotation and scale information into a single Matrix!
+    /// see also [`matrix_trs_out`] [`Matrix::t_r_s`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Quat, Matrix}, mesh::Mesh, material::Material,
+    ///                      util::Time};
+    ///
+    /// let mesh = Mesh::cube();
+    /// let material = Material::pbr();
+    ///
+    /// let mut transform = Matrix::IDENTITY;
+    /// let mut position = Vec3::ZERO;
+    /// let mut delta_scale = 2.0;
+    /// let mut delta_rotate = 90.0;
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     position += Vec3::NEG_Z * Time::get_stepf();
+    ///     delta_rotate = (delta_rotate + 10.0  * Time::get_stepf()) % 360.0;
+    ///     let rotation = Quat::from_angles(0.0, delta_rotate, 0.0);
+    ///     let scale = Vec3::ONE * (delta_scale * Time::get_stepf()).cos();
+    ///
+    ///     transform.update_t_r_s(&position, &rotation, &scale);
+    ///
+    ///     mesh.draw(token, &material, transform, None, None);
+    ///     assert_eq!(transform, Matrix::t_r_s(position, rotation, scale));
+    /// );
+    /// ```
+    #[inline]
+    pub fn update_t_r_s(&mut self, translation: &Vec3, rotation: &Quat, scale: &Vec3) {
+        unsafe { matrix_trs_out(self, translation, rotation, scale) }
+    }
+
     /// Translate, Rotate, Scale. Update a transform Matrix using all these components!
     /// <https://stereokit.net/Pages/StereoKit/Matrix/TRS.html>
-    /// * translation - Move an object by this amount.
-    /// * rotation - The quaternion describing the rotation for this transform.
-    /// * scale - How much larger or smaller this transform makes things. Vec3::ONE is a good default.
+    /// * `translation` - Move an object by this amount.
+    /// * `rotation` - The quaternion describing the rotation for this transform.
+    /// * `scale` - How much larger or smaller this transform makes things. Vec3::ONE is a good default.
     ///
     /// see also [`matrix_trs_out`]
+    #[deprecated(since = "0.40.0", note = "please use Matrix::update_t_r, Matrix::update_t_s or Matrix::update_t_r_s")]
     #[inline]
     #[allow(clippy::not_unsafe_ptr_arg_deref)]
     pub fn trs_to_pointer(translation: &Vec3, rotation: &Quat, scale: &Vec3, out_result: *mut Matrix) {
@@ -2179,6 +3818,16 @@ impl Matrix {
     /// <https://stereokit.net/Pages/StereoKit/Matrix/Invert.html>
     ///
     /// see also [`Matrix::get_inverse`] [`matrix_invert`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Matrix};
+    ///
+    /// let mut transform = Matrix::t([1.0, 2.0, 3.0]);
+    /// transform.invert();
+    /// let point = Vec3::new(1.0, 2.0, 3.0);
+    /// let transformed_point = transform * point;
+    /// assert_eq!(transformed_point, Vec3::new(0.0, 0.0, 0.0));
+    /// ```
     #[inline]
     pub fn invert(&mut self) -> &mut Self {
         let m = unsafe { matrix_invert(self) };
@@ -2197,6 +3846,26 @@ impl Matrix {
     /// <https://stereokit.net/Pages/StereoKit/Matrix/Transpose.html>
     ///
     /// see also [`matrix_transpose`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Matrix};
+    ///
+    /// let mut transform = Matrix::t([1.0, 2.0, 3.0]);
+    /// assert_eq!(transform, Matrix::from([
+    ///     1.0, 0.0, 0.0, 0.0,
+    ///     0.0, 1.0, 0.0, 0.0,
+    ///     0.0, 0.0, 1.0, 0.0,
+    ///     1.0, 2.0, 3.0, 1.0,
+    /// ]));
+    ///
+    /// transform.transpose();
+    /// assert_eq!(transform, Matrix::from([
+    ///     1.0, 0.0, 0.0, 1.0,
+    ///     0.0, 1.0, 0.0, 2.0,
+    ///     0.0, 0.0, 1.0, 3.0,
+    ///     0.0, 0.0, 0.0, 1.0,
+    /// ]));
+    /// ```
     #[inline]
     pub fn transpose(&mut self) -> &mut Self {
         let m = unsafe { matrix_transpose(*self) };
@@ -2214,7 +3883,21 @@ impl Matrix {
     /// <https://stereokit.net/Pages/StereoKit/Matrix/Decompose.html>
     /// Returns the tuple (position:Vec3, scale:Vec3, orientation:QuatT)
     ///
-    /// see also [`matrix_decompose`]
+    /// see also [`matrix_decompose`] [`Matrix::decompose_to_ptr`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Matrix, Vec3, Quat};
+    ///
+    /// let position = Vec3::new(1.0, 2.0, 3.0);
+    /// let orientation = Quat::from_angles(0.0, 90.0, 0.0);
+    /// let scale = Vec3::new(2.0, 2.0, 2.0);
+    /// let matrix = Matrix::t_r_s(position, orientation, scale);
+    ///
+    /// let (pos, sca, ori) = matrix.decompose().unwrap();
+    /// assert_eq!(pos, position);
+    /// assert_eq!(sca, scale);
+    /// assert_eq!(ori, orientation);
+    /// ```
     #[inline]
     pub fn decompose(&self) -> Option<(Vec3, Vec3, Quat)> {
         let position: *mut Vec3 = &mut Vec3 { x: 0.0, y: 0.0, z: 0.0 };
@@ -2229,23 +3912,53 @@ impl Matrix {
     /// Returns this transformation matrix to its original translation, rotation and scale components. Not exactly a
     /// cheap function. If this is not a transform matrix, there’s a chance this call will fail, and return false.
     /// <https://stereokit.net/Pages/StereoKit/Matrix/Decompose.html>
-    /// * out_position - The translation component of the matrix.
-    /// * out_orientation - The rotation component of the matrix, some lossiness may be encountered when
+    /// * `out_position` - The translation component of the matrix.
+    /// * `out_orientation` - The rotation component of the matrix, some lossiness may be encountered when
     ///   composing/decomposing.
-    /// * out_scale - The scale component of the matrix.
+    /// * `out_scale` - The scale component of the matrix.
     ///
     /// see also [`matrix_decompose`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Matrix, Vec3, Quat};
+    ///
+    /// let position = Vec3::new(1.0, 2.0, 3.0);
+    /// let orientation = Quat::from_angles(0.0, 90.0, 0.0);
+    /// let scale = Vec3::new(2.0, 2.0, 2.0);
+    /// let matrix = Matrix::t_r_s(position, orientation, scale);
+    ///
+    /// let mut pos = Vec3::ZERO;
+    /// let mut sca = Vec3::ZERO;
+    /// let mut ori = Quat::ZERO;
+    ///
+    /// matrix.decompose_to_ptr(&mut pos, &mut ori, &mut sca);
+    /// assert_eq!(pos, position);
+    /// assert_eq!(sca, scale);
+    /// assert_eq!(ori, orientation);
+    /// ```
     #[inline]
-    #[allow(clippy::not_unsafe_ptr_arg_deref)]
-    pub fn decompose_to_ptr(&self, out_position: *mut Vec3, out_orientation: *mut Quat, out_scale: *mut Vec3) -> bool {
+    pub fn decompose_to_ptr(&self, out_position: &mut Vec3, out_orientation: &mut Quat, out_scale: &mut Vec3) -> bool {
         unsafe { matrix_decompose(self, out_position, out_scale, out_orientation) != 0 }
     }
 
     /// Transforms a point through the Matrix! This is basically just multiplying a vector (x,y,z,1) with the Matrix.
-    /// <https://stereokit.net/Pages/StereoKit/Matrix/Transform.html> see also the '*' operator
-    /// * point - The point to transform.
+    /// <https://stereokit.net/Pages/StereoKit/Matrix/Transform.html>
+    /// * `point` - The point to transform.
     ///
-    /// see also [`matrix_transform_pt`]
+    /// Returns the point transformed by the Matrix.
+    /// see also the '*' operator [`matrix_transform_pt`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Matrix};
+    ///
+    /// let transform = Matrix::t([1.0, 2.0, 3.0]);
+    /// let point = Vec3::new(1.0, 1.0, 1.0);
+    /// let transformed_point = transform.transform_point(point);
+    /// assert_eq!(transformed_point, Vec3::new(2.0, 3.0, 4.0));
+    ///
+    /// let transformed_point_b = transform * point;
+    /// assert_eq!(transformed_point_b, transformed_point);
+    /// ```
     #[inline]
     pub fn transform_point<V: Into<Vec3>>(&self, point: V) -> Vec3 {
         unsafe { matrix_transform_pt(*self, point.into()) }
@@ -2254,10 +3967,23 @@ impl Matrix {
     /// Shorthand to transform a ray though the Matrix! This properly transforms the position with the point transform
     /// method, and the direction with the direction transform method. Does not normalize, nor does it preserve a
     /// normalized direction if the Matrix contains scale data.
-    /// <https://stereokit.net/Pages/StereoKit/Matrix/Transform.html> see also the * operator
-    /// * ray - A ray you wish to transform from one space to another.
+    /// <https://stereokit.net/Pages/StereoKit/Matrix/Transform.html>
+    /// * `ray` - A ray you wish to transform from one space to another.
     ///
-    /// see also [`matrix_transform_ray`]
+    /// Returns the Ray transformed by the Matrix.
+    /// see also the `*` operator [`matrix_transform_ray`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Matrix, Ray};
+    ///
+    /// let transform = Matrix::t([1.0, 2.0, 3.0]);
+    /// let ray = Ray::new([0.0, 0.0, 0.0], [1.0, 0.0, 0.0]);
+    /// let transformed_ray = transform.transform_ray(ray);
+    /// assert_eq!(transformed_ray, Ray::new([1.0, 2.0, 3.0], [1.0, 0.0, 0.0]));
+    ///
+    /// let transformed_ray_b = transform * ray;
+    /// assert_eq!(transformed_ray_b, transformed_ray);
+    /// ```
     #[inline]
     pub fn transform_ray<R: Into<Ray>>(&self, ray: R) -> Ray {
         unsafe { matrix_transform_ray(*self, ray.into()) }
@@ -2267,22 +3993,48 @@ impl Matrix {
     /// rotation Quat from the matrix and apply that to the Pose’s orientation. Note that extracting a rotation Quat
     /// is an expensive operation, so if you’re doing it more than once, you should cache the rotation Quat and do this
     /// transform manually.
-    /// <https://stereokit.net/Pages/StereoKit/Matrix/Transform.html> see also the * operator
-    /// * pose - The original pose.
+    /// <https://stereokit.net/Pages/StereoKit/Matrix/Transform.html>
+    /// * `pose` - The original pose.
     ///
-    /// see also [`matrix_transform_pose`]
+    /// Returns the transformed pose.
+    /// see also the `*` operator [`matrix_transform_pose`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Pose, Vec3, Matrix};
+    ///
+    /// let transform = Matrix::t([1.0, 2.0, 3.0]);
+    /// let pose = Pose::new([0.0, 0.0, 0.0], None);
+    /// let transformed_pose = transform.transform_pose(pose);
+    /// assert_eq!(transformed_pose, Pose::new([1.0, 2.0, 3.0], None));
+    ///
+    /// let transformed_pose_b = transform * pose;
+    /// assert_eq!(transformed_pose_b, transformed_pose);
+    /// ```
     #[inline]
     pub fn transform_pose<P: Into<Pose>>(&self, pose: P) -> Pose {
         unsafe { matrix_transform_pose(*self, pose.into()) }
     }
 
-    /// Shorthand for transforming a rotation! This will extract a
-    /// rotation Quat from the matrix and apply that to the QuatT's orientation. Note that extracting a rotation Quat
-    /// is an expensive operation, so if you’re doing it more than once, you should cache the rotation Quat and do this
-    /// transform manually.
-    /// <https://stereokit.net/Pages/StereoKit/Matrix/Transform.html> see also the * operator
+    /// Shorthand for transforming a rotation! This will extract a rotation Quat from the matrix and apply that to the
+    /// QuatT's orientation. Note that extracting a rotation Quat is an expensive operation, so if you’re doing it more
+    /// than once, you should cache the rotation Quat and do this transform manually.
+    /// <https://stereokit.net/Pages/StereoKit/Matrix/Transform.html>
+    /// * `rotation` - The original rotation
     ///
-    /// see also [`matrix_transform_quat`]
+    /// Return the transformed quat.
+    /// see also the `*` operator [`matrix_transform_quat`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Quat, Matrix};
+    ///
+    /// let transform = Matrix::r([0.0, 90.0, 0.0]);
+    /// let rotation = Quat::from_angles(0.0, 90.0, 0.0);
+    /// let transformed_rotation = transform.transform_quat(rotation);
+    /// assert_eq!(transformed_rotation, Quat::from_angles(0.0, 180.0, 0.0));
+    ///
+    /// let transformed_rotation_b = transform * rotation;
+    /// assert_eq!(transformed_rotation_b, transformed_rotation);
+    /// ```
     #[inline]
     pub fn transform_quat<Q: Into<Quat>>(&self, rotation: Q) -> Quat {
         unsafe { matrix_transform_quat(*self, rotation.into()) }
@@ -2290,14 +4042,24 @@ impl Matrix {
 
     /// Transforms a point through the Matrix, but excluding translation! This is great for transforming vectors that
     /// are -directions- rather than points in space. Use this to transform normals and directions. The same as
-    /// multiplying (x,y,z,0) with the Matrix.
-    /// <https://stereokit.net/Pages/StereoKit/Matrix/TransformNormal.html> do not correspond to * operator !
-    /// * dir - A direction vector to be transformed.
+    /// multiplying (x,y,z,0) with the Matrix. Do not correspond to `*` operator !
+    /// <https://stereokit.net/Pages/StereoKit/Matrix/TransformNormal.html>
+    /// * `normal` - A direction vector to be transformed.
     ///
+    /// Returns the direction transformed by the Matrix.
     /// see also [`matrix_transform_dir`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Matrix};
+    ///
+    /// let transform = Matrix::r([0.0, 90.0, 0.0]);
+    /// let normal = Vec3::new(1.0, 0.0, 0.0);
+    /// let transformed_normal = transform.transform_normal(normal);
+    /// assert_eq!(transformed_normal, Vec3::new(0.0, 0.0, -1.0));
+    /// ```
     #[inline]
-    pub fn transform_normal<V: Into<Vec3>>(&self, dir: V) -> Vec3 {
-        unsafe { matrix_transform_dir(*self, dir.into()) }
+    pub fn transform_normal<V: Into<Vec3>>(&self, normal: V) -> Vec3 {
+        unsafe { matrix_transform_dir(*self, normal.into()) }
     }
 
     /// Creates an inverse matrix! If the matrix takes a point from a -> b, then its inverse takes the point
@@ -2305,6 +4067,16 @@ impl Matrix {
     /// <https://stereokit.net/Pages/StereoKit/Matrix/Inverse.html>
     ///
     /// see also [`matrix_inverse`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Matrix};
+    ///
+    /// let transform = Matrix::t([1.0, 2.0, 3.0]);
+    /// let inverse = transform.get_inverse();
+    /// let point = Vec3::new(1.0, 2.0, 3.0);
+    /// let transformed_point = inverse * point;
+    /// assert_eq!(transformed_point, Vec3::new(0.0, 0.0, 0.0));
+    /// ```
     #[inline]
     pub fn get_inverse(&self) -> Self {
         let out: *mut Matrix = &mut Matrix { row: [Vec4::ZERO, Vec4::ZERO, Vec4::ZERO, Vec4::ZERO] };
@@ -2317,12 +4089,23 @@ impl Matrix {
     /// Creates an inverse matrix! If the matrix takes a point from a -> b, then its inverse takes the point
     /// from b -> a.
     /// <https://stereokit.net/Pages/StereoKit/Matrix/Inverse.html>
-    /// * out - The output matrix.
+    /// * `out` - The output matrix.
     ///
     /// see also [`matrix_inverse`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Matrix};
+    ///
+    /// let transform = Matrix::t([1.0, 2.0, 3.0]);
+    /// let mut inverse = Matrix::NULL;
+    ///
+    /// transform.get_inverse_to_ptr(&mut inverse);
+    /// let point = Vec3::new(1.0, 2.0, 3.0);
+    /// let transformed_point = inverse * point;
+    /// assert_eq!(transformed_point, Vec3::new(0.0, 0.0, 0.0));
+    /// ```
     #[inline]
-    #[allow(clippy::not_unsafe_ptr_arg_deref)]
-    pub fn get_inverse_to_ptr(&self, out: *mut Matrix) {
+    pub fn get_inverse_to_ptr(&self, out: &mut Matrix) {
         unsafe {
             matrix_inverse(self, out);
         }
@@ -2333,6 +4116,16 @@ impl Matrix {
     /// <https://stereokit.net/Pages/StereoKit/Matrix/Pose.html>
     ///
     /// see also [`matrix_extract_pose`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Quat, Matrix, Pose};
+    ///
+    /// let matrix = Matrix::t_r(Vec3::new(1.0, 2.0, 3.0), [0.0, 0.0, 0.0]);
+    ///
+    /// let pose = matrix.get_pose();
+    /// assert_eq!(pose.position, Vec3::new(1.0, 2.0, 3.0));
+    /// assert_eq!(pose.orientation, Quat::IDENTITY)
+    /// ```
     #[inline]
     pub fn get_pose(&self) -> Pose {
         unsafe { matrix_extract_pose(self) }
@@ -2343,6 +4136,15 @@ impl Matrix {
     /// <https://stereokit.net/Pages/StereoKit/Matrix/Rotation.html>
     ///
     /// see also [`matrix_extract_rotation`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Quat, Matrix};
+    ///
+    /// let matrix = Matrix::t_r(Vec3::new(1.0, 2.0, 3.0), [0.0, 90.0, 0.0]);
+    ///
+    /// let rotation = matrix.get_rotation();
+    /// assert_eq!(rotation, Quat::from_angles(0.0, 90.0, 0.0))
+    /// ```
     #[inline]
     pub fn get_rotation(&self) -> Quat {
         unsafe { matrix_extract_rotation(self) }
@@ -2353,6 +4155,15 @@ impl Matrix {
     /// <https://stereokit.net/Pages/StereoKit/Matrix/Scale.html>
     ///
     /// see also [`matrix_extract_scale`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Matrix};
+    ///
+    /// let matrix = Matrix::t_s(Vec3::new(1.0, 2.0, 3.0), Vec3::new(2.0, 2.0, 2.0));
+    ///
+    /// let scale = matrix.get_scale();
+    /// assert_eq!(scale, Vec3::new(2.0, 2.0, 2.0))
+    /// ```
     #[inline]
     pub fn get_scale(&self) -> Vec3 {
         unsafe { matrix_extract_scale(self) }
@@ -2362,6 +4173,16 @@ impl Matrix {
     /// <https://stereokit.net/Pages/StereoKit/Matrix/Translation.html>
     ///
     /// see also [`matrix_extract_translation`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Matrix};
+    ///
+    /// let transform = Matrix::r([0.0, 90.0, 0.0]);
+    /// let normal = Vec3::new(1.0, 0.0, 0.0);
+    ///
+    /// let transformed_normal = transform.transform_normal(normal);
+    /// assert_eq!(transformed_normal, Vec3::new(0.0, 0.0, -1.0));
+    /// ```
     #[inline]
     pub fn get_translation(&self) -> Vec3 {
         unsafe { matrix_extract_translation(self) }
@@ -2373,8 +4194,28 @@ impl Matrix {
     /// <https://stereokit.net/Pages/StereoKit/Matrix/Transposed.html>
     ///
     /// see also [`matrix_transpose`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Matrix};
+    ///
+    /// let transform = Matrix::t([1.0, 2.0, 3.0]);
+    /// assert_eq!(transform, Matrix::from([
+    ///     1.0, 0.0, 0.0, 0.0,
+    ///     0.0, 1.0, 0.0, 0.0,
+    ///     0.0, 0.0, 1.0, 0.0,
+    ///     1.0, 2.0, 3.0, 1.0,
+    /// ]));
+    ///
+    /// let transposed = transform.get_transposed();
+    /// assert_eq!(transposed, Matrix::from([
+    ///     1.0, 0.0, 0.0, 1.0,
+    ///     0.0, 1.0, 0.0, 2.0,
+    ///     0.0, 0.0, 1.0, 3.0,
+    ///     0.0, 0.0, 0.0, 1.0,
+    /// ]));
+    /// ```
     #[inline]
-    pub fn get_transposed(&self) -> Matrix {
+    pub fn get_transposed(&self) -> Self {
         unsafe { matrix_transpose(*self) }
     }
 }
@@ -2382,6 +4223,20 @@ impl Matrix {
 impl Display for Matrix {
     /// Mostly for debug purposes, this is a decent way to log or inspect the matrix in debug mode. Looks
     /// like “[, , , ]”
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Matrix;
+    ///
+    /// let matrix = Matrix::from([
+    ///     1.0, 2.0, 3.3, 4.0,
+    ///     5.0, 6.0, 7.0, 8.0,
+    ///     9.0, 10.0, 11.0, 12.0,
+    ///     13.0, 14.0, 15.0, 16.0,
+    /// ]);
+    /// assert_eq!(format!("{}", matrix),
+    /// "[\r\n [x:1, y:2, z:3.3, w:4],\r\n [x:5, y:6, z:7, w:8],\r\n [x:9, y:10, z:11, w:12],\r\n [x:13, y:14, z:15, w:16]]");
+    /// ```
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         unsafe { write!(f, "[\r\n {},\r\n {},\r\n {},\r\n {}]", self.row[0], self.row[1], self.row[2], self.row[3]) }
     }
@@ -2395,6 +4250,16 @@ impl Display for Matrix {
 impl Mul<Vec3> for Matrix {
     type Output = Vec3;
 
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Matrix};
+    ///
+    /// let transform = Matrix::t([1.0, 2.0, 3.0]);
+    /// let point = Vec3::new(1.0, 1.0, 1.0);
+    ///
+    /// let transformed_point = transform * point;
+    /// assert_eq!(transformed_point, Vec3::new(2.0, 3.0, 4.0));
+    /// ```
     fn mul(self, rhs: Vec3) -> Self::Output {
         unsafe { matrix_transform_pt(self, rhs) }
     }
@@ -2407,6 +4272,16 @@ impl Mul<Vec3> for Matrix {
 ///
 /// see also [`matrix_transform_pt`]
 impl MulAssign<Matrix> for Vec3 {
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Matrix};
+    ///
+    /// let mut point = Vec3::new(1.0, 1.0, 1.0);
+    /// let transform = Matrix::t([1.0, 2.0, 3.0]);
+    ///
+    /// point *= transform;
+    /// assert_eq!(point, Vec3::new(2.0, 3.0, 4.0));
+    /// ```
     fn mul_assign(&mut self, rhs: Matrix) {
         let res = unsafe { matrix_transform_pt(rhs, *self) };
         self.x = res.x;
@@ -2424,6 +4299,16 @@ impl MulAssign<Matrix> for Vec3 {
 impl Mul<Matrix> for Vec3 {
     type Output = Vec3;
 
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Matrix};
+    ///
+    /// let transform = Matrix::t([1.0, 2.0, 3.0]);
+    /// let point = Vec3::new(1.0, 1.0, 1.0);
+    ///
+    /// let transformed_point = point * transform;
+    /// assert_eq!(transformed_point, Vec3::new(2.0, 3.0, 4.0));
+    /// ```
     fn mul(self, rhs: Matrix) -> Self::Output {
         unsafe { matrix_transform_pt(rhs, self) }
     }
@@ -2435,6 +4320,16 @@ impl Mul<Matrix> for Vec3 {
 impl Mul<Vec4> for Matrix {
     type Output = Vec4;
 
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec4, Matrix};
+    ///
+    /// let transform = Matrix::t([1.0, 2.0, 3.0]);
+    /// let v4 = Vec4::new(1.0, 1.0, 1.0, 1.0);
+    ///
+    /// let transformed_v4 = transform * v4;
+    /// assert_eq!(transformed_v4, Vec4::new(2.0, 3.0, 4.0, 1.0));
+    /// ```
     fn mul(self, rhs: Vec4) -> Self::Output {
         unsafe { matrix_transform_pt4(self, rhs) }
     }
@@ -2444,6 +4339,16 @@ impl Mul<Vec4> for Matrix {
 ///
 /// see also [`matrix_transform_pt4`]
 impl MulAssign<Matrix> for Vec4 {
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec4, Matrix};
+    ///
+    /// let mut v4 = Vec4::new(1.0, 1.0, 1.0, 1.0);
+    /// let transform = Matrix::t([1.0, 2.0, 3.0]);
+    ///
+    /// v4 *= transform;
+    /// assert_eq!(v4, Vec4::new(2.0, 3.0, 4.0, 1.0));
+    /// ```
     fn mul_assign(&mut self, rhs: Matrix) {
         let res = unsafe { matrix_transform_pt4(rhs, *self) };
         self.x = res.x;
@@ -2459,6 +4364,16 @@ impl MulAssign<Matrix> for Vec4 {
 impl Mul<Matrix> for Vec4 {
     type Output = Vec4;
 
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec4, Matrix};
+    ///
+    /// let transform = Matrix::t([1.0, 2.0, 3.0]);
+    /// let v4 = Vec4::new(1.0, 1.0, 1.0, 1.0);
+    ///
+    /// let transformed_v4 = v4 * transform;
+    /// assert_eq!(transformed_v4, Vec4::new(2.0, 3.0, 4.0, 1.0));
+    /// ```
     fn mul(self, rhs: Matrix) -> Self::Output {
         unsafe { matrix_transform_pt4(rhs, self) }
     }
@@ -2472,6 +4387,16 @@ impl Mul<Matrix> for Vec4 {
 impl Mul<Ray> for Matrix {
     type Output = Ray;
 
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Matrix, Ray};
+    ///
+    /// let transform = Matrix::t([1.0, 2.0, 3.0]);
+    /// let ray = Ray::new([0.0, 0.0, 0.0], [1.0, 0.0, 0.0]);
+    ///
+    /// let transformed_ray = transform * ray;
+    /// assert_eq!(transformed_ray, Ray::new([1.0, 2.0, 3.0], [1.0, 0.0, 0.0]));
+    /// ```
     fn mul(self, rhs: Ray) -> Self::Output {
         unsafe { matrix_transform_ray(self, rhs) }
     }
@@ -2483,6 +4408,15 @@ impl Mul<Ray> for Matrix {
 ///
 /// see also [`matrix_transform_ray`]
 impl MulAssign<Matrix> for Ray {
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Matrix, Ray};
+    ///
+    /// let mut ray = Ray::new([0.0, 0.0, 0.0], [1.0, 0.0, 0.0]);
+    /// let transform = Matrix::t([1.0, 2.0, 3.0]);
+    ///
+    /// ray *= transform;
+    /// assert_eq!(ray, Ray::new([1.0, 2.0, 3.0], [1.0, 0.0, 0.0]));
+    /// ```
     fn mul_assign(&mut self, rhs: Matrix) {
         let res = unsafe { matrix_transform_ray(rhs, *self) };
         self.position = res.position;
@@ -2498,6 +4432,16 @@ impl MulAssign<Matrix> for Ray {
 impl Mul<Matrix> for Ray {
     type Output = Ray;
 
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Matrix, Ray};
+    ///
+    /// let transform = Matrix::t([1.0, 2.0, 3.0]);
+    /// let ray = Ray::new([0.0, 0.0, 0.0], [1.0, 0.0, 0.0]);
+    ///
+    /// let transformed_ray = ray * transform;
+    /// assert_eq!(transformed_ray, Ray::new([1.0, 2.0, 3.0], [1.0, 0.0, 0.0]));
+    /// ```
     fn mul(self, rhs: Matrix) -> Self::Output {
         unsafe { matrix_transform_ray(rhs, self) }
     }
@@ -2510,6 +4454,16 @@ impl Mul<Matrix> for Ray {
 impl Mul<Quat> for Matrix {
     type Output = Quat;
 
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Quat, Matrix};
+    ///
+    /// let transform = Matrix::r([0.0, 90.0, 0.0]);
+    /// let rotation = Quat::from_angles(0.0, 0.0, 0.0);
+    ///
+    /// let transformed_rotation = transform * rotation;
+    /// assert_eq!(transformed_rotation, Quat::from_angles(0.0, 90.0, 0.0));
+    /// ```
     fn mul(self, rhs: Quat) -> Self::Output {
         unsafe { matrix_transform_quat(self, rhs) }
     }
@@ -2520,6 +4474,16 @@ impl Mul<Quat> for Matrix {
 ///
 /// see also [`matrix_transform_quat`]
 impl MulAssign<Matrix> for Quat {
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Quat, Matrix};
+    ///
+    /// let mut rotation = Quat::from_angles(0.0, 0.0, 0.0);
+    /// let transform = Matrix::r([0.0, 90.0, 0.0]);
+    ///
+    /// rotation *= transform;
+    /// assert_eq!(rotation, Quat::from_angles(0.0, 90.0, 0.0));
+    /// ```
     fn mul_assign(&mut self, rhs: Matrix) {
         let res = unsafe { matrix_transform_quat(rhs, *self) };
         self.x = res.x;
@@ -2536,6 +4500,16 @@ impl MulAssign<Matrix> for Quat {
 impl Mul<Matrix> for Quat {
     type Output = Quat;
 
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Quat, Matrix};
+    ///
+    /// let transform = Matrix::r([0.0, 90.0, 0.0]);
+    /// let rotation = Quat::from_angles(0.0, 0.0, 0.0);
+    ///
+    /// let transformed_rotation = rotation * transform;
+    /// assert_eq!(transformed_rotation, Quat::from_angles(0.0, 90.0, 0.0));
+    /// ```
     fn mul(self, rhs: Matrix) -> Self::Output {
         unsafe { matrix_transform_quat(rhs, self) }
     }
@@ -2549,6 +4523,16 @@ impl Mul<Matrix> for Quat {
 impl Mul<Pose> for Matrix {
     type Output = Pose;
 
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Pose, Vec3, Matrix};
+    ///
+    /// let transform = Matrix::t([1.0, 2.0, 3.0]);
+    /// let pose = Pose::new([0.0, 0.0, 0.0], None);
+    ///
+    /// let transformed_pose = transform * pose;
+    /// assert_eq!(transformed_pose, Pose::new([1.0, 2.0, 3.0], None));
+    /// ```
     fn mul(self, rhs: Pose) -> Self::Output {
         unsafe { matrix_transform_pose(self, rhs) }
     }
@@ -2560,6 +4544,16 @@ impl Mul<Pose> for Matrix {
 ///
 /// see also [`matrix_transform_pose`]
 impl MulAssign<Matrix> for Pose {
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Pose, Vec3, Matrix};
+    ///
+    /// let mut pose = Pose::new([0.0, 0.0, 0.0], None);
+    /// let transform = Matrix::t([1.0, 2.0, 3.0]);
+    ///
+    /// pose *= transform;
+    /// assert_eq!(pose, Pose::new([1.0, 2.0, 3.0], None));
+    /// ```
     fn mul_assign(&mut self, rhs: Matrix) {
         let res = unsafe { matrix_transform_pose(rhs, *self) };
         self.position = res.position;
@@ -2575,6 +4569,16 @@ impl MulAssign<Matrix> for Pose {
 impl Mul<Matrix> for Pose {
     type Output = Pose;
 
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Pose, Vec3, Matrix};
+    ///
+    /// let transform = Matrix::t([1.0, 2.0, 3.0]);
+    /// let pose = Pose::new([0.0, 0.0, 0.0], None);
+    ///
+    /// let transformed_pose = pose * transform;
+    /// assert_eq!(transformed_pose, Pose::new([1.0, 2.0, 3.0], None));
+    /// ```
     fn mul(self, rhs: Matrix) -> Self::Output {
         unsafe { matrix_transform_pose(rhs, self) }
     }
@@ -2589,6 +4593,18 @@ impl Mul<Matrix> for Pose {
 impl Mul<Matrix> for Matrix {
     type Output = Self;
 
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Matrix};
+    ///
+    /// let transform_a = Matrix::t([1.0, 2.0, 3.0]);
+    /// let transform_b = Matrix::s([2.0, 2.0, 2.0]);
+    ///
+    /// let transform_c = transform_a * transform_b;
+    /// let point = Vec3::new(1.0, 1.0, 1.0);
+    /// let transformed_point = transform_c * point;
+    /// assert_eq!(transformed_point, Vec3::new(4.0, 6.0, 8.0));
+    /// ```
     fn mul(self, rhs: Matrix) -> Self::Output {
         let out: *mut Matrix = &mut Matrix { row: [Vec4::ZERO, Vec4::ZERO, Vec4::ZERO, Vec4::ZERO] };
         unsafe {
@@ -2605,8 +4621,20 @@ impl Mul<Matrix> for Matrix {
 ///
 /// see also [`matrix_mul`]
 impl MulAssign<Matrix> for Matrix {
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Matrix};
+    ///
+    /// let mut transform_a = Matrix::t([1.0, 2.0, 3.0]);
+    /// let transform_b = Matrix::s([2.0, 2.0, 2.0]);
+    ///
+    /// transform_a *= transform_b;
+    /// let point = Vec3::new(1.0, 1.0, 1.0);
+    /// let transformed_point = transform_a * point;
+    /// assert_eq!(transformed_point, Vec3::new(4.0, 6.0, 8.0));
+    /// ```
     fn mul_assign(&mut self, rhs: Matrix) {
-        unsafe { matrix_mul(&rhs, self, self) };
+        unsafe { matrix_mul(self, &rhs, self) };
     }
 }
 
@@ -2632,7 +4660,7 @@ impl MulAssign<Matrix> for Matrix {
 /// let scale = 0.4;
 /// let bounds = model.get_bounds() * scale;
 /// let transform = Matrix::s(Vec3::ONE * scale);
-/// let transform_cube = Matrix::ts( bounds.center, bounds.dimensions);
+/// let transform_cube = Matrix::t_s( bounds.center, bounds.dimensions);
 /// let mut handle_pose =
 ///     Pose::new([0.0,-0.95,-0.65], Some([0.0, 140.0, 0.0].into()));
 ///
@@ -2652,6 +4680,7 @@ pub struct Bounds {
     pub center: Vec3,
     pub dimensions: Vec3,
 }
+
 /// AsRef
 impl AsRef<Bounds> for Bounds {
     fn as_ref(&self) -> &Bounds {
@@ -3092,6 +5121,15 @@ impl Bounds {
 impl Display for Bounds {
     /// Creates a text description of the Bounds, in the format of “[center:X dimensions:X]”
     /// <https://stereokit.net/Pages/StereoKit/Bounds/ToString.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Bounds};
+    ///
+    /// let bounds = Bounds::new([1.1, 2.0, 3.0], [4.0, 5.0, 6.0]);
+    /// assert_eq!(format!("{}", bounds),
+    ///            "[center:[x:1.1, y:2, z:3] dimensions:[x:4, y:5, z:6]]");
+    /// ```
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "[center:{} dimensions:{}]", self.center, self.dimensions)
     }
@@ -3102,6 +5140,16 @@ impl Display for Bounds {
 impl Mul<f32> for Bounds {
     type Output = Bounds;
 
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Bounds};
+    ///
+    /// let bounds = Bounds::from_corners( Vec3::ZERO, Vec3::ONE);
+    ///
+    /// let bounds_scaled = bounds * 2.0;
+    /// assert_eq!(bounds_scaled.center, Vec3::ONE);
+    /// assert_eq!(bounds_scaled.dimensions, Vec3::new(2.0, 2.0, 2.0));
+    /// ```
     fn mul(self, rhs: f32) -> Self::Output {
         Bounds { center: self.center * rhs, dimensions: self.dimensions * rhs }
     }
@@ -3111,7 +5159,16 @@ impl Mul<f32> for Bounds {
 /// position of the Bounds.
 /// <https://stereokit.net/Pages/StereoKit/Bounds/op_Multiply.html>
 impl MulAssign<f32> for Bounds {
-    #[inline]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Bounds};
+    ///
+    /// let mut bounds = Bounds::from_corners( Vec3::ZERO, Vec3::ONE);
+    ///
+    /// bounds *= 2.0;
+    /// assert_eq!(bounds.center, Vec3::ONE);
+    /// assert_eq!(bounds.dimensions, Vec3::new(2.0, 2.0, 2.0));
+    /// ```
     fn mul_assign(&mut self, rhs: f32) {
         self.center.mul_assign(rhs);
         self.dimensions.mul_assign(rhs);
@@ -3124,6 +5181,16 @@ impl MulAssign<f32> for Bounds {
 impl Mul<Bounds> for f32 {
     type Output = Bounds;
 
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Bounds};
+    ///
+    /// let bounds = Bounds::from_corners( Vec3::ZERO, Vec3::ONE);
+    ///
+    /// let bounds_scaled = 2.0 * bounds;
+    /// assert_eq!(bounds_scaled.center, Vec3::ONE);
+    /// assert_eq!(bounds_scaled.dimensions, Vec3::new(2.0, 2.0, 2.0));
+    /// ```
     fn mul(self, rhs: Bounds) -> Self::Output {
         Bounds { center: rhs.center * self, dimensions: rhs.dimensions * self }
     }
@@ -3135,6 +5202,16 @@ impl Mul<Bounds> for f32 {
 impl Mul<Vec3> for Bounds {
     type Output = Bounds;
 
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Bounds};
+    ///
+    /// let bounds = Bounds::from_corners( Vec3::ZERO, Vec3::ONE);
+    ///
+    /// let bounds_scaled = bounds * Vec3::new(1.0, 2.0, 3.0);
+    /// assert_eq!(bounds_scaled.center, Vec3::new(0.5, 1.0, 1.5));
+    /// assert_eq!(bounds_scaled.dimensions, Vec3::new(1.0, 2.0, 3.0));
+    /// ```
     fn mul(self, rhs: Vec3) -> Self::Output {
         Bounds { center: self.center * rhs, dimensions: self.dimensions * rhs }
     }
@@ -3144,7 +5221,16 @@ impl Mul<Vec3> for Bounds {
 /// position of the Bounds.
 /// <https://stereokit.net/Pages/StereoKit/Bounds/op_Multiply.html>
 impl MulAssign<Vec3> for Bounds {
-    #[inline]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Bounds};
+    ///
+    /// let mut bounds = Bounds::from_corners( Vec3::ZERO, Vec3::ONE);
+    ///
+    /// bounds *= Vec3::new(1.0, 2.0, 3.0);
+    /// assert_eq!(bounds.center, Vec3::new(0.5, 1.0, 1.5));
+    /// assert_eq!(bounds.dimensions, Vec3::new(1.0, 2.0, 3.0));
+    /// ```
     fn mul_assign(&mut self, rhs: Vec3) {
         self.center.mul_assign(rhs);
         self.dimensions.mul_assign(rhs);
@@ -3164,9 +5250,9 @@ impl MulAssign<Vec3> for Bounds {
 /// let plane_mesh = Mesh::generate_plane_up([1.0,1.0], None, true);
 /// let mut material_plane = Material::pbr();
 ///
-/// let transform_wall = Matrix::tr(&([-0.5, 0.0, 0.0].into()),
-///                                 &([0.0, 0.0, 90.0].into()));
-/// let transform_floor = Matrix::t(  [0.0, -0.5, 0.0]);
+/// let transform_wall = Matrix::t_r([-0.5, 0.0, 0.0],
+///                                  [0.0, 0.0, 90.0]);
+/// let transform_floor = Matrix::t([0.0, -0.5, 0.0]);
 ///
 /// let wall =   Plane::new (Vec3::X, 0.5);
 /// let wall_b = Plane::from_point( [-0.5, -1.1, -1.1].into(), Vec3::X);
@@ -3349,6 +5435,14 @@ impl Plane {
 
 impl Display for Plane {
     /// Creates a text description of the Plane, in the format of “[normal:X distance:X]”
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Plane};
+    ///
+    /// let plane = Plane::new([1.1, 2.0, 3.0], 4.0);
+    /// assert_eq!(format!("{}", plane),
+    ///            "[normal:[x:1.1, y:2, z:3] distance:4]");
+    /// ```
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "[normal:{} distance:{}]", self.normal, self.d)
     }
@@ -3480,8 +5574,8 @@ impl Pose {
     #[inline]
     pub fn to_matrix(&self, scale: Option<Vec3>) -> Matrix {
         match scale {
-            Some(scale) => Matrix::trs(&self.position, &self.orientation, &scale),
-            None => Matrix::tr(&self.position, &self.orientation),
+            Some(scale) => Matrix::t_r_s(self.position, self.orientation, scale),
+            None => Matrix::t_r(self.position, self.orientation),
         }
     }
 
@@ -3564,6 +5658,14 @@ impl Pose {
 impl Display for Pose {
     /// A string representation of the Pose, in the format of “position, Forward”. Mostly for debug visualization.
     /// <https://stereokit.net/Pages/StereoKit/Pose/ToString.html>
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Pose};
+    ///
+    /// let pose = Pose::new([1.1, 2.0, 3.0], Some([0.0, 90.0, 0.0].into()));
+    /// assert_eq!(format!("{}", pose),
+    ///            "[position:[x:1.1, y:2, z:3] forward:[x:0, y:0.70710677, z:0, w:0.7071067]]");
+    /// ```
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "[position:{} forward:{}]", self.position, self.orientation)
     }
@@ -3686,6 +5788,14 @@ impl Sphere {
 }
 impl Display for Sphere {
     /// Creates a text description of the Sphere, in the format of “[center:X radius:X]”
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Sphere};
+    ///
+    /// let sphere = Sphere::new([1.1, 2.0, 3.0], 4.0);
+    /// assert_eq!(format!("{}", sphere),
+    ///            "[center:[x:1.1, y:2, z:3] radius:4]");
+    /// ```
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "[center:{} radius:{}]", self.center, self.radius)
     }
@@ -3749,15 +5859,15 @@ impl Rect {
 ///
 /// let center = Vec3::new(0.0, -2.5, -2.5);
 /// let bounds = model.get_bounds();
-/// let transform = Matrix::tr(&center, &([0.0, 220.0, 0.0].into()));
-/// let transform_cube = Matrix::ts( bounds.center, bounds.dimensions) * transform;
+/// let transform = Matrix::t_r(center, [0.0, 220.0, 0.0]);
+/// let transform_cube = Matrix::t_s( bounds.center, bounds.dimensions) * transform;
 /// let inv = transform.get_inverse();
 ///
 /// let ray_x = Ray::new(Vec3{x:4.0, y: 0.0, z:  -2.5}, Vec3::NEG_X);
 /// let inv_ray_x = inv.transform_ray(ray_x);
 /// let inv_contact_x = bounds.intersect(inv_ray_x).expect("should be a point of contact");
 /// let contact_x = transform.transform_point(inv_contact_x);
-/// let transform_point_x = Matrix::ts(contact_x, Vec3::ONE * 0.3);
+/// let transform_point_x = Matrix::t_s(contact_x, Vec3::ONE * 0.3);
 ///
 /// filename_scr = "screenshots/ray.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
@@ -4002,9 +6112,9 @@ impl Ray {
     /// assert_eq!(ind_sphere, 672);
     /// assert_eq!(ind_cube, 9);
     ///
-    /// let transform_contact_sphere = Matrix::ts(
+    /// let transform_contact_sphere = Matrix::t_s(
     ///     transform.transform_point(contact_sphere), Vec3::ONE * 0.1);
-    /// let transform_contact_cube = Matrix::ts(
+    /// let transform_contact_cube = Matrix::t_s(
     ///     transform.transform_point(contact_cube), Vec3::ONE * 0.1);
     ///
     /// filename_scr = "screenshots/intersect_meshes.jpeg";
@@ -4116,8 +6226,7 @@ impl Ray {
     ///     mesh::Mesh, material::{Material, Cull}, util::named_colors};
     ///
     /// let model = Model::from_file("center.glb", None).unwrap().copy();
-    /// let transform = Matrix::tr(&([0.0,-2.25,-2.00].into()),
-    ///                            &([0.0, 140.0, 0.0].into()));
+    /// let transform = Matrix::t_r([0.0,-2.25,-2.00], [0.0, 140.0, 0.0]);
     ///
     /// let inv_ray = Ray::new([1.0, 2.0, -3.0], [-1.5, 2.0, 3.0]);
     ///
@@ -4168,8 +6277,7 @@ impl Ray {
     ///     mesh::Mesh, material::{Material, Cull}, util::named_colors};
     ///
     /// let model = Model::from_file("center.glb", None).unwrap().copy();
-    /// let transform = Matrix::tr(&([0.0,-2.25,-2.00].into()),
-    ///                            &([0.0, 140.0, 0.0].into()));
+    /// let transform = Matrix::t_r([0.0,-2.25,-2.00], [0.0, 140.0, 0.0]);
     ///
     /// let inv_ray = Ray::new([1.0, 2.0, -3.0], [-1.5, 2.0, 3.0]);
     ///
@@ -4192,6 +6300,14 @@ impl Ray {
 impl Display for Ray {
     /// Creates a text description of the Ray, in the format of “[position:X direction:X]”
     /// <https://stereokit.net/Pages/StereoKit/Ray/ToString.html>
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Ray};
+    ///
+    /// let ray = Ray::new([1.1, 2.0, 3.0], [4.0, 5.0, 6.0]);
+    /// assert_eq!(format!("{}", ray),
+    ///            "[position:[x:1.1, y:2, z:3] direction:[x:4, y:5, z:6]]");
+    /// ```
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "[position:{} direction:{}]", self.position, self.direction)
     }
