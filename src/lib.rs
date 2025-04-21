@@ -53,7 +53,7 @@
 //! Here is a simple "Hello World" StereoKit-rust app for all platforms:
 //!
 //! In `main.rs`, if you intend to build a PC VR/MR app:
-//! ```
+//! ```ignore
 //! #[allow(dead_code)]
 //! #[cfg(not(target_os = "android"))]
 //! fn main() {
@@ -72,7 +72,7 @@
 //! ```
 //!
 //! In `lib.rs` where you can remove the `target_os = "android" code` if you don't want to build for Android:
-//! ```
+//! ```ignore
 //! use stereokit_rust::{framework::SkClosures, prelude::*, sk::Sk, ui::Ui};
 //! use winit::event_loop::EventLoop;
 //!
