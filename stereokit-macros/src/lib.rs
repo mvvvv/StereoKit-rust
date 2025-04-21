@@ -247,6 +247,7 @@ pub fn test_init_sk(_input: TokenStream) -> TokenStream {
         let mut filename_scr = "screenshots/default_screenshoot.png";
         let mut number_of_steps = 3;
         let (mut width_scr, mut height_scr, mut fov_scr, mut from_scr, mut at_scr)  = (200, 200, 99.0, maths::Vec3::Z, maths::Vec3::ZERO);
+        system::Assets::block_for_priority(i32::MAX);
     };
 
     TokenStream::from(expanded)

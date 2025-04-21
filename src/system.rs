@@ -5771,11 +5771,13 @@ impl Text {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{system::Text, font::Font, util::named_colors, shader::Shader};
+    /// use stereokit_rust::{system::{Assets, Text}, font::Font,
+    ///                      util::named_colors, shader::Shader};
     ///
     /// let font = Font::default();
     /// let shader = Shader::from_file("shaders/water_pbr.hlsl.sks")
     ///                          .expect("Brick_pbr should be a valid shader");
+    /// Assets::block_for_priority(i32::MAX);
     ///
     /// let text_style = Text::make_style_with_shader(&font, 0.02, shader, named_colors::WHITE);
     ///
@@ -6465,7 +6467,8 @@ impl World {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{system::World, maths::{Vec3,Ray}};
+    /// use stereokit_rust::{system::{Assets, World}, maths::{Vec3,Ray}};
+    /// Assets::block_for_priority(i32::MAX);
     ///
     /// let raycast_is_present = sk.get_system().get_world_raycast_present();
     ///

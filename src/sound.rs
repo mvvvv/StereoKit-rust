@@ -866,7 +866,7 @@ impl SoundInst {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::Vec3, sound::Sound};
+    /// use stereokit_rust::{maths::Vec3, sound::Sound, system::Assets};
     ///
     /// let mut position = Vec3::new(0.0, 0.0, 0.5);
     /// let mut volume = 0.0;
@@ -874,6 +874,7 @@ impl SoundInst {
     /// let mut plane_sound = Sound::from_file("sounds/plane_engine.mp3").
     ///                           expect("A sound should be created");
     /// plane_sound.id("sound_plane");
+    /// Assets::block_for_priority(i32::MAX);
     ///
     /// let mut plane_sound_inst = plane_sound.play(position, None);
     /// plane_sound_inst.volume(0.005);

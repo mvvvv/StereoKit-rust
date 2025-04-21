@@ -971,10 +971,12 @@ impl<'a> Anims<'a> {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::model::{Model, Anims, AnimMode};
+    /// use stereokit_rust::{model::{Model, Anims, AnimMode}, system::Assets};
     ///
     /// let model = Model::from_file("mobiles.gltf", None)
     ///                              .expect("Could not load model").copy();
+    /// Assets::block_for_priority(i32::MAX);
+    ///
     /// let mut anims = model.get_anims();
     /// assert_eq!(anims.get_count(), 3);
     /// assert_eq!(anims.get_name_at_index(0), Some("rotate"));

@@ -15,12 +15,12 @@ use std::{
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{ui::Ui, maths::{Vec3, Quat, Pose, Matrix},
-///                      font::Font, system::Text, util::named_colors};
+///                      font::Font, system::{Assets, Text}, util::named_colors};
 ///
 /// // Load font assets
 /// let emoji_font = if cfg!(windows) {
 ///     // TODO: Doesn't work on Windows Github Actions.
-///     return;
+///     // return;
 ///     Font::from_file("C:\\Windows\\Fonts\\seguiemj.ttf").unwrap_or_default()
 /// } else {
 ///     Font::from_file("fonts/Noto_Emoji/NotoEmoji-VariableFont_wght.ttf").unwrap_or_default()
@@ -30,6 +30,7 @@ use std::{
 /// } else {
 ///     Font::from_file("fonts/Inter/Inter-VariableFont_opsz_wght.ttf").unwrap_or_default()
 /// };
+/// Assets::block_for_priority(i32::MAX);
 /// let emoji_style = Some(Text::make_style(emoji_font, 0.35, named_colors::RED));
 /// let text_style = Text::make_style(text_font, 0.025, named_colors::GREEN);
 /// let mut window_pose = Pose::new(
