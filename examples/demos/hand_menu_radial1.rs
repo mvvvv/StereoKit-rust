@@ -10,7 +10,9 @@ use stereokit_rust::{
     tools::{fly_over::ENABLE_FLY_OVER, log_window::SHOW_LOG_WINDOW, screenshot::SHOW_SCREENSHOT_WINDOW},
     util::{
         Color128, Gradient, SHLight, SphericalHarmonics,
-        named_colors::{BLACK, BLUE, BURLY_WOOD, LIGHT_BLUE, LIGHT_CYAN, RED, SEA_GREEN, STEEL_BLUE, WHITE, YELLOW},
+        named_colors::{
+            BLACK, BLUE, BURLY_WOOD, GRAY, LIGHT_BLUE, LIGHT_CYAN, RED, SEA_GREEN, STEEL_BLUE, WHITE, YELLOW,
+        },
     },
 };
 pub const SHOW_SHADOWS: &str = "ShowShadows";
@@ -238,8 +240,13 @@ impl HandMenuRadial1 {
         // You can also zip the files:
         // ktx create --cubemap --encode uastc  --format R8G8B8A8_UNORM  --assign-oetf linear --assign-primaries bt709
         //            --generate-mipmap right.png left.png top.png bottom.png front.png back.png cubemap_rgba32.ktx2
-        let cube4 =
+        let mut cube4 =
             SHCubemap::from_cubemap("hdri/giza/cubemap_rgba32.ktx2", true, 0).unwrap_or(SHCubemap::get_rendered_sky());
+        cube4
+            .sh
+            .add(Vec3::new(1.0, 0.5, 0.0).get_normalized(), Color128::WHITE)
+            .add(Vec3::new(-1.0, 0.5, 0.0).get_normalized(), GRAY)
+            .brightness(0.3);
 
         //save the default cubemap.
         let cube_default = SHCubemap::get_rendered_sky();
