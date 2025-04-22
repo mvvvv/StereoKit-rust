@@ -19,7 +19,7 @@ use crate::{
 use crate::sprite::Sprite;
 
 use super::{
-    file_browser::{FILE_BROWSER_OPEN, FileBrowser},
+    file_browser::{FILE_BROWSER_OPEN, FILE_BROWSER_SAVE, FileBrowser},
     os_api::get_external_path,
 };
 
@@ -141,11 +141,15 @@ impl ScreenshotViewer {
             if !self.enabled {
                 self.close_file_browser()
             }
-        } else if id == &self.id && key.eq(FILE_BROWSER_OPEN) {
-            let mut file_name = FILE_NAME.lock().unwrap();
-            file_name.clear();
-            file_name.push_str(value);
-            self.screen = None;
+        } else if id == &self.id {
+            if key.eq(FILE_BROWSER_OPEN) {
+                let mut file_name = FILE_NAME.lock().unwrap();
+                file_name.clear();
+                file_name.push_str(value);
+                self.screen = None;
+            } else if key.eq(FILE_BROWSER_SAVE) {
+                save_screenshot(value);
+            }
         }
     }
 
@@ -218,6 +222,7 @@ impl ScreenshotViewer {
                 }
                 file_browser.caller = self.id.clone();
                 file_browser.window_pose = Ui::popup_pose(Vec3::ZERO);
+                self.close_file_browser();
                 SkInfo::send_event(&self.sk_info, StepperAction::add(self.id.clone() + BROWSER_SUFFIX, file_browser));
             } else if !Platform::get_file_picker_visible() {
                 Platform::file_picker_sz(
@@ -265,6 +270,7 @@ impl ScreenshotViewer {
             self.screen = Sprite::from_tex(&self.tex, None, None).ok();
         }
         Ui::same_line();
+        Ui::push_enabled(self.screen.is_some(), None);
         if Ui::button("Save", None) && !Platform::get_file_picker_visible() {
             if cfg!(target_os = "android") {
                 if let Some(img_dir) = get_external_path(&self.sk_info) {
@@ -273,69 +279,37 @@ impl ScreenshotViewer {
                     }
                 }
             }
-            Platform::file_picker_sz(
-                PickerMode::Save,
-                move |ok, file_name| {
-                    if ok {
-                        let mut name = file_name.to_string();
-                        if !file_name.ends_with(".rgba") && !file_name.ends_with(".raw") {
-                            name += ".raw";
-                        }
+            if true {
+                let mut file_browser = FileBrowser::default();
 
-                        if let Ok(tex) = Tex::find(CAPTURE_TEXTURE_ID) {
-                            if let Some((width, height, size)) = tex.get_data_infos(0) {
-                                Log::diag(format!("size is {}", size * 4));
-                                let data = vec![0u8; size * 4];
-                                let data_slice = data.as_slice();
-                                if tex.get_color_data_u8(data_slice, 4, 0) {
-                                    match File::create(&name) {
-                                        // Vive le format RGBA !!! https://github.com/bzotto/rgba_bitmap
-                                        Ok(mut file) => {
-                                            if let Err(err) = file.write_fmt(format_args!("RGBA")) {
-                                                Log::warn(format!(
-                                                    "Screenshoot Error when writing RGBA {} : {:?}",
-                                                    &name, err
-                                                ));
-                                            }
-                                            if let Err(err) = file.write(&width.to_be_bytes()[4..]) {
-                                                Log::warn(format!(
-                                                    "Screenshoot Error when writing width {} : {:?}",
-                                                    &name, err
-                                                ));
-                                            }
-                                            if let Err(err) = file.write(&height.to_be_bytes()[4..]) {
-                                                Log::warn(format!(
-                                                    "Screenshoot Error when writing height {} : {:?}",
-                                                    &name, err
-                                                ));
-                                            }
-                                            if let Err(err) = file.write_all(data_slice) {
-                                                Log::warn(format!(
-                                                    "Screenshoot Error when writing raw image {} : {:?}",
-                                                    &name, err
-                                                ));
-                                            }
-                                        }
-                                        Err(err) => Log::warn(format!(
-                                            "Screenshoot Error when creating file {} : {:?}",
-                                            name, err
-                                        )),
-                                    }
-                                } else {
-                                    Log::warn(format!("Screenshoot Error when getting texture data {}", file_name));
-                                }
-                            } else {
-                                Log::warn(format!("Screenshoot Error unable to get texture infos {}", file_name));
-                            }
-                        } else {
-                            Log::warn(format!("Screenshoot Error unable to get texture ScreenshotTex {}", file_name));
-                        }
+                if cfg!(target_os = "android") {
+                    if let Some(img_dir) = get_external_path(&self.sk_info) {
+                        file_browser.dir = img_dir;
                     }
-                },
-                &SCREENSHOT_FORMATS,
-            )
+                }
+                if !file_browser.dir.exists() {
+                    file_browser.dir = current_dir().unwrap_or_default();
+                }
+                file_browser.picker_mode = PickerMode::Save;
+                file_browser.caller = self.id.clone();
+                file_browser.window_pose = Ui::popup_pose(Vec3::ZERO);
+                file_browser.file_name_to_save = "scr_.rgba".into();
+                file_browser.exts = vec![".rgba".into(), ".raw".into()];
+                self.close_file_browser();
+                SkInfo::send_event(&self.sk_info, StepperAction::add(self.id.clone() + BROWSER_SUFFIX, file_browser));
+            } else {
+                Platform::file_picker_sz(
+                    PickerMode::Save,
+                    move |ok, file_name| {
+                        if ok {
+                            save_screenshot(file_name);
+                        }
+                    },
+                    &SCREENSHOT_FORMATS,
+                )
+            }
         }
-
+        Ui::pop_enabled();
         Ui::window_end();
     }
 
@@ -349,5 +323,46 @@ impl ScreenshotViewer {
             self.shutdown_completed = true;
         }
         self.shutdown_completed
+    }
+}
+
+fn save_screenshot(file_name: &str) {
+    let mut name = file_name.to_string();
+    if !file_name.ends_with(".rgba") && !file_name.ends_with(".raw") {
+        name += ".raw";
+    }
+
+    if let Ok(tex) = Tex::find(CAPTURE_TEXTURE_ID) {
+        if let Some((width, height, size)) = tex.get_data_infos(0) {
+            Log::diag(format!("size is {}", size * 4));
+            let data = vec![0u8; size * 4];
+            let data_slice = data.as_slice();
+            if tex.get_color_data_u8(data_slice, 4, 0) {
+                match File::create(&name) {
+                    // Vive le format RGBA !!! https://github.com/bzotto/rgba_bitmap
+                    Ok(mut file) => {
+                        if let Err(err) = file.write_fmt(format_args!("RGBA")) {
+                            Log::warn(format!("Screenshoot Error when writing RGBA {} : {:?}", &name, err));
+                        }
+                        if let Err(err) = file.write(&width.to_be_bytes()[4..]) {
+                            Log::warn(format!("Screenshoot Error when writing width {} : {:?}", &name, err));
+                        }
+                        if let Err(err) = file.write(&height.to_be_bytes()[4..]) {
+                            Log::warn(format!("Screenshoot Error when writing height {} : {:?}", &name, err));
+                        }
+                        if let Err(err) = file.write_all(data_slice) {
+                            Log::warn(format!("Screenshoot Error when writing raw image {} : {:?}", &name, err));
+                        }
+                    }
+                    Err(err) => Log::warn(format!("Screenshoot Error when creating file {} : {:?}", name, err)),
+                }
+            } else {
+                Log::warn(format!("Screenshoot Error when getting texture data {}", file_name));
+            }
+        } else {
+            Log::warn(format!("Screenshoot Error unable to get texture infos {}", file_name));
+        }
+    } else {
+        Log::warn(format!("Screenshoot Error unable to get texture ScreenshotTex {}", file_name));
     }
 }
