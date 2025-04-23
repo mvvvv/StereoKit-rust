@@ -2228,7 +2228,8 @@ impl Ui {
         let size = size.unwrap_or(Vec2::ZERO);
         let type_text = type_text.unwrap_or(TextContext::Text);
         if unsafe {
-            ui_input(cstr.as_ptr(), c_value.as_ptr() as *mut c_char, out_value.len() as i32, size, type_text) != 0
+            ui_input(cstr.as_ptr(), c_value.as_ptr() as *mut c_char, out_value.capacity() as i32 + 16, size, type_text)
+                != 0
         } {
             match unsafe { CStr::from_ptr(c_value.as_ptr()).to_str() } {
                 Ok(result) => {
@@ -2271,7 +2272,7 @@ impl Ui {
             ui_input_at(
                 cstr.as_ptr(),
                 c_value.as_ptr() as *mut c_char,
-                out_value.len() as i32,
+                out_value.capacity() as i32 + 16,
                 top_left_corner.into(),
                 size,
                 type_text,
