@@ -11,7 +11,7 @@ use stereokit_rust::{
     util::{
         Color128, Gradient, SHLight, SphericalHarmonics,
         named_colors::{
-            BLACK, BLUE, BURLY_WOOD, GRAY, LIGHT_BLUE, LIGHT_CYAN, RED, SEA_GREEN, STEEL_BLUE, WHITE, YELLOW,
+            BLACK, BLUE, BURLY_WOOD, DARK_GRAY, LIGHT_BLUE, LIGHT_CYAN, RED, SEA_GREEN, STEEL_BLUE, WHITE, YELLOW,
         },
     },
 };
@@ -244,8 +244,10 @@ impl HandMenuRadial1 {
             SHCubemap::from_cubemap("hdri/giza/cubemap_rgba32.ktx2", true, 0).unwrap_or(SHCubemap::get_rendered_sky());
         cube4
             .sh
-            .add(Vec3::new(1.0, 0.5, 0.0).get_normalized(), Color128::WHITE)
-            .add(Vec3::new(-1.0, 0.5, 0.0).get_normalized(), GRAY)
+            .add(Vec3::new(1.0, 0.25, 0.0).get_normalized(), Color128::WHITE)
+            .add(Vec3::new(-1.0, 0.25, 0.0).get_normalized(), DARK_GRAY)
+            .add(Vec3::new(0.0, 0.25, 1.0).get_normalized(), DARK_GRAY)
+            .add(Vec3::new(0.0, 0.25, -1.0).get_normalized(), DARK_GRAY)
             .brightness(0.3);
 
         //save the default cubemap.
