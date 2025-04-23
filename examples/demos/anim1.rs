@@ -60,9 +60,6 @@ impl Default for Anim1 {
             .unwrap()
             .material(&ico_material);
 
-        let mut anims = mobile.get_anims();
-        anims.play_anim("flyRotate", AnimMode::Loop);
-
         let nodes = mobile.get_nodes();
         nodes.get_root_node().expect("A root node is expected").add_child(
             "toto",
