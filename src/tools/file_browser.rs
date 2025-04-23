@@ -145,7 +145,7 @@ impl Default for FileBrowser {
             dir_buttons_tint: Ui::get_element_color(UiVisual::Separator, 0.0),
             input_tint: yellow,
             start_dir: PathBuf::new(),
-            file_name_to_save: "".into(),
+            file_name_to_save: String::with_capacity(255),
             replace_existing_file: false,
             file_selected: 0,
             radio_off: Sprite::radio_off(),
@@ -185,11 +185,14 @@ impl FileBrowser {
         let mut dir_selected = None;
 
         // The window to select existing file
+        let mut window_text2 = String::with_capacity(2048);
         let window_text = if self.exts.is_empty() {
             format!("{:?}", self.dir)
         } else {
             format!("{:?} with type {:?}", self.dir, self.exts)
         };
+        window_text2.push_str(&window_text);
+
         Ui::window_begin(&window_text, &mut self.window_pose, Some(self.window_size), Some(UiWin::Normal), None);
         if Ui::button_img_at(
             "a",
@@ -294,9 +297,10 @@ impl FileBrowser {
         }
         let cur_dir = self.dir.clone();
         // we add the dir at the end
-        let mut sub_dir: String = cur_dir.to_string_lossy().to_string();
+        let mut sub_dir: String = String::with_capacity(2048);
+        sub_dir += cur_dir.to_string_lossy().to_string().as_str();
         if !sub_dir.is_empty() {
-            sub_dir += "/";
+            sub_dir.insert(sub_dir.len(), '/');
         }
         for file_name in &self.files_of_dir {
             if let PathEntry::Dir(name) = file_name {

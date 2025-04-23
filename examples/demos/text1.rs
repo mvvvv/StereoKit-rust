@@ -76,7 +76,7 @@ impl Default for Text1 {
             font_selected: 1,
             text_context: TextContext::Text,
             text_style_test: Text::make_style(Font::default(), 0.05, WHITE),
-            text: "Text1".to_owned(),
+            text: String::with_capacity(2048),
             text_style: Text::make_style(Font::default(), 0.3, RED),
             next_value: Sprite::arrow_right(),
             radio_on: Sprite::radio_on(),
