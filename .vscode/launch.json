@@ -9,8 +9,10 @@
         "args": [
           "test",
           "--no-run",
+          "--features",
+          "event-loop",
           "--lib",
-          "--package=stereokit-rust"
+          "--package=stereokit-rust", 
         ],
         "filter": {
           "name": "stereokit-rust",

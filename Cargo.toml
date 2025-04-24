@@ -8,11 +8,12 @@ resolver = "2"
 edition = "2024"
 #rust-version = "1.85"
 description = "High-Level Rust bindings around the StereoKitC library for XR"
-homepage = "https://stereokit.net/"
-keywords = ["stereokit", "XR", "VR", "AR", "sys"]
+#homepage = "https://stereokit.net/"
+keywords = ["stereokit", "XR", "VR", "AR", "sys", "MR", "OpenXR"]
 license = "MIT"
 links = "StereoKitC"
 repository = "https://github.com/mvvvv/StereoKit-rust"
+categories = ["graphics", "gui", "rendering::engine", "mathematics"]
 
 include = ["StereoKit/tools/include", "/README.md"]
 readme = "README.md"
