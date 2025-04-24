@@ -1,7 +1,10 @@
 [package]
 name = "stereokit-macros"
+description = "Macros for stereokit-rust"
 version = "0.4.0"
-edition = "2021"
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/mvvvv/StereoKit-rust"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
