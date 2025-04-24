@@ -3,7 +3,7 @@ members = ["stereokit-macros"]
 
 [package]
 name = "stereokit-rust"
-version = "0.1.0"
+version = "0.4.0"
 resolver = "2"
 edition = "2024"
 #rust-version = "1.85"
@@ -44,7 +44,7 @@ thiserror = "2.0"
 bitflags = "2.9"
 glam = "0.30"
 openxr-sys = "0.11"
-stereokit-macros = { path = "stereokit-macros" }
+stereokit-macros = { path = "stereokit-macros", version = "0.4.0" }
 
 [target.'cfg(target_os = "android")'.dependencies]
 log = "0.4"
