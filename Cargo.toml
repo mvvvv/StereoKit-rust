@@ -15,7 +15,17 @@ links = "StereoKitC"
 repository = "https://github.com/mvvvv/StereoKit-rust"
 categories = ["graphics", "gui", "rendering::engine", "mathematics"]
 
-include = ["StereoKit/tools/include", "/README.md"]
+include = [
+  "Cargo.toml",
+  "build.rs",
+  "src/*",
+  "StereoKit/cmake",
+  "StereoKit/StereoKitC",
+  "StereoKit/CMakeLists.txt",
+  "README.md",
+  "LICENSE",
+  "stereokit-macros/*",
+]
 readme = "README.md"
 
 [features]
