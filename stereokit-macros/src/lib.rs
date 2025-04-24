@@ -66,7 +66,7 @@ fn has_field(field_name: &str, input: &DeriveInput) -> bool {
 /// impl MyStepper {
 ///     fn start(&mut self) -> bool {
 ///         self.transform = Matrix::r([0.0, 10.0 * Time::get_stepf(), 0.0]);
-///        self.material.color_tint(named_colors::BLUE);
+///         self.material.color_tint(named_colors::BLUE);
 ///         true
 ///     }
 ///     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}

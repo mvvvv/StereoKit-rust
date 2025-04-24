@@ -387,6 +387,7 @@ impl<'a> SkClosures<'a> {
     }
 }
 
+/// See derive macro [`crate::IStepper`] which is usefull to implement this trait.
 /// This is a lightweight standard interface for fire-and-forget systems that can be attached to StereoKit! This is
 /// particularly handy for extensions/plugins that need to run in the background of your application, or even for
 /// managing some of your own simpler systems.
@@ -405,8 +406,7 @@ impl<'a> SkClosures<'a> {
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{ font::Font, material::Material, maths::{Matrix, Quat, Vec3},
-///                       mesh::Mesh,system::{Text, TextStyle},
-///                       util::named_colors};
+///                       mesh::Mesh, system::{Text, TextStyle}, util::named_colors};
 ///
 /// /// The basic Stepper.
 /// pub struct AStepper {
@@ -429,7 +429,7 @@ impl<'a> SkClosures<'a> {
 ///             sk_info: None,
 ///             transform: Matrix::r([0.0, 180.0, 0.0]),
 ///             round_cube: None,
-///             text: "Stepper A".to_owned(),
+///             text: "IStepper\ntrait".to_owned(),
 ///             text_style: None,
 ///         }
 ///     }
@@ -441,7 +441,7 @@ impl<'a> SkClosures<'a> {
 ///         self.id = id;
 ///         self.sk_info = Some(sk_info);
 ///         self.round_cube = Some(Mesh::generate_rounded_cube(Vec3::ONE / 5.0, 0.02, None));
-///         self.text_style = Some(Text::make_style(Font::default(), 0.3, named_colors::RED));
+///         self.text_style = Some(Text::make_style(Font::default(), 0.3, named_colors::BLACK));
 ///
 ///         true
 ///     }
@@ -451,7 +451,8 @@ impl<'a> SkClosures<'a> {
 ///             round_cube.draw(token, Material::pbr(),
 ///                             self.transform, Some(named_colors::RED.into()), None);
 ///         }
-///         Text::add_at(token, &self.text, self.transform, self.text_style, None, None, None, None, None, None);
+///         Text::add_at(token, &self.text, self.transform, self.text_style,
+///                      None, None, None, None, None, None);
 ///     }
 /// }
 ///
@@ -517,15 +518,15 @@ pub trait IStepper {
 ///
 /// <https://stereokit.net/Pages/StereoKit/SK.html>
 ///
-/// ### Example
+/// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{maths::{Vec3, Matrix}, util::named_colors,
 ///     tools::{title::Title, screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW}}, };
 /// use std::any::TypeId; // we need this to remove all the steppers of a given type.
 ///
-/// let mut title = Title::new("StepperActions", Some(named_colors::GREEN), None, None);
-/// title.transform = Matrix::t_r([-1.0, 0.0, -1.5], [0.0, 155.0, 0.0]);
+/// let mut title = Title::new("StepperAction", Some(named_colors::GREEN), None, None);
+/// title.transform = Matrix::t_r([-1.0, 0.0, -1.0], [0.0, 155.0, 0.0]);
 /// sk.send_event(StepperAction::add("Title_green_ID", title.clone()));
 ///
 /// sk.send_event(StepperAction::add_default::<Title>("Title_white_ID"));
@@ -1179,7 +1180,7 @@ impl Steppers {
 ///         Self {
 ///             id: "BStepper".to_string(),
 ///             sk_info: None,
-///             text: "StepperClosures".to_owned(),
+///             text: "\nStepperClosures".to_owned(),
 ///             closures: StepperClosures::new(),
 ///         }
 ///     }

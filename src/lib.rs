@@ -24,7 +24,7 @@
 //! * On `Windows` get the following tools and dev libraries : "`CMake`", "`Visual Studio Build Tools 2022(Developpment
 //!   Desktop C++)`" and "`DotNet SDK v8+`".
 //! * On `Non Windows platforms` get the following tools and dev libraries : `clang` `cmake` `lld` `ninja-build` `libx11-dev`
-//!   `libxfixes-dev` `libegl-dev` `libgbm-dev` `libfontconfig-dev` `libxkbcommon-x11-0` `libxkbcommon0`.
+//!   `libxfixes-dev` `libegl-dev` `libgbm-dev` `libfontconfig-dev`.
 //! * Installing the stereokit_rust tools with `cargo install -F event-loop stereokit_rust` should help you to check
 //!   the missing dependencies.
 //!
@@ -249,8 +249,58 @@ pub mod font;
 /// - An event loop manager based on Winit.
 /// - HandMenuRadial related structs, enums and functions.
 ///
+/// At the core of this framework is the [`crate::IStepper`] derive macro, which allows you to create a stepper that can
+/// be run in the event loop.
 /// ## Examples
 /// which are also unit tests:
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{ font::Font, maths::{Matrix, Quat, Vec3},
+///                       system::{Text, TextStyle}, util::named_colors};
+///
+/// #[derive(IStepper)]
+/// pub struct MyStepper {
+///     id: StepperId,
+///     sk_info: Option<Rc<RefCell<SkInfo>>>,
+///
+///     transform: Matrix,
+///     pub text: String,
+///     text_style: Option<TextStyle>,
+/// }
+/// unsafe impl Send for MyStepper {}
+/// impl Default for MyStepper {
+///     fn default() -> Self {
+///         Self {
+///             id: "MyStepper".to_string(),
+///             sk_info: None,
+///
+///             transform: Matrix::IDENTITY,
+///             text: "IStepper\nderive\nmacro".to_owned(),
+///             text_style: None,
+///         }
+///     }
+/// }
+/// impl MyStepper {
+///     fn start(&mut self) -> bool {
+///         self.transform = Matrix::t_r([0.05, 0.0, -0.2], [0.0, 200.0, 0.0]);
+///         self.text_style = Some(Text::make_style(Font::default(), 0.3, named_colors::RED));
+///         true
+///     }
+///     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
+///     fn draw(&mut self, token: &MainThreadToken) {
+///         Text::add_at(token, &self.text, self.transform, self.text_style,
+///                      None, None, None, None, None, None);
+///     }
+/// }
+///
+/// sk.send_event(StepperAction::add_default::<MyStepper>("My_Basic_Stepper_ID"));
+///
+/// filename_scr = "screenshots/istepper_macro.jpeg";
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+///     // No code here as we only use MyStepper
+/// );
+/// ```
+/// [![IStepper derive macro](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/istepper_macro.jpeg)](IStepper)
 ///
 /// [![SkClosures](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sk_closures.jpeg)](framework::SkClosures)
 /// [![IStepper](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/a_stepper.jpeg)](framework::IStepper)

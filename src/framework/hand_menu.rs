@@ -16,8 +16,10 @@ use crate::{
 };
 use std::{borrow::BorrowMut, collections::VecDeque};
 
-/// StereoKit initialization settings! Setup SkSettings with your data before calling SkSetting.Init().
+/// This is a collection of display and behavior information for a single item on the hand menu.
 /// <https://stereokit.net/Pages/StereoKit.Framework/HandMenuItem.html>
+///
+/// see example in [`HandMenuRadial`]
 pub struct HandMenuItem {
     pub name: String,
     pub image: Option<Material>,
@@ -28,6 +30,11 @@ pub struct HandMenuItem {
 impl HandMenuItem {
     /// Makes a menu item!
     /// <https://stereokit.net/Pages/StereoKit.Framework/HandMenuItem/HandMenuItem.html>
+    /// * `name` - Display name of the item.
+    /// * `image` - Image to display on the item.
+    /// * `callback` - The callback that should be performed when this menu item is selected.
+    /// * `action` - Describes the menu related behavior of this menu item, should it close the menu? Open another
+    ///   layer? Check/Uncheck this item? Go back to the previous menu?
     pub fn new<C: FnMut() + 'static>(
         name: impl AsRef<str>,
         image: Option<Material>,
@@ -44,6 +51,9 @@ impl HandMenuItem {
 
     /// This draws the menu item on the radial menu!
     /// <https://stereokit.net/Pages/StereoKit.Framework/HandMenuItem/Draw.html>
+    /// * `token` - The main thread token.
+    /// * `at` - Center of the radial slice.
+    /// * `focused` - If the current menu slice has focus.
     pub fn draw_basic(&self, token: &MainThreadToken, at: Vec3, focused: bool) {
         let scale = match focused {
             true => Vec3::ONE * 0.6,
@@ -65,12 +75,20 @@ impl HandMenuItem {
 }
 
 /// A Cell of the radial menu which can be a [layer][HandRadialLayer] or an [item][HandMenuItem].
+///
+/// see example in [`HandMenuRadial`]
 pub enum HandRadial {
     Item(HandMenuItem),
     Layer(HandRadialLayer),
 }
 
 impl HandRadial {
+    /// Creates a new [HandRadial] item.
+    /// * `name` - Display name of the item.
+    /// * `image` - Image to display on the item.
+    /// * `callback` - The callback that should be performed when this menu item is selected.
+    /// * `action` - Describes the menu related behavior of this menu item, should it close the menu? Open another
+    ///   layer? Check/Uncheck this item? Go back to the previous menu?
     pub fn item<C: FnMut() + 'static>(
         name: impl AsRef<str>,
         image: Option<Material>,
@@ -80,6 +98,13 @@ impl HandRadial {
         Self::Item(HandMenuItem::new(name, image, callback, action))
     }
 
+    /// Creates a new [HandRadial] layer.
+    /// * `name` - Name of the layer, this is used for layer traversal, so make sure you get the spelling right! Perhaps
+    ///   use const strings for these.
+    /// * `image` - Image to display in the center of the radial menu.
+    /// * `start_angle` - An angle offset for the layer, if you want a specific orientation for the menu’s contents. Note
+    ///   this may not behave as expected if you’re setting this manually and using the backAngle as well.
+    /// * `items` - A list of menu items to display in this menu layer.
     pub fn layer(
         name: impl AsRef<str>,
         image: Option<Material>,
@@ -89,6 +114,7 @@ impl HandRadial {
         Self::Layer(HandRadialLayer::new(name, image, start_angle, items))
     }
 
+    /// Returns the number of items in this layer. 0 if this is an item.
     pub fn items_count(&self) -> usize {
         match self {
             HandRadial::Item(_) => 0,
@@ -96,13 +122,15 @@ impl HandRadial {
         }
     }
 
+    /// Returns the items in this layer. Empty if this is an item.
     pub fn items(&self) -> &Vec<Rc<HandRadial>> {
         match self {
-            HandRadial::Item(_) => todo!(),
+            HandRadial::Item(_) => panic!("Cannot get items from an item"),
             HandRadial::Layer(layer) => &layer.items,
         }
     }
 
+    /// Returns true if this is an item and it is a back action.
     pub fn is_back_action(&self) -> bool {
         match self {
             HandRadial::Item(item) => {
@@ -113,6 +141,7 @@ impl HandRadial {
         }
     }
 
+    /// Returns the group number if this is an item and it is a checked action.
     pub fn is_checked_action(&self) -> Option<u8> {
         match self {
             HandRadial::Item(item) => {
@@ -123,6 +152,7 @@ impl HandRadial {
         }
     }
 
+    /// Returns the group number if this is an item and it is an unchecked action.
     pub fn is_unchecked_action(&self) -> Option<u8> {
         match self {
             HandRadial::Item(item) => {
@@ -133,6 +163,7 @@ impl HandRadial {
         }
     }
 
+    /// Returns the start angle of the layer. 0.0 if this is an item.
     pub fn get_start_angle(&self) -> f32 {
         match self {
             HandRadial::Item(_) => 0.0,
@@ -140,6 +171,7 @@ impl HandRadial {
         }
     }
 
+    /// Returns the back angle of the layer. 0.0 if this is an item.
     pub fn get_back_angle(&self) -> f32 {
         match self {
             HandRadial::Item(_) => 0.0,
@@ -147,6 +179,7 @@ impl HandRadial {
         }
     }
 
+    /// Returns the name of the item or layer.
     pub fn get_name(&self) -> &str {
         match self {
             HandRadial::Item(item) => &item.name,
@@ -155,8 +188,11 @@ impl HandRadial {
     }
 }
 
-/// This is a collection of display and behavior information for a single item on the hand menu.
+/// This class represents a single layer in the HandRadialMenu. Each item in the layer is displayed around the radial
+/// menu’s circle.
 /// <https://stereokit.net/Pages/StereoKit.Framework/HandRadialLayer.html>
+///
+/// see example in [`HandMenuRadial`]
 pub struct HandRadialLayer {
     pub layer_name: String,
     pub items: Vec<Rc<HandRadial>>,
@@ -169,6 +205,12 @@ pub struct HandRadialLayer {
 /// Creates a menu layer, this overload will calculate a back_angle if there are any back actions present in the item
 /// list.
 /// <https://stereokit.net/Pages/StereoKit.Framework/HandRadialLayer/HandRadialLayer.html>
+/// * `name` - Name of the layer, this is used for layer traversal, so make sure you get the spelling right! Perhaps
+///   use const strings for these.
+/// * `image` - Image to display in the center of the radial menu.
+/// * `start_angle` - An angle offset for the layer, if you want a specific orientation for the menu’s contents. Note
+///   this may not behave as expected if you’re setting this manually and using the backAngle as well.
+/// * `items` - A list of menu items to display in this menu layer.
 impl HandRadialLayer {
     pub fn new(
         name: impl AsRef<str>,
@@ -305,7 +347,8 @@ impl HandRadialLayer {
 /// when selected! This is in addition to the HandMenuItem's
 /// callback function.
 /// <https://stereokit.net/Pages/StereoKit.Framework/HandMenuAction.html>
-
+///
+/// see example in [`HandMenuRadial`]
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum HandMenuAction {
     /// Execute the callback only and stay open (Warning ! this will send multiple time the callback)
@@ -383,7 +426,6 @@ pub const HAND_MENU_RADIAL_FOCUS: &str = "hand_menu_radial_focus";
 ///     }
 /// );
 /// ```
-
 #[derive(IStepper)]
 pub struct HandMenuRadial {
     id: StepperId,
@@ -475,8 +517,7 @@ impl HandMenuRadial {
     pub const ACTIVATION_ANGLE: f32 = 0.978;
 
     /// Creates a hand menu from the provided array of menu layers! HandMenuRadial is an IStepper, so proper usage is to
-    /// add it to the Stepper list via Sk.AddStepper. If no layers are provided to this constructor, a default
-    /// root layer will be automatically added.
+    /// add it to the Stepper list via (Sk|SkInfo).send_event(StepperAction::add_default()).
     /// <https://stereokit.net/Pages/StereoKit.Framework/HandMenuRadial/HandMenuRadial.html>
     pub fn new(root_layer: HandRadialLayer) -> Self {
         let root = Rc::new(HandRadial::Layer(root_layer));
