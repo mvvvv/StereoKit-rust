@@ -2495,6 +2495,16 @@ impl SHCubemap {
     /// Create the associated cubemap texture with the light spot.
     /// warning ! The SphericalHarmonics is moved to the result struct.
     /// <https://stereokit.net/Pages/StereoKit/Tex/GenCubemap.html>
+    /// * `lighting` - Lighting information stored in a SphericalHarmonics.
+    /// * `resolution` - The square size in pixels of each cubemap face! This generally doesn’t need to be large, as
+    ///   SphericalHarmonics typically contain pretty low frequency information.
+    /// * `light_spot_size_pct` - The size of the glowing spot added in the primary light direction. You can kinda think
+    ///   of the unit as a percentage of the cubemap face’s size, but it’s technically a Chebyshev distance from the
+    ///   light’s point on a 2m cube.
+    /// * `light_spot_intensity` - The glowing spot’s color is the primary light direction’s color, but multiplied by
+    ///   this value. Since this method generates a 128bpp texture, this is not clamped between 0-1, so feel free to go
+    ///   nuts here! Remember that reflections will often cut down some reflection intensity.
+    ///
     ///
     /// see also [`tex_gen_cubemap_sh`]
     /// ### Examples
@@ -2518,16 +2528,16 @@ impl SHCubemap {
     /// );
     /// ```
     pub fn gen_cubemap_sh(
-        lookup: SphericalHarmonics,
-        face_size: i32,
+        lighting: SphericalHarmonics,
+        resolution: i32,
         light_spot_size_pct: f32,
         light_spot_intensity: f32,
     ) -> SHCubemap {
         let tex = Tex(NonNull::new(unsafe {
-            tex_gen_cubemap_sh(&lookup, face_size, light_spot_size_pct, light_spot_intensity)
+            tex_gen_cubemap_sh(&lighting, resolution, light_spot_size_pct, light_spot_intensity)
         })
         .unwrap());
-        SHCubemap { sh: lookup, tex }
+        SHCubemap { sh: lighting, tex }
     }
 
     /// Get the associated lighting extracted from the cubemap.
