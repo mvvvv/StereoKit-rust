@@ -1,4 +1,5 @@
 use std::{
+    env,
     ffi::OsStr,
     fs::{self, File, create_dir},
     io::{self, BufRead, Error},
@@ -20,13 +21,21 @@ use crate::tools::os_api::{get_assets_dir, get_shaders_sks_dir, get_shaders_sour
 /// use stereokit_rust::tools::build_tools::get_skshaderc;
 /// let bin_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 /// let skshaderc_path = get_skshaderc(bin_dir.clone(), false);
-/// assert!(skshaderc_path.exists());
+/// assert!(skshaderc_path.is_ok());
 ///
 /// let skshaderc_exe_path = get_skshaderc(bin_dir, true);
-/// assert!(skshaderc_exe_path.exists());
-/// assert!(skshaderc_exe_path.ends_with("skshaderc.exe"));
+/// assert!(skshaderc_exe_path.is_ok());
+/// assert!(skshaderc_exe_path.unwrap().ends_with("skshaderc.exe"));
 /// ```
-pub fn get_skshaderc(bin_dir: PathBuf, with_wine: bool) -> PathBuf {
+pub fn get_skshaderc(bin_dir: PathBuf, with_wine: bool) -> Result<PathBuf, io::Error> {
+    let mut skshaderc = bin_dir.clone();
+    let target_dir = env::var("CARGO_TARGET_DIR").unwrap_or("target".into());
+    skshaderc.push(target_dir);
+
+    if !skshaderc.exists() {
+        return Err(io::Error::new(io::ErrorKind::NotFound, "target/tools not found. Please run 'cargo build' first."));
+    }
+
     let target_os = if with_wine {
         "win32"
     } else if cfg!(target_os = "linux") {
@@ -47,17 +56,14 @@ pub fn get_skshaderc(bin_dir: PathBuf, with_wine: bool) -> PathBuf {
     };
     let exe_type = target_os.to_string() + "_" + target_arch;
 
-    let mut skshaderc = bin_dir.clone();
-    skshaderc.push(r"StereoKit");
     skshaderc.push(r"tools");
-    skshaderc.push(r"skshaderc");
     skshaderc.push(exe_type);
     if cfg!(windows) || with_wine {
         skshaderc.push("skshaderc.exe");
     } else {
         skshaderc.push("skshaderc");
     }
-    skshaderc
+    Ok(skshaderc)
 }
 
 /// Compile hsls file to sks. See config.toml to change the default values.
@@ -76,7 +82,7 @@ pub fn compile_hlsl(
     //we get the dir from StereoKit-rust (not from here)
     let bin_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-    let skshaderc = get_skshaderc(bin_dir.clone(), with_wine);
+    let skshaderc = get_skshaderc(bin_dir.clone(), with_wine)?;
 
     let mut shaders_source_path = project_dir.clone();
 

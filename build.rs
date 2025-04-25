@@ -27,11 +27,11 @@ fn main() {
         println!(
             "cargo:warning=You seem to be building for MacOS! We still enable builds so that rust-analyzer works, but this won't actually build StereoKit so it'll be pretty non-functional."
         );
-        return;
     }
 
     // Build StereoKit, and tell rustc to link it.
     let mut cmake_config = Config::new("StereoKit");
+    cmake_config.define("SK_DISTRIBUTE", "OFF");
 
     let profile_upper = if profile == "debug" {
         cmake_config.define("CMAKE_BUILD_TYPE", "Debug");
@@ -56,6 +56,7 @@ fn main() {
         cmake_config.define("SK_WINDOWS_GL", "ON");
     }
 
+    let mut dep_sk_gpu_src = None;
     if cfg!(feature = "force-local-deps") && env::var("FORCE_LOCAL_DEPS").is_ok() {
         println!("cargo:info=Force local deps !!");
         // Helper function to define optional dependencies
@@ -69,6 +70,8 @@ fn main() {
         define_if_exists("DEP_MESHOPTIMIZER_SOURCE", "CPM_meshoptimizer_SOURCE", &mut cmake_config);
         define_if_exists("DEP_BASIS_UNIVERSAL_SOURCE", "CPM_basis_universal_SOURCE", &mut cmake_config);
         define_if_exists("DEP_SK_GPU_SOURCE", "CPM_sk_gpu_SOURCE", &mut cmake_config);
+        // we need this path for retrieving skshaderc*
+        dep_sk_gpu_src = env::var("DEP_SK_GPU_SOURCE").ok();
     }
 
     if target_family.as_str() == "windows" {
@@ -265,8 +268,37 @@ fn main() {
         }
     }
 
+    // copy the tools (skshaderc) under target/tools
+    let target_dir = env::var("CARGO_TARGET_DIR").unwrap_or("target".into());
+    let target_dir = Path::new(&target_dir);
+    let distrib = target_dir.join("tools");
+    let tools_dir = if let Some(sk_gpu_src) = dep_sk_gpu_src {
+        let path = Path::new(&sk_gpu_src);
+        path.join("tools")
+    } else {
+        dst.join("build").join("_deps").join("sk_gpu-src").join("tools")
+    };
+    copy_tree(tools_dir, distrib).expect("Unable to copy tools");
+
     // Tell cargo to invalidate the built crate whenever the wrapper changes
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=StereoKit/StereoKitC/stereokit.h");
     println!("cargo:rerun-if-changed=StereoKit/StereoKitC/stereokit_ui.h");
+}
+
+/// Recursive fn to copy all the content of a directory to another one.
+/// Duplicate from stereokit_rust::tools::build_tools::copy_tree
+/// * `src` - The source directory.
+/// * `dst` - The destination directory.
+pub fn copy_tree(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> std::io::Result<()> {
+    if let Err(_err) = fs::create_dir(&dst) {}
+    for entry in fs::read_dir(src)?.flatten() {
+        let path_type = entry.file_type()?;
+        if path_type.is_dir() {
+            copy_tree(entry.path(), dst.as_ref().join(entry.file_name()))?;
+        } else {
+            fs::copy(entry.path(), dst.as_ref().join(entry.file_name()))?;
+        }
+    }
+    Ok(())
 }

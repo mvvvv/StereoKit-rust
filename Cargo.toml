@@ -3,7 +3,7 @@ members = ["stereokit-macros"]
 
 [package]
 name = "stereokit-rust"
-version = "0.4.0"
+version = "0.4.0-alpha.1"
 resolver = "2"
 edition = "2024"
 #rust-version = "1.85"
@@ -15,19 +15,21 @@ license-file = "LICENSE"
 links = "StereoKitC"
 repository = "https://github.com/mvvvv/StereoKit-rust"
 categories = ["graphics", "gui", "rendering::engine", "mathematics"]
-
 include = [
   "Cargo.toml",
   "build.rs",
   "src/*",
   "StereoKit/cmake",
+  "StereoKit/tools/include",
   "StereoKit/StereoKitC",
   "StereoKit/CMakeLists.txt",
   "README.md",
-  "LICENSE",
-  "stereokit-macros/*",
+  "LICENSE"
 ]
 readme = "README.md"
+
+[package.metadata.docs.rs]
+features = ["event-loop"]
 
 [features]
 dynamic-openxr = [] # Add openxr_loader.so in Android APK
@@ -55,8 +57,8 @@ thiserror = "2.0"
 bitflags = "2.9"
 glam = "0.30"
 openxr-sys = "0.11"
-stereokit-macros = { path = "./stereokit-macros", version = "0.4.0" }
-#stereokit-macros = "0.4.0"
+#stereokit-macros = { path = "./stereokit-macros", version = "0.4.0" }
+stereokit-macros = "0.4.0"
 
 [target.'cfg(target_os = "android")'.dependencies]
 log = "0.4"
