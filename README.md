@@ -16,7 +16,9 @@ Its purpose is to improve the previous rust project <https://github.com/MalekiRe
 - by offering a framework based on winit/android-activity which takes up the ISTEPPERS of the C# framework.
 
 
-This project is at an early stage so try it carefully. Right now, the only way to get the project is to get the source code from github.
+This project is at an early stage so try it carefully. To start using it [see the documentation](https://docs.rs/crate/stereokit-rust).
+
+The following instructions are to get the source code from github if you want to contribute or launch the demos.
 
 #### Regarding your working OS, here are the target architectures you can build for:
 

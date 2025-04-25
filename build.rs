@@ -271,14 +271,16 @@ fn main() {
     // copy the tools (skshaderc) under target/tools
     let target_dir = env::var("CARGO_TARGET_DIR").unwrap_or("target".into());
     let target_dir = Path::new(&target_dir);
-    let distrib = target_dir.join("tools");
-    let tools_dir = if let Some(sk_gpu_src) = dep_sk_gpu_src {
-        let path = Path::new(&sk_gpu_src);
-        path.join("tools")
-    } else {
-        dst.join("build").join("_deps").join("sk_gpu-src").join("tools")
-    };
-    copy_tree(tools_dir, distrib).expect("Unable to copy tools");
+    if target_dir.exists() {
+        let distrib = target_dir.join("tools");
+        let tools_dir = if let Some(sk_gpu_src) = dep_sk_gpu_src {
+            let path = Path::new(&sk_gpu_src);
+            path.join("tools")
+        } else {
+            dst.join("build").join("_deps").join("sk_gpu-src").join("tools")
+        };
+        copy_tree(tools_dir, distrib).expect("Unable to copy tools");
+    }
 
     // Tell cargo to invalidate the built crate whenever the wrapper changes
     println!("cargo:rerun-if-changed=build.rs");

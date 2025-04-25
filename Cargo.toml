@@ -3,7 +3,7 @@ members = ["stereokit-macros"]
 
 [package]
 name = "stereokit-rust"
-version = "0.4.0-alpha.1"
+version = "0.4.0-alpha.2"
 resolver = "2"
 edition = "2024"
 #rust-version = "1.85"
@@ -44,6 +44,9 @@ crate-type = ["lib", "cdylib"]
 
 [[bin]]
 name = "cargo-compile_sks"
+
+[[bin]]
+name = "cargo-build_sk_rs"
 
 [build-dependencies]
 cmake = "0.1.54"
