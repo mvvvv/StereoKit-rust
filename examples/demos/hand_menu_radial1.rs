@@ -93,9 +93,8 @@ impl Default for HandMenuRadial1 {
             .normal_tex(parquetroughness)
             .metal_tex(parquetmetal)
             .tex_transform(Vec4::new(0.0, 0.0, 12.0, 12.0))
-            .roughness_amount(0.7)
-            .metallic_amount(0.5)
-            .transparency(Transparency::Blend)
+            .roughness_amount(3.0)
+            .metallic_amount(0.2)
             .face_cull(Cull::Back);
 
         // fresh water
