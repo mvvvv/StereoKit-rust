@@ -103,7 +103,7 @@ impl Default for HandMenuRadial1 {
             .normal_tex(&bump_tex)
             .occlusion_tex(&bump_inverse_tex)
             .tex_transform(Vec4::new(0.0, 0.0, 6.0, 6.0))
-            .roughness_amount(0.4)
+            .roughness_amount(1.4)
             .metallic_amount(0.6)
             .face_cull(Cull::Back)
             .color_tint(SEA_GREEN)
