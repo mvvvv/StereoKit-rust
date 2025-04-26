@@ -3,14 +3,14 @@ members = ["stereokit-macros"]
 
 [package]
 name = "stereokit-rust"
-version = "0.4.0-alpha.2"
+version = "0.4.0-alpha.3"
 resolver = "2"
 edition = "2024"
 #rust-version = "1.85"
 description = "High-Level Rust bindings around the StereoKitC library for XR"
 #homepage = "https://stereokit.net/"
 keywords = ["stereokit", "VR", "sys", "MR", "OpenXR"]
-license = "MIT"
+#license = "MIT"
 license-file = "LICENSE"
 links = "StereoKitC"
 repository = "https://github.com/mvvvv/StereoKit-rust"
@@ -26,7 +26,7 @@ include = [
   "README.md",
   "LICENSE"
 ]
-readme = "README.md"
+#readme = "README.md"
 
 [package.metadata.docs.rs]
 features = ["event-loop"]

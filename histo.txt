@@ -31,3 +31,7 @@ clear;cargo test --features event-loop
 
 #---- build docs
 cargo clean --doc && cargo doc --features event-loop
+
+#---- publish to crates.icon
+cargo publish -F event-loop --dry-run
+cargo publish -F event-loop

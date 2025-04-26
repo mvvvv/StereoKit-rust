@@ -27,6 +27,12 @@ fn main() {
         println!(
             "cargo:warning=You seem to be building for MacOS! We still enable builds so that rust-analyzer works, but this won't actually build StereoKit so it'll be pretty non-functional."
         );
+        return;
+    }
+
+    if env::var("DOCS_RS").is_ok() {
+        println!("cargo:warning=Skipping build on docs.rs");
+        return;
     }
 
     // Build StereoKit, and tell rustc to link it.
@@ -269,17 +275,26 @@ fn main() {
     }
 
     // copy the tools (skshaderc) under target/tools
-    let target_dir = env::var("CARGO_TARGET_DIR").unwrap_or("target".into());
-    let target_dir = Path::new(&target_dir);
-    if target_dir.exists() {
+    let target_dir_name = env::var("CARGO_TARGET_DIR").unwrap_or("target".into());
+    let mut target_dir = Path::new(&out_dir).parent().unwrap().parent().unwrap().parent().unwrap().parent().unwrap();
+    if !target_dir.ends_with(&target_dir_name) {
+        //cross compilation, we need to go up one more level
+        target_dir = target_dir.parent().unwrap();
+    }
+    println!("cargo:info=Can we copy skshaderc* to {:?}/tools ?", target_dir);
+    if target_dir.ends_with(&target_dir_name) && target_dir.exists() {
         let distrib = target_dir.join("tools");
         let tools_dir = if let Some(sk_gpu_src) = dep_sk_gpu_src {
+            println!("cargo:info=--yes! we copy skshaderc from {:?}", sk_gpu_src);
             let path = Path::new(&sk_gpu_src);
             path.join("tools")
         } else {
+            println!("cargo:info=--yes! we copy skshaderc from {:?}/build/_deps/sk_gpu-src/tools", dst);
             dst.join("build").join("_deps").join("sk_gpu-src").join("tools")
         };
         copy_tree(tools_dir, distrib).expect("Unable to copy tools");
+    } else {
+        println!("cargo:warning={target_dir_name} directory {:?} does not exist", target_dir);
     }
 
     // Tell cargo to invalidate the built crate whenever the wrapper changes
