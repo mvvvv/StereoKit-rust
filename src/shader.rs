@@ -118,7 +118,7 @@ impl Shader {
     /// * `file_utf8` - Path to a precompiled StereoKit Shader file! If no .sks extension is part of this path,
     ///   StereoKit will automatically add it and check that first.
     ///
-    /// see also [`Material::new`] [`shader_create_file`]
+    /// see also [`crate::material::Material::new`] [`shader_create_file`]
     /// see example in [`Shader`]
     pub fn from_file(file_utf8: impl AsRef<Path>) -> Result<Shader, StereoKitError> {
         let path_buf = file_utf8.as_ref().to_path_buf();
