@@ -74,7 +74,7 @@ impl HandMenuItem {
     }
 }
 
-/// A Cell of the radial menu which can be a [layer][HandRadialLayer] or an [item][HandMenuItem].
+/// A Cell of the radial menu which can be a [`Layer`](HandRadialLayer) or an [`item`](HandMenuItem).
 ///
 /// see example in [`HandMenuRadial`]
 pub enum HandRadial {

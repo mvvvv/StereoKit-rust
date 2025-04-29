@@ -193,7 +193,7 @@ impl Material {
     /// * `shader` - Any valid shader.
     /// * `id` - If None the id will be set to a default value "auto/asset_???"
     ///
-    /// see also [`material_create`][`material_set_id`]
+    /// see also [`material_create`] [`material_set_id`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -221,7 +221,7 @@ impl Material {
     /// * `id` - If None the id will be set to a default value "auto/asset_???"
     /// * `shader_file_name` - The filename of a Shader asset.
     ///
-    /// see also [`material_create`][`material_set_id`]
+    /// see also [`material_create`] [`material_set_id`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -376,7 +376,7 @@ impl Material {
     /// * `priority` - The priority sort order for this asset in the async loading system. Lower values mean loading
     ///   sooner.
     ///
-    /// see also [Material::diffuse_tex] [`material_create`][`material_set_id`]
+    /// see also [Material::diffuse_tex] [`material_create`] [`material_set_id`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -418,7 +418,7 @@ impl Material {
     /// * `priority` - The priority sort order for this asset in the async loading system. Lower values mean loading
     ///   sooner.
     ///
-    /// see also [Material::diffuse_tex] [`material_create`][`material_set_id`]
+    /// see also [Material::diffuse_tex] [`material_create`] [`material_set_id`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -1113,7 +1113,7 @@ impl Material {
     /// Get All param infos.
     /// <https://stereokit.net/Pages/StereoKit/Material/GetAllParamInfo.html>
     ///
-    /// see also [`ParamInfos`][`ParamInfo`]
+    /// see also [`ParamInfos`] [`ParamInfo`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -1449,7 +1449,7 @@ impl Iterator for ParamInfos<'_> {
 
     /// get all the param info
     ///
-    /// see also [`material_get_param_info`][`material_get_param_count`][`material_get_param`]
+    /// see also [`material_get_param_info`] [`material_get_param_count`] [`material_get_param`]
     fn next(&mut self) -> Option<Self::Item> {
         self.index += 1;
         let count = unsafe { material_get_param_count(self.material.0.as_ptr()) };
@@ -2098,7 +2098,7 @@ impl<'a> ParamInfos<'a> {
     /// * `name` - The name of the parameter to get.
     /// * `type_info` - The type of the parameter to get.
     ///
-    /// see also [`ParamInfo`][`material_get_param`]
+    /// see also [`ParamInfo`] [`material_get_param`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -2128,7 +2128,7 @@ impl<'a> ParamInfos<'a> {
     /// * `type_info` - the type of the parameter.
     ///
     /// Returns a pointer to the value that will be filled in if the parameter is found.
-    /// see also [`ParamInfo`][`material_get_param_id`][`ParamInfos::set_data_with_id`]
+    /// see also [`ParamInfo`] [`material_get_param_id`] [`ParamInfos::set_data_with_id`]
     pub fn get_data_with_id(&self, id: u64, type_info: MaterialParam) -> Option<*mut c_void> {
         let out_value = CString::new("H").unwrap().into_raw() as *mut c_void;
         if unsafe { material_get_param_id(self.material.0.as_ptr(), id, type_info, out_value) } != 0 {

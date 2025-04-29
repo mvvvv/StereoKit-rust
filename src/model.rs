@@ -1027,7 +1027,7 @@ impl<'a> Anims<'a> {
     /// or in addition to Draw.
     /// <https://stereokit.net/Pages/StereoKit/Model/StepAnim.html>
     ///
-    /// see also [`model_step_anim`][`model_play_anim`]
+    /// see also [`model_step_anim`] [`model_play_anim`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!

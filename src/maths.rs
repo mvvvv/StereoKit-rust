@@ -2834,7 +2834,7 @@ impl Quat {
     ///   direction will be (0,1,0), to prevent roll.    
     ///
     /// Returns a rotation that describes looking from a point, towards another point.
-    /// see also [`quat_lookat`][`quat_lookat_up`]
+    /// see also [`quat_lookat`] [`quat_lookat_up`]
     /// ### Examples
     /// ```
     /// use stereokit_rust::maths::{Quat, Vec3};
@@ -4827,7 +4827,7 @@ impl Bounds {
     /// <https://stereokit.net/Pages/StereoKit/Bounds/Scale.html>
     /// * scale - The scale to apply.
     ///
-    /// see also [Bounds::scale_vec][Bounds::scaled][Bounds::scaled_vec] and '/' '*' operator
+    /// see also [Bounds::scale_vec] [Bounds::scaled] [Bounds::scaled_vec] and '/' '*' operator
     /// ### Examples
     /// ```
     /// use stereokit_rust::maths::{Vec3, Matrix, Bounds};
@@ -4850,7 +4850,7 @@ impl Bounds {
     /// <https://stereokit.net/Pages/StereoKit/Bounds/Scale.html>
     /// * scale - The scale to apply.
     ///
-    /// see also [Bounds::scale][Bounds::scaled_vec][Bounds::scaled] and '/' '*' operator
+    /// see also [Bounds::scale] [Bounds::scaled_vec] [Bounds::scaled] and '/' '*' operator
     /// ### Examples
     /// ```
     /// use stereokit_rust::maths::{Vec3, Matrix, Bounds};
@@ -5018,7 +5018,7 @@ impl Bounds {
     /// <https://stereokit.net/Pages/StereoKit/Bounds/Scaled.html>
     /// * scale - The scale to apply.
     ///
-    /// see also [Bounds::scale][Bounds::scaled_vec][Bounds::scale_vec] and '/' '*' operator
+    /// see also [Bounds::scale] [Bounds::scaled_vec] [Bounds::scale_vec] and '/' '*' operator
     /// ### Examples
     /// ```
     /// use stereokit_rust::maths::{Vec3, Bounds};
@@ -5041,7 +5041,7 @@ impl Bounds {
     /// <https://stereokit.net/Pages/StereoKit/Bounds/Scaled.html>
     /// * scale - The scale to apply.
     ///
-    /// see also [Bounds::scale_vec][Bounds::scale][Bounds::scaled] and '/' '*' operator
+    /// see also [Bounds::scale_vec] [Bounds::scale] [Bounds::scaled] and '/' '*' operator
     /// ### Examples
     /// ```
     /// use stereokit_rust::maths::{Vec3, Bounds};

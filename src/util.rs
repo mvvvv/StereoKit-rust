@@ -1248,7 +1248,7 @@ impl Gradient {
     /// * `keys` - These can be in any order that you like, they’ll be sorted by their GradientKey.position value
     ///   regardless!
     ///
-    /// see also [`gradient_create`][`gradient_create_keys`]
+    /// see also [`gradient_create`] [`gradient_create_keys`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!

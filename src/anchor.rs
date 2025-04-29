@@ -389,7 +389,7 @@ impl Anchor {
 }
 
 /// Iterator for getting the list of anchors or new_anchors.
-/// see also   [`Anchor::new_anchors`][`Anchor::anchors`]
+/// see also   [`Anchor::new_anchors`] [`Anchor::anchors`]
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!

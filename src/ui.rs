@@ -1936,7 +1936,7 @@ impl Ui {
     /// * `notify_on` - Allows you to modify the behavior of the return value. None is default UiNotify::Change.
     ///
     /// Returns new value of the slider if it has changed during this step.
-    /// see also [`ui_hslider`][`Ui::hslider_f64`] [`Ui::hslider_at`]  [`Ui::hslider_at_f64`]
+    /// see also [`ui_hslider`] [`Ui::hslider_f64`] [`Ui::hslider_at`] [`Ui::hslider_at_f64`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
