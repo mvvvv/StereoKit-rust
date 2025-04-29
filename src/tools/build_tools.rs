@@ -33,7 +33,10 @@ pub fn get_skshaderc(bin_dir: PathBuf, with_wine: bool) -> Result<PathBuf, io::E
     skshaderc.push(target_dir);
 
     if !skshaderc.exists() {
-        return Err(io::Error::new(io::ErrorKind::NotFound, "target/tools not found. Please run 'cargo build' first."));
+        return Err(io::Error::new(
+            io::ErrorKind::NotFound,
+            format!("{} not found. Please run 'cargo build' first.", skshaderc.display()),
+        ));
     }
 
     let target_os = if with_wine {
