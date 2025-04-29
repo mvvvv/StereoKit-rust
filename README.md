@@ -69,10 +69,11 @@ This is the shortest way to launch your first PCVR/PCMR program[^1]: `cargo run 
 ## Templates to create your own project:
 There is 3 templates used to build android versions (they can also create a PCVR executable). The default choice, branch `main`, will use cargo-apk (like demos above). The branch `gradle` will let you use gradle with winit. Then the branch `gradle-no-event-loop` will use gradle without winit.
 * `git clone -b $branch https://github.com/mvvvv/stereokit-template/`
+* In Cargo.toml, change the dependency path to the local path of StereoKit-rust (uncomment the local path and comment the crates.io path).
 * If you don't clone the template project in the same directory than the StereoKit-rust project, you'll have to modify the path of the Stereokit-rust dependency.
 
 
-## (Temporary needs some stereokit/sk_gpu hacks on linux) Build the project's demo for Windows_x64 using GNU from Linux (and Windows and probably Mac)
+## Build the project's demo for Windows_x64 using GNU from Linux (and Windows and probably Mac)
 * Install mingw64-w64 (MSYS2 on windows)
 * Add the rust target gnu for windows:`rustup target add x86_64-pc-windows-gnu`
 * Temporary unavailable for linux: we need wine to compile the shaders
