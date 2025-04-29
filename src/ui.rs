@@ -517,6 +517,8 @@ pub struct UiSettings {
     pub backplate_border: f32,
 }
 
+/// StereoKit ffi type.
+/// see also [`crate::util::Hash`] [`Ui::stack_hash`] [`Ui::push_id`] [`Ui::push_id_int`]
 pub type IdHashT = u64;
 
 #[derive(Default, Debug, Copy, Clone)]
@@ -2958,9 +2960,40 @@ impl Ui {
     ///     Ui::window_end();
     /// );
     /// ```
-    pub fn push_id(root_id: impl AsRef<str>) {
+    pub fn push_id(root_id: impl AsRef<str>) -> IdHashT {
         let cstr = CString::new(root_id.as_ref()).unwrap();
-        unsafe { ui_push_id(cstr.as_ptr()) };
+        unsafe { ui_push_id(cstr.as_ptr()) }
+    }
+
+    /// Adds a root id to the stack for the following UI elements! This id is combined when hashing any following ids,
+    /// to prevent id collisions in separate groups.
+    /// <https://stereokit.net/Pages/StereoKit/UI/PushId.html>
+    /// * `root_id` - The root id to use until the following PopId call. MUST be unique within current hierarchy.
+    ///
+    /// see also [`ui_push_idi`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{ui::Ui, maths::{Vec2, Vec3, Pose}};
+    ///
+    /// let mut window_pose = Pose::new(
+    ///     [0.01, 0.055, 0.92], Some([0.0, 185.0, 0.0].into()));
+    /// let mut toggle_value1 = false;
+    /// let mut toggle_value1b = true;
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     Ui::window_begin("Push Id", &mut window_pose, None, None, None);
+    ///     Ui::push_id_int(1);
+    ///     Ui::toggle("Choice 1",&mut toggle_value1, None);
+    ///     Ui::pop_id();
+    ///     Ui::push_id_int(2);
+    ///     Ui::toggle("Choice 1",&mut toggle_value1b, None);
+    ///     Ui::pop_id();
+    ///     Ui::window_end();
+    /// );
+    /// ```
+    pub fn push_id_int(root_id: i32) -> IdHashT {
+        unsafe { ui_push_idi(root_id) }
     }
 
     /// When a soft keyboard is visible, interacting with UI elements will cause the keyboard to close. This function

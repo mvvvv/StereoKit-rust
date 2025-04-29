@@ -1629,7 +1629,7 @@ impl<'a> ParamInfos<'a> {
     /// );
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/param_infos_with_id.jpeg" alt="screenshot" width="200">
-    pub unsafe fn set_data_with_id(&mut self, id: u64, type_info: MaterialParam, value: *mut c_void) -> &mut Self {
+    pub unsafe fn set_data_with_id(&mut self, id: IdHashT, type_info: MaterialParam, value: *mut c_void) -> &mut Self {
         unsafe { material_set_param_id(self.material.0.as_ptr(), id, type_info, value) };
         self
     }
