@@ -1518,17 +1518,17 @@ impl<'a> ParamInfos<'a> {
 
     /// This allows you to set more complex shader data types such as structs. Note the SK doesn’t guard against setting
     /// data of the wrong size here, so pay extra attention to the size of your data here, and ensure it matched up with
-    /// the shader!
+    /// the shader! Consider using [`ParamInfos::set_data_with_id`] if you have to change the data type often (i.e. in
+    /// the main loop).
     /// <https://stereokit.net/Pages/StereoKit/Material/SetData.html>
     /// * `name` - The name of the parameter to set
     /// * `type_info` - The type of the data being set.
     /// * `value` - A pointer to the data being set.
     ///
-    /// <https://stereokit.net/Pages/StereoKit/Material/SetData.html>
-    ///
-    /// see also [`material_set_param`]
+    /// see also [`material_set_param`] [`ParamInfos::set_data_with_id`]
     ///    # Safety
     ///    Be sure of the data you want to modify this way.
+    ///
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -1565,15 +1565,35 @@ impl<'a> ParamInfos<'a> {
     /// * `type_info` - the type of the parameter you want to set.
     /// * `value` - a pointer to the data you want to set.
     ///
-    /// see also [`ParamInfo`][`material_set_param_id`]
+    /// see also [`material_set_param_id`] [`ParamInfos::set_data`]
     ///    # Safety
     ///    Be sure of the data you want to modify this way.
-    pub unsafe fn set_data_with_id<S: AsRef<str>>(
-        &mut self,
-        id: u64,
-        type_info: MaterialParam,
-        value: *mut c_void,
-    ) -> &mut Self {
+    ///
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{material::{Material, MaterialParam, Cull},
+    ///                      mesh::Mesh, maths::{Vec3, Vec4, Matrix}, util::Hash};
+    ///
+    /// let cube = Mesh::cube();
+    /// let mut material_cube = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// material_cube.face_cull(Cull::Front).tex_transform(Vec4::new(0.0, 0.0, 0.04, 0.04));
+    /// let mut param_infos = material_cube.get_all_param_info();
+    /// // an odd way to do : material.color_tint(...);
+    /// let mut new_color: std::vec::Vec<f32>  = vec![0.2, 0.2, 0.9, 1.0];
+    /// let hash_color = Hash::string("color");
+    ///
+    /// filename_scr = "screenshots/param_infos_with_id.jpeg";
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     unsafe{
+    ///         param_infos.set_data_with_id(hash_color, MaterialParam::Color128,
+    ///                          new_color.as_ptr() as *mut std::ffi::c_void);
+    ///     }
+    ///     cube.draw(token, &material_cube, Matrix::IDENTITY, None, None);
+    /// );
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/param_infos_with_id.jpeg" alt="screenshot" width="200">
+    pub unsafe fn set_data_with_id(&mut self, id: u64, type_info: MaterialParam, value: *mut c_void) -> &mut Self {
         unsafe { material_set_param_id(self.material.0.as_ptr(), id, type_info, value) };
         self
     }

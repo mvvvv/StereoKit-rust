@@ -318,6 +318,7 @@ pub mod framework;
 /// [![Material Transparency](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/material_transparency.jpeg)](material::Material::transparency)
 /// [![Material Face Cull](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/material_face_cull.jpeg)](material::Material::face_cull)
 /// [![Material Parameter Info](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/param_infos.jpeg)](material::ParamInfos)
+/// [![Material Parameter Info with id](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/param_infos_with_id.jpeg)](material::ParamInfos::set_data_with_id)
 pub mod material;
 
 /// Vec2, 3 and4, Quat and Matrix, Bounds, Plane and Ray related structs, enums and functions.

@@ -3,6 +3,7 @@ use crate::{
     maths::{Bool32T, Vec3, lerp},
     sk::DisplayBlend,
     system::TextContext,
+    ui::IdHashT,
 };
 use std::{
     ffi::{CStr, CString, c_char, c_void},
@@ -1491,6 +1492,103 @@ impl FileFilter {
         value[0..c_array.len()].fill_with(|| c_array_iter.next().unwrap());
 
         Self { ext: value }
+    }
+}
+
+/// This class contains some tools for hashing data within StereoKit! Certain systems in StereoKit use string hashes
+/// instead of full strings for faster search and compare, like UI and Materials, so this class gives access to the code
+/// SK uses for hashing. StereoKit currently internally uses a 64 bit FNV hash, though this detail should be pretty
+/// transparent to developers
+pub struct Hash;
+
+unsafe extern "C" {
+    pub fn hash_string(str_utf8: *const c_char) -> IdHashT;
+    pub fn hash_string_with(str_utf8: *const c_char, root: IdHashT) -> IdHashT;
+    pub fn hash_int(val: i32) -> IdHashT;
+    pub fn hash_int_with(val: i32, root: IdHashT) -> IdHashT;
+}
+
+impl Hash {
+    /// This will hash the UTF8 representation of the given string into a hash value that StereoKit can use.
+    /// <https://stereokit.net/Pages/StereoKit/Hash/String.html>
+    /// * `str` - A string (UTF8),that will be hashed.
+    ///
+    /// Returns a StereoKit hash representing the provided string.
+    /// see also [`hash_string`] [`Hash::string_with`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::util::Hash;
+    ///
+    /// let hash = Hash::string("Hello World");
+    /// assert_eq!(hash, 4420528118743043111);
+    /// ```
+    pub fn string(str: impl AsRef<str>) -> IdHashT {
+        let c_str = CString::new(str.as_ref()).unwrap();
+        unsafe { hash_string(c_str.as_ptr()) }
+    }
+
+    /// This will hash the UTF8 representation of the given string into a hash value that StereoKit can use. This
+    /// overload allows you to combine your hash with an existing hash.
+    /// <https://stereokit.net/Pages/StereoKit/Hash/String.html>
+    /// * `str` - A string (UTF8),that will be hashed.
+    /// * `root` - The hash value this new hash will start from.
+    ///
+    /// Returns a StereoKit hash representing a combination of the provided string and the root hash.
+    /// see also [`hash_string_with`] [`Hash::string`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::util::Hash;
+    ///
+    /// let hash1 = Hash::string("Hello");
+    /// assert_eq!(hash1, 7201466553693376363);
+    ///
+    /// let hash2 = Hash::string_with(" World", hash1);
+    /// assert_eq!(hash2, 4420528118743043111);
+    /// ```
+    pub fn string_with(str: impl AsRef<str>, root: IdHashT) -> IdHashT {
+        let c_str = CString::new(str.as_ref()).unwrap();
+        unsafe { hash_string_with(c_str.as_ptr(), root) }
+    }
+
+    /// This will hash an integer into a hash value that StereoKit can use. This is helpful for adding in some
+    /// uniqueness using something like a for loop index. This may be best when combined with additional hashes.
+    /// <https://stereokit.net/Pages/StereoKit/Hash/Int.html>
+    /// * `val` - An integer that will be hashed.
+    ///
+    /// Returns a StereoKit hash representing the provided integer.
+    /// see also [`hash_int`] [`Hash::int_with`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::util::Hash;
+    ///
+    /// let hash = Hash::int(123456789);
+    /// assert_eq!(hash, 8379007418144316681);
+    /// ```
+    pub fn int(val: i32) -> IdHashT {
+        unsafe { hash_int(val) }
+    }
+
+    /// This will hash an integer into a hash value that StereoKit can use. This is helpful for adding in some
+    /// uniqueness using something like a for loop index. This overload allows you to combine your hash with an existing
+    /// hash.
+    /// <https://stereokit.net/Pages/StereoKit/Hash/Int.html>
+    /// * `val` - An integer that will be hashed.
+    /// * `root` - The hash value this new hash will start from.
+    ///
+    /// Returns a StereoKit hash representing a combination of the provided string and the root hash.
+    /// see also [`hash_int_with`] [`Hash::int`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::util::Hash;
+    ///
+    /// let hash1 = Hash::int(123456789);
+    /// assert_eq!(hash1, 8379007418144316681);
+    ///
+    /// let hash2 = Hash::int_with(123456789, hash1);
+    /// assert_eq!(hash2, 13864748593440029765);
+    /// ```
+    pub fn int_with(int: i32, root: IdHashT) -> IdHashT {
+        unsafe { hash_int_with(int, root) }
     }
 }
 
