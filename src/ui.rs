@@ -1761,8 +1761,8 @@ impl Ui {
     /// let handle_bounds = Bounds::new([0.0, 0.0, 0.0], [0.045, 0.045, 0.045]);
     ///
     /// let mut material_bound = Material::ui_box();
-    /// material_bound  .color_tint(named_colors::GOLD)
-    ///                 .get_all_param_info().set_float("border_size", 0.0025);
+    /// material_bound.color_tint(named_colors::GOLD)
+    ///               .border_size(0.0025);
     /// let cube_bounds  = Mesh::cube();
     ///
     /// filename_scr = "screenshots/ui_handle.jpeg";
@@ -1829,8 +1829,8 @@ impl Ui {
     /// let handle_bounds = Bounds::new([0.0, 0.0, 0.0], [0.045, 0.045, 0.045]);
     ///
     /// let mut material_bound = Material::ui_box();
-    /// material_bound  .color_tint(named_colors::GOLD)
-    ///                 .get_all_param_info().set_float("border_size", 0.0025);
+    /// material_bound.color_tint(named_colors::GOLD)
+    ///               .border_size(0.0025);
     /// let cube_bounds  = Mesh::cube();
     ///
     /// let sphere = Mesh::generate_sphere(0.045, None);

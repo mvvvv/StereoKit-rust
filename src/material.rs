@@ -3,6 +3,7 @@ use crate::maths::{Bool32T, Matrix, Vec2, Vec3, Vec4};
 use crate::shader::{Shader, ShaderT};
 use crate::system::{IAsset, Log};
 use crate::tex::{Tex, TexT};
+use crate::ui::IdHashT;
 use crate::util::Color128;
 use std::ffi::{CStr, CString, c_char, c_void};
 use std::marker::PhantomData;
@@ -482,11 +483,35 @@ impl Material {
         self
     }
 
+    /// Non canonical shader parameter to indicate a border size if the shader have one (especially for [`Material::ui_box`])
+    /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
+    ///
+    /// see also [`material_set_param_id`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::material::Material;
+    ///
+    /// let mut material = Material::ui_box();
+    /// material.border_size(0.0428);
+    ///
+    /// assert_eq!(material.get_all_param_info().get_float("border_size"), 0.0428);
+    /// # use stereokit_rust::util::Hash;
+    /// # assert_eq!(Hash::string("border_size"), 12300782195362451721);
+    /// ```
+    pub fn border_size(&mut self, time: f32) -> &mut Self {
+        let ptr: *const f32 = &time;
+        unsafe {
+            material_set_param_id(self.0.as_ptr(), 12300782195362451721, MaterialParam::Float, ptr as *const c_void);
+        }
+        self
+    }
+
     /// In clip shaders, this is the cutoff value below which pixels are discarded.
     /// Typically, the diffuse/albedo’s alpha component is sampled for comparison here. This represents the float param ‘cutoff’.
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
-    /// see also [`material_set_param`]
+    /// see also [`material_set_param_id`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to init sk !!!!
@@ -495,12 +520,13 @@ impl Material {
     /// let mut material = Material::pbr_clip().copy();
     /// material.clip_cutoff(0.53);
     /// assert_eq!(material.get_all_param_info().get_float("cutoff"), 0.53);
+    /// # use stereokit_rust::util::Hash;
+    /// # assert_eq!(Hash::string("cutoff"), 9874215895386126464);
     /// ```
     pub fn clip_cutoff(&mut self, cutoff: f32) -> &mut Self {
         let ptr: *const f32 = &cutoff;
         unsafe {
-            let name = CString::new("cutoff").unwrap();
-            material_set_param(self.0.as_ptr(), name.as_ptr(), MaterialParam::Float, ptr as *const c_void);
+            material_set_param_id(self.0.as_ptr(), 9874215895386126464, MaterialParam::Float, ptr as *const c_void);
         }
         self
     }
@@ -509,7 +535,7 @@ impl Material {
     /// the diffuse texture right at the start. This represents the Color param ‘color’.
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
-    /// see also [`material_set_param`]
+    /// see also [`material_set_param_id`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to init sk !!!!
@@ -518,12 +544,13 @@ impl Material {
     /// let mut material = Material::unlit().copy();
     /// material.color_tint(named_colors::RED);
     /// assert_eq!(material.get_all_param_info().get_color("color"), named_colors::RED.into());
+    /// # use stereokit_rust::util::Hash;
+    /// # assert_eq!(Hash::string("color"), 8644027876048135736);
     /// ```    
     pub fn color_tint(&mut self, color: impl Into<Color128>) -> &mut Self {
         let ptr: *const Color128 = &color.into();
         unsafe {
-            let cstr = &CString::new("color").unwrap();
-            material_set_param(self.0.as_ptr(), cstr.as_ptr(), MaterialParam::Color128, ptr as *const c_void);
+            material_set_param_id(self.0.as_ptr(), 8644027876048135736, MaterialParam::Color128, ptr as *const c_void);
         }
         self
     }
@@ -533,7 +560,7 @@ impl Material {
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
     /// see also [`Material::tex_file_copy`]
-    /// see also [`material_set_param`]
+    /// see also [`material_set_param_id`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -550,13 +577,14 @@ impl Material {
     ///            &tex.get_id());
     /// assert_ne!(&default_tex.get_id(),
     ///            &tex.get_id());
+    /// # use stereokit_rust::util::Hash;
+    /// # assert_eq!(Hash::string("diffuse"), 17401384459118377917);
     /// ```
     pub fn diffuse_tex(&mut self, texture: impl AsRef<Tex>) -> &mut Self {
         unsafe {
-            let cstr = &CString::new("diffuse").unwrap();
-            material_set_param(
+            material_set_param_id(
                 self.0.as_ptr(),
-                cstr.as_ptr(),
+                17401384459118377917,
                 MaterialParam::Texture,
                 texture.as_ref().0.as_ptr() as *const c_void,
             );
@@ -569,7 +597,7 @@ impl Material {
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
     /// see also [`Material::emission_tex`]
-    /// see also [`material_set_param`]
+    /// see also [`material_set_param_id`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to init sk !!!!
@@ -578,12 +606,13 @@ impl Material {
     /// let mut material = Material::pbr().copy();
     /// material.emission_factor(named_colors::RED);
     /// assert_eq!(material.get_all_param_info().get_color("emission_factor"), named_colors::RED.into());
+    /// # use stereokit_rust::util::Hash;
+    /// # assert_eq!(Hash::string("emission_factor"), 5248711978018327020);
     /// ```  
     pub fn emission_factor(&mut self, color: impl Into<Color128>) -> &mut Self {
         let ptr: *const Color128 = &color.into();
         unsafe {
-            let cstr = &CString::new("emission_factor").unwrap();
-            material_set_param(self.0.as_ptr(), cstr.as_ptr(), MaterialParam::Color128, ptr as *const c_void);
+            material_set_param_id(self.0.as_ptr(), 5248711978018327020, MaterialParam::Color128, ptr as *const c_void);
         }
         self
     }
@@ -593,7 +622,7 @@ impl Material {
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
     /// see also [`Material::emission_factor`]
-    /// see also [`material_set_param`]
+    /// see also [`material_set_param_id`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -607,13 +636,14 @@ impl Material {
     ///
     /// assert_eq!(&material.get_all_param_info().get_texture("emission").unwrap().get_id(),
     ///            &tex.get_id());
+    /// # use stereokit_rust::util::Hash;
+    /// # assert_eq!(Hash::string("emission"), 17756472659261185998);
     /// ```
     pub fn emission_tex(&mut self, texture: impl AsRef<Tex>) -> &mut Self {
         unsafe {
-            let cstr = &CString::new("emission").unwrap();
-            material_set_param(
+            material_set_param_id(
                 self.0.as_ptr(),
-                cstr.as_ptr(),
+                17756472659261185998,
                 MaterialParam::Texture,
                 texture.as_ref().0.as_ptr() as *const c_void,
             );
@@ -626,7 +656,7 @@ impl Material {
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
     /// see also [`Material::metal_tex`]
-    /// see also [`material_set_param`]
+    /// see also [`material_set_param_id`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to init sk !!!!
@@ -635,13 +665,13 @@ impl Material {
     /// let mut material = Material::pbr().copy();
     /// material.metallic_amount(0.68);
     /// assert_eq!(material.get_all_param_info().get_float("metallic"), 0.68);
-    ///
+    /// # use stereokit_rust::util::Hash;
+    /// # assert_eq!(Hash::string("metallic"), 16113330016842241480);
     /// ```  
     pub fn metallic_amount(&mut self, amount: f32) -> &mut Self {
         let ptr: *const f32 = &amount;
         unsafe {
-            let cstr = &CString::new("metallic").unwrap();
-            material_set_param(self.0.as_ptr(), cstr.as_ptr(), MaterialParam::Float, ptr as *const c_void);
+            material_set_param_id(self.0.as_ptr(), 16113330016842241480, MaterialParam::Float, ptr as *const c_void);
         }
         self
     }
@@ -651,7 +681,7 @@ impl Material {
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
     /// see also [`Material::metallic_amount`]
-    /// see also [`material_set_param`]
+    /// see also [`material_set_param_id`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -665,13 +695,14 @@ impl Material {
     ///
     /// assert_eq!(&material.get_all_param_info().get_texture("metal").unwrap().get_id(),
     ///            &tex.get_id());
+    /// # use stereokit_rust::util::Hash;
+    /// # assert_eq!(Hash::string("metal"), 4582786214424138428);
     /// ```
     pub fn metal_tex(&mut self, texture: impl AsRef<Tex>) -> &mut Self {
         unsafe {
-            let cstr = &CString::new("metal").unwrap();
-            material_set_param(
+            material_set_param_id(
                 self.0.as_ptr(),
-                cstr.as_ptr(),
+                4582786214424138428,
                 MaterialParam::Texture,
                 texture.as_ref().0.as_ptr() as *const c_void,
             );
@@ -685,7 +716,7 @@ impl Material {
     /// the texture param ‘normal’.
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
-    /// see also [`material_set_param`]
+    /// see also [`material_set_param_id`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -699,13 +730,14 @@ impl Material {
     ///
     /// assert_eq!(&material.get_all_param_info().get_texture("normal").unwrap().get_id(),
     ///            &tex.get_id());
+    /// # use stereokit_rust::util::Hash;
+    /// # assert_eq!(Hash::string("normal"), 6991063326977151602);
     /// ```
     pub fn normal_tex(&mut self, texture: impl AsRef<Tex>) -> &mut Self {
         unsafe {
-            let cstr = &CString::new("normal").unwrap();
-            material_set_param(
+            material_set_param_id(
                 self.0.as_ptr(),
-                cstr.as_ptr(),
+                6991063326977151602,
                 MaterialParam::Texture,
                 texture.as_ref().0.as_ptr() as *const c_void,
             );
@@ -718,7 +750,7 @@ impl Material {
     /// texture param ‘occlusion’.
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
-    /// see also [`material_set_param`]
+    /// see also [`material_set_param_id`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -732,13 +764,14 @@ impl Material {
     ///
     /// assert_eq!(&material.get_all_param_info().get_texture("occlusion").unwrap().get_id(),
     ///            &tex.get_id());
+    /// # use stereokit_rust::util::Hash;
+    /// # assert_eq!(Hash::string("occlusion"), 10274420935108893154);
     /// ```
     pub fn occlusion_tex(&mut self, texture: impl AsRef<Tex>) -> &mut Self {
         unsafe {
-            let cstr = &CString::new("occlusion").unwrap();
-            material_set_param(
+            material_set_param_id(
                 self.0.as_ptr(),
-                cstr.as_ptr(),
+                10274420935108893154,
                 MaterialParam::Texture,
                 texture.as_ref().0.as_ptr() as *const c_void,
             );
@@ -750,7 +783,7 @@ impl Material {
     /// This represents the float param ‘roughness’.
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
-    /// see also [`material_set_param`]
+    /// see also [`material_set_param_id`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -760,12 +793,13 @@ impl Material {
     /// material.roughness_amount(0.78);
     ///
     /// assert_eq!(material.get_all_param_info().get_float("roughness"), 0.78);
+    /// # use stereokit_rust::util::Hash;
+    /// # assert_eq!(Hash::string("roughness"), 14293098357166276437);
     /// ```
     pub fn roughness_amount(&mut self, amount: f32) -> &mut Self {
         let ptr: *const f32 = &amount;
         unsafe {
-            let cstr = &CString::new("roughness").unwrap();
-            material_set_param(self.0.as_ptr(), cstr.as_ptr(), MaterialParam::Float, ptr as *const c_void);
+            material_set_param_id(self.0.as_ptr(), 14293098357166276437, MaterialParam::Float, ptr as *const c_void);
         }
         self
     }
@@ -788,7 +822,7 @@ impl Material {
     /// Non canonical shader parameter to indicate a time multiplier if the shader have one (water, blinker ...)
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
-    /// see also [`material_set_param`]
+    /// see also [`material_set_param_id`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -798,12 +832,13 @@ impl Material {
     /// material.time(0.38);
     ///
     /// assert_eq!(material.get_all_param_info().get_float("time"), 0.38);
+    /// # use stereokit_rust::util::Hash;
+    /// # assert_eq!(Hash::string("time"), 2185518981507421060);
     /// ```
     pub fn time(&mut self, time: f32) -> &mut Self {
         let ptr: *const f32 = &time;
         unsafe {
-            let cstr = &CString::new("time").unwrap();
-            material_set_param(self.0.as_ptr(), cstr.as_ptr(), MaterialParam::Float, ptr as *const c_void);
+            material_set_param_id(self.0.as_ptr(), 2185518981507421060, MaterialParam::Float, ptr as *const c_void);
         }
         self
     }
@@ -814,7 +849,7 @@ impl Material {
     /// This represents the float param 'tex_trans'.
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
-    /// see also [`material_set_param`]
+    /// see also [`material_set_param_id`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -824,12 +859,13 @@ impl Material {
     /// material.tex_transform(Vec4::ONE * 5.5);
     ///
     /// assert_eq!(material.get_all_param_info().get_vector4("tex_trans"), Vec4::ONE * 5.5);
+    /// # use stereokit_rust::util::Hash;
+    /// # assert_eq!(Hash::string("tex_trans"), 11548192078170871263);
     /// ```
     pub fn tex_transform(&mut self, transform: impl Into<Vec4>) -> &mut Self {
         let ptr: *const Vec4 = &transform.into();
         unsafe {
-            let cstr = &CString::new("tex_trans").unwrap();
-            material_set_param(self.0.as_ptr(), cstr.as_ptr(), MaterialParam::Float, ptr as *const c_void);
+            material_set_param_id(self.0.as_ptr(), 11548192078170871263, MaterialParam::Float, ptr as *const c_void);
         }
         self
     }
@@ -2124,12 +2160,12 @@ impl<'a> ParamInfos<'a> {
 
     /// Get an info value (identified with an id) of the shader of this material
     /// <https://stereokit.net/Pages/StereoKit/Material.html>
-    /// * `id` - the hash_fnv64_string value of the name of the parameter.
+    /// * `id` - the [`crate::util::Hash::string`] value of the name of the parameter.
     /// * `type_info` - the type of the parameter.
     ///
     /// Returns a pointer to the value that will be filled in if the parameter is found.
     /// see also [`ParamInfo`] [`material_get_param_id`] [`ParamInfos::set_data_with_id`]
-    pub fn get_data_with_id(&self, id: u64, type_info: MaterialParam) -> Option<*mut c_void> {
+    pub fn get_data_with_id(&self, id: IdHashT, type_info: MaterialParam) -> Option<*mut c_void> {
         let out_value = CString::new("H").unwrap().into_raw() as *mut c_void;
         if unsafe { material_get_param_id(self.material.0.as_ptr(), id, type_info, out_value) } != 0 {
             Some(out_value)

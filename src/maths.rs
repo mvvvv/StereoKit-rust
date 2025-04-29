@@ -4654,8 +4654,8 @@ impl MulAssign<Matrix> for Matrix {
 /// let model = Model::from_file("center.glb", None).unwrap().copy();
 /// let cube = Mesh::cube();
 /// let mut material_cube = Material::ui_box();
-/// material_cube   .color_tint(named_colors::GOLD)
-///                 .get_all_param_info().set_float("border_size", 0.05);
+/// material_cube.color_tint(named_colors::GOLD)
+///              .border_size(0.05);
 ///
 /// let scale = 0.4;
 /// let bounds = model.get_bounds() * scale;
@@ -5685,7 +5685,7 @@ impl Display for Pose {
 /// let sphere_mesh = Mesh::generate_sphere(sphere.radius * 2.0, Some(12));
 /// let mut material_sphere = Material::pbr().copy();
 /// material_sphere.color_tint(named_colors::GOLD)
-///                .get_all_param_info().set_float("border_size", 0.05);
+///                .border_size(0.05);
 ///
 /// let scale = 0.1;
 /// let transform = Matrix::t(sphere.center);
@@ -5854,8 +5854,8 @@ impl Rect {
 /// let model = Model::from_file("center.glb", None).unwrap().copy();
 /// let cube = Mesh::cube();
 /// let mut material_cube =Material::ui_box();
-/// material_cube   .color_tint(named_colors::GOLD)
-///                 .get_all_param_info().set_float("border_size", 0.05);
+/// material_cube.color_tint(named_colors::GOLD)
+///              .border_size(0.05);
 ///
 /// let center = Vec3::new(0.0, -2.5, -2.5);
 /// let bounds = model.get_bounds();

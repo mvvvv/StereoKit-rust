@@ -451,8 +451,8 @@ impl Model {
     ///      .add("cube2", transform2, Some(&cube), Some(&material), true);
     ///
     /// let mut material_before = Material::ui_box();
-    /// material_before .color_tint(named_colors::GOLD)
-    ///                 .get_all_param_info().set_float("border_size", 0.025);
+    /// material_before.color_tint(named_colors::GOLD)
+    ///                .border_size(0.025);
     ///
     /// let mut material_after = material_before.copy();
     /// material_after.color_tint(named_colors::RED);
@@ -555,7 +555,7 @@ impl Model {
     ///
     /// let mut material_ui = Material::ui_box();
     /// material_ui.color_tint(named_colors::GOLD)
-    ///            .get_all_param_info().set_float("border_size", 0.01);
+    ///            .border_size(0.01);
     ///
     /// let material_brick =Material::from_file("shaders/brick_pbr.hlsl.sks",
     ///                                         Some("my_material_brick")).unwrap();
@@ -804,7 +804,7 @@ impl Model {
     ///
     /// let mut material_bounds = Material::ui_box();
     /// material_bounds .color_tint(named_colors::GOLD)
-    ///                 .get_all_param_info().set_float("border_size", 0.025);
+    ///                 .border_size(0.025);
     ///
     /// let bounds = model.get_bounds();
     /// let transform_before = transform_model * Matrix::t_s( bounds.center, bounds.dimensions);

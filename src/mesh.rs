@@ -742,8 +742,8 @@ impl Mesh {
     ///
     /// let cube =   Mesh::cube();
     /// let mut material_before = Material::ui_box();
-    /// material_before .color_tint(named_colors::GOLD)
-    ///                 .get_all_param_info().set_float("border_size", 0.025);
+    /// material_before.color_tint(named_colors::GOLD)
+    ///                .border_size(0.025);
     ///
     /// let mut material_after = material_before.copy();
     /// material_after.color_tint(named_colors::RED);
