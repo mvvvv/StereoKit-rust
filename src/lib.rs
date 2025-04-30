@@ -21,9 +21,9 @@
 //!
 //! # Installation:
 //! StereoKit-rust is a binding and therefore requires some tools and libraries to compile StereoKitC:
-//! * On `Windows` get the following tools and dev libraries : "`CMake`", "`Visual Studio Build Tools 2022(Developpment
+//! * On `Windows` get the following tools and dev libraries : "`Git`", "`CMake`", "`Visual Studio Build Tools 2022(Developpment
 //!   Desktop C++)`" and "`DotNet SDK v8+`".
-//! * On `Non Windows platforms` get the following tools and dev libraries : `clang` `cmake` `lld` `ninja-build` `libx11-dev`
+//! * On `Non Windows platforms` get the following tools and dev libraries : `git` `clang` `cmake` `lld` `ninja-build` `libx11-dev`
 //!   `libxfixes-dev` `libegl-dev` `libgbm-dev` `libfontconfig-dev`.
 //! * Installing the stereokit_rust tools with `cargo install -F event-loop stereokit_rust` should help you to check
 //!   the missing dependencies.

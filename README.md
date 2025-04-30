@@ -33,8 +33,8 @@ Let us know if you have launched the demos on an architecture not tested here.
 
 ### Download the source project:
 * `git clone --recursive https://github.com/mvvvv/StereoKit-rust/`
-* On Linux get the following tools and dev libraries : clang cmake libx11-dev libxfixes-dev libegl-dev libgbm-dev libfontconfig-dev.
-* On Windows[^2] get the following tools and dev libraries : "CMake", "Visual Studio Build Tools 2022(Developpment Desktop C++)" and "DotNet SDK v8+" 
+* On Linux get the following tools and dev libraries : git clang cmake libx11-dev libxfixes-dev libegl-dev libgbm-dev libfontconfig-dev.
+* On Windows[^2] get the following tools and dev libraries : "Git", "CMake", "Visual Studio Build Tools 2022(Developpment Desktop C++)" and "DotNet SDK v8+" 
 * Install the project's tools from the project directory `cargo install -F event-loop --path .`
 * If you want to launch the demos then: 
   - compile the shaders. From StereoKit-rust directory launch `cargo compile_sks` 
