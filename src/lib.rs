@@ -25,7 +25,7 @@
 //!   Desktop C++)`" and "`DotNet SDK v8+`".
 //! * On `Non Windows platforms` get the following tools and dev libraries : `git` `clang` `cmake` `lld` `ninja-build` `libx11-dev`
 //!   `libxfixes-dev` `libegl-dev` `libgbm-dev` `libfontconfig-dev`.
-//! * Installing the stereokit_rust tools with `cargo install -F event-loop stereokit_rust` should help you to check
+//! * Installing the stereokit_rust tools with `cargo install -F no-event-loop stereokit_rust` should help you to check
 //!   the missing dependencies.
 //!
 //! # Usage
