@@ -519,7 +519,7 @@ pub fn get_all_display_refresh_rates(with_log: bool) -> Vec<f32> {
                     } {
                         Result::SUCCESS => {
                             if with_log {
-                                Log::info(format!("There is {} display rate:", count));
+                                Log::info(format!("There are {} display rate:", count));
                                 for (i, iter) in array.iter().enumerate() {
                                     if i >= count as usize {
                                         break;
@@ -561,7 +561,7 @@ pub fn get_display_refresh_rates(fps_to_get: &[i32], with_log: bool) -> Vec<f32>
         set_display_refresh_rate(rate, with_log);
     }
     if with_log {
-        Log::info(format!("There is {} display rate from the given selection:", available_rates.len()));
+        Log::info(format!("There are {} display rate from the given selection:", available_rates.len()));
         for iter in &available_rates {
             Log::info(format!("   {:?} ", iter));
         }
@@ -701,7 +701,7 @@ pub fn get_env_blend_modes(with_log: bool) -> Vec<EnvironmentBlendMode> {
                     } {
                         Result::SUCCESS => {
                             if with_log {
-                                Log::info(format!("There is {} env blend modes:", count));
+                                Log::info(format!("There are {} env blend modes:", count));
                                 for (i, iter) in modes.iter().enumerate() {
                                     if i >= count as usize {
                                         break;
