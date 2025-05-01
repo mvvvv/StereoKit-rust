@@ -7,7 +7,7 @@
  rustup target add x86_64-pc-windows-gnu
  
 #---- building for pc
-cargo run --features event-loop  --example main_pc
+DISPLAY= cargo run --features event-loop  --example main_pc  #----DISPLAY must be unset on Wayland only
 cargo run --features event-loop  --example main_pc -- --test
 cargo build_sk_rs --example main_pc --features event-loop ../sk_builds/SK_demo_linux/
 FORCE_LOCAL_DEPS=ON DEP_SK_GPU_SOURCE="/opt/sk_gpu" cargo build_sk_rs --example main_pc --features event-loop,force-local-deps ../sk_builds/SK_demo_linux/
@@ -27,10 +27,10 @@ cargo apk build --features event-loop  --example main
 ktx create --cubemap --encode uastc  --format R8G8B8A8_UNORM  --assign-oetf linear --assign-primaries bt709  --generate-mipmap right.png left.png top.png bottom.png front.png back.png cubemap_rgba32.ktx2
 
 #---- launch tests
-clear;cargo test --features event-loop
+clear;DISPLAY= cargo test --features event-loop      #----DISPLAY must be unset on Wayland only
 
 #---- build docs
-cargo clean --doc && cargo doc --features event-loop
+cargo clean --doc && cargo doc --features event-loop  #----no-event-loop will fail because of lib //! doc containing `event-loop`
 
 #---- publish to crates.icon
 cargo publish -F event-loop --dry-run

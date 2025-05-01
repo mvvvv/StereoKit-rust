@@ -42,7 +42,8 @@ Let us know if you have launched the demos on an architecture not tested here.
 
 ### Run the project's demo on your PC's headset :
 * Make sure you have [OpenXR installed](https://www.khronos.org/openxr/) with an active runtine.
-* Launch[^1]: `cargo run --features event-loop  --example main_pc`
+* Launch[^1]: `cargo run --features event-loop  --example main_pc` 
+  using Wayland on Linux may require to unset temporarily the DISPLAY variable: `DISPLAY= cargo run  --features event-loop  --example main_pc`).
 
 ### Run the project's demo on your PC using the [simulator](https://stereokit.net/Pages/Guides/Using-The-Simulator.html) 
 * Launch[^1]: `cargo run --features event-loop  --example main_pc -- --test`
@@ -63,11 +64,12 @@ Let us know if you have launched the demos on an architecture not tested here.
 
 ### Use your own event manager (PC only - see gradle templates for an android build)
 The demos above, are using [winit](https://github.com/rust-windowing/winit) as an event manager and interface with the OS. If you want to use your own loop and event manager, have a look to [manual.rs](https://github.com/mvvvv/StereoKit-rust/blob/master/examples/manual.rs).
-This is the shortest way to launch your first PCVR/PCMR program[^1]: `cargo run --features no-event-loop --example manual`
+This is the shortest way to launch your first PC VR/MR program[^1]: `cargo run --features no-event-loop --example manual`
+(using Wayland on Linux may require to unset temporarily the DISPLAY variable: `DISPLAY= cargo run  --features no-event-loop  --example manual`).
 
 
 ## Templates to create your own project:
-There is 3 templates used to build android versions (they can also create a PCVR executable). The default choice, branch `main`, will use cargo-apk (like demos above). The branch `gradle` will let you use gradle with winit. Then the branch `gradle-no-event-loop` will use gradle without winit.
+There is 3 templates used to build android versions (they can also create a PC VR/MR executable). The default choice, branch `main`, will use cargo-apk (like demos above). The branch `gradle` will let you use gradle with winit. Then the branch `gradle-no-event-loop` will use gradle without winit.
 * `git clone -b $branch https://github.com/mvvvv/stereokit-template/`
 * In Cargo.toml, change the dependency path to the local path of StereoKit-rust (uncomment the local path and comment the crates.io path).
 * If you don't clone the template project in the same directory than the StereoKit-rust project, you'll have to modify the path of the Stereokit-rust dependency.
@@ -118,7 +120,8 @@ This project was made possible thanks to the work of many talents on the followi
 * this_error & anyerror.
 * ... many others, more discreet, without which nothing would be possible.
 
-[^1]: If you're using VsCode you'll see a corresponding launcher in launch.json to debug the app.
+[^1]: If you're using VsCode you'll see a corresponding launcher in launch.json to debug the app. If you're using linux,
+with Wayland, you'll have to add `DISPLAY= ` before the command.
 
 [^2]: If you're using VsCode you can choose to use LLDB instead of GDB when testing with MSVC. For that add to your workspace settings.json:
       ```"lldb.script": { "lang.rust.toolchain": "stable-x86_64-pc-windows-gnu" }```

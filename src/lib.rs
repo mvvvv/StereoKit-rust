@@ -123,6 +123,7 @@
 //!
 //! ## Building your PC VR/MR app:
 //! * Launch `cargo run` to compile and run your app in debug mode on your PC with or without a headset.
+//!   (using Wayland on Linux may require to unset temporarily the DISPLAY variable: `DISPLAY= cargo run`)
 //! * Launch `cargo build_sk_rs <build_directory>` to compile your app & assets in release mode for your PC.
 //!
 //! To test with your headset, make sure you have [OpenXR installed](https://www.khronos.org/openxr/) with an active
@@ -221,9 +222,21 @@ use std::{ffi::NulError, path::PathBuf};
 pub use stereokit_macros::IStepper;
 
 pub use stereokit_macros::include_asset_tree;
-pub use stereokit_macros::test_init_sk;
-pub use stereokit_macros::test_screenshot;
-pub use stereokit_macros::test_steps;
+
+#[cfg(feature = "event-loop")]
+pub use stereokit_macros::test_init_sk_event_loop as test_init_sk;
+#[cfg(feature = "no-event-loop")]
+pub use stereokit_macros::test_init_sk_no_event_loop as test_init_sk;
+
+#[cfg(feature = "event-loop")]
+pub use stereokit_macros::test_screenshot_event_loop as test_screenshot;
+#[cfg(feature = "no-event-loop")]
+pub use stereokit_macros::test_screenshot_no_event_loop as test_screenshot;
+
+#[cfg(feature = "event-loop")]
+pub use stereokit_macros::test_steps_event_loop as test_steps;
+#[cfg(feature = "no-event-loop")]
+pub use stereokit_macros::test_steps_no_event_loop as test_steps;
 
 /// Some of the errors you might encounter when using StereoKit-rust.
 use thiserror::Error;
