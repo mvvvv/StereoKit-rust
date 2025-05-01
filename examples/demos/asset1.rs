@@ -13,7 +13,7 @@ use stereokit_rust::{
     tex::Tex,
     tools::os_api::{PathEntry, get_assets},
     ui::{Ui, UiBtnLayout},
-    util::named_colors::{RED, YELLOW},
+    util::named_colors::{DARK_BLUE, RED, YELLOW},
 };
 
 const ASSET_DIR: &[&str] = include_asset_tree!("assets"); // you can't use get_assets_dir() here
@@ -157,6 +157,7 @@ impl Asset1 {
             }
         }
         Ui::next_line();
+        Ui::push_tint(DARK_BLUE);
         if let Some(sub_dir_name) = self.asset_sub_dir.to_str() {
             if !sub_dir_name.is_empty() {
                 //---back button
@@ -187,6 +188,7 @@ impl Asset1 {
                 }
             }
         }
+        Ui::pop_tint();
 
         if let Some(new_value) = new_asset_files {
             self.asset_files = new_value;
