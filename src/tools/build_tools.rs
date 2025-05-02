@@ -85,7 +85,7 @@ pub fn compile_hlsl(
     //we get the dir from StereoKit-rust (not from here)
     let bin_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-    let skshaderc = get_skshaderc(bin_dir.clone(), with_wine)?;
+    let skshaderc = get_skshaderc(project_dir.clone(), with_wine)?;
 
     let mut shaders_source_path = project_dir.clone();
 
