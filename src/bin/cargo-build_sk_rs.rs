@@ -1,4 +1,4 @@
-use std::{env::current_dir, ffi::OsStr, fs::create_dir, process::Stdio};
+use std::{ffi::OsStr, fs::create_dir, process::Stdio};
 
 use stereokit_rust::tools::{
     build_tools::{compile_hlsl, copy_tree, get_cargo_name},
@@ -296,6 +296,8 @@ fn main() {
         }
     }
 
+    let real_current_dir = PathBuf::from(".");
+
     // 2 - the assets
     let from_assets = PathBuf::from(get_assets_dir());
     let to_asset = output_path.join(get_assets_dir());
@@ -318,7 +320,8 @@ fn main() {
             }
             "x"
         };
-        compile_hlsl(current_dir().unwrap(), Some(target_shaders_dir), &["-t", target, "-sw"], with_wine).unwrap();
+
+        compile_hlsl(real_current_dir, Some(target_shaders_dir), &["-t", target, "-sw"], with_wine).unwrap();
     } else {
         let shaders_path = PathBuf::from(shaders_path_name);
         for entry in shaders_path.read_dir().expect("shaders_path is not a valid directory!").flatten() {
