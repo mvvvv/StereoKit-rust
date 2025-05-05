@@ -515,6 +515,9 @@ pub struct UiSettings {
     pub backplate_depth: f32,
     // How wide is the back-border around the UI elements? In meters.
     pub backplate_border: f32,
+    /// Defines the scale factor for the separator's thickness. The thickness is calculated by multiplying the height
+    /// of the text by this factor. The default valus is 0.4f.
+    pub separator_scale: f32,
 }
 
 /// StereoKit ffi type.
@@ -1209,6 +1212,7 @@ impl Ui {
     /// assert_eq!(settings.rounding, 0.0075000003);
     /// assert_eq!(settings.backplate_depth, 0.4);
     /// assert_eq!(settings.backplate_border, 0.0005);
+    /// assert_eq!(settings.separator_scale, 0.4);
     ///
     /// let new_settings = UiSettings {
     ///     margin: 0.005,
@@ -1218,6 +1222,7 @@ impl Ui {
     ///     rounding: 0.004,
     ///     backplate_depth: 0.6,
     ///     backplate_border: 0.002,
+    ///     separator_scale: 0.6,
     /// };
     /// Ui::settings(new_settings);
     /// let settings = Ui::get_settings();
@@ -1228,6 +1233,7 @@ impl Ui {
     /// assert_eq!(settings.rounding, 0.004);
     /// assert_eq!(settings.backplate_depth, 0.6);
     /// assert_eq!(settings.backplate_border, 0.002);
+    /// assert_eq!(settings.separator_scale, 0.6);
     /// ```
     pub fn settings(settings: UiSettings) {
         unsafe { ui_settings(settings) }
