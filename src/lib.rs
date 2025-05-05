@@ -2,6 +2,7 @@
 //! If the name of this crate contains "_rust" (not great for a Rust crate, we agree) it is to emphasize the fact that
 //! StereoKit is first and foremost a C, C++, C# project.
 //! StereoKit allows you to create VR/MR applications with ease on every headset platforms that run OpenXR.
+//!
 //! <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/StereoKit-rust.png" alt="screenshot" width="300">
 //!
 //! [StereoKit-rust GitHub repository](https://github.com/mvvvv/StereoKit-rust/) /
@@ -21,12 +22,19 @@
 //!
 //! # Installation:
 //! StereoKit-rust is a binding and therefore requires some tools and libraries to compile StereoKitC:
-//! * On `Windows` get the following tools and dev libraries : "`Git`", "`CMake`", "`Visual Studio Build Tools 2022(Developpment
-//!   Desktop C++)`" and "`DotNet SDK v8+`".
-//! * On `Non Windows platforms` get the following tools and dev libraries : `git` `clang` `cmake` `lld` `ninja-build` `libx11-dev`
-//!   `libxfixes-dev` `libegl-dev` `libgbm-dev` `libfontconfig-dev`.
-//! * Installing the stereokit_rust tools with `cargo install -F no-event-loop stereokit_rust` should help you to check
-//!   the missing dependencies.
+//! ### On `Windows`:
+//!   - Considering that you have already installed "`Visual Studio Build Tools 2022(Developpment Desktop C++)`" in order to
+//!     have `Rust` compiling with `stable-????-pc-windows-msvc` toolchain.
+//!   - Get the following tools and dev libraries : "`Git`", "`CMake`" and "`DotNet SDK v8+`".
+//!
+//! ### On `Linux`:
+//!   - Considering that you have already installed `Rust` with `stable-?????-unknown-linux-gnu` toolchain and the linux package
+//!     `build-essential`.
+//!   - Get the following tools and dev libraries : `git` `clang` `cmake` `lld` `ninja-build` `libx11-dev`
+//!     `libxfixes-dev` `libegl-dev` `libgbm-dev` `libfontconfig-dev`.
+//!
+//! Installing the stereokit_rust tools with `cargo install -F no-event-loop stereokit-rust` should help you to check
+//! the missing dependencies.
 //!
 //! # Usage
 //! You have to chose between `event-loop` and `no-event-loop` features. The feature `no-event-loop` is the
@@ -110,7 +118,7 @@
 //! ```
 //!
 //! Hundreds of examples (which are also unit tests) are available in this documentation. If you like to learn by
-//! examples, watch the modules in the following order: [`sk`], [`mesh`], [`model`], [`maths`], [`ui`], [`framework`],
+//! examples, check out  the modules in the following order: [`sk`], [`mesh`], [`model`], [`maths`], [`ui`], [`framework`],
 //! [`tools`], [`sound`], [`system`], [`material`], [`shader`], [`tex`], [`sprite`], [`font`], [`render_list`].
 //!
 //! # How to build and test your application:
@@ -124,7 +132,7 @@
 //! ## Building your PC VR/MR app:
 //! * Launch `cargo run` to compile and run your app in debug mode on your PC with or without a headset.
 //!   (using Wayland on Linux may require to unset temporarily the DISPLAY variable: `DISPLAY= cargo run`)
-//! * Launch `cargo build_sk_rs <build_directory>` to compile your app & assets in release mode for your PC.
+//! * Launch `cargo build_sk_rs <build_directory>` to compile your app and assets in release mode for your PC.
 //!
 //! To test with your headset, make sure you have [OpenXR installed](https://www.khronos.org/openxr/) with an active
 //! runtine (SteamVR, Monado, WiVRn, ALVR ...).
@@ -135,12 +143,12 @@
 //!   intend to use it). You'll need a Java JDK (v17 is fine).
 //! * Using sdkmanager, install platform-tools(v32), latest build-tools and the latest ndk.
 //! * Set ANDROID_HOME environment variable to its path (this path contains the `build_tools` directory).
-//! * Set the NDK path (which ends with it's version number) into ANDROID_NDK_ROOT environment variable.
+//! * Set the NDK path (which ends with it's version number) into the ANDROID_NDK_ROOT environment variable.
 //! * Install [Ninja](https://ninja-build.org/)
 //! * Check that `adb` ($ANDROID_HOME/platform_tools/adb) is connecting to your headset.
-//! * Download the target: `rustup target add aarch64-linux-android` for most of the existing android headsets.
+//! * Download the target: `rustup target add aarch64-linux-android` for most existing android headsets.
 //! * Create a keystore for signing your app (using keytool or Android Studio).
-//! ##### If you don't need some java/kotlin code, you can use cargo-apk  (cargo-xbuild should be an alternative but is missing some documentation):
+//! ##### If you don't need some java/kotlin code, you can use cargo-apk  (cargo-xbuild is an alternative but lacks some documentation):
 //!   - Install: `cargo install cargo-apk`.
 //!   - The manifest file will be generated from the `Cargo.toml` (see the `package.metadata.android` section). Here are
 //!     some examples:
@@ -150,13 +158,13 @@
 //!     in the CARGO_APK_RELEASE_KEYSTORE and  `CARGO_APK_RELEASE_KEYSTORE_PASSWORD` environment variables.
 //!   - Launch the debug on your headset: `cargo apk run --lib`
 //!   - Generate the release apk: `cargo apk build --lib --release`. The apk will be in `target/release/apk/`.
-//! ##### Otherwise, you have to use gradle with cargo-ndk:
+//! ##### Otherwise, you have to use Gradle with cargo-ndk:
 //!   - Install: `cargo install cargo-ndk`.
 //!   - Clone or extract a ZIP of [gradle template](https://github.com/mvvvv/stereokit-template/tree/gradle).
 //!   - Name your project in the `package.name` entry in `Cargo.toml`.
 //!   - Set `cargo.libName` (same as `package.name` from `Cargo.toml`), `android.applicationId` and `android.main` in
 //!     `gradle.properties`.
-//!   - In `app/src/main/AndroidManifest.xml` Delete or modify the path and package's name of `MainActivity.java` (your
+//!   - In `app/src/main/AndroidManifest.xml` delete or modify the path and package name of `MainActivity.java` (your
 //!     choice impacts android.main ↑ and android:hasCode attribute).
 //!   - Store your keystore values in one of the hidden gradle properties files (ie. `~/.gradle/gradle.properties`)
 //!     to store and forget the confidential values:
@@ -172,45 +180,46 @@
 //!
 //! ## Building your Windows GNU PC VR/MR app:
 //! Thanks to Steam Proton, you can run your Windows exe on Linux. It's even better than native build thanks to D3D11
-//! to Vulkan translation. Knowing that, we work to build Windows exe on Linux using GNU toolchain.
-//! Build your app for Windows_x64 using GNU toolchain from Linux and Windows (and probably Mac).
-//! * Install mingw64-w64 (MSYS2 on windows)
-//! * Add the rust target gnu for windows:`rustup target add x86_64-pc-windows-gnu`
-//! * On 'Non Windows OS': we need wine to compile the shaders
+//! to Vulkan translation. Knowing that, we work to build Windows .exe files on Linux using GNU toolchain.
+//!
+//! Build your app for Windows_x64 using GNU toolchain from Linux and Windows (and probably Mac):
+//! * Install mingw64-w64 (MSYS2 on windows).
+//! * Add the `Rust` target gnu for windows:`rustup target add x86_64-pc-windows-gnu`
+//! * On 'Non Windows OS': we need wine to compile the shaders:
 //!   - Install wine and winetricks.
-//!   - Install needed tools and libs: `winetricks corefonts d3dx9 d3dcompiler_47`
+//!   - Install needed tools and libs: `winetricks corefonts d3dx9 d3dcompiler_47`.
 //! * Create a directory where necessary libs will be stored (i.e. ../x64-mingw-libs/) then add a link to the DLLs or
-//!   static libs(*.a) the build will need after or during its creation. Example on Ubuntu 24.XX:
+//!   static libs (*.a) the build will need after or during its creation. Example on Ubuntu 24.XX:
 //!   - If you want to use DLLs:
 //!      - `ln -s /usr/lib/gcc/x86_64-w64-mingw32/13-win32/libgcc_s_seh-1.dll ../x64-mingw-libs/`
 //!      - `ln -s /usr/lib/gcc/x86_64-w64-mingw32/13-win32/libstdc++-6.dll ../x64-mingw-libs/`
 //!   - If you want to use static libs:
 //!      - `ln -s /usr/lib/gcc/x86_64-w64-mingw32/13-win32/libgcc.a ../x64-mingw-libs/libgcc_eh.a`
 //! * Launch: `cargo build_sk_rs --x64-win-gnu ../x64-mingw-libs/ <the path of your exportable repository>`
-//! * To run your your_app.exe on Linux:
+//! * To run your_app.exe on Linux:
 //!   - Add a non-steam game to your library then launch it when WiVRn or SteamVR are started.
 //!   - If you only need the simulator: `wine your_app.exe`.
 //!
 //! ## Building your Linux aarch64 PC VR/MR app:
-//! If you are on aarch64 linux you just have to follow the instructions in [Building your PC VR/MR app](#building-your-pc-vrmr-app).
+//! If you are on aarch64 Linux, you just have to follow the instructions in [`Building your PC VR/MR app`](#building-your-pc-vrmr-app).
 //! If you are on a x86_64 architecture you are able to cross-compile your app for aarch64:
 //! * Install g++-aarch64-linux-gnu
 //! * Get the libraries `libx11-dev:arm64` `libxfixes-dev:arm64` `libegl-dev:arm64` `libgbm-dev:arm64` `libfontconfig-dev:arm64`.
 //!   On Ubuntu 24:XX this can be done by adding a foreign architecture `dpkg --add-architecture arm64` with depot
-//!   `http://ports.ubuntu.com/ubuntu-ports`. To avoid errors during `apt update` you'll have to precise the architectures
+//!   `http://ports.ubuntu.com/ubuntu-ports`. To avoid errors during `apt update` you'll have to specify the architectures
 //!   of all depots in `/etc/apt/sources.list.d/ubuntu.sources`
-//! * Add the rust target aarch64 for linux:`rustup target add aarch64-unknown-linux-gnu`
+//! * Add the rust target aarch64 for Linux:`rustup target add aarch64-unknown-linux-gnu`
 //! * Add a section `[target.aarch64-unknown-linux-gnu]` in your config.toml for setting `linker = "aarch64-linux-gnu-gcc"`
 //! * Launch `cargo build_sk_rs --aarch64-linux <the path of your exportable repository>`
 //!
 //! ## Building your Linux x86_64 PC VR/MR app:
-//! If you are on x86_64 linux you just have to follow the instructions in [Building your PC VR/MR app](#building-your-pc-vrmr-app).
+//! If you are on x86_64 Linux, you just have to follow the instructions in [`Building your PC VR/MR app`](#building-your-pc-vrmr-app).
 //! If you are on aarch64 architecture you should be able to cross-compile for x86_64:
-//! (This hasn't been tested yet, if you're interested in testing it, please let us now)
+//! (This hasn't been tested yet, if you are interested in testing it, please let us now)
 //! * Install g++-x86-64-linux-gnu
 //! * Get the libraries `libx11-dev:amd64` `libxfixes-dev:amd64` `libegl-dev:amd64` `libgbm-dev:amd64` `libfontconfig-dev:amd64`.
 //!   On Ubuntu 24:XX this can be done by adding a foreign architecture `dpkg --add-architecture amd64` with depot
-//!   `http://ports.ubuntu.com/ubuntu-ports`. To avoid errors during `apt update` you'll have to precise the architectures
+//!   `http://ports.ubuntu.com/ubuntu-ports`. To avoid errors during `apt update` you'll have to specify the architectures
 //!   of all depots in `/etc/apt/sources.list.d/ubuntu.sources`
 //! * Add the rust target aarch64 for linux:`rustup target add x86_64-unknown-linux-gnu`
 //! * Add a section `[target.x86_64-unknown-linux-gnu]` in your config.toml for setting `linker = "x86_64-linux-gnu-gcc"`

@@ -91,7 +91,7 @@ There is 3 templates used to build android versions (they can also create a PC V
 
 ## Build the project's demo for Linux aarch64 from Linux x86_64
 * Install g++-aarch64-linux-gnu
-* Get the libraries libx11-dev:arm64 libxfixes-dev:arm64 libegl-dev:arm64 libgbm-dev:arm64 libfontconfig-dev:arm64. On Ubuntu 24:XX this can be done by adding a foreign architecture `dpkg --add-architecture arm64` with depot `http://ports.ubuntu.com/ubuntu-ports`. To avoid errors during `apt update` you'll have to precise the architectures of all depots in `/etc/apt/sources.list.d/ubuntu.sources`
+* Get the libraries libx11-dev:arm64 libxfixes-dev:arm64 libegl-dev:arm64 libgbm-dev:arm64 libfontconfig-dev:arm64. On Ubuntu 24:XX this can be done by adding a foreign architecture `dpkg --add-architecture arm64` with depot `http://ports.ubuntu.com/ubuntu-ports`. To avoid errors during `apt update` you'll have to specify the architectures of all depots in `/etc/apt/sources.list.d/ubuntu.sources`
 * Add the rust target aarch64 for linux:`rustup target add aarch64-unknown-linux-gnu`
 * Add a section `[target.aarch64-unknown-linux-gnu]` in your config.toml for setting `linker = "aarch64-linux-gnu-gcc"`
 * Launch `cargo build_sk_rs --example main_pc --features event-loop --aarch64-linux <the path of your exportable repository>`
