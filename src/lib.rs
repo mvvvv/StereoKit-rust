@@ -31,7 +31,7 @@
 //!   - Considering that you have already installed `Rust` with `stable-?????-unknown-linux-gnu` toolchain and the linux package
 //!     `build-essential`.
 //!   - Get the following tools and dev libraries : `git` `clang` `cmake` `lld` `ninja-build` `libx11-dev`
-//!     `libxfixes-dev` `libegl-dev` `libgbm-dev` `libfontconfig-dev`.
+//!     `libxfixes-dev` `libegl-dev` `libgbm-dev` `libfontconfig-dev` `libxkbcommon-x11-dev`.
 //!
 //! Installing the stereokit_rust tools with `cargo install -F no-event-loop stereokit-rust` should help you to check
 //! the missing dependencies.
@@ -66,6 +66,7 @@
 //! #[cfg(not(target_os = "android"))]
 //! fn main() {
 //!     use stereokit_rust::sk::SkSettings;
+//!     use <MY_APP>::the_main;
 //!     // Initialize StereoKit with default settings
 //!     let mut settings = SkSettings::default();
 //!     settings.app_name("Test");
