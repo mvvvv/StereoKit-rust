@@ -20,6 +20,8 @@ pub const USAGE: &str = r#"Usage : cargo build_sk_rs [Options] <Output_path>
         --features <feat1, feat2 ...>   : Features of the project to turn on.
         --example  <exe_name>           : If the project has an examples directory, 
                                           will execute the program <exe_name>.
+        --bin  <exe_name>               : If the project has a bin directory, 
+                                          will execute the program <exe_name>.
         --shaders <path_to_shaders>     : Use sks shaders from path_to_shaders.
                                           By default, shaders are optimized for
                                           the target platform.
@@ -47,6 +49,8 @@ fn main() {
     let mut feature_list = vec![];
     let mut example = "".to_string();
     let mut example_exe = "".to_string();
+    let mut bin = "".to_string();
+    let mut bin_exe = "".to_string();
     let mut shaders_path_name = "".to_string();
     let mut profile = "--release".to_string();
 
@@ -105,6 +109,20 @@ fn main() {
                     panic!("{}", USAGE);
                 }
             }
+            "--bin" => {
+                bin = "--bin".to_string();
+                if let Some(arg_config) = args.next() {
+                    if !arg_config.starts_with('-') {
+                        bin_exe = arg_config;
+                    } else {
+                        println!("Value specified for --bin must be the name of an executable.");
+                        panic!("{}", USAGE);
+                    }
+                } else {
+                    println!("No value specified for parameter --bin.");
+                    panic!("{}", USAGE);
+                }
+            }
             "--shaders" => {
                 if let Some(arg_config) = args.next() {
                     if !arg_config.starts_with('-') {
@@ -157,6 +175,11 @@ fn main() {
         panic!("{}", USAGE);
     }
 
+    if !example.is_empty() && !bin.is_empty() {
+        println!("You cannot specify both --example and --bin");
+        panic!("{}", USAGE);
+    }
+
     //----Second the cargo build command
     let mut windows_exe = if cfg!(target_os = "windows") { ".exe" } else { "" };
 
@@ -197,6 +220,10 @@ fn main() {
         cmd.arg(&example).arg(&example_exe);
     }
 
+    if !bin.is_empty() {
+        cmd.arg(&bin).arg(&bin_exe);
+    }
+
     let child = cmd.spawn().expect("failed to run cargo build");
     let output = child.wait_with_output().expect("failed to wait on child");
     println!("{}", String::from_utf8(output.clone().stdout).unwrap_or(format!("{:#?}", output)));
@@ -227,6 +254,8 @@ fn main() {
     println!("Project name is {}", project_id);
     let exe_file = if !example.is_empty() {
         built_files.join("examples").join(example_exe + windows_exe)
+    } else if !bin.is_empty() {
+        built_files.join(bin_exe + windows_exe)
     } else {
         built_files.join(format!("{}{}", project_id, windows_exe))
     };

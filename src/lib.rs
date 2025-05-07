@@ -46,11 +46,11 @@
 //! crate-type = ["lib", "cdylib"]
 //!
 //! [dependencies]
-//! stereokit-rust = { version = "0.40", features= ["event-loop"] }
+//! stereokit-rust = { version = "0.4.0", features= ["event-loop"] }
 //! winit = { version = "0.30", features = [ "android-native-activity" ] }
 //!
 //! [target.'cfg(target_os = "android")'.dependencies]
-//! stereokit-rust = { version = "0.40" , features = ["event-loop", "build-dynamic-openxr"] }
+//! stereokit-rust = { version = "0.4.0" , features = ["event-loop", "build-dynamic-openxr"] }
 //! log = "0.4"
 //! android_logger = "0.15"
 //! ndk-context = "0.1.1"
@@ -59,14 +59,18 @@
 //!
 //! # Examples
 //! Here is a simple "Hello World" StereoKit-rust app for all platforms:
+//! ```bash
+//! cargo new --lib vr_app
+//! cd vr_app
+//! ```
 //!
-//! In `main.rs`, if you intend to build a PC VR/MR app:
+//! In `src/bin/main_vr_app.rs`, if you intend to build a PC VR/MR app:
 //! ```ignore
 //! #[allow(dead_code)]
 //! #[cfg(not(target_os = "android"))]
 //! fn main() {
 //!     use stereokit_rust::sk::SkSettings;
-//!     use <MY_APP>::the_main;
+//!     use vr_app::the_main;
 //!     // Initialize StereoKit with default settings
 //!     let mut settings = SkSettings::default();
 //!     settings.app_name("Test");
@@ -80,7 +84,7 @@
 //! # pub fn the_main(sk: Sk, event_loop: EventLoop<StepperAction>) {}
 //! ```
 //!
-//! In `lib.rs` where you can remove the `target_os = "android" code` if you don't want to build for Android:
+//! In `src/lib.rs` where you can remove the `target_os = "android" code` if you don't want to build for Android:
 //! ```ignore
 //! use stereokit_rust::{framework::SkClosures, prelude::*, sk::Sk, ui::Ui};
 //! use winit::event_loop::EventLoop;
@@ -131,9 +135,9 @@
 //! * [Building your Linux X86_64 PC VR/MR app](#building-your-linux-x86_64-pc-vrmr-app).
 //!
 //! ## Building your PC VR/MR app:
-//! * Launch `cargo run` to compile and run your app in debug mode on your PC with or without a headset.
+//! * Launch `cargo run --bin main_vr_app` to compile and run your app in debug mode on your PC with or without a headset.
 //!   (using Wayland on Linux may require to unset temporarily the DISPLAY variable: `DISPLAY= cargo run`)
-//! * Launch `cargo build_sk_rs <build_directory>` to compile your app and assets in release mode for your PC.
+//! * Launch `cargo build_sk_rs --bin main_vr_app <build_directory>` to compile your app and assets in release mode for your PC.
 //!
 //! To test with your headset, make sure you have [OpenXR installed](https://www.khronos.org/openxr/) with an active
 //! runtine (SteamVR, Monado, WiVRn, ALVR ...).
@@ -196,7 +200,7 @@
 //!      - `ln -s /usr/lib/gcc/x86_64-w64-mingw32/13-win32/libstdc++-6.dll ../x64-mingw-libs/`
 //!   - If you want to use static libs:
 //!      - `ln -s /usr/lib/gcc/x86_64-w64-mingw32/13-win32/libgcc.a ../x64-mingw-libs/libgcc_eh.a`
-//! * Launch: `cargo build_sk_rs --x64-win-gnu ../x64-mingw-libs/ <the path of your exportable repository>`
+//! * Launch: `cargo build_sk_rs --bin main_vr_app --x64-win-gnu ../x64-mingw-libs/ <the path of your exportable repository>`
 //! * To run your_app.exe on Linux:
 //!   - Add a non-steam game to your library then launch it when WiVRn or SteamVR are started.
 //!   - If you only need the simulator: `wine your_app.exe`.
@@ -211,7 +215,7 @@
 //!   of all depots in `/etc/apt/sources.list.d/ubuntu.sources`
 //! * Add the rust target aarch64 for Linux:`rustup target add aarch64-unknown-linux-gnu`
 //! * Add a section `[target.aarch64-unknown-linux-gnu]` in your config.toml for setting `linker = "aarch64-linux-gnu-gcc"`
-//! * Launch `cargo build_sk_rs --aarch64-linux <the path of your exportable repository>`
+//! * Launch `cargo build_sk_rs --bin main_vr_app --aarch64-linux <the path of your exportable repository>`
 //!
 //! ## Building your Linux x86_64 PC VR/MR app:
 //! If you are on x86_64 Linux, you just have to follow the instructions in [`Building your PC VR/MR app`](#building-your-pc-vrmr-app).
@@ -224,7 +228,7 @@
 //!   of all depots in `/etc/apt/sources.list.d/ubuntu.sources`
 //! * Add the rust target aarch64 for linux:`rustup target add x86_64-unknown-linux-gnu`
 //! * Add a section `[target.x86_64-unknown-linux-gnu]` in your config.toml for setting `linker = "x86_64-linux-gnu-gcc"`
-//! * Launch `cargo build_sk_rs --x64-linux <the path of your exportable repository>`.
+//! * Launch `cargo build_sk_rs --bin main_vr_app --x64-linux <the path of your exportable repository>`.
 
 use std::{ffi::NulError, path::PathBuf};
 
