@@ -3,7 +3,7 @@ members = ["stereokit-macros"]
 
 [package]
 name = "stereokit-rust"
-version = "0.4.0-alpha.11"
+version = "0.4.0-alpha.12"
 resolver = "2"
 edition = "2024"
 #rust-version = "1.85"
@@ -155,9 +155,14 @@ name = "com.oculus.feature.RENDER_MODEL"
 required = true
 
 #---Android feature AndroidXR
+# [[package.metadata.android.uses_feature]]
+# name = "android.software.xr.immersive"
+# required = true
+
 [[package.metadata.android.uses_feature]]
-name = "android.software.xr.immersive"
+name = "android.software.xr.api.openxr"
 required = true
+version = 0x00010000
 
 [[package.metadata.android.uses_feature]]
 name = "android.hardware.xr.input.hand_tracking"
@@ -244,7 +249,7 @@ required = false
 
 #---Android permission AndroidXR
 [[package.metadata.android.uses_permission]]
-name = "android.permission.SCENE_UNDERSTANDING"
+name = "android.permission.SCENE_UNDERSTANDING_COARSE"
 required = false
 
 [[package.metadata.android.uses_permission]]
@@ -296,9 +301,9 @@ value = "1"
 name = "spaces.version"
 value = "0.15.0"
 
-#---AndroidXR
+#---AndroidXR TODO WHICH ONE IS ACTUALLY NEEDED?
 [[package.metadata.android.application.meta_data]]
-name = "android.window.PROPERTY_XR_ACTIVITY_START_MODE"
+name = "android.window.PROPERTY_ACTIVITY_XR_START_MODE"
 value = "XR_ACTIVITY_START_MODE_FULL_SPACE_UNMANAGED"
 
 [package.metadata.android.application.activity]

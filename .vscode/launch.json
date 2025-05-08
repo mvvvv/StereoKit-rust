@@ -94,6 +94,28 @@
       }
     },
     {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug 'test' example",
+      "cargo": {
+        "args": [
+          "build",
+          "--features",
+          "event-loop",
+          "--example=test"
+        ],
+        "filter": {
+          "name": "test",
+          "kind": "example"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PATH": "${workspaceFolder}/target/debug/deps;${env:PATH}"
+      }
+    },
+    {
       "name": "GDB Attach",
       "type": "cppdbg",
       "request": "attach",

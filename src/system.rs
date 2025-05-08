@@ -2319,8 +2319,8 @@ unsafe extern "C" {
     pub fn input_controller_menu() -> BtnState;
     pub fn input_controller_model_set(hand: Handed, model: ModelT);
     pub fn input_controller_model_get(hand: Handed) -> ModelT;
-    pub fn input_head() -> *const Pose;
-    pub fn input_eyes() -> *const Pose;
+    pub fn input_head() -> Pose;
+    pub fn input_eyes() -> Pose;
     pub fn input_eyes_tracked() -> BtnState;
     pub fn input_mouse() -> *const Mouse;
     pub fn input_key(key: Key) -> BtnState;
@@ -3078,7 +3078,7 @@ impl Input {
     /// assert_eq!(Input::get_eyes_tracked(), BtnState::Inactive)
     /// ```
     pub fn get_eyes() -> Pose {
-        unsafe { *input_eyes() }
+        unsafe { input_eyes() }
     }
 
     /// If eye hardware is available and app has permission, then this is the tracking state of the eyes. Eyes may move
@@ -3125,7 +3125,7 @@ impl Input {
     /// assert_eq!(head_pose, Pose::IDENTITY);
     /// ```
     pub fn get_head() -> Pose {
-        unsafe { *input_head() }
+        unsafe { input_head() }
     }
 
     /// Information about this system’s mouse, or lack thereof!
@@ -4102,6 +4102,9 @@ impl Renderer {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::{Matrix, Vec3}, system::Renderer};
     ///
+    /// let camera_root = Renderer::get_camera_root();
+    /// assert_eq!(camera_root, Matrix::IDENTITY);
+    ///
     /// let transform = Matrix::t([0.0, 0.0, -1.0]);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
@@ -4325,10 +4328,13 @@ impl Renderer {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{system::Renderer, tex::{Tex, TexType}};
+    /// use stereokit_rust::{system::{Renderer, Assets}, tex::{Tex, TexType}};
     ///
     /// let sky_tex = Tex::from_file("hdri/sky_dawn.jpeg", true, None)
     ///                        .expect("sky_tex should be created");
+    ///
+    /// Assets::block_for_priority(i32::MAX);
+    ///
     /// Renderer::sky_tex(&sky_tex);
     /// let sky_tex_get = Renderer::get_sky_tex();
     ///
