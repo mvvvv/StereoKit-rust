@@ -1,6 +1,7 @@
 #![cfg(feature = "event-loop")]
 
 use hand_menu_radial0::HandMenuRadial0;
+use input1::Input1;
 use stereokit_rust::prelude::*;
 
 pub mod a_stepper;
@@ -13,6 +14,7 @@ pub mod c_stepper;
 pub mod font1;
 pub mod hand_menu_radial0;
 pub mod hand_menu_radial1;
+pub mod input1;
 pub mod math1;
 pub mod program;
 pub mod render_list1;
@@ -94,6 +96,10 @@ impl Test {
             Test::new("Ui1", |sk| {
                 sk.send_event(StepperAction::add_default::<Ui1>("Ui1"));
                 "Ui1".to_string()
+            }),
+            Test::new("Input1", |sk| {
+                sk.send_event(StepperAction::add_default::<Input1>("Input1"));
+                "Input1".to_string()
             }),
             Test::new("Anim1", |sk| {
                 sk.send_event(StepperAction::add_default::<Anim1>("Anim1"));

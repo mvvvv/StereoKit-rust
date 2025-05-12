@@ -119,6 +119,7 @@ impl FlyOver {
         }
         let mut speed_accelerator = self.move_speed;
         if move_v != Vec3::ZERO {
+            move_v *= Vec3 { x: -1.0, y: 1.0, z: 1.0 };
             let camera_pose = camera_root.get_pose();
             let head_forward = head.get_forward();
             move_v.y = head_forward.y * self.reverse;
@@ -135,7 +136,7 @@ impl FlyOver {
 
         //----- rotate
         let rotate_stick = Input::controller(Handed::Right).stick;
-        let rotate_val = Vec2::dot(rotate_stick, Vec2::X);
+        let rotate_val = Vec2::dot(rotate_stick, -Vec2::X);
 
         // Credit to Cazzola: https://discord.com/channels/805160376529715210/805160377130156124/1307293861680255067
         if rotate_val != 0.0 {

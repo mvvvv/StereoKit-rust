@@ -10,4 +10,4 @@ log.txt
 
 build_preset.rs
 .continueignore
-.continue/prompts/exampleTests.prompt
+.continue/

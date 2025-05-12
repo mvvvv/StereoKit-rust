@@ -53,7 +53,7 @@ jobs:
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
     - name: Install StereoKit
-      run: cargo install -F event-loop --path . 
+      run: cargo install -F event-loop --force --path . 
 
     - name: compile shaders
       run: cargo compile_sks --options -f -t x
@@ -94,7 +94,7 @@ jobs:
         sudo apt-get install xvfb clang cmake lld ninja-build libx11-dev libxfixes-dev libegl-dev libgbm-dev libfontconfig-dev libxkbcommon-x11-0 libxkbcommon0
 
     - name: Install StereoKit
-      run: cargo install -F event-loop --path . 
+      run: cargo install -F event-loop --force --path . 
 
     - name: compile shaders
       run: cargo compile_sks --options -f -t e

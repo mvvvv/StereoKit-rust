@@ -133,7 +133,7 @@ impl Ui1 {
 
         let size = Vec2::ONE * Ui::get_layout_remaining().x;
         self.ui_touch_panel(size);
-        Ui::label(format!("{}x{}", self.slider_pt.x * 100.0, self.slider_pt.y * 100.0), None, true);
+        Ui::label(format!("{:>6.2} * {:>6.2}", self.slider_pt.x * 100.0, self.slider_pt.y * 100.0), None, true);
 
         Ui::hseparator();
 

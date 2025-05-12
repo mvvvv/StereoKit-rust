@@ -1678,8 +1678,8 @@ impl Ui {
         }
     }
 
-    /// A pressable button! A button will expand to fit the text provided to it, vertically and horizontally. Text is
-    /// re-used as the id. Will return true only on the first frame it is pressed!
+    /// A pressable button! A circle of the given diameter, with an image on it. Text is re-used as the id. Will return
+    /// true only on the first frame it is pressed!
     /// <https://stereokit.net/Pages/StereoKit/UI/ButtonRound.html>
     /// * `id` - An id for tracking element state. MUST be unique within current hierarchy.
     ///   hierarchy.
