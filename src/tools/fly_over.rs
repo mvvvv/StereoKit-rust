@@ -111,10 +111,10 @@ impl FlyOver {
                 move_v.z = 1.0;
             }
             if Input::key(Key::Right).is_just_active() {
-                move_v.x = 1.0;
+                move_v.x = -1.0;
             }
             if Input::key(Key::Left).is_just_active() {
-                move_v.x = -1.0;
+                move_v.x = 1.0;
             }
         }
         let mut speed_accelerator = self.move_speed;
