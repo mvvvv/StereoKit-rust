@@ -4,7 +4,7 @@ use std::{
     fs::{self, File, create_dir},
     io::{self, BufRead, Error},
     path::{Path, PathBuf},
-    process::{Command, exit},
+    process::Command,
 };
 
 use crate::tools::os_api::{get_assets_dir, get_shaders_sks_dir, get_shaders_source_dir};
@@ -69,13 +69,17 @@ pub fn get_skshaderc(bin_dir: PathBuf, with_wine: bool) -> Result<PathBuf, io::E
     Ok(skshaderc)
 }
 
-/// Compile hsls file to sks. See config.toml to change the default values.
+/// Compile hsls file to sks. Use variables `SK_RUST_SHADERS_SOURCE_DIR`  `SK_RUST_ASSETS_DIR` and `SK_RUST_SHADERS_SKS_DIR`
+/// to change the default values.
 /// * `project_dir` - The directory of the project. By default it's  the current directory where `shaderc_src` directory
 ///   is.
 /// * `target_dir` - The directory where the sks files will be generated. By default it's the `assets/shaders/`
 ///   directory.
 /// * `options` - The options to pass to skshaderc except -i and -o  that are `project_dir` and `target_dir`.
 /// * `with_wine` - If true, use wine to run `skshaderc.exe` on linux.
+///
+/// Returns `Ok(true)` if the compilation was successful, `Ok(false)` if there was no shaders_src directory and `Err` if
+/// there was an error.
 pub fn compile_hlsl(
     project_dir: PathBuf,
     target_dir: Option<PathBuf>,
@@ -93,11 +97,10 @@ pub fn compile_hlsl(
 
     if !shaders_source_path.exists() || !shaders_source_path.is_dir() {
         println!(
-            "Current directory do not see {:?} directory. The value may be change in config.toml [env]",
+            "No shaders to compile. Current directory does not see {:?} directory. \n---The name of the directory may be change with SK_RUST_SHADERS_SOURCE_DIR",
             shaders_source_path
         );
-        println!("Abort!");
-        exit(1);
+        return Ok(false);
     }
 
     let shaders_path = match target_dir {

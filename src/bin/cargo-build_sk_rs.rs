@@ -330,8 +330,14 @@ fn main() {
     // 2 - the assets
     let from_assets = PathBuf::from(get_assets_dir());
     let to_asset = output_path.join(get_assets_dir());
-    copy_tree(from_assets, to_asset.clone()).unwrap();
-
+    if from_assets.exists() {
+        println!("Copying assets from {:?} to {:?}", from_assets, to_asset);
+        copy_tree(from_assets, to_asset.clone()).unwrap();
+    } else {
+        println!(
+            "Assets directory not found! {from_assets:?}\n---The name of the directory may be change with SK_RUST_ASSET_DIR"
+        )
+    }
     // 3 - the shaders
     let mut with_wine = false;
     let target_shaders_dir = to_asset.join(get_shaders_sks_dir());

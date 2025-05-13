@@ -69,7 +69,7 @@
 //! #[allow(dead_code)]
 //! #[cfg(not(target_os = "android"))]
 //! fn main() {
-//!     use stereokit_rust::sk::SkSettings;
+//!     use stereokit_rust::sk::{SkSettings, Sk};
 //!     use vr_app::the_main;
 //!     // Initialize StereoKit with default settings
 //!     let mut settings = SkSettings::default();
@@ -78,6 +78,7 @@
 //!     let (sk, event_loop) = settings.init_with_event_loop()
 //!         .expect("Should initialize StereoKit");
 //!     the_main(sk, event_loop);
+//!     Sk::shutdown();
 //! }
 //! # use stereokit_rust::prelude::*;
 //! # use winit::event_loop::EventLoop;

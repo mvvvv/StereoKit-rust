@@ -412,7 +412,7 @@ impl SkSettings {
     /// trailing ‘/’ is unnecessary. Default is "assets"
     /// <https://stereokit.net/Pages/StereoKit/SKSettings/assetsFolder.html>
     ///
-    /// Not pub anymore, please change variable SK_RUST_ASSET_DIR in config.toml [env]
+    /// Not pub anymore, please change variable SK_RUST_ASSET_DIR.
     fn assets_folder(assets_folder: impl AsRef<Path>) -> *mut c_char {
         let c_str = CString::new(assets_folder.as_ref().to_str().unwrap()).unwrap();
         c_str.into_raw()
