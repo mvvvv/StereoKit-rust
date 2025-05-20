@@ -90,6 +90,9 @@
 //! use stereokit_rust::{framework::SkClosures, prelude::*, sk::Sk, ui::Ui};
 //! use winit::event_loop::EventLoop;
 //!
+//! #[cfg(target_os = "android")]
+//! use winit::platform::android::activity::AndroidApp;
+//!
 //! #[unsafe(no_mangle)]
 //! #[cfg(target_os = "android")]
 //! pub fn android_main(app: AndroidApp) {
@@ -160,8 +163,9 @@
 //!     some examples:
 //!     - [StereoKit-template](https://github.com/mvvvv/stereokit-template/blob/main/Cargo.toml#L27)
 //!     - [StereoKit-rust](https://github.com/mvvvv/StereoKit-rust/blob/master/Cargo.toml#L77)
+//!   - Create a res directory with the icons of your app (i.e. with <https://icon.kitchen>)
 //!   - Set the path and password to your keystore in the `Cargo.toml` [package.metadata.android.signing.release] or
-//!     in the CARGO_APK_RELEASE_KEYSTORE and  `CARGO_APK_RELEASE_KEYSTORE_PASSWORD` environment variables.
+//!     in the `CARGO_APK_RELEASE_KEYSTORE` and  `CARGO_APK_RELEASE_KEYSTORE_PASSWORD` environment variables.
 //!   - Launch the debug on your headset: `cargo apk run --lib`
 //!   - Generate the release apk: `cargo apk build --lib --release`. The apk will be in `target/release/apk/`.
 //! ##### Otherwise, you have to use Gradle with cargo-ndk:
@@ -172,6 +176,7 @@
 //!     `gradle.properties`.
 //!   - In `app/src/main/AndroidManifest.xml` delete or modify the path and package name of `MainActivity.java` (your
 //!     choice impacts android.main ↑ and android:hasCode attribute).
+//!   - Replace the content of the res directory with the icons of your app (i.e. with <https://icon.kitchen>)
 //!   - Store your keystore values in one of the hidden gradle properties files (ie. `~/.gradle/gradle.properties`)
 //!     to store and forget the confidential values:
 //!     - RELEASE_STORE_FILE=/home/**/**/my_release_key.keystore

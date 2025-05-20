@@ -10,8 +10,7 @@ use stereokit_rust::{
     },
 };
 
-/// Copycat of the example https://github.com/StereoKit/StereoKit/blob/develop/Examples/StereoKitTest/Tests/TestCustomButton.cs
-
+/// Demonstrates input handling for controllers.
 #[derive(IStepper)]
 pub struct Input1 {
     id: StepperId,
@@ -32,6 +31,7 @@ unsafe impl Send for Input1 {}
 
 impl Default for Input1 {
     fn default() -> Self {
+        // Default slider IDs.
         let id_slider_left = "left sticker".into();
         let id_slider_right = "right sticker".into();
         Self {
@@ -44,7 +44,7 @@ impl Default for Input1 {
             id_slider_right_hash: Ui::stack_hash(&id_slider_right),
             id_slider_right,
 
-            text: "Input1".to_owned(),
+            text: "Input1".to_owned(), // Default text.
             text_style: Text::make_style(Font::default(), 0.3, RED),
             transform: Matrix::t_r(
                 (Vec3::NEG_Z * 2.5) + Vec3::Y, //
@@ -55,17 +55,21 @@ impl Default for Input1 {
 }
 
 impl Input1 {
-    /// Called from IStepper::initialize here you can abort the initialization by returning false
+    /// Initializes the Input1 instance.
     fn start(&mut self) -> bool {
+        // Hash the slider IDs.
         self.id_slider_left_hash = Ui::stack_hash(&self.id_slider_left);
         self.id_slider_right_hash = Ui::stack_hash(&self.id_slider_right);
         true
     }
 
-    /// Called from IStepper::step, here you can check the event report
+    /// Checks for events (currently unused).
     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
-    /// Called from IStepper::step after check_event, here you can draw your UI and scene
+    /// Draws the UI elements for controller input visualization.
+    ///
+    /// This function creates a window with labels and visual representations of controller inputs,
+    /// including stick positions, button states, trigger values, and grip values.
     fn draw(&mut self, token: &MainThreadToken) {
         Ui::window_begin("Input", &mut self.window_demo_pose, Some(Vec2::new(self.demo_win_width, 0.4)), None, None);
 
@@ -175,6 +179,13 @@ impl Input1 {
     }
 }
 
+/// Draws a slider element for visualizing controller stick input.
+///
+/// This function takes a 2D vector representing the stick position and an ID hash
+/// for the slider, and renders a visual representation of the slider within the UI.
+///
+/// # Arguments
+/// * `slider_pt` - A `Vec2` representing the position of the slider.
 fn draw_slider(mut slider_pt: Vec2, id_slider_hash: u64) {
     let size = Vec2::ONE * Ui::get_layout_remaining().x;
     let depth = Ui::get_settings().depth;
