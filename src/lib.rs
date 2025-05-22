@@ -80,6 +80,12 @@
 //!     the_main(sk, event_loop);
 //!     Sk::shutdown();
 //! }
+//!
+//! #[allow(dead_code)]
+//! #[cfg(target_os = "android")]
+//! //fake main fn for android as entry is lib.rs/android_main(...)
+//! fn main() {}
+//!
 //! # use stereokit_rust::prelude::*;
 //! # use winit::event_loop::EventLoop;
 //! # pub fn the_main(sk: Sk, event_loop: EventLoop<StepperAction>) {}
@@ -186,7 +192,7 @@
 //!   - If any, remove the .git folder.
 //!   - Launch the debug on your connected headset:
 //!     - On Windows, launch: `./gradlew.bat run && cmd /c logcat.cmd` or `(./gradlew.bat run) -and (cmd /c logcat.cmd)`
-//!     - On others, launch: `./gradlew run && logcat.cmd`
+//!     - On others, launch: `./gradlew run && ./logcat.cmd`
 //!   - Generate the release apk: `./gradlew buildRelease`. The apk will be in `app/build/outputs/apk/release`
 //!
 //! ## Building your Windows GNU PC VR/MR app:
