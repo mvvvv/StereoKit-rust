@@ -109,10 +109,7 @@ pub fn compile_hlsl(
             let mut shaders_path = project_dir.clone();
             shaders_path.push(get_assets_dir());
             if !shaders_path.exists() || !shaders_path.is_dir() {
-                return Err(Error::new(
-                    io::ErrorKind::Other,
-                    format!("Current directory do not see {:?} directory", shaders_path),
-                ));
+                return Err(Error::other(format!("Current directory do not see {:?} directory", shaders_path)));
             }
 
             shaders_path.push(get_shaders_sks_dir());
@@ -213,8 +210,8 @@ pub fn get_cargo_name() -> Result<String, Error> {
         }
     }
     if in_package {
-        Err(Error::new(io::ErrorKind::Other, "Cargo.toml do not have a [package]/name field"))
+        Err(Error::other("Cargo.toml do not have a [package]/name field"))
     } else {
-        Err(Error::new(io::ErrorKind::Other, "Cargo.toml do not have a [package] section"))
+        Err(Error::other("Cargo.toml do not have a [package] section"))
     }
 }
