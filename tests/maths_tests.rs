@@ -1080,3 +1080,44 @@ mod tests_matrix {
         }
     }
 }
+
+#[cfg(test)]
+mod tests_pose {
+    use stereokit_rust::maths::{Matrix, Pose, Vec3};
+
+    /// Copycat from https://github.com/StereoKit/StereoKit/Test/TestMath.cs
+    #[test]
+    fn test_pose_matrix() {
+        let pose = Pose::new([1.0, 2.0, 3.0], Some([37.0, 90.0, 212.0].into()));
+        let pt = Vec3::new(100.0, 73.89, 0.0);
+
+        //
+        let mat_pose = pose.to_matrix(None);
+        let mat_trs = Matrix::t_r(pose.position, pose.orientation);
+
+        assert_eq!(mat_pose.transform_point(Vec3::ZERO), mat_trs.transform_point(Vec3::ZERO));
+        assert_eq!(mat_pose.transform_point(pt), mat_trs.transform_point(pt));
+
+        //
+        let mat_pose = pose.to_matrix_inv(None);
+        let mat_trs = Matrix::t_r(pose.position, pose.orientation).get_inverse();
+
+        assert_eq!(mat_pose.transform_point(Vec3::ZERO), mat_trs.transform_point(Vec3::ZERO));
+        assert_eq!(mat_pose.transform_point(pt), mat_trs.transform_point(pt));
+
+        //
+        let mat_pose = pose.to_matrix(Some(0.7 * Vec3::ONE));
+        let mat_trs = Matrix::t_r_s(pose.position, pose.orientation, 0.7 * Vec3::ONE);
+
+        assert_eq!(mat_pose.transform_point(Vec3::ZERO), mat_trs.transform_point(Vec3::ZERO));
+        assert_eq!(mat_pose.transform_point(pt), mat_trs.transform_point(pt));
+
+        //
+        let mat_pose = pose.to_matrix_inv(Some(0.7 * Vec3::ONE));
+        let mat_trs = Matrix::t_r_s(pose.position, pose.orientation, 0.7 * Vec3::ONE).get_inverse();
+
+        assert_eq!(mat_pose.transform_point(Vec3::ZERO), mat_trs.transform_point(Vec3::ZERO));
+        // we divide by 10.0 to avoid floating point precision issues
+        assert_eq!(mat_pose.transform_point(pt / 10.0), mat_trs.transform_point(pt / 10.0));
+    }
+}

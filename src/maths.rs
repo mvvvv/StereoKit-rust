@@ -529,7 +529,7 @@ impl Vec2 {
         a + ((b - a) * blend)
     }
 
-    /// Returns a vector where each elements is the maximum value for each corresponding pair.
+    /// Returns a vector where each element is the maximum value for each corresponding pair.
     /// <https://stereokit.net/Pages/StereoKit/Vec2/Max.html>
     /// * `a` - Order isn't important here.
     /// * `b` - Order isn't important here.
@@ -548,7 +548,7 @@ impl Vec2 {
         Self { x: f32::max(a.x, b.x), y: f32::max(a.y, b.y) }
     }
 
-    /// Returns a vector where each elements is the minimum value for each corresponding pair.
+    /// Returns a vector where each element is the minimum value for each corresponding pair.
     /// <https://stereokit.net/Pages/StereoKit/Vec2/Min.html>
     /// * `a` - Order isn't important here.
     /// * `b` - Order isn't important here.
@@ -1454,7 +1454,7 @@ impl Vec3 {
         a + ((b - a) * blend)
     }
 
-    /// Returns a vector where each elements is the maximum value for each corresponding pair.
+    /// Returns a vector where each element is the maximum value for each corresponding pair.
     /// <https://stereokit.net/Pages/StereoKit/Vec3/Max.html>
     /// * `a` - Order isn't important here.
     /// * `b` - Order isn't important here.
@@ -1474,7 +1474,7 @@ impl Vec3 {
         Self { x: f32::max(a.x, b.x), y: f32::max(a.y, b.y), z: f32::max(a.z, b.z) }
     }
 
-    /// Returns a vector where each elements is the minimum value for each corresponding pair.
+    /// Returns a vector where each element is the minimum value for each corresponding pair.
     /// <https://stereokit.net/Pages/StereoKit/Vec3/Min.html>
     /// * `a` - Order isn't important here.
     /// * `b` - Order isn't important here.
@@ -1525,7 +1525,8 @@ impl Vec3 {
         Self::cross(forward, up)
     }
 
-    /// Absolute value of each component, this may be usefull in some case
+    /// Returns a vector where each element is the absolute value of the corresponding element.
+    /// <https://stereokit.net/Pages/StereoKit/Vec3/Abs.html>
     ///
     /// ### Examples
     /// ```
@@ -2112,12 +2113,12 @@ impl Vec4 {
         a + ((b - a) * blend)
     }
 
-    /// Returns a vector where each elements is the maximum value for each corresponding pair.
+    /// Returns a vector where each element is the maximum value for each corresponding pair.
     /// <https://stereokit.net/Pages/StereoKit/Vec4/Max.html>
     /// * `a` - Order isn't important here.
     /// * `b` - Order isn't important here.
     ///
-    /// Returns a vector where each elements is the maximum value for each corresponding pair.
+    /// Returns a vector where each element is the maximum value for each corresponding pair.
     /// #### Examples
     /// ```
     /// use stereokit_rust::maths::Vec4;
@@ -2132,7 +2133,7 @@ impl Vec4 {
         Self { x: f32::max(a.x, b.x), y: f32::max(a.y, b.y), z: f32::max(a.z, b.z), w: f32::max(a.w, b.w) }
     }
 
-    /// Returns a vector where each elements is the minimum value for each corresponding pair.
+    /// Returns a vector where each element is the minimum value for each corresponding pair.
     /// <https://stereokit.net/Pages/StereoKit/Vec4/Min.html>
     /// * `a` - Order isn't important here.
     /// * `b` - Order isn't important here.
@@ -2609,7 +2610,7 @@ impl Quat {
     ///
     /// let mut q = Quat::new(1.0, 2.0, 3.0, 4.0);
     /// q.invert();
-    /// assert_eq!(q,  Quat { x: -0.033333335, y: -0.06666667, z: -0.1, w: 0.13333334 });
+    /// assert_eq!(q, Quat { x: -0.033333335, y: -0.06666667, z: -0.1, w: 0.13333334 });
     /// ```
     #[inline]
     pub fn invert(&mut self) -> &mut Self {
@@ -2619,6 +2620,20 @@ impl Quat {
         self.z = m.z;
         self.w = m.w;
         self
+    }
+
+    /// Return the conjugate
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::Quat;
+    ///
+    /// let mut q = Quat::new(1.0, 2.0, 3.0, 4.0);
+    /// let q2 = q.conjugate();
+    /// assert_eq!(q2, Quat { x: -1.0, y: -2.0, z: -3.0, w: 4.0 });
+    /// ```
+    #[inline]
+    pub fn conjugate(&self) -> Self {
+        Self { x: -self.x, y: -self.y, z: -self.z, w: self.w }
     }
 
     /// Normalize this quaternion with the same orientation, and a length of 1.
@@ -3169,6 +3184,13 @@ impl From<[f32; 16]> for Matrix {
         Self { m: s }
     }
 }
+
+impl From<Pose> for Matrix {
+    fn from(pose: Pose) -> Self {
+        Self::t_r(pose.position, pose.orientation)
+    }
+}
+
 impl std::fmt::Debug for Matrix {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self)
@@ -5486,6 +5508,12 @@ pub struct Pose {
     pub orientation: Quat,
 }
 
+impl From<Matrix> for Pose {
+    fn from(matrix: Matrix) -> Self {
+        matrix.get_pose()
+    }
+}
+
 impl Default for Pose {
     /// Position is Vec3::ZERO, and orientation is Quat::IDENTITY (no rotation)
     /// <https://stereokit.net/Pages/StereoKit/Pose/Identity.html>
@@ -5576,6 +5604,44 @@ impl Pose {
         match scale {
             Some(scale) => Matrix::t_r_s(self.position, self.orientation, scale),
             None => Matrix::t_r(self.position, self.orientation),
+        }
+    }
+
+    /// Converts this pose into the inverse of the Pose's transform matrix. This can be used to
+    /// transform points from the space represented by the Pose into world space.
+    /// <https://stereokit.net/Pages/StereoKit/Pose/ToMatrixInv.html>
+    /// * scale - A scale vector! Vec3.One would be an identity scale.
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Matrix, Pose};
+    ///
+    /// let pose1 = Pose::IDENTITY;
+    ///
+    /// assert_eq!(pose1.to_matrix_inv(None), Matrix::IDENTITY);    
+    ///
+    /// assert_eq!(pose1.to_matrix_inv(Some(Vec3::new(0.5, 0.25, 0.125))),
+    ///             [2.0, 0.0, 0.0, 0.0,
+    ///              0.0, 4.0, 0.0, 0.0,
+    ///              0.0, 0.0, 8.0, 0.0,
+    ///              0.0, 0.0, 0.0, 1.0].into());
+    /// ```
+    #[inline]
+    pub fn to_matrix_inv(&self, scale: Option<Vec3>) -> Matrix {
+        let inv_orientation = self.orientation.conjugate();
+
+        match scale {
+            Some(scale) => {
+                let inv_scale = 1.0 / scale;
+
+                let inv_transform = inv_orientation.rotate_point(-self.position * inv_scale);
+
+                Matrix::t_r_s(inv_transform, inv_orientation, inv_scale)
+            }
+            None => {
+                let inv_transform = inv_orientation.rotate_point(-self.position);
+                Matrix::t_r(inv_transform, inv_orientation)
+            }
         }
     }
 
@@ -5962,8 +6028,8 @@ impl Ray {
         self.position + self.direction * percent
     }
 
-    /// Calculates the point on the Ray that’s closest to the given point! This can be in front of, or behind the
-    /// ray’s starting position.
+    /// Calculates the point on the Ray that’s closest to the given point! This will be clamped if the point is behind
+    /// the ray's origin.
     /// <https://stereokit.net/Pages/StereoKit/Ray/Closest.html>
     /// * to - Any point in the same coordinate space as the  Ray.
     ///
@@ -5976,7 +6042,7 @@ impl Ray {
     ///
     /// let ray = Ray::new(Vec3::ZERO, Vec3::ONE);
     ///
-    /// assert_eq!(ray.closest(Vec3::Z), Vec3::ONE);
+    /// assert_eq!(ray.closest(Vec3::Z), Vec3::ONE / 3.0);
     /// ```
     #[inline]
     pub fn closest<V: Into<Vec3>>(&self, to: V) -> Vec3 {

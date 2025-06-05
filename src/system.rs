@@ -308,7 +308,7 @@ impl Assets {
     /// assert_eq!(texture_count,   23 + 1 );
     /// assert_eq!(model_count,     2);
     /// assert_eq!(sound_count,     5);
-    /// assert_eq!(material_count,  36 + 1 );
+    /// assert_eq!(material_count,  37 + 1 );
     /// assert_eq!(shader_count,    15);
     /// assert_eq!(font_count,      1);
     /// assert_eq!(mesh_count,  26);
@@ -1119,6 +1119,7 @@ pub struct Hierarchy;
 
 unsafe extern "C" {
     pub fn hierarchy_push(transform: *const Matrix, parent_behavior: HierarchyParent);
+    pub fn hierarchy_push_pose(pose: *const Pose, parent_behavior: HierarchyParent);
     pub fn hierarchy_pop();
     pub fn hierarchy_set_enabled(enabled: Bool32T);
     pub fn hierarchy_is_enabled() -> Bool32T;
@@ -1163,9 +1164,9 @@ impl Hierarchy {
         unsafe { hierarchy_pop() }
     }
 
-    /// Pushes a transform Matrix onto the stack, and combines it with the Matrix below it. Any draw operation’s Matrix
-    /// will now be combined with this Matrix to make it relative to the current hierarchy. Use Hierarchy.pop to remove
-    /// it from the Hierarchy stack! All Push calls must have an accompanying Pop call.
+    /// Pushes a transform Matrix (eventually a Pose) onto the stack, and combines it with the Matrix below it. Any draw
+    /// operation’s Matrix will now be combined with this Matrix to make it relative to the current hierarchy. Use
+    /// Hierarchy.pop to remove it from the Hierarchy stack! All Push calls must have an accompanying Pop call.
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/Push.html>
     /// * `parent_behavior` - This determines how this matrix combines with the parent matrix below it. Normal behavior
     ///   is to "inherit" the parent matrix, but there are cases where you may wish to entirely ignore the parent
@@ -1173,6 +1174,18 @@ impl Hierarchy {
     ///   value "Inherit"
     ///
     /// see also [`hierarchy_push`] [`Hierarchy::pop`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Matrix, system::{Hierarchy, HierarchyParent}};
+    ///
+    /// test_steps! { // !!!! Get a proper main loop !!!!
+    ///     Hierarchy::push(token, Matrix::t([0.0, -0.5, -0.5]), None);
+    ///     assert_eq!(Hierarchy::to_local_point(token, [0.4, 0.4, 0.4]), [0.4, 0.9, 0.9].into());
+    ///     assert_eq!(Hierarchy::to_world_point(token, [0.4, 0.9, 0.9]), [0.4, 0.4, 0.4].into());
+    ///     Hierarchy::pop(token);
+    /// }
+    /// ```
     pub fn push<M: Into<Matrix>>(_token: &MainThreadToken, transform: M, parent_behavior: Option<HierarchyParent>) {
         let parent_behavior = parent_behavior.unwrap_or(HierarchyParent::Inherit);
         unsafe { hierarchy_push(&transform.into(), parent_behavior) }
@@ -1187,10 +1200,10 @@ impl Hierarchy {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::Matrix, system::{Hierarchy, HierarchyParent}};
+    /// use stereokit_rust::{maths::Pose, system::{Hierarchy, HierarchyParent}};
     ///
     /// test_steps! { // !!!! Get a proper main loop !!!!
-    ///     Hierarchy::push(token, Matrix::t([0.0, -0.5, -0.5]), None);
+    ///     Hierarchy::push(token, Pose::new([0.0, -0.5, -0.5], None), None);
     ///     assert_eq!(Hierarchy::to_local_point(token, [0.4, 0.4, 0.4]), [0.4, 0.9, 0.9].into());
     ///     assert_eq!(Hierarchy::to_world_point(token, [0.4, 0.9, 0.9]), [0.4, 0.4, 0.4].into());
     ///     Hierarchy::pop(token);

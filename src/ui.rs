@@ -671,8 +671,12 @@ unsafe extern "C" {
     pub fn ui_layout_push(start: Vec3, dimensions: Vec2, add_margin: Bool32T);
     pub fn ui_layout_push_cut(cut_to: UiCut, size: f32, add_margin: Bool32T);
     pub fn ui_layout_pop();
-    /// Deprecaded: pub fn ui_last_element_hand_used(hand: Handed) -> BtnState;
+    // Deprecaded: pub fn ui_last_element_hand_used(hand: Handed) -> BtnState;
+    /// TODO: v0.4 These functions use hands instead of interactors, they need replaced!
+    pub fn ui_is_interacting(hand: Handed) -> Bool32T;
+    /// TODO: v0.4 These functions use hands instead of interactors, they need replaced!
     pub fn ui_last_element_hand_active(hand: Handed) -> BtnState;
+    /// TODO: v0.4 These functions use hands instead of interactors, they need replaced!
     pub fn ui_last_element_hand_focused(hand: Handed) -> BtnState;
     pub fn ui_last_element_active() -> BtnState;
     pub fn ui_last_element_focused() -> BtnState;
@@ -680,7 +684,6 @@ unsafe extern "C" {
     pub fn ui_nextline();
     pub fn ui_sameline();
     pub fn ui_line_height() -> f32;
-    pub fn ui_is_interacting(hand: Handed) -> Bool32T;
     pub fn ui_button_behavior(
         window_relative_pos: Vec3,
         size: Vec2,
@@ -1678,13 +1681,13 @@ impl Ui {
         }
     }
 
-    /// A pressable button! A circle of the given diameter, with an image on it. Text is re-used as the id. Will return
-    /// true only on the first frame it is pressed!
+    /// A pressable round button! This button has a square layout,Add commentMore actions and only shows an image, no
+    /// text. Will return true only on the first frame it is pressed!
     /// <https://stereokit.net/Pages/StereoKit/UI/ButtonRound.html>
     /// * `id` - An id for tracking element state. MUST be unique within current hierarchy.
     ///   hierarchy.
     /// * `image` - An image to display as the face of the button.
-    /// * `diameter` - The diameter of the button’s visual.
+    /// * `diameter` - The diameter of the button's visual. ThisAdd commentMore actions defaults to the line height.
     ///
     /// Returns true only on the first frame it is pressed!
     /// see also [`ui_button_round`] [`Ui::button_round_at`]
@@ -2301,13 +2304,14 @@ impl Ui {
 
     /// Tells if the user is currently interacting with a UI element! This will be true if the hand has an active or
     /// focused UI element.
+    /// TODO: v0.4 These functions use hands instead of interactors, they need replaced!
     /// <https://stereokit.net/Pages/StereoKit/UI/IsInteracting.html>
     /// * `hand` - The hand to check for interaction.
     ///
     /// Returns true if the hand has an active or focused UI element. False otherwise.
     /// see also [`ui_is_interacting`]
     /// ### Examples
-    /// ```
+    /// ```no_run
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{ui::Ui, system::Handed};
     ///
@@ -2318,6 +2322,10 @@ impl Ui {
     ///     assert_eq!(Ui::is_interacting(Handed::Max), false);
     /// );
     /// ```
+    #[deprecated(
+        since = "0.4.0",
+        note = "TODO: These functions use hands instead of interactors, they need replaced!"
+    )]
     pub fn is_interacting(hand: Handed) -> bool {
         unsafe { ui_is_interacting(hand) != 0 }
     }
@@ -2362,6 +2370,7 @@ impl Ui {
 
     /// Tells if the hand was involved in the active state of the most recently called UI element using an id. Active
     /// state is frequently a single frame in the case of Buttons, but could be many in the case of Sliders or Handles.
+    /// TODO: v0.4 These functions use hands instead of interactors, they need replaced!
     /// <https://stereokit.net/Pages/StereoKit/UI/LastElementHandActive.html>
     /// * `hand` - Which hand we’re checking.
     ///
@@ -2387,6 +2396,10 @@ impl Ui {
     ///     Ui::window_end();
     /// );
     /// ```
+    #[deprecated(
+        since = "0.4.0",
+        note = "TODO: These functions use hands instead of interactors, they need replaced!"
+    )]
     pub fn last_element_hand_active(hand: Handed) -> BtnState {
         unsafe { ui_last_element_hand_active(hand) }
     }
@@ -2394,6 +2407,7 @@ impl Ui {
     /// Tells if the hand was involved in the focus state of the most recently called UI element using an id. Focus
     /// occurs when the hand is in or near an element, in such a way that indicates the user may be about to interact
     /// with it.
+    /// TODO: v0.4 These functions use hands instead of interactors, they need replaced!
     /// <https://stereokit.net/Pages/StereoKit/UI/LastElementHandFocused.html>
     /// * `hand` - Which hand we’re checking.
     ///
@@ -2418,6 +2432,10 @@ impl Ui {
     ///     Ui::window_end();
     /// );
     /// ```
+    #[deprecated(
+        since = "0.4.0",
+        note = "TODO: These functions use hands instead of interactors, they need replaced!"
+    )]
     pub fn last_element_hand_focused(hand: Handed) -> BtnState {
         unsafe { ui_last_element_hand_focused(hand) }
     }
