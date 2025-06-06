@@ -67,6 +67,11 @@ fn main() {
                     if !arg_config.starts_with('-') {
                         build_target = Target::X86_64WinGnu;
                         win_libs_path_name = arg_config;
+                        let win_libs_path = PathBuf::from(&win_libs_path_name);
+                        if !win_libs_path.is_dir() {
+                            println!("Argument {} should be a valid directory name", win_libs_path_name);
+                            panic!("{}", USAGE);
+                        }
                     } else {
                         println!("Value specified for --x64-win-gnu must be the path of a directory.");
                         panic!("{}", USAGE);

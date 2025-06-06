@@ -203,15 +203,17 @@
 //! * Install mingw64-w64 (MSYS2 on windows).
 //! * Add the `Rust` target gnu for windows:`rustup target add x86_64-pc-windows-gnu`
 //! * On 'Non Windows OS': we need wine to compile the shaders:
+//!   - Add i386 architecture (i.e. `sudo dpkg --add-architecture i386` on Ubuntu)
 //!   - Install wine and winetricks.
-//!   - Install needed tools and libs: `winetricks corefonts d3dx9 d3dcompiler_47`.
+//!   - Install needed tools and libs: `winetricks corefonts d3dx9 d3dcompiler_47 dxvk`.
 //! * Create a directory where necessary libs will be stored (i.e. ../x64-mingw-libs/) then add a link to the DLLs or
 //!   static libs (*.a) the build will need after or during its creation. Example on Ubuntu 24.XX:
 //!   - If you want to use DLLs:
 //!      - `ln -s /usr/lib/gcc/x86_64-w64-mingw32/13-win32/libgcc_s_seh-1.dll ../x64-mingw-libs/`
 //!      - `ln -s /usr/lib/gcc/x86_64-w64-mingw32/13-win32/libstdc++-6.dll ../x64-mingw-libs/`
 //!   - If you want to use static libs:
-//!      - `ln -s /usr/lib/gcc/x86_64-w64-mingw32/13-win32/libgcc.a ../x64-mingw-libs/libgcc_eh.a`
+//!      - `ln -s /usr/lib/gcc/x86_64-w64-mingw32/13-win32/libgcc_eh.a ../x64-mingw-libs/`
+//!      - `ln -s /usr/lib/gcc/x86_64-w64-mingw32/13-win32/libstdc++.a ../x64-mingw-libs/`
 //! * Launch: `cargo build_sk_rs --bin main_vr_app --x64-win-gnu ../x64-mingw-libs/ <the path of your exportable repository>`
 //! * To run your_app.exe on Linux:
 //!   - Add a non-steam game to your library then launch it when WiVRn or SteamVR are started.

@@ -83,7 +83,7 @@ There is 3 templates used to build android versions (they can also create a PC V
   - Install needed tools and libs: `winetricks corefonts d3dx9 d3dcompiler_47`
 * Create a directory where necessary libs will be stored (i.e. ../x64-mingw-libs/) then add a link to the DLLs or static libs(*.a) the build will need after or during its creation. Example on Ubuntu 24.XX:
   - `ln -s /usr/lib/gcc/x86_64-w64-mingw32/13-win32/libgcc_s_seh-1.dll ../x64-mingw-libs/ && ln -s /usr/lib/gcc/x86_64-w64-mingw32/13-win32/libstdc++-6.dll ../x64-mingw-libs/`
-  - or `ln -s /usr/lib/gcc/x86_64-w64-mingw32/13-win32/libgcc.a ../x64-mingw-libs/libgcc_eh.a`
+  - or `ln -s /usr/lib/gcc/x86_64-w64-mingw32/13-win32/libgcc_eh.a ../x64-mingw-libs/ && ln -s /usr/lib/gcc/x86_64-w64-mingw32/13-win32/libstdc++.a ../x64-mingw-libs/`
 * Launch: `cargo build_sk_rs --x64-win-gnu ../x64-mingw-libs/  --example main_pc --features event-loop <the path of your exportable repository>`
 * To run main_pc.exe on Linux:
   - Add a non-steam game to your library then launch it when WiVRn or SteamVR are started.
