@@ -790,7 +790,6 @@ pub enum QuitReason {
 #[derive(Debug)]
 pub struct SkInfo {
     settings: SkSettings,
-    system_info: SystemInfo,
     #[cfg(feature = "event-loop")]
     event_loop_proxy: Option<EventLoopProxy<StepperAction>>,
     #[cfg(target_os = "android")]
@@ -813,7 +812,7 @@ impl SkInfo {
     /// [`SkInfo::system_from`] is more easy to use.
     /// <https://stereokit.net/Pages/StereoKit/SK/System.html>
     pub fn get_system(&self) -> SystemInfo {
-        self.system_info.clone()
+        unsafe { sk_system_info() }
     }
 
     /// Get an event_loop_proxy clone to send events.
@@ -1038,7 +1037,6 @@ impl Sk {
                 let sk_info = Rc::new(RefCell::new(SkInfo {
                     android_app: app,
                     settings: unsafe { sk_get_settings() },
-                    system_info: unsafe { sk_system_info() },
                     #[cfg(feature = "event-loop")]
                     event_loop_proxy: None,
                 }));
@@ -1076,7 +1074,6 @@ impl Sk {
             true => {
                 let sk_info = Rc::new(RefCell::new(SkInfo {
                     settings: unsafe { sk_get_settings() },
-                    system_info: unsafe { sk_system_info() },
                     #[cfg(feature = "event-loop")]
                     event_loop_proxy: None,
                 }));
@@ -1376,7 +1373,6 @@ impl Sk {
             true => {
                 let sk_info = Rc::new(RefCell::new(SkInfo {
                     settings: settings.clone(),
-                    system_info: unsafe { sk_system_info() },
                     event_loop_proxy: Some(event_loop_proxy),
                     android_app: app,
                 }));
@@ -1420,7 +1416,6 @@ impl Sk {
             true => {
                 let sk_info = Rc::new(RefCell::new(SkInfo {
                     settings: settings.clone(),
-                    system_info: unsafe { sk_system_info() },
                     event_loop_proxy: Some(event_loop_proxy),
                 }));
                 Ok((
