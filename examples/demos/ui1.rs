@@ -8,7 +8,7 @@ use stereokit_rust::{
     ui::{IdHashT, Ui, UiColor, UiCorner, UiLathePt, UiSliderData, UiVisual},
     util::{
         Color32, Color128, Time,
-        named_colors::{CYAN, DARK_BLUE, ORCHID, RED, YELLOW},
+        named_colors::{CYAN, DARK_BLUE, MAGENTA, ORCHID, RED},
     },
 };
 
@@ -84,7 +84,7 @@ impl Ui1 {
         self.id_slider_hash = Ui::stack_hash(&self.id_slider);
         //create extra slots
         Ui::set_theme_color(UiColor::ExtraSlot01, None, ORCHID);
-        Ui::set_theme_color(UiColor::ExtraSlot02, None, YELLOW);
+        Ui::set_theme_color(UiColor::ExtraSlot02, None, MAGENTA);
         Ui::set_element_color(UiVisual::ExtraSlot01, UiColor::ExtraSlot01);
         Ui::set_element_color(UiVisual::ExtraSlot02, UiColor::ExtraSlot02);
         true
@@ -180,6 +180,9 @@ impl Ui1 {
             None,
             None,
         );
+        if out_button_state.is_just_active() {
+            Ui::play_sound_on_off(UiVisual::Button, id, layout.center);
+        }
         out_button_state.is_just_inactive()
     }
 
@@ -222,6 +225,10 @@ impl Ui1 {
             None,
         );
 
+        if out_button_state.is_just_active() {
+            Ui::play_sound_on_off(UiVisual::Button, id, layout.center);
+        }
+
         out_button_state.is_just_inactive()
     }
 
@@ -262,6 +269,12 @@ impl Ui1 {
             btn_size,
             focus,
         );
+        if slider.active_state.is_just_active() {
+            Ui::play_sound_on(UiVisual::SliderPush, slider.button_center.xy0());
+        }
+        if slider.active_state.is_just_inactive() {
+            Ui::play_sound_off(UiVisual::SliderPush, slider.button_center.xy0());
+        }
         prev.x != self.slider_pt.x || prev.y != self.slider_pt.y
     }
 }

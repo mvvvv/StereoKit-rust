@@ -642,6 +642,10 @@ unsafe extern "C" {
     pub fn ui_get_element_color(element_visual: UiVisual, focus: f32) -> Color128;
     pub fn ui_get_anim_focus(id: IdHashT, focus_state: BtnState, activation_state: BtnState) -> f32;
 
+    pub fn ui_play_sound_on_off(element_visual: UiVisual, element_id: IdHashT, at_local: Vec3);
+    pub fn ui_play_sound_on(element_visual: UiVisual, at_local: Vec3);
+    pub fn ui_play_sound_off(element_visual: UiVisual, at_local: Vec3);
+
     pub fn ui_push_grab_aura(enabled: Bool32T);
     pub fn ui_pop_grab_aura();
     pub fn ui_grab_aura_enabled() -> Bool32T;
@@ -1561,6 +1565,7 @@ impl Ui {
             );
         }
     }
+
     /// A pressable button accompanied by an image! The button will expand to fit the text provided to it, horizontally.
     /// Text is re-used as the id. Will return true only on the first frame it is pressed!
     /// <https://stereokit.net/Pages/StereoKit/UI/ButtonImg.html>
@@ -2733,6 +2738,97 @@ impl Ui {
     /// see example in [`Ui::panel_begin`]
     pub fn panel_end() {
         unsafe { ui_panel_end() };
+    }
+
+    /// This will play the 'on' sound associated with the given UIVisual at the local position. It will also play the
+    /// 'off' sound when the given element becomes inactive, at the world location of the initial local position!
+    /// <https://stereokit.net/Pages/StereoKit/UI/PlaySoundOnOff.html>
+    /// * `element_visual` - The UIVisual to pull sound information from.
+    /// * `element_id` - The id of the element that will be tracked for playing the 'off' sound.
+    /// * `at_local` - The hierarchy local location where the sound will play.
+    ///
+    /// see also [`ui_play_sound_on_off`] [`Ui::play_sound_on`] [`Ui::play_sound_off`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{ui::{Ui, UiVisual}, maths::{Vec3, Pose}};
+    ///
+    /// let mut window_pose = Pose::new(
+    ///     [0.01, 0.035, 0.93], Some([0.0, 185.0, 0.0].into()));
+    ///
+    /// let element_visual = UiVisual::WindowBody;
+    /// let id= "Play sound on/off";
+    /// let id_hash = Ui::stack_hash(&id);
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     Ui::window_begin(id, &mut window_pose, None, None, None);
+    ///     Ui::play_sound_on_off(element_visual, id_hash, window_pose.position);
+    ///     Ui::label("This will play the 'on' sound\nfor the given (id / UiVisual)\nat the local position.", None, false);           
+    ///     Ui::window_end();
+    /// );
+    /// ```
+    pub fn play_sound_on_off(element_visual: UiVisual, element_id: IdHashT, at_local: impl Into<Vec3>) {
+        unsafe {
+            ui_play_sound_on_off(element_visual, element_id, at_local.into());
+        }
+    }
+
+    /// This will play the 'on' sound associated with the given UIVisual at the world position.
+    /// <https://stereokit.net/Pages/StereoKit/UI/PlaySoundOn.html>
+    /// * `element_visual` - The UIVisual to pull sound information from.
+    /// * `at_local` - The hierarchy local location where the sound will play.
+    ///
+    /// see also [`ui_play_sound_on`] [`Ui::play_sound_on_off`] [`Ui::play_sound_off`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{ui::{Ui, UiVisual}, maths::{Vec3, Pose}};
+    ///     
+    /// let mut window_pose = Pose::new(
+    ///     [0.01, 0.035, 0.93], Some([0.0, 185.0, 0.0].into()));
+    ///
+    /// let element_visual = UiVisual::WindowBody;
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     Ui::window_begin("Play sound on", &mut window_pose, None, None, None);
+    ///     Ui::play_sound_on(element_visual, window_pose.position);
+    ///     Ui::label("This will play the 'on' sound\nassociated with the given UIVisual\nat the local position.", None, false);           
+    ///     Ui::window_end();
+    /// );
+    /// ```
+    pub fn play_sound_on(element_visual: UiVisual, at_local: impl Into<Vec3>) {
+        unsafe {
+            ui_play_sound_on(element_visual, at_local.into());
+        }
+    }
+
+    /// This will play the 'off' sound associated with the given UIVisual at the world position.
+    /// <https://stereokit.net/Pages/StereoKit/UI/PlaySoundOff.html>
+    /// * `element_visual` - The UIVisual to pull sound information from.
+    /// * `at_local` - The hierarchy local location where the sound will play.
+    ///
+    /// see also [`ui_play_sound_off`] [`Ui::play_sound_on`] [`Ui::play_sound_on_off`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{ui::{Ui, UiVisual}, maths::{Vec3, Pose}};
+    ///
+    /// let mut window_pose = Pose::new(
+    ///     [0.01, 0.035, 0.93], Some([0.0, 185.0, 0.0].into()));
+    /// let element_visual = UiVisual::SliderPinch;
+    /// let mut value = 0.5;
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     Ui::window_begin("Play sound off", &mut window_pose, None, None, None);
+    ///     Ui::hslider("Slider1", &mut value, 0.0, 1.0,  None, None, None, None);
+    ///     Ui::play_sound_off(element_visual, window_pose.position);
+    ///     Ui::label("This will play the 'off' sound\nassociated with the given UIVisual\nat the local position.", None, false);
+    ///     Ui::window_end();
+    /// );
+    pub fn play_sound_off(element_visual: UiVisual, at_local: impl Into<Vec3>) {
+        unsafe {
+            ui_play_sound_off(element_visual, at_local.into());
+        }
     }
 
     /// Removes an ‘enabled’ state from the stack, and whatever was below will then be used as the primary enabled
