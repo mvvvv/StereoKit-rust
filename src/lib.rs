@@ -200,10 +200,10 @@
 //! to Vulkan translation. Knowing that, we work to build Windows .exe files on Linux using GNU toolchain.
 //!
 //! Build your app for Windows_x64 using GNU toolchain from Linux and Windows (and probably Mac):
-//! * Install mingw64-w64 (MSYS2 on windows).
+//! * Install mingw-w64 (MSYS2 on windows).
 //! * Add the `Rust` target gnu for windows:`rustup target add x86_64-pc-windows-gnu`
 //! * On 'Non Windows OS': we need wine to compile the shaders:
-//!   - Add i386 architecture (i.e. `sudo dpkg --add-architecture i386` on Ubuntu)
+//!   - Add i386 architecture (i.e. `sudo dpkg --add-architecture i386` on Ubuntu).
 //!   - Install wine and winetricks.
 //!   - Install needed tools and libs: `winetricks corefonts d3dx9 d3dcompiler_47 dxvk`.
 //! * Create a directory where necessary libs will be stored (i.e. ../x64-mingw-libs/) then add a link to the DLLs or
