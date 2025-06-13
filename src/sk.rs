@@ -2,6 +2,7 @@ use crate::{
     StereoKitError,
     maths::Bool32T,
     system::{Log, LogLevel},
+    tex::TexFormat,
     tools::os_api::get_assets_dir,
 };
 #[cfg(target_os = "android")]
@@ -78,9 +79,10 @@ pub enum AppMode {
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
 pub enum DepthMode {
-    /// Default mode, uses 16 bit on mobile devices like HoloLens and Quest, and 32 bit on higher powered platforms
-    /// like PC. If you need a far view distance even on mobile devices, prefer D32 or Stencil instead.
-    Balanced = 0,
+    /// Default mode, uses the OpenXR runtime's preferred depth format. This isAdd commentMore actions typically 16 bit
+    /// on standalone/battery powered devices like Quest and HoloLens, and 32 bit on higher powered platforms like PC.
+    /// If you need a far view distance even on mobile devices, prefer D32 or Stencil instead..
+    Default = 0,
     /// 16 bit depth buffer, this is fast and recommended for devices like the HoloLens. This is especially important
     /// for fast depth based reprojection. Far view distances will suffer here though, so keep your clipping far plane
     /// as close as possible.
@@ -311,7 +313,7 @@ pub const DEFAULT_NAME: *const c_char = {
 /// ### Examples
 /// ```
 /// use stereokit_rust::sk::{Sk, SkSettings, AppMode, DisplayBlend, DepthMode, OriginMode, StandbyMode};
-/// use stereokit_rust::system::LogLevel;
+/// use stereokit_rust::{system::LogLevel, tex::TexFormat};
 ///
 /// let mut settings = SkSettings::default();
 /// settings.app_name("Test").mode(AppMode::Offscreen);
@@ -320,7 +322,8 @@ pub const DEFAULT_NAME: *const c_char = {
 /// assert_eq!(settings.mode,                        AppMode::Offscreen);
 /// assert_eq!(settings.blend_preference,            DisplayBlend::None);
 /// assert_eq!(settings.no_flatscreen_fallback,      0);
-/// assert_eq!(settings.depth_mode,                  DepthMode::Balanced);
+/// assert_eq!(settings.depth_mode,                  DepthMode::Default);
+/// assert_eq!(settings.color_format,                TexFormat::None);
 /// assert_eq!(settings.log_filter,                  LogLevel::None);
 /// assert_eq!(settings.overlay_app,                 0);
 /// assert_eq!(settings.overlay_priority,            0);
@@ -347,6 +350,7 @@ pub struct SkSettings {
     pub no_flatscreen_fallback: Bool32T,
     pub depth_mode: DepthMode,
     pub log_filter: LogLevel,
+    pub color_format: TexFormat,
     pub overlay_app: Bool32T,
     pub overlay_priority: u32,
     pub flatscreen_pos_x: i32,
@@ -371,7 +375,8 @@ impl Default for SkSettings {
             mode: AppMode::XR,
             blend_preference: DisplayBlend::None,
             no_flatscreen_fallback: 0,
-            depth_mode: DepthMode::Balanced,
+            depth_mode: DepthMode::Default,
+            color_format: TexFormat::None,
             log_filter: LogLevel::None,
             overlay_app: 0,
             overlay_priority: 0,
@@ -433,11 +438,10 @@ impl SkSettings {
         self
     }
 
-    /// What type of background blend mode do we prefer for this application? Are you trying to build an
-    /// Opaque/Immersive/VR app, or would you like the display to be AnyTransparent, so the world will show up behind
-    /// your content, if that’s an option? Note that this is a preference only, and if it’s not available on this device,
-    /// the app will fall back to the runtime’s preference instead! By default, (DisplayBlend.None) this uses the
-    /// runtime’s preference.
+    /// What kind of depth buffer should StereoKit use? A fast one, a detailed one, one that uses stencils? By default
+    /// StereoKit will let the XR runtime choose, which typically results in fast,  16bit depth buffers for battery
+    /// powered devices, and detailed 32bit depth buffers on PCs. If the requested mode is not available, StereoKit will
+    /// fall back to the XR runtime's preference.
     /// <https://stereokit.net/Pages/StereoKit/SKSettings/blendPreference.html>
     pub fn blend_preference(&mut self, blend_preference: DisplayBlend) -> &mut Self {
         self.blend_preference = blend_preference;
@@ -449,6 +453,16 @@ impl SkSettings {
     /// <https://stereokit.net/Pages/StereoKit/SKSettings/depthMode.html>
     pub fn depth_mode(&mut self, depth_mode: DepthMode) -> &mut Self {
         self.depth_mode = depth_mode;
+        self
+    }
+
+    /// What kind of color buffer should StereoKit use for the primary display surface? By default StereoKit will let
+    /// the XR runtime choose from a list that StereoKit likes. This is generally the best choice, as the runtime can
+    /// pick surface formats that can improve performance. If a requested format is not available, StereoKit will fall
+    /// back to the XR runtime's preference.
+    /// <https://stereokit.net/Pages/StereoKit/SKSettings/colorFormat.html>
+    pub fn color_format(&mut self, color_format: TexFormat) -> &mut Self {
+        self.color_format = color_format;
         self
     }
 
