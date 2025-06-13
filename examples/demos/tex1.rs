@@ -122,7 +122,7 @@ impl Default for Tex1 {
         let color_dots = raw_dots.as_slice();
         let color_dots128 = raw_dots128.as_slice();
 
-        let mut tex_color_32a = Tex::new(TexType::Image, TexFormat::RGBA32, "tex_color");
+        let mut tex_color_32a = Tex::new(TexType::Image, TexFormat::RGBA32, Some("tex_color"));
         unsafe {
             tex_color_32a
                 .id("tex_color32a")
@@ -140,10 +140,10 @@ impl Default for Tex1 {
         tex_color_32c.id("tex_color32c");
         let mut tex_color_32d = Tex::from_color128(color_dots128, width, height, true).unwrap();
         tex_color_32d.id("tex_color32d");
-        let tex_vide = Tex::new(TexType::ImageNomips, TexFormat::RGBA128, "tex_vide");
-        let tex_vide2 = Tex::new(TexType::ImageNomips, TexFormat::R8, "tex_vide2");
-        let tex_vide3 = Tex::new(TexType::ImageNomips, TexFormat::R16u, "tex_vide3");
-        let tex_vide4 = Tex::new(TexType::ImageNomips, TexFormat::R32, "tex_vide4");
+        let tex_vide = Tex::new(TexType::ImageNomips, TexFormat::RGBA128, Some("tex_vide"));
+        let tex_vide2 = Tex::new(TexType::ImageNomips, TexFormat::R8, Some("tex_vide2"));
+        let tex_vide3 = Tex::new(TexType::ImageNomips, TexFormat::R16u, Some("tex_vide3"));
+        let tex_vide4 = Tex::new(TexType::ImageNomips, TexFormat::R32, Some("tex_vide4"));
 
         let mut gradient = Gradient::new(None);
         gradient.add(RED, 0.01);
