@@ -195,7 +195,7 @@ pub enum TexAddress {
 ///
 /// let mut tex_back = Tex::gen_particle(128, 128, 0.2, None);
 ///
-/// let mut tex_floor = Tex::new(TexType::Image, TexFormat::RGBA32, "My_tex_ID");
+/// let mut tex_floor = Tex::new(TexType::Image, TexFormat::RGBA32, None);
 ///
 /// let plane_mesh = Mesh::generate_plane_up([1.0,1.0], None, true);
 /// let material_left  = Material::pbr().tex_copy(tex_left);
@@ -869,7 +869,7 @@ impl Tex {
     /// let tex_loading = Tex::gen_color(named_colors::GREEN, 128, 128, TexType::Image, TexFormat::RGBA32);
     /// Tex::set_loading_fallback(&tex_loading);
     ///
-    /// let tex = Tex::new(TexType::Image, TexFormat::RGBA32, "tex_left_ID");
+    /// let tex = Tex::new(TexType::Image, TexFormat::RGBA32, None);
     /// let material  = Material::pbr().tex_copy(tex);
     /// let plane_mesh = Mesh::generate_plane_up([1.0,1.0], None, true);
     /// let transform_floor = Matrix::t(  [0.0, -0.5, 0.0]);
@@ -1086,7 +1086,7 @@ impl Tex {
     ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
     ///
     /// let image_data = std::include_bytes!("../assets/textures/open_gltf.jpeg");
-    /// let mut tex = Tex::new(TexType::Image, TexFormat::RGBA32, "My_tex_ID");
+    /// let mut tex = Tex::new(TexType::Image, TexFormat::RGBA32, None);
     ///
     /// tex.set_memory(image_data, true, false, Some(0));
     ///
@@ -1136,7 +1136,7 @@ impl Tex {
     ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
     ///
     /// let mut color_dots = [named_colors::CYAN; 16 * 16];
-    /// let mut tex = Tex::new(TexType::Image, TexFormat::RGBA32, "tex_ID");
+    /// let mut tex = Tex::new(TexType::Image, TexFormat::RGBA32, None);
     ///
     /// unsafe { tex.set_colors(16, 16, color_dots.as_mut_ptr() as *mut std::os::raw::c_void); }
     ///
@@ -1169,7 +1169,7 @@ impl Tex {
     ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
     ///
     /// let mut color_dots = [named_colors::CYAN; 16 * 16];
-    /// let mut tex = Tex::new(TexType::Image, TexFormat::RGBA32, "tex_ID");
+    /// let mut tex = Tex::new(TexType::Image, TexFormat::RGBA32, None);
     ///
     /// tex.set_colors32(16, 16, &color_dots);
     ///
@@ -1230,7 +1230,7 @@ impl Tex {
     ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
     ///
     /// let mut color_dots = [Color128{r: 0.25, g: 0.125, b: 1.0, a: 1.0}; 16 * 16];
-    /// let mut tex = Tex::new(TexType::Image, TexFormat::RGBA128, "tex_ID");
+    /// let mut tex = Tex::new(TexType::Image, TexFormat::RGBA128, None);
     ///
     /// tex.set_colors128(16, 16, &color_dots);
     ///
@@ -1289,7 +1289,7 @@ impl Tex {
     ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
     ///
     /// let mut color_dots = [125u8; 16 * 16];
-    /// let mut tex = Tex::new(TexType::Image, TexFormat::R8, "tex_ID");
+    /// let mut tex = Tex::new(TexType::Image, TexFormat::R8, None);
     ///
     /// tex.set_colors_r8(16, 16, &color_dots);
     ///
@@ -1350,7 +1350,7 @@ impl Tex {
     ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
     ///
     /// let mut color_dots = [127u8; 16 * 16 * 4];
-    /// let mut tex = Tex::new(TexType::Image, TexFormat::RGBA32, "tex_ID");
+    /// let mut tex = Tex::new(TexType::Image, TexFormat::RGBA32, None);
     ///
     /// tex.set_colors_u8(16, 16, &color_dots, 4);
     ///
@@ -1396,7 +1396,7 @@ impl Tex {
     ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
     ///
     /// let mut color_dots = [256u16; 16 * 16];
-    /// let mut tex = Tex::new(TexType::Image, TexFormat::R16u, "tex_ID");
+    /// let mut tex = Tex::new(TexType::Image, TexFormat::R16u, None);
     ///
     /// tex.set_colors_r16(16, 16, &color_dots);
     ///
@@ -1455,7 +1455,7 @@ impl Tex {
     ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
     ///
     /// let mut color_dots = [0.13f32; 16 * 16];
-    /// let mut tex = Tex::new(TexType::Image, TexFormat::R32, "tex_ID");
+    /// let mut tex = Tex::new(TexType::Image, TexFormat::R32, None);
     ///
     /// tex.set_colors_r32(16, 16, &color_dots);
     ///
@@ -1566,7 +1566,7 @@ impl Tex {
     /// # use stereokit_rust::{tex::{Tex, TexFormat, TexType}};
     /// # use std::ptr::null_mut;
     ///
-    /// let mut tex = Tex::new(TexType::Image, TexFormat::RGBA32, "tex_ID");
+    /// let mut tex = Tex::new(TexType::Image, TexFormat::RGBA32, None);
     /// let native_surface = tex.get_native_surface();
     /// unsafe { tex.set_native_surface(native_surface, TexType::Image, 0, 1, 1, 1, false); }
     /// ```
@@ -1610,7 +1610,7 @@ impl Tex {
     /// use stereokit_rust::{maths::{Vec3, Matrix}, util::{named_colors, Color32},
     ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
     ///
-    /// let mut tex = Tex::new(TexType::Image, TexFormat::RGBA32, "tex_ID");
+    /// let mut tex = Tex::new(TexType::Image, TexFormat::RGBA32, None);
     ///
     /// assert_eq!(tex.get_width(), Some(0));
     /// assert_eq!(tex.get_height(), Some(0));
@@ -1640,10 +1640,10 @@ impl Tex {
     ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
     ///
     /// let tex_fallback = Tex::gen_color(named_colors::VIOLET, 128, 128, TexType::Image, TexFormat::RGBA32);
-    /// let mut tex = Tex::new(TexType::Image, TexFormat::RGBA32, "tex_ID");
+    /// let mut tex = Tex::new(TexType::Image, TexFormat::RGBA32, None);
     /// tex.fallback_override(&tex_fallback);
     ///
-    /// let tex = Tex::new(TexType::Image, TexFormat::RGBA32, "tex_left_ID");
+    /// let tex = Tex::new(TexType::Image, TexFormat::RGBA32, Some("tex_left_ID"));
     /// let tex_metal = Tex::from_file("textures/parquet2/parquet2metal.ktx2", true, Some(9999))
     ///                          .expect("Metal tex should be created");
     /// let mut material  = Material::pbr().tex_copy(tex);
@@ -1883,7 +1883,7 @@ impl Tex {
     ///                      tex::{Tex, TexFormat, TexType}};
     ///
     /// let mut color_dots = [named_colors::CYAN; 16 * 16];
-    /// let mut tex = Tex::new(TexType::Image, TexFormat::RGBA32, "tex_ID");
+    /// let mut tex = Tex::new(TexType::Image, TexFormat::RGBA32, None);
     /// tex.set_colors32(16, 16, &color_dots);
     ///
     /// let check_dots = [Color32::WHITE; 16 * 16];
