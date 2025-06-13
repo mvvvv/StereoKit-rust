@@ -931,7 +931,8 @@ impl Steppers {
                             StepperHandler { id: stepper_id, type_id, stepper, state: StepperState::Initializing };
                         self.running_steppers.push(stepper_h);
                     } else {
-                        Log::warn(format!("Stepper {} did not initialize", stepper_id))
+                        Log::warn(format!("Stepper {} did not initialize", stepper_id));
+                        token.event_report.push(StepperAction::event(stepper_id.as_str(), ISTEPPER_REMOVED, "false"));
                     }
                 }
                 StepperAction::RemoveAll(stepper_type) => {
