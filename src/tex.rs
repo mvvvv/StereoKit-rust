@@ -376,6 +376,8 @@ impl Tex {
     /// <https://stereokit.net/Pages/StereoKit/Tex/Tex.html>
     /// * `texture_type` - What type of texture is it? Just a 2D Image? A Cubemap? Should it have mip-maps?
     /// * `format` - What information is the texture composed of? 32 bit colors, 64 bit colors, etc.
+    /// * `id` - A unique asset Id for this texture, this is used to find the texture later on, and to reference it.
+    ///   if
     ///
     /// see also [`tex_create`]
     /// ### Examples
@@ -387,11 +389,11 @@ impl Tex {
     /// let plane_mesh = Mesh::generate_plane_up([1.0,1.0], None, true);
     ///
     /// let mut color_dots = [named_colors::CYAN; 128 * 128];
-    /// let mut tex_left = Tex::new(TexType::Image, TexFormat::RGBA32, "tex_left_ID");
+    /// let mut tex_left = Tex::new(TexType::Image, TexFormat::RGBA32, Some("tex_left_ID"));
     /// tex_left.set_colors32(128, 128, &color_dots);
     ///
     /// let mut color_dots = [Color128::new(0.5, 0.75, 0.25, 1.0); 128 * 128];
-    /// let mut tex_right = Tex::new(TexType::Image, TexFormat::RGBA128, "tex_right_ID");
+    /// let mut tex_right = Tex::new(TexType::Image, TexFormat::RGBA128, None);
     /// tex_right.set_colors128(128, 128, &color_dots);
     ///
     /// let material_left  = Material::pbr().tex_copy(tex_left);
@@ -405,10 +407,12 @@ impl Tex {
     ///     plane_mesh.draw(token, &material_right, transform_right, None, None);
     /// );
     /// ```
-    pub fn new<S: AsRef<str>>(texture_type: TexType, format: TexFormat, id: S) -> Tex {
+    pub fn new(texture_type: TexType, format: TexFormat, id: Option<&str>) -> Tex {
         let tex = Tex(NonNull::new(unsafe { tex_create(texture_type, format) }).unwrap());
-        let c_str = CString::new(id.as_ref()).unwrap();
-        unsafe { tex_set_id(tex.0.as_ptr(), c_str.as_ptr()) };
+        if let Some(id) = id {
+            let c_str = CString::new(id).unwrap();
+            unsafe { tex_set_id(tex.0.as_ptr(), c_str.as_ptr()) };
+        }
         tex
     }
 
@@ -1542,15 +1546,18 @@ impl Tex {
     ///   provided here.
     /// * `native_fmt` - The texture’s format using the graphics backend’s value, not SK’s. This should match up with
     ///   the settings the texture was originally created with. If SK can figure the appropriate settings, it may
-    ///   override the value provided here.
+    ///   override the value provided here. 0 is a valide default value.
     /// * `width` - Width of the texture. This should match up with the settings the texture was originally created
-    ///   with. If SK can figure the appropriate settings, it may override the value provided here.
+    ///   with. If SK can figure the appropriate settings, it may override the value provided here. 0 is a valide default
+    ///   value.
     /// * `height` - Height of the texture. This should match up with the settings the texture was originally created
-    ///   with. If SK can figure the appropriate settings, it may override the value provided here.
+    ///   with. If SK can figure the appropriate settings, it may override the value provided here. 0 is a valide default
+    ///   value.
     /// * `surface_count` - Texture array surface count. This should match up with the settings the texture was
     ///   originally created with. If SK can figure the appropriate settings, it may override the value provided here.
+    ///   1 is a valide default value.
     /// * `owned` - Should ownership of this texture resource be passed on to StereoKit? If so, StereoKit may delete
-    ///   it when it’s finished with it. If this is not desired, pass in false.
+    ///   it when it’s finished with it. True is a valide default value, if this is not desired, pass in false.
     ///
     /// see also [`tex_set_surface`]
     /// ### Examples

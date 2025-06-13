@@ -173,7 +173,7 @@ impl PassthroughFbExt {
                 flags: CompositionLayerFlags::BLEND_TEXTURE_SOURCE_ALPHA,
                 layer_handle: self.active_layer,
             };
-            BackendOpenXR::add_composition_layer(&mut layer, -1);
+            BackendOpenXR::add_composition_layer(&mut layer, -10);
         }
     }
 

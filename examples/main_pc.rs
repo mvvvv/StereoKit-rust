@@ -110,6 +110,7 @@ fn main() {
     BackendOpenXR::request_ext("XR_FB_display_refresh_rate");
     BackendOpenXR::request_ext("XR_META_virtual_keyboard");
     BackendOpenXR::request_ext("XR_FB_render_model");
+
     let (sk, event_loop) = settings.init_with_event_loop().unwrap();
     launch(sk, event_loop, is_testing, start_test);
     Sk::shutdown();

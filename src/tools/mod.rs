@@ -1,5 +1,6 @@
 pub mod build_tools;
 pub mod os_api;
+pub mod xr_comp_layers;
 
 #[cfg(feature = "event-loop")]
 pub mod file_browser;

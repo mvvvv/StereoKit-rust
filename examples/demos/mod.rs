@@ -15,6 +15,7 @@ pub mod font1;
 pub mod hand_menu_radial0;
 pub mod hand_menu_radial1;
 pub mod input1;
+pub mod layers1;
 pub mod math1;
 pub mod program;
 pub mod render_list1;
@@ -29,8 +30,8 @@ pub mod ui1;
 
 use self::{
     a_stepper::AStepper, anchor1::Anchor1, anim1::Anim1, asset1::Asset1, b_stepper::BStepper, biplane1::Biplane1,
-    c_stepper::CStepper, font1::Font1, math1::Math1, render_list1::RenderList1, shaders1::Shader1, sprite1::Sprite1,
-    tex1::Tex1, text1::Text1, text2::Text2, threads1::Threads1, threads2::Threads2, ui1::Ui1,
+    c_stepper::CStepper, font1::Font1, layers1::Layers1, math1::Math1, render_list1::RenderList1, shaders1::Shader1,
+    sprite1::Sprite1, tex1::Tex1, text1::Text1, text2::Text2, threads1::Threads1, threads2::Threads2, ui1::Ui1,
 };
 
 pub struct Test {
@@ -124,6 +125,10 @@ impl Test {
             Test::new("Biplane1", |sk| {
                 sk.send_event(StepperAction::add_default::<Biplane1>("Biplane1"));
                 "Biplane1".to_string()
+            }),
+            Test::new("Layers1", |sk| {
+                sk.send_event(StepperAction::add_default::<Layers1>("Layers1"));
+                "Layers1".to_string()
             }),
         ];
         Box::new(tests)

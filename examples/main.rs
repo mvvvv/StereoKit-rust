@@ -37,10 +37,86 @@ pub fn android_main(app: AndroidApp) {
     android_logger::init_once(
         android_logger::Config::default().with_max_level(log::LevelFilter::Debug).with_tag("STKit-rs"),
     );
+    /*
+        BackendOpenXR::request_ext("XR_ANDROID_anchor_sharing_export");
+        BackendOpenXR::request_ext("XR_ANDROID_composition_layer_passthrough_mesh");
+        BackendOpenXR::request_ext("XR_ANDROID_depth_texture");
+        BackendOpenXR::request_ext("XR_ANDROID_device_anchor_persistence");
+        BackendOpenXR::request_ext("XR_ANDROID_eye_tracking");
+        BackendOpenXR::request_ext("XR_ANDROID_face_tracking");
+        BackendOpenXR::request_ext("XR_ANDROID_hand_mesh");
+        BackendOpenXR::request_ext("XR_ANDROID_light_estimation");
+        BackendOpenXR::request_ext("XR_ANDROID_mouse_interaction");
+        BackendOpenXR::request_ext("XR_ANDROID_passthrough_camera_state");
+        BackendOpenXR::request_ext("XR_ANDROID_performance_metrics");
+        BackendOpenXR::request_ext("XR_ANDROID_raycast");
+        BackendOpenXR::request_ext("XR_ANDROID_recommended_resolution");
+        BackendOpenXR::request_ext("XR_ANDROID_trackables");
+        BackendOpenXR::request_ext("XR_ANDROID_trackables_marker");
+        BackendOpenXR::request_ext("XR_ANDROID_trackables_object");
+        BackendOpenXR::request_ext("XR_ANDROID_trackables_qr_code");
+        BackendOpenXR::request_ext("XR_ANDROID_unbounded_reference_space");
+
+        BackendOpenXR::request_ext("XR_ANDROIDSYS_anchor_sharing_import");
+        BackendOpenXR::request_ext("XR_ANDROIDSYS_eye_tracking_calibration");
+        BackendOpenXR::request_ext("XR_ANDROIDSYS_face_tracking_calibration");
+        BackendOpenXR::request_ext("XR_ANDROIDSYS_ipd_calibration");
+        BackendOpenXR::request_ext("XR_ANDROIDSYS_trackables_shoebox");
+
+        BackendOpenXR::request_ext("XR_ANDROIDX_composition_layer_axis_aligned_distortion");
+        BackendOpenXR::request_ext("XR_ANDROIDX_scene_meshing");
+
+        BackendOpenXR::request_ext("XR_EXT_dpad_binding");
+        BackendOpenXR::request_ext("XR_EXT_debug_utils");
+        BackendOpenXR::request_ext("XR_EXT_future");
+        BackendOpenXR::request_ext("XR_EXT_hand_interaction");
+        BackendOpenXR::request_ext("XR_EXT_hand_tracking");
+        BackendOpenXR::request_ext("XR_EXT_palm_pose");
+        BackendOpenXR::request_ext("XR_EXT_performance_settings");
+        BackendOpenXR::request_ext("XR_EXT_uuid");
+
+        BackendOpenXR::request_ext("XR_KHR_android_surface_swapchain");
+        BackendOpenXR::request_ext("XR_KHR_binding_modification");
+        BackendOpenXR::request_ext("XR_KHR_composition_layer_color_scale_bias");
+        BackendOpenXR::request_ext("XR_KHR_composition_layer_cube");
+        BackendOpenXR::request_ext("XR_KHR_composition_layer_cylinder");
+        BackendOpenXR::request_ext("XR_KHR_composition_layer_equirect2");
+        BackendOpenXR::request_ext("XR_KHR_loader_init");
+        BackendOpenXR::request_ext("XR_KHR_loader_init_android");
+        BackendOpenXR::request_ext("XR_KHR_locate_spaces");
+        BackendOpenXR::request_ext("XR_KHR_maintenance1");
+        BackendOpenXR::request_ext("XR_KHR_opengl_es_enable");
+        BackendOpenXR::request_ext("XR_KHR_swapchain_usage_input_attachment_bit");
+        BackendOpenXR::request_ext("XR_KHR_visibility_mask");
+        BackendOpenXR::request_ext("XR_KHR_vulkan_enable");
+        BackendOpenXR::request_ext("XR_KHR_vulkan_enable2");
+
+        BackendOpenXR::request_ext("XR_FB_color_space");
+        BackendOpenXR::request_ext("XR_FB_composition_layer_depth_test");
+        BackendOpenXR::request_ext("XR_FB_composition_layer_image_layout");
+        BackendOpenXR::request_ext("XR_FB_composition_layer_settings");
+        BackendOpenXR::request_ext("XR_FB_display_refresh_rate");
+        BackendOpenXR::request_ext("XR_FB_render_model");
+        BackendOpenXR::request_ext("XR_FB_foveation");
+        BackendOpenXR::request_ext("XR_FB_foveation_configuration");
+        BackendOpenXR::request_ext("XR_FB_foveation_vulkan");
+        BackendOpenXR::request_ext("XR_FB_hand_tracking_aim");
+        BackendOpenXR::request_ext("XR_FB_hand_tracking_mesh");
+        BackendOpenXR::request_ext("XR_FB_space_warp");
+        BackendOpenXR::request_ext("XR_FB_swapchain_update_state");
+
+        BackendOpenXR::request_ext("XR_META_foveation_eye_tracked");
+        BackendOpenXR::request_ext("XR_META_vulkan_swapchain_create_info");
+        BackendOpenXR::request_ext("XR_META_virtual_keyboard");
+
+        BackendOpenXR::request_ext("XR_MND_headless");
+    */
 
     BackendOpenXR::request_ext("XR_FB_display_refresh_rate");
     BackendOpenXR::request_ext("XR_FB_render_model");
     BackendOpenXR::request_ext("XR_META_virtual_keyboard");
+    BackendOpenXR::request_ext("XR_KHR_android_surface_swapchain");
+
     let (sk, event_loop) = settings.init_with_event_loop(app).unwrap();
 
     _main(sk, event_loop);
