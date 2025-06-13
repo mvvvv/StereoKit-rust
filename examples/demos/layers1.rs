@@ -22,6 +22,8 @@ use stereokit_rust::{
 /// Composition Layers demo
 ///
 /// OpenXR allows submitting extra quad or video layers
+///
+///  This is a rust copycat of <https://github.com/StereoKit/StereoKit/blob/develop/Examples/StereoKitTest/Demos/DemoLayers.cs>
 #[derive(IStepper)]
 pub struct Layers1 {
     id: StepperId,

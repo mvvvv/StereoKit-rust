@@ -27,6 +27,8 @@ use std::ptr::null_mut;
 #[derive(Debug)]
 /// Helper for loading and using the OpenXR composition layers extension.
 /// Provides function pointers for swapchain management and layer submission.
+///
+///  This is a rust adaptations of <https://github.com/StereoKit/StereoKit/blob/master/Examples/StereoKitTest/Tools/XrCompLayers.cs>
 pub struct XrCompLayers {
     // OpenXR function pointers
     #[cfg(target_os = "android")]
