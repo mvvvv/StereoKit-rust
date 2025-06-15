@@ -472,7 +472,7 @@ impl RenderList {
     /// let transform_screen = Matrix::t([0.0, 0.0, -1.0]);
     ///
     /// let at = Vec3::new(-80.0, 1.0, 80.0);
-    /// let perspective = Matrix::perspective(45.0, 1.0, 0.01, 220.0);
+    /// let perspective = Matrix::perspective(45.0, 1.0, 0.01, 120.0);
     /// let transform_cam  = Matrix::look_at(at, Vec3::ZERO, None);
     ///
     /// let mut render_list = RenderList::new();

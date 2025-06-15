@@ -4,10 +4,12 @@ use std::rc::Rc;
 use stereokit_rust::font::Font;
 use stereokit_rust::maths::{Bounds, Rect};
 use stereokit_rust::render_list::RenderList;
-use stereokit_rust::system::{TextFit, TextStyle};
+use stereokit_rust::sprite::Sprite;
+use stereokit_rust::system::{Pivot, RenderClear, TextFit, TextStyle};
 use stereokit_rust::tex::TexFormat;
 use stereokit_rust::tools::xr_comp_layers::{SwapchainSk, XrCompLayers};
 use stereokit_rust::util::named_colors::{self, RED};
+use stereokit_rust::util::{Color128, Time};
 use stereokit_rust::{
     material::Material,
     maths::{Matrix, Pose, Vec2, Vec3},
@@ -16,7 +18,6 @@ use stereokit_rust::{
     system::{Backend, BackendXRType, Renderer, Text},
     tex::Tex,
     ui::Ui,
-    util::Color32,
 };
 
 /// Composition Layers demo
@@ -32,8 +33,9 @@ pub struct Layers1 {
     material: Material,
     window_pose: Pose,
     preview_pose: Pose,
-    swapchain: Option<SwapchainSk>,
+    swapchain_sk: Option<SwapchainSk>,
     render_list: RenderList,
+    projection: Matrix,
     sort_order: f32,
 
     pub transform: Matrix,
@@ -55,8 +57,9 @@ impl Default for Layers1 {
             material: Material::pbr().copy(),
             window_pose,
             preview_pose,
-            swapchain: None,
+            swapchain_sk: None,
             render_list: RenderList::new(),
+            projection: Matrix::orthographic(0.2, 0.2, 0.01, 1010.0),
             sort_order: 1.0,
 
             transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, [0.0, 180.0, 0.0]),
@@ -80,7 +83,7 @@ impl Layers1 {
                     SwapchainUsageFlags::COLOR_ATTACHMENT,
                     false,
                 ) {
-                    self.swapchain = SwapchainSk::wrap(handle, TexFormat::RGBA32, 512, 512, Some(comp_layer));
+                    self.swapchain_sk = SwapchainSk::wrap(handle, TexFormat::RGBA32, 512, 512, Some(comp_layer));
                 } else {
                     Log::warn("Failed to create XR swapchain");
                     return false;
@@ -95,7 +98,8 @@ impl Layers1 {
             if let Ok(floor) = Tex::from_file("textures/parquet2/parquet2.ktx2", true, None) {
                 mat.diffuse_tex(&floor);
             }
-            self.render_list.add_mesh(Mesh::sphere(), mat, Matrix::s(0.1 * Vec3::ONE), Color32::WHITE, None);
+            self.render_list
+                .add_mesh(Mesh::sphere(), mat, Matrix::s(0.05 * Vec3::ONE), named_colors::BLUE, None);
             true
         } else {
             Log::warn("OpenXR backend is not available, cannot start Layers1 demo");
@@ -126,30 +130,41 @@ impl Layers1 {
             None,
         );
 
-        if let Some(sc) = &mut self.swapchain {
+        if let Some(sc) = &mut self.swapchain_sk {
             let old_color = Renderer::get_clear_color();
             Renderer::clear_color(named_colors::SKY_BLUE);
             if let Err(e) = sc.acquire_image(None) {
                 Log::warn(format!("Failed to acquire image from swapchain: {}", e));
                 Log::warn("Skipping rendering for now...");
-                self.swapchain = None;
+                self.swapchain_sk = None;
                 return;
             }
+            let render_tex = sc.get_render_target().expect("SwapchainSk should have a render target");
             self.render_list.draw_now(
-                sc.get_render_target().expect("SwapchainSk should have a render target"),
-                Matrix::look_at(Vec3::new(0.0, 0.0, 0.0), Vec3::ZERO, None),
-                Matrix::orthographic(0.2, 0.2, 0.01, 50.0),
-                None,
-                None,
+                render_tex,
+                //                Matrix::look_at(Vec3::angle_xy(Time::get_totalf() * 90.0, 0.0), Vec3::ZERO, None),
+                Matrix::look_at(Vec3::X, Vec3::ZERO, None),
+                self.projection,
+                Some(Color128::new(0.4, 0.3, 0.2, 0.5)),
+                Some(RenderClear::Color),
                 Rect::new(0.0, 0.0, 1.0, 1.0),
                 None,
             );
+
+            //let sprite = Sprite::from_tex(render_tex, None, None).unwrap();
+            let sprite = Sprite::from_file("icons/fly_over.png", None, None).unwrap();
+
+            sprite.draw(token, self.transform, Pivot::Center, None);
+
+            assert_eq!(render_tex.get_width(), Some(512));
+
             if let Err(e) = sc.release_image() {
                 Log::warn(format!("Failed to release image from swapchain: {}", e));
                 Log::warn("Skipping rendering for now...");
-                self.swapchain = None;
+                self.swapchain_sk = None;
                 return;
             }
+
             Renderer::clear_color(old_color);
             XrCompLayers::submit_quad_layer(
                 self.preview_pose,

@@ -110,6 +110,14 @@ pub fn android_main(app: AndroidApp) {
         BackendOpenXR::request_ext("XR_META_virtual_keyboard");
 
         BackendOpenXR::request_ext("XR_MND_headless");
+        BackendOpenXR::request_ext("XR_MND_headless");
+        BackendOpenXR::request_ext("XR_MND_swapchain_usage_input_attachment_bit");
+
+        BackendOpenXR::request_ext("XR_MNDX_ball_on_a_stick_controller");
+        BackendOpenXR::request_ext("XR_MNDX_force_feedback_curl");
+        BackendOpenXR::request_ext("XR_MNDX_hydra");
+        BackendOpenXR::request_ext("XR_MNDX_system_buttons");
+        BackendOpenXR::request_ext("XR_MNDX_xdev_space");
     */
 
     BackendOpenXR::request_ext("XR_FB_display_refresh_rate");
