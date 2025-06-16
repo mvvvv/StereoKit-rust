@@ -9,7 +9,7 @@
 #---- building for pc
 DISPLAY= cargo run --features event-loop  --example main_pc  #----DISPLAY must be unset on Wayland only
 cargo run --features event-loop  --example main_pc -- --test
-cargo build_sk_rs --example main_pc --features event-loop ../sk_builds/SK_demo_linux/
+cargo build_sk_rs --example main_pc --features event-loop ../sk_builds/SK_demo_linux/ && steam steam://rungameid/13868818448177430528
 FORCE_LOCAL_DEPS=ON DEP_SK_GPU_SOURCE="/opt/sk_gpu" cargo build_sk_rs --example main_pc --features event-loop,force-local-deps ../sk_builds/SK_demo_linux/
 
 #---- cross building for pc

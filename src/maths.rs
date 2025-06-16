@@ -2588,6 +2588,10 @@ impl Quat {
     /// <https://stereokit.net/Pages/StereoKit/Quat/Identity.html>
     pub const IDENTITY: Self = Self { x: 0.0, y: 0.0, z: 0.0, w: 1.0 };
 
+    /// This is a quaternion that represents a 180 degree rotation around the Y axis. It’s useful for
+    /// representing a 180 degree turn in a 3D space, such as when you want to face the opposite direction.
+    pub const Y_180: Self = Self { x: 0.0, y: 1.0, z: 0.0, w: 0.0 };
+
     /// ZERO may be found when testing some [`crate::system::Input`], [`crate::system::Pointer`] or [`crate::system::Controller`]
     pub const ZERO: Self = Self { x: 0.0, y: 0.0, z: 0.0, w: 0.0 };
 
@@ -2831,6 +2835,10 @@ impl Quat {
     ///
     /// let quat = Quat::from_angles(45.0, 30.0, 60.0);
     /// let quat2: Quat = [45.0, 30.0, 60.0].into();
+    /// assert_eq!(quat, quat2);
+    ///
+    /// let quat = Quat::from_angles(0.0, 180.0, 0.0);
+    /// let quat2: Quat = Quat::Y_180;
     /// assert_eq!(quat, quat2);
     /// ```
     #[inline]

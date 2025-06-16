@@ -29,6 +29,7 @@ use stereokit_rust::{
 pub struct Layers1 {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
+    shutdown_completed: bool,
 
     material: Material,
     window_pose: Pose,
@@ -53,17 +54,18 @@ impl Default for Layers1 {
         Self {
             id: "Layers1".into(),
             sk_info: None,
+            shutdown_completed: false,
 
             material: Material::pbr().copy(),
             window_pose,
             preview_pose,
             swapchain_sk: None,
             render_list: RenderList::new(),
-            projection: Matrix::orthographic(0.2, 0.2, 0.01, 1010.0),
+            projection: Matrix::orthographic(0.2, 0.2, 0.01, 10.0),
             sort_order: 1.0,
 
             transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, [0.0, 180.0, 0.0]),
-            text: "Layers1".to_owned(),
+            text: "Layers1\n\n\n".to_owned(),
             text_style: None,
         }
     }
@@ -99,7 +101,7 @@ impl Layers1 {
                 mat.diffuse_tex(&floor);
             }
             self.render_list
-                .add_mesh(Mesh::sphere(), mat, Matrix::s(0.05 * Vec3::ONE), named_colors::BLUE, None);
+                .add_mesh(Mesh::sphere(), mat, Matrix::s(0.05 * Vec3::ONE), named_colors::WHITE, None);
             true
         } else {
             Log::warn("OpenXR backend is not available, cannot start Layers1 demo");
@@ -142,17 +144,15 @@ impl Layers1 {
             let render_tex = sc.get_render_target().expect("SwapchainSk should have a render target");
             self.render_list.draw_now(
                 render_tex,
-                //                Matrix::look_at(Vec3::angle_xy(Time::get_totalf() * 90.0, 0.0), Vec3::ZERO, None),
-                Matrix::look_at(Vec3::X, Vec3::ZERO, None),
+                Matrix::look_at(Vec3::angle_xy(Time::get_totalf() * 90.0, 0.0), Vec3::ZERO, None),
                 self.projection,
-                Some(Color128::new(0.4, 0.3, 0.2, 0.5)),
+                Some(Color128::new(0.4, 0.3, 0.2, 1.0)),
                 Some(RenderClear::Color),
                 Rect::new(0.0, 0.0, 1.0, 1.0),
                 None,
             );
 
-            //let sprite = Sprite::from_tex(render_tex, None, None).unwrap();
-            let sprite = Sprite::from_file("icons/fly_over.png", None, None).unwrap();
+            let sprite = Sprite::from_tex(render_tex, None, None).unwrap();
 
             sprite.draw(token, self.transform, Pivot::Center, None);
 
@@ -220,5 +220,14 @@ impl Layers1 {
         Ui::window_end();
 
         Text::add_at(token, &self.text, self.transform, self.text_style, None, None, None, None, None, None);
+    }
+
+    fn close(&mut self, _triggering: bool) -> bool {
+        if let Some(sc) = &mut self.swapchain_sk {
+            sc.destroy();
+        }
+        self.swapchain_sk = None;
+        self.shutdown_completed = true;
+        self.shutdown_completed
     }
 }
