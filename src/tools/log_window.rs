@@ -33,7 +33,7 @@ pub const SHOW_LOG_WINDOW: &str = "Tool_ShowLogWindow";
 /// // Somewhere to copy the log
 /// static LOG_LOG: Mutex<Vec<LogItem>> = Mutex::new(vec![]);
 /// let fn_mut = |level: LogLevel, log_text: &str| {
-///    let mut items = LOG_LOG.lock().unwrap();
+///    let items = LOG_LOG.lock().unwrap();
 ///    basic_log_fmt(level, log_text, 20, items);
 /// };
 /// Log::subscribe(fn_mut);

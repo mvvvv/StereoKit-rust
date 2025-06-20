@@ -1187,7 +1187,7 @@ impl GradientKey {
 /// use stereokit_rust::{maths::Vec3, system::AssetState, tex::{Tex, SHCubemap},
 ///                      util::{named_colors, Gradient, GradientKey, Color128}};
 ///
-/// let mut keys = [
+/// let keys = [
 ///     GradientKey::new(Color128::BLACK_TRANSPARENT, 0.0),
 ///     GradientKey::new(named_colors::RED, 0.1),
 ///     GradientKey::new(named_colors::CYAN, 0.4),
@@ -1255,7 +1255,7 @@ impl Gradient {
     /// use stereokit_rust::{maths::Vec3, tex::{Tex, SHCubemap},
     ///                      util::{named_colors, Gradient, GradientKey, Color128}};
     ///
-    /// let mut keys = [
+    /// let keys = [
     ///     GradientKey::new(Color128::BLACK_TRANSPARENT, 0.0),
     ///     GradientKey::new(named_colors::RED, 0.5),
     ///     GradientKey::new(Color128::BLACK, 0.7)];
