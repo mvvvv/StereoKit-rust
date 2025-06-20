@@ -277,6 +277,79 @@ pub fn open_asset(_sk_info: &Option<Rc<RefCell<SkInfo>>>, asset_path: impl AsRef
     File::open(path_asset).ok()
 }
 
+/// Open and read an asset like a file
+#[cfg(target_os = "android")]
+pub fn read_asset(sk_info: &Option<Rc<RefCell<SkInfo>>>, asset_path: impl AsRef<Path>) -> Option<Vec<u8>> {
+    use std::ffi::CString;
+
+    if sk_info.is_none() {
+        Log::err("open_asset, sk_info is None");
+        return None;
+    }
+
+    let sk_i = sk_info.as_ref().unwrap().borrow_mut();
+    let app = sk_i.get_android_app();
+
+    if let Ok(cstring) = CString::new(asset_path.as_ref().to_str().unwrap_or("Error!!!")) {
+        if let Some(mut asset) = app.asset_manager().open(cstring.as_c_str()) {
+            if let Ok(o_buffer) = asset.buffer() {
+                Some(o_buffer.to_vec())
+            } else {
+                Log::err(format!("open_asset, {:?} cannot get the buffer", asset_path.as_ref()));
+                None
+            }
+        } else {
+            Log::err(format!("open_asset, path {:?} cannot be a opened", asset_path.as_ref()));
+            None
+        }
+    } else {
+        Log::err(format!("open_asset, path {:?} cannot be a cstring", asset_path.as_ref()));
+        None
+    }
+}
+
+/// Open and read an asset like a file
+/// * `sk_info` - The SkInfo smart pointer
+/// * `asset_path` - The path to the asset.
+///
+/// Returns a File if the asset was opened successfully, None otherwise.
+///
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::tools::os_api::read_asset;
+/// use std::io::Read;
+///
+/// let sk_info  = Some(sk.get_sk_info_clone());
+///
+/// let asset_path = "textures/readme.md";
+///
+/// let buffer = read_asset(&sk_info, asset_path).expect("File readme should be readable");
+/// assert!(buffer.starts_with(b"# Images"));
+/// ```
+#[cfg(not(target_os = "android"))]
+pub fn read_asset(_sk_info: &Option<Rc<RefCell<SkInfo>>>, asset_path: impl AsRef<Path>) -> Option<Vec<u8>> {
+    use std::{env, io::Read};
+
+    let path_assets = env::current_dir().unwrap().join(get_assets_dir());
+    let path_asset = path_assets.join(&asset_path);
+    let mut fd = match File::open(path_asset).ok() {
+        Some(file) => file,
+        None => {
+            Log::err(format!("open_asset, path {:?} cannot be opened", asset_path.as_ref()));
+            return None;
+        }
+    };
+    let mut o_buffer = vec![];
+    match fd.read_to_end(&mut o_buffer) {
+        Ok(_) => Some(o_buffer),
+        Err(err) => {
+            Log::err(format!("open_asset, path {:?} cannot be read: {}", asset_path.as_ref(), err));
+            None
+        }
+    }
+}
+
 /// Read the files and eventually the sub directory of a given directory
 /// * `_sk_info` - The SkInfo smart pointer
 /// * `dir` - The directory to read.
