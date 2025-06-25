@@ -55,8 +55,14 @@ impl Default for Sprite1 {
         tex_particule2.id("tagada");
 
         //---- Some Text
-        let font_files =
-            ["/usr/share/fonts/truetype/wine/tahoma.ttf", "/usr/share/fonts/truetype/wine/ms_sans_serif.ttf"];
+        let font_files = if cfg!(windows) {
+            ["C:\\Windows\\Fonts\\Arial.ttf", "C:\\Windows\\Fonts\\Calibri.ttf"]
+        } else {
+            [
+                "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
+                "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+            ]
+        };
         let font = Font::from_files(&font_files).unwrap_or_default();
         let text_style = Text::make_style(font, 0.50, CYAN);
 
