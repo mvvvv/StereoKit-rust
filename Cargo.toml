@@ -204,7 +204,7 @@ name = "android.permission.MANAGE_EXTERNAL_STORAGE"
 
 #---Android permission for Horizon OS
 [[package.metadata.android.uses_permission]]
-name = "com.oculus.permission.HAND_TRACKING"
+name = "horizonos.permission.HAND_TRACKING"
 required = false
 
 [[package.metadata.android.uses_permission]]
@@ -212,11 +212,11 @@ name = "com.oculus.permission.BODY_TRACKING"
 required = false
 
 [[package.metadata.android.uses_permission]]
-name = "com.oculus.permission.FACE_TRACKING"
+name = "horizonos.permission.FACE_TRACKING"
 required = false
 
 [[package.metadata.android.uses_permission]]
-name = "com.oculus.permission.EYE_TRACKING"
+name = "horizonos.permission.EYE_TRACKING"
 required = false
 
 [[package.metadata.android.uses_permission]]
@@ -224,11 +224,11 @@ name = "com.oculus.permission.RENDER_MODEL"
 required = true
 
 [[package.metadata.android.uses_permission]]
-name = "com.oculus.permission.USE_ANCHOR_API"
+name = "horizonos.permission.USE_ANCHOR_API"
 required = true
 
 [[package.metadata.android.uses_permission]]
-name = "com.oculus.permission.USE_SCENE"
+name = "horizonos.permission.USE_SCENE"
 required = true
 
 [[package.metadata.android.uses_permission]]
@@ -236,7 +236,7 @@ name = "com.oculus.permission.BOUNDARY_VISIBILITY"
 required = true
 
 [[package.metadata.android.uses_permission]]
-name = "com.oculus.permission.IMPORT_EXPORT_IOT_MAP_DATA"
+name = "horizonos.permission.IMPORT_EXPORT_IOT_MAP_DATA"
 required = false
 
 [[package.metadata.android.uses_permission]]
@@ -252,9 +252,9 @@ required = false
 name = "android.permission.SCENE_UNDERSTANDING_COARSE"
 required = false
 
-[[package.metadata.android.uses_permission]]
-name = "android.permission.HAND_TRACKING"
-required = false
+# [[package.metadata.android.uses_permission]]
+# name = "android.permission.HAND_TRACKING"
+# required = false
 
 [[package.metadata.android.uses_permission]]
 name = "android.permission.EYE_TRACKING_FINE"
