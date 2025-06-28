@@ -368,8 +368,7 @@ impl Anchor {
         unsafe { CStr::from_ptr(anchor_get_name(self.0.as_ptr())).to_str().unwrap() }
     }
 
-    /// Tries to get the underlying perception spatial anchor
-    /// for platforms using Microsoft spatial anchors.
+    /// Tries to get the underlying perception spatial anchor for platforms using Microsoft spatial anchors.
     /// <https://stereokit.net/Pages/StereoKit/Anchor/TryGetPerceptionAnchor.html>
     /// * `'T'` - The type of the spatial anchor. Must corresponds to the the Windows API type
     ///   of Windows.Perception.Spatial.SpatialAnchor.
