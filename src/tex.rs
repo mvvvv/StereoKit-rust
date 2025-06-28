@@ -641,7 +641,7 @@ impl Tex {
             tex_create_color32(colors.as_ptr() as *mut Color32, width as i32, height as i32, srgb_data as i32)
         })
         .ok_or(StereoKitError::TexColor(
-            format!("{}x{}", height, width),
+            format!("{height}x{width}"),
             "tex_create_color32 failed".to_string(),
         ))?))
     }
@@ -697,7 +697,7 @@ impl Tex {
             tex_create_color128(colors.as_ptr() as *mut Color128, width as i32, height as i32, srgb_data as i32)
         })
         .ok_or(StereoKitError::TexColor(
-            format!("{}x{}", height, width),
+            format!("{height}x{width}"),
             "tex_create_color128 failed".to_string(),
         ))?))
     }
@@ -750,7 +750,7 @@ impl Tex {
             tex_create_rendertarget(width as i32, height as i32, multisample, color_format, depth_format)
         })
         .ok_or(StereoKitError::TexRenderTarget(
-            format!("{}x{}", height, width),
+            format!("{height}x{width}"),
             "tex_create_rendertarget failed".to_string(),
         ))?))
     }

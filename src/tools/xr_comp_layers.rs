@@ -155,7 +155,7 @@ impl XrCompLayers {
         }
 
         if !(Backend::xr_type() == BackendXRType::OpenXR && this.load_bindings()) {
-            Log::warn(format!("XrCompLayers: some bindings are missing : {:?}", this));
+            Log::warn(format!("XrCompLayers: some bindings are missing : {this:?}"));
             return None;
         }
 
@@ -571,7 +571,7 @@ impl SwapchainSk {
                 Self { xr_comp_layers, handle, width, height, acquired: 0, gles_images, images: Vec::with_capacity(0) };
 
             for image in &this.gles_images {
-                Log::diag(format!("SwapchainSk: image: {:#?}", image));
+                Log::diag(format!("SwapchainSk: image: {image:#?}"));
                 // let mut image_sk =
                 //     Tex::gen_color(named_colors::BLUE_VIOLET, width, height, TexType::Rendertarget, format);
                 //let mut image_sk = Tex::new(TexType::Rendertarget, format, None);

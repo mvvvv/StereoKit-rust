@@ -84,7 +84,7 @@ impl Math1 {
             ray = Ray::new(hand_pose.position, hand_pose.get_up());
         }
         if right_hand.is_just_pinched() {
-            Log::diag(format!("{:?}", ray));
+            Log::diag(format!("{ray:?}"));
         }
 
         // Draw a line for the ray

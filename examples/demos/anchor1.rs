@@ -58,7 +58,7 @@ impl Anchor1 {
         }
         let ray = Ray::new(hand_pose.position, hand_pose.get_up());
         if right_hand.is_just_pinched() {
-            Log::diag(format!("{:?}", ray));
+            Log::diag(format!("{ray:?}"));
         }
         Lines::add(token, ray.position, ray.position + ray.direction * 0.5, WHITE, None, 0.01);
 

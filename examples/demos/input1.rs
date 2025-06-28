@@ -107,7 +107,7 @@ impl Input1 {
         Ui::hspace(0.01);
         let trigger = move_ctrler.trigger;
         let trigger_color: Color128 = if trigger > 0.0 { RED.into() } else { WHITE.into() };
-        let trigger_text = format!("L_Trigger: {:.2}", trigger);
+        let trigger_text = format!("L_Trigger: {trigger:.2}");
         Ui::push_tint(trigger_color.to_gamma());
         Ui::button_at(trigger_text, [0.12, -0.295, 0.005], [0.10, 0.03]);
         Ui::pop_tint();
@@ -117,7 +117,7 @@ impl Input1 {
         let grip = move_ctrler.grip;
         let grip_color: Color128 = if grip > 0.0 { RED.into() } else { WHITE.into() };
         Ui::push_tint(grip_color.to_gamma());
-        let grip_text = format!("L_Grip: {:.2}", grip);
+        let grip_text = format!("L_Grip: {grip:.2}");
         Ui::button_at(grip_text, [0.10, -0.34, 0.005], [0.09, 0.03]);
         Ui::pop_tint();
 
@@ -157,7 +157,7 @@ impl Input1 {
         Ui::hspace(0.01);
         let trigger = move_ctrler.trigger;
         let trigger_color: Color128 = if trigger > 0.0 { RED.into() } else { WHITE.into() };
-        let trigger_text = format!("R_Trigger: {:.2}", trigger);
+        let trigger_text = format!("R_Trigger: {trigger:.2}");
         Ui::push_tint(trigger_color.to_gamma());
         Ui::button_at(trigger_text, [-0.02, -0.295, 0.005], [0.10, 0.03]);
         Ui::pop_tint();
@@ -167,7 +167,7 @@ impl Input1 {
         let grip = move_ctrler.grip;
         let grip_color: Color128 = if grip > 0.0 { RED.into() } else { WHITE.into() };
         Ui::push_tint(grip_color.to_gamma());
-        let grip_text = format!("R_Grip: {:.2}", grip);
+        let grip_text = format!("R_Grip: {grip:.2}");
         Ui::button_at(grip_text, [-0.01, -0.34, 0.005], [0.09, 0.03]);
         Ui::pop_tint();
 

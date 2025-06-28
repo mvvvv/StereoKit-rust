@@ -184,7 +184,7 @@ pub fn include_asset_tree(body: TokenStream) -> TokenStream {
             vec_path.push("!!No asset dir tree!!".to_string());
         }
     }
-    let stringified = format!("&{:?}", vec_path);
+    let stringified = format!("&{vec_path:?}");
     TokenStream::from_str(&stringified).unwrap()
 
     // let body = [TokenTree::Literal(Literal::string("/assets"))].into_iter().collect();

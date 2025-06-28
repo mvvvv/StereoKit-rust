@@ -70,7 +70,7 @@ mod tests_vec {
         assert_eq!(Vec2::max(v1, v2), v2);
         assert_eq!(Vec2::min(v1, v2), v1);
         assert_eq!(v1.abs(), Vec2::new(1.0, 2.0));
-        assert_eq!(format!("{}", v1), "[x:1, y:2]");
+        assert_eq!(format!("{v1}"), "[x:1, y:2]");
         assert_eq!(v1 / v2, Vec2::new(1.0 / 3.0, 2.0 / 4.0));
         let mut tmp = v1;
         tmp /= v2;
@@ -145,7 +145,7 @@ mod tests_vec {
         assert_eq!(Vec3::max(v1, v2), v2);
         assert_eq!(Vec3::min(v1, v2), v1);
         assert_eq!(v1.abs(), Vec3::new(1.0, 2.0, 3.0));
-        assert_eq!(format!("{}", v1), "[x:1, y:2, z:3]");
+        assert_eq!(format!("{v1}"), "[x:1, y:2, z:3]");
         assert_eq!(v1 / v2, Vec3::new(1.0 / 4.0, 2.0 / 5.0, 3.0 / 6.0));
         let mut tmp = v1;
         tmp /= v2;
@@ -531,7 +531,7 @@ mod tests_quat {
     #[test]
     fn test_quat_display() {
         let q = Quat::new(1.0, 2.0, 3.0, 4.0);
-        assert_eq!(format!("{}", q), "[x:1, y:2, z:3, w:4]");
+        assert_eq!(format!("{q}"), "[x:1, y:2, z:3, w:4]");
     }
 
     #[test]

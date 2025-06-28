@@ -18,9 +18,9 @@ fn main() {
     let skc_in_dll = cfg!(feature = "skc-in-dll");
 
     if win_gl {
-        println!("cargo:info=Compiling with {} for {}/opengl with profile {}", target_env, target_os, profile);
+        println!("cargo:info=Compiling with {target_env} for {target_os}/opengl with profile {profile}");
     } else {
-        println!("cargo:info=Compiling with {} for {} with profile {}", target_env, target_os, profile);
+        println!("cargo:info=Compiling with {target_env} for {target_os} with profile {profile}");
     }
 
     if target_os == "macos" {
@@ -138,7 +138,7 @@ fn main() {
                 if !skc_in_dll {
                     println!("cargo:rustc-link-search=native={}/build", dst.display());
                     println!("cargo:rustc-link-search=native={}/lib", dst.display());
-                    println!("cargo:rustc-link-search=native={}", win_gnu_libs);
+                    println!("cargo:rustc-link-search=native={win_gnu_libs}");
                     cargo_link!("gcc_eh");
                     cargo_link!("stdc++");
                     cargo_link!("meshoptimizer");
@@ -146,16 +146,16 @@ fn main() {
                     //---- We have to extract the DLL i.e. ".\target\x86_64-pc-windows-gnu\debug\build\stereokit-rust-be362d37871b9048\out\build\StereoKitC.dll"
                     //---- and copy it to ".\target\x86_64-pc-windows-gnu\debug\deps\
                     //println!("cargo:rustc-link-search=native={}/build", dst.display());
-                    println!("cargo:rustc-link-search=native={}", win_gnu_libs);
+                    println!("cargo:rustc-link-search=native={win_gnu_libs}");
                     let deuleuleu = "libStereoKitC.dll";
                     let target_dir = Path::new(&out_dir).parent().unwrap().parent().unwrap().parent().unwrap();
                     let deps_libs = target_dir.join("deps");
                     println!("cargo:rustc-link-search=native={}", deps_libs.to_str().unwrap());
-                    println!("cargo:info=dst --> {:?}", dst);
+                    println!("cargo:info=dst --> {dst:?}");
                     let dest_file_dll = deps_libs.join(deuleuleu);
                     let file_dll = dst.join("build").join(deuleuleu);
-                    println!("cargo:info={} is copied from here --> {:?}", deuleuleu, file_dll);
-                    println!("cargo:info=                             to there --> {:?}", dest_file_dll);
+                    println!("cargo:info={deuleuleu} is copied from here --> {file_dll:?}");
+                    println!("cargo:info=                             to there --> {dest_file_dll:?}");
                     let _lib_dll = fs::copy(file_dll, dest_file_dll).unwrap();
                 }
             } else {
@@ -167,29 +167,29 @@ fn main() {
                 let lib_pdb = lib.clone() + ".pdb";
                 let target_dir = Path::new(&out_dir).parent().unwrap().parent().unwrap().parent().unwrap();
                 let deps_libs = target_dir.join("deps");
-                println!("cargo:info=dst --> {:?}", dst);
+                println!("cargo:info=dst --> {dst:?}");
                 //---Do we have a .dll ?
                 let file_dll = dst.join("build").join(&profile).join(&deuleuleu);
                 if file_dll.is_file() {
                     let dest_file_dll = deps_libs.join(&deuleuleu);
-                    println!("cargo:info=StereoKitC.dll is copied from here --> {:?}", file_dll);
-                    println!("cargo:info=                          to there --> {:?}", dest_file_dll);
+                    println!("cargo:info=StereoKitC.dll is copied from here --> {file_dll:?}");
+                    println!("cargo:info=                          to there --> {dest_file_dll:?}");
                     let _lib_dll = fs::copy(file_dll, dest_file_dll).unwrap();
                 }
                 //---Do we have a .lib ?
                 let file_lib = dst.join("build").join(&profile).join(&lib_lib);
                 if file_lib.is_file() {
                     let dest_file_lib = deps_libs.join(&lib_lib);
-                    println!("cargo:info=StereoKitC.lib is copied from here --> {:?}", file_lib);
-                    println!("cargo:info=                          to there --> {:?}", dest_file_lib);
+                    println!("cargo:info=StereoKitC.lib is copied from here --> {file_lib:?}");
+                    println!("cargo:info=                          to there --> {dest_file_lib:?}");
                     let _lib_dll = fs::copy(file_lib, dest_file_lib).unwrap();
                 }
                 //---Do we have a .pdb ?
                 let file_pdb = dst.join("build").join(&profile).join(&lib_pdb);
                 if file_pdb.is_file() {
                     let dest_file_pdb = deps_libs.join(&lib_pdb);
-                    println!("cargo:info=StereoKitC.pdb is copied from here --> {:?}", file_pdb);
-                    println!("cargo:info=                          to there --> {:?}", dest_file_pdb);
+                    println!("cargo:info=StereoKitC.pdb is copied from here --> {file_pdb:?}");
+                    println!("cargo:info=                          to there --> {dest_file_pdb:?}");
                     let _lib_dll = fs::copy(file_pdb, dest_file_pdb).unwrap();
                 }
             }
@@ -231,8 +231,8 @@ fn main() {
                     .parent()
                     .unwrap();
                 let mut runtime_libs = target_dir.join("runtime_libs");
-                println!("cargo:info=dst --> {:?}", dst);
-                println!("cargo:info=Android runtime_libs are copied here --> {:?}", runtime_libs);
+                println!("cargo:info=dst --> {dst:?}");
+                println!("cargo:info=Android runtime_libs are copied here --> {runtime_libs:?}");
                 assert!(target_dir.ends_with("target"));
                 if let Err(_e) = fs::create_dir(&runtime_libs) {};
                 runtime_libs = runtime_libs.join(&abi);
@@ -281,20 +281,20 @@ fn main() {
         //cross compilation, we need to go up one more level
         target_dir = target_dir.parent().unwrap();
     }
-    println!("cargo:info=Can we copy skshaderc* to {:?}/tools ?", target_dir);
+    println!("cargo:info=Can we copy skshaderc* to {target_dir:?}/tools ?");
     if target_dir.ends_with(&target_dir_name) && target_dir.exists() {
         let distrib = target_dir.join("tools");
         let tools_dir = if let Some(sk_gpu_src) = dep_sk_gpu_src {
-            println!("cargo:info=--yes! we copy skshaderc from {:?}", sk_gpu_src);
+            println!("cargo:info=--yes! we copy skshaderc from {sk_gpu_src:?}");
             let path = Path::new(&sk_gpu_src);
             path.join("tools")
         } else {
-            println!("cargo:info=--yes! we copy skshaderc from {:?}/build/_deps/sk_gpu-src/tools", dst);
+            println!("cargo:info=--yes! we copy skshaderc from {dst:?}/build/_deps/sk_gpu-src/tools");
             dst.join("build").join("_deps").join("sk_gpu-src").join("tools")
         };
         copy_tree(tools_dir, distrib).expect("Unable to copy tools");
     } else {
-        println!("cargo:warning={target_dir_name} directory {:?} does not exist", target_dir);
+        println!("cargo:warning={target_dir_name} directory {target_dir:?} does not exist");
     }
 
     // Tell cargo to invalidate the built crate whenever the wrapper changes

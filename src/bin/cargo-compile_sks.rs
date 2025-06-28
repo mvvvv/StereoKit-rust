@@ -37,7 +37,7 @@ fn main() {
                     }
                     options.push(arg);
                 } else {
-                    println!("Unkown argument {}", arg);
+                    println!("Unkown argument {arg}");
                     panic!("{}", USAGE);
                 }
             }

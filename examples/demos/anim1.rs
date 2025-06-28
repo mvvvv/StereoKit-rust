@@ -38,12 +38,12 @@ impl Default for Anim1 {
             .tex_transform(Vec4::new(0.0, 0.0, 5.0, 5.0))
             .transparency(Transparency::None)
             .face_cull(Cull::None)
-            .id(format!("BRICK_{}", prefix_id));
+            .id(format!("BRICK_{prefix_id}"));
         Log::diag(format!("Brick material ID is {}", brick_wall_material.get_id()));
         // The nodes stay alive and keep Material alive so, no id .id("brick_wall");
         let mut ico_material = brick_wall_material.copy();
         let prefix_id = brick_wall_material.get_id().to_string();
-        ico_material.face_cull(Cull::Back).color_tint(WHITE).id(format!("ICO_{}", prefix_id));
+        ico_material.face_cull(Cull::Back).color_tint(WHITE).id(format!("ICO_{prefix_id}"));
         Log::diag(format!("Ico material ID is {}", ico_material.get_id()));
         let nodes = &mobile.get_nodes();
         nodes

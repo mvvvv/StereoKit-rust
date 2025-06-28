@@ -559,13 +559,13 @@ unsafe extern "C" {
     );
     pub fn backend_openxr_add_callback_poll_event(
         xr_poll_event_callback: ::std::option::Option<
-            unsafe extern "C" fn(context: *mut c_void, XrEventDataBuffer: *mut c_void),
+            unsafe extern "C" fn(context: *mut c_void, xr_event_data_buffer: *mut c_void),
         >,
         context: *mut c_void,
     );
     pub fn backend_openxr_remove_callback_poll_event(
         xr_poll_event_callback: ::std::option::Option<
-            unsafe extern "C" fn(context: *mut c_void, XrEventDataBuffer: *mut c_void),
+            unsafe extern "C" fn(context: *mut c_void, xr_event_data_buffer: *mut c_void),
         >,
     );
     pub fn backend_platform_get() -> BackendPlatform;

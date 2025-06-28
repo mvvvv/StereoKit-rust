@@ -133,7 +133,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
     let refresh_rate_editable = BackendOpenXR::ext_enabled("XR_FB_display_refresh_rate");
     if refresh_rate_editable {
         refresh_rates = get_all_display_refresh_rates(true);
-        Log::info(format!("Initial display rate is {:?}", current_refresh_rate));
+        Log::info(format!("Initial display rate is {current_refresh_rate:?}"));
     } else {
         Log::info("No editable refresh rate !");
     }
@@ -172,7 +172,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
     SkClosures::new(sk, |sk, token| {
         if last_focus != sk.get_app_focus() {
             last_focus = sk.get_app_focus();
-            Log::info(format!("App focus changed to : {:?}", last_focus));
+            Log::info(format!("App focus changed to : {last_focus:?}"));
         }
 
         // if is_testing && run_seconds != 0.0 {
@@ -295,7 +295,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
         }
 
         fps = ((1.0 / Time::get_step()) + fps) / 2.0;
-        Ui::label(format!("FPS: {:.0}", fps), None, true);
+        Ui::label(format!("FPS: {fps:.0}"), None, true);
         Ui::same_line();
 
         if refresh_rate_editable
@@ -326,7 +326,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
         Ui::next_line();
         Ui::label("Viewport scaling:", None, true);
         Ui::same_line();
-        Ui::label(format!("{:.2}", viewport_scaling), None, true);
+        Ui::label(format!("{viewport_scaling:.2}"), None, true);
         Ui::same_line();
         if let Some(new_value) = Ui::hslider("scaling", &mut viewport_scaling, 0.1, 1.0, Some(0.05), None, None, None) {
             Renderer::viewport_scaling(new_value);
@@ -355,7 +355,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
     })
     .on_window_event(|_sk, event| {
         // we hope to flood the log with external controllers soon ...
-        Log::diag(format!("{:?}", event));
+        Log::diag(format!("{event:?}"));
     })
     .on_sleeping_step(|_sk, _token| {
         now = std::time::SystemTime::now();

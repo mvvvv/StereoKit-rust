@@ -84,7 +84,7 @@ impl Threads2 {
                 // let name = id_str.clone();
                 // let local_transform = Matrix::t(Vec3::new(id as f32 / 200.0, random, -random));
                 // model.get_nodes().add(name, local_transform, &mesh, &material, true);
-                Log::diag(format!("loop1 : {} ", id));
+                Log::diag(format!("loop1 : {id} "));
                 thread::sleep(time::Duration::from_millis(1));
             }
             run_for_ever2bis.store(false, Ordering::Release);
@@ -108,7 +108,7 @@ impl Threads2 {
 
                 // let mut model_nodes = model.get_nodes();
                 // model_nodes.add(name, local_transform, &mesh, &material, true);
-                Log::diag(format!("loop2 : {} ", id));
+                Log::diag(format!("loop2 : {id} "));
                 thread::sleep(time::Duration::from_millis(1));
             }
 
@@ -116,7 +116,7 @@ impl Threads2 {
 
             match thread_add.map(JoinHandle::join) {
                 Some(Err(error)) => {
-                    Log::err(format!("Thread2, thread panic  : {:?}", error));
+                    Log::err(format!("Thread2, thread panic  : {error:?}"));
                 }
                 Some(Ok(_)) => (),
                 None => {
@@ -147,7 +147,7 @@ impl Threads2 {
         } else if let Some(join_handle) = self.thread_blinker.take() {
             if join_handle.is_finished() {
                 if let Err(error) = join_handle.join() {
-                    Log::err(format!("Thread2, join_handle panic  : {:?}", error));
+                    Log::err(format!("Thread2, join_handle panic  : {error:?}"));
                 }
                 self.shutdown_completed = true;
             } else {

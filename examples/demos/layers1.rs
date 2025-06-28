@@ -136,7 +136,7 @@ impl Layers1 {
             let old_color = Renderer::get_clear_color();
             Renderer::clear_color(named_colors::SKY_BLUE);
             if let Err(e) = sc.acquire_image(None) {
-                Log::warn(format!("Failed to acquire image from swapchain: {}", e));
+                Log::warn(format!("Failed to acquire image from swapchain: {e}"));
                 Log::warn("Skipping rendering for now...");
                 self.swapchain_sk = None;
                 return;
@@ -159,7 +159,7 @@ impl Layers1 {
             assert_eq!(render_tex.get_width(), Some(512));
 
             if let Err(e) = sc.release_image() {
-                Log::warn(format!("Failed to release image from swapchain: {}", e));
+                Log::warn(format!("Failed to release image from swapchain: {e}"));
                 Log::warn("Skipping rendering for now...");
                 self.swapchain_sk = None;
                 return;

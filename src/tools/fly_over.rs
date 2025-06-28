@@ -73,7 +73,7 @@ impl FlyOver {
         let sk_settings = SkInfo::settings_from(&self.sk_info);
         if sk_settings.mode != AppMode::Simulator {
             let origin_mode = World::get_origin_mode();
-            Log::diag(format!("Fly_Over: OriginMode is {:?} ", origin_mode));
+            Log::diag(format!("Fly_Over: OriginMode is {origin_mode:?} "));
             if cfg!(target_os = "android") {
                 if origin_mode == OriginMode::Stage {
                     Log::diag("Stage origin reversion");

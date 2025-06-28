@@ -94,7 +94,7 @@ impl Asset1 {
         new_material_hand.color_tint(YELLOW);
         Input::hand_material(Handed::Right, Some(new_material_hand));
 
-        Log::diag(format!("{:?}", ASSET_DIR));
+        Log::diag(format!("{ASSET_DIR:?}"));
 
         true
     }
@@ -212,7 +212,7 @@ impl Asset1 {
                     }
                     Some(AssetToShow::model(model))
                 } else {
-                    Log::err(format!("Unable to load model {:?} !!", file_name_str));
+                    Log::err(format!("Unable to load model {file_name_str:?} !!"));
                     None
                 }
             } else if Assets::TEXTURE_FORMATS.contains(&ext.as_str()) {

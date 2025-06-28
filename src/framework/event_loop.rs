@@ -98,7 +98,7 @@ pub struct SkClosures<'a> {
 
 impl ApplicationHandler<StepperAction> for SkClosures<'_> {
     fn user_event(&mut self, _event_loop: &ActiveEventLoop, user_event: StepperAction) {
-        Log::diag(format!("UserEvent {:?}", user_event));
+        Log::diag(format!("UserEvent {user_event:?}"));
         self.sk.send_event(user_event);
     }
 
@@ -108,7 +108,7 @@ impl ApplicationHandler<StepperAction> for SkClosures<'_> {
 
     fn window_event(&mut self, event_loop: &ActiveEventLoop, window_id: WindowId, event: WindowEvent) {
         if event == WindowEvent::Destroyed {
-            Log::info(format!("SkClosure Window {:?} Destroyed !!!", window_id));
+            Log::info(format!("SkClosure Window {window_id:?} Destroyed !!!"));
             return;
         }
         match event {
@@ -117,7 +117,7 @@ impl ApplicationHandler<StepperAction> for SkClosures<'_> {
                 self.sleeping = SleepPhase::WakingUp;
             }
             WindowEvent::Focused(value) => {
-                Log::diag(format!("!!!Window {:?} focused: {:?}", window_id, value));
+                Log::diag(format!("!!!Window {window_id:?} focused: {value:?}"));
                 if self.window_id != Some(window_id) {
                     if self.window_id.is_none() {
                         self.window_id = Some(window_id);
@@ -278,7 +278,7 @@ impl<'a> SkClosures<'a> {
         };
         event_loop.set_control_flow(ControlFlow::Poll);
         if let Err(err) = event_loop.run_app(&mut this) {
-            Log::err(format!("event_loop.run_app returned with an error : {:?}", err));
+            Log::err(format!("event_loop.run_app returned with an error : {err:?}"));
         }
     }
 
@@ -382,7 +382,7 @@ impl<'a> SkClosures<'a> {
     pub fn run(&mut self, event_loop: EventLoop<StepperAction>) {
         event_loop.set_control_flow(ControlFlow::Poll);
         if let Err(err) = event_loop.run_app(self) {
-            Log::err(format!("event_loop.run_app returned with an error : {:?}", err));
+            Log::err(format!("event_loop.run_app returned with an error : {err:?}"));
         }
     }
 }
@@ -570,15 +570,15 @@ impl fmt::Debug for StepperAction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             StepperAction::Add(_stepper, _id, stepper_id) => {
-                write!(f, "StepperAction::Add(..., type_id: ... , stepper_id:{:?} )", stepper_id)
+                write!(f, "StepperAction::Add(..., type_id: ... , stepper_id:{stepper_id:?} )")
             }
-            StepperAction::RemoveAll(type_id) => write!(f, "StepperAction::RemoveAll( type_id:{:?} )", type_id),
-            StepperAction::Remove(stepper_id) => write!(f, "StepperAction::Remove( id:{:?} )", stepper_id),
+            StepperAction::RemoveAll(type_id) => write!(f, "StepperAction::RemoveAll( type_id:{type_id:?} )"),
+            StepperAction::Remove(stepper_id) => write!(f, "StepperAction::Remove( id:{stepper_id:?} )"),
             StepperAction::Quit(stepper_id, reason) => {
-                write!(f, "StepperAction::Quit() sent by id:{:?} for reason '{}'", stepper_id, reason)
+                write!(f, "StepperAction::Quit() sent by id:{stepper_id:?} for reason '{reason}'")
             }
             StepperAction::Event(stepper_id, key, value) => {
-                write!(f, "StepperAction::Event( id:{:?} => {}->{} )", stepper_id, key, value)
+                write!(f, "StepperAction::Event( id:{stepper_id:?} => {key}->{value} )")
             }
         }
     }
@@ -931,7 +931,7 @@ impl Steppers {
                             StepperHandler { id: stepper_id, type_id, stepper, state: StepperState::Initializing };
                         self.running_steppers.push(stepper_h);
                     } else {
-                        Log::warn(format!("Stepper {} did not initialize", stepper_id));
+                        Log::warn(format!("Stepper {stepper_id} did not initialize"));
                         token.event_report.push(StepperAction::event(stepper_id.as_str(), ISTEPPER_REMOVED, "false"));
                     }
                 }
@@ -950,7 +950,7 @@ impl Steppers {
                     }
                 }
                 StepperAction::Quit(from, reason) => {
-                    Log::info(format!("Quit sent by {} for reason: {}", from, reason));
+                    Log::info(format!("Quit sent by {from} for reason: {reason}"));
                     return false;
                 }
                 _ => token.event_report.push(action),

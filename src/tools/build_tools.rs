@@ -97,8 +97,7 @@ pub fn compile_hlsl(
 
     if !shaders_source_path.exists() || !shaders_source_path.is_dir() {
         println!(
-            "No shaders to compile. Current directory does not see {:?} directory. \n---The name of the directory may be change with SK_RUST_SHADERS_SOURCE_DIR",
-            shaders_source_path
+            "No shaders to compile. Current directory does not see {shaders_source_path:?} directory. \n---The name of the directory may be change with SK_RUST_SHADERS_SOURCE_DIR"
         );
         return Ok(false);
     }
@@ -109,7 +108,7 @@ pub fn compile_hlsl(
             let mut shaders_path = project_dir.clone();
             shaders_path.push(get_assets_dir());
             if !shaders_path.exists() || !shaders_path.is_dir() {
-                return Err(Error::other(format!("Current directory do not see {:?} directory", shaders_path)));
+                return Err(Error::other(format!("Current directory do not see {shaders_path:?} directory")));
             }
 
             shaders_path.push(get_shaders_sks_dir());
@@ -149,13 +148,13 @@ pub fn compile_hlsl(
                             cmd.arg(arg);
                         }
                         let output = cmd.arg(file).output().expect("failed to run shader compiler");
-                        let out = String::from_utf8(output.clone().stdout).unwrap_or(format!("{:#?}", output));
+                        let out = String::from_utf8(output.clone().stdout).unwrap_or(format!("{output:#?}"));
                         if !out.is_empty() {
-                            println!("{}", out)
+                            println!("{out}")
                         }
-                        let err = String::from_utf8(output.clone().stderr).unwrap_or(format!("{:#?}", output));
+                        let err = String::from_utf8(output.clone().stderr).unwrap_or(format!("{output:#?}"));
                         if !err.is_empty() {
-                            println!("{}", err)
+                            println!("{err}")
                         }
                     }
                 }

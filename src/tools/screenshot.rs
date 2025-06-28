@@ -187,13 +187,12 @@ impl ScreenshotViewer {
                                         tex.set_colors_u8(width, height, data_slice, 4);
                                         self.screen = Sprite::from_tex(&self.tex, None, None).ok();
                                     }
-                                    Err(err) => Log::warn(format!(
-                                        "Screenshoot Error when reading file {} : {:?}",
-                                        file_name, err
-                                    )),
+                                    Err(err) => {
+                                        Log::warn(format!("Screenshoot Error when reading file {file_name} : {err:?}"))
+                                    }
                                 }
                             } else {
-                                Log::warn(format!("File is not an RGBA {}", file_name));
+                                Log::warn(format!("File is not an RGBA {file_name}"));
                             }
                         } else {
                             Log::warn(format!("Screenshoot Error unable to read rgba file infos {}", &file_name));
@@ -231,7 +230,7 @@ impl ScreenshotViewer {
                         let mut name = FILE_NAME.lock().unwrap();
                         name.clear();
                         if ok {
-                            Log::diag(format!("Open screenshot {}", file_name));
+                            Log::diag(format!("Open screenshot {file_name}"));
                             name.push_str(file_name);
                             Platform::file_picker_close();
                         } else {
@@ -275,7 +274,7 @@ impl ScreenshotViewer {
             if cfg!(target_os = "android") {
                 if let Some(img_dir) = get_external_path(&self.sk_info) {
                     if let Err(err) = set_current_dir(&img_dir) {
-                        Log::err(format!("Unable to move current_dir to {:?} : {:?}", img_dir, err))
+                        Log::err(format!("Unable to move current_dir to {img_dir:?} : {err:?}"))
                     }
                 }
             }
@@ -354,15 +353,15 @@ fn save_screenshot(file_name: &str) {
                             Log::warn(format!("Screenshoot Error when writing raw image {} : {:?}", &name, err));
                         }
                     }
-                    Err(err) => Log::warn(format!("Screenshoot Error when creating file {} : {:?}", name, err)),
+                    Err(err) => Log::warn(format!("Screenshoot Error when creating file {name} : {err:?}")),
                 }
             } else {
-                Log::warn(format!("Screenshoot Error when getting texture data {}", file_name));
+                Log::warn(format!("Screenshoot Error when getting texture data {file_name}"));
             }
         } else {
-            Log::warn(format!("Screenshoot Error unable to get texture infos {}", file_name));
+            Log::warn(format!("Screenshoot Error unable to get texture infos {file_name}"));
         }
     } else {
-        Log::warn(format!("Screenshoot Error unable to get texture ScreenshotTex {}", file_name));
+        Log::warn(format!("Screenshoot Error unable to get texture ScreenshotTex {file_name}"));
     }
 }

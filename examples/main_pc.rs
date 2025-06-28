@@ -76,14 +76,14 @@ fn main() {
                     panic!("No value specified for parameter --start.");
                 }
             }
-            "--help" => println!("{}", USAGE),
+            "--help" => println!("{USAGE}"),
             _ => {
                 if arg.starts_with('-') {
-                    println!("Unkown argument {}", arg);
+                    println!("Unkown argument {arg}");
                 } else {
-                    println!("Unkown positional argument {}", arg);
+                    println!("Unkown positional argument {arg}");
                 }
-                println!("{}", USAGE);
+                println!("{USAGE}");
             }
         }
     }

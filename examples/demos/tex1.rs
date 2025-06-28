@@ -83,7 +83,7 @@ impl Default for Tex1 {
 
         let width = 128;
         let height = 128;
-        Log::info(format!("size : {}/{}", width, height));
+        Log::info(format!("size : {width}/{height}"));
         let mut raw_dots = Vec::new(); //vec![base_color; width * height];
         let mut raw_dots128 = Vec::new();
         let mut raw_dots_byte: Vec<u8> = Vec::new();
@@ -270,7 +270,7 @@ impl Default for Tex1 {
         Log::info(format!("!!Nodes number: {:?}", nodes.get_count()));
         let n = nodes.all().map(|node| format!("---{:?} : {:?}", node.get_name(), node.get_id()));
         for s in n {
-            Log::info(format!("{:?}", s));
+            Log::info(format!("{s:?}"));
         }
 
         panels.recalculate_bounds_exact();

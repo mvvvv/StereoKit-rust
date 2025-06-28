@@ -461,7 +461,7 @@ unsafe impl Send for HandMenuRadial {}
 
 impl HandMenuRadial {
     pub fn build_id(id: &str) -> String {
-        format!("{}{}", HAND_MENU_RADIAL, id)
+        format!("{HAND_MENU_RADIAL}{id}")
     }
 
     /// Part of IStepper, you shouldn’t be calling this yourself.
@@ -885,7 +885,7 @@ impl HandMenuRadial {
 
                 self.select_item(item_selected.clone(), tip_world, ((angle_id as f32) + 0.5) * step)
             } else {
-                Log::err(format!("HandMenuRadial : Placement error for index {}", angle_id));
+                Log::err(format!("HandMenuRadial : Placement error for index {angle_id}"));
             }
         }
         if cancel {

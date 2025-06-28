@@ -116,11 +116,11 @@ impl Sprite1 {
         Assets::block_for_priority(i32::MAX);
 
         for asset in Assets::all().filter(|s| !s.to_string().contains(" default/")) {
-            Log::diag(format!("{}", asset));
+            Log::diag(format!("{asset}"));
         }
 
         for asset in Assets::all_of_type(AssetType::Sprite) {
-            Log::diag(format!("{}", asset));
+            Log::diag(format!("{asset}"));
         }
         true
     }

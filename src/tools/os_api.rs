@@ -161,14 +161,14 @@ pub fn get_assets(
                     }
                 }
                 Err(err) => {
-                    Log::diag(format!("Unable to read {:?}: {}", path_asset, err));
+                    Log::diag(format!("Unable to read {path_asset:?}: {err}"));
                 }
             }
         } else {
-            Log::diag(format!("{:?} is not a dir", path_asset));
+            Log::diag(format!("{path_asset:?} is not a dir"));
         }
     } else {
-        Log::diag(format!("{:?} do not exists", path_asset));
+        Log::diag(format!("{path_asset:?} do not exists"));
     }
 
     vec
@@ -592,12 +592,12 @@ pub fn get_all_display_refresh_rates(with_log: bool) -> Vec<f32> {
                     } {
                         Result::SUCCESS => {
                             if with_log {
-                                Log::info(format!("There are {} display rate:", count));
+                                Log::info(format!("There are {count} display rate:"));
                                 for (i, iter) in array.iter().enumerate() {
                                     if i >= count as usize {
                                         break;
                                     }
-                                    Log::info(format!("   {:?} ", iter));
+                                    Log::info(format!("   {iter:?} "));
                                 }
                             }
                         }
@@ -636,7 +636,7 @@ pub fn get_display_refresh_rates(fps_to_get: &[i32], with_log: bool) -> Vec<f32>
     if with_log {
         Log::info(format!("There are {} display rate from the given selection:", available_rates.len()));
         for iter in &available_rates {
-            Log::info(format!("   {:?} ", iter));
+            Log::info(format!("   {iter:?} "));
         }
     }
 
@@ -774,12 +774,12 @@ pub fn get_env_blend_modes(with_log: bool) -> Vec<EnvironmentBlendMode> {
                     } {
                         Result::SUCCESS => {
                             if with_log {
-                                Log::info(format!("There are {} env blend modes:", count));
+                                Log::info(format!("There are {count} env blend modes:"));
                                 for (i, iter) in modes.iter().enumerate() {
                                     if i >= count as usize {
                                         break;
                                     }
-                                    Log::info(format!("   {:?} ", iter));
+                                    Log::info(format!("   {iter:?} "));
                                 }
                             }
                         }

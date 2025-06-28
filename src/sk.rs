@@ -399,7 +399,7 @@ impl Default for SkSettings {
 
 impl fmt::Display for SkSettings {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 
@@ -1419,7 +1419,7 @@ impl Sk {
         settings.android_java_vm = vm_pointer;
         settings.android_activity = jobject_pointer;
 
-        Log::info(format!("SK_INIT ::: context {:?}/jvm : {:?}", vm_pointer, jobject_pointer));
+        Log::info(format!("SK_INIT ::: context {vm_pointer:?}/jvm : {jobject_pointer:?}"));
 
         match unsafe {
             Log::info("Before init >>>");
@@ -1708,14 +1708,10 @@ impl Sk {
         event_loop
             .run(move |event, elwt| match event {
                 Event::NewEvents(_start_cause) => {} // Quest flood this : Log::diag(format!("NewEvents {:?}", start_cause)),
-                Event::WindowEvent { window_id, event } => {
-                    Log::diag(format!("WindowEvent {:?} -> {:?}", window_id, event))
-                }
-                Event::DeviceEvent { device_id, event } => {
-                    Log::diag(format!("DeviceEvent {:?} -> {:?}", device_id, event))
-                }
+                Event::WindowEvent { window_id, event } => Log::diag(format!("WindowEvent {window_id:?} -> {event:?}")),
+                Event::DeviceEvent { device_id, event } => Log::diag(format!("DeviceEvent {device_id:?} -> {event:?}")),
                 Event::UserEvent(action) => {
-                    Log::diag(format!("UserEvent {:?}", action));
+                    Log::diag(format!("UserEvent {action:?}"));
                     self.send_event(action);
                 }
                 Event::Suspended => Log::info("Suspended !!"),
@@ -1732,7 +1728,7 @@ impl Sk {
                 Event::MemoryWarning => Log::warn("MemoryWarning !!"),
             })
             .unwrap_or_else(|e| {
-                Log::err(format!("!!!event_loop error closing!! : {}", e));
+                Log::err(format!("!!!event_loop error closing!! : {e}"));
             });
     }
 }

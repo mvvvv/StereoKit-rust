@@ -69,7 +69,7 @@ fn main() {
                         win_libs_path_name = arg_config;
                         let win_libs_path = PathBuf::from(&win_libs_path_name);
                         if !win_libs_path.is_dir() {
-                            println!("Argument {} should be a valid directory name", win_libs_path_name);
+                            println!("Argument {win_libs_path_name} should be a valid directory name");
                             panic!("{}", USAGE);
                         }
                     } else {
@@ -149,18 +149,18 @@ fn main() {
             "--help" => panic!("{}", USAGE),
             _ => {
                 if arg.starts_with('-') {
-                    println!("Unkown argument {}", arg);
+                    println!("Unkown argument {arg}");
                     panic!("{}", USAGE);
                 } else if output_path_name.is_empty() {
                     let path = PathBuf::from(&arg);
                     if path.exists() && path.parent().unwrap().is_dir() {
                         output_path_name = arg;
                     } else {
-                        println!("Argument {} should be path to an existing directory", arg);
+                        println!("Argument {arg} should be path to an existing directory");
                         panic!("{}", USAGE);
                     }
                 } else {
-                    println!("Unkown positional argument {}", arg);
+                    println!("Unkown positional argument {arg}");
                     panic!("{}", USAGE);
                 }
             }
@@ -176,7 +176,7 @@ fn main() {
         panic!("{}", USAGE);
     }
     if !output_path.is_dir() {
-        println!("Argument {} should be a valid directory name", output_path_name);
+        println!("Argument {output_path_name} should be a valid directory name");
         panic!("{}", USAGE);
     }
 
@@ -231,8 +231,8 @@ fn main() {
 
     let child = cmd.spawn().expect("failed to run cargo build");
     let output = child.wait_with_output().expect("failed to wait on child");
-    println!("{}", String::from_utf8(output.clone().stdout).unwrap_or(format!("{:#?}", output)));
-    println!("{}", String::from_utf8(output.clone().stderr).unwrap_or(format!("{:#?}", output)));
+    println!("{}", String::from_utf8(output.clone().stdout).unwrap_or(format!("{output:#?}")));
+    println!("{}", String::from_utf8(output.clone().stderr).unwrap_or(format!("{output:#?}")));
 
     if !output.status.success() {
         panic!("cargo build failed!")
@@ -240,7 +240,7 @@ fn main() {
 
     //----Third the file copy
     if output_path_already_exists {
-        println!("Replacing file in {}", output_path_name);
+        println!("Replacing file in {output_path_name}");
         println!("Warning! Old abandoned files will not be deleted !");
     }
 
@@ -256,17 +256,17 @@ fn main() {
 
     // 1 - the executable
     let project_id = get_cargo_name().unwrap();
-    println!("Project name is {}", project_id);
+    println!("Project name is {project_id}");
     let exe_file = if !example.is_empty() {
         built_files.join("examples").join(example_exe + windows_exe)
     } else if !bin.is_empty() {
         built_files.join(bin_exe + windows_exe)
     } else {
-        built_files.join(format!("{}{}", project_id, windows_exe))
+        built_files.join(format!("{project_id}{windows_exe}"))
     };
     let dest_file_exe = output_path.join(exe_file.file_name().unwrap_or_default());
-    println!("Executable is copied from here --> {:?}", exe_file);
-    println!("                      to there --> {:?}", dest_file_exe);
+    println!("Executable is copied from here --> {exe_file:?}");
+    println!("                      to there --> {dest_file_exe:?}");
     let _lib_exe = fs::copy(&exe_file, dest_file_exe).unwrap();
 
     if !windows_exe.is_empty() {
@@ -280,8 +280,8 @@ fn main() {
         let pdb_file = PathBuf::from(&pdb_file_name);
         if pdb_file.is_file() {
             let dest_file_pdb = output_path.join(pdb_file.file_name().expect("No filename for PDB"));
-            println!("Exe's PDB  is copied from here --> {:?}", pdb_file);
-            println!("                      to there --> {:?}", dest_file_pdb);
+            println!("Exe's PDB  is copied from here --> {pdb_file:?}");
+            println!("                      to there --> {dest_file_pdb:?}");
             let _lib_pdb = fs::copy(pdb_file, dest_file_pdb).unwrap();
         }
         // 1-1 - the dlls created
@@ -289,16 +289,16 @@ fn main() {
         let dll_file = built_files.join("deps").join(c_dll);
         if dll_file.is_file() {
             let dest_file_dll = output_path.join(dll_file.file_name().unwrap_or_default());
-            println!("DLL is copied from here --> {:?}", dll_file);
-            println!("               to there --> {:?}", dest_file_dll);
+            println!("DLL is copied from here --> {dll_file:?}");
+            println!("               to there --> {dest_file_dll:?}");
             let _lib_dll = fs::copy(dll_file, dest_file_dll).unwrap();
 
             let c_pdb = if !win_libs_path_name.is_empty() { "libStereoKitC.pdb" } else { "StereoKitC.pdb" };
             let pdb_file = built_files.join("deps").join(c_pdb);
             if pdb_file.is_file() {
                 let dest_file_pdb = output_path.join(pdb_file.file_name().unwrap_or_default());
-                println!("PDB is copied from here --> {:?}", pdb_file);
-                println!("               to there --> {:?}", dest_file_pdb);
+                println!("PDB is copied from here --> {pdb_file:?}");
+                println!("               to there --> {dest_file_pdb:?}");
                 let _lib_pdb = fs::copy(pdb_file, dest_file_pdb).unwrap();
             }
 
@@ -319,7 +319,7 @@ fn main() {
                     if file.is_file() {
                         if let Some(extension) = file.extension() {
                             if copy_extensions.contains(&extension) {
-                                println!("Mingw Dll to copy {:?}", file);
+                                println!("Mingw Dll to copy {file:?}");
                                 let dest_file_dll = output_path.join(file.file_name().unwrap_or_default());
                                 let _lib_dll = fs::copy(file, dest_file_dll).unwrap();
                             }
@@ -336,7 +336,7 @@ fn main() {
     let from_assets = PathBuf::from(get_assets_dir());
     let to_asset = output_path.join(get_assets_dir());
     if from_assets.exists() {
-        println!("Copying assets from {:?} to {:?}", from_assets, to_asset);
+        println!("Copying assets from {from_assets:?} to {to_asset:?}");
         copy_tree(from_assets, to_asset.clone()).unwrap();
     } else {
         println!(
@@ -367,7 +367,7 @@ fn main() {
         for entry in shaders_path.read_dir().expect("shaders_path is not a valid directory!").flatten() {
             let file = entry.path();
             if file.is_file() {
-                println!("Shader to copy {:?}", file);
+                println!("Shader to copy {file:?}");
                 let dest_file_dll = target_shaders_dir.join(file.file_name().unwrap_or_default());
                 let _lib_dll = fs::copy(file, dest_file_dll).unwrap();
             }
