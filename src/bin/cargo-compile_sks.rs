@@ -2,13 +2,18 @@ use std::env::{args, current_dir};
 
 use stereokit_rust::tools::build_tools::compile_hlsl;
 
-pub const USAGE: &str = r#"Usage : cargo compile_sks [Options] <Output_path>
-    Compile the HLSL files in shader_src to assets/shaders
+pub const USAGE: &str = r#"Compile the HLSL files in "./shader_src" to "./assets/shaders".
+
+Usage : cargo compile_sks [Options] <Output_path>
     
     Options:
         --with-wine    : For linux, will use wine to launch the Windows compiler
         --options      : skshaderc's options except -o 
         -h|--help      : Display help"#;
+
+fn show_help() {
+    println!("{USAGE}");
+}
 
 fn main() {
     //----First the command line
@@ -27,8 +32,10 @@ fn main() {
             "--with-wine" => {
                 with_wine = true;
             }
-            "-h" => panic!("{}", USAGE),
-            "--help" => panic!("{}", USAGE),
+            arg if arg == "-h" || arg == "--help" || arg == "--explain" => {
+                show_help();
+                return;
+            }
             _ => {
                 if with_option {
                     if arg == "-o" {

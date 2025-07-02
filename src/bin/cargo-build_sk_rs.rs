@@ -5,8 +5,9 @@ use stereokit_rust::tools::{
     os_api::{get_assets_dir, get_shaders_sks_dir},
 };
 
-pub const USAGE: &str = r#"Usage : cargo build_sk_rs [Options] <Output_path>
-    Build the project then copy files to <Output_path>
+pub const USAGE: &str = r#"Build the project then copy files to <Output_path>.
+
+Usage : cargo build_sk_rs [Options] <Output_path>
     
     Options:
         --debug                         : Build a debug instead of a release.
@@ -29,6 +30,10 @@ pub const USAGE: &str = r#"Usage : cargo build_sk_rs [Options] <Output_path>
         
         
     If you want DLL instead of static link use the feature skc-in-dll"#;
+
+fn show_help() {
+    println!("{USAGE}");
+}
 
 enum Target {
     Default,
@@ -145,8 +150,10 @@ fn main() {
                     panic!("{}", USAGE);
                 }
             }
-            "-h" => panic!("{}", USAGE),
-            "--help" => panic!("{}", USAGE),
+            arg if arg == "-h" || arg == "--help" || arg == "--explain" => {
+                show_help();
+                return;
+            }
             _ => {
                 if arg.starts_with('-') {
                     println!("Unkown argument {arg}");
