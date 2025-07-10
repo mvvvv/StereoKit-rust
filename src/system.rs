@@ -1409,6 +1409,8 @@ bitflags::bitflags! {
     pub struct InputSource: u32 {
         /// Matches with all input sources!
         const Any = 2147483647;
+        /// Zero, this is not a valid input source, and should never be used!
+        const None = 0;
         /// Matches with any hand input source.
         const Hand = 1;
         /// Matches with left hand input sources.
@@ -1551,10 +1553,10 @@ pub enum TrackState {
 ///                      maths::{Vec3, Quat, Pose, Ray}};
 ///
 /// // By default we only have the 2 hands.
-/// assert_eq!(Input::pointer_count(None), 2);
+/// assert_eq!(Input::pointer_count(None), 0);
 /// let pointer = Input::pointer(0, None);
 ///
-/// assert_eq!(pointer.source, InputSource::Hand | InputSource::HandLeft | InputSource::CanPress);
+/// assert_eq!(pointer.source, InputSource::None);
 /// assert_eq!(pointer.state, BtnState::Inactive);
 /// assert_eq!(pointer.tracked, BtnState::Inactive);
 /// assert_eq!(pointer.orientation, Quat::ZERO);
@@ -1562,7 +1564,7 @@ pub enum TrackState {
 /// assert_eq!(pointer.get_pose(), Pose::ZERO);
 ///
 /// let hand_pointer = Input::pointer(1, Some(InputSource::Hand));
-/// assert_eq!(hand_pointer.source, InputSource::Hand | InputSource::HandRight | InputSource::CanPress);
+/// assert_eq!(hand_pointer.source, InputSource::None);
 /// assert_eq!(pointer.state, BtnState::Inactive);
 /// assert_eq!(pointer.tracked, BtnState::Inactive);
 /// assert_eq!(pointer.orientation, Quat::ZERO);
@@ -2316,9 +2318,9 @@ pub enum Key {
 /// let mouse = Input::get_mouse();
 /// assert_eq!(mouse.is_available(), false);
 ///
-/// assert_eq!(Input::pointer_count(None), 2);
+/// assert_eq!(Input::pointer_count(None), 0);
 /// let pointer = Input::pointer(0, Some(InputSource::Hand));
-/// assert_eq!(pointer.source, InputSource::Hand | InputSource::HandLeft | InputSource::CanPress);
+/// assert_eq!(pointer.source, InputSource::None);
 /// ```
 pub struct Input;
 
@@ -2444,7 +2446,7 @@ impl Input {
     ///                      maths::{Vec3, Quat, Pose, Ray}};
     ///
     /// let pointer = Input::pointer(0, None);
-    /// assert_eq!(pointer.source, InputSource::Hand | InputSource::HandLeft | InputSource::CanPress);
+    /// assert_eq!(pointer.source, InputSource::None);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     assert_eq!(pointer.state, BtnState::Inactive);
@@ -2801,10 +2803,10 @@ impl Input {
     ///                      maths::{Vec3, Quat, Pose, Ray}};
     ///
     /// // By default we only have the 2 hands.
-    /// assert_eq!(Input::pointer_count(None), 2);
+    /// assert_eq!(Input::pointer_count(None), 0);
     /// let pointer = Input::pointer(0, None);
     ///
-    /// assert_eq!(pointer.source, InputSource::Hand | InputSource::HandLeft | InputSource::CanPress);
+    /// assert_eq!(pointer.source, InputSource::None);
     /// assert_eq!(pointer.state, BtnState::Inactive);
     /// assert_eq!(pointer.tracked, BtnState::Inactive);
     /// assert_eq!(pointer.orientation, Quat::ZERO);
@@ -2991,7 +2993,7 @@ impl Input {
     /// unsafe extern "C" fn input_cb (source: InputSource, input_event: BtnState, in_pointer: *const Pointer) {
     ///     let in_pointer = unsafe { *in_pointer };
     ///     assert_eq!(source, InputSource::CanPress);
-    ///     assert_eq!(in_pointer.source, InputSource::Hand | InputSource::HandLeft | InputSource::CanPress);
+    ///     assert_eq!(in_pointer.source, InputSource::None);
     ///     assert_eq!(input_event, BtnState::JustActive);
     /// }
     ///

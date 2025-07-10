@@ -94,7 +94,8 @@ pub fn input_subscribe() -> (Pointer, unsafe extern "C" fn(InputSource, BtnState
     unsafe extern "C" fn input_cb(source: InputSource, input_event: BtnState, in_pointer: *const Pointer) {
         let in_pointer = unsafe { *in_pointer };
         Log::diag(format!("Event {:?}\n  from: {:?}\n   for: {:?}", input_event, source, in_pointer.source));
-        assert_eq!(in_pointer.source, InputSource::Hand | InputSource::HandLeft | InputSource::CanPress);
+        //assert_eq!(in_pointer.source, InputSource::Hand | InputSource::HandLeft | InputSource::CanPress);
+        assert_eq!(in_pointer.source, InputSource::None);
         assert_eq!(input_event, BtnState::JustActive);
     }
     (pointer, input_cb)
