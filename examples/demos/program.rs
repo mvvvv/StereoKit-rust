@@ -335,6 +335,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
         if reduce_to < viewport_scaling {
             viewport_scaling = reduce_to;
             Renderer::viewport_scaling(viewport_scaling);
+            reduce_to = 1.0;
         } else {
             reduce_to = 1.0
         }
