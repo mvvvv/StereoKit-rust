@@ -1418,14 +1418,19 @@ bitflags::bitflags! {
         /// Matches with right hand input sources.
         const HandRight = 4;
         /// Matches with Gaze category input sources.
+        #[deprecated(since = "0.4.0", note = "Use Input::get_eyes() instead")]
         const Gaze = 16;
         /// Matches with the head gaze input source.
+        #[deprecated(since = "0.4.0", note = "Use Input::get_eyes() instead")]
         const GazeHead = 32;
         /// Matches with the eye gaze input source.
+        #[deprecated(since = "0.4.0", note = "Use Input::get_eyes() instead")]
         const GazeEyes = 64;
         /// Matches with mouse cursor simulated gaze as an input source.
+        #[deprecated(since = "0.4.0", note = "Use Input::get_eyes() instead")]
         const GazeCurzor = 128;
         /// Matches with any input source that has an activation button!
+        #[deprecated(since = "0.4.0", note = "Not working any more")]
         const CanPress = 256;
     }
 }
@@ -2358,6 +2363,8 @@ unsafe extern "C" {
     ) -> HandSimId;
     pub fn input_hand_sim_pose_remove(id: HandSimId);
     pub fn input_hand_sim_pose_clear();
+
+    #[deprecated(since = "0.4.0", note = "Not working anymore")]
     pub fn input_subscribe(
         source: InputSource,
         input_event: BtnState,
@@ -2365,6 +2372,8 @@ unsafe extern "C" {
             unsafe extern "C" fn(source: InputSource, input_event: BtnState, in_pointer: *const Pointer),
         >,
     );
+
+    #[deprecated(since = "0.4.0", note = "Not working anymore")]
     pub fn input_unsubscribe(
         source: InputSource,
         input_event: BtnState,
@@ -2372,6 +2381,8 @@ unsafe extern "C" {
             unsafe extern "C" fn(source: InputSource, input_event: BtnState, in_pointer: *const Pointer),
         >,
     );
+
+    #[deprecated(since = "0.4.0", note = "Not working anymore")]
     pub fn input_fire_event(source: InputSource, input_event: BtnState, pointer: *const Pointer);
 }
 
@@ -2458,6 +2469,8 @@ impl Input {
     ///     }
     /// );
     /// ```
+    #[deprecated(since = "0.4.0", note = "Not working anymore")]
+    #[allow(deprecated)]
     pub fn fire_event(event_source: InputSource, event_types: BtnState, pointer: &Pointer) {
         unsafe { input_fire_event(event_source, event_types, pointer) };
     }
@@ -3008,6 +3021,8 @@ impl Input {
     ///     }
     /// );
     /// ```
+    #[deprecated(since = "0.4.0", note = "Not working anymore")]
+    #[allow(deprecated)]
     pub fn subscribe(
         event_source: InputSource,
         event_types: BtnState,
@@ -3024,6 +3039,8 @@ impl Input {
     ///
     /// see also [`input_unsubscribe`]    
     /// see example in [`Input::subscribe`]
+    #[deprecated(since = "0.4.0", note = "Not working anymore")]
+    #[allow(deprecated)]
     pub fn unsubscribe(
         event_source: InputSource,
         event_types: BtnState,
