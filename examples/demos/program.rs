@@ -7,13 +7,10 @@ use stereokit_rust::{
     model::Model,
     prelude::*,
     shader::Shader,
-    sk::{AppFocus, DisplayBlend, DisplayMode},
+    sk::{AppFocus, DisplayBlend},
     sound::{Sound, SoundInst},
     sprite::Sprite,
-    system::{
-        Backend, BackendOpenXR, BackendXRType, BtnState, Input, Key, Lines, LogItem, LogLevel, Projection, Renderer,
-        Text,
-    },
+    system::{Backend, BackendOpenXR, BackendXRType, Input, Key, Lines, LogItem, LogLevel, Projection, Renderer, Text},
     tex::Tex,
     tools::{
         fly_over::FlyOver,
@@ -139,11 +136,13 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
     }
 
     let mut viewport_scaling = Renderer::get_viewport_scaling();
-    let mut reduce_to = viewport_scaling;
-    if cfg!(target_os = "windows") {
-        //---Above this value, there is distortion on steam proton (and maybe on windows)
-        reduce_to = 0.85;
-    }
+
+    //---Above this value, there is distortion
+    let mut reduce_to = 0.65; // viewport_scaling;
+    // if cfg!(target_os = "windows") {
+    //     //---Above this value, there is distortion on steam proton (and maybe on windows)
+    //     reduce_to = 0.65;
+    // }
     // let mut multisample = Renderer::get_multisample() as f32;
     let mut fps = 72.0;
 
@@ -213,7 +212,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
         scene_frame += 1;
 
         // Playing with projection in simulator mode
-        if sk.get_active_display_mode() == DisplayMode::Flatscreen && Input::key(Key::P) == BtnState::JustActive {
+        if Backend::xr_type() == BackendXRType::Simulator && Input::key(Key::P).is_just_active() {
             if Renderer::get_projection() == Projection::Perspective {
                 Renderer::projection(Projection::Orthographic);
             } else {
