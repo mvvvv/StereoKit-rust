@@ -5023,15 +5023,15 @@ impl Bounds {
     /// assert!(box_bounds.intersect(ray1).is_some(),  "should be a point of contact");
     /// assert_eq!(box_bounds.intersect(ray2), None);
     /// assert_eq!(box_bounds.intersect(ray3),  None);
-    /// assert_eq!(box_bounds.intersect(Ray::new([0.1, 0.1, 0.1], [0.9, 0.9, 0.9])),
-    ///             Some([-0.5, -0.5, -0.5].into()));
+    /// assert_eq!(box_bounds.intersect(Ray::new([1.1, 1.1, 1.1], [-1.9, -1.9, -1.9])),
+    ///             Some([0.5, 0.5, 0.5].into()));
     ///
     /// // We want the contact point for ray1
     /// let contact_point = box_bounds.intersect(ray1)
     ///         .expect ("There should be a point of contact");
     ///
     /// let contact_point = box_transform.transform_point(contact_point);
-    /// assert_eq!(contact_point,  [10.2, 0.5, 2.4 ].into());
+    /// assert_eq!(contact_point,  [10.2, 1.3, 2.4 ].into());
     /// ```
     #[inline]
     pub fn intersect<R: Into<Ray>>(&self, ray: R) -> Option<Vec3> {
@@ -6137,7 +6137,7 @@ impl Ray {
     ///         .expect ("There should be a point of contact");
     ///
     /// let contact_point = box_transform.transform_point(contact_point);
-    /// assert_eq!(contact_point,  [10.2, 0.5, 2.4 ].into());
+    /// assert_eq!(contact_point,  [10.2, 1.3, 2.4 ].into());
     /// ```
     #[inline]
     pub fn intersect_bounds(&self, bounds: Bounds) -> Option<Vec3> {

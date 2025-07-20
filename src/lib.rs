@@ -134,7 +134,7 @@
 //!
 //! Hundreds of examples (which are also unit tests) are available in this documentation. If you like to learn by
 //! examples, check out  the modules in the following order: [`sk`], [`mesh`], [`model`], [`maths`], [`ui`], [`framework`],
-//! [`tools`], [`sound`], [`system`], [`material`], [`shader`], [`tex`], [`sprite`], [`font`], [`render_list`].
+//! [`tools`], [`sound`], [`interactor`], [`system`], [`material`], [`shader`], [`tex`], [`sprite`], [`font`], [`render_list`].
 //!
 //! # How to build and test your application:
 //!
@@ -478,6 +478,10 @@ pub mod sound;
 /// [![Sprite close](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_close.jpeg)](sprite::Sprite::close)
 /// [![Sprite shift](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_shift.jpeg)](sprite::Sprite::shift)
 pub mod sprite;
+
+/// Interactor related structs, enums and functions.
+///
+pub mod interactor;
 
 /// Sprite specific structs, enums and functions.
 ///

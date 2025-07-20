@@ -1417,7 +1417,7 @@ unsafe extern "C" {
     pub fn material_get_texture(material: MaterialT, name: *const c_char) -> TexT;
     pub fn material_has_param(material: MaterialT, name: *const c_char, type_: MaterialParam) -> Bool32T;
     pub fn material_set_param(material: MaterialT, name: *const c_char, type_: MaterialParam, value: *const c_void);
-    pub fn material_set_param_id(material: MaterialT, id: u64, type_: MaterialParam, value: *const c_void);
+    pub fn material_set_param_id(material: MaterialT, id: IdHashT, type_: MaterialParam, value: *const c_void);
     pub fn material_get_param(
         material: MaterialT,
         name: *const c_char,

@@ -138,11 +138,11 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
     let mut viewport_scaling = Renderer::get_viewport_scaling();
 
     //---Above this value, there is distortion
-    let mut reduce_to = 0.65; // viewport_scaling;
-    // if cfg!(target_os = "windows") {
-    //     //---Above this value, there is distortion on steam proton (and maybe on windows)
-    //     reduce_to = 0.65;
-    // }
+    let mut reduce_to = 1.0;
+    if cfg!(target_os = "windows") {
+        //---Above this value, there is distortion on steam proton (and maybe on windows)
+        reduce_to = 0.85;
+    }
     // let mut multisample = Renderer::get_multisample() as f32;
     let mut fps = 72.0;
 

@@ -22,6 +22,11 @@ use std::{
     ptr::{NonNull, null, null_mut},
 };
 
+// Re-export interactor types for convenient access
+pub use crate::interactor::{
+    DefaultInteractors, Interaction, Interactor, InteractorActivation, InteractorEvent, InteractorType,
+};
+
 /// All StereoKit assets implement this interface! This is mostly to help group and hold Asset objects, and is
 /// particularly useful when working with Assets at a high level with the Assets class.
 /// <https://stereokit.net/Pages/StereoKit/IAsset.html>
@@ -1455,7 +1460,7 @@ bitflags::bitflags! {
     /// A bit-flag for the current state of a button input.
     /// <https://stereokit.net/Pages/StereoKit/BtnState.html>
     ///
-    /// see also [`Input`] |`Ui`]
+    /// see also [`Input`] [`Ui`]
     /// ### Examples
     /// ```
     /// use stereokit_rust::system::BtnState;
@@ -1472,21 +1477,63 @@ bitflags::bitflags! {
         /// Is the button currently up, unpressed?
         const Inactive = 0;
         /// Is the button currently down, pressed?
-        const Active = 1;
-        ///	Has the button just been released? Only true for a single frame.
-        const JustInactive = 2;
-        ///	Has the button just been pressed? Only true for a single frame.
-        const JustActive = 4;
+        const Active = 1 << 0;
+        /// Has the button just been released? Only true for a single frame.
+        const JustInactive = 1 << 1;
+        /// Has the button just been pressed? Only true for a single frame.
+        const JustActive = 1 << 2;
         /// Has the button just changed state this frame?
-        const Changed = 6;
+        const Changed = Self::JustInactive.bits() | Self::JustActive.bits();
         /// Matches with all states!
-        const Any = 2147483647;
+        const Any = 0x7FFFFFFF;
     }
 }
 
 /// A collection of extension methods for the BtnState enum that makes bit-field checks a little easier.
 /// <https://stereokit.net/Pages/StereoKit/BtnStateExtensions.html>
 impl BtnState {
+    /// Creates a Button State using the current and previous frame's state! These two states allow us to add the
+    /// "JustActive" and "JustInactive" bitflags when changes happen.
+    /// <https://stereokit.net/Pages/StereoKit/BtnState/Make.html>
+    /// * `was_active` - Was it active previously?
+    /// * `is_active` - And is it active currently?
+    ///
+    /// Returns a bitflag with "Just" events added in!
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::system::BtnState;
+    ///
+    /// // Button was not pressed, now it is pressed
+    /// let state = BtnState::make(false, true);
+    /// assert!(state.contains(BtnState::Active));
+    /// assert!(state.contains(BtnState::JustActive));
+    /// assert!(!state.contains(BtnState::JustInactive));
+    ///
+    /// // Button was pressed, now it is not pressed
+    /// let state = BtnState::make(true, false);
+    /// assert!(!state.contains(BtnState::Active));
+    /// assert!(state.contains(BtnState::JustInactive));
+    /// assert!(!state.contains(BtnState::JustActive));
+    ///
+    /// // Button was pressed, still pressed
+    /// let state = BtnState::make(true, true);
+    /// assert!(state.contains(BtnState::Active));
+    /// assert!(!state.contains(BtnState::JustActive));
+    /// assert!(!state.contains(BtnState::JustInactive));
+    /// ```
+    pub fn make(was_active: bool, is_active: bool) -> BtnState {
+        let mut result = if is_active { BtnState::Active } else { BtnState::Inactive };
+
+        if was_active && !is_active {
+            result |= BtnState::JustInactive;
+        }
+        if is_active && !was_active {
+            result |= BtnState::JustActive;
+        }
+
+        result
+    }
+
     /// Is the button pressed?
     /// <https://stereokit.net/Pages/StereoKit/BtnStateExtensions/IsActive.html>
     pub fn is_active(&self) -> bool {
