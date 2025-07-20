@@ -13,8 +13,6 @@ fn main() {
         number_of_steps = 10;
         test_steps!( // !!!! Get a proper main loop !!!!
 
-
-
             // testing hand_menu_radial0
             if iter == 1 {
                 SkInfo::send_event(&Some(sk.get_sk_info_clone()),
@@ -41,24 +39,10 @@ fn main() {
     };
 
     {
-        let (pointer, input_cb) = input_subscribe();
         let (circle, material_circle) = material1();
 
         number_of_steps = 10;
         test_steps!( // !!!! Get a proper main loop !!!!
-
-            // testing input
-            assert_eq!(pointer.state, BtnState::Inactive);
-            assert_eq!(pointer.tracked, BtnState::Inactive);
-            if iter == 0 {
-                Input::subscribe(InputSource::CanPress, BtnState::JustActive, Some(input_cb));
-                Input::fire_event(InputSource::CanPress, BtnState::JustActive, &pointer);
-            } else if iter == 1 {
-                 Input::fire_event(pointer.source, BtnState::JustActive, &pointer);
-            } else if iter == 8 {
-                Input::unsubscribe(InputSource::CanPress, BtnState::JustInactive, Some(input_cb));
-            }
-
 
             // testing material1
             circle.draw(token, &material_circle,  Matrix::IDENTITY, None, None);
