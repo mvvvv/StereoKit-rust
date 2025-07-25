@@ -32,6 +32,6 @@ clear;DISPLAY= cargo test --features event-loop      #----DISPLAY must be unset 
 #---- build docs
 cargo clean --doc && cargo doc --features event-loop  #----no-event-loop will fail because of lib //! doc containing `event-loop`
 
-#---- publish to crates.icon
+#---- publish to crates.io
 cargo publish -F event-loop --dry-run
 cargo publish -F event-loop
