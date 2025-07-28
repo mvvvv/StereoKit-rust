@@ -1,5 +1,8 @@
 #![cfg(test)]
-use stereokit_rust::{material::Material, mesh::Mesh, prelude::*};
+use stereokit_rust::{material::Material, mesh::Mesh};
+
+#[cfg(feature = "event-loop")]
+use stereokit_rust::prelude::*;
 
 #[cfg(feature = "event-loop")]
 fn main() {
@@ -33,10 +36,7 @@ fn main() {
 #[cfg(feature = "no-event-loop")]
 fn main() {
     stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    use stereokit_rust::{
-        maths::Matrix,
-        system::{BtnState, Input, InputSource},
-    };
+    use stereokit_rust::maths::Matrix;
 
     {
         let (circle, material_circle) = material1();
