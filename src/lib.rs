@@ -40,6 +40,13 @@
 //! You have to chose between `event-loop` and `no-event-loop` features. The feature `no-event-loop` is the
 //! lighter but you can't use the [`framework`].
 //!
+//! ## Features
+//! - **`event-loop`**: Enables the framework with Winit integration for window management and event handling.
+//! - **`no-event-loop`**: Lighter weight option without framework support.
+//! - **`test-xr-mode`**: For testing - replaces `AppMode::Offscreen` with `AppMode::XR` in test macros to test with real XR devices.
+//! - **`dynamic-openxr`**: Includes OpenXR loader dynamically for Android builds (APK).
+//! - **`build-dynamic-openxr`**: Builds OpenXR loader from Khronos OpenXR project for Android builds (APK).
+//!
 //! Using `event-loop` your `Cargo.toml` should contain the following lines:
 //! ```toml
 //! [lib]
@@ -255,6 +262,9 @@ pub use stereokit_macros::include_asset_tree;
 pub use stereokit_macros::test_init_sk_event_loop as test_init_sk;
 #[cfg(feature = "no-event-loop")]
 pub use stereokit_macros::test_init_sk_no_event_loop as test_init_sk;
+
+pub use stereokit_macros::offscreen_mode_stop_here;
+pub use stereokit_macros::xr_mode_stop_here;
 
 #[cfg(feature = "event-loop")]
 pub use stereokit_macros::test_screenshot_event_loop as test_screenshot;

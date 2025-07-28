@@ -534,9 +534,12 @@ pub type OpenXRHandleT = u64;
 ///     assert_eq!(graphics, BackendGraphics::OpenGLESEGL);
 ///     assert_eq!(platform, BackendPlatform::Linux);
 /// }
+/// assert_eq!(BackendOpenXR::eyes_sample_time(), 0);
+///
+/// xr_mode_stop_here!();
+/// // These are the expected results for offscreen tests on a PC:
 /// assert_eq!(xr_type, BackendXRType::None);
 ///
-/// assert_eq!(BackendOpenXR::eyes_sample_time(), 0);
 /// ```
 pub struct Backend;
 
@@ -647,6 +650,9 @@ impl Backend {
     /// use stereokit_rust::system::{Backend, BackendXRType};
     ///
     /// let xr_type = Backend::xr_type();
+    ///
+    /// xr_mode_stop_here!();
+    /// // These are the expected results for offscreen tests on a PC:
     /// assert_eq!(xr_type, BackendXRType::None);
     /// ```
     pub fn xr_type() -> BackendXRType {
@@ -678,50 +684,32 @@ impl Backend {
 ///
 /// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 ///
-///
-/// // These are result when not running in an OpenXR environment:
-/// assert_eq!( Backend::xr_type(), BackendXRType::None);
-/// assert_ne!( Backend::xr_type(), BackendXRType::OpenXR);
-///
+/// let xr_type = Backend::xr_type();
 /// let eyes_sample_time = BackendOpenXR::eyes_sample_time();
-/// assert_eq!(eyes_sample_time, 0);
-///
-/// let instance = BackendOpenXR::instance();
-/// assert_eq!(instance, 0);
-///
-/// let session = BackendOpenXR::session();
-/// assert_eq!(session, 0);
-///
-/// let space = BackendOpenXR::space();
-/// assert_eq!(space, 0);
-///
-/// let system_id = BackendOpenXR::system_id();
-/// assert_eq!(system_id, 0);
-///
-/// let time = BackendOpenXR::time();
-/// assert_eq!(time, 0);
-///
-/// let ext_enabled = BackendOpenXR::ext_enabled("XR_EXT_hand_tracking");
-/// assert_eq!(ext_enabled, false);
-///
+/// let instance         = BackendOpenXR::instance();
+/// let session          = BackendOpenXR::session();
+/// let space            = BackendOpenXR::space();
+/// let system_id        = BackendOpenXR::system_id();
+/// let time             = BackendOpenXR::time();
+/// let ext_enabled      = BackendOpenXR::ext_enabled("XR_EXT_hand_tracking");
 /// let get_function_ptr = BackendOpenXR::get_function_ptr("xrGetHandTrackerEXT");
-/// assert_eq!(get_function_ptr, None);
-///
-/// let get_function = BackendOpenXR::get_function::<unsafe extern "C" fn()>("xrGetHandTrackerEXT");
-/// assert_eq!(get_function, None);
-///
+/// let get_function     = BackendOpenXR::get_function::<unsafe extern "C" fn()>("xrGetHandTrackerEXT");
 /// BackendOpenXR::set_hand_joint_scale(1.0);
+/// BackendOpenXR::use_minimum_exts(true);
 ///
-/// // using openxrs crate:
-/// // let mut xr_composition_layer_x = XrCompositionLayerProjection{
-/// //     ty: XrStructureType::XR_TYPE_COMPOSITION_LAYER_PROJECTION,
-/// //     next: std::ptr::null(),
-/// //     layer_flags: XrCompositionLayerFlags::empty(),
-/// //     space: 0,
-/// //     view_count: 0,
-/// //     views: [XrCompositionLayerProjectionView::default(); 0],
-/// // };
-/// // BackendOpenXR::add_composition_layer(&mut xr_composition_layer_x, 0);
+/// xr_mode_stop_here!();
+/// // These are the expected results for offscreen tests on a PC:
+/// assert_eq!( xr_type, BackendXRType::None);
+///  assert_ne!( xr_type, BackendXRType::OpenXR);
+/// assert_eq!(eyes_sample_time, 0);
+/// assert_eq!(instance, 0);
+/// assert_eq!(session, 0);
+/// assert_eq!(space, 0);
+/// assert_eq!(system_id, 0);
+/// assert_eq!(time, 0);
+/// assert_eq!(ext_enabled, false);
+/// assert_eq!(get_function_ptr, None);
+/// assert_eq!(get_function, None);
 /// ```
 pub struct BackendOpenXR;
 
@@ -738,6 +726,20 @@ impl BackendOpenXR {
     /// <https://stereokit.net/Pages/StereoKit/Backend.OpenXR/Instance.html>
     ///
     /// see also [`backend_openxr_get_instance`]
+    ///
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::BackendOpenXR;
+    ///
+    /// let instance_handle = BackendOpenXR::instance();
+    ///
+    /// // In XR mode, this would be a valid XrInstance handle for OpenXR operations
+    /// // In offscreen mode, returns 0
+    ///
+    /// offscreen_mode_stop_here!();
+    /// assert_ne!(instance_handle, 0);
+    /// ```
     pub fn instance() -> OpenXRHandleT {
         unsafe { backend_openxr_get_instance() }
     }
@@ -747,6 +749,20 @@ impl BackendOpenXR {
     /// <https://stereokit.net/Pages/StereoKit/Backend.OpenXR/Session.html>
     ///
     /// see also [`backend_openxr_get_session`]
+    ///
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::BackendOpenXR;
+    ///
+    /// let session_handle = BackendOpenXR::session();
+    ///
+    /// // In XR mode, this would be a valid XrSession handle for OpenXR session operations
+    /// // In offscreen mode, returns 0
+    ///
+    /// offscreen_mode_stop_here!();
+    /// assert_ne!(session_handle, 0);
+    /// ```
     pub fn session() -> OpenXRHandleT {
         unsafe { backend_openxr_get_session() }
     }
@@ -756,6 +772,20 @@ impl BackendOpenXR {
     /// <https://stereokit.net/Pages/StereoKit/Backend.OpenXR/Space.html>
     ///
     /// see also [`backend_openxr_get_space`]
+    ///
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::BackendOpenXR;
+    ///
+    /// let space_handle = BackendOpenXR::space();
+    ///
+    /// // In XR mode, this would be a valid XrSpace handle for coordinate transformations
+    /// // In offscreen mode, returns 0
+    ///
+    /// offscreen_mode_stop_here!();
+    /// assert_ne!(space_handle, 0);
+    /// ```
     pub fn space() -> OpenXRHandleT {
         unsafe { backend_openxr_get_space() }
     }
@@ -765,6 +795,20 @@ impl BackendOpenXR {
     /// <https://stereokit.net/Pages/StereoKit/Backend.OpenXR/SystemId.html>
     ///
     /// see also [`backend_openxr_get_system_id`]
+    ///
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::BackendOpenXR;
+    ///
+    /// let system_id = BackendOpenXR::system_id();
+    ///
+    /// // In XR mode, this would be a valid XrSystemId for the current XR device
+    /// // In offscreen mode, returns 0
+    ///
+    /// offscreen_mode_stop_here!();
+    /// assert_ne!(system_id, 0);
+    /// ```
     pub fn system_id() -> OpenXRHandleT {
         unsafe { backend_openxr_get_system_id() }
     }
@@ -773,6 +817,19 @@ impl BackendOpenXR {
     /// <https://stereokit.net/Pages/StereoKit/Backend.OpenXR/Time.html>
     ///
     /// see also [`backend_openxr_get_time`]
+    ///
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::BackendOpenXR;
+    ///
+    /// let current_time = BackendOpenXR::time();
+    ///
+    /// // In offscreen mode, returns 0
+    ///
+    /// offscreen_mode_stop_here!();
+    /// assert_ne!(current_time, 0);
+    /// ```
     pub fn time() -> i64 {
         unsafe { backend_openxr_get_time() }
     }
@@ -796,6 +853,54 @@ impl BackendOpenXR {
     ///   projection layer that StereoKit renders to is at 0, -1 would be before it, and +1 would be after.
     ///
     /// see also [`backend_openxr_composition_layer`]
+    ///
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::BackendOpenXR;
+    ///
+    /// // Only works in XR mode but offscreen accept it.
+    /// use openxr_sys as oxr;
+    ///
+    /// // Create projection views for left eye only
+    /// let mut projection_views = [
+    ///     oxr::CompositionLayerProjectionView {
+    ///         ty: oxr::StructureType::COMPOSITION_LAYER_PROJECTION_VIEW,
+    ///         next: std::ptr::null(),
+    ///         sub_image: oxr::SwapchainSubImage {
+    ///             swapchain: oxr::Swapchain::from_raw(0), // Should be valid swapchain
+    ///             image_rect: oxr::Rect2Di {
+    ///                 offset: oxr::Offset2Di { x: 0, y: 0 },
+    ///                 extent: oxr::Extent2Di { width: 1024, height: 1024 },
+    ///             },
+    ///             image_array_index: 0,
+    ///         },
+    ///         pose: oxr::Posef {
+    ///             orientation: oxr::Quaternionf { x: 0.0, y: 0.0, z: 0.0, w: 1.0 },
+    ///             position: oxr::Vector3f { x: -0.032, y: 0.0, z: 0.0 }, // Left eye offset
+    ///         },
+    ///         fov: oxr::Fovf {
+    ///             angle_left: -0.7853981, // -45 degrees
+    ///             angle_right: 0.7853981,  // 45 degrees
+    ///             angle_up: 0.7853981,     // 45 degrees
+    ///             angle_down: -0.7853981,  // -45 degrees
+    ///         },
+    ///     }
+    /// ];
+    ///
+    /// let mut composition_layer = oxr::CompositionLayerProjection {
+    ///     ty: oxr::StructureType::COMPOSITION_LAYER_PROJECTION,
+    ///     next: std::ptr::null(),
+    ///     layer_flags: oxr::CompositionLayerFlags::BLEND_TEXTURE_SOURCE_ALPHA,
+    ///     space: oxr::Space::from_raw(BackendOpenXR::space()),
+    ///     view_count: 1,
+    ///     views: projection_views.as_ptr(),
+    /// };
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     BackendOpenXR::add_composition_layer(&mut composition_layer, 0);
+    /// );
+    /// ```
     pub fn add_composition_layer<T>(xr_composition_layer_x: &mut T, sort_order: i32) {
         let size = size_of::<T>();
         let ptr = xr_composition_layer_x as *mut _ as *mut c_void;
@@ -807,6 +912,28 @@ impl BackendOpenXR {
     /// * `xr_base_header` - An OpenXR object that will be chained into the xrEndFrame call.
     ///
     /// see also [`backend_openxr_end_frame_chain`]
+    ///
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::BackendOpenXR;
+    ///
+    /// // Only works in XR mode but offscreen accept it.
+    /// use openxr_sys as oxr;
+    /// let mut frame_end_info = oxr::FrameEndInfo {
+    ///     ty: oxr::StructureType::FRAME_END_INFO,
+    ///     next: std::ptr::null(),
+    ///     display_time: oxr::Time::from_nanos(BackendOpenXR::time()),
+    ///     environment_blend_mode:  oxr::EnvironmentBlendMode::OPAQUE,
+    ///     layer_count: 0,
+    ///     layers: std::ptr::null_mut(), // Should be filled with valid layers
+    ///     
+    /// };
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     BackendOpenXR::add_end_frame_chain(&mut frame_end_info);
+    /// );
+    /// ```
     pub fn add_end_frame_chain<T>(xr_base_header: &mut T) {
         let size = size_of::<T>();
         let ptr = xr_base_header as *mut _ as *mut c_void;
@@ -820,6 +947,22 @@ impl BackendOpenXR {
     /// * `extension_name` - The extension name as listed in the OpenXR spec. For example: “XR_EXT_hand_tracking”.
     ///
     /// see also [`backend_openxr_ext_exclude`]
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::system::BackendOpenXR;
+    ///
+    /// // This must be called before SK.Initialize
+    /// BackendOpenXR::exclude_ext("XR_EXT_hand_tracking");
+    /// BackendOpenXR::exclude_ext("XR_FB_passthrough");
+    ///
+    /// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    ///
+    /// offscreen_mode_stop_here!();
+    /// // Later, we can check if the extensions were not loaded:
+    /// assert_eq!(BackendOpenXR::ext_enabled("XR_EXT_hand_tracking"), false);
+    /// assert_eq!(BackendOpenXR::ext_enabled("XR_FB_passthrough"), false);
+    /// ```
     pub fn exclude_ext(extension_name: impl AsRef<str>) {
         let c_str = CString::new(extension_name.as_ref()).unwrap();
         unsafe { backend_openxr_ext_exclude(c_str.as_ptr()) }
@@ -832,6 +975,22 @@ impl BackendOpenXR {
     /// * `extension_name` - The extension name as listed in the OpenXR spec. For example: “XR_EXT_hand_tracking”.
     ///
     /// see also [`backend_openxr_ext_request`]
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::system::BackendOpenXR;
+    ///
+    /// // This must be called before SK.Initialize
+    /// BackendOpenXR::request_ext("XR_EXT_hand_tracking");
+    /// BackendOpenXR::request_ext("XR_the_ext_that_does_not_exist");
+    ///
+    /// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    ///
+    /// offscreen_mode_stop_here!();
+    /// // Later, check if extensions were loaded as we can't be sure they are ok for this runtime:
+    /// assert_eq!(BackendOpenXR::ext_enabled("XR_EXT_hand_tracking"), true);
+    /// assert_eq!(BackendOpenXR::ext_enabled("XR_the_ext_that_does_not_exist"), false);
+    /// ```
     pub fn request_ext(extension_name: impl AsRef<str>) {
         let c_str = CString::new(extension_name.as_ref()).unwrap();
         unsafe { backend_openxr_ext_request(c_str.as_ptr()) }
@@ -843,6 +1002,21 @@ impl BackendOpenXR {
     /// * `extension_name` - The extension name as listed in the OpenXR spec. For example: “XR_EXT_hand_tracking”.
     ///
     /// see also [`backend_openxr_ext_enabled`]
+    ///
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::BackendOpenXR;
+    ///
+    /// // Check if an extension is enabled (only works in XR mode)
+    /// let hand_tracking_enabled = BackendOpenXR::ext_enabled("XR_EXT_hand_tracking");
+    /// let imaginary_enabled = BackendOpenXR::ext_enabled("XR_the_ext_that_does_not_exist");
+    ///
+    /// offscreen_mode_stop_here!();
+    /// // In offscreen mode, extensions are never enabled
+    /// assert_eq!(hand_tracking_enabled, true);
+    /// assert_eq!(imaginary_enabled, false);
+    /// ```
     pub fn ext_enabled(extension_name: impl AsRef<str>) -> bool {
         if Backend::xr_type() == BackendXRType::OpenXR {
             let c_str = CString::new(extension_name.as_ref()).unwrap();
@@ -854,10 +1028,28 @@ impl BackendOpenXR {
 
     /// This is basically xrGetInstanceProcAddr from OpenXR, you can use this to get and call functions from an
     /// extension you’ve loaded.
+    /// ### Important Note
+    /// It is more relevant to use the openxrs crate which contains the function signatures
+    ///
     /// <https://stereokit.net/Pages/StereoKit/Backend.OpenXR/GetFunctionPtr.html>
     /// * `function_name` - The name of the function to get the pointer for.
     ///
     /// see also [`backend_openxr_get_function`]
+    ///
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::BackendOpenXR;
+    ///
+    /// // Get a function pointer from an OpenXR extension (only works in XR mode)
+    /// let hand_tracker_fn = BackendOpenXR::get_function_ptr("xrCreateHandTrackerEXT");
+    /// let passthrough_fn = BackendOpenXR::get_function_ptr("xrInexistantFunction");
+    ///
+    /// offscreen_mode_stop_here!();
+    /// // In offscreen mode, function pointers are None
+    /// assert_eq!(hand_tracker_fn.is_some(), true);
+    /// assert_eq!(passthrough_fn, None);
+    /// ```
     pub fn get_function_ptr(function_name: impl AsRef<str>) -> Option<VoidFunction> {
         let c_str = CString::new(function_name.as_ref()).unwrap();
         unsafe { backend_openxr_get_function(c_str.as_ptr()) }
@@ -865,10 +1057,26 @@ impl BackendOpenXR {
 
     /// This is basically xrGetInstanceProcAddr from OpenXR, you can use this to get and call functions from an
     /// extension you’ve loaded.
+    /// ### Important Note
+    /// It is more relevant to use the openxrs crate which contains the function signatures
+    ///
     /// <https://stereokit.net/Pages/StereoKit/Backend.OpenXR/GetFunctionPtr.html>
     /// * `function_name` - The name of the function to get the pointer for.
     ///
     /// see also [`backend_openxr_get_function`]
+    ///
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::BackendOpenXR;
+    ///
+    /// // Get a typed function pointer from an OpenXR extension (only works in XR mode)
+    /// let hand_tracker_fn: Option<unsafe extern "C" fn()> = BackendOpenXR::get_function("xrCreateHandTrackerEXT");
+    ///
+    /// offscreen_mode_stop_here!();
+    /// // In offscreen mode, function pointers are None
+    /// assert_eq!(hand_tracker_fn.is_some(), true);
+    /// ```
     pub fn get_function<T>(function_name: impl AsRef<str>) -> Option<T> {
         let c_str = CString::new(function_name.as_ref()).unwrap();
         let function = unsafe { backend_openxr_get_function(c_str.as_ptr()) };
@@ -882,6 +1090,21 @@ impl BackendOpenXR {
     ///   as normal.
     ///
     /// see also [`backend_openxr_set_hand_joint_scale`]
+    ///
+    /// ### Example
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::{Backend, BackendOpenXR, BackendXRType};
+    ///
+    /// // Adjust hand joint scaling (only effective in XR mode with hand tracking)
+    /// BackendOpenXR::set_hand_joint_scale(1.2); // Make joints 20% larger
+    ///
+    /// // Or make them smaller
+    /// BackendOpenXR::set_hand_joint_scale(0.8); // Make joints 20% smaller
+    ///
+    /// // Reset to default
+    /// BackendOpenXR::set_hand_joint_scale(1.0);
+    /// ```
     pub fn set_hand_joint_scale(joint_scale_factor: f32) {
         unsafe { backend_openxr_set_hand_joint_scale(joint_scale_factor) }
     }
@@ -898,15 +1121,13 @@ impl BackendOpenXR {
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::system::BackendAndroid;
 ///
-/// // These are results for a non Android environment:
-///
 /// let activity = BackendAndroid::activity();
-/// assert_eq!(activity, std::ptr::null_mut());
-///
 /// let java_vm = BackendAndroid::java_vm();
-/// assert_eq!(java_vm, std::ptr::null_mut());
-///
 /// let jni_environment = BackendAndroid::jni_environment();
+///
+/// // These are results for a non Android environment:
+/// assert_eq!(activity, std::ptr::null_mut());
+/// assert_eq!(java_vm, std::ptr::null_mut());
 /// assert_eq!(jni_environment, std::ptr::null_mut());
 /// ```
 pub struct BackendAndroid;
@@ -2716,12 +2937,11 @@ impl Input {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::system::{Input, Handed, HandSource};
     ///
-    /// // These are the normal values for Offscreen tests:
-    ///
     /// let hand_source = Input::hand_source(Handed::Left);
-    /// assert_eq!(hand_source, HandSource::None);
-    ///
     /// let hand_source = Input::hand_source(Handed::Right);
+    ///
+    /// xr_mode_stop_here!();
+    /// // These are the expected results for offscreen tests on a PC:
     /// assert_eq!(hand_source, HandSource::None);
     /// ```
     pub fn hand_source(hand: Handed) -> HandSource {
@@ -6360,7 +6580,11 @@ impl World {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::{Vec3, Pose}, system::World};
     ///
-    /// assert_eq!(World::get_origin_offset(), Pose::ZERO);
+    /// let origin_offset = World::get_origin_offset();
+    ///
+    /// xr_mode_stop_here!();
+    /// // These are the expected results for offscreen tests on a PC:
+    /// assert_eq!(origin_offset, Pose::ZERO);
     ///
     /// let offset = Pose::new([0.0, 0.0, 0.01], None);
     /// if false {World::origin_offset(offset);}
@@ -6414,14 +6638,18 @@ impl World {
     /// let occlusion_is_present = sk.get_system().get_world_occlusion_present();
     ///
     /// World::occlusion_enabled(true);
-    /// World:: refresh_interval(0.01);
+    /// World::refresh_interval(0.01);
     ///
+    /// let occlusion_enabled = World::get_occlusion_enabled();
+    /// let refresh_interval  = World::get_refresh_interval();
+    ///
+    /// offscreen_mode_stop_here!();
+    /// // These are the expected results for OpenXR tests on a PC:
+    /// assert_eq!(refresh_interval, 0.01);
     /// if occlusion_is_present {
-    ///     assert_eq!(World::get_occlusion_enabled(), true);
-    ///     assert_eq!(World::get_refresh_interval(), 0.01);
+    ///     assert_eq!(occlusion_enabled, true);
     /// } else {
-    ///     assert_eq!(World::get_occlusion_enabled(), false);
-    ///     assert_eq!(World::get_refresh_interval(), 0.0);
+    ///     assert_eq!(occlusion_enabled, false);
     /// }
     /// ```
     pub fn refresh_interval(speed: f32) {
@@ -6439,18 +6667,13 @@ impl World {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::system::World;
     ///
-    /// let occlusion_is_present = sk.get_system().get_world_occlusion_present();
+    /// World::refresh_radius(3.5);
     ///
-    /// World::occlusion_enabled(true);
-    /// World:: refresh_radius(3.5);
+    /// let refresh_radius  = World::get_refresh_radius();
     ///
-    /// if occlusion_is_present {
-    ///     assert_eq!(World::get_occlusion_enabled(), true);
-    ///     assert_eq!(World::get_refresh_radius(), 3.5);
-    /// } else {
-    ///     assert_eq!(World::get_occlusion_enabled(), false);
-    ///     assert_eq!(World::get_refresh_radius(), 0.0);
-    /// }
+    /// offscreen_mode_stop_here!();
+    /// // These are the expected results for OpenXR tests on a PC:
+    /// assert_eq!(refresh_radius, 3.5);
     /// ```
     pub fn refresh_radius(distance: f32) {
         unsafe { world_set_refresh_radius(distance) }
@@ -6466,18 +6689,13 @@ impl World {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::system::{World, WorldRefresh};
     ///
-    /// let occlusion_is_present = sk.get_system().get_world_occlusion_present();
-    ///
-    /// World::occlusion_enabled(true);
     /// World::refresh_type(WorldRefresh::Timer);
     ///
-    /// if occlusion_is_present {
-    ///     assert_eq!(World::get_occlusion_enabled(), true);
-    ///     assert_eq!(World::get_refresh_type(), WorldRefresh::Timer);
-    /// } else {
-    ///     assert_eq!(World::get_occlusion_enabled(), false);
-    ///     assert_eq!(World::get_refresh_type(), WorldRefresh::Area);
-    /// }
+    /// let refresh_type  = World::get_refresh_type();
+    ///
+    /// offscreen_mode_stop_here!();
+    /// // These are the expected results for OpenXR tests on a PC:
+    /// assert_eq!(refresh_type, WorldRefresh::Timer);
     /// ```
     pub fn refresh_type(refresh_type: WorldRefresh) {
         unsafe { world_set_refresh_type(refresh_type) }
@@ -6585,6 +6803,8 @@ impl World {
     ///
     /// let bounds_pose = World::get_bounds_pose();
     ///
+    /// xr_mode_stop_here!();
+    /// // These are the expected results for offscreen tests on a PC:
     /// if World::has_bounds(){
     ///     // These are results for a non OpenXR environment:
     ///     assert_eq!(bounds_pose, Pose::IDENTITY);
@@ -6612,7 +6832,7 @@ impl World {
     ///
     /// if World::has_bounds(){
     ///     // These are results for a non OpenXR environment:
-    ///     assert_ne!(bounds_size, Vec2::ZERO);
+    ///     // Sometime it's ZERO (Monado/simulator) and sometimes it's a valid size (real OpenXR):
     /// } else {
     ///     // These are results for a non OpenXR environment:
     ///     assert_eq!(bounds_size, Vec2::ZERO);
@@ -6692,6 +6912,8 @@ impl World {
     ///
     /// let is_tracked = World::get_tracked();
     ///
+    /// xr_mode_stop_here!();
+    /// // These are the expected results for offscreen tests on a PC:
     /// assert_eq!(is_tracked, BtnState::Active);
     /// ```
     pub fn get_tracked() -> BtnState {

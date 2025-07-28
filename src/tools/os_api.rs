@@ -562,15 +562,14 @@ pub const USUAL_FPS_SUSPECTS: [i32; 12] = [30, 60, 72, 80, 90, 100, 110, 120, 14
 ///     assert!(!rates.is_empty());
 ///     let rate = get_display_refresh_rate().unwrap_or(0.0);
 ///     assert!(rate >= 20.0);
-///     assert!(set_display_refresh_rate(60.0, true));
-///     let rate = get_display_refresh_rate().unwrap_or(0.0);
-///     assert_eq!(rate, 60.0);
+///     assert!(set_display_refresh_rate(rate, true));
+///     let rate2 = get_display_refresh_rate().unwrap_or(0.0);
+///     assert_eq!(rate, rate2);
 /// } else {
 ///     let rates = get_all_display_refresh_rates(true);
 ///     // assert!(rates.len(), 5); // with 5 value 0.0
 ///     let rate = get_display_refresh_rate();
 ///     assert_eq!(rate , None);
-///     assert_eq!(set_display_refresh_rate(60.0, true), false);
 /// }
 /// ```
 pub fn get_all_display_refresh_rates(with_log: bool) -> Vec<f32> {

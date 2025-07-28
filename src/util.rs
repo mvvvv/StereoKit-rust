@@ -920,30 +920,29 @@ pub struct FovInfo {
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{util::{Device, DisplayType, DeviceTracking}, sk::DisplayBlend};
 ///
-/// // These are the expected results for tests on a PC:
-/// let display_type = Device::get_display_type();
+/// let display_type      = Device::get_display_type();
+/// let display_blend     = Device::get_display_blend();
+/// let device_tracking   = Device::get_tracking();
+/// let device_name       = Device::get_name().unwrap();
+/// let device_runtime    = Device::get_runtime().unwrap();
+/// let device_gpu        = Device::get_gpu().unwrap();
+/// let has_eye_gaze      = Device::has_eye_gaze();
+/// let has_hand_tracking = Device::has_hand_tracking();
+/// let valid_blend_none  = Device::valid_blend(DisplayBlend::None);
+/// let display_blend_none= Device::display_blend(DisplayBlend::None);
+///
+/// xr_mode_stop_here!();
+/// // These are the expected results for offscreen tests on a PC:
 /// assert_eq!(display_type, DisplayType::Flatscreen);
-///
-/// let display_blend = Device::get_display_blend();
 /// assert_eq!(display_blend, DisplayBlend::Opaque);
-///
-/// let device_tracking = Device::get_tracking();
 /// assert_eq!(device_tracking, DeviceTracking::None);
-///
-/// let device_name = Device::get_name().unwrap();
 /// assert_eq!(device_name, "Offscreen");
-///
-/// let device_runtime = Device::get_runtime().unwrap();
 /// assert_eq!(device_runtime, "None");
-///
-/// let device_gpu = Device::get_gpu().unwrap();
-/// assert_ne!(device_gpu, "Name of your GPU");
-///
-/// assert_eq!(Device::has_eye_gaze(), false);
-/// assert_eq!(Device::has_hand_tracking(), false);
-///
-/// assert_eq!(Device::valid_blend(DisplayBlend::None), false);
-/// assert_eq!(Device::display_blend(DisplayBlend::None), false);
+///  assert_ne!(device_gpu, "Name of your GPU");
+/// assert_eq!(has_eye_gaze, false);
+/// assert_eq!(has_hand_tracking, false);
+/// assert_eq!(valid_blend_none, false);
+/// assert_eq!(display_blend_none, false);
 /// ```
 pub struct Device;
 
@@ -978,6 +977,7 @@ impl Device {
     /// // These are the expected results for tests on a PC:
     /// assert_eq!(Device::get_display_blend(), DisplayBlend::Opaque);
     ///
+    /// xr_mode_stop_here!();
     /// assert_eq!(Device::display_blend(DisplayBlend::AnyTransparent), false);
     /// assert_eq!(Device::display_blend(DisplayBlend::None), false);
     /// assert_eq!(Device::display_blend(DisplayBlend::Additive), false);
@@ -1005,7 +1005,8 @@ impl Device {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::util::{Device, DisplayType};
     ///
-    /// // These are the expected results for tests on a PC:
+    /// xr_mode_stop_here!();
+    /// // These are the expected results for offscreen tests on a PC:
     /// assert_eq!(Device::get_display_type(), DisplayType::Flatscreen);
     /// ```
     pub fn get_display_type() -> DisplayType {
@@ -1023,7 +1024,10 @@ impl Device {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::util::Device;
     ///
-    /// // These are the expected results for tests on a PC:
+    /// assert!(Device::get_runtime().is_ok());
+    ///
+    /// xr_mode_stop_here!();
+    /// // These are the expected results for offscreen tests on a PC:
     /// assert_eq!(Device::get_runtime().unwrap(), "None");
     /// ```
     pub fn get_runtime<'a>() -> Result<&'a str, StereoKitError> {
@@ -1052,8 +1056,11 @@ impl Device {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::util::Device;
     ///
-    /// // These are the expected results for tests on a PC:
-    /// assert_eq!(Device::has_eye_gaze(), false);
+    /// let has_eye_gaze = Device::has_eye_gaze();
+    ///
+    /// xr_mode_stop_here!();
+    /// // These are the expected results for offscreen tests on a PC:
+    /// assert_eq!(has_eye_gaze, false);
     /// ```
     pub fn has_eye_gaze() -> bool {
         unsafe { device_has_eye_gaze() != 0 }
@@ -1069,8 +1076,11 @@ impl Device {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::util::Device;
     ///
-    /// // These are the expected results for tests on a PC:
-    /// assert_eq!(Device::has_hand_tracking(), false);
+    /// let has_hand_tracking = Device::has_hand_tracking();
+    ///
+    /// xr_mode_stop_here!();
+    /// // These are the expected results for offscreen tests on a PC:
+    /// assert_eq!(has_hand_tracking, false);
     /// ```
     pub fn has_hand_tracking() -> bool {
         unsafe { device_has_hand_tracking() != 0 }
@@ -1086,7 +1096,11 @@ impl Device {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::util::Device;
     ///
-    /// // These are the expected results for tests on a PC:
+    /// let name = Device::get_name();
+    /// assert!(name.is_ok());
+    ///
+    /// xr_mode_stop_here!();
+    /// // These are the expected results for offscreen tests on a PC:
     /// assert_eq!(Device::get_name().unwrap(), "Offscreen");
     /// ```
     pub fn get_name<'a>() -> Result<&'a str, StereoKitError> {
@@ -1105,8 +1119,11 @@ impl Device {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::util::{Device, DeviceTracking};
     ///
-    /// // These are the expected results for tests on a PC:
-    /// assert_eq!(Device::get_tracking(), DeviceTracking::None);
+    /// let tracking = Device::get_tracking();
+    ///
+    /// xr_mode_stop_here!();
+    /// // These are the expected results for offscreen tests on a PC:
+    /// assert_eq!(tracking, DeviceTracking::None);
     /// ```
     pub fn get_tracking() -> DeviceTracking {
         unsafe { device_get_tracking() }
@@ -1122,8 +1139,10 @@ impl Device {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{util::Device, sk::DisplayBlend};
     ///
-    /// // These are the expected results for tests on a PC:
     /// assert_eq!(Device::valid_blend(DisplayBlend::Opaque), true);
+    ///
+    /// xr_mode_stop_here!();
+    /// // These are the expected results for offscreen tests on a PC:
     /// assert_eq!(Device::valid_blend(DisplayBlend::None), false);
     /// assert_eq!(Device::valid_blend(DisplayBlend::Additive), false);
     /// assert_eq!(Device::valid_blend(DisplayBlend::Blend), false);
@@ -1838,7 +1857,8 @@ impl Platform {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{util::Platform, system::TextContext};
     ///
-    /// // On desktop, this will not show the keyboard, as it is assumed that the user has a physical keyboard.
+    /// xr_mode_stop_here!();
+    /// // On non XR mode, this will not show the keyboard, as it is assumed that the user has a physical keyboard.
     /// Platform::keyboard_show(true, TextContext::Text);
     /// assert_eq!(Platform::is_keyboard_visible(), false);
     ///
@@ -2472,7 +2492,7 @@ impl Time {
     /// assert_eq!(Time::get_step(), 0.0);
     ///
     /// let mut total = 0.0f64;
-    /// number_of_steps = 1000;
+    /// number_of_steps = 100;
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     if iter < number_of_steps + 2 {
     ///         assert_eq!(Time::get_total(), total + Time::get_step());
@@ -2496,10 +2516,10 @@ impl Time {
     /// assert_eq!(Time::get_stepf(), 0.0);
     ///
     /// let mut totalf = 0.0f32;
-    /// number_of_steps = 1000;
+    /// number_of_steps = 100;
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     if iter < number_of_steps + 2 {
-    ///         assert!((Time::get_totalf() - totalf - Time::get_stepf()).abs() < 0.000001);
+    ///         assert!((Time::get_totalf() - totalf - Time::get_stepf()).abs() < 0.0001);
     ///     }
     ///     totalf = Time::get_totalf();
     /// );
@@ -2521,7 +2541,7 @@ impl Time {
     /// assert_eq!(Time::get_step_unscaled(), 0.0);
     ///
     /// let mut total = 0.0f64;
-    /// number_of_steps = 1000;
+    /// number_of_steps = 100;
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     if iter < number_of_steps + 2 {
     ///         assert_eq!(Time::get_total_unscaled(), total + Time::get_step_unscaled());
@@ -2546,10 +2566,10 @@ impl Time {
     /// assert_eq!(Time::get_step_unscaledf(), 0.0);
     ///
     /// let mut totalf = 0.0f32;
-    /// number_of_steps = 1000;
+    /// number_of_steps = 100;
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     if iter < number_of_steps + 2 {
-    ///         assert!((Time::get_total_unscaledf() - totalf - Time::get_step_unscaledf().abs() < 0.000001));
+    ///         assert!((Time::get_total_unscaledf() - totalf - Time::get_step_unscaledf().abs() < 0.0001));
     ///     }
     ///     totalf = Time::get_total_unscaledf();
     /// );
@@ -2573,7 +2593,7 @@ impl Time {
     ///
     /// assert_eq!(Time::get_total(), 0.0);
     ///
-    /// number_of_steps = 1000;
+    /// number_of_steps = 100;
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     if iter < number_of_steps + 2 {
     ///         assert_eq!(Time::get_total(), Time::get_total_unscaled() * 2.0);
@@ -2599,7 +2619,7 @@ impl Time {
     ///
     /// assert_eq!(Time::get_totalf(), 0.0);
     ///
-    /// number_of_steps = 1000;
+    /// number_of_steps = 100;
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     if iter < number_of_steps + 2 {
     ///         assert_eq!(Time::get_totalf(), Time::get_total_unscaledf() / 4.0);

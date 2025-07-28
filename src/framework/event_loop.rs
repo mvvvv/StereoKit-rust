@@ -1159,7 +1159,7 @@ impl Steppers {
 /// See Demo b_stepper.rs::BStepper
 /// Non canonical structure
 ///
-/// ### Examples:
+/// ### Examples
 /// ```
 /// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{font::Font, framework::StepperClosures, material::Material,

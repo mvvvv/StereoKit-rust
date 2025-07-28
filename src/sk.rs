@@ -772,7 +772,12 @@ pub enum QuitReason {
 ///
 /// let sk_info = Some(sk.get_sk_info_clone());
 /// let settings = SkInfo::settings_from(&sk_info);
-/// assert_eq!(settings.mode, AppMode::Offscreen);
+///
+/// if cfg!(feature = "test-xr-mode") {
+///     assert_eq!(settings.mode, AppMode::XR);
+/// } else {
+///     assert_eq!(settings.mode, AppMode::Offscreen);
+/// }
 ///
 /// let system = SkInfo::system_from(&sk_info);
 /// assert_eq!(system.get_display_width(), 0);
@@ -1163,7 +1168,12 @@ impl Sk {
     /// use stereokit_rust::sk::DisplayMode;
     ///
     /// let display_mode: DisplayMode = sk.get_active_display_mode();
-    /// assert_eq!(display_mode, DisplayMode::Flatscreen);
+    ///
+    /// if cfg!(feature = "test-xr-mode") {
+    ///     assert_eq!(display_mode, DisplayMode::MixedReality);
+    /// } else {
+    ///     assert_eq!(display_mode, DisplayMode::Flatscreen);
+    /// }
     /// ```
     pub fn get_active_display_mode(&self) -> DisplayMode {
         unsafe { sk_active_display_mode() }
@@ -1181,7 +1191,12 @@ impl Sk {
     /// use stereokit_rust::sk::AppFocus;
     ///
     /// let display_mode: AppFocus = sk.get_app_focus();
-    /// assert_eq!(display_mode, AppFocus::Active);
+    ///
+    /// if cfg!(feature = "test-xr-mode") {
+    ///     // may be AppFocus::Hidden (SteamVR/ALVR) or AppFocus::Active(Monado/Simulator);
+    /// } else {
+    ///     assert_eq!(display_mode, AppFocus::Active);
+    /// }
     /// ```
     pub fn get_app_focus(&self) -> AppFocus {
         unsafe { sk_app_focus() }
@@ -1198,7 +1213,12 @@ impl Sk {
     ///
     /// let sk_info = Some(sk.get_sk_info_clone());
     /// let settings = SkInfo::settings_from(&sk_info);
-    /// assert_eq!(settings.mode, AppMode::Offscreen);
+    ///
+    /// if cfg!(feature = "test-xr-mode") {
+    ///     assert_eq!(settings.mode, AppMode::XR);
+    /// } else {
+    ///     assert_eq!(settings.mode, AppMode::Offscreen);
+    /// }
     ///
     /// let system = SkInfo::system_from(&sk_info);
     /// assert_eq!(system.get_display_width(), 0);
@@ -1220,7 +1240,12 @@ impl Sk {
     /// use stereokit_rust::sk::{Sk, SkSettings, AppMode};
     ///
     /// let settings: SkSettings = sk.get_settings();
-    /// assert_eq!(settings.mode, AppMode::Offscreen);
+    ///
+    /// if cfg!(feature = "test-xr-mode") {
+    ///     assert_eq!(settings.mode, AppMode::XR);
+    /// } else {
+    ///     assert_eq!(settings.mode, AppMode::Offscreen);
+    /// }
     /// ```
     pub fn get_settings(&self) -> SkSettings {
         unsafe { sk_get_settings() }

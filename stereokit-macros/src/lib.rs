@@ -237,8 +237,11 @@ fn get_sub_dirs(path_assets: PathBuf, sub_path: &Path) -> Vec<String> {
 #[proc_macro]
 pub fn test_init_sk_event_loop(_input: TokenStream) -> TokenStream {
     let expanded = quote! {
-        use stereokit_rust::{*, prelude::*, test_screenshot, test_steps};
+        use stereokit_rust::{*, prelude::*, test_screenshot, test_steps, xr_mode_stop_here, offscreen_mode_stop_here};
         let mut sk_settings = sk::SkSettings::default();
+        #[cfg(feature = "test-xr-mode")]
+        sk_settings.mode(sk::AppMode::XR).app_name("cargo test");
+        #[cfg(not(feature = "test-xr-mode"))]
         sk_settings.mode(sk::AppMode::Offscreen).app_name("cargo test");
         let (mut sk, mut event_loop) = sk_settings.init_with_event_loop().unwrap();
 
@@ -271,8 +274,11 @@ pub fn test_init_sk_event_loop(_input: TokenStream) -> TokenStream {
 #[proc_macro]
 pub fn test_init_sk_no_event_loop(_input: TokenStream) -> TokenStream {
     let expanded = quote! {
-        use stereokit_rust::{*, prelude::*, test_screenshot, test_steps};
+        use stereokit_rust::{*, prelude::*, test_screenshot, test_steps, xr_mode_stop_here, offscreen_mode_stop_here};
         let mut sk_settings = sk::SkSettings::default();
+        #[cfg(feature = "test-xr-mode")]
+        sk_settings.mode(sk::AppMode::XR).app_name("cargo test");
+        #[cfg(not(feature = "test-xr-mode"))]
         sk_settings.mode(sk::AppMode::Offscreen).app_name("cargo test");
         let mut sk = sk_settings.init().unwrap();
 
@@ -280,6 +286,64 @@ pub fn test_init_sk_no_event_loop(_input: TokenStream) -> TokenStream {
         let mut number_of_steps = 3;
         let (mut width_scr, mut height_scr, mut fov_scr, mut from_scr, mut at_scr)  = (200, 200, 99.0, maths::Vec3::Z, maths::Vec3::ZERO);
         system::Assets::block_for_priority(i32::MAX);
+    };
+
+    TokenStream::from(expanded)
+}
+
+#[proc_macro]
+/// Stop execution (Return) if the `test-xr-mode` feature is active. This macro is useful to exit tests early when running
+/// in XR mode. Use this when you can't predict what every OpenXR implementation will do.
+///
+/// ### Example
+/// ```ignore
+/// #[test]
+/// fn my_test() {
+///     test_init_sk!();
+///     
+///     // Code that works in both Offscreen and XR modes
+///     // ...
+///     
+///     xr_mode_stop_here!(); // Exit here if in XR mode
+///     
+///     // Code that should only run in Offscreen mode
+///     // (e.g., pixel-perfect assertions, screenshots)
+///     // ...
+/// }
+/// ```
+pub fn xr_mode_stop_here(_input: TokenStream) -> TokenStream {
+    let expanded = quote! {
+        #[cfg(feature = "test-xr-mode")]
+        return;
+    };
+
+    TokenStream::from(expanded)
+}
+
+#[proc_macro]
+/// Stop execution (Return) if the `test-xr-mode` feature is inactive. This macro is useful to exit tests early when running
+/// in offscreen mode. Use this when the following code is only valid in XR mode.
+///
+/// ### Example
+/// ```ignore
+/// #[test]
+/// fn my_test() {
+///     test_init_sk!();
+///     
+///     // Code that works in both Offscreen and XR modes
+///     // ...
+///     
+///     offscreen_mode_stop_here!(); // Exit here if in offscreen mode
+///     
+///     // Code that should only run in XR mode
+///     // (e.g., pixel-perfect assertions, screenshots)
+///     // ...
+/// }
+/// ```
+pub fn offscreen_mode_stop_here(_input: TokenStream) -> TokenStream {
+    let expanded = quote! {
+        #[cfg(not(feature = "test-xr-mode"))]
+        return;
     };
 
     TokenStream::from(expanded)
