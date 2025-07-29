@@ -34,6 +34,7 @@ clear;DISPLAY= cargo test --features event-loop,test-xr-mode -- --test-threads=1
 cargo clean --doc && cargo doc --features event-loop  #----no-event-loop will fail because of lib //! doc containing `event-loop`
 
 #---- publish to crates.io
+cd stereokit-macros && cargo publish && cd ..   #---publish macros crate
 cargo publish -F event-loop --dry-run
 cargo publish -F event-loop
 
