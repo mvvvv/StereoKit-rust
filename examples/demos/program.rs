@@ -39,7 +39,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
         "======================================================================================================================== !!",
     );
 
-    Renderer::scaling(1.5);
+    //Renderer::scaling(1.5); // Create distortion on WiVRn linux
     Renderer::multisample(4);
 
     let mut window_demo_pose = Pose::new(Vec3::new(-0.7, 1.5, -0.3), Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0))));
