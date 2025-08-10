@@ -18,6 +18,7 @@ use stereokit_rust::{
 pub const SHOW_SHADOWS: &str = "ShowShadows";
 pub const SHOW_FLOOR: &str = "ShowFloor";
 pub const CHANGE_FLOOR: &str = "ChangeFlor";
+pub const SKY_DOME_CHANGED: &str = "SkyDomeChanged";
 const ID: &str = "demo_1";
 
 /// The basic Stepper. This stepper is used for Thread1 demo, we must ensure the StereoKit code stay in the main thread
@@ -127,8 +128,8 @@ impl Default for HandMenuRadial1 {
         let shadow_depth =
             Tex::render_target(1024, 1024, Some(1), Some(TexFormat::R8), Some(TexFormat::Depth32)).unwrap_or_default();
         let mut test_material = Material::unlit().copy();
-        test_material.diffuse_tex(shadow_depth.get_zbuffer().unwrap_or_default());
-        //test_material.diffuse_tex(&shadow_depth);
+        //test_material.diffuse_tex(shadow_depth.get_zbuffer().unwrap_or_default());
+        test_material.diffuse_tex(&shadow_depth);
         //Renderer::clear_color(Color128::hsv(0.4, 0.3, 0.5, 1.0));
 
         let floor_model = Model::from_mesh(
@@ -179,6 +180,14 @@ impl HandMenuRadial1 {
         let mut fly_over = true;
         let send_event_fly_over = SkInfo::get_message_closure(sk_info.clone(), id.clone(), ENABLE_FLY_OVER);
 
+        // Sky dome changed events
+        let send_event_sky_dome_day = SkInfo::get_message_closure(sk_info.clone(), id.clone(), SKY_DOME_CHANGED);
+        let send_event_sky_dome_sunset = SkInfo::get_message_closure(sk_info.clone(), id.clone(), SKY_DOME_CHANGED);
+        let send_event_sky_dome_blacklight = SkInfo::get_message_closure(sk_info.clone(), id.clone(), SKY_DOME_CHANGED);
+        let send_event_sky_dome_hdri = SkInfo::get_message_closure(sk_info.clone(), id.clone(), SKY_DOME_CHANGED);
+        let send_event_sky_dome_gizah = SkInfo::get_message_closure(sk_info.clone(), id.clone(), SKY_DOME_CHANGED);
+        let send_event_sky_dome_default = SkInfo::get_message_closure(sk_info.clone(), id.clone(), SKY_DOME_CHANGED);
+
         // Change the material of the floor
         let change_floor0 = SkInfo::get_message_closure(sk_info.clone(), id.clone(), CHANGE_FLOOR);
         let change_floor1 = SkInfo::get_message_closure(sk_info.clone(), id.clone(), CHANGE_FLOOR);
@@ -224,7 +233,8 @@ impl HandMenuRadial1 {
         let sh = SphericalHarmonics::from_lights(&lights);
         let cube2 = SHCubemap::gen_cubemap_sh(sh, 15, 5.0, 0.02);
 
-        let cube3 = SHCubemap::from_cubemap("hdri/sky_dawn.hdr", true, 0).unwrap_or(SHCubemap::get_rendered_sky());
+        let mut cube3 = SHCubemap::from_cubemap("hdri/sky_dawn.hdr", true, 0).unwrap_or(SHCubemap::get_rendered_sky());
+        cube3.sh.add(Vec3::new(-1.0, 0.15, -0.15).get_normalized(), RED).brightness(0.1);
 
         // let cubemap_files = [
         //     "hdri/giza/right.png",
@@ -268,6 +278,7 @@ impl HandMenuRadial1 {
                             None,
                             move || {
                                 cube0.render_as_sky();
+                                send_event_sky_dome_day("Day".to_string());
                             },
                             HandMenuAction::Unchecked(1),
                         ),
@@ -276,6 +287,7 @@ impl HandMenuRadial1 {
                             None,
                             move || {
                                 cube1.render_as_sky();
+                                send_event_sky_dome_sunset("Sunset".to_string());
                             },
                             HandMenuAction::Unchecked(1),
                         ),
@@ -284,6 +296,7 @@ impl HandMenuRadial1 {
                             None,
                             move || {
                                 cube2.render_as_sky();
+                                send_event_sky_dome_blacklight("BlackLight".to_string());
                             },
                             HandMenuAction::Unchecked(1),
                         ),
@@ -292,6 +305,7 @@ impl HandMenuRadial1 {
                             None,
                             move || {
                                 cube3.render_as_sky();
+                                send_event_sky_dome_hdri("HdriDawn".to_string());
                             },
                             HandMenuAction::Unchecked(1),
                         ),
@@ -300,6 +314,7 @@ impl HandMenuRadial1 {
                             None,
                             move || {
                                 cube4.render_as_sky();
+                                send_event_sky_dome_gizah("Gizah".to_string());
                             },
                             HandMenuAction::Unchecked(1),
                         ),
@@ -308,6 +323,7 @@ impl HandMenuRadial1 {
                             None,
                             move || {
                                 cube_default.render_as_sky();
+                                send_event_sky_dome_default("Default".to_string());
                             },
                             HandMenuAction::Checked(1),
                         ),
@@ -425,6 +441,8 @@ impl HandMenuRadial1 {
             self.show_floor = value.parse().unwrap_or(true);
         } else if key.eq(SHOW_SHADOWS) {
             self.show_shadows = value.parse().unwrap_or(true);
+        } else if key.eq(SKY_DOME_CHANGED) {
+            Log::info(format!("Sky dome changed to: {value}"));
         }
     }
 
@@ -451,6 +469,8 @@ impl HandMenuRadial1 {
                 Renderer::render_to(
                     token,
                     &self.shadow_depth,
+                    None,
+                    None,
                     camera,
                     Matrix::perspective(90.0, 1.0, 10.01, 1010.0),
                     None,
