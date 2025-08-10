@@ -284,16 +284,16 @@ impl FileBrowser {
         }
         Ui::next_line();
         Ui::push_tint(self.dir_buttons_tint);
-        if let Some(sub_dir_name) = self.dir.to_str() {
-            if !sub_dir_name.is_empty() {
-                Ui::push_enabled(self.dir != self.start_dir, None);
-                //---back button
-                if Ui::button("..", None) {
-                    self.dir.pop();
-                    dir_selected = Some(get_files(&self.sk_info, self.dir.clone(), &self.exts, true));
-                }
-                Ui::pop_enabled();
+        if let Some(sub_dir_name) = self.dir.to_str()
+            && !sub_dir_name.is_empty()
+        {
+            Ui::push_enabled(self.dir != self.start_dir, None);
+            //---back button
+            if Ui::button("..", None) {
+                self.dir.pop();
+                dir_selected = Some(get_files(&self.sk_info, self.dir.clone(), &self.exts, true));
             }
+            Ui::pop_enabled();
         }
         let cur_dir = self.dir.clone();
         // we add the dir at the end

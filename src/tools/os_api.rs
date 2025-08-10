@@ -152,10 +152,10 @@ pub fn get_assets(
                         if file.path().is_file() {
                             if exts.is_empty() {
                                 vec.push(PathEntry::File(file.file_name()))
-                            } else if let Some(extension) = path.extension() {
-                                if exts.is_empty() || exts.contains(&extension.to_os_string()) {
-                                    vec.push(PathEntry::File(file.file_name()))
-                                }
+                            } else if let Some(extension) = path.extension()
+                                && (exts.is_empty() || exts.contains(&extension.to_os_string()))
+                            {
+                                vec.push(PathEntry::File(file.file_name()))
                             }
                         }
                     }
@@ -399,22 +399,23 @@ pub fn get_files(
     }
     let mut vec = vec![];
 
-    if dir.exists() && dir.is_dir() {
-        if let Ok(read_dir) = read_dir(dir) {
-            for file in read_dir.flatten() {
-                let path = file.path();
+    if dir.exists()
+        && dir.is_dir()
+        && let Ok(read_dir) = read_dir(dir)
+    {
+        for file in read_dir.flatten() {
+            let path = file.path();
 
-                if file.path().is_file() {
-                    if exts.is_empty() {
-                        vec.push(PathEntry::File(file.file_name()))
-                    } else if let Some(extension) = path.extension() {
-                        if exts.is_empty() || exts.contains(&extension.to_os_string()) {
-                            vec.push(PathEntry::File(file.file_name()))
-                        }
-                    }
-                } else if show_sub_dirs && file.path().is_dir() {
-                    vec.push(PathEntry::Dir(file.file_name()))
+            if file.path().is_file() {
+                if exts.is_empty() {
+                    vec.push(PathEntry::File(file.file_name()))
+                } else if let Some(extension) = path.extension()
+                    && (exts.is_empty() || exts.contains(&extension.to_os_string()))
+                {
+                    vec.push(PathEntry::File(file.file_name()))
                 }
+            } else if show_sub_dirs && file.path().is_dir() {
+                vec.push(PathEntry::Dir(file.file_name()))
             }
         }
     }

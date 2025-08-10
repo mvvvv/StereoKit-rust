@@ -323,14 +323,13 @@ fn main() {
                 let libs_path = PathBuf::from(win_libs_path_name.clone());
                 for entry in libs_path.read_dir().expect("Libs path is not a valid directory!").flatten() {
                     let file = entry.path();
-                    if file.is_file() {
-                        if let Some(extension) = file.extension() {
-                            if copy_extensions.contains(&extension) {
-                                println!("Mingw Dll to copy {file:?}");
-                                let dest_file_dll = output_path.join(file.file_name().unwrap_or_default());
-                                let _lib_dll = fs::copy(file, dest_file_dll).unwrap();
-                            }
-                        }
+                    if file.is_file()
+                        && let Some(extension) = file.extension()
+                        && copy_extensions.contains(&extension)
+                    {
+                        println!("Mingw Dll to copy {file:?}");
+                        let dest_file_dll = output_path.join(file.file_name().unwrap_or_default());
+                        let _lib_dll = fs::copy(file, dest_file_dll).unwrap();
                     }
                 }
             }

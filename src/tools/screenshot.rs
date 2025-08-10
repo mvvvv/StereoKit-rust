@@ -211,10 +211,10 @@ impl ScreenshotViewer {
             if true {
                 let mut file_browser = FileBrowser::default();
 
-                if cfg!(target_os = "android") {
-                    if let Some(img_dir) = get_external_path(&self.sk_info) {
-                        file_browser.dir = img_dir;
-                    }
+                if cfg!(target_os = "android")
+                    && let Some(img_dir) = get_external_path(&self.sk_info)
+                {
+                    file_browser.dir = img_dir;
                 }
                 if !file_browser.dir.exists() {
                     file_browser.dir = current_dir().unwrap_or_default();
@@ -271,20 +271,19 @@ impl ScreenshotViewer {
         Ui::same_line();
         Ui::push_enabled(self.screen.is_some(), None);
         if Ui::button("Save", None) && !Platform::get_file_picker_visible() {
-            if cfg!(target_os = "android") {
-                if let Some(img_dir) = get_external_path(&self.sk_info) {
-                    if let Err(err) = set_current_dir(&img_dir) {
-                        Log::err(format!("Unable to move current_dir to {img_dir:?} : {err:?}"))
-                    }
-                }
+            if cfg!(target_os = "android")
+                && let Some(img_dir) = get_external_path(&self.sk_info)
+                && let Err(err) = set_current_dir(&img_dir)
+            {
+                Log::err(format!("Unable to move current_dir to {img_dir:?} : {err:?}"))
             }
             if true {
                 let mut file_browser = FileBrowser::default();
 
-                if cfg!(target_os = "android") {
-                    if let Some(img_dir) = get_external_path(&self.sk_info) {
-                        file_browser.dir = img_dir;
-                    }
+                if cfg!(target_os = "android")
+                    && let Some(img_dir) = get_external_path(&self.sk_info)
+                {
+                    file_browser.dir = img_dir;
                 }
                 if !file_browser.dir.exists() {
                     file_browser.dir = current_dir().unwrap_or_default();

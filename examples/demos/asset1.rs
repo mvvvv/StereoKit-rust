@@ -106,10 +106,10 @@ impl Asset1 {
     fn draw(&mut self, token: &MainThreadToken) {
         // If a model has been selected, we draw it
         if let Some(model) = &self.model_to_show {
-            if Ui::handle("Model1", &mut self.asset_pose, model.get_bounds() * self.asset_scale, false, None, None) {
-                if let Some(mut sound) = self.sound_to_play {
-                    sound.position(self.asset_pose.position);
-                }
+            if Ui::handle("Model1", &mut self.asset_pose, model.get_bounds() * self.asset_scale, false, None, None)
+                && let Some(mut sound) = self.sound_to_play
+            {
+                sound.position(self.asset_pose.position);
             }
             let model_transform = self.asset_pose.to_matrix(Some(self.asset_scale));
             Renderer::add_model(token, model, model_transform, None, None);
@@ -158,13 +158,13 @@ impl Asset1 {
         }
         Ui::next_line();
         Ui::push_tint(DARK_BLUE);
-        if let Some(sub_dir_name) = self.asset_sub_dir.to_str() {
-            if !sub_dir_name.is_empty() {
-                //---back button
-                if Ui::button("..", None) {
-                    self.asset_sub_dir.pop();
-                    new_asset_files = Some(get_assets(&self.sk_info, self.asset_sub_dir.clone(), &self.exts));
-                }
+        if let Some(sub_dir_name) = self.asset_sub_dir.to_str()
+            && !sub_dir_name.is_empty()
+        {
+            //---back button
+            if Ui::button("..", None) {
+                self.asset_sub_dir.pop();
+                new_asset_files = Some(get_assets(&self.sk_info, self.asset_sub_dir.clone(), &self.exts));
             }
         }
         let cur_dir = self.asset_sub_dir.clone();

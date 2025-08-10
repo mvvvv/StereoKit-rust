@@ -225,11 +225,11 @@ pub fn basic_log_fmt(
                 if pos > 0 {
                     sub_string.insert_str(0, "»»»»");
                 }
-                if let Some(item) = items.last_mut() {
-                    if item.text == sub_string {
-                        item.count += 1;
-                        continue;
-                    }
+                if let Some(item) = items.last_mut()
+                    && item.text == sub_string
+                {
+                    item.count += 1;
+                    continue;
                 }
 
                 items.push(LogItem { level, text: sub_string.to_owned(), count: 1 });

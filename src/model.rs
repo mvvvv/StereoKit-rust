@@ -729,7 +729,7 @@ impl Model {
     ///    }
     /// }
     /// ```
-    pub fn get_nodes(&self) -> Nodes {
+    pub fn get_nodes(&'_ self) -> Nodes<'_> {
         Nodes::from(self)
     }
 
@@ -757,7 +757,7 @@ impl Model {
     ///
     /// model.get_anims().play_anim_idx(0, AnimMode::Loop);
     /// ```
-    pub fn get_anims(&self) -> Anims {
+    pub fn get_anims(&'_ self) -> Anims<'_> {
         Anims::from(self)
     }
 
@@ -1600,7 +1600,7 @@ impl<'a> Nodes<'a> {
     ///     }
     /// }
     /// ```
-    pub fn all(&self) -> NodeIter {
+    pub fn all(&'_ self) -> NodeIter<'_> {
         NodeIter::all_from(self.model)
     }
 
@@ -1638,7 +1638,7 @@ impl<'a> Nodes<'a> {
     ///     }
     /// }
     /// ```
-    pub fn visuals(&self) -> NodeIter {
+    pub fn visuals(&'_ self) -> NodeIter<'_> {
         NodeIter::visuals_from(self.model)
     }
 
@@ -1673,7 +1673,7 @@ impl<'a> Nodes<'a> {
     /// let found_non_existent = nodes.find("non_existent");
     /// assert!(found_non_existent.is_none());
     /// ```
-    pub fn find<S: AsRef<str>>(&self, name: S) -> Option<ModelNode> {
+    pub fn find<S: AsRef<str>>(&'_ self, name: S) -> Option<ModelNode<'_>> {
         let c_str = CString::new(name.as_ref()).unwrap();
         match unsafe { model_node_find(self.model.0.as_ptr(), c_str.as_ptr()) } {
             -1 => None,
@@ -1744,7 +1744,7 @@ impl<'a> Nodes<'a> {
     /// let node = nodes.get_index(0).expect("Node should exist");
     /// assert_eq!(node.get_name(), Some("root"));
     /// ```
-    pub fn get_index(&self, index: i32) -> Option<ModelNode> {
+    pub fn get_index(&'_ self, index: i32) -> Option<ModelNode<'_>> {
         if unsafe { model_node_count(self.model.0.as_ptr()) } <= index {
             return None;
         }
@@ -1773,7 +1773,7 @@ impl<'a> Nodes<'a> {
     /// let node = nodes.get_visual_index(0);
     /// assert!(node.is_none());
     /// ```
-    pub fn get_visual_index(&self, index: i32) -> Option<ModelNode> {
+    pub fn get_visual_index(&'_ self, index: i32) -> Option<ModelNode<'_>> {
         if unsafe { model_node_visual_count(self.model.0.as_ptr()) } <= index {
             return None;
         }
@@ -1802,7 +1802,7 @@ impl<'a> Nodes<'a> {
     /// let node = nodes.get_root_node().expect("Node should exist");
     /// assert_eq!(node.get_name(), Some("root"));
     /// ```
-    pub fn get_root_node(&self) -> Option<ModelNode> {
+    pub fn get_root_node(&'_ self) -> Option<ModelNode<'_>> {
         let id = unsafe { model_node_get_root(self.model.0.as_ptr()) };
         if id == -1 { None } else { Some(ModelNode { model: self.model, id }) }
     }
@@ -2222,7 +2222,7 @@ impl ModelNode<'_> {
     /// let next_node = next_node.iterate();
     /// assert!(next_node.is_none());
     /// ```
-    pub fn iterate(&self) -> Option<ModelNode> {
+    pub fn iterate(&'_ self) -> Option<ModelNode<'_>> {
         match unsafe { model_node_iterate(self.model.0.as_ptr(), self.id) } {
             -1 => None,
             otherwise => Some(ModelNode { model: self.model, id: otherwise }),
@@ -2253,7 +2253,7 @@ impl ModelNode<'_> {
     /// let child_node = node.get_child().expect("Node should have a child");
     /// assert_eq!(child_node.get_name(), Some("mesh child1"));
     /// ```
-    pub fn get_child(&self) -> Option<ModelNode> {
+    pub fn get_child(&'_ self) -> Option<ModelNode<'_>> {
         match unsafe { model_node_child(self.model.0.as_ptr(), self.id) } {
             -1 => None,
             otherwise => Some(ModelNode { model: self.model, id: otherwise }),
@@ -2290,7 +2290,7 @@ impl ModelNode<'_> {
     /// let sibling_node = node.get_sibling().expect("Node should have a sibling");
     /// assert_eq!(sibling_node.get_name(), Some("mush"));
     /// ```
-    pub fn get_sibling(&self) -> Option<ModelNode> {
+    pub fn get_sibling(&'_ self) -> Option<ModelNode<'_>> {
         match unsafe { model_node_sibling(self.model.0.as_ptr(), self.id) } {
             -1 => None,
             otherwise => Some(ModelNode { model: self.model, id: otherwise }),
@@ -2327,7 +2327,7 @@ impl ModelNode<'_> {
     /// // Mesh is it's own parent.
     /// assert_eq!(child_node.get_parent().unwrap().get_name(), Some("mesh"));
     /// ```
-    pub fn get_parent(&self) -> Option<ModelNode> {
+    pub fn get_parent(&'_ self) -> Option<ModelNode<'_>> {
         match unsafe { model_node_parent(self.model.0.as_ptr(), self.id) } {
             -1 => None,
             otherwise => Some(ModelNode { model: self.model, id: otherwise }),
@@ -2339,7 +2339,7 @@ impl ModelNode<'_> {
     ///
     /// see also [`model_node_iterate`]
     /// same as [`ModelNode::iterate`]
-    pub fn get_next(&self) -> Option<ModelNode> {
+    pub fn get_next(&'_ self) -> Option<ModelNode<'_>> {
         self.iterate()
     }
 
@@ -2391,7 +2391,7 @@ impl ModelNode<'_> {
     ///    }
     /// }
     /// ```
-    pub fn get_infos(&self) -> Infos {
+    pub fn get_infos(&'_ self) -> Infos<'_> {
         Infos::from(self)
     }
 }

@@ -290,10 +290,10 @@ impl Interactor1 {
 
         // Input Source slider (convert to f32 for slider)
         Ui::text("Min Distance::", None, None, None, None, None, None);
-        if Ui::hslider("min_distance", &mut self.min_distance, -1.0, 3.0, None, Some(0.2), None, None).is_some() {
-            if let Some(interactor) = &self.test_interactor {
-                interactor.min_distance(self.min_distance);
-            }
+        if Ui::hslider("min_distance", &mut self.min_distance, -1.0, 3.0, None, Some(0.2), None, None).is_some()
+            && let Some(interactor) = &self.test_interactor
+        {
+            interactor.min_distance(self.min_distance);
         }
 
         // Capsule Radius slider

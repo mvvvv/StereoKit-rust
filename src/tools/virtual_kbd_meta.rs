@@ -1,14 +1,14 @@
 use openxr_sys::{
+    Bool32, FALSE, Instance, MAX_SYSTEM_NAME_SIZE, Posef, Result, Session, Space, StructureType,
+    SystemGraphicsProperties, SystemId, SystemProperties, SystemTrackingProperties,
+    SystemVirtualKeyboardPropertiesMETA, VirtualKeyboardCreateInfoMETA, VirtualKeyboardLocationTypeMETA,
+    VirtualKeyboardMETA, VirtualKeyboardSpaceCreateInfoMETA,
     pfn::{
         CreateVirtualKeyboardMETA, CreateVirtualKeyboardSpaceMETA, DestroyVirtualKeyboardMETA, GetSystemProperties,
         GetVirtualKeyboardDirtyTexturesMETA, GetVirtualKeyboardModelAnimationStatesMETA, GetVirtualKeyboardScaleMETA,
         GetVirtualKeyboardTextureDataMETA, SendVirtualKeyboardInputMETA, SetVirtualKeyboardModelVisibilityMETA,
         SuggestVirtualKeyboardLocationMETA,
     },
-    Bool32, Instance, Posef, Result, Session, Space, StructureType, SystemGraphicsProperties, SystemId,
-    SystemProperties, SystemTrackingProperties, SystemVirtualKeyboardPropertiesMETA, VirtualKeyboardCreateInfoMETA,
-    VirtualKeyboardLocationTypeMETA, VirtualKeyboardMETA, VirtualKeyboardSpaceCreateInfoMETA, FALSE,
-    MAX_SYSTEM_NAME_SIZE,
 };
 
 use crate::{
@@ -111,14 +111,10 @@ impl IStepper for VirtualKbdMETA {
     fn step(&mut self, token: &MainThreadToken) {
         // Here with enable/disable the passthrough
         for e in token.get_event_report().iter() {
-            if let StepperAction::Event(_, key, value) = e {
-                if key.eq(KEYBOARD_SHOW) {
-                    if value == "0" {
-                        self.enable(false)
-                    } else {
-                        self.enable(true)
-                    }
-                }
+            if let StepperAction::Event(_, key, value) = e
+                && key.eq(KEYBOARD_SHOW)
+            {
+                if value == "0" { self.enable(false) } else { self.enable(true) }
             }
         }
         if self.enabled() {

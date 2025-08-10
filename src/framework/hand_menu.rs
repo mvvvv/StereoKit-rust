@@ -844,14 +844,14 @@ impl HandMenuRadial {
 
                 if let Some(group_to_change) = item_selected.as_ref().is_unchecked_action() {
                     for line in layer.items().iter() {
-                        if let Some(group) = line.as_ref().is_checked_action() {
-                            if group == group_to_change {
-                                let mut to_reverse = line.as_ref();
-                                let to_to_reverse = to_reverse.borrow_mut();
+                        if let Some(group) = line.as_ref().is_checked_action()
+                            && group == group_to_change
+                        {
+                            let mut to_reverse = line.as_ref();
+                            let to_to_reverse = to_reverse.borrow_mut();
 
-                                if let HandRadial::Item(menu_item) = to_to_reverse {
-                                    menu_item.action.replace(HandMenuAction::Unchecked(group));
-                                }
+                            if let HandRadial::Item(menu_item) = to_to_reverse {
+                                menu_item.action.replace(HandMenuAction::Unchecked(group));
                             }
                         }
                     }
@@ -868,10 +868,10 @@ impl HandMenuRadial {
                             if group_to_change == group {
                                 cpt += 1
                             }
-                        } else if let Some(group) = line.as_ref().is_unchecked_action() {
-                            if group_to_change == group {
-                                cpt += 1
-                            }
+                        } else if let Some(group) = line.as_ref().is_unchecked_action()
+                            && group_to_change == group
+                        {
+                            cpt += 1
                         }
                     }
                     if cpt == 1 {

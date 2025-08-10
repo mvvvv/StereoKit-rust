@@ -133,30 +133,29 @@ pub fn compile_hlsl(
         for entry in entries {
             let file = entry?.path();
             println!("Compiling file : {:?}", &file);
-            if file.is_file() {
-                if let Some(extension) = file.extension() {
-                    if !excluded_extensions.contains(&extension) {
-                        let mut cmd = if with_wine {
-                            let mut c = Command::new("wine");
-                            c.arg(skshaderc.clone());
-                            c
-                        } else {
-                            Command::new(OsStr::new(skshaderc.to_str().unwrap_or("NOPE")))
-                        };
-                        cmd.arg("-f").arg("-e").arg("-i").arg(&shaders_include).arg("-o").arg(&shaders_path);
-                        for arg in options {
-                            cmd.arg(arg);
-                        }
-                        let output = cmd.arg(file).output().expect("failed to run shader compiler");
-                        let out = String::from_utf8(output.clone().stdout).unwrap_or(format!("{output:#?}"));
-                        if !out.is_empty() {
-                            println!("{out}")
-                        }
-                        let err = String::from_utf8(output.clone().stderr).unwrap_or(format!("{output:#?}"));
-                        if !err.is_empty() {
-                            println!("{err}")
-                        }
-                    }
+            if file.is_file()
+                && let Some(extension) = file.extension()
+                && !excluded_extensions.contains(&extension)
+            {
+                let mut cmd = if with_wine {
+                    let mut c = Command::new("wine");
+                    c.arg(skshaderc.clone());
+                    c
+                } else {
+                    Command::new(OsStr::new(skshaderc.to_str().unwrap_or("NOPE")))
+                };
+                cmd.arg("-f").arg("-e").arg("-i").arg(&shaders_include).arg("-o").arg(&shaders_path);
+                for arg in options {
+                    cmd.arg(arg);
+                }
+                let output = cmd.arg(file).output().expect("failed to run shader compiler");
+                let out = String::from_utf8(output.clone().stdout).unwrap_or(format!("{output:#?}"));
+                if !out.is_empty() {
+                    println!("{out}")
+                }
+                let err = String::from_utf8(output.clone().stderr).unwrap_or(format!("{output:#?}"));
+                if !err.is_empty() {
+                    println!("{err}")
                 }
             }
         }

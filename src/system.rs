@@ -4109,11 +4109,11 @@ impl Microphone {
     ///
     /// see also [`mic_start`] [`Microphone::get_devices`] [`Microphone::stop`]
     pub fn start(device_name: Option<String>) -> bool {
-        if let Some(device_name) = device_name {
-            if !device_name.is_empty() {
-                let cstr = CString::new(device_name).unwrap();
-                return unsafe { mic_start(cstr.as_ptr() as *const c_char) != 0 };
-            }
+        if let Some(device_name) = device_name
+            && !device_name.is_empty()
+        {
+            let cstr = CString::new(device_name).unwrap();
+            return unsafe { mic_start(cstr.as_ptr() as *const c_char) != 0 };
         }
         // Here we call for a null_mut device_name
         unsafe { mic_start(null_mut() as *const c_char) != 0 }

@@ -181,13 +181,13 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
         // In case we close the active_scene we have to free the choice to select an other one
         let mut launch_next = false;
         for event in token.get_event_report() {
-            if let Some(active_stepper) = &active_scene {
-                if let StepperAction::Event(stepper_id, key, _value) = event {
-                    if active_stepper == stepper_id && key == ISTEPPER_REMOVED {
-                        active_scene = None;
-                        launch_next = true;
-                    }
-                }
+            if let Some(active_stepper) = &active_scene
+                && let StepperAction::Event(stepper_id, key, _value) = event
+                && active_stepper == stepper_id
+                && key == ISTEPPER_REMOVED
+            {
+                active_scene = None;
+                launch_next = true;
             }
         }
 
@@ -359,11 +359,11 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
     })
     .on_sleeping_step(|_sk, _token| {
         now = std::time::SystemTime::now();
-        if let Ok(duration) = now.duration_since(hidden_time) {
-            if duration.as_secs() > 15 {
-                Log::info("HIDDEN STEP -------> Dreaming ");
-                hidden_time = now;
-            }
+        if let Ok(duration) = now.duration_since(hidden_time)
+            && duration.as_secs() > 15
+        {
+            Log::info("HIDDEN STEP -------> Dreaming ");
+            hidden_time = now;
         }
     })
     .shutdown(|sk| Log::info(format!("QuitReason is {:?}", sk.get_quit_reason())))
