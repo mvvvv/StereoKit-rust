@@ -261,6 +261,13 @@ required = false
 name = "android.permission.EYE_TRACKING_FINE"
 required = false
 
+[[package.metadata.android.uses_permission]]
+name = "org.khronos.openxr.permission.OPENXR"
+required = false
+
+[[package.metadata.android.uses_permission]]
+name = "org.khronos.openxr.permission.OPENXR_SYSTEM"
+required = false
 
 #---Android Application
 [package.metadata.android.application]
