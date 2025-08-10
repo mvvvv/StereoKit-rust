@@ -144,6 +144,7 @@ unsafe extern "C" {
     pub fn material_set_wireframe(material: MaterialT, wireframe: Bool32T);
     pub fn material_set_depth_test(material: MaterialT, depth_test_mode: DepthTest);
     pub fn material_set_depth_write(material: MaterialT, write_enabled: Bool32T);
+    pub fn material_set_depth_clip(material: MaterialT, clip_enabled: Bool32T);
     pub fn material_set_queue_offset(material: MaterialT, offset: i32);
     pub fn material_set_chain(material: MaterialT, chain_material: MaterialT);
     pub fn material_get_transparency(material: MaterialT) -> Transparency;
@@ -151,6 +152,7 @@ unsafe extern "C" {
     pub fn material_get_wireframe(material: MaterialT) -> Bool32T;
     pub fn material_get_depth_test(material: MaterialT) -> DepthTest;
     pub fn material_get_depth_write(material: MaterialT) -> Bool32T;
+    pub fn material_get_depth_clip(material: MaterialT) -> Bool32T;
     pub fn material_get_queue_offset(material: MaterialT) -> i32;
     pub fn material_get_chain(material: MaterialT) -> MaterialT;
     pub fn material_set_shader(material: MaterialT, shader: ShaderT);
@@ -1001,12 +1003,32 @@ impl Material {
     /// use stereokit_rust::{util::{named_colors,Color32},material::Material};
     ///
     /// let mut material_cube = Material::pbr().copy();
-    /// assert_eq!(material_cube.get_depth_write(), true);
+    /// assert_eq!(material_cube.get_depth_write(), false);
     /// material_cube.depth_write(false).color_tint(named_colors::CYAN);
     /// assert_eq!(material_cube.get_depth_write(), false);
     /// ```
     pub fn depth_write(&mut self, write_enabled: bool) -> &mut Self {
         unsafe { material_set_depth_write(self.0.as_ptr(), write_enabled as Bool32T) };
+        self
+    }
+
+    /// Should the near/far depth plane clip (discard) what we're drawing? This defaults to true, and should almost
+    /// always be true! However, it can be useful to set this to false for occasions like shadow map rendering, where
+    /// near/far clip planes are really critical, and out of clip objects are still useful to have.
+    /// <https://stereokit.net/Pages/StereoKit/Material.html>
+    ///
+    /// see also [`material_set_depth_clip`] [`Material::get_depth_clip`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::material::Material;
+    /// let mut material = Material::pbr().copy();
+    /// assert_eq!(material.get_depth_clip(), false);
+    /// material.depth_clip(false);
+    /// assert_eq!(material.get_depth_clip(), false);
+    /// ```
+    pub fn depth_clip(&mut self, clip_enabled: bool) -> &mut Self {
+        unsafe { material_set_depth_clip(self.0.as_ptr(), clip_enabled as Bool32T) };
         self
     }
 
@@ -1124,6 +1146,16 @@ impl Material {
     /// see example in [`Material::depth_write`]
     pub fn get_depth_write(&self) -> bool {
         unsafe { material_get_depth_write(self.0.as_ptr()) != 0 }
+    }
+
+    /// Get the [`Material::depth_clip`] state of the material.
+    /// <https://stereokit.net/Pages/StereoKit/Material.html>
+    ///
+    /// see also [`material_get_depth_clip`]
+    ///
+    /// see example in [`Material::depth_clip`]
+    pub fn get_depth_clip(&self) -> bool {
+        unsafe { material_get_depth_clip(self.0.as_ptr()) != 0 }
     }
 
     /// Get the [`Material::queue_offset`] of the material.
@@ -2264,7 +2296,8 @@ impl ParamInfo {
 }
 
 unsafe extern "C" {
-    pub fn material_buffer_create(register_slot: i32, size: i32) -> MaterialBufferT;
+    pub fn material_buffer_create(size: i32) -> MaterialBufferT;
+    pub fn material_buffer_addref(buffer: MaterialBufferT);
     pub fn material_buffer_set_data(buffer: MaterialBufferT, buffer_data: *const c_void);
     pub fn material_buffer_release(buffer: MaterialBufferT);
 }
@@ -2279,6 +2312,34 @@ unsafe extern "C" {
 /// proper copying. It should also match the layout of your equivalent cbuffer in the shader file. Note that shaders
 /// often have specific byte alignment requirements!
 /// <https://stereokit.net/Pages/StereoKit/MaterialBuffer.html>
+///
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::material::MaterialBuffer;
+///
+/// // This struct must mirror the layout of the cbuffer in your shader.
+/// // #[repr(C)] ensures a predictable memory layout.
+/// #[repr(C)]
+/// #[derive(Clone, Copy, Debug, Default)]
+/// struct Globals {
+///     time: f32,
+///     wind: [f32; 3], // Example of packing a vec3
+///     // Alignment padding if your shader expects 16-byte alignment for next values.
+/// }
+///
+/// // Create the GPU buffer once.
+/// let buffer = MaterialBuffer::<Globals>::new();
+///
+/// // Update data you want the shader(s) to read.
+/// let mut globals = Globals { time: 1.234, wind: [0.1, 0.2, 0.3], ..Default::default() };
+///
+/// // Upload to GPU so every shader using this global slot can access it.
+/// buffer.set(&mut globals as *mut _);
+///
+/// // In your shader, declare a matching cbuffer bound to the slot you
+/// // bind this MaterialBuffer to (see Renderer::set_global_buffer in StereoKit).
+/// ```
 pub struct MaterialBuffer<T> {
     _material_buffer: MaterialBufferT,
     phantom: PhantomData<T>,
@@ -2297,23 +2358,27 @@ impl<T> Drop for MaterialBuffer<T> {
         unsafe { material_buffer_release(self._material_buffer) }
     }
 }
+
 impl<T> AsRef<MaterialBuffer<T>> for MaterialBuffer<T> {
     fn as_ref(&self) -> &MaterialBuffer<T> {
         self
     }
 }
 
+impl<T> Default for MaterialBuffer<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl<T> MaterialBuffer<T> {
-    /// Create a new global MaterialBuffer bound to the register slot id. All shaders will have access to the data
-    /// provided via this instance’s Set.
+    /// Create a new global MaterialBuffer that can be bound to a register slot id via Renderer.SetGlobalBuffer. All
+    /// shaders will have access to the data provided via this instance's `Set`.
     /// <https://stereokit.net/Pages/StereoKit/MaterialBuffer/MaterialBuffer.html>
-    /// * `register_slot` - Valid values are 3-16. This is the register id that this data will be bound to. In HLSL,
-    ///   you’ll see the slot id for ‘3’ indicated like this : register(b3)
     ///
     /// see also [`material_buffer_create`]
-    pub fn new(register_slot: i32) -> MaterialBuffer<T> {
+    pub fn new() -> MaterialBuffer<T> {
         let size = std::mem::size_of::<T>();
-        let mat_buffer = unsafe { material_buffer_create(register_slot, size as i32) };
+        let mat_buffer = unsafe { material_buffer_create(size as i32) };
         MaterialBuffer { _material_buffer: mat_buffer, phantom: PhantomData }
     }
 
@@ -2323,5 +2388,10 @@ impl<T> MaterialBuffer<T> {
     /// see also [`material_buffer_set_data`]
     pub fn set(&self, in_data: *mut T) {
         unsafe { material_buffer_set_data(self._material_buffer, in_data as *const c_void) };
+    }
+
+    /// Internal: returns raw pointer for FFI binding usage (Renderer::set_global_buffer).
+    pub(crate) fn as_ptr(&self) -> MaterialBufferT {
+        self._material_buffer
     }
 }

@@ -2,7 +2,7 @@ use crate::{
     StereoKitError,
     anchor::{_AnchorT, Anchor},
     font::{_FontT, Font, FontT},
-    material::{_MaterialT, Material, MaterialT},
+    material::{_MaterialT, Material, MaterialBuffer, MaterialBufferT, MaterialT},
     maths::{Bool32T, Matrix, Pose, Quat, Ray, Rect, Vec2, Vec3, ray_from_mouse},
     mesh::{_MeshT, Mesh, MeshT},
     model::{_ModelT, Model, ModelT},
@@ -4300,6 +4300,7 @@ unsafe extern "C" {
     pub fn render_enabled_skytex() -> Bool32T;
 
     pub fn render_global_texture(register_slot: i32, texture: TexT);
+    pub fn render_global_buffer(register_slot: i32, buffer: MaterialBufferT);
     pub fn render_add_mesh(
         mesh: MeshT,
         material: MaterialT,
@@ -4352,6 +4353,8 @@ unsafe extern "C" {
     );
     pub fn render_to(
         to_rendertarget: TexT,
+        to_target_index: i32,
+        override_material: MaterialT,
         camera: *const Matrix,
         projection: *const Matrix,
         layer_filter: RenderLayer,
@@ -4836,6 +4839,11 @@ impl Renderer {
     /// <https://stereokit.net/Pages/StereoKit/Renderer/RenderTo.html>
     /// * `to_render_target` - The texture to which the scene will be rendered to. This must be a Rendertarget type
     ///   texture.
+    /// * `to_target_index` - (Optional) Index of the render target's array slice we want to draw to. If None, defaults
+    ///   to 0. This is only relevant for array/render target textures with multiple slices.
+    /// * `override_material` - (Optional) A material that will override all materials used during this render pass.
+    ///   This can be useful for depth pre-pass, shadow map rendering, or special effects. If None, materials attached
+    ///   to individual draw items are used (normal behavior).
     /// * `camera` - A TRS matrix representing the location and orientation of the camera. This matrix gets inverted
     ///   later on, so no need to do it yourself.
     /// * `projection` - The projection matrix describes how the geometry is flattened onto the draw surface. Normally,
@@ -4880,18 +4888,23 @@ impl Renderer {
     ///     Renderer::add_mesh(token, &plane, &material, transform_plane,
     ///         None, None);
     ///
-    ///     Renderer::render_to(token, &tex, camera, projection, None, None, None);
+    ///     Renderer::render_to(token, &tex, None, None, camera, projection, None, None, None);
     /// );
     /// ```
+    #[allow(clippy::too_many_arguments)]
     pub fn render_to<M: Into<Matrix>>(
         _token: &MainThreadToken,
         to_render_target: impl AsRef<Tex>,
+        to_target_index: Option<i32>,
+        override_material: Option<&Material>,
         camera: M,
         projection: M,
         layer_filter: Option<RenderLayer>,
         clear: Option<RenderClear>,
         viewport: Option<Rect>,
     ) {
+        let to_target_index = to_target_index.unwrap_or(0);
+        let override_material_ptr = override_material.map(|m| m.0.as_ptr()).unwrap_or(std::ptr::null_mut());
         let layer_filter = layer_filter.unwrap_or(RenderLayer::All);
         let clear = clear.unwrap_or(RenderClear::All);
         let viewport = viewport.unwrap_or_default();
@@ -4899,6 +4912,8 @@ impl Renderer {
         unsafe {
             render_to(
                 to_render_target.as_ref().0.as_ptr(),
+                to_target_index,
+                override_material_ptr,
                 &camera.into(),
                 &projection.into(),
                 layer_filter,
@@ -4940,6 +4955,65 @@ impl Renderer {
         } else {
             unsafe { render_global_texture(texture_register, null_mut()) }
         }
+    }
+
+    /// This attaches a buffer resource globally across all shaders. StereoKit uses this to attach the stereokit
+    /// rendering constants. It can be used for things like shadowmaps, wind data, etc.
+    /// <https://stereokit.net/Pages/StereoKit/Renderer/SetGlobalBuffer.html>
+    /// * `buffer_register` - Valid values are 3-16. This is the register id that this data will be bound to. In HLSL,
+    ///   you'll see the slot id for '3' indicated like this `: register(b3)`
+    /// * `buffer` - The data buffer you would like to bind
+    ///
+    /// see also [`render_global_buffer`] []
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::Renderer, material::MaterialBuffer};
+    ///
+    /// #[repr(C)]
+    /// #[derive(Default, Copy, Clone)]
+    /// struct Globals { time: f32, padding: [f32;3] }
+    ///
+    /// let mut globals = Globals { time: 1.0, ..Default::default() };
+    /// let buffer = MaterialBuffer::<Globals>::new();
+    /// buffer.set(&mut globals as *mut _);
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     // Bind the buffer to slot 3 so shaders can read it.
+    ///     Renderer::set_global_buffer( 3, &buffer);
+    /// );
+    /// ```
+    pub fn set_global_buffer<T>(buffer_register: i32, buffer: &MaterialBuffer<T>) {
+        unsafe {
+            render_global_buffer(buffer_register, buffer.as_ref().as_ptr());
+        }
+    }
+
+    /// Unbinds any global MaterialBuffer previously bound to this register slot (3-16). Equivalent to passing None
+    /// to [`Renderer::set_global_buffer`]. Provided as a convenience method.
+    /// <https://stereokit.net/Pages/StereoKit/Renderer/SetGlobalBuffer.html>
+    /// * `buffer_register` - Valid values are 3-16. This is the register id the data was bound to.
+    ///
+    /// see also [`render_global_buffer`] [`Renderer::set_global_buffer`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::Renderer, material::MaterialBuffer};
+    ///
+    /// #[repr(C)]
+    /// #[derive(Default, Copy, Clone)]
+    /// struct Globals { value: f32, padding: [f32;3] }
+    /// let buffer = MaterialBuffer::<Globals>::new();
+    /// test_steps!(
+    ///     Renderer::set_global_buffer(4, &buffer);
+    ///     // Later we decide to unbind it completely
+    ///     if iter == number_of_steps -1 {
+    ///         Renderer::unset_global_buffer(4);
+    ///     }
+    /// );
+    /// ```
+    pub fn unset_global_buffer(buffer_register: i32) {
+        unsafe { render_global_buffer(buffer_register, std::ptr::null_mut()) }
     }
 
     /// Schedules a screenshot for the end of the frame! The view will be rendered from the given pose, with a

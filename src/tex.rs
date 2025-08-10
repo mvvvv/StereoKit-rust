@@ -21,30 +21,32 @@ bitflags::bitflags! {
     #[derive(Debug, Copy, Clone, PartialEq, Eq)]
     #[repr(C)]
     pub struct TexType: u32 {
-        /// A standard color image; without any generated mip-maps.
-        const ImageNomips = 1 << 0;
-        /// A size sided texture that's used for things like skyboxes;
-        /// environment maps; and reflection probes. It behaves like a texture
-        /// array with 6 textures.
-        const Cubemap = 1 << 1;
-        /// This texture can be rendered to! This is great for textures
-        /// that might be passed in as a target to Renderer.Blit; or other
-        /// such situations.
+        /// A standard color image, without any generated mip-maps.
+        const ImageNomips  = 1 << 0;
+        /// A size sided texture that's used for things like skyboxes, environment maps, and reflection probes. It
+        /// behaves like a texture array with 6 textures.
+        const Cubemap      = 1 << 1;
+        /// This texture can be rendered to! This is great for textures that might be passed in as a target to
+        /// Renderer.Blit, or other such situations.
         const Rendertarget = 1 << 2;
-        /// This texture contains depth data; not color data!
-        const Depth = 1 << 3;
-        /// This texture will generate mip-maps any time the contents
-        /// change. Mip-maps are a list of textures that are each half the
-        /// size of the one before them! This is used to prevent textures from
-        /// 'sparkling' or aliasing in the distance.
-        const Mips = 1 << 4;
-        /// This texture's data will be updated frequently from the
-        /// CPU (not renders)! This ensures the graphics card stores it
-        /// someplace where writes are easy to do quickly.
-        const Dynamic = 1 << 5;
-        /// A standard color image that also generates mip-maps
-        /// automatically.
-        const Image = Self::ImageNomips.bits() | Self::Mips.bits();
+        /// This texture contains depth data, not color data! It is writeable, but not readable. This makes it great
+        /// for zbuffers, but not shadowmaps or other textures that need to be read from later on.
+        const Depth        = 1 << 3;
+        /// This texture contains depth data, not color data! It is writeable, but not readable. This makes it great
+        /// for zbuffers, but not shadowmaps or other textures that need to be read from later on.
+        const Zbuffer      = 1 << 3;
+        /// This texture will generate mip-maps any time the contents change. Mip-maps are a list of textures that are
+        /// each half the size of the one before them! This is used to prevent textures from 'sparkling' or aliasing in
+        /// the distance.
+        const Mips         = 1 << 4;
+        /// This texture's data will be updated frequently from the CPU (not renders)! This ensures the graphics card
+        /// stores it someplace where writes are easy to do quickly.
+        const Dynamic      = 1 << 5;
+        /// This texture contains depth data, not color data! It is writeable and readable. This makes it great for
+        /// shadowmaps or other textures that need to be read from later on.
+        const Depthtarget  = 1 << 6;
+        /// A standard color image that also generates mip-maps automatically.
+        const Image        = Self::ImageNomips.bits() | Self::Mips.bits();
     }
 }
 impl TexType {
@@ -156,10 +158,40 @@ pub enum TexSample {
     Anisotropic = 2,
 }
 
+/// How does the GPU compare sampled values against existing texture data? This is mostly useful for depth textures
+/// where the hardware can do a comparison (ex: shadow map lookups) as part of the sampling operation. Default is
+/// None, which means no comparison test is performed.
+/// These map directly to the native `tex_sample_comp_` values.
+/// <https://stereokit.net/Pages/StereoKit/TexSampleComp.html>
+///
+/// see also [`Tex`]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u32)]
+pub enum TexSampleComp {
+    /// No comparison test; returns the raw sampled value.
+    None = 0,
+    /// Passes if sampled value is less than the reference.
+    Less = 1,
+    /// Passes if sampled value is less than or equal to the reference.
+    LessOrEq = 2,
+    /// Passes if sampled value is greater than the reference.
+    Greater = 3,
+    /// Passes if sampled value is greater than or equal to the reference.
+    GreaterOrEq = 4,
+    /// Passes if sampled value equals the reference.
+    Equal = 5,
+    /// Passes if sampled value does not equal the reference.
+    NotEqual = 6,
+    /// Always passes (effectively disables depth based rejection, but still channels through comparison hardware).
+    Always = 7,
+    /// Never passes.
+    Never = 8,
+}
+
 /// What happens when the shader asks for a texture coordinate
 /// that's outside the texture?? Believe it or not, this happens plenty
 /// often!
-///<https://stereokit.net/Pages/StereoKit/TexAddress.html>
+/// <https://stereokit.net/Pages/StereoKit/TexAddress.html>
 ///
 /// see also [`Tex`]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -307,10 +339,10 @@ unsafe extern "C" {
         texture: TexT,
         width: i32,
         height: i32,
-        data: *mut *mut c_void,
-        data_count: i32,
-        out_sh_lighting_info: *mut SphericalHarmonics,
+        array_data: *mut *mut c_void,
+        array_count: i32,
         multisample: i32,
+        out_sh_lighting_info: *mut SphericalHarmonics,
     );
     pub fn tex_set_mem(
         texture: TexT,
@@ -343,6 +375,8 @@ unsafe extern "C" {
     pub fn tex_get_height(texture: TexT) -> i32;
     pub fn tex_set_sample(texture: TexT, sample: TexSample);
     pub fn tex_get_sample(texture: TexT) -> TexSample;
+    pub fn tex_set_sample_comp(texture: TexT, compare: TexSampleComp);
+    pub fn tex_get_sample_comp(texture: TexT) -> TexSampleComp;
     pub fn tex_set_address(texture: TexT, address_mode: TexAddress);
     pub fn tex_get_address(texture: TexT) -> TexAddress;
     pub fn tex_set_anisotropy(texture: TexT, anisotropy_level: i32);
@@ -789,7 +823,16 @@ impl Tex {
     /// );
     /// ```
     pub fn gen_color(color: impl Into<Color128>, width: i32, height: i32, tex_type: TexType, format: TexFormat) -> Tex {
-        Tex(NonNull::new(unsafe { tex_gen_color(color.into(), width, height, tex_type, format) }).unwrap())
+        let raw = unsafe { tex_gen_color(color.into(), width, height, tex_type, format) };
+        match NonNull::new(raw) {
+            Some(nn) => Tex(nn),
+            None => {
+                Log::err(format!(
+                    "tex_gen_color failed for {width}x{height} {tex_type:?} {format:?}. Returning error fallback texture."
+                ));
+                Tex::error()
+            }
+        }
     }
 
     /// Generates a ‘radial’ gradient that works well for particles, blob shadows, glows, or various other things.
@@ -1602,28 +1645,53 @@ impl Tex {
     /// instead, but this can be useful if you’re adding color data some other way, such as when blitting or rendering
     /// to it.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetSize.html>
+    /// * `width`  - Width in pixels of the texture. Powers of two are generally best!
+    /// * `height` - Height in pixels of the texture. Powers of two are generally best!
+    /// * `array_count` - How many surfaces (array layers) are in this texture? A normal texture only has 1, but
+    ///   additional layers can be useful for certain rendering techniques or effects.
+    /// * `msaa` - Multisample anti-aliasing level, only important for render target type textures. This is the number
+    ///   of fragments drawn per pixel to reduce aliasing artifacts. Typical values: 1,2,4,8.
     ///
-    /// see also [`tex_set_colors`]
+    /// Internally this invokes the native `tex_set_color_arr` with a null data pointer, establishing only the
+    /// dimensions/array layout.
+    ///
+    /// see also [`tex_set_color_arr`]
     /// ### Examples
     /// ```
-    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::{named_colors, Color32},
-    ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
+    /// # stereokit_rust::test_init_sk!();
+    /// use stereokit_rust::tex::{Tex, TexFormat, TexType};
+    /// let mut tex = Tex::new(TexType::Rendertarget, TexFormat::RGBA32, None);
+    /// // Use defaults (array_count=1, msaa=1)
+    /// tex.set_size(64, 64, None, None);
+    /// assert_eq!(tex.get_width(),  Some(64));
+    /// assert_eq!(tex.get_height(), Some(64));
     ///
-    /// let mut tex = Tex::new(TexType::Image, TexFormat::RGBA32, None);
-    ///
-    /// assert_eq!(tex.get_width(), Some(0));
-    /// assert_eq!(tex.get_height(), Some(0));
-    ///
-    /// tex.set_size(16, 16);
-    /// assert_eq!(tex.get_width(), Some(16));
-    /// assert_eq!(tex.get_height(), Some(16));
-    ///
-    /// let check_dots = [Color32::BLACK; 16 * 16];
-    /// assert!(tex.get_color_data::<Color32>(&check_dots, 0));
+    /// // Explicit MSAA configuration
+    /// tex.set_size(128, 64, None, Some(4)); // 1-layer array, 4x MSAA
+    /// assert_eq!(tex.get_width(),  Some(128));
+    /// assert_eq!(tex.get_height(), Some(64));
     /// ```
-    pub fn set_size(&mut self, width: usize, height: usize) -> &mut Self {
-        unsafe { tex_set_colors(self.0.as_ptr(), width as i32, height as i32, null_mut()) };
+    pub fn set_size(
+        &mut self,
+        width: usize,
+        height: usize,
+        array_count: Option<usize>,
+        msaa: Option<i32>,
+    ) -> &mut Self {
+        let array_count = array_count.unwrap_or(1);
+        let msaa = msaa.unwrap_or(1);
+        unsafe {
+            let data_ptr: *mut *mut std::os::raw::c_void = null_mut();
+            tex_set_color_arr(
+                self.0.as_ptr(),
+                width as i32,
+                height as i32,
+                data_ptr, // array_data = None
+                array_count as i32,
+                msaa,
+                null_mut(), // out_sh_lighting_info = None
+            )
+        };
         self
     }
 
@@ -1678,6 +1746,34 @@ impl Tex {
     /// ```
     pub fn sample_mode(&mut self, sample: TexSample) -> &mut Self {
         unsafe { tex_set_sample(self.0.as_ptr(), sample) };
+        self
+    }
+
+    /// When doing hardware comparison sampling (like sampling from a depth texture and comparing it to a reference
+    /// value) this sets the comparison operation used. Defaults to TexSampleComp::None meaning no comparison; the raw
+    /// texture value is returned. This is most useful for depth based shadow maps or percentage closer filtering
+    /// scenarios. Changing this may internally alter the sampler state object, so prefer setting it up once when
+    /// configuring the texture.
+    /// <https://stereokit.net/Pages/StereoKit/Tex/SampleComp.html>
+    ///
+    /// see also [`tex_set_sample_comp`] [`Tex::get_sample_comp`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!();
+    /// use stereokit_rust::{util::named_colors, tex::{Tex, TexFormat, TexType, TexSampleComp}};
+    /// let mut tex = Tex::gen_color(named_colors::BLACK, 4,4, TexType::Image, TexFormat::RGBA32);
+    /// tex.sample_comp(Some(TexSampleComp::LessOrEq));
+    /// assert_eq!(tex.get_sample_comp(), TexSampleComp::LessOrEq);
+    ///
+    /// tex.sample_comp(None);
+    /// assert_eq!(tex.get_sample_comp(), TexSampleComp::None);
+    /// ```
+    pub fn sample_comp(&mut self, compare: Option<TexSampleComp>) -> &mut Self {
+        let compare = match compare {
+            Some(c) => c,
+            None => TexSampleComp::None,
+        };
+        unsafe { tex_set_sample_comp(self.0.as_ptr(), compare) };
         self
     }
 
@@ -2076,6 +2172,15 @@ impl Tex {
     /// see example in [`Tex::sample_mode`]
     pub fn get_sample_mode(&self) -> TexSample {
         unsafe { tex_get_sample(self.0.as_ptr()) }
+    }
+
+    /// Retrieves the texture comparison sampling mode. See [`Tex::sample_comp`].
+    /// <https://stereokit.net/Pages/StereoKit/Tex/SampleComp.html>
+    ///
+    /// see also [`tex_get_sample_comp`]
+    /// see example in [`Tex::sample_comp`]
+    pub fn get_sample_comp(&self) -> TexSampleComp {
+        unsafe { tex_get_sample_comp(self.0.as_ptr()) }
     }
 
     /// When looking at a UV texture coordinate on this texture, how do we handle values larger than 1, or less than
