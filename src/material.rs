@@ -1003,7 +1003,7 @@ impl Material {
     /// use stereokit_rust::{util::{named_colors,Color32},material::Material};
     ///
     /// let mut material_cube = Material::pbr().copy();
-    /// assert_eq!(material_cube.get_depth_write(), false);
+    /// assert_eq!(material_cube.get_depth_write(), true);
     /// material_cube.depth_write(false).color_tint(named_colors::CYAN);
     /// assert_eq!(material_cube.get_depth_write(), false);
     /// ```
