@@ -130,6 +130,10 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
     let refresh_rate_editable = BackendOpenXR::ext_enabled("XR_FB_display_refresh_rate");
     if refresh_rate_editable {
         refresh_rates = get_all_display_refresh_rates(true);
+        // Initialize current_refresh_rate with the maximum available refresh rate
+        if let Some(&max_rate) = refresh_rates.iter().max_by(|a, b| a.partial_cmp(b).unwrap()) {
+            current_refresh_rate = max_rate;
+        }
         Log::info(format!("Initial display rate is {current_refresh_rate:?}"));
     } else {
         Log::info("No editable refresh rate !");
@@ -139,10 +143,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
 
     //---Above this value, there is distortion
     let mut reduce_to = 1.0;
-    if cfg!(target_os = "windows") {
-        //---Above this value, there is distortion on steam proton (and maybe on windows)
-        reduce_to = 0.85;
-    }
+    // You don't need to reduce this value as long as render_scaling is less or equal to 1.0:
     // let mut multisample = Renderer::get_multisample() as f32;
     let mut fps = 72.0;
 
@@ -172,11 +173,11 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
         if last_focus != sk.get_app_focus() {
             last_focus = sk.get_app_focus();
             Log::info(format!("App focus changed to : {last_focus:?}"));
-        }
 
-        // if is_testing && run_seconds != 0.0 {
-        //     Time::set_time(Time::get_total() + 1.0 / 90.0, 1.0 / 90.0)
-        // }
+            if !set_display_refresh_rate(current_refresh_rate, true) {
+                current_refresh_rate = 0.0;
+            }
+        }
 
         // In case we close the active_scene we have to free the choice to select an other one
         let mut launch_next = false;

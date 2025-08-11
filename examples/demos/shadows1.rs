@@ -54,7 +54,7 @@ enum ShadowMode {
     TemporalFiltered, // Smoothed over time
 }
 
-const SHADOW_MODE: ShadowMode = ShadowMode::Stable;
+const SHADOW_MODE: ShadowMode = ShadowMode::SceneCentered;
 
 #[derive(IStepper)]
 pub struct Shadows1 {
