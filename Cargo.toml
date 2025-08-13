@@ -153,7 +153,7 @@ required = true
 
 [[package.metadata.android.uses_feature]]
 name = "com.oculus.feature.RENDER_MODEL"
-required = true
+required = false
 
 #---Android feature AndroidXR
 # [[package.metadata.android.uses_feature]]
@@ -222,7 +222,7 @@ required = false
 
 [[package.metadata.android.uses_permission]]
 name = "com.oculus.permission.RENDER_MODEL"
-required = true
+required = false
 
 [[package.metadata.android.uses_permission]]
 name = "horizonos.permission.USE_ANCHOR_API"

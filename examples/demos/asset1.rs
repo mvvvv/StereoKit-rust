@@ -88,8 +88,8 @@ impl Asset1 {
         // Some test about hand meshes
         let left_hand = Input::get_controller_model(Handed::Left);
         let right_hand = Input::get_controller_model(Handed::Right);
-        Input::set_controller_model(Handed::Left, Some(left_hand));
-        Input::set_controller_model(Handed::Right, Some(right_hand));
+        Input::set_controller_model(Handed::Left, Some(&left_hand));
+        Input::set_controller_model(Handed::Right, Some(&right_hand));
         let mut new_material_hand = self.hand_material.copy();
         new_material_hand.color_tint(YELLOW);
         Input::hand_material(Handed::Right, Some(new_material_hand));

@@ -2675,13 +2675,13 @@ impl Input {
     /// let model_left = Model::from_file("center.glb", None)
     ///                     .expect("mobiles.gltf should be a valid model");
     ///
-    /// Input::set_controller_model(Handed::Left, Some(model_left));
+    /// Input::set_controller_model(Handed::Left, Some(&model_left));
     /// assert_eq!(Input::get_controller_model(Handed::Left).get_id(), "center.glb");
     ///
     /// Input::set_controller_model(Handed::Left, None);
     /// assert_eq!(Input::get_controller_model(Handed::Left).get_id(), "default/model_controller_l");
     /// ```
-    pub fn set_controller_model(handed: Handed, model: Option<Model>) {
+    pub fn set_controller_model(handed: Handed, model: Option<&Model>) {
         match model {
             Some(model) => unsafe { input_controller_model_set(handed, model.0.as_ptr()) },
             None => unsafe { input_controller_model_set(handed, null_mut()) },

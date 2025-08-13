@@ -20,6 +20,7 @@ use stereokit_rust::{
             get_all_display_refresh_rates, get_display_refresh_rate, get_env_blend_modes, set_display_refresh_rate,
         },
         screenshot::ScreenshotViewer,
+        xr_fb_render_model::{DRAW_CONTROLLER, XrFbRenderModelStepper, is_render_model_extension_available},
         //virtual_kbd_meta::VirtualKbdMETA,
     },
     ui::{Ui, UiBtnLayout},
@@ -102,6 +103,8 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
     sk.send_event(StepperAction::add_default::<FlyOver>("FlyOver"));
     let mut passthrough = false;
     let mut passthough_blend_enabled = false;
+    let mut nice_controllers = false;
+    let nice_controllers_available = is_render_model_extension_available();
 
     let blend_modes = get_env_blend_modes(true);
     if blend_modes.contains(&EnvironmentBlendMode::ADDITIVE) || blend_modes.contains(&EnvironmentBlendMode::ALPHA_BLEND)
@@ -156,6 +159,23 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
                 next_scene = Some(test);
             }
         }
+    }
+
+    // Add the XR FB render model stepper only if extension is available
+    if nice_controllers_available {
+        sk.send_event(StepperAction::add_default::<XrFbRenderModelStepper>("XrFbRenderModelStepper"));
+        Log::info("XR_FB_render_model extension available");
+
+        // Set initial controller state
+        if nice_controllers {
+            sk.send_event(StepperAction::event("XrFbRenderModelStepper", DRAW_CONTROLLER, "true"));
+            Log::diag("Controller models will be enabled via stepper");
+        } else {
+            sk.send_event(StepperAction::event("XrFbRenderModelStepper", DRAW_CONTROLLER, "false"));
+            Log::diag("Controller models will be disabled via stepper");
+        }
+    } else {
+        Log::diag("XR_FB_render_model extension not available - controller stepper skipped");
     }
 
     let ui_text_style = Ui::get_text_style();
@@ -279,23 +299,35 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
         }
         Ui::same_line();
         Ui::panel_begin(None);
-        if passthough_blend_enabled {
-            if let Some(new_value) = Ui::toggle("Passthrough MR", &mut passthrough, None) {
+        if passthough_blend_enabled && let Some(new_value) = Ui::toggle("Passthrough MR", &mut passthrough, None) {
+            if new_value {
+                Log::diag("Activate passthrough");
+                sk.send_event(StepperAction::event("main", SHOW_FLOOR, "false"));
+                Device::display_blend(DisplayBlend::AnyTransparent);
+            } else {
+                Log::diag("Deactivate passthrough");
+                sk.send_event(StepperAction::event("main", SHOW_FLOOR, "true"));
+                Device::display_blend(DisplayBlend::Opaque);
+            }
+        }
+
+        // Controller toggle via stepper events - only if extension is available
+        if nice_controllers_available {
+            Ui::same_line();
+            if let Some(new_value) = Ui::toggle("Draw controllers", &mut nice_controllers, None) {
                 if new_value {
-                    Log::diag("Activate passthrough");
-                    sk.send_event(StepperAction::event("main", SHOW_FLOOR, "false"));
-                    Device::display_blend(DisplayBlend::AnyTransparent);
+                    Log::diag("Draw Controllers");
+                    sk.send_event(StepperAction::event("XrFbRenderModelStepper", DRAW_CONTROLLER, "true"));
                 } else {
-                    Log::diag("Deactivate passthrough");
-                    sk.send_event(StepperAction::event("main", SHOW_FLOOR, "true"));
-                    Device::display_blend(DisplayBlend::Opaque);
+                    Log::diag("Stop drawing Controllers");
+                    sk.send_event(StepperAction::event("XrFbRenderModelStepper", DRAW_CONTROLLER, "false"));
                 }
             }
-            Ui::same_line();
         }
 
         fps = ((1.0 / Time::get_step()) + fps) / 2.0;
         Ui::label(format!("FPS: {fps:.0}"), None, true);
+
         Ui::same_line();
 
         if refresh_rate_editable

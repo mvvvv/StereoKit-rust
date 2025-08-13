@@ -3,6 +3,9 @@ pub mod os_api;
 pub mod xr_comp_layers;
 
 #[cfg(feature = "event-loop")]
+pub mod xr_fb_render_model;
+
+#[cfg(feature = "event-loop")]
 pub mod file_browser;
 
 #[cfg(feature = "event-loop")]
