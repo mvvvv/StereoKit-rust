@@ -20,7 +20,7 @@ use stereokit_rust::{
             get_all_display_refresh_rates, get_display_refresh_rate, get_env_blend_modes, set_display_refresh_rate,
         },
         screenshot::ScreenshotViewer,
-        xr_fb_render_model::{DRAW_CONTROLLER, XrFbRenderModelStepper, is_render_model_extension_available},
+        xr_fb_render_model::{DRAW_CONTROLLER, XrFbRenderModelStepper, is_fb_render_model_extension_available},
         //virtual_kbd_meta::VirtualKbdMETA,
     },
     ui::{Ui, UiBtnLayout},
@@ -103,8 +103,8 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
     sk.send_event(StepperAction::add_default::<FlyOver>("FlyOver"));
     let mut passthrough = false;
     let mut passthough_blend_enabled = false;
-    let mut nice_controllers = false;
-    let nice_controllers_available = is_render_model_extension_available();
+    let mut nice_controllers = true;
+    let nice_controllers_available = is_fb_render_model_extension_available();
 
     let blend_modes = get_env_blend_modes(true);
     if blend_modes.contains(&EnvironmentBlendMode::ADDITIVE) || blend_modes.contains(&EnvironmentBlendMode::ALPHA_BLEND)
