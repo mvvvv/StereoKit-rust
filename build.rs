@@ -56,6 +56,9 @@ fn main() {
             cmake_config.define("__MINGW32__", "ON");
             cmake_config.define("WINDOWS_LIBS", "comdlg32;dxgi;d3d11;");
         }
+        //PR #1260
+        cmake_config.cflag("-mf16c -mavx");
+        cmake_config.cxxflag("-mf16c -mavx");
     }
 
     if win_gl {
