@@ -404,13 +404,13 @@ const LEFT_SHIFT: f32 = 0.04; // Left animation delay
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{
-///     tools::xr_fb_render_model::{XrFbRenderModelStepper, is_render_model_extension_available, DRAW_CONTROLLER},
+///     tools::xr_fb_render_model::{XrFbRenderModelStepper, is_fb_render_model_extension_available, DRAW_CONTROLLER},
 ///     system::{Input, Handed},
 ///     prelude::*,
 /// };
 ///
 /// // Check if the extension is available before using the stepper
-/// if is_render_model_extension_available() {
+/// if is_fb_render_model_extension_available() {
 ///     let mut stepper = XrFbRenderModelStepper::default();
 ///     
 ///     // Optional: customize controller model paths
