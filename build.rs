@@ -17,6 +17,11 @@ fn main() {
     let win_gl = !env::var("SK_RUST_WINDOWS_GL").unwrap_or_default().is_empty();
     let skc_in_dll = cfg!(feature = "skc-in-dll");
 
+    let mut abi = env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_default();
+    if abi == "aarch64" {
+        abi = "arm64-v8a".to_string();
+    }
+
     if win_gl {
         println!("cargo:info=Compiling with {target_env} for {target_os}/opengl with profile {profile}");
     } else {
@@ -56,6 +61,10 @@ fn main() {
             cmake_config.define("__MINGW32__", "ON");
             cmake_config.define("WINDOWS_LIBS", "comdlg32;dxgi;d3d11;");
         }
+        //PR #1260
+        cmake_config.cflag("-mf16c -mavx");
+        cmake_config.cxxflag("-mf16c -mavx");
+    } else if target_os == "android" && abi == "x86_64" {
         //PR #1260
         cmake_config.cflag("-mf16c -mavx");
         cmake_config.cxxflag("-mf16c -mavx");
@@ -215,10 +224,6 @@ fn main() {
                 cargo_link!("android");
                 cargo_link!("EGL");
 
-                let mut abi = env::var("CARGO_CFG_TARGET_ARCH").unwrap();
-                if abi == "aarch64" {
-                    abi = "arm64-v8a".to_string();
-                }
                 //---- A directory whose content is only used during the production of the APK (no need for DEBUG/RELEASE sub directory)
                 //---- Copying from ./target/aarch64-linux-android/debug/build/stereokit-rust-1d044aba61d6313d/out/lib/libopenxr_loader.so
                 //---- to   ./target/runtime_libs/
