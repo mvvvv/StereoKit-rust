@@ -30,7 +30,7 @@ pub fn android_main(app: AndroidApp) {
         .origin(OriginMode::Floor)
         .render_multisample(4)
         .render_scaling(2.0)
-        .depth_mode(DepthMode::Stencil)
+        .depth_mode(DepthMode::D32)
         .omit_empty_frames(true)
         .log_filter(LogLevel::Diagnostic);
 

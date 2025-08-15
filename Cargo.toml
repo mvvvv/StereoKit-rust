@@ -177,7 +177,24 @@ required = false
 name = "android.hardware.xr.input.eye_tracking"
 required = false
 
+#---Android feature Vive
+[[package.metadata.android.uses_feature]]
+name = "wave.feature.handtracking"
+required = false
+
+[[package.metadata.android.uses_feature]]
+name = "wave.feature.tracker"
+required = false
+
 #---Android permission common
+[[package.metadata.android.uses_permission]]
+name = "org.khronos.openxr.permission.OPENXR"
+required = false
+
+[[package.metadata.android.uses_permission]]
+name = "org.khronos.openxr.permission.OPENXR_SYSTEM"
+required = false
+
 [[package.metadata.android.uses_permission]]
 name = "android.permission.INTERNET"
 
@@ -203,7 +220,7 @@ name = "android.permission.READ_EXTERNAL_STORAGE"
 [[package.metadata.android.uses_permission]]
 name = "android.permission.MANAGE_EXTERNAL_STORAGE"
 
-#---Android permission for Horizon OS
+#---Android permission HorizonOS
 [[package.metadata.android.uses_permission]]
 name = "horizonos.permission.HAND_TRACKING"
 required = false
@@ -261,13 +278,31 @@ required = false
 name = "android.permission.EYE_TRACKING_FINE"
 required = false
 
-[[package.metadata.android.uses_permission]]
-name = "org.khronos.openxr.permission.OPENXR"
-required = false
+#---Queries common
+[[package.metadata.android.queries.provider]]
+authorities = "org.khronos.openxr.runtime_broker;org.khronos.openxr.system_runtime_broker"
+name = "org.khronos.openxr"
 
-[[package.metadata.android.uses_permission]]
-name = "org.khronos.openxr.permission.OPENXR_SYSTEM"
-required = false
+[[package.metadata.android.queries.intent]]
+actions = ["org.khronos.openxr.OpenXRRuntimeService"]
+
+[[package.metadata.android.queries.intent]]
+actions = ["org.khronos.openxr.OpenXRApiLayerService"]
+
+#---Queries Snapdragons
+[[package.metadata.android.queries.package]]
+name = "com.qualcomm.qti.spaces.services"
+
+[[package.metadata.android.queries.package]]
+name = "com.qualcomm.qti.openxrruntime"
+
+[[package.metadata.android.queries.intent]]
+actions = ["com.qualcomm.qti.openxr.spaces.intent.action.BIND"]
+
+#---AndroidXR TODO WHICH ONE IS ACTUALLY NEEDED?
+[[package.metadata.android.application.meta_data]]
+name = "android.window.PROPERTY_ACTIVITY_XR_START_MODE"
+value = "XR_ACTIVITY_START_MODE_FULL_SPACE_UNMANAGED"
 
 #---Android Application
 [package.metadata.android.application]
@@ -309,11 +344,6 @@ value = "1"
 name = "spaces.version"
 value = "0.15.0"
 
-#---AndroidXR TODO WHICH ONE IS ACTUALLY NEEDED?
-[[package.metadata.android.application.meta_data]]
-name = "android.window.PROPERTY_ACTIVITY_XR_START_MODE"
-value = "XR_ACTIVITY_START_MODE_FULL_SPACE_UNMANAGED"
-
 [package.metadata.android.application.activity]
 #name = ".MainActivity"
 theme = "@android:style/Theme.Black.NoTitleBar.Fullscreen"
@@ -327,6 +357,7 @@ actions = ["android.intent.action.MAIN"]
 categories = [
   "com.oculus.intent.category.VR",
   "android.intent.category.LAUNCHER",
+  "org.khronos.openxr.intent.category.IMMERSIVE_HMD"
 ]
 
 [[package.metadata.android.application.activity.meta_data]]
