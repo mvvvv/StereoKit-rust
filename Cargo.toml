@@ -163,7 +163,6 @@ required = false
 [[package.metadata.android.uses_feature]]
 name = "android.software.xr.api.openxr"
 required = true
-version = 0x00010000
 
 [[package.metadata.android.uses_feature]]
 name = "android.hardware.xr.input.hand_tracking"
@@ -301,8 +300,12 @@ actions = ["com.qualcomm.qti.openxr.spaces.intent.action.BIND"]
 
 #---AndroidXR TODO WHICH ONE IS ACTUALLY NEEDED?
 [[package.metadata.android.application.meta_data]]
-name = "android.window.PROPERTY_ACTIVITY_XR_START_MODE"
+name = "android.window.PROPERTY_XR_ACTIVITY_START_MODE"
 value = "XR_ACTIVITY_START_MODE_FULL_SPACE_UNMANAGED"
+
+[[package.metadata.android.application.meta_data]]
+name = "android.window.PROPERTY_XR_BOUNDARY_TYPE_RECOMMENDED"
+value = "XR_BOUNDARY_TYPE_LARGE"
 
 #---Android Application
 [package.metadata.android.application]
