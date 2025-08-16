@@ -29,7 +29,7 @@ pub fn android_main(app: AndroidApp) {
         .app_name("rust Demos")
         .origin(OriginMode::Floor)
         .render_multisample(4)
-        .render_scaling(2.0)
+        .render_scaling(1.5)
         .depth_mode(DepthMode::D32)
         .omit_empty_frames(true)
         .log_filter(LogLevel::Diagnostic);
