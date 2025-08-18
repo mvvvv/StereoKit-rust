@@ -90,7 +90,7 @@ impl XrMetaVirtualKeyboard {
     ///                 
     ///                 // Test system support check
     ///                 match extension.check_system_support(false) {
-    ///                     Ok(true) => {
+    ///                     Ok(_sys_prop) => {
     ///                         Log::info("✅ System supports virtual keyboards");
     ///                         
     ///                         // Test keyboard creation
@@ -114,7 +114,6 @@ impl XrMetaVirtualKeyboard {
     ///                             Err(e) => Log::err(format!("❌ Keyboard creation failed: {:?}", e)),
     ///                         }
     ///                     }
-    ///                     Ok(false) => Log::warn("⚠️ System does not support virtual keyboards"),
     ///                     Err(e) => Log::err(format!("❌ System support check failed: {:?}", e)),
     ///                 }
     ///             }
