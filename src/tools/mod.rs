@@ -1,5 +1,6 @@
 pub mod build_tools;
 pub mod os_api;
+pub mod xr_android_depth_texture;
 pub mod xr_comp_layers;
 
 #[cfg(feature = "event-loop")]
@@ -24,7 +25,7 @@ pub mod passthrough_fb_ext;
 pub mod screenshot;
 
 #[cfg(feature = "event-loop")]
-pub mod virtual_kbd_meta;
+pub mod xr_meta_virtual_keyboard;
 
 #[cfg(feature = "event-loop")]
 pub mod title;

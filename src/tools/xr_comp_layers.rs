@@ -1,4 +1,9 @@
-// filepath: src/tools/xr_comp_layers.rs
+//! XR_KHR_android_surface_swapchain extension implementation
+//!
+//! **This is a rust adaptation of <https://github.com/StereoKit/StereoKit/blob/develop/Examples/StereoKitTest/Tools/XrCompLayers.cs>**
+//!
+//! <https://registry.khronos.org/OpenXR/specs/1.1/html/xrspec.html#XR_KHR_android_surface_swapchain>
+
 use crate::{
     maths::{Pose, Quat, Rect, Vec2},
     prelude::*,
@@ -25,20 +30,12 @@ use openxr_sys::{
 use std::ptr::null_mut;
 
 #[derive(Debug)]
-/// Helper for loading and using the OpenXR composition layers extension.
-/// Provides function pointers for swapchain management and layer submission.
-///
-/// This is a rust adaptation of <https://github.com/StereoKit/StereoKit/blob/master/Examples/StereoKitTest/Tools/XrCompLayers.cs>
-///
-/// # Overview
-///
+
 /// `XrCompLayers` provides low-level OpenXR composition layer functionality, while `SwapchainSk`
 /// offers a high-level wrapper for creating and managing OpenXR swapchains with StereoKit integration.
 ///
-/// # Examples
-///
+/// ### Examples
 /// ## Basic Usage with SwapchainSk
-///
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{ maths::{Vec3, Matrix, Pose, Vec2, Rect},  render_list::RenderList,

@@ -1,12 +1,13 @@
-//! XR_FB_render_model extension implementation
+//! XR_FB_render_model extension implementation (HorizonOS)
 //!
 //! This module provides access to the OpenXR XR_FB_render_model extension,
 //! which allows applications to retrieve render models for controllers and other devices.
+//! <https://registry.khronos.org/OpenXR/specs/1.1/html/xrspec.html#XR_FB_render_model>
 
 use std::ffi::{CString, c_char};
 use std::ptr;
 
-use openxr_sys::{
+use openxr_sys::{RenderModelCapabilitiesRequestFB, 
     Instance, Path, RenderModelBufferFB, RenderModelFlagsFB, RenderModelKeyFB, RenderModelLoadInfoFB,
     RenderModelPathInfoFB, RenderModelPropertiesFB, Result as XrResult, Session, StructureType,
     pfn::{EnumerateRenderModelPathsFB, GetRenderModelPropertiesFB, LoadRenderModelFB, PathToString, StringToPath},
@@ -66,6 +67,16 @@ impl XrFbRenderModel {
         let xr_load_render_model = BackendOpenXR::get_function::<LoadRenderModelFB>("xrLoadRenderModelFB");
         let xr_string_to_path = BackendOpenXR::get_function::<StringToPath>("xrStringToPath");
         let xr_path_to_string = BackendOpenXR::get_function::<PathToString>("xrPathToString");
+
+        if xr_enumerate_render_model_paths.is_none()
+            || xr_get_render_model_properties.is_none()
+            || xr_load_render_model.is_none()
+            || xr_string_to_path.is_none()
+            || xr_path_to_string.is_none()
+        {
+            Log::warn("Failed to load all XR_FB_render_model functions");
+            return None;
+        }
 
         Some(Self {
             xr_enumerate_render_model_paths,
@@ -174,9 +185,21 @@ impl XrFbRenderModel {
             flags: RenderModelFlagsFB::from_raw(0),
         };
 
+        let mut cap_req = RenderModelCapabilitiesRequestFB {
+            ty: StructureType::RENDER_MODEL_CAPABILITIES_REQUEST_FB,
+            next: ptr::null_mut(),
+            flags: RenderModelFlagsFB::SUPPORTS_GLTF_2_0_SUBSET_2,
+
+        };
+
+        properties.next = &mut cap_req as *mut _ as *mut _;
+
         let result = unsafe { get_properties_fn(self.session, path, &mut properties) };
 
-        if result != XrResult::SUCCESS {
+        if result != XrResult::SUCCESS //
+            // && result != XrResult::RENDER_MODEL_UNAVAILABLE_FB //
+            // && result != XrResult::SESSION_LOSS_PENDING //
+        {
             return Err(result);
         }
 
@@ -194,6 +217,7 @@ impl XrFbRenderModel {
         })
     }
 
+
     /// Loads render model data for a given model path
     pub fn load_render_model(&self, model_path: &str) -> Result<Vec<u8>, XrResult> {
         let load_fn = self.xr_load_render_model.ok_or(XrResult::ERROR_FUNCTION_UNSUPPORTED)?;
@@ -208,7 +232,7 @@ impl XrFbRenderModel {
             return Err(result);
         }
 
-        let mut properties_struct = RenderModelPropertiesFB {
+        let mut properties = RenderModelPropertiesFB {
             ty: StructureType::RENDER_MODEL_PROPERTIES_FB,
             next: ptr::null_mut(),
             vendor_id: 0,
@@ -218,12 +242,21 @@ impl XrFbRenderModel {
             flags: RenderModelFlagsFB::from_raw(0),
         };
 
-        let result = unsafe { get_properties_fn(self.session, path, &mut properties_struct) };
-        if result != XrResult::SUCCESS {
+        let mut cap_req = RenderModelCapabilitiesRequestFB {
+            ty: StructureType::RENDER_MODEL_CAPABILITIES_REQUEST_FB,
+            next: ptr::null_mut(),
+            flags: RenderModelFlagsFB::SUPPORTS_GLTF_2_0_SUBSET_2,
+
+        };
+
+        properties.next = &mut cap_req as *mut _ as *mut _;
+
+        let result = unsafe { get_properties_fn(self.session, path, &mut properties) };
+        if result != XrResult::SUCCESS && result != XrResult::RENDER_MODEL_UNAVAILABLE_FB && result != XrResult::SESSION_LOSS_PENDING {
             return Err(result);
         }
 
-        let model_key = properties_struct.model_key;
+        let model_key = properties.model_key;
 
         let load_info =
             RenderModelLoadInfoFB { ty: StructureType::RENDER_MODEL_LOAD_INFO_FB, next: ptr::null_mut(), model_key };
@@ -301,12 +334,15 @@ impl XrFbRenderModel {
         // Load and set right controller model using specified path
         if let Ok(right_model) = self.get_controller_model(Handed::Right, right_path) {
             Input::set_controller_model(Handed::Right, Some(right_model));
-            Log::info(format!("Right controller model loaded and configured from path: {}", right_path));
+            Log::info(format!("   Right controller model loaded and configured from path: {}", right_path));
 
             // Launch animation 0 in Loop mode if with_animation is true
             if with_animation {
                 right_model.get_anims().play_anim_idx(0, AnimMode::Loop);
-                Log::info("Right controller animation started");
+                if right_model.get_anims().get_count() > 1 { 
+                    Log::warn("Right controller model has more than one animation, only the first will be played in loop"); 
+                }
+                Log::info("✅ Right controller animation started");
             }
         } else {
             Log::warn(format!("Failed to load right controller model from path: {}", right_path));
@@ -316,15 +352,15 @@ impl XrFbRenderModel {
         // Load and set left controller model using specified path
         if let Ok(left_model) = self.get_controller_model(Handed::Left, left_path) {
             Input::set_controller_model(Handed::Left, Some(left_model));
-            Log::info(format!("Left controller model loaded and configured from path: {}", left_path));
+            Log::info(format!("   Left controller model loaded and configured from path: {}", left_path));
 
             // Launch animation 0 in Loop mode if with_animation is true
             if with_animation {
                 left_model.get_anims().play_anim_idx(0, AnimMode::Loop);
-                Log::info("Left controller animation started");
+                Log::info("✅ Left controller animation started");
             }
         } else {
-            Log::warn(format!("Failed to load left controller model from path: {}", left_path));
+            Log::warn(format!("❌ Failed to load left controller model from path: {}", left_path));
             return Err(XrResult::ERROR_RUNTIME_FAILURE);
         }
 
@@ -344,15 +380,17 @@ impl XrFbRenderModel {
     pub fn explore_render_models(&self) -> Result<(), XrResult> {
         if let Ok(paths) = self.enumerate_render_model_paths() {
             for path in paths {
-                Log::diag(format!("Available render model: {}", path));
-
-                if let Ok(properties) = self.get_render_model_properties(&path) {
-                    Log::diag(format!("--Model: {}", properties.model_name));
-                    Log::diag(format!("    Vendor ID: {}", properties.vendor_id));
-                    Log::diag(format!("    Model version: {}", properties.model_version));
-                    Log::diag(format!("    Model flags: 0x{:x}", properties.flags));
-                } else {
-                    Log::diag(format!("No connected device for model: {}", path));
+                Log::diag(format!("   Render model: <{}>", path));
+                match self.get_render_model_properties(&path) {
+                    Ok(properties) => {
+                        Log::diag(format!("     Model: {:?}", properties.model_name));
+                        Log::diag(format!("     Vendor ID: {}", properties.vendor_id));
+                        Log::diag(format!("     Model version: {}", properties.model_version));
+                        Log::diag(format!("     Model flags: 0x{:?}", properties.flags));
+                    }
+                    Err(e) => {
+                        Log::diag(format!("     No properties for model: {}: {:?}", path, e));
+                    }
                 }
             }
         }
@@ -390,7 +428,7 @@ pub fn is_fb_render_model_extension_available() -> bool {
 /// Event key for enabling/disabling controller drawing
 pub const DRAW_CONTROLLER: &str = "draw_controller";
 
-const LEFT_SHIFT: f32 = 0.04; // Left animation delay
+const LEFT_SHIFT: f32 = 0.04; // Left hand animation timing offset for synchronization
 
 /// IStepper implementation for XR_FB_render_model integration with StereoKit
 ///
@@ -434,6 +472,16 @@ const LEFT_SHIFT: f32 = 0.04; // Left animation delay
 ///     );
 /// }
 /// ```
+///
+/// # Animation System
+/// The stepper maps controller inputs to specific animation time codes:
+/// - **Stick directions**: 8 cardinal points (1.18-1.64 range)
+/// - **Trigger pressure**: Variable animation (0.6-0.66 range)
+/// - **Grip pressure**: Variable animation (0.82-0.88 range)
+/// - **Button combinations**: Discrete animations (0.18, 0.32, 0.46, 0.98)
+///
+/// When multiple inputs are active, the step rotation system cycles through
+/// available animations using the `animation_time_code` property.
 #[derive(IStepper)]
 pub struct XrFbRenderModelStepper {
     id: StepperId,
@@ -441,17 +489,23 @@ pub struct XrFbRenderModelStepper {
     enabled: bool,
     shutdown_completed: bool,
 
-    // Model paths for controllers
+    /// Path to the left controller's render model in the OpenXR runtime
+    /// Default: "/model_fb/controller/left" (Meta Quest controllers)
     pub left_controller_model_path: String,
+    
+    /// Path to the right controller's render model in the OpenXR runtime  
+    /// Default: "/model_fb/controller/right" (Meta Quest controllers)
     pub right_controller_model_path: String,
 
     xr_render_model: Option<XrFbRenderModel>,
     is_enabled: bool,
 
-    // Animation time code for manual control
+    /// Animation time code for manual control and step rotation system
+    /// Used in animation_analyser for development and in set_animation for step cycling
     pub animation_time_code: f32,
     
-    // Controls whether animations are executed in draw
+    /// Controls whether animations are executed in the draw method
+    /// When false, controllers will be rendered but remain static
     pub with_animation: bool,
 }
 
@@ -481,20 +535,22 @@ impl XrFbRenderModelStepper {
     /// Called from IStepper::initialize here you can abort the initialization by returning false
     fn start(&mut self) -> bool {
         // Initialize XR render model system
+        Log::info("🔧 Initializing XR_FB_render_model...");
+        if !is_fb_render_model_extension_available() {
+            Log::err("⚠️ XR_FB_render_model extension not available");
+            return false; // Still succeed even if extension is not available
+        }
         match XrFbRenderModel::new() {
             Some(xr_model) => {
-                Log::info("XR_FB_render_model extension initialized");
-
                 // Explore available models
                 if let Err(e) = xr_model.explore_render_models() {
-                    Log::warn(format!("Failed to explore XR_FB_render_models: {:?}", e));
+                    Log::warn(format!("❌ Failed to explore XR_FB_render_models: {:?}", e));
                 }
-
                 self.xr_render_model = Some(xr_model);
                 true
             }
             None => {
-                Log::err("XR_FB_render_model extension not available");
+                Log::err("❌ XR_FB_render_model extension not available");
                 false // Still succeed even if extension is not available
             }
         }
@@ -526,7 +582,7 @@ impl XrFbRenderModelStepper {
                 }
                 "false" => {
                     self.is_enabled = false;
-                    Log::diag("Controller drawing disabled via event");
+                    Log::info("Controller drawing disabled via event");
 
                     // Disable controller models and animations
                     if self.xr_render_model.is_some() {
@@ -540,7 +596,21 @@ impl XrFbRenderModelStepper {
         }
     }
 
-    /// Set animation based on controller button states
+    /// Set animation based on controller button states with step rotation system
+    ///
+    /// This function maps controller input states to specific animation times:
+    /// - Stick directions (8 cardinal points): 1.18-1.64 range
+    /// - Trigger pressure: 0.6-0.66 range (variable based on pressure)  
+    /// - Grip pressure: 0.82-0.88 range (variable based on pressure)
+    /// - Button combinations: 0.18, 0.32, 0.46, 0.98
+    /// 
+    /// Uses a step rotation system via animation_time_code to cycle through
+    /// multiple simultaneous animations when several inputs are active.
+    ///
+    /// # Arguments
+    /// * `handed` - Which controller to animate (Left or Right)
+    /// * `controller` - Reference to the controller input state
+    /// * `shift` - Time shift to apply (LEFT_SHIFT for left hand, 0.0 for right)
     fn set_animation(&mut self, handed: Handed, controller: &crate::system::Controller, shift: f32) {
         let mut animation_times = vec![];
 
@@ -559,72 +629,70 @@ impl XrFbRenderModelStepper {
                 let animation_time = 
                     // Horizontal directions dominate
                     if x > 0.3 {
-                        // right
+                        // right side
                         if y > 0.3 {
-                            1.58
+                            1.58  // Right-up direction
                         } else if y < -0.3 {
-                            1.64
+                            1.64  // Right-down direction
                         } else {
-                            1.38
+                            1.38  // Pure right direction
                         } 
                     } else if x < -0.3 {
-                        // left
+                        // left side
                         if y > 0.3 {
-                            1.52
+                            1.52  // Left-up direction
                         } else if y < -0.3 {
-                            1.46
+                            1.46  // Left-down direction
                         } else {
-                            1.32
+                            1.32  // Pure left direction
                         }
                     } else {
-                        // Center
+                        // Center (vertical movements)
                         if y > 0.3 {
-                            1.18
+                            1.18  // Pure up direction
                         } else if y < -0.3 {
-                            1.26
+                            1.26  // Pure down direction
                         } else {
-                            -1.0
+                            -1.0  // Center position (no movement)
                         }
                     };
                 if animation_time > 0.0 { animation_times.push(animation_time); }
             }
-            // Different animations based on button combinations
+            // Button-based animations with different combinations
             if controller.trigger > 0.1 {
-                let animation_time = 0.6 + 0.06 * controller.trigger; // Trigger pressed animation
+                let animation_time = 0.6 + 0.06 * controller.trigger; // Variable trigger animation
                 animation_times.push(animation_time);
             }
-            // Apply animation time to the controller
             if controller.grip > 0.1 {
-                let animation_time = 0.82 + 0.06 * controller.grip; // Grip pressed animation
+                let animation_time = 0.82 + 0.06 * controller.grip; // Variable grip animation
                 animation_times.push(animation_time);
             }
 
-            // Apply animation time to the controller
+            // Discrete button animations
             let mut animation_time= -1.0;
             if controller.is_x1_pressed() && controller.is_x2_pressed() {
-                animation_time = 0.46; // X/Y or A/B button pressed animation
+                animation_time = 0.46; // Both X/Y or A/B buttons pressed
             } else if controller.is_x1_pressed() {
-                animation_time = 0.18; // X or A button pressed animation
+                animation_time = 0.18; // Single X or A button pressed
             } else if controller.is_x2_pressed() {
-                animation_time = 0.32; 
+                animation_time = 0.32; // Single Y or B button pressed
             } else if controller.is_stick_clicked() {
-                animation_time = -1.0; // No Stick click animation found.
+                animation_time = -1.0; // Stick click (no animation found)
             } else if Input::get_controller_menu_button().is_active() {
-                animation_time = 0.98; // System button pressed animation
+                animation_time = 0.98; // System/menu button pressed
             }
 
             if animation_time > 0.0 { animation_times.push(animation_time); }
 
             if animation_times.is_empty() {
-                // No animations found, use default
+                // No active inputs detected, use default idle animation
                 xr_render_model.set_controller_anim_time(handed, 4.4);
             } else {
-                // Select animation for this step (interlacing)
+                // Multiple animations available - use step rotation to cycle through them
                 let step_sel = self.animation_time_code % animation_times.len() as f32;
                 for (i, animation_time) in animation_times.into_iter().enumerate() {
                     if i as f32 == step_sel{
                         xr_render_model.set_controller_anim_time(handed, animation_time + shift);
-                        
                         break;
                     }
                 }
@@ -638,13 +706,13 @@ impl XrFbRenderModelStepper {
             return;
         }
 
-        // This is an helper to find right timecode of all the animations
+        // Animation analysis helper (disabled by default)
         if false {
             self.animation_analyser(_token);
         } else if self.with_animation {
-            // Animate controllers based on button activation for each hand
+            // Execute controller animations based on current input states
             if self.xr_render_model.is_some() {
-                // Set animations for both controllers
+                // Apply animations to both controllers independently
                 let left_controller = Input::controller(Handed::Left);
                 self.set_animation(Handed::Left, &left_controller, LEFT_SHIFT);
 
@@ -654,15 +722,22 @@ impl XrFbRenderModelStepper {
         }
     }
 
-    /// Use this if you want to analyze the animation 
+    /// Animation analysis helper for finding correct animation time codes
+    ///
+    /// This is a development tool that displays the current animation time code
+    /// in 3D space and allows manual advancement through animations using joystick clicks.
+    /// Useful for discovering and documenting animation time codes for different poses.
+    ///
+    /// # Arguments
+    /// * `_token` - Main thread token for safe UI operations
     fn animation_analyser(&mut self, _token: &MainThreadToken) {
-        // Check for joystick button press to advance animation time
+        // Advance animation time on joystick button press
         if Input::controller(Handed::Right).stick_click.is_just_active()
             || Input::controller(Handed::Left).stick_click.is_just_active()
         {
             self.animation_time_code += 0.02;
 
-            // Reset to 0 when reaching 6 seconds
+            // Reset to 0 when reaching 6 seconds maximum
             if self.animation_time_code >= 6.0 {
                 self.animation_time_code = 0.0;
             }
@@ -670,23 +745,20 @@ impl XrFbRenderModelStepper {
             Log::diag(format!("Animation time code: {:.1}s", self.animation_time_code));
         }
 
-        // Display animation time code value in 3D text
+        // Display current animation time code in 3D space
         use crate::maths::{Matrix, Quat, Vec3};
         use crate::system::Text;
 
         let text_content = format!("Animation Time: {:.2}s\nPress joystick to advance", self.animation_time_code);
         let position = Vec3::new(0.0, 1.5, -0.8);
-        let rotation = Quat::from_angles(0.0, 180.0, 0.0);
-        // Tourné vers Z
+        let rotation = Quat::from_angles(0.0, 180.0, 0.0); // Rotated toward Z-axis
         let transform = Matrix::t_r(position, rotation);
 
         Text::add_at(_token, &text_content, transform, None, None, None, None, None, None, None);
 
-        // Update controller animations to the current time code
+        // Apply current time code to both controllers for analysis
         if let Some(ref mut xr_render_model) = self.xr_render_model {
-            // Set animation time for both controllers
             xr_render_model.set_controller_anim_time(Handed::Left, self.animation_time_code);
-
             xr_render_model.set_controller_anim_time(Handed::Right, self.animation_time_code);
         }
     }

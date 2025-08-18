@@ -155,6 +155,10 @@ required = true
 name = "com.oculus.feature.RENDER_MODEL"
 required = false
 
+[[package.metadata.android.uses_feature]]
+name = "com.oculus.feature.VIRTUAL_KEYBOARD"
+required = false
+
 #---Android feature AndroidXR
 # [[package.metadata.android.uses_feature]]
 # name = "android.software.xr.immersive"

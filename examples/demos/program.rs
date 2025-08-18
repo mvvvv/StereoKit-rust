@@ -21,7 +21,9 @@ use stereokit_rust::{
         },
         screenshot::ScreenshotViewer,
         xr_fb_render_model::{DRAW_CONTROLLER, XrFbRenderModelStepper, is_fb_render_model_extension_available},
-        //virtual_kbd_meta::VirtualKbdMETA,
+        xr_meta_virtual_keyboard::{
+            KEYBOARD_SHOW, XrMetaVirtualKeyboardStepper, is_meta_virtual_keyboard_extension_available,
+        },
     },
     ui::{Ui, UiBtnLayout},
     util::{Device, Time},
@@ -56,6 +58,11 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
     let mut next_scene: Option<&Test> = None;
     let mut scene_frame = 0;
     let mut scene_time = 0.0f32;
+
+    let mut passthrough = false;
+    let mut passthough_blend_enabled = false;
+    let mut nice_controllers = true;
+    let nice_controllers_available = is_fb_render_model_extension_available();
     //--------------------------------------------------------------------
 
     // Sending formated log to our mutex for the log window.
@@ -101,10 +108,6 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
     sk.send_event(StepperAction::add("LogWindow", log_window));
     sk.send_event(StepperAction::add_default::<ScreenshotViewer>("Screenshoot"));
     sk.send_event(StepperAction::add_default::<FlyOver>("FlyOver"));
-    let mut passthrough = false;
-    let mut passthough_blend_enabled = false;
-    let mut nice_controllers = true;
-    let nice_controllers_available = is_fb_render_model_extension_available();
 
     let blend_modes = get_env_blend_modes(true);
     if blend_modes.contains(&EnvironmentBlendMode::ADDITIVE) || blend_modes.contains(&EnvironmentBlendMode::ALPHA_BLEND)
@@ -159,6 +162,15 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
                 next_scene = Some(test);
             }
         }
+    }
+
+    // Add virtual keyboard stepper if extension is available
+    if is_meta_virtual_keyboard_extension_available() {
+        let keyboard_stepper = XrMetaVirtualKeyboardStepper::new(true);
+        sk.send_event(StepperAction::add("XrMetaVirtualKeyboardStepper", keyboard_stepper));
+        sk.send_event(StepperAction::event("XrMetaVirtualKeyboardStepper", KEYBOARD_SHOW, "true"));
+    } else {
+        Log::diag("XR_META_virtual_keyboard extension not available");
     }
 
     // Add the XR FB render model stepper only if extension is available

@@ -29,6 +29,7 @@ ktx create --cubemap --encode uastc  --format R8G8B8A8_UNORM  --assign-oetf line
 #---- launch tests
 clear;DISPLAY= cargo test --features event-loop              #----DISPLAY must be unset on Wayland only
 clear;DISPLAY= cargo test --features event-loop,test-xr-mode -- --test-threads=1  mesh::Mesh   #----DISPLAY must be unset on Wayland only
+clear;DISPLAY= cargo test --doc tools --features event-loop,test-xr-mode -- --test-threads=1
 
 #---- build docs
 cargo clean --doc && cargo doc --features event-loop  #----no-event-loop will fail because of lib //! doc containing `event-loop`
