@@ -39,6 +39,11 @@ pub fn android_main(app: AndroidApp) {
     );
 
     //crate::demos::load_all_extensions();
+    BackendOpenXR::request_ext("XR_FB_display_refresh_rate");
+    BackendOpenXR::request_ext("XR_FB_render_model");
+    BackendOpenXR::request_ext("XR_META_virtual_keyboard");
+    BackendOpenXR::request_ext("XR_META_simultaneous_hands_and_controllers");
+    BackendOpenXR::request_ext("XR_KHR_android_surface_swapchain");
 
     let (sk, event_loop) = settings.init_with_event_loop(app).unwrap();
 
