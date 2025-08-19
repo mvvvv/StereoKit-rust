@@ -17,7 +17,9 @@ use stereokit_rust::{
         log_window::{LogWindow, basic_log_fmt},
         notif::HudNotification,
         os_api::{
-            get_all_display_refresh_rates, get_display_refresh_rate, get_env_blend_modes, set_display_refresh_rate,
+            get_all_display_refresh_rates, get_display_refresh_rate, get_env_blend_modes,
+            is_simultaneous_hands_and_controllers_supported, pause_simultaneous_hands_and_controllers,
+            resume_simultaneous_hands_and_controllers, set_display_refresh_rate,
         },
         screenshot::ScreenshotViewer,
         xr_fb_render_model::{DRAW_CONTROLLER, XrFbRenderModelStepper, is_fb_render_model_extension_available},
@@ -42,12 +44,9 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
         "======================================================================================================================== !!",
     );
 
-    //Renderer::scaling(1.5); // Create distortion on WiVRn linux
-    Renderer::multisample(4);
-
     let mut window_demo_pose = Pose::new(Vec3::new(-0.7, 1.5, -0.3), Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0))));
 
-    let demo_win_width = 55.0 * CM;
+    let demo_win_width = 60.0 * CM;
 
     let mut last_focus = AppFocus::Background;
     let mut hidden_time = std::time::SystemTime::now();
@@ -63,6 +62,8 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
     let mut passthough_blend_enabled = false;
     let mut nice_controllers = true;
     let nice_controllers_available = is_fb_render_model_extension_available();
+    let mut simultaneous_hands_controllers = false;
+    let simultaneous_hands_controllers_available = is_simultaneous_hands_and_controllers_supported(true);
     //--------------------------------------------------------------------
 
     // Sending formated log to our mutex for the log window.
@@ -313,11 +314,11 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
         Ui::panel_begin(None);
         if passthough_blend_enabled && let Some(new_value) = Ui::toggle("Passthrough MR", &mut passthrough, None) {
             if new_value {
-                Log::diag("Activate passthrough");
+                Log::info("Activate passthrough");
                 sk.send_event(StepperAction::event("main", SHOW_FLOOR, "false"));
                 Device::display_blend(DisplayBlend::AnyTransparent);
             } else {
-                Log::diag("Deactivate passthrough");
+                Log::info("Deactivate passthrough");
                 sk.send_event(StepperAction::event("main", SHOW_FLOOR, "true"));
                 Device::display_blend(DisplayBlend::Opaque);
             }
@@ -328,11 +329,31 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
             Ui::same_line();
             if let Some(new_value) = Ui::toggle("Draw controllers", &mut nice_controllers, None) {
                 if new_value {
-                    Log::diag("Draw Controllers");
+                    Log::info("Draw Controllers");
                     sk.send_event(StepperAction::event("XrFbRenderModelStepper", DRAW_CONTROLLER, "true"));
                 } else {
-                    Log::diag("Stop drawing Controllers");
+                    Log::info("Stop drawing Controllers");
                     sk.send_event(StepperAction::event("XrFbRenderModelStepper", DRAW_CONTROLLER, "false"));
+                }
+            }
+        }
+
+        // Simultaneous hands and controllers toggle - only if extension is available
+        if simultaneous_hands_controllers_available {
+            Ui::same_line();
+            if let Some(new_value) = Ui::toggle("Hands+Controllers", &mut simultaneous_hands_controllers, None) {
+                if new_value {
+                    Log::info("Enabling simultaneous hands and controllers tracking");
+                    if !resume_simultaneous_hands_and_controllers(true) {
+                        Log::err("Failed to enable simultaneous hands and controllers tracking");
+                        simultaneous_hands_controllers = false;
+                    }
+                } else {
+                    Log::info("Disabling simultaneous hands and controllers tracking");
+                    if !pause_simultaneous_hands_and_controllers(true) {
+                        Log::err("Failed to disable simultaneous hands and controllers tracking");
+                        simultaneous_hands_controllers = true;
+                    }
                 }
             }
         }

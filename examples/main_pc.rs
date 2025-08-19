@@ -107,6 +107,7 @@ fn main() {
     }
     settings.standby_mode(StandbyMode::Slow);
 
+    //crate::demos::load_all_extensions();
     BackendOpenXR::request_ext("XR_FB_display_refresh_rate");
     BackendOpenXR::request_ext("XR_META_virtual_keyboard");
     BackendOpenXR::request_ext("XR_FB_render_model");
