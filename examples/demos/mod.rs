@@ -146,6 +146,8 @@ impl Test {
     }
 }
 
+/// All extensions encountered so far :
+/// AndroidX + HorizonOS + ALVR Linux + WiVRn/Monado Simulator
 pub fn load_all_extensions() {
     // EXT extensions
     BackendOpenXR::request_ext("XR_EXT_active_action_set_priority");
@@ -219,6 +221,7 @@ pub fn load_all_extensions() {
     BackendOpenXR::request_ext("XR_HTCX_vive_tracker_interaction");
 
     // KHR extensions
+    BackendOpenXR::request_ext("XR_KHR_D3D12_enable\n");
     BackendOpenXR::request_ext("XR_KHR_binding_modification");
     BackendOpenXR::request_ext("XR_KHR_composition_layer_color_scale_bias");
     BackendOpenXR::request_ext("XR_KHR_composition_layer_cube");
@@ -230,6 +233,7 @@ pub fn load_all_extensions() {
     BackendOpenXR::request_ext("XR_KHR_locate_spaces");
     BackendOpenXR::request_ext("XR_KHR_maintenance1");
     BackendOpenXR::request_ext("XR_KHR_opengl_enable");
+    BackendOpenXR::request_ext("XR_KHR_opengl_es_enable");
     BackendOpenXR::request_ext("XR_KHR_swapchain_usage_input_attachment_bit");
     BackendOpenXR::request_ext("XR_KHR_visibility_mask");
     BackendOpenXR::request_ext("XR_KHR_vulkan_enable");
@@ -274,6 +278,7 @@ pub fn load_all_extensions() {
     BackendOpenXR::request_ext("XR_MND_headless");
     BackendOpenXR::request_ext("XR_MND_swapchain_usage_input_attachment_bit");
     BackendOpenXR::request_ext("XR_MNDX_ball_on_a_stick_controller");
+    BackendOpenXR::request_ext("XR_MNDX_egl_enable");
     BackendOpenXR::request_ext("XR_MNDX_force_feedback_curl");
     BackendOpenXR::request_ext("XR_MNDX_hydra");
     BackendOpenXR::request_ext("XR_MNDX_oculus_remote");
