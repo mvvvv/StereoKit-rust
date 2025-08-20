@@ -116,6 +116,9 @@ fn main() {
         // When you need to ship your own openxr loader use this feature:
         cmake_config.define("SK_DYNAMIC_OPENXR", "ON");
     }
+    if cfg!(feature = "profile") {
+        cmake_config.define("SK_PROFILE", "ON");
+    }
 
     let dst = cmake_config.build();
 
@@ -139,6 +142,9 @@ fn main() {
             cargo_link!("windowsapp");
             cargo_link!("user32");
             cargo_link!("shell32");
+            if cfg!(feature = "profile") {
+                cargo_link!("TracyClient");
+            }
             // test not really useful, just there to recall this annoying problem:
             if cfg!(windows) {
                 cargo_link!("Comdlg32");
@@ -220,6 +226,9 @@ fn main() {
             cargo_link!("stdc++");
             cargo_link!("openxr_loader");
             cargo_link!("meshoptimizer");
+            if cfg!(feature = "profile") {
+                cargo_link!("TracyClient");
+            }
             if target_os == "android" {
                 cargo_link!("android");
                 cargo_link!("EGL");

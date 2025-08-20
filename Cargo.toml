@@ -39,6 +39,7 @@ no-event-loop = ["dep:android-activity"]
 force-local-deps = []
 skc-in-dll = [] # Create and use StereoKitC as a DLL when building for windows (MSVC & GNU)
 test-xr-mode = [] # Replace AppMode::Offscreen with AppMode::XR in test macros
+profile = [] # Enable profiling in StereoKitC using tracy
 
 [lib]
 crate-type = ["lib", "cdylib"]
