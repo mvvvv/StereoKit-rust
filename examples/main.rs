@@ -38,7 +38,7 @@ pub fn android_main(app: AndroidApp) {
         android_logger::Config::default().with_max_level(log::LevelFilter::Debug).with_tag("STKit-rs"),
     );
 
-    //crate::demos::load_all_extensions();
+    //stereokit_rust::tools::load_all_extensions();
     BackendOpenXR::request_ext("XR_FB_display_refresh_rate");
     BackendOpenXR::request_ext("XR_FB_render_model");
     BackendOpenXR::request_ext("XR_META_virtual_keyboard");
@@ -64,7 +64,7 @@ fn main() {
         .no_flatscreen_fallback(true)
         .mode(AppMode::Simulator);
 
-    //crate::demos::load_all_extensions();
+    //stereokit_rust::tools::load_all_extensions();
     BackendOpenXR::request_ext("XR_FB_display_refresh_rate");
     let (sk, event_loop) = settings.init_with_event_loop().unwrap();
     _main(sk, event_loop);

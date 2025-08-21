@@ -22,8 +22,12 @@
 //! <https://developer.android.com/develop/xr/openxr/extensions/XR_ANDROID_depth_texture>
 
 use crate::system::{Backend, BackendOpenXR, BackendXRType, Log};
-use openxr_sys::{Bool32, Result, Session, StructureType, Swapchain};
+use openxr_sys::{
+    Bool32, Instance, MAX_SYSTEM_NAME_SIZE, Result, Session, StructureType, Swapchain, SystemGraphicsProperties,
+    SystemId, SystemProperties, SystemTrackingProperties, pfn::GetSystemProperties,
+};
 use std::os::raw::{c_uint, c_ulong, c_void};
+use std::ptr::null_mut;
 
 /// Extension name for XR_FB_render_model
 pub const XR_ANDROID_DEPTH_TEXTURE_EXTENSION_NAME: &str = "XR_ANDROID_depth_texture";
@@ -148,24 +152,6 @@ type PfnEnumerateDepthResolutionsAndroid = unsafe extern "C" fn(
     resolutions: *mut DepthResolutionAndroid,
 ) -> Result;
 
-type PfnCreateDepthTextureAndroid = unsafe extern "C" fn(
-    session: Session,
-    create_info: *const DepthTextureCreateInfoAndroid,
-    depth_texture: *mut DepthTextureAndroid,
-) -> Result;
-
-type PfnDestroyDepthTextureAndroid =
-    unsafe extern "C" fn(session: Session, depth_texture: *const DepthTextureAndroid) -> Result;
-
-type PfnAcquireDepthTextureAndroid = unsafe extern "C" fn(
-    session: Session,
-    depth_texture: *const DepthTextureAndroid,
-    depth_surface_info: *mut DepthSurfaceInfoAndroid,
-) -> Result;
-
-type PfnReleaseDepthTextureAndroid =
-    unsafe extern "C" fn(session: Session, depth_texture: *const DepthTextureAndroid) -> Result;
-
 type PfnCreateDepthSwapchainAndroid = unsafe extern "C" fn(
     session: Session,
     create_info: *const DepthSwapchainCreateInfoAndroid,
@@ -217,15 +203,11 @@ pub const XR_TYPE_DEPTH_SWAPCHAIN_IMAGE_ANDROID_RAW: u32 = 1000343005;
 pub const XR_TYPE_SYSTEM_DEPTH_TRACKING_PROPERTIES_ANDROID_RAW: u32 = 1000343006;
 
 /// Extension function names for dynamic loading
-const XR_ENUMERATE_DEPTH_RESOLUTIONS_ANDROID_NAME: &str = "xrEnumerateDepthResolutionsAndroid";
-const XR_CREATE_DEPTH_TEXTURE_ANDROID_NAME: &str = "xrCreateDepthTextureAndroid";
-const XR_DESTROY_DEPTH_TEXTURE_ANDROID_NAME: &str = "xrDestroyDepthTextureAndroid";
-const XR_ACQUIRE_DEPTH_TEXTURE_ANDROID_NAME: &str = "xrAcquireDepthTextureAndroid";
-const XR_RELEASE_DEPTH_TEXTURE_ANDROID_NAME: &str = "xrReleaseDepthTextureAndroid";
-const XR_CREATE_DEPTH_SWAPCHAIN_ANDROID_NAME: &str = "xrCreateDepthSwapchainAndroid";
-const XR_DESTROY_DEPTH_SWAPCHAIN_ANDROID_NAME: &str = "xrDestroyDepthSwapchainAndroid";
-const XR_ENUMERATE_DEPTH_SWAPCHAIN_IMAGES_ANDROID_NAME: &str = "xrEnumerateDepthSwapchainImagesAndroid";
-const XR_ACQUIRE_DEPTH_SWAPCHAIN_IMAGE_ANDROID_NAME: &str = "xrAcquireDepthSwapchainImageAndroid";
+const XR_ENUMERATE_DEPTH_RESOLUTIONS_ANDROID_NAME: &str = "xrEnumerateDepthResolutionsANDROID";
+const XR_CREATE_DEPTH_SWAPCHAIN_ANDROID_NAME: &str = "xrCreateDepthSwapchainANDROID";
+const XR_DESTROY_DEPTH_SWAPCHAIN_ANDROID_NAME: &str = "xrDestroyDepthSwapchainANDROID";
+const XR_ENUMERATE_DEPTH_SWAPCHAIN_IMAGES_ANDROID_NAME: &str = "xrEnumerateDepthSwapchainImagesANDROID";
+const XR_ACQUIRE_DEPTH_SWAPCHAIN_IMAGE_ANDROID_NAME: &str = "xrAcquireDepthSwapchainImagesANDROID";
 
 /// Main extension handler for Android depth texture functionality
 ///
@@ -244,97 +226,57 @@ const XR_ACQUIRE_DEPTH_SWAPCHAIN_IMAGE_ANDROID_NAME: &str = "xrAcquireDepthSwapc
 /// number_of_steps = 50;
 /// test_steps!( // !!!! Get a proper main loop !!!!
 ///     if iter == 10 {
-///         // Initialize extension and test swapchain creation
+///         // Initialize extension and check system support
 ///         if let Some(depth_ext) = XrAndroidDepthTexture::new() {
-///             let session = openxr_sys::Session::from_raw(
-///                 stereokit_rust::system::BackendOpenXR::session()
-///             );
-///             
-///             // Create depth swapchain with smooth and raw depth images
-///             let swapchain_info = create_depth_swapchain_info(
-///                 XR_DEPTH_RESOLUTION_HALF_ANDROID,
-///                 XR_DEPTH_SWAPCHAIN_CREATE_SMOOTH_DEPTH_IMAGE_BIT_ANDROID
-///                     | XR_DEPTH_SWAPCHAIN_CREATE_RAW_DEPTH_IMAGE_BIT_ANDROID
-///             );
-///             
-///             match depth_ext.create_depth_swapchain(session, &swapchain_info) {
-///                 Ok(swapchain) => {
-///                     stereokit_rust::system::Log::info("✅ Depth swapchain created!");
+///             // Check system support with logging
+///             match depth_ext.check_system_support(true) {
+///                 Ok(_system_props) => {
+///                     stereokit_rust::system::Log::info("✅ System supports depth tracking");
 ///                     
-///                     // Enumerate swapchain images
-///                     if let Ok(images) = depth_ext.enumerate_depth_swapchain_images(swapchain) {
-///                         stereokit_rust::system::Log::info(
-///                             format!("Found {} swapchain images", images.len())
-///                         );
-///                     }
+///                     // Continue with depth texture operations...
+///                     let session = openxr_sys::Session::from_raw(
+///                         stereokit_rust::system::BackendOpenXR::session()
+///                     );
 ///                     
-///                     // Test image acquisition
-///                     if let Ok(index) = depth_ext.acquire_depth_swapchain_image(session, swapchain) {
-///                         stereokit_rust::system::Log::info(
-///                             format!("Acquired image at index: {}", index)
-///                         );
-///                     }
+///                     // Create depth swapchain with smooth and raw depth images
+///                     let swapchain_info = create_depth_swapchain_info(
+///                         XR_DEPTH_RESOLUTION_HALF_ANDROID,
+///                         XR_DEPTH_SWAPCHAIN_CREATE_SMOOTH_DEPTH_IMAGE_BIT_ANDROID
+///                             | XR_DEPTH_SWAPCHAIN_CREATE_RAW_DEPTH_IMAGE_BIT_ANDROID
+///                     );
 ///                     
-///                     // Cleanup
-///                     let _ = depth_ext.destroy_depth_swapchain(swapchain);
-///                     stereokit_rust::system::Log::info("✅ Swapchain test completed!");
-///                 }
-///                 Err(e) => stereokit_rust::system::Log::err(format!("Swapchain creation failed: {}", e)),
-///             }
-///         }
-///     }
-/// );
-/// ```
-///
-/// #### Direct Depth Texture Example
-/// ```rust
-/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::tools::xr_android_depth_texture::*;
-///
-/// number_of_steps = 30;
-/// test_steps!( // !!!! Get a proper main loop !!!!
-///     if iter == 15 {
-///         // Test direct depth texture creation and management
-///         if let Some(depth_ext) = XrAndroidDepthTexture::new() {
-///             let session = openxr_sys::Session::from_raw(
-///                 stereokit_rust::system::BackendOpenXR::session()
-///             );
-///             
-///             // Create depth texture with specific dimensions
-///             let texture_info = create_depth_texture_info(
-///                 1280, 960, // Half resolution dimensions
-///                 SURFACE_ORIGIN_TOP_LEFT_ANDROID
-///             );
-///             
-///             match depth_ext.create_depth_texture(session, &texture_info) {
-///                 Ok(depth_texture) => {
-///                     stereokit_rust::system::Log::info("✅ Depth texture created!");
-///                     
-///                     // Test texture acquisition and release cycle
-///                     match depth_ext.acquire_depth_texture(session, &depth_texture) {
-///                         Ok(_surface_info) => {
-///                             stereokit_rust::system::Log::info("✅ Depth texture acquired!");
+///                     match depth_ext.create_depth_swapchain(session, &swapchain_info) {
+///                         Ok(swapchain) => {
+///                             stereokit_rust::system::Log::info("✅ Depth swapchain created!");
 ///                             
-///                             // Release texture
-///                             if let Ok(()) = depth_ext.release_depth_texture(session, &depth_texture) {
-///                                 stereokit_rust::system::Log::info("✅ Depth texture released!");
+///                             // Enumerate swapchain images
+///                             if let Ok(images) = depth_ext.enumerate_depth_swapchain_images(swapchain) {
+///                                 stereokit_rust::system::Log::info(
+///                                     format!("Found {} swapchain images", images.len())
+///                                 );
 ///                             }
+///                             
+///                             // Test image acquisition
+///                             if let Ok(index) = depth_ext.acquire_depth_swapchain_image(session, swapchain) {
+///                                 stereokit_rust::system::Log::info(
+///                                     format!("Acquired image at index: {}", index)
+///                                 );
+///                             }
+///                             
+///                             // Cleanup
+///                             let _ = depth_ext.destroy_depth_swapchain(swapchain);
+///                             stereokit_rust::system::Log::info("✅ Swapchain test completed!");
 ///                         }
-///                         Err(e) => stereokit_rust::system::Log::warn(
-///                             format!("Could not acquire texture: {}", e)
-///                         ),
+///                         Err(e) => stereokit_rust::system::Log::err(format!("Swapchain creation failed: {}", e)),
 ///                     }
-///                     
-///                     // Cleanup
-///                     let _ = depth_ext.destroy_depth_texture(session, &depth_texture);
-///                     stereokit_rust::system::Log::info("✅ Direct texture test completed!");
 ///                 }
-///                 Err(e) => stereokit_rust::system::Log::err(format!("Texture creation failed: {}", e)),
+///                 Err(e) => stereokit_rust::system::Log::err(format!("System support check failed: {:?}", e)),
 ///             }
 ///         }
 ///     }
 /// );
 /// ```
+///
 ///
 /// #### Depth Resolution Enumeration Example  
 /// ```
@@ -381,45 +323,16 @@ const XR_ACQUIRE_DEPTH_SWAPCHAIN_IMAGE_ANDROID_NAME: &str = "xrAcquireDepthSwapc
 ///     }
 /// );
 /// ```
-///
-/// #### Comprehensive Extension Test
-/// ```
-/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::tools::xr_android_depth_texture::*;
-///
-/// number_of_steps = 100;
-/// test_steps!( // !!!! Get a proper main loop !!!!
-///     if iter == 25 {
-///         // Run the comprehensive test function that checks all functionality
-///         stereokit_rust::system::Log::info("🚀 Starting comprehensive depth texture test...");
-///         test_depth_texture_extension();
-///         stereokit_rust::system::Log::info("🏁 Comprehensive test completed!");
-///     }
-///     
-///     if iter == 50 {
-///         // Run all individual example functions
-///         stereokit_rust::system::Log::info("🧪 Running all example functions...");
-///         
-///         let _ = example_depth_swapchain();
-///         let _ = example_depth_texture();
-///         let _ = example_depth_resolutions();
-///         
-///         stereokit_rust::system::Log::info("✅ All examples completed!");
-///     }
-/// );
-/// ```
 #[derive(Debug)]
 pub struct XrAndroidDepthTexture {
     /// Loaded function pointers from the OpenXR runtime
+    xr_get_system_properties: Option<GetSystemProperties>,
     enumerate_depth_resolutions: Option<PfnEnumerateDepthResolutionsAndroid>,
-    create_depth_texture: Option<PfnCreateDepthTextureAndroid>,
-    destroy_depth_texture: Option<PfnDestroyDepthTextureAndroid>,
-    acquire_depth_texture: Option<PfnAcquireDepthTextureAndroid>,
-    release_depth_texture: Option<PfnReleaseDepthTextureAndroid>,
     create_depth_swapchain: Option<PfnCreateDepthSwapchainAndroid>,
     destroy_depth_swapchain: Option<PfnDestroyDepthSwapchainAndroid>,
     enumerate_depth_swapchain_images: Option<PfnEnumerateDepthSwapchainImagesAndroid>,
     acquire_depth_swapchain_image: Option<PfnAcquireDepthSwapchainImageAndroid>,
+    instance: Instance,
 }
 
 impl XrAndroidDepthTexture {
@@ -439,21 +352,10 @@ impl XrAndroidDepthTexture {
         }
 
         // Load functions using the generic system
+        let xr_get_system_properties = BackendOpenXR::get_function::<GetSystemProperties>("xrGetSystemProperties");
         let enumerate_depth_resolutions = BackendOpenXR::get_function::<PfnEnumerateDepthResolutionsAndroid>(
             XR_ENUMERATE_DEPTH_RESOLUTIONS_ANDROID_NAME,
         );
-
-        let create_depth_texture =
-            BackendOpenXR::get_function::<PfnCreateDepthTextureAndroid>(XR_CREATE_DEPTH_TEXTURE_ANDROID_NAME);
-
-        let destroy_depth_texture =
-            BackendOpenXR::get_function::<PfnDestroyDepthTextureAndroid>(XR_DESTROY_DEPTH_TEXTURE_ANDROID_NAME);
-
-        let acquire_depth_texture =
-            BackendOpenXR::get_function::<PfnAcquireDepthTextureAndroid>(XR_ACQUIRE_DEPTH_TEXTURE_ANDROID_NAME);
-
-        let release_depth_texture =
-            BackendOpenXR::get_function::<PfnReleaseDepthTextureAndroid>(XR_RELEASE_DEPTH_TEXTURE_ANDROID_NAME);
 
         let create_depth_swapchain =
             BackendOpenXR::get_function::<PfnCreateDepthSwapchainAndroid>(XR_CREATE_DEPTH_SWAPCHAIN_ANDROID_NAME);
@@ -469,12 +371,11 @@ impl XrAndroidDepthTexture {
             XR_ACQUIRE_DEPTH_SWAPCHAIN_IMAGE_ANDROID_NAME,
         );
 
+        let instance = Instance::from_raw(BackendOpenXR::instance());
+
         // Verify that all critical functions were loaded successfully
-        if enumerate_depth_resolutions.is_none()
-            || create_depth_texture.is_none()
-            || destroy_depth_texture.is_none()
-            || acquire_depth_texture.is_none()
-            || release_depth_texture.is_none()
+        if xr_get_system_properties.is_none()
+            || enumerate_depth_resolutions.is_none()
             || create_depth_swapchain.is_none()
             || destroy_depth_swapchain.is_none()
             || enumerate_depth_swapchain_images.is_none()
@@ -487,16 +388,101 @@ impl XrAndroidDepthTexture {
         Log::info("XR_ANDROID_depth_texture extension initialized successfully");
 
         Some(Self {
+            xr_get_system_properties,
             enumerate_depth_resolutions,
-            create_depth_texture,
-            destroy_depth_texture,
-            acquire_depth_texture,
-            release_depth_texture,
             create_depth_swapchain,
             destroy_depth_swapchain,
             enumerate_depth_swapchain_images,
             acquire_depth_swapchain_image,
+            instance,
         })
+    }
+
+    /// Check if the system supports depth tracking
+    ///
+    /// # Parameters
+    /// - `with_log`: If true, outputs system properties to diagnostic log
+    ///
+    /// # Returns
+    /// `Ok(SystemProperties)` with depth tracking properties if supported, or error on failure
+    pub fn check_system_support(&self, with_log: bool) -> std::result::Result<SystemProperties, openxr_sys::Result> {
+        let get_props_fn = self.xr_get_system_properties.ok_or(openxr_sys::Result::ERROR_FUNCTION_UNSUPPORTED)?;
+
+        let system_id = SystemId::from_raw(BackendOpenXR::system_id());
+
+        let mut depth_tracking_props = XrSystemDepthTrackingPropertiesANDROID {
+            ty: xr_type_system_depth_tracking_properties_android(),
+            next: null_mut(),
+            supports_depth_tracking: Bool32::from_raw(0),
+        };
+
+        let mut system_properties = SystemProperties {
+            ty: StructureType::SYSTEM_PROPERTIES,
+            next: &mut depth_tracking_props as *mut _ as *mut c_void,
+            system_id,
+            vendor_id: 0,
+            system_name: [0; MAX_SYSTEM_NAME_SIZE],
+            graphics_properties: SystemGraphicsProperties {
+                max_swapchain_image_height: 0,
+                max_swapchain_image_width: 0,
+                max_layer_count: 0,
+            },
+            tracking_properties: SystemTrackingProperties {
+                orientation_tracking: Bool32::from_raw(0),
+                position_tracking: Bool32::from_raw(0),
+            },
+        };
+
+        let result = unsafe { get_props_fn(self.instance, system_id, &mut system_properties) };
+
+        if result != openxr_sys::Result::SUCCESS {
+            return Err(result);
+        }
+
+        if with_log {
+            Log::diag("=== XR_ANDROID_depth_texture System Properties ===");
+            Log::diag(format!("System ID: {:?}", system_properties.system_id));
+            Log::diag(format!("Vendor ID: {}", system_properties.vendor_id));
+
+            // Convert system name from i8 array to string
+            let system_name = system_properties
+                .system_name
+                .iter()
+                .take_while(|&&c| c != 0)
+                .map(|&c| c as u8 as char)
+                .collect::<String>();
+            Log::diag(format!("System name: {}", system_name));
+
+            Log::diag("Graphics properties:");
+            Log::diag(format!(
+                "  Max swapchain image height: {}",
+                system_properties.graphics_properties.max_swapchain_image_height
+            ));
+            Log::diag(format!(
+                "  Max swapchain image width: {}",
+                system_properties.graphics_properties.max_swapchain_image_width
+            ));
+            Log::diag(format!("  Max layer count: {}", system_properties.graphics_properties.max_layer_count));
+
+            Log::diag("Tracking properties:");
+            Log::diag(format!(
+                "  Orientation tracking: {}",
+                system_properties.tracking_properties.orientation_tracking.into_raw() != 0
+            ));
+            Log::diag(format!(
+                "  Position tracking: {}",
+                system_properties.tracking_properties.position_tracking.into_raw() != 0
+            ));
+
+            Log::diag("Depth tracking properties:");
+            Log::diag(format!(
+                "  Supports depth tracking: {}",
+                depth_tracking_props.supports_depth_tracking.into_raw() != 0
+            ));
+            Log::diag("================================================");
+        }
+
+        Ok(system_properties)
     }
 
     /// Wrapper methods used by lib.rs
@@ -641,114 +627,6 @@ impl XrAndroidDepthTexture {
 
         if result != openxr_sys::Result::SUCCESS {
             return Err(format!("Failed to destroy depth swapchain: {:?}", result));
-        }
-
-        Ok(())
-    }
-
-    /// Create a depth texture for direct texture access
-    ///
-    /// # Arguments
-    /// * `session` - The OpenXR session
-    /// * `create_info` - Configuration for the depth texture
-    ///
-    /// # Returns
-    /// Handle to the created depth texture or error description
-    pub fn create_depth_texture(
-        &self,
-        session: Session,
-        create_info: &DepthTextureCreateInfoAndroid,
-    ) -> std::result::Result<DepthTextureAndroid, String> {
-        let create_fn = self.create_depth_texture.ok_or("create_depth_texture function not loaded")?;
-
-        let mut depth_texture = DepthTextureAndroid {
-            ty: xr_type_depth_texture_android(),
-            next: std::ptr::null(),
-            texture: std::ptr::null_mut(),
-        };
-
-        let result = unsafe { create_fn(session, create_info, &mut depth_texture) };
-
-        if result != openxr_sys::Result::SUCCESS {
-            return Err(format!("Failed to create depth texture: {:?}", result));
-        }
-
-        Ok(depth_texture)
-    }
-
-    /// Destroy a previously created depth texture
-    ///
-    /// # Arguments
-    /// * `session` - The OpenXR session
-    /// * `depth_texture` - The depth texture to destroy
-    ///
-    /// # Returns
-    /// `Ok(())` on success or error description on failure
-    pub fn destroy_depth_texture(
-        &self,
-        session: Session,
-        depth_texture: &DepthTextureAndroid,
-    ) -> std::result::Result<(), String> {
-        let destroy_fn = self.destroy_depth_texture.ok_or("destroy_depth_texture function not loaded")?;
-
-        let result = unsafe { destroy_fn(session, depth_texture) };
-
-        if result != openxr_sys::Result::SUCCESS {
-            return Err(format!("Failed to destroy depth texture: {:?}", result));
-        }
-
-        Ok(())
-    }
-
-    /// Acquire a depth texture for rendering
-    ///
-    /// # Arguments
-    /// * `session` - The OpenXR session
-    /// * `depth_texture` - The depth texture to acquire
-    ///
-    /// # Returns
-    /// Surface information for the acquired texture or error description
-    pub fn acquire_depth_texture(
-        &self,
-        session: Session,
-        depth_texture: &DepthTextureAndroid,
-    ) -> std::result::Result<DepthSurfaceInfoAndroid, String> {
-        let acquire_fn = self.acquire_depth_texture.ok_or("acquire_depth_texture function not loaded")?;
-
-        let mut surface_info = DepthSurfaceInfoAndroid {
-            ty: xr_type_depth_surface_info_android(),
-            next: std::ptr::null(),
-            depth_surface: std::ptr::null_mut(),
-        };
-
-        let result = unsafe { acquire_fn(session, depth_texture, &mut surface_info) };
-
-        if result != openxr_sys::Result::SUCCESS {
-            return Err(format!("Failed to acquire depth texture: {:?}", result));
-        }
-
-        Ok(surface_info)
-    }
-
-    /// Release a previously acquired depth texture
-    ///
-    /// # Arguments
-    /// * `session` - The OpenXR session
-    /// * `depth_texture` - The depth texture to release
-    ///
-    /// # Returns
-    /// `Ok(())` on success or error description on failure
-    pub fn release_depth_texture(
-        &self,
-        session: Session,
-        depth_texture: &DepthTextureAndroid,
-    ) -> std::result::Result<(), String> {
-        let release_fn = self.release_depth_texture.ok_or("release_depth_texture function not loaded")?;
-
-        let result = unsafe { release_fn(session, depth_texture) };
-
-        if result != openxr_sys::Result::SUCCESS {
-            return Err(format!("Failed to release depth texture: {:?}", result));
         }
 
         Ok(())
@@ -902,70 +780,23 @@ pub fn test_depth_texture_extension() {
 
             Log::diag("✅ XR_ANDROID_depth_texture swapchain API is available");
 
-            // Get OpenXR handles from StereoKit and convert to proper types
+            // Get OpenXR handles from StereoKit for logging purposes
             let instance_raw = BackendOpenXR::instance();
             let system_id_raw = BackendOpenXR::system_id();
             Log::diag(format!("✅ OpenXR instance obtained: {:?}", instance_raw));
             Log::diag(format!("✅ OpenXR system ID obtained: {:?}", system_id_raw));
 
-            // Convert to proper openxr_sys types
-            let instance = openxr_sys::Instance::from_raw(instance_raw);
-            let system_id = openxr_sys::SystemId::from_raw(system_id_raw);
-
             // === INSPECT SYSTEM CAPABILITY ===
             Log::diag("=== Inspecting system depth tracking capabilities ===");
 
-            // Create system properties structure
-            let mut depth_tracking_properties = XrSystemDepthTrackingPropertiesANDROID::default();
-            Log::diag("Created XrSystemDepthTrackingPropertiesANDROID structure");
+            // Test system support check using the new method
+            match depth_ext.check_system_support(true) {
+                Ok(sys_prop) => {
+                    Log::diag("✅ System support check completed successfully");
 
-            // We need to call xrGetSystemProperties, but StereoKit doesn't expose this directly
-            // So we'll try to get the function pointer using generic type
-            type PfnGetSystemProperties = unsafe extern "system" fn(
-                instance: openxr_sys::Instance,
-                system_id: openxr_sys::SystemId,
-                properties: *mut openxr_sys::SystemProperties,
-            ) -> openxr_sys::Result;
-
-            if let Some(get_props_fn) = BackendOpenXR::get_function::<PfnGetSystemProperties>("xrGetSystemProperties") {
-                Log::diag("✅ Found xrGetSystemProperties function pointer");
-
-                // Create system properties with depth tracking properties chained
-                let mut system_properties = openxr_sys::SystemProperties {
-                    ty: openxr_sys::SystemProperties::TYPE,
-                    next: &mut depth_tracking_properties as *mut _ as *mut std::ffi::c_void,
-                    system_id,
-                    vendor_id: 0,
-                    system_name: [0; openxr_sys::MAX_SYSTEM_NAME_SIZE],
-                    graphics_properties: openxr_sys::SystemGraphicsProperties {
-                        max_swapchain_image_height: 0,
-                        max_swapchain_image_width: 0,
-                        max_layer_count: 0,
-                    },
-                    tracking_properties: openxr_sys::SystemTrackingProperties {
-                        orientation_tracking: openxr_sys::Bool32::from_raw(0),
-                        position_tracking: openxr_sys::Bool32::from_raw(0),
-                    },
-                };
-
-                let result = unsafe { get_props_fn(instance, system_id, &mut system_properties) };
-
-                if result == openxr_sys::Result::SUCCESS {
-                    Log::diag("✅ xrGetSystemProperties call successful");
-                    // Convert i8 array to string for display
-                    let system_name_bytes: &[u8] = unsafe {
-                        std::slice::from_raw_parts(
-                            system_properties.system_name.as_ptr() as *const u8,
-                            system_properties.system_name.len(),
-                        )
-                    };
-                    Log::diag(format!("System name: {:?}", String::from_utf8_lossy(system_name_bytes)));
-                    Log::diag(format!("Vendor ID: {}", system_properties.vendor_id));
-                    Log::diag(format!(
-                        "Max swapchain size: {}x{}",
-                        system_properties.graphics_properties.max_swapchain_image_width,
-                        system_properties.graphics_properties.max_swapchain_image_height
-                    ));
+                    // Get the depth tracking properties from the next pointer
+                    let depth_tracking_properties =
+                        unsafe { &*(sys_prop.next as *const XrSystemDepthTrackingPropertiesANDROID) };
 
                     if depth_tracking_properties.supports_depth_tracking.into_raw() != 0 {
                         Log::diag("🎯 ✅ DEPTH TRACKING IS SUPPORTED BY THE SYSTEM!");
@@ -1079,11 +910,10 @@ pub fn test_depth_texture_extension() {
                     } else {
                         Log::warn("⚠️ Depth tracking is NOT supported by this system");
                     }
-                } else {
-                    Log::err(format!("❌ xrGetSystemProperties failed: {:?}", result));
                 }
-            } else {
-                Log::err("❌ Could not get xrGetSystemProperties function pointer");
+                Err(e) => {
+                    Log::err(format!("❌ System support check failed: {:?}", e));
+                }
             }
         }
         None => {
@@ -1092,195 +922,4 @@ pub fn test_depth_texture_extension() {
     }
 
     Log::diag("🏁 === DEPTH TEXTURE EXTENSION TEST COMPLETE ===");
-}
-
-/// Simple example demonstrating depth swapchain creation
-///
-/// This example can be called from a StereoKit application to test
-/// the depth swapchain functionality.
-///
-/// ### Example
-/// ```
-/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::tools::xr_android_depth_texture::*;
-///
-/// number_of_steps = 40;
-/// test_steps!( // !!!! Get a proper main loop !!!!
-///     if iter == 20 {
-///         // Test swapchain creation and management
-///         match example_depth_swapchain() {
-///             Ok(()) => stereokit_rust::system::Log::info("✅ Swapchain test passed!"),
-///             Err(e) => stereokit_rust::system::Log::err(format!("❌ Swapchain test failed: {}", e)),
-///         }
-///     }
-/// );
-/// ```
-pub fn example_depth_swapchain() -> std::result::Result<(), String> {
-    Log::info("🚀 === DEPTH SWAPCHAIN EXAMPLE ===");
-
-    // Initialize the extension
-    let depth_ext = match XrAndroidDepthTexture::new() {
-        Some(ext) => {
-            Log::info("✅ XR_ANDROID_depth_texture extension initialized");
-            ext
-        }
-        None => {
-            return Err("❌ XR_ANDROID_depth_texture extension not available".to_string());
-        }
-    };
-
-    // Get session handle
-    let session = Session::from_raw(BackendOpenXR::session());
-
-    // Create swapchain
-    let swapchain_info = create_depth_swapchain_info(
-        XR_DEPTH_RESOLUTION_HALF_ANDROID,
-        XR_DEPTH_SWAPCHAIN_CREATE_SMOOTH_DEPTH_IMAGE_BIT_ANDROID
-            | XR_DEPTH_SWAPCHAIN_CREATE_RAW_DEPTH_IMAGE_BIT_ANDROID,
-    );
-
-    let swapchain = depth_ext.create_depth_swapchain(session, &swapchain_info)?;
-    Log::info(format!("✅ Depth swapchain created: {:?}", swapchain));
-
-    // Enumerate images
-    let images = depth_ext.enumerate_depth_swapchain_images(swapchain)?;
-    Log::info(format!("✅ Found {} swapchain images", images.len()));
-
-    // Test image acquisition
-    match depth_ext.acquire_depth_swapchain_image(session, swapchain) {
-        Ok(index) => Log::info(format!("✅ Acquired swapchain image at index: {}", index)),
-        Err(e) => Log::warn(format!("⚠️ Could not acquire image: {}", e)),
-    }
-
-    // Cleanup
-    depth_ext.destroy_depth_swapchain(swapchain)?;
-    Log::info("✅ Swapchain destroyed successfully");
-
-    Log::info("🏁 === DEPTH SWAPCHAIN EXAMPLE COMPLETE ===");
-    Ok(())
-}
-
-/// Simple example demonstrating direct depth texture usage
-///
-/// This example can be called from a StereoKit application to test
-/// the direct depth texture functionality.
-///
-/// ### Example
-/// ```
-/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::tools::xr_android_depth_texture::*;
-///
-/// number_of_steps = 35;
-/// test_steps!( // !!!! Get a proper main loop !!!!
-///     if iter == 15 {
-///         // Test direct texture creation and usage
-///         match example_depth_texture() {
-///             Ok(()) => stereokit_rust::system::Log::info("✅ Texture test passed!"),
-///             Err(e) => stereokit_rust::system::Log::err(format!("❌ Texture test failed: {}", e)),
-///         }
-///     }
-/// );
-/// ```
-pub fn example_depth_texture() -> std::result::Result<(), String> {
-    Log::info("🚀 === DEPTH TEXTURE EXAMPLE ===");
-
-    // Initialize the extension
-    let depth_ext = match XrAndroidDepthTexture::new() {
-        Some(ext) => {
-            Log::info("✅ XR_ANDROID_depth_texture extension initialized");
-            ext
-        }
-        None => {
-            return Err("❌ XR_ANDROID_depth_texture extension not available".to_string());
-        }
-    };
-
-    // Get session handle
-    let session = Session::from_raw(BackendOpenXR::session());
-
-    // Create depth texture
-    let texture_info = create_depth_texture_info(1280, 960, SURFACE_ORIGIN_TOP_LEFT_ANDROID);
-
-    let depth_texture = depth_ext.create_depth_texture(session, &texture_info)?;
-    Log::info("✅ Depth texture created successfully");
-
-    // Test texture acquisition and release
-    match depth_ext.acquire_depth_texture(session, &depth_texture) {
-        Ok(_surface_info) => {
-            Log::info("✅ Depth texture acquired successfully");
-
-            // Release immediately
-            depth_ext.release_depth_texture(session, &depth_texture)?;
-            Log::info("✅ Depth texture released successfully");
-        }
-        Err(e) => Log::warn(format!("⚠️ Could not acquire texture: {}", e)),
-    }
-
-    // Cleanup
-    depth_ext.destroy_depth_texture(session, &depth_texture)?;
-    Log::info("✅ Depth texture destroyed successfully");
-
-    Log::info("🏁 === DEPTH TEXTURE EXAMPLE COMPLETE ===");
-    Ok(())
-}
-
-/// Comprehensive example testing depth resolution enumeration
-///
-/// This example demonstrates how to enumerate available depth resolutions
-/// and provides detailed information about each one.
-///
-/// ### Example
-/// ```
-/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::tools::xr_android_depth_texture::*;
-///
-/// number_of_steps = 25;
-/// test_steps!( // !!!! Get a proper main loop !!!!
-///     if iter == 10 {
-///         // Test resolution enumeration with detailed logging
-///         match example_depth_resolutions() {
-///             Ok(()) => stereokit_rust::system::Log::info("✅ Resolution test passed!"),
-///             Err(e) => stereokit_rust::system::Log::err(format!("❌ Resolution test failed: {}", e)),
-///         }
-///     }
-/// );
-/// ```
-pub fn example_depth_resolutions() -> std::result::Result<(), String> {
-    Log::info("🚀 === DEPTH RESOLUTIONS EXAMPLE ===");
-
-    // Initialize the extension
-    let depth_ext = match XrAndroidDepthTexture::new() {
-        Some(ext) => {
-            Log::info("✅ XR_ANDROID_depth_texture extension initialized");
-            ext
-        }
-        None => {
-            return Err("❌ XR_ANDROID_depth_texture extension not available".to_string());
-        }
-    };
-
-    // Get session handle
-    let session = Session::from_raw(BackendOpenXR::session());
-
-    // Enumerate available depth resolutions
-    let resolutions = depth_ext.enumerate_depth_resolutions(session)?;
-    Log::info(format!("✅ Found {} supported depth resolutions", resolutions.len()));
-
-    for (i, resolution) in resolutions.iter().enumerate() {
-        let (width, height) = get_resolution_dimensions(*resolution);
-        let resolution_name = match *resolution {
-            XR_DEPTH_RESOLUTION_QUARTER_ANDROID => "Quarter",
-            XR_DEPTH_RESOLUTION_HALF_ANDROID => "Half",
-            XR_DEPTH_RESOLUTION_FULL_ANDROID => "Full",
-            _ => "Unknown",
-        };
-
-        Log::info(format!(
-            "  Resolution {}: {} ({}x{}) - enum value: {}",
-            i, resolution_name, width, height, resolution
-        ));
-    }
-
-    Log::info("🏁 === DEPTH RESOLUTIONS EXAMPLE COMPLETE ===");
-    Ok(())
 }
