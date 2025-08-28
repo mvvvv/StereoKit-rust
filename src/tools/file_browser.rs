@@ -69,7 +69,7 @@ pub const FILE_BROWSER_SAVE: &str = "File_Browser_save";
 /// use stereokit_rust::{maths::{Vec2, Vec3}, sk::SkInfo, ui::Ui, tools::os_api::get_external_path,
 ///                      tools::file_browser::{FileBrowser, FILE_BROWSER_SAVE}, util::PickerMode, };
 ///
-/// let id = "main".to_string();
+/// let id = "main_tests".to_string();
 /// const BROWSER_SUFFIX: &str = "_file_to_save";
 /// let mut file_browser = FileBrowser::default();
 /// let sk_info  = Some(sk.get_sk_info_clone());
@@ -86,7 +86,7 @@ pub const FILE_BROWSER_SAVE: &str = "File_Browser_save";
 /// file_browser.caller = id.clone();
 /// file_browser.window_pose = Ui::popup_pose([-0.02, 0.09, 1.37]);
 /// file_browser.window_size = Vec2{x: 0.25, y: 0.0};
-/// file_browser.file_name_to_save = "main.rs".into();
+/// file_browser.file_name_to_save = "main_tests.rs".into();
 /// SkInfo::send_event(&sk_info, StepperAction::add(id.clone() + BROWSER_SUFFIX, file_browser));
 ///
 /// filename_scr = "screenshots/file_save.jpeg";

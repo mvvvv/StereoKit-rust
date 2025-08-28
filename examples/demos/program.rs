@@ -167,6 +167,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
 
     // Add virtual keyboard stepper if extension is available
     if is_meta_virtual_keyboard_extension_available() {
+        Log::info("XR_META_virtual_keyboard extension available");
         let keyboard_stepper = XrMetaVirtualKeyboardStepper::new(true);
         sk.send_event(StepperAction::add("XrMetaVirtualKeyboardStepper", keyboard_stepper));
         sk.send_event(StepperAction::event("XrMetaVirtualKeyboardStepper", KEYBOARD_SHOW, "true"));
@@ -188,7 +189,25 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
             Log::diag("Controller models will be disabled via stepper");
         }
     } else {
-        Log::diag("XR_FB_render_model extension not available - controller stepper skipped");
+        Log::diag("XR_FB_render_model extension not available");
+    }
+
+    // Activate simultaneous hand & controller
+    if simultaneous_hands_controllers_available {
+        Log::info("Simultaneous hands and controllers tracking supported");
+
+        if simultaneous_hands_controllers {
+            if resume_simultaneous_hands_and_controllers(true) {
+                Log::info("Simultaneous hands and controllers tracking enabled at start");
+            } else {
+                Log::err("❌ Failed to enable simultaneous hands and controllers tracking");
+                simultaneous_hands_controllers = false;
+            }
+        } else {
+            Log::info("Simultaneous hands and controllers tracking disabled at start");
+        }
+    } else {
+        Log::diag("Simultaneous hands and controllers tracking not supported");
     }
 
     let ui_text_style = Ui::get_text_style();
@@ -359,7 +378,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
         }
 
         fps = ((1.0 / Time::get_step()) + fps) / 2.0;
-        Ui::label(format!("FPS: {fps:.0}"), None, true);
+        Ui::label(format!("FPS: {fps:3.0}"), Some(Vec2::new(0.1, 0.0)), true);
 
         Ui::same_line();
 

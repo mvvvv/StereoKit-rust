@@ -43,6 +43,7 @@ pub fn android_main(app: AndroidApp) {
     BackendOpenXR::request_ext("XR_FB_render_model");
     BackendOpenXR::request_ext("XR_META_virtual_keyboard");
     BackendOpenXR::request_ext("XR_META_simultaneous_hands_and_controllers");
+    //BackendOpenXR::exclude_ext("XR_META_detached_controllers"); // uncomment if you don't want to see detached controllers
     BackendOpenXR::request_ext("XR_KHR_android_surface_swapchain");
 
     let (sk, event_loop) = settings.init_with_event_loop(app).unwrap();

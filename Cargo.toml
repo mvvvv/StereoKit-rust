@@ -90,8 +90,8 @@ name = "main"
 crate-type = ["cdylib"]
 
 [[test]]
-name = "tests"
-path = "tests/main.rs"
+name = "main_tests"
+path = "tests/main_tests.rs"
 harness = false
 
 [package.metadata.android]

@@ -4270,9 +4270,12 @@ pub struct Renderer;
 
 unsafe extern "C" {
     pub fn render_set_clip(near_plane: f32, far_plane: f32);
-    pub fn render_set_fov(field_of_view_degrees: f32);
+    pub fn render_get_clip(out_near_plane: *mut f32, out_far_plane: *mut f32);
+    pub fn render_set_fov(vertical_field_of_view_degrees: f32);
+    pub fn render_get_fov() -> f32;
     pub fn render_set_ortho_clip(near_plane: f32, far_plane: f32);
     pub fn render_set_ortho_size(viewport_height_meters: f32);
+    pub fn render_get_ortho_size() -> f32;
     pub fn render_set_projection(proj: Projection);
     pub fn render_get_projection() -> Projection;
     pub fn render_get_cam_root() -> Matrix;
@@ -5244,34 +5247,45 @@ impl Renderer {
     /// * `far_plane` - At what distance from the camera does the GPU discard pixel? This is not true distance, but
     ///   rather Z-axis distance from zero in View Space coordinates!
     ///
-    /// see also [`render_set_clip`]
+    /// see also [`render_set_clip`] [`Renderer::get_clip`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::system::Renderer;
     ///
+    /// let (near, far) = Renderer::get_clip();
+    /// assert_eq!(near, 0.02);
+    /// assert_eq!(far, 50.0);
+    ///
     /// Renderer::set_clip(0.01, 10.0);
+    /// let (near, far) = Renderer::get_clip();
+    /// assert_eq!(near, 0.01);
+    /// assert_eq!(far, 10.0);
     /// ```
     pub fn set_clip(near_plane: f32, far_plane: f32) {
         unsafe { render_set_clip(near_plane, far_plane) }
     }
 
-    /// Only works for flatscreen! This updates the camera’s projection matrix with a new field of view.
+    /// Only works for 2D windowed modes! This updates the camera's projection matrix with a new vertical field of view.
     ///
     /// This value only affects perspective mode projection, which is the default projection mode.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SetFOV.html>
-    /// * `field_of_view` - Vertical field of view in degrees.`
+    /// * `vertical_field_of_view` - Vertical field of view in degrees.`
     ///
-    /// see also [`render_set_fov`]
+    /// see also [`render_set_fov`] [`Renderer::get_fov`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::system::Renderer;
+    /// let fov = Renderer::get_fov();
+    /// assert_eq!(fov, 90.0);
     ///
     /// Renderer::set_fov(120.0);
+    /// let fov = Renderer::get_fov();
+    /// assert_eq!(fov, 120.0);
     /// ```
-    pub fn set_fov(field_of_view: f32) {
-        unsafe { render_set_fov(field_of_view) }
+    pub fn set_fov(vertical_field_of_view: f32) {
+        unsafe { render_set_fov(vertical_field_of_view) }
     }
 
     /// Set the near and far clipping planes of the camera! These are important to z-buffer quality, especially when
@@ -5279,7 +5293,7 @@ impl Renderer {
     /// near and far planes, the better your z-buffer will look! If you see flickering on objects that are overlapping,
     /// try making the range smaller.
     ///
-    /// These values only affect orthographic mode projection, which is only available in flatscreen.
+    /// These values only affect orthographic mode projection, which is only available in 2D window modes.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SetOrthoClip.html>
     /// * `near_plane` - The GPU discards pixels that are too close to the camera, this is that distance! It must be
     ///   larger than zero, due to the projection math, which also means that numbers too close to zero will produce
@@ -5302,17 +5316,22 @@ impl Renderer {
     /// This sets the size of the orthographic projection’s viewport. You can use this feature to zoom in and out of the
     /// scene.
     ///
-    /// This value only affects orthographic mode projection, which is only available in flatscreen.
+    /// This value only affects orthographic mode projection, which is only available in 2D window modes.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SetOrthoSize.html>
     /// * `viewport_height_meters` - The vertical size of the projection’s viewport, in meters.
     ///
-    /// see also [`render_set_ortho_size`]
+    /// see also [`render_set_ortho_size`] [`Renderer::get_ortho_size`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::system::Renderer;
     ///
+    /// let ortho_size = Renderer::get_ortho_size();
+    /// assert_eq!(ortho_size, 1.0);
+    ///
     /// Renderer::set_ortho_size(12.0);
+    /// let ortho_size = Renderer::get_ortho_size();
+    /// assert_eq!(ortho_size, 12.0);
     /// ```
     pub fn set_ortho_size(view_port_height_meters: f32) {
         unsafe { render_set_ortho_size(view_port_height_meters) }
@@ -5327,6 +5346,47 @@ impl Renderer {
     /// see example in [`Renderer::camera_root`]
     pub fn get_camera_root() -> Matrix {
         unsafe { render_get_cam_root() }
+    }
+
+    /// This retrieves the current near and far clipping planes for the perspective matrix of the primary draw surface.
+    ///
+    /// <https://stereokit.net/Pages/StereoKit/Renderer/GetClip.html>
+    ///
+    /// Returns a tuple (`near_plane`, `far_plane`)
+    /// * `near_plane` - The GPU discards pixels that are too close to the camera, this is that distance! It will be larger
+    ///   than zero, due to the projection math, which also means that numbers too close to zero will produce z-fighting artifacts. This
+    ///   has an enforced minimum of 0.001, but will probably be closer to 0.1.
+    /// * `far_plane` - At what distance from the camera does the GPU discard pixel? This is not true distance, but rather Z-axis
+    ///   distance from zero in View Space coordinates!
+    ///
+    /// see also [`render_get_clip`]
+    /// see example in [`Renderer::set_clip`]
+    pub fn get_clip() -> (f32, f32) {
+        let mut near_plane = 0.0;
+        let mut far_plane = 0.0;
+        unsafe { render_get_clip(&mut near_plane, &mut far_plane) }
+        (near_plane, far_plane)
+    }
+
+    /// Only works for 2D windowed modes! This retrieves the vertical field of view of the camera's projection matrix when in
+    /// perspective projection mode.
+    ///
+    /// <https://stereokit.net/Pages/StereoKit/Renderer/GetFOV.html>
+    ///
+    /// see also [`render_get_fov`]
+    /// see example in [`Renderer::set_fov`]
+    pub fn get_fov() -> f32 {
+        unsafe { render_get_fov() }
+    }
+
+    /// This retrieves the size the primary render surface's view when using orthographic projection mode.
+    ///
+    /// <https://stereokit.net/Pages/StereoKit/Renderer/GetOrthoSize.html>
+    ///
+    /// see also [`render_get_ortho_size`] []
+    /// see example in [`Renderer::set_ortho_size`]
+    pub fn get_ortho_size() -> f32 {
+        unsafe { render_get_ortho_size() }
     }
 
     /// This is the current render layer mask for Mixed Reality Capture, or 2nd person observer rendering. By default,
