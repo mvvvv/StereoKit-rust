@@ -42,3 +42,6 @@ cargo publish -F event-loop
 
 
 
+#---- Saving some logs
+touch build.rs; clear; cargo apk run --features event-loop  --example main > examples/examples_of_quest_log.txt 
+ansi2html < examples/example_of_quest_log.txt > examples/example_of_quest_log.html 
