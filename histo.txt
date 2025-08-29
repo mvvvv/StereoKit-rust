@@ -42,7 +42,30 @@ cargo publish -F event-loop
 
 
 
-#---- Saving some logs
+#---- Saving some logs ANDROID
 touch build.rs; clear; cargo apk run --features event-loop  --example main > examples/examples_of_quest_log.txt 
 ansi2html < examples/example_of_quest_log.txt > examples/example_of_quest_log.html 
 cut -c1-5,37- < examples/example_of_quest_log.txt > examples/comp_example_of_quest_log.txt
+
+
+#---- Saving some logs  WiVRn
+cargo run --features event-loop  --example main_pc &> examples/example_of_WiVRn_EGL.txt
+
+steam steam://rungameid/17868406875997863936  
+# wait the end ...
+grep OutputDebugStringA ~/steam-17868406875997863936.log | cut -c49- | sed -e 's/\\n\"$//' > examples/example_of_WiVRn_D3D11_gnu.txt
+
+steam steam://rungameid/14582336022122594304
+# wait the end ...
+grep OutputDebugStringA ~/steam-14582336022122594304.log | cut -c49- | sed -e 's/\\n\"$//' > examples/example_of_WiVRn_D3D11_msvc.txt
+
+#---- Saving some logs  ALVR
+cargo run --features event-loop  --example main_pc &> examples/example_of_ALVR_EGL.txt
+
+steam steam://rungameid/17868406875997863936  
+# wait the end ...
+grep OutputDebugStringA ~/steam-17868406875997863936.log | cut -c49- | sed -e 's/\\n\"$//' > examples/example_of_ALVR_D3D11_gnu.txt
+
+steam steam://rungameid/14582336022122594304
+# wait the end ...
+grep OutputDebugStringA ~/steam-14582336022122594304.log | cut -c49- | sed -e 's/\\n\"$//' > examples/example_of_ALVR_D3D11_msvc.txt

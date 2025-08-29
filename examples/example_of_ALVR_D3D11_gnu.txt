@@ -1,0 +1,220 @@
+[SK info] SK_INIT ::: context 0x0/jvm : 0x0
+[SK info] Before init >>>
+[SK diagnostic] Initializing StereoKit v0.4.0 Win32 x64...
+[SK diagnostic] Initializing Assets
+[SK diagnostic] Initializing Platform
+[SK diagnostic] OpenXR API:     1.0.49
+[SK diagnostic] OpenXR runtime: SteamVR/OpenXR 2.12.14
+[SK diagnostic] OpenXR extensions:
+[SK diagnostic] ___________________________________
+[SK diagnostic] |     Usage | Extension
+[SK diagnostic] |-----------|----------------------
+[SK diagnostic] |   present | XR_EXT_active_action_set_priority
+[SK diagnostic] |   present | XR_EXT_debug_utils
+[SK diagnostic] |   present | XR_EXT_dpad_binding
+[SK diagnostic] |   present | XR_EXT_frame_composition_report
+[SK diagnostic] |   present | XR_EXT_hand_joints_motion_range
+[SK diagnostic] |   present | XR_EXT_user_presence
+[SK diagnostic] |   present | XR_HTCX_vive_tracker_interaction
+[SK diagnostic] |   present | XR_HTC_vive_cosmos_controller_interaction
+[SK diagnostic] |   present | XR_HTC_vive_focus3_controller_interaction
+[SK diagnostic] |   present | XR_HTC_vive_wrist_tracker_interaction
+[SK diagnostic] |   present | XR_KHR_D3D12_enable
+[SK diagnostic] |   present | XR_KHR_binding_modification
+[SK diagnostic] |   present | XR_KHR_generic_controller
+[SK diagnostic] |   present | XR_KHR_opengl_enable
+[SK diagnostic] |   present | XR_KHR_opengl_es_enable
+[SK diagnostic] |   present | XR_KHR_visibility_mask
+[SK diagnostic] |   present | XR_KHR_vulkan_enable
+[SK diagnostic] |   present | XR_KHR_vulkan_enable2
+[SK diagnostic] |   present | XR_META_performance_metrics
+[SK diagnostic] |   present | XR_MNDX_egl_enable
+[SK diagnostic] |   present | XR_MND_headless
+[SK diagnostic] |   present | XR_VALVE_analog_threshold
+[SK diagnostic] | ACTIVATED | XR_EXT_eye_gaze_interaction
+[SK diagnostic] | ACTIVATED | XR_EXT_hand_interaction
+[SK diagnostic] | ACTIVATED | XR_EXT_hand_tracking
+[SK diagnostic] | ACTIVATED | XR_EXT_hand_tracking_data_source
+[SK diagnostic] | ACTIVATED | XR_EXT_hp_mixed_reality_controller
+[SK diagnostic] | ACTIVATED | XR_EXT_interaction_render_model
+[SK diagnostic] | ACTIVATED | XR_EXT_local_floor
+[SK diagnostic] | ACTIVATED | XR_EXT_palm_pose
+[SK diagnostic] | ACTIVATED | XR_EXT_render_model
+[SK diagnostic] | ACTIVATED | XR_EXT_uuid
+[SK diagnostic] | ACTIVATED | XR_FB_display_refresh_rate
+[SK diagnostic] | ACTIVATED | XR_KHR_D3D11_enable
+[SK diagnostic] | ACTIVATED | XR_KHR_composition_layer_depth
+[SK diagnostic] | ACTIVATED | XR_KHR_win32_convert_performance_counter_time
+[SK diagnostic] |___________|______________________
+[SK diagnostic] [sk_gpu] Using Direct3D 11: vendor 0x10DE, device 0x2783
+[SK diagnostic] [sk_gpu] Device: NVIDIA GeForce RTX 4070 SUPER
+[SK diagnostic] Starting a XR mode app
+[SK diagnostic] System name: SteamVR/OpenXR : oculus
+[SK diagnostic] ____________________
+[SK diagnostic] | Swapchain Formats 
+[SK diagnostic] |-------------------
+[SK diagnostic] | +rgba32_sRGB
+[SK diagnostic] | +bgra32_sRGB
+[SK diagnostic] |  rgba128
+[SK diagnostic] |  rgba64f
+[SK diagnostic] | +rgb10a2
+[SK diagnostic] | +depth32
+[SK diagnostic] | +depth16
+[SK diagnostic] | +depth24_stencil8
+[SK diagnostic] |___________________
+[SK diagnostic] Creating view: PrimaryStereo color:rgba32_sRGB depth:depth32 blend:Opaque
+[SK diagnostic] OpenXR state: unknown -> idle
+[SK diagnostic] OpenXR state: idle -> ready
+[SK diagnostic] OpenXR session began.
+[SK diagnostic] OpenXR state: ready -> synchronized
+[SK diagnostic] OpenXR state: synchronized -> visible
+[SK diagnostic] OpenXR state: visible -> focused
+[SK warning] openxr_acquire_time failed to get current time!
+[SK diagnostic] NOT using spatial anchors.
+[SK diagnostic] Created local floor app space at an offset of (0,0,0) (0,0,0,1)
+[SK diagnostic] Initializing Audio
+[SK info] Using audio backend: WASAPI
+[SK diagnostic] Initializing Defaults
+[SK diagnostic] Initializing Sprites
+[SK diagnostic] Initializing Lines
+[SK diagnostic] Initializing UI
+[SK diagnostic] Initializing Tools
+[SK diagnostic] Initializing Renderer
+[SK diagnostic] Initializing World
+[SK diagnostic] Initializing Input
+[SK info] Initialization successful
+[SK info] <<< After init
+[SK diagnostic] ======================================================================================================================== !!
+[SK info] XR_META_simultaneous_hands_and_controllers extension is not available.
+[SK diagnostic] sprite_create: Atlased sprites not implemented yet! All atlased sprites will be switched to single.
+[SK diagnostic] Runtime SteamVR/OpenXR / Device SteamVR/OpenXR : oculus
+[SK diagnostic] \"mobiles.gltf\"
+[SK diagnostic] \"mobiles.gltf/mesh/0_0_Icosphere\"
+[SK diagnostic] \"mobiles.gltf/mesh/1_0_Plane\"
+[SK diagnostic] \"mobiles.gltf/mesh/2_0_Icosphere.003\"
+[SK diagnostic] \"mobiles.gltf/mesh/3_0_Icosphere.004\"
+[SK diagnostic] calcaire_blanc params:
+[SK diagnostic]  --- color/Color128 : r:1, g:1, b:1, a:1 
+[SK diagnostic]  --- emission_factor/Color128 : r:0, g:0, b:0, a:0 
+[SK diagnostic]  --- tex_trans/Vec4 : [x:0, y:0, z:1, w:1] 
+[SK diagnostic]  --- metallic/Float : 0 
+[SK diagnostic]  --- roughness/Float : 0.20000008 
+[SK diagnostic]  --- sk_cubemap/Texture : Texture data... 
+[SK diagnostic]  --- diffuse/Texture : Texture data... 
+[SK diagnostic]  --- emission/Texture : Texture data... 
+[SK diagnostic]  --- metal/Texture : Texture data... 
+[SK diagnostic]  --- occlusion/Texture : Texture data... 
+[SK info] There are 1 env blend modes:
+[SK info]    OPAQUE 
+[SK diagnostic] No Passthrough !!
+[SK info] There are 1 display rate:
+[SK info]    90.0 
+[SK info] Initial display rate is 90.0
+[SK diagnostic] XR_META_virtual_keyboard extension not available
+[SK diagnostic] XR_FB_render_model extension not available
+[SK diagnostic] Simultaneous hands and controllers tracking not supported
+[SK diagnostic] ===================================================================================================================== !!
+[SK diagnostic] Thread id : Some(\"main\") / ThreadId(1) 
+[SK diagnostic] Process id : Some(\"main\") / 312 
+[SK info] Resumed !!
+[SK warning] Invalid texture format for calculating spherical harmonics, must be rgba32, rg11b10, rgba64f or rgba128.
+[SK diagnostic] Fly_Over: OriginMode is Floor 
+[SK diagnostic] --
+[SK info] Stepper HudNotif1 is initialized.
+[SK info] Stepper HandMenuRadial1 is initialized.
+[SK info] Stepper LogWindow is initialized.
+[SK info] Stepper Screenshoot is initialized.
+[SK info] Stepper FlyOver is initialized.
+[SK info] App focus changed to : Active
+[SK diagnostic] WokeUp
+[SK diagnostic] UserEvent StepperAction::Add(..., type_id: ... , stepper_id:\"hand_menu_radial_demo_1\" )
+[SK diagnostic] UserEvent StepperAction::Event( id:\"hand_menu_radial_demo_1\" => hand_menu_radial_focus->true )
+[SK diagnostic] UserEvent StepperAction::Remove( id:\"HudNotif1\" )
+[SK diagnostic] Set swapchain to 2624x2860 4msaa for PrimaryStereo using simultaneous render.
+[SK diagnostic] Creating target surface: 2624x2860x2@4msaa
+[SK info] Stepper hand_menu_radial_demo_1 is initialized.
+[SK info] Stepper HudNotif1 is removed.
+[SK diagnostic] Switched /user/hand/left to oculus/touch_controller
+[SK diagnostic] Switched /user/hand/right to oculus/touch_controller
+[SK diagnostic] OpenXR state: focused -> visible
+[SK diagnostic] OpenXR state: visible -> synchronized
+[SK info] App focus changed to : Hidden
+[SK diagnostic] Time to sleep
+[SK diagnostic] OpenXR state: synchronized -> visible
+[SK diagnostic] OpenXR state: visible -> focused
+[SK info] App focus changed to : Active
+[SK diagnostic] WokeUp
+[SK diagnostic] OpenXR state: focused -> visible
+[SK diagnostic] OpenXR state: visible -> synchronized
+[SK info] App focus changed to : Hidden
+[SK diagnostic] Time to sleep
+[SK diagnostic] OpenXR state: synchronized -> visible
+[SK diagnostic] OpenXR state: visible -> focused
+[SK info] App focus changed to : Active
+[SK diagnostic] WokeUp
+[SK info] Starting scene: Shadows1
+[SK info] Stepper Shadows1 is initialized.
+[SK diagnostic] OpenXR state: focused -> visible
+[SK diagnostic] OpenXR state: visible -> synchronized
+[SK info] App focus changed to : Hidden
+[SK diagnostic] Time to sleep
+[SK info] HIDDEN STEP -------> Dreaming 
+[SK info] HIDDEN STEP -------> Dreaming 
+[SK info] HIDDEN STEP -------> Dreaming 
+[SK diagnostic] OpenXR state: synchronized -> visible
+[SK diagnostic] OpenXR state: visible -> focused
+[SK info] App focus changed to : Active
+[SK diagnostic] WokeUp
+[SK diagnostic] OpenXR state: focused -> visible
+[SK diagnostic] OpenXR state: visible -> synchronized
+[SK info] App focus changed to : Hidden
+[SK diagnostic] Time to sleep
+[SK diagnostic] OpenXR state: synchronized -> visible
+[SK diagnostic] OpenXR state: visible -> focused
+[SK info] App focus changed to : Active
+[SK diagnostic] WokeUp
+[SK diagnostic] Closure Thread id : Some(\"main\") / ThreadId(1) 
+[SK diagnostic] Closure Process id : Some(\"main\") / 312 
+[SK info] Quit sent by main for reason: Main program call quit
+[SK diagnostic] Closing HandMenuRadial1
+[SK diagnostic] Closing LogWindow
+[SK diagnostic] Closing Screenshoot
+[SK diagnostic] Closing FlyOver
+[SK diagnostic] Closing hand_menu_radial_demo_1
+[SK diagnostic] Closing Shadows1
+[SK info] Stepper HandMenuRadial1 is removed.
+[SK info] Stepper LogWindow is removed.
+[SK info] Stepper Screenshoot is removed.
+[SK info] Stepper FlyOver is removed.
+[SK info] Stepper hand_menu_radial_demo_1 is removed.
+[SK info] Stepper Shadows1 is removed.
+[SK diagnostic] The app demand to quit()!!
+[SK diagnostic] UserEvent StepperAction::Event( id:\"hand_menu_radial_demo_1\" => hand_menu_radial_focus->false )
+[SK diagnostic] UserEvent StepperAction::Remove( id:\"Screenshoot_file_browser\" )
+[SK diagnostic] UserEvent StepperAction::Remove( id:\"hand_menu_radial_demo_1\" )
+[SK info] SkClosure LoopExiting !!
+[SK info] QuitReason is User
+[SK diagnostic] sk_step() says stop()!!
+[SK info] SkClosure Exiting !!
+[SK info] Session Performance Report:
+[SK info] ______________________________________________________
+[SK info] |         System | Initialize |     Step |  Shutdown |
+[SK info] |________________|____________|__________|___________|
+[SK info] |       Defaults |    28.87ms |          |    0.17ms |
+[SK info] |     FrameBegin |            |  0.234ms |           |
+[SK info] |          Input |     0.05ms |          |    0.01ms |
+[SK info] |       Renderer |     0.03ms |  0.000ms |    0.02ms |
+[SK info] |             UI |     1.48ms |  0.005ms |    0.04ms |
+[SK info] |       Platform |  8095.52ms |          |   20.80ms |
+[SK info] |            App |   366.27ms |  6.643ms |           |
+[SK info] |      Animation |            |  0.000ms |    0.00ms |
+[SK info] |          Tools |     0.06ms |  0.000ms |    0.01ms |
+[SK info] |          Lines |     0.01ms |  0.002ms |    0.00ms |
+[SK info] |        Sprites |     0.01ms |  0.000ms |    0.00ms |
+[SK info] |           Text |            |  0.012ms |    0.01ms |
+[SK info] |         UILate |            |  0.000ms |           |
+[SK info] |          World |     0.03ms |  0.000ms |    0.00ms |
+[SK info] |    FrameRender |            |  6.768ms |           |
+[SK info] |         Assets |    14.16ms |  0.001ms |    0.02ms |
+[SK info] |          Audio |   104.07ms |  0.001ms |    3.41ms |
+[SK info] |________________|____________|__________|___________|

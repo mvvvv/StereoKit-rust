@@ -153,10 +153,7 @@ impl ApplicationHandler<StepperAction> for SkClosures<'_> {
     // }
 
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
-        if self.sk.get_app_focus() == AppFocus::Hidden
-            && self.sleeping == SleepPhase::WokeUp
-            && cfg!(target_os = "android")
-        {
+        if self.sk.get_app_focus() == AppFocus::Hidden && self.sleeping == SleepPhase::WokeUp {
             self.sleeping = SleepPhase::Sleeping;
             Log::diag("Time to sleep")
         }
@@ -173,8 +170,11 @@ impl ApplicationHandler<StepperAction> for SkClosures<'_> {
             }
             SleepPhase::Sleeping => {
                 sleep(Duration::from_millis(200));
+                if cfg!(not(target_os = "android")) {
+                    self.step(event_loop);
+                }
                 (self.on_sleeping_step)(&mut self.sk, &self.token);
-                if cfg!(not(target_os = "android")) && self.sk.get_app_focus() == AppFocus::Active {
+                if self.sk.get_app_focus() == AppFocus::Active {
                     self.sleeping = SleepPhase::WakingUp;
                 }
             }

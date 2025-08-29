@@ -1,0 +1,357 @@
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.04s
+     Running `target/debug/examples/main_pc`
+[SK [0;36minfo[0;;0m] SK_INIT ::: context 0x0/jvm : 0x0
+[SK [0;36minfo[0;;0m] Before init >>>
+[SK [0;34mdiagnostic[0;;0m] Initializing StereoKit v0.4.0 Linux x64...
+[SK [0;34mdiagnostic[0;;0m] Initializing Assets
+[SK [0;34mdiagnostic[0;;0m] Initializing Platform
+[SK [0;34mdiagnostic[0;;0m] [[0;33msk_gpu[0;;0m] EGL version 1.5
+[SK [0;34mdiagnostic[0;;0m] [[0;33msk_gpu[0;;0m] Using OpenGL: OpenGL ES 3.2 NVIDIA 575.64.03
+[SK [0;34mdiagnostic[0;;0m] [[0;33msk_gpu[0;;0m] Device: NVIDIA GeForce RTX 4070 SUPER/PCIe/SSE2
+[SK [0;34mdiagnostic[0;;0m] [[0;33msk_gpu[0;;0m] Debug info enabled.
+[SK [0;34mdiagnostic[0;;0m] Starting a [0;32mXR[0;;0m mode app
+[SK [0;34mdiagnostic[0;;0m] OpenXR API:     1.0.49
+[SK [0;34mdiagnostic[0;;0m] OpenXR runtime: [0;32mSteamVR/OpenXR[0;;0m 2.12.14
+[SK [0;34mdiagnostic[0;;0m] OpenXR extensions:
+[SK [0;34mdiagnostic[0;;0m] [1;30m___________________________________[0;;0m
+[SK [0;34mdiagnostic[0;;0m] [1;30m|     [1;33mUsage [1;30m| [1;33mExtension[0;;0m
+[SK [0;34mdiagnostic[0;;0m] [1;30m|-----------|----------------------[0;;0m
+[SK [0;34mdiagnostic[0;;0m] [1;30m|   [0;;0mpresent [1;30m| [0;;0mXR_EXT_active_action_set_priority
+[SK [0;34mdiagnostic[0;;0m] [1;30m|   [0;;0mpresent [1;30m| [0;;0mXR_EXT_dpad_binding
+[SK [0;34mdiagnostic[0;;0m] [1;30m|   [0;;0mpresent [1;30m| [0;;0mXR_EXT_frame_composition_report
+[SK [0;34mdiagnostic[0;;0m] [1;30m|   [0;;0mpresent [1;30m| [0;;0mXR_EXT_hand_joints_motion_range
+[SK [0;34mdiagnostic[0;;0m] [1;30m|   [0;;0mpresent [1;30m| [0;;0mXR_EXT_user_presence
+[SK [0;34mdiagnostic[0;;0m] [1;30m|   [0;;0mpresent [1;30m| [0;;0mXR_HTCX_vive_tracker_interaction
+[SK [0;34mdiagnostic[0;;0m] [1;30m|   [0;;0mpresent [1;30m| [0;;0mXR_HTC_vive_cosmos_controller_interaction
+[SK [0;34mdiagnostic[0;;0m] [1;30m|   [0;;0mpresent [1;30m| [0;;0mXR_HTC_vive_focus3_controller_interaction
+[SK [0;34mdiagnostic[0;;0m] [1;30m|   [0;;0mpresent [1;30m| [0;;0mXR_HTC_vive_wrist_tracker_interaction
+[SK [0;34mdiagnostic[0;;0m] [1;30m|   [0;;0mpresent [1;30m| [0;;0mXR_KHR_binding_modification
+[SK [0;34mdiagnostic[0;;0m] [1;30m|   [0;;0mpresent [1;30m| [0;;0mXR_KHR_generic_controller
+[SK [0;34mdiagnostic[0;;0m] [1;30m|   [0;;0mpresent [1;30m| [0;;0mXR_KHR_opengl_enable
+[SK [0;34mdiagnostic[0;;0m] [1;30m|   [0;;0mpresent [1;30m| [0;;0mXR_KHR_visibility_mask
+[SK [0;34mdiagnostic[0;;0m] [1;30m|   [0;;0mpresent [1;30m| [0;;0mXR_KHR_vulkan_enable
+[SK [0;34mdiagnostic[0;;0m] [1;30m|   [0;;0mpresent [1;30m| [0;;0mXR_KHR_vulkan_enable2
+[SK [0;34mdiagnostic[0;;0m] [1;30m|   [0;;0mpresent [1;30m| [0;;0mXR_META_performance_metrics
+[SK [0;34mdiagnostic[0;;0m] [1;30m|   [0;;0mpresent [1;30m| [0;;0mXR_MND_headless
+[SK [0;34mdiagnostic[0;;0m] [1;30m|   [0;;0mpresent [1;30m| [0;;0mXR_VALVE_analog_threshold
+[SK [0;34mdiagnostic[0;;0m] [1;30m| [1;36mACTIVATED [1;30m| [1;32mXR_EXT_debug_utils[0;;0m
+[SK [0;34mdiagnostic[0;;0m] [1;30m| [1;36mACTIVATED [1;30m| [1;32mXR_EXT_eye_gaze_interaction[0;;0m
+[SK [0;34mdiagnostic[0;;0m] [1;30m| [1;36mACTIVATED [1;30m| [1;32mXR_EXT_hand_interaction[0;;0m
+[SK [0;34mdiagnostic[0;;0m] [1;30m| [1;36mACTIVATED [1;30m| [1;32mXR_EXT_hand_tracking[0;;0m
+[SK [0;34mdiagnostic[0;;0m] [1;30m| [1;36mACTIVATED [1;30m| [1;32mXR_EXT_hand_tracking_data_source[0;;0m
+[SK [0;34mdiagnostic[0;;0m] [1;30m| [1;36mACTIVATED [1;30m| [1;32mXR_EXT_hp_mixed_reality_controller[0;;0m
+[SK [0;34mdiagnostic[0;;0m] [1;30m| [1;36mACTIVATED [1;30m| [1;32mXR_EXT_interaction_render_model[0;;0m
+[SK [0;34mdiagnostic[0;;0m] [1;30m| [1;36mACTIVATED [1;30m| [1;32mXR_EXT_local_floor[0;;0m
+[SK [0;34mdiagnostic[0;;0m] [1;30m| [1;36mACTIVATED [1;30m| [1;32mXR_EXT_palm_pose[0;;0m
+[SK [0;34mdiagnostic[0;;0m] [1;30m| [1;36mACTIVATED [1;30m| [1;32mXR_EXT_render_model[0;;0m
+[SK [0;34mdiagnostic[0;;0m] [1;30m| [1;36mACTIVATED [1;30m| [1;32mXR_EXT_uuid[0;;0m
+[SK [0;34mdiagnostic[0;;0m] [1;30m| [1;36mACTIVATED [1;30m| [1;32mXR_FB_display_refresh_rate[0;;0m
+[SK [0;34mdiagnostic[0;;0m] [1;30m| [1;36mACTIVATED [1;30m| [1;32mXR_KHR_composition_layer_depth[0;;0m
+[SK [0;34mdiagnostic[0;;0m] [1;30m| [1;36mACTIVATED [1;30m| [1;32mXR_KHR_convert_timespec_time[0;;0m
+[SK [0;34mdiagnostic[0;;0m] [1;30m| [1;36mACTIVATED [1;30m| [1;32mXR_KHR_opengl_es_enable[0;;0m
+[SK [0;34mdiagnostic[0;;0m] [1;30m| [1;36mACTIVATED [1;30m| [1;32mXR_MNDX_egl_enable[0;;0m
+[SK [0;34mdiagnostic[0;;0m] [1;30m|___________|______________________[0;;0m
+[SK [0;34mdiagnostic[0;;0m] OpenXR requires GLES v1.5.0 - v3.2.0
+[SK [0;34mdiagnostic[0;;0m] System name: [0;32mSteamVR/OpenXR : oculus[0;;0m
+[SK [0;34mdiagnostic[0;;0m] [1;30m____________________[0;;0m
+[SK [0;34mdiagnostic[0;;0m] [1;30m| [1;33mSwapchain Formats[0;;0m 
+[SK [0;34mdiagnostic[0;;0m] [1;30m|-------------------[0;;0m
+[SK [0;34mdiagnostic[0;;0m] [1;30m|[0;;0m +rgba32_sRGB[0;;0m
+[SK [0;34mdiagnostic[0;;0m] [1;30m|[0;;0m +depth16[0;;0m
+[SK [0;34mdiagnostic[0;;0m] [1;30m|[0;;0m +depth32[0;;0m
+[SK [0;34mdiagnostic[0;;0m] [1;30m|___________________[0;;0m
+[SK [0;34mdiagnostic[0;;0m] Creating view: [0;32mPrimaryStereo[0;;0m color:[0;32mrgba32_sRGB[0;;0m depth:[0;32mdepth32[0;;0m blend:[0;32mOpaque[0;;0m
+[SK [0;34mdiagnostic[0;;0m] OpenXR state: [1;37munknown[1;30m -> [1;37midle[0;;0m
+[SK [0;34mdiagnostic[0;;0m] OpenXR state: [1;37midle[1;30m -> [1;37mready[0;;0m
+[SK [0;34mdiagnostic[0;;0m] OpenXR session began.
+[SK [0;34mdiagnostic[0;;0m] OpenXR state: [1;37mready[1;30m -> [1;37msynchronized[0;;0m
+[SK [0;34mdiagnostic[0;;0m] OpenXR state: [1;37msynchronized[1;30m -> [1;37mvisible[0;;0m
+[SK [0;34mdiagnostic[0;;0m] OpenXR state: [1;37mvisible[1;30m -> [1;37mfocused[0;;0m
+[SK [0;34mdiagnostic[0;;0m] NOT using spatial anchors.
+[SK [0;34mdiagnostic[0;;0m] Created [0;32mlocal floor[0;;0m app space at an offset of [0;37m(0,0,0) (0,0,0,1)[0;;0m
+[SK [0;34mdiagnostic[0;;0m] Bounds updated: 3.8[1;30mx[0;;0m3.5 at (0,0,0) (0,0,0,1)
+[SK [0;34mdiagnostic[0;;0m] Initializing Audio
+[SK [0;36minfo[0;;0m] Using audio backend: PulseAudio
+[SK [0;34mdiagnostic[0;;0m] Initializing Defaults
+[SK [0;34mdiagnostic[0;;0m] Initializing Sprites
+[SK [0;34mdiagnostic[0;;0m] Initializing Lines
+[SK [0;34mdiagnostic[0;;0m] Initializing UI
+[SK [0;34mdiagnostic[0;;0m] Initializing Tools
+[SK [0;34mdiagnostic[0;;0m] Initializing Renderer
+[SK [0;34mdiagnostic[0;;0m] Initializing World
+[SK [0;34mdiagnostic[0;;0m] Bounds updated: 3.8[1;30mx[0;;0m3.5 at (0,0,0) (0,0,0,1)
+[SK [0;34mdiagnostic[0;;0m] Initializing Input
+[SK [0;36minfo[0;;0m] Initialization successful
+[SK [0;36minfo[0;;0m] <<< After init
+[SK [0;34mdiagnostic[0;;0m] ======================================================================================================================== !!
+[SK [0;36minfo[0;;0m] XR_META_simultaneous_hands_and_controllers extension is not available.
+[SK [0;34mdiagnostic[0;;0m] sprite_create: Atlased sprites not implemented yet! All atlased sprites will be switched to single.
+[SK [0;34mdiagnostic[0;;0m] Runtime SteamVR/OpenXR / Device SteamVR/OpenXR : oculus
+[SK [0;34mdiagnostic[0;;0m] "mobiles.gltf"
+[SK [0;34mdiagnostic[0;;0m] "mobiles.gltf/mesh/0_0_Icosphere"
+[SK [0;34mdiagnostic[0;;0m] "mobiles.gltf/mesh/1_0_Plane"
+[SK [0;34mdiagnostic[0;;0m] "mobiles.gltf/mesh/2_0_Icosphere.003"
+[SK [0;34mdiagnostic[0;;0m] "mobiles.gltf/mesh/3_0_Icosphere.004"
+[SK [0;34mdiagnostic[0;;0m] calcaire_blanc params:
+[SK [0;34mdiagnostic[0;;0m]  --- color/Color128 : r:1, g:1, b:1, a:1 
+[SK [0;34mdiagnostic[0;;0m]  --- emission_factor/Color128 : r:0, g:0, b:0, a:0 
+[SK [0;34mdiagnostic[0;;0m]  --- tex_trans/Vec4 : [x:0, y:0, z:1, w:1] 
+[SK [0;34mdiagnostic[0;;0m]  --- metallic/Float : 0 
+[SK [0;34mdiagnostic[0;;0m]  --- roughness/Float : 0.20000008 
+[SK [0;34mdiagnostic[0;;0m]  --- sk_cubemap/Texture : Texture data... 
+[SK [0;34mdiagnostic[0;;0m]  --- diffuse/Texture : Texture data... 
+[SK [0;34mdiagnostic[0;;0m]  --- emission/Texture : Texture data... 
+[SK [0;34mdiagnostic[0;;0m]  --- metal/Texture : Texture data... 
+[SK [0;34mdiagnostic[0;;0m]  --- occlusion/Texture : Texture data... 
+[SK [0;36minfo[0;;0m] There are 1 env blend modes:
+[SK [0;36minfo[0;;0m]    OPAQUE 
+[SK [0;34mdiagnostic[0;;0m] No Passthrough !!
+[SK [0;36minfo[0;;0m] There are 1 display rate:
+[SK [0;36minfo[0;;0m]    90.0 
+[SK [0;36minfo[0;;0m] Initial display rate is 90.0
+[SK [0;34mdiagnostic[0;;0m] XR_META_virtual_keyboard extension not available
+[SK [0;34mdiagnostic[0;;0m] XR_FB_render_model extension not available
+[SK [0;34mdiagnostic[0;;0m] Simultaneous hands and controllers tracking not supported
+[SK [0;34mdiagnostic[0;;0m] ===================================================================================================================== !!
+[SK [0;34mdiagnostic[0;;0m] Thread id : Some("main") / ThreadId(1) 
+[SK [0;34mdiagnostic[0;;0m] Process id : Some("main") / 28876 
+[SK [0;36minfo[0;;0m] Resumed !!
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/PERFORMANCE - 0x20082 - Texture state performance warning: emulating compressed format not supported in hardware with decompressed images
+[SK [0;33mwarning[0;;0m] Invalid texture format for calculating spherical harmonics, must be rgba32, rg11b10, rgba64f or rgba128.
+[SK [0;34mdiagnostic[0;;0m] Fly_Over: OriginMode is Floor 
+[SK [0;34mdiagnostic[0;;0m] --
+[SK [0;36minfo[0;;0m] Stepper HudNotif1 is initialized.
+[SK [0;36minfo[0;;0m] Stepper HandMenuRadial1 is initialized.
+[SK [0;36minfo[0;;0m] Stepper LogWindow is initialized.
+[SK [0;36minfo[0;;0m] Stepper Screenshoot is initialized.
+[SK [0;36minfo[0;;0m] Stepper FlyOver is initialized.
+[SK [0;36minfo[0;;0m] App focus changed to : Active
+[SK [0;34mdiagnostic[0;;0m] WokeUp
+[SK [0;34mdiagnostic[0;;0m] UserEvent StepperAction::Add(..., type_id: ... , stepper_id:"hand_menu_radial_demo_1" )
+[SK [0;34mdiagnostic[0;;0m] UserEvent StepperAction::Event( id:"hand_menu_radial_demo_1" => hand_menu_radial_focus->true )
+[SK [0;34mdiagnostic[0;;0m] Set swapchain to 2624[1;30mx[0;;0m2860 4[1;30mmsaa[0;;0m for [0;32mPrimaryStereo[0;;0m using [0;32mmultiview[0;;0m render.
+[SK [0;31merror[0;;0m] [[0;33msk_gpu[0;;0m] API/ERROR - 0x501 - GL_INVALID_VALUE error generated. Not a semaphore.
+[SK [0;31merror[0;;0m] [[0;33msk_gpu[0;;0m] API/ERROR - 0x501 - GL_INVALID_VALUE error generated. Not a semaphore.
+[SK [0;34mdiagnostic[0;;0m] [[0;33msk_gpu[0;;0m] Clearing unsourced (skg_tex_set_contents_arr) err: 0x501
+[SK [0;36minfo[0;;0m] Stepper hand_menu_radial_demo_1 is initialized.
+[SK [0;34mdiagnostic[0;;0m] Switched /user/hand/left to oculus/touch_controller
+[SK [0;34mdiagnostic[0;;0m] Switched /user/hand/right to oculus/touch_controller
+[SK [0;34mdiagnostic[0;;0m] UserEvent StepperAction::Remove( id:"HudNotif1" )
+[SK [0;36minfo[0;;0m] Stepper HudNotif1 is removed.
+[SK [0;36minfo[0;;0m] Starting scene: Shadows1
+[SK [0;33mwarning[0;;0m] [[0;33msk_gpu[0;;0m] API/UNDEFINED_BEHAVIOR - 0x20096 - Program undefined behavior warning: The current GL state uses a sampler (0) that has depth comparisons disabled, with a texture object (0) with a non-depth format, by a shader that samples it with a shadow sampler. Using this state to sample would result in undefined behavior.
+[SK [0;36minfo[0;;0m] Stepper Shadows1 is initialized.
+[SK [0;34mdiagnostic[0;;0m] OpenXR state: [1;37mfocused[1;30m -> [1;37mvisible[0;;0m
+[SK [0;34mdiagnostic[0;;0m] OpenXR state: [1;37mvisible[1;30m -> [1;37msynchronized[0;;0m
+[SK [0;36minfo[0;;0m] App focus changed to : Hidden
+[SK [0;34mdiagnostic[0;;0m] Time to sleep
+[SK [0;36minfo[0;;0m] HIDDEN STEP -------> Dreaming 
+[SK [0;36minfo[0;;0m] HIDDEN STEP -------> Dreaming 
+[SK [0;36minfo[0;;0m] HIDDEN STEP -------> Dreaming 
+[SK [0;34mdiagnostic[0;;0m] OpenXR state: [1;37msynchronized[1;30m -> [1;37mvisible[0;;0m
+[SK [0;34mdiagnostic[0;;0m] OpenXR state: [1;37mvisible[1;30m -> [1;37mfocused[0;;0m
+[SK [0;36minfo[0;;0m] App focus changed to : Active
+[SK [0;34mdiagnostic[0;;0m] WokeUp
+[SK [0;34mdiagnostic[0;;0m] OpenXR state: [1;37mfocused[1;30m -> [1;37mvisible[0;;0m
+[SK [0;34mdiagnostic[0;;0m] OpenXR state: [1;37mvisible[1;30m -> [1;37msynchronized[0;;0m
+[SK [0;36minfo[0;;0m] App focus changed to : Hidden
+[SK [0;34mdiagnostic[0;;0m] Time to sleep
+[SK [0;34mdiagnostic[0;;0m] OpenXR state: [1;37msynchronized[1;30m -> [1;37mvisible[0;;0m
+[SK [0;34mdiagnostic[0;;0m] OpenXR state: [1;37mvisible[1;30m -> [1;37mfocused[0;;0m
+[SK [0;36minfo[0;;0m] App focus changed to : Active
+[SK [0;34mdiagnostic[0;;0m] WokeUp
+[SK [0;34mdiagnostic[0;;0m] OpenXR state: [1;37mfocused[1;30m -> [1;37mvisible[0;;0m
+[SK [0;34mdiagnostic[0;;0m] OpenXR state: [1;37mvisible[1;30m -> [1;37msynchronized[0;;0m
+[SK [0;36minfo[0;;0m] App focus changed to : Hidden
+[SK [0;34mdiagnostic[0;;0m] Time to sleep
+[SK [0;34mdiagnostic[0;;0m] OpenXR state: [1;37msynchronized[1;30m -> [1;37mvisible[0;;0m
+[SK [0;34mdiagnostic[0;;0m] OpenXR state: [1;37mvisible[1;30m -> [1;37mfocused[0;;0m
+[SK [0;36minfo[0;;0m] App focus changed to : Active
+[SK [0;34mdiagnostic[0;;0m] WokeUp
+[SK [0;34mdiagnostic[0;;0m] OpenXR state: [1;37mfocused[1;30m -> [1;37mvisible[0;;0m
+[SK [0;34mdiagnostic[0;;0m] OpenXR state: [1;37mvisible[1;30m -> [1;37msynchronized[0;;0m
+[SK [0;36minfo[0;;0m] App focus changed to : Hidden
+[SK [0;34mdiagnostic[0;;0m] Time to sleep
+[SK [0;34mdiagnostic[0;;0m] OpenXR state: [1;37msynchronized[1;30m -> [1;37mvisible[0;;0m
+[SK [0;34mdiagnostic[0;;0m] OpenXR state: [1;37mvisible[1;30m -> [1;37mfocused[0;;0m
+[SK [0;36minfo[0;;0m] App focus changed to : Active
+[SK [0;36minfo[0;;0m] HIDDEN STEP -------> Dreaming 
+[SK [0;34mdiagnostic[0;;0m] WokeUp
+[SK [0;34mdiagnostic[0;;0m] Closure Thread id : Some("main") / ThreadId(1) 
+[SK [0;34mdiagnostic[0;;0m] Closure Process id : Some("main") / 28876 
+[SK [0;36minfo[0;;0m] Quit sent by main for reason: Main program call quit
+[SK [0;34mdiagnostic[0;;0m] Closing HandMenuRadial1
+[SK [0;34mdiagnostic[0;;0m] Closing LogWindow
+[SK [0;34mdiagnostic[0;;0m] Closing Screenshoot
+[SK [0;34mdiagnostic[0;;0m] Closing FlyOver
+[SK [0;34mdiagnostic[0;;0m] Closing hand_menu_radial_demo_1
+[SK [0;34mdiagnostic[0;;0m] Closing Shadows1
+[SK [0;36minfo[0;;0m] Stepper HandMenuRadial1 is removed.
+[SK [0;36minfo[0;;0m] Stepper LogWindow is removed.
+[SK [0;36minfo[0;;0m] Stepper Screenshoot is removed.
+[SK [0;36minfo[0;;0m] Stepper FlyOver is removed.
+[SK [0;36minfo[0;;0m] Stepper hand_menu_radial_demo_1 is removed.
+[SK [0;36minfo[0;;0m] Stepper Shadows1 is removed.
+[SK [0;34mdiagnostic[0;;0m] The app demand to quit()!!
+[SK [0;34mdiagnostic[0;;0m] UserEvent StepperAction::Event( id:"hand_menu_radial_demo_1" => hand_menu_radial_focus->false )
+[SK [0;34mdiagnostic[0;;0m] UserEvent StepperAction::Remove( id:"Screenshoot_file_browser" )
+[SK [0;34mdiagnostic[0;;0m] UserEvent StepperAction::Remove( id:"hand_menu_radial_demo_1" )
+[SK [0;36minfo[0;;0m] SkClosure LoopExiting !!
+[SK [0;36minfo[0;;0m] QuitReason is User
+[SK [0;34mdiagnostic[0;;0m] sk_step() says stop()!!
+[SK [0;36minfo[0;;0m] SkClosure Exiting !!
