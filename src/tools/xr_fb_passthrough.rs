@@ -1,3 +1,9 @@
+//! XR_KHR_android_surface_swapchain extension implementation
+//!
+//! **This is a rust copycat of <https://github.com/StereoKit/StereoKit/blob/master/Examples/StereoKitTest/Tools/PassthroughFBExt.cs>**
+//!
+//! <https://registry.khronos.org/OpenXR/specs/1.1/html/xrspec.html#XR_FB_passthrough>
+
 use openxr_sys::{
     CompositionLayerFlags, CompositionLayerPassthroughFB, PassthroughCreateInfoFB, PassthroughFB, PassthroughFlagsFB,
     PassthroughLayerCreateInfoFB, PassthroughLayerFB, PassthroughLayerPurposeFB, Result, Session, Space, StructureType,
@@ -25,7 +31,7 @@ pub const PASSTHROUGH_FLIP: &str = "PassthroughFlip";
 ///
 ///  This is a rust copycat of <https://github.com/StereoKit/StereoKit/blob/master/Examples/StereoKitTest/Tools/PassthroughFBExt.cs>
 ///
-/// Use PassthroughFbExt::new(true) instead of Default if you want to have it at start up.
+/// Use FbPassthroughStepper::new(true) instead of Default if you want to have it at start up.
 ///
 ///
 /// ### Fields that can be changed before initialization:
@@ -41,12 +47,12 @@ pub const PASSTHROUGH_FLIP: &str = "PassthroughFlip";
 /// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 ///
 /// // Launch the stepper as follow :
-/// use stereokit_rust::tools::passthrough_fb_ext::*;
+/// use stereokit_rust::tools::xr_fb_passthrough::*;
 /// let mut passthrough = false;
 /// let mut new_passthrough_value = true; // !!!! Get a proper way to decide of this value !!!!
 /// let passthrough_enabled = system::BackendOpenXR::ext_enabled("XR_FB_passthrough");
 /// if passthrough_enabled {
-///    sk.send_event(StepperAction::add_default::<PassthroughFbExt>(
+///    sk.send_event(StepperAction::add_default::<FbPassthroughStepper>(
 ///        "PassthroughFbExt",
 ///    ));
 ///    if passthrough {
@@ -78,7 +84,7 @@ pub const PASSTHROUGH_FLIP: &str = "PassthroughFlip";
 /// ```
 
 #[derive(IStepper)]
-pub struct PassthroughFbExt {
+pub struct FbPassthroughStepper {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
     enabled: bool,
@@ -101,12 +107,12 @@ pub struct PassthroughFbExt {
     xr_passthrough_layer_set_style_fb: Option<PassthroughLayerSetStyleFB>,
 }
 
-unsafe impl Send for PassthroughFbExt {}
+unsafe impl Send for FbPassthroughStepper {}
 
-impl Default for PassthroughFbExt {
+impl Default for FbPassthroughStepper {
     fn default() -> Self {
         Self {
-            id: "PassthroughFbExt".to_string(),
+            id: "FbPassthroughStepper".to_string(),
             sk_info: None,
             enabled: false,
             shutdown_completed: false,
@@ -141,7 +147,7 @@ impl Default for PassthroughFbExt {
 }
 
 /// All the code here run in the main thread
-impl PassthroughFbExt {
+impl FbPassthroughStepper {
     /// Use this if you don't want passthrough at init.
     pub fn new(enabled: bool) -> Self {
         Self { enable_on_init: enabled, ..Default::default() }
