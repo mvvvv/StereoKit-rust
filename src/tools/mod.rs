@@ -36,7 +36,6 @@ pub mod title;
 /// AndroidX + HorizonOS + ALVR Linux + WiVRn/Monado Simulator
 pub fn load_all_extensions() {
     // Android extensions
-    BackendOpenXR::request_ext("XR_ANDROID_depth_texture");
     BackendOpenXR::request_ext("XR_ANDROID_anchor_sharing_export");
     BackendOpenXR::request_ext("XR_ANDROID_composition_layer_passthrough_mesh");
     BackendOpenXR::request_ext("XR_ANDROID_depth_texture");
