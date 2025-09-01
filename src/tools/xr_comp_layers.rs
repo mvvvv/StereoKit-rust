@@ -152,7 +152,7 @@ impl XrCompLayers {
         }
 
         if !(Backend::xr_type() == BackendXRType::OpenXR && this.load_bindings()) {
-            Log::warn(format!("XrCompLayers: some bindings are missing : {this:?}"));
+            Log::warn(format!("❌ XrCompLayers: some function bindings are missing : {this:?}"));
             return None;
         }
 
@@ -320,7 +320,7 @@ impl XrCompLayers {
             match res {
                 XrResult::SUCCESS => Some((swapchain, surface)),
                 otherwise => {
-                    Log::err(format!("xrDestroySwapchain failed: {otherwise}"));
+                    Log::err(format!("❌ xrDestroySwapchain failed: {otherwise}"));
                     None
                 }
             }
@@ -335,7 +335,7 @@ impl XrCompLayers {
         match unsafe { self.xr_destroy_swapchain.unwrap()(handle) } {
             XrResult::SUCCESS => {}
             otherwise => {
-                Log::err(format!("xrDestroySwapchain failed: {otherwise}"));
+                Log::err(format!("❌ xrDestroySwapchain failed: {otherwise}"));
             }
         }
     }
@@ -375,7 +375,7 @@ impl XrCompLayers {
         } {
             XrResult::SUCCESS => {}
             otherwise => {
-                Log::err(format!("xrCreateSwapchain failed: {otherwise}"));
+                Log::err(format!("❌ xrCreateSwapchain failed: {otherwise}"));
                 return None;
             }
         }
@@ -467,7 +467,7 @@ impl SwapchainSk {
             {
                 SwapchainSk::wrap(handle, format, width, height, Some(xr_comp_layers))
             } else {
-                Log::warn("Failed to create XR swapchain: Try_make_swapchain failed");
+                Log::warn("❌ Failed to create XR swapchain: Try_make_swapchain failed");
                 None
             }
         } else {
@@ -527,7 +527,7 @@ impl SwapchainSk {
         {
             XrResult::SUCCESS => {}
             otherwise => {
-                Log::err(format!("xrEnumerateSwapchainImages failed: {otherwise}"));
+                Log::err(format!("❌ xrEnumerateSwapchainImages failed: {otherwise}"));
                 return None;
             }
         }
@@ -556,7 +556,7 @@ impl SwapchainSk {
             } {
                 XrResult::SUCCESS => {}
                 otherwise => {
-                    Log::err(format!("xrEnumerateSwapchainImages failed: {otherwise}"));
+                    Log::err(format!("❌ xrEnumerateSwapchainImages failed: {otherwise}"));
                     return None;
                 }
             }
@@ -587,10 +587,9 @@ impl SwapchainSk {
                 };
                 this.images.push(image_sk);
             }
-
             Some(this)
         } else {
-            Log::warn("SwapchainSk: OpenGL ES backend is not available");
+            Log::warn("❌ SwapchainSk: OpenGL ES backend is not available");
             None
         }
     }
@@ -615,7 +614,7 @@ impl SwapchainSk {
         {
             XrResult::SUCCESS => {}
             err => {
-                Log::err(format!("xrEnumerateSwapchainImages failed: {err}"));
+                Log::err(format!("❌ xrEnumerateSwapchainImages failed: {err}"));
                 return None;
             }
         }
@@ -642,7 +641,7 @@ impl SwapchainSk {
             } {
                 XrResult::SUCCESS => {}
                 err => {
-                    Log::err(format!("xrEnumerateSwapchainImages failed: {err}"));
+                    Log::err(format!("❌ xrEnumerateSwapchainImages failed: {err}"));
                     return None;
                 }
             }
@@ -673,6 +672,7 @@ impl SwapchainSk {
             }
             Some(this)
         } else {
+            Log::warn("❌ SwapchainSk: D3D11 backend is not available");
             None
         }
     }

@@ -4,6 +4,8 @@ pub mod build_tools;
 pub mod os_api;
 pub mod xr_android_depth_texture;
 pub mod xr_comp_layers;
+pub mod xr_fb_display_refresh_rate;
+pub mod xr_meta_simultaneous_hands_controllers;
 
 #[cfg(feature = "event-loop")]
 pub mod file_browser;

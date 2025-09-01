@@ -16,13 +16,16 @@ use stereokit_rust::{
         fly_over::FlyOver,
         log_window::{LogWindow, basic_log_fmt},
         notif::HudNotification,
-        os_api::{
-            get_all_display_refresh_rates, get_display_refresh_rate, get_env_blend_modes,
-            is_simultaneous_hands_and_controllers_supported, pause_simultaneous_hands_and_controllers,
-            resume_simultaneous_hands_and_controllers, set_display_refresh_rate,
-        },
+        os_api::get_env_blend_modes,
         screenshot::ScreenshotViewer,
+        xr_fb_display_refresh_rate::{
+            get_all_display_refresh_rates, get_display_refresh_rate, set_display_refresh_rate,
+        },
         xr_fb_render_model::{DRAW_CONTROLLER, XrFbRenderModelStepper, is_fb_render_model_extension_available},
+        xr_meta_simultaneous_hands_controllers::{
+            is_simultaneous_hands_and_controllers_supported, pause_simultaneous_hands_and_controllers,
+            resume_simultaneous_hands_and_controllers,
+        },
         xr_meta_virtual_keyboard::{
             KEYBOARD_SHOW, XrMetaVirtualKeyboardStepper, is_meta_virtual_keyboard_extension_available,
         },
@@ -63,7 +66,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
     let mut nice_controllers = true;
     let nice_controllers_available = is_fb_render_model_extension_available();
     let mut simultaneous_hands_controllers = false;
-    let simultaneous_hands_controllers_available = is_simultaneous_hands_and_controllers_supported(true);
+    let simultaneous_hands_controllers_available = is_simultaneous_hands_and_controllers_supported(false);
     //--------------------------------------------------------------------
 
     // Sending formated log to our mutex for the log window.
@@ -116,9 +119,9 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
         passthough_blend_enabled = true;
         if passthrough {
             Device::display_blend(DisplayBlend::AnyTransparent);
-            Log::diag("Passthrough Activated at start !!");
+            Log::info("Passthrough Activated at start !!");
         } else {
-            Log::diag("Passthrough Deactived at start !!");
+            Log::info("Passthrough Deactived at start !!");
         }
     } else {
         Log::diag("No Passthrough !!")
@@ -143,7 +146,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
         }
         Log::info(format!("Initial display rate is {current_refresh_rate:?}"));
     } else {
-        Log::info("No editable refresh rate !");
+        Log::diag("No editable refresh rate !");
     }
 
     let mut viewport_scaling = Renderer::get_viewport_scaling();
@@ -167,7 +170,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
 
     // Add virtual keyboard stepper if extension is available
     if is_meta_virtual_keyboard_extension_available() {
-        Log::info("XR_META_virtual_keyboard extension available");
+        Log::info("✅ XR_META_virtual_keyboard extension available");
         let keyboard_stepper = XrMetaVirtualKeyboardStepper::new(true);
         sk.send_event(StepperAction::add("XrMetaVirtualKeyboardStepper", keyboard_stepper));
         sk.send_event(StepperAction::event("XrMetaVirtualKeyboardStepper", KEYBOARD_SHOW, "true"));
@@ -178,15 +181,15 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
     // Add the XR FB render model stepper only if extension is available
     if nice_controllers_available {
         sk.send_event(StepperAction::add_default::<XrFbRenderModelStepper>("XrFbRenderModelStepper"));
-        Log::info("XR_FB_render_model extension available");
+        Log::info("✅ XR_FB_render_model extension available");
 
         // Set initial controller state
         if nice_controllers {
             sk.send_event(StepperAction::event("XrFbRenderModelStepper", DRAW_CONTROLLER, "true"));
-            Log::diag("Controller models will be enabled via stepper");
+            Log::info("Controller models will be drawn via stepper");
         } else {
             sk.send_event(StepperAction::event("XrFbRenderModelStepper", DRAW_CONTROLLER, "false"));
-            Log::diag("Controller models will be disabled via stepper");
+            Log::info("Controller models won't be drawn at start");
         }
     } else {
         Log::diag("XR_FB_render_model extension not available");
@@ -194,7 +197,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
 
     // Activate simultaneous hand & controller
     if simultaneous_hands_controllers_available {
-        Log::info("Simultaneous hands and controllers tracking supported");
+        Log::info("✅ Simultaneous hands and controllers tracking available");
 
         if simultaneous_hands_controllers {
             if resume_simultaneous_hands_and_controllers(true) {
@@ -207,7 +210,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
             Log::info("Simultaneous hands and controllers tracking disabled at start");
         }
     } else {
-        Log::diag("Simultaneous hands and controllers tracking not supported");
+        Log::diag("Simultaneous hands and controllers tracking not available");
     }
 
     let ui_text_style = Ui::get_text_style();

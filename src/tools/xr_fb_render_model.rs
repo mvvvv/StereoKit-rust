@@ -37,6 +37,7 @@ pub struct RenderModelProperties {
 
 /// Main struct for XR_FB_render_model extension
 pub struct XrFbRenderModel {
+    with_log: bool,
     xr_enumerate_render_model_paths: Option<EnumerateRenderModelPathsFB>,
     xr_get_render_model_properties: Option<GetRenderModelPropertiesFB>,
     xr_load_render_model: Option<LoadRenderModelFB>,
@@ -44,14 +45,15 @@ pub struct XrFbRenderModel {
     xr_path_to_string: Option<PathToString>,
     instance: Instance,
     session: Session,
-    // Cached controller models to avoid reloading
+
+    // Cached controller models
     left_controller_data: Option<Model>,
     right_controller_data: Option<Model>,
 }
 
 impl XrFbRenderModel {
     /// Creates a new XrFbRenderModel instance if the extension is supported
-    pub fn new() -> Option<Self> {
+    pub fn new(with_log: bool) -> Option<Self> {
         if Backend::xr_type() != BackendXRType::OpenXR || !BackendOpenXR::ext_enabled(XR_FB_RENDER_MODEL_EXTENSION_NAME)
         {
             return None;
@@ -74,11 +76,12 @@ impl XrFbRenderModel {
             || xr_string_to_path.is_none()
             || xr_path_to_string.is_none()
         {
-            Log::warn("Failed to load all XR_FB_render_model functions");
+            Log::warn("❌ Failed to load all XR_FB_render_model functions");
             return None;
         }
 
         Some(Self {
+            with_log,
             xr_enumerate_render_model_paths,
             xr_get_render_model_properties,
             xr_load_render_model,
@@ -332,32 +335,41 @@ impl XrFbRenderModel {
     /// Loads and configures controller models for both hands using specified paths
     pub fn setup_controller_models(&mut self, left_path: &str, right_path: &str, with_animation: bool) -> Result<(), XrResult> {
         // Load and set right controller model using specified path
+        let with_log = self.with_log;
         if let Ok(right_model) = self.get_controller_model(Handed::Right, right_path) {
             Input::set_controller_model(Handed::Right, Some(right_model));
-            Log::info(format!("   Right controller model loaded and configured from path: {}", right_path));
+            if with_log {
+                Log::info(format!("   Right controller model loaded and configured from path: {}", right_path));
+            }
 
             // Launch animation 0 in Loop mode if with_animation is true
             if with_animation {
                 right_model.get_anims().play_anim_idx(0, AnimMode::Loop);
                 if right_model.get_anims().get_count() > 1 { 
-                    Log::warn("Right controller model has more than one animation, only the first will be played in loop"); 
+                    Log::warn("⚠️ Right controller model has more than one animation, only the first will be played in loop"); 
                 }
-                Log::info("✅ Right controller animation started");
+                if with_log {
+                    Log::info("✅ Right controller animation started");
+                }
             }
         } else {
-            Log::warn(format!("Failed to load right controller model from path: {}", right_path));
+            Log::warn(format!("❌ Failed to load right controller model from path: {}", right_path));
             return Err(XrResult::ERROR_RUNTIME_FAILURE);
         }
 
         // Load and set left controller model using specified path
         if let Ok(left_model) = self.get_controller_model(Handed::Left, left_path) {
             Input::set_controller_model(Handed::Left, Some(left_model));
-            Log::info(format!("   Left controller model loaded and configured from path: {}", left_path));
+            if with_log {
+                Log::info(format!("   Left controller model loaded and configured from path: {}", left_path));
+            }
 
             // Launch animation 0 in Loop mode if with_animation is true
             if with_animation {
                 left_model.get_anims().play_anim_idx(0, AnimMode::Loop);
-                Log::info("✅ Left controller animation started");
+                if with_log {
+                    Log::info("✅ Left controller animation started");
+                }
             }
         } else {
             Log::warn(format!("❌ Failed to load left controller model from path: {}", left_path));
@@ -368,12 +380,13 @@ impl XrFbRenderModel {
     }
 
     /// Disables controller models by setting them to None
-    pub fn disable_controller_models() {
+    pub fn disable_controller_models(&mut self) {
         use crate::system::{Handed, Input};
 
         Input::set_controller_model(Handed::Right, None);
         Input::set_controller_model(Handed::Left, None);
-        Log::info("Controller models disabled");
+        self.left_controller_data = None;
+        self.right_controller_data = None;
     }
 
     /// Explores and logs information about all available render models
@@ -535,23 +548,23 @@ impl XrFbRenderModelStepper {
     /// Called from IStepper::initialize here you can abort the initialization by returning false
     fn start(&mut self) -> bool {
         // Initialize XR render model system
-        Log::info("🔧 Initializing XR_FB_render_model...");
+        //Log::info("🔧 Initializing XR_FB_render_model...");
         if !is_fb_render_model_extension_available() {
             Log::err("⚠️ XR_FB_render_model extension not available");
-            return false; // Still succeed even if extension is not available
+            return false; 
         }
-        match XrFbRenderModel::new() {
+        match XrFbRenderModel::new(false) {
             Some(xr_model) => {
                 // Explore available models
-                if let Err(e) = xr_model.explore_render_models() {
-                    Log::warn(format!("❌ Failed to explore XR_FB_render_models: {:?}", e));
-                }
+                // if let Err(e) = xr_model.explore_render_models() {
+                //     Log::warn(format!("❌ Failed to explore XR_FB_render_models: {:?}", e));
+                // }
                 self.xr_render_model = Some(xr_model);
                 true
             }
             None => {
                 Log::err("❌ XR_FB_render_model extension not available");
-                false // Still succeed even if extension is not available
+                false 
             }
         }
     }
@@ -563,7 +576,6 @@ impl XrFbRenderModelStepper {
                 "true" => {
                     if !self.is_enabled {
                         self.is_enabled = true;
-                        Log::diag("Controller drawing enabled via event");
 
                         // Load controller models if available
                         if let Some(ref mut xr_model) = self.xr_render_model {
@@ -573,25 +585,27 @@ impl XrFbRenderModelStepper {
                                 &self.right_controller_model_path,
                                 self.with_animation,
                             ) {
-                                Log::warn(format!("Failed to setup controller models: {:?}", e));
+                                Log::warn(format!("❌ DRAW_CONTROLLER Failed to setup controller models: {:?}", e));
                             } else {
-                                Log::info("Controller models setup completed");
+                                Log::info("DRAW_CONTROLLER `true`: Controller models setup completed");
                             }
+                        } else {
+                            Log::warn("❌ DRAW_CONTROLLER `true` error: XR_FB_render_model not initialized");
                         }
                     }
                 }
-                "false" => {
+                _=> {
                     self.is_enabled = false;
-                    Log::info("Controller drawing disabled via event");
 
                     // Disable controller models and animations
-                    if self.xr_render_model.is_some() {
-                        XrFbRenderModel::disable_controller_models();
+                    if let Some(ref mut xr_model) = self.xr_render_model {
+                        xr_model.disable_controller_models();
+                        Log::info("DRAW_CONTROLLER `false`: Controller drawing disabled");
+                    } else {
+                        Log::warn("❌ DRAW_CONTROLLER `false` error: XR_FB_render_model not initialized");
                     }
                 }
-                _ => {
-                    Log::warn(format!("Unknown DRAW_CONTROLLER value: {}", value));
-                }
+
             }
         }
     }
@@ -768,13 +782,12 @@ impl XrFbRenderModelStepper {
     fn close(&mut self, triggering: bool) -> bool {
         if triggering {
             // Disable controller models
-            if self.xr_render_model.is_some() {
-                XrFbRenderModel::disable_controller_models();
+            if let Some(ref mut xr_model) = self.xr_render_model {
+                xr_model.disable_controller_models();
             }
 
             self.xr_render_model = None;
             self.shutdown_completed = true;
-            Log::info("XR FB render model stepper closed");
             true
         } else {
             self.shutdown_completed

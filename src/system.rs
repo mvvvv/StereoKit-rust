@@ -672,7 +672,7 @@ impl Backend {
 /// with the API as provided here.
 /// <https://stereokit.net/Pages/StereoKit/Backend.OpenXR.html>
 ///
-/// see implementations in [`crate::tools::passthrough_fb_ext`] [`crate::tools::os_api`]
+/// see implementations in [`crate::tools::xr_fb_passthrough`] [`crate::tools::os_api`]
 /// ### Examples
 /// ```
 /// use stereokit_rust::system::{Backend, BackendOpenXR, BackendXRType};

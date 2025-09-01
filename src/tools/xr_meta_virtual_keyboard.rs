@@ -527,7 +527,7 @@ impl XrMetaVirtualKeyboardStepper {
 
     /// Method called by derive(IStepper) during initialization
     fn start(&mut self) -> bool {
-        Log::info("🔧 Initializing virtual keyboard...");
+        //Log::info("🔧 Initializing virtual keyboard...");
         if !is_meta_virtual_keyboard_extension_available() && self.meta_kdb.is_some() && self.init_kbd() {
             Log::warn("⚠️ XR_META_virtual_keyboard extension not available");
             return false;
@@ -545,7 +545,7 @@ impl XrMetaVirtualKeyboardStepper {
             if self.keyboard_model.is_none() {
                 Log::info("🔧 Loading virtual keyboard 3D model...");
                 // Try to load the virtual keyboard model using XrFbRenderModel
-                if let Some(xr_render_model) = XrFbRenderModel::new() {
+                if let Some(xr_render_model) = XrFbRenderModel::new(true) {
                     // Explore available models
                     if let Err(e) = xr_render_model.explore_render_models() {
                         Log::warn(format!("❌ Failed to explore XR_FB_render_models: {:?}", e));
