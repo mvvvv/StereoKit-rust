@@ -10,6 +10,7 @@ pub mod anim1;
 pub mod asset1;
 pub mod b_stepper;
 pub mod biplane1;
+pub mod browser1;
 pub mod c_stepper;
 pub mod font1;
 pub mod hand_menu_radial0;
@@ -23,6 +24,7 @@ pub mod render_list1;
 pub mod shaders1;
 pub mod shadows1;
 pub mod sprite1;
+pub mod system_deep_link1;
 pub mod tex1;
 pub mod text1;
 pub mod text2;
@@ -140,6 +142,16 @@ impl Test {
             Test::new("Shadows1", |sk| {
                 sk.send_event(StepperAction::add_default::<Shadows1>("Shadows1"));
                 "Shadows1".to_string()
+            }),
+            #[cfg(target_os = "android")]
+            Test::new("Browser1", |sk| {
+                sk.send_event(StepperAction::add_default::<browser1::Browser1>("Browser1"));
+                "Browser1".to_string()
+            }),
+            #[cfg(target_os = "android")]
+            Test::new("SystemDeepLink", |sk| {
+                sk.send_event(StepperAction::add_default::<system_deep_link1::SystemDeepLink1>("SystemDeepLink"));
+                "SystemDeepLink".to_string()
             }),
         ];
         Box::new(tests)

@@ -538,6 +538,443 @@ pub fn show_soft_input(_show: bool) -> bool {
     false
 }
 
+/// Open the default browser. Adapted from https://github.com/amodm/webbrowser-rs
+#[cfg(target_os = "android")]
+pub fn launch_browser_android(url: &str) -> bool {
+    use jni::objects::{JObject, JValue};
+
+    Log::diag(format!("launch_browser_android: Attempting to open URL: {}", url));
+
+    // Create a VM for executing Java calls
+    let ctx = ndk_context::android_context();
+    let vm = match unsafe { jni::JavaVM::from_raw(ctx.vm() as _) } {
+        Ok(value) => value,
+        Err(e) => {
+            Log::err(format!("launch_browser_android: no vm !! : {:?}", e));
+            return false;
+        }
+    };
+
+    let activity = unsafe { jni::objects::JObject::from_raw(ctx.context() as _) };
+    let mut env = match vm.attach_current_thread() {
+        Ok(value) => value,
+        Err(e) => {
+            Log::err(format!("launch_browser_android: no env !! : {:?}", e));
+            return false;
+        }
+    };
+
+    // Create ACTION_VIEW object
+    let intent_class = match env.find_class("android/content/Intent") {
+        Ok(value) => value,
+        Err(e) => {
+            Log::err(format!("launch_browser_android: no intent_class !! : {:?}", e));
+            return false;
+        }
+    };
+    let action_view = match env.get_static_field(&intent_class, "ACTION_VIEW", "Ljava/lang/String;") {
+        Ok(value) => value,
+        Err(e) => {
+            Log::err(format!("launch_browser_android: no action_view !! : {:?}", e));
+            return false;
+        }
+    };
+
+    // Create Uri object
+    let uri_class = match env.find_class("android/net/Uri") {
+        Ok(value) => value,
+        Err(e) => {
+            Log::err(format!("launch_browser_android: no uri_class !! : {:?}", e));
+            return false;
+        }
+    };
+    let url_string = match env.new_string(url) {
+        Ok(value) => value,
+        Err(e) => {
+            Log::err(format!("launch_browser_android: no url_string !! : {:?}", e));
+            return false;
+        }
+    };
+    let uri = match env
+        .call_static_method(
+            &uri_class,
+            "parse",
+            "(Ljava/lang/String;)Landroid/net/Uri;",
+            &[JValue::Object(&JObject::from(url_string))],
+        )
+        .unwrap()
+        .l()
+    {
+        Ok(value) => value,
+        Err(e) => {
+            Log::err(format!("launch_browser_android: no uri !! : {:?}", e));
+            return false;
+        }
+    };
+
+    // Create new ACTION_VIEW intent with the uri
+    let intent = match env.alloc_object(&intent_class) {
+        Ok(value) => value,
+        Err(e) => {
+            Log::err(format!("launch_browser_android: no intent !! : {:?}", e));
+            return false;
+        }
+    };
+    if let Err(e) = env.call_method(
+        &intent,
+        "<init>",
+        "(Ljava/lang/String;Landroid/net/Uri;)V",
+        &[action_view.borrow(), JValue::Object(&uri)],
+    ) {
+        Log::err(format!("launch_browser_android: intent init failed !! : {:?}", e));
+        return false;
+    }
+
+    // Start the intent activity.
+    match env.call_method(&activity, "startActivity", "(Landroid/content/Intent;)V", &[JValue::Object(&intent)]) {
+        Ok(_) => {
+            // Just clear any pending exceptions without detailed analysis
+            if env.exception_check().unwrap_or(false) {
+                let _ = env.exception_clear();
+                Log::err("launch_browser_android: Activity exception occurred (cleared)");
+                return false;
+            }
+            true
+        }
+        Err(e) => {
+            Log::err(format!("launch_browser_android: startActivity failed: {} | URL: {}", e, url));
+            // Clear any pending exceptions without trying to read them
+            if env.exception_check().unwrap_or(false) {
+                let _ = env.exception_clear();
+            }
+            false
+        }
+    }
+}
+
+/// Open nothing has we don't have a virtual keyboard
+#[cfg(not(target_os = "android"))]
+pub fn launch_browser_android(_url: &str) -> bool {
+    false
+}
+
+/// Supported system deep link actions for Meta Quest following official Meta specifications
+#[derive(Debug, Clone, PartialEq)]
+pub enum SystemAction {
+    /// Open the browser with a URL
+    /// Intent: systemux://browser, URI: [any valid URL]
+    Browser { url: String },
+    /// Open the store
+    /// Intent: systemux://store, URI: [none] for front page or /item/[ID] for specific app
+    Store { app_id: Option<String> },
+    /// Open settings
+    /// Intent: systemux://settings, URI options:
+    /// - [none]: Main settings page
+    /// - /hands: Hand tracking settings
+    /// - /system: System settings
+    /// - /privacy: Privacy settings
+    /// - /controllers: Controllers settings
+    /// - /bluetooth: Bluetooth settings
+    /// - /wifi: WiFi settings
+    /// - /device: Device settings
+    /// - /guardian: Guardian/Boundary settings
+    /// - /accounts: Accounts settings
+    /// - /notifications: Notifications settings
+    /// - /applications?package=com.X.Y: Settings for specific app
+    Settings { setting: Option<String> },
+    /// Open Files app
+    /// Intent: systemux://file-manager, URI: [none] for Recents, /media/ for Media tab, /downloads/ for Downloads tab
+    FileManager { path: Option<String> },
+    /// Open Meta bug reporter
+    /// Intent: systemux://bug_report, URI: N/A
+    BugReport,
+}
+
+/// System Deep Link function for Meta Quest following Meta specifications.
+/// This function uses the VR Shell package to trigger various system actions.
+///
+/// # Arguments
+/// * `action` - The system action to perform
+///
+/// # Examples
+/// ```
+/// // Open browser with URL
+/// system_deep_link(SystemAction::Browser("https://www.oculus.com".to_string()));
+///
+/// // Open store with app ID
+/// system_deep_link(SystemAction::Store("1234567890".to_string()));
+///
+/// // Open home screen
+/// system_deep_link(SystemAction::Home);
+///
+/// // Custom action
+/// system_deep_link(SystemAction::Custom {
+///     action: "myaction".to_string(),
+///     data: Some("mydata".to_string())
+/// });
+/// ```
+/// System Deep Link function for Meta Quest following Meta specifications.
+/// This function uses the VR Shell package to trigger various system actions.
+///
+/// # Arguments
+/// * `action` - The system action to perform
+///
+/// # Examples
+/// ```
+/// // Open browser with URL
+/// system_deep_link(SystemAction::Browser("https://www.oculus.com".to_string()));
+///
+/// // Open store with app ID
+/// system_deep_link(SystemAction::Store("1234567890".to_string()));
+///
+/// // Open home screen
+/// system_deep_link(SystemAction::Home);
+///
+/// // Custom action
+/// System Deep Link function for Meta Quest following official Meta specifications.
+/// This function uses PackageManager.getLaunchIntentForPackage() with intent_data and uri extras
+/// as documented in Meta's System Deep Linking guide.
+///
+/// # Arguments
+/// * `action` - The system action to perform
+///
+/// # Examples
+/// ```
+/// // Open browser with URL
+/// system_deep_link(SystemAction::Browser { url: "https://www.meta.com".to_string() });
+///
+/// // Open store front page
+/// system_deep_link(SystemAction::Store { app_id: None });
+///
+/// // Open store page for specific app
+/// system_deep_link(SystemAction::Store { app_id: Some("1234567890".to_string()) });
+///
+/// // Open settings main page
+/// system_deep_link(SystemAction::Settings { setting: None });
+///
+/// // Open hand tracking settings
+/// system_deep_link(SystemAction::Settings { setting: Some("/hands".to_string()) });
+///
+/// // Open controllers settings
+/// system_deep_link(SystemAction::Settings { setting: Some("/controllers".to_string()) });
+///
+/// // Open WiFi settings
+/// system_deep_link(SystemAction::Settings { setting: Some("/wifi".to_string()) });
+///
+/// // Open Guardian/Boundary settings
+/// system_deep_link(SystemAction::Settings { setting: Some("/guardian".to_string()) });
+///
+/// // Open settings for specific app
+/// system_deep_link(SystemAction::Settings { setting: Some("/applications?package=com.oculus.browser".to_string()) });
+///
+/// // Open bug reporter
+/// system_deep_link(SystemAction::BugReport);
+/// ```
+#[cfg(target_os = "android")]
+pub fn system_deep_link(action: SystemAction) -> bool {
+    use crate::system::Log;
+    use jni::objects::JValue;
+
+    // Create a VM for executing Java calls
+    let ctx = ndk_context::android_context();
+    let vm = match unsafe { jni::JavaVM::from_raw(ctx.vm() as _) } {
+        Ok(value) => value,
+        Err(e) => {
+            Log::err(format!("system_deep_link: Failed to get VM: {:?}", e));
+            return false;
+        }
+    };
+
+    let activity = unsafe { jni::objects::JObject::from_raw(ctx.context() as _) };
+    let mut env = match vm.attach_current_thread() {
+        Ok(env) => env,
+        Err(e) => {
+            Log::err(format!("system_deep_link: Failed to attach to JVM thread: {:?}", e));
+            return false;
+        }
+    };
+
+    // Prepare action info according to Meta specifications
+    let (intent_data, uri_value, display_data) = match &action {
+        SystemAction::Browser { url } => {
+            ("systemux://browser", url.clone(), format!("Opening browser with URL: {}", url))
+        }
+        SystemAction::Store { app_id } => {
+            let uri = match app_id {
+                Some(id) => format!("/item/{}", id),
+                None => String::new(),
+            };
+            (
+                "systemux://store",
+                uri,
+                format!(
+                    "Opening store{}",
+                    if app_id.is_some() { format!(" for app: {}", app_id.as_ref().unwrap()) } else { String::new() }
+                ),
+            )
+        }
+        SystemAction::Settings { setting } => {
+            let uri = setting.as_deref().unwrap_or("");
+            (
+                "systemux://settings",
+                uri.to_string(),
+                format!("Opening settings{}", if !uri.is_empty() { format!(": {}", uri) } else { String::new() }),
+            )
+        }
+        SystemAction::FileManager { path } => {
+            let uri = path.as_deref().unwrap_or("");
+            (
+                "systemux://file-manager",
+                uri.to_string(),
+                format!("Opening file manager{}", if !uri.is_empty() { format!(": {}", uri) } else { String::new() }),
+            )
+        }
+        SystemAction::BugReport => ("systemux://bug_report", String::new(), "Opening bug report".to_string()),
+    };
+
+    Log::info(format!("system_deep_link: {}", display_data));
+    Log::diag(format!(
+        "system_deep_link: Attempting to launch VR Shell with intent_data='{}', uri='{}'",
+        intent_data, uri_value
+    ));
+
+    // Get PackageManager from context (following Meta specification)
+    let package_manager =
+        match env.call_method(&activity, "getPackageManager", "()Landroid/content/pm/PackageManager;", &[]) {
+            Ok(pm) => match pm.l() {
+                Ok(pm_obj) => pm_obj,
+                Err(e) => {
+                    Log::err(format!("system_deep_link: Failed to extract PackageManager object: {}", e));
+                    return false;
+                }
+            },
+            Err(e) => {
+                Log::err(format!("system_deep_link: Failed to get PackageManager: {}", e));
+                return false;
+            }
+        };
+
+    // Get launch intent for VR Shell (following Meta specification)
+    let package_name = match env.new_string("com.oculus.vrshell") {
+        Ok(s) => s,
+        Err(e) => {
+            Log::err(format!("system_deep_link: Failed to create package name string: {}", e));
+            return false;
+        }
+    };
+
+    let intent = match env.call_method(
+        &package_manager,
+        "getLaunchIntentForPackage",
+        "(Ljava/lang/String;)Landroid/content/Intent;",
+        &[JValue::Object(&package_name.into())],
+    ) {
+        Ok(intent_result) => match intent_result.l() {
+            Ok(intent_obj) if !intent_obj.is_null() => intent_obj,
+            Ok(_) => {
+                Log::err("system_deep_link: getLaunchIntentForPackage returned null");
+                return false;
+            }
+            Err(e) => {
+                Log::err(format!("system_deep_link: Failed to extract Intent object: {}", e));
+                return false;
+            }
+        },
+        Err(e) => {
+            Log::err(format!("system_deep_link: Failed to get launch intent: {}", e));
+            return false;
+        }
+    };
+
+    // Add intent_data extra (following Meta specification)
+    let intent_data_key = match env.new_string("intent_data") {
+        Ok(s) => s,
+        Err(e) => {
+            Log::err(format!("system_deep_link: Failed to create intent_data key: {}", e));
+            return false;
+        }
+    };
+
+    let intent_data_value = match env.new_string(intent_data) {
+        Ok(s) => s,
+        Err(e) => {
+            Log::err(format!("system_deep_link: Failed to create intent_data value: {}", e));
+            return false;
+        }
+    };
+
+    if let Err(e) = env.call_method(
+        &intent,
+        "putExtra",
+        "(Ljava/lang/String;Ljava/lang/String;)Landroid/content/Intent;",
+        &[JValue::Object(&intent_data_key.into()), JValue::Object(&intent_data_value.into())],
+    ) {
+        Log::err(format!("system_deep_link: Failed to add intent_data extra: {}", e));
+        return false;
+    }
+
+    // Add uri extra if not empty (following Meta specification)
+    if !uri_value.is_empty() {
+        let uri_key = match env.new_string("uri") {
+            Ok(s) => s,
+            Err(e) => {
+                Log::err(format!("system_deep_link: Failed to create uri key: {}", e));
+                return false;
+            }
+        };
+
+        let uri_value_string = match env.new_string(&uri_value) {
+            Ok(s) => s,
+            Err(e) => {
+                Log::err(format!("system_deep_link: Failed to create uri value: {}", e));
+                return false;
+            }
+        };
+
+        if let Err(e) = env.call_method(
+            &intent,
+            "putExtra",
+            "(Ljava/lang/String;Ljava/lang/String;)Landroid/content/Intent;",
+            &[JValue::Object(&uri_key.into()), JValue::Object(&uri_value_string.into())],
+        ) {
+            Log::err(format!("system_deep_link: Failed to add uri extra: {}", e));
+            return false;
+        }
+    }
+
+    // Start activity (following Meta specification)
+    match env.call_method(&activity, "startActivity", "(Landroid/content/Intent;)V", &[JValue::Object(&intent)]) {
+        Ok(_) => {
+            // Just clear any pending exceptions without detailed analysis
+            if env.exception_check().unwrap_or(false) {
+                let _ = env.exception_clear();
+                Log::err("system_deep_link: Activity exception occurred (cleared)");
+                return false;
+            }
+            Log::info(format!("system_deep_link: Successfully executed: {}", display_data));
+            true
+        }
+        Err(e) => {
+            Log::err(format!(
+                "system_deep_link: Failed to start activity: {} | Action: {:?} | Intent data: {} | URI: {}",
+                e, action, intent_data, uri_value
+            ));
+            // Clear any pending exceptions without trying to read them
+            if env.exception_check().unwrap_or(false) {
+                let _ = env.exception_clear();
+            }
+            false
+        }
+    }
+}
+
+#[cfg(not(target_os = "android"))]
+pub fn system_deep_link(_action: SystemAction) -> bool {
+    use crate::system::Log;
+    Log::warn("system_deep_link: Not supported on non-Android platforms");
+    false
+}
+
 /// Get the list of environnement blend_modes available on this device.
 /// * `with_log` - if true, will log the available blend modes.
 ///
