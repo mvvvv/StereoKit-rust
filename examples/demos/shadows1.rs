@@ -71,9 +71,8 @@ pub struct Shadows1 {
 
     model: Model,
     model_pose: Pose,
-    shadow_maps: Vec<Tex>, // double buffered
+    shadow_map: Tex,
     shadow_buffer: MaterialBuffer<ShadowBuffer>,
-    shadow_buffer_last: ShadowBuffer,
 
     light_dir: Vec3,
     previous_light_pos: Vec3,        // For temporal filtering
@@ -99,19 +98,13 @@ impl Default for Shadows1 {
 
         let model = Shadows1::generate_model(&floor_mat, &shadow_mat);
 
-        // Create depth shadow maps (double buffer)
-        let mut shadow_maps = Vec::new();
-        for _ in 0..2 {
-            // double buffer
-            // Use None for the id to avoid duplicate asset ids when creating multiple depth targets
-            let mut tex = Tex::new(TexType::Depthtarget, TexFormat::Depth16, None);
-            tex.set_size(SHADOW_MAP_RESOLUTION as usize, SHADOW_MAP_RESOLUTION as usize, None, None)
-                .sample_mode(TexSample::Linear)
-                .sample_comp(Some(TexSampleComp::LessOrEq))
-                .address_mode(TexAddress::Clamp);
-
-            shadow_maps.push(tex);
-        }
+        let shadow_buffer = MaterialBuffer::<ShadowBuffer>::new();
+        let mut shadow_map = Tex::new(TexType::Depthtarget, TexFormat::Depth16, None);
+        shadow_map
+            .set_size(SHADOW_MAP_RESOLUTION as usize, SHADOW_MAP_RESOLUTION as usize, None, None)
+            .sample_mode(TexSample::Linear)
+            .sample_comp(Some(TexSampleComp::LessOrEq))
+            .address_mode(TexAddress::Clamp);
 
         Self {
             id: StepperId::default(),
@@ -129,9 +122,8 @@ impl Default for Shadows1 {
 
             model,
             model_pose: Pose::new([0.0, 1.0, -0.5], None),
-            shadow_maps,
-            shadow_buffer: MaterialBuffer::<ShadowBuffer>::new(),
-            shadow_buffer_last: ShadowBuffer::default(),
+            shadow_map,
+            shadow_buffer,
 
             light_dir: Renderer::get_sky_light().get_dominent_light_direction(),
             previous_light_pos: Vec3::ZERO,
@@ -235,8 +227,7 @@ impl Shadows1 {
         let proj = Matrix::orthographic(SHADOW_MAP_SIZE, SHADOW_MAP_SIZE, SHADOW_MAP_NEAR_CLIP, SHADOW_MAP_FAR_CLIP);
 
         // Upload previous frame's data then update for next
-        self.shadow_buffer.set(&mut self.shadow_buffer_last);
-        self.shadow_buffer_last = ShadowBuffer {
+        let mut shadow_buffer_last = ShadowBuffer {
             shadow_map_transform: (view.get_inverse() * proj).get_transposed(),
             // Adaptive bias based on shadow mode
             shadow_map_bias: match self.current_shadow_mode {
@@ -250,12 +241,11 @@ impl Shadows1 {
             shadow_map_pixel_size: 1.0 / SHADOW_MAP_RESOLUTION as f32,
         };
 
-        let render_to = (self.frame_count % self.shadow_maps.len() as u64) as usize;
-        let render_next = ((self.frame_count + 1) % self.shadow_maps.len() as u64) as usize;
+        self.shadow_buffer.set(&mut shadow_buffer_last);
 
         Renderer::render_to(
             token,
-            &self.shadow_maps[render_to],
+            &self.shadow_map,
             None,
             None,
             view,
@@ -265,7 +255,7 @@ impl Shadows1 {
             None,
         );
 
-        Renderer::set_global_texture(token, 12, Some(&self.shadow_maps[render_next]));
+        Renderer::set_global_texture(token, 12, Some(&self.shadow_map));
         Renderer::set_global_buffer(12, &self.shadow_buffer);
     }
 

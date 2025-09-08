@@ -2698,10 +2698,22 @@ impl SHCubemap {
     /// assert_eq!(tex.get_id(), "default/cubemap");
     /// ```
     pub fn get_rendered_sky() -> SHCubemap {
-        SHCubemap {
-            sh: unsafe { render_get_skylight() },
-            tex: Tex(NonNull::new(unsafe { render_get_skytex() }).unwrap()),
-        }
+        let skytex_ptr = unsafe { render_get_skytex() };
+        let tex = if let Some(nonnull_ptr) = NonNull::new(skytex_ptr) {
+            Tex(nonnull_ptr)
+        } else {
+            // Si render_get_skytex() retourne null, on crée un SHCubemap par défaut
+            Log::warn("render_get_skytex() returned null, creating default sky cubemap");
+            let gradient_keys = [
+                crate::util::GradientKey::new(crate::util::Color128::new(0.2, 0.4, 0.8, 1.0), 0.0), // Bleu ciel
+                crate::util::GradientKey::new(crate::util::Color128::new(0.8, 0.9, 1.0, 1.0), 1.0), // Blanc nuageux
+            ];
+            let gradient = crate::util::Gradient::new(Some(&gradient_keys));
+            let default_sh_cubemap = SHCubemap::gen_cubemap_gradient(gradient, crate::maths::Vec3::UP, 64);
+            return default_sh_cubemap;
+        };
+
+        SHCubemap { sh: unsafe { render_get_skylight() }, tex }
     }
 
     /// set the spherical harmonics as skylight and the the cubemap texture as skytex

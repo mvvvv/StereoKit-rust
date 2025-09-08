@@ -5508,7 +5508,14 @@ impl Renderer {
     /// see also [`render_get_skytex`]
     /// see example in [`Renderer::sky_tex`]
     pub fn get_sky_tex() -> Tex {
-        Tex(NonNull::new(unsafe { render_get_skytex() }).unwrap())
+        let skytex_ptr = unsafe { render_get_skytex() };
+        if let Some(nonnull_ptr) = NonNull::new(skytex_ptr) {
+            Tex(nonnull_ptr)
+        } else {
+            // Si render_get_skytex() retourne null, on retourne une texture d'erreur par défaut
+            Log::warn("render_get_skytex() returned null, returning error texture");
+            Tex::error()
+        }
     }
 
     /// This is the Material that StereoKit is currently using to draw the skybox! It needs a special shader that's
