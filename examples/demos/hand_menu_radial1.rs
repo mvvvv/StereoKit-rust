@@ -210,6 +210,11 @@ impl HandMenuRadial1 {
         fly_over_ico.clip_cutoff(0.1);
 
         //---- Sky domes and floor
+
+        //save the default cubemap.
+        let cube_default = SHCubemap::get_rendered_sky();
+        cube_default.render_as_sky();
+
         let mut gradient_sky = Gradient::new(None);
         gradient_sky
             .add(Color128::BLACK, 0.0)
@@ -233,7 +238,8 @@ impl HandMenuRadial1 {
         let sh = SphericalHarmonics::from_lights(&lights);
         let cube2 = SHCubemap::gen_cubemap_sh(sh, 15, 5.0, 0.02);
 
-        let mut cube3 = SHCubemap::from_cubemap("hdri/sky_dawn.hdr", true, 0).unwrap_or(SHCubemap::get_rendered_sky());
+        let mut cube3 =
+            SHCubemap::from_cubemap("hdri/sky_dawn.hdr", true, 0).unwrap_or_else(|_err| cube_default.clone_ref());
         cube3.sh.add(Vec3::new(-1.0, 0.15, -0.15).get_normalized(), RED).brightness(0.1);
 
         // let cubemap_files = [
@@ -249,8 +255,8 @@ impl HandMenuRadial1 {
         // You can also zip the files:
         // ktx create --cubemap --encode uastc  --format R8G8B8A8_UNORM  --assign-oetf linear --assign-primaries bt709
         //            --generate-mipmap right.png left.png top.png bottom.png front.png back.png cubemap_rgba32.ktx2
-        let mut cube4 =
-            SHCubemap::from_cubemap("hdri/giza/cubemap_rgba32.ktx2", true, 0).unwrap_or(SHCubemap::get_rendered_sky());
+        let mut cube4 = SHCubemap::from_cubemap("hdri/giza/cubemap_rgba32.ktx2", true, 0)
+            .unwrap_or_else(|_err| cube_default.clone_ref());
         cube4
             .sh
             .add(Vec3::new(1.0, 0.25, 0.0).get_normalized(), Color128::WHITE)
@@ -258,9 +264,6 @@ impl HandMenuRadial1 {
             .add(Vec3::new(0.0, 0.25, 1.0).get_normalized(), DARK_GRAY)
             .add(Vec3::new(0.0, 0.25, -1.0).get_normalized(), DARK_GRAY)
             .brightness(0.3);
-
-        //save the default cubemap.
-        let cube_default = SHCubemap::get_rendered_sky();
 
         //---Load hand menu
         let hand_menu_stepper = HandMenuRadial::new(HandRadialLayer::new(

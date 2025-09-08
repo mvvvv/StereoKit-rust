@@ -2716,6 +2716,25 @@ impl SHCubemap {
         SHCubemap { sh: unsafe { render_get_skylight() }, tex }
     }
 
+    /// Creates a clone of the same reference. Basically, the new variable is the same asset. This is what you get by
+    /// calling find() method.
+    /// <https://stereokit.net/Pages/StereoKit/Tex/Find.html>
+    ///
+    /// see also [`tex_find()`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::tex::SHCubemap;
+    ///
+    /// let sh_cubemap = SHCubemap::get_rendered_sky();
+    ///
+    /// let cubemap = sh_cubemap.clone_ref();
+    /// assert_eq!(cubemap.tex.get_id(), "default/cubemap");
+    /// ```
+    pub fn clone_ref(&self) -> SHCubemap {
+        SHCubemap { sh: self.sh, tex: self.tex.clone_ref() }
+    }
+
     /// set the spherical harmonics as skylight and the the cubemap texture as skytex
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyLight.html>
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyTex.html>
