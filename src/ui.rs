@@ -1131,10 +1131,10 @@ unsafe extern "C" {
         allowed_gestures: UiGesture,
     ) -> Bool32T;
     pub fn ui_handle_end();
-    pub fn ui_window_begin(text: *const c_char, pose: *mut Pose, size: Vec2, window_type: UiWin, move_type: UiMove);
+    pub fn ui_window_begin(text: *const c_char, opt_pose: *mut Pose, size: Vec2, window_type: UiWin, move_type: UiMove);
     pub fn ui_window_begin_16(
         text: *const c_ushort,
-        pose: *mut Pose,
+        opt_pose: *mut Pose,
         size: Vec2,
         window_type: UiWin,
         move_type: UiMove,
@@ -4659,8 +4659,8 @@ impl Ui {
     ///   hierarchy.
     /// * `pose` - The pose state for the window! If showHeader is true, the user will be able to grab this header and
     ///   move it around.
-    /// * `size` - Physical size of the window! If None, then the size on that axis will be auto-
-    ///   calculated based on the content provided during the previous frame.
+    /// * `size` - Physical size of the window! If either dimension is 0, then the size on that axis will be auto-
+    ///   calculated based on the content provided during the previous frame. None fills both dimensions automatically.
     /// * `windowType` - Describes how the window should be drawn, use a header, a body, neither, or both? None is
     ///   UiWin::Normal
     /// * `moveType` - Describes how the window will move when dragged around. None is UiMove::FaceUser
@@ -4674,21 +4674,21 @@ impl Ui {
     /// let mut window_pose1 = Pose::new(
     ///     [-0.07, 0.115, 0.89], Some([0.0, 185.0, 0.0].into()));
     /// let mut window_pose2 = Pose::new(
-    ///     [-0.05, 0.02, 0.89], Some([0.0, 180.0, 0.0].into()));
+    ///     [-0.03, 0.02, 0.89], Some([0.0, 180.0, 0.0].into()));
     /// let mut window_pose3 = Pose::new(
-    ///     [0.09, -0.075, 0.89], Some([0.0, 175.0, 0.0].into()));
+    ///     [0.06, -0.07, 0.89], Some([0.0, 175.0, 0.0].into()));
     ///
     /// filename_scr = "screenshots/ui_window.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Window", &mut window_pose1, None, Some(UiWin::Body), None);
+    ///     Ui::window_begin("Window A", &mut window_pose1, None, Some(UiWin::Body), None);
     ///     Ui::label("Hello", None, true);
     ///     Ui::window_end();
     ///
-    ///     Ui::window_begin("Window", &mut window_pose2, Some([0.19, 0.05].into()), None, None);
+    ///     Ui::window_begin("Window B", &mut window_pose2, Some([0.19, 0.05].into()), None, None);
     ///     Ui::label("World", None, true);
     ///     Ui::window_end();
     ///
-    ///     Ui::window_begin("Window", &mut window_pose3, None, None, Some(UiMove::Exact));
+    ///     Ui::window_begin("Window C", &mut window_pose3, None, None, Some(UiMove::Exact));
     ///     Ui::label("!!", None, true);
     ///     Ui::window_end();
     /// );
@@ -4696,7 +4696,7 @@ impl Ui {
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_window.jpeg" alt="screenshot" width="200">
     pub fn window_begin(
         text: impl AsRef<str>,
-        pose: &mut Pose,
+        opt_pose: &mut Pose,
         size: Option<Vec2>,
         window_type: Option<UiWin>,
         move_type: Option<UiMove>,
@@ -4705,7 +4705,48 @@ impl Ui {
         let window_type = window_type.unwrap_or(UiWin::Normal);
         let move_type = move_type.unwrap_or(UiMove::FaceUser);
         let size = size.unwrap_or(Vec2::ZERO);
-        unsafe { ui_window_begin(cstr.as_ptr(), pose, size, window_type, move_type) }
+        unsafe { ui_window_begin(cstr.as_ptr(), opt_pose, size, window_type, move_type) }
+    }
+
+    /// Begins a new window! This will push an automatically determined pose onto the transform stack, and all UI
+    /// elements will be relative to that new pose. The pose is actually the top-center of the window. Must be finished
+    /// with a call to Ui::window_end().
+    /// If size is None the size will be auto-calculated based on the content provided during the previous frame.
+    /// <https://stereokit.net/Pages/StereoKit/UI/WindowBegin.html>
+    /// * `text` - Text to display on the window title and id for tracking element state. MUST be unique within current
+    ///   hierarchy.
+    /// * `size` - Physical size of the window! If either dimension is 0, then the size on that axis will be auto-
+    ///   calculated based on the content provided during the previous frame. None fills both dimensions automatically.
+    /// * `windowType` - Describes how the window should be drawn, use a header, a body, neither, or both? None is
+    ///   UiWin::Normal
+    /// * `moveType` - Describes how the window will move when dragged around. None is UiMove::FaceUser
+    ///
+    /// see also [`ui_window_begin`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{ui::{Ui, UiMove, UiWin}, maths::Vec2};
+    ///
+    /// fov_scr = 10.0;
+    /// filename_scr = "screenshots/ui_window_auto.jpeg";
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     Ui::window_begin_auto("Window very very large", None, None, None);
+    ///     Ui::label("Hello", None, true);
+    ///     Ui::window_end();
+    /// );
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_window_auto.jpeg" alt="screenshot" width="200">
+    pub fn window_begin_auto(
+        text: impl AsRef<str>,
+        size: Option<Vec2>,
+        window_type: Option<UiWin>,
+        move_type: Option<UiMove>,
+    ) {
+        let cstr = CString::new(text.as_ref()).unwrap();
+        let window_type = window_type.unwrap_or(UiWin::Normal);
+        let move_type = move_type.unwrap_or(UiMove::FaceUser);
+        let size = size.unwrap_or(Vec2::ZERO);
+        unsafe { ui_window_begin(cstr.as_ptr(), null_mut(), size, window_type, move_type) }
     }
 
     /// Finishes a window! Must be called after Ui::window_begin() and all elements have been drawn.

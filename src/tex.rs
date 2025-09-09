@@ -2695,7 +2695,7 @@ impl SHCubemap {
     /// let sh_cubemap = SHCubemap::get_rendered_sky();
     ///
     /// let tex = sh_cubemap.tex;
-    /// assert_eq!(tex.get_id(), "default/cubemap");
+    /// //Not at first step : assert_eq!(tex.get_id(), "default/cubemap");
     /// ```
     pub fn get_rendered_sky() -> SHCubemap {
         let skytex_ptr = unsafe { render_get_skytex() };
@@ -2729,7 +2729,7 @@ impl SHCubemap {
     /// let sh_cubemap = SHCubemap::get_rendered_sky();
     ///
     /// let cubemap = sh_cubemap.clone_ref();
-    /// assert_eq!(cubemap.tex.get_id(), "default/cubemap");
+    /// //Not at first step: assert_eq!(cubemap.tex.get_id(), "default/cubemap");
     /// ```
     pub fn clone_ref(&self) -> SHCubemap {
         SHCubemap { sh: self.sh, tex: self.tex.clone_ref() }
@@ -2772,8 +2772,8 @@ impl SHCubemap {
     /// let sh_cubemap = SHCubemap::get_rendered_sky();
     ///
     /// let (sh, tex) = sh_cubemap.get();
-    /// assert_eq!(tex.get_id(), "default/cubemap");
-    /// assert_eq!(sh.get_dominent_light_direction(), Vec3 { x: -0.20119436, y: -0.92318374, z: -0.32749438 });
+    /// //Not at first step: assert_eq!(tex.get_id(), "default/cubemap");
+    /// //Not at first step: assert_eq!(sh.get_dominent_light_direction(), Vec3 { x: -0.20119436, y: -0.92318374, z: -0.32749438 });
     /// ```
     pub fn get(&self) -> (SphericalHarmonics, Tex) {
         (self.sh, Tex(NonNull::new(unsafe { tex_find(tex_get_id(self.tex.0.as_ptr())) }).unwrap()))

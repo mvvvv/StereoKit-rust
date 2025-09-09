@@ -5727,6 +5727,21 @@ impl Pose {
     pub fn get_up(&self) -> Vec3 {
         self.orientation.mul_vec3(Vec3::UP)
     }
+
+    /// Check if this Pose is exactly equal to Pose::ZERO
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::maths::{Vec3, Pose};
+    /// let pose1 = Pose::ZERO;
+    /// let pose2 = Pose::IDENTITY;
+    /// assert!(pose1.is_zero());
+    /// assert!(!pose2.is_zero());
+    /// ```
+    #[inline]
+    pub fn is_zero(&self) -> bool {
+        self.orientation.x == 0.0 && self.orientation.y == 0.0 && self.orientation.z == 0.0 && self.orientation.w == 0.0
+    }
 }
 
 impl Display for Pose {

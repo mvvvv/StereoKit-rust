@@ -1,7 +1,7 @@
 use stereokit_rust::{
     font::Font,
     material::Material,
-    maths::{Matrix, Pose, Quat, Vec2, Vec3, units::CM},
+    maths::{Matrix, Quat, Vec2, Vec3, units::CM},
     mesh::Mesh,
     prelude::*,
     system::{BtnState, Pivot, Text, TextStyle},
@@ -39,7 +39,7 @@ const LATHE_BUTTON: [UiLathePt; 6] = [
 pub struct Ui1 {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
-    pub window_demo_pose: Pose,
+
     pub demo_win_width: f32,
     pub ui_material: Material,
     pub id_slider: String,
@@ -62,10 +62,6 @@ impl Default for Ui1 {
             transform: Matrix::t_r(
                 (Vec3::NEG_Z * 2.5) + Vec3::Y, //
                 Quat::from_angles(0.0, 180.0, 0.0),
-            ),
-            window_demo_pose: Pose::new(
-                Vec3::new(0.0, 1.5, -1.3), //
-                Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0))),
             ),
             demo_win_width: 36.0 * CM,
             ui_material: Material::ui().copy(),
@@ -107,13 +103,7 @@ impl Ui1 {
             Ui::set_element_visual(UiVisual::ExtraSlot03, mesh, None, None);
         }
 
-        Ui::window_begin(
-            "Ui elements",
-            &mut self.window_demo_pose,
-            Some(Vec2::new(self.demo_win_width, 0.0)),
-            None,
-            None,
-        );
+        Ui::window_begin_auto("Ui elements", Some(Vec2::new(self.demo_win_width, 0.0)), None, None);
 
         self.custom_button_mesh(token, "Custom Button Mesh", UiVisual::ExtraSlot02);
         self.custom_button_element(token, "Custom Button Element");
