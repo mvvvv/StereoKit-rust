@@ -4665,7 +4665,7 @@ impl Ui {
     ///   UiWin::Normal
     /// * `moveType` - Describes how the window will move when dragged around. None is UiMove::FaceUser
     ///
-    /// see also [`ui_window_begin`]
+    /// see also [`ui_window_begin`] [`Ui::window_end`] [`Ui::window_begin_auto`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -4721,7 +4721,7 @@ impl Ui {
     ///   UiWin::Normal
     /// * `moveType` - Describes how the window will move when dragged around. None is UiMove::FaceUser
     ///
-    /// see also [`ui_window_begin`]
+    /// see also [`ui_window_begin`] [`Ui::window_end`] [`Ui::window_begin`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -4753,7 +4753,7 @@ impl Ui {
     /// <https://stereokit.net/Pages/StereoKit/UI/WindowEnd.html>
     ///
     /// see also [`ui_window_end`]
-    /// see example in [`Ui::window_begin`]
+    /// see example in [`Ui::window_begin`] [`Ui::window_begin_auto`]
     pub fn window_end() {
         unsafe { ui_window_end() }
     }
