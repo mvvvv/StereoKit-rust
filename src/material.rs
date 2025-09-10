@@ -147,6 +147,7 @@ unsafe extern "C" {
     pub fn material_set_depth_clip(material: MaterialT, clip_enabled: Bool32T);
     pub fn material_set_queue_offset(material: MaterialT, offset: i32);
     pub fn material_set_chain(material: MaterialT, chain_material: MaterialT);
+    pub fn material_set_variant(material: MaterialT, variant_index: i32, variant_material: MaterialT);
     pub fn material_get_transparency(material: MaterialT) -> Transparency;
     pub fn material_get_cull(material: MaterialT) -> Cull;
     pub fn material_get_wireframe(material: MaterialT) -> Bool32T;
@@ -155,6 +156,7 @@ unsafe extern "C" {
     pub fn material_get_depth_clip(material: MaterialT) -> Bool32T;
     pub fn material_get_queue_offset(material: MaterialT) -> i32;
     pub fn material_get_chain(material: MaterialT) -> MaterialT;
+    pub fn material_get_variant(material: MaterialT, variant_index: i32) -> MaterialT;
     pub fn material_set_shader(material: MaterialT, shader: ShaderT);
     pub fn material_get_shader(material: MaterialT) -> ShaderT;
 }
@@ -1039,7 +1041,7 @@ impl Material {
     /// towards the back of the queue, so they’re more likely to be discarded early.
     /// <https://stereokit.net/Pages/StereoKit/Material/QueueOffset.html>
     ///
-    /// see also [`material_set_queue_offset`]
+    /// see also [`material_set_queue_offset`] [`Material::get_queue_offset`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -1059,7 +1061,7 @@ impl Material {
     /// chained Materials will also be used to draw the same item.
     /// <https://stereokit.net/Pages/StereoKit/Material/Chain.html>
     ///
-    /// see also [`material_set_chain`]
+    /// see also [`material_set_chain`] [`Material::get_chain`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -1075,6 +1077,47 @@ impl Material {
     /// ```
     pub fn chain(&mut self, chained_material: &Material) -> &mut Self {
         unsafe { material_set_chain(self.0.as_ptr(), chained_material.0.as_ptr()) };
+        self
+    }
+
+    /// Variants are used by special effects when a manual render pass selects a variant to use for the whole pass!
+    /// Variants default to None, and None variants are not drawn.
+    ///
+    /// For example, a shadow map render pass might use variant 1, and sets it to a simplified Material that skips
+    /// textures and only does positional vertex transforms.
+    /// <https://stereokit.net/Pages/StereoKit/Material/SetVariant.html>
+    /// * `variant_index` - Which variant index should we set? 0 is reserved for the primary material, and SK has a max
+    ///   of 4 total variants, including the default.
+    /// * `variant_material` - The Material to use for the variant. Sub-variants are ignored, and None variant means
+    ///   nothing will be drawn when using the variant.
+    ///
+    /// see also [`material_set_variant`] [`Material::get_variant`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::material::Material;
+    ///
+    /// let mut main_material = Material::pbr().copy();
+    /// main_material.id("main_material");
+    ///
+    /// // Create a simplified variant for shadow mapping
+    /// let mut shadow_variant = Material::unlit().copy();
+    /// shadow_variant.id("shadow_variant");
+    ///
+    /// // Set variant 1 for shadow mapping
+    /// main_material.set_variant(1, Some(&shadow_variant));
+    ///
+    /// // Verify the variant was set
+    /// assert!(main_material.get_variant(0).is_none());
+    /// assert!(main_material.get_variant(1).is_some());
+    /// assert_eq!(main_material.get_variant(1).unwrap().get_id(), "shadow_variant");
+    /// ```
+    pub fn set_variant(&mut self, variant_index: i32, variant_material: Option<&Material>) -> &mut Self {
+        let material_ptr = match variant_material {
+            Some(material) => material.0.as_ptr(),
+            None => std::ptr::null_mut(),
+        };
+        unsafe { material_set_variant(self.0.as_ptr(), variant_index, material_ptr) };
         self
     }
 
@@ -1178,6 +1221,20 @@ impl Material {
         unsafe { NonNull::new(material_get_chain(self.0.as_ptr())).map(Material) }
     }
 
+    /// This retrieves the variant assigned to the specified variant index. None is the default value for variants, and
+    /// it's not valid to ask for variant 0 (already the current Material).
+    /// <https://stereokit.net/Pages/StereoKit/Material/GetVariant.html>
+    /// * `variant_index` - The variant to retrieve. 0 is already the current material, and an invalid index here. SK
+    ///   has a max of 4 total variants, including the default.
+    ///
+    /// Returns the Material variant, or None.
+    ///
+    /// see also [`material_get_variant`]
+    /// see example in [`Material::set_variant`]
+    pub fn get_variant(&self, variant_index: i32) -> Option<Material> {
+        unsafe { NonNull::new(material_get_variant(self.0.as_ptr(), variant_index)).map(Material) }
+    }
+
     /// Get All param infos.
     /// <https://stereokit.net/Pages/StereoKit/Material/GetAllParamInfo.html>
     ///
@@ -1213,7 +1270,8 @@ impl Material {
     /// characteristics, so it can be great to copy this one when creating your own materials! Or if you want to
     /// override StereoKit’s default PBR behavior, here’s where you do it! Note that the shader used by default here is
     /// much more costly than Default.Material.
-    ///  <https://stereokit.net/Pages/StereoKit/Material/PBR.html>
+    /// <https://stereokit.net/Pages/StereoKit/Material/PBR.html>
+    ///
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -1227,6 +1285,7 @@ impl Material {
 
     /// Same as MaterialPBR, but it uses a discard clip for transparency.
     /// <https://stereokit.net/Pages/StereoKit/Material/PBRClip.html>
+    ///
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -1243,6 +1302,7 @@ impl Material {
     /// this one when creating your own materials! Or if you want to override StereoKit’s default unlit behavior,
     /// here’s where you do it!
     /// <https://stereokit.net/Pages/StereoKit/Material/Unlit.html>
+    ///
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -1260,6 +1320,7 @@ impl Material {
     /// performance characteristics, so it can be great to copy this one when creating your own materials!
     /// Or if you want to override StereoKit’s default unlit clipped behavior, here’s where you do it!
     /// <https://stereokit.net/Pages/StereoKit/Material/UnlitClip.html>
+    ///
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -1273,6 +1334,7 @@ impl Material {
 
     /// The material used by cubemap
     /// <https://stereokit.net/Pages/StereoKit/Material.html>
+    ///
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -1286,6 +1348,7 @@ impl Material {
 
     /// The material used by font
     /// <https://stereokit.net/Pages/StereoKit/Material.html>
+    ///
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -1299,6 +1362,7 @@ impl Material {
 
     /// The material used for hands
     /// <https://stereokit.net/Pages/StereoKit/Material.html>
+    ///
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -1314,6 +1378,7 @@ impl Material {
     /// the finger
     /// is to the UI.
     /// <https://stereokit.net/Pages/StereoKit/Material/UI.html>
+    ///
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -1331,6 +1396,7 @@ impl Material {
     /// works best on cube-like meshes where each face has UV coordinates from 0-1.
     /// Shader Parameters: color - color border_size - meters border_size_grow - meters border_affect_radius - meters
     /// <https://stereokit.net/Pages/StereoKit/Material/UIBox.html>
+    ///
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -1345,6 +1411,7 @@ impl Material {
     /// The material used by the UI for Quadrant Sized UI elements. See UI.QuadrantSizeMesh for additional details.
     /// By default, it uses a shader that creates a ‘finger shadow’ that shows how close the finger is to the UI.
     /// <https://stereokit.net/Pages/StereoKit/Material.html>
+    ///
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -1359,6 +1426,7 @@ impl Material {
     /// The material used by the UI for Aura, an extra space and visual element that goes around Window elements to make
     /// them easier to grab
     /// <https://stereokit.net/Pages/StereoKit/Material.html>
+    ///
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!

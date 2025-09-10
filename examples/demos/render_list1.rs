@@ -105,6 +105,7 @@ impl RenderList1 {
             Some(RenderClear::Color),
             Rect::new(0.0, 0.0, 1.0, 1.0),
             None,
+            None,
         );
 
         Ui::window_begin("Render Lists", &mut self.window_pose, Some(Vec2::new(0.23, 0.35)), None, None);

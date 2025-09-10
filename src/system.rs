@@ -4357,10 +4357,10 @@ unsafe extern "C" {
     pub fn render_to(
         to_rendertarget: TexT,
         to_target_index: i32,
-        override_material: MaterialT,
         camera: *const Matrix,
         projection: *const Matrix,
         layer_filter: RenderLayer,
+        material_variant: i32,
         clear: RenderClear,
         viewport: Rect,
     );
@@ -4844,9 +4844,6 @@ impl Renderer {
     ///   texture.
     /// * `to_target_index` - (Optional) Index of the render target's array slice we want to draw to. If None, defaults
     ///   to 0. This is only relevant for array/render target textures with multiple slices.
-    /// * `override_material` - (Optional) A material that will override all materials used during this render pass.
-    ///   This can be useful for depth pre-pass, shadow map rendering, or special effects. If None, materials attached
-    ///   to individual draw items are used (normal behavior).
     /// * `camera` - A TRS matrix representing the location and orientation of the camera. This matrix gets inverted
     ///   later on, so no need to do it yourself.
     /// * `projection` - The projection matrix describes how the geometry is flattened onto the draw surface. Normally,
@@ -4854,6 +4851,9 @@ impl Renderer {
     /// * `layer_filter` - This is a bit flag that allows you to change which layers StereoKit renders for this particular
     ///   render viewpoint. To change what layers a visual is on, use a Draw method that includes a RenderLayer as a
     ///   parameter. If None has default value of RenderLayer::ALL
+    /// * `material_variant` - Specifies which Material variant should be used for rendering. 0 will be the normal
+    ///   default material, any others will generally be application-defined by setting up each Material's Variant with
+    ///   specific shaders. If a Material has no corresponding variant, it will not be drawn.
     /// * `clear` - Describes if and how the rendertarget should be cleared before rendering. Note that clearing the
     ///   target is unaffected by the viewport, so this will clean the entire surface! If None has default value of
     ///   RenderClear::All
@@ -4891,7 +4891,7 @@ impl Renderer {
     ///     Renderer::add_mesh(token, &plane, &material, transform_plane,
     ///         None, None);
     ///
-    ///     Renderer::render_to(token, &tex, None, None, camera, projection, None, None, None);
+    ///     Renderer::render_to(token, &tex, None, camera, projection, None, None, None, None);
     /// );
     /// ```
     #[allow(clippy::too_many_arguments)]
@@ -4899,16 +4899,16 @@ impl Renderer {
         _token: &MainThreadToken,
         to_render_target: impl AsRef<Tex>,
         to_target_index: Option<i32>,
-        override_material: Option<&Material>,
         camera: M,
         projection: M,
         layer_filter: Option<RenderLayer>,
+        material_variant: Option<i32>,
         clear: Option<RenderClear>,
         viewport: Option<Rect>,
     ) {
         let to_target_index = to_target_index.unwrap_or(0);
-        let override_material_ptr = override_material.map(|m| m.0.as_ptr()).unwrap_or(std::ptr::null_mut());
         let layer_filter = layer_filter.unwrap_or(RenderLayer::All);
+        let material_variant = material_variant.unwrap_or(0);
         let clear = clear.unwrap_or(RenderClear::All);
         let viewport = viewport.unwrap_or_default();
 
@@ -4916,10 +4916,10 @@ impl Renderer {
             render_to(
                 to_render_target.as_ref().0.as_ptr(),
                 to_target_index,
-                override_material_ptr,
                 &camera.into(),
                 &projection.into(),
                 layer_filter,
+                material_variant,
                 clear,
                 viewport,
             )

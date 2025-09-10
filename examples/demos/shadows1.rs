@@ -3,7 +3,7 @@
 // !!!!!!!
 use stereokit_rust::{
     font::Font,
-    material::{Cull, Material, MaterialBuffer},
+    material::{Material, MaterialBuffer},
     maths::{Matrix, Pose, Quat, Vec2, Vec3, Vec4},
     mesh::Mesh,
     model::Model,
@@ -41,9 +41,10 @@ impl Default for ShadowBuffer {
 }
 
 const SHADOW_MAP_SIZE: f32 = 2.0;
-const SHADOW_MAP_RESOLUTION: i32 = 1024; // Higher resolution for better quality
+const SHADOW_MAP_RESOLUTION: usize = 1024; // Higher resolution for better quality
 const SHADOW_MAP_NEAR_CLIP: f32 = 0.01;
 const SHADOW_MAP_FAR_CLIP: f32 = 20.0;
+const SHADOW_MAP_VARIANT: i32 = 1; // Use material variant 1 for shadow casting
 
 // Shadow mode configuration
 #[derive(Debug, Clone, Copy)]
@@ -87,9 +88,22 @@ unsafe impl Send for Shadows1 {}
 
 impl Default for Shadows1 {
     fn default() -> Self {
+        let shadow_buffer = MaterialBuffer::<ShadowBuffer>::new();
+        let mut shadow_map = Tex::new(TexType::Depthtarget, TexFormat::Depth16, None);
+        shadow_map
+            .set_size(SHADOW_MAP_RESOLUTION, SHADOW_MAP_RESOLUTION, None, None)
+            .sample_mode(TexSample::Linear)
+            .sample_comp(Some(TexSampleComp::LessOrEq))
+            .address_mode(TexAddress::Clamp);
+
+        let mut caster_mat = Material::from_file("shaders/basic_shadow_caster.hlsl.sks", None).unwrap_or_default();
+        caster_mat.depth_test(stereokit_rust::material::DepthTest::LessOrEq).depth_clip(false);
+        // This can help with shadow acne if biasing isn't working out, but can introduce peter-panning.
+        // caster_mat.face_cull(Cull::Front);
+
         // Prepare a simple model: floor + a few cubes.
         let mut shadow_mat = Material::from_file("shaders/basic_shadow.hlsl.sks", None).unwrap_or_default();
-        shadow_mat.depth_test(stereokit_rust::material::DepthTest::LessOrEq).face_cull(Cull::Back);
+        shadow_mat.set_variant(SHADOW_MAP_VARIANT, Some(&caster_mat));
 
         let mut floor_mat = shadow_mat
             .tex_file_copy("textures/parquet2/parquet2.ktx2", true, None)
@@ -97,14 +111,6 @@ impl Default for Shadows1 {
         floor_mat.tex_transform(Vec4::new(0.0, 0.0, 2.0, 2.0));
 
         let model = Shadows1::generate_model(&floor_mat, &shadow_mat);
-
-        let shadow_buffer = MaterialBuffer::<ShadowBuffer>::new();
-        let mut shadow_map = Tex::new(TexType::Depthtarget, TexFormat::Depth16, None);
-        shadow_map
-            .set_size(SHADOW_MAP_RESOLUTION as usize, SHADOW_MAP_RESOLUTION as usize, None, None)
-            .sample_mode(TexSample::Linear)
-            .sample_comp(Some(TexSampleComp::LessOrEq))
-            .address_mode(TexAddress::Clamp);
 
         Self {
             id: StepperId::default(),
@@ -240,23 +246,21 @@ impl Shadows1 {
             light_color: [1.0, 1.0, 1.0].into(),
             shadow_map_pixel_size: 1.0 / SHADOW_MAP_RESOLUTION as f32,
         };
-
         self.shadow_buffer.set(&mut shadow_buffer_last);
 
+        Renderer::set_global_texture(token, 12, None);
         Renderer::render_to(
             token,
             &self.shadow_map,
             None,
-            None,
             view,
             proj,
             Some(RenderLayer::All & !RenderLayer::VFX),
+            Some(SHADOW_MAP_VARIANT),
             None,
             None,
         );
-
         Renderer::set_global_texture(token, 12, Some(&self.shadow_map));
-        Renderer::set_global_buffer(12, &self.shadow_buffer);
     }
 
     /// Draw the shadow settings UI window

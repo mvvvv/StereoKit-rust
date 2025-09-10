@@ -150,6 +150,7 @@ impl Layers1 {
                 Some(RenderClear::Color),
                 Rect::new(0.0, 0.0, 1.0, 1.0),
                 None,
+                None,
             );
 
             let sprite = Sprite::from_tex(render_tex, None, None).unwrap();

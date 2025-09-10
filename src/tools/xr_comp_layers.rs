@@ -73,7 +73,7 @@ use std::ptr::null_mut;
 ///                         Some(Color128::new(0.4, 0.3, 0.2, 1.0)),
 ///                         Some(RenderClear::Color),
 ///                         Rect::new(0.0, 0.0, 1.0, 1.0),
-///                         None,
+///                         None, None,
 ///                     );
 ///                 }
 ///                 
@@ -433,7 +433,7 @@ impl XrCompLayers {
 ///                 None,
 ///                 Some(RenderClear::All),
 ///                 Rect::new(0.0, 0.0, 1.0, 1.0),
-///                 None,
+///                 None, None,
 ///             );
 ///         }
 ///         swapchain.release_image().expect("Failed to release image");

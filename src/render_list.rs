@@ -54,7 +54,7 @@ use std::{
 ///            Some(Color128::new((iter % 100) as f32 * 0.01, 0.3, 0.2, 0.5)),
 ///            Some(RenderClear::Color),
 ///            Rect::new(0.0, 0.0, 1.0, 1.0),
-///            None,
+///            None, None,
 ///        );
 ///
 ///     screen.draw(token, &render_mat, Matrix::IDENTITY, None, None);
@@ -129,6 +129,7 @@ unsafe extern "C" {
         clear: RenderClear,
         viewport_pct: Rect,
         layer_filter: RenderLayer,
+        material_variant: i32,
     );
     pub fn render_list_push(list: RenderListT);
     pub fn render_list_pop();
@@ -317,7 +318,7 @@ impl RenderList {
     ///     Some(Color128::new(0.99, 0.3, 0.2, 0.5)),
     ///     Some(RenderClear::Color),
     ///     Rect::new(0.0, 0.0, 1.0, 1.0),
-    ///     Some(RenderLayer::AllThirdPerson),
+    ///     Some(RenderLayer::AllThirdPerson), None,
     /// );
     ///
     /// filename_scr = "screenshots/render_list_add_mesh.jpeg";
@@ -393,7 +394,7 @@ impl RenderList {
     ///     Some(Color128::new(0.0, 0.3, 0.2, 0.5)),
     ///     Some(RenderClear::Color),
     ///     Rect::new(0.0, 0.0, 1.0, 1.0),
-    ///     Some(RenderLayer::AllFirstPerson),
+    ///     Some(RenderLayer::AllFirstPerson), None,
     /// );
     ///
     /// filename_scr = "screenshots/render_list_add_model.jpeg";
@@ -451,6 +452,9 @@ impl RenderList {
     /// * `layerFilter` - This is a bit flag that allows you to change which layers StereoKit renders for this
     ///   particular render viewpoint. To change what layers a visual is on, use a Draw method that includes a
     ///   RenderLayer as a parameter.
+    /// * `material_variant` - Specifies which Material variant should be used for rendering. 0 will be the normal
+    ///   default material, any others will generally be application defined by setting up each Material's Variant
+    ///   with specific shaders. If a Material has no corresponding variant, it will not be drawn.
     ///
     /// see also [`render_list_draw_now`]
     /// ### Examples
@@ -490,7 +494,8 @@ impl RenderList {
     ///         None,
     ///         Some(RenderClear::None),
     ///         Rect::new(0.0, 0.0, 1.0, 1.0),
-    ///         None
+    ///         None,
+    ///         None,
     ///     );
     /// );
     /// ```
@@ -505,10 +510,12 @@ impl RenderList {
         clear: Option<RenderClear>,
         viewport_pct: Rect,
         layer_filter: Option<RenderLayer>,
+        material_variant: Option<i32>,
     ) {
         let layer_filter = layer_filter.unwrap_or(RenderLayer::all());
         let clear = clear.unwrap_or(RenderClear::All);
         let clear_color = clear_color.unwrap_or_default();
+        let material_variant = material_variant.unwrap_or(0);
         unsafe {
             render_list_draw_now(
                 self.0.as_ptr(),
@@ -519,6 +526,7 @@ impl RenderList {
                 clear,
                 viewport_pct,
                 layer_filter,
+                material_variant,
             )
         }
     }

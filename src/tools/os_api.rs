@@ -665,11 +665,11 @@ pub enum SystemAction {
     /// Intent: systemux://browser, URI: [any valid URL]
     Browser { url: String },
     /// Open the store
-    /// Intent: systemux://store, URI: [none] for front page or /item/[ID] for specific app
+    /// Intent: systemux://store, URI: \[none\] for front page or /item/\[ID\] for specific app
     Store { app_id: Option<String> },
     /// Open settings
     /// Intent: systemux://settings, URI options:
-    /// - [none]: Main settings page
+    /// - \[none\]: Main settings page
     /// - /hands: Hand tracking settings
     /// - /system: System settings
     /// - /privacy: Privacy settings
@@ -683,7 +683,7 @@ pub enum SystemAction {
     /// - /applications?package=com.X.Y: Settings for specific app
     Settings { setting: Option<String> },
     /// Open Files app
-    /// Intent: systemux://file-manager, URI: [none] for Recents, /media/ for Media tab, /downloads/ for Downloads tab
+    /// Intent: systemux://file-manager, URI: \[none\] for Recents, /media/ for Media tab, /downloads/ for Downloads tab
     FileManager { path: Option<String> },
     /// Open Meta bug reporter
     /// Intent: systemux://bug_report, URI: N/A
