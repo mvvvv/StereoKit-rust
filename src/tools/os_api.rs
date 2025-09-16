@@ -652,7 +652,7 @@ pub fn launch_browser_android(url: &str) -> bool {
     }
 }
 
-/// Open nothing has we don't have a virtual keyboard
+/// Open nothing has we aren't on Android
 #[cfg(not(target_os = "android"))]
 pub fn launch_browser_android(_url: &str) -> bool {
     false

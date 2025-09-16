@@ -141,7 +141,7 @@
 //!
 //! Hundreds of examples (which are also unit tests) are available in this documentation. If you like to learn by
 //! examples, check out  the modules in the following order: [`sk`], [`mesh`], [`model`], [`maths`], [`ui`], [`framework`],
-//! [`tools`], [`sound`], [`interactor`], [`system`], [`material`], [`shader`], [`tex`], [`sprite`], [`font`], [`render_list`].
+//! [`tools`], [`sound`], [`interactor`], [`system`], [`permission`] [`material`], [`shader`], [`tex`], [`sprite`], [`font`], [`render_list`].
 //!
 //! # How to build and test your application:
 //!
@@ -418,6 +418,9 @@ pub mod mesh;
 /// [![Model Nodes](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_nodes.jpeg)](model::Nodes)
 /// [![ModelNode](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_node.jpeg)](model::ModelNode)
 pub mod model;
+
+/// Permission related structs, enums and functions for managing cross-platform permissions.
+pub mod permission;
 
 /// Prelude for StereoKit-rust. The basis for all StereoKit-rust programs.
 pub mod prelude;
