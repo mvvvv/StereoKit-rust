@@ -1,7 +1,6 @@
 use std::f32::consts::PI;
 
 use crate::{
-    font::Font,
     framework::StepperId,
     material::Material,
     maths::{Bounds, Matrix, Pose, Quat, Vec2, Vec3},
@@ -9,10 +8,9 @@ use crate::{
     sk::MainThreadToken,
     sound::{Sound, SoundInst},
     sprite::Sprite,
-    system::{Input, Renderer, Text, TextStyle},
+    system::{Input, Renderer},
     tex::Tex,
     ui::{Ui, UiBtnLayout, UiMove, UiWin},
-    util::named_colors::RED,
 };
 
 pub struct ScreenRepo {
@@ -23,7 +21,6 @@ pub struct ScreenRepo {
     sprite_show_param: Sprite,
     id_handle: String,
     id_material: String,
-    id_texture: String,
     id_left_sound: String,
     id_right_sound: String,
     id_slider_distance: String,
@@ -41,7 +38,6 @@ impl ScreenRepo {
             id_window_param: id.clone() + "_window_param",
             id_handle: id.clone() + "_handle",
             id_material: id.clone() + "_material",
-            id_texture: id.clone() + "_texture",
             id_left_sound: id.clone() + "_left_sound",
             id_right_sound: id.clone() + "_right_sound",
             id_slider_distance: id.clone() + "_slider_distance",
@@ -51,24 +47,35 @@ impl ScreenRepo {
     }
 }
 
-/// The video stepper
+/// The screen stepper
+/// ```ignore
+/// // Create a screen with a first texture
+/// let mut screen = Screen::new("my_screen", texture1);
+///
+/// // Add a second texture
+/// screen.set_texture(1, Some(texture2));
+///
+/// // Switch to the second texture
+/// screen.set_tex_curr(1);
+///
+/// // Return to the first texture
+/// screen.set_tex_curr(0);
+/// ```
 pub struct Screen {
     id: StepperId,
 
     repo: ScreenRepo,
-    pub width: i32,
-    pub height: i32,
-    pub screen_distance: f32,
-    pub screen_flattening: f32,
-    pub screen_size: Vec2,
-    pub screen_diagonal: f32,
-    pub screen_pose: Pose,
-    pub screen: Mesh,
-    pub sound_spacing_factor: f32,
-    pub text: String,
-    pub transform: Matrix,
-    pub text_style: Option<TextStyle>,
+    screen_distance: f32,
+    screen_flattening: f32,
+    screen_size: Vec2,
+    screen_diagonal: f32,
+    screen_pose: Pose,
+    screen: Mesh,
+    sound_spacing_factor: f32,
+
     screen_material: Material,
+    screen_textures: [Option<Tex>; 2],
+    tex_curr: usize,
 
     sound_left: Sound,
     sound_left_inst: Option<SoundInst>,
@@ -78,19 +85,18 @@ pub struct Screen {
 
 unsafe impl Send for Screen {}
 
-/// This code may be called in some threads, so no StereoKit code
-impl Default for Screen {
-    fn default() -> Self {
+/// All the code here run in the main thread
+impl Screen {
+    /// Create the screen
+    pub fn new(id: &str, screen_tex: impl AsRef<Tex>) -> Self {
         let screen_size = Vec2::new(3.840, 2.160);
         let screen_diagonal = (screen_size.x.powf(2.0) + screen_size.y.powf(2.0)).sqrt();
         let screen_material = Material::unlit().copy();
 
-        Self {
-            id: "Screen1".to_string(),
+        let mut this = Self {
+            id: id.to_string(),
 
-            repo: ScreenRepo::new("Screen1".to_string()),
-            width: 3840,
-            height: 2160,
+            repo: ScreenRepo::new(id.to_string()),
             screen_distance: 2.20,
             screen_flattening: 0.99,
             screen_size,
@@ -98,35 +104,22 @@ impl Default for Screen {
             screen_pose: Pose::IDENTITY,
             screen: Mesh::new(),
             sound_spacing_factor: 3.0,
-            text: "Screen1".to_owned(),
-            transform: Matrix::t_r(
-                Vec3::new(0.0, 2.0, -2.5), //
-                Quat::from_angles(0.0, 180.0, 0.0),
-            ),
-            text_style: Some(Text::make_style(Font::default(), 0.3, RED)),
+
             screen_material,
+            screen_textures: [None, None],
+            tex_curr: 0,
 
             sound_left: Sound::click(),
             sound_left_inst: None,
             sound_right: Sound::click(),
             sound_right_inst: None,
-        }
-    }
-}
-
-/// All the code here run in the main thread
-impl Screen {
-    /// Create the video player
-    pub fn new(id: &str, screen_tex: impl AsRef<Tex>) -> Self {
-        let mut this = Self { ..Default::default() };
-
-        this.id = id.to_string();
-        this.repo = ScreenRepo::new(this.id.clone());
+        };
 
         let screen_tex = screen_tex.as_ref().clone_ref();
 
-        this.repo.id_texture = screen_tex.as_ref().get_id().to_string();
-        this.screen_material.id(&this.repo.id_material).diffuse_tex(&screen_tex);
+        this.screen_textures[0] = Some(screen_tex.clone_ref());
+        this.screen_material.id(&this.repo.id_material);
+        this.update_material_texture();
 
         this.sound_left = Sound::create_stream(200.0).unwrap_or_default();
         this.sound_left.id(&this.repo.id_left_sound);
@@ -147,8 +140,6 @@ impl Screen {
         let screen_transform = self.screen_param();
 
         Renderer::add_mesh(token, &self.screen, &self.screen_material, screen_transform, None, None);
-
-        Text::add_at(token, &self.text, self.transform, self.text_style, None, None, None, None, None, None);
     }
 
     /// Here is managed the screen position, its rotundity, size and distance
@@ -308,6 +299,11 @@ impl Screen {
         cross * factor as f32 * self.sound_spacing_factor
     }
 
+    /// Get the screen mesh
+    pub fn get_mesh(&self) -> &Mesh {
+        &self.screen
+    }
+
     fn adapt_screen(&mut self) {
         let distance = self.screen_distance;
         let flattening = if self.screen_flattening <= 0.0 { 500.0 } else { 1.0 / self.screen_flattening - 1.0 };
@@ -405,5 +401,43 @@ impl Screen {
 
             mesh
         };
+    }
+
+    /// Set the current texture index (0 or 1)
+    pub fn set_tex_curr(&mut self, tex_index: usize) {
+        if tex_index < 2 {
+            self.tex_curr = tex_index;
+            self.update_material_texture();
+        }
+    }
+
+    /// Set a texture at the specified index (0 or 1)
+    pub fn set_texture(&mut self, index: usize, texture: Option<Tex>) {
+        if index < 2 {
+            self.screen_textures[index] = texture;
+            if index == self.tex_curr {
+                self.update_material_texture();
+            }
+        }
+    }
+
+    /// Update the material's diffuse texture based on the current texture index
+    fn update_material_texture(&mut self) {
+        if let Some(ref texture) = self.screen_textures[self.tex_curr] {
+            self.screen_material.diffuse_tex(texture);
+        }
+    }
+
+    /// Check if the screen has been touched and return the position (x,y) in screen coordinates
+    /// Returns Some((x, y)) if touched, None otherwise
+    /// Coordinates are normalized between 0.0 and 1.0
+    pub fn touched(&self) -> Option<(f32, f32)> {
+        // TODO: implement ray-mesh intersection to detect touch
+
+        None
+    }
+
+    pub fn get_id(&self) -> &str {
+        &self.id
     }
 }
