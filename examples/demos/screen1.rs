@@ -1,4 +1,4 @@
-use stereokit_rust::{framework::Screen, prelude::*, tex::Tex, util::Time};
+use stereokit_rust::{framework::Screen, prelude::*, system::Input, tex::Tex, util::Time};
 
 /// Demo that displays a screen cycling through JPEG textures from assets/textures
 #[derive(IStepper)]
@@ -38,8 +38,9 @@ impl Default for Screen1 {
         let initial_texture = textures.first().map(|t| t.clone_ref()).unwrap_or_else(Tex::default);
 
         let mut screen = Screen::new("slideshow", initial_texture);
+        screen.screen_orientation([0.0, 180.0, 0.0]).screen_size([1.920, 1.080]);
 
-        // Load second texture if available
+        // Load second texture if needed
         if textures.len() > 1 {
             screen.set_texture(1, Some(textures[1].clone_ref()));
         }
@@ -74,6 +75,13 @@ impl Screen1 {
 
         // Update screen
         self.screen.draw(token);
+
+        // Check for touches
+        for index in 0..Input::pointer_count(None) {
+            if let Some(touched) = self.screen.touched(token, index) {
+                Log::info(format!("Screen touched at: {:?}x{:?}", touched.0, touched.1));
+            }
+        }
     }
 
     // Called by derive macro for event handling

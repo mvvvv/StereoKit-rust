@@ -1,14 +1,15 @@
 use std::f32::consts::PI;
 
+use crate::util::named_colors;
 use crate::{
     framework::StepperId,
     material::Material,
-    maths::{Bounds, Matrix, Pose, Quat, Vec2, Vec3},
+    maths::{Bounds, Matrix, Pose, Quat, Ray, Vec2, Vec3},
     mesh::{Inds, Mesh, Vertex},
     sk::MainThreadToken,
     sound::{Sound, SoundInst},
     sprite::Sprite,
-    system::{Input, Renderer},
+    system::{Input, Lines, Renderer},
     tex::Tex,
     ui::{Ui, UiBtnLayout, UiMove, UiWin},
 };
@@ -21,8 +22,8 @@ pub struct ScreenRepo {
     sprite_show_param: Sprite,
     id_handle: String,
     id_material: String,
-    id_left_sound: String,
-    id_right_sound: String,
+    // id_left_sound: String,
+    // id_right_sound: String,
     id_slider_distance: String,
     id_slider_size: String,
     id_slider_flattening: String,
@@ -38,8 +39,8 @@ impl ScreenRepo {
             id_window_param: id.clone() + "_window_param",
             id_handle: id.clone() + "_handle",
             id_material: id.clone() + "_material",
-            id_left_sound: id.clone() + "_left_sound",
-            id_right_sound: id.clone() + "_right_sound",
+            // id_left_sound: id.clone() + "_left_sound",
+            // id_right_sound: id.clone() + "_right_sound",
             id_slider_distance: id.clone() + "_slider_distance",
             id_slider_size: id.clone() + "_slider_size",
             id_slider_flattening: id.clone() + "_slider_radius",
@@ -47,7 +48,7 @@ impl ScreenRepo {
     }
 }
 
-/// The screen stepper
+/// The screen struct
 /// ```ignore
 /// // Create a screen with a first texture
 /// let mut screen = Screen::new("my_screen", texture1);
@@ -72,6 +73,7 @@ pub struct Screen {
     screen_pose: Pose,
     screen: Mesh,
     sound_spacing_factor: f32,
+    ray_thickness: f32,
 
     screen_material: Material,
     screen_textures: [Option<Tex>; 2],
@@ -87,11 +89,15 @@ unsafe impl Send for Screen {}
 
 /// All the code here run in the main thread
 impl Screen {
+    pub const MAX_DISTANCE: f32 = 6.0;
+    pub const MAX_DIAGONAL: f32 = 15.0;
+    pub const MIN_DIAGONAL: f32 = 0.2;
+
     /// Create the screen
     pub fn new(id: &str, screen_tex: impl AsRef<Tex>) -> Self {
         let screen_size = Vec2::new(3.840, 2.160);
         let screen_diagonal = (screen_size.x.powf(2.0) + screen_size.y.powf(2.0)).sqrt();
-        let screen_material = Material::unlit().copy();
+        let screen_material = Material::ui().copy();
 
         let mut this = Self {
             id: id.to_string(),
@@ -104,6 +110,7 @@ impl Screen {
             screen_pose: Pose::IDENTITY,
             screen: Mesh::new(),
             sound_spacing_factor: 3.0,
+            ray_thickness: 0.005,
 
             screen_material,
             screen_textures: [None, None],
@@ -122,9 +129,7 @@ impl Screen {
         this.update_material_texture();
 
         this.sound_left = Sound::create_stream(200.0).unwrap_or_default();
-        this.sound_left.id(&this.repo.id_left_sound);
         this.sound_right = Sound::create_stream(200.0).unwrap_or_default();
-        this.sound_right.id(&this.repo.id_right_sound);
 
         this.screen_pose = Input::get_head() * Matrix::r(Quat::from_angles(0.0, 180.0, 0.0));
         this.adapt_screen();
@@ -133,6 +138,108 @@ impl Screen {
         this.sound_right_inst = Some(this.sound_right.play(this.sound_position(1), Some(1.0)));
 
         this
+    }
+
+    /// Set the screen distance
+    pub fn screen_distance(&mut self, distance: f32) -> &mut Self {
+        let max_size = self.screen_distance * PI;
+        let screen_size = self.screen_size;
+        if screen_size.x > max_size || self.screen_size.y > max_size {
+            // self.screen_distance = old_value;
+        } else {
+            let min_distance = (self.screen_size.x.max(self.screen_size.y)) / PI;
+            self.screen_distance = distance.max(min_distance).min(Self::MAX_DISTANCE);
+            self.adapt_screen();
+        }
+        self
+    }
+
+    /// Set the screen flattening (0.0 to 1.0)
+    pub fn screen_flattening(&mut self, flattening: f32) -> &mut Self {
+        self.screen_flattening = flattening.clamp(0.0, 1.0);
+        self.adapt_screen();
+        self
+    }
+
+    /// Set the screen size
+    pub fn screen_size(&mut self, size: impl Into<Vec2>) -> &mut Self {
+        let size = size.into();
+        let max_size = self.screen_distance * PI;
+        let screen_diagonal = (size.x.powf(2.0) + size.y.powf(2.0)).sqrt();
+        if size.x <= max_size
+            && size.y <= max_size
+            && size.x > 0.0
+            && size.y > 0.0
+            && screen_diagonal > Self::MIN_DIAGONAL
+        {
+            self.screen_size = size;
+            self.screen_diagonal = screen_diagonal;
+            self.adapt_screen();
+        }
+        self
+    }
+
+    /// Set the screen diagonal (automatically adjusts screen_size proportionally)
+    pub fn screen_diagonal(&mut self, diagonal: f32) -> &mut Self {
+        let max_size = self.screen_distance * PI;
+        let screen_size = self.screen_size * diagonal / self.screen_diagonal;
+        if screen_size.x > max_size || self.screen_size.y > max_size {
+            // self.screen_diagonal = old_value;
+        } else {
+            self.screen_size = screen_size;
+            self.screen_diagonal = diagonal;
+
+            self.adapt_screen();
+        }
+        self
+    }
+
+    /// Set the screen orientation (position remains anchored to head)
+    pub fn screen_orientation(&mut self, orientation: impl Into<Quat>) -> &mut Self {
+        let orientation = orientation.into();
+        let head = Input::get_head();
+        self.screen_pose.orientation = orientation;
+        self.screen_pose.position = head.position;
+        self
+    }
+
+    /// Set the sound spacing factor
+    pub fn sound_spacing_factor(&mut self, factor: f32) -> &mut Self {
+        self.sound_spacing_factor = factor;
+        self
+    }
+
+    /// Set the ray thickness
+    pub fn ray_thickness(&mut self, thickness: f32) -> &mut Self {
+        self.ray_thickness = thickness.max(0.001);
+        self
+    }
+
+    /// Set the current texture index (0 or 1)
+    pub fn set_tex_curr(&mut self, tex_index: usize) -> &mut Self {
+        if tex_index < 2 {
+            self.tex_curr = tex_index;
+            self.update_material_texture();
+        }
+        self
+    }
+
+    /// Set a texture at the specified index (0 or 1)
+    pub fn set_texture(&mut self, index: usize, texture: Option<Tex>) -> &mut Self {
+        if index < 2 {
+            self.screen_textures[index] = texture;
+            if index == self.tex_curr {
+                self.update_material_texture();
+            }
+        }
+        self
+    }
+
+    /// Update the material's diffuse texture based on the current texture index
+    fn update_material_texture(&mut self) {
+        if let Some(ref texture) = self.screen_textures[self.tex_curr] {
+            self.screen_material.diffuse_tex(texture);
+        }
     }
 
     /// Called from IStepper::step, after check_event here you can draw your UI and scene
@@ -146,10 +253,6 @@ impl Screen {
     fn screen_param(&mut self) -> Matrix {
         const GRAB_X_MARGIN: f32 = 0.4;
 
-        const MAX_DISTANCE: f32 = 6.0;
-
-        const MAX_DIAGONAL: f32 = 15.0;
-        const MIN_DIAGONAL: f32 = 0.2;
         let bounds = self.screen.get_bounds();
 
         let factor_size = (self.screen_distance.max(1.0).powf(2.0) + self.screen_diagonal.max(1.0).powf(2.0)).sqrt();
@@ -175,9 +278,8 @@ impl Screen {
             let head = Input::get_head();
             self.screen_pose.position = head.position;
         }
-        let screen_transform = self.screen_pose.to_matrix(None);
 
-        let mut adapt = false;
+        let screen_transform = self.screen_pose.to_matrix(None);
         if self.repo.show_param {
             let info_position = Vec3::new(bounds.center.x, bounds.center.y, GRAB_X_MARGIN * 1.5);
             let mut window_pose = Pose::new(info_position, None) * screen_transform;
@@ -202,67 +304,47 @@ impl Screen {
             Ui::same_line();
             Ui::label(format!("{:.2}", self.screen_distance), None, true);
             Ui::same_line();
-            let old_value = self.screen_distance;
-            if let Some(_new_value) = Ui::hslider(
+            let mut screen_distance = self.screen_distance;
+            if let Some(new_value) = Ui::hslider(
                 &self.repo.id_slider_distance,
-                &mut self.screen_distance,
+                &mut screen_distance,
                 GRAB_X_MARGIN * 2.0,
-                MAX_DISTANCE,
+                Self::MAX_DISTANCE,
                 None,
                 None,
                 None,
                 None,
             ) {
-                let max_size = self.screen_distance * PI;
-                let screen_size = self.screen_size;
-                if screen_size.x > max_size || self.screen_size.y > max_size {
-                    self.screen_distance = old_value;
-                } else {
-                    adapt = true;
-                }
+                self.screen_distance(new_value);
             }
 
             Ui::label("Diagonal", None, true);
             Ui::same_line();
             Ui::label(format!("{:.2}", self.screen_diagonal), None, true);
             Ui::same_line();
-            let old_value = self.screen_diagonal;
+            let mut screen_diagonal = self.screen_diagonal;
             if let Some(new_value) = Ui::hslider(
                 &self.repo.id_slider_size,
-                &mut self.screen_diagonal,
-                MIN_DIAGONAL,
-                MAX_DIAGONAL,
+                &mut screen_diagonal,
+                Self::MIN_DIAGONAL,
+                Self::MAX_DIAGONAL,
                 None,
                 None,
                 None,
                 None,
             ) {
-                let max_size = self.screen_distance * PI;
-                let screen_size = self.screen_size * new_value / old_value;
-                if screen_size.x > max_size || self.screen_size.y > max_size {
-                    self.screen_diagonal = old_value;
-                } else {
-                    self.screen_size = screen_size;
-                    adapt = true;
-                }
+                self.screen_diagonal(new_value);
             }
 
             Ui::label("Curvature", None, true);
             Ui::same_line();
             Ui::label(format!("{:.2}", self.screen_flattening), None, true);
             Ui::same_line();
-            if let Some(new_value) = Ui::hslider(
-                &self.repo.id_slider_flattening,
-                &mut self.screen_flattening,
-                0.0,
-                1.0,
-                None,
-                None,
-                None,
-                None,
-            ) {
-                self.screen_flattening = new_value;
-                adapt = true;
+            let mut screen_flattening = self.screen_flattening;
+            if let Some(new_value) =
+                Ui::hslider(&self.repo.id_slider_flattening, &mut screen_flattening, 0.0, 1.0, None, None, None, None)
+            {
+                self.screen_flattening(new_value);
             }
         } else {
             let info_position = Vec3::new(
@@ -285,9 +367,6 @@ impl Screen {
             }
         }
         Ui::window_end();
-        if adapt {
-            self.adapt_screen();
-        }
         screen_transform
     }
 
@@ -297,11 +376,6 @@ impl Screen {
         let forward = self.screen_pose.get_forward();
         let cross = Vec3::cross(up, forward);
         cross * factor as f32 * self.sound_spacing_factor
-    }
-
-    /// Get the screen mesh
-    pub fn get_mesh(&self) -> &Mesh {
-        &self.screen
     }
 
     fn adapt_screen(&mut self) {
@@ -403,41 +477,110 @@ impl Screen {
         };
     }
 
-    /// Set the current texture index (0 or 1)
-    pub fn set_tex_curr(&mut self, tex_index: usize) {
-        if tex_index < 2 {
-            self.tex_curr = tex_index;
-            self.update_material_texture();
-        }
-    }
-
-    /// Set a texture at the specified index (0 or 1)
-    pub fn set_texture(&mut self, index: usize, texture: Option<Tex>) {
-        if index < 2 {
-            self.screen_textures[index] = texture;
-            if index == self.tex_curr {
-                self.update_material_texture();
-            }
-        }
-    }
-
-    /// Update the material's diffuse texture based on the current texture index
-    fn update_material_texture(&mut self) {
-        if let Some(ref texture) = self.screen_textures[self.tex_curr] {
-            self.screen_material.diffuse_tex(texture);
-        }
-    }
-
     /// Check if the screen has been touched and return the position (x,y) in screen coordinates
     /// Returns Some((x, y)) if touched, None otherwise
     /// Coordinates are normalized between 0.0 and 1.0
-    pub fn touched(&self) -> Option<(f32, f32)> {
-        // TODO: implement ray-mesh intersection to detect touch
+    pub fn touched(&self, token: &MainThreadToken, index: i32) -> Option<(f32, f32)> {
+        // no ray when adjusting params
+        if self.repo.show_param {
+            return None;
+        }
 
-        None
+        // Transform from world into the screen's local/model space
+        // Our screen mesh is drawn with transform = self.screen_pose.to_matrix(None)
+        // So to bring a world ray into model space, multiply by the inverse
+        let screen_mtx = self.screen_pose.to_matrix(None);
+        let inv = screen_mtx.get_inverse();
+
+        let p = Input::pointer(index, None);
+
+        // Bring the pointer ray into model space
+        let local_ray = inv.transform_ray(p.ray);
+
+        // Use a precise raycast that also gives us the first triangle index
+        let (mut hit_ray, mut tri_start_index) = (Ray::default(), 0u32);
+        let hit = self.screen.intersect_to_ptr(local_ray, None, &mut hit_ray, &mut tri_start_index);
+        if !hit {
+            return None;
+        }
+
+        // we draw the ray
+        //self.draw_ray(token, p.ray);
+        Lines::add_ray(token, p.ray, self.screen_distance, named_colors::WHITE, None, self.ray_thickness);
+
+        if !p.state.is_just_inactive() {
+            return None;
+        }
+        // Retrieve the triangle's vertices to barycentrically interpolate UV
+        let tri = self.screen.get_triangle(tri_start_index)?;
+        let [a, b, c] = tri;
+
+        // Compute barycentric coordinates of hit point on triangle ABC
+        let p_hit = hit_ray.position; // hit point in model space
+        let v0 = b.pos - a.pos;
+        let v1 = c.pos - a.pos;
+        let v2 = p_hit - a.pos;
+        let d00 = Vec3::dot(v0, v0);
+        let d01 = Vec3::dot(v0, v1);
+        let d11 = Vec3::dot(v1, v1);
+        let d20 = Vec3::dot(v2, v0);
+        let d21 = Vec3::dot(v2, v1);
+        let denom = d00 * d11 - d01 * d01;
+        if denom == 0.0 {
+            return None;
+        }
+        let v = (d11 * d20 - d01 * d21) / denom;
+        let w = (d00 * d21 - d01 * d20) / denom;
+        let u = 1.0 - v - w;
+
+        // Interpolate UVs and return normalized coordinates
+        let hit_uv = a.uv * u + b.uv * v + c.uv * w;
+
+        // UVs are already normalized [0,1] on our mesh
+        Some((hit_uv.x, hit_uv.y))
     }
 
     pub fn get_id(&self) -> &str {
         &self.id
+    }
+
+    /// Get the screen mesh
+    pub fn get_mesh(&self) -> &Mesh {
+        &self.screen
+    }
+
+    /// Get the current screen distance
+    pub fn get_screen_distance(&self) -> f32 {
+        self.screen_distance
+    }
+
+    /// Get the current screen flattening
+    pub fn get_screen_flattening(&self) -> f32 {
+        self.screen_flattening
+    }
+
+    /// Get the current screen size
+    pub fn get_screen_size(&self) -> Vec2 {
+        self.screen_size
+    }
+
+    /// Get the current screen diagonal
+    pub fn get_screen_diagonal(&self) -> f32 {
+        self.screen_diagonal
+    }
+
+    /// Get the current screen orientation
+    pub fn get_screen_orientation(&self) -> Quat {
+        self.screen_pose.orientation
+    }
+
+    /// Get the current sound spacing factor
+    pub fn get_sound_spacing_factor(&self) -> f32 {
+        self.sound_spacing_factor
+    }
+
+    /// Get the current ray thickness
+    pub fn get_ray_thickness(&self) -> f32 {
+        self.ray_thickness
     }
 }
