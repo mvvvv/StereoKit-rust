@@ -12,6 +12,7 @@ use std::{
     path::Path,
     ptr::NonNull,
 };
+use crate::import_from_c;
 
 /// A color value stored as 4 floats with values that are generally between 0 and 1! Note that there’s also a Color32
 /// structure, and that 4 floats is generally a lot more than you need. So, use this for calculating individual
@@ -86,14 +87,12 @@ impl From<Color32> for Color128 {
     }
 }
 
-unsafe extern "C" {
-    pub fn color_hsv(hue: f32, saturation: f32, value: f32, transparency: f32) -> Color128;
-    pub fn color_to_hsv(color: *const Color128) -> Vec3;
-    pub fn color_lab(l: f32, a: f32, b: f32, transparency: f32) -> Color128;
-    pub fn color_to_lab(color: *const Color128) -> Vec3;
-    pub fn color_to_linear(srgb_gamma_correct: Color128) -> Color128;
-    pub fn color_to_gamma(srgb_linear: Color128) -> Color128;
-}
+import_from_c!(color_hsv, "color_hsv", Color128, (hue: f32, saturation: f32, value: f32, transparency: f32));
+import_from_c!(color_to_hsv, "color_to_hsv", Vec3, (color: *const Color128));
+import_from_c!(color_lab, "color_lab", Color128, (l: f32, a: f32, b: f32, transparency: f32));
+import_from_c!(color_to_lab, "color_to_lab", Vec3, (color: *const Color128));
+import_from_c!(color_to_linear, "color_to_linear", Color128, (srgb_gamma_correct: Color128));
+import_from_c!(color_to_gamma, "color_to_gamma", Color128, (srgb_linear: Color128));
 
 impl Color128 {
     /// Opaque black color
@@ -946,22 +945,20 @@ pub struct FovInfo {
 /// ```
 pub struct Device;
 
-unsafe extern "C" {
-    pub fn device_display_get_type() -> DisplayType;
-    pub fn device_display_get_blend() -> DisplayBlend;
-    pub fn device_display_set_blend(blend: DisplayBlend) -> Bool32T;
-    pub fn device_display_valid_blend(blend: DisplayBlend) -> Bool32T;
-    pub fn device_display_get_refresh_rate() -> f32;
-    pub fn device_display_get_width() -> i32;
-    pub fn device_display_get_height() -> i32;
-    pub fn device_display_get_fov() -> FovInfo;
-    pub fn device_get_tracking() -> DeviceTracking;
-    pub fn device_get_name() -> *const c_char;
-    pub fn device_get_runtime() -> *const c_char;
-    pub fn device_get_gpu() -> *const c_char;
-    pub fn device_has_eye_gaze() -> Bool32T;
-    pub fn device_has_hand_tracking() -> Bool32T;
-}
+import_from_c!(device_display_get_type, "device_display_get_type", DisplayType, ());
+import_from_c!(device_display_get_blend, "device_display_get_blend", DisplayBlend, ());
+import_from_c!(device_display_set_blend, "device_display_set_blend", Bool32T, (blend: DisplayBlend));
+import_from_c!(device_display_valid_blend, "device_display_valid_blend", Bool32T, (blend: DisplayBlend));
+import_from_c!(device_display_get_refresh_rate, "device_display_get_refresh_rate", f32, ());
+import_from_c!(device_display_get_width, "device_display_get_width", i32, ());
+import_from_c!(device_display_get_height, "device_display_get_height", i32, ());
+import_from_c!(device_display_get_fov, "device_display_get_fov", FovInfo, ());
+import_from_c!(device_get_tracking, "device_get_tracking", DeviceTracking, ());
+import_from_c!(device_get_name, "device_get_name", *const c_char, ());
+import_from_c!(device_get_runtime, "device_get_runtime", *const c_char, ());
+import_from_c!(device_get_gpu, "device_get_gpu", *const c_char, ());
+import_from_c!(device_has_eye_gaze, "device_has_eye_gaze", Bool32T, ());
+import_from_c!(device_has_hand_tracking, "device_has_hand_tracking", Bool32T, ());
 
 impl Device {
     /// Allows you to set and get the current blend mode of the device! Setting this may not succeed if the blend mode
@@ -1250,17 +1247,16 @@ pub struct _GradientT {
 /// StereoKit ffi type.
 pub type GradientT = *mut _GradientT;
 
-unsafe extern "C" {
-    pub fn gradient_create() -> GradientT;
-    pub fn gradient_create_keys(in_arr_keys: *const GradientKey, count: i32) -> GradientT;
-    pub fn gradient_add(gradient: GradientT, color_linear: Color128, position: f32);
-    pub fn gradient_set(gradient: GradientT, index: i32, color_linear: Color128, position: f32);
-    pub fn gradient_remove(gradient: GradientT, index: i32);
-    pub fn gradient_count(gradient: GradientT) -> i32;
-    pub fn gradient_get(gradient: GradientT, at: f32) -> Color128;
-    pub fn gradient_get32(gradient: GradientT, at: f32) -> Color32;
-    pub fn gradient_destroy(gradient: GradientT);
-}
+import_from_c!(gradient_create, "gradient_create", GradientT, ());
+import_from_c!(gradient_create_keys, "gradient_create_keys", GradientT, (in_arr_keys: *const GradientKey, count: i32));
+import_from_c!(gradient_add, "gradient_add", (), (gradient: GradientT, color_linear: Color128, position: f32));
+import_from_c!(gradient_set, "gradient_set", (), (gradient: GradientT, index: i32, color_linear: Color128, position: f32));
+import_from_c!(gradient_remove, "gradient_remove", (), (gradient: GradientT, index: i32));
+import_from_c!(gradient_count, "gradient_count", i32, (gradient: GradientT));
+import_from_c!(gradient_get, "gradient_get", Color128, (gradient: GradientT, at: f32));
+import_from_c!(gradient_get32, "gradient_get32", Color32, (gradient: GradientT, at: f32));
+import_from_c!(gradient_destroy, "gradient_destroy", (), (gradient: GradientT));
+
 impl Gradient {
     /// Creates a new, completely empty gradient.
     /// <https://stereokit.net/Pages/StereoKit/Gradient/Gradient.html>
@@ -1520,12 +1516,10 @@ impl FileFilter {
 /// transparent to developers
 pub struct Hash;
 
-unsafe extern "C" {
-    pub fn hash_string(str_utf8: *const c_char) -> IdHashT;
-    pub fn hash_string_with(str_utf8: *const c_char, root: IdHashT) -> IdHashT;
-    pub fn hash_int(val: i32) -> IdHashT;
-    pub fn hash_int_with(val: i32, root: IdHashT) -> IdHashT;
-}
+import_from_c!(hash_string, "hash_string", IdHashT, (str_utf8: *const c_char));
+import_from_c!(hash_string_with, "hash_string_with", IdHashT, (str_utf8: *const c_char, root: IdHashT));
+import_from_c!(hash_int, "hash_int", IdHashT, (val: i32));
+import_from_c!(hash_int_with, "hash_int_with", IdHashT, (val: i32, root: IdHashT));
 
 impl Hash {
     /// This will hash the UTF8 representation of the given string into a hash value that StereoKit can use.
@@ -1647,49 +1641,18 @@ pub enum PickerMode {
 /// ```
 pub struct Platform;
 
-unsafe extern "C" {
-    pub fn platform_file_picker(
-        mode: PickerMode,
-        callback_data: *mut c_void,
-        picker_callback: ::std::option::Option<
-            unsafe extern "C" fn(callback_data: *mut c_void, confirmed: Bool32T, filename: *const c_char),
-        >,
-        filters: *const FileFilter,
-        filter_count: i32,
-    );
-    pub fn platform_file_picker_sz(
-        mode: PickerMode,
-        callback_data: *mut c_void,
-        picker_callback_sz: ::std::option::Option<
-            unsafe extern "C" fn(
-                callback_data: *mut c_void,
-                confirmed: Bool32T,
-                filename_ptr: *const c_char,
-                filename_length: i32,
-            ),
-        >,
-        in_arr_filters: *const FileFilter,
-        filter_count: i32,
-    );
-    pub fn platform_file_picker_close();
-    pub fn platform_file_picker_visible() -> Bool32T;
-    pub fn platform_read_file(
-        filename_utf8: *const c_char,
-        out_data: *mut *mut c_void,
-        out_size: *mut usize,
-    ) -> Bool32T;
-    pub fn platform_write_file(filename_utf8: *const c_char, data: *mut c_void, size: usize) -> Bool32T;
-    pub fn platform_write_file_text(filename_utf8: *const c_char, text_utf8: *const c_char) -> Bool32T;
-    pub fn platform_keyboard_get_force_fallback() -> Bool32T;
-    pub fn platform_keyboard_set_force_fallback(force_fallback: Bool32T);
-    pub fn platform_keyboard_show(visible: Bool32T, type_: TextContext);
-    pub fn platform_keyboard_visible() -> Bool32T;
-    pub fn platform_keyboard_set_layout(
-        type_: TextContext,
-        keyboard_layout: *const *const c_char,
-        layouts_num: i32,
-    ) -> Bool32T;
-}
+import_from_c!(platform_file_picker, "platform_file_picker", (), (mode: PickerMode, callback_data: *mut c_void, picker_callback: ::std::option::Option<unsafe extern "C" fn(callback_data: *mut c_void, confirmed: Bool32T, filename: *const c_char)>, filters: *const FileFilter, filter_count: i32));
+import_from_c!(platform_file_picker_sz, "platform_file_picker_sz", (), (mode: PickerMode, callback_data: *mut c_void, picker_callback_sz: ::std::option::Option<unsafe extern "C" fn(callback_data: *mut c_void, confirmed: Bool32T, filename_ptr: *const c_char, filename_length: i32)>, in_arr_filters: *const FileFilter, filter_count: i32));
+import_from_c!(platform_file_picker_close, "platform_file_picker_close", (), ());
+import_from_c!(platform_file_picker_visible, "platform_file_picker_visible", Bool32T, ());
+import_from_c!(platform_read_file, "platform_read_file", Bool32T, (filename_utf8: *const c_char, out_data: *mut *mut c_void, out_size: *mut usize));
+import_from_c!(platform_write_file, "platform_write_file", Bool32T, (filename_utf8: *const c_char, data: *mut c_void, size: usize));
+import_from_c!(platform_write_file_text, "platform_write_file_text", Bool32T, (filename_utf8: *const c_char, text_utf8: *const c_char));
+import_from_c!(platform_keyboard_get_force_fallback, "platform_keyboard_get_force_fallback", Bool32T, ());
+import_from_c!(platform_keyboard_set_force_fallback, "platform_keyboard_set_force_fallback", (), (force_fallback: Bool32T));
+import_from_c!(platform_keyboard_show, "platform_keyboard_show", (), (visible: Bool32T, type_: TextContext));
+import_from_c!(platform_keyboard_visible, "platform_keyboard_visible", Bool32T, ());
+import_from_c!(platform_keyboard_set_layout, "platform_keyboard_set_layout", Bool32T, (type_: TextContext, keyboard_layout: *const *const c_char, layouts_num: i32));
 
 /// File_picker trampoline
 ///
@@ -2182,13 +2145,13 @@ pub struct SphericalHarmonics {
     pub coefficients: [Vec3; 9usize],
 }
 
-unsafe extern "C" {
-    pub fn sh_create(in_arr_lights: *const SHLight, light_count: i32) -> SphericalHarmonics;
-    pub fn sh_brightness(ref_harmonics: *mut SphericalHarmonics, scale: f32);
-    pub fn sh_add(ref_harmonics: *mut SphericalHarmonics, light_dir: Vec3, light_color: Vec3);
-    pub fn sh_lookup(harmonics: *const SphericalHarmonics, normal: Vec3) -> Color128;
-    pub fn sh_dominant_dir(harmonics: *const SphericalHarmonics) -> Vec3;
-}
+
+import_from_c!(sh_create, "sh_create", SphericalHarmonics, (in_arr_lights: *const SHLight, light_count: i32));
+import_from_c!(sh_brightness, "sh_brightness", (), (ref_harmonics: *mut SphericalHarmonics, scale: f32));
+import_from_c!(sh_add, "sh_add", (), (ref_harmonics: *mut SphericalHarmonics, light_dir: Vec3, light_color: Vec3));
+import_from_c!(sh_lookup, "sh_lookup", Color128, (harmonics: *const SphericalHarmonics, normal: Vec3));
+import_from_c!(sh_dominant_dir, "sh_dominant_dir", Vec3, (harmonics: *const SphericalHarmonics));
+
 impl SphericalHarmonics {
     /// Creates a SphericalHarmonics approximation of the irradiance given from a set of directional lights!
     /// <https://stereokit.net/Pages/StereoKit/SphericalHarmonics/FromLights.html>
@@ -2387,29 +2350,18 @@ impl SphericalHarmonics {
 /// ```
 pub struct Time;
 
-unsafe extern "C" {
-    // Deprecated: pub fn time_get_raw() -> f64;
-    // Deprecated: pub fn time_getf_unscaled() -> f32;
-    // Deprecated: pub fn time_get_unscaled() -> f64;
-    // Deprecated: pub fn time_getf() -> f32;
-    // Deprecated: pub fn time_get() -> f64;
-    // Deprecated: pub fn time_elapsedf_unscaled() -> f32;
-    // Deprecated: pub fn time_elapsed_unscaled() -> f64;
-    // Deprecated: pub fn time_elapsedf() -> f32;
-    // Deprecated: pub fn time_elapsed() -> f64;
-    pub fn time_total_raw() -> f64;
-    pub fn time_totalf_unscaled() -> f32;
-    pub fn time_total_unscaled() -> f64;
-    pub fn time_totalf() -> f32;
-    pub fn time_total() -> f64;
-    pub fn time_stepf_unscaled() -> f32;
-    pub fn time_step_unscaled() -> f64;
-    pub fn time_stepf() -> f32;
-    pub fn time_step() -> f64;
-    pub fn time_scale(scale: f64);
-    pub fn time_set_time(total_seconds: f64, frame_elapsed_seconds: f64);
-    pub fn time_frame() -> u64;
-}
+import_from_c!(time_total_raw, "time_total_raw", f64, ());
+import_from_c!(time_totalf_unscaled, "time_totalf_unscaled", f32, ());
+import_from_c!(time_total_unscaled, "time_total_unscaled", f64, ());
+import_from_c!(time_totalf, "time_totalf", f32, ());
+import_from_c!(time_total, "time_total", f64, ());
+import_from_c!(time_stepf_unscaled, "time_stepf_unscaled", f32, ());
+import_from_c!(time_step_unscaled, "time_step_unscaled", f64, ());
+import_from_c!(time_stepf, "time_stepf", f32, ());
+import_from_c!(time_step, "time_step", f64, ());
+import_from_c!(time_scale, "time_scale", (), (scale: f64));
+import_from_c!(time_set_time, "time_set_time", (), (total_seconds: f64, frame_elapsed_seconds: f64));
+import_from_c!(time_frame, "time_frame", u64, ());
 
 impl Time {
     /// Time is scaled by this value! Want time to pass slower? Set it to 0.5! Faster? Try 2!

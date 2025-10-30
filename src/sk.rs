@@ -32,6 +32,7 @@ use winit::{
     event::Event,
     event_loop::{ControlFlow, EventLoop, EventLoopProxy},
 };
+use crate::import_from_c;
 
 /// Specifies a type of display mode StereoKit uses, like Mixed Reality headset display vs. a PC display, or even just
 /// rendering to an offscreen surface, or not rendering at all!
@@ -275,30 +276,23 @@ pub enum StandbyMode {
     None = 3,
 }
 
-unsafe extern "C" {
-    pub fn sk_init(settings: SkSettings) -> Bool32T;
-    pub fn sk_set_window(window: *mut c_void);
-    pub fn sk_set_window_xam(window: *mut c_void);
-    pub fn sk_shutdown();
-    pub fn sk_shutdown_unsafe();
-    pub fn sk_quit(quit_reason: QuitReason);
-    pub fn sk_step(app_step: Option<unsafe extern "C" fn()>) -> Bool32T;
-    pub fn sk_run(app_step: Option<unsafe extern "C" fn()>, app_shutdown: Option<unsafe extern "C" fn()>);
-    pub fn sk_run_data(
-        app_step: Option<unsafe extern "C" fn(step_data: *mut c_void)>,
-        step_data: *mut c_void,
-        app_shutdown: Option<unsafe extern "C" fn(shutdown_data: *mut c_void)>,
-        shutdown_data: *mut c_void,
-    );
-    pub fn sk_is_stepping() -> Bool32T;
-    pub fn sk_active_display_mode() -> DisplayMode;
-    pub fn sk_get_settings() -> SkSettings;
-    pub fn sk_system_info() -> SystemInfo;
-    pub fn sk_version_name() -> *const c_char;
-    pub fn sk_version_id() -> u64;
-    pub fn sk_app_focus() -> AppFocus;
-    pub fn sk_get_quit_reason() -> QuitReason;
-}
+import_from_c!(sk_init, "sk_init", Bool32T, (settings: SkSettings));
+import_from_c!(sk_set_window, "sk_set_window", (), (window: *mut c_void));
+import_from_c!(sk_set_window_xam, "sk_set_window_xam", (), (window: *mut c_void));
+import_from_c!(sk_shutdown, "sk_shutdown", (), ());
+import_from_c!(sk_shutdown_unsafe, "sk_shutdown_unsafe", (), ());
+import_from_c!(sk_quit, "sk_quit", (), (quit_reason: QuitReason));
+import_from_c!(sk_step, "sk_step", Bool32T, (app_step: Option<unsafe extern "C" fn()>));
+import_from_c!(sk_run, "sk_run", (), (app_step: Option<unsafe extern "C" fn()>, app_shutdown: Option<unsafe extern "C" fn()>));
+import_from_c!(sk_run_data, "sk_run_data", (), (app_step: Option<unsafe extern "C" fn(step_data: *mut c_void)>, step_data: *mut c_void, app_shutdown: Option<unsafe extern "C" fn(shutdown_data: *mut c_void)>, shutdown_data: *mut c_void));
+import_from_c!(sk_is_stepping, "sk_is_stepping", Bool32T, ());
+import_from_c!(sk_active_display_mode, "sk_active_display_mode", DisplayMode, ());
+import_from_c!(sk_get_settings, "sk_get_settings", SkSettings, ());
+import_from_c!(sk_system_info, "sk_system_info", SystemInfo, ());
+import_from_c!(sk_version_name, "sk_version_name", *const c_char, ());
+import_from_c!(sk_version_id, "sk_version_id", u64, ());
+import_from_c!(sk_app_focus, "sk_app_focus", AppFocus, ());
+import_from_c!(sk_get_quit_reason, "sk_get_quit_reason", QuitReason, ());
 
 /// Default name of the applications is `StereoKitApp`
 pub const DEFAULT_NAME: *const c_char = {

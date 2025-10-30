@@ -4,6 +4,7 @@ use std::{
     path::Path,
     ptr::NonNull,
 };
+use crate::import_from_c;
 
 /// This class represents a text font asset! On the back-end, this asset is composed of a texture with font characters
 /// rendered to it, and a list of data about where, and how large those characters are on the texture.
@@ -71,17 +72,15 @@ pub struct _FontT {
 /// StereoKit ffi type.
 pub type FontT = *mut _FontT;
 
-unsafe extern "C" {
-    pub fn font_find(id: *const c_char) -> FontT;
-    pub fn font_create(file_utf8: *const c_char) -> FontT;
-    pub fn font_create_files(in_arr_files: *mut *const c_char, file_count: i32) -> FontT;
-    pub fn font_create_family(font_family: *const c_char) -> FontT;
-    pub fn font_set_id(font: FontT, id: *const c_char);
-    pub fn font_get_id(font: FontT) -> *const c_char;
-    pub fn font_addref(font: FontT);
-    pub fn font_release(font: FontT);
-    pub fn font_get_tex(font: FontT) -> TexT;
-}
+import_from_c!(font_find, "font_find", FontT, (id: *const c_char));
+import_from_c!(font_create, "font_create", FontT, (file_utf8: *const c_char));
+import_from_c!(font_create_files, "font_create_files", FontT, (in_arr_files: *mut *const c_char, file_count: i32));
+import_from_c!(font_create_family, "font_create_family", FontT, (font_family: *const c_char));
+import_from_c!(font_set_id, "font_set_id", (), (font: FontT, id: *const c_char));
+import_from_c!(font_get_id, "font_get_id", *const c_char, (font: FontT));
+import_from_c!(font_addref, "font_addref", (), (font: FontT));
+import_from_c!(font_release, "font_release", (), (font: FontT));
+import_from_c!(font_get_tex, "font_get_tex", TexT, (font: FontT));
 
 impl IAsset for Font {
     // fn id(&mut self, id: impl AsRef<str>) {

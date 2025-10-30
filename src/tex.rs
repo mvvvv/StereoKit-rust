@@ -10,6 +10,7 @@ use std::{
     path::{Path, PathBuf},
     ptr::{NonNull, null_mut},
 };
+use crate::import_from_c;
 
 bitflags::bitflags! {
     /// Textures come in various types and flavors! These are bit-flags
@@ -278,114 +279,54 @@ pub type TexT = *mut _TexT;
 unsafe impl Send for Tex {}
 unsafe impl Sync for Tex {}
 
-unsafe extern "C" {
-    pub fn tex_find(id: *const c_char) -> TexT;
-    pub fn tex_create(type_: TexType, format: TexFormat) -> TexT;
-    pub fn tex_create_rendertarget(
-        width: i32,
-        height: i32,
-        msaa: i32,
-        color_format: TexFormat,
-        depth_format: TexFormat,
-    ) -> TexT;
-    pub fn tex_create_color32(in_arr_data: *mut Color32, width: i32, height: i32, srgb_data: Bool32T) -> TexT;
-    pub fn tex_create_color128(in_arr_data: *mut Color128, width: i32, height: i32, srgb_data: Bool32T) -> TexT;
-    pub fn tex_create_mem(data: *mut c_void, data_size: usize, srgb_data: Bool32T, load_priority: i32) -> TexT;
-    pub fn tex_create_file(file_utf8: *const c_char, srgb_data: Bool32T, load_priority: i32) -> TexT;
-    pub fn tex_create_file_arr(
-        in_arr_files: *mut *const c_char,
-        file_count: i32,
-        srgb_data: Bool32T,
-        load_priority: i32,
-    ) -> TexT;
-    pub fn tex_create_cubemap_file(cubemap_file: *const c_char, srgb_data: Bool32T, load_priority: i32) -> TexT;
-    pub fn tex_create_cubemap_files(
-        in_arr_cube_face_file_xxyyzz: *mut *const c_char,
-        srgb_data: Bool32T,
-        load_priority: i32,
-    ) -> TexT;
-    pub fn tex_copy(texture: TexT, type_: TexType, format: TexFormat) -> TexT;
-    pub fn tex_gen_mips(texture: TexT) -> Bool32T;
-    pub fn tex_set_id(texture: TexT, id: *const c_char);
-    pub fn tex_get_id(texture: TexT) -> *const c_char;
-    pub fn tex_set_fallback(texture: TexT, fallback: TexT);
-    pub fn tex_set_surface(
-        texture: TexT,
-        native_surface: *mut c_void,
-        type_: TexType,
-        native_fmt: i64,
-        width: i32,
-        height: i32,
-        surface_count: i32,
-        multisample: i32,
-        framebuffer_multisample: i32,
-        owned: Bool32T,
-    );
-    pub fn tex_get_surface(texture: TexT) -> *mut c_void;
-    pub fn tex_addref(texture: TexT);
-    pub fn tex_release(texture: TexT);
-    pub fn tex_asset_state(texture: TexT) -> AssetState;
-    pub fn tex_on_load(
-        texture: TexT,
-        asset_on_load_callback: ::std::option::Option<unsafe extern "C" fn(texture: TexT, context: *mut c_void)>,
-        context: *mut c_void,
-    );
-    pub fn tex_on_load_remove(
-        texture: TexT,
-        asset_on_load_callback: ::std::option::Option<unsafe extern "C" fn(texture: TexT, context: *mut c_void)>,
-    );
-    pub fn tex_set_colors(texture: TexT, width: i32, height: i32, data: *mut c_void);
-    pub fn tex_set_color_arr(
-        texture: TexT,
-        width: i32,
-        height: i32,
-        array_data: *mut *mut c_void,
-        array_count: i32,
-        multisample: i32,
-        out_sh_lighting_info: *mut SphericalHarmonics,
-    );
-    pub fn tex_set_mem(
-        texture: TexT,
-        data: *mut c_void,
-        data_size: usize,
-        srgb_data: Bool32T,
-        blocking: Bool32T,
-        priority: i32,
-    );
-    pub fn tex_add_zbuffer(texture: TexT, format: TexFormat);
-    pub fn tex_set_zbuffer(texture: TexT, depth_texture: TexT);
-    pub fn tex_get_zbuffer(texture: TexT) -> TexT;
-    pub fn tex_get_data(texture: TexT, out_data: *mut c_void, out_data_size: usize, mip_level: i32);
-    pub fn tex_gen_color(color: Color128, width: i32, height: i32, type_: TexType, format: TexFormat) -> TexT;
-    pub fn tex_gen_particle(width: i32, height: i32, roundness: f32, gradient_linear: GradientT) -> TexT;
-    pub fn tex_gen_cubemap(
-        gradient: GradientT,
-        gradient_dir: Vec3,
-        resolution: i32,
-        out_sh_lighting_info: *mut SphericalHarmonics,
-    ) -> TexT;
-    pub fn tex_gen_cubemap_sh(
-        lookup: *const SphericalHarmonics,
-        face_size: i32,
-        light_spot_size_pct: f32,
-        light_spot_intensity: f32,
-    ) -> TexT;
-    pub fn tex_get_format(texture: TexT) -> TexFormat;
-    pub fn tex_get_width(texture: TexT) -> i32;
-    pub fn tex_get_height(texture: TexT) -> i32;
-    pub fn tex_set_sample(texture: TexT, sample: TexSample);
-    pub fn tex_get_sample(texture: TexT) -> TexSample;
-    pub fn tex_set_sample_comp(texture: TexT, compare: TexSampleComp);
-    pub fn tex_get_sample_comp(texture: TexT) -> TexSampleComp;
-    pub fn tex_set_address(texture: TexT, address_mode: TexAddress);
-    pub fn tex_get_address(texture: TexT) -> TexAddress;
-    pub fn tex_set_anisotropy(texture: TexT, anisotropy_level: i32);
-    pub fn tex_get_anisotropy(texture: TexT) -> i32;
-    pub fn tex_get_mips(texture: TexT) -> i32;
-    pub fn tex_set_loading_fallback(loading_texture: TexT);
-    pub fn tex_set_error_fallback(error_texture: TexT);
-    pub fn tex_get_cubemap_lighting(cubemap_texture: TexT) -> SphericalHarmonics;
-}
+import_from_c!(tex_find, "tex_find", TexT, (id: *const c_char));
+import_from_c!(tex_create, "tex_create", TexT, (type_: TexType, format: TexFormat));
+import_from_c!(tex_create_rendertarget, "tex_create_rendertarget", TexT, (width: i32, height: i32, msaa: i32, color_format: TexFormat, depth_format: TexFormat));
+import_from_c!(tex_create_color32, "tex_create_color32", TexT, (in_arr_data: *mut Color32, width: i32, height: i32, srgb_data: Bool32T));
+import_from_c!(tex_create_color128, "tex_create_color128", TexT, (in_arr_data: *mut Color128, width: i32, height: i32, srgb_data: Bool32T));
+import_from_c!(tex_create_mem, "tex_create_mem", TexT, (data: *mut c_void, data_size: usize, srgb_data: Bool32T, load_priority: i32));
+import_from_c!(tex_create_file, "tex_create_file", TexT, (file_utf8: *const c_char, srgb_data: Bool32T, load_priority: i32));
+import_from_c!(tex_create_file_arr, "tex_create_file_arr", TexT, (in_arr_files: *mut *const c_char, file_count: i32, srgb_data: Bool32T, load_priority: i32));
+import_from_c!(tex_create_cubemap_file, "tex_create_cubemap_file", TexT, (cubemap_file: *const c_char, srgb_data: Bool32T, load_priority: i32));
+import_from_c!(tex_create_cubemap_files, "tex_create_cubemap_files", TexT, (in_arr_cube_face_file_xxyyzz: *mut *const c_char, srgb_data: Bool32T, load_priority: i32));
+import_from_c!(tex_copy, "tex_copy", TexT, (texture: TexT, type_: TexType, format: TexFormat));
+import_from_c!(tex_gen_mips, "tex_gen_mips", Bool32T, (texture: TexT));
+import_from_c!(tex_set_id, "tex_set_id", (), (texture: TexT, id: *const c_char));
+import_from_c!(tex_get_id, "tex_get_id", *const c_char, (texture: TexT));
+import_from_c!(tex_set_fallback, "tex_set_fallback", (), (texture: TexT, fallback: TexT));
+import_from_c!(tex_set_surface, "tex_set_surface", (), (texture: TexT, native_surface: *mut c_void, type_: TexType, native_fmt: i64, width: i32, height: i32, surface_count: i32, multisample: i32, framebuffer_multisample: i32, owned: Bool32T));
+import_from_c!(tex_get_surface, "tex_get_surface", *mut c_void, (texture: TexT));
+import_from_c!(tex_addref, "tex_addref", (), (texture: TexT));
+import_from_c!(tex_release, "tex_release", (), (texture: TexT));
+import_from_c!(tex_asset_state, "tex_asset_state", AssetState, (texture: TexT));
+import_from_c!(tex_on_load, "tex_on_load", (), (texture: TexT, asset_on_load_callback: ::std::option::Option<unsafe extern "C" fn(texture: TexT, context: *mut c_void)>, context: *mut c_void));
+import_from_c!(tex_on_load_remove, "tex_on_load_remove", (), (texture: TexT, asset_on_load_callback: ::std::option::Option<unsafe extern "C" fn(texture: TexT, context: *mut c_void)>, context: *mut c_void));
+import_from_c!(tex_set_colors, "tex_set_colors", (), (texture: TexT, width: i32, height: i32, data: *mut c_void));
+import_from_c!(tex_set_color_arr, "tex_set_color_arr", (), (texture: TexT, width: i32, height: i32, array_data: *mut *mut c_void, array_count: i32, multisample: i32, out_sh_lighting_info: *mut SphericalHarmonics));
+import_from_c!(tex_set_mem, "tex_set_mem", (), (texture: TexT, data: *mut c_void, data_size: usize, srgb_data: Bool32T, blocking: Bool32T, priority: i32));
+import_from_c!(tex_add_zbuffer, "tex_add_zbuffer", (), (texture: TexT, format: TexFormat));
+import_from_c!(tex_set_zbuffer, "tex_set_zbuffer", (), (texture: TexT, depth_texture: TexT));
+import_from_c!(tex_get_zbuffer, "tex_get_zbuffer", TexT, (texture: TexT));
+import_from_c!(tex_get_data, "tex_get_data", (), (texture: TexT, out_data: *mut c_void, out_data_size: usize, mip_level: i32));
+import_from_c!(tex_gen_color, "tex_gen_color", TexT, (color: Color128, width: i32, height: i32, type_: TexType, format: TexFormat));
+import_from_c!(tex_gen_particle, "tex_gen_particle", TexT, (width: i32, height: i32, roundness: f32, gradient_linear: GradientT));
+import_from_c!(tex_gen_cubemap, "tex_gen_cubemap", TexT, (gradient: GradientT, gradient_dir: Vec3, resolution: i32, out_sh_lighting_info: *mut SphericalHarmonics));
+import_from_c!(tex_gen_cubemap_sh, "tex_gen_cubemap_sh", TexT, (lookup: *const SphericalHarmonics, face_size: i32, light_spot_size_pct: f32, light_spot_intensity: f32));
+import_from_c!(tex_get_format, "tex_get_format", TexFormat, (texture: TexT));
+import_from_c!(tex_get_width, "tex_get_width", i32, (texture: TexT));
+import_from_c!(tex_get_height, "tex_get_height", i32, (texture: TexT));
+import_from_c!(tex_set_sample, "tex_set_sample", (), (texture: TexT, sample: TexSample));
+import_from_c!(tex_get_sample, "tex_get_sample", TexSample, (texture: TexT));
+import_from_c!(tex_set_sample_comp, "tex_set_sample_comp", (), (texture: TexT, compare: TexSampleComp));
+import_from_c!(tex_get_sample_comp, "tex_get_sample_comp", TexSampleComp, (texture: TexT));
+import_from_c!(tex_set_address, "tex_set_address", (), (texture: TexT, address_mode: TexAddress));
+import_from_c!(tex_get_address, "tex_get_address", TexAddress, (texture: TexT));
+import_from_c!(tex_set_anisotropy, "tex_set_anisotropy", (), (texture: TexT, anisotropy_level: i32));
+import_from_c!(tex_get_anisotropy, "tex_get_anisotropy", i32, (texture: TexT));
+import_from_c!(tex_get_mips, "tex_get_mips", i32, (texture: TexT));
+import_from_c!(tex_set_loading_fallback, "tex_set_loading_fallback", (), (loading_texture: TexT));
+import_from_c!(tex_set_error_fallback, "tex_set_error_fallback", (), (error_texture: TexT));
+import_from_c!(tex_get_cubemap_lighting, "tex_get_cubemap_lighting", SphericalHarmonics, (cubemap_texture: TexT));
 
 impl IAsset for Tex {
     // fn id(&mut self, id: impl AsRef<str>) {

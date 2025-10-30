@@ -14,6 +14,7 @@ use std::{
     path::Path,
     ptr::{NonNull, null_mut},
 };
+use crate::import_from_c;
 
 /// A Model is a collection of meshes, materials, and transforms that make up a visual element! This is a great way to
 /// group together complex objects that have multiple parts in them, and in fact, most model formats are composed this
@@ -84,75 +85,38 @@ pub struct _ModelT {
 /// StereoKit ffi type.
 pub type ModelT = *mut _ModelT;
 
-unsafe extern "C" {
-    pub fn model_find(id: *const c_char) -> ModelT;
-    pub fn model_copy(model: ModelT) -> ModelT;
-    pub fn model_create() -> ModelT;
-    pub fn model_create_mesh(mesh: MeshT, material: MaterialT) -> ModelT;
-    pub fn model_create_mem(
-        filename_utf8: *const c_char,
-        data: *const c_void,
-        data_size: usize,
-        shader: ShaderT,
-    ) -> ModelT;
-    pub fn model_create_file(filename_utf8: *const c_char, shader: ShaderT) -> ModelT;
-    pub fn model_set_id(model: ModelT, id: *const c_char);
-    pub fn model_get_id(model: ModelT) -> *const c_char;
-    pub fn model_addref(model: ModelT);
-    pub fn model_release(model: ModelT);
-    pub fn model_draw(model: ModelT, transform: Matrix, color_linear: Color128, layer: RenderLayer);
-    pub fn model_draw_mat(
-        model: ModelT,
-        material_override: MaterialT,
-        transform: Matrix,
-        color_linear: Color128,
-        layer: RenderLayer,
-    );
-    pub fn model_recalculate_bounds(model: ModelT);
-    pub fn model_recalculate_bounds_exact(model: ModelT);
-    pub fn model_set_bounds(model: ModelT, bounds: *const Bounds);
-    pub fn model_get_bounds(model: ModelT) -> Bounds;
-    pub fn model_ray_intersect(model: ModelT, model_space_ray: Ray, cull_mode: Cull, out_pt: *mut Ray) -> Bool32T;
-    pub fn model_ray_intersect_bvh(model: ModelT, model_space_ray: Ray, cull_mode: Cull, out_pt: *mut Ray) -> Bool32T;
-    pub fn model_ray_intersect_bvh_detailed(
-        model: ModelT,
-        model_space_ray: Ray,
-        cull_mode: Cull,
-        out_pt: *mut Ray,
-        out_mesh: *mut MeshT,
-        out_matrix: *mut Matrix,
-        out_start_inds: *mut u32,
-    ) -> Bool32T;
-    pub fn model_step_anim(model: ModelT);
-    pub fn model_play_anim(model: ModelT, animation_name: *const c_char, mode: AnimMode) -> Bool32T;
-    pub fn model_play_anim_idx(model: ModelT, index: i32, mode: AnimMode);
-    pub fn model_set_anim_time(model: ModelT, time: f32);
-    pub fn model_set_anim_completion(model: ModelT, percent: f32);
-    pub fn model_anim_find(model: ModelT, animation_name: *const c_char) -> i32;
-    pub fn model_anim_count(model: ModelT) -> i32;
-    pub fn model_anim_active(model: ModelT) -> i32;
-    pub fn model_anim_active_mode(model: ModelT) -> AnimMode;
-    pub fn model_anim_active_time(model: ModelT) -> f32;
-    pub fn model_anim_active_completion(model: ModelT) -> f32;
-    pub fn model_anim_get_name(model: ModelT, index: i32) -> *const c_char;
-    pub fn model_anim_get_duration(model: ModelT, index: i32) -> f32;
-    // Deprecated :pub fn model_get_name(model: ModelT, subset: i32) -> *const c_char;
-    // Deprecated :pub fn model_get_material(model: ModelT, subset: i32) -> MaterialT;
-    // Deprecated :pub fn model_get_mesh(model: ModelT, subset: i32) -> MeshT;
-    // Deprecated :pub fn model_get_transform(model: ModelT, subset: i32) -> Matrix;
-    // Deprecated :pub fn model_set_material(model: ModelT, subset: i32, material: MaterialT);
-    // Deprecated :pub fn model_set_mesh(model: ModelT, subset: i32, mesh: MeshT);
-    // Deprecated :pub fn model_set_transform(model: ModelT, subset: i32, transform: *const Matrix);
-    // Deprecated :pub fn model_remove_subset(model: ModelT, subset: i32);
-    // Deprecated :pub fn model_add_named_subset(
-    //     model: ModelT,
-    //     name: *const c_char,
-    //     mesh: MeshT,
-    //     material: MaterialT,
-    //     transform: *const Matrix,
-    // ) -> i32;
-    // Deprecated :pub fn model_add_subset(model: ModelT, mesh: MeshT, material: MaterialT, transform: *const Matrix) -> i32;
-}
+import_from_c!(model_find, "model_find", ModelT, (id: *const c_char));
+import_from_c!(model_copy, "model_copy", ModelT, (model: ModelT));
+import_from_c!(model_create, "model_create", ModelT, ());
+import_from_c!(model_create_mesh, "model_create_mesh", ModelT, (mesh: MeshT, material: MaterialT));
+import_from_c!(model_create_mem, "model_create_mem", ModelT, (filename_utf8: *const c_char, data: *const c_void, data_size: usize, shader: ShaderT));
+import_from_c!(model_create_file, "model_create_file", ModelT, (filename_utf8: *const c_char, shader: ShaderT));
+import_from_c!(model_set_id, "model_set_id", (), (model: ModelT, id: *const c_char));
+import_from_c!(model_get_id, "model_get_id", *const c_char, (model: ModelT));
+import_from_c!(model_addref, "model_addref", (), (model: ModelT));
+import_from_c!(model_release, "model_release", (), (model: ModelT));
+import_from_c!(model_draw, "model_draw", (), (model: ModelT, transform: Matrix, color_linear: Color128, layer: RenderLayer));
+import_from_c!(model_draw_mat, "model_draw_mat", (), (model: ModelT, material_override: MaterialT, transform: Matrix, color_linear: Color128, layer: RenderLayer));
+import_from_c!(model_recalculate_bounds, "model_recalculate_bounds", (), (model: ModelT));
+import_from_c!(model_recalculate_bounds_exact, "model_recalculate_bounds_exact", (), (model: ModelT));
+import_from_c!(model_set_bounds, "model_set_bounds", (), (model: ModelT, bounds: *const Bounds));
+import_from_c!(model_get_bounds, "model_get_bounds", Bounds, (model: ModelT));
+import_from_c!(model_ray_intersect, "model_ray_intersect", Bool32T, (model: ModelT, model_space_ray: Ray, cull_mode: Cull, out_pt: *mut Ray));
+import_from_c!(model_ray_intersect_bvh, "model_ray_intersect_bvh", Bool32T, (model: ModelT, model_space_ray: Ray, cull_mode: Cull, out_pt: *mut Ray));
+import_from_c!(model_ray_intersect_bvh_detailed, "model_ray_intersect_bvh_detailed", Bool32T, (model: ModelT, model_space_ray: Ray, cull_mode: Cull, out_pt: *mut Ray, out_mesh: *mut MeshT, out_matrix: *mut Matrix, out_start_inds: *mut u32));
+import_from_c!(model_step_anim, "model_step_anim", (), (model: ModelT));
+import_from_c!(model_play_anim, "model_play_anim", Bool32T, (model: ModelT, animation_name: *const c_char, mode: AnimMode));
+import_from_c!(model_play_anim_idx, "model_play_anim_idx", (), (model: ModelT, index: i32, mode: AnimMode));
+import_from_c!(model_set_anim_time, "model_set_anim_time", (), (model: ModelT, time: f32));
+import_from_c!(model_set_anim_completion, "model_set_anim_completion", (), (model: ModelT, percent: f32));
+import_from_c!(model_anim_find, "model_anim_find", i32, (model: ModelT, animation_name: *const c_char));
+import_from_c!(model_anim_count, "model_anim_count", i32, (model: ModelT));
+import_from_c!(model_anim_active, "model_anim_active", i32, (model: ModelT));
+import_from_c!(model_anim_active_mode, "model_anim_active_mode", AnimMode, (model: ModelT));
+import_from_c!(model_anim_active_time, "model_anim_active_time", f32, (model: ModelT));
+import_from_c!(model_anim_active_completion, "model_anim_active_completion", f32, (model: ModelT));
+import_from_c!(model_anim_get_name, "model_anim_get_name", *const c_char, (model: ModelT, index: i32));
+import_from_c!(model_anim_get_duration, "model_anim_get_duration", f32, (model: ModelT, index: i32));
 
 impl IAsset for Model {
     // fn id(&mut self, id: impl AsRef<str>) {
@@ -1371,68 +1335,39 @@ pub struct Nodes<'a> {
     model: &'a Model,
 }
 
-unsafe extern "C" {
-    pub fn model_subset_count(model: ModelT) -> i32;
-    pub fn model_node_add(
-        model: ModelT,
-        name: *const c_char,
-        model_transform: Matrix,
-        mesh: MeshT,
-        material: MaterialT,
-        solid: Bool32T,
-    ) -> ModelNodeId;
-    pub fn model_node_add_child(
-        model: ModelT,
-        parent: ModelNodeId,
-        name: *const c_char,
-        local_transform: Matrix,
-        mesh: MeshT,
-        material: MaterialT,
-        solid: Bool32T,
-    ) -> ModelNodeId;
-    pub fn model_node_find(model: ModelT, name: *const c_char) -> ModelNodeId;
-    pub fn model_node_sibling(model: ModelT, node: ModelNodeId) -> ModelNodeId;
-    pub fn model_node_parent(model: ModelT, node: ModelNodeId) -> ModelNodeId;
-    pub fn model_node_child(model: ModelT, node: ModelNodeId) -> ModelNodeId;
-    pub fn model_node_count(model: ModelT) -> i32;
-    pub fn model_node_index(model: ModelT, index: i32) -> ModelNodeId;
-    pub fn model_node_visual_count(model: ModelT) -> i32;
-    pub fn model_node_visual_index(model: ModelT, index: i32) -> ModelNodeId;
-    pub fn model_node_iterate(model: ModelT, node: ModelNodeId) -> ModelNodeId;
-    pub fn model_node_get_root(model: ModelT) -> ModelNodeId;
-    pub fn model_node_get_name(model: ModelT, node: ModelNodeId) -> *const c_char;
-    pub fn model_node_get_solid(model: ModelT, node: ModelNodeId) -> Bool32T;
-    pub fn model_node_get_visible(model: ModelT, node: ModelNodeId) -> Bool32T;
-    pub fn model_node_get_material(model: ModelT, node: ModelNodeId) -> MaterialT;
-    pub fn model_node_get_mesh(model: ModelT, node: ModelNodeId) -> MeshT;
-    pub fn model_node_get_transform_model(model: ModelT, node: ModelNodeId) -> Matrix;
-    pub fn model_node_get_transform_local(model: ModelT, node: ModelNodeId) -> Matrix;
-    pub fn model_node_set_name(model: ModelT, node: ModelNodeId, name: *const c_char);
-    pub fn model_node_set_solid(model: ModelT, node: ModelNodeId, solid: Bool32T);
-    pub fn model_node_set_visible(model: ModelT, node: ModelNodeId, visible: Bool32T);
-    pub fn model_node_set_material(model: ModelT, node: ModelNodeId, material: MaterialT);
-    pub fn model_node_set_mesh(model: ModelT, node: ModelNodeId, mesh: MeshT);
-    pub fn model_node_set_transform_model(model: ModelT, node: ModelNodeId, transform_model_space: Matrix);
-    pub fn model_node_set_transform_local(model: ModelT, node: ModelNodeId, transform_local_space: Matrix);
-    pub fn model_node_info_get(model: ModelT, node: ModelNodeId, info_key_utf8: *const c_char) -> *mut c_char;
-    pub fn model_node_info_set(
-        model: ModelT,
-        node: ModelNodeId,
-        info_key_utf8: *const c_char,
-        info_value_utf8: *const c_char,
-    );
-    pub fn model_node_info_remove(model: ModelT, node: ModelNodeId, info_key_utf8: *const c_char) -> Bool32T;
-    pub fn model_node_info_clear(model: ModelT, node: ModelNodeId);
-    pub fn model_node_info_count(model: ModelT, node: ModelNodeId) -> i32;
-    pub fn model_node_info_iterate(
-        model: ModelT,
-        node: ModelNodeId,
-        ref_iterator: *mut i32,
-        out_key_utf8: *mut *const c_char,
-        out_value_utf8: *mut *const c_char,
-    ) -> Bool32T;
-
-}
+import_from_c!(model_subset_count, "model_subset_count", i32, (model: ModelT));
+import_from_c!(model_node_add, "model_node_add", ModelNodeId, (model: ModelT, name: *const c_char, model_transform: Matrix, mesh: MeshT, material: MaterialT, solid: Bool32T));
+import_from_c!(model_node_add_child, "model_node_add_child", ModelNodeId, (model: ModelT, parent: ModelNodeId, name: *const c_char, local_transform: Matrix, mesh: MeshT, material: MaterialT, solid: Bool32T));
+import_from_c!(model_node_find, "model_node_find", ModelNodeId, (model: ModelT, name: *const c_char));
+import_from_c!(model_node_sibling, "model_node_sibling", ModelNodeId, (model: ModelT, node: ModelNodeId));
+import_from_c!(model_node_parent, "model_node_parent", ModelNodeId, (model: ModelT, node: ModelNodeId));
+import_from_c!(model_node_child, "model_node_child", ModelNodeId, (model: ModelT, node: ModelNodeId));
+import_from_c!(model_node_count, "model_node_count", i32, (model: ModelT));
+import_from_c!(model_node_index, "model_node_index", ModelNodeId, (model: ModelT, index: i32));
+import_from_c!(model_node_visual_count, "model_node_visual_count", i32, (model: ModelT));
+import_from_c!(model_node_visual_index, "model_node_visual_index", ModelNodeId, (model: ModelT, index: i32));
+import_from_c!(model_node_iterate, "model_node_iterate", ModelNodeId, (model: ModelT, node: ModelNodeId));
+import_from_c!(model_node_get_root, "model_node_get_root", ModelNodeId, (model: ModelT));
+import_from_c!(model_node_get_name, "model_node_get_name", *const c_char, (model: ModelT, node: ModelNodeId));
+import_from_c!(model_node_get_solid, "model_node_get_solid", Bool32T, (model: ModelT, node: ModelNodeId));
+import_from_c!(model_node_get_visible, "model_node_get_visible", Bool32T, (model: ModelT, node: ModelNodeId));
+import_from_c!(model_node_get_material, "model_node_get_material", MaterialT, (model: ModelT, node: ModelNodeId));
+import_from_c!(model_node_get_mesh, "model_node_get_mesh", MeshT, (model: ModelT, node: ModelNodeId));
+import_from_c!(model_node_get_transform_model, "model_node_get_transform_model", Matrix, (model: ModelT, node: ModelNodeId));
+import_from_c!(model_node_get_transform_local, "model_node_get_transform_local", Matrix, (model: ModelT, node: ModelNodeId));
+import_from_c!(model_node_set_name, "model_node_set_name", (), (model: ModelT, node: ModelNodeId, name: *const c_char));
+import_from_c!(model_node_set_solid, "model_node_set_solid", (), (model: ModelT, node: ModelNodeId, solid: Bool32T));
+import_from_c!(model_node_set_visible, "model_node_set_visible", (), (model: ModelT, node: ModelNodeId, visible: Bool32T));
+import_from_c!(model_node_set_material, "model_node_set_material", (), (model: ModelT, node: ModelNodeId, material: MaterialT));
+import_from_c!(model_node_set_mesh, "model_node_set_mesh", (), (model: ModelT, node: ModelNodeId, mesh: MeshT));
+import_from_c!(model_node_set_transform_model, "model_node_set_transform_model", (), (model: ModelT, node: ModelNodeId, transform_model_space: Matrix));
+import_from_c!(model_node_set_transform_local, "model_node_set_transform_local", (), (model: ModelT, node: ModelNodeId, transform_local_space: Matrix));
+import_from_c!(model_node_info_get, "model_node_info_get", *mut c_char, (model: ModelT, node: ModelNodeId, info_key_utf8: *const c_char));
+import_from_c!(model_node_info_set, "model_node_info_set", (), (model: ModelT, node: ModelNodeId, info_key_utf8: *const c_char, info_value_utf8: *const c_char));
+import_from_c!(model_node_info_remove, "model_node_info_remove", Bool32T, (model: ModelT, node: ModelNodeId, info_key_utf8: *const c_char));
+import_from_c!(model_node_info_clear, "model_node_info_clear", (), (model: ModelT, node: ModelNodeId));
+import_from_c!(model_node_info_count, "model_node_info_count", i32, (model: ModelT, node: ModelNodeId));
+import_from_c!(model_node_info_iterate, "model_node_info_iterate", Bool32T, (model: ModelT, node: ModelNodeId, ref_iterator: *mut i32, out_key_utf8: *mut *const c_char, out_value_utf8: *mut *const c_char));
 
 /// Iterator of the nodes of a model. Can be instanciate from [Model]
 ///

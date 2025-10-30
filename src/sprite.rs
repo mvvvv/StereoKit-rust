@@ -11,6 +11,7 @@ use std::{
     path::Path,
     ptr::NonNull,
 };
+use crate::import_from_c;
 
 /// The way the Sprite is stored on the backend! Does it get batched and atlased for draw efficiency, or is it a single image?
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -99,22 +100,18 @@ pub struct _SpriteT {
 /// StereoKit ffi type.
 pub type SpriteT = *mut _SpriteT;
 
-unsafe extern "C" {
-    pub fn sprite_find(id: *const c_char) -> SpriteT;
-    pub fn sprite_create(sprite: TexT, type_: SpriteType, atlas_id: *const c_char) -> SpriteT;
-    pub fn sprite_create_file(filename_utf8: *const c_char, type_: SpriteType, atlas_id: *const c_char) -> SpriteT;
-
-    pub fn sprite_set_id(sprite: SpriteT, id: *const c_char);
-
-    pub fn sprite_get_id(sprite: SpriteT) -> *const c_char;
-    pub fn sprite_addref(sprite: SpriteT);
-    pub fn sprite_release(sprite: SpriteT);
-    pub fn sprite_get_aspect(sprite: SpriteT) -> f32;
-    pub fn sprite_get_width(sprite: SpriteT) -> i32;
-    pub fn sprite_get_height(sprite: SpriteT) -> i32;
-    pub fn sprite_get_dimensions_normalized(sprite: SpriteT) -> Vec2;
-    pub fn sprite_draw(sprite: SpriteT, transform: Matrix, pivot_position: Pivot, color: Color32);
-}
+import_from_c!(sprite_find, "sprite_find", SpriteT, (id: *const c_char));
+import_from_c!(sprite_create, "sprite_create", SpriteT, (sprite: TexT, type_: SpriteType, atlas_id: *const c_char));
+import_from_c!(sprite_create_file, "sprite_create_file", SpriteT, (filename_utf8: *const c_char, type_: SpriteType, atlas_id: *const c_char));
+import_from_c!(sprite_set_id, "sprite_set_id", (), (sprite: SpriteT, id: *const c_char));
+import_from_c!(sprite_get_id, "sprite_get_id", *const c_char, (sprite: SpriteT));
+import_from_c!(sprite_addref, "sprite_addref", (), (sprite: SpriteT));
+import_from_c!(sprite_release, "sprite_release", (), (sprite: SpriteT));
+import_from_c!(sprite_get_aspect, "sprite_get_aspect", f32, (sprite: SpriteT));
+import_from_c!(sprite_get_width, "sprite_get_width", i32, (sprite: SpriteT));
+import_from_c!(sprite_get_height, "sprite_get_height", i32, (sprite: SpriteT));
+import_from_c!(sprite_get_dimensions_normalized, "sprite_get_dimensions_normalized", Vec2, (sprite: SpriteT));
+import_from_c!(sprite_draw, "sprite_draw", (), (sprite: SpriteT, transform: Matrix, pivot_position: Pivot, color: Color32));
 
 impl IAsset for Sprite {
     // fn id(&mut self, id: impl AsRef<str>) {

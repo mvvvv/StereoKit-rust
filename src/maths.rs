@@ -7,6 +7,7 @@ use std::{
     fmt::Display,
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
+use crate::import_from_c;
 
 /// Native code use this as bool
 pub type Bool32T = i32;
@@ -955,9 +956,7 @@ impl PartialEq for Vec3 {
     }
 }
 
-unsafe extern "C" {
-    pub fn vec3_cross(a: *const Vec3, b: *const Vec3) -> Vec3;
-}
+import_from_c!(vec3_cross, "vec3_cross", Vec3, (a: *const Vec3, b: *const Vec3));
 
 impl Vec3 {
     /// StereoKit uses a right-handed coordinate system, which means that forward is looking down the -Z axis! This
@@ -2569,18 +2568,16 @@ impl PartialEq for Quat {
     }
 }
 
-unsafe extern "C" {
-    pub fn quat_difference(a: *const Quat, b: *const Quat) -> Quat;
-    pub fn quat_lookat(from: *const Vec3, at: *const Vec3) -> Quat;
-    pub fn quat_lookat_up(from: *const Vec3, at: *const Vec3, up: *const Vec3) -> Quat;
-    pub fn quat_from_angles(pitch_x_deg: f32, yaw_y_deg: f32, roll_z_deg: f32) -> Quat;
-    pub fn quat_slerp(a: *const Quat, b: *const Quat, t: f32) -> Quat;
-    pub fn quat_normalize(a: *const Quat) -> Quat;
-    pub fn quat_inverse(a: *const Quat) -> Quat;
-    pub fn quat_mul(a: *const Quat, b: *const Quat) -> Quat;
-    pub fn quat_mul_vec(a: *const Quat, b: *const Vec3) -> Vec3;
-    pub fn quat_to_axis_angle(a: Quat, out_axis: *mut Vec3, out_rotation_deg: *mut f32);
-}
+import_from_c!(quat_difference, "quat_difference", Quat, (a: *const Quat, b: *const Quat));
+import_from_c!(quat_lookat, "quat_lookat", Quat, (from: *const Vec3, at: *const Vec3));
+import_from_c!(quat_lookat_up, "quat_lookat_up", Quat, (from: *const Vec3, at: *const Vec3, up: *const Vec3));
+import_from_c!(quat_from_angles, "quat_from_angles", Quat, (pitch_x_deg: f32, yaw_y_deg: f32, roll_z_deg: f32));
+import_from_c!(quat_slerp, "quat_slerp", Quat, (a: *const Quat, b: *const Quat, t: f32));
+import_from_c!(quat_normalize, "quat_normalize", Quat, (a: *const Quat));
+import_from_c!(quat_inverse, "quat_inverse", Quat, (a: *const Quat));
+import_from_c!(quat_mul, "quat_mul", Quat, (a: *const Quat, b: *const Quat));
+import_from_c!(quat_mul_vec, "quat_mul_vec", Vec3, (a: *const Quat, b: *const Vec3));
+import_from_c!(quat_to_axis_angle, "quat_to_axis_angle", (), (a: Quat, out_axis: *mut Vec3, out_rotation_deg: *mut f32));
 
 impl Quat {
     /// This is the ‘multiply by one!’ of the quaternion rotation world. It’s basically a default, no rotation
@@ -3225,43 +3222,32 @@ impl PartialEq for Matrix {
     }
 }
 
-unsafe extern "C" {
-    pub fn pose_matrix_out(pose: *const Pose, out_result: *mut Matrix, scale: Vec3);
-    pub fn matrix_inverse(a: *const Matrix, out_Matrix: *mut Matrix);
-    pub fn matrix_invert(a: *const Matrix) -> Matrix;
-    pub fn matrix_mul(a: *const Matrix, b: *const Matrix, out_Matrix: *mut Matrix);
-    // Deprecated: pub fn matrix_mul_point(transform: *const Matrix, point: *const Vec3) -> Vec3;
-    // Deprecated: pub fn matrix_mul_point4(transform: *const Matrix, point: *const Vec4) -> Vec4;
-    pub fn matrix_mul_direction(transform: *const Matrix, direction: *const Vec3) -> Vec3;
-    // Deprecated: pub fn matrix_mul_rotation(transform: *const Matrix, orientation: *const Quat) -> Quat;
-    // Deprecated: pub fn matrix_mul_pose(transform: *const Matrix, pose: *const Pose) -> Pose;
-    pub fn matrix_transform_pt(transform: Matrix, point: Vec3) -> Vec3;
-    pub fn matrix_transform_pt4(transform: Matrix, point: Vec4) -> Vec4;
-    pub fn matrix_transform_dir(transform: Matrix, direction: Vec3) -> Vec3;
-    pub fn matrix_transform_ray(transform: Matrix, ray: Ray) -> Ray;
-    pub fn matrix_transform_quat(transform: Matrix, rotation: Quat) -> Quat;
-    pub fn matrix_transform_pose(transform: Matrix, pose: Pose) -> Pose;
-    pub fn matrix_transpose(transform: Matrix) -> Matrix;
-    pub fn matrix_to_angles(transform: *const Matrix) -> Vec3;
-    pub fn matrix_trs(position: *const Vec3, orientation: *const Quat, scale: *const Vec3) -> Matrix;
-    pub fn matrix_t(position: Vec3) -> Matrix;
-    pub fn matrix_r(orientation: Quat) -> Matrix;
-    pub fn matrix_s(scale: Vec3) -> Matrix;
-    pub fn matrix_ts(position: Vec3, scale: Vec3) -> Matrix;
-    pub fn matrix_trs_out(out_result: *mut Matrix, position: *const Vec3, orientation: *const Quat, scale: *const Vec3);
-    pub fn matrix_perspective(fov_degrees: f32, aspect_ratio: f32, near_clip: f32, far_clip: f32) -> Matrix;
-    pub fn matrix_orthographic(width: f32, height: f32, near_clip: f32, far_clip: f32) -> Matrix;
-    pub fn matrix_decompose(
-        transform: *const Matrix,
-        out_position: *mut Vec3,
-        out_scale: *mut Vec3,
-        out_orientation: *mut Quat,
-    ) -> Bool32T;
-    pub fn matrix_extract_translation(transform: *const Matrix) -> Vec3;
-    pub fn matrix_extract_scale(transform: *const Matrix) -> Vec3;
-    pub fn matrix_extract_rotation(transform: *const Matrix) -> Quat;
-    pub fn matrix_extract_pose(transform: *const Matrix) -> Pose;
-}
+import_from_c!(pose_matrix_out, "pose_matrix_out", (), (pose: *const Pose, out_result: *mut Matrix, scale: Vec3));
+import_from_c!(matrix_inverse, "matrix_inverse", (), (a: *const Matrix, out_Matrix: *mut Matrix));
+import_from_c!(matrix_invert, "matrix_invert", Matrix, (a: *const Matrix));
+import_from_c!(matrix_mul, "matrix_mul", (), (a: *const Matrix, b: *const Matrix, out_Matrix: *mut Matrix));
+import_from_c!(matrix_mul_direction, "matrix_mul_direction", Vec3, (transform: *const Matrix, direction: *const Vec3));
+import_from_c!(matrix_transform_pt, "matrix_transform_pt", Vec3, (transform: Matrix, point: Vec3));
+import_from_c!(matrix_transform_pt4, "matrix_transform_pt4", Vec4, (transform: Matrix, point: Vec4));
+import_from_c!(matrix_transform_dir, "matrix_transform_dir", Vec3, (transform: Matrix, direction: Vec3));
+import_from_c!(matrix_transform_ray, "matrix_transform_ray", Ray, (transform: Matrix, ray: Ray));
+import_from_c!(matrix_transform_quat, "matrix_transform_quat", Quat, (transform: Matrix, rotation: Quat));
+import_from_c!(matrix_transform_pose, "matrix_transform_pose", Pose, (transform: Matrix, pose: Pose));
+import_from_c!(matrix_transpose, "matrix_transpose", Matrix, (transform: Matrix));
+import_from_c!(matrix_to_angles, "matrix_to_angles", Vec3, (transform: *const Matrix));
+import_from_c!(matrix_trs, "matrix_trs", Matrix, (position: *const Vec3, orientation: *const Quat, scale: *const Vec3));
+import_from_c!(matrix_t, "matrix_t", Matrix, (position: Vec3));
+import_from_c!(matrix_r, "matrix_r", Matrix, (orientation: Quat));
+import_from_c!(matrix_s, "matrix_s", Matrix, (scale: Vec3));
+import_from_c!(matrix_ts, "matrix_ts", Matrix, (position: Vec3, scale: Vec3));
+import_from_c!(matrix_trs_out, "matrix_trs_out", (), (out_result: *mut Matrix, position: *const Vec3, orientation: *const Quat, scale: *const Vec3));
+import_from_c!(matrix_perspective, "matrix_perspective", Matrix, (fov_degrees: f32, aspect_ratio: f32, near_clip: f32, far_clip: f32));
+import_from_c!(matrix_orthographic, "matrix_orthographic", Matrix, (width: f32, height: f32, near_clip: f32, far_clip: f32));
+import_from_c!(matrix_decompose, "matrix_decompose", Bool32T, (transform: *const Matrix, out_position: *mut Vec3, out_scale: *mut Vec3, out_orientation: *mut Quat));
+import_from_c!(matrix_extract_translation, "matrix_extract_translation", Vec3, (transform: *const Matrix));
+import_from_c!(matrix_extract_scale, "matrix_extract_scale", Vec3, (transform: *const Matrix));
+import_from_c!(matrix_extract_rotation, "matrix_extract_rotation", Quat, (transform: *const Matrix));
+import_from_c!(matrix_extract_pose, "matrix_extract_pose", Pose, (transform: *const Matrix));
 
 impl Matrix {
     /// Identity matrix made of [[Vec4::X, Vec4::Y, Vec4::Z, Vec4::W]]
@@ -4718,15 +4704,13 @@ impl AsRef<Bounds> for Bounds {
     }
 }
 
-unsafe extern "C" {
-    pub fn bounds_ray_intersect(bounds: Bounds, ray: Ray, out_pt: *mut Vec3) -> Bool32T;
-    pub fn bounds_point_contains(bounds: Bounds, pt: Vec3) -> Bool32T;
-    pub fn bounds_line_contains(bounds: Bounds, pt1: Vec3, pt2: Vec3) -> Bool32T;
-    pub fn bounds_capsule_contains(bounds: Bounds, pt1: Vec3, pt2: Vec3, radius: f32) -> Bool32T;
-    pub fn bounds_grow_to_fit_pt(bounds: Bounds, pt: Vec3) -> Bounds;
-    pub fn bounds_grow_to_fit_box(bounds: Bounds, box_: Bounds, opt_box_transform: *const Matrix) -> Bounds;
-    pub fn bounds_transform(bounds: Bounds, transform: Matrix) -> Bounds;
-}
+import_from_c!(bounds_ray_intersect, "bounds_ray_intersect", Bool32T, (bounds: Bounds, ray: Ray, out_pt: *mut Vec3));
+import_from_c!(bounds_point_contains, "bounds_point_contains", Bool32T, (bounds: Bounds, pt: Vec3));
+import_from_c!(bounds_line_contains, "bounds_line_contains", Bool32T, (bounds: Bounds, pt1: Vec3, pt2: Vec3));
+import_from_c!(bounds_capsule_contains, "bounds_capsule_contains", Bool32T, (bounds: Bounds, pt1: Vec3, pt2: Vec3, radius: f32));
+import_from_c!(bounds_grow_to_fit_pt, "bounds_grow_to_fit_pt", Bounds, (bounds: Bounds, pt: Vec3));
+import_from_c!(bounds_grow_to_fit_box, "bounds_grow_to_fit_box", Bounds, (bounds: Bounds, box_: Bounds, opt_box_transform: *const Matrix));
+import_from_c!(bounds_transform, "bounds_transform", Bounds, (bounds: Bounds, transform: Matrix));
 
 impl Bounds {
     /// Creates a bounding box object!
@@ -5328,13 +5312,11 @@ impl PartialEq for Plane {
     }
 }
 
-unsafe extern "C" {
-    pub fn plane_from_points(p1: Vec3, p2: Vec3, p3: Vec3) -> Plane;
-    pub fn plane_from_ray(ray: Ray) -> Plane;
-    pub fn plane_ray_intersect(plane: Plane, ray: Ray, out_pt: *mut Vec3) -> Bool32T;
-    pub fn plane_line_intersect(plane: Plane, p1: Vec3, p2: Vec3, out_pt: *mut Vec3) -> Bool32T;
-    pub fn plane_point_closest(plane: Plane, pt: Vec3) -> Vec3;
-}
+import_from_c!(plane_from_points, "plane_from_points", Plane, (p1: Vec3, p2: Vec3, p3: Vec3));
+import_from_c!(plane_from_ray, "plane_from_ray", Plane, (ray: Ray));
+import_from_c!(plane_ray_intersect, "plane_ray_intersect", Bool32T, (plane: Plane, ray: Ray, out_pt: *mut Vec3));
+import_from_c!(plane_line_intersect, "plane_line_intersect", Bool32T, (plane: Plane, p1: Vec3, p2: Vec3, out_pt: *mut Vec3));
+import_from_c!(plane_point_closest, "plane_point_closest", Vec3, (plane: Plane, pt: Vec3));
 
 impl Plane {
     /// Creates a Plane directly from the ax + by + cz + d = 0 formula!
@@ -5809,10 +5791,8 @@ impl AsRef<Sphere> for Sphere {
     }
 }
 
-unsafe extern "C" {
-    pub fn sphere_ray_intersect(sphere: Sphere, ray: Ray, out_pt: *mut Vec3) -> Bool32T;
-    pub fn sphere_point_contains(sphere: Sphere, pt: Vec3) -> Bool32T;
-}
+import_from_c!(sphere_ray_intersect, "sphere_ray_intersect", Bool32T, (sphere: Sphere, ray: Ray, out_pt: *mut Vec3));
+import_from_c!(sphere_point_contains, "sphere_point_contains", Bool32T, (sphere: Sphere, pt: Vec3));
 
 impl Sphere {
     /// Creates a Sphere directly from the ax + by + cz + d = 0 formula!
@@ -5976,11 +5956,9 @@ pub struct Ray {
     pub direction: Vec3,
 }
 
-unsafe extern "C" {
-    pub fn ray_intersect_plane(ray: Ray, plane_pt: Vec3, plane_normal: Vec3, out_t: *mut f32) -> Bool32T;
-    pub fn ray_from_mouse(screen_pixel_pos: Vec2, out_ray: *mut Ray) -> Bool32T;
-    pub fn ray_point_closest(ray: Ray, pt: Vec3) -> Vec3;
-}
+import_from_c!(ray_intersect_plane, "ray_intersect_plane", Bool32T, (ray: Ray, plane_pt: Vec3, plane_normal: Vec3, out_t: *mut f32));
+import_from_c!(ray_from_mouse, "ray_from_mouse", Bool32T, (screen_pixel_pos: Vec2, out_ray: *mut Ray));
+import_from_c!(ray_point_closest, "ray_point_closest", Vec3, (ray: Ray, pt: Vec3));
 
 impl Ray {
     /// Ray Zero is the default

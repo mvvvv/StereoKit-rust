@@ -21,6 +21,7 @@ use std::{
     path::Path,
     ptr::{NonNull, null, null_mut},
 };
+use crate::import_from_c;
 
 // Re-export interactor types for convenient access
 pub use crate::interactor::{
@@ -134,21 +135,19 @@ pub struct Assets;
 
 pub type AssetT = *mut c_void;
 
-unsafe extern "C" {
-    pub fn assets_releaseref_threadsafe(asset: *mut c_void);
-    pub fn assets_current_task() -> i32;
-    pub fn assets_total_tasks() -> i32;
-    pub fn assets_current_task_priority() -> i32;
-    pub fn assets_block_for_priority(priority: i32);
-    pub fn assets_count() -> i32;
-    pub fn assets_get_index(index: i32) -> AssetT;
-    pub fn assets_get_type(index: i32) -> AssetType;
-    pub fn asset_get_type(asset: AssetT) -> AssetType;
-    pub fn asset_set_id(asset: AssetT, id: *const c_char);
-    pub fn asset_get_id(asset: AssetT) -> *const c_char;
-    pub fn asset_addref(asset: AssetT);
-    pub fn asset_release(asset: AssetT);
-}
+import_from_c!(assets_releaseref_threadsafe, "assets_releaseref_threadsafe", (), (asset: *mut c_void));
+import_from_c!(assets_current_task, "assets_current_task", i32, ());
+import_from_c!(assets_total_tasks, "assets_total_tasks", i32, ());
+import_from_c!(assets_current_task_priority, "assets_current_task_priority", i32, ());
+import_from_c!(assets_block_for_priority, "assets_block_for_priority", (), (priority: i32));
+import_from_c!(assets_count, "assets_count", i32, ());
+import_from_c!(assets_get_index, "assets_get_index", AssetT, (index: i32));
+import_from_c!(assets_get_type, "assets_get_type", AssetType, (index: i32));
+import_from_c!(asset_get_type, "asset_get_type", AssetType, (asset: AssetT));
+import_from_c!(asset_set_id, "asset_set_id", (), (asset: AssetT, id: *const c_char));
+import_from_c!(asset_get_id, "asset_get_id", *const c_char, (asset: AssetT));
+import_from_c!(asset_addref, "asset_addref", (), (asset: AssetT));
+import_from_c!(asset_release, "asset_release", (), (asset: AssetT));
 
 /// Non-canonical structure to store an asset and avoid reducer `Box<dyn Asset>`
 ///
@@ -545,56 +544,42 @@ pub struct Backend;
 
 pub type VoidFunction = unsafe extern "system" fn();
 
-unsafe extern "C" {
-    pub fn backend_xr_get_type() -> BackendXRType;
-    pub fn backend_openxr_get_instance() -> OpenXRHandleT;
-    pub fn backend_openxr_get_session() -> OpenXRHandleT;
-    pub fn backend_openxr_get_system_id() -> OpenXRHandleT;
-    pub fn backend_openxr_get_space() -> OpenXRHandleT;
-    pub fn backend_openxr_get_time() -> i64;
-    pub fn backend_openxr_get_eyes_sample_time() -> i64;
-    pub fn backend_openxr_get_function(function_name: *const c_char) -> Option<VoidFunction>;
-    pub fn backend_openxr_ext_enabled(extension_name: *const c_char) -> Bool32T;
-    pub fn backend_openxr_ext_request(extension_name: *const c_char);
-    pub fn backend_openxr_ext_exclude(extension_name: *const c_char);
-    pub fn backend_openxr_use_minimum_exts(use_minimum_exts: Bool32T);
-    pub fn backend_openxr_composition_layer(XrCompositionLayerBaseHeader: *mut c_void, data_size: i32, sort_order: i32);
-    pub fn backend_openxr_end_frame_chain(XrBaseHeader: *mut c_void, data_size: i32);
-    pub fn backend_openxr_set_hand_joint_scale(joint_scale_factor: f32);
-    pub fn backend_openxr_add_callback_pre_session_create(
-        xr_pre_session_create_callback: ::std::option::Option<unsafe extern "C" fn(context: *mut c_void)>,
-        context: *mut c_void,
-    );
-    pub fn backend_openxr_add_callback_poll_event(
-        xr_poll_event_callback: ::std::option::Option<
-            unsafe extern "C" fn(context: *mut c_void, xr_event_data_buffer: *mut c_void),
-        >,
-        context: *mut c_void,
-    );
-    pub fn backend_openxr_remove_callback_poll_event(
-        xr_poll_event_callback: ::std::option::Option<
-            unsafe extern "C" fn(context: *mut c_void, xr_event_data_buffer: *mut c_void),
-        >,
-    );
-    pub fn backend_platform_get() -> BackendPlatform;
-    pub fn backend_android_get_java_vm() -> *mut c_void;
-    pub fn backend_android_get_activity() -> *mut c_void;
-    pub fn backend_android_get_jni_env() -> *mut c_void;
-    pub fn backend_graphics_get() -> BackendGraphics;
-    pub fn backend_d3d11_get_d3d_device() -> *mut c_void;
-    pub fn backend_d3d11_get_d3d_context() -> *mut c_void;
-    pub fn backend_d3d11_get_deferred_d3d_context() -> *mut c_void;
-    pub fn backend_d3d11_get_deferred_mtx() -> *mut c_void;
-    pub fn backend_d3d11_get_main_thread_id() -> u32;
-    pub fn backend_opengl_wgl_get_hdc() -> *mut c_void;
-    pub fn backend_opengl_wgl_get_hglrc() -> *mut c_void;
-    pub fn backend_opengl_glx_get_context() -> *mut c_void;
-    pub fn backend_opengl_glx_get_display() -> *mut c_void;
-    pub fn backend_opengl_glx_get_drawable() -> *mut c_void;
-    pub fn backend_opengl_egl_get_context() -> *mut c_void;
-    pub fn backend_opengl_egl_get_config() -> *mut c_void;
-    pub fn backend_opengl_egl_get_display() -> *mut c_void;
-}
+import_from_c!(backend_xr_get_type, "backend_xr_get_type", BackendXRType, ());
+import_from_c!(backend_openxr_get_instance, "backend_openxr_get_instance", OpenXRHandleT, ());
+import_from_c!(backend_openxr_get_session, "backend_openxr_get_session", OpenXRHandleT, ());
+import_from_c!(backend_openxr_get_system_id, "backend_openxr_get_system_id", OpenXRHandleT, ());
+import_from_c!(backend_openxr_get_space, "backend_openxr_get_space", OpenXRHandleT, ());
+import_from_c!(backend_openxr_get_time, "backend_openxr_get_time", i64, ());
+import_from_c!(backend_openxr_get_eyes_sample_time, "backend_openxr_get_eyes_sample_time", i64, ());
+import_from_c!(backend_openxr_get_function, "backend_openxr_get_function", Option<VoidFunction>, (function_name: *const c_char));
+import_from_c!(backend_openxr_ext_enabled, "backend_openxr_ext_enabled", Bool32T, (extension_name: *const c_char));
+import_from_c!(backend_openxr_ext_request, "backend_openxr_ext_request", (), (extension_name: *const c_char));
+import_from_c!(backend_openxr_ext_exclude, "backend_openxr_ext_exclude", (), (extension_name: *const c_char));
+import_from_c!(backend_openxr_use_minimum_exts, "backend_openxr_use_minimum_exts", (), (use_minimum_exts: Bool32T));
+import_from_c!(backend_openxr_composition_layer, "backend_openxr_composition_layer", (), (XrCompositionLayerBaseHeader: *mut c_void, data_size: i32, sort_order: i32));
+import_from_c!(backend_openxr_end_frame_chain, "backend_openxr_end_frame_chain", (), (XrBaseHeader: *mut c_void, data_size: i32));
+import_from_c!(backend_openxr_set_hand_joint_scale, "backend_openxr_set_hand_joint_scale", (), (joint_scale_factor: f32));
+import_from_c!(backend_openxr_add_callback_pre_session_create, "backend_openxr_add_callback_pre_session_create", (), (xr_pre_session_create_callback: ::std::option::Option<unsafe extern "C" fn(context: *mut c_void)>, context: *mut c_void));
+import_from_c!(backend_openxr_add_callback_poll_event, "backend_openxr_add_callback_poll_event", (), (xr_poll_event_callback: ::std::option::Option<unsafe extern "C" fn(context: *mut c_void, xr_event_data_buffer: *mut c_void)>, context: *mut c_void));
+import_from_c!(backend_openxr_remove_callback_poll_event, "backend_openxr_remove_callback_poll_event", (), (xr_poll_event_callback: ::std::option::Option<unsafe extern "C" fn(context: *mut c_void, xr_event_data_buffer: *mut c_void)>));
+import_from_c!(backend_platform_get, "backend_platform_get", BackendPlatform, ());
+import_from_c!(backend_android_get_java_vm, "backend_android_get_java_vm", *mut c_void, ());
+import_from_c!(backend_android_get_activity, "backend_android_get_activity", *mut c_void, ());
+import_from_c!(backend_android_get_jni_env, "backend_android_get_jni_env", *mut c_void, ());
+import_from_c!(backend_graphics_get, "backend_graphics_get", BackendGraphics, ());
+import_from_c!(backend_d3d11_get_d3d_device, "backend_d3d11_get_d3d_device", *mut c_void, ());
+import_from_c!(backend_d3d11_get_d3d_context, "backend_d3d11_get_d3d_context", *mut c_void, ());
+import_from_c!(backend_d3d11_get_deferred_d3d_context, "backend_d3d11_get_deferred_d3d_context", *mut c_void, ());
+import_from_c!(backend_d3d11_get_deferred_mtx, "backend_d3d11_get_deferred_mtx", *mut c_void, ());
+import_from_c!(backend_d3d11_get_main_thread_id, "backend_d3d11_get_main_thread_id", u32, ());
+import_from_c!(backend_opengl_wgl_get_hdc, "backend_opengl_wgl_get_hdc", *mut c_void, ());
+import_from_c!(backend_opengl_wgl_get_hglrc, "backend_opengl_wgl_get_hglrc", *mut c_void, ());
+import_from_c!(backend_opengl_glx_get_context, "backend_opengl_glx_get_context", *mut c_void, ());
+import_from_c!(backend_opengl_glx_get_display, "backend_opengl_glx_get_display", *mut c_void, ());
+import_from_c!(backend_opengl_glx_get_drawable, "backend_opengl_glx_get_drawable", *mut c_void, ());
+import_from_c!(backend_opengl_egl_get_context, "backend_opengl_egl_get_context", *mut c_void, ());
+import_from_c!(backend_opengl_egl_get_config, "backend_opengl_egl_get_config", *mut c_void, ());
+import_from_c!(backend_opengl_egl_get_display, "backend_opengl_egl_get_display", *mut c_void, ());
 
 impl Backend {
     /// This describes the graphics API thatStereoKit is using for rendering. StereoKit uses D3D11 for Windows platforms,
@@ -1343,25 +1328,23 @@ pub enum HierarchyParent {
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/hierarchy.jpeg" alt="screenshot" width="200">
 pub struct Hierarchy;
 
-unsafe extern "C" {
-    pub fn hierarchy_push(transform: *const Matrix, parent_behavior: HierarchyParent);
-    pub fn hierarchy_push_pose(pose: *const Pose, parent_behavior: HierarchyParent);
-    pub fn hierarchy_pop();
-    pub fn hierarchy_set_enabled(enabled: Bool32T);
-    pub fn hierarchy_is_enabled() -> Bool32T;
-    pub fn hierarchy_to_world() -> *const Matrix;
-    pub fn hierarchy_to_local() -> *const Matrix;
-    pub fn hierarchy_to_local_point(world_pt: *const Vec3) -> Vec3;
-    pub fn hierarchy_to_local_direction(world_dir: *const Vec3) -> Vec3;
-    pub fn hierarchy_to_local_rotation(world_orientation: *const Quat) -> Quat;
-    pub fn hierarchy_to_local_pose(world_pose: *const Pose) -> Pose;
-    pub fn hierarchy_to_local_ray(world_ray: Ray) -> Ray;
-    pub fn hierarchy_to_world_point(local_pt: *const Vec3) -> Vec3;
-    pub fn hierarchy_to_world_direction(local_dir: *const Vec3) -> Vec3;
-    pub fn hierarchy_to_world_rotation(local_orientation: *const Quat) -> Quat;
-    pub fn hierarchy_to_world_pose(local_pose: *const Pose) -> Pose;
-    pub fn hierarchy_to_world_ray(local_ray: Ray) -> Ray;
-}
+import_from_c!(hierarchy_push, "hierarchy_push", (), (transform: *const Matrix, parent_behavior: HierarchyParent));
+import_from_c!(hierarchy_push_pose, "hierarchy_push_pose", (), (pose: *const Pose, parent_behavior: HierarchyParent));
+import_from_c!(hierarchy_pop, "hierarchy_pop", (), ());
+import_from_c!(hierarchy_set_enabled, "hierarchy_set_enabled", (), (enabled: Bool32T));
+import_from_c!(hierarchy_is_enabled, "hierarchy_is_enabled", Bool32T, ());
+import_from_c!(hierarchy_to_world, "hierarchy_to_world", *const Matrix, ());
+import_from_c!(hierarchy_to_local, "hierarchy_to_local", *const Matrix, ());
+import_from_c!(hierarchy_to_local_point, "hierarchy_to_local_point", Vec3, (world_pt: *const Vec3));
+import_from_c!(hierarchy_to_local_direction, "hierarchy_to_local_direction", Vec3, (world_dir: *const Vec3));
+import_from_c!(hierarchy_to_local_rotation, "hierarchy_to_local_rotation", Quat, (world_orientation: *const Quat));
+import_from_c!(hierarchy_to_local_pose, "hierarchy_to_local_pose", Pose, (world_pose: *const Pose));
+import_from_c!(hierarchy_to_local_ray, "hierarchy_to_local_ray", Ray, (world_ray: Ray));
+import_from_c!(hierarchy_to_world_point, "hierarchy_to_world_point", Vec3, (local_pt: *const Vec3));
+import_from_c!(hierarchy_to_world_direction, "hierarchy_to_world_direction", Vec3, (local_dir: *const Vec3));
+import_from_c!(hierarchy_to_world_rotation, "hierarchy_to_world_rotation", Quat, (local_orientation: *const Quat));
+import_from_c!(hierarchy_to_world_pose, "hierarchy_to_world_pose", Pose, (local_pose: *const Pose));
+import_from_c!(hierarchy_to_world_ray, "hierarchy_to_world_ray", Ray, (local_ray: Ray));
 
 impl Hierarchy {
     /// This is enabled by default. Disabling this will cause any draw call to ignore any Matrices that are on the
@@ -2597,62 +2580,36 @@ pub enum Key {
 /// ```
 pub struct Input;
 
-unsafe extern "C" {
-    pub fn input_pointer_count(filter: InputSource) -> i32;
-    pub fn input_pointer(index: i32, filter: InputSource) -> Pointer;
-    pub fn input_hand(hand: Handed) -> *const Hand;
-    pub fn input_hand_override(hand: Handed, in_arr_hand_joints: *const HandJoint);
-    pub fn input_hand_source(hand: Handed) -> HandSource;
-    pub fn input_controller(hand: Handed) -> *const Controller;
-    pub fn input_controller_menu() -> BtnState;
-    pub fn input_controller_model_set(hand: Handed, model: ModelT);
-    pub fn input_controller_model_get(hand: Handed) -> ModelT;
-    pub fn input_head() -> Pose;
-    pub fn input_eyes() -> Pose;
-    pub fn input_eyes_tracked() -> BtnState;
-    pub fn input_mouse() -> *const Mouse;
-    pub fn input_key(key: Key) -> BtnState;
-    pub fn input_key_inject_press(key: Key);
-    pub fn input_key_inject_release(key: Key);
-    pub fn input_text_consume() -> u32;
-    pub fn input_text_reset();
-    pub fn input_text_inject_char(character: u32);
-    pub fn input_hand_visible(hand: Handed, visible: Bool32T);
-    // Deprecated: pub fn input_hand_solid(hand: Handed, solid: Bool32T);
-    pub fn input_hand_material(hand: Handed, material: MaterialT);
-    pub fn input_get_finger_glow() -> Bool32T;
-    pub fn input_set_finger_glow(visible: Bool32T);
-    pub fn input_hand_sim_pose_add(
-        in_arr_palm_relative_hand_joints_25: *const Pose,
-        button1: ControllerKey,
-        and_button2: ControllerKey,
-        or_hotkey1: Key,
-        and_hotkey2: Key,
-    ) -> HandSimId;
-    pub fn input_hand_sim_pose_remove(id: HandSimId);
-    pub fn input_hand_sim_pose_clear();
-
-    #[deprecated(since = "0.4.0", note = "Not working anymore")]
-    pub fn input_subscribe(
-        source: InputSource,
-        input_event: BtnState,
-        input_event_callback: Option<
-            unsafe extern "C" fn(source: InputSource, input_event: BtnState, in_pointer: *const Pointer),
-        >,
-    );
-
-    #[deprecated(since = "0.4.0", note = "Not working anymore")]
-    pub fn input_unsubscribe(
-        source: InputSource,
-        input_event: BtnState,
-        input_event_callback: Option<
-            unsafe extern "C" fn(source: InputSource, input_event: BtnState, in_pointer: *const Pointer),
-        >,
-    );
-
-    #[deprecated(since = "0.4.0", note = "Not working anymore")]
-    pub fn input_fire_event(source: InputSource, input_event: BtnState, pointer: *const Pointer);
-}
+import_from_c!(input_pointer_count, "input_pointer_count", i32, (filter: InputSource));
+import_from_c!(input_pointer, "input_pointer", Pointer, (index: i32, filter: InputSource));
+import_from_c!(input_hand, "input_hand", *const Hand, (hand: Handed));
+import_from_c!(input_hand_override, "input_hand_override", (), (hand: Handed, in_arr_hand_joints: *const HandJoint));
+import_from_c!(input_hand_source, "input_hand_source", HandSource, (hand: Handed));
+import_from_c!(input_controller, "input_controller", *const Controller, (hand: Handed));
+import_from_c!(input_controller_menu, "input_controller_menu", BtnState, ());
+import_from_c!(input_controller_model_set, "input_controller_model_set", (), (hand: Handed, model: ModelT));
+import_from_c!(input_controller_model_get, "input_controller_model_get", ModelT, (hand: Handed));
+import_from_c!(input_head, "input_head", Pose, ());
+import_from_c!(input_eyes, "input_eyes", Pose, ());
+import_from_c!(input_eyes_tracked, "input_eyes_tracked", BtnState, ());
+import_from_c!(input_mouse, "input_mouse", *const Mouse, ());
+import_from_c!(input_key, "input_key", BtnState, (key: Key));
+import_from_c!(input_key_inject_press, "input_key_inject_press", (), (key: Key));
+import_from_c!(input_key_inject_release, "input_key_inject_release", (), (key: Key));
+import_from_c!(input_text_consume, "input_text_consume", u32, ());
+import_from_c!(input_text_reset, "input_text_reset", (), ());
+import_from_c!(input_text_inject_char, "input_text_inject_char", (), (character: u32));
+import_from_c!(input_hand_visible, "input_hand_visible", (), (hand: Handed, visible: Bool32T));
+import_from_c!(input_hand_solid, "input_hand_solid", (), (hand: Handed, solid: Bool32T));
+import_from_c!(input_hand_material, "input_hand_material", (), (hand: Handed, material: MaterialT));
+import_from_c!(input_get_finger_glow, "input_get_finger_glow", Bool32T, ());
+import_from_c!(input_set_finger_glow, "input_set_finger_glow", (), (visible: Bool32T));
+import_from_c!(input_hand_sim_pose_add, "input_hand_sim_pose_add", HandSimId, (in_arr_palm_relative_hand_joints_25: *const Pose, button1: ControllerKey, and_button2: ControllerKey, or_hotkey1: Key, and_hotkey2: Key));
+import_from_c!(input_hand_sim_pose_remove, "input_hand_sim_pose_remove", (), (id: HandSimId));
+import_from_c!(input_hand_sim_pose_clear, "input_hand_sim_pose_clear", (), ());
+import_from_c!(input_subscribe, "input_subscribe", (), (source: InputSource, input_event: BtnState, input_event_callback: Option<unsafe extern "C" fn(source: InputSource, input_event: BtnState, in_pointer: *const Pointer)>));
+import_from_c!(input_unsubscribe, "input_unsubscribe", (), (source: InputSource, input_event: BtnState, input_event_callback: Option<unsafe extern "C" fn(source: InputSource, input_event: BtnState, in_pointer: *const Pointer)>));
+import_from_c!(input_fire_event, "input_fire_event", (), (source: InputSource, input_event: BtnState, pointer: *const Pointer));
 
 impl Input {
     /// When StereoKit is rendering the input source, this allows you to override the controller Model SK uses. The
@@ -3524,13 +3481,11 @@ impl LinePoint {
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/lines.jpeg" alt="screenshot" width="200">
 pub struct Lines;
 
-unsafe extern "C" {
-    pub fn line_add(start: Vec3, end: Vec3, color_start: Color32, color_end: Color32, thickness: f32);
-    pub fn line_addv(start: LinePoint, end: LinePoint);
-    pub fn line_add_axis(pose: Pose, size: f32);
-    pub fn line_add_list(points: *const Vec3, count: i32, color: Color32, thickness: f32);
-    pub fn line_add_listv(in_arr_points: *const LinePoint, count: i32);
-}
+import_from_c!(line_add, "line_add", (), (start: Vec3, end: Vec3, color_start: Color32, color_end: Color32, thickness: f32));
+import_from_c!(line_addv, "line_addv", (), (start: LinePoint, end: LinePoint));
+import_from_c!(line_add_axis, "line_add_axis", (), (pose: Pose, size: f32));
+import_from_c!(line_add_list, "line_add_list", (), (points: *const Vec3, count: i32, color: Color32, thickness: f32));
+import_from_c!(line_add_listv, "line_add_listv", (), (in_arr_points: *const LinePoint, count: i32));
 
 impl Lines {
     /// Adds a line to the environment for the current frame.
@@ -3783,28 +3738,15 @@ pub struct LogItem {
 /// ```
 pub struct Log;
 
-unsafe extern "C" {
-    pub fn log_diag(text: *const c_char);
-    //pub fn log_diagf(text: *const c_char, ...);
-    pub fn log_info(text: *const c_char);
-    //pub fn log_infof(text: *const c_char, ...);
-    pub fn log_warn(text: *const c_char);
-    //pub fn log_warnf(text: *const c_char, ...);
-    pub fn log_err(text: *const c_char);
-    //pub fn log_errf(text: *const c_char, ...);
-    //pub fn log_writef(level: LogLevel, text: *const c_char, ...);
-    pub fn log_write(level: LogLevel, text: *const c_char);
-    pub fn log_set_filter(level: LogLevel);
-    pub fn log_set_colors(colors: LogColors);
-    pub fn log_subscribe(
-        log_callback: Option<unsafe extern "C" fn(context: *mut c_void, level: LogLevel, text: *const c_char)>,
-        context: *mut c_void,
-    );
-    pub fn log_unsubscribe(
-        log_callback: Option<unsafe extern "C" fn(context: *mut c_void, level: LogLevel, text: *const c_char)>,
-        context: *mut c_void,
-    );
-}
+import_from_c!(log_diag, "log_diag", (), (text: *const c_char));
+import_from_c!(log_info, "log_info", (), (text: *const c_char));
+import_from_c!(log_warn, "log_warn", (), (text: *const c_char));
+import_from_c!(log_err, "log_err", (), (text: *const c_char));
+import_from_c!(log_write, "log_write", (), (level: LogLevel, text: *const c_char));
+import_from_c!(log_set_filter, "log_set_filter", (), (level: LogLevel));
+import_from_c!(log_set_colors, "log_set_colors", (), (colors: LogColors));
+import_from_c!(log_subscribe, "log_subscribe", (), (log_callback: Option<unsafe extern "C" fn(context: *mut c_void, level: LogLevel, text: *const c_char)>, context: *mut c_void));
+import_from_c!(log_unsubscribe, "log_unsubscribe", (), (log_callback: Option<unsafe extern "C" fn(context: *mut c_void, level: LogLevel, text: *const c_char)>, context: *mut c_void));
 
 /// Log subscribe trampoline
 ///
@@ -4048,14 +3990,12 @@ pub struct Microphone {
     sound: Sound,
 }
 
-unsafe extern "C" {
-    pub fn mic_get_stream() -> SoundT;
-    pub fn mic_is_recording() -> Bool32T;
-    pub fn mic_device_count() -> i32;
-    pub fn mic_device_name(index: i32) -> *const c_char;
-    pub fn mic_start(device_name: *const c_char) -> Bool32T;
-    pub fn mic_stop();
-}
+import_from_c!(mic_get_stream, "mic_get_stream", SoundT, ());
+import_from_c!(mic_is_recording, "mic_is_recording", Bool32T, ());
+import_from_c!(mic_device_count, "mic_device_count", i32, ());
+import_from_c!(mic_device_name, "mic_device_name", *const c_char, (index: i32));
+import_from_c!(mic_start, "mic_start", Bool32T, (device_name: *const c_char));
+import_from_c!(mic_stop, "mic_stop", (), ());
 
 impl Microphone {
     /// This is the sound stream of the Microphone when it is recording. This Asset is created the first time it is
@@ -4268,115 +4208,50 @@ pub enum Projection {
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/renderer.jpeg" alt="screenshot" width="200">
 pub struct Renderer;
 
-unsafe extern "C" {
-    pub fn render_set_clip(near_plane: f32, far_plane: f32);
-    pub fn render_get_clip(out_near_plane: *mut f32, out_far_plane: *mut f32);
-    pub fn render_set_fov(vertical_field_of_view_degrees: f32);
-    pub fn render_get_fov() -> f32;
-    pub fn render_set_ortho_clip(near_plane: f32, far_plane: f32);
-    pub fn render_set_ortho_size(viewport_height_meters: f32);
-    pub fn render_get_ortho_size() -> f32;
-    pub fn render_set_projection(proj: Projection);
-    pub fn render_get_projection() -> Projection;
-    pub fn render_get_cam_root() -> Matrix;
-    pub fn render_set_cam_root(cam_root: *const Matrix);
-    pub fn render_set_skytex(sky_texture: TexT);
-    pub fn render_get_skytex() -> TexT;
-    pub fn render_set_skymaterial(sky_material: MaterialT);
-    pub fn render_get_skymaterial() -> MaterialT;
-    pub fn render_set_skylight(light_info: *const SphericalHarmonics);
-    pub fn render_get_skylight() -> SphericalHarmonics;
-    pub fn render_set_filter(layer_filter: RenderLayer);
-    pub fn render_get_filter() -> RenderLayer;
-    pub fn render_set_scaling(display_tex_scale: f32);
-    pub fn render_get_scaling() -> f32;
-    pub fn render_set_viewport_scaling(viewport_rect_scale: f32);
-    pub fn render_get_viewport_scaling() -> f32;
-    pub fn render_set_multisample(display_tex_multisample: i32);
-    pub fn render_get_multisample() -> i32;
-    pub fn render_override_capture_filter(use_override_filter: Bool32T, layer_filter: RenderLayer);
-    pub fn render_get_capture_filter() -> RenderLayer;
-    pub fn render_has_capture_filter() -> Bool32T;
-    pub fn render_set_clear_color(color_gamma: Color128);
-    pub fn render_get_clear_color() -> Color128;
-    pub fn render_enable_skytex(show_sky: Bool32T);
-    pub fn render_enabled_skytex() -> Bool32T;
-
-    pub fn render_global_texture(register_slot: i32, texture: TexT);
-    pub fn render_global_buffer(register_slot: i32, buffer: MaterialBufferT);
-    pub fn render_add_mesh(
-        mesh: MeshT,
-        material: MaterialT,
-        transform: *const Matrix,
-        color_linear: Color128,
-        layer: RenderLayer,
-    );
-    pub fn render_add_model(model: ModelT, transform: *const Matrix, color_linear: Color128, layer: RenderLayer);
-    pub fn render_add_model_mat(
-        model: ModelT,
-        material_override: MaterialT,
-        transform: *const Matrix,
-        color_linear: Color128,
-        layer: RenderLayer,
-    );
-    pub fn render_blit(to_rendertarget: TexT, material: MaterialT);
-
-    pub fn render_screenshot(
-        file_utf8: *const c_char,
-        file_quality_100: i32,
-        viewpoint: Pose,
-        width: i32,
-        height: i32,
-        field_of_view_degrees: f32,
-    );
-    pub fn render_screenshot_capture(
-        render_on_screenshot_callback: ::std::option::Option<
-            unsafe extern "C" fn(color_buffer: *mut Color32, width: i32, height: i32, context: *mut c_void),
-        >,
-        viewpoint: Pose,
-        width: i32,
-        height: i32,
-        field_of_view_degrees: f32,
-        tex_format: TexFormat,
-        context: *mut c_void,
-    );
-    pub fn render_screenshot_viewpoint(
-        render_on_screenshot_callback: ::std::option::Option<
-            unsafe extern "C" fn(color_buffer: *mut Color32, width: i32, height: i32, context: *mut c_void),
-        >,
-        camera: Matrix,
-        projection: Matrix,
-        width: i32,
-        height: i32,
-        layer_filter: RenderLayer,
-        clear: RenderClear,
-        viewport: Rect,
-        tex_format: TexFormat,
-        context: *mut c_void,
-    );
-    pub fn render_to(
-        to_rendertarget: TexT,
-        to_target_index: i32,
-        camera: *const Matrix,
-        projection: *const Matrix,
-        layer_filter: RenderLayer,
-        material_variant: i32,
-        clear: RenderClear,
-        viewport: Rect,
-    );
-
-    pub fn render_MaterialTo(
-        to_rendertarget: TexT,
-        override_material: MaterialT,
-        camera: *const Matrix,
-        projection: *const Matrix,
-        layer_filter: RenderLayer,
-        clear: RenderClear,
-        viewport: Rect,
-    );
-    pub fn render_get_device(device: *mut *mut c_void, context: *mut *mut c_void);
-
-}
+import_from_c!(render_set_clip, "render_set_clip", (), (near_plane: f32, far_plane: f32));
+import_from_c!(render_get_clip, "render_get_clip", (), (out_near_plane: *mut f32, out_far_plane: *mut f32));
+import_from_c!(render_set_fov, "render_set_fov", (), (vertical_field_of_view_degrees: f32));
+import_from_c!(render_get_fov, "render_get_fov", f32, ());
+import_from_c!(render_set_ortho_clip, "render_set_ortho_clip", (), (near_plane: f32, far_plane: f32));
+import_from_c!(render_set_ortho_size, "render_set_ortho_size", (), (viewport_height_meters: f32));
+import_from_c!(render_get_ortho_size, "render_get_ortho_size", f32, ());
+import_from_c!(render_set_projection, "render_set_projection", (), (proj: Projection));
+import_from_c!(render_get_projection, "render_get_projection", Projection, ());
+import_from_c!(render_get_cam_root, "render_get_cam_root", Matrix, ());
+import_from_c!(render_set_cam_root, "render_set_cam_root", (), (cam_root: *const Matrix));
+import_from_c!(render_set_skytex, "render_set_skytex", (), (sky_texture: TexT));
+import_from_c!(render_get_skytex, "render_get_skytex", TexT, ());
+import_from_c!(render_set_skymaterial, "render_set_skymaterial", (), (sky_material: MaterialT));
+import_from_c!(render_get_skymaterial, "render_get_skymaterial", MaterialT, ());
+import_from_c!(render_set_skylight, "render_set_skylight", (), (light_info: *const SphericalHarmonics));
+import_from_c!(render_get_skylight, "render_get_skylight", SphericalHarmonics, ());
+import_from_c!(render_set_filter, "render_set_filter", (), (layer_filter: RenderLayer));
+import_from_c!(render_get_filter, "render_get_filter", RenderLayer, ());
+import_from_c!(render_set_scaling, "render_set_scaling", (), (display_tex_scale: f32));
+import_from_c!(render_get_scaling, "render_get_scaling", f32, ());
+import_from_c!(render_set_viewport_scaling, "render_set_viewport_scaling", (), (viewport_rect_scale: f32));
+import_from_c!(render_get_viewport_scaling, "render_get_viewport_scaling", f32, ());
+import_from_c!(render_set_multisample, "render_set_multisample", (), (display_tex_multisample: i32));
+import_from_c!(render_get_multisample, "render_get_multisample", i32, ());
+import_from_c!(render_override_capture_filter, "render_override_capture_filter", (), (use_override_filter: Bool32T, layer_filter: RenderLayer));
+import_from_c!(render_get_capture_filter, "render_get_capture_filter", RenderLayer, ());
+import_from_c!(render_has_capture_filter, "render_has_capture_filter", Bool32T, ());
+import_from_c!(render_set_clear_color, "render_set_clear_color", (), (color_gamma: Color128));
+import_from_c!(render_get_clear_color, "render_get_clear_color", Color128, ());
+import_from_c!(render_enable_skytex, "render_enable_skytex", (), (show_sky: Bool32T));
+import_from_c!(render_enabled_skytex, "render_enabled_skytex", Bool32T, ());
+import_from_c!(render_global_texture, "render_global_texture", (), (register_slot: i32, texture: TexT));
+import_from_c!(render_global_buffer, "render_global_buffer", (), (register_slot: i32, buffer: MaterialBufferT));
+import_from_c!(render_add_mesh, "render_add_mesh", (), (mesh: MeshT, material: MaterialT, transform: *const Matrix, color_linear: Color128, layer: RenderLayer));
+import_from_c!(render_add_model, "render_add_model", (), (model: ModelT, transform: *const Matrix, color_linear: Color128, layer: RenderLayer));
+import_from_c!(render_add_model_mat, "render_add_model_mat", (), (model: ModelT, material_override: MaterialT, transform: *const Matrix, color_linear: Color128, layer: RenderLayer));
+import_from_c!(render_blit, "render_blit", (), (to_rendertarget: TexT, material: MaterialT));
+import_from_c!(render_screenshot, "render_screenshot", (), (file_utf8: *const c_char, file_quality_100: i32, viewpoint: Pose, width: i32, height: i32, field_of_view_degrees: f32));
+import_from_c!(render_screenshot_capture, "render_screenshot_capture", (), (render_on_screenshot_callback: ::std::option::Option<unsafe extern "C" fn(color_buffer: *mut Color32, width: i32, height: i32, context: *mut c_void)>, viewpoint: Pose, width: i32, height: i32, field_of_view_degrees: f32, tex_format: TexFormat, context: *mut c_void));
+import_from_c!(render_screenshot_viewpoint, "render_screenshot_viewpoint", (), (render_on_screenshot_callback: ::std::option::Option<unsafe extern "C" fn(color_buffer: *mut Color32, width: i32, height: i32, context: *mut c_void)>, camera: Matrix, projection: Matrix, width: i32, height: i32, layer_filter: RenderLayer, clear: RenderClear, viewport: Rect, tex_format: TexFormat, context: *mut c_void));
+import_from_c!(render_to, "render_to", (), (to_rendertarget: TexT, to_target_index: i32, camera: *const Matrix, projection: *const Matrix, layer_filter: RenderLayer, material_variant: i32, clear: RenderClear, viewport: Rect));
+import_from_c!(render_MaterialTo, "render_MaterialTo", (), (to_rendertarget: TexT, override_material: MaterialT, camera: *const Matrix, projection: *const Matrix, layer_filter: RenderLayer, clear: RenderClear, viewport: Rect));
+import_from_c!(render_get_device, "render_get_device", (), (device: *mut *mut c_void, context: *mut *mut c_void));
 
 /// screenshot_capture trampoline
 ///
@@ -5587,28 +5462,20 @@ pub struct TextStyle {
     _id: u32,
 }
 
-unsafe extern "C" {
-    pub fn text_make_style(font: FontT, layout_height: f32, color_gamma: Color128) -> TextStyle;
-    pub fn text_make_style_shader(font: FontT, layout_height: f32, shader: ShaderT, color_gamma: Color128)
-    -> TextStyle;
-    pub fn text_make_style_mat(
-        font: FontT,
-        layout_height: f32,
-        material: MaterialT,
-        color_gamma: Color128,
-    ) -> TextStyle;
-    pub fn text_style_get_line_height_pct(style: TextStyle) -> f32;
-    pub fn text_style_set_line_height_pct(style: TextStyle, height_percent: f32);
-    pub fn text_style_get_layout_height(style: TextStyle) -> f32;
-    pub fn text_style_set_layout_height(style: TextStyle, height_meters: f32);
-    pub fn text_style_get_total_height(style: TextStyle) -> f32;
-    pub fn text_style_set_total_height(style: TextStyle, height_meters: f32);
-    pub fn text_style_get_material(style: TextStyle) -> MaterialT;
-    pub fn text_style_get_ascender(style: TextStyle) -> f32;
-    pub fn text_style_get_descender(style: TextStyle) -> f32;
-    pub fn text_style_get_cap_height(style: TextStyle) -> f32;
-    pub fn text_style_get_baseline(style: TextStyle) -> f32;
-}
+import_from_c!(text_make_style, "text_make_style", TextStyle, (font: FontT, layout_height: f32, color_gamma: Color128));
+import_from_c!(text_make_style_shader, "text_make_style_shader", TextStyle, (font: FontT, layout_height: f32, shader: ShaderT, color_gamma: Color128));
+import_from_c!(text_make_style_mat, "text_make_style_mat", TextStyle, (font: FontT, layout_height: f32, material: MaterialT, color_gamma: Color128));
+import_from_c!(text_style_get_line_height_pct, "text_style_get_line_height_pct", f32, (style: TextStyle));
+import_from_c!(text_style_set_line_height_pct, "text_style_set_line_height_pct", (), (style: TextStyle, height_percent: f32));
+import_from_c!(text_style_get_layout_height, "text_style_get_layout_height", f32, (style: TextStyle));
+import_from_c!(text_style_set_layout_height, "text_style_set_layout_height", (), (style: TextStyle, height_meters: f32));
+import_from_c!(text_style_get_total_height, "text_style_get_total_height", f32, (style: TextStyle));
+import_from_c!(text_style_set_total_height, "text_style_set_total_height", (), (style: TextStyle, height_meters: f32));
+import_from_c!(text_style_get_material, "text_style_get_material", MaterialT, (style: TextStyle));
+import_from_c!(text_style_get_ascender, "text_style_get_ascender", f32, (style: TextStyle));
+import_from_c!(text_style_get_descender, "text_style_get_descender", f32, (style: TextStyle));
+import_from_c!(text_style_get_cap_height, "text_style_get_cap_height", f32, (style: TextStyle));
+import_from_c!(text_style_get_baseline, "text_style_get_baseline", f32, (style: TextStyle));
 
 impl Default for TextStyle {
     /// This is the default text style used by StereoKit.
@@ -6090,79 +5957,17 @@ pub enum TextContext {
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/text.jpeg" alt="screenshot" width="200">
 pub struct Text;
 
-unsafe extern "C" {
-    pub fn text_add_at(
-        text_utf8: *const c_char,
-        transform: *const Matrix,
-        style: TextStyle,
-        position: Pivot,
-        align: Align,
-        off_x: f32,
-        off_y: f32,
-        off_z: f32,
-        vertex_tint_linear: Color128,
-    );
-    pub fn text_add_at_16(
-        text_utf16: *const c_ushort,
-        transform: *const Matrix,
-        style: TextStyle,
-        position: Pivot,
-        align: Align,
-        off_x: f32,
-        off_y: f32,
-        off_z: f32,
-        vertex_tint_linear: Color128,
-    );
-    pub fn text_add_in(
-        text_utf8: *const c_char,
-        transform: *const Matrix,
-        size: Vec2,
-        fit: TextFit,
-        style: TextStyle,
-        position: Pivot,
-        align: Align,
-        off_x: f32,
-        off_y: f32,
-        off_z: f32,
-        vertex_tint_linear: Color128,
-    ) -> f32;
-    pub fn text_add_in_16(
-        text_utf16: *const c_ushort,
-        transform: *const Matrix,
-        size: Vec2,
-        fit: TextFit,
-        style: TextStyle,
-        position: Pivot,
-        align: Align,
-        off_x: f32,
-        off_y: f32,
-        off_z: f32,
-        vertex_tint_linear: Color128,
-    ) -> f32;
-    pub fn text_size_layout(text_utf8: *const c_char, style: TextStyle) -> Vec2;
-    pub fn text_size_layout_constrained(text_utf8: *const c_char, style: TextStyle, max_width: f32) -> Vec2;
-    pub fn text_size_layout_16(text_utf16: *const c_ushort, style: TextStyle) -> Vec2;
-    pub fn text_size_layout_constrained_16(text_utf16: *const c_ushort, style: TextStyle, max_width: f32) -> Vec2;
-    pub fn text_size_render(layout_size: Vec2, style: TextStyle, y_offset: *mut f32) -> Vec2;
-    pub fn text_char_at(
-        text_utf8: *const c_char,
-        style: TextStyle,
-        char_index: i32,
-        opt_size: *mut Vec2,
-        fit: TextFit,
-        position: Pivot,
-        align: Align,
-    ) -> Vec2;
-    pub fn text_char_at_16(
-        text_utf16: *const c_ushort,
-        style: TextStyle,
-        char_index: i32,
-        opt_size: *mut Vec2,
-        fit: TextFit,
-        position: Pivot,
-        align: Align,
-    ) -> Vec2;
-}
+import_from_c!(text_add_at, "text_add_at", (), (text_utf8: *const c_char, transform: *const Matrix, style: TextStyle, position: Pivot, align: Align, off_x: f32, off_y: f32, off_z: f32, vertex_tint_linear: Color128));
+import_from_c!(text_add_at_16, "text_add_at_16", (), (text_utf16: *const c_ushort, transform: *const Matrix, style: TextStyle, position: Pivot, align: Align, off_x: f32, off_y: f32, off_z: f32, vertex_tint_linear: Color128));
+import_from_c!(text_add_in, "text_add_in", f32, (text_utf8: *const c_char, transform: *const Matrix, size: Vec2, fit: TextFit, style: TextStyle, position: Pivot, align: Align, off_x: f32, off_y: f32, off_z: f32, vertex_tint_linear: Color128));
+import_from_c!(text_add_in_16, "text_add_in_16", f32, (text_utf16: *const c_ushort, transform: *const Matrix, size: Vec2, fit: TextFit, style: TextStyle, position: Pivot, align: Align, off_x: f32, off_y: f32, off_z: f32, vertex_tint_linear: Color128));
+import_from_c!(text_size_layout, "text_size_layout", Vec2, (text_utf8: *const c_char, style: TextStyle));
+import_from_c!(text_size_layout_constrained, "text_size_layout_constrained", Vec2, (text_utf8: *const c_char, style: TextStyle, max_width: f32));
+import_from_c!(text_size_layout_16, "text_size_layout_16", Vec2, (text_utf16: *const c_ushort, style: TextStyle));
+import_from_c!(text_size_layout_constrained_16, "text_size_layout_constrained_16", Vec2, (text_utf16: *const c_ushort, style: TextStyle, max_width: f32));
+import_from_c!(text_size_render, "text_size_render", Vec2, (layout_size: Vec2, style: TextStyle, y_offset: *mut f32));
+import_from_c!(text_char_at, "text_char_at", Vec2, (text_utf8: *const c_char, style: TextStyle, char_index: i32, opt_size: *mut Vec2, fit: TextFit, position: Pivot, align: Align));
+import_from_c!(text_char_at_16, "text_char_at_16", Vec2, (text_utf16: *const c_ushort, style: TextStyle, char_index: i32, opt_size: *mut Vec2, fit: TextFit, position: Pivot, align: Align));
 
 impl Text {
     /// Create a text style for use with other text functions! A text style is a font plus size/color/material
@@ -6613,37 +6418,30 @@ pub enum SpatialNodeType {
 /// <https://stereokit.net/Pages/StereoKit/World.html>
 pub struct World;
 
-unsafe extern "C" {
-    pub fn world_has_bounds() -> Bool32T;
-    pub fn world_get_bounds_size() -> Vec2;
-    pub fn world_get_bounds_pose() -> Pose;
-    pub fn world_from_spatial_graph(spatial_graph_node_id: *mut u8, dynamic: SpatialNodeType, qpc_time: i64) -> Pose;
-    pub fn world_from_perception_anchor(perception_spatial_anchor: *mut c_void) -> Pose;
-    pub fn world_try_from_spatial_graph(
-        spatial_graph_node_id: *mut u8,
-        dynamic: SpatialNodeType,
-        qpc_time: i64,
-        out_pose: *mut Pose,
-    ) -> Bool32T;
-    pub fn world_try_from_perception_anchor(perception_spatial_anchor: *mut c_void, out_pose: *mut Pose) -> Bool32T;
-    pub fn world_raycast(ray: Ray, out_intersection: *mut Ray) -> Bool32T;
-    pub fn world_set_occlusion_enabled(enabled: Bool32T);
-    pub fn world_get_occlusion_enabled() -> Bool32T;
-    pub fn world_set_raycast_enabled(enabled: Bool32T);
-    pub fn world_get_raycast_enabled() -> Bool32T;
-    pub fn world_set_occlusion_material(material: MaterialT);
-    pub fn world_get_occlusion_material() -> MaterialT;
-    pub fn world_set_refresh_type(refresh_type: WorldRefresh);
-    pub fn world_get_refresh_type() -> WorldRefresh;
-    pub fn world_set_refresh_radius(radius_meters: f32);
-    pub fn world_get_refresh_radius() -> f32;
-    pub fn world_set_refresh_interval(every_seconds: f32);
-    pub fn world_get_refresh_interval() -> f32;
-    pub fn world_get_tracked() -> BtnState;
-    pub fn world_get_origin_mode() -> OriginMode;
-    pub fn world_get_origin_offset() -> Pose;
-    pub fn world_set_origin_offset(offset: Pose);
-}
+import_from_c!(world_has_bounds, "world_has_bounds", Bool32T, ());
+import_from_c!(world_get_bounds_size, "world_get_bounds_size", Vec2, ());
+import_from_c!(world_get_bounds_pose, "world_get_bounds_pose", Pose, ());
+import_from_c!(world_from_spatial_graph, "world_from_spatial_graph", Pose, (spatial_graph_node_id: *mut u8, dynamic: SpatialNodeType, qpc_time: i64));
+import_from_c!(world_from_perception_anchor, "world_from_perception_anchor", Pose, (perception_spatial_anchor: *mut c_void));
+import_from_c!(world_try_from_spatial_graph, "world_try_from_spatial_graph", Bool32T, (spatial_graph_node_id: *mut u8, dynamic: SpatialNodeType, qpc_time: i64, out_pose: *mut Pose));
+import_from_c!(world_try_from_perception_anchor, "world_try_from_perception_anchor", Bool32T, (perception_spatial_anchor: *mut c_void, out_pose: *mut Pose));
+import_from_c!(world_raycast, "world_raycast", Bool32T, (ray: Ray, out_intersection: *mut Ray));
+import_from_c!(world_set_occlusion_enabled, "world_set_occlusion_enabled", (), (enabled: Bool32T));
+import_from_c!(world_get_occlusion_enabled, "world_get_occlusion_enabled", Bool32T, ());
+import_from_c!(world_set_raycast_enabled, "world_set_raycast_enabled", (), (enabled: Bool32T));
+import_from_c!(world_get_raycast_enabled, "world_get_raycast_enabled", Bool32T, ());
+import_from_c!(world_set_occlusion_material, "world_set_occlusion_material", (), (material: MaterialT));
+import_from_c!(world_get_occlusion_material, "world_get_occlusion_material", MaterialT, ());
+import_from_c!(world_set_refresh_type, "world_set_refresh_type", (), (refresh_type: WorldRefresh));
+import_from_c!(world_get_refresh_type, "world_get_refresh_type", WorldRefresh, ());
+import_from_c!(world_set_refresh_radius, "world_set_refresh_radius", (), (radius_meters: f32));
+import_from_c!(world_get_refresh_radius, "world_get_refresh_radius", f32, ());
+import_from_c!(world_set_refresh_interval, "world_set_refresh_interval", (), (every_seconds: f32));
+import_from_c!(world_get_refresh_interval, "world_get_refresh_interval", f32, ());
+import_from_c!(world_get_tracked, "world_get_tracked", BtnState, ());
+import_from_c!(world_get_origin_mode, "world_get_origin_mode", OriginMode, ());
+import_from_c!(world_get_origin_offset, "world_get_origin_offset", Pose, ());
+import_from_c!(world_set_origin_offset, "world_set_origin_offset", (), (offset: Pose));
 
 impl World {
     /// Off by default. This tells StereoKit to load up and display an occlusion surface that allows the real world to

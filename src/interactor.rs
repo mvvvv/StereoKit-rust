@@ -3,6 +3,7 @@ use crate::{
     system::BtnState,
     ui::IdHashT,
 };
+use crate::import_from_c;
 
 /// Should this interactor behave like a single point in space interacting with elements? Or should it behave more like
 /// an intangible line? Hit detection is still capsule shaped, but behavior may change a little to reflect the primary
@@ -76,52 +77,26 @@ pub enum DefaultInteractors {
     None = 1,
 }
 
-unsafe extern "C" {
-    // Interactor functions
-    pub fn interactor_create(
-        shape_type: InteractorType,
-        events: InteractorEvent,
-        activation_type: InteractorActivation,
-        input_source_id: i32,
-        capsule_radius: f32,
-        secondary_motion_dimensions: i32,
-    ) -> i32;
-    pub fn interactor_destroy(interactor: i32);
-    pub fn interactor_update(
-        interactor: i32,
-        capsule_start: Vec3,
-        capsule_end: Vec3,
-        motion: Pose,
-        motion_anchor: Vec3,
-        secondary_motion: Vec3,
-        active: BtnState,
-        tracked: BtnState,
-    );
-    pub fn interactor_set_min_distance(interactor: i32, min_distance: f32);
-    pub fn interactor_get_min_distance(interactor: i32) -> f32;
-    pub fn interactor_get_capsule_start(interactor: i32) -> Vec3;
-    pub fn interactor_get_capsule_end(interactor: i32) -> Vec3;
-    pub fn interactor_set_radius(interactor: i32, radius: f32);
-    pub fn interactor_get_radius(interactor: i32) -> f32;
-    pub fn interactor_get_tracked(interactor: i32) -> BtnState;
-    pub fn interactor_get_focused(interactor: i32) -> IdHashT;
-    pub fn interactor_get_active(interactor: i32) -> IdHashT;
-    pub fn interactor_get_focus_bounds(
-        interactor: i32,
-        out_pose_world: *mut Pose,
-        out_bounds_local: *mut Bounds,
-        out_at_local: *mut Vec3,
-    ) -> Bool32T;
-    pub fn interactor_get_motion(interactor: i32) -> Pose;
-    pub fn interactor_count() -> i32;
-    pub fn interactor_get(index: i32) -> i32;
-
-    // Interaction system functions
-    pub fn interaction_set_default_interactors(default_interactors: DefaultInteractors);
-    pub fn interaction_get_default_interactors() -> DefaultInteractors;
-    pub fn interaction_set_default_draw(draw_interactors: Bool32T);
-    pub fn interaction_get_default_draw() -> Bool32T;
-}
+import_from_c!(interactor_create, "interactor_create", i32, (shape_type: InteractorType, events: InteractorEvent, activation_type: InteractorActivation, input_source_id: i32, capsule_radius: f32, secondary_motion_dimensions: i32));
+import_from_c!(interactor_destroy, "interactor_destroy", (), (interactor: i32));
+import_from_c!(interactor_update, "interactor_update", (), (interactor: i32, capsule_start: Vec3, capsule_end: Vec3, motion: Pose, motion_anchor: Vec3, secondary_motion: Vec3, active: BtnState, tracked: BtnState));
+import_from_c!(interactor_set_min_distance, "interactor_set_min_distance", (), (interactor: i32, min_distance: f32));
+import_from_c!(interactor_get_min_distance, "interactor_get_min_distance", f32, (interactor: i32));
+import_from_c!(interactor_get_capsule_start, "interactor_get_capsule_start", Vec3, (interactor: i32));
+import_from_c!(interactor_get_capsule_end, "interactor_get_capsule_end", Vec3, (interactor: i32));
+import_from_c!(interactor_set_radius, "interactor_set_radius", (), (interactor: i32, radius: f32));
+import_from_c!(interactor_get_radius, "interactor_get_radius", f32, (interactor: i32));
+import_from_c!(interactor_get_tracked, "interactor_get_tracked", BtnState, (interactor: i32));
+import_from_c!(interactor_get_focused, "interactor_get_focused", IdHashT, (interactor: i32));
+import_from_c!(interactor_get_active, "interactor_get_active", IdHashT, (interactor: i32));
+import_from_c!(interactor_get_focus_bounds, "interactor_get_focus_bounds", Bool32T, (interactor: i32, out_pose_world: *mut Pose, out_bounds_local: *mut Bounds, out_at_local: *mut Vec3));
+import_from_c!(interactor_get_motion, "interactor_get_motion", Pose, (interactor: i32));
+import_from_c!(interactor_count, "interactor_count", i32, ());
+import_from_c!(interactor_get, "interactor_get", i32, (index: i32));
+import_from_c!(interaction_set_default_interactors, "interaction_set_default_interactors", (), (default_interactors: DefaultInteractors));
+import_from_c!(interaction_get_default_interactors, "interaction_get_default_interactors", DefaultInteractors, ());
+import_from_c!(interaction_set_default_draw, "interaction_set_default_draw", (), (draw_interactors: Bool32T));
+import_from_c!(interaction_get_default_draw, "interaction_get_default_draw", Bool32T, ());
 
 /// Interactors are essentially capsules that allow interaction with StereoKit's interaction primitives used by the UI
 /// system. While StereoKit does provide a number of interactors by default, you can replace StereoKit's defaults, add

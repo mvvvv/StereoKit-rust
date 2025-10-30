@@ -7,6 +7,7 @@ use std::{
     ffi::{CStr, CString, c_char, c_void},
     ptr::{NonNull, null_mut},
 };
+use crate::import_from_c;
 
 /// An Anchor in StereoKit is a completely virtual pose that is pinned to a real-world location. They are creatable via
 /// code, generally can persist across sessions, may provide additional stability beyond the system’s 6dof tracking,
@@ -76,28 +77,26 @@ bitflags::bitflags! {
         const Stability = 2;
     }
 }
-unsafe extern "C" {
-    pub fn anchor_find(asset_id_utf8: *const c_char) -> AnchorT;
-    pub fn anchor_create(pose: Pose) -> AnchorT;
-    pub fn anchor_set_id(anchor: AnchorT, asset_id_utf8: *const c_char);
-    pub fn anchor_get_id(anchor: AnchorT) -> *const c_char;
-    pub fn anchor_addref(anchor: AnchorT);
-    pub fn anchor_release(anchor: AnchorT);
-    pub fn anchor_try_set_persistent(anchor: AnchorT, persistent: Bool32T) -> Bool32T;
-    pub fn anchor_get_persistent(anchor: AnchorT) -> Bool32T;
-    pub fn anchor_get_pose(anchor: AnchorT) -> Pose;
-    pub fn anchor_get_changed(anchor: AnchorT) -> Bool32T;
-    pub fn anchor_get_name(anchor: AnchorT) -> *const c_char;
-    pub fn anchor_get_tracked(anchor: AnchorT) -> BtnState;
-    pub fn anchor_clear_stored();
-    pub fn anchor_get_capabilities() -> AnchorCaps;
-    pub fn anchor_get_count() -> i32;
-    pub fn anchor_get_index(index: i32) -> AnchorT;
-    pub fn anchor_get_new_count() -> i32;
-    pub fn anchor_get_new_index(index: i32) -> AnchorT;
-    pub fn anchor_get_perception_anchor(anchor: AnchorT, perception_spatial_anchor: *mut *mut c_void) -> Bool32T; //TODO: Check this
 
-}
+import_from_c!(anchor_find, "anchor_find", AnchorT, (asset_id_utf8: *const c_char));
+import_from_c!(anchor_create, "anchor_create", AnchorT, (pose: Pose));
+import_from_c!(anchor_set_id, "anchor_set_id", (), (anchor: AnchorT, asset_id_utf8: *const c_char));
+import_from_c!(anchor_get_id, "anchor_get_id", *const c_char, (anchor: AnchorT));
+import_from_c!(anchor_addref, "anchor_addref", (), (anchor: AnchorT));
+import_from_c!(anchor_release, "anchor_release", (), (anchor: AnchorT));
+import_from_c!(anchor_try_set_persistent, "anchor_try_set_persistent", Bool32T, (anchor: AnchorT, persistent: Bool32T));
+import_from_c!(anchor_get_persistent, "anchor_get_persistent", Bool32T, (anchor: AnchorT));
+import_from_c!(anchor_get_pose, "anchor_get_pose", Pose, (anchor: AnchorT));
+import_from_c!(anchor_get_changed, "anchor_get_changed", Bool32T, (anchor: AnchorT));
+import_from_c!(anchor_get_name, "anchor_get_name", *const c_char, (anchor: AnchorT));
+import_from_c!(anchor_get_tracked, "anchor_get_tracked", BtnState, (anchor: AnchorT));
+import_from_c!(anchor_clear_stored, "anchor_clear_stored", (), ());
+import_from_c!(anchor_get_capabilities, "anchor_get_capabilities", AnchorCaps, ());
+import_from_c!(anchor_get_count, "anchor_get_count", i32, ());
+import_from_c!(anchor_get_index, "anchor_get_index", AnchorT, (index: i32));
+import_from_c!(anchor_get_new_count, "anchor_get_new_count", i32, ());
+import_from_c!(anchor_get_new_index, "anchor_get_new_index", AnchorT, (index: i32));
+import_from_c!(anchor_get_perception_anchor, "anchor_get_perception_anchor", Bool32T, (anchor: AnchorT, perception_spatial_anchor: *mut *mut c_void)); //TODO: Check this
 
 impl IAsset for Anchor {
     // fn id(&mut self, id: impl AsRef<str>) {

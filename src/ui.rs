@@ -13,6 +13,7 @@ use std::{
     ffi::{CStr, CString, c_char, c_ushort},
     ptr::{NonNull, null_mut},
 };
+use crate::import_from_c;
 
 /// A description of what type of window to draw! This is a bit flag, so it can contain multiple elements.
 /// <https://stereokit.net/Pages/StereoKit/UIWin.html>
@@ -598,552 +599,161 @@ pub struct UiSliderData {
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui.jpeg" alt="screenshot" width="200">
 pub struct Ui;
 
-unsafe extern "C" {
-    pub fn ui_quadrant_size_verts(ref_vertices: *mut Vertex, vertex_count: i32, overflow_percent: f32);
-    pub fn ui_quadrant_size_mesh(ref_mesh: MeshT, overflow_percent: f32);
-    pub fn ui_gen_quadrant_mesh(
-        rounded_corners: UiCorner,
-        corner_radius: f32,
-        corner_resolution: u32,
-        delete_flat_sides: Bool32T,
-        quadrantify: Bool32T,
-        lathe_pts: *const UiLathePt,
-        lathe_pt_count: i32,
-    ) -> MeshT;
-    pub fn ui_show_volumes(show: Bool32T);
-    pub fn ui_enable_far_interact(enable: Bool32T);
-    pub fn ui_far_interact_enabled() -> Bool32T;
-    pub fn ui_system_get_move_type() -> UiMove;
-    pub fn ui_system_set_move_type(move_type: UiMove);
-    pub fn ui_settings(settings: UiSettings);
-    pub fn ui_get_settings() -> UiSettings;
-    pub fn ui_get_margin() -> f32;
-    pub fn ui_get_padding() -> f32;
-    pub fn ui_get_gutter() -> f32;
-    pub fn ui_set_color(color: Color128);
-    pub fn ui_set_theme_color(color_type: UiColor, color_gamma: Color128);
-    pub fn ui_get_theme_color(color_type: UiColor) -> Color128;
-    pub fn ui_set_theme_color_state(color_type: UiColor, state: UiColorState, color_gamma: Color128);
-    pub fn ui_get_theme_color_state(color_type: UiColor, state: UiColorState) -> Color128;
-    pub fn ui_set_element_visual(element_visual: UiVisual, mesh: MeshT, material: MaterialT, min_size: Vec2);
-    pub fn ui_set_element_color(element_visual: UiVisual, color_category: UiColor);
-    pub fn ui_set_element_sound(element_visual: UiVisual, activate: SoundT, deactivate: SoundT);
-    pub fn ui_has_keyboard_focus() -> Bool32T;
-    pub fn ui_popup_pose(shift: Vec3) -> Pose;
-
-    pub fn ui_draw_element(element_visual: UiVisual, start: Vec3, size: Vec3, focus: f32);
-    pub fn ui_draw_element_color(
-        element_visual: UiVisual,
-        element_color: UiVisual,
-        start: Vec3,
-        size: Vec3,
-        focus: f32,
-    );
-    pub fn ui_get_element_color(element_visual: UiVisual, focus: f32) -> Color128;
-    pub fn ui_get_anim_focus(id: IdHashT, focus_state: BtnState, activation_state: BtnState) -> f32;
-
-    pub fn ui_play_sound_on_off(element_visual: UiVisual, element_id: IdHashT, at_local: Vec3);
-    pub fn ui_play_sound_on(element_visual: UiVisual, at_local: Vec3);
-    pub fn ui_play_sound_off(element_visual: UiVisual, at_local: Vec3);
-
-    pub fn ui_push_grab_aura(enabled: Bool32T);
-    pub fn ui_pop_grab_aura();
-    pub fn ui_grab_aura_enabled() -> Bool32T;
-    pub fn ui_push_text_style(style: TextStyle);
-    pub fn ui_pop_text_style();
-    pub fn ui_get_text_style() -> TextStyle;
-    pub fn ui_is_enabled() -> Bool32T;
-    pub fn ui_push_tint(tint_gamma: Color128);
-    pub fn ui_pop_tint();
-    pub fn ui_push_enabled(enabled: Bool32T, parent_behavior: HierarchyParent);
-    pub fn ui_pop_enabled();
-    pub fn ui_push_preserve_keyboard(preserve_keyboard: Bool32T);
-    pub fn ui_pop_preserve_keyboard();
-    pub fn ui_push_surface(surface_pose: Pose, layout_start: Vec3, layout_dimensions: Vec2);
-    pub fn ui_pop_surface();
-    pub fn ui_push_id(id: *const c_char) -> IdHashT;
-    pub fn ui_push_id_16(id: *const c_ushort) -> IdHashT;
-    pub fn ui_push_idi(id: i32) -> IdHashT;
-    pub fn ui_pop_id();
-    pub fn ui_stack_hash(string: *const c_char) -> IdHashT;
-    pub fn ui_stack_hash_16(string: *const c_ushort) -> IdHashT;
-    pub fn ui_layout_area(start: Vec3, dimensions: Vec2, add_margin: Bool32T);
-    pub fn ui_layout_remaining() -> Vec2;
-    pub fn ui_layout_at() -> Vec3;
-    pub fn ui_layout_last() -> Bounds;
-    pub fn ui_layout_reserve(size: Vec2, add_padding: Bool32T, depth: f32) -> Bounds;
-    pub fn ui_layout_push(start: Vec3, dimensions: Vec2, add_margin: Bool32T);
-    pub fn ui_layout_push_cut(cut_to: UiCut, size: f32, add_margin: Bool32T);
-    pub fn ui_layout_pop();
-    // Deprecaded: pub fn ui_last_element_hand_used(hand: Handed) -> BtnState;
-    /// TODO: v0.4 These functions use hands instead of interactors, they need replaced!
-    pub fn ui_is_interacting(hand: Handed) -> Bool32T;
-    /// TODO: v0.4 These functions use hands instead of interactors, they need replaced!
-    pub fn ui_last_element_hand_active(hand: Handed) -> BtnState;
-    /// TODO: v0.4 These functions use hands instead of interactors, they need replaced!
-    pub fn ui_last_element_hand_focused(hand: Handed) -> BtnState;
-    pub fn ui_last_element_active() -> BtnState;
-    pub fn ui_last_element_focused() -> BtnState;
-    // Deprecated: pub fn ui_area_remaining() -> Vec2;
-    pub fn ui_nextline();
-    pub fn ui_sameline();
-    pub fn ui_line_height() -> f32;
-    pub fn ui_button_behavior(
-        window_relative_pos: Vec3,
-        size: Vec2,
-        id: IdHashT,
-        out_finger_offset: *mut f32,
-        out_button_state: *mut BtnState,
-        out_focus_state: *mut BtnState,
-        out_opt_hand: *mut i32,
-    );
-    pub fn ui_button_behavior_depth(
-        window_relative_pos: Vec3,
-        size: Vec2,
-        id: IdHashT,
-        button_depth: f32,
-        button_activation_depth: f32,
-        out_finger_offset: *mut f32,
-        out_button_state: *mut BtnState,
-        out_focus_state: *mut BtnState,
-        out_opt_hand: *mut i32,
-    );
-    pub fn ui_slider_behavior(
-        window_relative_pos: Vec3,
-        size: Vec2,
-        id: IdHashT,
-        value: *mut Vec2,
-        min: Vec2,
-        max: Vec2,
-        button_size_visual: Vec2,
-        button_size_interact: Vec2,
-        confirm_method: UiConfirm,
-        data: *mut UiSliderData,
-    );
-    pub fn ui_volume_at(
-        id: *const c_char,
-        bounds: Bounds,
-        interact_type: UiConfirm,
-        out_opt_hand: *mut Handed,
-        out_opt_focus_state: *mut BtnState,
-    ) -> BtnState;
-    pub fn ui_volume_at_16(
-        id: *const c_ushort,
-        bounds: Bounds,
-        interact_type: UiConfirm,
-        out_opt_hand: *mut Handed,
-        out_opt_focus_state: *mut BtnState,
-    ) -> BtnState;
-    // Deprecated : pub fn ui_volume_at(id: *const c_char, bounds: Bounds) -> Bool32T;
-    // Deprecated : pub fn ui_volume_at_16(id: *const c_ushort, bounds: Bounds) -> Bool32T;
-    // Deprecated : pub fn ui_interact_volume_at(bounds: Bounds, out_hand: *mut Handed) -> BtnState;
-    pub fn ui_label(text: *const c_char, use_padding: Bool32T);
-    pub fn ui_label_16(text: *const c_ushort, use_padding: Bool32T);
-    pub fn ui_label_sz(text: *const c_char, size: Vec2, use_padding: Bool32T);
-    pub fn ui_label_sz_16(text: *const c_ushort, size: Vec2, use_padding: Bool32T);
-    pub fn ui_text(
-        text: *const c_char,
-        scroll: *mut Vec2,
-        scroll_direction: UiScroll,
-        height: f32,
-        text_align: Align,
-    ) -> Bool32T;
-    pub fn ui_text_16(
-        text: *const c_ushort,
-        scroll: *mut Vec2,
-        scroll_direction: UiScroll,
-        height: f32,
-        text_align: Align,
-    ) -> Bool32T;
-    pub fn ui_text_sz(
-        text: *const c_char,
-        scroll: *mut Vec2,
-        scroll_direction: UiScroll,
-        size: Vec2,
-        text_align: Align,
-        fit: TextFit,
-    ) -> Bool32T;
-    pub fn ui_text_sz_16(
-        text: *const c_ushort,
-        scroll: *mut Vec2,
-        scroll_direction: UiScroll,
-        size: Vec2,
-        text_align: Align,
-        fit: TextFit,
-    ) -> Bool32T;
-    pub fn ui_text_at(
-        text: *const c_char,
-        scroll: *mut Vec2,
-        scroll_direction: UiScroll,
-        text_align: Align,
-        fit: TextFit,
-        window_relative_pos: Vec3,
-        size: Vec2,
-    ) -> Bool32T;
-    pub fn ui_text_at_16(
-        text: *const c_ushort,
-        scroll: *mut Vec2,
-        scroll_direction: UiScroll,
-        text_align: Align,
-        fit: TextFit,
-        window_relative_pos: Vec3,
-        size: Vec2,
-    ) -> Bool32T;
-    pub fn ui_button(text: *const c_char) -> Bool32T;
-    pub fn ui_button_16(text: *const c_ushort) -> Bool32T;
-    pub fn ui_button_sz(text: *const c_char, size: Vec2) -> Bool32T;
-    pub fn ui_button_sz_16(text: *const c_ushort, size: Vec2) -> Bool32T;
-    pub fn ui_button_at(text: *const c_char, window_relative_pos: Vec3, size: Vec2) -> Bool32T;
-    pub fn ui_button_at_16(text: *const c_ushort, window_relative_pos: Vec3, size: Vec2) -> Bool32T;
-    pub fn ui_button_img(text: *const c_char, image: SpriteT, image_layout: UiBtnLayout, color: Color128) -> Bool32T;
-    pub fn ui_button_img_16(
-        text: *const c_ushort,
-        image: SpriteT,
-        image_layout: UiBtnLayout,
-        color: Color128,
-    ) -> Bool32T;
-    pub fn ui_button_img_sz(
-        text: *const c_char,
-        image: SpriteT,
-        image_layout: UiBtnLayout,
-        size: Vec2,
-        color: Color128,
-    ) -> Bool32T;
-    pub fn ui_button_img_sz_16(
-        text: *const c_ushort,
-        image: SpriteT,
-        image_layout: UiBtnLayout,
-        size: Vec2,
-        color: Color128,
-    ) -> Bool32T;
-    pub fn ui_button_img_at(
-        text: *const c_char,
-        image: SpriteT,
-        image_layout: UiBtnLayout,
-        window_relative_pos: Vec3,
-        size: Vec2,
-        color: Color128,
-    ) -> Bool32T;
-    pub fn ui_button_img_at_16(
-        text: *const c_ushort,
-        image: SpriteT,
-        image_layout: UiBtnLayout,
-        window_relative_pos: Vec3,
-        size: Vec2,
-        color: Color128,
-    ) -> Bool32T;
-    pub fn ui_button_round(id: *const c_char, image: SpriteT, diameter: f32) -> Bool32T;
-    pub fn ui_button_round_16(id: *const c_ushort, image: SpriteT, diameter: f32) -> Bool32T;
-    pub fn ui_button_round_at(id: *const c_char, image: SpriteT, window_relative_pos: Vec3, diameter: f32) -> Bool32T;
-    pub fn ui_button_round_at_16(
-        id: *const c_ushort,
-        image: SpriteT,
-        window_relative_pos: Vec3,
-        diameter: f32,
-    ) -> Bool32T;
-    pub fn ui_toggle(text: *const c_char, pressed: *mut Bool32T) -> Bool32T;
-    pub fn ui_toggle_16(text: *const c_ushort, pressed: *mut Bool32T) -> Bool32T;
-    pub fn ui_toggle_sz(text: *const c_char, pressed: *mut Bool32T, size: Vec2) -> Bool32T;
-    pub fn ui_toggle_sz_16(text: *const c_ushort, pressed: *mut Bool32T, size: Vec2) -> Bool32T;
-    pub fn ui_toggle_at(text: *const c_char, pressed: *mut Bool32T, window_relative_pos: Vec3, size: Vec2) -> Bool32T;
-    pub fn ui_toggle_at_16(
-        text: *const c_ushort,
-        pressed: *mut Bool32T,
-        window_relative_pos: Vec3,
-        size: Vec2,
-    ) -> Bool32T;
-    pub fn ui_toggle_img(
-        text: *const c_char,
-        pressed: *mut Bool32T,
-        toggle_off: SpriteT,
-        toggle_on: SpriteT,
-        image_layout: UiBtnLayout,
-    ) -> Bool32T;
-    pub fn ui_toggle_img_16(
-        text: *const c_ushort,
-        pressed: *mut Bool32T,
-        toggle_off: SpriteT,
-        toggle_on: SpriteT,
-        image_layout: UiBtnLayout,
-    ) -> Bool32T;
-    pub fn ui_toggle_img_sz(
-        text: *const c_char,
-        pressed: *mut Bool32T,
-        toggle_off: SpriteT,
-        toggle_on: SpriteT,
-        image_layout: UiBtnLayout,
-        size: Vec2,
-    ) -> Bool32T;
-    pub fn ui_toggle_img_sz_16(
-        text: *const c_ushort,
-        pressed: *mut Bool32T,
-        toggle_off: SpriteT,
-        toggle_on: SpriteT,
-        image_layout: UiBtnLayout,
-        size: Vec2,
-    ) -> Bool32T;
-    pub fn ui_toggle_img_at(
-        text: *const c_char,
-        pressed: *mut Bool32T,
-        toggle_off: SpriteT,
-        toggle_on: SpriteT,
-        image_layout: UiBtnLayout,
-        window_relative_pos: Vec3,
-        size: Vec2,
-    ) -> Bool32T;
-    pub fn ui_toggle_img_at_16(
-        text: *const c_ushort,
-        pressed: *mut Bool32T,
-        toggle_off: SpriteT,
-        toggle_on: SpriteT,
-        image_layout: UiBtnLayout,
-        window_relative_pos: Vec3,
-        size: Vec2,
-    ) -> Bool32T;
-    pub fn ui_hslider(
-        id: *const c_char,
-        value: *mut f32,
-        min: f32,
-        max: f32,
-        step: f32,
-        width: f32,
-        confirm_method: UiConfirm,
-        notify_on: UiNotify,
-    ) -> Bool32T;
-    pub fn ui_hslider_16(
-        id: *const c_ushort,
-        value: *mut f32,
-        min: f32,
-        max: f32,
-        step: f32,
-        width: f32,
-        confirm_method: UiConfirm,
-        notify_on: UiNotify,
-    ) -> Bool32T;
-    pub fn ui_hslider_f64(
-        id: *const c_char,
-        value: *mut f64,
-        min: f64,
-        max: f64,
-        step: f64,
-        width: f32,
-        confirm_method: UiConfirm,
-        notify_on: UiNotify,
-    ) -> Bool32T;
-    pub fn ui_hslider_f64_16(
-        id: *const c_ushort,
-        value: *mut f64,
-        min: f64,
-        max: f64,
-        step: f64,
-        width: f32,
-        confirm_method: UiConfirm,
-        notify_on: UiNotify,
-    ) -> Bool32T;
-    pub fn ui_hslider_at(
-        id: *const c_char,
-        value: *mut f32,
-        min: f32,
-        max: f32,
-        step: f32,
-        window_relative_pos: Vec3,
-        size: Vec2,
-        confirm_method: UiConfirm,
-        notify_on: UiNotify,
-    ) -> Bool32T;
-    pub fn ui_hslider_at_16(
-        id: *const c_ushort,
-        value: *mut f32,
-        min: f32,
-        max: f32,
-        step: f32,
-        window_relative_pos: Vec3,
-        size: Vec2,
-        confirm_method: UiConfirm,
-        notify_on: UiNotify,
-    ) -> Bool32T;
-    pub fn ui_hslider_at_f64(
-        id: *const c_char,
-        value: *mut f64,
-        min: f64,
-        max: f64,
-        step: f64,
-        window_relative_pos: Vec3,
-        size: Vec2,
-        confirm_method: UiConfirm,
-        notify_on: UiNotify,
-    ) -> Bool32T;
-    pub fn ui_hslider_at_f64_16(
-        id: *const c_ushort,
-        value: *mut f64,
-        min: f64,
-        max: f64,
-        step: f64,
-        window_relative_pos: Vec3,
-        size: Vec2,
-        confirm_method: UiConfirm,
-        notify_on: UiNotify,
-    ) -> Bool32T;
-    pub fn ui_vslider(
-        id: *const c_char,
-        value: *mut f32,
-        min: f32,
-        max: f32,
-        step: f32,
-        height: f32,
-        confirm_method: UiConfirm,
-        notify_on: UiNotify,
-    ) -> Bool32T;
-    pub fn ui_vslider_16(
-        id: *const c_ushort,
-        value: *mut f32,
-        min: f32,
-        max: f32,
-        step: f32,
-        height: f32,
-        confirm_method: UiConfirm,
-        notify_on: UiNotify,
-    ) -> Bool32T;
-    pub fn ui_vslider_f64(
-        id: *const c_char,
-        value: *mut f64,
-        min: f64,
-        max: f64,
-        step: f64,
-        height: f32,
-        confirm_method: UiConfirm,
-        notify_on: UiNotify,
-    ) -> Bool32T;
-    pub fn ui_vslider_f64_16(
-        id: *const c_ushort,
-        value: *mut f64,
-        min: f64,
-        max: f64,
-        step: f64,
-        height: f32,
-        confirm_method: UiConfirm,
-        notify_on: UiNotify,
-    ) -> Bool32T;
-    pub fn ui_vslider_at(
-        id: *const c_char,
-        value: *mut f32,
-        min: f32,
-        max: f32,
-        step: f32,
-        window_relative_pos: Vec3,
-        size: Vec2,
-        confirm_method: UiConfirm,
-        notify_on: UiNotify,
-    ) -> Bool32T;
-    pub fn ui_vslider_at_16(
-        id: *const c_ushort,
-        value: *mut f32,
-        min: f32,
-        max: f32,
-        step: f32,
-        window_relative_pos: Vec3,
-        size: Vec2,
-        confirm_method: UiConfirm,
-        notify_on: UiNotify,
-    ) -> Bool32T;
-    pub fn ui_vslider_at_f64(
-        id: *const c_char,
-        value: *mut f64,
-        min: f64,
-        max: f64,
-        step: f64,
-        window_relative_pos: Vec3,
-        size: Vec2,
-        confirm_method: UiConfirm,
-        notify_on: UiNotify,
-    ) -> Bool32T;
-    pub fn ui_vslider_at_f64_16(
-        id: *const c_ushort,
-        value: *mut f64,
-        min: f64,
-        max: f64,
-        step: f64,
-        window_relative_pos: Vec3,
-        size: Vec2,
-        confirm_method: UiConfirm,
-        notify_on: UiNotify,
-    ) -> Bool32T;
-    pub fn ui_input(
-        id: *const c_char,
-        buffer: *mut c_char,
-        buffer_size: i32,
-        size: Vec2,
-        type_: TextContext,
-    ) -> Bool32T;
-    pub fn ui_input_at(
-        id: *const c_char,
-        buffer: *mut c_char,
-        buffer_size: i32,
-        window_relative_pos: Vec3,
-        size: Vec2,
-        type_: TextContext,
-    ) -> Bool32T;
-    pub fn ui_input_16(
-        id: *const c_ushort,
-        buffer: *mut c_ushort,
-        buffer_size: i32,
-        size: Vec2,
-        type_: TextContext,
-    ) -> Bool32T;
-    pub fn ui_input_at_16(
-        id: *const c_ushort,
-        buffer: *mut c_ushort,
-        buffer_size: i32,
-        window_relative_pos: Vec3,
-        size: Vec2,
-        type_: TextContext,
-    ) -> Bool32T;
-    pub fn ui_image(image: SpriteT, size: Vec2);
-    pub fn ui_model(model: ModelT, ui_size: Vec2, model_scale: f32);
-    pub fn ui_model_at(model: ModelT, start: Vec3, size: Vec3, color: Color128);
-    pub fn ui_hprogress_bar(percent: f32, width: f32, flip_fil_dir: Bool32T);
-    pub fn ui_vprogress_bar(percent: f32, height: f32, flip_fil_dir: Bool32T);
-    pub fn ui_progress_bar_at(
-        percent: f32,
-        window_relative_pos: Vec3,
-        size: Vec2,
-        bar_direction: UiDir,
-        flip_fil_dir: Bool32T,
-    );
-    pub fn ui_hseparator();
-    // Deprecated : pub fn ui_space(space: f32);
-    pub fn ui_hspace(horizontal_space: f32);
-    pub fn ui_vspace(vertical_space: f32);
-    pub fn ui_handle_begin(
-        text: *const c_char,
-        movement: *mut Pose,
-        handle: Bounds,
-        draw: Bool32T,
-        move_type: UiMove,
-        allowed_gestures: UiGesture,
-    ) -> Bool32T;
-    pub fn ui_handle_begin_16(
-        text: *const c_ushort,
-        movement: *mut Pose,
-        handle: Bounds,
-        draw: Bool32T,
-        move_type: UiMove,
-        allowed_gestures: UiGesture,
-    ) -> Bool32T;
-    pub fn ui_handle_end();
-    pub fn ui_window_begin(text: *const c_char, opt_pose: *mut Pose, size: Vec2, window_type: UiWin, move_type: UiMove);
-    pub fn ui_window_begin_16(
-        text: *const c_ushort,
-        opt_pose: *mut Pose,
-        size: Vec2,
-        window_type: UiWin,
-        move_type: UiMove,
-    );
-    pub fn ui_window_end();
-    pub fn ui_panel_at(start: Vec3, size: Vec2, padding: UiPad);
-    pub fn ui_panel_begin(padding: UiPad);
-    pub fn ui_panel_end();
-}
+import_from_c!(ui_quadrant_size_verts, "ui_quadrant_size_verts", (), (ref_vertices: *mut Vertex, vertex_count: i32, overflow_percent: f32));
+import_from_c!(ui_quadrant_size_mesh, "ui_quadrant_size_mesh", (), (ref_mesh: MeshT, overflow_percent: f32));
+import_from_c!(ui_gen_quadrant_mesh, "ui_gen_quadrant_mesh", MeshT, (rounded_corners: UiCorner, corner_radius: f32, corner_resolution: u32, delete_flat_sides: Bool32T, quadrantify: Bool32T, lathe_pts: *const UiLathePt, lathe_pt_count: i32));
+import_from_c!(ui_show_volumes, "ui_show_volumes", (), (show: Bool32T));
+import_from_c!(ui_enable_far_interact, "ui_enable_far_interact", (), (enable: Bool32T));
+import_from_c!(ui_far_interact_enabled, "ui_far_interact_enabled", Bool32T, ());
+import_from_c!(ui_system_get_move_type, "ui_system_get_move_type", UiMove, ());
+import_from_c!(ui_system_set_move_type, "ui_system_set_move_type", (), (move_type: UiMove));
+import_from_c!(ui_settings, "ui_settings", (), (settings: UiSettings));
+import_from_c!(ui_get_settings, "ui_get_settings", UiSettings, ());
+import_from_c!(ui_get_margin, "ui_get_margin", f32, ());
+import_from_c!(ui_get_padding, "ui_get_padding", f32, ());
+import_from_c!(ui_get_gutter, "ui_get_gutter", f32, ());
+import_from_c!(ui_set_color, "ui_set_color", (), (color: Color128));
+import_from_c!(ui_set_theme_color, "ui_set_theme_color", (), (color_type: UiColor, color_gamma: Color128));
+import_from_c!(ui_get_theme_color, "ui_get_theme_color", Color128, (color_type: UiColor));
+import_from_c!(ui_set_theme_color_state, "ui_set_theme_color_state", (), (color_type: UiColor, state: UiColorState, color_gamma: Color128));
+import_from_c!(ui_get_theme_color_state, "ui_get_theme_color_state", Color128, (color_type: UiColor, state: UiColorState));
+import_from_c!(ui_set_element_visual, "ui_set_element_visual", (), (element_visual: UiVisual, mesh: MeshT, material: MaterialT, min_size: Vec2));
+import_from_c!(ui_set_element_color, "ui_set_element_color", (), (element_visual: UiVisual, color_category: UiColor));
+import_from_c!(ui_set_element_sound, "ui_set_element_sound", (), (element_visual: UiVisual, activate: SoundT, deactivate: SoundT));
+import_from_c!(ui_has_keyboard_focus, "ui_has_keyboard_focus", Bool32T, ());
+import_from_c!(ui_popup_pose, "ui_popup_pose", Pose, (shift: Vec3));
+import_from_c!(ui_draw_element, "ui_draw_element", (), (element_visual: UiVisual, start: Vec3, size: Vec3, focus: f32));
+import_from_c!(ui_draw_element_color, "ui_draw_element_color", (), (element_visual: UiVisual, element_color: UiVisual, start: Vec3, size: Vec3, focus: f32));
+import_from_c!(ui_get_element_color, "ui_get_element_color", Color128, (element_visual: UiVisual, focus: f32));
+import_from_c!(ui_get_anim_focus, "ui_get_anim_focus", f32, (id: IdHashT, focus_state: BtnState, activation_state: BtnState));
+import_from_c!(ui_play_sound_on_off, "ui_play_sound_on_off", (), (element_visual: UiVisual, element_id: IdHashT, at_local: Vec3));
+import_from_c!(ui_play_sound_on, "ui_play_sound_on", (), (element_visual: UiVisual, at_local: Vec3));
+import_from_c!(ui_play_sound_off, "ui_play_sound_off", (), (element_visual: UiVisual, at_local: Vec3));
+import_from_c!(ui_push_grab_aura, "ui_push_grab_aura", (), (enabled: Bool32T));
+import_from_c!(ui_pop_grab_aura, "ui_pop_grab_aura", (), ());
+import_from_c!(ui_grab_aura_enabled, "ui_grab_aura_enabled", Bool32T, ());
+import_from_c!(ui_push_text_style, "ui_push_text_style", (), (style: TextStyle));
+import_from_c!(ui_pop_text_style, "ui_pop_text_style", (), ());
+import_from_c!(ui_get_text_style, "ui_get_text_style", TextStyle, ());
+import_from_c!(ui_is_enabled, "ui_is_enabled", Bool32T, ());
+import_from_c!(ui_push_tint, "ui_push_tint", (), (tint_gamma: Color128));
+import_from_c!(ui_pop_tint, "ui_pop_tint", (), ());
+import_from_c!(ui_push_enabled, "ui_push_enabled", (), (enabled: Bool32T, parent_behavior: HierarchyParent));
+import_from_c!(ui_pop_enabled, "ui_pop_enabled", (), ());
+import_from_c!(ui_push_preserve_keyboard, "ui_push_preserve_keyboard", (), (preserve_keyboard: Bool32T));
+import_from_c!(ui_pop_preserve_keyboard, "ui_pop_preserve_keyboard", (), ());
+import_from_c!(ui_push_surface, "ui_push_surface", (), (surface_pose: Pose, layout_start: Vec3, layout_dimensions: Vec2));
+import_from_c!(ui_pop_surface, "ui_pop_surface", (), ());
+import_from_c!(ui_push_id, "ui_push_id", IdHashT, (id: *const c_char));
+import_from_c!(ui_push_id_16, "ui_push_id_16", IdHashT, (id: *const c_ushort));
+import_from_c!(ui_push_idi, "ui_push_idi", IdHashT, (id: i32));
+import_from_c!(ui_pop_id, "ui_pop_id", (), ());
+import_from_c!(ui_stack_hash, "ui_stack_hash", IdHashT, (string: *const c_char));
+import_from_c!(ui_stack_hash_16, "ui_stack_hash_16", IdHashT, (string: *const c_ushort));
+import_from_c!(ui_layout_area, "ui_layout_area", (), (start: Vec3, dimensions: Vec2, add_margin: Bool32T));
+import_from_c!(ui_layout_remaining, "ui_layout_remaining", Vec2, ());
+import_from_c!(ui_layout_at, "ui_layout_at", Vec3, ());
+import_from_c!(ui_layout_last, "ui_layout_last", Bounds, ());
+import_from_c!(ui_layout_reserve, "ui_layout_reserve", Bounds, (size: Vec2, add_padding: Bool32T, depth: f32));
+import_from_c!(ui_layout_push, "ui_layout_push", (), (start: Vec3, dimensions: Vec2, add_margin: Bool32T));
+import_from_c!(ui_layout_push_cut, "ui_layout_push_cut", (), (cut_to: UiCut, size: f32, add_margin: Bool32T));
+import_from_c!(ui_layout_pop, "ui_layout_pop", (), ());
+/// TODO: v0.4 These functions use hands instead of interactors, they need replaced!
+import_from_c!(ui_is_interacting, "ui_is_interacting", Bool32T, (hand: Handed));
+/// TODO: v0.4 These functions use hands instead of interactors, they need replaced!
+import_from_c!(ui_last_element_hand_active, "ui_last_element_hand_active", BtnState, (hand: Handed));
+/// TODO: v0.4 These functions use hands instead of interactors, they need replaced!
+import_from_c!(ui_last_element_hand_focused, "ui_last_element_hand_focused", BtnState, (hand: Handed));
+import_from_c!(ui_last_element_active, "ui_last_element_active", BtnState, ());
+import_from_c!(ui_last_element_focused, "ui_last_element_focused", BtnState, ());
+// Deprecated: pub fn ui_area_remaining() -> Vec2;
+import_from_c!(ui_nextline, "ui_nextline", (), ());
+import_from_c!(ui_sameline, "ui_sameline", (), ());
+import_from_c!(ui_line_height, "ui_line_height", f32, ());
+import_from_c!(ui_button_behavior, "ui_button_behavior", (), (window_relative_pos: Vec3, size: Vec2, id: IdHashT, out_finger_offset: *mut f32, out_button_state: *mut BtnState, out_focus_state: *mut BtnState, out_opt_hand: *mut i32));
+import_from_c!(ui_button_behavior_depth, "ui_button_behavior_depth", (), (window_relative_pos: Vec3, size: Vec2, id: IdHashT, button_depth: f32, button_activation_depth: f32, out_finger_offset: *mut f32, out_button_state: *mut BtnState, out_focus_state: *mut BtnState, out_opt_hand: *mut i32));
+import_from_c!(ui_slider_behavior, "ui_slider_behavior", (), (window_relative_pos: Vec3, size: Vec2, id: IdHashT, value: *mut Vec2, min: Vec2, max: Vec2, button_size_visual: Vec2, button_size_interact: Vec2, confirm_method: UiConfirm, data: *mut UiSliderData));
+import_from_c!(ui_volume_at, "ui_volume_at", BtnState, (id: *const c_char, bounds: Bounds, interact_type: UiConfirm, out_opt_hand: *mut Handed, out_opt_focus_state: *mut BtnState));
+import_from_c!(ui_volume_at_16, "ui_volume_at_16", BtnState, (id: *const c_ushort, bounds: Bounds, interact_type: UiConfirm, out_opt_hand: *mut Handed, out_opt_focus_state: *mut BtnState));
+// Deprecated : pub fn ui_volume_at(id: *const c_char, bounds: Bounds) -> Bool32T;
+// Deprecated : pub fn ui_volume_at_16(id: *const c_ushort, bounds: Bounds) -> Bool32T;
+// Deprecated : pub fn ui_interact_volume_at(bounds: Bounds, out_hand: *mut Handed) -> BtnState;
+import_from_c!(ui_label, "ui_label", (), (text: *const c_char, use_padding: Bool32T));
+import_from_c!(ui_label_16, "ui_label_16", (), (text: *const c_ushort, use_padding: Bool32T));
+import_from_c!(ui_label_sz, "ui_label_sz", (), (text: *const c_char, size: Vec2, use_padding: Bool32T));
+import_from_c!(ui_label_sz_16, "ui_label_sz_16", (), (text: *const c_ushort, size: Vec2, use_padding: Bool32T));
+import_from_c!(ui_text, "ui_text", Bool32T, (text: *const c_char, scroll: *mut Vec2, scroll_direction: UiScroll, height: f32, text_align: Align));
+import_from_c!(ui_text_16, "ui_text_16", Bool32T, (text: *const c_ushort, scroll: *mut Vec2, scroll_direction: UiScroll, height: f32, text_align: Align));
+import_from_c!(ui_text_sz, "ui_text_sz", Bool32T, (text: *const c_char, scroll: *mut Vec2, scroll_direction: UiScroll, size: Vec2, text_align: Align, fit: TextFit));
+import_from_c!(ui_text_sz_16, "ui_text_sz_16", Bool32T, (text: *const c_ushort, scroll: *mut Vec2, scroll_direction: UiScroll, size: Vec2, text_align: Align, fit: TextFit));
+import_from_c!(ui_text_at, "ui_text_at", Bool32T, (text: *const c_char, scroll: *mut Vec2, scroll_direction: UiScroll, text_align: Align, fit: TextFit, window_relative_pos: Vec3, size: Vec2));
+import_from_c!(ui_text_at_16, "ui_text_at_16", Bool32T, (text: *const c_ushort, scroll: *mut Vec2, scroll_direction: UiScroll, text_align: Align, fit: TextFit, window_relative_pos: Vec3, size: Vec2));
+import_from_c!(ui_button, "ui_button", Bool32T, (text: *const c_char));
+import_from_c!(ui_button_16, "ui_button_16", Bool32T, (text: *const c_ushort));
+import_from_c!(ui_button_sz, "ui_button_sz", Bool32T, (text: *const c_char, size: Vec2));
+import_from_c!(ui_button_sz_16, "ui_button_sz_16", Bool32T, (text: *const c_ushort, size: Vec2));
+import_from_c!(ui_button_at, "ui_button_at", Bool32T, (text: *const c_char, window_relative_pos: Vec3, size: Vec2));
+import_from_c!(ui_button_at_16, "ui_button_at_16", Bool32T, (text: *const c_ushort, window_relative_pos: Vec3, size: Vec2));
+import_from_c!(ui_button_img, "ui_button_img", Bool32T, (text: *const c_char, image: SpriteT, image_layout: UiBtnLayout, color: Color128));
+import_from_c!(ui_button_img_16, "ui_button_img_16", Bool32T, (text: *const c_ushort, image: SpriteT, image_layout: UiBtnLayout, color: Color128));
+import_from_c!(ui_button_img_sz, "ui_button_img_sz", Bool32T, (text: *const c_char, image: SpriteT, image_layout: UiBtnLayout, size: Vec2, color: Color128));
+import_from_c!(ui_button_img_sz_16, "ui_button_img_sz_16", Bool32T, (text: *const c_ushort, image: SpriteT, image_layout: UiBtnLayout, size: Vec2, color: Color128));
+import_from_c!(ui_button_img_at, "ui_button_img_at", Bool32T, (text: *const c_char, image: SpriteT, image_layout: UiBtnLayout, window_relative_pos: Vec3, size: Vec2, color: Color128));
+import_from_c!(ui_button_img_at_16, "ui_button_img_at_16", Bool32T, (text: *const c_ushort, image: SpriteT, image_layout: UiBtnLayout, window_relative_pos: Vec3, size: Vec2, color: Color128));
+import_from_c!(ui_button_round, "ui_button_round", Bool32T, (id: *const c_char, image: SpriteT, diameter: f32));
+import_from_c!(ui_button_round_16, "ui_button_round_16", Bool32T, (id: *const c_ushort, image: SpriteT, diameter: f32));
+import_from_c!(ui_button_round_at, "ui_button_round_at", Bool32T, (id: *const c_char, image: SpriteT, window_relative_pos: Vec3, diameter: f32));
+import_from_c!(ui_button_round_at_16, "ui_button_round_at_16", Bool32T, (id: *const c_ushort, image: SpriteT, window_relative_pos: Vec3, diameter: f32));
+import_from_c!(ui_toggle, "ui_toggle", Bool32T, (text: *const c_char, pressed: *mut Bool32T));
+import_from_c!(ui_toggle_16, "ui_toggle_16", Bool32T, (text: *const c_ushort, pressed: *mut Bool32T));
+import_from_c!(ui_toggle_sz, "ui_toggle_sz", Bool32T, (text: *const c_char, pressed: *mut Bool32T, size: Vec2));
+import_from_c!(ui_toggle_sz_16, "ui_toggle_sz_16", Bool32T, (text: *const c_ushort, pressed: *mut Bool32T, size: Vec2));
+import_from_c!(ui_toggle_at, "ui_toggle_at", Bool32T, (text: *const c_char, pressed: *mut Bool32T, window_relative_pos: Vec3, size: Vec2));
+import_from_c!(ui_toggle_at_16, "ui_toggle_at_16", Bool32T, (text: *const c_ushort, pressed: *mut Bool32T, window_relative_pos: Vec3, size: Vec2));
+import_from_c!(ui_toggle_img, "ui_toggle_img", Bool32T, (text: *const c_char, pressed: *mut Bool32T, toggle_off: SpriteT, toggle_on: SpriteT, image_layout: UiBtnLayout));
+import_from_c!(ui_toggle_img_16, "ui_toggle_img_16", Bool32T, (text: *const c_ushort, pressed: *mut Bool32T, toggle_off: SpriteT, toggle_on: SpriteT, image_layout: UiBtnLayout));
+import_from_c!(ui_toggle_img_sz, "ui_toggle_img_sz", Bool32T, (text: *const c_char, pressed: *mut Bool32T, toggle_off: SpriteT, toggle_on: SpriteT, image_layout: UiBtnLayout, size: Vec2));
+import_from_c!(ui_toggle_img_sz_16, "ui_toggle_img_sz_16", Bool32T, (text: *const c_ushort, pressed: *mut Bool32T, toggle_off: SpriteT, toggle_on: SpriteT, image_layout: UiBtnLayout, size: Vec2));
+import_from_c!(ui_toggle_img_at, "ui_toggle_img_at", Bool32T, (text: *const c_char, pressed: *mut Bool32T, toggle_off: SpriteT, toggle_on: SpriteT, image_layout: UiBtnLayout, window_relative_pos: Vec3, size: Vec2));
+import_from_c!(ui_toggle_img_at_16, "ui_toggle_img_at_16", Bool32T, (text: *const c_ushort, pressed: *mut Bool32T, toggle_off: SpriteT, toggle_on: SpriteT, image_layout: UiBtnLayout, window_relative_pos: Vec3, size: Vec2));
+import_from_c!(ui_hslider, "ui_hslider", Bool32T, (id: *const c_char, value: *mut f32, min: f32, max: f32, step: f32, width: f32, confirm_method: UiConfirm, notify_on: UiNotify));
+import_from_c!(ui_hslider_16, "ui_hslider_16", Bool32T, (id: *const c_ushort, value: *mut f32, min: f32, max: f32, step: f32, width: f32, confirm_method: UiConfirm, notify_on: UiNotify));
+import_from_c!(ui_hslider_f64, "ui_hslider_f64", Bool32T, (id: *const c_char, value: *mut f64, min: f64, max: f64, step: f64, width: f32, confirm_method: UiConfirm, notify_on: UiNotify));
+import_from_c!(ui_hslider_f64_16, "ui_hslider_f64_16", Bool32T, (id: *const c_ushort, value: *mut f64, min: f64, max: f64, step: f64, width: f32, confirm_method: UiConfirm, notify_on: UiNotify));
+import_from_c!(ui_hslider_at, "ui_hslider_at", Bool32T, (id: *const c_char, value: *mut f32, min: f32, max: f32, step: f32, window_relative_pos: Vec3, size: Vec2, confirm_method: UiConfirm, notify_on: UiNotify));
+import_from_c!(ui_hslider_at_16, "ui_hslider_at_16", Bool32T, (id: *const c_ushort, value: *mut f32, min: f32, max: f32, step: f32, window_relative_pos: Vec3, size: Vec2, confirm_method: UiConfirm, notify_on: UiNotify));
+import_from_c!(ui_hslider_at_f64, "ui_hslider_at_f64", Bool32T, (id: *const c_char, value: *mut f64, min: f64, max: f64, step: f64, window_relative_pos: Vec3, size: Vec2, confirm_method: UiConfirm, notify_on: UiNotify));
+import_from_c!(ui_hslider_at_f64_16, "ui_hslider_at_f64_16", Bool32T, (id: *const c_ushort, value: *mut f64, min: f64, max: f64, step: f64, window_relative_pos: Vec3, size: Vec2, confirm_method: UiConfirm, notify_on: UiNotify));
+import_from_c!(ui_vslider, "ui_vslider", Bool32T, (id: *const c_char, value: *mut f32, min: f32, max: f32, step: f32, height: f32, confirm_method: UiConfirm, notify_on: UiNotify));
+import_from_c!(ui_vslider_16, "ui_vslider_16", Bool32T, (id: *const c_ushort, value: *mut f32, min: f32, max: f32, step: f32, height: f32, confirm_method: UiConfirm, notify_on: UiNotify));
+import_from_c!(ui_vslider_f64, "ui_vslider_f64", Bool32T, (id: *const c_char, value: *mut f64, min: f64, max: f64, step: f64, height: f32, confirm_method: UiConfirm, notify_on: UiNotify));
+import_from_c!(ui_vslider_f64_16, "ui_vslider_f64_16", Bool32T, (id: *const c_ushort, value: *mut f64, min: f64, max: f64, step: f64, height: f32, confirm_method: UiConfirm, notify_on: UiNotify));
+import_from_c!(ui_vslider_at, "ui_vslider_at", Bool32T, (id: *const c_char, value: *mut f32, min: f32, max: f32, step: f32, window_relative_pos: Vec3, size: Vec2, confirm_method: UiConfirm, notify_on: UiNotify));
+import_from_c!(ui_vslider_at_16, "ui_vslider_at_16", Bool32T, (id: *const c_ushort, value: *mut f32, min: f32, max: f32, step: f32, window_relative_pos: Vec3, size: Vec2, confirm_method: UiConfirm, notify_on: UiNotify));
+import_from_c!(ui_vslider_at_f64, "ui_vslider_at_f64", Bool32T, (id: *const c_char, value: *mut f64, min: f64, max: f64, step: f64, window_relative_pos: Vec3, size: Vec2, confirm_method: UiConfirm, notify_on: UiNotify));
+import_from_c!(ui_vslider_at_f64_16, "ui_vslider_at_f64_16", Bool32T, (id: *const c_ushort, value: *mut f64, min: f64, max: f64, step: f64, window_relative_pos: Vec3, size: Vec2, confirm_method: UiConfirm, notify_on: UiNotify));
+import_from_c!(ui_input, "ui_input", Bool32T, (id: *const c_char, buffer: *mut c_char, buffer_size: i32, size: Vec2, type_: TextContext));
+import_from_c!(ui_input_at, "ui_input_at", Bool32T, (id: *const c_char, buffer: *mut c_char, buffer_size: i32, window_relative_pos: Vec3, size: Vec2, type_: TextContext));
+import_from_c!(ui_input_16, "ui_input_16", Bool32T, (id: *const c_ushort, buffer: *mut c_ushort, buffer_size: i32, size: Vec2, type_: TextContext));
+import_from_c!(ui_input_at_16, "ui_input_at_16", Bool32T, (id: *const c_ushort, buffer: *mut c_ushort, buffer_size: i32, window_relative_pos: Vec3, size: Vec2, type_: TextContext));
+import_from_c!(ui_image, "ui_image", (), (image: SpriteT, size: Vec2));
+import_from_c!(ui_model, "ui_model", (), (model: ModelT, ui_size: Vec2, model_scale: f32));
+import_from_c!(ui_model_at, "ui_model_at", (), (model: ModelT, start: Vec3, size: Vec3, color: Color128));
+import_from_c!(ui_hprogress_bar, "ui_hprogress_bar", (), (percent: f32, width: f32, flip_fil_dir: Bool32T));
+import_from_c!(ui_vprogress_bar, "ui_vprogress_bar", (), (percent: f32, height: f32, flip_fil_dir: Bool32T));
+import_from_c!(ui_progress_bar_at, "ui_progress_bar_at", (), (percent: f32, window_relative_pos: Vec3, size: Vec2, bar_direction: UiDir, flip_fil_dir: Bool32T));
+import_from_c!(ui_hseparator, "ui_hseparator", (), ());
+import_from_c!(ui_hspace, "ui_hspace", (), (horizontal_space: f32));
+import_from_c!(ui_vspace, "ui_vspace", (), (vertical_space: f32));
+import_from_c!(ui_handle_begin, "ui_handle_begin", Bool32T, (text: *const c_char, movement: *mut Pose, handle: Bounds, draw: Bool32T, move_type: UiMove, allowed_gestures: UiGesture));
+import_from_c!(ui_handle_begin_16, "ui_handle_begin_16", Bool32T, (text: *const c_ushort, movement: *mut Pose, handle: Bounds, draw: Bool32T, move_type: UiMove, allowed_gestures: UiGesture));
+import_from_c!(ui_handle_end, "ui_handle_end", (), ());
+import_from_c!(ui_window_begin, "ui_window_begin", (), (text: *const c_char, opt_pose: *mut Pose, size: Vec2, window_type: UiWin, move_type: UiMove));
+import_from_c!(ui_window_begin_16, "ui_window_begin_16", (), (text: *const c_ushort, opt_pose: *mut Pose, size: Vec2, window_type: UiWin, move_type: UiMove));
+import_from_c!(ui_window_end, "ui_window_end", (), ());
+import_from_c!(ui_panel_at, "ui_panel_at", (), (start: Vec3, size: Vec2, padding: UiPad));
+import_from_c!(ui_panel_begin, "ui_panel_begin", (), (padding: UiPad));
+import_from_c!(ui_panel_end, "ui_panel_end", (), ());
 
 impl Ui {
     /// StereoKit will generate a color palette from this gamma space color, and use it to skin the UI! To explicitly

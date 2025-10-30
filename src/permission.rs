@@ -1,6 +1,7 @@
 use std::fmt;
 
 use crate::maths::Bool32T;
+use crate::import_from_c;
 
 /// A list of permissions that StereoKit knows about. On some platforms (like Android), these permissions may need to be
 /// explicitly requested before using certain features.
@@ -76,11 +77,9 @@ impl fmt::Display for PermissionState {
     }
 }
 
-unsafe extern "C" {
-    pub fn permission_state(permission: PermissionType) -> PermissionState;
-    pub fn permission_is_interactive(permission: PermissionType) -> Bool32T;
-    pub fn permission_request(permission: PermissionType);
-}
+import_from_c!(permission_state, "permission_state", PermissionState, (permission: PermissionType));
+import_from_c!(permission_is_interactive, "permission_is_interactive", Bool32T, (permission: PermissionType));
+import_from_c!(permission_request, "permission_request", (), (permission: PermissionType));
 
 /// Certain features in XR require explicit permissions from the operating system and user! This is typically for
 /// feature that surface sensitive data like eye gaze, or objects in the user's room. This is often complicated by the

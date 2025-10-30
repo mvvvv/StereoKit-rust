@@ -13,6 +13,7 @@ use std::{
     ffi::{CStr, CString, c_char, c_void},
     ptr::NonNull,
 };
+use crate::import_from_c;
 
 /// A RenderList is a collection of Draw commands that can be submitted to various surfaces. RenderList.Primary is
 /// where all normal Draw calls get added to, and this RenderList is renderer to primary display surface.
@@ -86,55 +87,22 @@ pub struct _RenderListT {
 /// StereoKit ffi type.
 pub type RenderListT = *mut _RenderListT;
 
-unsafe extern "C" {
-    pub fn render_list_find(id: *const c_char) -> RenderListT;
-    pub fn render_list_set_id(render_list: RenderListT, id: *const c_char);
-    pub fn render_list_get_id(render_list: RenderListT) -> *const c_char;
-    pub fn render_get_primary_list() -> RenderListT;
-    pub fn render_list_create() -> RenderListT;
-    pub fn render_list_addref(list: RenderListT);
-    pub fn render_list_release(list: RenderListT);
-    pub fn render_list_clear(list: RenderListT);
-    pub fn render_list_item_count(list: RenderListT) -> i32;
-    pub fn render_list_prev_count(list: RenderListT) -> i32;
-    pub fn render_list_add_mesh(
-        list: RenderListT,
-        mesh: MeshT,
-        material: MaterialT,
-        transform: Matrix,
-        color_linear: Color128,
-        render_layer: RenderLayer,
-    );
-    pub fn render_list_add_model(
-        list: RenderListT,
-        model: ModelT,
-        transform: Matrix,
-        color_linear: Color128,
-        render_layer: RenderLayer,
-    );
-    pub fn render_list_add_model_mat(
-        list: RenderListT,
-        model: ModelT,
-        material_override: MaterialT,
-        transform: Matrix,
-        color_linear: Color128,
-        render_layer: RenderLayer,
-    );
-    pub fn render_list_draw_now(
-        list: RenderListT,
-        to_rendertarget: TexT,
-        camera: Matrix,
-        projection: Matrix,
-        clear_color: Color128,
-        clear: RenderClear,
-        viewport_pct: Rect,
-        layer_filter: RenderLayer,
-        material_variant: i32,
-    );
-    pub fn render_list_push(list: RenderListT);
-    pub fn render_list_pop();
-
-}
+import_from_c!(render_list_find, "render_list_find", RenderListT, (id: *const c_char));
+import_from_c!(render_list_set_id, "render_list_set_id", (), (render_list: RenderListT, id: *const c_char));
+import_from_c!(render_list_get_id, "render_list_get_id", *const c_char, (render_list: RenderListT));
+import_from_c!(render_get_primary_list, "render_get_primary_list", RenderListT, ());
+import_from_c!(render_list_create, "render_list_create", RenderListT, ());
+import_from_c!(render_list_addref, "render_list_addref", (), (list: RenderListT));
+import_from_c!(render_list_release, "render_list_release", (), (list: RenderListT));
+import_from_c!(render_list_clear, "render_list_clear", (), (list: RenderListT));
+import_from_c!(render_list_item_count, "render_list_item_count", i32, (list: RenderListT));
+import_from_c!(render_list_prev_count, "render_list_prev_count", i32, (list: RenderListT));
+import_from_c!(render_list_add_mesh, "render_list_add_mesh", (), (list: RenderListT, mesh: MeshT, material: MaterialT, transform: Matrix, color_linear: Color128, render_layer: RenderLayer));
+import_from_c!(render_list_add_model, "render_list_add_model", (), (list: RenderListT, model: ModelT, transform: Matrix, color_linear: Color128, render_layer: RenderLayer));
+import_from_c!(render_list_add_model_mat, "render_list_add_model_mat", (), (list: RenderListT, model: ModelT, material_override: MaterialT, transform: Matrix, color_linear: Color128, render_layer: RenderLayer));
+import_from_c!(render_list_draw_now, "render_list_draw_now", (), (list: RenderListT, to_rendertarget: TexT, camera: Matrix, projection: Matrix, clear_color: Color128, clear: RenderClear, viewport_pct: Rect, layer_filter: RenderLayer, material_variant: i32));
+import_from_c!(render_list_push, "render_list_push", (), (list: RenderListT));
+import_from_c!(render_list_pop, "render_list_pop", (), ());
 
 impl Default for RenderList {
     fn default() -> Self {

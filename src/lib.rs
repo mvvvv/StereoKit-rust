@@ -279,6 +279,9 @@ pub use stereokit_macros::test_steps_no_event_loop as test_steps;
 /// Some of the errors you might encounter when using StereoKit-rust.
 use thiserror::Error;
 
+// FFI helpers
+mod ffi;
+
 /// Anchor related structs and functions.
 ///
 /// With examples which are also unit tests.

@@ -9,6 +9,7 @@ use std::ffi::{CStr, CString, c_char, c_void};
 use std::marker::PhantomData;
 use std::path::Path;
 use std::ptr::NonNull;
+use crate::import_from_c;
 
 /// Also known as ‘alpha’ for those in the know. But there’s actually more than one type of transparency in rendering!
 /// The horrors. We’re keepin’ it fairly simple for now, so you get three options!
@@ -130,36 +131,34 @@ pub struct _MaterialT {
 /// StereoKit ffi type.
 pub type MaterialT = *mut _MaterialT;
 
-unsafe extern "C" {
-    pub fn material_find(id: *const c_char) -> MaterialT;
-    pub fn material_create(shader: ShaderT) -> MaterialT;
-    pub fn material_copy(material: MaterialT) -> MaterialT;
-    pub fn material_copy_id(id: *const c_char) -> MaterialT;
-    pub fn material_set_id(material: MaterialT, id: *const c_char);
-    pub fn material_get_id(material: MaterialT) -> *const c_char;
-    pub fn material_addref(material: MaterialT);
-    pub fn material_release(material: MaterialT);
-    pub fn material_set_transparency(material: MaterialT, mode: Transparency);
-    pub fn material_set_cull(material: MaterialT, mode: Cull);
-    pub fn material_set_wireframe(material: MaterialT, wireframe: Bool32T);
-    pub fn material_set_depth_test(material: MaterialT, depth_test_mode: DepthTest);
-    pub fn material_set_depth_write(material: MaterialT, write_enabled: Bool32T);
-    pub fn material_set_depth_clip(material: MaterialT, clip_enabled: Bool32T);
-    pub fn material_set_queue_offset(material: MaterialT, offset: i32);
-    pub fn material_set_chain(material: MaterialT, chain_material: MaterialT);
-    pub fn material_set_variant(material: MaterialT, variant_index: i32, variant_material: MaterialT);
-    pub fn material_get_transparency(material: MaterialT) -> Transparency;
-    pub fn material_get_cull(material: MaterialT) -> Cull;
-    pub fn material_get_wireframe(material: MaterialT) -> Bool32T;
-    pub fn material_get_depth_test(material: MaterialT) -> DepthTest;
-    pub fn material_get_depth_write(material: MaterialT) -> Bool32T;
-    pub fn material_get_depth_clip(material: MaterialT) -> Bool32T;
-    pub fn material_get_queue_offset(material: MaterialT) -> i32;
-    pub fn material_get_chain(material: MaterialT) -> MaterialT;
-    pub fn material_get_variant(material: MaterialT, variant_index: i32) -> MaterialT;
-    pub fn material_set_shader(material: MaterialT, shader: ShaderT);
-    pub fn material_get_shader(material: MaterialT) -> ShaderT;
-}
+import_from_c!(material_find, "material_find", MaterialT, (id: *const c_char));
+import_from_c!(material_create, "material_create", MaterialT, (shader: ShaderT));
+import_from_c!(material_copy, "material_copy", MaterialT, (material: MaterialT));
+import_from_c!(material_copy_id, "material_copy_id", MaterialT, (id: *const c_char));
+import_from_c!(material_set_id, "material_set_id", (), (material: MaterialT, id: *const c_char));
+import_from_c!(material_get_id, "material_get_id", *const c_char, (material: MaterialT));
+import_from_c!(material_addref, "material_addref", (), (material: MaterialT));
+import_from_c!(material_release, "material_release", (), (material: MaterialT));
+import_from_c!(material_set_transparency, "material_set_transparency", (), (material: MaterialT, mode: Transparency));
+import_from_c!(material_set_cull, "material_set_cull", (), (material: MaterialT, mode: Cull));
+import_from_c!(material_set_wireframe, "material_set_wireframe", (), (material: MaterialT, wireframe: Bool32T));
+import_from_c!(material_set_depth_test, "material_set_depth_test", (), (material: MaterialT, depth_test_mode: DepthTest));
+import_from_c!(material_set_depth_write, "material_set_depth_write", (), (material: MaterialT, write_enabled: Bool32T));
+import_from_c!(material_set_depth_clip, "material_set_depth_clip", (), (material: MaterialT, clip_enabled: Bool32T));
+import_from_c!(material_set_queue_offset, "material_set_queue_offset", (), (material: MaterialT, offset: i32));
+import_from_c!(material_set_chain, "material_set_chain", (), (material: MaterialT, chain_material: MaterialT));
+import_from_c!(material_set_variant, "material_set_variant", (), (material: MaterialT, variant_index: i32, variant_material: MaterialT));
+import_from_c!(material_get_transparency, "material_get_transparency", Transparency, (material: MaterialT));
+import_from_c!(material_get_cull, "material_get_cull", Cull, (material: MaterialT));
+import_from_c!(material_get_wireframe, "material_get_wireframe", Bool32T, (material: MaterialT));
+import_from_c!(material_get_depth_test, "material_get_depth_test", DepthTest, (material: MaterialT));
+import_from_c!(material_get_depth_write, "material_get_depth_write", Bool32T, (material: MaterialT));
+import_from_c!(material_get_depth_clip, "material_get_depth_clip", Bool32T, (material: MaterialT));
+import_from_c!(material_get_queue_offset, "material_get_queue_offset", i32, (material: MaterialT));
+import_from_c!(material_get_chain, "material_get_chain", MaterialT, (material: MaterialT));
+import_from_c!(material_get_variant, "material_get_variant", MaterialT, (material: MaterialT, variant_index: i32));
+import_from_c!(material_set_shader, "material_set_shader", (), (material: MaterialT, shader: ShaderT));
+import_from_c!(material_get_shader, "material_get_shader", ShaderT, (material: MaterialT));
 
 impl IAsset for Material {
     // fn id(&mut self, id: impl AsRef<str>) {
@@ -1472,69 +1471,40 @@ pub struct ParamInfos<'a> {
     index: i32,
 }
 
-unsafe extern "C" {
-    pub fn material_set_float(material: MaterialT, name: *const c_char, value: f32);
-    pub fn material_set_vector2(material: MaterialT, name: *const c_char, value: Vec2);
-    pub fn material_set_vector3(material: MaterialT, name: *const c_char, value: Vec3);
-    pub fn material_set_color(material: MaterialT, name: *const c_char, color_gamma: Color128);
-    pub fn material_set_vector4(material: MaterialT, name: *const c_char, value: Vec4);
-    // Deprecated: pub fn material_set_vector(material: MaterialT, name: *const c_char, value: Vec4);
-    pub fn material_set_int(material: MaterialT, name: *const c_char, value: i32);
-    pub fn material_set_int2(material: MaterialT, name: *const c_char, value1: i32, value2: i32);
-    pub fn material_set_int3(material: MaterialT, name: *const c_char, value1: i32, value2: i32, value3: i32);
-    pub fn material_set_int4(
-        material: MaterialT,
-        name: *const c_char,
-        value1: i32,
-        value2: i32,
-        value3: i32,
-        value4: i32,
-    );
-    pub fn material_set_bool(material: MaterialT, name: *const c_char, value: Bool32T);
-    pub fn material_set_uint(material: MaterialT, name: *const c_char, value: u32);
-    pub fn material_set_uint2(material: MaterialT, name: *const c_char, value1: u32, value2: u32);
-    pub fn material_set_uint3(material: MaterialT, name: *const c_char, value1: u32, value2: u32, value3: u32);
-    pub fn material_set_uint4(
-        material: MaterialT,
-        name: *const c_char,
-        value1: u32,
-        value2: u32,
-        value3: u32,
-        value4: u32,
-    );
-    pub fn material_set_matrix(material: MaterialT, name: *const c_char, value: Matrix);
-    pub fn material_set_texture(material: MaterialT, name: *const c_char, value: TexT) -> Bool32T;
-    pub fn material_set_texture_id(material: MaterialT, id: u64, value: TexT) -> Bool32T;
-    pub fn material_get_float(material: MaterialT, name: *const c_char) -> f32;
-    pub fn material_get_vector2(material: MaterialT, name: *const c_char) -> Vec2;
-    pub fn material_get_vector3(material: MaterialT, name: *const c_char) -> Vec3;
-    pub fn material_get_color(material: MaterialT, name: *const c_char) -> Color128;
-    pub fn material_get_vector4(material: MaterialT, name: *const c_char) -> Vec4;
-    pub fn material_get_int(material: MaterialT, name: *const c_char) -> i32;
-    pub fn material_get_bool(material: MaterialT, name: *const c_char) -> Bool32T;
-    pub fn material_get_uint(material: MaterialT, name: *const c_char) -> u32;
-    pub fn material_get_matrix(material: MaterialT, name: *const c_char) -> Matrix;
-    pub fn material_get_texture(material: MaterialT, name: *const c_char) -> TexT;
-    pub fn material_has_param(material: MaterialT, name: *const c_char, type_: MaterialParam) -> Bool32T;
-    pub fn material_set_param(material: MaterialT, name: *const c_char, type_: MaterialParam, value: *const c_void);
-    pub fn material_set_param_id(material: MaterialT, id: IdHashT, type_: MaterialParam, value: *const c_void);
-    pub fn material_get_param(
-        material: MaterialT,
-        name: *const c_char,
-        type_: MaterialParam,
-        out_value: *mut c_void,
-    ) -> Bool32T;
-    pub fn material_get_param_id(material: MaterialT, id: u64, type_: MaterialParam, out_value: *mut c_void)
-    -> Bool32T;
-    pub fn material_get_param_info(
-        material: MaterialT,
-        index: i32,
-        out_name: *mut *mut c_char,
-        out_type: *mut MaterialParam,
-    );
-    pub fn material_get_param_count(material: MaterialT) -> i32;
-
-}
+import_from_c!(material_set_float, "material_set_float", (), (material: MaterialT, name: *const c_char, value: f32));
+import_from_c!(material_set_vector2, "material_set_vector2", (), (material: MaterialT, name: *const c_char, value: Vec2));
+import_from_c!(material_set_vector3, "material_set_vector3", (), (material: MaterialT, name: *const c_char, value: Vec3));
+import_from_c!(material_set_color, "material_set_color", (), (material: MaterialT, name: *const c_char, color_gamma: Color128));
+import_from_c!(material_set_vector4, "material_set_vector4", (), (material: MaterialT, name: *const c_char, value: Vec4));
+import_from_c!(material_set_int, "material_set_int", (), (material: MaterialT, name: *const c_char, value: i32));
+import_from_c!(material_set_int2, "material_set_int2", (), (material: MaterialT, name: *const c_char, value1: i32, value2: i32));
+import_from_c!(material_set_int3, "material_set_int3", (), (material: MaterialT, name: *const c_char, value1: i32, value2: i32, value3: i32));
+import_from_c!(material_set_int4, "material_set_int4", (), (material: MaterialT, name: *const c_char, value1: i32, value2: i32, value3: i32, value4: i32));
+import_from_c!(material_set_bool, "material_set_bool", (), (material: MaterialT, name: *const c_char, value: Bool32T));
+import_from_c!(material_set_uint, "material_set_uint", (), (material: MaterialT, name: *const c_char, value: u32));
+import_from_c!(material_set_uint2, "material_set_uint2", (), (material: MaterialT, name: *const c_char, value1: u32, value2: u32));
+import_from_c!(material_set_uint3, "material_set_uint3", (), (material: MaterialT, name: *const c_char, value1: u32, value2: u32, value3: u32));
+import_from_c!(material_set_uint4, "material_set_uint4", (), (material: MaterialT, name: *const c_char, value1: u32, value2: u32, value3: u32, value4: u32));
+import_from_c!(material_set_matrix, "material_set_matrix", (), (material: MaterialT, name: *const c_char, value: Matrix));
+import_from_c!(material_set_texture, "material_set_texture", (), (material: MaterialT, name: *const c_char, value: TexT));
+import_from_c!(material_set_texture_id, "material_set_texture_id", (), (material: MaterialT, id: u64, value: TexT));
+import_from_c!(material_get_float, "material_get_float", f32, (material: MaterialT, name: *const c_char));
+import_from_c!(material_get_vector2, "material_get_vector2", Vec2, (material: MaterialT, name: *const c_char));
+import_from_c!(material_get_vector3, "material_get_vector3", Vec3, (material: MaterialT, name: *const c_char));
+import_from_c!(material_get_color, "material_get_color", Color128, (material: MaterialT, name: *const c_char));
+import_from_c!(material_get_vector4, "material_get_vector4", Vec4, (material: MaterialT, name: *const c_char));
+import_from_c!(material_get_int, "material_get_int", i32, (material: MaterialT, name: *const c_char));
+import_from_c!(material_get_bool, "material_get_bool", Bool32T, (material: MaterialT, name: *const c_char));
+import_from_c!(material_get_uint, "material_get_uint", u32, (material: MaterialT, name: *const c_char));
+import_from_c!(material_get_matrix, "material_get_matrix", Matrix, (material: MaterialT, name: *const c_char));
+import_from_c!(material_get_texture, "material_get_texture", TexT, (material: MaterialT, name: *const c_char));
+import_from_c!(material_has_param, "material_has_param", Bool32T, (material: MaterialT, name: *const c_char, type_: MaterialParam));
+import_from_c!(material_set_param, "material_set_param", (), (material: MaterialT, name: *const c_char, type_: MaterialParam, value: *const c_void));
+import_from_c!(material_set_param_id, "material_set_param_id", (), (material: MaterialT, id: IdHashT, type_: MaterialParam, value: *const c_void));
+import_from_c!(material_get_param, "material_get_param", Bool32T, (material: MaterialT, name: *const c_char, type_: MaterialParam, out_value: *mut c_void));
+import_from_c!(material_get_param_id, "material_get_param_id", Bool32T, (material: MaterialT, id: u64, type_: MaterialParam, out_value: *mut c_void));
+import_from_c!(material_get_param_info, "material_get_param_info", (), (material: MaterialT, index: i32, out_name: *mut *mut c_char, out_type: *mut MaterialParam));
+import_from_c!(material_get_param_count, "material_get_param_count", i32, (material: MaterialT));
 
 /// TODO: v0.4 This may need significant revision? What type of data does this material parameter need?
 /// This is used to tell the shader how large the data is, and where to attach it to on the shader.
@@ -2363,12 +2333,10 @@ impl ParamInfo {
     }
 }
 
-unsafe extern "C" {
-    pub fn material_buffer_create(size: i32) -> MaterialBufferT;
-    pub fn material_buffer_addref(buffer: MaterialBufferT);
-    pub fn material_buffer_set_data(buffer: MaterialBufferT, buffer_data: *const c_void);
-    pub fn material_buffer_release(buffer: MaterialBufferT);
-}
+import_from_c!(material_buffer_create, "material_buffer_create", MaterialBufferT, (size: i32));
+import_from_c!(material_buffer_addref, "material_buffer_addref", (), (buffer: MaterialBufferT));
+import_from_c!(material_buffer_set_data, "material_buffer_set_data", (), (buffer: MaterialBufferT, buffer_data: *const c_void));
+import_from_c!(material_buffer_release, "material_buffer_release", (), (buffer: MaterialBufferT));
 
 /// This is a chunk of memory that will get bound to all shaders at a particular register slot. StereoKit uses this to
 /// provide engine values to the shader, and you can also use this to drive graphical shader systems of your own!

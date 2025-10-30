@@ -10,6 +10,7 @@ use std::{
     ffi::{CStr, CString, c_char},
     ptr::{NonNull, slice_from_raw_parts_mut},
 };
+use crate::import_from_c;
 
 /// This represents a single vertex in a Mesh, all StereoKit Meshes currently use this exact layout!
 /// It’s good to fill out all values of a Vertex explicitly, as default values for the normal (0,0,0) and color
@@ -166,96 +167,39 @@ pub type MeshT = *mut _MeshT;
 /// StereoKit ffi type.
 pub type VindT = u32;
 
-unsafe extern "C" {
-    pub fn mesh_find(name: *const c_char) -> MeshT;
-    pub fn mesh_create() -> MeshT;
-    pub fn mesh_copy(mesh: MeshT) -> MeshT;
-    pub fn mesh_set_id(mesh: MeshT, id: *const c_char);
-    pub fn mesh_get_id(mesh: MeshT) -> *const c_char;
-    pub fn mesh_addref(mesh: MeshT);
-    pub fn mesh_release(mesh: MeshT);
-    pub fn mesh_draw(mesh: MeshT, material: MaterialT, transform: Matrix, color_linear: Color128, layer: RenderLayer);
-    pub fn mesh_set_keep_data(mesh: MeshT, keep_data: Bool32T);
-    pub fn mesh_get_keep_data(mesh: MeshT) -> Bool32T;
-    pub fn mesh_set_data(
-        mesh: MeshT,
-        in_arr_vertices: *const Vertex,
-        vertex_count: i32,
-        in_arr_indices: *const VindT,
-        index_count: i32,
-        calculate_bounds: Bool32T,
-    );
-    pub fn mesh_set_verts(mesh: MeshT, in_arr_vertices: *const Vertex, vertex_count: i32, calculate_bounds: Bool32T);
-    pub fn mesh_get_verts(
-        mesh: MeshT,
-        out_arr_vertices: *mut *mut Vertex,
-        out_vertex_count: *mut i32,
-        reference_mode: Memory,
-    );
-    pub fn mesh_get_vert_count(mesh: MeshT) -> i32;
-    pub fn mesh_set_inds(mesh: MeshT, in_arr_indices: *const VindT, index_count: i32);
-    pub fn mesh_get_inds(
-        mesh: MeshT,
-        out_arr_indices: *mut *mut VindT,
-        out_index_count: *mut i32,
-        reference_mode: Memory,
-    );
-    pub fn mesh_get_ind_count(mesh: MeshT) -> i32;
-    pub fn mesh_set_draw_inds(mesh: MeshT, index_count: i32);
-    pub fn mesh_set_bounds(mesh: MeshT, bounds: *const Bounds);
-    pub fn mesh_get_bounds(mesh: MeshT) -> Bounds;
-    pub fn mesh_has_skin(mesh: MeshT) -> Bool32T;
-    pub fn mesh_set_skin(
-        mesh: MeshT,
-        in_arr_bone_ids_4: *const u16,
-        bone_id_4_count: i32,
-        in_arr_bone_weights: *const Vec4,
-        bone_weight_count: i32,
-        bone_resting_transforms: *const Matrix,
-        bone_count: i32,
-    );
-    pub fn mesh_update_skin(mesh: MeshT, in_arr_bone_transforms: *const Matrix, bone_count: i32);
-    pub fn mesh_ray_intersect(
-        mesh: MeshT,
-        model_space_ray: Ray,
-        cull_mode: Cull,
-        out_pt: *mut Ray,
-        out_start_inds: *mut u32,
-    ) -> Bool32T;
-    pub fn mesh_ray_intersect_bvh(
-        mesh: MeshT,
-        model_space_ray: Ray,
-        cull_mode: Cull,
-        out_pt: *mut Ray,
-        out_start_inds: *mut u32,
-    ) -> Bool32T;
-    pub fn mesh_get_triangle(
-        mesh: MeshT,
-        triangle_index: u32,
-        out_a: *mut Vertex,
-        out_b: *mut Vertex,
-        out_c: *mut Vertex,
-    ) -> Bool32T;
-    pub fn mesh_gen_plane(
-        dimensions: Vec2,
-        plane_normal: Vec3,
-        plane_top_direction: Vec3,
-        subdivisions: i32,
-        double_sided: Bool32T,
-    ) -> MeshT;
-    pub fn mesh_gen_circle(
-        diameter: f32,
-        plane_normal: Vec3,
-        plane_top_direction: Vec3,
-        spokes: i32,
-        double_sided: Bool32T,
-    ) -> MeshT;
-    pub fn mesh_gen_cube(dimensions: Vec3, subdivisions: i32) -> MeshT;
-    pub fn mesh_gen_sphere(diameter: f32, subdivisions: i32) -> MeshT;
-    pub fn mesh_gen_rounded_cube(dimensions: Vec3, edge_radius: f32, subdivisions: i32) -> MeshT;
-    pub fn mesh_gen_cylinder(diameter: f32, depth: f32, direction: Vec3, subdivisions: i32) -> MeshT;
-    pub fn mesh_gen_cone(diameter: f32, depth: f32, direction: Vec3, subdivisions: i32) -> MeshT;
-}
+import_from_c!(mesh_find, "mesh_find", MeshT, (name: *const c_char));
+import_from_c!(mesh_create, "mesh_create", MeshT, ());
+import_from_c!(mesh_copy, "mesh_copy", MeshT, (mesh: MeshT));
+import_from_c!(mesh_set_id, "mesh_set_id", (), (mesh: MeshT, id: *const c_char));
+import_from_c!(mesh_get_id, "mesh_get_id", *const c_char, (mesh: MeshT));
+import_from_c!(mesh_addref, "mesh_addref", (), (mesh: MeshT));
+import_from_c!(mesh_release, "mesh_release", (), (mesh: MeshT));
+import_from_c!(mesh_draw, "mesh_draw", (), (mesh: MeshT, material: MaterialT, transform: Matrix, color_linear: Color128, layer: RenderLayer));
+import_from_c!(mesh_set_keep_data, "mesh_set_keep_data", (), (mesh: MeshT, keep_data: Bool32T));
+import_from_c!(mesh_get_keep_data, "mesh_get_keep_data", Bool32T, (mesh: MeshT));
+import_from_c!(mesh_set_data, "mesh_set_data", (), (mesh: MeshT, in_arr_vertices: *const Vertex, vertex_count: i32, in_arr_indices: *const VindT, index_count: i32, calculate_bounds: Bool32T));
+import_from_c!(mesh_set_verts, "mesh_set_verts", (), (mesh: MeshT, in_arr_vertices: *const Vertex, vertex_count: i32, calculate_bounds: Bool32T));
+import_from_c!(mesh_get_verts, "mesh_get_verts", (), (mesh: MeshT, out_arr_vertices: *mut *mut Vertex, out_vertex_count: *mut i32, reference_mode: Memory));
+import_from_c!(mesh_get_vert_count, "mesh_get_vert_count", i32, (mesh: MeshT));
+import_from_c!(mesh_set_inds, "mesh_set_inds", (), (mesh: MeshT, in_arr_indices: *const VindT, index_count: i32));
+import_from_c!(mesh_get_inds, "mesh_get_inds", (), (mesh: MeshT, out_arr_indices: *mut *mut VindT, out_index_count: *mut i32, reference_mode: Memory));
+import_from_c!(mesh_get_ind_count, "mesh_get_ind_count", i32, (mesh: MeshT));
+import_from_c!(mesh_set_draw_inds, "mesh_set_draw_inds", (), (mesh: MeshT, index_count: i32));
+import_from_c!(mesh_set_bounds, "mesh_set_bounds", (), (mesh: MeshT, bounds: *const Bounds));
+import_from_c!(mesh_get_bounds, "mesh_get_bounds", Bounds, (mesh: MeshT));
+import_from_c!(mesh_has_skin, "mesh_has_skin", Bool32T, (mesh: MeshT));
+import_from_c!(mesh_set_skin, "mesh_set_skin", (), (mesh: MeshT, in_arr_bone_ids_4: *const u16, bone_id_4_count: i32, in_arr_bone_weights: *const Vec4, bone_weight_count: i32, bone_resting_transforms: *const Matrix, bone_count: i32));
+import_from_c!(mesh_update_skin, "mesh_update_skin", (), (mesh: MeshT, in_arr_bone_transforms: *const Matrix, bone_count: i32));
+import_from_c!(mesh_ray_intersect, "mesh_ray_intersect", Bool32T, (mesh: MeshT, model_space_ray: Ray, cull_mode: Cull, out_pt: *mut Ray, out_start_inds: *mut u32));
+import_from_c!(mesh_ray_intersect_bvh, "mesh_ray_intersect_bvh", Bool32T, (mesh: MeshT, model_space_ray: Ray, cull_mode: Cull, out_pt: *mut Ray, out_start_inds: *mut u32));
+import_from_c!(mesh_get_triangle, "mesh_get_triangle", Bool32T, (mesh: MeshT, triangle_index: u32, out_a: *mut Vertex, out_b: *mut Vertex, out_c: *mut Vertex));
+import_from_c!(mesh_gen_plane, "mesh_gen_plane", MeshT, (dimensions: Vec2, plane_normal: Vec3, plane_top_direction: Vec3, subdivisions: i32, double_sided: Bool32T));
+import_from_c!(mesh_gen_circle, "mesh_gen_circle", MeshT, (diameter: f32, plane_normal: Vec3, plane_top_direction: Vec3, spokes: i32, double_sided: Bool32T));
+import_from_c!(mesh_gen_cube, "mesh_gen_cube", MeshT, (dimensions: Vec3, subdivisions: i32));
+import_from_c!(mesh_gen_sphere, "mesh_gen_sphere", MeshT, (diameter: f32, subdivisions: i32));
+import_from_c!(mesh_gen_rounded_cube, "mesh_gen_rounded_cube", MeshT, (dimensions: Vec3, edge_radius: f32, subdivisions: i32));
+import_from_c!(mesh_gen_cylinder, "mesh_gen_cylinder", MeshT, (diameter: f32, depth: f32, direction: Vec3, subdivisions: i32));
+import_from_c!(mesh_gen_cone, "mesh_gen_cone", MeshT, (diameter: f32, depth: f32, direction: Vec3, subdivisions: i32));
 
 impl IAsset for Mesh {
     // fn id(&mut self, id: impl AsRef<str>) {

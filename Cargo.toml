@@ -12,20 +12,8 @@ description = "High-Level Rust bindings around the StereoKitC library for XR"
 keywords = ["stereokit", "VR", "sys", "MR", "OpenXR"]
 license = "MIT"
 #license-file = "LICENSE"
-links = "StereoKitC"
 repository = "https://github.com/mvvvv/StereoKit-rust"
 categories = ["graphics", "gui", "rendering::engine", "mathematics"]
-include = [
-  "Cargo.toml",
-  "build.rs",
-  "src/*",
-  "StereoKit/cmake",
-  "StereoKit/tools/include",
-  "StereoKit/StereoKitC",
-  "StereoKit/CMakeLists.txt",
-  "README.md",
-  "LICENSE"
-]
 readme = "README_short.md"
 
 [package.metadata.docs.rs]
@@ -50,9 +38,6 @@ name = "cargo-compile_sks"
 [[bin]]
 name = "cargo-build_sk_rs"
 
-[build-dependencies]
-cmake = "0.1.54"
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 winit = { version = "0.30", features = [
@@ -64,6 +49,8 @@ glam = "0.30"
 openxr-sys = "0.11"
 stereokit-macros = { path = "./stereokit-macros", version = "0.5.1" }
 #stereokit-macros = "0.5.1"
+libloading = "0.8"
+paste = "1.0.15"
 
 [target.'cfg(target_os = "android")'.dependencies]
 log = "0.4"

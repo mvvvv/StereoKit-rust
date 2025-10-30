@@ -4,6 +4,7 @@ use std::{
     path::Path,
     ptr::NonNull,
 };
+use crate::import_from_c;
 
 /// A shader is a piece of code that runs on the GPU, and determines how model data gets transformed into pixels on
 /// screen! It’s more likely that you’ll work more directly with Materials, which shaders are a subset of.
@@ -52,16 +53,15 @@ pub struct _ShaderT {
 }
 /// StereoKit ffi type.
 pub type ShaderT = *mut _ShaderT;
-unsafe extern "C" {
-    pub fn shader_find(id: *const ::std::os::raw::c_char) -> ShaderT;
-    pub fn shader_create_file(filename_utf8: *const ::std::os::raw::c_char) -> ShaderT;
-    pub fn shader_create_mem(data: *mut ::std::os::raw::c_void, data_size: usize) -> ShaderT;
-    pub fn shader_set_id(shader: ShaderT, id: *const ::std::os::raw::c_char);
-    pub fn shader_get_id(shader: ShaderT) -> *const ::std::os::raw::c_char;
-    pub fn shader_get_name(shader: ShaderT) -> *const ::std::os::raw::c_char;
-    pub fn shader_addref(shader: ShaderT);
-    pub fn shader_release(shader: ShaderT);
-}
+
+import_from_c!(shader_find, "shader_find", ShaderT, (id: *const std::os::raw::c_char));
+import_from_c!(shader_create_file, "shader_create_file", ShaderT, (filename_utf8: *const std::os::raw::c_char));
+import_from_c!(shader_create_mem, "shader_create_mem", ShaderT, (data: *mut std::os::raw::c_void, data_size: usize));
+import_from_c!(shader_set_id, "shader_set_id", (), (shader: ShaderT, id: *const std::os::raw::c_char));
+import_from_c!(shader_get_id, "shader_get_id", *const std::os::raw::c_char, (shader: ShaderT));
+import_from_c!(shader_get_name, "shader_get_name", *const std::os::raw::c_char, (shader: ShaderT));
+import_from_c!(shader_addref, "shader_addref", (), (shader: ShaderT));
+import_from_c!(shader_release, "shader_release", (), (shader: ShaderT));
 
 impl IAsset for Shader {
     // fn id(&mut self, id: impl AsRef<str>) {

@@ -8,6 +8,7 @@ use std::{
     path::Path,
     ptr::NonNull,
 };
+use crate::import_from_c;
 
 /// This class represents a sound effect! Excellent for blips and bloops and little clips that you might play around
 /// your scene. Right now, this supports .wav, .mp3, and procedurally generated noises!
@@ -86,29 +87,24 @@ pub type SoundT = *mut _SoundT;
 unsafe impl Send for Sound {}
 unsafe impl Sync for Sound {}
 
-unsafe extern "C" {
-    pub fn sound_find(id: *const c_char) -> SoundT;
-    pub fn sound_set_id(sound: SoundT, id: *const c_char);
-    pub fn sound_get_id(sound: SoundT) -> *const c_char;
-    pub fn sound_create(filename_utf8: *const c_char) -> SoundT;
-    pub fn sound_create_stream(buffer_duration: f32) -> SoundT;
-    pub fn sound_create_samples(in_arr_samples_at_48000s: *const f32, sample_count: u64) -> SoundT;
-    pub fn sound_generate(
-        audio_generator: Option<unsafe extern "C" fn(sample_time: f32) -> f32>,
-        duration: f32,
-    ) -> SoundT;
-    pub fn sound_write_samples(sound: SoundT, in_arr_samples: *const f32, sample_count: u64);
-    pub fn sound_read_samples(sound: SoundT, out_arr_samples: *mut f32, sample_count: u64) -> u64;
-    pub fn sound_unread_samples(sound: SoundT) -> u64;
-    pub fn sound_total_samples(sound: SoundT) -> u64;
-    pub fn sound_cursor_samples(sound: SoundT) -> u64;
-    pub fn sound_get_decibels(sound: SoundT) -> f32;
-    pub fn sound_set_decibels(sound: SoundT, decibels: f32);
-    pub fn sound_play(sound: SoundT, at: Vec3, volume: f32) -> SoundInst;
-    pub fn sound_duration(sound: SoundT) -> f32;
-    pub fn sound_addref(sound: SoundT);
-    pub fn sound_release(sound: SoundT);
-}
+import_from_c!(sound_find, "sound_find", SoundT, (id: *const c_char));
+import_from_c!(sound_set_id, "sound_set_id", (), (sound: SoundT, id: *const c_char));
+import_from_c!(sound_get_id, "sound_get_id", *const c_char, (sound: SoundT));
+import_from_c!(sound_create, "sound_create", SoundT, (filename_utf8: *const c_char));
+import_from_c!(sound_create_stream, "sound_create_stream", SoundT, (buffer_duration: f32));
+import_from_c!(sound_create_samples, "sound_create_samples", SoundT, (in_arr_samples_at_48000s: *const f32, sample_count: u64));
+import_from_c!(sound_generate, "sound_generate", SoundT, (audio_generator: Option<unsafe extern "C" fn(sample_time: f32) -> f32>, duration: f32));
+import_from_c!(sound_write_samples, "sound_write_samples", (), (sound: SoundT, in_arr_samples: *const f32, sample_count: u64));
+import_from_c!(sound_read_samples, "sound_read_samples", u64, (sound: SoundT, out_arr_samples: *mut f32, sample_count: u64));
+import_from_c!(sound_unread_samples, "sound_unread_samples", u64, (sound: SoundT));
+import_from_c!(sound_total_samples, "sound_total_samples", u64, (sound: SoundT));
+import_from_c!(sound_cursor_samples, "sound_cursor_samples", u64, (sound: SoundT));
+import_from_c!(sound_get_decibels, "sound_get_decibels", f32, (sound: SoundT));
+import_from_c!(sound_set_decibels, "sound_set_decibels", (), (sound: SoundT, decibels: f32));
+import_from_c!(sound_play, "sound_play", SoundInst, (sound: SoundT, at: Vec3, volume: f32));
+import_from_c!(sound_duration, "sound_duration", f32, (sound: SoundT));
+import_from_c!(sound_addref, "sound_addref", (), (sound: SoundT));
+import_from_c!(sound_release, "sound_release", (), (sound: SoundT));
 
 impl IAsset for Sound {
     // fn id(&mut self, id: impl AsRef<str>) {
@@ -790,15 +786,13 @@ pub struct SoundInst {
     pub _slot: i16,
 }
 
-unsafe extern "C" {
-    pub fn sound_inst_stop(sound_inst: SoundInst);
-    pub fn sound_inst_is_playing(sound_inst: SoundInst) -> Bool32T;
-    pub fn sound_inst_set_pos(sound_inst: SoundInst, pos: Vec3);
-    pub fn sound_inst_get_pos(sound_inst: SoundInst) -> Vec3;
-    pub fn sound_inst_set_volume(sound_inst: SoundInst, volume: f32);
-    pub fn sound_inst_get_volume(sound_inst: SoundInst) -> f32;
-    pub fn sound_inst_get_intensity(sound_inst: SoundInst) -> f32;
-}
+import_from_c!(sound_inst_stop, "sound_inst_stop", (), (sound_inst: SoundInst));
+import_from_c!(sound_inst_is_playing, "sound_inst_is_playing", Bool32T, (sound_inst: SoundInst));
+import_from_c!(sound_inst_set_pos, "sound_inst_set_pos", (), (sound_inst: SoundInst, pos: Vec3));
+import_from_c!(sound_inst_get_pos, "sound_inst_get_pos", Vec3, (sound_inst: SoundInst));
+import_from_c!(sound_inst_set_volume, "sound_inst_set_volume", (), (sound_inst: SoundInst, volume: f32));
+import_from_c!(sound_inst_get_volume, "sound_inst_get_volume", f32, (sound_inst: SoundInst));
+import_from_c!(sound_inst_get_intensity, "sound_inst_get_intensity", f32, (sound_inst: SoundInst));
 
 impl SoundInst {
     /// This stops the sound early if it’s still playing. consume the SoundInst as it will not be playable again.
