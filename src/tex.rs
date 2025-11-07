@@ -278,6 +278,7 @@ pub type TexT = *mut _TexT;
 unsafe impl Send for Tex {}
 unsafe impl Sync for Tex {}
 
+#[link(name = "StereoKitC")]
 unsafe extern "C" {
     pub fn tex_find(id: *const c_char) -> TexT;
     pub fn tex_create(type_: TexType, format: TexFormat) -> TexT;

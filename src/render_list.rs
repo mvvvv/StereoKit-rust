@@ -86,6 +86,7 @@ pub struct _RenderListT {
 /// StereoKit ffi type.
 pub type RenderListT = *mut _RenderListT;
 
+#[link(name = "StereoKitC")]
 unsafe extern "C" {
     pub fn render_list_find(id: *const c_char) -> RenderListT;
     pub fn render_list_set_id(render_list: RenderListT, id: *const c_char);

@@ -76,6 +76,7 @@ pub enum DefaultInteractors {
     None = 1,
 }
 
+#[link(name = "StereoKitC")]
 unsafe extern "C" {
     // Interactor functions
     pub fn interactor_create(

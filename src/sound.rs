@@ -86,6 +86,7 @@ pub type SoundT = *mut _SoundT;
 unsafe impl Send for Sound {}
 unsafe impl Sync for Sound {}
 
+#[link(name = "StereoKitC")]
 unsafe extern "C" {
     pub fn sound_find(id: *const c_char) -> SoundT;
     pub fn sound_set_id(sound: SoundT, id: *const c_char);
@@ -790,6 +791,7 @@ pub struct SoundInst {
     pub _slot: i16,
 }
 
+#[link(name = "StereoKitC")]
 unsafe extern "C" {
     pub fn sound_inst_stop(sound_inst: SoundInst);
     pub fn sound_inst_is_playing(sound_inst: SoundInst) -> Bool32T;

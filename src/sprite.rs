@@ -99,6 +99,7 @@ pub struct _SpriteT {
 /// StereoKit ffi type.
 pub type SpriteT = *mut _SpriteT;
 
+#[link(name = "StereoKitC")]
 unsafe extern "C" {
     pub fn sprite_find(id: *const c_char) -> SpriteT;
     pub fn sprite_create(sprite: TexT, type_: SpriteType, atlas_id: *const c_char) -> SpriteT;
