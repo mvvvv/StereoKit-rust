@@ -86,6 +86,7 @@ impl From<Color32> for Color128 {
     }
 }
 
+#[link(name = "StereoKitC")]
 unsafe extern "C" {
     pub fn color_hsv(hue: f32, saturation: f32, value: f32, transparency: f32) -> Color128;
     pub fn color_to_hsv(color: *const Color128) -> Vec3;
@@ -946,6 +947,7 @@ pub struct FovInfo {
 /// ```
 pub struct Device;
 
+#[link(name = "StereoKitC")]
 unsafe extern "C" {
     pub fn device_display_get_type() -> DisplayType;
     pub fn device_display_get_blend() -> DisplayBlend;
@@ -1250,6 +1252,7 @@ pub struct _GradientT {
 /// StereoKit ffi type.
 pub type GradientT = *mut _GradientT;
 
+#[link(name = "StereoKitC")]
 unsafe extern "C" {
     pub fn gradient_create() -> GradientT;
     pub fn gradient_create_keys(in_arr_keys: *const GradientKey, count: i32) -> GradientT;
@@ -1520,6 +1523,7 @@ impl FileFilter {
 /// transparent to developers
 pub struct Hash;
 
+#[link(name = "StereoKitC")]
 unsafe extern "C" {
     pub fn hash_string(str_utf8: *const c_char) -> IdHashT;
     pub fn hash_string_with(str_utf8: *const c_char, root: IdHashT) -> IdHashT;
@@ -1647,6 +1651,7 @@ pub enum PickerMode {
 /// ```
 pub struct Platform;
 
+#[link(name = "StereoKitC")]
 unsafe extern "C" {
     pub fn platform_file_picker(
         mode: PickerMode,
@@ -1694,6 +1699,7 @@ unsafe extern "C" {
 /// File_picker trampoline
 ///
 /// see also [`Plaform::file_picker`]
+#[link(name = "StereoKitC")]
 unsafe extern "C" fn fp_trampoline<FS: FnMut(&str), FC: FnMut()>(
     user_data: *mut c_void,
     confirmed: Bool32T,
@@ -1712,6 +1718,7 @@ unsafe extern "C" fn fp_trampoline<FS: FnMut(&str), FC: FnMut()>(
 /// File_picker_sz trampoline
 ///
 /// see also [`Plaform::file_picker`]
+#[link(name = "StereoKitC")]
 unsafe extern "C" fn fp_sz_trampoline<F: FnMut(bool, &str)>(
     user_data: *mut c_void,
     confirmed: Bool32T,
@@ -2182,6 +2189,7 @@ pub struct SphericalHarmonics {
     pub coefficients: [Vec3; 9usize],
 }
 
+#[link(name = "StereoKitC")]
 unsafe extern "C" {
     pub fn sh_create(in_arr_lights: *const SHLight, light_count: i32) -> SphericalHarmonics;
     pub fn sh_brightness(ref_harmonics: *mut SphericalHarmonics, scale: f32);
@@ -2387,6 +2395,7 @@ impl SphericalHarmonics {
 /// ```
 pub struct Time;
 
+#[link(name = "StereoKitC")]
 unsafe extern "C" {
     // Deprecated: pub fn time_get_raw() -> f64;
     // Deprecated: pub fn time_getf_unscaled() -> f32;

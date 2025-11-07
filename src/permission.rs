@@ -76,6 +76,7 @@ impl fmt::Display for PermissionState {
     }
 }
 
+#[link(name = "StereoKitC")]
 unsafe extern "C" {
     pub fn permission_state(permission: PermissionType) -> PermissionState;
     pub fn permission_is_interactive(permission: PermissionType) -> Bool32T;

@@ -84,6 +84,7 @@ pub struct _ModelT {
 /// StereoKit ffi type.
 pub type ModelT = *mut _ModelT;
 
+#[link(name = "StereoKitC")]
 unsafe extern "C" {
     pub fn model_find(id: *const c_char) -> ModelT;
     pub fn model_copy(model: ModelT) -> ModelT;
@@ -1371,6 +1372,7 @@ pub struct Nodes<'a> {
     model: &'a Model,
 }
 
+#[link(name = "StereoKitC")]
 unsafe extern "C" {
     pub fn model_subset_count(model: ModelT) -> i32;
     pub fn model_node_add(

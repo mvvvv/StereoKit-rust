@@ -134,6 +134,7 @@ pub struct Assets;
 
 pub type AssetT = *mut c_void;
 
+#[link(name = "StereoKitC")]
 unsafe extern "C" {
     pub fn assets_releaseref_threadsafe(asset: *mut c_void);
     pub fn assets_current_task() -> i32;
@@ -545,6 +546,7 @@ pub struct Backend;
 
 pub type VoidFunction = unsafe extern "system" fn();
 
+#[link(name = "StereoKitC")]
 unsafe extern "C" {
     pub fn backend_xr_get_type() -> BackendXRType;
     pub fn backend_openxr_get_instance() -> OpenXRHandleT;
@@ -1343,6 +1345,7 @@ pub enum HierarchyParent {
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/hierarchy.jpeg" alt="screenshot" width="200">
 pub struct Hierarchy;
 
+#[link(name = "StereoKitC")]
 unsafe extern "C" {
     pub fn hierarchy_push(transform: *const Matrix, parent_behavior: HierarchyParent);
     pub fn hierarchy_push_pose(pose: *const Pose, parent_behavior: HierarchyParent);
@@ -2597,6 +2600,7 @@ pub enum Key {
 /// ```
 pub struct Input;
 
+#[link(name = "StereoKitC")]
 unsafe extern "C" {
     pub fn input_pointer_count(filter: InputSource) -> i32;
     pub fn input_pointer(index: i32, filter: InputSource) -> Pointer;
@@ -3524,6 +3528,7 @@ impl LinePoint {
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/lines.jpeg" alt="screenshot" width="200">
 pub struct Lines;
 
+#[link(name = "StereoKitC")]
 unsafe extern "C" {
     pub fn line_add(start: Vec3, end: Vec3, color_start: Color32, color_end: Color32, thickness: f32);
     pub fn line_addv(start: LinePoint, end: LinePoint);
@@ -3783,6 +3788,7 @@ pub struct LogItem {
 /// ```
 pub struct Log;
 
+#[link(name = "StereoKitC")]
 unsafe extern "C" {
     pub fn log_diag(text: *const c_char);
     //pub fn log_diagf(text: *const c_char, ...);
@@ -3809,6 +3815,7 @@ unsafe extern "C" {
 /// Log subscribe trampoline
 ///
 /// see also [`Log::subscribe`]
+#[link(name = "StereoKitC")]
 unsafe extern "C" fn log_trampoline<'a, F: FnMut(LogLevel, &str) + 'a>(
     context: *mut c_void,
     log_level: LogLevel,
@@ -4048,6 +4055,7 @@ pub struct Microphone {
     sound: Sound,
 }
 
+#[link(name = "StereoKitC")]
 unsafe extern "C" {
     pub fn mic_get_stream() -> SoundT;
     pub fn mic_is_recording() -> Bool32T;
@@ -4268,6 +4276,7 @@ pub enum Projection {
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/renderer.jpeg" alt="screenshot" width="200">
 pub struct Renderer;
 
+#[link(name = "StereoKitC")]
 unsafe extern "C" {
     pub fn render_set_clip(near_plane: f32, far_plane: f32);
     pub fn render_get_clip(out_near_plane: *mut f32, out_far_plane: *mut f32);
@@ -4381,6 +4390,7 @@ unsafe extern "C" {
 /// screenshot_capture trampoline
 ///
 /// see also [`Renderer::screenshot_capture`]
+#[link(name = "StereoKitC")]
 unsafe extern "C" fn sc_capture_trampoline<F: FnMut(&[Color32], usize, usize)>(
     color_buffer: *mut Color32,
     width: i32,
@@ -5587,6 +5597,7 @@ pub struct TextStyle {
     _id: u32,
 }
 
+#[link(name = "StereoKitC")]
 unsafe extern "C" {
     pub fn text_make_style(font: FontT, layout_height: f32, color_gamma: Color128) -> TextStyle;
     pub fn text_make_style_shader(font: FontT, layout_height: f32, shader: ShaderT, color_gamma: Color128)
@@ -6090,6 +6101,7 @@ pub enum TextContext {
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/text.jpeg" alt="screenshot" width="200">
 pub struct Text;
 
+#[link(name = "StereoKitC")]
 unsafe extern "C" {
     pub fn text_add_at(
         text_utf8: *const c_char,
@@ -6613,6 +6625,7 @@ pub enum SpatialNodeType {
 /// <https://stereokit.net/Pages/StereoKit/World.html>
 pub struct World;
 
+#[link(name = "StereoKitC")]
 unsafe extern "C" {
     pub fn world_has_bounds() -> Bool32T;
     pub fn world_get_bounds_size() -> Vec2;
