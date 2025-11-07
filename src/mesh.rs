@@ -166,6 +166,7 @@ pub type MeshT = *mut _MeshT;
 /// StereoKit ffi type.
 pub type VindT = u32;
 
+#[link(name = "StereoKitC")]
 unsafe extern "C" {
     pub fn mesh_find(name: *const c_char) -> MeshT;
     pub fn mesh_create() -> MeshT;

@@ -71,6 +71,7 @@ pub struct _FontT {
 /// StereoKit ffi type.
 pub type FontT = *mut _FontT;
 
+#[link(name = "StereoKitC")]
 unsafe extern "C" {
     pub fn font_find(id: *const c_char) -> FontT;
     pub fn font_create(file_utf8: *const c_char) -> FontT;

@@ -76,6 +76,8 @@ bitflags::bitflags! {
         const Stability = 2;
     }
 }
+
+#[link(name = "StereoKitC")]
 unsafe extern "C" {
     pub fn anchor_find(asset_id_utf8: *const c_char) -> AnchorT;
     pub fn anchor_create(pose: Pose) -> AnchorT;

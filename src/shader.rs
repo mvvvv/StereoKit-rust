@@ -52,6 +52,8 @@ pub struct _ShaderT {
 }
 /// StereoKit ffi type.
 pub type ShaderT = *mut _ShaderT;
+
+#[link(name = "StereoKitC")]
 unsafe extern "C" {
     pub fn shader_find(id: *const ::std::os::raw::c_char) -> ShaderT;
     pub fn shader_create_file(filename_utf8: *const ::std::os::raw::c_char) -> ShaderT;
