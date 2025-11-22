@@ -6,7 +6,10 @@ use stereokit_rust::{
     sound::{Sound, SoundInst},
     sprite::Sprite,
     system::{Input, Key, Log, Text, TextContext, TextStyle},
-    tools::os_api::show_soft_input,
+    tools::{
+        os_api::show_soft_input,
+        xr_meta_virtual_keyboard::{KEYBOARD_SHOW, XR_META_VIRTUAL_KEYBOARD_EXTENSION_NAME},
+    },
     ui::{Ui, UiBtnLayout},
     util::{
         Platform,
@@ -43,6 +46,7 @@ pub struct Text1 {
     pub android_keyboard: bool,
     pub android_keyboard_ime: bool,
     pub keyboard_layout_fr: bool,
+    pub virtual_keyboard_visible: bool,
     inst_play: Option<SoundInst>,
     pub show_keyboard: bool,
     pub text_sample: String,
@@ -70,6 +74,7 @@ impl Default for Text1 {
             android_keyboard: false,
             android_keyboard_ime: false,
             keyboard_layout_fr: false,
+            virtual_keyboard_visible: false,
             inst_play: None,
             show_keyboard: false,
             text_sample: String::from("😃‣‣‣‣😃"),
@@ -164,6 +169,15 @@ impl Text1 {
                 Input::key_inject_release(Key::Left);
 
                 show_soft_input(true);
+            }
+
+            Ui::same_line();
+            if let Some(new_value) = Ui::toggle("Meta Virtual Keyboard", &mut self.virtual_keyboard_visible, None) {
+                let event_value = if new_value { "true" } else { "false" };
+                SkInfo::send_event(
+                    &self.sk_info,
+                    StepperAction::event(XR_META_VIRTUAL_KEYBOARD_EXTENSION_NAME, KEYBOARD_SHOW, event_value),
+                );
             }
 
             // Ui::same_line();

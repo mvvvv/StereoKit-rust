@@ -27,7 +27,8 @@ use stereokit_rust::{
             resume_simultaneous_hands_and_controllers,
         },
         xr_meta_virtual_keyboard::{
-            KEYBOARD_SHOW, XrMetaVirtualKeyboardStepper, is_meta_virtual_keyboard_extension_available,
+            XR_META_VIRTUAL_KEYBOARD_EXTENSION_NAME, XrMetaVirtualKeyboardStepper,
+            is_meta_virtual_keyboard_extension_available,
         },
     },
     ui::{Ui, UiBtnLayout},
@@ -127,13 +128,6 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
         Log::diag("No Passthrough !!")
     }
 
-    // let virtual_kbd_enabled = BackendOpenXR::ext_enabled("XR_META_virtual_keyboard");
-    // if virtual_kbd_enabled {
-    //     sk.send_event(StepperAction::add_default::<VirtualKbdMETA>("VirtualKbdMETA"));
-    //     Log::diag("XR_META_virtual_keyboard Ready !!")
-    // } else {
-    //     Log::diag("No XR_META_virtual_keyboard !!")
-    // }
     let next_refresh_rate_image = Sprite::arrow_right();
     let mut current_refresh_rate = get_display_refresh_rate().unwrap_or(0.0);
     let mut refresh_rates = vec![];
@@ -171,9 +165,9 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
     // Add virtual keyboard stepper if extension is available
     if is_meta_virtual_keyboard_extension_available() {
         Log::info("✅ XR_META_virtual_keyboard extension available");
-        let keyboard_stepper = XrMetaVirtualKeyboardStepper::new(true);
-        sk.send_event(StepperAction::add("XrMetaVirtualKeyboardStepper", keyboard_stepper));
-        sk.send_event(StepperAction::event("XrMetaVirtualKeyboardStepper", KEYBOARD_SHOW, "true"));
+        let keyboard_stepper = XrMetaVirtualKeyboardStepper::new(false);
+        sk.send_event(StepperAction::add(XR_META_VIRTUAL_KEYBOARD_EXTENSION_NAME, keyboard_stepper));
+        //sk.send_event(StepperAction::event(XR_META_VIRTUAL_KEYBOARD_EXTENSION_NAME, KEYBOARD_SHOW, "true"));
     } else {
         Log::diag("XR_META_virtual_keyboard extension not available");
     }

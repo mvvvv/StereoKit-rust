@@ -12,7 +12,7 @@ use openxr_sys::{
     Bool32, FALSE, Instance, MAX_SYSTEM_NAME_SIZE, Posef, Result as XrResult, Session, Space, StructureType,
     SystemGraphicsProperties, SystemId, SystemProperties, SystemTrackingProperties,
     SystemVirtualKeyboardPropertiesMETA, VirtualKeyboardCreateInfoMETA, VirtualKeyboardLocationTypeMETA,
-    VirtualKeyboardMETA, VirtualKeyboardSpaceCreateInfoMETA,
+    VirtualKeyboardMETA, VirtualKeyboardModelVisibilitySetInfoMETA, VirtualKeyboardSpaceCreateInfoMETA,
     pfn::{
         CreateVirtualKeyboardMETA, CreateVirtualKeyboardSpaceMETA, DestroyVirtualKeyboardMETA, GetSystemProperties,
         GetVirtualKeyboardDirtyTexturesMETA, GetVirtualKeyboardModelAnimationStatesMETA, GetVirtualKeyboardScaleMETA,
@@ -351,14 +351,20 @@ impl XrMetaVirtualKeyboard {
     ///
     /// # Returns
     /// `Ok(())` on success or error on failure
-    #[allow(unused_variables)]
     pub fn set_model_visibility(&self, keyboard: VirtualKeyboardMETA, visible: bool) -> Result<(), XrResult> {
-        let _set_visibility_fn =
-            self.xr_set_virtual_kbd_model_visibility.ok_or(XrResult::ERROR_FUNCTION_UNSUPPORTED)?;
+        let set_visibility_fn = self.xr_set_virtual_kbd_model_visibility.ok_or(XrResult::ERROR_FUNCTION_UNSUPPORTED)?;
 
-        // Note: The actual OpenXR function may require a specific info structure
-        // For now, we'll return success to indicate the function is available
-        // A proper implementation would need the correct VirtualKeyboardModelVisibilitySetInfoMETA structure
+        let visibility_info = VirtualKeyboardModelVisibilitySetInfoMETA {
+            ty: StructureType::VIRTUAL_KEYBOARD_MODEL_VISIBILITY_SET_INFO_META,
+            next: null_mut(),
+            visible: Bool32::from_raw(if visible { 1 } else { 0 }),
+        };
+
+        let result = unsafe { set_visibility_fn(keyboard, &visibility_info) };
+
+        if result != XrResult::SUCCESS {
+            return Err(result);
+        }
 
         Log::info(format!("Virtual keyboard visibility set to: {}", visible));
         Ok(())
@@ -528,11 +534,12 @@ impl XrMetaVirtualKeyboardStepper {
     /// Method called by derive(IStepper) during initialization
     fn start(&mut self) -> bool {
         //Log::info("🔧 Initializing virtual keyboard...");
-        if !is_meta_virtual_keyboard_extension_available() && self.meta_kdb.is_some() && self.init_kbd() {
+        if !is_meta_virtual_keyboard_extension_available() || self.meta_kdb.is_none() {
             Log::warn("⚠️ XR_META_virtual_keyboard extension not available");
             return false;
         }
-        true
+
+        self.init_kbd()
     }
 
     /// Method called by derive(IStepper) for event handling  
@@ -541,49 +548,22 @@ impl XrMetaVirtualKeyboardStepper {
         if key.eq(KEYBOARD_SHOW) {
             self.enabled = value == "true";
 
-            // Charger le modèle 3D du clavier virtuel uniquement lors de la réception de KEYBOARD_SHOW=true et si non déjà chargé
-            if self.keyboard_model.is_none() {
-                Log::info("🔧 Loading virtual keyboard 3D model...");
-                // Try to load the virtual keyboard model using XrFbRenderModel
-                if let Some(xr_render_model) = XrFbRenderModel::new(true) {
-                    // Explore available models
-                    if let Err(e) = xr_render_model.explore_render_models() {
-                        Log::warn(format!("❌ Failed to explore XR_FB_render_models: {:?}", e));
-                    }
-
-                    let selected_path = "/model_meta/keyboard/virtual";
-                    match xr_render_model.load_render_model(selected_path) {
-                        Ok(model_data) => {
-                            Log::info(format!(
-                                "   Successfully loaded {} bytes of model data from {}",
-                                model_data.len(),
-                                selected_path
-                            ));
-
-                            match Model::from_memory("virtual_keyboard.gltf", &model_data, None) {
-                                Ok(model) => {
-                                    self.keyboard_model = Some(model);
-                                    Log::info("✅ Virtual keyboard 3D model created successfully");
-                                }
-                                Err(e) => {
-                                    Log::warn(format!("❌ Failed to create Model from keyboard data: {:?}", e));
-                                }
-                            }
-                        }
-                        Err(e) => {
-                            Log::warn(format!("❌ Failed to load model data from {}: {:?}", selected_path, e));
-                        }
-                    }
-                } else {
-                    Log::warn("❌ XrFbRenderModel not available, cannot load virtual keyboard 3D model");
-                }
-            }
+            // The Meta runtime automatically manages the keyboard rendering
+            // We only need to control its visibility
             if let Some(ref meta_kdb) = self.meta_kdb {
+                // Check if keyboard handle is valid before trying to set visibility
+                if self.virtual_kbd == VirtualKeyboardMETA::NULL {
+                    Log::warn("⚠️ Virtual keyboard not initialized yet, visibility will be set during initialization");
+                    return;
+                }
+
                 if self.enabled {
+                    Log::info("✅ Showing virtual keyboard...");
                     meta_kdb
                         .set_model_visibility(self.virtual_kbd, true)
                         .unwrap_or_else(|e| Log::warn(format!("❌ Failed to show keyboard: {:?}", e)));
                 } else {
+                    Log::info("✅ Hiding virtual keyboard...");
                     meta_kdb
                         .set_model_visibility(self.virtual_kbd, false)
                         .unwrap_or_else(|e| Log::warn(format!("❌ Failed to hide keyboard: {:?}", e)));
@@ -636,10 +616,54 @@ impl XrMetaVirtualKeyboardStepper {
                 return false;
             }
         }
+
+        // Load the keyboard 3D model using XR_FB_render_model
+        // According to Meta documentation, the keyboard model must be loaded and rendered
+        if let Some(render_model_ext) = XrFbRenderModel::new(false) {
+            // CRITICAL: Must enumerate models FIRST before trying to load any specific model
+            // This is required by the XR_FB_render_model extension spec
+            match render_model_ext.enumerate_render_model_paths() {
+                Ok(paths) => {
+                    Log::info(format!("   Found {} render model paths:", paths.len()));
+                    for path in &paths {
+                        Log::info(format!("     - {}", path));
+                    }
+
+                    // Now we can safely load the keyboard model
+                    let model_path = "/model_meta/keyboard/virtual";
+
+                    match render_model_ext.load_render_model(model_path) {
+                        Ok(model_data) => {
+                            Log::info(format!("   Loaded {} bytes of keyboard model data", model_data.len()));
+
+                            match Model::from_memory("virtual_keyboard.gltf", &model_data, None) {
+                                Ok(model) => {
+                                    self.keyboard_model = Some(model);
+                                    Log::info("   Keyboard 3D model created successfully");
+                                }
+                                Err(e) => {
+                                    Log::warn(format!("❌ Failed to create Model from keyboard data: {:?}", e));
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            Log::warn(format!("❌ Failed to load keyboard model from {}: {:?}", model_path, e));
+                        }
+                    }
+                }
+                Err(e) => {
+                    Log::warn(format!("❌ Failed to enumerate render models: {:?}", e));
+                }
+            }
+        } else {
+            Log::warn("❌ XR_FB_render_model extension not available");
+        }
+
+        // Set initial visibility state
         match meta_kdb.set_model_visibility(self.virtual_kbd, self.enabled) {
             Ok(()) => {}
             Err(e) => {
-                Log::err(format!("❌ Failed to show keyboard: {:?}", e));
+                Log::err(format!("❌ Failed to set keyboard visibility: {:?}", e));
             }
         }
 
@@ -648,9 +672,18 @@ impl XrMetaVirtualKeyboardStepper {
     }
 
     /// Method called by derive(IStepper) for rendering/drawing
-    fn draw(&mut self, _token: &MainThreadToken) {
-        // Virtual keyboard is active - could handle input events, animations, etc.
-        // Future implementation: handle keyboard input, update textures, etc.
+    fn draw(&mut self, token: &MainThreadToken) {
+        // Render the keyboard model if available
+        if let Some(ref model) = self.keyboard_model {
+            // The keyboard space position is managed by OpenXR
+            // We render the model at world origin and let the space handle positioning
+            // TODO: Get the actual pose from kbd_space and render at that location
+            // For now, render at a fixed position for testing
+            use crate::maths::{Matrix, Quat, Vec3};
+            let pose = Matrix::t_r(Vec3::new(0.0, 1.0, -1.5), Quat::Y_180);
+            model.draw(token, pose, None, None);
+        }
+        // Future implementation: handle keyboard input events, update textures, animations, etc.
     }
 
     /// Method called by derive(IStepper) during shutdown
@@ -664,213 +697,4 @@ impl XrMetaVirtualKeyboardStepper {
         }
         self.shutdown_completed
     }
-}
-
-/// Simple example demonstrating virtual keyboard creation
-///
-/// This example can be called from a StereoKit application to test
-/// the virtual keyboard functionality.
-///
-/// # Executable Test Example
-/// ```
-/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::tools::xr_meta_virtual_keyboard::*;
-///
-/// number_of_steps = 40;
-/// test_steps!( // !!!! Get a proper main loop !!!!
-///     if iter == 20 {
-///         // Test virtual keyboard creation and management
-///         match example_virtual_keyboard() {
-///             Ok(()) => Log::info("✅ Virtual keyboard test passed!"),
-///             Err(e) => Log::err(format!("❌ Virtual keyboard test failed: {}", e)),
-///         }
-///     }
-/// );
-/// ```
-pub fn example_virtual_keyboard() -> Result<(), String> {
-    Log::info("🚀 === VIRTUAL KEYBOARD EXAMPLE ===");
-
-    // Check if extension is available
-    if !is_meta_virtual_keyboard_extension_available() {
-        return Err("❌ XR_META_virtual_keyboard extension not available".to_string());
-    }
-
-    // Initialize the extension
-    let meta_kdb = match XrMetaVirtualKeyboard::new() {
-        Some(ext) => {
-            Log::info("✅ XR_META_virtual_keyboard extension initialized");
-            ext
-        }
-        None => {
-            return Err("❌ XR_META_virtual_keyboard extension initialization failed".to_string());
-        }
-    };
-
-    // Check system support
-    let _sys_prop = match meta_kdb.check_system_support(false) {
-        Ok(val) => val,
-        Err(e) => {
-            return Err(format!("❌ Failed to check system support: {:?}", e));
-        }
-    };
-
-    // Create virtual keyboard
-    let virtual_kbd = meta_kdb
-        .create_virtual_keyboard()
-        .map_err(|e| format!("Failed to create virtual keyboard: {:?}", e))?;
-    Log::info("✅ Virtual keyboard created");
-
-    // Create keyboard space
-    let _kbd_space = meta_kdb
-        .create_virtual_keyboard_space(
-            virtual_kbd,
-            VirtualKeyboardLocationTypeMETA::CUSTOM,
-            Space::from_raw(BackendOpenXR::space()),
-            Posef::IDENTITY,
-        )
-        .map_err(|e| format!("Failed to create keyboard space: {:?}", e))?;
-    Log::info("✅ Virtual keyboard space created");
-
-    // Test visibility control
-    meta_kdb
-        .set_model_visibility(virtual_kbd, true)
-        .map_err(|e| format!("Failed to show keyboard: {:?}", e))?;
-    Log::info("✅ Virtual keyboard shown");
-
-    meta_kdb
-        .set_model_visibility(virtual_kbd, false)
-        .map_err(|e| format!("Failed to hide keyboard: {:?}", e))?;
-    Log::info("✅ Virtual keyboard hidden");
-
-    // Cleanup
-    meta_kdb
-        .destroy_virtual_keyboard(virtual_kbd)
-        .map_err(|e| format!("Failed to destroy keyboard: {:?}", e))?;
-    Log::info("✅ Virtual keyboard destroyed");
-
-    Log::info("🏁 === VIRTUAL KEYBOARD EXAMPLE COMPLETE ===");
-    Ok(())
-}
-
-/// Comprehensive test function for XR_META_virtual_keyboard extension
-///
-/// This function demonstrates the complete workflow for using Meta virtual keyboards:
-/// 1. Extension initialization and availability checking
-/// 2. System capability inspection for virtual keyboard support
-/// 3. Virtual keyboard creation and space setup
-/// 4. Visibility control and interaction testing
-/// 5. Proper cleanup and resource management
-///
-/// The test provides detailed logging of each step and handles errors gracefully,
-/// making it useful both for validation and as a reference implementation.
-///
-/// # Usage
-/// Call this function after StereoKit initialization in an OpenXR environment
-/// that supports the XR_META_virtual_keyboard extension.
-///
-/// ### Examples
-/// ```
-/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::tools::xr_meta_virtual_keyboard::*;
-///
-/// number_of_steps = 60;
-/// test_steps!( // !!!! Get a proper main loop !!!!
-///     if iter == 30 {
-///         // Run comprehensive test of all virtual keyboard functionality
-///         Log::info("🚀 Running comprehensive virtual keyboard test...");
-///         test_virtual_keyboard_extension();
-///         Log::info("🏁 Comprehensive test completed!");
-///     }
-/// );
-/// ```
-pub fn test_virtual_keyboard_extension() {
-    Log::diag("🚀 === TESTING XR_META_VIRTUAL_KEYBOARD EXTENSION ===");
-
-    // Check extension availability
-    if !is_meta_virtual_keyboard_extension_available() {
-        Log::err("❌ XR_META_virtual_keyboard extension not available");
-        return;
-    }
-
-    // Initialize the virtual keyboard extension
-    match XrMetaVirtualKeyboard::new() {
-        Some(meta_kdb) => {
-            Log::diag("✅ XR_META_virtual_keyboard extension initialized successfully");
-
-            // Test system capability checking
-            Log::diag("=== Testing system capability checking ===");
-            match meta_kdb.check_system_support(true) {
-                Ok(_sys_prop) => {
-                    Log::diag("✅ System supports virtual keyboards");
-
-                    // Test keyboard creation
-                    Log::diag("=== Testing virtual keyboard creation ===");
-                    match meta_kdb.create_virtual_keyboard() {
-                        Ok(virtual_kbd) => {
-                            Log::diag(format!("✅ Virtual keyboard created: {:?}", virtual_kbd));
-
-                            // Test space creation
-                            Log::diag("=== Testing keyboard space creation ===");
-                            match meta_kdb.create_virtual_keyboard_space(
-                                virtual_kbd,
-                                VirtualKeyboardLocationTypeMETA::CUSTOM,
-                                Space::from_raw(BackendOpenXR::space()),
-                                Posef::IDENTITY,
-                            ) {
-                                Ok(kbd_space) => {
-                                    Log::diag(format!("✅ Keyboard space created: {:?}", kbd_space));
-
-                                    // Test visibility control
-                                    Log::diag("=== Testing visibility control ===");
-                                    match meta_kdb.set_model_visibility(virtual_kbd, true) {
-                                        Ok(()) => {
-                                            Log::diag("✅ Keyboard shown successfully");
-
-                                            match meta_kdb.set_model_visibility(virtual_kbd, false) {
-                                                Ok(()) => {
-                                                    Log::diag("✅ Keyboard hidden successfully");
-                                                }
-                                                Err(e) => {
-                                                    Log::err(format!("❌ Failed to hide keyboard: {:?}", e));
-                                                }
-                                            }
-                                        }
-                                        Err(e) => {
-                                            Log::err(format!("❌ Failed to show keyboard: {:?}", e));
-                                        }
-                                    }
-
-                                    Log::diag("🎯 ✅ VIRTUAL KEYBOARD EXTENSION SETUP COMPLETE!");
-                                }
-                                Err(e) => {
-                                    Log::err(format!("❌ Failed to create keyboard space: {:?}", e));
-                                }
-                            }
-
-                            // Cleanup - destroy the keyboard
-                            match meta_kdb.destroy_virtual_keyboard(virtual_kbd) {
-                                Ok(()) => {
-                                    Log::diag("✅ Virtual keyboard destroyed successfully");
-                                }
-                                Err(e) => {
-                                    Log::err(format!("❌ Failed to destroy virtual keyboard: {:?}", e));
-                                }
-                            }
-                        }
-                        Err(e) => {
-                            Log::err(format!("❌ Failed to create virtual keyboard: {:?}", e));
-                        }
-                    }
-                }
-                Err(e) => {
-                    Log::err(format!("❌ Failed to check system support: {:?}", e));
-                }
-            }
-        }
-        None => {
-            Log::err("❌ Failed to initialize XR_META_virtual_keyboard extension");
-        }
-    }
-
-    Log::diag("🏁 === VIRTUAL KEYBOARD EXTENSION TEST COMPLETE ===");
 }
