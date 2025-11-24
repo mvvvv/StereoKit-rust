@@ -144,7 +144,7 @@ pub fn compile_hlsl(
                 } else {
                     Command::new(OsStr::new(skshaderc.to_str().unwrap_or("NOPE")))
                 };
-                cmd.arg("-f").arg("-e").arg("-i").arg(&shaders_include).arg("-o").arg(&shaders_path);
+                cmd.arg("-e").arg("-i").arg(&shaders_include).arg("-o").arg(&shaders_path);
                 for arg in options {
                     cmd.arg(arg);
                 }
