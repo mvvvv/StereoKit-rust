@@ -92,7 +92,7 @@ impl Threads2 {
         }));
         self.thread_blinker = Some(thread::spawn(move || {
             let _model = Model::find(MODEL_ID).unwrap();
-            let blinker = Shader::from_file("shaders/blinker.hlsl.sks").unwrap();
+            let blinker = Shader::from_file("shaders/blinker.hlsl.sks").unwrap_or_default();
             let mut id = 0;
             let mut material = Material::default_copy();
             let color = Color128::WHITE;

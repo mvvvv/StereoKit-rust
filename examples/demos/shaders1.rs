@@ -43,7 +43,7 @@ unsafe impl Send for Shader1 {}
 impl Default for Shader1 {
     fn default() -> Self {
         //------ Materials
-        let hud_text_shader = Shader::from_file("shaders/hud_text.hlsl.sks").unwrap();
+        let hud_text_shader = Shader::from_file("shaders/hud_text.hlsl.sks").unwrap_or_default();
         let text_style = Text::make_style_with_shader(Font::default(), 0.03, hud_text_shader, RED);
 
         let mut blinker_material =

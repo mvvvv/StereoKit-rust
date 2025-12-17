@@ -48,7 +48,7 @@ unsafe impl Send for HudNotification {}
 
 impl Default for HudNotification {
     fn default() -> Self {
-        let hud_text_shader = Shader::from_file("shaders/hud_text.hlsl.sks").unwrap();
+        let hud_text_shader = Shader::from_file("shaders/hud_text.hlsl.sks").unwrap_or_default();
         let text_style = Text::make_style_with_shader(Font::default(), 0.03, hud_text_shader, BLACK);
         let position = Vec3::new(0.0, -0.2, -0.2);
         let transform_text = Matrix::IDENTITY;
