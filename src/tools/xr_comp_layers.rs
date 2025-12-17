@@ -350,11 +350,7 @@ impl XrCompLayers {
         single_image: bool,
     ) -> Option<Swapchain> {
         let mut swapchain = Swapchain::default();
-        let create_flags = if single_image {
-            SwapchainCreateFlags::STATIC_IMAGE
-        } else {
-            SwapchainCreateFlags::PROTECTED_CONTENT
-        };
+        let create_flags = if single_image { SwapchainCreateFlags::STATIC_IMAGE } else { SwapchainCreateFlags::EMPTY };
 
         let info = SwapchainCreateInfo {
             ty: StructureType::SWAPCHAIN_CREATE_INFO,
