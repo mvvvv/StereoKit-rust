@@ -275,6 +275,7 @@ pub enum StandbyMode {
     None = 3,
 }
 
+#[link(name = "StereoKitC")]
 unsafe extern "C" {
     pub fn sk_init(settings: SkSettings) -> Bool32T;
     pub fn sk_set_window(window: *mut c_void);

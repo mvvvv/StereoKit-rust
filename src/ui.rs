@@ -598,6 +598,7 @@ pub struct UiSliderData {
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui.jpeg" alt="screenshot" width="200">
 pub struct Ui;
 
+#[link(name = "StereoKitC")]
 unsafe extern "C" {
     pub fn ui_quadrant_size_verts(ref_vertices: *mut Vertex, vertex_count: i32, overflow_percent: f32);
     pub fn ui_quadrant_size_mesh(ref_mesh: MeshT, overflow_percent: f32);

@@ -52,6 +52,7 @@ name = "cargo-build_sk_rs"
 
 [build-dependencies]
 cmake = "0.1.54"
+system-deps = "2.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
@@ -93,6 +94,9 @@ crate-type = ["cdylib"]
 name = "main_tests"
 path = "tests/main_tests.rs"
 harness = false
+
+[package.metadata.system-deps]
+StereoKitC = "0.3.11"
 
 [package.metadata.android]
 package = "com.stereokit.rust_binding.demos"

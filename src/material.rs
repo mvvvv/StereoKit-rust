@@ -130,6 +130,7 @@ pub struct _MaterialT {
 /// StereoKit ffi type.
 pub type MaterialT = *mut _MaterialT;
 
+#[link(name = "StereoKitC")]
 unsafe extern "C" {
     pub fn material_find(id: *const c_char) -> MaterialT;
     pub fn material_create(shader: ShaderT) -> MaterialT;
@@ -1472,6 +1473,7 @@ pub struct ParamInfos<'a> {
     index: i32,
 }
 
+#[link(name = "StereoKitC")]
 unsafe extern "C" {
     pub fn material_set_float(material: MaterialT, name: *const c_char, value: f32);
     pub fn material_set_vector2(material: MaterialT, name: *const c_char, value: Vec2);
@@ -2363,6 +2365,7 @@ impl ParamInfo {
     }
 }
 
+#[link(name = "StereoKitC")]
 unsafe extern "C" {
     pub fn material_buffer_create(size: i32) -> MaterialBufferT;
     pub fn material_buffer_addref(buffer: MaterialBufferT);
