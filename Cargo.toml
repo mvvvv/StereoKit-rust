@@ -3,7 +3,7 @@ members = ["stereokit-macros"]
 
 [package]
 name = "stereokit-rust"
-version = "0.4.0-alpha.21"
+version = "0.4.0-alpha.22"
 resolver = "2"
 edition = "2024"
 #rust-version = "1.85"
@@ -51,7 +51,7 @@ name = "cargo-compile_sks"
 name = "cargo-build_sk_rs"
 
 [build-dependencies]
-cmake = "0.1.54"
+cmake = "0.1.57"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
@@ -59,7 +59,7 @@ winit = { version = "0.30", features = [
   "android-native-activity",
 ], optional = true }
 thiserror = "2.0"
-bitflags = "2.9"
+bitflags = "2.10"
 glam = "0.30"
 openxr-sys = "0.11"
 stereokit-macros = { path = "./stereokit-macros", version = "0.5.1" }
