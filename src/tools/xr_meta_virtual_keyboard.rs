@@ -9,7 +9,7 @@
 //! <https://registry.khronos.org/OpenXR/specs/1.1/html/xrspec.html#XR_META_virtual_keyboard>
 
 use openxr_sys::{
-    Bool32, FALSE, Instance, MAX_SYSTEM_NAME_SIZE, Posef, Result as XrResult, Session, Space, StructureType,
+    Bool32, FALSE, Handle, Instance, MAX_SYSTEM_NAME_SIZE, Posef, Result as XrResult, Session, Space, StructureType,
     SystemGraphicsProperties, SystemId, SystemProperties, SystemTrackingProperties,
     SystemVirtualKeyboardPropertiesMETA, VirtualKeyboardCreateInfoMETA, VirtualKeyboardLocationTypeMETA,
     VirtualKeyboardMETA, VirtualKeyboardModelVisibilitySetInfoMETA, VirtualKeyboardSpaceCreateInfoMETA,

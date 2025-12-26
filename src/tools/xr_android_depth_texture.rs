@@ -23,8 +23,8 @@
 
 use crate::system::{Backend, BackendOpenXR, BackendXRType, Log};
 use openxr_sys::{
-    Bool32, Instance, MAX_SYSTEM_NAME_SIZE, Result, Session, StructureType, Swapchain, SystemGraphicsProperties,
-    SystemId, SystemProperties, SystemTrackingProperties, pfn::GetSystemProperties,
+    Bool32, Handle, Instance, MAX_SYSTEM_NAME_SIZE, Result, Session, StructureType, Swapchain,
+    SystemGraphicsProperties, SystemId, SystemProperties, SystemTrackingProperties, pfn::GetSystemProperties,
 };
 use std::os::raw::{c_uint, c_ulong, c_void};
 use std::ptr::null_mut;

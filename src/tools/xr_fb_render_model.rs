@@ -7,7 +7,7 @@
 use std::ffi::{CString, c_char};
 use std::ptr;
 
-use openxr_sys::{RenderModelCapabilitiesRequestFB, 
+use openxr_sys::{RenderModelCapabilitiesRequestFB, Handle,
     Instance, Path, RenderModelBufferFB, RenderModelFlagsFB, RenderModelKeyFB, RenderModelLoadInfoFB,
     RenderModelPathInfoFB, RenderModelPropertiesFB, Result as XrResult, Session, StructureType,
     pfn::{EnumerateRenderModelPathsFB, GetRenderModelPropertiesFB, LoadRenderModelFB, PathToString, StringToPath},

@@ -14,7 +14,7 @@ use crate::{
 use openxr_sys::{pfn::CreateSwapchainAndroidSurfaceKHR, platform::jobject};
 
 use openxr_sys::{
-    Duration, Session, Space, Swapchain, SwapchainImageWaitInfo,
+    Duration, Handle, Session, Space, Swapchain, SwapchainImageWaitInfo,
     pfn::{
         AcquireSwapchainImage, CreateSwapchain, DestroySwapchain, EnumerateSwapchainImages, ReleaseSwapchainImage,
         WaitSwapchainImage,

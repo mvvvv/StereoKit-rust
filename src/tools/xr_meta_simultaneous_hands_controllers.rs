@@ -6,7 +6,7 @@
 
 use openxr_sys::pfn::GetSystemProperties;
 use openxr_sys::{
-    Bool32, Instance, Result, Session, StructureType, SystemGraphicsProperties, SystemId, SystemProperties,
+    Bool32, Handle, Instance, Result, Session, StructureType, SystemGraphicsProperties, SystemId, SystemProperties,
     SystemTrackingProperties,
 };
 

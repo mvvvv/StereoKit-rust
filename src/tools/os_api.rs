@@ -1,5 +1,5 @@
 use openxr_sys::pfn::EnumerateEnvironmentBlendModes;
-use openxr_sys::{EnvironmentBlendMode, Instance, Result, SystemId, ViewConfigurationType};
+use openxr_sys::{EnvironmentBlendMode, Handle, Instance, Result, SystemId, ViewConfigurationType};
 use std::ffi::OsString;
 use std::fs::File;
 use std::path::Path;

@@ -4,7 +4,7 @@
 //! <https://registry.khronos.org/OpenXR/specs/1.1/html/xrspec.html#XR_FB_display_refresh_rate>
 
 use openxr_sys::pfn::{EnumerateDisplayRefreshRatesFB, GetDisplayRefreshRateFB, RequestDisplayRefreshRateFB};
-use openxr_sys::{Result, Session};
+use openxr_sys::{Handle, Result, Session};
 
 use crate::system::{BackendOpenXR, Log};
 

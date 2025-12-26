@@ -5,8 +5,9 @@
 //! <https://registry.khronos.org/OpenXR/specs/1.1/html/xrspec.html#XR_FB_passthrough>
 
 use openxr_sys::{
-    CompositionLayerFlags, CompositionLayerPassthroughFB, PassthroughCreateInfoFB, PassthroughFB, PassthroughFlagsFB,
-    PassthroughLayerCreateInfoFB, PassthroughLayerFB, PassthroughLayerPurposeFB, Result, Session, Space, StructureType,
+    CompositionLayerFlags, CompositionLayerPassthroughFB, Handle, PassthroughCreateInfoFB, PassthroughFB,
+    PassthroughFlagsFB, PassthroughLayerCreateInfoFB, PassthroughLayerFB, PassthroughLayerPurposeFB, Result, Session,
+    Space, StructureType,
     pfn::{
         CreatePassthroughFB, CreatePassthroughLayerFB, DestroyPassthroughFB, DestroyPassthroughLayerFB,
         PassthroughLayerPauseFB, PassthroughLayerResumeFB, PassthroughLayerSetStyleFB, PassthroughPauseFB,
