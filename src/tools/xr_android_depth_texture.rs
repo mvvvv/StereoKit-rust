@@ -234,6 +234,7 @@ const XR_ACQUIRE_DEPTH_SWAPCHAIN_IMAGE_ANDROID_NAME: &str = "xrAcquireDepthSwapc
 ///                     stereokit_rust::system::Log::info("✅ System supports depth tracking");
 ///                     
 ///                     // Continue with depth texture operations...
+///                     use openxr_sys::Handle;
 ///                     let session = openxr_sys::Session::from_raw(
 ///                         stereokit_rust::system::BackendOpenXR::session()
 ///                     );
@@ -288,6 +289,7 @@ const XR_ACQUIRE_DEPTH_SWAPCHAIN_IMAGE_ANDROID_NAME: &str = "xrAcquireDepthSwapc
 ///     if iter == 5 {
 ///         // Test depth resolution enumeration and analysis
 ///         if let Some(depth_ext) = XrAndroidDepthTexture::new() {
+///             use openxr_sys::Handle;
 ///             let session = openxr_sys::Session::from_raw(
 ///                 stereokit_rust::system::BackendOpenXR::session()
 ///             );

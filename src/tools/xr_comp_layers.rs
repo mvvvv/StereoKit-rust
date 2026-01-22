@@ -517,6 +517,7 @@ impl SwapchainSk {
 
         // Only proceed for Vulkan backend
         if Backend::graphics() == BackendGraphics::Vulkan {
+            Log::diag(format!("SwapchainSk::wrap: Enumerating {} images for Vulkan backend", image_count));
             // Prepare Vulkan image array
             let mut vk_images: Vec<SwapchainImageVulkanKHR> = vec![
                 SwapchainImageVulkanKHR {
@@ -527,6 +528,7 @@ impl SwapchainSk {
                 image_count as usize
             ];
             let mut final_count = 0;
+            Log::diag("SwapchainSk::wrap: Calling xrEnumerateSwapchainImages...");
             match unsafe {
                 xr_comp_layers.xr_enumerate_swaptchain_images.unwrap()(
                     handle,
@@ -535,7 +537,12 @@ impl SwapchainSk {
                     vk_images.as_mut_ptr() as *mut _,
                 )
             } {
-                XrResult::SUCCESS => {}
+                XrResult::SUCCESS => {
+                    Log::diag(format!(
+                        "SwapchainSk::wrap: xrEnumerateSwapchainImages SUCCESS, got {} images",
+                        final_count
+                    ));
+                }
                 err => {
                     Log::err(format!("❌ xrEnumerateSwapchainImages failed: {err}"));
                     return None;
@@ -544,12 +551,14 @@ impl SwapchainSk {
             let mut this =
                 Self { xr_comp_layers, handle, width, height, acquired: 0, vk_images, images: Vec::with_capacity(0) };
 
+            Log::diag(format!("SwapchainSk::wrap: Wrapping {} Vulkan images into Tex objects", this.vk_images.len()));
             // Wrap each Vulkan image into a Tex object
-            for img in &this.vk_images {
-                Log::diag(format!("SwapchainSk: image: {:#?}", img));
+            for (idx, img) in this.vk_images.iter().enumerate() {
+                Log::diag(format!("SwapchainSk::wrap: Processing image {}: {:#?}", idx, img));
                 let mut image_sk =
                     Tex::render_target(width as usize, height as usize, Some(1), Some(format), None).unwrap();
 
+                Log::diag(format!("SwapchainSk::wrap: Setting native surface for image {}...", idx));
                 unsafe {
                     image_sk.set_native_surface(
                         img.image as *mut std::ffi::c_void,
@@ -561,6 +570,7 @@ impl SwapchainSk {
                         true,
                     );
                 }
+                Log::diag(format!("SwapchainSk::wrap: Image {} wrapped successfully", idx));
                 this.images.push(image_sk);
             }
             Some(this)
