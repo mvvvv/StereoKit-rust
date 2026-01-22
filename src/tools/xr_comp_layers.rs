@@ -14,17 +14,13 @@ use crate::{
 use openxr_sys::{pfn::CreateSwapchainAndroidSurfaceKHR, platform::jobject};
 
 use openxr_sys::{
-    Duration, Handle, Session, Space, Swapchain, SwapchainImageWaitInfo,
+    CompositionLayerFlags, CompositionLayerQuad, Duration, Extent2Df, Extent2Di, EyeVisibility, Handle, Offset2Di,
+    Posef, Quaternionf, Rect2Di, Result as XrResult, Session, Space, StructureType, Swapchain, SwapchainCreateFlags,
+    SwapchainCreateInfo, SwapchainImageWaitInfo, SwapchainSubImage, SwapchainUsageFlags, Vector3f,
     pfn::{
         AcquireSwapchainImage, CreateSwapchain, DestroySwapchain, EnumerateSwapchainImages, ReleaseSwapchainImage,
         WaitSwapchainImage,
     },
-};
-
-use openxr_sys::{
-    CompositionLayerFlags, CompositionLayerQuad, Extent2Df, Extent2Di, EyeVisibility, Offset2Di, Posef, Quaternionf,
-    Rect2Di, Result as XrResult, StructureType, SwapchainCreateFlags, SwapchainCreateInfo, SwapchainSubImage,
-    SwapchainUsageFlags, Vector3f,
 };
 
 use std::ptr::null_mut;
@@ -180,20 +176,13 @@ impl XrCompLayers {
     /// Convert a StereoKit `TexFormat` into the corresponding native OpenXR format value.
     pub fn to_native_format(format: TexFormat) -> i64 {
         match Backend::graphics() {
-            BackendGraphics::D3D11 => match format {
-                TexFormat::Rgba32Srgb => 29,
-                TexFormat::Rgba32Linear => 28,
-                TexFormat::Bgra32Srgb => 91,
-                TexFormat::Bgra32Linear => 87,
-                TexFormat::Rgb10a2 => 24,
-                TexFormat::Rg11b10 => 26,
-                _ => panic!("Unsupported texture format"),
-            },
-            BackendGraphics::OpenGLESEGL => match format {
-                TexFormat::Rgba32Srgb => 0x8C43,
-                TexFormat::Rgba32Linear => 0x8058,
-                TexFormat::Rgb10a2 => 0x8059,
-                TexFormat::Rg11b10 => 0x8C3A,
+            BackendGraphics::Vulkan => match format {
+                TexFormat::Rgba32Srgb => 43,   // VK_FORMAT_R8G8B8A8_SRGB
+                TexFormat::Rgba32Linear => 37, // VK_FORMAT_R8G8B8A8_UNORM
+                TexFormat::Bgra32Srgb => 50,   // VK_FORMAT_B8G8R8A8_SRGB
+                TexFormat::Bgra32Linear => 44, // VK_FORMAT_B8G8R8A8_UNORM
+                TexFormat::Rgb10a2 => 64,      // VK_FORMAT_A2B10G10R10_UNORM_PACK32
+                TexFormat::Rg11b10 => 122,     // VK_FORMAT_B10G11R11_UFLOAT_PACK32
                 _ => panic!("Unsupported texture format"),
             },
             _ => panic!("Unsupported graphics backend"),
@@ -446,10 +435,7 @@ pub struct SwapchainSk {
     pub height: u32,
     pub acquired: u32,
     images: Vec<Tex>,
-    #[cfg(unix)]
-    gles_images: Vec<openxr_sys::SwapchainImageOpenGLESKHR>,
-    #[cfg(windows)]
-    d3d_images: Vec<openxr_sys::SwapchainImageD3D11KHR>,
+    vk_images: Vec<openxr_sys::SwapchainImageVulkanKHR>,
 }
 
 impl SwapchainSk {
@@ -505,8 +491,7 @@ impl SwapchainSk {
         Some(&self.images[self.acquired as usize])
     }
 
-    /// Wrap OpenGL ES swapchain images into `Tex` objects for `unix` platforms.
-    #[cfg(unix)]
+    /// Wrap Vulkan swapchain images into `Tex` objects.
     pub fn wrap(
         handle: Swapchain,
         format: TexFormat,
@@ -514,97 +499,12 @@ impl SwapchainSk {
         height: u32,
         xr_comp_layers: Option<XrCompLayers>,
     ) -> Option<Self> {
-        use openxr_sys::SwapchainImageOpenGLESKHR;
-
-        let xr_comp_layers = get_xr_comp_layers(xr_comp_layers)?;
-
-        let mut image_count = 0;
-        match unsafe { xr_comp_layers.xr_enumerate_swaptchain_images.unwrap()(handle, 0, &mut image_count, null_mut()) }
-        {
-            XrResult::SUCCESS => {}
-            otherwise => {
-                Log::err(format!("❌ xrEnumerateSwapchainImages failed: {otherwise}"));
-                return None;
-            }
-        }
-
-        if Backend::graphics() == BackendGraphics::OpenGLESEGL {
-            let mut gles_images: Vec<SwapchainImageOpenGLESKHR> = {
-                let images: Vec<SwapchainImageOpenGLESKHR> = vec![
-                    SwapchainImageOpenGLESKHR {
-                        image: 0,
-                        ty: StructureType::SWAPCHAIN_IMAGE_OPENGL_ES_KHR,
-                        next: null_mut()
-                    };
-                    image_count as usize
-                ];
-                images
-            };
-
-            let mut final_count = 0;
-            match unsafe {
-                xr_comp_layers.xr_enumerate_swaptchain_images.unwrap()(
-                    handle,
-                    image_count,
-                    &mut final_count,
-                    gles_images.as_mut_ptr() as *mut _,
-                )
-            } {
-                XrResult::SUCCESS => {}
-                otherwise => {
-                    Log::err(format!("❌ xrEnumerateSwapchainImages failed: {otherwise}"));
-                    return None;
-                }
-            }
-
-            assert_eq!(gles_images.len(), image_count as usize);
-            //assert_eq!(gles_images.len(), 3);
-
-            let mut this =
-                Self { xr_comp_layers, handle, width, height, acquired: 0, gles_images, images: Vec::with_capacity(0) };
-
-            for image in &this.gles_images {
-                Log::diag(format!("SwapchainSk: image: {image:#?}"));
-                // let mut image_sk =
-                //     Tex::gen_color(named_colors::BLUE_VIOLET, width, height, TexType::Rendertarget, format);
-                //let mut image_sk = Tex::new(TexType::Rendertarget, format, None);
-                let mut image_sk =
-                    Tex::render_target(width as usize, height as usize, Some(2), Some(format), None).unwrap();
-                unsafe {
-                    image_sk.set_native_surface(
-                        image.image as *mut std::ffi::c_void,
-                        TexType::Rendertarget,
-                        XrCompLayers::to_native_format(format),
-                        width as i32,
-                        height as i32,
-                        1,
-                        true,
-                    )
-                };
-                this.images.push(image_sk);
-            }
-            Some(this)
-        } else {
-            Log::warn("❌ SwapchainSk: OpenGL ES backend is not available");
-            None
-        }
-    }
-
-    /// Wrap D3D11 swapchain images into `Tex` objects for `windows` platforms.
-    #[cfg(windows)]
-    pub fn wrap(
-        handle: Swapchain,
-        format: TexFormat,
-        width: u32,
-        height: u32,
-        xr_comp_layers: Option<XrCompLayers>,
-    ) -> Option<Self> {
-        use openxr_sys::SwapchainImageD3D11KHR;
+        use openxr_sys::SwapchainImageVulkanKHR;
         use std::ptr::null_mut;
 
         let xr_comp_layers = get_xr_comp_layers(xr_comp_layers)?;
 
-        // First, get the image count
+        // Get the image count
         let mut image_count = 0;
         match unsafe { xr_comp_layers.xr_enumerate_swaptchain_images.unwrap()(handle, 0, &mut image_count, null_mut()) }
         {
@@ -615,13 +515,13 @@ impl SwapchainSk {
             }
         }
 
-        // Only proceed for D3D11 backend
-        if Backend::graphics() == BackendGraphics::D3D11 {
-            // Prepare D3D11 image array
-            let mut d3d_images: Vec<SwapchainImageD3D11KHR> = vec![
-                SwapchainImageD3D11KHR {
-                    texture: null_mut(),
-                    ty: StructureType::SWAPCHAIN_IMAGE_D3D11_KHR,
+        // Only proceed for Vulkan backend
+        if Backend::graphics() == BackendGraphics::Vulkan {
+            // Prepare Vulkan image array
+            let mut vk_images: Vec<SwapchainImageVulkanKHR> = vec![
+                SwapchainImageVulkanKHR {
+                    image: 0,
+                    ty: StructureType::SWAPCHAIN_IMAGE_VULKAN_KHR,
                     next: null_mut(),
                 };
                 image_count as usize
@@ -632,7 +532,7 @@ impl SwapchainSk {
                     handle,
                     image_count,
                     &mut final_count,
-                    d3d_images.as_mut_ptr() as *mut _,
+                    vk_images.as_mut_ptr() as *mut _,
                 )
             } {
                 XrResult::SUCCESS => {}
@@ -642,20 +542,17 @@ impl SwapchainSk {
                 }
             }
             let mut this =
-                Self { xr_comp_layers, handle, width, height, acquired: 0, d3d_images, images: Vec::with_capacity(0) };
+                Self { xr_comp_layers, handle, width, height, acquired: 0, vk_images, images: Vec::with_capacity(0) };
 
-            // Wrap each D3D11 texture into a Tex object
-            for img in &this.d3d_images {
+            // Wrap each Vulkan image into a Tex object
+            for img in &this.vk_images {
                 Log::diag(format!("SwapchainSk: image: {:#?}", img));
-                // let mut image_sk =
-                //     Tex::gen_color(named_colors::BLUE_VIOLET, width, height, TexType::Rendertarget, format);
-                // let mut image_sk = Tex::new(TexType::Rendertarget, format, None);
                 let mut image_sk =
                     Tex::render_target(width as usize, height as usize, Some(1), Some(format), None).unwrap();
 
                 unsafe {
                     image_sk.set_native_surface(
-                        img.texture,
+                        img.image as *mut std::ffi::c_void,
                         TexType::Rendertarget,
                         XrCompLayers::to_native_format(format),
                         width as i32,
@@ -668,7 +565,7 @@ impl SwapchainSk {
             }
             Some(this)
         } else {
-            Log::warn("❌ SwapchainSk: D3D11 backend is not available");
+            Log::warn("❌ SwapchainSk: Vulkan backend is not available");
             None
         }
     }

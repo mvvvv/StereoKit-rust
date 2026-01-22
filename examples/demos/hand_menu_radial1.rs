@@ -5,7 +5,7 @@ use stereokit_rust::{
     mesh::Mesh,
     model::Model,
     prelude::*,
-    system::Renderer,
+    system::{Backend, BackendPlatform, Renderer},
     tex::{SHCubemap, Tex, TexFormat, TexSample},
     tools::{fly_over::ENABLE_FLY_OVER, log_window::SHOW_LOG_WINDOW, screenshot::SHOW_SCREENSHOT_WINDOW},
     util::{
@@ -215,28 +215,31 @@ impl HandMenuRadial1 {
         let cube_default = SHCubemap::get_rendered_sky();
         cube_default.render_as_sky();
 
-        let cube0 = cube_default.clone_ref();
-        let cube1 = cube_default.clone_ref();
+        let mut cube0 = cube_default.clone_ref();
+        let mut cube1 = cube_default.clone_ref();
 
-        // let mut gradient_sky = Gradient::new(None);
-        // gradient_sky
-        //     .add(Color128::BLACK, 0.0)
-        //     .add(BLUE, 0.4)
-        //     .add(LIGHT_BLUE, 0.8)
-        //     .add(LIGHT_CYAN, 0.9)
-        //     .add(WHITE, 1.0);
-        // let cube0 = SHCubemap::gen_cubemap_gradient(gradient_sky, Vec3::Y, 1024);
+        if Backend::platform() != BackendPlatform::Web {
+            Log::warn("Using gradient for cubemap may crash the application");
+        } else {
+            let mut gradient_sky = Gradient::new(None);
+            gradient_sky
+                .add(Color128::BLACK, 0.0)
+                .add(BLUE, 0.4)
+                .add(LIGHT_BLUE, 0.8)
+                .add(LIGHT_CYAN, 0.9)
+                .add(WHITE, 1.0);
+            cube0 = SHCubemap::gen_cubemap_gradient(gradient_sky, Vec3::Y, 1024);
 
-        // let mut gradient = Gradient::new(None);
-        // gradient
-        //     .add(RED, 0.01)
-        //     .add(YELLOW, 0.1)
-        //     .add(LIGHT_CYAN, 0.3)
-        //     .add(LIGHT_BLUE, 0.4)
-        //     .add(BLUE, 0.5)
-        //     .add(BLACK, 0.7);
-        // let cube1 = SHCubemap::gen_cubemap_gradient(&gradient, Vec3::NEG_Z, 1);
-
+            let mut gradient = Gradient::new(None);
+            gradient
+                .add(RED, 0.01)
+                .add(YELLOW, 0.1)
+                .add(LIGHT_CYAN, 0.3)
+                .add(LIGHT_BLUE, 0.4)
+                .add(BLUE, 0.5)
+                .add(BLACK, 0.7);
+            cube1 = SHCubemap::gen_cubemap_gradient(&gradient, Vec3::NEG_Z, 1);
+        }
         let lights: [SHLight; 1] = [SHLight::new(Vec3::ONE, WHITE); 1];
         let sh = SphericalHarmonics::from_lights(&lights);
         let cube2 = SHCubemap::gen_cubemap_sh(sh, 15, 5.0, 0.02);
@@ -253,7 +256,7 @@ impl HandMenuRadial1 {
         //     "hdri/giza/front.png",
         //     "hdri/giza/back.png",
         // ];
-        // let cube4 = SHCubemap::from_cubemap_files(&cubemap_files, true, 0).unwrap_or(SHCubemap::get_rendered_sky());
+        // cube4 = SHCubemap::from_cubemap_files(&cubemap_files, true, 0).unwrap_or(SHCubemap::get_rendered_sky());
 
         // You can also zip the files:
         // ktx create --cubemap --encode uastc  --format R8G8B8A8_UNORM  --assign-oetf linear --assign-primaries bt709

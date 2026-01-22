@@ -476,7 +476,7 @@ pub enum BackendXRType {
 pub enum BackendPlatform {
     /// This is running as a Windows app using the Win32 APIs.
     Win32 = 0,
-    /// This is running as a Windows app using the UWP APIs.
+    /// This is running as a Windows app using the UWP APIs (no longer supported).
     Uwp = 1,
     /// This is running as a Linux app.
     Linux = 2,
@@ -495,19 +495,22 @@ pub enum BackendPlatform {
 pub enum BackendGraphics {
     /// An invalid default value.
     None = 0,
-    /// DirectX’s Direct3D11 is used for rendering! This is used by default on Windows.
+    /// DirectX’s Direct3D11 is used for rendering! This is used by default on Windows. (No longer supported)
     D3D11 = 1,
     /// OpenGL is used for rendering, using GLX (OpenGL Extension to the X Window System) for loading. This is used by
-    /// default on Linux.
+    /// default on Linux. (No longer supported)
     OpenGLGLX = 2,
     /// OpenGL is used for rendering, using WGL (Windows Extensions to OpenGL) for loading. Native developers can
-    /// configure SK to use this on Windows.
+    /// configure SK to use this on Windows. (No longer supported)
     OpenGLWGL = 3,
     /// OpenGL ES is used for rendering, using EGL (EGL Native Platform Graphics Interface) for loading. This is used by
-    /// default on Android, and native developers can configure SK to use this on Linux.
+    /// default on Android, and native developers can configure SK to use this on Linux. (No longer supported)
     OpenGLESEGL = 4,
     /// WebGL is used for rendering. This is used by default on Web.
     WebGL = 5,
+    /// Vulkan is used for rendering, this works basically on every platform, and is the only backend StereoKit
+    /// currently supports!
+    Vulkan = 6,
 }
 
 /// XrInstance type
