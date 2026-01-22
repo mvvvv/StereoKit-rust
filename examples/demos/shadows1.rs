@@ -97,7 +97,7 @@ impl Default for Shadows1 {
             .address_mode(TexAddress::Clamp);
 
         let mut caster_mat = Material::from_file("shaders/basic_shadow_caster.hlsl.sks", None).unwrap_or_default();
-        caster_mat.depth_test(stereokit_rust::material::DepthTest::LessOrEq).depth_clip(false);
+        caster_mat.depth_test(stereokit_rust::material::DepthTest::LessOrEq).depth_clamp(false);
         // This can help with shadow acne if biasing isn't working out, but can introduce peter-panning.
         // caster_mat.face_cull(Cull::Front);
 
@@ -145,7 +145,7 @@ impl Default for Shadows1 {
 impl Shadows1 {
     // Called by derive macro during IStepper::initialize
     fn start(&mut self) -> bool {
-        Renderer::set_global_buffer(12, &self.shadow_buffer);
+        Renderer::set_global_buffer(13, &self.shadow_buffer);
         true
     }
 
@@ -248,7 +248,7 @@ impl Shadows1 {
         };
         self.shadow_buffer.set(&mut shadow_buffer_last);
 
-        Renderer::set_global_texture(token, 12, None);
+        Renderer::set_global_texture(token, 13, None);
         Renderer::render_to(
             token,
             &self.shadow_map,
@@ -260,7 +260,7 @@ impl Shadows1 {
             None,
             None,
         );
-        Renderer::set_global_texture(token, 12, Some(&self.shadow_map));
+        Renderer::set_global_texture(token, 13, Some(&self.shadow_map));
     }
 
     /// Draw the shadow settings UI window

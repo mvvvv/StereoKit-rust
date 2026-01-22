@@ -42,7 +42,7 @@ impl Default for RenderList1 {
         let quad = Mesh::screen_quad();
         let mut list = RenderList::new();
         list.id("PlaneList");
-        let render_tex = Tex::gen_color(BLUE_VIOLET, 128, 128, TexType::Rendertarget, TexFormat::RGBA32);
+        let render_tex = Tex::gen_color(BLUE_VIOLET, 128, 128, TexType::Rendertarget, TexFormat::Rgba32Srgb);
         //let render_tex = Tex::render_target(128, 128, None, None, None).unwrap_or_default();
         let mut render_mat = Material::pbr().copy();
         let model = Model::from_file("plane.glb", None).unwrap();

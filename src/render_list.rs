@@ -31,7 +31,7 @@ use std::{
 /// let model = Model::from_file("plane.glb", None).unwrap().copy();
 ///
 /// let render_tex = Tex::gen_color(Color128::WHITE, 128, 128,
-///                       TexType::Rendertarget, TexFormat::RGBA32);
+///                       TexType::Rendertarget, TexFormat::Rgba32Srgb);
 /// let mut render_mat = Material::unlit().copy();
 /// render_mat.diffuse_tex(&render_tex);
 ///
@@ -308,7 +308,7 @@ impl RenderList {
     ///               Some(RenderLayer::Layer1));
     ///
     /// let render_tex = Tex::gen_color(Color128::WHITE, 128, 128,
-    ///                       TexType::Rendertarget, TexFormat::RGBA32);
+    ///                       TexType::Rendertarget, TexFormat::Rgba32Srgb);
     /// let mut render_mat = Material::unlit().copy();
     /// render_mat.diffuse_tex(&render_tex);
     /// let screen = Mesh::screen_quad();
@@ -384,7 +384,7 @@ impl RenderList {
     ///                Some(RenderLayer::Layer1));
     ///
     /// let render_tex = Tex::gen_color(Color128::WHITE, 128, 128,
-    ///                       TexType::Rendertarget, TexFormat::RGBA32);
+    ///                       TexType::Rendertarget, TexFormat::Rgba32Srgb);
     /// let mut render_mat = Material::unlit().copy();
     /// render_mat.diffuse_tex(&render_tex);
     /// let screen = Mesh::screen_quad();
@@ -469,7 +469,7 @@ impl RenderList {
     /// let cylinder_mat = Material::pbr().copy();
     ///
     /// let render_tex = Tex::gen_color(Color128::WHITE, 128, 128,
-    ///                       TexType::Rendertarget, TexFormat::RGBA32);
+    ///                       TexType::Rendertarget, TexFormat::Rgba32Srgb);
     /// let mut render_mat = Material::unlit().copy();
     /// render_mat.diffuse_tex(&render_tex);
     /// let mut screen = Mesh::generate_cube([1.0, 1.0, 1.0], None);

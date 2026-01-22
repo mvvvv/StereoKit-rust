@@ -120,13 +120,13 @@ impl ScreenshotViewer {
         //     self.picture_size.x as i32,
         //     self.picture_size.y as i32,
         //     TexType::Rendertarget,
-        //     TexFormat::RGBA32,
+        //     TexFormat::Rgba32Srgb,
         // );
         self.tex = Tex::render_target(
             self.picture_size.x as usize,
             self.picture_size.y as usize,
             None,
-            Some(TexFormat::RGBA32),
+            Some(TexFormat::Rgba32Srgb),
             Some(TexFormat::Depth32),
         )
         .unwrap_or_default();
@@ -263,7 +263,7 @@ impl ScreenshotViewer {
                 width_i,
                 height_i,
                 Some(self.field_of_view),
-                Some(TexFormat::RGBA32),
+                Some(TexFormat::Rgba32Srgb),
             );
 
             self.screen = Sprite::from_tex(&self.tex, None, None).ok();

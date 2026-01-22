@@ -98,17 +98,17 @@ impl Default for HandMenuRadial1 {
             .metallic_amount(0.2)
             .face_cull(Cull::Back);
 
-        // fresh water
+        // see water
         let mut sea = Material::from_file("shaders/water_pbr.hlsl.sks", "water_pbr".into()).unwrap_or_default();
         sea.diffuse_tex(&bump_inverse_tex)
             .normal_tex(&bump_tex)
             .occlusion_tex(&bump_inverse_tex)
-            .tex_transform(Vec4::new(0.0, 0.0, 6.0, 6.0))
+            .tex_transform(Vec4::new(0.0, 0.0, 0.01, 0.01))
             .roughness_amount(1.4)
             .metallic_amount(0.6)
             .face_cull(Cull::Back)
             .color_tint(SEA_GREEN)
-            .transparency(Transparency::MSAA)
+            .transparency(Transparency::None)
             .time(5.0);
 
         // fresh water2
@@ -117,7 +117,7 @@ impl Default for HandMenuRadial1 {
             .diffuse_tex(&bump_tile_tex)
             .occlusion_tex(&bump_inverse_tex)
             .normal_tex(&bump_tex)
-            .tex_transform(Vec4::new(0.0, 0.0, 5.0, 5.0))
+            .tex_transform(Vec4::new(0.0, 0.0, 0.01, 0.01))
             .roughness_amount(0.4)
             .metallic_amount(0.6)
             .face_cull(Cull::Back)
@@ -215,24 +215,27 @@ impl HandMenuRadial1 {
         let cube_default = SHCubemap::get_rendered_sky();
         cube_default.render_as_sky();
 
-        let mut gradient_sky = Gradient::new(None);
-        gradient_sky
-            .add(Color128::BLACK, 0.0)
-            .add(BLUE, 0.4)
-            .add(LIGHT_BLUE, 0.8)
-            .add(LIGHT_CYAN, 0.9)
-            .add(WHITE, 1.0);
-        let cube0 = SHCubemap::gen_cubemap_gradient(gradient_sky, Vec3::Y, 1024);
+        let cube0 = cube_default.clone_ref();
+        let cube1 = cube_default.clone_ref();
 
-        let mut gradient = Gradient::new(None);
-        gradient
-            .add(RED, 0.01)
-            .add(YELLOW, 0.1)
-            .add(LIGHT_CYAN, 0.3)
-            .add(LIGHT_BLUE, 0.4)
-            .add(BLUE, 0.5)
-            .add(BLACK, 0.7);
-        let cube1 = SHCubemap::gen_cubemap_gradient(&gradient, Vec3::NEG_Z, 1);
+        // let mut gradient_sky = Gradient::new(None);
+        // gradient_sky
+        //     .add(Color128::BLACK, 0.0)
+        //     .add(BLUE, 0.4)
+        //     .add(LIGHT_BLUE, 0.8)
+        //     .add(LIGHT_CYAN, 0.9)
+        //     .add(WHITE, 1.0);
+        // let cube0 = SHCubemap::gen_cubemap_gradient(gradient_sky, Vec3::Y, 1024);
+
+        // let mut gradient = Gradient::new(None);
+        // gradient
+        //     .add(RED, 0.01)
+        //     .add(YELLOW, 0.1)
+        //     .add(LIGHT_CYAN, 0.3)
+        //     .add(LIGHT_BLUE, 0.4)
+        //     .add(BLUE, 0.5)
+        //     .add(BLACK, 0.7);
+        // let cube1 = SHCubemap::gen_cubemap_gradient(&gradient, Vec3::NEG_Z, 1);
 
         let lights: [SHLight; 1] = [SHLight::new(Vec3::ONE, WHITE); 1];
         let sh = SphericalHarmonics::from_lights(&lights);

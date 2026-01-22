@@ -2435,9 +2435,9 @@ pub struct Mouse {
     pub pos: Vec2,
     /// How much has the mouse’s position changed in the current frame? Measured in pixels.
     pub pos_change: Vec2,
-    /// What’s the current scroll value for the mouse’s scroll wheel? TODO: Units
+    /// What’s the current scroll value for the mouse’s scroll wheel?
     pub scroll: f32,
-    /// How much has the scroll wheel value changed during this frame? TODO: Units
+    /// How much has the scroll wheel value changed during this frame?
     pub scroll_change: f32,
 }
 
@@ -3479,8 +3479,11 @@ impl Input {
 #[derive(Debug, Copy, Clone, PartialEq)]
 #[repr(C)]
 pub struct LinePoint {
+    /// Location of the line point.
     pub pt: Vec3,
+    /// Total thickness of the line, in meters.
     pub thickness: f32,
+    /// The vertex color for the line at this position.
     pub color: Color32,
 }
 
@@ -5059,7 +5062,7 @@ impl Renderer {
     /// * `width` - Size of the screenshot horizontally, in pixels.
     /// * `height`- Size of the screenshot vertically, in pixels
     /// * `field_of_view` - The angle of the viewport, in degrees. If None will use default value of 90°
-    /// * `tex_format` - The pixel format of the color data. If None will use default value of TexFormat::RGBA32
+    /// * `tex_format` - The pixel format of the color data. If None will use default value of TexFormat::Rgba32Srgb
     ///
     /// see also [`render_screenshot_capture`]
     /// ### Examples
@@ -5116,7 +5119,7 @@ impl Renderer {
         tex_format: Option<TexFormat>,
     ) {
         let field_of_view = field_of_view.unwrap_or(90.0);
-        let tex_format = tex_format.unwrap_or(TexFormat::RGBA32);
+        let tex_format = tex_format.unwrap_or(TexFormat::Rgba32Srgb);
         let mut closure = &mut on_screenshot;
         unsafe {
             render_screenshot_capture(
@@ -5152,7 +5155,7 @@ impl Renderer {
     /// * `viewport` - Allows you to specify a region of the rendertarget to draw to! This is in normalized coordinates,
     ///   0-1. If the width of this value is zero, then this will render to the entire texture. If None has default value
     ///   of (0, 0, 0, 0)
-    /// * `tex_format` - The pixel format of the color data. If None will use default value of TexFormat::RGBA32
+    /// * `tex_format` - The pixel format of the color data. If None will use default value of TexFormat::Rgba32Srgb
     ///
     /// see also [`render_screenshot_viewpoint`]
     /// ### Examples
@@ -5168,7 +5171,7 @@ impl Renderer {
     ///
     /// let plane = Mesh::generate_plane_up([1.0,1.0], None, true);
     /// let mut material = Material::unlit().copy();
-    /// let mut tex = Tex::gen_color(named_colors::VIOLET, 200, 200, TexType::Rendertarget, TexFormat::RGBA32);
+    /// let mut tex = Tex::gen_color(named_colors::VIOLET, 200, 200, TexType::Rendertarget, TexFormat::Rgba32Srgb);
     ///
     /// tex.id("CAPTURE_TEXTURE_ID");
     /// material.diffuse_tex(&tex);
@@ -5213,7 +5216,7 @@ impl Renderer {
         viewport: Option<Rect>,
         tex_format: Option<TexFormat>,
     ) {
-        let tex_format = tex_format.unwrap_or(TexFormat::RGBA32);
+        let tex_format = tex_format.unwrap_or(TexFormat::Rgba32Srgb);
         let render_layer = render_layer.unwrap_or(RenderLayer::all());
         let clear = clear.unwrap_or(RenderClear::All);
         let viewport = viewport.unwrap_or_default();
@@ -6038,22 +6041,25 @@ bitflags::bitflags! {
     }
 }
 
-/// Soft keyboard layouts are often specific to the type of text that they’re editing! This enum is a collection of
-/// common text contexts that SK can pass along to the OS’s soft keyboard for a more optimal layout.
-/// <https://stereokit.net/Pages/StereoKit/TextContext.html>
-///
-/// see also [`crate::ui::Ui::input`] [`crate::ui::Ui::input_at`] [`crate::util::Platform::keyboard_show`]
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-#[repr(u32)]
-pub enum TextContext {
-    /// General text editing, this is the most common type of text, and would result in a ‘standard’ keyboard layout.
-    Text = 0,
-    /// Numbers and numerical values.
-    Number = 1,
-    /// This text specifically represents some kind of URL/URI address.
-    Uri = 2,
-    /// This is a password, and should not be visible when typed!
-    Password = 3,
+bitflags::bitflags! {
+    /// Soft keyboard layouts are often specific to the type of text that they're editing! This enum is a collection of
+    /// common text contexts that SK can pass along to the OS's soft keyboard for a more optimal layout.
+    /// <https://stereokit.net/Pages/StereoKit/TextContext.html>
+    ///
+    /// see also [`crate::ui::Ui::input`] [`crate::ui::Ui::input_at`] [`crate::util::Platform::keyboard_show`]
+    #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+    #[repr(C)]
+    pub struct TextContext : u32
+    {
+        /// General text editing, this is the most common type of text, and would result in a 'standard' keyboard layout.
+        const Text = 0;
+        /// Numbers and numerical values.
+        const Number = 1;
+        /// This text specifically represents some kind of URL/URI address.
+        const Uri = 2;
+        /// This is a password, and should not be visible when typed!
+        const Password = 3;
+    }
 }
 
 /// A collection of functions for rendering and working with text. These are a lower level access to text rendering than
@@ -6848,9 +6854,13 @@ impl World {
     /// This method only works on UWP platforms, check Sk.System.perception_bridge_present to see if this is available.
     /// <https://stereokit.net/Pages/StereoKit/World/FromPerceptionAnchor.html>
     ///
+    /// # Safety
+    ///
+    /// The `perception_spatial_anchor` pointer must be a valid pointer to a `Windows.Perception.Spatial.SpatialAnchor` object.
+    ///
     /// see also [world_from_perception_anchor]
-    #[allow(clippy::not_unsafe_ptr_arg_deref)]
-    pub fn from_perception_anchor(perception_spatial_anchor: *mut c_void) -> Option<Pose> {
+    #[deprecated(since = "0.40.0", note = "UWP is no longer supported")]
+    pub unsafe fn from_perception_anchor(perception_spatial_anchor: *mut c_void) -> Option<Pose> {
         let mut pose = Pose::IDENTITY;
         if unsafe { world_try_from_perception_anchor(perception_spatial_anchor, &mut pose) != 0 } {
             Some(pose)
@@ -6858,7 +6868,6 @@ impl World {
             None
         }
     }
-    // TODO : Ask for the non try version
 
     /// Converts a Windows Mirage spatial node GUID into a Pose based on its current position and rotation! Check
     /// Sk::System::spatial_bridge_present to see if this is available to use. Currently only on HoloLens, good for use

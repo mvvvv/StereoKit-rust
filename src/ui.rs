@@ -14,22 +14,25 @@ use std::{
     ptr::{NonNull, null_mut},
 };
 
+bitflags::bitflags! {
 /// A description of what type of window to draw! This is a bit flag, so it can contain multiple elements.
 /// <https://stereokit.net/Pages/StereoKit/UIWin.html>
 ///
 /// see [`Ui::window_begin`]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(u32)]
-pub enum UiWin {
+#[repr(C)]
+pub struct UiWin : u32
+{
     /// No body, no head. Not really a flag, just set to this value. The Window will still be grab/movable. To prevent
     /// it from being grabbable, combine with the UIMove.None option, or switch to Ui::(push/pop)_surface.
-    Empty = 1,
+    const Empty = 1;
     /// Flag to include a head on the window.
-    Head = 2,
+    const Head = 2;
     /// Flag to include a body on the window.
-    Body = 4,
+    const Body = 4;
     /// A normal window has a head and a body to it. Both can be grabbed.
-    Normal = 6,
+    const Normal = Self::Head.bits() | Self::Body.bits();
+}
 }
 
 /// This describes how a UI element moves when being dragged around by a user!
@@ -184,22 +187,25 @@ pub enum UiNotify {
     Finalize = 1,
 }
 
+bitflags::bitflags! {
 /// This is a bit flag that describes different types and combinations of gestures used within the UI system.
 /// <https://stereokit.net/Pages/StereoKit/UIGesture.html>
 ///
-/// see [`Ui::handle`]  [`Ui::handle_begin`]  
+/// see [`Ui::handle`]  [`Ui::handle_begin`]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(u32)]
-pub enum UiGesture {
+#[repr(C)]
+pub struct UiGesture : u32
+{
     /// Default zero state, no gesture at all.
-    None = 0,
+    const None = 0;
     /// A pinching action, calculated by taking the distance between the tip of the thumb and the index finger.
-    Pinch = 1,
+    const Pinch = 1;
     /// A gripping or grasping motion meant to represent a full hand grab. This is calculated using the distance between
     /// the root and the tip of the ring finger.
-    Grip = 2,
+    const Grip = 2;
     /// This is a bit flag combination of both Pinch and Grip.
-    PinchGrip = 3,
+    const PinchGrip = Self::Pinch.bits() | Self::Grip.bits();
+}
 }
 
 /// <https://stereokit.net/Pages/StereoKit/UIPad.html>
@@ -526,20 +532,20 @@ pub type IdHashT = u64;
 
 #[derive(Default, Debug, Copy, Clone)]
 #[repr(C)]
-/// Visual properties of a slider behavior.
+/// Data about a UI slider element's current interaction state. Provided by the ui_slider_behavior function.
 /// <https://stereokit.net/Pages/StereoKit/UISliderData.html>
 ///
 /// see [`Ui::slider_behavior`]
 pub struct UiSliderData {
-    /// The center location of where the slider's interactionelement is.
+    /// The center of the slider button in window-relative coordinates.
     pub button_center: Vec2,
-    /// The current distance of the finger, within the pressable volume of the slider, from the bottom of the slider
+    /// How far the finger is pressing into the slider, in meters.
     pub finger_offset: f32,
-    /// This is the current frame's "focus" state for the button.
+    /// The current focus state of the slider.
     pub focus_state: BtnState,
-    /// This is the current frame's "active" state for the button.
+    /// The current active/pressed state of the slider.
     pub active_state: BtnState,
-    /// The interactor that is currently driving the activity or focus of the slider. Or -1 if there is no interaction.
+    /// The id of the interactor that is interacting with this slider, or -1 if none.
     pub interactor: i32,
 }
 
@@ -599,15 +605,15 @@ pub struct UiSliderData {
 pub struct Ui;
 
 unsafe extern "C" {
-    pub fn ui_quadrant_size_verts(ref_vertices: *mut Vertex, vertex_count: i32, overflow_percent: f32);
-    pub fn ui_quadrant_size_mesh(ref_mesh: MeshT, overflow_percent: f32);
+    pub fn ui_quadrant_size_verts(ref_arr_vertices: *mut Vertex, vertex_count: i32, overflow_percent: f32);
+    pub fn ui_quadrant_size_mesh(mesh: MeshT, overflow_percent: f32);
     pub fn ui_gen_quadrant_mesh(
         rounded_corners: UiCorner,
         corner_radius: f32,
         corner_resolution: u32,
         delete_flat_sides: Bool32T,
         quadrantify: Bool32T,
-        lathe_pts: *const UiLathePt,
+        in_arr_lathe_pts: *const UiLathePt,
         lathe_pt_count: i32,
     ) -> MeshT;
     pub fn ui_show_volumes(show: Bool32T);

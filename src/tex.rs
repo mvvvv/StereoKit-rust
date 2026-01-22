@@ -68,73 +68,204 @@ pub enum TexFormat {
     /// Red/Green/Blue/Transparency data channels, at 8 bits per-channel in sRGB color space. This is what you'll
     /// want most of the time you're dealing with color images! Matches well with the Color32 struct! If you're
     /// storing normals, rough/metal, or anything else, use Rgba32Linear.
-    RGBA32 = 1,
+    Rgba32Srgb = 1,
     /// Red/Green/Blue/Transparency data channels, at 8 bits per-channel in linear color space. This is what you'll
     /// want most of the time you're dealing with color data! Matches well with the Color32 struct.
-    RGBA32Linear = 2,
+    Rgba32Linear = 2,
     /// Blue/Green/Red/Transparency data channels, at 8 bits per-channel in sRGB color space. This is a common swapchain
-    /// format  on Windows.
-    BGRA32 = 3,
+    /// format on Windows.
+    Bgra32Srgb = 3,
     /// Blue/Green/Red/Transparency data channels, at 8 bits per-channel in linear color space. This is a common
     /// swapchain format on Windows.
-    BGRA32Linear = 4,
+    Bgra32Linear = 4,
     /// Red/Green/Blue data channels, with 11 bits for R and G, and 10 bits for blue. This is a great presentation format
     /// for high bit depth displays that still fits in 32 bits! This format has no alpha channel.
-    RG11B10 = 5,
+    Rg11b10 = 5,
     /// Red/Green/Blue/Transparency data channels, with 10 bits for R, G, and B, and 2 for alpha. This is a great
     /// presentation format for high bit depth displays that still fits in 32 bits, and also includes at least a bit of
     /// transparency!
-    RGB10A2 = 6,
+    Rgb10a2 = 6,
     /// Red/Green/Blue/Transparency data channels, at 16 bits per-channel! This is not common, but you might encounter
-    /// it with raw photos, or HDR images.  The u postfix indicates that the raw color data is stored as an unsigned
-    /// 16 bit integer, which is then normalized into the 0, 1 floating point range on the GPU.
-    RGBA64U = 7,
+    /// it with raw photos, or HDR images. TODO: remove during major version update, prefer s, f, or u postfixed versions
+    /// of this format.
+    Rgba64 = 7,
     /// Red/Green/Blue/Transparency data channels, at 16 bits per-channel! This is not common, but you might encounter
     /// it with raw photos, or HDR images. The s postfix indicates that the raw color data is stored as a signed 16 bit
     /// integer, which is then normalized into the -1, +1 floating point range on the GPU.
-    RGBA64S = 8,
+    Rgba64s = 8,
     /// Red/Green/Blue/Transparency data channels, at 16 bits per-channel! This is not common, but you might encounter
     /// it with raw photos, or HDR images. The f postfix indicates that the raw color data is stored as 16 bit floats,
     /// which may be tricky to work with in most languages.
-    RGBA64F = 9,
+    Rgba64f = 9,
     /// Red/Green/Blue/Transparency data channels at 32 bits per-channel! Basically 4 floats per color, which is bonkers
     /// expensive. Don't use this unless you know -exactly- what you're doing.
-    RGBA128 = 10,
+    Rgba128 = 10,
     /// A single channel of data, with 8 bits per-pixel! This can be great when you're only using one channel, and want
     /// to reduce memory usage. Values in the shader are always 0.0-1.0.
     R8 = 11,
     /// A single channel of data, with 16 bits per-pixel! This is a good format for height maps, since it stores a fair
-    /// bit of information in it. Values in the shader are always 0.0-1.0.
-    /// TODO: remove during major version update, prefer s, f, or u postfixed versions of this format, this item is the
-    /// same as  r16u.
-    //R16 = 12,
+    /// bit of information in it. The "un" postfix indicates "unsigned normalized", where the raw color data is stored
+    /// as an unsigned 16 bit integer, which is then normalized into the 0, 1 floating point range on the GPU.
+    R16un = 12,
     /// A single channel of data, with 16 bits per-pixel! This is a good format for height maps, since it stores a fair
-    /// bit of information in it. The u postfix indicates that the raw color data is stored as an unsigned 16 bit
-    /// integer, which is then normalized into the 0, 1 floating point range on the GPU.
-    R16u = 12,
-    /// A single channel of data, with 16 bits per-pixel! This is a good format for height maps, since it stores a fair
-    /// bit of information in it. The s postfix indicates that the raw color data is stored as a signed 16 bit integer,
-    /// which is then normalized into the -1, +1 floating point range on the GPU.
-    R16s = 13,
+    /// bit of information in it. The "sn" postfix indicates "signed normalized", where the raw color data is stored as
+    /// a signed 16 bit integer, which is then normalized into the -1, +1 floating point range on the GPU.
+    R16sn = 13,
+    /// A single channel of data, with 16 bits per-pixel! This is a good format for index or id data, since it stores
+    /// values as raw unsigned integers. The "ui" postfix indicates "unsigned integer", where the data is stored and
+    /// accessed as an unsigned 16 bit integer without any normalization.
+    R16ui = 14,
+    /// A single channel of data, with 16 bits per-pixel! This is a good format for index or id data, since it stores
+    /// values as raw signed integers. The "si" postfix indicates "signed integer", where the data is stored and accessed
+    /// as a signed 16 bit integer without any normalization.
+    R16si = 15,
     /// A single channel of data, with 16 bits per-pixel! This is a good format for height maps, since it stores a fair
     /// bit of information in it. The f postfix indicates that the raw color data is stored as 16 bit floats, which may
     /// be tricky to work with in most languages.
-    R16f = 14,
+    R16f = 16,
     /// A single channel of data, with 32 bits per-pixel! This basically treats each pixel as a generic float, so you
     /// can do all sorts of strange and interesting things with this.
-    R32 = 15,
+    R32f = 17,
     /// A depth data format, 24 bits for depth data, and 8 bits to store stencil information! Stencil data can be used
     /// for things like clipping effects, deferred rendering, or shadow effects.
-    DepthStencil = 16,
+    Depth24s8 = 18,
     /// 32 bits of data per depth value! This is pretty detailed, and is excellent for experiences that have a very far
     /// view distance.
-    Depth32 = 17,
+    Depth32 = 19,
     /// 16 bits of depth is not a lot, but it can be enough if your far clipping plane is pretty close. If you're seeing
     /// lots of flickering where two objects overlap, you either need to bring your far clip in, or switch to 32/24 bit
     /// depth.
-    Depth16 = 18,
+    Depth16 = 20,
     /// A double channel of data that supports 8 bits for the red channel and 8 bits for the green channel.
-    R8G8 = 19,
+    R8g8 = 21,
+    /// A shared exponent format with 9 bits each for R, G, B, and 5 bits for the shared exponent. This is a compact HDR
+    /// format.
+    Rgb9e5 = 22,
+    /// A depth data format with 32 bits for depth and 8 bits for stencil. The extra stencil bits provide more precision
+    /// than depth24s8 while still offering stencil support.
+    Depth32s8 = 23,
+    /// A depth data format with 16 bits for depth and 8 bits for stencil. This is a more compact depth-stencil format.
+    Depth16s8 = 24,
+    /// BC1/DXT1 block compression with sRGB color. 4 bits per pixel, great for opaque textures on desktop/console GPUs.
+    Bc1RgbSrgb = 25,
+    /// BC1/DXT1 block compression, linear color. 4 bits per pixel, great for opaque textures on desktop/console GPUs.
+    Bc1Rgb = 26,
+    /// BC3/DXT5 block compression with sRGB color. 8 bits per pixel, good for textures with alpha on desktop/console GPUs.
+    Bc3RgbaSrgb = 27,
+    /// BC3/DXT5 block compression, linear color. 8 bits per pixel, good for textures with alpha on desktop/console GPUs.
+    Bc3Rgba = 28,
+    /// BC4 single-channel block compression. 4 bits per pixel, ideal for grayscale textures like heightmaps on
+    /// desktop/console GPUs.
+    Bc4R = 29,
+    /// BC5 two-channel block compression. 8 bits per pixel, commonly used for normal maps on desktop/console GPUs.
+    Bc5Rg = 30,
+    /// BC7 high-quality block compression with sRGB color. 8 bits per pixel, best quality for color textures on
+    /// desktop/console GPUs.
+    Bc7RgbaSrgb = 31,
+    /// BC7 high-quality block compression, linear color. 8 bits per pixel, best quality for color textures on
+    /// desktop/console GPUs.
+    Bc7Rgba = 32,
+    /// ETC1 compression for RGB, widely supported on older Android devices. 4 bits per pixel, no alpha support.
+    Etc1Rgb = 33,
+    /// ETC2 compression with sRGB color and alpha. 8 bits per pixel, standard on OpenGL ES 3.0+ mobile devices.
+    Etc2RgbaSrgb = 34,
+    /// ETC2 compression with linear color and alpha. 8 bits per pixel, standard on OpenGL ES 3.0+ mobile devices.
+    Etc2Rgba = 35,
+    /// ETC2 single-channel compression. 4 bits per pixel, good for grayscale data on mobile.
+    Etc2R11 = 36,
+    /// ETC2 two-channel compression. 8 bits per pixel, useful for normal maps on mobile.
+    Etc2Rg11 = 37,
+    /// PVRTC1 RGB compression with sRGB color. 4 bits per pixel, supported on iOS and PowerVR GPUs.
+    Pvrtc1RgbSrgb = 38,
+    /// PVRTC1 RGB compression, linear color. 4 bits per pixel, supported on iOS and PowerVR GPUs.
+    Pvrtc1Rgb = 39,
+    /// PVRTC1 RGBA compression with sRGB color. 4 bits per pixel, supported on iOS and PowerVR GPUs.
+    Pvrtc1RgbaSrgb = 40,
+    /// PVRTC1 RGBA compression, linear color. 4 bits per pixel, supported on iOS and PowerVR GPUs.
+    Pvrtc1Rgba = 41,
+    /// PVRTC2 RGBA compression with sRGB color. 4 bits per pixel, improved quality over PVRTC1 on PowerVR GPUs.
+    Pvrtc2RgbaSrgb = 42,
+    /// PVRTC2 RGBA compression, linear color. 4 bits per pixel, improved quality over PVRTC1 on PowerVR GPUs.
+    Pvrtc2Rgba = 43,
+    /// ASTC 4x4 block compression with sRGB color. 8 bits per pixel, high quality format supported on modern mobile GPUs.
+    Astc4x4RgbaSrgb = 44,
+    /// ASTC 4x4 block compression, linear color. 8 bits per pixel, high quality format supported on modern mobile GPUs.
+    Astc4x4Rgba = 45,
+    /// ATC RGB compression for Qualcomm Adreno GPUs. 4 bits per pixel, found on many Android devices.
+    AtcRgb = 46,
+    /// ATC RGBA compression for Qualcomm Adreno GPUs. 8 bits per pixel, found on many Android devices.
+    AtcRgba = 47,
+}
+
+impl TexFormat {
+    /// Alias for Rgba32Srgb for backwards compatibility.
+    #[deprecated(since = "0.0.0", note = "Use Rgba32Srgb instead")]
+    pub const RGBA32: Self = Self::Rgba32Srgb;
+
+    /// Alias for Rgba32Linear for backwards compatibility.
+    #[deprecated(since = "0.0.0", note = "Use Rgba32Linear instead")]
+    #[allow(non_upper_case_globals)]
+    pub const RGBA32Linear: Self = Self::Rgba32Linear;
+
+    /// Alias for Bgra32Srgb for backwards compatibility.
+    #[deprecated(since = "0.0.0", note = "Use Bgra32Srgb instead")]
+    pub const BGRA32: Self = Self::Bgra32Srgb;
+
+    /// Alias for Bgra32Linear for backwards compatibility.
+    #[deprecated(since = "0.0.0", note = "Use Bgra32Linear instead")]
+    #[allow(non_upper_case_globals)]
+    pub const BGRA32Linear: Self = Self::Bgra32Linear;
+
+    /// Alias for Rg11b10 for backwards compatibility.
+    #[deprecated(since = "0.0.0", note = "Use Rg11b10 instead")]
+    pub const RG11B10: Self = Self::Rg11b10;
+
+    /// Alias for Rgb10a2 for backwards compatibility.
+    #[deprecated(since = "0.0.0", note = "Use Rgb10a2 instead")]
+    pub const RGB10A2: Self = Self::Rgb10a2;
+
+    /// Alias for Rgba64 for backwards compatibility.
+    #[deprecated(since = "0.0.0", note = "Use Rgba64 instead")]
+    pub const RGBA64U: Self = Self::Rgba64;
+
+    /// Alias for Rgba64s for backwards compatibility.
+    #[deprecated(since = "0.0.0", note = "Use Rgba64s instead")]
+    pub const RGBA64S: Self = Self::Rgba64s;
+
+    /// Alias for Rgba64f for backwards compatibility.
+    #[deprecated(since = "0.0.0", note = "Use Rgba64f instead")]
+    pub const RGBA64F: Self = Self::Rgba64f;
+
+    /// Alias for Rgba128 for backwards compatibility.
+    #[deprecated(since = "0.0.0", note = "Use Rgba128 instead")]
+    pub const RGBA128: Self = Self::Rgba128;
+
+    /// Alias for R8g8 for backwards compatibility.
+    #[deprecated(since = "0.0.0", note = "Use R8g8 instead")]
+    pub const R8G8: Self = Self::R8g8;
+
+    /// Alias for R32f for backwards compatibility.
+    #[deprecated(since = "0.0.0", note = "Use R32f instead")]
+    pub const R32: Self = Self::R32f;
+
+    /// Alias for Depth24s8 for backwards compatibility.
+    #[deprecated(since = "0.0.0", note = "Use Depth24s8 instead")]
+    #[allow(non_upper_case_globals)]
+    pub const DepthStencil: Self = Self::Depth24s8;
+
+    /// Alias for R16un for backwards compatibility.
+    #[deprecated(since = "0.0.0", note = "Use R16un instead")]
+    pub const R16: Self = Self::R16un;
+
+    /// Alias for R16un for backwards compatibility.
+    #[deprecated(since = "0.0.0", note = "Use R16un instead")]
+    #[allow(non_upper_case_globals)]
+    pub const R16u: Self = Self::R16un;
+
+    /// Alias for R16sn for backwards compatibility.
+    #[deprecated(since = "0.0.0", note = "Use R16sn instead")]
+    #[allow(non_upper_case_globals)]
+    pub const R16s: Self = Self::R16sn;
 }
 
 /// How does the shader grab pixels from the texture? Or more
@@ -158,33 +289,32 @@ pub enum TexSample {
     Anisotropic = 2,
 }
 
-/// How does the GPU compare sampled values against existing texture data? This is mostly useful for depth textures
-/// where the hardware can do a comparison (ex: shadow map lookups) as part of the sampling operation. Default is
-/// None, which means no comparison test is performed.
-/// These map directly to the native `tex_sample_comp_` values.
+/// When sampling from a texture with comparison enabled, the sampler compares the sampled texel value against a
+/// reference value and returns a 0 or 1 based on the result. This is primarily useful for shadow mapping techniques,
+/// where a depth texture is sampled to determine if a surface is in shadow.
 /// <https://stereokit.net/Pages/StereoKit/TexSampleComp.html>
 ///
 /// see also [`Tex`]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u32)]
 pub enum TexSampleComp {
-    /// No comparison test; returns the raw sampled value.
+    /// No comparison is performed, the texture is sampled normally. This is the default behavior for most textures.
     None = 0,
-    /// Passes if sampled value is less than the reference.
+    /// Returns 1 if the reference value is less than the sampled texel value.
     Less = 1,
-    /// Passes if sampled value is less than or equal to the reference.
+    /// Returns 1 if the reference value is less than or equal to the sampled texel value.
     LessOrEq = 2,
-    /// Passes if sampled value is greater than the reference.
+    /// Returns 1 if the reference value is greater than the sampled texel value.
     Greater = 3,
-    /// Passes if sampled value is greater than or equal to the reference.
+    /// Returns 1 if the reference value is greater than or equal to the sampled texel value.
     GreaterOrEq = 4,
-    /// Passes if sampled value equals the reference.
+    /// Returns 1 if the reference value is equal to the sampled texel value.
     Equal = 5,
-    /// Passes if sampled value does not equal the reference.
+    /// Returns 1 if the reference value is not equal to the sampled texel value.
     NotEqual = 6,
-    /// Always passes (effectively disables depth based rejection, but still channels through comparison hardware).
+    /// Always returns 1, regardless of values.
     Always = 7,
-    /// Never passes.
+    /// Always returns 0, regardless of values.
     Never = 8,
 }
 
@@ -223,11 +353,11 @@ pub enum TexAddress {
 /// let tex_left = Tex::from_file("textures/open_gltf.jpeg", true, None)
 ///                    .expect("tex_left should be created");
 ///
-/// let mut tex_right = Tex::gen_color(named_colors::RED, 1, 1, TexType::Image, TexFormat::RGBA32);
+/// let mut tex_right = Tex::gen_color(named_colors::RED, 1, 1, TexType::Image, TexFormat::Rgba32Srgb);
 ///
 /// let mut tex_back = Tex::gen_particle(128, 128, 0.2, None);
 ///
-/// let mut tex_floor = Tex::new(TexType::Image, TexFormat::RGBA32, None);
+/// let mut tex_floor = Tex::new(TexType::Image, TexFormat::Rgba32Srgb, None);
 ///
 /// let plane_mesh = Mesh::generate_plane_up([1.0,1.0], None, true);
 /// let material_left  = Material::pbr().tex_copy(tex_left);
@@ -318,7 +448,6 @@ unsafe extern "C" {
         height: i32,
         surface_count: i32,
         multisample: i32,
-        framebuffer_multisample: i32,
         owned: Bool32T,
     );
     pub fn tex_get_surface(texture: TexT) -> *mut c_void;
@@ -355,7 +484,7 @@ unsafe extern "C" {
     pub fn tex_add_zbuffer(texture: TexT, format: TexFormat);
     pub fn tex_set_zbuffer(texture: TexT, depth_texture: TexT);
     pub fn tex_get_zbuffer(texture: TexT) -> TexT;
-    pub fn tex_get_data(texture: TexT, out_data: *mut c_void, out_data_size: usize, mip_level: i32);
+    pub fn tex_get_data(texture: TexT, out_data: *mut c_void, data_size: usize, mip_level: i32);
     pub fn tex_gen_color(color: Color128, width: i32, height: i32, type_: TexType, format: TexFormat) -> TexT;
     pub fn tex_gen_particle(width: i32, height: i32, roundness: f32, gradient_linear: GradientT) -> TexT;
     pub fn tex_gen_cubemap(
@@ -423,7 +552,7 @@ impl Tex {
     /// let plane_mesh = Mesh::generate_plane_up([1.0,1.0], None, true);
     ///
     /// let mut color_dots = [named_colors::CYAN; 128 * 128];
-    /// let mut tex_left = Tex::new(TexType::Image, TexFormat::RGBA32, Some("tex_left_ID"));
+    /// let mut tex_left = Tex::new(TexType::Image, TexFormat::Rgba32Srgb, Some("tex_left_ID"));
     /// tex_left.set_colors32(128, 128, &color_dots);
     ///
     /// let mut color_dots = [Color128::new(0.5, 0.75, 0.25, 1.0); 128 * 128];
@@ -761,7 +890,7 @@ impl Tex {
     ///
     /// let plane_mesh = Mesh::generate_plane_up([1.0,1.0], None, true);
     ///
-    /// let tex = Tex::render_target(128, 128, Some(2), Some(TexFormat::RGBA32), None)
+    /// let tex = Tex::render_target(128, 128, Some(2), Some(TexFormat::Rgba32Srgb), None)
     ///                            .expect("Tex should be created");
     ///
     /// let material  = Material::pbr().tex_copy(&tex);
@@ -778,7 +907,7 @@ impl Tex {
         depth_format: Option<TexFormat>,
     ) -> Result<Tex, StereoKitError> {
         let multisample = multisample.unwrap_or(1);
-        let color_format = color_format.unwrap_or(TexFormat::RGBA32);
+        let color_format = color_format.unwrap_or(TexFormat::Rgba32Srgb);
         let depth_format = depth_format.unwrap_or(TexFormat::Depth16);
         Ok(Tex(NonNull::new(unsafe {
             tex_create_rendertarget(width as i32, height as i32, multisample, color_format, depth_format)
@@ -809,7 +938,7 @@ impl Tex {
     ///
     /// let plane_mesh = Mesh::generate_plane_up([1.0,1.0], None, true);
     ///
-    /// let tex_err = Tex::gen_color(named_colors::RED, 128, 128, TexType::Image, TexFormat::RGBA32);
+    /// let tex_err = Tex::gen_color(named_colors::RED, 128, 128, TexType::Image, TexFormat::Rgba32Srgb);
     /// Tex::set_error_fallback(&tex_err);
     ///
     /// let tex =  Tex::gen_color(Color128::new(0.1, 0.2, 0.5, 1.0), 128, 128, TexType::Image, TexFormat::RGBA128);
@@ -909,10 +1038,10 @@ impl Tex {
     /// use stereokit_rust::{maths::{Vec3, Matrix}, util::{named_colors, Color128},
     ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
     ///
-    /// let tex_loading = Tex::gen_color(named_colors::GREEN, 128, 128, TexType::Image, TexFormat::RGBA32);
+    /// let tex_loading = Tex::gen_color(named_colors::GREEN, 128, 128, TexType::Image, TexFormat::Rgba32Srgb);
     /// Tex::set_loading_fallback(&tex_loading);
     ///
-    /// let tex = Tex::new(TexType::Image, TexFormat::RGBA32, None);
+    /// let tex = Tex::new(TexType::Image, TexFormat::Rgba32Srgb, None);
     /// let material  = Material::pbr().tex_copy(tex);
     /// let plane_mesh = Mesh::generate_plane_up([1.0,1.0], None, true);
     /// let transform_floor = Matrix::t(  [0.0, -0.5, 0.0]);
@@ -936,7 +1065,7 @@ impl Tex {
     /// use stereokit_rust::{maths::{Vec3, Matrix}, util::{named_colors, Color128},
     ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
     ///
-    /// let tex_err = Tex::gen_color(named_colors::RED, 128, 128, TexType::Image, TexFormat::RGBA32);
+    /// let tex_err = Tex::gen_color(named_colors::RED, 128, 128, TexType::Image, TexFormat::Rgba32Srgb);
     /// Tex::set_error_fallback(&tex_err);
     ///
     /// let tex = Tex::from_file("file that doesn't exist", true, None)
@@ -964,7 +1093,7 @@ impl Tex {
     /// use stereokit_rust::{maths::{Vec3, Matrix}, util::{named_colors, Color128},
     ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
     ///
-    /// let mut tex_blue = Tex::gen_color(named_colors::BLUE, 1, 1, TexType::Image, TexFormat::RGBA32);
+    /// let mut tex_blue = Tex::gen_color(named_colors::BLUE, 1, 1, TexType::Image, TexFormat::Rgba32Srgb);
     /// assert!(tex_blue.get_id().starts_with("auto/tex_"));
     /// tex_blue.id("my_tex_blue");
     /// let same_tex_blue = Tex::find("my_tex_blue").expect("my_tex_blue should be found");
@@ -984,10 +1113,14 @@ impl Tex {
         ))
     }
 
-    /// Get a copy of the texture
+    /// Copy the current texture into a new texture, with the option to convert it to a different format or type! This
+    /// is a GPU blit operation, so the source texture does not need to be readable from the CPU. If the source texture
+    /// doesn't have mip-maps but the destination type does, they'll be generated for you!
     /// <https://stereokit.net/Pages/StereoKit/Tex.html>
-    /// * `tex_type` - Type of the copy. If None has default value of TexType::Image.
-    /// * `tex_format` - Format of the copy - If None has default value of TexFormat::None.
+    /// * `tex_type` - What type of texture should the new texture be? Image types with mip-maps will have mips
+    ///   generated for them if the source doesn't have them. If None has default value of TexType::Image.
+    /// * `tex_format` - What format should the new texture be in? If None is specified, the new texture will use the
+    ///   same format as the source (TexFormat::None).
     ///
     /// see also [`tex_copy`]
     /// ### Examples
@@ -998,9 +1131,9 @@ impl Tex {
     ///
     ///
     /// let tex_blue = Tex::gen_color(Color32::new(64, 32, 255, 255), 1, 1,
-    ///                               TexType::Image, TexFormat::RGBA32Linear);
+    ///                               TexType::Image, TexFormat::Rgba32SrgbLinear);
     ///
-    /// let tex_copy = tex_blue.copy(None, Some(TexFormat::RGBA32))
+    /// let tex_copy = tex_blue.copy(None, Some(TexFormat::Rgba32Srgb))
     ///                             .expect("copy should be done");
     /// let mut color_data = [Color32::WHITE; 1];
     /// assert!(tex_copy.get_color_data::<Color32>(&mut color_data, 0));
@@ -1032,7 +1165,7 @@ impl Tex {
     /// use stereokit_rust::{maths::{Vec3, Matrix}, util::{named_colors, Color128},
     ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
     ///
-    /// let mut tex_blue = Tex::gen_color(named_colors::BLUE, 1, 1, TexType::Image, TexFormat::RGBA32);
+    /// let mut tex_blue = Tex::gen_color(named_colors::BLUE, 1, 1, TexType::Image, TexFormat::Rgba32Srgb);
     /// assert!(tex_blue.get_id().starts_with("auto/tex_"));
     /// let same_tex_blue = tex_blue.clone_ref();
     /// assert_eq!(tex_blue, same_tex_blue);
@@ -1057,7 +1190,7 @@ impl Tex {
     /// use stereokit_rust::{maths::{Vec3, Matrix}, util::{named_colors, Color128},
     ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
     ///
-    /// let mut tex_blue = Tex::gen_color(named_colors::BLUE, 1, 1, TexType::Image, TexFormat::RGBA32);
+    /// let mut tex_blue = Tex::gen_color(named_colors::BLUE, 1, 1, TexType::Image, TexFormat::Rgba32Srgb);
     /// assert!(tex_blue.get_id().starts_with("auto/tex_"));
     /// tex_blue.id("my_tex_blue");
     /// assert_eq!(tex_blue.get_id(), "my_tex_blue");
@@ -1088,7 +1221,7 @@ impl Tex {
     ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
     ///
     ///
-    /// let mut tex = Tex::render_target(128, 128, Some(2), Some(TexFormat::RGBA32),
+    /// let mut tex = Tex::render_target(128, 128, Some(2), Some(TexFormat::Rgba32Srgb),
     ///                                  Some(TexFormat::None))
     ///                            .expect("Tex should be created");
     /// assert_eq!(tex.get_zbuffer(), None);
@@ -1129,7 +1262,7 @@ impl Tex {
     ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
     ///
     /// let image_data = std::include_bytes!("../assets/textures/open_gltf.jpeg");
-    /// let mut tex = Tex::new(TexType::Image, TexFormat::RGBA32, None);
+    /// let mut tex = Tex::new(TexType::Image, TexFormat::Rgba32Srgb, None);
     ///
     /// tex.set_memory(image_data, true, false, Some(0));
     ///
@@ -1179,7 +1312,7 @@ impl Tex {
     ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
     ///
     /// let mut color_dots = [named_colors::CYAN; 16 * 16];
-    /// let mut tex = Tex::new(TexType::Image, TexFormat::RGBA32, None);
+    /// let mut tex = Tex::new(TexType::Image, TexFormat::Rgba32Srgb, None);
     ///
     /// unsafe { tex.set_colors(16, 16, color_dots.as_mut_ptr() as *mut std::os::raw::c_void); }
     ///
@@ -1212,7 +1345,7 @@ impl Tex {
     ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
     ///
     /// let mut color_dots = [named_colors::CYAN; 16 * 16];
-    /// let mut tex = Tex::new(TexType::Image, TexFormat::RGBA32, None);
+    /// let mut tex = Tex::new(TexType::Image, TexFormat::Rgba32Srgb, None);
     ///
     /// tex.set_colors32(16, 16, &color_dots);
     ///
@@ -1222,8 +1355,8 @@ impl Tex {
     /// ```
     pub fn set_colors32(&mut self, width: usize, height: usize, data: &[Color32]) -> &mut Self {
         match self.get_format() {
-            Some(TexFormat::RGBA32) => (),
-            Some(TexFormat::RGBA32Linear) => (),
+            Some(TexFormat::Rgba32Srgb) => (),
+            Some(TexFormat::Rgba32Linear) => (),
             Some(_) => {
                 Log::err(format!(
                     "The format of the texture {} is not compatible with Tex::set_colors32",
@@ -1283,7 +1416,7 @@ impl Tex {
     /// ```
     pub fn set_colors128(&mut self, width: usize, height: usize, data: &[Color128]) -> &mut Self {
         match self.get_format() {
-            Some(TexFormat::RGBA128) => (),
+            Some(TexFormat::Rgba128) => (),
             Some(_) => {
                 Log::err(format!(
                     "The format of the texture {} is not compatible with Tex::set_colors128",
@@ -1393,7 +1526,7 @@ impl Tex {
     ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
     ///
     /// let mut color_dots = [127u8; 16 * 16 * 4];
-    /// let mut tex = Tex::new(TexType::Image, TexFormat::RGBA32, None);
+    /// let mut tex = Tex::new(TexType::Image, TexFormat::Rgba32Srgb, None);
     ///
     /// tex.set_colors_u8(16, 16, &color_dots, 4);
     ///
@@ -1420,7 +1553,7 @@ impl Tex {
     }
 
     /// Set the texture’s pixels using a scalar array for channel R ! This function should only be called on textures
-    /// with a format of R16u. You can call this as many times as you’d like, even with different widths and heights.
+    /// with a format of R16un. You can call this as many times as you’d like, even with different widths and heights.
     /// Calling this multiple times will mark it as dynamic on the graphics card. Calling this function can also result
     /// in building mip-maps, which has a non-zero cost: use TexType.ImageNomips when creating the Tex to avoid this.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetColors.html>
@@ -1439,7 +1572,7 @@ impl Tex {
     ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
     ///
     /// let mut color_dots = [256u16; 16 * 16];
-    /// let mut tex = Tex::new(TexType::Image, TexFormat::R16u, None);
+    /// let mut tex = Tex::new(TexType::Image, TexFormat::R16un, None);
     ///
     /// tex.set_colors_r16(16, 16, &color_dots);
     ///
@@ -1449,7 +1582,7 @@ impl Tex {
     /// ```
     pub fn set_colors_r16(&mut self, width: usize, height: usize, data: &[u16]) -> &mut Self {
         match self.get_format() {
-            Some(TexFormat::R16u) => (),
+            Some(TexFormat::R16un) => (),
             Some(_) => {
                 Log::err(format!(
                     "The format of the texture {} is not compatible with Tex::set_colors_r16",
@@ -1508,7 +1641,7 @@ impl Tex {
     /// ```
     pub fn set_colors_r32(&mut self, width: usize, height: usize, data: &[f32]) -> &mut Self {
         match self.get_format() {
-            Some(TexFormat::R32) => (),
+            Some(TexFormat::R32f) => (),
             Some(_) => {
                 Log::err(format!(
                     "The format of the texture {} is not compatible with Tex::set_colors_r32",
@@ -1552,13 +1685,13 @@ impl Tex {
     ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
     ///
     ///
-    /// let mut tex = Tex::render_target(128, 128, Some(2), Some(TexFormat::RGBA32),
+    /// let mut tex = Tex::render_target(128, 128, Some(2), Some(TexFormat::Rgba32Srgb),
     ///                                  Some(TexFormat::Depth16))
     ///                            .expect("Tex should be created");
     ///
     /// let zbuffer = tex.get_zbuffer().expect("Tex should have a zbuffer");
     ///
-    /// let mut tex2 = Tex::render_target(128, 128, Some(2), Some(TexFormat::RGBA32),
+    /// let mut tex2 = Tex::render_target(128, 128, Some(2), Some(TexFormat::Rgba32Srgb),
     ///                                  Some(TexFormat::None))
     ///                            .expect("Tex2 should be created");
     /// tex2.set_zbuffer(Some(zbuffer));
@@ -1609,7 +1742,7 @@ impl Tex {
     /// # use stereokit_rust::{tex::{Tex, TexFormat, TexType}};
     /// # use std::ptr::null_mut;
     ///
-    /// let mut tex = Tex::new(TexType::Image, TexFormat::RGBA32, None);
+    /// let mut tex = Tex::new(TexType::Image, TexFormat::Rgba32Srgb, None);
     /// let native_surface = tex.get_native_surface();
     /// unsafe { tex.set_native_surface(native_surface, TexType::Image, 0, 1, 1, 1, false); }
     /// ```
@@ -1633,7 +1766,6 @@ impl Tex {
                 width,
                 height,
                 surface_count,
-                1,
                 1,
                 owned as Bool32T,
             )
@@ -1660,7 +1792,7 @@ impl Tex {
     /// ```
     /// # stereokit_rust::test_init_sk!();
     /// use stereokit_rust::tex::{Tex, TexFormat, TexType};
-    /// let mut tex = Tex::new(TexType::Rendertarget, TexFormat::RGBA32, None);
+    /// let mut tex = Tex::new(TexType::Rendertarget, TexFormat::Rgba32Srgb, None);
     /// // Use defaults (array_count=1, msaa=1)
     /// tex.set_size(64, 64, None, None);
     /// assert_eq!(tex.get_width(),  Some(64));
@@ -1707,11 +1839,11 @@ impl Tex {
     /// use stereokit_rust::{maths::{Vec3, Matrix}, util::{named_colors, Color128},
     ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
     ///
-    /// let tex_fallback = Tex::gen_color(named_colors::VIOLET, 128, 128, TexType::Image, TexFormat::RGBA32);
-    /// let mut tex = Tex::new(TexType::Image, TexFormat::RGBA32, None);
+    /// let tex_fallback = Tex::gen_color(named_colors::VIOLET, 128, 128, TexType::Image, TexFormat::Rgba32Srgb);
+    /// let mut tex = Tex::new(TexType::Image, TexFormat::Rgba32Srgb, None);
     /// tex.fallback_override(&tex_fallback);
     ///
-    /// let tex = Tex::new(TexType::Image, TexFormat::RGBA32, Some("tex_left_ID"));
+    /// let tex = Tex::new(TexType::Image, TexFormat::Rgba32Srgb, Some("tex_left_ID"));
     /// let tex_metal = Tex::from_file("textures/parquet2/parquet2metal.ktx2", true, Some(9999))
     ///                          .expect("Metal tex should be created");
     /// let mut material  = Material::pbr().tex_copy(tex);
@@ -1739,7 +1871,7 @@ impl Tex {
     /// use stereokit_rust::{util::named_colors,
     ///                      tex::{Tex, TexFormat, TexType, TexSample}};
     ///
-    /// let mut tex = Tex::gen_color(named_colors::VIOLET, 128, 128, TexType::Image, TexFormat::RGBA32);
+    /// let mut tex = Tex::gen_color(named_colors::VIOLET, 128, 128, TexType::Image, TexFormat::Rgba32Srgb);
     /// assert_eq!(tex.get_sample_mode(), TexSample::Linear);
     /// tex.sample_mode(TexSample::Anisotropic);
     /// assert_eq!(tex.get_sample_mode(), TexSample::Anisotropic);
@@ -1749,11 +1881,9 @@ impl Tex {
         self
     }
 
-    /// When doing hardware comparison sampling (like sampling from a depth texture and comparing it to a reference
-    /// value) this sets the comparison operation used. Defaults to TexSampleComp::None meaning no comparison; the raw
-    /// texture value is returned. This is most useful for depth based shadow maps or percentage closer filtering
-    /// scenarios. Changing this may internally alter the sampler state object, so prefer setting it up once when
-    /// configuring the texture.
+    /// When sampling from a texture with comparison enabled, the sampler compares the sampled texel value against a
+    /// reference value and returns a 0 or 1 based on the result. This is primarily useful for shadow mapping techniques,
+    /// where a depth texture is sampled to determine if a surface is in shadow.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SampleComp.html>
     ///
     /// see also [`tex_set_sample_comp`] [`Tex::get_sample_comp`]
@@ -1761,7 +1891,7 @@ impl Tex {
     /// ```
     /// # stereokit_rust::test_init_sk!();
     /// use stereokit_rust::{util::named_colors, tex::{Tex, TexFormat, TexType, TexSampleComp}};
-    /// let mut tex = Tex::gen_color(named_colors::BLACK, 4,4, TexType::Image, TexFormat::RGBA32);
+    /// let mut tex = Tex::gen_color(named_colors::BLACK, 4,4, TexType::Image, TexFormat::Rgba32Srgb);
     /// tex.sample_comp(Some(TexSampleComp::LessOrEq));
     /// assert_eq!(tex.get_sample_comp(), TexSampleComp::LessOrEq);
     ///
@@ -1788,7 +1918,7 @@ impl Tex {
     /// use stereokit_rust::{util::named_colors,
     ///                      tex::{Tex, TexFormat, TexType, TexAddress}};
     ///
-    /// let mut tex = Tex::gen_color(named_colors::VIOLET, 128, 128, TexType::Image, TexFormat::RGBA32);
+    /// let mut tex = Tex::gen_color(named_colors::VIOLET, 128, 128, TexType::Image, TexFormat::Rgba32Srgb);
     /// assert_eq!(tex.get_address_mode(), TexAddress::Wrap);
     /// tex.address_mode(TexAddress::Mirror);
     /// assert_eq!(tex.get_address_mode(), TexAddress::Mirror);
@@ -1810,7 +1940,7 @@ impl Tex {
     /// use stereokit_rust::{util::named_colors,
     ///                      tex::{Tex, TexFormat, TexType, TexSample}};
     ///
-    /// let mut tex = Tex::gen_color(named_colors::VIOLET, 128, 128, TexType::Image, TexFormat::RGBA32);
+    /// let mut tex = Tex::gen_color(named_colors::VIOLET, 128, 128, TexType::Image, TexFormat::Rgba32Srgb);
     /// assert_eq!(tex.get_sample_mode(), TexSample::Linear);
     /// assert_eq!(tex.get_anisotropy(), 4);
     ///
@@ -1845,7 +1975,7 @@ impl Tex {
     ///                      tex::{Tex, TexFormat, TexType}};
     ///
     /// let tex = Tex::gen_color(named_colors::VIOLET, 128, 128,
-    ///                          TexType::Image, TexFormat::RGBA32);
+    ///                          TexType::Image, TexFormat::Rgba32Srgb);
     /// assert_eq!(tex.get_asset_state(), AssetState::Loaded);
     ///
     /// let tex_icon = Tex::from_file("icons/checked.png", true, None)
@@ -1896,7 +2026,7 @@ impl Tex {
     ///     if    tex_icon.get_asset_state()     != AssetState::Loaded
     ///        || tex_not_icon.get_asset_state() == AssetState::Loading { iter -= 1; }     
     /// );
-    /// assert_eq!(tex_icon.get_format(), Some(TexFormat::RGBA32));
+    /// assert_eq!(tex_icon.get_format(), Some(TexFormat::Rgba32Srgb));
     /// assert_eq!(tex_not_icon.get_format(), None);   
     /// ```
     pub fn get_format(&self) -> Option<TexFormat> {
@@ -1979,7 +2109,7 @@ impl Tex {
     ///                      tex::{Tex, TexFormat, TexType}};
     ///
     /// let mut color_dots = [named_colors::CYAN; 16 * 16];
-    /// let mut tex = Tex::new(TexType::Image, TexFormat::RGBA32, None);
+    /// let mut tex = Tex::new(TexType::Image, TexFormat::Rgba32Srgb, None);
     /// tex.set_colors32(16, 16, &color_dots);
     ///
     /// let check_dots = [Color32::WHITE; 16 * 16];
@@ -2057,7 +2187,7 @@ impl Tex {
     /// use stereokit_rust::{util::{named_colors, Color32, Color128},
     ///                      tex::{Tex, TexFormat, TexType}};
     ///
-    /// let mut tex = Tex::gen_color(named_colors::CYAN, 8 , 8, TexType::Image, TexFormat::RGBA32);
+    /// let mut tex = Tex::gen_color(named_colors::CYAN, 8 , 8, TexType::Image, TexFormat::Rgba32Srgb);
     ///
     /// let check_dots = [Color32::WHITE; 8 * 8];
     /// assert!(tex.get_color_data::<Color32>(&check_dots, 0));
@@ -2120,7 +2250,7 @@ impl Tex {
     /// use stereokit_rust::{util::{named_colors, Color32},
     ///                      tex::{Tex, TexFormat, TexType}};
     ///
-    /// let mut tex = Tex::gen_color(named_colors::CYAN, 8 , 8, TexType::Image, TexFormat::RGBA32);
+    /// let mut tex = Tex::gen_color(named_colors::CYAN, 8 , 8, TexType::Image, TexFormat::Rgba32Srgb);
     ///
     /// let mut check_dots = [0u8; 8 * 8 * 4];
     /// assert!(tex.get_color_data_u8(&mut check_dots, 4, 0));
@@ -2217,10 +2347,10 @@ impl Tex {
     ///                      tex::{Tex, TexFormat, TexType}};
     ///
     /// let tex_nomips = Tex::gen_color(named_colors::VIOLET, 128, 128,
-    ///                                 TexType::ImageNomips, TexFormat::RGBA32);
+    ///                                 TexType::ImageNomips, TexFormat::Rgba32Srgb);
     ///
     /// let tex = Tex::gen_color(named_colors::VIOLET, 128, 128,
-    ///                          TexType::Image, TexFormat::RGBA32);
+    ///                          TexType::Image, TexFormat::Rgba32Srgb);
     ///
     /// let tex_icon = Tex::from_file("icons/checked.png", true, None)
     ///                         .expect("Tex_icon should be created");
@@ -2263,7 +2393,7 @@ impl Tex {
     ///                      tex::{Tex, TexFormat, TexType}};
     ///
     /// let tex = Tex::gen_color(named_colors::VIOLET, 128, 128,
-    ///                          TexType::Cubemap, TexFormat::RGBA32);
+    ///                          TexType::Cubemap, TexFormat::Rgba32Srgb);
     ///
     /// // Cubemap must be created with SHCubemap static methods.
     /// let sh_cubemap = tex.get_cubemap_lighting();

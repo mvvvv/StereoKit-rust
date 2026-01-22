@@ -12,22 +12,28 @@ use crate::maths::Bool32T;
 pub enum PermissionType {
     /// For access to microphone data, this is typically an interactive permission that the user will need to explicitly
     /// approve.
+    /// This maps to android.permission.RECORD_AUDIO on Android.
     Microphone = 0,
     /// For access to camera data, this is typically an interactive permission that the user will need to explicitly
     /// approve. SK doesn't use this permission internally yet, but is often a useful permission for XR apps.
+    /// This maps to android.permission.CAMERA on Android.
     Camera = 1,
     /// For access to input quality eye tracking data, this is typically an interactive permission that the user will
     /// need to explicitly approve.
+    /// This maps to android.permission.EYE_TRACKING_FINE on Android XR, but varies per-runtime.
     EyeInput = 2,
     /// For access to per-joint hand tracking data. Some runtimes may have this permission interactive, but many do not.
+    /// This maps to android.permission.HAND_TRACKING on Android XR, but varies per-runtime.
     HandTracking = 3,
     /// For access to facial expression data, this is typically an interactive permission that the user will need to
     /// explicitly approve.
+    /// This maps to android.permission.FACE_TRACKING on Android XR, but varies per-runtime.
     FaceTracking = 4,
     /// For access to data in the user's space, this can be for things like spatial anchors, plane detection, hit
     /// testing, etc. This is typically an interactive permission that the user will need to explicitly approve.
+    /// This maps to android.permission.SCENE_UNDERSTANDING_COARSE on Android XR, but varies per-runtime.
     Scene = 5,
-    /// This enum is for tracking the number of values in this enum.
+    /// This enum is for tracking the number of value in this enum.
     Max = 6,
 }
 

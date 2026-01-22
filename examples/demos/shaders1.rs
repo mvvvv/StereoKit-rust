@@ -16,7 +16,7 @@ use stereokit_rust::{
 
 /// IStepper implementation for Shader1
 #[derive(IStepper)]
-pub struct Shader1 {
+pub struct Shaders1 {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
     shutdown_completed: bool,
@@ -38,9 +38,9 @@ pub struct Shader1 {
     fps: f64,
 }
 
-unsafe impl Send for Shader1 {}
+unsafe impl Send for Shaders1 {}
 
-impl Default for Shader1 {
+impl Default for Shaders1 {
     fn default() -> Self {
         //------ Materials
         let hud_text_shader = Shader::from_file("shaders/hud_text.hlsl.sks").unwrap_or_default();
@@ -137,7 +137,7 @@ impl Default for Shader1 {
     }
 }
 
-impl Shader1 {
+impl Shaders1 {
     /// Called from IStepper::initialize here you can abort the initialization by returning false
     fn start(&mut self) -> bool {
         World::occlusion_enabled(true);
@@ -156,7 +156,7 @@ impl Shader1 {
         let mut param_info = self.material_green.get_all_param_info();
         param_info
             .set_vector4("tex_trans", tex_transform)
-            .set_int("do_not_exist", &[1, 3, 5, 6])
+            //.set_int("do_not_exist", &[1, 3, 5, 6])
             .set_float("time", total_scale);
         self.plane.draw(token, &self.material_green, self.transform_plane, None, None);
 

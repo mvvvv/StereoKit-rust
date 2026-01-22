@@ -144,7 +144,7 @@ unsafe extern "C" {
     pub fn material_set_wireframe(material: MaterialT, wireframe: Bool32T);
     pub fn material_set_depth_test(material: MaterialT, depth_test_mode: DepthTest);
     pub fn material_set_depth_write(material: MaterialT, write_enabled: Bool32T);
-    pub fn material_set_depth_clip(material: MaterialT, clip_enabled: Bool32T);
+    pub fn material_set_depth_clamp(material: MaterialT, clamp_enabled: Bool32T);
     pub fn material_set_queue_offset(material: MaterialT, offset: i32);
     pub fn material_set_chain(material: MaterialT, chain_material: MaterialT);
     pub fn material_set_variant(material: MaterialT, variant_index: i32, variant_material: MaterialT);
@@ -153,7 +153,7 @@ unsafe extern "C" {
     pub fn material_get_wireframe(material: MaterialT) -> Bool32T;
     pub fn material_get_depth_test(material: MaterialT) -> DepthTest;
     pub fn material_get_depth_write(material: MaterialT) -> Bool32T;
-    pub fn material_get_depth_clip(material: MaterialT) -> Bool32T;
+    pub fn material_get_depth_clamp(material: MaterialT) -> Bool32T;
     pub fn material_get_queue_offset(material: MaterialT) -> i32;
     pub fn material_get_chain(material: MaterialT) -> MaterialT;
     pub fn material_get_variant(material: MaterialT, variant_index: i32) -> MaterialT;
@@ -1014,23 +1014,23 @@ impl Material {
         self
     }
 
-    /// Should the near/far depth plane clip (discard) what we're drawing? This defaults to true, and should almost
-    /// always be true! However, it can be useful to set this to false for occasions like shadow map rendering, where
-    /// near/far clip planes are really critical, and out of clip objects are still useful to have.
+    /// Should depth values be clamped to the near/far planes instead of being clipped? This defaults to false, meaning
+    /// depth clipping is enabled. Setting this to true can be useful for shadow map rendering, where near/far clip
+    /// planes are really critical, and out of clip objects are still useful to have.
     /// <https://stereokit.net/Pages/StereoKit/Material.html>
     ///
-    /// see also [`material_set_depth_clip`] [`Material::get_depth_clip`]
+    /// see also [`material_set_depth_clamp`] [`Material::get_depth_clamp`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::material::Material;
     /// let mut material = Material::pbr().copy();
-    /// assert_eq!(material.get_depth_clip(), false);
-    /// material.depth_clip(false);
-    /// assert_eq!(material.get_depth_clip(), false);
+    /// assert_eq!(material.get_depth_clamp(), false);
+    /// material.depth_clamp(false);
+    /// assert_eq!(material.get_depth_clamp(), false);
     /// ```
-    pub fn depth_clip(&mut self, clip_enabled: bool) -> &mut Self {
-        unsafe { material_set_depth_clip(self.0.as_ptr(), clip_enabled as Bool32T) };
+    pub fn depth_clamp(&mut self, clip_enabled: bool) -> &mut Self {
+        unsafe { material_set_depth_clamp(self.0.as_ptr(), clip_enabled as Bool32T) };
         self
     }
 
@@ -1191,14 +1191,14 @@ impl Material {
         unsafe { material_get_depth_write(self.0.as_ptr()) != 0 }
     }
 
-    /// Get the [`Material::depth_clip`] state of the material.
+    /// Get the [`Material::depth_clamp`] state of the material.
     /// <https://stereokit.net/Pages/StereoKit/Material.html>
     ///
-    /// see also [`material_get_depth_clip`]
+    /// see also [`material_get_depth_clamp`]
     ///
-    /// see example in [`Material::depth_clip`]
-    pub fn get_depth_clip(&self) -> bool {
-        unsafe { material_get_depth_clip(self.0.as_ptr()) != 0 }
+    /// see example in [`Material::depth_clamp`]
+    pub fn get_depth_clamp(&self) -> bool {
+        unsafe { material_get_depth_clamp(self.0.as_ptr()) != 0 }
     }
 
     /// Get the [`Material::queue_offset`] of the material.
@@ -1536,7 +1536,7 @@ unsafe extern "C" {
 
 }
 
-/// TODO: v0.4 This may need significant revision? What type of data does this material parameter need?
+/// What type of data does this material parameter need?
 /// This is used to tell the shader how large the data is, and where to attach it to on the shader.
 /// <https://stereokit.net/Pages/StereoKit/MaterialParam.html>
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

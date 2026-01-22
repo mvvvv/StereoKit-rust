@@ -900,14 +900,18 @@ pub enum DisplayType {
     Flatscreen = 2,
 }
 
-/// TODO: waiting for C# implementation
+/// This describes the field of view of a display, in degrees.
 /// <https://stereokit.net/Pages/StereoKit/FovInfo.html>
 #[derive(Debug, Copy, Clone)]
 #[repr(C)]
 pub struct FovInfo {
+    /// The left edge of the field of view, in degrees.
     pub left: f32,
+    /// The right edge of the field of view, in degrees.
     pub right: f32,
+    /// The top edge of the field of view, in degrees.
     pub top: f32,
+    /// The bottom edge of the field of view, in degrees.
     pub bottom: f32,
 }
 

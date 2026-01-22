@@ -48,7 +48,7 @@ use std::ptr::null_mut;
 /// if Backend::xr_type() == BackendXRType::OpenXR {
 ///     // Create XrCompLayers instance
 ///     if let Some(mut swapchain) = SwapchainSk::new(
-///             TexFormat::RGBA32, 512, 512, None ){
+///             TexFormat::Rgba32Srgb, 512, 512, None ){
 ///         
 ///         // Set up rendering components
 ///         let mut render_list = RenderList::new();
@@ -181,19 +181,19 @@ impl XrCompLayers {
     pub fn to_native_format(format: TexFormat) -> i64 {
         match Backend::graphics() {
             BackendGraphics::D3D11 => match format {
-                TexFormat::RGBA32 => 29,
-                TexFormat::RGBA32Linear => 28,
-                TexFormat::BGRA32 => 91,
-                TexFormat::BGRA32Linear => 87,
-                TexFormat::RGB10A2 => 24,
-                TexFormat::RG11B10 => 26,
+                TexFormat::Rgba32Srgb => 29,
+                TexFormat::Rgba32Linear => 28,
+                TexFormat::Bgra32Srgb => 91,
+                TexFormat::Bgra32Linear => 87,
+                TexFormat::Rgb10a2 => 24,
+                TexFormat::Rg11b10 => 26,
                 _ => panic!("Unsupported texture format"),
             },
             BackendGraphics::OpenGLESEGL => match format {
-                TexFormat::RGBA32 => 0x8C43,
-                TexFormat::RGBA32Linear => 0x8058,
-                TexFormat::RGB10A2 => 0x8059,
-                TexFormat::RG11B10 => 0x8C3A,
+                TexFormat::Rgba32Srgb => 0x8C43,
+                TexFormat::Rgba32Linear => 0x8058,
+                TexFormat::Rgb10a2 => 0x8059,
+                TexFormat::Rg11b10 => 0x8C3A,
                 _ => panic!("Unsupported texture format"),
             },
             _ => panic!("Unsupported graphics backend"),
@@ -406,7 +406,7 @@ impl XrCompLayers {
 ///     system::{Backend, BackendXRType, RenderClear}, tools::xr_comp_layers::* };
 ///
 /// // Create a swapchain
-/// if let Some(mut swapchain) = SwapchainSk::new(TexFormat::RGBA32, 512, 512, None) {
+/// if let Some(mut swapchain) = SwapchainSk::new(TexFormat::Rgba32Srgb, 512, 512, None) {
 ///    
 ///     // Set up rendering
 ///     let mut render_list = RenderList::new();

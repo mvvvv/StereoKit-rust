@@ -43,6 +43,7 @@ fn main() {
     // Build StereoKit, and tell rustc to link it.
     let mut cmake_config = Config::new("StereoKit");
     cmake_config.define("SK_DISTRIBUTE", "OFF");
+    cmake_config.define("SK_LOCAL_SK_RENDERER", "OFF");
 
     let profile_upper = if profile == "debug" {
         cmake_config.define("CMAKE_BUILD_TYPE", "Debug");
@@ -156,10 +157,20 @@ fn main() {
                 if !skc_in_dll {
                     println!("cargo:rustc-link-search=native={}/build", dst.display());
                     println!("cargo:rustc-link-search=native={}/lib", dst.display());
+                    println!("cargo:rustc-link-search=native={}/build/_deps/sk_renderer-build", dst.display());
+                    println!(
+                        "cargo:rustc-link-search=native={}/build/_deps/openxr_loader-build/src/loader",
+                        dst.display()
+                    );
                     println!("cargo:rustc-link-search=native={win_gnu_libs}");
-                    cargo_link!("gcc_eh");
-                    cargo_link!("stdc++");
+                    // Order matters: libs that depend on others should be listed first
+                    cargo_link!("static=StereoKitC");
+                    cargo_link!("static=sk_renderer");
+                    cargo_link!("static=openxr_loader");
                     cargo_link!("meshoptimizer");
+                    // C++ runtime libraries must come last
+                    cargo_link!("stdc++");
+                    cargo_link!("gcc_eh");
                 } else {
                     //---- We have to extract the DLL i.e. ".\target\x86_64-pc-windows-gnu\debug\build\stereokit-rust-be362d37871b9048\out\build\StereoKitC.dll"
                     //---- and copy it to ".\target\x86_64-pc-windows-gnu\debug\deps\
@@ -220,12 +231,15 @@ fn main() {
             println!("cargo:rustc-link-search=native={}/lib64", dst.display());
             println!("cargo:rustc-link-search=native={}/build", dst.display());
             println!("cargo:rustc-link-search=native={}/install", dst.display());
+            println!("cargo:rustc-link-search=native={}/build/_deps/sk_renderer-build", dst.display());
 
-            cargo_link!("StereoKitC");
+            cargo_link!("static=StereoKitC");
+            cargo_link!("static=sk_renderer");
 
             cargo_link!("stdc++");
             cargo_link!("openxr_loader");
             cargo_link!("meshoptimizer");
+            cargo_link!("vulkan");
             if cfg!(feature = "profile") {
                 cargo_link!("TracyClient");
             }
@@ -306,10 +320,22 @@ fn main() {
             let path = Path::new(&sk_gpu_src);
             path.join("tools")
         } else {
-            println!("cargo:info=--yes! we copy skshaderc from {dst:?}/build/_deps/sk_gpu-src/tools");
-            dst.join("build").join("_deps").join("sk_gpu-src").join("tools")
+            // Try sk_renderer path first (new architecture)
+            let sk_renderer_path = dst.join("build").join("_deps").join("sk_renderer-build").join("skshaderc");
+            if sk_renderer_path.exists() {
+                println!("cargo:info=--yes! we copy skshaderc from {sk_renderer_path:?}");
+                sk_renderer_path
+            } else {
+                // Fall back to sk_gpu path (old architecture)
+                println!("cargo:info=--yes! we copy skshaderc from {dst:?}/build/_deps/sk_gpu-src/tools");
+                dst.join("build").join("_deps").join("sk_gpu-src").join("tools")
+            }
         };
-        copy_tree(tools_dir, distrib).expect("Unable to copy tools");
+        if tools_dir.exists() {
+            copy_tree(tools_dir, distrib).expect("Unable to copy tools");
+        } else {
+            println!("cargo:warning=Tools directory not found at {tools_dir:?}");
+        }
     } else {
         println!("cargo:warning={target_dir_name} directory {target_dir:?} does not exist");
     }

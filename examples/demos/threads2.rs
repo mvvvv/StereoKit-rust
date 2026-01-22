@@ -77,7 +77,7 @@ impl Threads2 {
                 // let id_str = "Cube ".to_string() + &id.to_string();
                 // let mesh = Mesh::generate_cube(Vec3::ONE * 0.03, None);
 
-                // let tex = Tex::gen_color(color, 16, 16, TexType::ImageNomips, TexFormat::RGBA32);
+                // let tex = Tex::gen_color(color, 16, 16, TexType::ImageNomips, TexFormat::Rgba32Srgb);
                 // let mut material = Material::default_copy();
                 // material.diffuse_tex(tex);
                 // material.color_tint(color);

@@ -28,17 +28,37 @@ use crate::tools::os_api::{get_assets_dir, get_shaders_sks_dir, get_shaders_sour
 /// assert!(skshaderc_exe_path.unwrap().ends_with("skshaderc.exe"));
 /// ```
 pub fn get_skshaderc(bin_dir: PathBuf, with_wine: bool) -> Result<PathBuf, io::Error> {
-    let mut skshaderc = bin_dir.clone();
+    let mut target_root = bin_dir.clone();
     let target_dir = env::var("CARGO_TARGET_DIR").unwrap_or("target".into());
-    skshaderc.push(target_dir);
+    target_root.push(target_dir);
 
-    if !skshaderc.exists() {
+    if !target_root.exists() {
         return Err(io::Error::new(
             io::ErrorKind::NotFound,
-            format!("{} not found. Please run 'cargo build' first.", skshaderc.display()),
+            format!("{} not found. Please run 'cargo build' first.", target_root.display()),
         ));
     }
 
+    let mut tools_dir = target_root.clone();
+    tools_dir.push("tools");
+
+    if !with_wine && cfg!(target_os = "linux") {
+        let mut flat_linux = tools_dir.clone();
+        flat_linux.push("skshaderc");
+        if flat_linux.exists() {
+            return Ok(flat_linux);
+        }
+    }
+
+    if cfg!(windows) || with_wine {
+        let mut flat_win = tools_dir.clone();
+        flat_win.push("skshaderc.exe");
+        if flat_win.exists() {
+            return Ok(flat_win);
+        }
+    }
+
+    // If not found in flat structure, we try the exe_type structure from sk_gpu
     let target_os = if with_wine {
         "win32"
     } else if cfg!(target_os = "linux") {
@@ -59,14 +79,13 @@ pub fn get_skshaderc(bin_dir: PathBuf, with_wine: bool) -> Result<PathBuf, io::E
     };
     let exe_type = target_os.to_string() + "_" + target_arch;
 
-    skshaderc.push(r"tools");
-    skshaderc.push(exe_type);
+    tools_dir.push(exe_type);
     if cfg!(windows) || with_wine {
-        skshaderc.push("skshaderc.exe");
+        tools_dir.push("skshaderc.exe");
     } else {
-        skshaderc.push("skshaderc");
+        tools_dir.push("skshaderc");
     }
-    Ok(skshaderc)
+    Ok(tools_dir)
 }
 
 /// Compile hsls file to sks. Use variables `SK_RUST_SHADERS_SOURCE_DIR`  `SK_RUST_ASSETS_DIR` and `SK_RUST_SHADERS_SKS_DIR`

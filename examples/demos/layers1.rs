@@ -81,11 +81,11 @@ impl Layers1 {
                 if let Some(handle) = comp_layer.try_make_swapchain(
                     512,
                     512,
-                    TexFormat::RGBA32,
+                    TexFormat::Rgba32Srgb,
                     SwapchainUsageFlags::COLOR_ATTACHMENT,
                     false,
                 ) {
-                    self.swapchain_sk = SwapchainSk::wrap(handle, TexFormat::RGBA32, 512, 512, Some(comp_layer));
+                    self.swapchain_sk = SwapchainSk::wrap(handle, TexFormat::Rgba32Srgb, 512, 512, Some(comp_layer));
                 } else {
                     Log::warn("Failed to create XR swapchain");
                     return false;

@@ -95,7 +95,7 @@ unsafe extern "C" {
     pub fn anchor_get_index(index: i32) -> AnchorT;
     pub fn anchor_get_new_count() -> i32;
     pub fn anchor_get_new_index(index: i32) -> AnchorT;
-    pub fn anchor_get_perception_anchor(anchor: AnchorT, perception_spatial_anchor: *mut *mut c_void) -> Bool32T; //TODO: Check this
+    pub fn anchor_get_perception_anchor(anchor: AnchorT, out_perception_spatial_anchor: *mut *mut c_void) -> Bool32T; //TODO: Check this
 
 }
 

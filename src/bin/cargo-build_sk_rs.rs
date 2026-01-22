@@ -357,14 +357,14 @@ fn main() {
     }
     if shaders_path_name.is_empty() {
         let target = if windows_exe.is_empty() {
-            "e"
+            "s"
         } else if with_gl {
             "g"
         } else {
             if !cfg!(windows) && !win_libs_path_name.is_empty() {
                 with_wine = true;
             }
-            "x"
+            "s"
         };
 
         compile_hlsl(real_current_dir, Some(target_shaders_dir), &["-t", target, "-sw"], with_wine).unwrap();

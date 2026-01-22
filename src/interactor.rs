@@ -23,7 +23,7 @@ pub enum InteractorType {
     Line = 1,
 }
 
-/// TODO: is this redundant with interactor_type_? This describes how an interactor activates elements. Does it use the
+/// This describes how an interactor activates elements. Does it use the
 /// physical position of the interactor, or the activation state?
 /// <https://stereokit.net/Pages/StereoKit/InteractorActivation.html>
 ///
@@ -251,7 +251,9 @@ impl Interactor {
         }
     }
 
-    /// Destroy this interactor and free its resources.
+    /// Interactors, unlike Assets, don't destroy themselves! You must explicitly Destroy an Interactor if you're
+    /// finished with it, otherwise it will continue to interact with StereoKit's interactors. This function immediately
+    /// removes the interactor from the interactor list.
     /// <https://stereokit.net/Pages/StereoKit/Interactor/Destroy.html>
     ///
     /// see also [`interactor_destroy`]
