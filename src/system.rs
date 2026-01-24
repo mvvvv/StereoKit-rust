@@ -314,11 +314,12 @@ impl Assets {
     /// assert_eq!(model_count,     2);
     /// assert_eq!(sound_count,     5);
     /// assert_eq!(material_count,  37 + 1 );
-    /// assert_eq!(shader_count,    15);
+    /// assert_eq!(shader_count,    16);
     /// assert_eq!(font_count,      1);
     /// assert_eq!(mesh_count,  26);
     /// assert_eq!(render_list_count, 1);
     /// assert_eq!(other_count, 0);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn all() -> AssetIter {
         AssetIter::iterate(None)
@@ -348,6 +349,7 @@ impl Assets {
     ///     }
     /// }
     /// assert_eq!(sprite_count, 13 + 1);
+    /// # sk::Sk::shutdown();   
     /// ```
     pub fn all_of_type(asset_type: AssetType) -> AssetIter {
         AssetIter::iterate(Some(asset_type))
@@ -368,6 +370,7 @@ impl Assets {
     /// // TODO: most of the time true but ... assert_eq!(Assets::total_tasks(), 1);
     /// number_of_steps = 200;
     /// assert_eq!(current_task, 0);
+    /// # sk::Sk::shutdown();   
     /// ```
     pub fn current_task() -> i32 {
         unsafe { assets_current_task() }
@@ -388,6 +391,7 @@ impl Assets {
     ///
     /// let current_task_priority  = Assets::current_task_priority();
     /// assert_eq!(current_task_priority, 10);
+    /// # sk::Sk::shutdown();   
     /// ```
     pub fn current_task_priority() -> i32 {
         unsafe { assets_current_task_priority() }
@@ -413,6 +417,7 @@ impl Assets {
     ///     let total_tasks  = Assets::total_tasks();
     ///     assert_eq!(total_tasks, 2);
     /// );
+    /// # sk::Sk::shutdown();   
     /// ```
     pub fn total_tasks() -> i32 {
         unsafe { assets_total_tasks() }
@@ -531,10 +536,10 @@ pub type OpenXRHandleT = u64;
 /// let xr_type = Backend::xr_type();
 ///
 /// if cfg!(target_os = "windows") {
-///     assert_eq!(graphics, BackendGraphics::D3D11);
+///     assert_eq!(graphics, BackendGraphics::Vulkan);
 ///     assert_eq!(platform, BackendPlatform::Win32);
 /// } else {
-///     assert_eq!(graphics, BackendGraphics::OpenGLESEGL);
+///     assert_eq!(graphics, BackendGraphics::Vulkan);
 ///     assert_eq!(platform, BackendPlatform::Linux);
 /// }
 /// assert_eq!(BackendOpenXR::eyes_sample_time(), 0);
@@ -612,9 +617,9 @@ impl Backend {
     ///
     /// let graphics = Backend::graphics();
     /// if cfg!(target_os = "windows") {
-    ///     assert_eq!(graphics, BackendGraphics::D3D11);
+    ///     assert_eq!(graphics, BackendGraphics::Vulkan);
     /// } else {
-    ///     assert_eq!(graphics, BackendGraphics::OpenGLESEGL);
+    ///     assert_eq!(graphics, BackendGraphics::Vulkan);
     /// }
     /// ```
     pub fn graphics() -> BackendGraphics {
@@ -711,8 +716,8 @@ impl Backend {
 /// assert_eq!(system_id, 0);
 /// assert_eq!(time, 0);
 /// assert_eq!(ext_enabled, false);
-/// assert_eq!(get_function_ptr, None);
-/// assert_eq!(get_function, None);
+/// assert!(get_function_ptr.is_none(), "Get function pointer should be none");
+/// assert!(get_function.is_none(),"Get function should be none");
 /// ```
 pub struct BackendOpenXR;
 
@@ -864,6 +869,7 @@ impl BackendOpenXR {
     ///
     /// // Only works in XR mode but offscreen accept it.
     /// use openxr_sys as oxr;
+    /// use oxr::Handle;
     ///
     /// // Create projection views for left eye only
     /// let mut projection_views = [
@@ -1051,7 +1057,7 @@ impl BackendOpenXR {
     /// offscreen_mode_stop_here!();
     /// // In offscreen mode, function pointers are None
     /// assert_eq!(hand_tracker_fn.is_some(), true);
-    /// assert_eq!(passthrough_fn, None);
+    /// assert!(passthrough_fn.is_none(),"Passthrough function should be none");
     /// ```
     pub fn get_function_ptr(function_name: impl AsRef<str>) -> Option<VoidFunction> {
         let c_str = CString::new(function_name.as_ref()).unwrap();
@@ -1241,6 +1247,7 @@ impl BackendOpenGLWGL {
     }
 }
 
+/// Not used anymore as we are running Vulkan now !!!
 /// When using OpenGL ES with the EGL loader for rendering, this contains a number of variables that may be useful for
 /// doing advanced rendering tasks. This is the default rendering backend for Android, and Linux builds can be
 /// configured to use this with the SK_LINUX_EGL cmake option when building the core StereoKitC library.
@@ -1252,13 +1259,13 @@ impl BackendOpenGLWGL {
 /// use stereokit_rust::system::BackendOpenGLESEGL;
 ///
 /// if cfg!(target_os = "linux") {
-///     // These are results for a OpenGLESEGL environment:
+///     // These are results for a Vulkan environment:
 ///
 ///     let context = BackendOpenGLESEGL::context();
-///     assert_ne!(context, std::ptr::null_mut());
+///     assert_eq!(context, std::ptr::null_mut());
 ///
 ///     let display = BackendOpenGLESEGL::display();
-///     assert_ne!(display, std::ptr::null_mut());
+///     assert_eq!(display, std::ptr::null_mut());
 /// }
 /// ```
 pub struct BackendOpenGLESEGL;
@@ -4798,6 +4805,7 @@ impl Renderer {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Renderer::blit(&tex, &material);
     /// );
+    /// # sk::Sk::shutdown();   
     /// ```
     pub fn blit(to_render_target: impl AsRef<Tex>, material: impl AsRef<Material>) {
         unsafe { render_blit(to_render_target.as_ref().0.as_ptr(), material.as_ref().0.as_ptr()) }

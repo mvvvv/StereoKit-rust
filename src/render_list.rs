@@ -325,6 +325,7 @@ impl RenderList {
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     screen.draw(token, &render_mat, Matrix::IDENTITY, None, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_list_add_mesh.jpeg" alt="screenshot" width="200">
     pub fn add_mesh(

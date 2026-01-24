@@ -40,7 +40,8 @@ impl Default for Math1 {
         let transform_ico_sphere = Matrix::t_s(Vec3::NEG_Z * 0.5 + Vec3::X + Vec3::Y * 1.5, Vec3::ONE * 0.3);
         let model_pose = Pose::new(Vec3::NEG_Z + Vec3::Y * 1.0, None);
         let transform_text = Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y * 2.0, Quat::from_angles(0.0, 180.0, 0.0));
-        let material = Material::pbr();
+        let mut material = Material::pbr().copy();
+        material.wireframe(true);
         let model = Model::from_mesh(Mesh::generate_sphere(SPHERE_RADIUS * 2.0, Some(16)), &material);
         let little_sphere = Mesh::generate_sphere(0.02, None);
         let ico_sphere = Mesh::find("mobiles.gltf/mesh/0_0_Icosphere").unwrap_or_default();

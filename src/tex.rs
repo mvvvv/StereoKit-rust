@@ -556,7 +556,7 @@ impl Tex {
     /// tex_left.set_colors32(128, 128, &color_dots);
     ///
     /// let mut color_dots = [Color128::new(0.5, 0.75, 0.25, 1.0); 128 * 128];
-    /// let mut tex_right = Tex::new(TexType::Image, TexFormat::RGBA128, None);
+    /// let mut tex_right = Tex::new(TexType::Image, TexFormat::Rgba128, None);
     /// tex_right.set_colors128(128, 128, &color_dots);
     ///
     /// let material_left  = Material::pbr().tex_copy(tex_left);
@@ -617,6 +617,7 @@ impl Tex {
     ///     plane_mesh.draw(token, &material_left,  transform_left,  None, None);
     ///     plane_mesh.draw(token, &material_right, transform_right, None, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn from_memory(data: &[u8], srgb_data: bool, priority: Option<i32>) -> Result<Tex, StereoKitError> {
         let priority = priority.unwrap_or(10);
@@ -727,6 +728,7 @@ impl Tex {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     plane_mesh.draw(token, &material,  transform,  None, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn from_files<P: AsRef<Path>>(
         files_utf8: &[P],
@@ -941,7 +943,7 @@ impl Tex {
     /// let tex_err = Tex::gen_color(named_colors::RED, 128, 128, TexType::Image, TexFormat::Rgba32Srgb);
     /// Tex::set_error_fallback(&tex_err);
     ///
-    /// let tex =  Tex::gen_color(Color128::new(0.1, 0.2, 0.5, 1.0), 128, 128, TexType::Image, TexFormat::RGBA128);
+    /// let tex =  Tex::gen_color(Color128::new(0.1, 0.2, 0.5, 1.0), 128, 128, TexType::Image, TexFormat::Rgba128);
     ///
     /// let material  = Material::pbr().tex_copy(tex);
     ///
@@ -1105,6 +1107,7 @@ impl Tex {
     /// let same_tex = Tex::find("textures/open_gltf.jpeg")
     ///                    .expect("same_tex should be found");
     /// assert_eq!(tex, same_tex);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn find<S: AsRef<str>>(id: S) -> Result<Tex, StereoKitError> {
         let c_str = CString::new(id.as_ref()).map_err(|_| StereoKitError::TexCString(id.as_ref().into()))?;
@@ -1131,7 +1134,7 @@ impl Tex {
     ///
     ///
     /// let tex_blue = Tex::gen_color(Color32::new(64, 32, 255, 255), 1, 1,
-    ///                               TexType::Image, TexFormat::Rgba32SrgbLinear);
+    ///                               TexType::Image, TexFormat::Rgba32Linear);
     ///
     /// let tex_copy = tex_blue.copy(None, Some(TexFormat::Rgba32Srgb))
     ///                             .expect("copy should be done");
@@ -1140,7 +1143,7 @@ impl Tex {
     /// //TODO: windows assert_eq!(color_data[0], Color32 { r: 64, g: 32, b: 255, a: 255 });
     /// //TODO: linux   assert_eq!(color_data[0], Color32 { r: 137, g: 99, b: 255, a: 255 });
     ///
-    /// let tex_copy = tex_blue.copy(Some(TexType::Image), Some(TexFormat::RGBA128))
+    /// let tex_copy = tex_blue.copy(Some(TexType::Image), Some(TexFormat::Rgba128))
     ///                             .expect("copy should be done");
     /// let mut color_data = [Color128::WHITE; 1];
     /// assert!(tex_copy.get_color_data::<Color128>(&mut color_data, 0));
@@ -1175,6 +1178,7 @@ impl Tex {
     /// assert_eq!(tex.get_id(), "textures/open_gltf.jpeg");
     /// let same_tex = tex.clone_ref();
     /// assert_eq!(tex, same_tex);
+    /// # sk::Sk::shutdown();   
     /// ```
     pub fn clone_ref(&self) -> Tex {
         Tex(NonNull::new(unsafe { tex_find(tex_get_id(self.0.as_ptr())) }).expect("<asset>::clone_ref failed!"))
@@ -1200,6 +1204,7 @@ impl Tex {
     /// assert_eq!(tex.get_id(), "textures/open_gltf.jpeg");
     /// tex_blue.id("my_tex_image");
     /// assert_eq!(tex_blue.get_id(), "my_tex_image");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
         let c_str = CString::new(id.as_ref()).unwrap();
@@ -1273,6 +1278,7 @@ impl Tex {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     plane_mesh.draw(token, &material, transform_floor, None, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn set_memory(&mut self, data: &[u8], srgb_data: bool, blocking: bool, priority: Option<i32>) -> &mut Self {
         let priority = priority.unwrap_or(10);
@@ -1406,7 +1412,7 @@ impl Tex {
     ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
     ///
     /// let mut color_dots = [Color128{r: 0.25, g: 0.125, b: 1.0, a: 1.0}; 16 * 16];
-    /// let mut tex = Tex::new(TexType::Image, TexFormat::RGBA128, None);
+    /// let mut tex = Tex::new(TexType::Image, TexFormat::Rgba128, None);
     ///
     /// tex.set_colors128(16, 16, &color_dots);
     ///
@@ -1715,8 +1721,7 @@ impl Tex {
     /// # Safety
     /// native_surface must be a valid pointer to a texture resource for the current graphics backend.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetNativeSurface.html>
-    /// * `native_surface` - For D3D, this should be an ID3D11Texture2D*, and for GL, this should be a uint32_t from a
-    ///   glGenTexture call, coerced into the IntPtr.
+    /// * `native_surface` - For Vulkan, this should be a VkImage handle, coerced into the IntPtr.
     /// * `tex_type` - The image flags that tell SK how to treat the texture, this should match up with the settings the
     ///   texture was originally created with. If SK can figure the appropriate settings, it may override the value
     ///   provided here.
@@ -2012,8 +2017,8 @@ impl Tex {
     ///                      tex::{Tex, TexFormat, TexType}};
     ///
     /// let tex = Tex::gen_color(named_colors::VIOLET, 128, 128,
-    ///                          TexType::Image, TexFormat::RGBA128);
-    /// assert_eq!(tex.get_format(), Some(TexFormat::RGBA128));
+    ///                          TexType::Image, TexFormat::Rgba128);
+    /// assert_eq!(tex.get_format(), Some(TexFormat::Rgba128));
     ///
     /// let tex_icon = Tex::from_file("icons/checked.png", true, None)
     ///                         .expect("Tex_icon should be created");
@@ -2050,9 +2055,9 @@ impl Tex {
         NonNull::new(unsafe { tex_get_zbuffer(self.0.as_ptr()) }).map(Tex)
     }
 
-    /// This will return the texture’s native resource for use with external libraries. For D3D, this will be an
-    /// ID3D11Texture2D*, and for GL, this will be a uint32_t from a glGenTexture call, coerced into the IntPtr. This
-    /// call will block execution until the texture is loaded, if it is not already.
+    /// This will return the texture’s native resource for use with external libraries. For Vulkan, this should be a
+    /// VkImage handle, coerced into the IntPtr. This call will block execution until the texture is loaded, if it is
+    /// not already.
     /// <https://stereokit.net/Pages/StereoKit/Tex/GetNativeSurface.html>
     ///
     /// see also [`tex_get_surface`]
@@ -2193,7 +2198,7 @@ impl Tex {
     /// assert!(tex.get_color_data::<Color32>(&check_dots, 0));
     /// assert_eq!(check_dots[5], named_colors::CYAN);
     ///
-    /// let mut tex = Tex::gen_color(named_colors::MAGENTA, 8 , 8, TexType::Image, TexFormat::RGBA128);
+    /// let mut tex = Tex::gen_color(named_colors::MAGENTA, 8 , 8, TexType::Image, TexFormat::Rgba128);
     ///
     /// let check_dots = [Color128::WHITE; 8 * 8];
     /// assert!(tex.get_color_data::<Color128>(&check_dots, 0));

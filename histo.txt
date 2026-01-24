@@ -10,17 +10,16 @@
 cargo run --features event-loop  --example main_pc  
 cargo run --features event-loop  --example main_pc -- --test
 cargo build_sk_rs --example main_pc --features event-loop ../sk_builds/SK_demo_linux/ && steam steam://rungameid/13868818448177430528
-FORCE_LOCAL_DEPS=ON DEP_SK_GPU_SOURCE="/opt/sk_gpu" cargo build_sk_rs --example main_pc --features event-loop,force-local-deps ../sk_builds/SK_demo_linux/
+FORCE_LOCAL_DEPS=ON DEP_SK_RENDERER_SOURCE="/opt/sk_renderer" cargo build_sk_rs --example main_pc --features event-loop,force-local-deps ../sk_builds/SK_demo_linux/
 
 #---- cross building for pc
 cargo build_sk_rs --example main_pc --features event-loop --x64-linux ../sk_builds/SK_demo_linux_x64/  #same as above on x86_64 linux PC
 cargo build_sk_rs --example main_pc --features event-loop --aarch64-linux ../sk_builds/SK_demo_linux_aarch64/
 cargo build_sk_rs --example main_pc --features event-loop --x64-win-gnu ../x64-mingw-libs/ ../sk_builds/SK_demo_win_gnu/ && steam steam://rungameid/17257947875543875584
-FORCE_LOCAL_DEPS=ON DEP_SK_GPU_SOURCE="/opt/sk_gpu" cargo build_sk_rs --debug --example main_pc --features event-loop,force-local-deps --x64-win-gnu ../x64-mingw-libs/ ../sk_builds/SK_demo_win_gnu/
+FORCE_LOCAL_DEPS=ON DEP_SK_RENDERER_SOURCE="/opt/sk_renderer" cargo build_sk_rs --debug --example main_pc --features event-loop,force-local-deps --x64-win-gnu ../x64-mingw-libs/ ../sk_builds/SK_demo_win_gnu/
 
 #---- building for android
 cargo apk run --features event-loop  --example main
-cargo compile_sks --options -f -t e
 cargo apk build --features event-loop  --example main
 
 #---- build ktx2 compressed texture_compression
@@ -49,23 +48,23 @@ cut -c1-5,37- < examples/example_of_quest_log.txt > examples/comp_example_of_que
 
 
 #---- Saving some logs  WiVRn
-cargo run --features event-loop  --example main_pc &> examples/example_of_WiVRn_EGL.txt
+cargo run --features event-loop  --example main_pc &> examples/example_of_WiVRn_native.txt
 
 steam steam://rungameid/17868406875997863936  
 # wait the end ...
-grep OutputDebugStringA ~/steam-17868406875997863936.log | cut -c49- | sed -e 's/\\n\"$//' > examples/example_of_WiVRn_D3D11_gnu.txt
+grep OutputDebugStringA ~/steam-17868406875997863936.log | cut -c49- | sed -e 's/\\n\"$//' > examples/example_of_WiVRn_wine_gnu.txt
 
 steam steam://rungameid/14582336022122594304
 # wait the end ...
-grep OutputDebugStringA ~/steam-14582336022122594304.log | cut -c49- | sed -e 's/\\n\"$//' > examples/example_of_WiVRn_D3D11_msvc.txt
+grep OutputDebugStringA ~/steam-14582336022122594304.log | cut -c49- | sed -e 's/\\n\"$//' > examples/example_of_WiVRn_wine_msvc.txt
 
-#---- Saving some logs  ALVR
-cargo run --features event-loop  --example main_pc &> examples/example_of_ALVR_EGL.txt
+#---- Saving some logs  SteamVR
+cargo run --features event-loop  --example main_pc &> examples/example_of_ALVR_native.txt
 
 steam steam://rungameid/17868406875997863936  
 # wait the end ...
-grep OutputDebugStringA ~/steam-17868406875997863936.log | cut -c49- | sed -e 's/\\n\"$//' > examples/example_of_ALVR_D3D11_gnu.txt
+grep OutputDebugStringA ~/steam-17868406875997863936.log | cut -c49- | sed -e 's/\\n\"$//' > examples/example_of_SteamVR_wine_gnu.txt
 
 steam steam://rungameid/14582336022122594304
 # wait the end ...
-grep OutputDebugStringA ~/steam-14582336022122594304.log | cut -c49- | sed -e 's/\\n\"$//' > examples/example_of_ALVR_D3D11_msvc.txt
+grep OutputDebugStringA ~/steam-14582336022122594304.log | cut -c49- | sed -e 's/\\n\"$//' > examples/example_of_SteamVR_wine_msvc.txt

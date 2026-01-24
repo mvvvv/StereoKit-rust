@@ -325,11 +325,13 @@ impl Tex1 {
             None,
             true,
         );
+        let mut mat_wireframe = Material::pbr().copy();
+        mat_wireframe.wireframe(true);
         nodes.get_root_node().expect("A root node should exist!").add_child(
             "titi",
             Matrix::IDENTITY,
             Some(&Mesh::sphere()), //
-            Some(&Material::unlit()),
+            Some(&mat_wireframe),
             true,
         );
         Log::info(format!("model <~GRN>node count<~clr> : <~RED>{}<~clr> !!!", &nodes.get_count()));
@@ -375,7 +377,6 @@ impl Tex1 {
                 1 => {
                     self.tex_vide.set_colors128(self.width, self.height, self.raw_dots128.as_slice());
                     self.tex_vide2.set_colors_r8(self.width, self.height, self.raw_dots_byte.as_slice());
-                    // see R16 --> R16f [sk_gpu] API/ERROR - 0x1 - GL_INVALID_OPERATION in glTexImage2D(format = GL_RED, type = GL_UNSIGNED_SHORT, internalformat = GL_R16F)
                     self.tex_vide3.set_colors_r16(self.width, self.height, self.raw_dots_u16.as_slice());
                     self.tex_vide4.set_colors_r32(self.width, self.height, self.raw_dots_u32.as_slice());
                     Log::info(format!(

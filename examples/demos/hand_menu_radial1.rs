@@ -11,7 +11,7 @@ use stereokit_rust::{
     util::{
         Color128, Gradient, SHLight, SphericalHarmonics,
         named_colors::{
-            BLACK, BLUE, BURLY_WOOD, DARK_GRAY, LIGHT_BLUE, LIGHT_CYAN, RED, SEA_GREEN, STEEL_BLUE, WHITE, YELLOW,
+            self, BLACK, BLUE, BURLY_WOOD, DARK_GRAY, LIGHT_BLUE, LIGHT_CYAN, RED, SEA_GREEN, STEEL_BLUE, WHITE, YELLOW,
         },
     },
 };
@@ -218,7 +218,7 @@ impl HandMenuRadial1 {
         let mut cube0 = cube_default.clone_ref();
         let mut cube1 = cube_default.clone_ref();
 
-        if Backend::platform() != BackendPlatform::Web {
+        if Backend::platform() == BackendPlatform::Web {
             Log::warn("Using gradient for cubemap may crash the application");
         } else {
             let mut gradient_sky = Gradient::new(None);
@@ -229,6 +229,14 @@ impl HandMenuRadial1 {
                 .add(LIGHT_CYAN, 0.9)
                 .add(WHITE, 1.0);
             cube0 = SHCubemap::gen_cubemap_gradient(gradient_sky, Vec3::Y, 1024);
+            cube0
+                .sh
+                .add(Vec3::new(0.0, 1.0, 0.0).get_normalized(), Color128::WHITE)
+                .add(Vec3::new(1.0, 0.125, 0.0).get_normalized(), DARK_GRAY)
+                .add(Vec3::new(-1.0, 0.125, 0.0).get_normalized(), DARK_GRAY)
+                .add(Vec3::new(0.0, 0.125, 1.0).get_normalized(), DARK_GRAY)
+                .add(Vec3::new(0.0, 0.125, -1.0).get_normalized(), DARK_GRAY)
+                .brightness(0.3);
 
             let mut gradient = Gradient::new(None);
             gradient
@@ -239,6 +247,7 @@ impl HandMenuRadial1 {
                 .add(BLUE, 0.5)
                 .add(BLACK, 0.7);
             cube1 = SHCubemap::gen_cubemap_gradient(&gradient, Vec3::NEG_Z, 1);
+            cube1.sh.add(Vec3::new(0.0, 0.0, 1.0).get_normalized(), named_colors::RED).brightness(0.3);
         }
         let lights: [SHLight; 1] = [SHLight::new(Vec3::ONE, WHITE); 1];
         let sh = SphericalHarmonics::from_lights(&lights);

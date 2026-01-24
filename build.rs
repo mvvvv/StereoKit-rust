@@ -14,7 +14,6 @@ fn main() {
     let target_env = env::var("CARGO_CFG_TARGET_ENV").unwrap();
 
     let win_gnu_libs = env::var("SK_RUST_WIN_GNU_LIBS").unwrap_or_default();
-    let win_gl = !env::var("SK_RUST_WINDOWS_GL").unwrap_or_default().is_empty();
     let skc_in_dll = cfg!(feature = "skc-in-dll");
 
     let mut abi = env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_default();
@@ -22,11 +21,7 @@ fn main() {
         abi = "arm64-v8a".to_string();
     }
 
-    if win_gl {
-        println!("cargo:info=Compiling with {target_env} for {target_os}/opengl with profile {profile}");
-    } else {
-        println!("cargo:info=Compiling with {target_env} for {target_os} with profile {profile}");
-    }
+    println!("cargo:info=Compiling with {target_env} for {target_os} with profile {profile}");
 
     if target_os == "macos" {
         println!(
@@ -54,14 +49,9 @@ fn main() {
 
     if !win_gnu_libs.is_empty() {
         cmake_config.define("CMAKE_SYSTEM_NAME", "Windows");
-        if win_gl {
-            cmake_config.cxxflag("-Wl,-allow-multiple-definition");
-            cmake_config.define("__MINGW32__", "ON");
-            cmake_config.define("WINDOWS_LIBS", "comdlg32;opengl32;");
-        } else {
-            cmake_config.define("__MINGW32__", "ON");
-            cmake_config.define("WINDOWS_LIBS", "comdlg32;dxgi;d3d11;");
-        }
+
+        cmake_config.define("__MINGW32__", "ON");
+        cmake_config.define("WINDOWS_LIBS", "comdlg32;dxgi;");
         //PR #1260
         cmake_config.cflag("-mf16c -mavx");
         cmake_config.cxxflag("-mf16c -mavx");
@@ -71,11 +61,7 @@ fn main() {
         cmake_config.cxxflag("-mf16c -mavx");
     }
 
-    if win_gl {
-        cmake_config.define("SK_WINDOWS_GL", "ON");
-    }
-
-    let mut dep_sk_gpu_src = None;
+    let mut dep_sk_renderer_src = None;
     if cfg!(feature = "force-local-deps") && env::var("FORCE_LOCAL_DEPS").is_ok() {
         println!("cargo:info=Force local deps !!");
         // Helper function to define optional dependencies
@@ -88,9 +74,10 @@ fn main() {
         define_if_exists("DEP_OPENXR_LOADER_SOURCE", "CPM_openxr_loader_SOURCE", &mut cmake_config);
         define_if_exists("DEP_MESHOPTIMIZER_SOURCE", "CPM_meshoptimizer_SOURCE", &mut cmake_config);
         define_if_exists("DEP_BASIS_UNIVERSAL_SOURCE", "CPM_basis_universal_SOURCE", &mut cmake_config);
-        define_if_exists("DEP_SK_GPU_SOURCE", "CPM_sk_gpu_SOURCE", &mut cmake_config);
+        define_if_exists("DEP_SK_RENDERER_SOURCE", "CPM_sk_renderer_SOURCE", &mut cmake_config);
+        define_if_exists("DEP_SK_APP_SOURCE", "CPM_sk_app_SOURCE", &mut cmake_config);
         // we need this path for retrieving skshaderc*
-        dep_sk_gpu_src = env::var("DEP_SK_GPU_SOURCE").ok();
+        dep_sk_renderer_src = env::var("DEP_SK_RENDERER_SOURCE").ok();
     }
 
     if target_family.as_str() == "windows" {
@@ -129,6 +116,29 @@ fn main() {
         "windows" => {
             println!("cargo:rustc-link-search=native={}/lib", dst.display());
             println!("cargo:rustc-link-search=native={}/build/{}", dst.display(), profile_upper);
+
+            // MinGW creates StereoKitC.a without the "lib" prefix, but Rust expects libStereoKitC.a
+            // So we create a symlink/copy with the correct name
+            if target_env == "gnu" && !skc_in_dll {
+                let build_dir = dst.join("build");
+                let skc_file = build_dir.join("StereoKitC.a");
+                let lib_skc_file = build_dir.join("libStereoKitC.a");
+
+                if skc_file.exists() && !lib_skc_file.exists() {
+                    // Try to create a symlink, fall back to copy if it fails
+                    #[cfg(unix)]
+                    {
+                        if std::os::unix::fs::symlink(&skc_file, &lib_skc_file).is_err() {
+                            let _ = fs::copy(&skc_file, &lib_skc_file);
+                        }
+                    }
+                    #[cfg(not(unix))]
+                    {
+                        let _ = fs::copy(&skc_file, &lib_skc_file);
+                    }
+                    println!("cargo:info=Created libStereoKitC.a link/copy for MinGW compatibility");
+                }
+            }
 
             cargo_link!("StereoKitC");
 
@@ -176,7 +186,7 @@ fn main() {
                     //---- and copy it to ".\target\x86_64-pc-windows-gnu\debug\deps\
                     //println!("cargo:rustc-link-search=native={}/build", dst.display());
                     println!("cargo:rustc-link-search=native={win_gnu_libs}");
-                    let deuleuleu = "libStereoKitC.dll";
+                    let deuleuleu = "StereoKitC.dll";
                     let target_dir = Path::new(&out_dir).parent().unwrap().parent().unwrap().parent().unwrap();
                     let deps_libs = target_dir.join("deps");
                     println!("cargo:rustc-link-search=native={}", deps_libs.to_str().unwrap());
@@ -227,9 +237,9 @@ fn main() {
             unimplemented!("sorry wasm isn't implemented yet");
         }
         "unix" => {
+            println!("cargo:rustc-link-search=native={}/build", dst.display());
             println!("cargo:rustc-link-search=native={}/lib", dst.display());
             println!("cargo:rustc-link-search=native={}/lib64", dst.display());
-            println!("cargo:rustc-link-search=native={}/build", dst.display());
             println!("cargo:rustc-link-search=native={}/install", dst.display());
             println!("cargo:rustc-link-search=native={}/build/_deps/sk_renderer-build", dst.display());
 
@@ -245,7 +255,6 @@ fn main() {
             }
             if target_os == "android" {
                 cargo_link!("android");
-                cargo_link!("EGL");
 
                 //---- A directory whose content is only used during the production of the APK (no need for DEBUG/RELEASE sub directory)
                 //---- Copying from ./target/aarch64-linux-android/debug/build/stereokit-rust-1d044aba61d6313d/out/lib/libopenxr_loader.so
@@ -294,9 +303,6 @@ fn main() {
             } else {
                 cargo_link!("X11");
                 cargo_link!("Xfixes");
-                cargo_link!("GL");
-                cargo_link!("EGL");
-                cargo_link!("gbm");
                 cargo_link!("fontconfig");
             }
         }
@@ -315,9 +321,9 @@ fn main() {
     println!("cargo:info=Can we copy skshaderc* to {target_dir:?}/tools ?");
     if target_dir.ends_with(&target_dir_name) && target_dir.exists() {
         let distrib = target_dir.join("tools");
-        let tools_dir = if let Some(sk_gpu_src) = dep_sk_gpu_src {
-            println!("cargo:info=--yes! we copy skshaderc from {sk_gpu_src:?}");
-            let path = Path::new(&sk_gpu_src);
+        let tools_dir = if let Some(sk_renderer_src) = dep_sk_renderer_src {
+            println!("cargo:info=--yes! we copy skshaderc from {sk_renderer_src:?}");
+            let path = Path::new(&sk_renderer_src);
             path.join("tools")
         } else {
             // Try sk_renderer path first (new architecture)

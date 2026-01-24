@@ -396,6 +396,7 @@ impl Material {
     ///            &material2.get_all_param_info().get_texture("diffuse").unwrap().get_id());
     /// assert_ne!(&material2.get_all_param_info().get_texture("diffuse").unwrap().get_id(),
     ///            &material3.get_all_param_info().get_texture("diffuse").unwrap().get_id());
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn tex_file_copy(
         &mut self,
@@ -439,6 +440,7 @@ impl Material {
     ///            &material2.get_all_param_info().get_texture("diffuse").unwrap().get_id());
     /// assert_ne!(&material2.get_all_param_info().get_texture("diffuse").unwrap().get_id(),
     ///            &material3.get_all_param_info().get_texture("diffuse").unwrap().get_id());
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn tex_copy(&mut self, tex: impl AsRef<Tex>) -> Material {
         let mut mat = self.copy();
@@ -583,6 +585,7 @@ impl Material {
     ///            &tex.get_id());
     /// # use stereokit_rust::util::Hash;
     /// # assert_eq!(Hash::string("diffuse"), 17401384459118377917);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn diffuse_tex(&mut self, texture: impl AsRef<Tex>) -> &mut Self {
         unsafe {
@@ -642,6 +645,7 @@ impl Material {
     ///            &tex.get_id());
     /// # use stereokit_rust::util::Hash;
     /// # assert_eq!(Hash::string("emission"), 17756472659261185998);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn emission_tex(&mut self, texture: impl AsRef<Tex>) -> &mut Self {
         unsafe {
@@ -701,6 +705,7 @@ impl Material {
     ///            &tex.get_id());
     /// # use stereokit_rust::util::Hash;
     /// # assert_eq!(Hash::string("metal"), 4582786214424138428);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn metal_tex(&mut self, texture: impl AsRef<Tex>) -> &mut Self {
         unsafe {
@@ -736,6 +741,7 @@ impl Material {
     ///            &tex.get_id());
     /// # use stereokit_rust::util::Hash;
     /// # assert_eq!(Hash::string("normal"), 6991063326977151602);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn normal_tex(&mut self, texture: impl AsRef<Tex>) -> &mut Self {
         unsafe {
@@ -770,6 +776,7 @@ impl Material {
     ///            &tex.get_id());
     /// # use stereokit_rust::util::Hash;
     /// # assert_eq!(Hash::string("occlusion"), 10274420935108893154);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn occlusion_tex(&mut self, texture: impl AsRef<Tex>) -> &mut Self {
         unsafe {
@@ -951,7 +958,7 @@ impl Material {
     /// Should this material draw only the edges/wires of the mesh? This can be useful for debugging, and even some
     /// kinds of visualization work.
     ///
-    /// Note that this may not work on some mobile OpenGL systems like Quest.
+    /// TODO/FIXME: Wireframe rendering currently doesn't work with StereoKit's default shaders.
     /// <https://stereokit.net/Pages/StereoKit/Material/Wireframe.html>
     ///
     /// see also [`material_set_wireframe`]
@@ -1859,6 +1866,7 @@ impl<'a> ParamInfos<'a> {
 
     /// Sets a shader parameter with the given name to the provided value. If no parameter is found, nothing happens,
     /// and the value is not set! Warning, this may work on Int values as you can see in the examples.
+    /// TODO: This doesn't work
     /// <https://stereokit.net/Pages/StereoKit/Material/SetUInt.html>
     /// * `name` - the name of the parameter to set
     /// * `value` : up to 4 unsigned integer values
@@ -1950,6 +1958,7 @@ impl<'a> ParamInfos<'a> {
     ///                    .expect("tex should be created");
     /// param_infos.set_texture("metal", &metal_tex);
     /// assert_eq!( param_infos.get_texture("metal").unwrap(), metal_tex );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn set_texture<S: AsRef<str>>(&mut self, name: S, value: impl AsRef<Tex>) -> &mut Self {
         unsafe {
@@ -2285,7 +2294,7 @@ impl<'a> ParamInfos<'a> {
     ///
     /// let mut material = Material::unlit();
     /// let mut param_infos = material.get_all_param_info();
-    /// assert_eq!( param_infos.get_count(), 3);
+    /// assert_eq!( param_infos.get_count(), 5);
     /// ```
     pub fn get_count(&self) -> i32 {
         unsafe { material_get_param_count(self.material.0.as_ptr()) }
@@ -2307,6 +2316,10 @@ impl<'a> ParamInfos<'a> {
     ///         "tex_trans" =>
     ///             assert_eq!(param_infos.string_of(&param), "[x:0, y:0, z:1, w:1]"),
     ///         "diffuse" =>
+    ///             assert_eq!(param_infos.string_of(&param), "Texture data..."),
+    ///         "sk_cubemap" =>
+    ///             assert_eq!(param_infos.string_of(&param), "Texture data..."),
+    ///         "sk_inst" =>
     ///             assert_eq!(param_infos.string_of(&param), "Texture data..."),
     ///        otherwise =>
     ///             panic!("Unknown param type: {}", otherwise)
