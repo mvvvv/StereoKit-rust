@@ -2299,7 +2299,7 @@ impl SphericalHarmonics {
     ///
     /// sh.brightness(0.0);
     /// assert_eq!(sh.get_sample([1.0, 0.0, 1.0]), Color128::BLACK);
-    /// assert_eq!(sh.get_dominent_light_direction().x.is_nan(), true);
+    /// assert_eq!(sh.get_dominent_light_direction(), Vec3::new(0.0, 1.0, 0.0).get_normalized());
     /// ```
     pub fn brightness(&mut self, scale: f32) -> &mut Self {
         unsafe { sh_brightness(self, scale) };

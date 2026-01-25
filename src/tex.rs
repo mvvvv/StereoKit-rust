@@ -2802,13 +2802,18 @@ impl SHCubemap {
     /// let sh_cubemap = SHCubemap::gen_cubemap_sh(sh, 128, 0.5, 1.0);
     /// let tex = sh_cubemap.tex;
     ///
-    /// let sh_cubemap2 = SHCubemap::get_cubemap_lighting(tex);
+    /// let mut sh_cubemap2 = SHCubemap::get_cubemap_lighting(tex);
+    /// sh_cubemap2.sh.brightness(1.0);
+    /// sh_cubemap2.render_as_sky();
     /// let tex2 = sh_cubemap2.tex;
-    /// assert_eq!(tex2.get_asset_state(), AssetState::Loaded);
-    /// assert_eq!(sh_cubemap2.sh.get_dominent_light_direction(), -Vec3::ONE.get_normalized());
-    /// assert_ne!(sh_cubemap2.sh.coefficients[0], Vec3::ZERO);
-    /// assert_ne!(sh_cubemap2.sh.coefficients[1], Vec3::ZERO);
-    /// assert_eq!(sh_cubemap2.sh.coefficients[8], Vec3::ZERO);
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     assert_eq!(tex2.get_asset_state(), AssetState::Loaded);
+    ///     assert_eq!(sh_cubemap2.sh.get_dominent_light_direction(), -Vec3::ONE.get_normalized());
+    ///     assert_ne!(sh_cubemap2.sh.coefficients[0], Vec3::ZERO);
+    ///     assert_ne!(sh_cubemap2.sh.coefficients[1], Vec3::ZERO);
+    ///     assert_eq!(sh_cubemap2.sh.coefficients[8], Vec3::ZERO);
+    /// );
     /// ```
     pub fn get_cubemap_lighting(cubemap_texture: impl AsRef<Tex>) -> SHCubemap {
         SHCubemap {
