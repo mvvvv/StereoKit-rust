@@ -5,13 +5,14 @@ use stereokit_rust::{
     mesh::Mesh,
     model::Model,
     prelude::*,
-    system::{Backend, BackendPlatform, Renderer},
+    system::Renderer,
     tex::{SHCubemap, Tex, TexFormat, TexSample},
     tools::{fly_over::ENABLE_FLY_OVER, log_window::SHOW_LOG_WINDOW, screenshot::SHOW_SCREENSHOT_WINDOW},
     util::{
         Color128, Gradient, SHLight, SphericalHarmonics,
         named_colors::{
-            self, BLACK, BLUE, BURLY_WOOD, DARK_GRAY, LIGHT_BLUE, LIGHT_CYAN, RED, SEA_GREEN, STEEL_BLUE, WHITE, YELLOW,
+            BLACK, BLUE, BURLY_WOOD, DARK_BLUE, DARK_GRAY, LIGHT_BLUE, LIGHT_CYAN, RED, SEA_GREEN, STEEL_BLUE, WHITE,
+            YELLOW,
         },
     },
 };
@@ -215,47 +216,41 @@ impl HandMenuRadial1 {
         let cube_default = SHCubemap::get_rendered_sky();
         cube_default.render_as_sky();
 
-        let mut cube0 = cube_default.clone_ref();
-        let mut cube1 = cube_default.clone_ref();
+        let mut gradient_sky = Gradient::new(None);
+        gradient_sky
+            .add(DARK_BLUE, 0.0)
+            .add(BLUE, 0.4)
+            .add(LIGHT_BLUE, 0.8)
+            .add(LIGHT_CYAN, 0.9)
+            .add(WHITE, 1.0);
+        let mut cube0 = SHCubemap::gen_cubemap_gradient(gradient_sky, Vec3::Y, 1024);
+        cube0
+            .sh
+            //     .add(Vec3::new(0.0, 1.0, 0.0).get_normalized(), Color128::WHITE)
+            //     .add(Vec3::new(1.0, 0.125, 0.0).get_normalized(), DARK_GRAY)
+            //     .add(Vec3::new(-1.0, 0.125, 0.0).get_normalized(), DARK_GRAY)
+            //     .add(Vec3::new(0.0, 0.125, 1.0).get_normalized(), DARK_GRAY)
+            //     .add(Vec3::new(0.0, 0.125, -1.0).get_normalized(), DARK_GRAY)
+            .brightness(1.9);
 
-        if Backend::platform() == BackendPlatform::Web {
-            Log::warn("Using gradient for cubemap may crash the application");
-        } else {
-            let mut gradient_sky = Gradient::new(None);
-            gradient_sky
-                .add(Color128::BLACK, 0.0)
-                .add(BLUE, 0.4)
-                .add(LIGHT_BLUE, 0.8)
-                .add(LIGHT_CYAN, 0.9)
-                .add(WHITE, 1.0);
-            cube0 = SHCubemap::gen_cubemap_gradient(gradient_sky, Vec3::Y, 1024);
-            cube0
-                .sh
-                .add(Vec3::new(0.0, 1.0, 0.0).get_normalized(), Color128::WHITE)
-                .add(Vec3::new(1.0, 0.125, 0.0).get_normalized(), DARK_GRAY)
-                .add(Vec3::new(-1.0, 0.125, 0.0).get_normalized(), DARK_GRAY)
-                .add(Vec3::new(0.0, 0.125, 1.0).get_normalized(), DARK_GRAY)
-                .add(Vec3::new(0.0, 0.125, -1.0).get_normalized(), DARK_GRAY)
-                .brightness(0.3);
+        let mut gradient = Gradient::new(None);
+        gradient
+            .add(RED, 0.01)
+            .add(YELLOW, 0.1)
+            .add(LIGHT_CYAN, 0.3)
+            .add(LIGHT_BLUE, 0.4)
+            .add(BLUE, 0.5)
+            .add(BLACK, 0.7);
+        let mut cube1 = SHCubemap::gen_cubemap_gradient(&gradient, Vec3::NEG_Z, 1);
+        cube1.sh.add(Vec3::new(0.0, 0.0, 1.0), RED).brightness(0.3);
 
-            let mut gradient = Gradient::new(None);
-            gradient
-                .add(RED, 0.01)
-                .add(YELLOW, 0.1)
-                .add(LIGHT_CYAN, 0.3)
-                .add(LIGHT_BLUE, 0.4)
-                .add(BLUE, 0.5)
-                .add(BLACK, 0.7);
-            cube1 = SHCubemap::gen_cubemap_gradient(&gradient, Vec3::NEG_Z, 1);
-            cube1.sh.add(Vec3::new(0.0, 0.0, 1.0).get_normalized(), named_colors::RED).brightness(0.3);
-        }
         let lights: [SHLight; 1] = [SHLight::new(Vec3::ONE, WHITE); 1];
         let sh = SphericalHarmonics::from_lights(&lights);
         let cube2 = SHCubemap::gen_cubemap_sh(sh, 15, 5.0, 0.02);
 
         let mut cube3 =
             SHCubemap::from_cubemap("hdri/sky_dawn.hdr", true, 0).unwrap_or_else(|_err| cube_default.clone_ref());
-        cube3.sh.add(Vec3::new(-1.0, 0.15, -0.15).get_normalized(), RED).brightness(0.1);
+        cube3.sh.add(Vec3::new(-1.0, 0.15, -0.15).get_normalized(), RED).brightness(0.3);
 
         // let cubemap_files = [
         //     "hdri/giza/right.png",
