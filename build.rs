@@ -140,16 +140,6 @@ fn main() {
                 }
             }
 
-            cargo_link!("StereoKitC");
-
-            if cfg!(debug_assertions) {
-                // openxr-sys/linked wants libopenxr_loader so it asks for -Wl -lopenxr_loader in final ld
-                cargo_link!("openxr_loaderd");
-            } else {
-                cargo_link!("openxr_loader");
-            }
-
-            cargo_link!("meshoptimizer");
             cargo_link!("windowsapp");
             cargo_link!("user32");
             cargo_link!("shell32");
@@ -176,7 +166,12 @@ fn main() {
                     // Order matters: libs that depend on others should be listed first
                     cargo_link!("static=StereoKitC");
                     cargo_link!("static=sk_renderer");
-                    cargo_link!("static=openxr_loader");
+                    if cfg!(debug_assertions) {
+                        // openxr-sys/linked wants libopenxr_loader so it asks for -Wl -lopenxr_loader in final ld
+                        cargo_link!("openxr_loaderd");
+                    } else {
+                        cargo_link!("openxr_loader");
+                    }
                     cargo_link!("meshoptimizer");
                     // C++ runtime libraries must come last
                     cargo_link!("stdc++");
@@ -185,6 +180,15 @@ fn main() {
                     //---- We have to extract the DLL i.e. ".\target\x86_64-pc-windows-gnu\debug\build\stereokit-rust-be362d37871b9048\out\build\StereoKitC.dll"
                     //---- and copy it to ".\target\x86_64-pc-windows-gnu\debug\deps\
                     //println!("cargo:rustc-link-search=native={}/build", dst.display());
+                    cargo_link!("StereoKitC");
+                    if cfg!(debug_assertions) {
+                        // openxr-sys/linked wants libopenxr_loader so it asks for -Wl -lopenxr_loader in final ld
+                        cargo_link!("openxr_loaderd");
+                    } else {
+                        cargo_link!("openxr_loader");
+                    }
+
+                    cargo_link!("meshoptimizer");
                     println!("cargo:rustc-link-search=native={win_gnu_libs}");
                     let deuleuleu = "StereoKitC.dll";
                     let target_dir = Path::new(&out_dir).parent().unwrap().parent().unwrap().parent().unwrap();
@@ -200,6 +204,20 @@ fn main() {
             } else {
                 //---- We have to extract the DLL i.e. ".\target\debug\build\stereokit-rust-be362d37871b9048\out\build\Debug\StereoKitC.dll"
                 //---- and copy it to ".\target\debug\deps\
+
+                // Add search paths for sk_renderer library
+                println!(
+                    "cargo:rustc-link-search=native={}/build/_deps/sk_renderer-build/{}",
+                    dst.display(),
+                    profile_upper
+                );
+                println!("cargo:rustc-link-search=native={}/lib", dst.display());
+
+                // Link sk_renderer library
+                if !skc_in_dll {
+                    cargo_link!("sk_renderer");
+                }
+
                 let lib: String = "StereoKitC".into();
                 let deuleuleu = lib.clone() + ".dll";
                 let lib_lib = lib.clone() + ".lib";
@@ -312,38 +330,56 @@ fn main() {
     }
 
     // copy the tools (skshaderc) under target/tools
-    let target_dir_name = env::var("CARGO_TARGET_DIR").unwrap_or("target".into());
-    let mut target_dir = Path::new(&out_dir).parent().unwrap().parent().unwrap().parent().unwrap().parent().unwrap();
-    if !target_dir.ends_with(&target_dir_name) {
-        //cross compilation, we need to go up one more level
-        target_dir = target_dir.parent().unwrap();
-    }
-    println!("cargo:info=Can we copy skshaderc* to {target_dir:?}/tools ?");
-    if target_dir.ends_with(&target_dir_name) && target_dir.exists() {
-        let distrib = target_dir.join("tools");
-        let tools_dir = if let Some(sk_renderer_src) = dep_sk_renderer_src {
-            println!("cargo:info=--yes! we copy skshaderc from {sk_renderer_src:?}");
-            let path = Path::new(&sk_renderer_src);
-            path.join("tools")
-        } else {
-            // Try sk_renderer path first (new architecture)
-            let sk_renderer_path = dst.join("build").join("_deps").join("sk_renderer-build").join("skshaderc");
-            if sk_renderer_path.exists() {
-                println!("cargo:info=--yes! we copy skshaderc from {sk_renderer_path:?}");
-                sk_renderer_path
+    // Only copy if the target CPU architecture matches the host CPU architecture
+    // (OS can differ: we can run Windows .exe on Linux with wine, and both can coexist thanks to .exe suffix)
+    let target_arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_default();
+    let host_arch = env::consts::ARCH;
+
+    println!("cargo:info=Host CPU architecture: {host_arch}, Target CPU architecture: {target_arch}");
+
+    if host_arch == target_arch {
+        let target_dir_name = env::var("CARGO_TARGET_DIR").unwrap_or("target".into());
+        let mut target_dir =
+            Path::new(&out_dir).parent().unwrap().parent().unwrap().parent().unwrap().parent().unwrap();
+        if !target_dir.ends_with(&target_dir_name) {
+            //cross compilation, we need to go up one more level
+            target_dir = target_dir.parent().unwrap();
+        }
+        println!("cargo:info=Can we copy skshaderc* to {target_dir:?}/tools ?");
+        if target_dir.ends_with(&target_dir_name) && target_dir.exists() {
+            let distrib = target_dir.join("tools");
+            let tools_dir = if let Some(sk_renderer_src) = dep_sk_renderer_src {
+                println!("cargo:info=--yes! we copy skshaderc from {sk_renderer_src:?}");
+                let path = Path::new(&sk_renderer_src);
+                path.join("tools")
             } else {
-                // Fall back to sk_gpu path (old architecture)
-                println!("cargo:info=--yes! we copy skshaderc from {dst:?}/build/_deps/sk_gpu-src/tools");
-                dst.join("build").join("_deps").join("sk_gpu-src").join("tools")
+                // Try sk_renderer path first (new architecture)
+                let mut sk_renderer_path = dst.join("build").join("_deps").join("sk_renderer-build").join("skshaderc");
+                // For MSVC, add the profile directory (Debug/Release) after skshaderc
+                if target_env == "msvc" {
+                    sk_renderer_path = sk_renderer_path.join(profile_upper);
+                }
+                if sk_renderer_path.exists() {
+                    println!("cargo:info=--yes! we copy skshaderc from {sk_renderer_path:?}");
+                    sk_renderer_path
+                } else {
+                    // Fall back to sk_gpu path (old architecture)
+                    println!("cargo:info=--yes! we copy skshaderc from {dst:?}/build/_deps/sk_gpu-src/tools");
+                    dst.join("build").join("_deps").join("sk_gpu-src").join("tools")
+                }
+            };
+            if tools_dir.exists() {
+                copy_tree(tools_dir, distrib).expect("Unable to copy tools");
+            } else {
+                println!("cargo:warning=Tools directory not found at {tools_dir:?}");
             }
-        };
-        if tools_dir.exists() {
-            copy_tree(tools_dir, distrib).expect("Unable to copy tools");
         } else {
-            println!("cargo:warning=Tools directory not found at {tools_dir:?}");
+            println!("cargo:warning={target_dir_name} directory {target_dir:?} does not exist");
         }
     } else {
-        println!("cargo:warning={target_dir_name} directory {target_dir:?} does not exist");
+        println!(
+            "cargo:info=Skipping skshaderc copy: target CPU architecture ({target_arch}) differs from host CPU architecture ({host_arch})"
+        );
     }
 
     // Tell cargo to invalidate the built crate whenever the wrapper changes
