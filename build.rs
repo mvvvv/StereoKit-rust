@@ -205,6 +205,15 @@ fn main() {
                 //---- We have to extract the DLL i.e. ".\target\debug\build\stereokit-rust-be362d37871b9048\out\build\Debug\StereoKitC.dll"
                 //---- and copy it to ".\target\debug\deps\
 
+                cargo_link!("StereoKitC");
+                if cfg!(debug_assertions) {
+                    // openxr-sys/linked wants libopenxr_loader so it asks for -Wl -lopenxr_loader in final ld
+                    cargo_link!("openxr_loaderd");
+                } else {
+                    cargo_link!("openxr_loader");
+                }
+
+                cargo_link!("meshoptimizer");
                 // Add search paths for sk_renderer library
                 println!(
                     "cargo:rustc-link-search=native={}/build/_deps/sk_renderer-build/{}",
