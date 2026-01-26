@@ -1170,6 +1170,7 @@ impl BackendAndroid {
     }
 }
 
+/// Deprecated as we are using Vulkan now !!!!
 /// When using Direct3D11 for rendering, this contains a number of variables that may be useful for doing advanced
 /// rendering tasks. This is the default rendering backend on Windows.
 /// <https://stereokit.net/Pages/StereoKit/Backend.D3D11.html>
@@ -1184,7 +1185,7 @@ impl BackendAndroid {
 /// if cfg!(target_os = "windows") {
 ///     // These are results for a D3D11 environment:
 ///     assert_eq!(d3d_context, std::ptr::null_mut());
-///     assert_ne!(d3d_device, std::ptr::null_mut());
+///     assert_eq!(d3d_device, std::ptr::null_mut());
 /// } else {
 ///     // These are results for a non D3D11 environment:
 ///     assert_eq!(d3d_context, std::ptr::null_mut());
