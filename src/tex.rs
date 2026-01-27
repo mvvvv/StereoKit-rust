@@ -590,7 +590,7 @@ impl Tex {
     /// * `priority` - The priority sort order for this asset in the async loading system. Lower values mean loading
     ///   sooner. If None will be set to 10
     ///
-    /// see also [`tex_create_mem`]
+    /// see also [`tex_create_mem`] [`Tex::set_memory`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!

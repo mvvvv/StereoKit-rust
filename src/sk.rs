@@ -1360,7 +1360,6 @@ impl Sk {
     ///     // Quit the app at first step
     ///     sk.quit(Some(QuitReason::Error));
     /// );
-    ///
     /// // Shutdown StereoKit
     /// Sk::shutdown();
     /// ```
