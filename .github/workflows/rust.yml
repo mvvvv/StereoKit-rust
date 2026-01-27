@@ -36,8 +36,8 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
+        ref: ${{ inputs.branch || github.ref }}
         submodules: 'recursive'
-        ref: ${{ inputs.branch }}
 
     - uses: lukka/get-cmake@v3.26.3
 
@@ -74,8 +74,8 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
+        ref: ${{ inputs.branch || github.ref }}
         submodules: 'recursive'
-        ref: ${{ inputs.branch }}
 
     - name: Get Cache
       uses: actions/cache@v4
