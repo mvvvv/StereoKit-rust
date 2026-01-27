@@ -91,7 +91,7 @@ jobs:
     - name: Install Prerequisites
       run: |
         sudo apt-get update
-        sudo apt-get install xvfb clang cmake lld ninja-build libx11-dev libxfixes-dev libvulkan-dev libfontconfig-dev libxkbcommon-x11-0 libxkbcommon0
+        sudo apt-get install xvfb clang cmake lld ninja-build libx11-dev libxfixes-dev libvulkan-dev libfontconfig-dev libxkbcommon-x11-0 libxkbcommon0 mesa-vulkan-drivers
 
     - name: Install StereoKit
       run: cargo install -F event-loop --force --path . 
@@ -104,6 +104,7 @@ jobs:
     - name: Run tests event-loop
       run: |
         export DISPLAY=:99
+        export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.x86_64.json
         Xvfb -ac :99 -screen 0 1280x1024x16 > /dev/null 2>&1 &
         cargo test --verbose --features event-loop -- --test-threads=1
 
