@@ -56,7 +56,7 @@ jobs:
       run: cargo install -F event-loop --force --path . 
 
     - name: compile shaders
-      run: cargo compile_sks --options -f -t x
+      run: cargo compile_sks --options -f -t s
 
     - name: Build event-loop
       run: cargo build --verbose --features event-loop --example main_pc
@@ -91,13 +91,13 @@ jobs:
     - name: Install Prerequisites
       run: |
         sudo apt-get update
-        sudo apt-get install xvfb clang cmake lld ninja-build libx11-dev libxfixes-dev libegl-dev libgbm-dev libfontconfig-dev libxkbcommon-x11-0 libxkbcommon0
+        sudo apt-get install xvfb clang cmake lld ninja-build libx11-dev libxfixes-dev libvulkan-dev libfontconfig-dev libxkbcommon-x11-0 libxkbcommon0
 
     - name: Install StereoKit
       run: cargo install -F event-loop --force --path . 
 
     - name: compile shaders
-      run: cargo compile_sks --options -f -t e
+      run: cargo compile_sks --options -f -t s
 
     - name: Build event-loop
       run: cargo build --verbose --features event-loop --example main_pc
