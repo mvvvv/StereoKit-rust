@@ -23,13 +23,6 @@ fn main() {
 
     println!("cargo:info=Compiling with {target_env} for {target_os} with profile {profile}");
 
-    if target_os == "macos" {
-        println!(
-            "cargo:warning=You seem to be building for MacOS! We still enable builds so that rust-analyzer works, but this won't actually build StereoKit so it'll be pretty non-functional."
-        );
-        return;
-    }
-
     if env::var("DOCS_RS").is_ok() {
         println!("cargo:warning=Skipping build on docs.rs");
         return;
@@ -202,6 +195,7 @@ fn main() {
                     let _lib_dll = fs::copy(file_dll, dest_file_dll).unwrap();
                 }
             } else {
+                //-- For MSVC
                 //---- We have to extract the DLL i.e. ".\target\debug\build\stereokit-rust-be362d37871b9048\out\build\Debug\StereoKitC.dll"
                 //---- and copy it to ".\target\debug\deps\
 
@@ -276,11 +270,13 @@ fn main() {
             cargo_link!("stdc++");
             cargo_link!("openxr_loader");
             cargo_link!("meshoptimizer");
-            cargo_link!("vulkan");
+
             if cfg!(feature = "profile") {
                 cargo_link!("TracyClient");
             }
+
             if target_os == "android" {
+                cargo_link!("vulkan");
                 cargo_link!("android");
 
                 //---- A directory whose content is only used during the production of the APK (no need for DEBUG/RELEASE sub directory)
@@ -327,7 +323,20 @@ fn main() {
                 // fs::copy(libcxx, dest_file_so).expect("Unable to copy libc++_shared.so");
 
                 cargo_link!("dylib=c++");
+            } else if target_os == "macos" {
+                // macOS uses MoltenVK for Vulkan support
+                println!("cargo:info=Building for macOS - using native frameworks");
+                cargo_link!("framework=Metal");
+                cargo_link!("framework=QuartzCore");
+                cargo_link!("framework=AppKit");
+                cargo_link!("framework=Foundation");
+                // MoltenVK is typically provided via brew or vulkan-sdk
+                println!("cargo:rustc-link-search=native=/usr/local/lib");
+                println!("cargo:rustc-link-search=native=/opt/homebrew/lib");
+                cargo_link!("MoltenVK");
             } else {
+                // Linux
+                cargo_link!("vulkan");
                 cargo_link!("X11");
                 cargo_link!("Xfixes");
                 cargo_link!("fontconfig");

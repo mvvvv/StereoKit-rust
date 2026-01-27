@@ -6,7 +6,6 @@ on:
         description: 'Branch to build'
         type: string
         required: false
-        default: 'master'
       onWindows:
         description: 'on windows latest!'
         type: boolean
@@ -14,6 +13,11 @@ on:
         default: true
       onUbuntu:
           description: 'on ubuntu latest!'
+          type: boolean
+          required: false
+          default: true
+      onMacOS:
+          description: 'on macos latest!'
           type: boolean
           required: false
           default: true
@@ -61,12 +65,12 @@ jobs:
     - name: Build event-loop
       run: cargo build --verbose --features event-loop --example main_pc
     - name: Run tests event-loop
-      run: cargo test --verbose --features event-loop
+      run: cargo test --verbose --features event-loop -- --test-threads=1
 
     - name: Build no-event-loop
       run: cargo build --verbose --features no-event-loop --example manual
     - name: Run tests no-event-loop
-      run: cargo test --verbose --features no-event-loop
+      run: cargo test --verbose --features no-event-loop -- --test-threads=1
 
   build-linux:
     runs-on: ubuntu-latest
@@ -110,10 +114,45 @@ jobs:
 
     - name: Build no-event-loop
       run: cargo build --verbose --features no-event-loop --example manual
-    # - name: Run tests no-event-loop
-    #   run: |
-    #     export DISPLAY=:99
-    #     Xvfb -ac :99 -screen 0 1280x1024x16 > /dev/null 2>&1 &
-    #     cargo test --verbose --features no-event-loop -- --test-threads=1
+
+  build-macos:
+    runs-on: macos-latest
+    if: ${{ inputs.onMacOS }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ inputs.branch || github.ref }}
+        submodules: 'recursive'
+
+    - name: Get Cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          target/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Install Prerequisites
+      run: |
+        brew install cmake ninja molten-vk vulkan-headers
+
+    - name: Install StereoKit
+      run: cargo install -F event-loop --force --path . 
+
+    - name: compile shaders
+      run: cargo compile_sks --options -f -t s
+
+    - name: Build event-loop
+      run: cargo build --verbose --features event-loop --example main_pc
+    - name: Run tests event-loop
+      run: cargo test --verbose --features event-loop -- --test-threads=1
+
+    - name: Build no-event-loop
+      run: cargo build --verbose --features no-event-loop --example manual
+    - name: Run tests no-event-loop
+      run: cargo test --verbose --features no-event-loop -- --test-threads=1
 
 
