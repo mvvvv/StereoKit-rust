@@ -19,12 +19,12 @@ The following instructions are to get the source code from github if you want to
 
 ## Regarding your working OS, here are the target architectures you can build for
 
-|    Target:     | Windows x86_64 |   Linux x86_64    | Meta Quest | Linux AArch64 |
-| :------------: | :------------: | :---------------: | :--------: | :-----------: |
-| Windows x86_64 |     **X**      | with Steam Proton |   **X**    |               |
-| Linux  x86_64  |     **X**      |       **X**       |   **X**    |     **X**     |
-| Linux  AArch64 |       ?        |         ?         |     ?      |     **X**     |
-|     MacOs      |                |                   |   **X**    |               |
+|    Target:     | Windows x86_64 |   Linux x86_64    | Meta Quest | Linux AArch64 | macOS AArch64 |
+| :------------: | :------------: | :---------------: | :--------: | :-----------: | :-----------: |
+| Windows x86_64 |     **X**      | with Steam Proton |   **X**    |               |               |
+| Linux  x86_64  |     **X**      |       **X**       |   **X**    |     **X**     |               |
+| Linux  AArch64 |       ?        |         ?         |     ?      |     **X**     |               |
+|     macOS      |                |                   |   **X**    |               |     **X**     |
 
 Let us know if you have launched the demos on an architecture not tested here.
 
@@ -32,6 +32,7 @@ Let us know if you have launched the demos on an architecture not tested here.
 
 - `git clone --recursive https://github.com/mvvvv/StereoKit-rust/`
 - On Linux get the following tools and dev libraries : git clang cmake libx11-dev libxfixes-dev libvulkan-dev libfontconfig-dev.
+- On macOS get the following tools and dev libraries : brew install cmake ninja molten-vk vulkan-headers.
 - On Windows[^2] get the following tools and dev libraries : "Git", "CMake", "Visual Studio Build Tools 2022(Developpment Desktop C++)" and "DotNet SDK v8+"
 - Install the project's tools from the project directory `cargo install -F event-loop --path .`
 - If you want to launch the demos then:
@@ -42,7 +43,6 @@ Let us know if you have launched the demos on an architecture not tested here.
 
 - Make sure you have [OpenXR installed](https://www.khronos.org/openxr/) with an active runtine.
 - Launch[^1]: `cargo run --features event-loop  --example main_pc`
-  using Wayland on Linux may require to unset temporarily the DISPLAY variable: `DISPLAY= cargo run  --features event-loop  --example main_pc`).
 
 ### Run the project's demo on your PC using the [simulator](https://stereokit.net/Pages/Guides/Using-The-Simulator.html)
 
@@ -52,7 +52,7 @@ Let us know if you have launched the demos on an architecture not tested here.
 
 `cargo build_sk_rs --example main_pc --features event-loop <the path of your exportable repository>`
 
-### Run the project's demo on your Android headset (from a PC running Windows, Mac or Linux)
+### Run the project's demo on your Android headset
 
 - Install [sdkmanager](https://developer.android.com/studio/command-line/sdkmanager)  (or Android Studio if you intend to use it). You'll need a Java JDK (v17 is fine).
 

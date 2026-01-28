@@ -1765,7 +1765,7 @@ impl Platform {
     /// A note for UWP apps, UWP generally does not have permission to access random files, unless the user has chosen
     /// them with the picker! This picker properly handles permissions for individual files on UWP, but may have issues
     /// with files that reference other files, such as .gltf files with external textures. See [`Platform::write_file`]
-    /// and [`Platform.read_file`] for manually reading and writing files in a cross-platfom manner.
+    /// and [`Platform::read_file`] for manually reading and writing files in a cross-platfom manner.
     /// <https://stereokit.net/Pages/StereoKit/Platform/FilePicker.html>
     /// * `mode` - Are we trying to Open a file, or Save a file? This changes the appearance and behavior of the picker
     ///   to support the specified action.
@@ -1810,7 +1810,7 @@ impl Platform {
     /// A note for UWP apps, UWP generally does not have permission to access random files, unless the user has chosen
     /// them with the picker! This picker properly handles permissions for individual files on UWP, but may have issues
     /// with files that reference other files, such as .gltf files with external textures. See [`Platform::write_file`]
-    /// and [`Platform.read_file`] for manually reading and writing files in a cross-platfom manner.
+    /// and [`Platform::read_file`] for manually reading and writing files in a cross-platfom manner.
     /// <https://stereokit.net/Pages/StereoKit/Platform/FilePicker.html>
     /// * `mode` - Are we trying to Open a file, or Save a file? This changes the appearance and behavior of the picker
     ///   to support the specified action.

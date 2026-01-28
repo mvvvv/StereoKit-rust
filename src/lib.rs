@@ -31,7 +31,12 @@
 //!   - Considering that you have already installed `Rust` with `stable-?????-unknown-linux-gnu` toolchain and the linux package
 //!     `build-essential`.
 //!   - Get the following tools and dev libraries : `git` `clang` `cmake` `lld` `ninja-build` `libx11-dev`
-//!     `libxfixes-dev` `libegl-dev` `libgbm-dev` `libfontconfig-dev` `libxkbcommon-x11-dev`.
+//!     `libxfixes-dev` `libvulkan-dev` `libfontconfig-dev` `libxkbcommon-x11-dev`.
+//!   - For headless/CI environments or software rendering: `mesa-vulkan-drivers` (provides lavapipe software renderer).
+//!
+//! ### On `macOS`:
+//!   - Considering that you have already installed `Rust` with `stable-?????-apple-darwin` toolchain.
+//!   - Get the following tools and dev libraries : `brew install cmake ninja molten-vk vulkan-headers`.
 //!
 //! Installing the stereokit_rust tools with `cargo install -F no-event-loop stereokit-rust` should help you to check
 //! the missing dependencies.
@@ -145,16 +150,15 @@
 //!
 //! # How to build and test your application:
 //!
-//! * [Building your PC VR/MR app](#building-your-pc-vrmr-app).
+//! * [Building your PC/Mac VR/MR app](#building-your-pcmac-vrmr-app).
 //! * [Building your Android VR/MR app](#building-your-android-vrmr-app).
 //! * [Building your Windows GNU PC VR/MR app](#building-your-windows-gnu-pc-vrmr-app).
-//! * [Building your Linux AARCH64 PC VR/MR app](#building-your-linux-aarch64-pc-vrmr-app).
-//! * [Building your Linux X86_64 PC VR/MR app](#building-your-linux-x86_64-pc-vrmr-app).
+//! * [Cross-building your Linux AARCH64 PC VR/MR app](#cross-building-your-linux-aarch64-pc-vrmr-app).
+//! * [Cross-building your Linux X86_64 PC VR/MR app](#cross-building-your-linux-x86_64-pc-vrmr-app).
 //!
-//! ## Building your PC VR/MR app:
+//! ## Building your PC/Mac VR/MR app:
 //! * Launch `cargo run --bin main_vr_app` to compile and run your app in debug mode on your PC with or without a headset.
-//!   (using Wayland on Linux may require to unset temporarily the DISPLAY variable: `DISPLAY= cargo run`)
-//! * Launch `cargo build_sk_rs --bin main_vr_app <build_directory>` to compile your app and assets in release mode for your PC.
+//! * Launch `cargo build_sk_rs --bin main_vr_app <build_directory>` to compile your app and assets in release mode for your PC/Mac.
 //!
 //! To test with your headset, make sure you have [OpenXR installed](https://www.khronos.org/openxr/) with an active
 //! runtine (SteamVR, Monado, WiVRn, ALVR ...).
@@ -203,8 +207,7 @@
 //!   - Generate the release apk: `./gradlew buildRelease`. The apk will be in `app/build/outputs/apk/release`
 //!
 //! ## Building your Windows GNU PC VR/MR app:
-//! Thanks to Steam Proton, you can run your Windows exe on Linux. It's even better than native build thanks to D3D11
-//! to Vulkan translation. Knowing that, we work to build Windows .exe files on Linux using GNU toolchain.
+//! Thanks to Steam Proton, you can test and run your Windows exe on Linux. Knowing that, we can also build Windows .exe files on Linux using GNU toolchain.
 //!
 //! Build your app for Windows_x64 using GNU toolchain from Linux and Windows (and probably Mac):
 //! * Install mingw-w64 (MSYS2 on windows).
@@ -226,8 +229,8 @@
 //!   - Add a non-steam game to your library then launch it when WiVRn or SteamVR are started.
 //!   - If you only need the simulator: `wine your_app.exe`.
 //!
-//! ## Building your Linux aarch64 PC VR/MR app:
-//! If you are on aarch64 Linux, you just have to follow the instructions in [`Building your PC VR/MR app`](#building-your-pc-vrmr-app).
+//! ## Cross building your Linux aarch64 PC VR/MR app:
+//! If you are on aarch64 Linux, you just have to follow the instructions in [`Building your PC/Mac VR/MR app`](#building-your-pcmac-vrmr-app).
 //! If you are on a x86_64 architecture you are able to cross-compile your app for aarch64:
 //! * Install g++-aarch64-linux-gnu
 //! * Get the libraries `libx11-dev:arm64` `libxfixes-dev:arm64` `libegl-dev:arm64` `libgbm-dev:arm64` `libfontconfig-dev:arm64`.
@@ -238,8 +241,8 @@
 //! * Add a section `[target.aarch64-unknown-linux-gnu]` in your config.toml for setting `linker = "aarch64-linux-gnu-gcc"`
 //! * Launch `cargo build_sk_rs --bin main_vr_app --aarch64-linux <the path of your exportable repository>`
 //!
-//! ## Building your Linux x86_64 PC VR/MR app:
-//! If you are on x86_64 Linux, you just have to follow the instructions in [`Building your PC VR/MR app`](#building-your-pc-vrmr-app).
+//! ## Cross building your Linux x86_64 PC VR/MR app:
+//! If you are on x86_64 Linux, you just have to follow the instructions in [`Building your PC/Mac VR/MR app`](#building-your-pcmac-vrmr-app).
 //! If you are on aarch64 architecture you should be able to cross-compile for x86_64:
 //! (This hasn't been tested yet, if you are interested in testing it, please let us now)
 //! * Install g++-x86-64-linux-gnu

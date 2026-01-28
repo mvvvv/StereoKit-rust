@@ -7038,7 +7038,7 @@ impl World {
     }
 
     /// The mode or “reference space” that StereoKit uses for determining its base origin. This is determined by the
-    /// initial value provided in [`crate::sk::SkSettings.origin`], as well as by support from the underlying runtime. The mode
+    /// initial value provided in [`crate::sk::SkSettings::origin`], as well as by support from the underlying runtime. The mode
     /// reported here will not necessarily be the one requested in initialization, as fallbacks are implemented using
     /// different available modes.
     /// <https://stereokit.net/Pages/StereoKit/World/OriginMode.html>
