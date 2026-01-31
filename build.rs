@@ -82,7 +82,7 @@ fn main() {
     } else {
         cmake_config.define("SK_BUILD_SHARED_LIBS", "OFF");
     }
-    cmake_config.define("SK_BUILD_TESTS", "OFF").define("SK_PHYSICS", "OFF");
+    cmake_config.define("SK_BUILD_TESTS", "OFF");
     if target_os == "android" {
         cmake_config.define("CMAKE_ANDROID_API", "32");
         cmake_config.define("CMAKE_INSTALL_INCLUDEDIR", "install");
@@ -355,7 +355,7 @@ fn main() {
 
     println!("cargo:info=Host CPU architecture: {host_arch}, Target CPU architecture: {target_arch}");
 
-    if host_arch == target_arch {
+    if host_arch == target_arch && target_os != "android" {
         let target_dir_name = env::var("CARGO_TARGET_DIR").unwrap_or("target".into());
         let mut target_dir =
             Path::new(&out_dir).parent().unwrap().parent().unwrap().parent().unwrap().parent().unwrap();
@@ -381,9 +381,8 @@ fn main() {
                     println!("cargo:info=--yes! we copy skshaderc from {sk_renderer_path:?}");
                     sk_renderer_path
                 } else {
-                    // Fall back to sk_gpu path (old architecture)
-                    println!("cargo:info=--yes! we copy skshaderc from {dst:?}/build/_deps/sk_gpu-src/tools");
-                    dst.join("build").join("_deps").join("sk_gpu-src").join("tools")
+                    println!("cargo:info=--no sk_renderer path not found");
+                    "no path found for skshaderc".into()
                 }
             };
             if tools_dir.exists() {
@@ -396,7 +395,7 @@ fn main() {
         }
     } else {
         println!(
-            "cargo:info=Skipping skshaderc copy: target CPU architecture ({target_arch}) differs from host CPU architecture ({host_arch})"
+            "cargo:info=Skipping skshaderc copy: Android build or target CPU architecture ({target_arch}) differs from host CPU architecture ({host_arch})"
         );
     }
 
