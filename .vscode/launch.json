@@ -22,7 +22,7 @@
       "args": [],
       "cwd": "${workspaceFolder}",
       "env": {
-        "PATH": "${workspaceFolder}/target/debug/deps;${workspaceFolder}/StereoKit/bin/distribute/bin/Win32/x64/Debug;${env:PATH}"
+        "PATH": "${workspaceFolder}/target/debug/deps;${env:PATH}"
       }
     },
     {
