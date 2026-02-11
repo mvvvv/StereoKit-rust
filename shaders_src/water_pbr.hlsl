@@ -4,10 +4,10 @@
 //--name = water_pbr
 //--color:color = 0, 0, 1, 0.9
 //--emission_factor:color = 0.01,0.07,0,01
-//--tex_trans   = 0,0,1,1
+//--tex_trans   = 0,0,10.1,10.1
 //--time = 5
-//--metallic    = 0.9
-//--roughness   = 0.01
+//--metallic    = 0.6
+//--roughness   = 1.4
 float4       color;
 float4       emission_factor;
 float4       tex_trans;

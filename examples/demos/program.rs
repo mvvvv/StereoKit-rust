@@ -94,6 +94,8 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
         Device::get_name().unwrap_or("???")
     ));
     let mut notif = HudNotification::default();
+    notif.duration = Some(10.0);
+    notif.position = Vec3::new(0.0, 0.0, -0.6);
     if Backend::xr_type() == BackendXRType::Simulator {
         notif.text = "Press [F1] key to open the hand menu".into();
     } else if cfg!(target_os = "android") || Device::get_runtime().unwrap_or_default().starts_with(" 'v") {

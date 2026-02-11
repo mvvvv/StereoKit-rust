@@ -89,6 +89,7 @@ impl Default for HandMenuRadial1 {
         let mut parquet =
             Material::from_file("shaders/large_tile_pbr.hlsl.sks", "parquet_pbr".into()).unwrap_or_default();
         parquet
+            .face_cull(Cull::Back)
             .diffuse_tex(&parquet_img)
             .color_tint(BURLY_WOOD)
             .occlusion_tex(&parquetao)
@@ -96,32 +97,31 @@ impl Default for HandMenuRadial1 {
             .metal_tex(parquetmetal)
             .tex_transform(Vec4::new(0.0, 0.0, 12.0, 12.0))
             .roughness_amount(3.0)
-            .metallic_amount(0.2)
-            .face_cull(Cull::Back);
+            .metallic_amount(0.2);
 
         // see water
         let mut sea = Material::from_file("shaders/water_pbr.hlsl.sks", "water_pbr".into()).unwrap_or_default();
         sea.diffuse_tex(&bump_inverse_tex)
-            .normal_tex(&bump_tex)
-            .occlusion_tex(&bump_inverse_tex)
-            .tex_transform(Vec4::new(0.0, 0.0, 0.01, 0.01))
-            .roughness_amount(1.4)
-            .metallic_amount(0.6)
             .face_cull(Cull::Back)
+            .emission_tex(&bump_tex)
+            .occlusion_tex(&bump_inverse_tex)
+            .tex_transform(Vec4::new(0.0, 0.0, 1.5, 2.5))
+            .roughness_amount(0.4)
+            .metallic_amount(0.1)
             .color_tint(SEA_GREEN)
             .transparency(Transparency::None)
-            .time(5.0);
+            .time(3.0);
 
         // fresh water2
         let mut water2 = Material::from_file("shaders/water_pbr2.hlsl.sks", "water_pbr2".into()).unwrap_or_default();
         water2
+            .face_cull(Cull::Back)
             .diffuse_tex(&bump_tile_tex)
             .occlusion_tex(&bump_inverse_tex)
             .normal_tex(&bump_tex)
-            .tex_transform(Vec4::new(0.0, 0.0, 0.01, 0.01))
+            .tex_transform(Vec4::new(0.0, 0.0, 5.5, 4.5))
             .roughness_amount(0.4)
             .metallic_amount(0.6)
-            .face_cull(Cull::Back)
             .color_tint(STEEL_BLUE)
             .transparency(Transparency::Blend)
             .time(5.0);

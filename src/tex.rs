@@ -712,8 +712,8 @@ impl Tex {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix},
-    ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
+    /// use stereokit_rust::{maths::{ Matrix},
+    ///                      tex::{Tex}, mesh::Mesh, material::Material};
     ///
     /// let plane_mesh = Mesh::generate_plane_up([1.0,1.0], None, true);
     ///

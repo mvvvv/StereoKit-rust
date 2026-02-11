@@ -1,12 +1,12 @@
 use stereokit_rust::{
     font::Font,
-    material::{Cull, Material},
+    material::Material,
     maths::{Matrix, Pose, Quat, Vec2, Vec3, Vec4},
     mesh::{Mesh, Vertex},
     prelude::*,
-    shader::Shader,
-    system::{Text, TextStyle, World},
+    system::{Text, World},
     tex::Tex,
+    tools::notif::HudNotification,
     ui::{Ui, UiMove, UiWin},
     util::{
         Time,
@@ -33,8 +33,7 @@ pub struct Shaders1 {
     mesh: Mesh,
     plane: Mesh,
     pub transform_text: Matrix,
-    text: String,
-    text_style: TextStyle,
+    notif: HudNotification,
     fps: f64,
 }
 
@@ -42,10 +41,12 @@ unsafe impl Send for Shaders1 {}
 
 impl Default for Shaders1 {
     fn default() -> Self {
-        //------ Materials
-        let hud_text_shader = Shader::from_file("shaders/hud_text.hlsl.sks").unwrap_or_default();
-        let text_style = Text::make_style_with_shader(Font::default(), 0.03, hud_text_shader, RED);
+        let mut notif = HudNotification::default();
+        notif.duration = None;
+        notif.position = Vec3::new(-0.03, -0.03, -0.3);
+        notif.text_style = Text::make_style(Font::default(), 0.01, GREEN);
 
+        //------ Materials
         let mut blinker_material =
             Material::from_file("shaders/blinker.hlsl.sks", Some("red_material")).unwrap_or_default();
         blinker_material
@@ -70,7 +71,6 @@ impl Default for Shaders1 {
             .tex_transform(Vec4::new(0.0, 0.0, 2.0, 2.0))
             .roughness_amount(0.4)
             .metallic_amount(0.6)
-            .face_cull(Cull::Back)
             .color_tint(LIGHT_BLUE)
             .time(5.0);
 
@@ -130,8 +130,7 @@ impl Default for Shaders1 {
             mesh,
             plane,
             transform_text,
-            text: "Shader1".to_owned(),
-            text_style,
+            notif,
             fps: 0.0,
         }
     }
@@ -176,18 +175,8 @@ impl Shaders1 {
 
         self.fps = ((1.0 / Time::get_step()) + self.fps) / 2.0;
 
-        Text::add_at(
-            token,
-            format!("{}\n{:?} FPS", &self.text, self.fps as i16),
-            self.transform_text,
-            Some(self.text_style),
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-        );
+        self.notif.text = format!("Shader1\nFPS: {:.0}", self.fps);
+        self.notif.draw(token);
     }
 
     fn close(&mut self, triggering: bool) -> bool {

@@ -3,7 +3,7 @@
 
 //--name = water_pbr2
 //--color:color = 0, 0, 1, 1.0
-//--tex_trans   = 0,0,10.1,10.1
+//--tex_trans   = 0,0,5.1,5.1
 //--time = 5
 //--metallic    = 0.9
 //--roughness   = 0.01

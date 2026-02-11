@@ -33,11 +33,11 @@ impl Default for Anim1 {
         let mut brick_wall_material = calcaire.copy();
         let prefix_id = brick_wall_material.get_id().to_string();
         brick_wall_material
+            .face_cull(Cull::None)
             .roughness_amount(0.7)
             .color_tint(DARK_RED)
             .tex_transform(Vec4::new(0.0, 0.0, 5.0, 5.0))
             .transparency(Transparency::None)
-            .face_cull(Cull::None)
             .id(format!("BRICK_{prefix_id}"));
         Log::diag(format!("Brick material ID is {}", brick_wall_material.get_id()));
         // The nodes stay alive and keep Material alive so, no id .id("brick_wall");
@@ -112,7 +112,7 @@ impl Anim1 {
 
         // We ask for a notification to be displayed
         let mut notif = HudNotification::default();
-        notif.position = Vec3::new(0.0, 0.3, -0.2);
+        notif.position = Vec3::new(0.0, 0.0, -0.5);
         notif.text = "Close right hand to change animation".into();
 
         SkInfo::send_event(&self.sk_info, StepperAction::add("HudNotifAnim1", notif));

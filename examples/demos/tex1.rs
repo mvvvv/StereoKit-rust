@@ -347,7 +347,7 @@ impl Tex1 {
 
         // We ask for a notification to be displayed
         let mut notif = HudNotification::default();
-        notif.position = Vec3::new(0.0, 0.3, -0.2).into();
+        notif.position = Vec3::new(0.0, 0.0, -0.5).into();
         notif.text = "Close right hand to change textures".into();
 
         SkInfo::send_event(&self.sk_info, StepperAction::add("HudNotifTex1", notif));
