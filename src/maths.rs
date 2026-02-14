@@ -3271,6 +3271,12 @@ impl Matrix {
     /// This is mainly used for test screenshots, but it can be useful for other things too!
     pub const Y_180: Matrix = Matrix { row: [Vec4::NEG_X, Vec4::Y, Vec4::NEG_Z, Vec4::W] };
 
+    /// Identity matrix rotated 180 degrees around the Z axis made of [[Vec4::NEG_X, Vec4::NEG_Y, Vec4::Z, Vec4::W]]
+    pub const Z_180: Matrix = Matrix { row: [Vec4::NEG_X, Vec4::NEG_Y, Vec4::Z, Vec4::W] };
+
+    /// Identity matrix rotated 180 degrees around the X axis made of [[Vec4::X, Vec4::NEG_Y, Vec4::NEG_Z, Vec4::W]]
+    pub const X_180: Matrix = Matrix { row: [Vec4::X, Vec4::NEG_Y, Vec4::NEG_Z, Vec4::W] };
+
     /// Null or Zero matrix made of [[Vec4::ZERO, Vec4::ZERO, Vec4::ZERO, Vec4::ZERO]]
     pub const NULL: Matrix = Matrix { row: [Vec4::ZERO, Vec4::ZERO, Vec4::ZERO, Vec4::ZERO] };
 

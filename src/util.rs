@@ -1017,6 +1017,27 @@ impl Device {
         unsafe { device_display_get_type() }
     }
 
+    /// The refresh rate of the display in Hz, derived from OpenXR's predictedDisplayPeriod. Returns 0 if not available.
+    /// <https://stereokit.net/Pages/StereoKit/Device/DisplayRefreshRate.html>
+    ///
+    /// see also [`device_display_get_refresh_rate`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::util::Device;
+    ///
+    /// let refresh_rate = Device::get_display_refresh_rate();
+    /// // Refresh rate should be a positive value or 0 if not available
+    /// assert_ne!(refresh_rate, 0.0);
+    ///
+    /// xr_mode_stop_here!();
+    /// // 90 seams to be the default for the headless.
+    /// assert_eq!(refresh_rate, 90.0);
+    /// ```
+    pub fn get_display_refresh_rate() -> f32 {
+        unsafe { device_display_get_refresh_rate() }
+    }
+
     /// This is the name of the OpenXR runtime that powers the current device! This can help you determine which
     /// implementation quirks to expect based on the codebase used. On the simulator, this will be "Simulator", and in
     /// other non-XR modes this will be "None".
@@ -1040,10 +1061,20 @@ impl Device {
             .map_err(|e| StereoKitError::CStrError(e.to_string()))
     }
 
-    /// The reported name of the GPU, this will differ between D3D and GL.
+    /// The reported name of the GPU.
     /// <https://stereokit.net/Pages/StereoKit/Device/GPU.html>
     ///
     /// see also [`device_get_gpu`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::util::Device;
+    ///
+    /// let gpu_name = Device::get_gpu();
+    /// assert!(gpu_name.is_ok());
+    /// // The GPU name will vary by system, but should not be empty
+    /// assert!(!gpu_name.unwrap().is_empty());
+    /// ```
     pub fn get_gpu<'a>() -> Result<&'a str, StereoKitError> {
         unsafe { CStr::from_ptr(device_get_gpu()) }
             .to_str()
@@ -2413,6 +2444,8 @@ unsafe extern "C" {
     pub fn time_scale(scale: f64);
     pub fn time_set_time(total_seconds: f64, frame_elapsed_seconds: f64);
     pub fn time_frame() -> u64;
+    pub fn time_perf_cpu_us() -> u64;
+    pub fn time_perf_gpu_us() -> u64;
 }
 
 impl Time {
@@ -2652,5 +2685,49 @@ impl Time {
     /// see example in [`Time::get_total_unscaled`]
     pub fn get_total_unscaledf() -> f32 {
         unsafe { time_totalf_unscaled() }
+    }
+
+    /// Microseconds of CPU work for the renderer during the most recently completed frame. This measures wall-clock
+    /// time from command buffer acquisition through queue submission, excluding any time spent waiting on GPU fences
+    /// or vsync. This is useful for identifying CPU-side rendering bottlenecks such as draw call overhead or resource
+    /// uploads. Returns 0 if timing data is not yet available (first few frames).
+    /// <https://stereokit.net/Pages/StereoKit/Time/PerfCPUus.html>
+    ///
+    /// see also [`time_perf_cpu_us`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::util::Time;
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     let cpu_us = Time::get_perf_cpu_us();
+    ///     // CPU time should be non-zero after first few frames
+    ///     assert_eq!(cpu_us, 0);
+    /// );
+    /// ```
+    pub fn get_perf_cpu_us() -> u64 {
+        unsafe { time_perf_cpu_us() }
+    }
+
+    /// Microseconds the GPU spent executing rendering commands for the most recently completed frame. Measured via
+    /// hardware timestamp queries at the top and bottom of the Vulkan pipeline, so this reflects actual GPU execution
+    /// time independent of CPU pacing or vsync. Useful for identifying GPU-bound scenarios like expensive shaders or
+    /// overdraw. Returns 0 if timing data is not yet available (first few frames).
+    /// <https://stereokit.net/Pages/StereoKit/Time/PerfGPUus.html>
+    ///
+    /// see also [`time_perf_gpu_us`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::util::Time;
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     let gpu_us = Time::get_perf_gpu_us();
+    ///     // GPU time should be non-zero after first few frames
+    ///     assert_eq!(gpu_us, 0);
+    /// );
+    /// ```
+    pub fn get_perf_gpu_us() -> u64 {
+        unsafe { time_perf_gpu_us() }
     }
 }
