@@ -114,9 +114,9 @@ struct vsIn {
 };
 struct psIn {
     float4 pos     : SV_POSITION;
-    float3 normal  : NORMAL0;
+    half3  normal  : NORMAL0;
     float2 uv      : TEXCOORD0;
-    float3 irradiance: COLOR1;
+    half3  irradiance: COLOR1;
     float3 world   : TEXCOORD2;
     float3 view_dir: TEXCOORD3;
     uint view_id : SV_RenderTargetArrayIndex;
@@ -127,26 +127,27 @@ psIn vs(vsIn input, uint id : SV_InstanceID) {
 	o.view_id = id % sk_view_count;
 	id        = id / sk_view_count;
 
-    o.world = mul(float4(input.pos.xyz, 1), sk_inst[id].world).xyz;
-    o.pos   = mul(float4(o.world,  1), sk_viewproj[o.view_id]);
+	float3x3 world3x3 = (float3x3)sk_inst[id].world;
+	o.world = mul(input.pos.xyz, world3x3) + sk_inst[id].world[3].xyz;
+	o.pos   = mul(float4(o.world, 1), sk_viewproj[o.view_id]);
 
-    o.normal     = normalize(mul(float4(input.norm, 0), sk_inst[id].world).xyz);
-    o.uv         = (input.uv * tex_trans.zw) + tex_trans.xy;
-    o.irradiance = sk_lighting(o.normal);
-    o.view_dir   = sk_camera_pos[o.view_id].xyz - o.world;
-    return o;
+	o.normal     = normalize(mul(input.norm, world3x3));
+	o.uv         = (input.uv * tex_trans.zw) + tex_trans.xy;
+	o.irradiance = sk_lighting(o.normal);
+	o.view_dir   = sk_camera_pos[o.view_id].xyz - o.world;
+	return o;
 }
 
 float4 ps(psIn input) : SV_TARGET {
     
     float4 albedo = float4(brick_color(input.uv * size_factors[0]), 1.0);
     float3 normal_cal = normal(input.uv * size_factors[0]) * input.normal;
-    float2 metal_rough = metal    .Sample(metal_s,    input.uv).gb; // rough is g, b is metallic
-    float metallic_final = metal_rough.y * metallic;
-    float rough_final    = metal_rough.x * roughness;
-    float  ao  = 1.0;
+    half2 metal_rough = (half2)metal    .Sample(metal_s,    input.uv).gb; // rough is g, b is metallic
+    half metallic_final = metal_rough.y * (half)metallic;
+    half rough_final    = metal_rough.x * (half)roughness;
+    half  ao  = 1.0h;
     if (use_occlusion) {
-        ao  = occlusion.Sample(occlusion_s,input.uv).r;  // occlusion is sometimes part of the metal tex, uses r channel
+        ao  = (half)occlusion.Sample(occlusion_s,input.uv).r;  // occlusion is sometimes part of the metal tex, uses r channel
     }
     
     float4 color = sk_pbr_shade(albedo, input.irradiance, ao, metallic_final, rough_final, input.view_dir, normal_cal);
