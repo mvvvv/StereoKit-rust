@@ -96,8 +96,8 @@ impl Default for HandMenuRadial1 {
             .normal_tex(parquetroughness)
             .metal_tex(parquetmetal)
             .tex_transform(Vec4::new(0.0, 0.0, 12.0, 12.0))
-            .roughness_amount(3.0)
-            .metallic_amount(0.2);
+            .roughness_amount(0.9)
+            .metallic_amount(0.05);
 
         // see water
         let mut sea = Material::from_file("shaders/water_pbr.hlsl.sks", "water_pbr".into()).unwrap_or_default();
@@ -109,7 +109,7 @@ impl Default for HandMenuRadial1 {
             .metallic_amount(0.1)
             .color_tint(SEA_GREEN)
             .transparency(Transparency::None)
-            .face_cull(Cull::Back)
+            .face_cull(Cull::Front)
             .time(3.0);
 
         // fresh water2
