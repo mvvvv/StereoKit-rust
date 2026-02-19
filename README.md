@@ -52,6 +52,8 @@ Let us know if you have launched the demos on an architecture not tested here.
 
 `cargo build_sk_rs --example main_pc --features event-loop <the path of your exportable repository>`
 
+On Linux, you may have to set `RUSTFLAGS="-Clinker-plugin-lto"` if you encounter any "undefined reference".
+
 ### Run the project's demo on your Android headset
 
 - Install [sdkmanager](https://developer.android.com/studio/command-line/sdkmanager)  (or Android Studio if you intend to use it). You'll need a Java JDK (v17 is fine).

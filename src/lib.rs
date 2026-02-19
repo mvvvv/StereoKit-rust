@@ -159,6 +159,7 @@
 //! ## Building your PC/Mac VR/MR app:
 //! * Launch `cargo run --bin main_vr_app` to compile and run your app in debug mode on your PC with or without a headset.
 //! * Launch `cargo build_sk_rs --bin main_vr_app <build_directory>` to compile your app and assets in release mode for your PC/Mac.
+//!   On Linux, you may have to set `RUSTFLAGS="-Clinker-plugin-lto"` if you encounter any "undefined reference".
 //!
 //! To test with your headset, make sure you have [OpenXR installed](https://www.khronos.org/openxr/) with an active
 //! runtine (SteamVR, Monado, WiVRn, ALVR ...).
