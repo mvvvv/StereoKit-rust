@@ -772,15 +772,16 @@ pub enum QuitReason {
 ///
 /// let sk_info = Some(sk.get_sk_info_clone());
 /// let settings = SkInfo::settings_from(&sk_info);
+/// let system = SkInfo::system_from(&sk_info);
 ///
 /// if cfg!(feature = "test-xr-mode") {
 ///     assert_eq!(settings.mode, AppMode::XR);
+///     assert_ne!(system.get_display_width(), 0);
 /// } else {
 ///     assert_eq!(settings.mode, AppMode::Offscreen);
+///     assert_eq!(system.get_display_width(), 0);
 /// }
 ///
-/// let system = SkInfo::system_from(&sk_info);
-/// assert_eq!(system.get_display_width(), 0);
 ///
 /// #[cfg(feature = "event-loop")]
 /// {
@@ -1213,15 +1214,15 @@ impl Sk {
     ///
     /// let sk_info = Some(sk.get_sk_info_clone());
     /// let settings = SkInfo::settings_from(&sk_info);
+    /// let system   = SkInfo::system_from(&sk_info);
     ///
     /// if cfg!(feature = "test-xr-mode") {
     ///     assert_eq!(settings.mode, AppMode::XR);
+    ///     assert_ne!(system.get_display_width(), 0);
     /// } else {
     ///     assert_eq!(settings.mode, AppMode::Offscreen);
+    ///     assert_eq!(system.get_display_width(), 0);
     /// }
-    ///
-    /// let system = SkInfo::system_from(&sk_info);
-    /// assert_eq!(system.get_display_width(), 0);
     /// ```
     pub fn get_sk_info_clone(&self) -> Rc<RefCell<SkInfo>> {
         self.sk_info.clone()
@@ -1262,7 +1263,11 @@ impl Sk {
     /// use stereokit_rust::sk::{Sk, SystemInfo};
     ///
     /// let system_info: SystemInfo = sk.get_system();
-    /// assert_eq!(system_info.get_display_height(), 0);
+    /// if cfg!(feature = "test-xr-mode") {
+    ///     assert_ne!(system_info.get_display_height(), 0);
+    /// } else {
+    ///     assert_eq!(system_info.get_display_height(), 0);
+    /// }
     /// ```
     pub fn get_system(&self) -> SystemInfo {
         unsafe { sk_system_info() }

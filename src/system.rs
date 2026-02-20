@@ -309,16 +309,29 @@ impl Assets {
     ///
     ///     }
     /// }
-    /// assert_eq!(sprite_count,    13 + 1 );
-    /// assert_eq!(texture_count,   23 + 1 );
-    /// assert_eq!(model_count,     2);
-    /// assert_eq!(sound_count,     5);
-    /// assert_eq!(material_count,  37 + 1 );
-    /// assert_eq!(shader_count,    16);
-    /// assert_eq!(font_count,      1);
-    /// assert_eq!(mesh_count,  26);
-    /// assert_eq!(render_list_count, 1);
-    /// assert_eq!(other_count, 0);
+    /// if cfg!(feature = "test-xr-mode") {
+    ///     assert_eq!(sprite_count,    13 + 1 );
+    ///     assert_eq!(texture_count,   29 + 1 );
+    ///     assert_eq!(model_count,     2);
+    ///     assert_eq!(sound_count,     5);
+    ///     assert_eq!(material_count,  37 + 1 );
+    ///     assert_eq!(shader_count,    16);
+    ///     assert_eq!(font_count,      1);
+    ///     assert_eq!(mesh_count,  26);
+    ///     assert_eq!(render_list_count, 1);
+    ///     assert_eq!(other_count, 0);
+    /// } else {
+    ///     assert_eq!(sprite_count,    13 + 1 );
+    ///     assert_eq!(texture_count,   23 + 1 );
+    ///     assert_eq!(model_count,     2);
+    ///     assert_eq!(sound_count,     5);
+    ///     assert_eq!(material_count,  37 + 1 );
+    ///     assert_eq!(shader_count,    16);
+    ///     assert_eq!(font_count,      1);
+    ///     assert_eq!(mesh_count,  26);
+    ///     assert_eq!(render_list_count, 1);
+    ///     assert_eq!(other_count, 0);
+    /// }
     /// # sk::Sk::shutdown();
     /// ```
     pub fn all() -> AssetIter {
