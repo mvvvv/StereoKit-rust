@@ -445,91 +445,52 @@ pub fn show_soft_input_ime(_sk_info: &Option<Rc<RefCell<SkInfo>>>, _show: bool) 
 /// Open Android IMS keyboard. This doesn't work for accentuated characters.
 #[cfg(target_os = "android")]
 pub fn show_soft_input(show: bool) -> bool {
-    use jni::objects::JValue;
+    use jni::{jni_sig, jni_str, objects::JValue};
 
     let ctx = ndk_context::android_context();
-    let vm = match unsafe { jni::JavaVM::from_raw(ctx.vm() as _) } {
-        Ok(value) => value,
-        Err(e) => {
-            Log::err(format!("virtual_kbd : no vm !! : {:?}", e));
-            return false;
-        }
-    };
-    let activity = unsafe { jni::objects::JObject::from_raw(ctx.context() as _) };
-    let mut env = match vm.attach_current_thread() {
-        Ok(value) => value,
-        Err(e) => {
-            Log::err(format!("virtual_kbd : no env !! : {:?}", e));
-            return false;
-        }
-    };
-
-    let class_ctxt = match env.find_class("android/content/Context") {
-        Ok(value) => value,
-        Err(e) => {
-            Log::err(format!("virtual_kbd : no class_ctxt !! : {:?}", e));
-            return false;
-        }
-    };
-    let ims = match env.get_static_field(class_ctxt, "INPUT_METHOD_SERVICE", "Ljava/lang/String;") {
-        Ok(value) => value,
-        Err(e) => {
-            Log::err(format!("virtual_kbd : no ims !! : {:?}", e));
-            return false;
-        }
-    };
-
-    let im_manager = match env
-        .call_method(&activity, "getSystemService", "(Ljava/lang/String;)Ljava/lang/Object;", &[ims.borrow()])
-        .unwrap()
-        .l()
-    {
-        Ok(value) => value,
-        Err(e) => {
-            Log::err(format!("virtual_kbd : no im_manager !! : {:?}", e));
-            return false;
-        }
-    };
-
-    let jni_window = match env.call_method(&activity, "getWindow", "()Landroid/view/Window;", &[]).unwrap().l() {
-        Ok(value) => value,
-        Err(e) => {
-            Log::err(format!("virtual_kbd : no jni_window !! : {:?}", e));
-            return false;
-        }
-    };
-
-    let view = match env.call_method(jni_window, "getDecorView", "()Landroid/view/View;", &[]).unwrap().l() {
-        Ok(value) => value,
-        Err(e) => {
-            Log::err(format!("virtual_kbd : no view !! : {:?}", e));
-            return false;
-        }
-    };
-
-    if show {
-        let result = env
-            .call_method(im_manager, "showSoftInput", "(Landroid/view/View;I)Z", &[JValue::Object(&view), 0i32.into()])
-            .unwrap()
-            .z()
-            .unwrap();
-        result
-    } else {
-        let window_token = env.call_method(view, "getWindowToken", "()Landroid/os/IBinder;", &[]).unwrap().l().unwrap();
-        let jvalue_window_token = jni::objects::JValueGen::Object(&window_token);
-
-        let result = env
+    let vm = unsafe { jni::JavaVM::from_raw(ctx.vm() as _) };
+    vm.attach_current_thread(|env| -> jni::errors::Result<bool> {
+        let activity = unsafe { jni::objects::JObject::from_raw(env, ctx.context() as _) };
+        let class_ctxt = env.find_class(jni_str!("android/content/Context"))?;
+        let ims = env.get_static_field(class_ctxt, jni_str!("INPUT_METHOD_SERVICE"), jni_sig!("Ljava/lang/String;"))?;
+        let im_manager = env
             .call_method(
-                im_manager,
-                "hideSoftInputFromWindow",
-                "(Landroid/os/IBinder;I)Z",
-                &[jvalue_window_token, 0i32.into()],
-            )
-            .unwrap()
-            .z()
-            .unwrap();
-        result
-    }
+                &activity,
+                jni_str!("getSystemService"),
+                jni_sig!("(Ljava/lang/String;)Ljava/lang/Object;"),
+                &[ims.borrow()],
+            )?
+            .l()?;
+        let jni_window =
+            env.call_method(&activity, jni_str!("getWindow"), jni_sig!("()Landroid/view/Window;"), &[])?.l()?;
+        let view =
+            env.call_method(jni_window, jni_str!("getDecorView"), jni_sig!("()Landroid/view/View;"), &[])?.l()?;
+        if show {
+            Ok(env
+                .call_method(
+                    im_manager,
+                    jni_str!("showSoftInput"),
+                    jni_sig!("(Landroid/view/View;I)Z"),
+                    &[JValue::Object(&view), 0i32.into()],
+                )?
+                .z()?)
+        } else {
+            let window_token =
+                env.call_method(view, jni_str!("getWindowToken"), jni_sig!("()Landroid/os/IBinder;"), &[])?.l()?;
+            Ok(env
+                .call_method(
+                    im_manager,
+                    jni_str!("hideSoftInputFromWindow"),
+                    jni_sig!("(Landroid/os/IBinder;I)Z"),
+                    &[JValue::Object(&window_token), 0i32.into()],
+                )?
+                .z()?)
+        }
+    })
+    .unwrap_or_else(|e| {
+        Log::err(format!("virtual_kbd error: {:?}", e));
+        false
+    })
 }
 
 /// Open nothing has we don't have a virtual keyboard
@@ -541,115 +502,57 @@ pub fn show_soft_input(_show: bool) -> bool {
 /// Open the default browser. Adapted from https://github.com/amodm/webbrowser-rs
 #[cfg(target_os = "android")]
 pub fn launch_browser_android(url: &str) -> bool {
-    use jni::objects::{JObject, JValue};
+    use jni::{
+        jni_sig, jni_str,
+        objects::{JObject, JValue},
+    };
 
     Log::diag(format!("launch_browser_android: Attempting to open URL: {}", url));
-
-    // Create a VM for executing Java calls
     let ctx = ndk_context::android_context();
-    let vm = match unsafe { jni::JavaVM::from_raw(ctx.vm() as _) } {
-        Ok(value) => value,
-        Err(e) => {
-            Log::err(format!("launch_browser_android: no vm !! : {:?}", e));
-            return false;
+    let vm = unsafe { jni::JavaVM::from_raw(ctx.vm() as _) };
+    vm.attach_current_thread(|env| -> jni::errors::Result<bool> {
+        let activity = unsafe { jni::objects::JObject::from_raw(env, ctx.context() as _) };
+        // Create ACTION_VIEW object
+        let intent_class = env.find_class(jni_str!("android/content/Intent"))?;
+        let action_view =
+            env.get_static_field(&intent_class, jni_str!("ACTION_VIEW"), jni_sig!("Ljava/lang/String;"))?;
+        // Create Uri object
+        let uri_class = env.find_class(jni_str!("android/net/Uri"))?;
+        let url_string = env.new_string(url)?;
+        let uri = env
+            .call_static_method(
+                &uri_class,
+                jni_str!("parse"),
+                jni_sig!("(Ljava/lang/String;)Landroid/net/Uri;"),
+                &[JValue::Object(&JObject::from(url_string))],
+            )?
+            .l()?;
+        // Create new ACTION_VIEW intent with the uri
+        let intent = env.alloc_object(&intent_class)?;
+        env.call_method(
+            &intent,
+            jni_str!("<init>"),
+            jni_sig!("(Ljava/lang/String;Landroid/net/Uri;)V"),
+            &[action_view.borrow(), JValue::Object(&uri)],
+        )?;
+        // Start the intent activity.
+        env.call_method(
+            &activity,
+            jni_str!("startActivity"),
+            jni_sig!("(Landroid/content/Intent;)V"),
+            &[JValue::Object(&intent)],
+        )?;
+        if env.exception_check() {
+            let _ = env.exception_clear();
+            Log::err("launch_browser_android: Activity exception occurred (cleared)");
+            return Ok(false);
         }
-    };
-
-    let activity = unsafe { jni::objects::JObject::from_raw(ctx.context() as _) };
-    let mut env = match vm.attach_current_thread() {
-        Ok(value) => value,
-        Err(e) => {
-            Log::err(format!("launch_browser_android: no env !! : {:?}", e));
-            return false;
-        }
-    };
-
-    // Create ACTION_VIEW object
-    let intent_class = match env.find_class("android/content/Intent") {
-        Ok(value) => value,
-        Err(e) => {
-            Log::err(format!("launch_browser_android: no intent_class !! : {:?}", e));
-            return false;
-        }
-    };
-    let action_view = match env.get_static_field(&intent_class, "ACTION_VIEW", "Ljava/lang/String;") {
-        Ok(value) => value,
-        Err(e) => {
-            Log::err(format!("launch_browser_android: no action_view !! : {:?}", e));
-            return false;
-        }
-    };
-
-    // Create Uri object
-    let uri_class = match env.find_class("android/net/Uri") {
-        Ok(value) => value,
-        Err(e) => {
-            Log::err(format!("launch_browser_android: no uri_class !! : {:?}", e));
-            return false;
-        }
-    };
-    let url_string = match env.new_string(url) {
-        Ok(value) => value,
-        Err(e) => {
-            Log::err(format!("launch_browser_android: no url_string !! : {:?}", e));
-            return false;
-        }
-    };
-    let uri = match env
-        .call_static_method(
-            &uri_class,
-            "parse",
-            "(Ljava/lang/String;)Landroid/net/Uri;",
-            &[JValue::Object(&JObject::from(url_string))],
-        )
-        .unwrap()
-        .l()
-    {
-        Ok(value) => value,
-        Err(e) => {
-            Log::err(format!("launch_browser_android: no uri !! : {:?}", e));
-            return false;
-        }
-    };
-
-    // Create new ACTION_VIEW intent with the uri
-    let intent = match env.alloc_object(&intent_class) {
-        Ok(value) => value,
-        Err(e) => {
-            Log::err(format!("launch_browser_android: no intent !! : {:?}", e));
-            return false;
-        }
-    };
-    if let Err(e) = env.call_method(
-        &intent,
-        "<init>",
-        "(Ljava/lang/String;Landroid/net/Uri;)V",
-        &[action_view.borrow(), JValue::Object(&uri)],
-    ) {
-        Log::err(format!("launch_browser_android: intent init failed !! : {:?}", e));
-        return false;
-    }
-
-    // Start the intent activity.
-    match env.call_method(&activity, "startActivity", "(Landroid/content/Intent;)V", &[JValue::Object(&intent)]) {
-        Ok(_) => {
-            // Just clear any pending exceptions without detailed analysis
-            if env.exception_check().unwrap_or(false) {
-                let _ = env.exception_clear();
-                Log::err("launch_browser_android: Activity exception occurred (cleared)");
-                return false;
-            }
-            true
-        }
-        Err(e) => {
-            Log::err(format!("launch_browser_android: startActivity failed: {} | URL: {}", e, url));
-            // Clear any pending exceptions without trying to read them
-            if env.exception_check().unwrap_or(false) {
-                let _ = env.exception_clear();
-            }
-            false
-        }
-    }
+        Ok(true)
+    })
+    .unwrap_or_else(|e| {
+        Log::err(format!("launch_browser_android error: {:?}", e));
+        false
+    })
 }
 
 /// Open nothing has we aren't on Android
@@ -775,26 +678,7 @@ pub fn system_deep_link(action: SystemAction) -> bool {
     use crate::system::Log;
     use jni::objects::JValue;
 
-    // Create a VM for executing Java calls
-    let ctx = ndk_context::android_context();
-    let vm = match unsafe { jni::JavaVM::from_raw(ctx.vm() as _) } {
-        Ok(value) => value,
-        Err(e) => {
-            Log::err(format!("system_deep_link: Failed to get VM: {:?}", e));
-            return false;
-        }
-    };
-
-    let activity = unsafe { jni::objects::JObject::from_raw(ctx.context() as _) };
-    let mut env = match vm.attach_current_thread() {
-        Ok(env) => env,
-        Err(e) => {
-            Log::err(format!("system_deep_link: Failed to attach to JVM thread: {:?}", e));
-            return false;
-        }
-    };
-
-    // Prepare action info according to Meta specifications
+    // Prepare action info according to Meta specifications (outside JNI context)
     let (intent_data, uri_value, display_data) = match &action {
         SystemAction::Browser { url } => {
             ("systemux://browser", url.clone(), format!("Opening browser with URL: {}", url))
@@ -838,134 +722,78 @@ pub fn system_deep_link(action: SystemAction) -> bool {
         intent_data, uri_value
     ));
 
-    // Get PackageManager from context (following Meta specification)
-    let package_manager =
-        match env.call_method(&activity, "getPackageManager", "()Landroid/content/pm/PackageManager;", &[]) {
-            Ok(pm) => match pm.l() {
-                Ok(pm_obj) => pm_obj,
-                Err(e) => {
-                    Log::err(format!("system_deep_link: Failed to extract PackageManager object: {}", e));
-                    return false;
-                }
-            },
-            Err(e) => {
-                Log::err(format!("system_deep_link: Failed to get PackageManager: {}", e));
-                return false;
-            }
-        };
+    let ctx = ndk_context::android_context();
+    let vm = unsafe { jni::JavaVM::from_raw(ctx.vm() as _) };
+    vm.attach_current_thread(|env| -> jni::errors::Result<bool> {
+        use jni::{jni_sig, jni_str};
+        let activity = unsafe { jni::objects::JObject::from_raw(env, ctx.context() as _) };
 
-    // Get launch intent for VR Shell (following Meta specification)
-    let package_name = match env.new_string("com.oculus.vrshell") {
-        Ok(s) => s,
-        Err(e) => {
-            Log::err(format!("system_deep_link: Failed to create package name string: {}", e));
-            return false;
+        // Get PackageManager from context (following Meta specification)
+        let package_manager = env
+            .call_method(
+                &activity,
+                jni_str!("getPackageManager"),
+                jni_sig!("()Landroid/content/pm/PackageManager;"),
+                &[],
+            )?
+            .l()?;
+
+        // Get launch intent for VR Shell (following Meta specification)
+        let package_name = env.new_string("com.oculus.vrshell")?;
+        let intent = env
+            .call_method(
+                &package_manager,
+                jni_str!("getLaunchIntentForPackage"),
+                jni_sig!("(Ljava/lang/String;)Landroid/content/Intent;"),
+                &[JValue::Object(&package_name.into())],
+            )?
+            .l()?;
+        if intent.is_null() {
+            Log::err("system_deep_link: getLaunchIntentForPackage returned null");
+            return Ok(false);
         }
-    };
 
-    let intent = match env.call_method(
-        &package_manager,
-        "getLaunchIntentForPackage",
-        "(Ljava/lang/String;)Landroid/content/Intent;",
-        &[JValue::Object(&package_name.into())],
-    ) {
-        Ok(intent_result) => match intent_result.l() {
-            Ok(intent_obj) if !intent_obj.is_null() => intent_obj,
-            Ok(_) => {
-                Log::err("system_deep_link: getLaunchIntentForPackage returned null");
-                return false;
-            }
-            Err(e) => {
-                Log::err(format!("system_deep_link: Failed to extract Intent object: {}", e));
-                return false;
-            }
-        },
-        Err(e) => {
-            Log::err(format!("system_deep_link: Failed to get launch intent: {}", e));
-            return false;
-        }
-    };
-
-    // Add intent_data extra (following Meta specification)
-    let intent_data_key = match env.new_string("intent_data") {
-        Ok(s) => s,
-        Err(e) => {
-            Log::err(format!("system_deep_link: Failed to create intent_data key: {}", e));
-            return false;
-        }
-    };
-
-    let intent_data_value = match env.new_string(intent_data) {
-        Ok(s) => s,
-        Err(e) => {
-            Log::err(format!("system_deep_link: Failed to create intent_data value: {}", e));
-            return false;
-        }
-    };
-
-    if let Err(e) = env.call_method(
-        &intent,
-        "putExtra",
-        "(Ljava/lang/String;Ljava/lang/String;)Landroid/content/Intent;",
-        &[JValue::Object(&intent_data_key.into()), JValue::Object(&intent_data_value.into())],
-    ) {
-        Log::err(format!("system_deep_link: Failed to add intent_data extra: {}", e));
-        return false;
-    }
-
-    // Add uri extra if not empty (following Meta specification)
-    if !uri_value.is_empty() {
-        let uri_key = match env.new_string("uri") {
-            Ok(s) => s,
-            Err(e) => {
-                Log::err(format!("system_deep_link: Failed to create uri key: {}", e));
-                return false;
-            }
-        };
-
-        let uri_value_string = match env.new_string(&uri_value) {
-            Ok(s) => s,
-            Err(e) => {
-                Log::err(format!("system_deep_link: Failed to create uri value: {}", e));
-                return false;
-            }
-        };
-
-        if let Err(e) = env.call_method(
+        // Add intent_data extra (following Meta specification)
+        let intent_data_key = env.new_string("intent_data")?;
+        let intent_data_value = env.new_string(intent_data)?;
+        env.call_method(
             &intent,
-            "putExtra",
-            "(Ljava/lang/String;Ljava/lang/String;)Landroid/content/Intent;",
-            &[JValue::Object(&uri_key.into()), JValue::Object(&uri_value_string.into())],
-        ) {
-            Log::err(format!("system_deep_link: Failed to add uri extra: {}", e));
-            return false;
-        }
-    }
+            jni_str!("putExtra"),
+            jni_sig!("(Ljava/lang/String;Ljava/lang/String;)Landroid/content/Intent;"),
+            &[JValue::Object(&intent_data_key.into()), JValue::Object(&intent_data_value.into())],
+        )?;
 
-    // Start activity (following Meta specification)
-    match env.call_method(&activity, "startActivity", "(Landroid/content/Intent;)V", &[JValue::Object(&intent)]) {
-        Ok(_) => {
-            // Just clear any pending exceptions without detailed analysis
-            if env.exception_check().unwrap_or(false) {
-                let _ = env.exception_clear();
-                Log::err("system_deep_link: Activity exception occurred (cleared)");
-                return false;
-            }
-            Log::info(format!("system_deep_link: Successfully executed: {}", display_data));
-            true
+        // Add uri extra if not empty (following Meta specification)
+        if !uri_value.is_empty() {
+            let uri_key = env.new_string("uri")?;
+            let uri_value_string = env.new_string(&uri_value)?;
+            env.call_method(
+                &intent,
+                jni_str!("putExtra"),
+                jni_sig!("(Ljava/lang/String;Ljava/lang/String;)Landroid/content/Intent;"),
+                &[JValue::Object(&uri_key.into()), JValue::Object(&uri_value_string.into())],
+            )?;
         }
-        Err(e) => {
-            Log::err(format!(
-                "system_deep_link: Failed to start activity: {} | Action: {:?} | Intent data: {} | URI: {}",
-                e, action, intent_data, uri_value
-            ));
-            // Clear any pending exceptions without trying to read them
-            if env.exception_check().unwrap_or(false) {
-                let _ = env.exception_clear();
-            }
-            false
+
+        // Start activity (following Meta specification)
+        env.call_method(
+            &activity,
+            jni_str!("startActivity"),
+            jni_sig!("(Landroid/content/Intent;)V"),
+            &[JValue::Object(&intent)],
+        )?;
+        if env.exception_check() {
+            let _ = env.exception_clear();
+            Log::err("system_deep_link: Activity exception occurred (cleared)");
+            return Ok(false);
         }
-    }
+        Log::info(format!("system_deep_link: Successfully executed: {}", display_data));
+        Ok(true)
+    })
+    .unwrap_or_else(|e| {
+        Log::err(format!("system_deep_link: Failed with error: {:?}", e));
+        false
+    })
 }
 
 #[cfg(not(target_os = "android"))]
