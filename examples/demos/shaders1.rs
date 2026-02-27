@@ -4,7 +4,7 @@ use stereokit_rust::{
     maths::{Matrix, Pose, Quat, Vec2, Vec3, Vec4},
     mesh::{Mesh, Vertex},
     prelude::*,
-    system::{Text, World},
+    system::{OcclusionCaps, Text, World},
     tex::Tex,
     tools::notif::HudNotification,
     ui::{Ui, UiMove, UiWin},
@@ -139,7 +139,7 @@ impl Default for Shaders1 {
 impl Shaders1 {
     /// Called from IStepper::initialize here you can abort the initialization by returning false
     fn start(&mut self) -> bool {
-        World::occlusion_enabled(true);
+        World::occlusion(stereokit_rust::system::OcclusionCaps::Mesh);
         true
     }
 
@@ -181,7 +181,7 @@ impl Shaders1 {
 
     fn close(&mut self, triggering: bool) -> bool {
         if triggering {
-            World::occlusion_enabled(false);
+            World::occlusion(OcclusionCaps::None);
             self.shutdown_completed = true;
         }
         self.shutdown_completed
