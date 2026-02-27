@@ -57,17 +57,25 @@ pub fn load_all_extensions() {
     BackendOpenXR::request_ext("XR_ANDROID_trackables_object");
     BackendOpenXR::request_ext("XR_ANDROID_trackables_qr_code");
     BackendOpenXR::request_ext("XR_ANDROID_unbounded_reference_space");
+
+    // BD extensions
+    BackendOpenXR::request_ext("XR_BD_controller_interaction");
+
     // EXT extensions
     BackendOpenXR::request_ext("XR_EXT_active_action_set_priority");
     BackendOpenXR::request_ext("XR_EXT_composition_layer_inverted_alpha");
     BackendOpenXR::request_ext("XR_EXT_debug_utils");
     BackendOpenXR::request_ext("XR_EXT_dpad_binding");
+    BackendOpenXR::request_ext("XR_EXT_eye_gaze_interaction");
     BackendOpenXR::request_ext("XR_EXT_frame_composition_report");
     BackendOpenXR::request_ext("XR_EXT_frame_synthesis");
     BackendOpenXR::request_ext("XR_EXT_future");
     BackendOpenXR::request_ext("XR_EXT_hand_interaction");
     BackendOpenXR::request_ext("XR_EXT_hand_joints_motion_range");
     BackendOpenXR::request_ext("XR_EXT_hand_tracking");
+    BackendOpenXR::request_ext("XR_EXT_hand_tracking_data_source");
+    BackendOpenXR::request_ext("XR_EXT_hand_tracking_source");
+    BackendOpenXR::request_ext("XR_EXT_hp_mixed_reality_controller");
     BackendOpenXR::request_ext("XR_EXT_palm_pose");
     BackendOpenXR::request_ext("XR_EXT_performance_settings");
     BackendOpenXR::request_ext("XR_EXT_samsung_odyssey_controller");
@@ -77,11 +85,13 @@ pub fn load_all_extensions() {
     BackendOpenXR::request_ext("XR_EXT_spatial_persistence");
     BackendOpenXR::request_ext("XR_EXT_spatial_persistence_operations");
     BackendOpenXR::request_ext("XR_EXT_spatial_plane_tracking");
+    BackendOpenXR::request_ext("XR_EXT_local_floor");
     BackendOpenXR::request_ext("XR_EXT_user_presence");
     BackendOpenXR::request_ext("XR_EXT_uuid");
     BackendOpenXR::request_ext("XR_EXTX_overlay");
 
     // FB extensions
+    BackendOpenXR::request_ext("XR_FB_android_surface_swapchain_create");
     BackendOpenXR::request_ext("XR_FB_body_tracking");
     BackendOpenXR::request_ext("XR_FB_color_space");
     BackendOpenXR::request_ext("XR_FB_common_events");
@@ -114,6 +124,7 @@ pub fn load_all_extensions() {
     BackendOpenXR::request_ext("XR_FB_spatial_entity_storage_batch");
     BackendOpenXR::request_ext("XR_FB_spatial_entity_user");
     BackendOpenXR::request_ext("XR_FB_swapchain_update_state");
+    BackendOpenXR::request_ext("XR_FB_swapchain_update_state_android_surface");
     BackendOpenXR::request_ext("XR_FB_swapchain_update_state_opengl_es");
     BackendOpenXR::request_ext("XR_FB_swapchain_update_state_vulkan");
     BackendOpenXR::request_ext("XR_FB_touch_controller_pro");
@@ -130,12 +141,16 @@ pub fn load_all_extensions() {
 
     // KHR extensions
     BackendOpenXR::request_ext("XR_KHR_D3D12_enable\n");
+    BackendOpenXR::request_ext("XR_KHR_android_create_instance");
     BackendOpenXR::request_ext("XR_KHR_android_surface_swapchain");
+    BackendOpenXR::request_ext("XR_KHR_android_thread_settings");
     BackendOpenXR::request_ext("XR_KHR_binding_modification");
     BackendOpenXR::request_ext("XR_KHR_composition_layer_color_scale_bias");
     BackendOpenXR::request_ext("XR_KHR_composition_layer_cube");
     BackendOpenXR::request_ext("XR_KHR_composition_layer_cylinder");
+    BackendOpenXR::request_ext("XR_KHR_composition_layer_depth");
     BackendOpenXR::request_ext("XR_KHR_composition_layer_equirect2");
+    BackendOpenXR::request_ext("XR_KHR_convert_timespec_time");
     BackendOpenXR::request_ext("XR_KHR_extended_struct_name_lengths");
     BackendOpenXR::request_ext("XR_KHR_generic_controller");
     BackendOpenXR::request_ext("XR_KHR_loader_init");
@@ -161,6 +176,7 @@ pub fn load_all_extensions() {
     BackendOpenXR::request_ext("XR_META_boundary_visibility");
     BackendOpenXR::request_ext("XR_META_colocation_discovery");
     BackendOpenXR::request_ext("XR_META_detached_controllers");
+    BackendOpenXR::request_ext("XR_META_environment_depth");
     BackendOpenXR::request_ext("XR_META_face_tracking_visemes");
     BackendOpenXR::request_ext("XR_META_feature_fidelity");
     BackendOpenXR::request_ext("XR_META_foveation_eye_tracked");
@@ -176,7 +192,9 @@ pub fn load_all_extensions() {
     BackendOpenXR::request_ext("XR_META_spatial_entity_group_sharing");
     BackendOpenXR::request_ext("XR_META_spatial_entity_mesh");
     BackendOpenXR::request_ext("XR_META_spatial_entity_persistence");
+    BackendOpenXR::request_ext("XR_META_spatial_entity_room_mesh");
     BackendOpenXR::request_ext("XR_META_spatial_entity_sharing");
+    BackendOpenXR::request_ext("XR_META_tile_properties_hint");
     BackendOpenXR::request_ext("XR_META_touch_controller_plus");
     BackendOpenXR::request_ext("XR_META_virtual_keyboard");
     BackendOpenXR::request_ext("XR_META_vulkan_swapchain_create_info");
@@ -184,14 +202,21 @@ pub fn load_all_extensions() {
     // Magic Leap extensions
     BackendOpenXR::request_ext("XR_ML_ml2_controller_interaction");
 
+    // MSFT extensions
+    BackendOpenXR::request_ext("XR_MSFT_hand_interaction");
+    BackendOpenXR::request_ext("XR_MSFT_unbounded_reference_space");
+
     // Monado and MNDX extensions
     BackendOpenXR::request_ext("XR_MND_headless");
     BackendOpenXR::request_ext("XR_MND_swapchain_usage_input_attachment_bit");
     BackendOpenXR::request_ext("XR_MNDX_ball_on_a_stick_controller");
+    BackendOpenXR::request_ext("XR_MNDX_blubur_s1");
     BackendOpenXR::request_ext("XR_MNDX_egl_enable");
+    BackendOpenXR::request_ext("XR_MNDX_flipvr");
     BackendOpenXR::request_ext("XR_MNDX_force_feedback_curl");
     BackendOpenXR::request_ext("XR_MNDX_hydra");
     BackendOpenXR::request_ext("XR_MNDX_oculus_remote");
+    BackendOpenXR::request_ext("XR_MNDX_psvr2_interaction");
     BackendOpenXR::request_ext("XR_MNDX_system_buttons");
     BackendOpenXR::request_ext("XR_MNDX_xdev_space");
 

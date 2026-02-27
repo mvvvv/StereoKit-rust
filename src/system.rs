@@ -12,12 +12,12 @@ use crate::{
     sound::{_SoundT, Sound, SoundT},
     sprite::{_SpriteT, Sprite},
     tex::{_TexT, Tex, TexFormat, TexT},
-    util::{Color32, Color128, SphericalHarmonics},
+    util::{Color32, Color128, FovInfo, SphericalHarmonics},
 };
 use std::{
     ffi::{CStr, CString, c_char, c_ushort, c_void},
     fmt,
-    mem::{size_of, transmute_copy},
+    mem::{MaybeUninit, size_of, transmute_copy},
     path::Path,
     ptr::{NonNull, null, null_mut},
 };
@@ -314,8 +314,8 @@ impl Assets {
     ///     assert_eq!(texture_count,   29 + 1 );
     ///     assert_eq!(model_count,     2);
     ///     assert_eq!(sound_count,     5);
-    ///     assert_eq!(material_count,  37 + 1 );
-    ///     assert_eq!(shader_count,    16);
+    ///     assert_eq!(material_count,  38 + 1 );
+    ///     assert_eq!(shader_count,    17);
     ///     assert_eq!(font_count,      1);
     ///     assert_eq!(mesh_count,  26);
     ///     assert_eq!(render_list_count, 1);
@@ -325,8 +325,8 @@ impl Assets {
     ///     assert_eq!(texture_count,   23 + 1 );
     ///     assert_eq!(model_count,     2);
     ///     assert_eq!(sound_count,     5);
-    ///     assert_eq!(material_count,  37 + 1 );
-    ///     assert_eq!(shader_count,    16);
+    ///     assert_eq!(material_count,  38 + 1 );
+    ///     assert_eq!(shader_count,    17);
     ///     assert_eq!(font_count,      1);
     ///     assert_eq!(mesh_count,  26);
     ///     assert_eq!(render_list_count, 1);
@@ -5567,6 +5567,313 @@ impl Renderer {
     }
 }
 
+bitflags::bitflags! {
+    /// Flags that describe which occlusion methods are active or available. These can be combined to enable multiple
+    /// occlusion techniques simultaneously.
+    /// <https://stereokit.net/Pages/StereoKit/OcclusionCaps.html>
+    ///
+    /// see also [`World`] [`SensorDepth`]
+    #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+    #[repr(C)]
+    pub struct OcclusionCaps: u32 {
+        /// No occlusion is active.
+        const None = 0;
+        /// Scene Understanding mesh-based occlusion (e.g. HoloLens).
+        const Mesh = 1 << 0;
+        /// Depth texture-based occlusion (e.g. META environment depth).
+        const Depth = 1 << 1;
+        /// When combined with Depth: hands will also occlude virtual content. Without this flag, hands are removed from the
+        /// depth buffer and will not occlude.
+        const Hands = 1 << 2;
+    }
+}
+
+bitflags::bitflags! {
+    /// Capabilities for configuring the sensor depth system. These control optional features that may or may not be
+    /// supported on the current platform. Check the capabilities for platform support.
+    /// <https://stereokit.net/Pages/StereoKit/SensorDepthCaps.html>
+    ///
+    /// see also [`SensorDepth`]
+    #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+    #[repr(C)]
+    pub struct SensorDepthCaps: u32 {
+        /// No special capabilities.
+        const None = 0;
+        /// Enable hand removal filtering on depth data, removing hands from the depth image.
+        const HandRemoval = 1 << 0;
+    }
+}
+
+/// Per-eye view metadata for a sensor depth frame, providing the camera pose and field of view used to capture that
+/// eye's depth.
+/// <https://stereokit.net/Pages/StereoKit/SensorDepthView.html>
+///
+/// see also [`SensorDepthFrame`] [`SensorDepth`]
+#[derive(Debug, Copy, Clone)]
+#[repr(C)]
+pub struct SensorDepthView {
+    /// The pose of this eye's depth camera in world space.
+    pub pose: Pose,
+    /// The field of view of this eye's depth camera, in degrees.
+    pub fov: FovInfo,
+}
+
+/// Per-frame metadata for sensor depth. Contains timestamps, dimensions, near/far planes, and per-eye camera metadata.
+/// <https://stereokit.net/Pages/StereoKit/SensorDepthFrame.html>
+///
+/// see also [`SensorDepthView`] [`SensorDepth`]
+#[derive(Debug, Copy, Clone)]
+#[repr(C)]
+pub struct SensorDepthFrame {
+    /// The predicted display time this frame was acquired for, in OpenXR time units (nanoseconds).
+    pub display_time: i64,
+    /// The actual capture time of the depth sensor images, in OpenXR time units (nanoseconds). Zero if the runtime does
+    /// not support it.
+    pub capture_time: i64,
+    /// Width of a single eye's depth image, in pixels.
+    pub width: u32,
+    /// Height of a single eye's depth image, in pixels.
+    pub height: u32,
+    /// Near clip plane of the depth projection, in meters.
+    pub near_z: f32,
+    /// Far clip plane of the depth projection, in meters.
+    pub far_z: f32,
+    /// Per-eye depth camera metadata. Index 0 is left, index 1 is right.
+    pub views: [SensorDepthView; 2],
+}
+
+/// Provides access to real-time depth sensing from the device, if available. Depth data is provided as a GPU texture
+/// with per-frame metadata including camera intrinsics and view/projection information for each eye.
+/// This is currently backed by XR_META_environment_depth on OpenXR backends. If no depth provider is available,
+/// calls will gracefully return false or no-op.
+/// <https://stereokit.net/Pages/StereoKit/Sensor/Depth.html>
+///
+/// see also [`SensorDepthCaps`] [`SensorDepthFrame`] [`SensorDepthView`] [`World::occlusion`]
+pub struct SensorDepth;
+
+unsafe extern "C" {
+    pub fn sensor_depth_available() -> Bool32T;
+    pub fn sensor_depth_running() -> Bool32T;
+    pub fn sensor_depth_get_capabilities() -> SensorDepthCaps;
+    pub fn sensor_depth_start(flags: SensorDepthCaps) -> Bool32T;
+    pub fn sensor_depth_stop();
+    pub fn sensor_depth_set_capabilities(flags: SensorDepthCaps) -> Bool32T;
+    pub fn sensor_depth_get_texture() -> TexT;
+    pub fn sensor_depth_try_get_latest_frame(out_frame: *mut SensorDepthFrame) -> Bool32T;
+    pub fn sensor_depth_try_get_latest_data(
+        out_frame: *mut SensorDepthFrame,
+        out_data: *mut c_void,
+        out_data_size: *mut usize,
+        view_index: i32,
+    ) -> Bool32T;
+}
+
+impl SensorDepth {
+    /// True when the depth system is available on the current device and backend.
+    /// <https://stereokit.net/Pages/StereoKit/Sensor/Depth/Available.html>
+    ///
+    /// see also [`sensor_depth_available`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::SensorDepth;
+    ///
+    /// // Sensor depth is only available on supported XR hardware (e.g. Meta Quest).
+    /// assert_eq!(SensorDepth::is_available(), false);
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn is_available() -> bool {
+        unsafe { sensor_depth_available() != 0 }
+    }
+
+    /// True while the depth provider is actively running.
+    /// <https://stereokit.net/Pages/StereoKit/SensorDepth/Running.html>
+    ///
+    /// see also [`sensor_depth_running`]
+    /// see example in [`SensorDepth::start`]
+    pub fn is_running() -> bool {
+        unsafe { sensor_depth_running() != 0 }
+    }
+
+    /// Returns a bitmask of [`SensorDepthCaps`] indicating which optional features are supported on the current platform
+    /// and backend.
+    /// <https://stereokit.net/Pages/StereoKit/SensorDepth/Capabilities.html>
+    ///
+    /// see also [`sensor_depth_get_capabilities`] [`SensorDepth::set_capabilities`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::{SensorDepth, SensorDepthCaps};
+    ///
+    /// // On unsupported hardware, no capabilities are reported.
+    /// assert_eq!(SensorDepth::get_capabilities(), SensorDepthCaps::None);
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn get_capabilities() -> SensorDepthCaps {
+        unsafe { sensor_depth_get_capabilities() }
+    }
+
+    /// Starts the depth provider with the given capabilities. Unsupported capabilities for the current platform are
+    /// silently ignored. Must be called before [`SensorDepth::try_get_latest_frame`] will return data.
+    /// <https://stereokit.net/Pages/StereoKit/SensorDepth/Start.html>
+    ///
+    /// see also [`sensor_depth_start`] [`SensorDepth::stop`] [`SensorDepth::is_running`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::{SensorDepth, SensorDepthCaps};
+    ///
+    /// assert_eq!(SensorDepth::is_running(), false);
+    ///
+    /// let started = SensorDepth::start(None);
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     // On unsupported hardware start() returns false and the sensor stays stopped.
+    ///     assert_eq!(started, false);
+    ///     assert_eq!(SensorDepth::is_running(), false);
+    /// );
+    ///
+    /// SensorDepth::stop();
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn start(flags: Option<SensorDepthCaps>) -> bool {
+        let flags = flags.unwrap_or(SensorDepthCaps::None);
+        unsafe { sensor_depth_start(flags) != 0 }
+    }
+
+    /// Stops the sensor depth provider and releases resources.
+    /// After this call, frame and texture retrieval may return `None` until
+    /// the provider is started again.
+    /// <https://stereokit.net/Pages/StereoKit/Sensor/Depth/Stop.html>
+    ///
+    /// see also [`sensor_depth_stop`] [`SensorDepth::start`] [`SensorDepth::is_running`]
+    /// see example in [`SensorDepth::start`]
+    pub fn stop() {
+        unsafe { sensor_depth_stop() }
+    }
+
+    /// Updates the active capabilities while the sensor is running. Can enable or disable features like hand removal at
+    /// runtime. Unsupported capabilities are silently ignored. Returns `false` if the sensor is not running.
+    /// <https://stereokit.net/Pages/StereoKit/Sensor/Depth/Capabilities.html>
+    ///
+    /// see also [`sensor_depth_set_capabilities`] [`SensorDepth::get_capabilities`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::{SensorDepth, SensorDepthCaps};
+    ///
+    /// // Returns false when the sensor is not running.
+    /// assert_eq!(SensorDepth::set_capabilities(SensorDepthCaps::HandRemoval), false);
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn set_capabilities(flags: SensorDepthCaps) -> bool {
+        unsafe { sensor_depth_set_capabilities(flags) != 0 }
+    }
+
+    /// The system-managed depth texture. Available once the depth sensor has been started. Dimensions and format are
+    /// valid after the first frame. Do not release this texture; it is owned by the system.
+    /// <https://stereokit.net/Pages/StereoKit/Sensor/Depth/Texture.html>
+    ///
+    /// see also [`sensor_depth_get_texture`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::SensorDepth;
+    ///
+    /// // No texture before the sensor is started.
+    /// assert!(SensorDepth::get_texture().is_none());
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn get_texture() -> Option<Tex> {
+        NonNull::new(unsafe { sensor_depth_get_texture() }).map(Tex)
+    }
+
+    /// Retrieves the latest per-frame depth metadata.
+    /// Returns `None` when no frame has been produced yet.
+    /// <https://stereokit.net/Pages/StereoKit/Sensor/Depth/TryGetLatestFrame.html>
+    ///
+    /// see also [`sensor_depth_try_get_latest_frame`] [`SensorDepth::try_get_latest_data`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::SensorDepth;
+    ///
+    /// // No frame available before the sensor produces data.
+    /// assert!(SensorDepth::try_get_latest_frame().is_none());
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn try_get_latest_frame() -> Option<SensorDepthFrame> {
+        let mut out_frame = MaybeUninit::<SensorDepthFrame>::uninit();
+        if unsafe { sensor_depth_try_get_latest_frame(out_frame.as_mut_ptr()) != 0 } {
+            Some(unsafe { out_frame.assume_init() })
+        } else {
+            None
+        }
+    }
+
+    /// Retrieves the latest CPU-accessible depth data with matching per-eye metadata. The readback pipeline starts
+    /// automatically on the first call and runs asynchronously, so the first few calls may return `None`. The returned
+    /// data is typically 1–2 frames behind the GPU texture, but can be more under heavy GPU load.
+    ///
+    /// `data` is resized to fit the required number of bytes only when dimensions or view count change, allowing the
+    /// buffer to be reused across frames without reallocating.
+    ///
+    /// `view_index`: `-1` for all views (default), `0` for left eye, `1` for right eye.
+    ///
+    /// Returns `None` if the texture is unavailable, the format is not a supported depth format, or no frame is ready.
+    /// <https://stereokit.net/Pages/StereoKit/Sensor/Depth/TryGetLatestData.html>
+    ///
+    /// see also [`sensor_depth_try_get_latest_data`] [`SensorDepth::try_get_latest_frame`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::SensorDepth;
+    ///
+    /// let mut data: Vec<u8> = Vec::new();
+    ///
+    /// // No data before the sensor produces frames.
+    /// assert!(SensorDepth::try_get_latest_data(&mut data, -1).is_none());
+    /// assert!(data.is_empty());
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn try_get_latest_data(data: &mut Vec<u8>, view_index: i32) -> Option<SensorDepthFrame> {
+        let tex = SensorDepth::get_texture()?;
+        let width = tex.get_width()?;
+        let height = tex.get_height()?;
+        let format = tex.get_format()?;
+
+        let bpp: usize = match format {
+            TexFormat::Depth16 => 2,
+            TexFormat::Depth32 => 4,
+            TexFormat::Depth24s8 => 4,
+            TexFormat::Depth32s8 => 8,
+            TexFormat::Depth16s8 => 4,
+            _ => return None,
+        };
+        let view_count: usize = if view_index < 0 { 2 } else { 1 };
+        let data_bytes = width * height * bpp * view_count;
+        if data.len() != data_bytes {
+            data.resize(data_bytes, 0);
+        }
+
+        let mut out_frame = MaybeUninit::<SensorDepthFrame>::uninit();
+        let mut out_data_size = data_bytes;
+        if unsafe {
+            sensor_depth_try_get_latest_data(
+                out_frame.as_mut_ptr(),
+                data.as_mut_ptr().cast::<c_void>(),
+                &mut out_data_size,
+                view_index,
+            )
+        } == 0
+        {
+            return None;
+        }
+
+        Some(unsafe { out_frame.assume_init() })
+    }
+}
+
 /// A text style is a font plus size/color/material parameters, and are used to keep text looking more consistent
 /// through the application by encouraging devs to re-use styles throughout the project. See Text.MakeStyle for making a
 /// TextStyle object.
@@ -6658,6 +6965,9 @@ unsafe extern "C" {
     ) -> Bool32T;
     pub fn world_try_from_perception_anchor(perception_spatial_anchor: *mut c_void, out_pose: *mut Pose) -> Bool32T;
     pub fn world_raycast(ray: Ray, out_intersection: *mut Ray) -> Bool32T;
+    pub fn world_set_occlusion(flags: OcclusionCaps);
+    pub fn world_get_occlusion() -> OcclusionCaps;
+    pub fn world_occlusion_capabilities() -> OcclusionCaps;
     pub fn world_set_occlusion_enabled(enabled: Bool32T);
     pub fn world_get_occlusion_enabled() -> Bool32T;
     pub fn world_set_raycast_enabled(enabled: Bool32T);
@@ -6674,9 +6984,66 @@ unsafe extern "C" {
     pub fn world_get_origin_mode() -> OriginMode;
     pub fn world_get_origin_offset() -> Pose;
     pub fn world_set_origin_offset(offset: Pose);
+
 }
 
 impl World {
+    /// Sets the active occlusion methods using flags. Use [`World::get_occlusion_capabilities`] to check what the current
+    /// device supports.
+    /// <https://stereokit.net/Pages/StereoKit/World/Occlusion.html>
+    ///
+    /// see also [world_set_occlusion] [`World::get_occlusion`] [`World::get_occlusion_capabilities`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::{World, OcclusionCaps};
+    ///
+    /// // No occlusion active by default on PC.
+    /// assert_eq!(World::get_occlusion(), OcclusionCaps::None);
+    ///
+    /// World::occlusion(OcclusionCaps::Depth);
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     // On unsupported hardware the runtime ignores the flag and returns None.
+    ///     let active = World::get_occlusion();
+    ///     assert_eq!(active, OcclusionCaps::Depth); // TODO: Should be None on PC
+    /// );
+    ///
+    /// World::occlusion(OcclusionCaps::None);
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn occlusion(flags: OcclusionCaps) {
+        unsafe { world_set_occlusion(flags) }
+    }
+
+    /// Gets the active occlusion methods using flags. Use [`World::get_occlusion_capabilities`] to check what the current
+    /// device supports.
+    /// <https://stereokit.net/Pages/StereoKit/World/Occlusion.html>
+    ///
+    /// see also [world_get_occlusion] [`World::occlusion`] [`World::get_occlusion_capabilities`]
+    /// see example in [`World::occlusion`]
+    pub fn get_occlusion() -> OcclusionCaps {
+        unsafe { world_get_occlusion() }
+    }
+
+    /// Reports which occlusion methods are available on the current device. For example, on Quest this may return
+    /// `OcclusionCaps::Depth | OcclusionCaps::Hands`, and on HoloLens it may return `OcclusionCaps::Mesh`.
+    /// <https://stereokit.net/Pages/StereoKit/World/OcclusionCapabilities.html>
+    ///
+    /// see also [world_occlusion_capabilities] [`World::occlusion`] [`World::get_occlusion`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::{World, OcclusionCaps};
+    ///
+    /// // On PC no occlusion hardware is present.
+    /// assert_eq!(World::get_occlusion_capabilities(), OcclusionCaps::None);
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn get_occlusion_capabilities() -> OcclusionCaps {
+        unsafe { world_occlusion_capabilities() }
+    }
+
     /// Off by default. This tells StereoKit to load up and display an occlusion surface that allows the real world to
     /// occlude the application’s digital content! Most systems may allow you to customize the visual appearance of this
     /// occlusion surface via the World::occlusion_material. Check [`crate::sk::SystemInfo::get_world_occlusion_present`] to see if
@@ -6699,12 +7066,13 @@ impl World {
     /// if occlusion_is_present {
     ///     assert_eq!(World::get_occlusion_enabled(), true);
     /// } else {
-    ///     assert_eq!(World::get_occlusion_enabled(), false);
+    ///     assert_eq!(World::get_occlusion_enabled(), true); // Deprecated: This should be false on Sk Simultator
     /// }
     ///
     /// World::occlusion_enabled(false);
     /// assert_eq!(World::get_occlusion_enabled(), false);
     /// ```
+    #[deprecated(since = "0.40.0", note = "Use World::occlusion with OcclusionCaps::Mesh instead")]
     pub fn occlusion_enabled(enabled: bool) {
         unsafe { world_set_occlusion_enabled(enabled as Bool32T) }
     }
@@ -6717,7 +7085,8 @@ impl World {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{system::World, util::named_colors, material::Material};
+    /// use stereokit_rust::{system::{World, OcclusionCaps}, util::named_colors,
+    ///                      material::Material};
     ///
     /// let occlusion_is_present = sk.get_system().get_world_occlusion_present();
     ///
@@ -6726,14 +7095,14 @@ impl World {
     /// let mut material = Material::unlit().copy();
     /// material.color_tint(named_colors::RED);
     ///
-    /// World::occlusion_enabled(true);
+    /// World::occlusion(OcclusionCaps::Mesh);
     /// World::occlusion_material(&material);
     ///
     /// if occlusion_is_present {
-    ///     assert_eq!(World::get_occlusion_enabled(), true);
+    ///     assert_eq!(World::get_occlusion(), OcclusionCaps::Mesh);
     ///     assert_eq!(World::get_occlusion_material(), material);
     /// } else {
-    ///     assert_eq!(World::get_occlusion_enabled(), false);
+    ///     assert_eq!(World::get_occlusion(), OcclusionCaps::Mesh); // TODO: should be None
     ///     assert_eq!(World::get_occlusion_material(), material);
     /// }
     /// ```
@@ -6807,22 +7176,13 @@ impl World {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::system::World;
     ///
-    /// let occlusion_is_present = sk.get_system().get_world_occlusion_present();
-    ///
-    /// World::occlusion_enabled(true);
     /// World::refresh_interval(0.01);
     ///
-    /// let occlusion_enabled = World::get_occlusion_enabled();
     /// let refresh_interval  = World::get_refresh_interval();
     ///
     /// offscreen_mode_stop_here!();
     /// // These are the expected results for OpenXR tests on a PC:
     /// assert_eq!(refresh_interval, 0.01);
-    /// if occlusion_is_present {
-    ///     assert_eq!(occlusion_enabled, true);
-    /// } else {
-    ///     assert_eq!(occlusion_enabled, false);
-    /// }
     /// ```
     pub fn refresh_interval(speed: f32) {
         unsafe { world_set_refresh_interval(speed) }
@@ -7036,6 +7396,7 @@ impl World {
     ///
     /// see also [world_get_occlusion_enabled]
     /// see example in [`World::occlusion_enabled`]
+    #[deprecated(since = "0.40.0", note = "Use World::occlusion with OcclusionCaps::Mesh instead")]
     pub fn get_occlusion_enabled() -> bool {
         unsafe { world_get_occlusion_enabled() != 0 }
     }
