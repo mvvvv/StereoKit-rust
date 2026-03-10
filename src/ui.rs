@@ -600,6 +600,7 @@ pub struct UiSliderData {
 ///     }
 ///     Ui::window_end();
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui.jpeg" alt="screenshot" width="200">
 pub struct Ui;
@@ -1182,6 +1183,7 @@ impl Ui {
     ///     }
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_color_scheme.jpeg" alt="screenshot" width="200">
     pub fn color_scheme(color: impl Into<Color128>) {
@@ -1203,6 +1205,7 @@ impl Ui {
     ///
     /// Ui::enable_far_interact(false);
     /// assert_eq!(Ui::get_enable_far_interact(), false);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn enable_far_interact(enable: bool) {
         unsafe { ui_enable_far_interact(enable as Bool32T) };
@@ -1247,6 +1250,7 @@ impl Ui {
     /// assert_eq!(settings.backplate_depth, 0.6);
     /// assert_eq!(settings.backplate_border, 0.002);
     /// assert_eq!(settings.separator_scale, 0.6);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn settings(settings: UiSettings) {
         unsafe { ui_settings(settings) }
@@ -1263,6 +1267,7 @@ impl Ui {
     /// use stereokit_rust::ui::Ui;
     ///
     /// Ui::show_volumes(true);
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_show_volumes.jpeg" alt="screenshot" width="200">
     pub fn show_volumes(show: bool) {
@@ -1283,6 +1288,7 @@ impl Ui {
     ///
     /// Ui::system_move_type(UiMove::Exact);
     /// assert_eq!(Ui::get_system_move_type(), UiMove::Exact);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn system_move_type(move_type: UiMove) {
         unsafe { ui_system_set_move_type(move_type) };
@@ -1318,6 +1324,7 @@ impl Ui {
     ///     if Ui::button_at("5", [-0.04, -0.08, 0.005],[0.03, 0.03]) {button = 5}
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_button.jpeg" alt="screenshot" width="200">
     pub fn button(text: impl AsRef<str>, size: Option<Vec2>) -> bool {
@@ -1380,6 +1387,7 @@ impl Ui {
     ///     }
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn button_behavior(
         window_relative_pos: impl Into<Vec3>,
@@ -1448,6 +1456,7 @@ impl Ui {
     ///     }
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     #[allow(clippy::too_many_arguments)]
     pub fn button_behavior_depth(
@@ -1540,6 +1549,7 @@ impl Ui {
     ///     Ui::label(format!("x: {:.2}          y: {:.2}", slider_pt.x, slider_pt.y), None, true);
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_slider_behavior.jpeg" alt="screenshot" width="200">
     #[allow(clippy::too_many_arguments)]
@@ -1633,6 +1643,7 @@ impl Ui {
     ///     }
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_button_img.jpeg" alt="screenshot" width="200">
     pub fn button_img(
@@ -1726,6 +1737,7 @@ impl Ui {
     ///     if Ui::button_round_at("4", &backspace_sprite, [-0.04, -0.08, 0.005], 0.04) {button = 4}
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_button_round.jpeg" alt="screenshot" width="200">
     pub fn button_round(id: impl AsRef<str>, image: impl AsRef<Sprite>, diameter: f32) -> bool {
@@ -1799,6 +1811,7 @@ impl Ui {
     ///     cube_bounds.draw(token, &material_bound,
     ///                      handle_pose2.to_matrix(Some(handle_bounds.dimensions)), None, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_handle.jpeg" alt="screenshot" width="200">
     pub fn handle(
@@ -1873,6 +1886,7 @@ impl Ui {
     ///     cube_bounds.draw(token, &material_bound, Matrix::s(handle_bounds.dimensions), None, None);
     ///     Ui::handle_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_handle_begin.jpeg" alt="screenshot" width="200">
     pub fn handle_begin(
@@ -1937,6 +1951,7 @@ impl Ui {
     ///     Ui::pop_text_style();
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_hseparator.jpeg" alt="screenshot" width="200">
     pub fn hseparator() {
@@ -1992,6 +2007,7 @@ impl Ui {
     ///     }
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_hslider.jpeg" alt="screenshot" width="200">
     #[allow(clippy::too_many_arguments)]
@@ -2190,6 +2206,7 @@ impl Ui {
     ///     Ui::image(&log_sprite, [0.05, 0.05]);
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_image.jpeg" alt="screenshot" width="200">
     pub fn image(image: impl AsRef<Sprite>, size: impl Into<Vec2>) {
@@ -2237,6 +2254,7 @@ impl Ui {
     ///     }
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_input.jpeg" alt="screenshot" width="200">
     pub fn input(
@@ -2369,6 +2387,7 @@ impl Ui {
     ///     Ui::label("Label 4", Some([0.0,   0.0045].into()), false);
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_label.jpeg" alt="screenshot" width="200">
     pub fn label(text: impl AsRef<str>, size: Option<Vec2>, use_padding: bool) {
@@ -2479,6 +2498,7 @@ impl Ui {
     ///     Ui::label("Text and more", None, false);
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_layout_area.jpeg" alt="screenshot" width="200">
     pub fn layout_area(start: impl Into<Vec3>, dimensions: impl Into<Vec2>, add_margin: bool) {
@@ -2522,6 +2542,7 @@ impl Ui {
     ///     Ui::layout_pop();
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_layout_push.jpeg" alt="screenshot" width="200">
     pub fn layout_push(start: impl Into<Vec3>, dimensions: impl Into<Vec2>, add_margin: bool) {
@@ -2587,6 +2608,7 @@ impl Ui {
     ///     assert_eq!(bounds_no_pad, Bounds::new([0.065, -0.115, -0.0025], [0.05, 0.05, 0.005]));
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn layout_reserve(size: impl Into<Vec2>, add_padding: bool, depth: f32) -> Bounds {
         unsafe { ui_layout_reserve(size.into(), add_padding as Bool32T, depth) }
@@ -2618,6 +2640,7 @@ impl Ui {
     ///     Ui::model(&model, Some([0.04, 0.04].into()), Some(0.05));
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_model.jpeg" alt="screenshot" width="200">
     pub fn model(model: impl AsRef<Model>, ui_size: Option<Vec2>, model_scale: Option<f32>) {
@@ -2648,6 +2671,7 @@ impl Ui {
     ///     Ui::label("Line 5", None, false);
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn next_line() {
         unsafe { ui_nextline() };
@@ -2686,6 +2710,7 @@ impl Ui {
     ///
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_panel_at.jpeg" alt="screenshot" width="200">
     pub fn panel_at(start: impl Into<Vec3>, size: impl Into<Vec2>, padding: Option<UiPad>) {
@@ -2730,6 +2755,7 @@ impl Ui {
     ///
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_panel_begin.jpeg" alt="screenshot" width="200">
     pub fn panel_begin(padding: Option<UiPad>) {
@@ -2772,6 +2798,7 @@ impl Ui {
     ///     Ui::label("This will play the 'on' sound\nfor the given (id / UiVisual)\nat the local position.", None, false);           
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn play_sound_on_off(element_visual: UiVisual, element_id: IdHashT, at_local: impl Into<Vec3>) {
         unsafe {
@@ -2801,6 +2828,7 @@ impl Ui {
     ///     Ui::label("This will play the 'on' sound\nassociated with the given UIVisual\nat the local position.", None, false);           
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn play_sound_on(element_visual: UiVisual, at_local: impl Into<Vec3>) {
         unsafe {
@@ -2994,6 +3022,7 @@ impl Ui {
     ///
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_progress_bar_at.jpeg" alt="screenshot" width="200">
     pub fn progress_bar_at(
@@ -3053,6 +3082,7 @@ impl Ui {
     ///     Ui::pop_enabled();
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn push_enabled(enabled: bool, parent_behavior: Option<HierarchyParent>) {
         let parent_behavior = parent_behavior.unwrap_or(HierarchyParent::Inherit);
@@ -3085,6 +3115,7 @@ impl Ui {
     ///     Ui::pop_id();
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn push_id(root_id: impl AsRef<str>) -> IdHashT {
         let cstr = CString::new(root_id.as_ref()).unwrap();
@@ -3117,6 +3148,7 @@ impl Ui {
     ///     Ui::pop_id();
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn push_id_int(root_id: i32) -> IdHashT {
         unsafe { ui_push_idi(root_id) }
@@ -3152,6 +3184,7 @@ impl Ui {
     ///     Ui::pop_preserve_keyboard();
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn push_preserve_keyboard(preserve_keyboard: bool) {
         unsafe { ui_push_preserve_keyboard(preserve_keyboard as Bool32T) }
@@ -3184,6 +3217,7 @@ impl Ui {
     ///     Ui::pop_grab_aura();
     ///     assert_eq!(Ui::grab_aura_enabled(), true);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn push_grab_aura(enabled: bool) {
         unsafe { ui_push_grab_aura(enabled as Bool32T) }
@@ -3223,6 +3257,7 @@ impl Ui {
     ///     Ui::panel_end();
     ///     Ui::pop_surface();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_push_surface.jpeg" alt="screenshot" width="200">
     pub fn push_surface(pose: impl Into<Pose>, layout_start: impl Into<Vec3>, layout_dimension: impl Into<Vec2>) {
@@ -3273,6 +3308,7 @@ impl Ui {
     ///
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_push_text_style.jpeg" alt="screenshot" width="200">
     pub fn push_text_style(style: TextStyle) {
@@ -3315,6 +3351,7 @@ impl Ui {
     ///     Ui::pop_tint();
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_push_tint.jpeg" alt="screenshot" width="200">
     pub fn push_tint(color_gamma: impl Into<Color128>) {
@@ -3362,6 +3399,7 @@ impl Ui {
     ///     Ui::hseparator();
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn quadrant_size_mesh(mesh: impl AsRef<Mesh>, overflow_percent: f32) {
         unsafe { ui_quadrant_size_mesh(mesh.as_ref().0.as_ptr(), overflow_percent) }
@@ -3411,6 +3449,7 @@ impl Ui {
     ///     Ui::hseparator();
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn quadrant_size_verts(verts: &[Vertex], overflow_percent: f32) {
         unsafe { ui_quadrant_size_verts(verts.as_ptr() as *mut Vertex, verts.len() as i32, overflow_percent) }
@@ -3464,6 +3503,7 @@ impl Ui {
     ///     if Ui::button("Exit", None) {sk.quit(None);}
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_gen_quadrant_mesh.jpeg" alt="screenshot" width="200">
     pub fn gen_quadrant_mesh(
@@ -3587,6 +3627,7 @@ impl Ui {
     ///     }
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_radio.jpeg" alt="screenshot" width="200">
     pub fn radio_img(
@@ -3716,6 +3757,7 @@ impl Ui {
     ///     Ui::hseparator();
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn set_element_visual(
         visual: UiVisual,
@@ -3768,6 +3810,7 @@ impl Ui {
     ///     Ui::hseparator();
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn set_element_color(visual: UiVisual, color_category: UiColor) {
         unsafe { ui_set_element_color(visual, color_category) };
@@ -3801,6 +3844,7 @@ impl Ui {
     ///     if Ui::button("Button2", None) {todo!();}
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn set_element_sound(visual: UiVisual, activate: Option<Sound>, deactivate: Option<Sound>) {
         let activate = match activate {
@@ -3849,6 +3893,7 @@ impl Ui {
     ///     Ui::draw_element(UiVisual::Carat, None, [0.0, -0.14, 0.0], [0.025, 0.025, 0.005], 1.0);
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_draw_element.jpeg" alt="screenshot" width="200">
     pub fn draw_element(
@@ -3911,6 +3956,7 @@ impl Ui {
     ///     assert_eq!(focus, 1.0);
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_anim_focus(id: IdHashT, focus_state: BtnState, activation_state: BtnState) -> f32 {
         unsafe { ui_get_anim_focus(id, focus_state, activation_state) }
@@ -3965,6 +4011,7 @@ impl Ui {
     ///     if Ui::button("Exit", None) {sk.quit(None);}
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_set_theme_color.jpeg" alt="screenshot" width="200">
     pub fn set_theme_color(
@@ -4021,6 +4068,7 @@ impl Ui {
     ///     if Ui::button("Exit", None) {sk.quit(None);}
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn vspace(space: f32) {
         unsafe { ui_vspace(space) }
@@ -4047,6 +4095,7 @@ impl Ui {
     ///     if Ui::button("Exit", None) {sk.quit(None);}
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn hspace(space: f32) {
         unsafe { ui_hspace(space) }
@@ -4119,6 +4168,7 @@ impl Ui {
     ///                 TextFit::Wrap, [0.10, -0.14, 0.0], [0.21, 0.04]);
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_text.jpeg" alt="screenshot" width="200">
     pub fn text(
@@ -4251,6 +4301,7 @@ impl Ui {
     ///                                       [-0.01, -0.12, 0.0], [0.06, 0.03]) {todo!()}
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_toggle.jpeg" alt="screenshot" width="200">
     pub fn toggle(text: impl AsRef<str>, out_value: &mut bool, size: Option<Vec2>) -> Option<bool> {
@@ -4426,6 +4477,7 @@ impl Ui {
     ///     assert_eq!(is_active, BtnState::Inactive);
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn volume_at(
         id: impl AsRef<str>,
@@ -4491,6 +4543,7 @@ impl Ui {
     ///     }
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_vslider.jpeg" alt="screenshot" width="200">
     #[allow(clippy::too_many_arguments)]
@@ -4698,6 +4751,7 @@ impl Ui {
     ///     Ui::label("!!", None, true);
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_window.jpeg" alt="screenshot" width="200">
     pub fn window_begin(
@@ -4740,6 +4794,7 @@ impl Ui {
     ///     Ui::label("Hello", None, true);
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_window_auto.jpeg" alt="screenshot" width="200">
     pub fn window_begin_auto(
@@ -4840,6 +4895,7 @@ impl Ui {
     ///
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_layout_last() -> Bounds {
         unsafe { ui_layout_last() }
@@ -4867,6 +4923,7 @@ impl Ui {
     ///
     /// let line_height = Ui::get_line_height();
     /// assert_eq!(line_height, 0.030000001);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_line_height() -> f32 {
         unsafe { ui_line_height() }

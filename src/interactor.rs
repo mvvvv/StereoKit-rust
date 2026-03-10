@@ -163,6 +163,7 @@ unsafe extern "C" {
 /// let motion = interactor.get_motion();
 ///
 /// interactor.destroy();
+/// # sk::Sk::shutdown();
 /// ```
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Interactor {
@@ -416,6 +417,7 @@ impl Interactor {
 ///
 /// // Check if default drawing is enabled
 /// let draw_enabled = Interaction::get_default_draw();
+/// # sk::Sk::shutdown();
 /// ```
 pub struct Interaction;
 

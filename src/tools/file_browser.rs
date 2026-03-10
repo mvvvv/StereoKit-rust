@@ -61,6 +61,7 @@ pub const FILE_BROWSER_SAVE: &str = "File_Browser_save";
 ///         }
 ///     }
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/file_browser.jpeg" alt="screenshot" width="200">
 ///
@@ -99,6 +100,7 @@ pub const FILE_BROWSER_SAVE: &str = "File_Browser_save";
 ///         }
 ///     }
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/file_save.jpeg" alt="screenshot" width="200">
 #[derive(IStepper)]

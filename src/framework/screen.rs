@@ -61,6 +61,7 @@ impl ScreenRepo {
 ///
 /// // Return to the first texture
 /// screen.set_tex_curr(0);
+/// # sk::Sk::shutdown();
 /// ```
 pub struct Screen {
     id: StepperId,

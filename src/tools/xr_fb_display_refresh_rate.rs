@@ -39,6 +39,7 @@ pub const USUAL_FPS_SUSPECTS: [i32; 12] = [30, 60, 72, 80, 90, 100, 110, 120, 14
 ///     let rate = get_display_refresh_rate();
 ///     assert_eq!(rate , None);
 /// }
+/// # sk::Sk::shutdown();
 /// ```
 pub fn get_all_display_refresh_rates(with_log: bool) -> Vec<f32> {
     let mut array = [0.0; 40];

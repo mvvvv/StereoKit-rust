@@ -947,6 +947,7 @@ pub struct FovInfo {
 /// assert_eq!(has_hand_tracking, false);
 /// assert_eq!(valid_blend_none, false);
 /// assert_eq!(display_blend_none, false);
+/// # sk::Sk::shutdown();
 /// ```
 pub struct Device;
 
@@ -985,6 +986,7 @@ impl Device {
     /// assert_eq!(Device::display_blend(DisplayBlend::AnyTransparent), false);
     /// assert_eq!(Device::display_blend(DisplayBlend::None), false);
     /// assert_eq!(Device::display_blend(DisplayBlend::Additive), false);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn display_blend(blend: DisplayBlend) -> bool {
         unsafe { device_display_set_blend(blend) != 0 }
@@ -1012,6 +1014,7 @@ impl Device {
     /// xr_mode_stop_here!();
     /// // These are the expected results for offscreen tests on a PC:
     /// assert_eq!(Device::get_display_type(), DisplayType::Flatscreen);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_display_type() -> DisplayType {
         unsafe { device_display_get_type() }
@@ -1033,6 +1036,7 @@ impl Device {
     /// xr_mode_stop_here!();
     /// // 90 seams to be the default for the headless.
     /// assert_eq!(refresh_rate, 90.0);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_display_refresh_rate() -> f32 {
         unsafe { device_display_get_refresh_rate() }
@@ -1054,6 +1058,7 @@ impl Device {
     /// xr_mode_stop_here!();
     /// // These are the expected results for offscreen tests on a PC:
     /// assert_eq!(Device::get_runtime().unwrap(), "None");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_runtime<'a>() -> Result<&'a str, StereoKitError> {
         unsafe { CStr::from_ptr(device_get_runtime()) }
@@ -1074,6 +1079,7 @@ impl Device {
     /// assert!(gpu_name.is_ok());
     /// // The GPU name will vary by system, but should not be empty
     /// assert!(!gpu_name.unwrap().is_empty());
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_gpu<'a>() -> Result<&'a str, StereoKitError> {
         unsafe { CStr::from_ptr(device_get_gpu()) }
@@ -1096,6 +1102,7 @@ impl Device {
     /// xr_mode_stop_here!();
     /// // These are the expected results for offscreen tests on a PC:
     /// assert_eq!(has_eye_gaze, false);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn has_eye_gaze() -> bool {
         unsafe { device_has_eye_gaze() != 0 }
@@ -1116,6 +1123,7 @@ impl Device {
     /// xr_mode_stop_here!();
     /// // These are the expected results for offscreen tests on a PC:
     /// assert_eq!(has_hand_tracking, false);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn has_hand_tracking() -> bool {
         unsafe { device_has_hand_tracking() != 0 }
@@ -1137,6 +1145,7 @@ impl Device {
     /// xr_mode_stop_here!();
     /// // These are the expected results for offscreen tests on a PC:
     /// assert_eq!(Device::get_name().unwrap(), "Offscreen");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_name<'a>() -> Result<&'a str, StereoKitError> {
         unsafe { CStr::from_ptr(device_get_name()) }
@@ -1159,6 +1168,7 @@ impl Device {
     /// xr_mode_stop_here!();
     /// // These are the expected results for offscreen tests on a PC:
     /// assert_eq!(tracking, DeviceTracking::None);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_tracking() -> DeviceTracking {
         unsafe { device_get_tracking() }
@@ -1182,6 +1192,7 @@ impl Device {
     /// assert_eq!(Device::valid_blend(DisplayBlend::Additive), false);
     /// assert_eq!(Device::valid_blend(DisplayBlend::Blend), false);
     /// assert_eq!(Device::valid_blend(DisplayBlend::AnyTransparent), false);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn valid_blend(blend: DisplayBlend) -> bool {
         unsafe { device_display_valid_blend(blend) != 0 }
@@ -1260,6 +1271,7 @@ impl GradientKey {
 ///     .add(named_colors::BLUE, 0.5)
 ///     .add(Color128::BLACK, 0.7);
 /// let tex_particule1 = Tex::gen_particle(128, 128, 0.2, Some(gradient));
+/// # sk::Sk::shutdown();
 /// ```
 pub struct Gradient(pub NonNull<_GradientT>);
 
@@ -1323,6 +1335,7 @@ impl Gradient {
     /// gradient2.add(named_colors::CYAN, 0.4);
     /// assert_eq!(gradient2.get_count(), 4);
     /// let tex_particule1 = Tex::gen_particle(128, 128, 0.2, Some(gradient2));
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn new(keys: Option<&[GradientKey]>) -> Self {
         match keys {
@@ -1354,6 +1367,7 @@ impl Gradient {
     ///     .add(Color128::BLACK, 0.7);
     /// assert_eq!(gradient.get_count(), 5);
     /// let tex_particule1 = Tex::gen_particle(128, 128, 0.2, Some(gradient));
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn add(&mut self, color_linear: impl Into<Color128>, position: f32) -> &mut Self {
         unsafe { gradient_add(self.0.as_ptr(), color_linear.into(), position) };
@@ -1390,6 +1404,7 @@ impl Gradient {
     /// assert_eq!(gradient.get(0.3), named_colors::RED.into());
     ///
     /// let tex_particule1 = Tex::gen_particle(128, 128, 0.2, Some(gradient));
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn set(&mut self, index: i32, color_linear: impl Into<Color128>, position: f32) -> &mut Self {
         if index < 0 || index >= self.get_count() {
@@ -1426,6 +1441,7 @@ impl Gradient {
     /// assert_eq!(gradient.get(0.4), Color128 { r: 0.25, g: 0.25, b: 0.75, a: 1.0 });
     ///
     /// let tex_particule1 = Tex::gen_particle(128, 128, 0.2, Some(gradient));
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn remove(&mut self, index: i32) -> &mut Self {
         if index < 0 || index >= self.get_count() {
@@ -1457,7 +1473,8 @@ impl Gradient {
     /// assert_eq!(gradient.get_count(), 3);
     ///
     /// let tex_particule1 = Tex::gen_particle(128, 128, 0.2, Some(gradient));
-    ///```
+    /// # sk::Sk::shutdown();
+    /// ```
     pub fn get_count(&self) -> i32 {
         unsafe { gradient_count(self.0.as_ptr()) }
     }
@@ -1488,6 +1505,7 @@ impl Gradient {
     /// assert_eq!(gradient.get(0.5), named_colors::BLUE.into());
     ///
     /// let tex_particule1 = Tex::gen_particle(128, 128, 0.2, Some(gradient));
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get(&self, at: f32) -> Color128 {
         unsafe { gradient_get(self.0.as_ptr(), at) }
@@ -1520,6 +1538,7 @@ impl Gradient {
     /// assert_eq!(gradient.get32(0.5), named_colors::BLUE);
     ///
     /// let tex_particule1 = Tex::gen_particle(128, 128, 0.2, Some(gradient));
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get32(&self, at: f32) -> Color32 {
         unsafe { gradient_get32(self.0.as_ptr(), at) }
@@ -1679,6 +1698,7 @@ pub enum PickerMode {
 /// assert!(file_content.starts_with("# Images "));
 ///
 /// assert!(Platform::write_file_text(path, file_content).is_ok());
+/// # sk::Sk::shutdown();
 /// ```
 pub struct Platform;
 
@@ -1782,6 +1802,7 @@ impl Platform {
     ///
     /// Platform::force_fallback_keyboard(false);
     /// assert_eq!(Platform::get_force_fallback_keyboard(), false);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn force_fallback_keyboard(force_fallback: bool) {
         unsafe { platform_keyboard_set_force_fallback(force_fallback as Bool32T) }
@@ -1899,6 +1920,7 @@ impl Platform {
     ///
     /// Platform::keyboard_show(false, TextContext::Text);
     /// assert_eq!(Platform::is_keyboard_visible(), false);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn keyboard_show(show: bool, input_type: TextContext) {
         unsafe { platform_keyboard_show(show as Bool32T, input_type) }
@@ -1937,6 +1959,7 @@ impl Platform {
     /// let keyboard_layouts = vec![FR_KEY_TEXT, FR_KEY_TEXT_SHIFT, FR_KEY_TEXT_ALT];
     ///
     /// assert_eq!(Platform::keyboard_set_layout(TextContext::Text, &keyboard_layouts), true);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn keyboard_set_layout(keyboard_type: TextContext, keyboard_layouts: &Vec<&str>) -> bool {
         let mut keyboard_layouts_c = vec![];
@@ -1971,6 +1994,7 @@ impl Platform {
     /// let file_content = Platform::read_file_text(&path)
     ///                                  .expect("File should be readable");
     /// assert!(file_content.starts_with("[env]"));
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn read_file_text<'a>(filename: impl AsRef<Path>) -> Result<&'a str, StereoKitError> {
         let path_buf = filename.as_ref().to_path_buf();
@@ -2012,6 +2036,7 @@ impl Platform {
     /// let file_content = Platform::read_file(&path)
     ///                                  .expect("File should be readable");
     /// assert!(file_content.starts_with(b"# Images "));
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn read_file<'a>(filename: impl AsRef<Path>) -> Result<&'a [u8], StereoKitError> {
         let path_buf = filename.as_ref().to_path_buf();
@@ -2054,6 +2079,7 @@ impl Platform {
     /// assert!(file_content.starts_with("# Images "));
     ///
     /// assert!(Platform::write_file_text(path, file_content).is_ok());
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn write_file_text<S: AsRef<str>>(filename: impl AsRef<Path>, text: S) -> Result<bool, StereoKitError> {
         let path_buf = filename.as_ref().to_path_buf();
@@ -2094,6 +2120,7 @@ impl Platform {
     /// assert!(file_content.starts_with(b"# Images "));
     ///
     /// assert!(Platform::write_file(path, file_content).is_ok());
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn write_file(filename: impl AsRef<Path>, data: &[u8]) -> Result<bool, StereoKitError> {
         let path_buf = filename.as_ref().to_path_buf();
@@ -2121,6 +2148,7 @@ impl Platform {
     /// use stereokit_rust::util::Platform;
     ///
     /// assert_eq!(Platform::get_file_picker_visible(), false);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_file_picker_visible() -> bool {
         unsafe { platform_file_picker_visible() != 0 }
@@ -2163,6 +2191,7 @@ impl Platform {
 ///
 /// assert_eq!(light0, light1);
 /// assert_eq!(light1, light2);
+/// # sk::Sk::shutdown();
 /// ```
 #[derive(Debug, Copy, Clone, PartialEq)]
 #[repr(C)]
@@ -2210,6 +2239,7 @@ impl SHLight {
 ///
 /// assert_eq!(sh.get_sample(Vec3::UP), Color128 { r: 0.5813507, g: 0.8046322, b: 0.5813487, a: 1.0 });
 /// assert_eq!(sh.get_dominent_light_direction(), Vec3 { x: 0.27644092, y: 0.2728996, z: 0.9214696 });
+/// # sk::Sk::shutdown();
 /// ```
 #[derive(Debug, Default, Copy, Clone, PartialEq)]
 #[repr(C)]
@@ -2245,6 +2275,7 @@ impl SphericalHarmonics {
     ///
     /// assert_eq!(sh.get_sample(Vec3::UP), Color128 { r: 2.2098913, g: 0.0, b: 0.0, a: 1.0 });
     /// assert_eq!(sh.get_dominent_light_direction(), -Vec3::ONE.get_normalized());
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn from_lights(lights: &[SHLight]) -> Self {
         unsafe { sh_create(lights.as_ptr(), lights.len() as i32) }
@@ -2269,6 +2300,7 @@ impl SphericalHarmonics {
     ///
     /// assert_eq!(sh.get_sample([1.0, 0.0, 1.0]), Color128 { r: 11.453729, g: 0.0, b: 0.0, a: 1.0 });
     /// assert_eq!(sh.get_dominent_light_direction(), Vec3::new(-1.0, 0.0, -1.0).get_normalized());
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn new(coefficients: [Vec3; 9]) -> Self {
         SphericalHarmonics { coefficients }
@@ -2295,7 +2327,8 @@ impl SphericalHarmonics {
     ///
     /// assert_eq!(sh.get_sample([1.0, 0.0, 1.0]), Color128 { r: 11.453729, g: -0.2956792, b: 4.4505944, a: 1.0 });
     /// assert_eq!(sh.get_dominent_light_direction(), Vec3 { x: -0.21951628, y: -0.21670417, z: -0.95123714 });
-    ///```
+    /// # sk::Sk::shutdown();
+    /// ```
     pub fn add(&mut self, light_dir: impl Into<Vec3>, light_color: impl Into<Color128>) -> &mut Self {
         let light_dir = light_dir.into();
         let color = light_color.into();
@@ -2331,6 +2364,7 @@ impl SphericalHarmonics {
     /// sh.brightness(0.0);
     /// assert_eq!(sh.get_sample([1.0, 0.0, 1.0]), Color128::BLACK);
     /// assert_eq!(sh.get_dominent_light_direction(), Vec3::new(0.0, 1.0, 0.0).get_normalized());
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn brightness(&mut self, scale: f32) -> &mut Self {
         unsafe { sh_brightness(self, scale) };
@@ -2366,6 +2400,7 @@ impl SphericalHarmonics {
     ///   .add([0.0, 1.0, 1.0], named_colors::BLUE);
     ///
     /// assert_eq!(sh.get_dominent_light_direction(), Vec3 { x: -0.3088678, y: -0.6715365, z: -0.6735276 });
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_dominent_light_direction(&self) -> Vec3 {
         unsafe { sh_dominant_dir(self) }
@@ -2419,6 +2454,7 @@ impl SphericalHarmonics {
 ///    totalf = Time::get_totalf();
 ///    total = Time::get_total();
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 pub struct Time;
 
@@ -2467,6 +2503,7 @@ impl Time {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     assert_eq!(Time::get_step_unscaled(), Time::get_step() / 2.0);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn scale(factor: f64) {
         unsafe { time_scale(factor) }
@@ -2491,6 +2528,7 @@ impl Time {
     ///
     /// assert_eq!(Time::get_total(), 10.0);
     /// assert_eq!(Time::get_step(), 0.01);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn set_time(total_seconds: f64, frame_elapsed_seconds: f64) {
         unsafe { time_set_time(total_seconds, frame_elapsed_seconds) }
@@ -2512,6 +2550,7 @@ impl Time {
     ///         assert_eq!(Time::get_frame(), iter + 1);
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_frame() -> u64 {
         unsafe { time_frame() }
@@ -2536,7 +2575,8 @@ impl Time {
     ///     }
     ///     total = Time::get_total();
     /// );
-    /// ```    
+    /// # sk::Sk::shutdown();
+    /// ```
     pub fn get_step() -> f64 {
         unsafe { time_step() }
     }
@@ -2560,6 +2600,7 @@ impl Time {
     ///     }
     ///     totalf = Time::get_totalf();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_stepf() -> f32 {
         unsafe { time_stepf() }
@@ -2585,6 +2626,7 @@ impl Time {
     ///     }
     ///     total = Time::get_total_unscaled();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_step_unscaled() -> f64 {
         unsafe { time_step_unscaled() }
@@ -2610,6 +2652,7 @@ impl Time {
     ///     }
     ///     totalf = Time::get_total_unscaledf();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_step_unscaledf() -> f32 {
         unsafe { time_stepf_unscaled() }
@@ -2636,6 +2679,7 @@ impl Time {
     ///         assert_eq!(Time::get_total(), Time::get_total_unscaled() * 2.0);
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_total() -> f64 {
         unsafe { time_total() }
@@ -2662,6 +2706,7 @@ impl Time {
     ///         assert_eq!(Time::get_totalf(), Time::get_total_unscaledf() / 4.0);
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_totalf() -> f32 {
         unsafe { time_totalf() }
@@ -2704,6 +2749,7 @@ impl Time {
     ///     // CPU time should be non-zero after first few frames
     ///     assert_eq!(cpu_us, 0);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_perf_cpu_us() -> u64 {
         unsafe { time_perf_cpu_us() }
@@ -2726,6 +2772,7 @@ impl Time {
     ///     // GPU time should be non-zero after first few frames
     ///     assert_eq!(gpu_us, 0);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_perf_gpu_us() -> u64 {
         unsafe { time_perf_gpu_us() }

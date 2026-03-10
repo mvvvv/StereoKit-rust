@@ -666,7 +666,6 @@ impl SkSettings {
     /// .run(event_loop);
     ///
     /// Sk::shutdown();
-    ///
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sk_basic_example.jpeg" alt="screenshot" width="200">
     #[cfg(not(target_os = "android"))]
@@ -1175,6 +1174,7 @@ impl Sk {
     /// } else {
     ///     assert_eq!(display_mode, DisplayMode::Flatscreen);
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_active_display_mode(&self) -> DisplayMode {
         unsafe { sk_active_display_mode() }
@@ -1198,6 +1198,7 @@ impl Sk {
     /// } else {
     ///     assert_eq!(display_mode, AppFocus::Active);
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_app_focus(&self) -> AppFocus {
         unsafe { sk_app_focus() }
@@ -1223,6 +1224,7 @@ impl Sk {
     ///     assert_eq!(settings.mode, AppMode::Offscreen);
     ///     assert_eq!(system.get_display_width(), 0);
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_sk_info_clone(&self) -> Rc<RefCell<SkInfo>> {
         self.sk_info.clone()
@@ -1247,6 +1249,7 @@ impl Sk {
     /// } else {
     ///     assert_eq!(settings.mode, AppMode::Offscreen);
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_settings(&self) -> SkSettings {
         unsafe { sk_get_settings() }
@@ -1268,6 +1271,7 @@ impl Sk {
     /// } else {
     ///     assert_eq!(system_info.get_display_height(), 0);
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_system(&self) -> SystemInfo {
         unsafe { sk_system_info() }
@@ -1283,6 +1287,7 @@ impl Sk {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     ///
     /// assert_ne!(sk.get_version_id(), 0x0);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_version_id(&self) -> u64 {
         unsafe { sk_version_id() }
@@ -1297,6 +1302,7 @@ impl Sk {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     ///
     /// assert_ne!(sk.get_version_name(), "3");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_version_name(&self) -> &str {
         unsafe { CStr::from_ptr(sk_version_name()) }.to_str().unwrap()
@@ -1320,6 +1326,7 @@ impl Sk {
     ///     // Quit the app at first step
     ///     sk.quit(Some(QuitReason::Error));
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn quit(&self, quit_reason: Option<QuitReason>) {
         let quit_reason = quit_reason.unwrap_or(QuitReason::User);
@@ -1342,6 +1349,7 @@ impl Sk {
     /// sk.step();
     ///
     /// assert_eq!(sk.get_quit_reason(), QuitReason::User);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_quit_reason(&self) -> QuitReason {
         unsafe { sk_get_quit_reason() }
@@ -1367,6 +1375,7 @@ impl Sk {
     /// );
     /// // Shutdown StereoKit
     /// Sk::shutdown();
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn shutdown() {
         unsafe { sk_shutdown() }
@@ -1506,6 +1515,7 @@ impl Sk {
     ///
     /// // 3 steps later we are out
     /// assert_eq!(iter, 3);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn execute_on_main<F: FnMut() + 'static>(&mut self, action: F) {
         self.actions.push_back(Box::new(action))
@@ -1545,6 +1555,7 @@ impl Sk {
     ///
     /// // 6 steps later we are out
     /// assert_eq!(iter, number_of_steps + 3);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn send_event(&mut self, action: StepperAction) {
         self.steppers.send_event(action);
@@ -1581,6 +1592,7 @@ impl Sk {
     ///
     /// // 6 steps later we are out
     /// assert_eq!(iter, number_of_steps + 3);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_steppers_count(&self) -> usize {
         self.steppers.get_count()
@@ -1626,6 +1638,7 @@ impl Sk {
     ///        assert_eq!(sk.get_steppers_count(), 0);
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_steppers(&self) -> &Steppers {
         &self.steppers
@@ -1663,6 +1676,7 @@ impl Sk {
     ///
     /// // If we are here the thread has finished
     /// handle.join().unwrap();
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_event_loop_proxy(&self) -> Option<EventLoopProxy<StepperAction>> {
         let sk = self.sk_info.as_ref();

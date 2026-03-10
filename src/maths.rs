@@ -756,7 +756,7 @@ impl MulAssign<f32> for Vec2 {
     /// let mut vec2_a = Vec2::new(1.0, 2.0);
     /// vec2_a *= 2.0;
     /// assert_eq!(vec2_a, Vec2::new(2.0, 4.0));
-    ///```
+    /// ```
     #[inline]
     fn mul_assign(&mut self, rhs: f32) {
         self.x.mul_assign(rhs);
@@ -1300,7 +1300,7 @@ impl Vec3 {
     /// Returns is **not** a unit vector, even if both ‘a’ and ‘b’ are unit vectors.
     /// see also [`vec3_cross`]
     /// ### Examples
-    ///```
+    /// ```
     /// use stereokit_rust::maths::Vec3;
     ///
     /// // Test case 1: Basic cross product
@@ -1548,7 +1548,7 @@ impl Vec3 {
     ///
     /// let v = Vec3::new(1.0, 2.0, 3.0);
     /// assert_eq!(v.to_array(), [1.0, 2.0, 3.0]);
-    ///```
+    /// ```
     #[inline]
     pub const fn to_array(&self) -> [f32; 3] {
         [self.x, self.y, self.z]
@@ -3172,6 +3172,7 @@ impl Sub<Quat> for Quat {
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
 ///     model.draw(token, transform, None, None);
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/matrix.jpeg" alt="screenshot" width="200">
 #[repr(C)]
@@ -4708,6 +4709,7 @@ impl MulAssign<Matrix> for Matrix {
 ///     cube.draw(token, &material_cube, transform_cube, None, None);
 ///     Ui::handle_end();
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/bounds.jpeg" alt="screenshot" width="200">
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
@@ -5102,7 +5104,7 @@ impl Bounds {
     ///
     /// see also [`bounds_transform]
     /// ### Examples
-    ///```
+    /// ```
     /// use stereokit_rust::maths::{Vec3, Bounds, Matrix};
     ///
     /// let matrix = Matrix::r([90.0, 90.0, 90.0]);
@@ -5111,7 +5113,7 @@ impl Bounds {
     ///
     /// assert_eq!(bounds_transformed.dimensions, Vec3{x: 1.0000001, y: 0.99999994, z: 0.99999994});
     /// assert_eq!(bounds_transformed.center, Vec3{x:0.0, y:0.0, z:0.0})
-    ///```
+    /// ```
     #[inline]
     pub fn transformed(&self, transform: impl Into<Matrix>) -> Self {
         unsafe { bounds_transform(*self, transform.into()) }
@@ -5123,13 +5125,13 @@ impl Bounds {
     ///
     /// see also [Bounds::tlb]
     /// ### Examples
-    ///```
+    /// ```
     /// use stereokit_rust::maths::{Vec3, Bounds};
     ///
     /// let bounds = Bounds::bounds_centered([1.0, 1.0, 1.0]);
     ///
     /// assert_eq!(bounds.tlc(), Vec3{x:0.5, y:0.5, z: 0.0});
-    ///```    
+    /// ```
     #[inline]
     pub fn tlc(&self) -> Vec3 {
         self.center + self.dimensions.xy0() / 2.0
@@ -5141,13 +5143,13 @@ impl Bounds {
     ///
     /// see also [Bounds::tlb]
     /// ### Examples
-    ///```
+    /// ```
     /// use stereokit_rust::maths::{Vec3, Bounds};
     ///
     /// let bounds = Bounds::bounds_centered([1.0, 1.0, 1.0]);
     ///
     /// assert_eq!(bounds.tlb(), Vec3{x:0.5, y:0.5, z: 0.5});
-    ///```
+    /// ```
     #[inline]
     pub fn tlb(&self) -> Vec3 {
         self.center + self.dimensions / 2.0
@@ -5307,6 +5309,7 @@ impl MulAssign<Vec3> for Bounds {
 ///     plane_mesh.draw(token, &material_plane, transform_wall, Some(named_colors::CYAN.into()), None);
 ///     plane_mesh.draw(token, &material_plane, transform_floor, Some(named_colors::BLACK.into()), None);
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/plane.jpeg" alt="screenshot" width="200">
 #[derive(Copy, Clone, Debug, Default)]
@@ -5798,6 +5801,7 @@ impl Display for Pose {
 ///     Lines::add_ray(token, ray_x, 0.30, named_colors::RED, None, 0.04);
 ///     Lines::add_ray(token, ray_y, 0.30, named_colors::GREEN, None, 0.04);
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sphere.jpeg" alt="screenshot" width="200">
 #[derive(Copy, Clone, Debug, Default, PartialEq)]
@@ -5971,6 +5975,7 @@ impl Rect {
 ///     Lines::add_ray(token, ray_x, 1.5, named_colors::WHITE, None, 0.2);
 ///     point.draw(token, &material_point, transform_point_x, Some(named_colors::RED.into()), None );
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ray.jpeg" alt="screenshot" width="200">
 #[derive(Default, Debug, Copy, Clone, PartialEq)]
@@ -6222,6 +6227,7 @@ impl Ray {
     ///     sphere.draw(token, &material, transform_contact_sphere,
     ///                 Some(named_colors::RED.into()), None );
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/intersect_meshes.jpeg" alt="screenshot" width="200">
     #[inline]
@@ -6340,6 +6346,7 @@ impl Ray {
     ///     point.draw(token, &material, transform_contact_model,
     ///                Some(named_colors::RED.into()), None );
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/intersect_model.jpeg" alt="screenshot" width="200">
     #[inline]

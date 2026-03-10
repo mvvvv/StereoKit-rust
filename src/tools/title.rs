@@ -27,6 +27,7 @@ use crate::{
 /// filename_scr = "screenshots/title.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/title.jpeg" alt="screenshot" width="200">
 #[derive(IStepper, Clone)]

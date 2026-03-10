@@ -128,6 +128,7 @@ pub enum AssetType {
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
 ///     my_sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/assets.jpeg" alt="screenshot" width="200">
 pub struct Assets;
@@ -362,7 +363,7 @@ impl Assets {
     ///     }
     /// }
     /// assert_eq!(sprite_count, 13 + 1);
-    /// # sk::Sk::shutdown();   
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn all_of_type(asset_type: AssetType) -> AssetIter {
         AssetIter::iterate(Some(asset_type))
@@ -383,7 +384,7 @@ impl Assets {
     /// // TODO: most of the time true but ... assert_eq!(Assets::total_tasks(), 1);
     /// number_of_steps = 200;
     /// assert_eq!(current_task, 0);
-    /// # sk::Sk::shutdown();   
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn current_task() -> i32 {
         unsafe { assets_current_task() }
@@ -404,7 +405,7 @@ impl Assets {
     ///
     /// let current_task_priority  = Assets::current_task_priority();
     /// assert_eq!(current_task_priority, 10);
-    /// # sk::Sk::shutdown();   
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn current_task_priority() -> i32 {
         unsafe { assets_current_task_priority() }
@@ -430,7 +431,7 @@ impl Assets {
     ///     let total_tasks  = Assets::total_tasks();
     ///     assert_eq!(total_tasks, 2);
     /// );
-    /// # sk::Sk::shutdown();   
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn total_tasks() -> i32 {
         unsafe { assets_total_tasks() }
@@ -458,6 +459,7 @@ impl Assets {
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     model.draw(token, transform, Some(named_colors::MISTY_ROSE.into()), None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/assets_block_for_priority.jpeg" alt="screenshot" width="200">
     pub fn block_for_priority(priority: i32) {
@@ -561,6 +563,7 @@ pub type OpenXRHandleT = u64;
 /// // These are the expected results for offscreen tests on a PC:
 /// assert_eq!(xr_type, BackendXRType::None);
 ///
+/// # sk::Sk::shutdown();
 /// ```
 pub struct Backend;
 
@@ -634,6 +637,7 @@ impl Backend {
     /// } else {
     ///     assert_eq!(graphics, BackendGraphics::Vulkan);
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn graphics() -> BackendGraphics {
         unsafe { backend_graphics_get() }
@@ -655,6 +659,7 @@ impl Backend {
     /// } else {
     ///     assert_eq!(platform, BackendPlatform::Linux);
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn platform() -> BackendPlatform {
         unsafe { backend_platform_get() }
@@ -675,6 +680,7 @@ impl Backend {
     /// xr_mode_stop_here!();
     /// // These are the expected results for offscreen tests on a PC:
     /// assert_eq!(xr_type, BackendXRType::None);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn xr_type() -> BackendXRType {
         unsafe { backend_xr_get_type() }
@@ -731,6 +737,7 @@ impl Backend {
 /// assert_eq!(ext_enabled, false);
 /// assert!(get_function_ptr.is_none(), "Get function pointer should be none");
 /// assert!(get_function.is_none(),"Get function should be none");
+/// # sk::Sk::shutdown();
 /// ```
 pub struct BackendOpenXR;
 
@@ -760,6 +767,7 @@ impl BackendOpenXR {
     ///
     /// offscreen_mode_stop_here!();
     /// assert_ne!(instance_handle, 0);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn instance() -> OpenXRHandleT {
         unsafe { backend_openxr_get_instance() }
@@ -783,6 +791,7 @@ impl BackendOpenXR {
     ///
     /// offscreen_mode_stop_here!();
     /// assert_ne!(session_handle, 0);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn session() -> OpenXRHandleT {
         unsafe { backend_openxr_get_session() }
@@ -806,6 +815,7 @@ impl BackendOpenXR {
     ///
     /// offscreen_mode_stop_here!();
     /// assert_ne!(space_handle, 0);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn space() -> OpenXRHandleT {
         unsafe { backend_openxr_get_space() }
@@ -829,6 +839,7 @@ impl BackendOpenXR {
     ///
     /// offscreen_mode_stop_here!();
     /// assert_ne!(system_id, 0);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn system_id() -> OpenXRHandleT {
         unsafe { backend_openxr_get_system_id() }
@@ -850,6 +861,7 @@ impl BackendOpenXR {
     ///
     /// offscreen_mode_stop_here!();
     /// assert_ne!(current_time, 0);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn time() -> i64 {
         unsafe { backend_openxr_get_time() }
@@ -922,6 +934,7 @@ impl BackendOpenXR {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     BackendOpenXR::add_composition_layer(&mut composition_layer, 0);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn add_composition_layer<T>(xr_composition_layer_x: &mut T, sort_order: i32) {
         let size = size_of::<T>();
@@ -955,6 +968,7 @@ impl BackendOpenXR {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     BackendOpenXR::add_end_frame_chain(&mut frame_end_info);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn add_end_frame_chain<T>(xr_base_header: &mut T) {
         let size = size_of::<T>();
@@ -984,6 +998,7 @@ impl BackendOpenXR {
     /// // Later, we can check if the extensions were not loaded:
     /// assert_eq!(BackendOpenXR::ext_enabled("XR_EXT_hand_tracking"), false);
     /// assert_eq!(BackendOpenXR::ext_enabled("XR_FB_passthrough"), false);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn exclude_ext(extension_name: impl AsRef<str>) {
         let c_str = CString::new(extension_name.as_ref()).unwrap();
@@ -1012,6 +1027,7 @@ impl BackendOpenXR {
     /// // Later, check if extensions were loaded as we can't be sure they are ok for this runtime:
     /// assert_eq!(BackendOpenXR::ext_enabled("XR_EXT_hand_tracking"), true);
     /// assert_eq!(BackendOpenXR::ext_enabled("XR_the_ext_that_does_not_exist"), false);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn request_ext(extension_name: impl AsRef<str>) {
         let c_str = CString::new(extension_name.as_ref()).unwrap();
@@ -1038,6 +1054,7 @@ impl BackendOpenXR {
     /// // In offscreen mode, extensions are never enabled
     /// assert_eq!(hand_tracking_enabled, true);
     /// assert_eq!(imaginary_enabled, false);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn ext_enabled(extension_name: impl AsRef<str>) -> bool {
         if Backend::xr_type() == BackendXRType::OpenXR {
@@ -1071,6 +1088,7 @@ impl BackendOpenXR {
     /// // In offscreen mode, function pointers are None
     /// assert_eq!(hand_tracker_fn.is_some(), true);
     /// assert!(passthrough_fn.is_none(),"Passthrough function should be none");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_function_ptr(function_name: impl AsRef<str>) -> Option<VoidFunction> {
         let c_str = CString::new(function_name.as_ref()).unwrap();
@@ -1098,6 +1116,7 @@ impl BackendOpenXR {
     /// offscreen_mode_stop_here!();
     /// // In offscreen mode, function pointers are None
     /// assert_eq!(hand_tracker_fn.is_some(), true);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_function<T>(function_name: impl AsRef<str>) -> Option<T> {
         let c_str = CString::new(function_name.as_ref()).unwrap();
@@ -1126,6 +1145,7 @@ impl BackendOpenXR {
     ///
     /// // Reset to default
     /// BackendOpenXR::set_hand_joint_scale(1.0);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn set_hand_joint_scale(joint_scale_factor: f32) {
         unsafe { backend_openxr_set_hand_joint_scale(joint_scale_factor) }
@@ -1151,6 +1171,7 @@ impl BackendOpenXR {
 /// assert_eq!(activity, std::ptr::null_mut());
 /// assert_eq!(java_vm, std::ptr::null_mut());
 /// assert_eq!(jni_environment, std::ptr::null_mut());
+/// # sk::Sk::shutdown();
 /// ```
 pub struct BackendAndroid;
 
@@ -1204,6 +1225,7 @@ impl BackendAndroid {
 ///     assert_eq!(d3d_context, std::ptr::null_mut());
 ///     assert_eq!(d3d_device, std::ptr::null_mut());
 /// }
+/// # sk::Sk::shutdown();
 /// ```
 pub struct BackendD3D11;
 
@@ -1240,6 +1262,7 @@ impl BackendD3D11 {
 /// // These are results for a non OpenGLWGL environment:
 /// assert_eq!(hdc, std::ptr::null_mut());
 /// assert_eq!(hglrc, std::ptr::null_mut());
+/// # sk::Sk::shutdown();
 /// ```
 pub struct BackendOpenGLWGL;
 
@@ -1281,6 +1304,7 @@ impl BackendOpenGLWGL {
 ///     let display = BackendOpenGLESEGL::display();
 ///     assert_eq!(display, std::ptr::null_mut());
 /// }
+/// # sk::Sk::shutdown();
 /// ```
 pub struct BackendOpenGLESEGL;
 
@@ -1363,6 +1387,7 @@ pub enum HierarchyParent {
 ///     Hierarchy::enabled(token, true);
 ///     Hierarchy::pop(&token);
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/hierarchy.jpeg" alt="screenshot" width="200">
 pub struct Hierarchy;
@@ -1435,6 +1460,7 @@ impl Hierarchy {
     ///     assert_eq!(Hierarchy::to_world_point(token, [0.4, 0.9, 0.9]), [0.4, 0.4, 0.4].into());
     ///     Hierarchy::pop(token);
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn push<M: Into<Matrix>>(_token: &MainThreadToken, transform: M, parent_behavior: Option<HierarchyParent>) {
         let parent_behavior = parent_behavior.unwrap_or(HierarchyParent::Inherit);
@@ -1458,6 +1484,7 @@ impl Hierarchy {
     ///     assert_eq!(Hierarchy::to_world_point(token, [0.4, 0.9, 0.9]), [0.4, 0.4, 0.4].into());
     ///     Hierarchy::pop(token);
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn to_local_point<V: Into<Vec3>>(_token: &MainThreadToken, world_point: V) -> Vec3 {
         unsafe { hierarchy_to_local_point(&world_point.into()) }
@@ -1485,6 +1512,7 @@ impl Hierarchy {
     ///     assert_eq!(world, [-90.0, 0.0, 0.0].into());
     ///     Hierarchy::pop(token);
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn to_local_rotation<Q: Into<Quat>>(_token: &MainThreadToken, world_orientation: Q) -> Quat {
         unsafe { hierarchy_to_local_rotation(&world_orientation.into()) }
@@ -1508,6 +1536,7 @@ impl Hierarchy {
     ///     assert_eq!(Hierarchy::to_world_pose(token, Pose::new([10.0, 20.5, 30.5], None)), pose);
     ///     Hierarchy::pop(token);
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn to_local_pose<P: Into<Pose>>(_token: &MainThreadToken, world_pose: P) -> Pose {
         unsafe { hierarchy_to_local_pose(&world_pose.into()) }
@@ -1556,6 +1585,7 @@ impl Hierarchy {
     ///     sphere.draw(token, &material, transform_contact, Some(named_colors::YELLOW.into()), None );
     ///     Hierarchy::pop(token);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/hierarchy_ray.jpeg" alt="screenshot" width="200">
     pub fn to_local_ray<R: Into<Ray>>(_token: &MainThreadToken, world_ray: R) -> Ray {
@@ -1823,6 +1853,7 @@ impl BtnState {
 /// assert_eq!(controller.tracked_rot, TrackState::Lost);
 /// assert_ne!(controller.tracked_rot, TrackState::Inferred);
 /// assert_ne!(controller.tracked_rot, TrackState::Known);
+/// # sk::Sk::shutdown();
 /// ```
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
@@ -1867,6 +1898,7 @@ pub enum TrackState {
 /// assert_eq!(pointer.orientation, Quat::ZERO);
 /// assert_eq!(pointer.ray, Ray::ZERO);
 /// assert_eq!(pointer.get_pose(), Pose::ZERO);
+/// # sk::Sk::shutdown();
 /// ```
 #[derive(Debug, Copy, Clone)]
 #[repr(C)]
@@ -1915,6 +1947,7 @@ impl Pointer {
 /// assert_eq!(index_tip.position, Vec3 { x: 0.029, y: 0.097, z: -0.041 });
 /// assert_eq!(index_tip.orientation, Quat { x: -0.193, y: -0.004, z: 0.046, w: -0.98 });
 /// assert_eq!(index_tip.radius, 0.007);
+/// # sk::Sk::shutdown();
 /// ```
 #[derive(Debug, Copy, Clone, PartialEq)]
 #[repr(C)]
@@ -2029,6 +2062,7 @@ pub type HandSimId = i32;
 ///         }
 ///     }
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/hand.jpeg" alt="screenshot" width="200">
 ///
@@ -2069,6 +2103,7 @@ pub type HandSimId = i32;
 /// assert_eq!(hand.is_tracked(), false);
 /// assert_eq!(hand.is_just_tracked(), false);
 /// assert_eq!(hand.is_just_untracked(), false);
+/// # sk::Sk::shutdown();
 /// ```
 pub struct Hand {
     /// This is a 2D array with 25 HandJoints. You can get the right joint by finger*5 + joint
@@ -2199,7 +2234,8 @@ impl Hand {
     /// material.color_tint(Color128::new(0.8, 0.5, 0.1, 1.0));
     /// hand.material(&material);
     ///
-    /// assert_ne!(material, Material::hand())
+    /// assert_ne!(material, Material::hand());
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn material(&mut self, material: impl AsRef<Material>) -> &mut Self {
         unsafe { input_hand_material(self.handed, material.as_ref().0.as_ptr()) }
@@ -2262,6 +2298,7 @@ pub enum ControllerKey {
 ///     model_left.draw(token, transform_left, None, None);
 ///     model_right.draw(token, transform_right, None, None);
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/controller.jpeg" alt="screenshot" width="200">
 ///
@@ -2297,6 +2334,7 @@ pub enum ControllerKey {
 /// assert_eq!(controller.is_x2_just_pressed(), false);
 /// assert_eq!(controller.is_x2_just_unpressed(), false);
 /// assert_eq!(controller.is_x2_pressed(), false);
+/// # sk::Sk::shutdown();
 /// ```
 #[derive(Debug, Copy, Clone)]
 #[repr(C)]
@@ -2439,15 +2477,16 @@ impl Controller {
 ///
 /// let mouse = Input::get_mouse();
 ///
-/// assert_eq!(mouse.is_available(),false);
+/// assert_eq!(mouse.is_available(),true);
 /// assert_eq!(mouse.pos,           Vec2::ZERO);
 /// assert_eq!(mouse.pos_change,    Vec2::ZERO);
 /// assert_eq!(mouse.scroll,        0.0);
 /// assert_eq!(mouse.scroll_change, 0.0);
 ///
 /// assert_eq!(mouse.get_ray().position, Vec3::ZERO);
-/// // Warning: No ray if the mouse isn't available!
+/// // Warning: No ray if the mouse isn't "realy" available!
 /// // assert_eq!(mouse.get_ray().direction, Vec3::new(f32::NAN, f32::NAN, f32::NAN));
+/// # sk::Sk::shutdown();
 /// ```
 #[derive(Debug, Copy, Clone)]
 #[repr(C)]
@@ -2613,11 +2652,12 @@ pub enum Key {
 /// assert_eq!(head , Pose::IDENTITY);
 ///
 /// let mouse = Input::get_mouse();
-/// assert_eq!(mouse.is_available(), false);
+/// assert_eq!(mouse.is_available(), true);
 ///
 /// assert_eq!(Input::pointer_count(None), 0);
 /// let pointer = Input::pointer(0, Some(InputSource::Hand));
 /// assert_eq!(pointer.source, InputSource::None);
+/// # sk::Sk::shutdown();
 /// ```
 pub struct Input;
 
@@ -2704,6 +2744,7 @@ impl Input {
     ///
     /// Input::set_controller_model(Handed::Left, None);
     /// assert_eq!(Input::get_controller_model(Handed::Left).get_id(), "default/model_controller_l");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn set_controller_model(handed: Handed, model: Option<&Model>) {
         match model {
@@ -2729,6 +2770,7 @@ impl Input {
     ///
     /// assert_eq!(controller.tracked_pos, TrackState::Lost);
     /// assert_eq!(controller.tracked_rot, TrackState::Lost);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn controller(handed: Handed) -> Controller {
         unsafe { *input_controller(handed) }
@@ -2743,7 +2785,7 @@ impl Input {
     ///
     /// see also [`input_fire_event`]    
     /// ### Examples
-    /// ```
+    /// ``` ignore
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{system::{Input, InputSource, Pointer, BtnState, Handed, TrackState},
     ///                      maths::{Vec3, Quat, Pose, Ray}};
@@ -2791,6 +2833,7 @@ impl Input {
     /// let hand = Input::hand(Handed::Right);
     /// let thumb_tip = hand.get(FingerId::Thumb, JointId::Tip);
     /// assert_eq!(thumb_tip.position, Vec3 { x: 0.072, y: 0.028, z: -0.055 });
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn hand(handed: Handed) -> Hand {
         unsafe { *input_hand(handed) }
@@ -2821,6 +2864,7 @@ impl Input {
     ///         Input::hand_clear_override(Handed::Left);
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn hand_clear_override(hand: Handed) {
         unsafe { input_hand_override(hand, null()) };
@@ -2866,6 +2910,7 @@ impl Input {
     ///         Input::hand_material(Handed::Left, None);
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn hand_material(hand: Handed, material: Option<Material>) {
         match material {
@@ -2910,6 +2955,7 @@ impl Input {
     ///
     /// let id = Input::hand_sim_pose_add(&hand_joints, ControllerKey::X1, ControllerKey::None_, Key::None, Key::None);
     /// assert_eq!(id, 7);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn hand_sim_pose_add(
         hand_joints_palm_relative_25: &[Pose],
@@ -2967,6 +3013,7 @@ impl Input {
     /// xr_mode_stop_here!();
     /// // These are the expected results for offscreen tests on a PC:
     /// assert_eq!(hand_source, HandSource::None);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn hand_source(hand: Handed) -> HandSource {
         unsafe { input_hand_source(hand) }
@@ -2987,6 +3034,7 @@ impl Input {
     /// Input::hand_visible(Handed::Right, false);
     /// Input::hand_visible(Handed::Max, false);
     /// Input::hand_visible(Handed::Left, true);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn hand_visible(hand: Handed, visible: bool) {
         unsafe { input_hand_visible(hand, visible as Bool32T) };
@@ -3012,6 +3060,7 @@ impl Input {
     ///
     /// Input::finger_glow(true);
     /// assert_eq!(Input::get_finger_glow(), true);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn finger_glow(visible: bool) {
         unsafe { input_set_finger_glow(visible as Bool32T) };
@@ -3037,6 +3086,7 @@ impl Input {
     /// assert_eq!(key_state.is_just_active(), false);
     /// assert_eq!(key_state.is_just_inactive(), false);
     /// assert_eq!(key_state.is_changed(), false);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn key(key: Key) -> BtnState {
         unsafe { input_key(key) }
@@ -3073,6 +3123,7 @@ impl Input {
     ///     }
     /// );
     /// assert_eq!(Input::key(Key::A).is_active(), true);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn key_inject_press(key: Key) {
         unsafe { input_key_inject_press(key) };
@@ -3116,6 +3167,7 @@ impl Input {
     /// assert_eq!(pointer.orientation, Quat::ZERO);
     /// assert_eq!(pointer.ray, Ray::ZERO);
     /// assert_eq!(pointer.get_pose(), Pose::ZERO);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn pointer(index: i32, filter: Option<InputSource>) -> Pointer {
         let filter = filter.unwrap_or(InputSource::Any);
@@ -3166,6 +3218,7 @@ impl Input {
     ///         assert_eq!(Input::text_consume(), Some('\0'));
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn text_consume() -> Option<char> {
         char::from_u32(unsafe { input_text_consume() })
@@ -3203,6 +3256,7 @@ impl Input {
     ///         assert_eq!(Input::text_consume(), Some('\0'));
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn text_reset() {
         unsafe { input_text_reset() };
@@ -3238,6 +3292,7 @@ impl Input {
     ///         assert_eq!(Input::text_consume(), Some('\0'));
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn text_inject_char(character: char) {
         unsafe { input_text_inject_char(character as u32) };
@@ -3271,6 +3326,7 @@ impl Input {
     ///         assert_eq!(Input::text_consume(), Some('\0'));
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn text_inject_chars(str: impl AsRef<str>) {
         for character in str.as_ref().chars() {
@@ -3288,7 +3344,7 @@ impl Input {
     ///
     /// see also [`input_subscribe`]    
     /// ### Examples
-    /// ```
+    /// ``` ignore
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::system::{Input, InputSource, Pointer, BtnState, Handed};
     ///
@@ -3375,6 +3431,7 @@ impl Input {
     /// assert_eq!(button_state.is_just_active(), false);
     /// assert_eq!(button_state.is_just_inactive(), false);
     /// assert_eq!(button_state.is_changed(), false);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_controller_menu_button() -> BtnState {
         unsafe { input_controller_menu() }
@@ -3398,7 +3455,8 @@ impl Input {
     /// let eyes_pose = Input::get_eyes();
     ///
     /// assert_eq!(eyes_pose, Pose::IDENTITY);
-    /// assert_eq!(Input::get_eyes_tracked(), BtnState::Inactive)
+    /// assert_eq!(Input::get_eyes_tracked(), BtnState::Inactive);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_eyes() -> Pose {
         unsafe { input_eyes() }
@@ -3427,7 +3485,8 @@ impl Input {
     /// assert_eq!(eyes_tracked.is_active(), false);
     /// assert_eq!(eyes_tracked, BtnState::Inactive);
     ///
-    /// assert_eq!(Input::get_eyes(),Pose::IDENTITY)
+    /// assert_eq!(Input::get_eyes(),Pose::IDENTITY);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_eyes_tracked() -> BtnState {
         unsafe { input_eyes_tracked() }
@@ -3446,6 +3505,7 @@ impl Input {
     /// let head_pose = Input::get_head();
     ///
     /// assert_eq!(head_pose, Pose::IDENTITY);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_head() -> Pose {
         unsafe { input_head() }
@@ -3462,7 +3522,7 @@ impl Input {
     ///
     /// let mouse = Input::get_mouse();
     ///
-    /// assert_eq!(mouse.is_available(),false);
+    /// assert_eq!(mouse.is_available(),true);
     /// assert_eq!(mouse.pos,           Vec2::ZERO);
     /// assert_eq!(mouse.pos_change,    Vec2::ZERO);
     /// assert_eq!(mouse.scroll,        0.0);
@@ -3471,6 +3531,7 @@ impl Input {
     /// assert_eq!(mouse.get_ray().position, Vec3::ZERO);
     /// // Warning: No ray if the mouse isn't available!
     /// // assert_eq!(mouse.get_ray().direction, Vec3::new(f32::NAN, f32::NAN, f32::NAN));
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_mouse() -> Mouse {
         unsafe { *input_mouse() }
@@ -3547,6 +3608,7 @@ impl LinePoint {
 ///
 ///     Lines::add_axis(token, axis_pose, Some(0.7), Some(0.04));
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/lines.jpeg" alt="screenshot" width="200">
 pub struct Lines;
@@ -3581,6 +3643,7 @@ impl Lines {
     ///
     ///     Lines::add(token, [0.7, 0.7, 0.2], [-0.7, 0.7, 0.2], named_colors::RED, None, 0.03);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn add<V: Into<Vec3>>(
         _token: &MainThreadToken,
@@ -3621,6 +3684,7 @@ impl Lines {
     ///     Lines::add_ray(token, ray2, 1.0, named_colors::WHITE, Some(named_colors::GREEN), 0.03 );
     ///     Lines::add_ray(token, ray2, 1.0, named_colors::WHITE, Some(named_colors::BLUE), 0.03 );
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn add_ray<R: Into<Ray>>(
         _token: &MainThreadToken,
@@ -3655,6 +3719,7 @@ impl Lines {
     ///     ]);
     ///
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn add_list(_token: &MainThreadToken, points: &[LinePoint]) {
         unsafe { line_add_listv(points.as_ptr(), points.len() as i32) }
@@ -3684,6 +3749,7 @@ impl Lines {
     ///     Lines::add_axis(token, axis_pose, Some(0.7), Some(0.02));
     ///
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn add_axis<P: Into<Pose>>(token: &MainThreadToken, at_pose: P, size: Option<f32>, thickness: Option<f32>) {
         let at_pose: Pose = at_pose.into();
@@ -4067,6 +4133,7 @@ impl Log {
 ///         //assert_ne!(recorded_data, 0);
 ///     }
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/microphone.jpeg" alt="screenshot" width="200">
 #[repr(C)]
@@ -4291,6 +4358,7 @@ pub enum Projection {
 ///             width_scr, height_scr, Some(fov_scr) );
 ///     }
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/renderer.jpeg" alt="screenshot" width="200">
 pub struct Renderer;
@@ -4444,6 +4512,7 @@ impl Renderer {
     ///     let camera_root = Renderer::get_camera_root();
     ///     assert_eq!(camera_root, transform);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn camera_root(transform: impl Into<Matrix>) {
         unsafe { render_set_cam_root(&transform.into()) }
@@ -4476,6 +4545,7 @@ impl Renderer {
     ///     assert_eq!(Renderer::get_clear_color(), named_colors::BLUE.into());
     ///
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn clear_color(color_gamma: impl Into<Color128>) {
         unsafe { render_set_clear_color(color_gamma.into()) }
@@ -4498,6 +4568,7 @@ impl Renderer {
     ///
     /// Renderer::enable_sky(true);
     /// assert_eq!(Renderer::get_enable_sky(), true);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn enable_sky(enable: bool) {
         unsafe { render_enable_skytex(enable as Bool32T) }
@@ -4521,6 +4592,7 @@ impl Renderer {
     ///
     /// Renderer::layer_filter(RenderLayer::AllFirstPerson);
     /// assert_eq!(Renderer::get_layer_filter(), RenderLayer::AllFirstPerson);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn layer_filter(filter: RenderLayer) {
         unsafe { render_set_filter(filter) }
@@ -4545,6 +4617,7 @@ impl Renderer {
     ///
     /// Renderer::multisample(1);
     /// assert_eq!(Renderer::get_multisample(), 1);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn multisample(level: i32) {
         unsafe { render_set_multisample(level) }
@@ -4571,6 +4644,7 @@ impl Renderer {
     ///
     /// Renderer::projection(Projection::Perspective);
     /// assert_eq!(Renderer::get_projection(), Projection::Perspective);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn projection(projection: Projection) {
         unsafe { render_set_projection(projection) }
@@ -4595,6 +4669,7 @@ impl Renderer {
     ///
     /// Renderer::scaling(1.0);
     /// assert_eq!(Renderer::get_scaling(), 1.0);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn scaling(scaling: f32) {
         unsafe { render_set_scaling(scaling) }
@@ -4618,6 +4693,7 @@ impl Renderer {
     ///
     /// Renderer::viewport_scaling(1.0);
     /// assert_eq!(Renderer::get_viewport_scaling(), 1.0);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn viewport_scaling(scaling: f32) {
         unsafe { render_set_viewport_scaling(scaling) }
@@ -4644,7 +4720,8 @@ impl Renderer {
     ///
     /// assert_eq!(sky_light, sh);
     /// assert_eq!(sh.get_dominent_light_direction(),
-    ///            Vec3 { x: -0.0, y: -1.0, z: -1.0 }.get_normalized())
+    ///            Vec3 { x: -0.0, y: -1.0, z: -1.0 }.get_normalized());
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn sky_light(light_info: SphericalHarmonics) {
         unsafe { render_set_skylight(&light_info) }
@@ -4671,6 +4748,7 @@ impl Renderer {
     /// let sky_tex_get = Renderer::get_sky_tex();
     ///
     /// assert_eq!(sky_tex_get, sky_tex);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn sky_tex(tex: impl AsRef<Tex>) {
         unsafe { render_set_skytex(tex.as_ref().0.as_ptr()) }
@@ -4701,6 +4779,7 @@ impl Renderer {
     ///
     /// let same_material = Renderer::get_sky_material();
     /// assert_eq!(same_material, material);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn sky_material(material: impl AsRef<Material>) {
         unsafe { render_set_skymaterial(material.as_ref().0.as_ptr()) }
@@ -4739,6 +4818,7 @@ impl Renderer {
     ///
     ///     Renderer::add_mesh(token, &sphere, &material, transform2, None, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn add_mesh(
         _token: &MainThreadToken,
@@ -4786,6 +4866,7 @@ impl Renderer {
     ///
     ///     Renderer::add_model(token, &model, transform2, None, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn add_model(
         _token: &MainThreadToken,
@@ -4819,7 +4900,7 @@ impl Renderer {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Renderer::blit(&tex, &material);
     /// );
-    /// # sk::Sk::shutdown();   
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn blit(to_render_target: impl AsRef<Tex>, material: impl AsRef<Material>) {
         unsafe { render_blit(to_render_target.as_ref().0.as_ptr(), material.as_ref().0.as_ptr()) }
@@ -4860,6 +4941,7 @@ impl Renderer {
     ///
     /// Renderer::override_capture_filter(false, RenderLayer::Layer0);
     /// assert_eq!(Renderer::has_capture_filter(), false);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn override_capture_filter(use_override_filter: bool, override_filter: RenderLayer) {
         unsafe { render_override_capture_filter(use_override_filter as Bool32T, override_filter) }
@@ -4921,6 +5003,7 @@ impl Renderer {
     ///
     ///     Renderer::render_to(token, &tex, None, camera, projection, None, None, None, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     #[allow(clippy::too_many_arguments)]
     pub fn render_to<M: Into<Matrix>>(
@@ -4979,6 +5062,7 @@ impl Renderer {
     ///         Renderer::set_global_texture(token, 12, None);
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn set_global_texture(_token: &MainThreadToken, texture_register: i32, tex: Option<&Tex>) {
         if let Some(tex) = tex {
@@ -5005,6 +5089,7 @@ impl Renderer {
     /// #[derive(Default, Copy, Clone)]
     /// struct Globals { time: f32, padding: [f32;3] }
     ///
+    /// # {
     /// let mut globals = Globals { time: 1.0, ..Default::default() };
     /// let buffer = MaterialBuffer::<Globals>::new();
     /// buffer.set(&mut globals as *mut _);
@@ -5013,6 +5098,7 @@ impl Renderer {
     ///     // Bind the buffer to slot 3 so shaders can read it.
     ///     Renderer::set_global_buffer( 3, &buffer);
     /// );
+    /// # } sk::Sk::shutdown();
     /// ```
     pub fn set_global_buffer<T>(buffer_register: i32, buffer: &MaterialBuffer<T>) {
         unsafe {
@@ -5034,6 +5120,8 @@ impl Renderer {
     /// #[repr(C)]
     /// #[derive(Default, Copy, Clone)]
     /// struct Globals { value: f32, padding: [f32;3] }
+    ///
+    /// # {
     /// let buffer = MaterialBuffer::<Globals>::new();
     /// test_steps!(
     ///     Renderer::set_global_buffer(4, &buffer);
@@ -5042,6 +5130,7 @@ impl Renderer {
     ///         Renderer::unset_global_buffer(4);
     ///     }
     /// );
+    /// # } sk::Sk::shutdown();
     /// ```
     pub fn unset_global_buffer(buffer_register: i32) {
         unsafe { render_global_buffer(buffer_register, std::ptr::null_mut()) }
@@ -5132,6 +5221,7 @@ impl Renderer {
     ///         camera_pose, 200, 200, None, None
     ///     );
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/screenshot_capture.jpeg" alt="screenshot" width="200">
     pub fn screenshot_capture<F: FnMut(&[Color32], usize, usize)>(
@@ -5226,6 +5316,7 @@ impl Renderer {
     ///         camera, projection, 200, 200, None, None, None, None
     ///     );
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/screenshot_viewpoint.jpeg" alt="screenshot" width="200">
     #[allow(clippy::too_many_arguments)]
@@ -5289,6 +5380,7 @@ impl Renderer {
     /// let (near, far) = Renderer::get_clip();
     /// assert_eq!(near, 0.01);
     /// assert_eq!(far, 10.0);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn set_clip(near_plane: f32, far_plane: f32) {
         unsafe { render_set_clip(near_plane, far_plane) }
@@ -5311,6 +5403,7 @@ impl Renderer {
     /// Renderer::set_fov(120.0);
     /// let fov = Renderer::get_fov();
     /// assert_eq!(fov, 120.0);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn set_fov(vertical_field_of_view: f32) {
         unsafe { render_set_fov(vertical_field_of_view) }
@@ -5336,6 +5429,7 @@ impl Renderer {
     /// use stereokit_rust::system::Renderer;
     ///
     /// Renderer::set_ortho_clip(0.01, 5.0);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn set_ortho_clip(near_plane: f32, far_plane: f32) {
         unsafe { render_set_ortho_clip(near_plane, far_plane) }
@@ -5360,6 +5454,7 @@ impl Renderer {
     /// Renderer::set_ortho_size(12.0);
     /// let ortho_size = Renderer::get_ortho_size();
     /// assert_eq!(ortho_size, 12.0);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn set_ortho_size(view_port_height_meters: f32) {
         unsafe { render_set_ortho_size(view_port_height_meters) }
@@ -5914,6 +6009,7 @@ impl SensorDepth {
 ///    Lines::add(token, [sizex, line_height_at, 0.0], [-sizex, line_height_at, 0.0], RED, None, 0.03  );
 ///    Hierarchy::pop(token);
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/text_style.jpeg" alt="screenshot" width="200">
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -5977,6 +6073,7 @@ impl TextStyle {
     ///
     /// assert_eq!(text_style.get_material().get_id(), "sk/text_style/2/material");
     /// assert_eq!(text_style.get_layout_height(), 0.02);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn from_font(font: impl AsRef<Font>, layout_height_meters: f32, color_gamma: impl Into<Color128>) -> Self {
         unsafe { text_make_style(font.as_ref().0.as_ptr(), layout_height_meters, color_gamma.into()) }
@@ -6008,6 +6105,7 @@ impl TextStyle {
     ///
     /// assert_eq!(text_style.get_material().get_id(), "sk/text_style/2/material");
     /// assert_eq!(text_style.get_layout_height(), 0.02);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn from_font_and_shader(
         font: impl AsRef<Font>,
@@ -6055,6 +6153,7 @@ impl TextStyle {
     ///
     /// assert_eq!(text_style.get_material(), material);
     /// assert_eq!(text_style.get_layout_height(), 0.02);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn from_font_and_material(
         font: impl AsRef<Font>,
@@ -6099,6 +6198,7 @@ impl TextStyle {
     /// text_style.layout_height(0.03);
     ///
     /// assert!((text_style.get_layout_height() - 0.03) < 0.0001);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn layout_height(&mut self, height_meters: f32) {
         unsafe { text_style_set_layout_height(*self, height_meters) }
@@ -6121,6 +6221,7 @@ impl TextStyle {
     /// text_style.total_height(0.03);
     ///
     /// assert_eq!(text_style.get_total_height(), 0.03);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn total_height(&mut self, height_meters: f32) {
         unsafe { text_style_set_total_height(*self, height_meters) }
@@ -6143,6 +6244,7 @@ impl TextStyle {
     /// text_style.line_height_pct(30.0);
     ///
     /// assert_eq!(text_style.get_line_height_pct(), 30.0);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn line_height_pct(&mut self, height_percent: f32) {
         unsafe { text_style_set_line_height_pct(*self, height_percent) }
@@ -6212,6 +6314,7 @@ impl TextStyle {
     /// assert_eq!(text_style.get_layout_height(), 0.02);
     ///
     /// assert_eq!(text_style.get_cap_height(), 0.02);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_cap_height(&self) -> f32 {
         unsafe { text_style_get_cap_height(*self) }
@@ -6235,6 +6338,7 @@ impl TextStyle {
     ///
     /// //TODO: linux   assert_eq!(text_style.get_ascender(), 0.03);
     /// //TODO: windows assert_eq!(text_style.get_ascender(),  0.021176472);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_ascender(&self) -> f32 {
         unsafe { text_style_get_ascender(*self) }
@@ -6254,6 +6358,7 @@ impl TextStyle {
     /// assert_eq!(text_style.get_layout_height(), 0.02);
     ///
     /// assert_ne!(text_style.get_descender(), 0.0);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_descender(&self) -> f32 {
         unsafe { text_style_get_descender(*self) }
@@ -6424,6 +6529,7 @@ bitflags::bitflags! {
 ///    Text::add_at(token, "----/****", transform3, Some(style), None,
 ///             None, None, None, None, None);
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/text.jpeg" alt="screenshot" width="200">
 pub struct Text;
@@ -6528,6 +6634,7 @@ impl Text {
     ///
     /// assert_eq!(text_style.get_material().get_id(), "sk/text_style/2/material");
     /// assert_eq!(text_style.get_layout_height(), 0.02);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn make_style(
         font: impl AsRef<Font>,
@@ -6567,6 +6674,7 @@ impl Text {
     ///
     /// assert_eq!(text_style.get_material().get_id(), "sk/text_style/2/material");
     /// assert_eq!(text_style.get_layout_height(), 0.02);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn make_style_with_shader(
         font: impl AsRef<Font>,
@@ -6616,6 +6724,7 @@ impl Text {
     ///
     /// assert_eq!(text_style.get_material(), material);
     /// assert_eq!(text_style.get_layout_height(), 0.02);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn make_style_with_material(
         font: impl AsRef<Font>,
@@ -6671,6 +6780,7 @@ impl Text {
     ///    Text::add_at(token, "----/****", transform3, Some(style), None,
     ///             None, None, None, None, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     #[allow(clippy::too_many_arguments)]
     pub fn add_at(
@@ -6753,6 +6863,7 @@ impl Text {
     ///             Some(style), Some(GREEN.into()), Some(Pivot::YTop),
     ///             Some(Align::Center),None, None, Some(-0.7));
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     #[allow(clippy::too_many_arguments)]
     pub fn add_in(
@@ -6849,6 +6960,7 @@ impl Text {
     ///    
     ///    cube.draw(token, &material, transform1, Some(GREEN.into()), None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn size_layout(text: impl AsRef<str>, text_style: Option<TextStyle>, max_width: Option<f32>) -> Vec2 {
         let c_str = CString::new(text.as_ref()).unwrap();
@@ -6897,6 +7009,7 @@ impl Text {
     ///    
     ///    cube.draw(token, &material, transform_cube, Some(GREEN.into()), None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn size_render(size_layout: impl Into<Vec2>, text_style: Option<TextStyle>, y_offset: &mut f32) -> Vec2 {
         let style = text_style.unwrap_or_default();
@@ -7053,7 +7166,7 @@ impl World {
     ///
     /// see also [world_set_occlusion_enabled]
     /// ### Examples
-    /// ```
+    /// ``` ignore
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{system::World};
     ///
@@ -7071,6 +7184,7 @@ impl World {
     ///
     /// World::occlusion_enabled(false);
     /// assert_eq!(World::get_occlusion_enabled(), false);
+    /// # sk::Sk::shutdown();
     /// ```
     #[deprecated(since = "0.40.0", note = "Use World::occlusion with OcclusionCaps::Mesh instead")]
     pub fn occlusion_enabled(enabled: bool) {
@@ -7105,6 +7219,7 @@ impl World {
     ///     assert_eq!(World::get_occlusion(), OcclusionCaps::Mesh); // TODO: should be None
     ///     assert_eq!(World::get_occlusion_material(), material);
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn occlusion_material(material: impl AsRef<Material>) {
         unsafe { world_set_occlusion_material(material.as_ref().0.as_ptr()) }
@@ -7129,6 +7244,7 @@ impl World {
     ///
     /// let offset = Pose::new([0.0, 0.0, 0.01], None);
     /// if false {World::origin_offset(offset);}
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn origin_offset(offset: impl Into<Pose>) {
         unsafe { world_set_origin_offset(offset.into()) }
@@ -7160,6 +7276,7 @@ impl World {
     /// World::raycast_enabled(false);
     /// assert_eq!(World::get_raycast_enabled(), false);
     ///
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn raycast_enabled(enabled: bool) {
         unsafe { world_set_raycast_enabled(enabled as Bool32T) }
@@ -7183,6 +7300,7 @@ impl World {
     /// offscreen_mode_stop_here!();
     /// // These are the expected results for OpenXR tests on a PC:
     /// assert_eq!(refresh_interval, 0.01);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn refresh_interval(speed: f32) {
         unsafe { world_set_refresh_interval(speed) }
@@ -7206,6 +7324,7 @@ impl World {
     /// offscreen_mode_stop_here!();
     /// // These are the expected results for OpenXR tests on a PC:
     /// assert_eq!(refresh_radius, 3.5);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn refresh_radius(distance: f32) {
         unsafe { world_set_refresh_radius(distance) }
@@ -7228,6 +7347,7 @@ impl World {
     /// offscreen_mode_stop_here!();
     /// // These are the expected results for OpenXR tests on a PC:
     /// assert_eq!(refresh_type, WorldRefresh::Timer);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn refresh_type(refresh_type: WorldRefresh) {
         unsafe { world_set_refresh_type(refresh_type) }
@@ -7276,6 +7396,7 @@ impl World {
     /// if spatial_bridge_is_present {
     ///     World::from_spatial_node("A test", SpatialNodeType::Static, 0);
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn from_spatial_node(
         spatial_graph_node_id: impl AsRef<str>,
@@ -7320,6 +7441,7 @@ impl World {
     /// } else {
     ///     assert_eq!(World::raycast(ray), None);
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn raycast(ray: impl Into<Ray>) -> Option<Ray> {
         let mut intersection = Ray::default();
@@ -7347,6 +7469,7 @@ impl World {
     ///     // These are results for a non OpenXR environment:
     ///     assert_eq!(bounds_pose, Pose::IDENTITY);
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_bounds_pose() -> Pose {
         unsafe { world_get_bounds_pose() }
@@ -7372,6 +7495,7 @@ impl World {
     ///     // These are results for a non OpenXR environment:
     ///     assert_eq!(bounds_size, Vec2::ZERO);
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_bounds_size() -> Vec2 {
         unsafe { world_get_bounds_size() }
@@ -7428,6 +7552,7 @@ impl World {
     /// let origin_mode = World::get_origin_mode();
     ///
     /// assert_eq!(origin_mode_init, origin_mode);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_origin_mode() -> OriginMode {
         unsafe { world_get_origin_mode() }
@@ -7451,6 +7576,7 @@ impl World {
     /// xr_mode_stop_here!();
     /// // These are the expected results for offscreen tests on a PC:
     /// assert_eq!(is_tracked, BtnState::Active);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_tracked() -> BtnState {
         unsafe { world_get_tracked() }

@@ -47,6 +47,7 @@ use std::{
 ///     Ui::pop_text_style();
 ///     Ui::window_end();
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/font.jpeg" alt="screenshot" width="200">
 #[repr(C)]
@@ -130,6 +131,7 @@ impl Font {
     ///     assert_ne!(text_font.get_id(), "default/font");
     ///     assert   !(text_font.get_id().starts_with("sk/font/"));
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn from_file(file_utf8: impl AsRef<Path>) -> Result<Font, StereoKitError> {
         let path_buf = file_utf8.as_ref().to_path_buf();
@@ -174,6 +176,7 @@ impl Font {
     ///     assert_ne!(text_font.get_id(), "default/font");
     ///     assert!   (text_font.get_id().starts_with("sk/font/"));
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn from_files<P: AsRef<Path>>(files_utf8: &[P]) -> Result<Font, StereoKitError> {
         let mut c_files = Vec::new();
@@ -212,8 +215,6 @@ impl Font {
     /// let font_family = if cfg!(windows) {
     ///     "Arial, Helvetica, Verdana, Geneva, Tahoma, sans-serif;"
     /// } else {
-    ///     // TODO: Doesn't work on Linux
-    ///     return;
     ///     "FreeSans, Liberation Sans, Nimbus Sans L, DejaVu Sans, Bitstream Vera Sans, sans-serif;"
     /// };
     ///
@@ -226,6 +227,7 @@ impl Font {
     ///     assert_ne!(text_font.get_id(), "default/font");
     ///     assert!   (text_font.get_id().starts_with("sk/font/"));
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn from_family(font_family: impl AsRef<str>) -> Result<Font, StereoKitError> {
         let c_str = CString::new(font_family.as_ref()).map_err(|_| {
@@ -260,7 +262,8 @@ impl Font {
     /// let id = text_font.get_id();
     /// let same_font = Font::find(id).unwrap_or_default();
     ///
-    /// assert_eq!(text_font.get_id(), same_font.get_id())
+    /// assert_eq!(text_font.get_id(), same_font.get_id());
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn find<S: AsRef<str>>(id: S) -> Result<Font, StereoKitError> {
         let c_str = CString::new(id.as_ref())
@@ -294,7 +297,8 @@ impl Font {
     ///
     /// let same_font = text_font.clone_ref();
     ///
-    /// assert_eq!(text_font.get_id(), same_font.get_id())
+    /// assert_eq!(text_font.get_id(), same_font.get_id());
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn clone_ref(&self) -> Font {
         Font(NonNull::new(unsafe { font_find(font_get_id(self.0.as_ptr())) }).expect("<asset>::clone_ref failed!"))
@@ -325,7 +329,8 @@ impl Font {
     ///
     /// let same_font = Font::find("my_font").unwrap_or_default();
     ///
-    /// assert_eq!(text_font.get_id(), same_font.get_id())
+    /// assert_eq!(text_font.get_id(), same_font.get_id());
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
         let c_str = CString::new(id.as_ref()).unwrap();

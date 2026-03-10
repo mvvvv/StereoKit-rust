@@ -83,6 +83,7 @@ enum SleepPhase {
 ///     Log::info(format!("QuitReason is {:?}", sk.get_quit_reason()));
 /// })
 /// .run(event_loop);
+/// Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sk_closures.jpeg" alt="screenshot" width="200">
 pub struct SkClosures<'a> {
@@ -256,6 +257,7 @@ impl<'a> SkClosures<'a> {
     ///     assert_eq!(sk.get_quit_reason(), QuitReason::User);
     ///     Log::info(format!("QuitReason is {:?}", sk.get_quit_reason()));
     /// });
+    /// Sk::shutdown();
     /// ```
     pub fn run_app<U: FnMut(&mut Sk, &MainThreadToken) + 'a, S: FnMut(&mut Sk) + 'a>(
         sk: Sk,
@@ -325,6 +327,7 @@ impl<'a> SkClosures<'a> {
     ///     Log::info(format!("QuitReason is {:?}", sk.get_quit_reason()));
     /// })
     /// .run(event_loop);
+    /// Sk::shutdown();
     /// ```
     pub fn new<U: FnMut(&mut Sk, &MainThreadToken) + 'a>(sk: Sk, on_step: U) -> Self {
         Self {
@@ -462,6 +465,7 @@ impl<'a> SkClosures<'a> {
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
 ///     // No code here as we only use AStepper
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/a_stepper.jpeg" alt="screenshot" width="200">
 pub trait IStepper {
@@ -550,6 +554,7 @@ pub trait IStepper {
 ///        assert_eq!(sk.get_steppers_count(), 2);
 ///    }
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/stepper_actions.jpeg" alt="screenshot" width="200">
 pub enum StepperAction {
@@ -609,6 +614,7 @@ impl StepperAction {
     ///         panic!("there is not iter 6 !!!");
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn add_default<T: IStepper + Send + Default + 'static>(stepper_id: impl AsRef<str>) -> Self {
         let stepper = <T>::default();
@@ -645,6 +651,7 @@ impl StepperAction {
     ///         panic!("there is not iter 6 !!!");
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn add<T: IStepper + Send + 'static>(stepper_id: impl AsRef<str>, stepper: T) -> Self {
         let stepper_type = stepper.type_id();
@@ -673,6 +680,7 @@ impl StepperAction {
     ///         assert_eq!(sk.get_steppers_count(), 1);
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn remove_all(type_id: TypeId) -> Self {
         StepperAction::RemoveAll(type_id)
@@ -700,6 +708,7 @@ impl StepperAction {
     ///         assert_eq!(sk.get_steppers_count(), 2);
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn remove(stepper_id: impl AsRef<str>) -> Self {
         StepperAction::Remove(stepper_id.as_ref().to_string())
@@ -729,6 +738,7 @@ impl StepperAction {
     ///         assert_eq!(sk.get_steppers_count(), 1);
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn quit(stepper_id: impl AsRef<str>, reason: impl AsRef<str>) -> Self {
         StepperAction::Quit(stepper_id.as_ref().to_string(), reason.as_ref().to_string())
@@ -760,6 +770,7 @@ impl StepperAction {
     ///         panic!("there is not iter 6 !!!");
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn event<S: AsRef<str>>(stepper_id: S, key: S, value: S) -> Self {
         StepperAction::Event(stepper_id.as_ref().to_string(), key.as_ref().to_owned(), value.as_ref().to_owned())
@@ -856,6 +867,7 @@ pub const ISTEPPER_REMOVED: &str = "IStepper_Removed";
 ///         assert_eq!(steppers.get_count(), 0);
 ///     }
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/steppers.jpeg" alt="screenshot" width="200">
 #[cfg(feature = "event-loop")]
@@ -881,6 +893,7 @@ impl Steppers {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     assert_eq!(steppers.get_count(), 0);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn new(sk_info: Rc<RefCell<SkInfo>>) -> Self {
         Self { sk_info, running_steppers: vec![], stepper_actions: VecDeque::new() }
@@ -912,6 +925,7 @@ impl Steppers {
     ///         assert_eq!(sk.get_steppers_count(), 2);
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn send_event(&mut self, action: StepperAction) {
         self.stepper_actions.push_back(action);
@@ -1038,6 +1052,7 @@ impl Steppers {
     ///         assert_eq!(sk.get_steppers_count(), 0);
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_stepper_handlers(&self) -> &[StepperHandler] {
         self.running_steppers.as_slice()
@@ -1080,6 +1095,7 @@ impl Steppers {
     ///         assert_eq!(sk.get_steppers_count(), 0);
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn shutdown(&mut self) {
         self.stepper_actions.clear();
@@ -1145,6 +1161,7 @@ impl Steppers {
     ///         assert_eq!(sk.get_steppers_count(), 0);
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_count(&self) -> usize {
         self.running_steppers.len()
@@ -1233,6 +1250,7 @@ impl Steppers {
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
 ///     // No code here as we only use BStepper
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/stepper_closures.jpeg" alt="screenshot" width="200">
 pub struct StepperClosures<'a> {

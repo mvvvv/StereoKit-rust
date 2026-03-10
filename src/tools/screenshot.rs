@@ -72,6 +72,7 @@ const BROWSER_SUFFIX: &str = "_file_browser";
 ///        sk.send_event(StepperAction::event( "ScrViewer", FILE_BROWSER_OPEN, scr_file));
 ///     }
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/screenshot_viewer.jpeg" alt="screenshot" width="200">
 #[derive(IStepper)]

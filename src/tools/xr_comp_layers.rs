@@ -94,8 +94,8 @@ use std::ptr::null_mut;
 ///         swapchain.destroy();
 ///     }
 /// }
+/// # sk::Sk::shutdown();
 /// ```
-///
 pub struct XrCompLayers {
     // OpenXR function pointers
     #[cfg(target_os = "android")]
@@ -427,6 +427,7 @@ impl XrCompLayers {
 ///     // Clean up
 ///     swapchain.destroy();
 /// }
+/// # sk::Sk::shutdown();
 /// ```
 pub struct SwapchainSk {
     pub xr_comp_layers: XrCompLayers,

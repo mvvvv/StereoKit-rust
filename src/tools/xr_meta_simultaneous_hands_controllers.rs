@@ -108,6 +108,7 @@ pub fn is_simultaneous_hands_and_controllers_supported(with_log: bool) -> bool {
 ///     let success = resume_simultaneous_hands_and_controllers(true);
 ///     assert_eq!(success, true);
 /// }
+/// # sk::Sk::shutdown();
 /// ```
 pub fn resume_simultaneous_hands_and_controllers(with_log: bool) -> bool {
     if !is_simultaneous_hands_and_controllers_supported(with_log) {
@@ -180,6 +181,7 @@ pub fn resume_simultaneous_hands_and_controllers(with_log: bool) -> bool {
 ///     let success = pause_simultaneous_hands_and_controllers(true);
 ///     assert_eq!(success, true);
 /// }
+/// # sk::Sk::shutdown();
 /// ```
 pub fn pause_simultaneous_hands_and_controllers(with_log: bool) -> bool {
     if !is_simultaneous_hands_and_controllers_supported(with_log) {

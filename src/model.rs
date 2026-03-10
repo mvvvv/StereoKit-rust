@@ -53,6 +53,7 @@ use std::{
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
 ///     model.draw(token, Matrix::IDENTITY, None, None);
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model.jpeg" alt="screenshot" width="200">
 #[derive(Debug, PartialEq)]
@@ -205,6 +206,7 @@ impl Model {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     model.draw(token, transform_model, None, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn new() -> Model {
         Model(NonNull::new(unsafe { model_create() }).unwrap())
@@ -244,6 +246,7 @@ impl Model {
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     model.draw(token, transform_model, None, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_from_mesh.jpeg" alt="screenshot" width="200">
     pub fn from_mesh<Me: AsRef<Mesh>, Ma: AsRef<Material>>(mesh: Me, material: Ma) -> Model {
@@ -278,6 +281,7 @@ impl Model {
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     model.draw(token, transform, Some(named_colors::GREEN.into()), None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_from_memory.jpeg" alt="screenshot" width="200">    
     pub fn from_memory<S: AsRef<str>>(
@@ -320,6 +324,7 @@ impl Model {
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     model.draw(token, transform, None, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_from_file.jpeg" alt="screenshot" width="200">
     pub fn from_file(file: impl AsRef<Path>, shader: Option<Shader>) -> Result<Model, StereoKitError> {
@@ -354,6 +359,7 @@ impl Model {
     ///
     /// assert_eq!(model.get_nodes().get_index(2).expect("Node should exist").get_mesh(),
     ///            model_copy.get_nodes().get_index(2).expect("Node should exist").get_mesh());
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn copy(&self) -> Model {
         Model(NonNull::new(unsafe { model_copy(self.0.as_ptr()) }).unwrap())
@@ -375,6 +381,7 @@ impl Model {
     /// let same_model = Model::find("my_model_id").expect("Model should be found");
     ///
     /// assert_eq!(model, same_model);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn find<S: AsRef<str>>(id: S) -> Result<Model, StereoKitError> {
         let c_str = CString::new(id.as_ref())?;
@@ -399,6 +406,7 @@ impl Model {
     /// let same_model = model.clone_ref();
     ///
     /// assert_eq!(model, same_model);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn clone_ref(&self) -> Model {
         Model(NonNull::new(unsafe { model_find(model_get_id(self.0.as_ptr())) }).expect("<asset>::clone_ref failed!"))
@@ -419,6 +427,7 @@ impl Model {
     ///
     /// model.id("my_model_id");
     /// assert_eq!(model.get_id(), "my_model_id");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
         let c_str = CString::new(id.as_ref()).unwrap();
@@ -473,6 +482,7 @@ impl Model {
     ///     cube_bounds.draw(  token, &material_before, transform_before, None, None);
     ///     cube_bounds.draw(  token, &material_after,  transform_after,  None, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_bounds.jpeg" alt="screenshot" width="200">
     pub fn bounds(&mut self, bounds: impl AsRef<Bounds>) -> &mut Self {
@@ -513,6 +523,7 @@ impl Model {
     ///     model.draw(token, transform3, Some(named_colors::BLACK.into()),
     ///                Some(RenderLayer::FirstPerson));
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_draw.jpeg" alt="screenshot" width="200">
     pub fn draw(
@@ -567,6 +578,7 @@ impl Model {
     ///     model.draw_with_material(token, &material_ui,    transform3, Some(named_colors::RED.into()),
     ///                Some(RenderLayer::FirstPerson));
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_draw_with_material.jpeg" alt="screenshot" width="200">
     pub fn draw_with_material<M: AsRef<Material>>(
@@ -630,6 +642,7 @@ impl Model {
     /// model.recalculate_bounds();
     ///
     /// assert_eq!(model.get_bounds(), Bounds::new([0.0, 0.0, 0.5], [2.0, 2.0, 1.0]));
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn recalculate_bounds(&self) {
         unsafe { model_recalculate_bounds(self.0.as_ptr()) };
@@ -673,6 +686,7 @@ impl Model {
     /// model.recalculate_bounds_exact();
     ///
     /// assert_eq!(model.get_bounds(), Bounds::new([0.0, 0.0, 0.5], [2.0, 2.0, 1.0]));
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn recalculate_bounds_exact(&self) {
         unsafe { model_recalculate_bounds_exact(self.0.as_ptr()) };
@@ -728,6 +742,7 @@ impl Model {
     ///        _ => assert_eq!(node.get_name(), Some("not_a_mesh")),
     ///    }
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_nodes(&'_ self) -> Nodes<'_> {
         Nodes::from(self)
@@ -756,6 +771,7 @@ impl Model {
     /// }
     ///
     /// model.get_anims().play_anim_idx(0, AnimMode::Loop);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_anims(&'_ self) -> Anims<'_> {
         Anims::from(self)
@@ -817,6 +833,7 @@ impl Model {
     ///     point.draw(token, &material, transform_contact_model,
     ///                Some(named_colors::RED.into()), None );
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_intersect.jpeg" alt="screenshot" width="200">
     #[inline]
@@ -906,6 +923,7 @@ impl Model {
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
 ///     model.draw(token, transform, None, None);
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_from_file.jpeg" alt="screenshot" width="200">
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/anims.jpeg" alt="screenshot" width="200">
@@ -983,6 +1001,7 @@ impl<'a> Anims<'a> {
     /// assert_eq!(anims.get_name_at_index(1), Some("flyRotate"));
     /// assert_eq!(anims.get_name_at_index(2), Some("fly"));
     /// assert_eq!(anims.get_name_at_index(3), None);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_name_at_index(&self, index: i32) -> Option<&str> {
         unsafe {
@@ -1009,6 +1028,7 @@ impl<'a> Anims<'a> {
     /// assert_eq!(anims.get_count(), 1);
     /// assert_eq!(anims.get_duration_at_index(0), 2.5);
     /// assert_eq!(anims.get_duration_at_index(1), -0.01);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_duration_at_index(&self, index: i32) -> f32 {
         unsafe {
@@ -1047,6 +1067,7 @@ impl<'a> Anims<'a> {
     ///         anims.step_anim();
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn step_anim(&mut self) -> &mut Self {
         unsafe { model_step_anim(self.model.0.as_ptr()) };
@@ -1081,6 +1102,7 @@ impl<'a> Anims<'a> {
     /// // If anim does not exist:
     /// anims.play_anim("Not exist", AnimMode::Manual);
     /// assert_eq!(anims.get_anim_mode(), AnimMode::Manual);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn play_anim(&mut self, animation_name: impl AsRef<str>, mode: AnimMode) -> &mut Self {
         let c_str = CString::new(animation_name.as_ref()).unwrap();
@@ -1112,6 +1134,7 @@ impl<'a> Anims<'a> {
     /// // If index does not exist:
     /// anims.play_anim_idx(102, AnimMode::Manual);
     /// assert_eq!(anims.get_anim_mode(), AnimMode::Once);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn play_anim_idx(&mut self, idx: i32, mode: AnimMode) -> &mut Self {
         unsafe { model_play_anim_idx(self.model.0.as_ptr(), idx, mode) };
@@ -1149,6 +1172,7 @@ impl<'a> Anims<'a> {
     /// // if the asking for animation longer than the duration (AnimMode::Loop):
     /// anims.anim_time(4.0);
     /// assert_eq!(anims.get_anim_completion(), 0.6);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn anim_time(&mut self, time: f32) -> &mut Self {
         unsafe { model_set_anim_time(self.model.0.as_ptr(), time) };
@@ -1185,6 +1209,7 @@ impl<'a> Anims<'a> {
     /// // if the asking for a completion over 100% (AnimMode::Loop):
     /// anims.anim_completion(1.8);
     /// assert_eq!(anims.get_anim_time(), 2.0);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn anim_completion(&mut self, percent: f32) -> &mut Self {
         unsafe { model_set_anim_completion(self.model.0.as_ptr(), percent) };
@@ -1207,6 +1232,7 @@ impl<'a> Anims<'a> {
     ///
     /// assert_eq!(anims.find_anim("SuzanneAction"), Some(0));
     /// assert_eq!(anims.find_anim("Not exist"), None);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn find_anim<S: AsRef<str>>(&self, name: S) -> Option<i32> {
         let c_str = match CString::new(name.as_ref()) {
@@ -1232,6 +1258,7 @@ impl<'a> Anims<'a> {
     /// let count = model.get_anims().get_count();
     ///
     /// assert_eq!(count, 3);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_count(&self) -> i32 {
         unsafe { model_anim_count(self.model.0.as_ptr()) }
@@ -1254,6 +1281,7 @@ impl<'a> Anims<'a> {
     ///
     /// anims.play_anim("flyRotate", AnimMode::Loop);
     /// assert_eq!(anims.get_active_anim(), 1);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_active_anim(&self) -> i32 {
         unsafe { model_anim_active(self.model.0.as_ptr()) }
@@ -1279,6 +1307,7 @@ impl<'a> Anims<'a> {
     ///
     /// anims.play_anim("fly", AnimMode::Manual);
     /// assert_eq!(anims.get_anim_mode(), AnimMode::Manual);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_anim_mode(&self) -> AnimMode {
         unsafe { model_anim_active_mode(self.model.0.as_ptr()) }
@@ -1300,6 +1329,7 @@ impl<'a> Anims<'a> {
     ///
     /// anims.play_anim("SuzanneAction", AnimMode::Loop ).anim_completion(0.5);
     /// assert_eq!(anims.get_anim_time(), 1.25);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_anim_time(&self) -> f32 {
         unsafe { model_anim_active_time(self.model.0.as_ptr()) }
@@ -1322,6 +1352,7 @@ impl<'a> Anims<'a> {
     /// anims.play_anim("SuzanneAction", AnimMode::Loop);
     /// anims.anim_time(0.5);
     /// assert_eq!(anims.get_anim_completion(), 0.2);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_anim_completion(&self) -> f32 {
         unsafe { model_anim_active_completion(self.model.0.as_ptr()) }
@@ -1364,6 +1395,7 @@ impl<'a> Anims<'a> {
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
 ///     model.draw(token, transform, None, None);
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_nodes.jpeg" alt="screenshot" width="200">
 #[derive(Debug, Copy, Clone)]
@@ -1535,6 +1567,7 @@ impl<'a> Nodes<'a> {
     ///
     /// assert_eq!(nodes.get_count(), 3);
     /// assert_eq!(nodes.get_root_node().unwrap().get_name(), Some("sphere"));
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn add<S: AsRef<str>>(
         &mut self,
@@ -1599,6 +1632,7 @@ impl<'a> Nodes<'a> {
     ///         _ => assert_eq!(node.get_name(), Some("A matrix")),
     ///     }
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn all(&'_ self) -> NodeIter<'_> {
         NodeIter::all_from(self.model)
@@ -1637,6 +1671,7 @@ impl<'a> Nodes<'a> {
     ///         _ => assert_eq!(node.get_name(), Some("cylinder")),
     ///     }
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn visuals(&'_ self) -> NodeIter<'_> {
         NodeIter::visuals_from(self.model)
@@ -1672,6 +1707,7 @@ impl<'a> Nodes<'a> {
     ///
     /// let found_non_existent = nodes.find("non_existent");
     /// assert!(found_non_existent.is_none());
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn find<S: AsRef<str>>(&'_ self, name: S) -> Option<ModelNode<'_>> {
         let c_str = CString::new(name.as_ref()).unwrap();
@@ -1697,6 +1733,7 @@ impl<'a> Nodes<'a> {
     ///
     /// nodes.add("root", Matrix::IDENTITY, None, None, false);
     /// assert_eq!(nodes.get_count(), 1);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_count(&self) -> i32 {
         unsafe { model_node_count(self.model.0.as_ptr()) }
@@ -1720,6 +1757,7 @@ impl<'a> Nodes<'a> {
     /// nodes.add("root", Matrix::IDENTITY, None, None, false);
     /// assert_eq!(nodes.get_count(), 1);
     /// assert_eq!(nodes.get_visual_count(), 0);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_visual_count(&self) -> i32 {
         unsafe { model_node_visual_count(self.model.0.as_ptr()) }
@@ -1743,6 +1781,7 @@ impl<'a> Nodes<'a> {
     /// nodes.add("root", Matrix::IDENTITY, None, None, false);
     /// let node = nodes.get_index(0).expect("Node should exist");
     /// assert_eq!(node.get_name(), Some("root"));
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_index(&'_ self, index: i32) -> Option<ModelNode<'_>> {
         if unsafe { model_node_count(self.model.0.as_ptr()) } <= index {
@@ -1772,6 +1811,7 @@ impl<'a> Nodes<'a> {
     /// nodes.add("root", Matrix::IDENTITY, None, None, false);
     /// let node = nodes.get_visual_index(0);
     /// assert!(node.is_none());
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_visual_index(&'_ self, index: i32) -> Option<ModelNode<'_>> {
         if unsafe { model_node_visual_count(self.model.0.as_ptr()) } <= index {
@@ -1801,6 +1841,7 @@ impl<'a> Nodes<'a> {
     /// nodes.add("root", Matrix::IDENTITY, None, None, false);
     /// let node = nodes.get_root_node().expect("Node should exist");
     /// assert_eq!(node.get_name(), Some("root"));
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_root_node(&'_ self) -> Option<ModelNode<'_>> {
         let id = unsafe { model_node_get_root(self.model.0.as_ptr()) };
@@ -1850,6 +1891,7 @@ impl<'a> Nodes<'a> {
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
 ///     model.draw(token, Matrix::IDENTITY, None, None);
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_node.jpeg" alt="screenshot" width="200">
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -1882,6 +1924,7 @@ impl ModelNode<'_> {
     ///
     /// let node = nodes.find("my_root_node").expect("A node should exist!");
     /// assert!(nodes.find("root").is_none());
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn name<S: AsRef<str>>(&mut self, name: S) -> &mut Self {
         let c_str = CString::new(name.as_ref()).unwrap();
@@ -1909,6 +1952,7 @@ impl ModelNode<'_> {
     ///
     /// node.solid(true);
     /// assert_eq!(node.get_solid(), true);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn solid(&mut self, solid: bool) -> &mut Self {
         unsafe { model_node_set_solid(self.model.0.as_ptr(), self.id, solid as Bool32T) };
@@ -1936,6 +1980,7 @@ impl ModelNode<'_> {
     ///
     /// node.visible(false);
     /// assert_eq!(node.get_visible(), false);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn visible(&mut self, visible: bool) -> &mut Self {
         unsafe { model_node_set_visible(self.model.0.as_ptr(), self.id, visible as Bool32T) };
@@ -1961,6 +2006,7 @@ impl ModelNode<'_> {
     ///
     /// node.material(Material::unlit());
     /// assert_eq!(node.get_material(), Some(Material::unlit()));
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn material<M: AsRef<Material>>(&mut self, material: M) -> &mut Self {
         unsafe { model_node_set_material(self.model.0.as_ptr(), self.id, material.as_ref().0.as_ptr()) };
@@ -1986,6 +2032,7 @@ impl ModelNode<'_> {
     ///
     /// node.mesh(Mesh::sphere());
     /// assert_eq!(node.get_mesh(), Some(Mesh::sphere()));
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn mesh<M: AsRef<Mesh>>(&mut self, mesh: M) -> &mut Self {
         unsafe { model_node_set_mesh(self.model.0.as_ptr(), self.id, mesh.as_ref().0.as_ptr()) };
@@ -2026,6 +2073,7 @@ impl ModelNode<'_> {
     /// node_child.local_transform(Matrix::t([-2.0, -2.0, -2.0]));
     /// assert_eq!(model.get_bounds().center, [0.0, 0.0, 0.0].into());
     /// assert_eq!(model.get_bounds().dimensions, [3.0, 3.0, 3.0].into());
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn model_transform(&mut self, transform_model_space: impl Into<Matrix>) -> &mut Self {
         unsafe { model_node_set_transform_model(self.model.0.as_ptr(), self.id, transform_model_space.into()) };
@@ -2072,6 +2120,7 @@ impl ModelNode<'_> {
     /// root_node
     ///     .add_child("child_mesh2", Matrix::IDENTITY, Some(&sphere), Some(&material), true)
     ///     .add_child("child_no_mesh", Matrix::IDENTITY, None, None, false);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn add_child<S: AsRef<str>>(
         &mut self,
@@ -2123,6 +2172,7 @@ impl ModelNode<'_> {
     ///
     /// let node = nodes.find("mush").expect("Node mesh should exist");
     /// assert_eq!(node.get_id(), 2);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_id(&self) -> ModelNodeId {
         self.id
@@ -2221,6 +2271,7 @@ impl ModelNode<'_> {
     ///
     /// let next_node = next_node.iterate();
     /// assert!(next_node.is_none());
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn iterate(&'_ self) -> Option<ModelNode<'_>> {
         match unsafe { model_node_iterate(self.model.0.as_ptr(), self.id) } {
@@ -2252,6 +2303,7 @@ impl ModelNode<'_> {
     ///
     /// let child_node = node.get_child().expect("Node should have a child");
     /// assert_eq!(child_node.get_name(), Some("mesh child1"));
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_child(&'_ self) -> Option<ModelNode<'_>> {
         match unsafe { model_node_child(self.model.0.as_ptr(), self.id) } {
@@ -2289,6 +2341,7 @@ impl ModelNode<'_> {
     ///
     /// let sibling_node = node.get_sibling().expect("Node should have a sibling");
     /// assert_eq!(sibling_node.get_name(), Some("mush"));
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_sibling(&'_ self) -> Option<ModelNode<'_>> {
         match unsafe { model_node_sibling(self.model.0.as_ptr(), self.id) } {
@@ -2326,6 +2379,7 @@ impl ModelNode<'_> {
     ///
     /// // Mesh is it's own parent.
     /// assert_eq!(child_node.get_parent().unwrap().get_name(), Some("mesh"));
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_parent(&'_ self) -> Option<ModelNode<'_>> {
         match unsafe { model_node_parent(self.model.0.as_ptr(), self.id) } {
@@ -2359,6 +2413,7 @@ impl ModelNode<'_> {
     /// let node = nodes.get_root_node().expect("We should have a root node");
     /// assert_eq!(node.get_name(), Some("mesh"));
     /// assert_eq!(node.get_model(), &model);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_model(&self) -> &Model {
         self.model
@@ -2390,6 +2445,7 @@ impl ModelNode<'_> {
     ///        _ => assert_eq!(info, Info { name: "name1".to_string(), value: "value1".to_string() }),
     ///    }
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_infos(&'_ self) -> Infos<'_> {
         Infos::from(self)
@@ -2475,6 +2531,7 @@ impl<'a> Infos<'a> {
     ///
     /// infos.clear();
     /// assert_eq!(infos.get_count(), 0);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn clear(&mut self) -> &mut Self {
         unsafe { model_node_info_clear(self.model.0.as_ptr(), self.node_id) };
@@ -2510,6 +2567,7 @@ impl<'a> Infos<'a> {
     ///
     /// assert_eq!(infos.get_info("name1"), None);
     /// assert_eq!(infos.get_info("name2"), Some("value2"));
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn remove_info<S: AsRef<str>>(&mut self, info_key_utf8: S) -> &mut Self {
         let c_str = CString::new(info_key_utf8.as_ref()).unwrap();
@@ -2545,6 +2603,7 @@ impl<'a> Infos<'a> {
     ///
     /// assert_eq!(infos.get_info("name1"), Some("value1"));
     /// assert_eq!(infos.get_info("name2"), Some("value2"));
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn set_info<S: AsRef<str>>(&mut self, info_key_utf8: S, info_value_utf8: S) -> &mut Self {
         let c_str = CString::new(info_key_utf8.as_ref()).unwrap();
@@ -2578,6 +2637,7 @@ impl<'a> Infos<'a> {
     /// assert_eq!(infos.get_info("name1"), Some("value1"));
     /// assert_eq!(infos.get_info("name2"), Some("value2"));
     /// assert_eq!(infos.get_info("name3333"), None);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_info<S: AsRef<str>>(&self, info_key_utf8: S) -> Option<&str> {
         let c_str = CString::new(info_key_utf8.as_ref()).unwrap();
@@ -2613,6 +2673,7 @@ impl<'a> Infos<'a> {
     /// assert_eq!(infos.contains("name1"), true);
     /// assert_eq!(infos.contains("name2"), true);
     /// assert_eq!(infos.contains("name333"), false);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn contains<S: AsRef<str>>(&self, info_key_utf8: S) -> bool {
         self.get_info(info_key_utf8).is_some()
@@ -2645,6 +2706,7 @@ impl<'a> Infos<'a> {
     ///
     /// infos.clear();
     /// assert_eq!(infos.get_count(), 0);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_count(&self) -> i32 {
         unsafe { model_node_info_count(self.model.0.as_ptr(), self.node_id) }

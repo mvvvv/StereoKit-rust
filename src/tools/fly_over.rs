@@ -38,6 +38,7 @@ pub const ENABLE_FLY_OVER: &str = "Tool_EnableFlyOver";
 ///        sk.send_event(StepperAction::event( "main", ENABLE_FLY_OVER, "false",));
 ///     }
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/fly_over.jpeg" alt="screenshot" width="200">
 #[derive(IStepper)]

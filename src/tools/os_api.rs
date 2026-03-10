@@ -119,6 +119,7 @@ pub fn get_assets(
 ///     }
 /// }
 /// assert!(file_found);
+/// # sk::Sk::shutdown();
 /// ```
 #[cfg(not(target_os = "android"))]
 pub fn get_assets(
@@ -264,6 +265,7 @@ pub fn open_asset(sk_info: &Option<Rc<RefCell<SkInfo>>>, asset_path: impl AsRef<
 /// let mut buffer = String::new();
 /// file.read_to_string(&mut buffer).expect("File readme should be read");
 /// assert!(buffer.starts_with("# Images"));
+/// # sk::Sk::shutdown();
 /// ```
 #[cfg(not(target_os = "android"))]
 pub fn open_asset(_sk_info: &Option<Rc<RefCell<SkInfo>>>, asset_path: impl AsRef<Path>) -> Option<File> {
@@ -323,6 +325,7 @@ pub fn read_asset(sk_info: &Option<Rc<RefCell<SkInfo>>>, asset_path: impl AsRef<
 ///
 /// let buffer = read_asset(&sk_info, asset_path).expect("File readme should be readable");
 /// assert!(buffer.starts_with(b"# Images"));
+/// # sk::Sk::shutdown();
 /// ```
 #[cfg(not(target_os = "android"))]
 pub fn read_asset(_sk_info: &Option<Rc<RefCell<SkInfo>>>, asset_path: impl AsRef<Path>) -> Option<Vec<u8>> {
@@ -381,6 +384,7 @@ pub fn read_asset(_sk_info: &Option<Rc<RefCell<SkInfo>>>, asset_path: impl AsRef
 /// }
 /// assert!(file_found);
 /// assert!(dir_found);
+/// # sk::Sk::shutdown();
 /// ```
 pub fn get_files(
     _sk_info: &Option<Rc<RefCell<SkInfo>>>,

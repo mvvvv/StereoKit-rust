@@ -314,7 +314,10 @@ pub fn test_init_sk_no_event_loop(_input: TokenStream) -> TokenStream {
 pub fn xr_mode_stop_here(_input: TokenStream) -> TokenStream {
     let expanded = quote! {
         #[cfg(feature = "test-xr-mode")]
-        return;
+        {
+            sk::Sk::shutdown();
+            return;
+        }
     };
 
     TokenStream::from(expanded)
@@ -343,7 +346,10 @@ pub fn xr_mode_stop_here(_input: TokenStream) -> TokenStream {
 pub fn offscreen_mode_stop_here(_input: TokenStream) -> TokenStream {
     let expanded = quote! {
         #[cfg(not(feature = "test-xr-mode"))]
-        return;
+        {
+            sk::Sk::shutdown();
+            return;
+        }
     };
 
     TokenStream::from(expanded)

@@ -425,6 +425,7 @@ pub const HAND_MENU_RADIAL_FOCUS: &str = "hand_menu_radial_focus";
 ///             StepperAction::remove(id.clone()));
 ///     }
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 #[derive(IStepper)]
 pub struct HandMenuRadial {

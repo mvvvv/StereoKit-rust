@@ -59,6 +59,7 @@ use std::{
 ///
 ///     screen.draw(token, &render_mat, Matrix::IDENTITY, None, None);
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_list.jpeg" alt="screenshot" width="200">
 #[repr(C)]
@@ -169,6 +170,7 @@ impl RenderList {
     ///
     /// render_list.add_mesh(Mesh::cube(), Material::unlit(), Matrix::IDENTITY, Color128::WHITE, None);
     /// assert_eq!(render_list.get_count(), 1);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn new() -> Self {
         RenderList(NonNull::new(unsafe { render_list_create() }).unwrap())
@@ -190,6 +192,7 @@ impl RenderList {
     ///
     /// let same_list = RenderList::find("my_render_list").expect("my_render_list should be found");
     /// assert_eq!(render_list, same_list);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn find<S: AsRef<str>>(id: S) -> Result<RenderList, StereoKitError> {
         let c_str = CString::new(id.as_ref())?;
@@ -215,6 +218,7 @@ impl RenderList {
     ///
     /// let same_list = render_list.clone_ref();
     /// assert_eq!(render_list, same_list);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn clone_ref(&self) -> RenderList {
         RenderList(
@@ -238,6 +242,7 @@ impl RenderList {
     /// render_list.id("my_render_list");
     ///
     /// assert_eq!(render_list.get_id(), "my_render_list");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
         let cstr_id = CString::new(id.as_ref()).unwrap();
@@ -266,6 +271,7 @@ impl RenderList {
     /// render_list.clear();
     /// assert_eq!(render_list.get_count(), 0);
     /// assert_eq!(render_list.get_prev_count(), 1);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn clear(&mut self) -> &mut Self {
         unsafe { render_list_clear(self.0.as_ptr()) }
@@ -325,6 +331,7 @@ impl RenderList {
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     screen.draw(token, &render_mat, Matrix::IDENTITY, None, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_list_add_mesh.jpeg" alt="screenshot" width="200">
     pub fn add_mesh(
@@ -401,6 +408,7 @@ impl RenderList {
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     screen.draw(token, &render_mat, Matrix::IDENTITY, None, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_list_add_model.jpeg" alt="screenshot" width="200">
     pub fn add_model(
@@ -498,6 +506,7 @@ impl RenderList {
     ///         None,
     ///     );
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_list_draw_now.jpeg" alt="screenshot" width="200">
     #[allow(clippy::too_many_arguments)]
@@ -544,6 +553,7 @@ impl RenderList {
     /// let primary_list = RenderList::primary();
     /// assert_eq!   (primary_list.get_id(),"sk/render/primary_renderlist");
     /// assert_eq!   (primary_list.get_count(), 0);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn primary() -> Self {
         RenderList(NonNull::new(unsafe { render_get_primary_list() }).unwrap())
@@ -575,6 +585,7 @@ impl RenderList {
     ///     RenderList::pop();
     ///     cylinder2.draw(token, &cylinder_mat, Matrix::IDENTITY, Some(named_colors::RED.into()), None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_list_push.jpeg" alt="screenshot" width="200">
     pub fn push(&mut self) {
@@ -615,6 +626,7 @@ impl RenderList {
     ///
     /// render_list.add_mesh(Mesh::cube(), Material::unlit(), Matrix::IDENTITY, Color128::WHITE, None);
     /// assert_eq!(render_list.get_count(), 1);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_count(&self) -> i32 {
         unsafe { render_list_item_count(self.0.as_ptr()) }
@@ -641,6 +653,7 @@ impl RenderList {
     /// render_list.clear();
     /// assert_eq!(render_list.get_count(), 0);
     /// assert_eq!(render_list.get_prev_count(), 1);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_prev_count(&self) -> i32 {
         unsafe { render_list_prev_count(self.0.as_ptr()) }

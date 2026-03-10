@@ -121,6 +121,7 @@ impl XrMetaVirtualKeyboard {
     ///         }
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn new() -> Option<Self> {
         if !is_meta_virtual_keyboard_extension_available() {
@@ -464,6 +465,7 @@ pub fn is_meta_virtual_keyboard_extension_available() -> bool {
 ///         Log::info("✅ Virtual keyboard hidden");
 ///     }
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 #[derive(IStepper)]
 pub struct XrMetaVirtualKeyboardStepper {
@@ -526,6 +528,7 @@ impl XrMetaVirtualKeyboardStepper {
     ///         sk.send_event(StepperAction::remove("keyboard_test1"));
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn new(enable_on_init: bool) -> Self {
         Self { enabled: enable_on_init, ..Default::default() }

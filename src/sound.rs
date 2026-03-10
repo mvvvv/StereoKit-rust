@@ -56,6 +56,7 @@ use std::{
 ///         assert!(!plane_sound_inst.is_playing());
 ///    }
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sound.jpeg" alt="screenshot" width="200">
 #[repr(C)]
@@ -166,6 +167,7 @@ impl Sound {
     ///         assert!(!stream_sound_inst.is_playing());
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn create_stream(stream_buffer_duration: f32) -> Result<Sound, StereoKitError> {
         Ok(Sound(
@@ -197,6 +199,7 @@ impl Sound {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     //TODO: assert!(plane_sound_inst.is_playing());
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn from_file(file_utf8: impl AsRef<Path>) -> Result<Sound, StereoKitError> {
         let path_buf = file_utf8.as_ref().to_path_buf();
@@ -232,6 +235,7 @@ impl Sound {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     assert!(sound_inst.is_playing());
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn from_samples(in_arr_samples_at_48000s: &[f32]) -> Result<Sound, StereoKitError> {
         Ok(Sound(
@@ -269,6 +273,7 @@ impl Sound {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     //assert!(sound_inst.is_playing());
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn generate(generator: unsafe extern "C" fn(f32) -> f32, duration: f32) -> Result<Sound, StereoKitError> {
         Ok(Sound(
@@ -295,6 +300,7 @@ impl Sound {
     ///                             .expect("sound_plane should be found");
     /// assert_eq!(plane_sound.get_id(), same_sound.get_id());
     /// assert_eq!(plane_sound, same_sound);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn find<S: AsRef<str>>(id: S) -> Result<Sound, StereoKitError> {
         let cstr_id = CString::new(id.as_ref())?;
@@ -321,6 +327,7 @@ impl Sound {
     ///
     /// assert_eq!(plane_sound.get_id(), same_sound.get_id());
     /// assert_eq!(plane_sound, same_sound);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn clone_ref(&self) -> Sound {
         Sound(NonNull::new(unsafe { sound_find(sound_get_id(self.0.as_ptr())) }).expect("<asset>::clone_ref failed!"))
@@ -348,6 +355,7 @@ impl Sound {
     ///                            expect("A sound stream should be created");
     /// assert!(stream_sound.get_id().starts_with("auto/sound_"));
     /// stream_sound.id("sound_stream");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
         let cstr_id = CString::new(id.as_ref()).unwrap();
@@ -385,6 +393,7 @@ impl Sound {
     ///        plane_sound_inst.position(Vec3::new(0.5, 0.0, 0.5));
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn play(&self, at: impl Into<Vec3>, volume: Option<f32>) -> SoundInst {
         let volume = volume.unwrap_or(1.0);
@@ -417,6 +426,7 @@ impl Sound {
     ///         assert_eq!(plane_sound.get_decibels(), 10.0);
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn decibels(&self, decibels: f32) {
         unsafe { sound_set_decibels(self.0.as_ptr(), decibels) }
@@ -457,6 +467,7 @@ impl Sound {
     ///
     /// let read_count = stream_sound.read_samples(read_samples.as_mut_slice(), Some(48000));
     /// assert_eq!(read_count, 0);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn read_samples(&self, out_arr_samples: &mut [f32], sample_count: Option<u64>) -> u64 {
         let sample_count = sample_count.unwrap_or(out_arr_samples.len() as u64);
@@ -493,6 +504,7 @@ impl Sound {
     /// stream_sound.write_samples(samples.as_slice(), Some(48000));
     ///
     /// assert_eq!(stream_sound.get_unread_samples(), 48000);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn write_samples(&self, in_arr_samples: &[f32], sample_count: Option<u64>) {
         let sample_count = sample_count.unwrap_or(in_arr_samples.len() as u64);
@@ -563,6 +575,7 @@ impl Sound {
     /// let mut sound_file = Sound::from_file("sounds/no.wav")
     ///                          .expect("Sound should be created from file");
     /// assert_eq!(sound_file.get_duration(), 1.4830834);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_duration(&self) -> f32 {
         unsafe { sound_duration(self.0.as_ptr()) }
@@ -599,6 +612,7 @@ impl Sound {
     /// assert_eq!(sound_file.get_duration(), 1.4830834);
     /// // 1.4830834 * 48000 = 71188
     /// assert_eq!(sound_file.get_total_samples(), 71188);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_total_samples(&self) -> u64 {
         unsafe { sound_total_samples(self.0.as_ptr()) }
@@ -631,6 +645,7 @@ impl Sound {
     /// let read_count = stream_sound.read_samples(read_samples.as_mut_slice(), Some(48000));
     /// assert_eq!(read_count, 48000);
     /// assert_eq!(stream_sound.get_unread_samples(), 0);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_unread_samples(&self) -> u64 {
         unsafe { sound_unread_samples(self.0.as_ptr()) }
@@ -654,6 +669,7 @@ impl Sound {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     // TODO: assert!(grab_sound_inst.is_playing());
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn click() -> Self {
         let cstr_id = CString::new("default/sound_click").unwrap();
@@ -678,6 +694,7 @@ impl Sound {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     // TODO: assert!(grab_sound_inst.is_playing());
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn unclick() -> Self {
         let cstr_id = CString::new("default/sound_unclick").unwrap();
@@ -701,6 +718,7 @@ impl Sound {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     // TODO: assert!(grab_sound_inst.is_playing());
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn grab() -> Self {
         let cstr_id = CString::new("default/sound_grab").unwrap();
@@ -724,6 +742,7 @@ impl Sound {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     // TODO: assert!(ungrab_sound_inst.is_playing());
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn ungrab() -> Self {
         let cstr_id = CString::new("default/sound_ungrab").unwrap();
@@ -781,6 +800,7 @@ impl Sound {
 ///         assert!(plane_sound_inst2.is_playing());
 ///    }
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sound_inst.jpeg" alt="screenshot" width="200">
 #[repr(C)]
@@ -820,6 +840,7 @@ impl SoundInst {
     ///         assert!(!plane_sound_inst.is_playing());
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn stop(self) {
         unsafe { sound_inst_stop(self) }
@@ -849,6 +870,7 @@ impl SoundInst {
     ///     position += Vec3::new(0.0001, 0.0, 0.0);
     ///     plane_sound_inst.position(position);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn position(&mut self, at: impl Into<Vec3>) -> &mut Self {
         unsafe { sound_inst_set_pos(*self, at.into()) }
@@ -880,6 +902,7 @@ impl SoundInst {
     ///     volume += 0.01;
     ///     plane_sound_inst.volume(volume);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn volume(&mut self, volume: f32) -> &mut Self {
         unsafe { sound_inst_set_volume(*self, volume) }
@@ -927,6 +950,7 @@ impl SoundInst {
     ///     assert_eq!(plane_sound_inst.get_intensity(), 0.0);
     ///     plane_sound_inst.stop();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_intensity(&self) -> f32 {
         unsafe { sound_inst_get_intensity(*self) }
@@ -954,6 +978,7 @@ impl SoundInst {
     ///         assert!(!plane_sound_inst.is_playing());
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn is_playing(&self) -> bool {
         unsafe { sound_inst_is_playing(*self) != 0 }

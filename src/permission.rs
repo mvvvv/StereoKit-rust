@@ -124,6 +124,7 @@ impl Permission {
     /// }
     ///
     /// assert_eq!(microphone_state, PermissionState::Granted); // On desktop, this is typically granted automatically
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_state(permission: PermissionType) -> PermissionState {
         unsafe { permission_state(permission) }
@@ -147,6 +148,7 @@ impl Permission {
     /// } else {
     ///     println!("Microphone permission is automatic");
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn is_interactive(permission: PermissionType) -> bool {
         unsafe { permission_is_interactive(permission) != 0 }
@@ -177,6 +179,7 @@ impl Permission {
     ///     Permission::request(PermissionType::EyeInput);
     ///     panic!("On desktop, EyeInput permission is automatic");
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn request(permission: PermissionType) {
         unsafe { permission_request(permission) }

@@ -54,6 +54,7 @@ pub const SHOW_LOG_WINDOW: &str = "Tool_ShowLogWindow";
 ///        sk.send_event(StepperAction::event( "main", SHOW_LOG_WINDOW, "false",));
 ///     }
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/log_window.jpeg" alt="screenshot" width="200">
 #[derive(IStepper)]

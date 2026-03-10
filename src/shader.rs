@@ -29,6 +29,7 @@ use std::{
 ///     plane.draw(token, &material, Matrix::IDENTITY, None, None);
 /// );
 ///
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/shaders.jpeg" alt="screenshot" width="200">
 #[repr(C)]
@@ -84,6 +85,7 @@ impl Default for Shader {
     /// use stereokit_rust::{shader::Shader};
     /// let mut shader = Shader::default();
     /// assert_eq!(shader.get_id(), "default/shader");
+    /// # sk::Sk::shutdown();
     /// ```
     fn default() -> Self {
         Self::find("default/shader").unwrap()
@@ -104,7 +106,8 @@ impl Shader {
     /// let shader_data = std::include_bytes!("../assets/shaders/brick_pbr.hlsl.sks");
     /// let mut shader = Shader::from_memory(shader_data).unwrap();
     /// assert_eq!(shader.get_name(), "the_name_of_brick_pbr");
-    ///```
+    /// # sk::Sk::shutdown();
+    /// ```
     pub fn from_memory(data: &[u8]) -> Result<Shader, StereoKitError> {
         Ok(Shader(
             NonNull::new(unsafe { shader_create_mem(data.as_ptr() as *mut c_void, data.len()) })
@@ -149,6 +152,7 @@ impl Shader {
     /// let mut shader_again = Shader::find("my_brick_shader");
     /// assert!(shader_again.is_ok(), "Failed to find shader");
     /// assert_eq!(shader_again.unwrap().get_id(), shader.get_id());
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn find<S: AsRef<str>>(id: S) -> Result<Shader, StereoKitError> {
         let c_str = CString::new(id.as_ref())
@@ -174,6 +178,7 @@ impl Shader {
     /// let mut shader_again = shader.clone_ref();
     /// assert_eq!(shader_again.get_id(), "my_brick_shader");
     /// assert_eq!(shader_again, shader);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn clone_ref(&self) -> Shader {
         Shader(
@@ -194,6 +199,7 @@ impl Shader {
     ///                              .expect("Brick shader should be there");
     /// shader.id("my_brick_shader");
     /// assert_eq!(shader.get_id(), "my_brick_shader");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
         let c_str = CString::new(id.as_ref()).unwrap();
@@ -222,6 +228,7 @@ impl Shader {
     /// let shader = Shader::from_file("shaders/brick_pbr.hlsl.sks")
     ///                              .expect("Brick shader should be there");
     /// assert_eq!(shader.get_name(), "the_name_of_brick_pbr");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_name(&self) -> &str {
         unsafe { CStr::from_ptr(shader_get_name(self.0.as_ptr())) }.to_str().unwrap()
@@ -235,6 +242,7 @@ impl Shader {
     /// use stereokit_rust::{shader::Shader};
     /// let mut shader = Shader::blit();
     /// assert_eq!(shader.get_id(), "default/shader_blit");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn blit() -> Self {
         Self::find("default/shader_blit").unwrap()
@@ -248,6 +256,7 @@ impl Shader {
     /// use stereokit_rust::{shader::Shader};
     /// let mut shader = Shader::light_map();
     /// assert_eq!(shader.get_id(), "default/shader_lightmap");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn light_map() -> Self {
         Self::find("default/shader_lightmap").unwrap()
@@ -263,6 +272,7 @@ impl Shader {
     /// use stereokit_rust::{shader::Shader};
     /// let mut shader = Shader::unlit();
     /// assert_eq!(shader.get_id(), "default/shader_unlit");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn unlit() -> Self {
         Self::find("default/shader_unlit").unwrap()
@@ -279,6 +289,7 @@ impl Shader {
     /// use stereokit_rust::{shader::Shader};
     /// let mut shader = Shader::unlit_clip();
     /// assert_eq!(shader.get_id(), "default/shader_unlit_clip");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn unlit_clip() -> Self {
         Self::find("default/shader_unlit_clip").unwrap()
@@ -292,6 +303,7 @@ impl Shader {
     /// use stereokit_rust::{shader::Shader};
     /// let mut shader = Shader::font();
     /// assert_eq!(shader.get_id(), "default/shader_font");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn font() -> Self {
         Self::find("default/shader_font").unwrap()
@@ -305,6 +317,7 @@ impl Shader {
     /// use stereokit_rust::{shader::Shader};
     /// let mut shader = Shader::equirect();
     /// assert_eq!(shader.get_id(), "default/shader_equirect");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn equirect() -> Self {
         Self::find("default/shader_equirect").unwrap()
@@ -320,6 +333,7 @@ impl Shader {
     /// use stereokit_rust::{shader::Shader};
     /// let mut shader = Shader::ui();
     /// assert_eq!(shader.get_id(), "default/shader_ui");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn ui() -> Self {
         Self::find("default/shader_ui").unwrap()
@@ -338,6 +352,7 @@ impl Shader {
     /// use stereokit_rust::{shader::Shader};
     /// let mut shader = Shader::ui_box();
     /// assert_eq!(shader.get_id(), "default/shader_ui_box");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn ui_box() -> Self {
         Self::find("default/shader_ui_box").unwrap()
@@ -351,6 +366,7 @@ impl Shader {
     /// use stereokit_rust::{shader::Shader};
     /// let mut shader = Shader::ui_quadrant();
     /// assert_eq!(shader.get_id(), "default/shader_ui_quadrant");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn ui_quadrant() -> Self {
         Self::find("default/shader_ui_quadrant").unwrap()
@@ -364,6 +380,7 @@ impl Shader {
     /// use stereokit_rust::{shader::Shader};
     /// let mut shader = Shader::sky();
     /// assert_eq!(shader.get_id(), "default/shader_sky");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn sky() -> Self {
         Self::find("default/shader_sky").unwrap()
@@ -378,6 +395,7 @@ impl Shader {
     /// use stereokit_rust::{shader::Shader};
     /// let mut shader = Shader::pbr();
     /// assert_eq!(shader.get_id(), "default/shader_pbr");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn pbr() -> Self {
         Self::find("default/shader_pbr").unwrap()
@@ -392,6 +410,7 @@ impl Shader {
     /// use stereokit_rust::{shader::Shader};
     /// let mut shader = Shader::pbr_clip();
     /// assert_eq!(shader.get_id(), "default/shader_pbr_clip");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn pbr_clip() -> Self {
         Self::find("default/shader_pbr_clip").unwrap()

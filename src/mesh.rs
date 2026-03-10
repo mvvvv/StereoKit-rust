@@ -36,6 +36,7 @@ use std::{
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
 ///     mesh.draw(token, &material, Matrix::IDENTITY, None, None);
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/basic_mesh.jpeg" alt="screenshot" width="200">
 #[derive(Default, Debug, Copy, Clone, PartialEq)]
@@ -139,6 +140,7 @@ pub enum Memory {
 ///     cube.draw(token, &material_cube, cube_transform, None, None);
 ///     sphere.draw(token, &material_sphere, Matrix::IDENTITY, None, None);
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/meshes.jpeg" alt="screenshot" width="200">
 #[derive(Debug, PartialEq)]
@@ -293,6 +295,7 @@ impl Mesh {
     ///
     /// assert_eq!(mesh.get_inds().len(), 0);
     /// assert_eq!(mesh.get_verts().len(), 0);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn new() -> Mesh {
         Mesh(NonNull::new(unsafe { mesh_create() }).unwrap())
@@ -333,6 +336,7 @@ impl Mesh {
     /// let mesh = Mesh::generate_plane([1.0, 1.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0], Some(1), true);
     /// assert_eq!(mesh.get_ind_count(), 48);
     /// assert_eq!(mesh.get_vert_count(), 18);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn generate_plane<V: Into<Vec3>>(
         dimensions: impl Into<Vec2>,
@@ -397,6 +401,7 @@ impl Mesh {
     /// let mesh = Mesh::generate_plane_up([1.0, 1.0], Some(1), true);
     /// assert_eq!(mesh.get_inds().len(), 48);
     /// assert_eq!(mesh.get_verts().len(), 18);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn generate_plane_up(dimensions: impl Into<Vec2>, subdivisions: Option<i32>, double_sided: bool) -> Mesh {
         let subdivisions = subdivisions.unwrap_or(0);
@@ -444,6 +449,7 @@ impl Mesh {
     /// let mesh = Mesh::generate_circle(1.0, [0.0, 1.0, 0.0], [0.0, 0.0, 1.0], Some(1), true);
     /// assert_eq!(mesh.get_inds().len(), 6);
     /// assert_eq!(mesh.get_verts().len(), 6);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn generate_circle<V: Into<Vec3>>(
         diameter: f32,
@@ -502,6 +508,7 @@ impl Mesh {
     /// let mesh = Mesh::generate_circle_up(1.0 , Some(1), true);
     /// assert_eq!(mesh.get_inds().len(), 6);
     /// assert_eq!(mesh.get_verts().len(), 6);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn generate_circle_up(diameter: f32, spokes: Option<i32>, double_sided: bool) -> Mesh {
         let spokes = spokes.unwrap_or(16);
@@ -539,6 +546,7 @@ impl Mesh {
     /// let mesh = Mesh::generate_cube([1.0, 1.0, 1.0], Some(1));
     /// assert_eq!(mesh.get_inds().len(), 144);
     /// assert_eq!(mesh.get_verts().len(), 54);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn generate_cube(dimensions: impl Into<Vec3>, subdivisions: Option<i32>) -> Mesh {
         let subdivisions = subdivisions.unwrap_or(0);
@@ -575,6 +583,7 @@ impl Mesh {
     /// let mesh = Mesh::generate_rounded_cube([1.0, 1.0, 1.0], 0.2, Some(1));
     /// assert_eq!(mesh.get_inds().len(), 324);
     /// assert_eq!(mesh.get_verts().len(), 96);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn generate_rounded_cube(dimensions: impl Into<Vec3>, edge_radius: f32, subdivisions: Option<i32>) -> Mesh {
         let subdivisions = subdivisions.unwrap_or(4);
@@ -608,6 +617,7 @@ impl Mesh {
     /// let mesh = Mesh::generate_sphere(1.0 , Some(1));
     /// assert_eq!(mesh.get_inds().len(), 144);
     /// assert_eq!(mesh.get_verts().len(), 54);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn generate_sphere(diameter: f32, subdivisions: Option<i32>) -> Mesh {
         let subdivisions = subdivisions.unwrap_or(4);
@@ -643,6 +653,7 @@ impl Mesh {
     /// let mesh = Mesh::generate_cylinder(1.0, 1.0, [0.0, 1.0, 0.0], Some(1));
     /// assert_eq!(mesh.get_inds().len(), 12);
     /// assert_eq!(mesh.get_verts().len(), 10);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn generate_cylinder(diameter: f32, depth: f32, direction: impl Into<Vec3>, subdivisions: Option<i32>) -> Mesh {
         let subdivisions = subdivisions.unwrap_or(16);
@@ -667,6 +678,7 @@ impl Mesh {
     /// let same_mesh = Mesh::find("my_circle").expect("Mesh should be here");
     ///
     /// assert_eq!(mesh, same_mesh);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn find<S: AsRef<str>>(id: S) -> Result<Mesh, StereoKitError> {
         let cstr = CString::new(id.as_ref())?;
@@ -694,6 +706,7 @@ impl Mesh {
     ///
     /// assert_eq!(mesh, same_mesh);
     /// assert_ne!(mesh, not_same_mesh);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn clone_ref(&self) -> Mesh {
         Mesh(NonNull::new(unsafe { mesh_find(mesh_get_id(self.0.as_ptr())) }).expect("<asset>::clone_ref failed!"))
@@ -716,6 +729,7 @@ impl Mesh {
     /// mesh.id("my_circle");
     ///
     /// assert_eq!(mesh.get_id(), "my_circle");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
         let cstr = CString::new(id.as_ref()).unwrap();
@@ -761,6 +775,7 @@ impl Mesh {
     ///     cube.draw(  token, &material_before, transform_before, None, None);
     ///     cube.draw(  token, &material_after,  transform_after,  None, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_bounds.jpeg" alt="screenshot" width="200">
     pub fn bounds(&mut self, bounds: impl AsRef<Bounds>) -> &mut Self {
@@ -788,6 +803,7 @@ impl Mesh {
     /// assert_eq!(mesh.get_keep_data(), false);
     /// mesh.keep_data(true);
     /// assert_eq!(mesh.get_keep_data(), true);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn keep_data(&mut self, keep_data: bool) -> &mut Self {
         unsafe { mesh_set_keep_data(self.0.as_ptr(), keep_data as Bool32T) };
@@ -864,6 +880,7 @@ impl Mesh {
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     square.draw(token, &material , Matrix::IDENTITY, None, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_set_verts.jpeg" alt="screenshot" width="200">
     pub fn set_verts(&mut self, vertices: &[Vertex], calculate_bounds: bool) -> &mut Self {
@@ -910,6 +927,7 @@ impl Mesh {
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     sphere.draw(token, &material , Matrix::IDENTITY,  Some(named_colors::PINK.into()), None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_set_inds.jpeg" alt="screenshot" width="200">
     pub fn set_inds(&mut self, indices: &[u32]) -> &mut Self {
@@ -950,6 +968,7 @@ impl Mesh {
     ///     cylinder3.draw(token, &material , Matrix::IDENTITY, Some(named_colors::GREEN.into()),
     ///         Some(RenderLayer::ThirdPerson));
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_draw.jpeg" alt="screenshot" width="200">
     pub fn draw(
@@ -1110,6 +1129,7 @@ impl Mesh {
     ///    Vertex::new([-0.5, 0.0,-0.5].into(),Vec3::UP,Some(Vec2::ZERO), None),
     ///    ];
     /// assert_eq!(triangle1, vertices1);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_triangle(&self, triangle_index: u32) -> Option<[Vertex; 3]> {
         let mut v_a = Vertex::default();
@@ -1171,6 +1191,7 @@ impl Mesh {
     ///     Lines::add_ray(token, ray, 2.2, named_colors::WHITE, None, 0.02);
     ///     sphere.draw(token, &material, transform_contact_cube, Some(named_colors::YELLOW.into()), None );
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_intersect.jpeg" alt="screenshot" width="200">
     #[inline]
@@ -1254,6 +1275,7 @@ impl Mesh {
     /// // Get the mesh
     /// let mesh = Mesh::cube();
     /// assert_eq!(mesh.get_id(), "default/mesh_cube");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn cube() -> Self {
         Mesh::find("default/mesh_cube").unwrap()
@@ -1271,6 +1293,7 @@ impl Mesh {
     /// // Get the mesh
     /// let mesh = Mesh::screen_quad();
     /// assert_eq!(mesh.get_id(), "default/mesh_screen_quad");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn screen_quad() -> Self {
         Mesh::find("default/mesh_screen_quad").unwrap()
@@ -1293,6 +1316,7 @@ impl Mesh {
     /// // Get the mesh
     /// let mesh = Mesh::sphere();
     /// assert_eq!(mesh.get_id(), "default/mesh_sphere");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn sphere() -> Self {
         Mesh::find("default/mesh_sphere").unwrap()
@@ -1309,6 +1333,7 @@ impl Mesh {
     /// // Get the mesh
     /// let mesh = Mesh::left_hand();
     /// assert_eq!(mesh.get_id(), "default/mesh_lefthand");
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/left_hand.jpeg" alt="screenshot" width="200">
     pub fn left_hand() -> Self {
@@ -1326,6 +1351,7 @@ impl Mesh {
     /// // Get the mesh
     /// let mesh = Mesh::right_hand();
     /// assert_eq!(mesh.get_id(), "default/mesh_righthand");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn right_hand() -> Self {
         Mesh::find("default/mesh_righthand").unwrap()

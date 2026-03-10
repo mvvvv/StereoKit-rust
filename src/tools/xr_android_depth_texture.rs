@@ -276,6 +276,7 @@ const XR_ACQUIRE_DEPTH_SWAPCHAIN_IMAGE_ANDROID_NAME: &str = "xrAcquireDepthSwapc
 ///         }
 ///     }
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 ///
 ///
@@ -324,6 +325,7 @@ const XR_ACQUIRE_DEPTH_SWAPCHAIN_IMAGE_ANDROID_NAME: &str = "xrAcquireDepthSwapc
 ///         }
 ///     }
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 #[derive(Debug)]
 pub struct XrAndroidDepthTexture {

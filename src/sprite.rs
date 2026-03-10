@@ -71,6 +71,7 @@ pub enum SpriteType {
 ///     sprite3.draw(token, transform3, Pivot::TopRight, Some(named_colors::LIME.into()));
 ///     sprite4.draw(token, transform4, Pivot::YCenter, None);
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite.jpeg" alt="screenshot" width="200">
 #[repr(C)]
@@ -176,6 +177,7 @@ impl Sprite {
     ///     sprite.draw(token, Matrix::Y_180, Pivot::YTop,    Some(named_colors::RED.into()));
     ///     sprite.draw(token, Matrix::Y_180, Pivot::YBottom, Some(named_colors::GREEN.into()));
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_from_tex.jpeg" alt="screenshot" width="200">
     pub fn from_tex(
@@ -229,6 +231,7 @@ impl Sprite {
     ///     sprite.draw(token, Matrix::Y_180, Pivot::YTop,    Some(named_colors::RED.into()));
     ///     sprite.draw(token, Matrix::Y_180, Pivot::YBottom, Some(named_colors::GREEN.into()));
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_from_file.jpeg" alt="screenshot" width="200">
     pub fn from_file(
@@ -280,6 +283,7 @@ impl Sprite {
     ///                        .expect("Should be able to find sprite");
     ///
     /// assert_eq!(same_sprite, sprite);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn find<S: AsRef<str>>(id: S) -> Result<Sprite, StereoKitError> {
         let cstr_id = CString::new(id.as_ref())?;
@@ -309,6 +313,7 @@ impl Sprite {
     /// let same_sprite = sprite.clone_ref();
     ///
     /// assert_eq!(same_sprite, sprite);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn clone_ref(&self) -> Sprite {
         Sprite(
@@ -334,6 +339,7 @@ impl Sprite {
     /// sprite.id("My_sprite_ID");
     ///
     /// assert_eq!(sprite.get_id(), "My_sprite_ID");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
         let cstr_id = CString::new(id.as_ref()).unwrap();
@@ -370,6 +376,7 @@ impl Sprite {
     ///     sprite.draw(token, Matrix::Y_180, Pivot::BottomLeft,  Some(named_colors::RED.into()));
     ///     sprite.draw(token, Matrix::Y_180, Pivot::BottomRight, Some(named_colors::GREEN.into()));
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_draw.jpeg" alt="screenshot" width="200">
     pub fn draw(
@@ -409,6 +416,7 @@ impl Sprite {
     /// let sprite = Sprite::from_file("hdri/sky_dawn.hdr", None, None)
     ///                  .expect("open_gltf.jpeg should be able to create sprite");
     /// assert_eq!(sprite.get_aspect(), 2.0);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_aspect(&self) -> f32 {
         unsafe { sprite_get_aspect(self.0.as_ptr()) }
@@ -430,6 +438,7 @@ impl Sprite {
     /// let sprite = Sprite::from_file("hdri/sky_dawn.hdr", None, None)
     ///                  .expect("open_gltf.jpeg should be able to create sprite");
     /// assert_eq!(sprite.get_height(), 2048);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_height(&self) -> i32 {
         unsafe { sprite_get_height(self.0.as_ptr()) }
@@ -451,6 +460,7 @@ impl Sprite {
     /// let sprite = Sprite::from_file("hdri/sky_dawn.hdr", None, None)
     ///                  .expect("open_gltf.jpeg should be able to create sprite");
     /// assert_eq!(sprite.get_width(), 4096);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_width(&self) -> i32 {
         unsafe { sprite_get_width(self.0.as_ptr()) }
@@ -472,6 +482,7 @@ impl Sprite {
     /// let sprite = Sprite::from_file("hdri/sky_dawn.hdr", None, None)
     ///                  .expect("open_gltf.jpeg should be able to create sprite");
     /// assert_eq!(sprite.get_normalized_dimensions(), Vec2::new(1.0, 0.5));
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_normalized_dimensions(&self) -> Vec2 {
         unsafe { sprite_get_dimensions_normalized(self.0.as_ptr()) }
@@ -494,6 +505,7 @@ impl Sprite {
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_radio_on.jpeg" alt="screenshot" width="48">
     pub fn radio_on() -> Self {
@@ -518,6 +530,7 @@ impl Sprite {
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_radio_off.jpeg" alt="screenshot" width="48">
     pub fn radio_off() -> Self {
@@ -543,6 +556,7 @@ impl Sprite {
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_toggle_on.jpeg" alt="screenshot" width="48">
     pub fn toggle_on() -> Self {
@@ -568,6 +582,7 @@ impl Sprite {
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_toggle_off.jpeg" alt="screenshot" width="48">
     pub fn toggle_off() -> Self {
@@ -591,6 +606,7 @@ impl Sprite {
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_arrow_left.jpeg" alt="screenshot" width="48">
     pub fn arrow_left() -> Self {
@@ -614,6 +630,7 @@ impl Sprite {
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_arrow_right.jpeg" alt="screenshot" width="48">
     pub fn arrow_right() -> Self {
@@ -637,6 +654,7 @@ impl Sprite {
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_arrow_up.jpeg" alt="screenshot" width="48">
     pub fn arrow_up() -> Self {
@@ -660,6 +678,7 @@ impl Sprite {
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_arrow_down.jpeg" alt="screenshot" width="48">
     pub fn arrow_down() -> Self {
@@ -684,6 +703,7 @@ impl Sprite {
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_backspace.jpeg" alt="screenshot" width="48">
     pub fn backspace() -> Self {
@@ -708,6 +728,7 @@ impl Sprite {
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_shift.jpeg" alt="screenshot" width="48">
     pub fn shift() -> Self {
@@ -731,6 +752,7 @@ impl Sprite {
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_close.jpeg" alt="screenshot" width="48">
     pub fn close() -> Self {
@@ -753,6 +775,7 @@ impl Sprite {
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_list.jpeg" alt="screenshot" width="48">
     pub fn list() -> Self {
@@ -775,6 +798,7 @@ impl Sprite {
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_grid.jpeg" alt="screenshot" width="48">
     pub fn grid() -> Self {

@@ -107,6 +107,7 @@ pub enum Cull {
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
 ///     cube.draw(token, &material_cube, Matrix::IDENTITY, None, None);
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/materials.jpeg" alt="screenshot" width="200">
 #[derive(Debug, PartialEq)]
@@ -185,6 +186,7 @@ impl Default for Material {
     /// use stereokit_rust::{material::Material};
     /// let mut material = Material::default();
     /// assert_eq!(material.get_id(), "default/material");
+    /// # sk::Sk::shutdown();
     /// ```
     fn default() -> Self {
         let c_str = CString::new("default/material").unwrap();
@@ -211,6 +213,7 @@ impl Material {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     plane.draw(token, &material_plane,  Matrix::IDENTITY, None, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn new(shader: impl AsRef<Shader>, id: Option<&str>) -> Material {
         let mut mat = Material(NonNull::new(unsafe { material_create(shader.as_ref().0.as_ptr()) }).unwrap());
@@ -240,6 +243,7 @@ impl Material {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     circle.draw(token, &material_circle,  Matrix::IDENTITY, None, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn from_file(shader_file_name: impl AsRef<Path>, id: Option<&str>) -> Result<Material, StereoKitError> {
         let shader = Shader::from_file(&shader_file_name);
@@ -284,6 +288,7 @@ impl Material {
     /// assert_ne!(&material_blue.get_id(), &material_red.get_id());
     /// assert_ne!(&material_blue.get_all_param_info().get_color("color"),
     ///            &material_red.get_all_param_info().get_color("color"));
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn copy(&self) -> Material {
         Material(NonNull::new(unsafe { material_copy(self.0.as_ptr()) }).unwrap())
@@ -311,6 +316,7 @@ impl Material {
     /// assert_ne!(&material.get_all_param_info().get_color("color"),
     ///            &material_red.get_all_param_info().get_color("color"));
     /// assert_ne!(&material.get_id(), &material_red.get_id());
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn copy_id<S: AsRef<str>>(id: S) -> Result<Material, StereoKitError> {
         let c_str = CString::new(id.as_ref())?;
@@ -337,6 +343,7 @@ impl Material {
     /// assert_eq!(&material.get_all_param_info().get_color("color"),
     ///            &material_red.get_all_param_info().get_color("color"));
     /// assert_eq!(&material.get_id(),&"my_red_material");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn find<S: AsRef<str>>(id: S) -> Result<Material, StereoKitError> {
         let c_str = CString::new(id.as_ref())?;
@@ -364,6 +371,7 @@ impl Material {
     /// assert_eq!(&material.get_all_param_info().get_color("color"),
     ///            &material_red.get_all_param_info().get_color("color"));
     /// assert_eq!(&material.get_id(),&"my_red_material");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn clone_ref(&self) -> Material {
         Material(
@@ -462,6 +470,7 @@ impl Material {
     ///
     /// material.id("my_new_material");
     /// assert_eq!(material.get_id(), "my_new_material");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
         let c_str = CString::new(id.as_ref()).unwrap();
@@ -483,6 +492,7 @@ impl Material {
     ///
     /// material.shader(Shader::unlit());
     /// assert_eq!(material.get_shader().get_id(), Shader::unlit().get_id());
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn shader(&mut self, shader: impl AsRef<Shader>) -> &mut Self {
         unsafe { material_set_shader(self.0.as_ptr(), shader.as_ref().0.as_ptr()) };
@@ -504,6 +514,7 @@ impl Material {
     /// assert_eq!(material.get_all_param_info().get_float("border_size"), 0.0428);
     /// # use stereokit_rust::util::Hash;
     /// # assert_eq!(Hash::string("border_size"), 12300782195362451721);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn border_size(&mut self, time: f32) -> &mut Self {
         let ptr: *const f32 = &time;
@@ -528,6 +539,7 @@ impl Material {
     /// assert_eq!(material.get_all_param_info().get_float("cutoff"), 0.53);
     /// # use stereokit_rust::util::Hash;
     /// # assert_eq!(Hash::string("cutoff"), 9874215895386126464);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn clip_cutoff(&mut self, cutoff: f32) -> &mut Self {
         let ptr: *const f32 = &cutoff;
@@ -552,7 +564,8 @@ impl Material {
     /// assert_eq!(material.get_all_param_info().get_color("color"), named_colors::RED.into());
     /// # use stereokit_rust::util::Hash;
     /// # assert_eq!(Hash::string("color"), 8644027876048135736);
-    /// ```    
+    /// # sk::Sk::shutdown();
+    /// ```
     pub fn color_tint(&mut self, color: impl Into<Color128>) -> &mut Self {
         let ptr: *const Color128 = &color.into();
         unsafe {
@@ -615,7 +628,8 @@ impl Material {
     /// assert_eq!(material.get_all_param_info().get_color("emission_factor"), named_colors::RED.into());
     /// # use stereokit_rust::util::Hash;
     /// # assert_eq!(Hash::string("emission_factor"), 5248711978018327020);
-    /// ```  
+    /// # sk::Sk::shutdown();
+    /// ```
     pub fn emission_factor(&mut self, color: impl Into<Color128>) -> &mut Self {
         let ptr: *const Color128 = &color.into();
         unsafe {
@@ -675,7 +689,8 @@ impl Material {
     /// assert_eq!(material.get_all_param_info().get_float("metallic"), 0.68);
     /// # use stereokit_rust::util::Hash;
     /// # assert_eq!(Hash::string("metallic"), 16113330016842241480);
-    /// ```  
+    /// # sk::Sk::shutdown();
+    /// ```
     pub fn metallic_amount(&mut self, amount: f32) -> &mut Self {
         let ptr: *const f32 = &amount;
         unsafe {
@@ -806,6 +821,7 @@ impl Material {
     /// assert_eq!(material.get_all_param_info().get_float("roughness"), 0.78);
     /// # use stereokit_rust::util::Hash;
     /// # assert_eq!(Hash::string("roughness"), 14293098357166276437);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn roughness_amount(&mut self, amount: f32) -> &mut Self {
         let ptr: *const f32 = &amount;
@@ -845,6 +861,7 @@ impl Material {
     /// assert_eq!(material.get_all_param_info().get_float("time"), 0.38);
     /// # use stereokit_rust::util::Hash;
     /// # assert_eq!(Hash::string("time"), 2185518981507421060);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn time(&mut self, time: f32) -> &mut Self {
         let ptr: *const f32 = &time;
@@ -872,6 +889,7 @@ impl Material {
     /// assert_eq!(material.get_all_param_info().get_vector4("tex_trans"), Vec4::ONE * 5.5);
     /// # use stereokit_rust::util::Hash;
     /// # assert_eq!(Hash::string("tex_trans"), 11548192078170871263);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn tex_transform(&mut self, transform: impl Into<Vec4>) -> &mut Self {
         let ptr: *const Vec4 = &transform.into();
@@ -912,6 +930,7 @@ impl Material {
     ///     cube.draw(token, &material_cube, cube_transform, None, None);
     ///     sphere.draw(token, &material_sphere, Matrix::IDENTITY, None, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/material_transparency.jpeg" alt="screenshot" width="200">
     pub fn transparency(&mut self, mode: Transparency) -> &mut Self {
@@ -948,6 +967,7 @@ impl Material {
     ///     cube1.draw(token, &material_cube1,  Matrix::IDENTITY, None, None);
     ///     cube2.draw(token, &material_cube2,  Matrix::IDENTITY, None, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/material_face_cull.jpeg" alt="screenshot" width="200">
     pub fn face_cull(&mut self, mode: Cull) -> &mut Self {
@@ -971,6 +991,7 @@ impl Material {
     /// assert_eq!(material_cube.get_wireframe(), false);
     /// material_cube.wireframe(true).color_tint(named_colors::CYAN);
     /// assert_eq!(material_cube.get_wireframe(), true);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn wireframe(&mut self, wireframe: bool) -> &mut Self {
         unsafe { material_set_wireframe(self.0.as_ptr(), wireframe as Bool32T) };
@@ -993,6 +1014,7 @@ impl Material {
     /// assert_eq!(material_cube.get_depth_test(), DepthTest::Less);
     /// material_cube.depth_test(DepthTest::Greater).color_tint(named_colors::CYAN);
     /// assert_eq!(material_cube.get_depth_test(), DepthTest::Greater);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn depth_test(&mut self, depth_test_mode: DepthTest) -> &mut Self {
         unsafe { material_set_depth_test(self.0.as_ptr(), depth_test_mode) };
@@ -1015,6 +1037,7 @@ impl Material {
     /// assert_eq!(material_cube.get_depth_write(), true);
     /// material_cube.depth_write(false).color_tint(named_colors::CYAN);
     /// assert_eq!(material_cube.get_depth_write(), false);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn depth_write(&mut self, write_enabled: bool) -> &mut Self {
         unsafe { material_set_depth_write(self.0.as_ptr(), write_enabled as Bool32T) };
@@ -1035,6 +1058,7 @@ impl Material {
     /// assert_eq!(material.get_depth_clamp(), false);
     /// material.depth_clamp(false);
     /// assert_eq!(material.get_depth_clamp(), false);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn depth_clamp(&mut self, clip_enabled: bool) -> &mut Self {
         unsafe { material_set_depth_clamp(self.0.as_ptr(), clip_enabled as Bool32T) };
@@ -1058,6 +1082,7 @@ impl Material {
     /// assert_eq!(material_cube.get_queue_offset(), 0);
     /// material_cube.queue_offset(8).color_tint(named_colors::CYAN);
     /// assert_eq!(material_cube.get_queue_offset(), 8);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn queue_offset(&mut self, offset: i32) -> &mut Self {
         unsafe { material_set_queue_offset(self.0.as_ptr(), offset) };
@@ -1081,6 +1106,7 @@ impl Material {
     /// material_to_chain.id("material_to_chain");
     /// material_cube.chain(&material_to_chain);
     /// assert_eq!(material_cube.get_chain().unwrap().get_id(), material_to_chain.get_id());
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn chain(&mut self, chained_material: &Material) -> &mut Self {
         unsafe { material_set_chain(self.0.as_ptr(), chained_material.0.as_ptr()) };
@@ -1118,6 +1144,7 @@ impl Material {
     /// assert!(main_material.get_variant(0).is_none());
     /// assert!(main_material.get_variant(1).is_some());
     /// assert_eq!(main_material.get_variant(1).unwrap().get_id(), "shadow_variant");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn set_variant(&mut self, variant_index: i32, variant_material: Option<&Material>) -> &mut Self {
         let material_ptr = match variant_material {
@@ -1267,6 +1294,7 @@ impl Material {
     ///        _ => {}
     ///    }
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_all_param_info(&self) -> ParamInfos<'_> {
         ParamInfos::from(self)
@@ -1285,6 +1313,7 @@ impl Material {
     /// use stereokit_rust::{material::Material};
     /// let mut material = Material::pbr();
     /// assert_eq!(material.get_id(), "default/material_pbr");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn pbr() -> Self {
         Self::find("default/material_pbr").unwrap()
@@ -1299,6 +1328,7 @@ impl Material {
     /// use stereokit_rust::{material::Material};
     /// let mut material = Material::pbr_clip();
     /// assert_eq!(material.get_id(), "default/material_pbr_clip");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn pbr_clip() -> Self {
         Self::find("default/material_pbr_clip").unwrap()
@@ -1316,6 +1346,7 @@ impl Material {
     /// use stereokit_rust::{material::Material};
     /// let mut material = Material::unlit();
     /// assert_eq!(material.get_id(), "default/material_unlit");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn unlit() -> Self {
         Self::find("default/material_unlit").unwrap()
@@ -1334,6 +1365,7 @@ impl Material {
     /// use stereokit_rust::{material::Material};
     /// let mut material = Material::unlit_clip();
     /// assert_eq!(material.get_id(), "default/material_unlit_clip");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn unlit_clip() -> Self {
         Self::find("default/material_unlit_clip").unwrap()
@@ -1348,6 +1380,7 @@ impl Material {
     /// use stereokit_rust::{material::Material};
     /// let mut material = Material::equirect();
     /// assert_eq!(material.get_id(), "default/equirect_convert");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn equirect() -> Self {
         Self::find("default/equirect_convert").unwrap()
@@ -1362,6 +1395,7 @@ impl Material {
     /// use stereokit_rust::{material::Material};
     /// let mut material = Material::font();
     /// assert_eq!(material.get_id(), "default/material_font");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn font() -> Self {
         Self::find("default/material_font").unwrap()
@@ -1376,6 +1410,7 @@ impl Material {
     /// use stereokit_rust::{material::Material};
     /// let mut material = Material::hand();
     /// assert_eq!(material.get_id(), "default/material_hand");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn hand() -> Self {
         Self::find("default/material_hand").unwrap()
@@ -1392,6 +1427,7 @@ impl Material {
     /// use stereokit_rust::{material::Material};
     /// let mut material = Material::ui();
     /// assert_eq!(material.get_id(), "default/material_ui");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn ui() -> Self {
         Self::find("default/material_ui").unwrap()
@@ -1410,6 +1446,7 @@ impl Material {
     /// use stereokit_rust::{material::Material};
     /// let mut material = Material::ui_box();
     /// assert_eq!(material.get_id(), "default/material_ui_box");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn ui_box() -> Self {
         Self::find("default/material_ui_box").unwrap()
@@ -1425,6 +1462,7 @@ impl Material {
     /// use stereokit_rust::{material::Material};
     /// let mut material = Material::ui_quadrant();
     /// assert_eq!(material.get_id(), "default/material_ui_quadrant");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn ui_quadrant() -> Self {
         Self::find("default/material_ui_quadrant").unwrap()
@@ -1440,6 +1478,7 @@ impl Material {
     /// use stereokit_rust::{material::Material};
     /// let mut material = Material::ui_aura();
     /// assert_eq!(material.get_id(), "default/material_ui_aura");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn ui_aura() -> Self {
         Self::find("default/material_ui_aura").unwrap()
@@ -1472,6 +1511,7 @@ impl Material {
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
 ///     cube.draw(token, &material_cube, Matrix::IDENTITY, None, None);
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/param_infos.jpeg" alt="screenshot" width="200">
 pub struct ParamInfos<'a> {
@@ -1632,6 +1672,7 @@ impl<'a> ParamInfos<'a> {
     /// let mut param_infos = ParamInfos::from(&material_cube);
     /// assert!(param_infos.has_param("line_color", MaterialParam::Vec3), "line_color is missing");
     /// assert_eq!(param_infos.get_float("edge_pos"), 1.5);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn from(material: &'a Material) -> ParamInfos<'a> {
         ParamInfos { material, index: -1 }
@@ -1651,6 +1692,7 @@ impl<'a> ParamInfos<'a> {
     /// let mut param_infos = ParamInfos::from(&material_cube);
     /// assert!(param_infos.has_param("line_color", MaterialParam::Vec3), "line_color is missing");
     /// assert!(param_infos.has_param("edge_pos", MaterialParam::Float),   "edge_pos is missing");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn has_param<S: AsRef<str>>(&self, name: S, type_: MaterialParam) -> bool {
         unsafe {
@@ -1687,6 +1729,7 @@ impl<'a> ParamInfos<'a> {
     /// }
     /// assert_eq!( param_infos.get_color("color"),
     ///             util::Color128::new(1.0, 0.5, 0.2, 1.0));
+    /// # sk::Sk::shutdown();
     /// ```
     pub unsafe fn set_data<S: AsRef<str>>(
         &mut self,
@@ -1734,6 +1777,7 @@ impl<'a> ParamInfos<'a> {
     ///     }
     ///     cube.draw(token, &material_cube, Matrix::IDENTITY, None, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/param_infos_with_id.jpeg" alt="screenshot" width="200">
     pub unsafe fn set_data_with_id(&mut self, id: IdHashT, type_info: MaterialParam, value: *mut c_void) -> &mut Self {
@@ -1758,6 +1802,7 @@ impl<'a> ParamInfos<'a> {
     /// param_infos.set_bool("use_occlusion", true);
     ///
     /// assert_eq!( param_infos.get_bool("use_occlusion"),true);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn set_bool<S: AsRef<str>>(&mut self, name: S, value: bool) -> &mut Self {
         unsafe {
@@ -1786,6 +1831,7 @@ impl<'a> ParamInfos<'a> {
     /// param_infos.set_color("color", new_color);  
     ///
     /// assert_eq!( param_infos.get_color("color"),new_color.to_linear() );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn set_color<S: AsRef<str>>(&mut self, name: S, color_gamma: impl Into<Color128>) -> &mut Self {
         unsafe {
@@ -1812,6 +1858,7 @@ impl<'a> ParamInfos<'a> {
     /// param_infos.set_float("edge_pos", 0.18);
     ///
     /// assert_eq!( param_infos.get_float("edge_pos"), 0.18);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn set_float<S: AsRef<str>>(&mut self, name: S, value: f32) -> &mut Self {
         unsafe {
@@ -1842,6 +1889,7 @@ impl<'a> ParamInfos<'a> {
     /// param_infos.set_int("size_factors", new_factors.as_slice());
     ///
     /// assert_eq!( param_infos.get_int_vector("size_factors", MaterialParam::Int4).unwrap(), new_factors);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn set_int<S: AsRef<str>>(&mut self, name: S, values: &[i32]) -> &mut Self {
         unsafe {
@@ -1888,6 +1936,7 @@ impl<'a> ParamInfos<'a> {
     ///
     /// assert!( param_infos.has_param("size_factors", MaterialParam::UInt4),"size_factors should be here");
     /// assert_eq!( param_infos.get_uint_vector("size_factors", MaterialParam::UInt4).unwrap(), new_factors);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn set_uint<S: AsRef<str>>(&mut self, name: S, values: &[u32]) -> &mut Self {
         unsafe {
@@ -1930,6 +1979,7 @@ impl<'a> ParamInfos<'a> {
     ///
     /// assert!( param_infos.has_param("useless", MaterialParam::Matrix),"size_factors should be here");
     /// assert_eq!( param_infos.get_matrix("useless"), new_matrix);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn set_matrix<S: AsRef<str>>(&mut self, name: S, value: impl Into<Matrix>) -> &mut Self {
         unsafe {
@@ -1986,6 +2036,7 @@ impl<'a> ParamInfos<'a> {
     /// let new_vec2 = Vec2::new(0.15, 0.85);
     /// param_infos.set_vector2("edge_limit", new_vec2);
     /// assert_eq!( param_infos.get_vector2("edge_limit"), new_vec2);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn set_vector2<S: AsRef<str>>(&mut self, name: S, value: impl Into<Vec2>) -> &mut Self {
         unsafe {
@@ -2013,6 +2064,7 @@ impl<'a> ParamInfos<'a> {
     /// let new_vec3 = Vec3::new(0.75, 0.75, 0.75);
     /// param_infos.set_vector3("line_color", new_vec3);
     /// assert_eq!( param_infos.get_vector3("line_color"), new_vec3);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn set_vector3<S: AsRef<str>>(&mut self, name: S, value: impl Into<Vec3>) -> &mut Self {
         unsafe {
@@ -2042,6 +2094,7 @@ impl<'a> ParamInfos<'a> {
     /// // same as material.tex_transform(new_vec4)
     /// param_infos.set_vector4("tex_trans", new_vec4);
     /// assert_eq!( param_infos.get_vector4("tex_trans"), new_vec4);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn set_vector4<S: AsRef<str>>(&mut self, name: S, value: impl Into<Vec4>) -> &mut Self {
         unsafe {
@@ -2295,6 +2348,7 @@ impl<'a> ParamInfos<'a> {
     /// let mut material = Material::unlit();
     /// let mut param_infos = material.get_all_param_info();
     /// assert_eq!( param_infos.get_count(), 5);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_count(&self) -> i32 {
         unsafe { material_get_param_count(self.material.0.as_ptr()) }
@@ -2325,6 +2379,7 @@ impl<'a> ParamInfos<'a> {
     ///             panic!("Unknown param type: {}", otherwise)
     ///     }
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn string_of(&self, info: &ParamInfo) -> String {
         match info.get_type() {
@@ -2409,17 +2464,21 @@ unsafe extern "C" {
 ///     // Alignment padding if your shader expects 16-byte alignment for next values.
 /// }
 ///
+/// # {
 /// // Create the GPU buffer once.
 /// let buffer = MaterialBuffer::<Globals>::new();
 ///
 /// // Update data you want the shader(s) to read.
-/// let mut globals = Globals { time: 1.234, wind: [0.1, 0.2, 0.3], ..Default::default() };
+/// let mut globals = Globals { time: 1.234, wind: [0.1, 0.2, 0.3],
+///                             ..Default::default() };
 ///
 /// // Upload to GPU so every shader using this global slot can access it.
 /// buffer.set(&mut globals as *mut _);
+/// # }
 ///
 /// // In your shader, declare a matching cbuffer bound to the slot you
 /// // bind this MaterialBuffer to (see Renderer::set_global_buffer in StereoKit).
+/// # sk::Sk::shutdown();
 /// ```
 pub struct MaterialBuffer<T> {
     _material_buffer: MaterialBufferT,

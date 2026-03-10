@@ -37,6 +37,7 @@ use std::{
 ///     let anchor = Anchor::from_pose(Pose::default()).expect("What?!!!?");
 ///     anchor.try_set_persistent(true);
 /// }
+/// # sk::Sk::shutdown();
 /// ```
 #[repr(C)]
 #[derive(Debug, PartialEq)]
@@ -122,6 +123,7 @@ impl Anchor {
     ///
     /// let my_anchor = Anchor::find("the_anchor that doesn't exist");
     /// assert!(my_anchor.is_err());
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn find<S: AsRef<str>>(id: S) -> Result<Anchor, StereoKitError> {
         let c_str = CString::new(id.as_ref())
@@ -147,6 +149,7 @@ impl Anchor {
     ///     let same = anchor.clone_ref();
     ///     assert_eq!(same.get_id(), anchor.get_id());
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn clone_ref(&self) -> Anchor {
         Anchor(
@@ -168,6 +171,7 @@ impl Anchor {
     /// if let Ok(anchor) = Anchor::from_pose(Pose::default()){;
     ///     anchor.try_set_persistent(true);
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn from_pose(pose: impl Into<Pose>) -> Result<Anchor, StereoKitError> {
         Ok(Anchor(
@@ -193,6 +197,7 @@ impl Anchor {
     ///     anchor.id("my_anchor");
     ///     assert_eq!(anchor.get_id(), "my_anchor");
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
         let c_str = CString::new(id.as_ref()).unwrap();
@@ -212,6 +217,7 @@ impl Anchor {
     /// Anchor::clear_store();
     /// assert_eq!(Anchor::anchors().get_count(), 0);
     /// assert_eq!(Anchor::new_anchors().get_count(), 0);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn clear_store() {
         unsafe { anchor_clear_stored() };
@@ -227,6 +233,7 @@ impl Anchor {
     /// use stereokit_rust::{anchor::Anchor, maths::Pose};
     ///
     /// assert_eq!(Anchor::anchors().get_count(), 0);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn anchors() -> AnchorIter {
         AnchorIter::anchors()
@@ -242,6 +249,7 @@ impl Anchor {
     /// use stereokit_rust::{anchor::Anchor, maths::Pose};
     ///
     /// assert_eq!(Anchor::new_anchors().get_count(), 0);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn new_anchors() -> AnchorIter {
         AnchorIter::new_anchors()
@@ -264,6 +272,7 @@ impl Anchor {
     ///     anchor.try_set_persistent(true);
     ///     assert_eq!(anchor.get_persistent(), true);
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn try_set_persistent(&self, persistent: bool) -> bool {
         unsafe { anchor_try_set_persistent(self.0.as_ptr(), persistent as Bool32T) != 0 }
@@ -287,6 +296,7 @@ impl Anchor {
     ///     let anchor = Anchor::from_pose(Pose::default()).expect("What?!!!?");
     ///     anchor.try_set_persistent(true);
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_capabilities() -> AnchorCaps {
         unsafe { anchor_get_capabilities() }
@@ -316,6 +326,7 @@ impl Anchor {
     /// if let Ok(mut anchor) = Anchor::from_pose(Pose::default()){;
     ///     assert_eq!(anchor.get_pose(), Pose::default());
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_pose(&self) -> Pose {
         unsafe { anchor_get_pose(self.0.as_ptr()) }
@@ -335,6 +346,7 @@ impl Anchor {
     /// if let Ok(mut anchor) = Anchor::from_pose(Pose::default()){;
     ///     assert_eq!(anchor.get_tracked(), BtnState::Active);
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_tracked(&self) -> BtnState {
         unsafe { anchor_get_tracked(self.0.as_ptr()) }
@@ -363,6 +375,7 @@ impl Anchor {
     /// if let Ok(mut anchor) = Anchor::from_pose(Pose::default()){;
     ///     assert_eq!(anchor.get_name().is_empty(), false);
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_name(&self) -> &str {
         unsafe { CStr::from_ptr(anchor_get_name(self.0.as_ptr())).to_str().unwrap() }
@@ -409,6 +422,7 @@ impl Anchor {
 /// for anchor in  AnchorIter::new_anchors() {
 ///     println!("New Anchor: {:?}", anchor);
 /// }
+/// # sk::Sk::shutdown();
 /// ```
 pub struct AnchorIter {
     index: i32,
@@ -469,6 +483,7 @@ impl AnchorIter {
     ///
     /// let new_anchors = Anchor::new_anchors();
     /// assert_eq!(new_anchors.get_count(), new_anchors.count() as i32);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_count(&self) -> i32 {
         if self.only_new { unsafe { anchor_get_new_count() } } else { unsafe { anchor_get_count() } }
@@ -487,6 +502,7 @@ impl AnchorIter {
     /// for anchor in  AnchorIter::anchors() {
     ///     println!("Anchor: {:?}", anchor);
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn anchors() -> AnchorIter {
         AnchorIter { index: -1, only_new: false }
@@ -505,6 +521,7 @@ impl AnchorIter {
     /// for anchor in  AnchorIter::new_anchors() {
     ///     println!("New Anchor: {:?}", anchor);
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn new_anchors() -> AnchorIter {
         AnchorIter { index: -1, only_new: true }

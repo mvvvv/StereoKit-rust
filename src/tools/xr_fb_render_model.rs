@@ -455,7 +455,8 @@ const LEFT_SHIFT: f32 = 0.04; // Left hand animation timing offset for synchroni
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{
-///     tools::xr_fb_render_model::{XrFbRenderModelStepper, is_fb_render_model_extension_available, DRAW_CONTROLLER},
+///     tools::xr_fb_render_model::{XrFbRenderModelStepper, 
+///     is_fb_render_model_extension_available, DRAW_CONTROLLER},
 ///     system::{Input, Handed},
 ///     prelude::*,
 /// };
@@ -484,6 +485,7 @@ const LEFT_SHIFT: f32 = 0.04; // Left hand animation timing offset for synchroni
 ///         }
 ///     );
 /// }
+/// # sk::Sk::shutdown();
 /// ```
 ///
 /// # Animation System

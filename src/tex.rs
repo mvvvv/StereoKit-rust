@@ -377,6 +377,7 @@ pub enum TexAddress {
 ///     plane_mesh.draw(token, &material_back,  transform_back,  None, None);
 ///     plane_mesh.draw(token, &material_floor, transform_floor, None, None);
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/tex.jpeg" alt="screenshot" width="200">
 #[repr(C)]
@@ -569,6 +570,7 @@ impl Tex {
     ///     plane_mesh.draw(token, &material_left,  transform_left,  None, None);
     ///     plane_mesh.draw(token, &material_right, transform_right, None, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn new(texture_type: TexType, format: TexFormat, id: Option<&str>) -> Tex {
         let tex = Tex(NonNull::new(unsafe { tex_create(texture_type, format) }).unwrap());
@@ -676,6 +678,7 @@ impl Tex {
     /// assert_eq!(tex_left.get_asset_state(),  AssetState::Loaded);
     /// assert_eq!(tex_right.get_asset_state(), AssetState::Loaded);
     /// assert_eq!(tex_floor.get_asset_state(), AssetState::NotFound);
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/tex_from_file.jpeg" alt="screenshot" width="200">
     pub fn from_file(
@@ -789,6 +792,7 @@ impl Tex {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     plane_mesh.draw(token, &material,  transform,  None, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn from_color32(
         colors: &[Color32],
@@ -845,6 +849,7 @@ impl Tex {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     plane_mesh.draw(token, &material,  transform,  None, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn from_color128(
         colors: &[Color128],
@@ -900,6 +905,7 @@ impl Tex {
     /// let transform  = Matrix::t_r([-0.5, 0.0, 0.0], [0.0, -45.0, 90.0]);
     ///
     /// Renderer::blit(&tex, &material);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn render_target(
         width: usize,
@@ -952,6 +958,7 @@ impl Tex {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     plane_mesh.draw(token, &material,  transform,  None, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn gen_color(color: impl Into<Color128>, width: i32, height: i32, tex_type: TexType, format: TexFormat) -> Tex {
         let raw = unsafe { tex_gen_color(color.into(), width, height, tex_type, format) };
@@ -1013,6 +1020,7 @@ impl Tex {
     ///     plane_mesh.draw(token, &material_back,  transform_back,  None, None);
     ///     plane_mesh.draw(token, &material_floor, transform_floor, None, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/tex_gen_particle.jpeg" alt="screenshot" width="200">
     pub fn gen_particle(width: i32, height: i32, roundness: f32, gradient_linear: Option<Gradient>) -> Tex {
@@ -1051,6 +1059,7 @@ impl Tex {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     plane_mesh.draw(token, &material,  transform_floor,  None, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn set_loading_fallback<T: AsRef<Tex>>(fallback: T) {
         unsafe { tex_set_loading_fallback(fallback.as_ref().0.as_ptr()) };
@@ -1079,6 +1088,7 @@ impl Tex {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     plane_mesh.draw(token, &material,  transform_floor,  None, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn set_error_fallback<T: AsRef<Tex>>(fallback: T) {
         unsafe { tex_set_error_fallback(fallback.as_ref().0.as_ptr()) };
@@ -1149,6 +1159,7 @@ impl Tex {
     /// assert!(tex_copy.get_color_data::<Color128>(&mut color_data, 0));
     /// //TODO: windows assert_eq!(color_data[0], Color128 { r: 0.0, g: 0.0, b: 0.0, a: 0.0 });
     /// //TODO: linux   assert_eq!(color_data[0], Color128 { r: 0.2509804, g: 0.1254902, b: 1.0, a:1.0 });
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn copy(&self, tex_type: Option<TexType>, tex_format: Option<TexFormat>) -> Result<Tex, StereoKitError> {
         let type_ = tex_type.unwrap_or(TexType::Image);
@@ -1178,7 +1189,7 @@ impl Tex {
     /// assert_eq!(tex.get_id(), "textures/open_gltf.jpeg");
     /// let same_tex = tex.clone_ref();
     /// assert_eq!(tex, same_tex);
-    /// # sk::Sk::shutdown();   
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn clone_ref(&self) -> Tex {
         Tex(NonNull::new(unsafe { tex_find(tex_get_id(self.0.as_ptr())) }).expect("<asset>::clone_ref failed!"))
@@ -1239,6 +1250,7 @@ impl Tex {
     /// let transform  = Matrix::t_r([-0.5, 0.0, 0.0], [0.0, -45.0, 90.0]);
     ///
     /// Renderer::blit(&tex, &material);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn add_zbuffer(&mut self, depth_format: TexFormat) -> &mut Self {
         unsafe { tex_add_zbuffer(self.0.as_ptr(), depth_format) };
@@ -1358,6 +1370,7 @@ impl Tex {
     /// let check_dots = [Color32::WHITE; 16 * 16];
     /// assert!(tex.get_color_data::<Color32>(&check_dots, 0));
     /// assert_eq!(check_dots, color_dots);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn set_colors32(&mut self, width: usize, height: usize, data: &[Color32]) -> &mut Self {
         match self.get_format() {
@@ -1419,6 +1432,7 @@ impl Tex {
     /// let check_dots = [Color128::BLACK; 16 * 16];
     /// assert!(tex.get_color_data::<Color128>(&check_dots, 0));
     /// assert_eq!(check_dots, color_dots);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn set_colors128(&mut self, width: usize, height: usize, data: &[Color128]) -> &mut Self {
         match self.get_format() {
@@ -1478,6 +1492,7 @@ impl Tex {
     /// let check_dots = [0u8; 16 * 16];
     /// assert!(tex.get_color_data::<u8>(&check_dots, 0));
     /// assert_eq!(check_dots, color_dots);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn set_colors_r8(&mut self, width: usize, height: usize, data: &[u8]) -> &mut Self {
         match self.get_format() {
@@ -1539,6 +1554,7 @@ impl Tex {
     /// let check_dots = [Color32::BLACK; 16 * 16];
     /// assert!(tex.get_color_data::<Color32>(&check_dots, 0));
     /// assert_eq!(check_dots[0],Color32{r:127,g:127,b:127,a:127});
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn set_colors_u8(&mut self, width: usize, height: usize, data: &[u8], color_size: usize) -> &mut Self {
         if width * height * color_size != data.len() {
@@ -1585,6 +1601,7 @@ impl Tex {
     /// let check_dots = [0u16; 16 * 16];
     /// assert!(tex.get_color_data::<u16>(&check_dots, 0));
     /// assert_eq!(check_dots, color_dots);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn set_colors_r16(&mut self, width: usize, height: usize, data: &[u16]) -> &mut Self {
         match self.get_format() {
@@ -1644,6 +1661,7 @@ impl Tex {
     /// let check_dots = [0.0f32; 16 * 16];
     /// assert!(tex.get_color_data::<f32>(&check_dots, 0));
     /// assert_eq!(check_dots, color_dots);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn set_colors_r32(&mut self, width: usize, height: usize, data: &[f32]) -> &mut Self {
         match self.get_format() {
@@ -1705,6 +1723,7 @@ impl Tex {
     ///
     /// //tex2.set_zbuffer(None);
     /// //assert_eq!(tex2.get_zbuffer(), None);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn set_zbuffer(&mut self, tex: Option<Tex>) -> &mut Self {
         if let Some(tex) = tex {
@@ -1750,6 +1769,7 @@ impl Tex {
     /// let mut tex = Tex::new(TexType::Image, TexFormat::Rgba32Srgb, None);
     /// let native_surface = tex.get_native_surface();
     /// unsafe { tex.set_native_surface(native_surface, TexType::Image, 0, 1, 1, 1, false); }
+    /// # sk::Sk::shutdown();
     /// ```
     #[allow(clippy::too_many_arguments)]
     pub unsafe fn set_native_surface(
@@ -1807,6 +1827,7 @@ impl Tex {
     /// tex.set_size(128, 64, None, Some(4)); // 1-layer array, 4x MSAA
     /// assert_eq!(tex.get_width(),  Some(128));
     /// assert_eq!(tex.get_height(), Some(64));
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn set_size(
         &mut self,
@@ -1859,6 +1880,7 @@ impl Tex {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     plane_mesh.draw(token, &material,  transform_floor,  None, None);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn fallback_override<T: AsRef<Tex>>(&mut self, fallback: T) -> &mut Self {
         unsafe { tex_set_fallback(self.0.as_ptr(), fallback.as_ref().0.as_ptr()) };
@@ -1880,6 +1902,7 @@ impl Tex {
     /// assert_eq!(tex.get_sample_mode(), TexSample::Linear);
     /// tex.sample_mode(TexSample::Anisotropic);
     /// assert_eq!(tex.get_sample_mode(), TexSample::Anisotropic);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn sample_mode(&mut self, sample: TexSample) -> &mut Self {
         unsafe { tex_set_sample(self.0.as_ptr(), sample) };
@@ -1902,6 +1925,7 @@ impl Tex {
     ///
     /// tex.sample_comp(None);
     /// assert_eq!(tex.get_sample_comp(), TexSampleComp::None);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn sample_comp(&mut self, compare: Option<TexSampleComp>) -> &mut Self {
         let compare = match compare {
@@ -1927,6 +1951,7 @@ impl Tex {
     /// assert_eq!(tex.get_address_mode(), TexAddress::Wrap);
     /// tex.address_mode(TexAddress::Mirror);
     /// assert_eq!(tex.get_address_mode(), TexAddress::Mirror);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn address_mode(&mut self, address_mode: TexAddress) -> &mut Self {
         unsafe { tex_set_address(self.0.as_ptr(), address_mode) };
@@ -1952,6 +1977,7 @@ impl Tex {
     /// tex.sample_mode(TexSample::Anisotropic).anisotropy(10);
     ///
     /// assert_eq!(tex.get_anisotropy(), 10);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn anisotropy(&mut self, anisotropy_level: i32) -> &mut Self {
         unsafe { tex_set_anisotropy(self.0.as_ptr(), anisotropy_level) };
@@ -2000,6 +2026,7 @@ impl Tex {
     /// assert_eq!(tex_not_icon.get_asset_state(), AssetState::NotFound);    
     /// assert_eq!(tex_not_icon.get_width(),  None);
     /// assert_eq!(tex_not_icon.get_height(), None);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_asset_state(&self) -> AssetState {
         unsafe { tex_asset_state(self.0.as_ptr()) }
@@ -2033,6 +2060,7 @@ impl Tex {
     /// );
     /// assert_eq!(tex_icon.get_format(), Some(TexFormat::Rgba32Srgb));
     /// assert_eq!(tex_not_icon.get_format(), None);   
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_format(&self) -> Option<TexFormat> {
         match self.get_asset_state() {
@@ -2138,6 +2166,7 @@ impl Tex {
     ///     if    tex_icon.get_asset_state()     != AssetState::Loaded { iter -= 1; }
     /// );
     /// assert_eq!(tex_icon.get_data_infos(0), Some((128, 128, 16384)));
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_data_infos(&self, mip: i8) -> Option<(usize, usize, usize)> {
         match self.get_asset_state() {
@@ -2203,6 +2232,7 @@ impl Tex {
     /// let check_dots = [Color128::WHITE; 8 * 8];
     /// assert!(tex.get_color_data::<Color128>(&check_dots, 0));
     /// assert_eq!(check_dots[5], named_colors::MAGENTA.into());
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_color_data<T>(&self, color_data: &[T], mut mip_level: i8) -> bool {
         let size_of_color = std::mem::size_of_val(color_data);
@@ -2263,6 +2293,7 @@ impl Tex {
     /// assert_eq!(check_dots[5*4+1], named_colors::CYAN.g);
     /// assert_eq!(check_dots[5*4+2], named_colors::CYAN.b);
     /// assert_eq!(check_dots[5*4+3], named_colors::CYAN.a);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_color_data_u8(&self, color_data: &[u8], color_size: usize, mut mip_level: i8) -> bool {
         let size_of_color = std::mem::size_of_val(color_data);
@@ -2374,6 +2405,7 @@ impl Tex {
     /// // TODO: assert_eq!(tex.get_mips(), Some(8));
     /// // TODO: assert_eq!(tex_icon.get_mips(), Some(8));
     /// assert_eq!(tex_not_icon.get_mips(), None);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_mips(&self) -> Option<i32> {
         match self.get_asset_state() {
@@ -2404,6 +2436,7 @@ impl Tex {
     /// let sh_cubemap = tex.get_cubemap_lighting();
     /// assert_eq!(sh_cubemap.sh.coefficients[2], Vec3::ZERO);
     /// assert_eq!(sh_cubemap.sh.coefficients[5], Vec3::ZERO);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_cubemap_lighting(&self) -> SHCubemap {
         SHCubemap {
@@ -2422,6 +2455,7 @@ impl Tex {
     ///
     /// let tex= Tex::black();
     /// assert_eq!(tex.get_id(), "default/tex_black");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn black() -> Self {
         Self::find("default/tex_black").unwrap()
@@ -2438,6 +2472,7 @@ impl Tex {
     ///
     /// let tex = Tex::dev_tex();
     /// assert_eq!(tex.get_id(), "default/tex_devtex");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn dev_tex() -> Self {
         Self::find("default/tex_devtex").unwrap()
@@ -2454,6 +2489,7 @@ impl Tex {
     ///
     /// let tex = Tex::error();
     /// assert_eq!(tex.get_id(), "default/tex_error");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn error() -> Self {
         Self::find("default/tex_error").unwrap()
@@ -2470,6 +2506,7 @@ impl Tex {
     ///
     /// let tex = Tex::flat();
     /// assert_eq!(tex.get_id(), "default/tex_flat");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn flat() -> Self {
         Self::find("default/tex_flat").unwrap()
@@ -2486,6 +2523,7 @@ impl Tex {
     ///
     /// let tex = Tex::gray();
     /// assert_eq!(tex.get_id(), "default/tex_gray");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn gray() -> Self {
         Self::find("default/tex_gray").unwrap()
@@ -2502,6 +2540,7 @@ impl Tex {
     ///
     /// let tex = Tex::rough();
     /// assert_eq!(tex.get_id(), "default/tex_rough");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn rough() -> Self {
         Self::find("default/tex_rough").unwrap()
@@ -2517,6 +2556,7 @@ impl Tex {
     ///
     /// let tex = Tex::white();
     /// assert_eq!(tex.get_id(), "default/tex");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn white() -> Self {
         Self::find("default/tex").unwrap()
@@ -2550,6 +2590,7 @@ impl Tex {
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
 ///     if tex.get_asset_state() != AssetState::Loaded {iter -= 1}
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sh_cubemap.jpeg" alt="screenshot" width="200">
 #[derive(Debug)]
@@ -2607,6 +2648,7 @@ impl SHCubemap {
     ///     if tex.get_asset_state() != AssetState::Loaded {iter -= 1}
     /// );
     /// assert_eq!(tex.get_asset_state(), AssetState::Loaded);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn from_cubemap(
         cubemap_file: impl AsRef<Path>,
@@ -2660,6 +2702,7 @@ impl SHCubemap {
     ///     if tex.get_asset_state() != AssetState::Loaded {iter -= 1}
     /// );
     /// assert_eq!(tex.get_asset_state(), AssetState::Loaded);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn from_cubemap_files<P: AsRef<Path>>(
         files_utf8: &[P; 6],
@@ -2724,6 +2767,7 @@ impl SHCubemap {
     /// assert_ne!(sh_cubemap.sh.coefficients[8], Vec3::ZERO);
     /// test_steps!( // !!!! Get a proper main loop !!!!
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn gen_cubemap_gradient(
         gradient: impl AsRef<Gradient>,
@@ -2773,6 +2817,7 @@ impl SHCubemap {
     /// assert_eq!(sh_cubemap.sh.coefficients[8], Vec3::ZERO);
     /// test_steps!( // !!!! Get a proper main loop !!!!
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn gen_cubemap_sh(
         lighting: SphericalHarmonics,
@@ -2814,6 +2859,7 @@ impl SHCubemap {
     ///     assert_ne!(sh_cubemap2.sh.coefficients[1], Vec3::ZERO);
     ///     assert_eq!(sh_cubemap2.sh.coefficients[8], Vec3::ZERO);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_cubemap_lighting(cubemap_texture: impl AsRef<Tex>) -> SHCubemap {
         SHCubemap {
@@ -2836,6 +2882,7 @@ impl SHCubemap {
     ///
     /// let tex = sh_cubemap.tex;
     /// //Not at first step : assert_eq!(tex.get_id(), "default/cubemap");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_rendered_sky() -> SHCubemap {
         let skytex_ptr = unsafe { render_get_skytex() };
@@ -2870,6 +2917,7 @@ impl SHCubemap {
     ///
     /// let cubemap = sh_cubemap.clone_ref();
     /// //Not at first step: assert_eq!(cubemap.tex.get_id(), "default/cubemap");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn clone_ref(&self) -> SHCubemap {
         SHCubemap { sh: self.sh, tex: self.tex.clone_ref() }
@@ -2893,6 +2941,7 @@ impl SHCubemap {
     ///
     /// Renderer::enable_sky(false);
     /// assert_eq!(Renderer::get_enable_sky(), false);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn render_as_sky(&self) {
         unsafe {
@@ -2914,6 +2963,7 @@ impl SHCubemap {
     /// let (sh, tex) = sh_cubemap.get();
     /// //Not at first step: assert_eq!(tex.get_id(), "default/cubemap");
     /// //Not at first step: assert_eq!(sh.get_dominent_light_direction(), Vec3 { x: -0.20119436, y: -0.92318374, z: -0.32749438 });
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get(&self) -> (SphericalHarmonics, Tex) {
         (self.sh, Tex(NonNull::new(unsafe { tex_find(tex_get_id(self.tex.0.as_ptr())) }).unwrap()))

@@ -3,10 +3,10 @@ members = ["stereokit-macros"]
 
 [package]
 name = "stereokit-rust"
-version = "0.4.0-alpha.24"
+version = "0.4.0-alpha.25"
 resolver = "2"
 edition = "2024"
-#rust-version = "1.85"
+#rust-version = "1.94"
 description = "High-Level Rust bindings around the StereoKitC library for XR"
 #homepage = "https://stereokit.net/"
 keywords = ["stereokit", "VR", "sys", "MR", "OpenXR"]

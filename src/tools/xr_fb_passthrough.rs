@@ -82,8 +82,8 @@ pub const PASSTHROUGH_FLIP: &str = "PassthroughFlip";
 ///      }
 ///      sk.send_event(StepperAction::event("main".into(), PASSTHROUGH_FLIP, string_value))
 ///  }
+/// # sk::Sk::shutdown();
 /// ```
-
 #[derive(IStepper)]
 pub struct FbPassthroughStepper {
     id: StepperId,
