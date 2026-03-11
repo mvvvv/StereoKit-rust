@@ -1610,8 +1610,8 @@ impl Hierarchy {
     ///     assert_eq!(Hierarchy::to_world_direction(token, [-1.0, 0.0, 0.0]), [1.0, 0.0, 0.0].into());
     ///     Hierarchy::pop(token);
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
-    /// see also [`hierarchy_to_local_direction`] [`hierarchy_to_world_direction`]
     pub fn to_local_direction<V: Into<Vec3>>(_token: &MainThreadToken, world_direction: V) -> Vec3 {
         unsafe { hierarchy_to_local_direction(&world_direction.into()) }
     }

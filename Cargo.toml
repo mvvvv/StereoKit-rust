@@ -190,6 +190,18 @@ required = false
 name = "wave.feature.tracker"
 required = false
 
+[[package.metadata.android.uses_feature]]
+name = "wave.feature.eyetracking"
+required = false
+
+[[package.metadata.android.uses_feature]]
+name = "wave.feature.sceneperception"
+required = false
+
+[[package.metadata.android.uses_feature]]
+name = "wave.feature.marker"
+required = true
+
 #---Android permission common
 [[package.metadata.android.uses_permission]]
 name = "org.khronos.openxr.permission.OPENXR"
@@ -337,6 +349,11 @@ value = "quest2|questpro|quest3"
 [[package.metadata.android.application.meta_data]]
 name = "com.oculus.intent.category.VR"
 value = "vr_only"
+
+#---Vive
+[[package.metadata.android.application.meta_data]]
+name = "no_controller_pairing"
+value = "true"
 
 #---Pico
 [[package.metadata.android.application.meta_data]]

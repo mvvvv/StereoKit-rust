@@ -2296,7 +2296,7 @@ impl<'a> ParamInfos<'a> {
     /// * `name` - The name of the parameter to get.
     /// * `type_info` - The type of the parameter to get.
     ///
-    /// see also [`ParamInfo`] [`material_get_param`]
+    /// see also [`ParamInfo`] [`material_get_param`] [`ParamInfos::set_data`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -2308,8 +2308,8 @@ impl<'a> ParamInfos<'a> {
     ///     let vec4 = unsafe { std::ptr::read(out_value as *const [i32; 4]).to_vec() };
     ///     assert_eq!( vec4, vec![300,-100,50,25] );
     /// } else { panic!("Failed to size_factors Int4");}
+    /// # sk::Sk::shutdown();
     /// ```
-    /// see [`ParamInfos::set_data`]
     pub fn get_data<S: AsRef<str>>(&self, name: S, type_info: MaterialParam) -> Option<*mut c_void> {
         let out_value = CString::new("H").unwrap().into_raw() as *mut c_void;
         let cstr = &CString::new(name.as_ref()).unwrap();

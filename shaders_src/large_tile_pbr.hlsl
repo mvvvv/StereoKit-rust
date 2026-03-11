@@ -40,12 +40,10 @@ struct psIn {
     half3  irradiance: COLOR1;
     float3 world   : TEXCOORD1;
     float3 view_dir: TEXCOORD2;
-SK_LAYER_OUTPUT
 };
 
-psIn vs(vsIn input, sk_input_t sys) {
+psIn vs(vsIn input, sk_ids_t ids) {
         psIn o;
-        sk_ids_t ids = sk_resolve_ids(sys);
 
         float3x3 world3x3 = (float3x3)sk_inst[ids.inst].world;
         o.world = mul(input.pos.xyz, world3x3) + sk_inst[ids.inst].world[3].xyz;
@@ -56,7 +54,6 @@ psIn vs(vsIn input, sk_input_t sys) {
         o.color      = input.color * sk_inst[ids.inst].color * color;
         o.irradiance = sk_lighting(o.normal);
         o.view_dir   = sk_camera_pos[ids.view].xyz - o.world;
-        SK_SET_LAYER(o, ids.view);
 	return o;
 }
 

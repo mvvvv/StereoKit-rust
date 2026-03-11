@@ -3292,6 +3292,7 @@ impl Matrix {
     ///   buffers, this should not be too far away, or you'll see bad z-fighting artifacts.    
     ///
     /// Returns the final orthographic Matrix.
+    /// see also [`matrix_orthographic`]
     /// ### Examples
     /// ```
     /// use stereokit_rust::maths::{Vec3, Matrix};
@@ -3302,7 +3303,6 @@ impl Matrix {
     /// let projection = translate * point;
     /// assert_eq!(projection, Vec3 { x: 2.0, y: 4.0, z: -0.03103103 });
     /// ```
-    /// see also [`matrix_orthographic`]
     #[inline]
     pub fn orthographic(width: f32, height: f32, near_clip: f32, far_clip: f32) -> Self {
         unsafe { matrix_orthographic(width, height, near_clip, far_clip) }
