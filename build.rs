@@ -271,7 +271,6 @@ fn main() {
             cargo_link!("static=sk_app");
             cargo_link!("static=sk_renderer");
 
-            cargo_link!("stdc++");
             cargo_link!("openxr_loader");
             cargo_link!("meshoptimizer");
 
@@ -338,8 +337,11 @@ fn main() {
                 println!("cargo:rustc-link-search=native=/usr/local/lib");
                 println!("cargo:rustc-link-search=native=/opt/homebrew/lib");
                 cargo_link!("MoltenVK");
+                // macOS uses libc++ (LLVM), not libstdc++ (GCC)
+                cargo_link!("c++");
             } else {
                 // Linux
+                cargo_link!("stdc++");
                 cargo_link!("vulkan");
                 cargo_link!("X11");
                 cargo_link!("Xfixes");
