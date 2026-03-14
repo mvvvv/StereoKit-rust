@@ -210,17 +210,23 @@ fn main() {
                 }
 
                 cargo_link!("meshoptimizer");
-                // Add search paths for sk_renderer library
+                // Add search paths for sk_renderer and sk_app libraries
                 println!(
                     "cargo:rustc-link-search=native={}/build/_deps/sk_renderer-build/{}",
                     dst.display(),
                     profile_upper
                 );
+                println!(
+                    "cargo:rustc-link-search=native={}/build/_deps/sk_app-build/{}",
+                    dst.display(),
+                    profile_upper
+                );
                 println!("cargo:rustc-link-search=native={}/lib", dst.display());
 
-                // Link sk_renderer library
+                // Link sk_renderer and sk_app libraries
                 if !skc_in_dll {
                     cargo_link!("sk_renderer");
+                    cargo_link!("sk_app");
                 }
 
                 let lib: String = "StereoKitC".into();
