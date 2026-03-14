@@ -2,30 +2,24 @@
 #include <stereokit_pbr.hlsli>
 
 //--name = water_pbr
-//--color:color = 0, 0, 1, 0.9
-//--emission_factor:color = 0.01,0.07,0,01
-//--tex_trans   = 0,0,10.1,10.1
-//--time = 5
-//--metallic    = 0.6
-//--roughness   = 1.4
-float4       color;
-float4       emission_factor;
-float4       tex_trans;
-float        time;
-float        metallic;
-float        roughness;
+float4 color           = {0, 0, 1, 0.9};
+float4 emission_factor = {0.01, 0.07, 0, 01};
+float4 tex_trans       = {0, 0, 10.1, 10.1};
+float  time            = 5;
+float  metallic        = 0.6;
+float  roughness       = 1.4;
 
 
 //--diffuse   = white
-//--emission  = white
-//--metal     = white
-//--occlusion = white
 Texture2D    diffuse        : register(t0);
 SamplerState diffuse_s   : register(s0);
+//--emission  = white
 Texture2D    emission       : register(t1);
 SamplerState emission_s  : register(s1);
+//--metal     = white
 Texture2D    metal          : register(t2);
 SamplerState metal_s     : register(s2);
+//--occlusion = white
 Texture2D    occlusion      : register(t3);
 SamplerState occlusion_s : register(s3);
 struct vsIn {

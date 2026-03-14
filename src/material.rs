@@ -1286,7 +1286,7 @@ impl Material {
     ///        "diffuse" | "emission" | "metal" | "occlusion"  
     ///             => assert_eq!(param.type_info, MaterialParam::Texture),
     ///        "color" | "emission_factor"  
-    ///             => assert_eq!(param.type_info, MaterialParam::Color128),
+    ///             => assert_eq!(param.type_info, MaterialParam::Vec4), // TODO no more Color32
     ///        "metallic" | "roughness"  
     ///             => assert_eq!(param.type_info, MaterialParam::Float),
     ///        "tex_trans"  
@@ -2366,7 +2366,7 @@ impl<'a> ParamInfos<'a> {
     /// for param in param_infos_iter {
     ///     match (param.get_name()) {
     ///         "color" =>
-    ///             assert_eq!(param_infos.string_of(&param), "r:1, g:1, b:1, a:1"),
+    ///             assert_eq!(param_infos.string_of(&param), "[x:1, y:1, z:1, w:1]"), // TODO: no more color "r:1, g:1, b:1, a:1"),
     ///         "tex_trans" =>
     ///             assert_eq!(param_infos.string_of(&param), "[x:0, y:0, z:1, w:1]"),
     ///         "diffuse" =>

@@ -31,7 +31,7 @@ Let us know if you have launched the demos on an architecture not tested here.
 ### Download the source project
 
 - `git clone --recursive https://github.com/mvvvv/StereoKit-rust/`
-- On Linux get the following tools and dev libraries : git clang cmake libx11-dev libxfixes-dev libvulkan-dev libfontconfig-dev.
+- On Linux get the following tools and dev libraries : git cmake ninja-build clang llvm lld libx11-dev libxfixes-dev libvulkan-dev libfontconfig-dev libxrandr-dev libxcursor-dev.
 - On macOS get the following tools and dev libraries : brew install cmake ninja molten-vk vulkan-headers.
 - On Windows[^2] get the following tools and dev libraries : "Git", "CMake", "Visual Studio Build Tools 2022(Developpment Desktop C++)" and "DotNet SDK v8+"
 - Install the project's tools from the project directory `cargo install -F event-loop --path .`
@@ -102,7 +102,7 @@ There is 3 templates used to build android versions (they can also create a PC V
 
 - Install g++-aarch64-linux-gnu
 
-- Get the libraries libx11-dev:arm64 libxfixes-dev:arm64 libegl-dev:arm64 libgbm-dev:arm64 libfontconfig-dev:arm64. On Ubuntu 24:XX this can be done by adding a foreign architecture `dpkg --add-architecture arm64` with depot `http://ports.ubuntu.com/ubuntu-ports`. To avoid errors during `apt update` you'll have to specify the architectures of all depots in `/etc/apt/sources.list.d/ubuntu.sources`
+- Get the libraries libx11-dev:arm64 libxfixes-dev:arm64 libegl-dev:arm64 libgbm-dev:arm64 libfontconfig-dev:arm64 libxrandr-dev:arm64 libxcursor-dev:arm64. On Ubuntu 24:XX this can be done by adding a foreign architecture `dpkg --add-architecture arm64` with depot `http://ports.ubuntu.com/ubuntu-ports`. To avoid errors during `apt update` you'll have to specify the architectures of all depots in `/etc/apt/sources.list.d/ubuntu.sources`
 - Add the rust target aarch64 for linux:`rustup target add aarch64-unknown-linux-gnu`
 - Add a section `[target.aarch64-unknown-linux-gnu]` in your config.toml for setting `linker = "aarch64-linux-gnu-gcc"`
 - Launch `cargo build_sk_rs --example main_pc --features event-loop --aarch64-linux <the path of your exportable repository>`

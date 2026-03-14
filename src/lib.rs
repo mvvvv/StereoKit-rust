@@ -30,8 +30,8 @@
 //! ### On `Linux`:
 //!   - Considering that you have already installed `Rust` with `stable-?????-unknown-linux-gnu` toolchain and the linux package
 //!     `build-essential`.
-//!   - Get the following tools and dev libraries : `git` `clang` `cmake` `lld` `ninja-build` `libx11-dev`
-//!     `libxfixes-dev` `libvulkan-dev` `libfontconfig-dev` `libxkbcommon-x11-dev`.
+//!   - Get the following tools and dev libraries : `git` `clang` `cmake` `lld` `llvm` `ninja-build` `libx11-dev`
+//!     `libxfixes-dev` `libvulkan-dev` `libfontconfig-dev` `libxkbcommon-x11-dev` `libxrandr-dev` `libxcursor-dev`.
 //!   - For headless/CI environments or software rendering: `mesa-vulkan-drivers` (provides lavapipe software renderer).
 //!
 //! ### On `macOS`:
@@ -234,7 +234,7 @@
 //! If you are on aarch64 Linux, you just have to follow the instructions in [`Building your PC/Mac VR/MR app`](#building-your-pcmac-vrmr-app).
 //! If you are on a x86_64 architecture you are able to cross-compile your app for aarch64:
 //! * Install g++-aarch64-linux-gnu
-//! * Get the libraries `libx11-dev:arm64` `libxfixes-dev:arm64` `libegl-dev:arm64` `libgbm-dev:arm64` `libfontconfig-dev:arm64`.
+//! * Get the libraries `libx11-dev:arm64` `libxfixes-dev:arm64` `libegl-dev:arm64` `libgbm-dev:arm64` `libfontconfig-dev:arm64` `libxrandr-dev:arm64` `libxcursor-dev:arm64`.
 //!   On Ubuntu 24:XX this can be done by adding a foreign architecture `dpkg --add-architecture arm64` with depot
 //!   `http://ports.ubuntu.com/ubuntu-ports`. To avoid errors during `apt update` you'll have to specify the architectures
 //!   of all depots in `/etc/apt/sources.list.d/ubuntu.sources`
@@ -247,7 +247,7 @@
 //! If you are on aarch64 architecture you should be able to cross-compile for x86_64:
 //! (This hasn't been tested yet, if you are interested in testing it, please let us now)
 //! * Install g++-x86-64-linux-gnu
-//! * Get the libraries `libx11-dev:amd64` `libxfixes-dev:amd64` `libegl-dev:amd64` `libgbm-dev:amd64` `libfontconfig-dev:amd64`.
+//! * Get the libraries `libx11-dev:amd64` `libxfixes-dev:amd64` `libegl-dev:amd64` `libgbm-dev:amd64` `libfontconfig-dev:amd64` `libxrandr-dev:amd64` `libxcursor-dev:amd64`.
 //!   On Ubuntu 24:XX this can be done by adding a foreign architecture `dpkg --add-architecture amd64` with depot
 //!   `http://ports.ubuntu.com/ubuntu-ports`. To avoid errors during `apt update` you'll have to specify the architectures
 //!   of all depots in `/etc/apt/sources.list.d/ubuntu.sources`

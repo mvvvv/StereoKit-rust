@@ -3492,8 +3492,8 @@ impl Input {
         unsafe { input_eyes_tracked() }
     }
 
-    /// The position and orientation of the user’s head! This is the center point between the user’s eyes, NOT the
-    /// center of the user’s head. Forward points the same way the user’s face is facing.
+    /// The position and orientation of the user’s head in world space! This is the center point between the user’s
+    /// eyes, NOT the center of the user’s head. Forward points the same way the user’s face is facing.
     /// <https://stereokit.net/Pages/StereoKit/Input/Head.html>
     ///
     /// see also [`input_head`]

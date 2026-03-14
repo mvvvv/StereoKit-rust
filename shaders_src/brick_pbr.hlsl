@@ -5,33 +5,23 @@
 // as it is insanely expensive and lack of MSAA
 // adapted from https://www.shadertoy.com/view/wt3Sz4
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-//--name                  = the_name_of_brick_pbr
-//--color:color           = 0.45,0.29,0.23,1
-//--line_color:color      = 0.84,0.84,0.84
-//--edge_pos              = 1.5
-//--metallic              = 0
-//--roughness             = 1
-//--tex_trans             = 0,0,0.1,0.1
-//--use_occlusion         = false
-//--size_factors          = 300,-100,50,25
-//--edge_limit            = 0.1,0.9
-//!!shadertoy
-//!!hlsl
-float4  color;
-float3  line_color;
-float   edge_pos;
-float   metallic;
-float   roughness;
-float4  tex_trans;
-bool    use_occlusion;
-int4    size_factors;
-matrix  useless;
-float2  edge_limit;
+
+//--name = the_name_of_brick_pbr
+float4 color         = {0.45, 0.29, 0.23, 1};
+float3 line_color    = {0.84, 0.84, 0.84};
+float  edge_pos      = 1.5;
+float  metallic      = 0;
+float  roughness     = 1;
+float4 tex_trans     = {0, 0, 0.1, 0.1};
+bool   use_occlusion = false;
+int4   size_factors  = {300, -100, 50, 25};
+matrix useless;
+float2 edge_limit    = {0.1, 0.9};
 
 //--metal     = white
-//--occlusion = white
 Texture2D    metal       : register(t0);
 SamplerState metal_s     : register(s0);
+//--occlusion = white
 Texture2D    occlusion   : register(t1);
 SamplerState occlusion_s : register(s1);
 

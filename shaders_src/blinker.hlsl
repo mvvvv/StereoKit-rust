@@ -1,13 +1,11 @@
 #include "stereokit.hlsli"
 
-//--time        = 1
-//--color:color = 1, 0, 0, 1
-//--tex_trans   = 0,0,1,1
-//--diffuse     = white
+//--name = blinker
+float  time      = 1;
+float4 color     = {1, 0, 0, 1};
+float4 tex_trans = {0, 0, 1, 1};
 
-float time;
-float4 color;
-float4 tex_trans;
+//--diffuse = white
 Texture2D    diffuse   : register(t0);
 SamplerState diffuse_s : register(s0);
 
