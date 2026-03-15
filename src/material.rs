@@ -1882,14 +1882,15 @@ impl<'a> ParamInfos<'a> {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::material::{Material, MaterialParam};
-    ///
-    /// let mut material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// 
+    /// # {
+    /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
     /// let mut param_infos = material.get_all_param_info();
     /// let new_factors = vec![302,50,20,10];
     /// param_infos.set_int("size_factors", new_factors.as_slice());
     ///
     /// assert_eq!( param_infos.get_int_vector("size_factors", MaterialParam::Int4).unwrap(), new_factors);
-    /// # sk::Sk::shutdown();
+    /// # } sk::Sk::shutdown();
     /// ```
     pub fn set_int<S: AsRef<str>>(&mut self, name: S, values: &[i32]) -> &mut Self {
         unsafe {
@@ -2302,13 +2303,14 @@ impl<'a> ParamInfos<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::material::{Material, MaterialParam};
     ///
-    /// let mut material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
-    /// let mut param_infos = material.get_all_param_info();
+    /// # {
+    /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let param_infos = material.get_all_param_info();
     /// if let Some(out_value) = param_infos.get_data("size_factors", MaterialParam::Int4) {
     ///     let vec4 = unsafe { std::ptr::read(out_value as *const [i32; 4]).to_vec() };
     ///     assert_eq!( vec4, vec![300,-100,50,25] );
     /// } else { panic!("Failed to size_factors Int4");}
-    /// # sk::Sk::shutdown();
+    /// # } sk::Sk::shutdown();
     /// ```
     pub fn get_data<S: AsRef<str>>(&self, name: S, type_info: MaterialParam) -> Option<*mut c_void> {
         let out_value = CString::new("H").unwrap().into_raw() as *mut c_void;
@@ -2474,11 +2476,10 @@ unsafe extern "C" {
 ///
 /// // Upload to GPU so every shader using this global slot can access it.
 /// buffer.set(&mut globals as *mut _);
-/// # }
+/// # } sk::Sk::shutdown();
 ///
 /// // In your shader, declare a matching cbuffer bound to the slot you
 /// // bind this MaterialBuffer to (see Renderer::set_global_buffer in StereoKit).
-/// # sk::Sk::shutdown();
 /// ```
 pub struct MaterialBuffer<T> {
     _material_buffer: MaterialBufferT,
