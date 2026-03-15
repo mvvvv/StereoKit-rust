@@ -42,11 +42,11 @@ pub fn get_skshaderc(bin_dir: PathBuf, with_wine: bool) -> Result<PathBuf, io::E
     let mut tools_dir = target_root.clone();
     tools_dir.push("tools");
 
-    if !with_wine && cfg!(target_os = "linux") {
-        let mut flat_linux = tools_dir.clone();
-        flat_linux.push("skshaderc");
-        if flat_linux.exists() {
-            return Ok(flat_linux);
+    if !with_wine && (cfg!(target_os = "linux") || cfg!(target_os = "macos")) {
+        let mut flat_unix = tools_dir.clone();
+        flat_unix.push("skshaderc");
+        if flat_unix.exists() {
+            return Ok(flat_unix);
         }
     }
 
@@ -58,7 +58,7 @@ pub fn get_skshaderc(bin_dir: PathBuf, with_wine: bool) -> Result<PathBuf, io::E
         }
     }
 
-    // If not found in flat structure, we try the exe_type structure from sk_gpu
+    // If not found in flat structure, we recall the exe_type structure from sk_gpu to help resolve the problem.
     let target_os = if with_wine {
         "win32"
     } else if cfg!(target_os = "linux") {
@@ -148,6 +148,7 @@ pub fn compile_hlsl(
     println!("Shaders compiled there : {:?}", &shaders_path);
 
     let excluded_extensions = [OsStr::new("hlsli"), OsStr::new("sks"), OsStr::new("txt"), OsStr::new("md")];
+    let mut failed_shaders: Vec<PathBuf> = vec![];
     if let Ok(entries) = shaders_source_path.read_dir() {
         for entry in entries {
             let file = entry?.path();
@@ -167,7 +168,7 @@ pub fn compile_hlsl(
                 for arg in options {
                     cmd.arg(arg);
                 }
-                let output = cmd.arg(file).output().expect("failed to run shader compiler");
+                let output = cmd.arg(&file).output().expect("failed to run shader compiler");
                 let out = String::from_utf8(output.clone().stdout).unwrap_or(format!("{output:#?}"));
                 if !out.is_empty() {
                     println!("{out}")
@@ -176,8 +177,18 @@ pub fn compile_hlsl(
                 if !err.is_empty() {
                     println!("{err}")
                 }
+                if !output.status.success() {
+                    failed_shaders.push(file);
+                }
             }
         }
+    }
+    if !failed_shaders.is_empty() {
+        println!("\x1b[1;31m---Shader compilation failed for {} file(s):", failed_shaders.len());
+        for shader in &failed_shaders {
+            println!("  - {:?}", shader);
+        }
+        print!("\x1b[0m");
     }
     Ok(true)
 }
