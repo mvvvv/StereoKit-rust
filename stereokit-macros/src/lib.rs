@@ -243,6 +243,7 @@ pub fn test_init_sk_event_loop(_input: TokenStream) -> TokenStream {
         sk_settings.mode(sk::AppMode::XR).app_name("cargo test");
         #[cfg(not(feature = "test-xr-mode"))]
         sk_settings.mode(sk::AppMode::Offscreen).app_name("cargo test");
+        sk_settings.standby_mode(sk::StandbyMode::None).disable_desktop_input_window(true);
         let (mut sk, mut event_loop) = sk_settings.init_with_event_loop().unwrap();
 
         let mut filename_scr = "screenshots/default_screenshoot.png";
@@ -280,6 +281,7 @@ pub fn test_init_sk_no_event_loop(_input: TokenStream) -> TokenStream {
         sk_settings.mode(sk::AppMode::XR).app_name("cargo test");
         #[cfg(not(feature = "test-xr-mode"))]
         sk_settings.mode(sk::AppMode::Offscreen).app_name("cargo test");
+        sk_settings.standby_mode(sk::StandbyMode::None).disable_desktop_input_window(true);
         let mut sk = sk_settings.init().unwrap();
 
         let mut filename_scr = "screenshots/default_screenshoot.png";
