@@ -37,6 +37,10 @@
 //! ### On `macOS`:
 //!   - Considering that you have already installed `Rust` with `stable-?????-apple-darwin` toolchain.
 //!   - Get the following tools and dev libraries : `brew install cmake ninja molten-vk vulkan-headers`.
+//!   - To run or test, set `DYLD_LIBRARY_PATH` so the dynamic linker finds MoltenVK:
+//!     * `export DYLD_LIBRARY_PATH=$(brew --prefix molten-vk)/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}`
+//!     * `export VK_ICD_FILENAMES=$(brew --prefix molten-vk)/share/vulkan/icd.d/MoltenVK_icd.json`
+//!
 //!
 //! Installing the stereokit_rust tools with `cargo install -F no-event-loop stereokit-rust` should help you to check
 //! the missing dependencies.

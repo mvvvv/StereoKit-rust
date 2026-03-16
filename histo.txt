@@ -5,6 +5,9 @@
  cargo install cargo-apk
  rustup target add aarch64-linux-android
  rustup target add x86_64-pc-windows-gnu
+ #-MacOS needs this variable to retrieve MoltenVK library
+ export DYLD_LIBRARY_PATH=$(brew --prefix molten-vk)/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}
+ export VK_ICD_FILENAMES=$(brew --prefix molten-vk)/share/vulkan/icd.d/MoltenVK_icd.json
  
 #---- building for pc
 cargo run --features event-loop  --example main_pc  

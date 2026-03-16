@@ -33,6 +33,9 @@ Let us know if you have launched the demos on an architecture not tested here.
 - `git clone --recursive https://github.com/mvvvv/StereoKit-rust/`
 - On Linux get the following tools and dev libraries : git cmake ninja-build clang llvm lld libx11-dev libxfixes-dev libvulkan-dev libfontconfig-dev libxrandr-dev libxcursor-dev.
 - On macOS get the following tools and dev libraries : brew install cmake ninja molten-vk vulkan-headers.
+  To run or test, set `DYLD_LIBRARY_PATH` so the dynamic linker finds MoltenVK:
+  - `export DYLD_LIBRARY_PATH=$(brew --prefix molten-vk)/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}`
+  - `export VK_ICD_FILENAMES=$(brew --prefix molten-vk)/share/vulkan/icd.d/MoltenVK_icd.json`
 - On Windows[^2] get the following tools and dev libraries : "Git", "CMake", "Visual Studio Build Tools 2022(Developpment Desktop C++)" and "DotNet SDK v8+"
 - Install the project's tools from the project directory `cargo install -F event-loop --path .`
 - If you want to launch the demos then:
