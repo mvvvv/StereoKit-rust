@@ -95,7 +95,7 @@ jobs:
     - name: Install Prerequisites
       run: |
         sudo apt-get update
-        sudo apt-get install xvfb clang cmake lld ninja-build libx11-dev libxfixes-dev libvulkan-dev libfontconfig-dev libxkbcommon-x11-0 libxkbcommon0 mesa-vulkan-drivers
+        sudo apt-get install xvfb clang cmake lld ninja-build libx11-dev libxfixes-dev libvulkan-dev libfontconfig-dev libxkbcommon-x11-0 libxkbcommon0 libxrandr-dev libxcursor-dev mesa-vulkan-drivers
 
     - name: Install StereoKit
       run: cargo install -F event-loop --force --path . 
@@ -149,6 +149,7 @@ jobs:
       run: cargo build --verbose --features event-loop --example main_pc
     - name: Run tests event-loop
       run: |
+        export DYLD_LIBRARY_PATH=$(brew --prefix molten-vk)/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}
         export VK_ICD_FILENAMES=$(brew --prefix molten-vk)/share/vulkan/icd.d/MoltenVK_icd.json
         cargo test --verbose --features event-loop -- --test-threads=1
 
@@ -156,6 +157,7 @@ jobs:
       run: cargo build --verbose --features no-event-loop --example manual
     - name: Run tests no-event-loop
       run: |
+        export DYLD_LIBRARY_PATH=$(brew --prefix molten-vk)/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}
         export VK_ICD_FILENAMES=$(brew --prefix molten-vk)/share/vulkan/icd.d/MoltenVK_icd.json
         cargo test --verbose --features no-event-loop -- --test-threads=1
 
