@@ -148,11 +148,15 @@ jobs:
     - name: Build event-loop
       run: cargo build --verbose --features event-loop --example main_pc
     - name: Run tests event-loop
-      run: cargo test --verbose --features event-loop -- --test-threads=1
+      run: |
+        export VK_ICD_FILENAMES=$(brew --prefix molten-vk)/share/vulkan/icd.d/MoltenVK_icd.json
+        cargo test --verbose --features event-loop -- --test-threads=1
 
     - name: Build no-event-loop
       run: cargo build --verbose --features no-event-loop --example manual
     - name: Run tests no-event-loop
-      run: cargo test --verbose --features no-event-loop -- --test-threads=1
+      run: |
+        export VK_ICD_FILENAMES=$(brew --prefix molten-vk)/share/vulkan/icd.d/MoltenVK_icd.json
+        cargo test --verbose --features no-event-loop -- --test-threads=1
 
 
