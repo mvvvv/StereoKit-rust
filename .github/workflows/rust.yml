@@ -38,7 +38,7 @@ jobs:
     runs-on: windows-latest
     if: ${{ inputs.onWindows }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
         ref: ${{ inputs.branch || github.ref }}
         submodules: 'recursive'
@@ -68,7 +68,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ inputs.onUbuntu }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
         ref: ${{ inputs.branch || github.ref }}
         submodules: 'recursive'
@@ -105,7 +105,7 @@ jobs:
     runs-on: macos-latest
     if: ${{ inputs.onMacOS }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
         ref: ${{ inputs.branch || github.ref }}
         submodules: 'recursive'
