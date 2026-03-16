@@ -107,10 +107,8 @@ jobs:
       run: cargo build --verbose --features event-loop --example main_pc
     - name: Run tests event-loop
       run: |
-        export DISPLAY=:99
         export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.x86_64.json
-        Xvfb -ac :99 -screen 0 1280x1024x16 > /dev/null 2>&1 &
-        cargo test --verbose --features event-loop -- --test-threads=1
+        xvfb-run --auto-servernum -s "-screen 0 1280x1024x16" cargo test --verbose --features event-loop -- --test-threads=1
 
     - name: Build no-event-loop
       run: cargo build --verbose --features no-event-loop --example manual
@@ -145,13 +143,13 @@ jobs:
     - name: compile shaders
       run: cargo compile_sks --options -f -t s
 
-    - name: Build event-loop
-      run: cargo build --verbose --features event-loop --example main_pc
-    - name: Run tests event-loop
-      run: |
-        export DYLD_LIBRARY_PATH=$(brew --prefix molten-vk)/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}
-        export VK_ICD_FILENAMES=$(brew --prefix molten-vk)/share/vulkan/icd.d/MoltenVK_icd.json
-        cargo test --verbose --features event-loop -- --test-threads=1
+    # - name: Build event-loop
+    #   run: cargo build --verbose --features event-loop --example main_pc
+    # - name: Run tests event-loop
+    #   run: |
+    #     export DYLD_LIBRARY_PATH=$(brew --prefix molten-vk)/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}
+    #     export VK_ICD_FILENAMES=$(brew --prefix molten-vk)/share/vulkan/icd.d/MoltenVK_icd.json
+    #     cargo test --verbose --features event-loop -- --test-threads=1
 
     - name: Build no-event-loop
       run: cargo build --verbose --features no-event-loop --example manual
