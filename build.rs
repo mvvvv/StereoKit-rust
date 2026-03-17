@@ -138,6 +138,7 @@ fn main() {
             cargo_link!("windowsapp");
             cargo_link!("user32");
             cargo_link!("shell32");
+            cargo_link!("gdi32");
             if cfg!(feature = "profile") {
                 cargo_link!("TracyClient");
             }
