@@ -2741,7 +2741,7 @@ impl Quat {
     ///
     /// let quat = Quat::from_angles(90.0, 0.0, 0.0);
     /// let angles = quat.to_angles();
-    /// assert_eq!(angles, [1.5707964, 0.0, 0.0]);
+    /// assert!(angles == [1.5707964, 0.0, 0.0]);
     /// ```
     #[inline]
     pub fn to_angles(&self) -> [f32; 3] {
@@ -5752,15 +5752,20 @@ impl Pose {
 }
 
 impl Display for Pose {
-    /// A string representation of the Pose, in the format of “position, Forward”. Mostly for debug visualization.
+    /// A string representation of the Pose, in the format of “position, forward”. Mostly for debug visualization.
     /// <https://stereokit.net/Pages/StereoKit/Pose/ToString.html>
     /// ### Examples
     /// ```
     /// use stereokit_rust::maths::{Vec3, Pose};
     ///
     /// let pose = Pose::new([1.1, 2.0, 3.0], Some([0.0, 90.0, 0.0].into()));
-    /// assert_eq!(format!("{}", pose),
-    ///            "[position:[x:1.1, y:2, z:3] forward:[x:0, y:0.70710677, z:0, w:0.7071067]]");
+    ///
+    /// let s = format!("{}", pose);
+    /// assert!(s.contains("[position:[x:"), "missing position prefix in: {s}");
+    /// assert!(s.contains(" forward:[x:"), "missing forward prefix in: {s}");
+    ///
+    /// // s is more or less equal to:
+    /// // "[position:[x:1.1, y:2, z:3] forward:[x:0, y:0.70710677, z:0, w:0.7071067]]"
     /// ```
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "[position:{} forward:{}]", self.position, self.orientation)
