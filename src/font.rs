@@ -22,11 +22,15 @@ use std::{
 ///     // TODO: Doesn't work on Windows Github Actions.
 ///     // return;
 ///     Font::from_file("C:\\Windows\\Fonts\\seguiemj.ttf").unwrap_or_default()
+/// } else if cfg!(target_os = "macos") {
+///     Font::from_file("/System/Library/Fonts/Apple Color Emoji.ttc").unwrap_or_default()
 /// } else {
 ///     Font::from_file("fonts/Noto_Emoji/NotoEmoji-VariableFont_wght.ttf").unwrap_or_default()
 /// };
 /// let text_font = if cfg!(windows) {
 ///     Font::from_file("C:\\Windows\\Fonts\\Arial.ttf").unwrap_or_default()
+/// } else if cfg!(target_os = "macos") {
+///     Font::from_file("/System/Library/Fonts/Helvetica.ttc").unwrap_or_default()
 /// } else {
 ///     Font::from_file("fonts/Inter/Inter-VariableFont_opsz_wght.ttf").unwrap_or_default()
 /// };
@@ -120,6 +124,8 @@ impl Font {
     ///
     /// let text_font = if cfg!(windows) {
     ///     Font::from_file("C:\\Windows\\Fonts\\Arial.ttf").unwrap_or_default()
+    /// } else if cfg!(target_os = "macos") {
+    ///     Font::from_file("/System/Library/Fonts/Helvetica.ttc").unwrap_or_default()
     /// } else {
     ///     Font::from_file("fonts/Inter/Inter-VariableFont_opsz_wght.ttf").unwrap_or_default()
     /// };
@@ -159,9 +165,12 @@ impl Font {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths:: Matrix, font::Font, system::Text, util::named_colors};
     ///
-    /// let font_files = if cfg!(windows) {
+    /// let font_files: [&str; 2] = if cfg!(windows) {
     ///     ["C:\\Windows\\Fonts\\Arial.ttf",
     ///      "C:\\Windows\\Fonts\\Calibri.ttf"]
+    /// } else if cfg!(target_os = "macos") {
+    ///     ["/System/Library/Fonts/Helvetica.ttc",
+    ///      "/System/Library/Fonts/Geneva.ttf"]
     /// } else {
     ///     ["/usr/share/fonts/truetype/freefont/FreeSans.ttf",
     ///      "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"]
@@ -214,6 +223,8 @@ impl Font {
     ///
     /// let font_family = if cfg!(windows) {
     ///     "Arial, Helvetica, Verdana, Geneva, Tahoma, sans-serif;"
+    /// } else if cfg!(target_os = "macos") {
+    ///     "Helvetica, Geneva, Arial, sans-serif;"
     /// } else {
     ///     "FreeSans, Liberation Sans, Nimbus Sans L, DejaVu Sans, Bitstream Vera Sans, sans-serif;"
     /// };
@@ -248,9 +259,12 @@ impl Font {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths:: Matrix, font::Font, system::Text, util::named_colors};
     ///
-    /// let font_files = if cfg!(windows) {
+    /// let font_files: [&str; 2] = if cfg!(windows) {
     ///     ["C:\\Windows\\Fonts\\Arial.ttf",
     ///      "C:\\Windows\\Fonts\\Calibri.ttf"]
+    /// } else if cfg!(target_os = "macos") {
+    ///     ["/System/Library/Fonts/Helvetica.ttc",
+    ///      "/System/Library/Fonts/Geneva.ttf"]
     /// } else {
     ///     ["/usr/share/fonts/truetype/freefont/FreeSans.ttf",
     ///      "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"]
@@ -284,9 +298,12 @@ impl Font {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths:: Matrix, font::Font, system::Text, util::named_colors};
     ///
-    /// let font_files = if cfg!(windows) {
+    /// let font_files: [&str; 2] = if cfg!(windows) {
     ///     ["C:\\Windows\\Fonts\\Arial.ttf",
     ///      "C:\\Windows\\Fonts\\Calibri.ttf"]
+    /// } else if cfg!(target_os = "macos") {
+    ///     ["/System/Library/Fonts/Helvetica.ttc",
+    ///      "/System/Library/Fonts/Geneva.ttf"]
     /// } else {
     ///     ["/usr/share/fonts/truetype/freefont/FreeSans.ttf",
     ///      "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"]
@@ -315,9 +332,12 @@ impl Font {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths:: Matrix, font::Font, system::Text, util::named_colors};
     ///
-    /// let font_files = if cfg!(windows) {
+    /// let font_files: [&str; 2] = if cfg!(windows) {
     ///     ["C:\\Windows\\Fonts\\Arial.ttf",
     ///      "C:\\Windows\\Fonts\\Calibri.ttf"]
+    /// } else if cfg!(target_os = "macos") {
+    ///     ["/System/Library/Fonts/Helvetica.ttc",
+    ///      "/System/Library/Fonts/Geneva.ttf"]
     /// } else {
     ///     ["/usr/share/fonts/truetype/freefont/FreeSans.ttf",
     ///      "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"]

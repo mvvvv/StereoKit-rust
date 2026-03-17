@@ -66,7 +66,7 @@ jobs:
       run: cargo build --verbose --features no-event-loop --example manual
     - name: Run tests no-event-loop
       timeout-minutes: 15
-      run: cargo test --verbose --features no-event-loop
+      run: cargo test --features no-event-loop -- --nocapture
 
   build-linux:
     runs-on: ubuntu-latest
@@ -144,6 +144,6 @@ jobs:
       run: |
         export DYLD_LIBRARY_PATH=$(brew --prefix molten-vk)/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}
         export MVK_CONFIG_LOG_LEVEL=0
-        cargo test --verbose --features no-event-loop -- --nocapture
+        cargo test --features no-event-loop -- --nocapture
 
 
