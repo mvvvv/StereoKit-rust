@@ -15,6 +15,7 @@ float  roughness     = 1;
 float4 tex_trans     = {0, 0, 0.1, 0.1};
 bool   use_occlusion = false;
 int4   size_factors  = {300, -100, 50, 25};
+uint4   u_size_factors  = {300, 100, 50, 25};
 matrix useless;
 float2 edge_limit    = {0.1, 0.9};
 

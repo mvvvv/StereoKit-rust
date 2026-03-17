@@ -1513,8 +1513,8 @@ impl Sk {
     ///     // Quit the app after a single step.
     /// );
     ///
-    /// // 3 steps later we are out
-    /// assert_eq!(iter, 3);
+    /// // 2 steps later we are out
+    /// assert_eq!(iter, 2);
     /// # sk::Sk::shutdown();
     /// ```
     pub fn execute_on_main<F: FnMut() + 'static>(&mut self, action: F) {
@@ -1553,8 +1553,8 @@ impl Sk {
     ///     }
     /// );
     ///
-    /// // 6 steps later we are out
-    /// assert_eq!(iter, number_of_steps + 3);
+    /// // 5 steps later we are out
+    /// assert_eq!(iter, number_of_steps + 2);
     /// # sk::Sk::shutdown();
     /// ```
     pub fn send_event(&mut self, action: StepperAction) {
@@ -1590,8 +1590,8 @@ impl Sk {
     ///     }
     /// );
     ///
-    /// // 6 steps later we are out
-    /// assert_eq!(iter, number_of_steps + 3);
+    /// // 5 steps later we are out
+    /// assert_eq!(iter, number_of_steps + 2);
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_steppers_count(&self) -> usize {

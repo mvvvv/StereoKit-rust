@@ -56,7 +56,6 @@ use std::{
 ///            Rect::new(0.0, 0.0, 1.0, 1.0),
 ///            None, None,
 ///        );
-///
 ///     screen.draw(token, &render_mat, Matrix::IDENTITY, None, None);
 /// );
 /// # sk::Sk::shutdown();
@@ -318,17 +317,18 @@ impl RenderList {
     /// let mut render_mat = Material::unlit().copy();
     /// render_mat.diffuse_tex(&render_tex);
     /// let screen = Mesh::screen_quad();
-    /// render_list.draw_now( &render_tex,
-    ///     transform_cam,
-    ///     perspective,
-    ///     Some(Color128::new(0.99, 0.3, 0.2, 0.5)),
-    ///     Some(RenderClear::Color),
-    ///     Rect::new(0.0, 0.0, 1.0, 1.0),
-    ///     Some(RenderLayer::AllThirdPerson), None,
-    /// );
-    ///
     /// filename_scr = "screenshots/render_list_add_mesh.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     if iter == 0 {
+    ///         render_list.draw_now( &render_tex,
+    ///             transform_cam,
+    ///             perspective,
+    ///             Some(Color128::new(0.99, 0.3, 0.2, 0.5)),
+    ///             Some(RenderClear::Color),
+    ///             Rect::new(0.0, 0.0, 1.0, 1.0),
+    ///             Some(RenderLayer::AllThirdPerson), None,
+    ///         );
+    ///     }
     ///     screen.draw(token, &render_mat, Matrix::IDENTITY, None, None);
     /// );
     /// # sk::Sk::shutdown();
@@ -395,17 +395,19 @@ impl RenderList {
     /// let mut render_mat = Material::unlit().copy();
     /// render_mat.diffuse_tex(&render_tex);
     /// let screen = Mesh::screen_quad();
-    /// render_list.draw_now( &render_tex,
-    ///     transform_cam,
-    ///     perspective,
-    ///     Some(Color128::new(0.0, 0.3, 0.2, 0.5)),
-    ///     Some(RenderClear::Color),
-    ///     Rect::new(0.0, 0.0, 1.0, 1.0),
-    ///     Some(RenderLayer::AllFirstPerson), None,
-    /// );
     ///
     /// filename_scr = "screenshots/render_list_add_model.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     if iter == 0 {
+    ///         render_list.draw_now( &render_tex,
+    ///             transform_cam,
+    ///             perspective,
+    ///             Some(Color128::new(0.0, 0.3, 0.2, 0.5)),
+    ///             Some(RenderClear::Color),
+    ///             Rect::new(0.0, 0.0, 1.0, 1.0),
+    ///             Some(RenderLayer::AllFirstPerson), None,
+    ///         );    
+    ///     }
     ///     screen.draw(token, &render_mat, Matrix::IDENTITY, None, None);
     /// );
     /// # sk::Sk::shutdown();

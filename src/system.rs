@@ -4737,10 +4737,12 @@ impl Renderer {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{system::{Renderer, Assets}, tex::{Tex, TexType}};
+    /// use stereokit_rust::{system::{Renderer, Assets}, tex::{SHCubemap, TexType}};
     ///
-    /// let sky_tex = Tex::from_file("hdri/sky_dawn.jpeg", true, None)
-    ///                        .expect("sky_tex should be created");
+    /// let sky_cubemap = SHCubemap::from_cubemap("hdri/sky_dawn.hdr", true, 9999)
+    ///                        .expect("sky_cubemap should be created");
+    ///
+    /// let sky_tex = sky_cubemap.get().1;
     ///
     /// Assets::block_for_priority(i32::MAX);
     ///

@@ -1654,7 +1654,7 @@ impl Tex {
     ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
     ///
     /// let mut color_dots = [0.13f32; 16 * 16];
-    /// let mut tex = Tex::new(TexType::Image, TexFormat::R32, None);
+    /// let mut tex = Tex::new(TexType::Image, TexFormat::R32f, None);
     ///
     /// tex.set_colors_r32(16, 16, &color_dots);
     ///

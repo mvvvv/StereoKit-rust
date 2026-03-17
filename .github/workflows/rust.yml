@@ -43,7 +43,7 @@ jobs:
         ref: ${{ inputs.branch || github.ref }}
         submodules: 'recursive'
 
-    - uses: lukka/get-cmake@v3.26.3
+    - uses: lukka/get-cmake@latest
 
     - name: Get Cache
       uses: swatinem/rust-cache@v2

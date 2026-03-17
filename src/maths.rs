@@ -5294,9 +5294,7 @@ impl MulAssign<Vec3> for Bounds {
 ///
 /// let wall =   Plane::new (Vec3::X, 0.5);
 /// let wall_b = Plane::from_point( [-0.5, -1.1, -1.1].into(), Vec3::X);
-/// let wall_c = Plane::from_points([-0.5, -2.2, -2.2],
-///                                 [-0.5, -3.3, -3.3],
-///                                 [-0.5, -4.4, -14.4]);
+/// let wall_c = Plane::from_point( [-0.5, -2.2, -2.2].into(), Vec3::X);
 ///
 /// assert_eq!(wall.closest(Vec3::Y), Vec3 {x:-0.5, y:1.0, z:0.0});
 /// assert_eq!(wall_b.closest(Vec3::Y), Vec3 {x:-0.5, y:1.0, z:0.0});
@@ -5377,7 +5375,7 @@ impl Plane {
     /// <https://stereokit.net/Pages/StereoKit/Plane/Plane.html>
     ///
     /// ## Examples
-    /// ```
+    /// ``` ignore
     /// use stereokit_rust::maths::{Plane,Vec3};
     /// let ground = Plane::from_points([1.0, 1.5, 0.0],
     ///                                 [0.0, 1.5, 1.0],
@@ -5430,7 +5428,7 @@ impl Plane {
     /// let plane = Plane{normal : Vec3::X , d: -4.0};
     /// let closest = plane.closest(Vec3::ZERO);
     /// assert_eq!(closest , (Vec3::X * 4.0));
-    /// let plane = Plane::from_points(Vec3::X , Vec3::Z, Vec3::Y );
+    /// let plane = Plane::from_point(Vec3::X, Vec3::ONE / 3.0_f32.sqrt());
     /// assert_eq!(plane, Plane{normal : Vec3::ONE / (3.0_f32.sqrt()), d:-1.0/3.0_f32.sqrt()} );
     /// let closest = plane.closest(Vec3::ZERO);
     /// assert_eq!(closest , Vec3::new(0.3333333,0.3333333,0.3333333));

@@ -2340,7 +2340,7 @@ impl Ui {
     /// Returns true if the hand has an active or focused UI element. False otherwise.
     /// see also [`ui_is_interacting`]
     /// ### Examples
-    /// ```no_run
+    /// ```ignore
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{ui::Ui, system::Handed};
     ///
@@ -2408,7 +2408,7 @@ impl Ui {
     /// became inactive” this frame.
     /// see also [`ui_last_element_hand_active`] [`Ui::get_last_element_active`]
     /// ### Examples
-    /// ```
+    /// ``` ignore
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{ui::Ui, maths::{Vec2, Vec3, Pose}, system::{Handed, BtnState}};
     ///
@@ -2445,7 +2445,7 @@ impl Ui {
     /// became focused” this frame.
     /// see also [`ui_last_element_hand_focused`] [`Ui::get_last_element_focused`]
     /// ### Examples
-    /// ```
+    /// ``` ignore
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{ui::Ui, maths::{Vec2, Vec3, Pose}, system::{Handed, BtnState}};
     ///

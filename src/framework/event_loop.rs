@@ -219,7 +219,9 @@ impl<'a> SkClosures<'a> {
         while let Some(mut action) = self.sk.actions.pop_front() {
             action();
         }
-        (self.on_step)(&mut self.sk, &self.token);
+        if self.sleeping != SleepPhase::Stopping {
+            (self.on_step)(&mut self.sk, &self.token);
+        }
 
         self.token.event_report.clear();
     }

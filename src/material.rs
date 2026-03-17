@@ -1882,14 +1882,15 @@ impl<'a> ParamInfos<'a> {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::material::{Material, MaterialParam};
-    /// 
+    ///
     /// # {
     /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
     /// let mut param_infos = material.get_all_param_info();
     /// let new_factors = vec![302,50,20,10];
     /// param_infos.set_int("size_factors", new_factors.as_slice());
     ///
-    /// assert_eq!( param_infos.get_int_vector("size_factors", MaterialParam::Int4).unwrap(), new_factors);
+    /// assert_eq!( param_infos.get_int_vector("size_factors",
+    ///             MaterialParam::Int4).unwrap(), new_factors);
     /// # } sk::Sk::shutdown();
     /// ```
     pub fn set_int<S: AsRef<str>>(&mut self, name: S, values: &[i32]) -> &mut Self {
@@ -1931,12 +1932,15 @@ impl<'a> ParamInfos<'a> {
     ///
     /// let mut material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
     /// let mut param_infos = material.get_all_param_info();
-    /// assert_eq!( param_infos.get_uint_vector("size_factors", MaterialParam::UInt4).unwrap(), vec![300, 4294967196, 50, 25]);
+    /// assert_eq!( param_infos.get_uint_vector("u_size_factors",
+    ///             MaterialParam::UInt4).unwrap(), vec![300, 100, 50, 25]);
     /// let new_factors = vec![303,502,201,100];
-    /// param_infos.set_uint("size_factors", new_factors.as_slice());
+    /// param_infos.set_uint("u_size_factors", new_factors.as_slice());
     ///
-    /// assert!( param_infos.has_param("size_factors", MaterialParam::UInt4),"size_factors should be here");
-    /// assert_eq!( param_infos.get_uint_vector("size_factors", MaterialParam::UInt4).unwrap(), new_factors);
+    /// assert!( param_infos.has_param("u_size_factors",
+    ///          MaterialParam::UInt4),"size_factors should be here");
+    /// assert_eq!( param_infos.get_uint_vector("u_size_factors",
+    ///             MaterialParam::UInt4).unwrap(), new_factors);
     /// # sk::Sk::shutdown();
     /// ```
     pub fn set_uint<S: AsRef<str>>(&mut self, name: S, values: &[u32]) -> &mut Self {

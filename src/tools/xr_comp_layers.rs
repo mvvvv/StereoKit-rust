@@ -26,7 +26,6 @@ use openxr_sys::{
 use std::ptr::null_mut;
 
 #[derive(Debug)]
-
 /// `XrCompLayers` provides low-level OpenXR composition layer functionality, while `SwapchainSk`
 /// offers a high-level wrapper for creating and managing OpenXR swapchains with StereoKit integration.
 ///
@@ -408,21 +407,23 @@ impl XrCompLayers {
 ///         None
 ///     );
 ///    
-///     // Render to swapchain
-///     if let Ok(_) = swapchain.acquire_image(None) {
-///         if let Some(render_target) = swapchain.get_render_target() {
-///             render_list.draw_now(
-///                 render_target,
-///                 Matrix::look_at(Vec3::angle_xy(Time::get_totalf() * 90.0, 0.0), Vec3::ZERO, None),
-///                 Matrix::orthographic(1.0, 1.0, 0.1, 10.0),
-///                 None,
-///                 Some(RenderClear::All),
-///                 Rect::new(0.0, 0.0, 1.0, 1.0),
-///                 None, None,
-///             );
+///     test_steps!( // !!!! Get a proper main loop !!!!
+///         // Render to swapchain
+///         if let Ok(_) = swapchain.acquire_image(None) {
+///             if let Some(render_target) = swapchain.get_render_target() {
+///                 render_list.draw_now(
+///                     render_target,
+///                     Matrix::look_at(Vec3::angle_xy(Time::get_totalf() * 90.0, 0.0), Vec3::ZERO, None),
+///                     Matrix::orthographic(1.0, 1.0, 0.1, 10.0),
+///                     None,
+///                     Some(RenderClear::All),
+///                     Rect::new(0.0, 0.0, 1.0, 1.0),
+///                     None, None,
+///                 );
+///             }
+///             swapchain.release_image().expect("Failed to release image");
 ///         }
-///         swapchain.release_image().expect("Failed to release image");
-///     }
+///     );
 ///    
 ///     // Clean up
 ///     swapchain.destroy();
