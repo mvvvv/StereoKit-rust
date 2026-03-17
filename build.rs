@@ -161,6 +161,7 @@ fn main() {
                     // Order matters: libs that depend on others should be listed first
                     cargo_link!("static=StereoKitC");
                     cargo_link!("static=sk_renderer");
+                    cargo_link!("static=sk_app");
                     if cfg!(debug_assertions) {
                         // openxr-sys/linked wants libopenxr_loader so it asks for -Wl -lopenxr_loader in final ld
                         cargo_link!("openxr_loaderd");
@@ -216,11 +217,7 @@ fn main() {
                     dst.display(),
                     profile_upper
                 );
-                println!(
-                    "cargo:rustc-link-search=native={}/build/_deps/sk_app-build/{}",
-                    dst.display(),
-                    profile_upper
-                );
+                println!("cargo:rustc-link-search=native={}/build/_deps/sk_app-build/{}", dst.display(), profile_upper);
                 println!("cargo:rustc-link-search=native={}/lib", dst.display());
 
                 // Link sk_renderer and sk_app libraries

@@ -48,6 +48,10 @@ jobs:
     - name: Get Cache
       uses: swatinem/rust-cache@v2
 
+    - name: Install llvmpipe
+      run: |
+        winget install --accept-source-agreements --accept-package-agreements Microsoft.Mesa3D
+
     - name: Install StereoKit
       run: cargo install -F event-loop --force --path . 
 
@@ -79,7 +83,7 @@ jobs:
     - name: Install Prerequisites
       run: |
         sudo apt-get update
-        sudo apt-get install xvfb clang cmake lld ninja-build libx11-dev libxfixes-dev libvulkan-dev libfontconfig-dev libxkbcommon-x11-0 libxkbcommon0 libxrandr-dev libxcursor-dev libwayland-dev wayland-protocols libxkbcommon-dev mesa-vulkan-drivers libx11-xcb1 libxcb-dri3-0
+        sudo apt-get install xvfb clang cmake lld ninja-build libx11-dev libxfixes-dev libvulkan-dev libfontconfig-dev libxkbcommon-x11-0 libxkbcommon0 libxrandr-dev libxcursor-dev libwayland-dev wayland-protocols libxkbcommon-dev mesa-vulkan-drivers mesa-utils llvm libx11-xcb1 libxcb-dri3-0
 
     - name: Install StereoKit
       run: cargo install -F event-loop --force --path . 
