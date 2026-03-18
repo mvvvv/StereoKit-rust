@@ -6405,6 +6405,8 @@ impl Ray {
     /// assert_eq!(contact_model_ray,
     ///            Ray { position:  Vec3 { x: -0.3688636, y: 1.2613544, z: -1.3526915 },
     ///                  direction: Vec3 { x: -0.4004621, y: -0.016381653, z: 0.9161662 } });
+    /// # sk::Sk::shutdown();
+    /// ```
     #[inline]
     #[allow(clippy::not_unsafe_ptr_arg_deref)]
     pub fn intersect_model_to_ptr(&self, model: &Model, cull: Option<Cull>, out_model_space_at: *mut Ray) -> bool {

@@ -886,6 +886,7 @@ impl Model {
     /// assert_eq!(contact_model_ray,
     ///     Ray { position:  Vec3 {  x: -0.24654332, y: -0.24928647, z: -0.037466552 },
     ///           direction: Vec3 {  x:  0.25881907, y:  0.0,        z:  0.9659258   } });
+    /// # sk::Sk::shutdown();
     /// ```
     #[inline]
     #[allow(clippy::not_unsafe_ptr_arg_deref)]

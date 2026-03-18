@@ -1251,6 +1251,7 @@ impl Mesh {
     /// assert_eq!(transform.transform_ray(contact_cube_ray),
     ///         Ray { position:  Vec3 { x: -0.39531866, y: 0.26354572, z: 0.2829433 },
     ///               direction: Vec3 { x: -0.77243483, y: -0.2620026, z: 0.57853174 } });
+    /// # sk::Sk::shutdown();
     /// ```
     #[inline]
     #[allow(clippy::not_unsafe_ptr_arg_deref)]
