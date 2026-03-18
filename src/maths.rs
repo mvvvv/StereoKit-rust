@@ -3523,6 +3523,8 @@ impl Matrix {
     ///     mesh.draw(token, &material, transform, None, None);
     ///     assert_eq!(transform, Matrix::r(rotation));
     /// );
+    /// # sk::Sk::shutdown();
+    /// ```
     #[inline]
     pub fn update_r(&mut self, rotation: &Quat) {
         unsafe { matrix_trs_out(self, &Vec3::ZERO, rotation, &Vec3::ONE) }
@@ -3574,6 +3576,7 @@ impl Matrix {
     ///     mesh.draw(token, &material, transform, None, None);
     ///     assert_eq!(transform, Matrix::s(scale));
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     #[inline]
     pub fn update_s(&mut self, scale: &Vec3) {
@@ -3626,6 +3629,7 @@ impl Matrix {
     ///     mesh.draw(token, &material, transform, None, None);
     ///     assert_eq!(transform, Matrix::t(position));
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     #[inline]
     pub fn update_t(&mut self, translation: &Vec3) {
@@ -3696,6 +3700,8 @@ impl Matrix {
     ///     mesh.draw(token, &material, transform, None, None);
     ///     assert_eq!(transform, Matrix::t_r(position, rotation));
     /// );
+    /// # sk::Sk::shutdown();
+    /// ```
     #[inline]
     pub fn update_t_r(&mut self, translation: &Vec3, rotation: &Quat) {
         unsafe { matrix_trs_out(self, translation, rotation, &Vec3::ONE) }
@@ -3765,6 +3771,7 @@ impl Matrix {
     ///     mesh.draw(token, &material, transform, None, None);
     ///     assert_eq!(transform, Matrix::t_s(position, scale));
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     #[inline]
     pub fn update_t_s(&mut self, translation: &Vec3, scale: &Vec3) {
@@ -3841,6 +3848,7 @@ impl Matrix {
     ///     mesh.draw(token, &material, transform, None, None);
     ///     assert_eq!(transform, Matrix::t_r_s(position, rotation, scale));
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     #[inline]
     pub fn update_t_r_s(&mut self, translation: &Vec3, rotation: &Quat, scale: &Vec3) {
@@ -5524,8 +5532,8 @@ impl Display for Plane {
 ///     Ui::text("My Text", None, None, None, Some(0.14), None, None);
 ///     Ui::window_end();
 /// );
+/// # sk::Sk::shutdown();
 /// ```
-///
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/pose.jpeg" alt="screenshot" width="200">
 #[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -6310,6 +6318,7 @@ impl Ray {
     /// assert_eq!(transform.transform_ray(contact_cube_ray),
     ///         Ray { position:  Vec3 { x: -0.39531866, y: 0.26354572, z: 0.2829433 },
     ///               direction: Vec3 { x: -0.77243483, y: -0.2620026, z: 0.57853174 } });
+    /// # sk::Sk::shutdown();
     /// ```
     #[inline]
     #[allow(clippy::not_unsafe_ptr_arg_deref)]
