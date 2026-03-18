@@ -986,14 +986,30 @@ impl Material {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{util::{named_colors,Color32},material::Material};
+    /// use stereokit_rust::{maths::{Vec3, Matrix, Quat}, util::{named_colors,Color32},
+    ///                      mesh::Mesh, material::Material};
+    ///
+    /// // Create Meshes
+    /// let cube = Mesh::generate_cube(Vec3::ONE * 0.8, None);
+    /// let sphere = Mesh::generate_sphere(1.0, None);
     ///
     /// let mut material_cube = Material::pbr().copy();
     /// assert_eq!(material_cube.get_wireframe(), false);
-    /// material_cube.wireframe(true).color_tint(named_colors::CYAN);
+    /// material_cube.wireframe(true).color_tint(named_colors::RED);
     /// assert_eq!(material_cube.get_wireframe(), true);
+    ///
+    /// let mut material_sphere = Material::pbr().copy();
+    /// material_sphere.wireframe(true).color_tint(named_colors::GREEN);
+    /// let cube_transform = Matrix::r([40.0, 50.0, 20.0]);
+    ///
+    /// filename_scr = "screenshots/wireframe.jpeg";
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     cube.draw(token, &material_cube, cube_transform, None, None);
+    ///     sphere.draw(token, &material_sphere, Matrix::IDENTITY, None, None);
+    /// );
     /// # sk::Sk::shutdown();
     /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/wireframe.jpeg" alt="screenshot" width="200">
     pub fn wireframe(&mut self, wireframe: bool) -> &mut Self {
         unsafe { material_set_wireframe(self.0.as_ptr(), wireframe as Bool32T) };
         self
@@ -2139,7 +2155,7 @@ impl<'a> ParamInfos<'a> {
     }
 
     /// Helper to get the value of a shader parameter with the given name and type. If no parameter is found, None will be
-    /// returned. 
+    /// returned.
     fn get_data_impl(
         &self,
         type_info: MaterialParam,
