@@ -91,12 +91,14 @@ pub struct Vec2 {
     pub y: f32,
 }
 
+#[cfg(feature = "with_glam")]
 impl From<glam::Vec2> for Vec2 {
     fn from(val: glam::Vec2) -> Self {
         Vec2 { x: val.x, y: val.y }
     }
 }
 
+#[cfg(feature = "with_glam")]
 impl From<Vec2> for glam::Vec2 {
     fn from(val: Vec2) -> Self {
         Self::new(val.x, val.y)
@@ -908,12 +910,14 @@ pub struct Vec3 {
     pub z: f32,
 }
 
+#[cfg(feature = "with_glam")]
 impl From<glam::Vec3> for Vec3 {
     fn from(val: glam::Vec3) -> Self {
         Vec3 { x: val.x, y: val.y, z: val.z }
     }
 }
 
+#[cfg(feature = "with_glam")]
 impl From<Vec3> for glam::Vec3 {
     fn from(val: Vec3) -> Self {
         Self::new(val.x, val.y, val.z)
@@ -1888,6 +1892,7 @@ pub struct Vec4 {
     pub z: f32,
     pub w: f32,
 }
+#[cfg(feature = "with_glam")]
 impl From<glam::Vec4> for Vec4 {
     fn from(value: glam::Vec4) -> Self {
         Self { x: value.x, y: value.y, z: value.z, w: value.w }
@@ -1899,6 +1904,7 @@ impl From<[f32; 4]> for Vec4 {
     }
 }
 
+#[cfg(feature = "with_glam")]
 impl From<Vec4> for glam::Vec4 {
     fn from(value: Vec4) -> Self {
         Self::new(value.x, value.y, value.z, value.w)
@@ -2505,21 +2511,25 @@ pub struct Quat {
     pub z: f32,
     pub w: f32,
 }
+#[cfg(feature = "with_glam")]
 impl From<glam::Quat> for Quat {
     fn from(val: glam::Quat) -> Self {
         Quat { x: val.x, y: val.y, z: val.z, w: val.w }
     }
 }
+#[cfg(feature = "with_glam")]
 impl From<Quat> for glam::Quat {
     fn from(val: Quat) -> Self {
         Self::from_xyzw(val.x, val.y, val.z, val.w)
     }
 }
+#[cfg(feature = "with_glam")]
 impl From<glam::Vec4> for Quat {
     fn from(val: glam::Vec4) -> Self {
         Quat { x: val.x, y: val.y, z: val.z, w: val.w }
     }
 }
+#[cfg(feature = "with_glam")]
 impl From<Quat> for glam::Vec4 {
     fn from(val: Quat) -> Self {
         Self::new(val.x, val.y, val.z, val.w)
@@ -3182,6 +3192,7 @@ pub union Matrix {
     pub m: [f32; 16usize],
 }
 
+#[cfg(feature = "with_glam")]
 impl From<glam::Mat4> for Matrix {
     fn from(m: glam::Mat4) -> Self {
         Matrix { row: [m.x_axis.into(), m.y_axis.into(), m.z_axis.into(), m.w_axis.into()] }

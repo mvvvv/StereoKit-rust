@@ -1,9 +1,6 @@
-use glam::{Mat4, Quat, Vec3};
-use std::f32::consts::PI;
-use std::ops::Mul;
 use stereokit_rust::{
     material::{Cull, Material},
-    maths::{Matrix, Vec4},
+    maths::{Matrix, Quat, Vec3, Vec4},
     mesh::Mesh,
     model::Model,
     prelude::*,
@@ -193,75 +190,18 @@ impl Default for Tex1 {
         let panels = Model::new();
         let mut nodes = panels.get_nodes();
         nodes
-            .add(
-                "p1",
-                Mat4::IDENTITY.mul(Mat4::from_translation(glam::Vec3::new(-2.5, 2.5, 0.0))),
-                Some(&Mesh::screen_quad()),
-                Some(&color2),
-                false,
-            )
-            .add(
-                "p2",
-                Mat4::IDENTITY.mul(Mat4::from_translation(glam::Vec3::new(0.0, 2.5, 0.0))),
-                Some(&Mesh::screen_quad()),
-                Some(&color4),
-                false,
-            )
-            .add(
-                "p3",
-                Mat4::IDENTITY.mul(Mat4::from_translation(glam::Vec3::new(2.5, 2.5, 0.0))),
-                Some(&Mesh::screen_quad()),
-                Some(&particule),
-                false,
-            )
-            .add(
-                "p4",
-                Mat4::IDENTITY.mul(Mat4::from_translation(glam::Vec3::new(-2.5, 0.0, 0.0))),
-                Some(&Mesh::screen_quad()),
-                Some(&color),
-                false,
-            )
-            .add(
-                "p5",
-                Mat4::IDENTITY.mul(Mat4::from_translation(glam::Vec3::new(0.0, 0.0, 0.0))),
-                Some(&Mesh::screen_quad()),
-                Some(&color3),
-                false,
-            )
-            .add(
-                "p6",
-                Mat4::IDENTITY.mul(Mat4::from_translation(glam::Vec3::new(2.5, 0.0, 0.0))),
-                Some(&Mesh::screen_quad()),
-                Some(&vide),
-                false,
-            )
-            .add(
-                "p7",
-                Mat4::IDENTITY.mul(Mat4::from_translation(glam::Vec3::new(-2.5, -2.5, 0.0))),
-                Some(&Mesh::screen_quad()),
-                Some(&vide2),
-                false,
-            )
-            .add(
-                "p8",
-                Mat4::IDENTITY.mul(Mat4::from_translation(glam::Vec3::new(0.0, -2.5, 0.0))),
-                Some(&Mesh::screen_quad()),
-                Some(&vide3),
-                false,
-            )
-            .add(
-                "p9",
-                Mat4::IDENTITY.mul(Mat4::from_translation(glam::Vec3::new(2.5, -2.5, 0.0))),
-                Some(&Mesh::screen_quad()),
-                Some(&vide4),
-                false,
-            )
+            .add("p1", Matrix::t(Vec3::new(-2.5, 2.5, 0.0)), Some(&Mesh::screen_quad()), Some(&color2), false)
+            .add("p2", Matrix::t(Vec3::new(0.0, 2.5, 0.0)), Some(&Mesh::screen_quad()), Some(&color4), false)
+            .add("p3", Matrix::t(Vec3::new(2.5, 2.5, 0.0)), Some(&Mesh::screen_quad()), Some(&particule), false)
+            .add("p4", Matrix::t(Vec3::new(-2.5, 0.0, 0.0)), Some(&Mesh::screen_quad()), Some(&color), false)
+            .add("p5", Matrix::t(Vec3::new(0.0, 0.0, 0.0)), Some(&Mesh::screen_quad()), Some(&color3), false)
+            .add("p6", Matrix::t(Vec3::new(2.5, 0.0, 0.0)), Some(&Mesh::screen_quad()), Some(&vide), false)
+            .add("p7", Matrix::t(Vec3::new(-2.5, -2.5, 0.0)), Some(&Mesh::screen_quad()), Some(&vide2), false)
+            .add("p8", Matrix::t(Vec3::new(0.0, -2.5, 0.0)), Some(&Mesh::screen_quad()), Some(&vide3), false)
+            .add("p9", Matrix::t(Vec3::new(2.5, -2.5, 0.0)), Some(&Mesh::screen_quad()), Some(&vide4), false)
             .add(
                 "pSol",
-                Mat4::IDENTITY.mul(Mat4::from_rotation_translation(
-                    glam::Quat::from_rotation_y(PI / 2.0),
-                    glam::Vec3::new(0.0, -2.5, 1.0),
-                )),
+                Matrix::t_r(Vec3::new(0.0, -2.5, 1.0), Quat::from_angles(0.0, 90.0, 0.0)),
                 Some(&Mesh::screen_quad()),
                 Some(&zarbi),
                 false,
@@ -347,7 +287,7 @@ impl Tex1 {
 
         // We ask for a notification to be displayed
         let mut notif = HudNotification::default();
-        notif.position = Vec3::new(0.0, 0.0, -0.5).into();
+        notif.position = Vec3::new(0.0, 0.0, -0.5);
         notif.text = "Close right hand to change textures".into();
 
         SkInfo::send_event(&self.sk_info, StepperAction::add("HudNotifTex1", notif));
@@ -361,11 +301,7 @@ impl Tex1 {
     fn draw(&mut self, token: &MainThreadToken) {
         self.panels.draw(
             token,
-            Mat4::IDENTITY.mul(Mat4::from_scale_rotation_translation(
-                Vec3::ONE * 0.25,
-                Quat::from_rotation_y(0.0),
-                Vec3::new(-0.5, 2.0, -2.0),
-            )),
+            Matrix::t_r_s(Vec3::new(-0.5, 2.0, -2.0), Quat::IDENTITY, Vec3::ONE * 0.25),
             None::<Color128>,
             None,
         );

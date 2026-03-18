@@ -1,5 +1,3 @@
-use glam::Mat4;
-use std::f32::consts::PI;
 use stereokit_rust::{
     font::Font,
     material::Material,
@@ -130,19 +128,18 @@ impl Sprite1 {
 
     /// Called from IStepper::step after check_event, here you can draw your UI
     fn draw(&mut self, token: &MainThreadToken) {
-        self.sprite1
-            .draw(token, Mat4::from_translation(glam::Vec3::new(-2.5, 1.5, -2.5)), Pivot::Center, None);
+        self.sprite1.draw(token, Matrix::t(Vec3::new(-2.5, 1.5, -2.5)), Pivot::Center, None);
 
         self.sprite_ico.draw(
             token,
-            Mat4::from_rotation_translation(glam::Quat::from_rotation_y(PI), glam::Vec3::new(0.0, 1.5, -2.5)),
+            Matrix::t_r(Vec3::new(0.0, 1.5, -2.5), Quat::from_angles(0.0, 180.0, 0.0)),
             Pivot::BottomCenter,
             None,
         );
 
-        self.sprite3.draw(token, Mat4::from_translation(glam::Vec3::new(2.5, 1.5, -2.5)), Pivot::YTop, None);
+        self.sprite3.draw(token, Matrix::t(Vec3::new(2.5, 1.5, -2.5)), Pivot::YTop, None);
 
-        self.sprite4.draw(token, Mat4::from_translation(glam::Vec3::new(0.0, 3.5, -2.5)), Pivot::YTop, None);
+        self.sprite4.draw(token, Matrix::t(Vec3::new(0.0, 3.5, -2.5)), Pivot::YTop, None);
 
         Text::add_at(
             token,

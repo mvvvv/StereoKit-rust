@@ -37,6 +37,7 @@ build-dynamic-openxr = [ "dynamic-openxr",] # Build openxr_loader from Khronos O
 event-loop = ["dep:winit"]
 no-event-loop = ["dep:android-activity"]
 force-local-deps = []
+with_glam = ["dep:glam"]
 skc-in-dll = [] # Create and use StereoKitC as a DLL when building for windows (MSVC & GNU)
 test-xr-mode = [] # Replace AppMode::Offscreen with AppMode::XR in test macros
 profile = [] # Enable profiling in StereoKitC using tracy
@@ -60,7 +61,7 @@ winit = { version = "0.30", features = [
 ], optional = true }
 thiserror = "2.0"
 bitflags = "2.11"
-glam = "0.32"
+glam = { version = "0.32", optional = true }
 openxr-sys = "0.13"
 stereokit-macros = { path = "./stereokit-macros", version = "0.5.1" }
 #stereokit-macros = "0.5.1"

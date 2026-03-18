@@ -150,7 +150,7 @@ impl Anim1 {
             let cube = SHCubemap::get_rendered_sky();
             Log::info(format!(
                 "sample : {:?} / dominent direction {}",
-                cube.sh.get_sample(glam::Vec3::ONE),
+                cube.sh.get_sample(Vec3::ONE),
                 cube.sh.get_dominent_light_direction()
             ))
         }
