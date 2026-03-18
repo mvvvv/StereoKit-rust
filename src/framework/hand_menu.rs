@@ -448,6 +448,7 @@ pub struct HandMenuRadial {
 
     background: Mesh,
     background_edge: Mesh,
+    pending_mesh_update: bool,
     activation_button: Mesh,
     activation_hamburger: Mesh,
     activation_ring: Mesh,
@@ -559,6 +560,7 @@ impl HandMenuRadial {
             angle_offset: 0.0,
             background: Mesh::new(),
             background_edge: Mesh::new(),
+            pending_mesh_update: false,
             activation_button,
             activation_hamburger,
             activation_ring,
@@ -697,6 +699,22 @@ impl HandMenuRadial {
     }
 
     fn step_menu(&mut self, token: &MainThreadToken, hand: Hand) {
+        // Regenerate background meshes if the active layer changed in the previous frame.
+        // This must happen before any draw calls to avoid a Vulkan race condition where the
+        // old (larger) static index buffer is destroyed and replaced with a smaller dynamic
+        // one while GPU draw commands from the previous frame still reference the old count.
+        if self.pending_mesh_update {
+            let divisor = self.active_layer.items_count() as f32;
+            generate_slice_mesh(360.0 / divisor, Self::MIN_DIST, Self::MAX_DIST, Self::SLICE_GAP, &mut self.background);
+            generate_slice_mesh(
+                360.0 / divisor,
+                Self::MAX_DIST,
+                Self::MAX_DIST + 0.005,
+                Self::SLICE_GAP,
+                &mut self.background_edge,
+            );
+            self.pending_mesh_update = false;
+        }
         // animate the menu a bit
         let time = f32::min(1.0, Time::get_step_unscaledf() * 24.0);
         self.menu_pose.position = Vec3::lerp(self.menu_pose.position, self.dest_pose.position, time);
@@ -916,15 +934,9 @@ impl HandMenuRadial {
         Sound::click().play(self.menu_pose.position, None);
         self.nav_stack.push_back(self.active_layer.clone());
         self.active_layer = new_layer_rc.clone();
-        let divisor = new_layer.items.len() as f32;
-        generate_slice_mesh(360.0 / divisor, Self::MIN_DIST, Self::MAX_DIST, Self::SLICE_GAP, &mut self.background);
-        generate_slice_mesh(
-            360.0 / divisor,
-            Self::MAX_DIST,
-            Self::MAX_DIST + 0.005,
-            Self::SLICE_GAP,
-            &mut self.background_edge,
-        );
+        // Defer mesh regeneration to the start of the next step_menu call (before draws),
+        // to avoid destroying the static GPU buffer while Frame T's draw commands are still queued.
+        self.pending_mesh_update = true;
         Log::diag(format!("HandRadialMenu : Layer {} opened", new_layer.layer_name));
     }
 
@@ -935,15 +947,8 @@ impl HandMenuRadial {
         } else {
             Log::err("HandMenuRadial : No back layer !!")
         }
-        let divisor = self.active_layer.items_count() as f32;
-        generate_slice_mesh(360.0 / divisor, Self::MIN_DIST, Self::MAX_DIST, Self::SLICE_GAP, &mut self.background);
-        generate_slice_mesh(
-            360.0 / divisor,
-            Self::MAX_DIST,
-            Self::MAX_DIST + 0.005,
-            Self::SLICE_GAP,
-            &mut self.background_edge,
-        );
+        // Defer mesh regeneration to the start of the next step_menu call.
+        self.pending_mesh_update = true;
     }
 
     fn select_item(&mut self, line: Rc<HandRadial>, at: Vec3, from_angle: f32) {
