@@ -1,6 +1,6 @@
 use stereokit_rust::{
     font::Font,
-    material::Material,
+    material::{Cull, Material},
     maths::{Bounds, Matrix, Plane, Pose, Quat, Ray, Sphere, Vec3},
     mesh::Mesh,
     model::Model,
@@ -41,7 +41,7 @@ impl Default for Math1 {
         let model_pose = Pose::new(Vec3::NEG_Z + Vec3::Y * 1.0, None);
         let transform_text = Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y * 2.0, Quat::from_angles(0.0, 180.0, 0.0));
         let mut material = Material::pbr().copy();
-        material.wireframe(true);
+        material.wireframe(true).face_cull(Cull::None);
         let model = Model::from_mesh(Mesh::generate_sphere(SPHERE_RADIUS * 2.0, Some(16)), &material);
         let little_sphere = Mesh::generate_sphere(0.02, None);
         let ico_sphere = Mesh::find("mobiles.gltf/mesh/0_0_Icosphere").unwrap_or_default();
