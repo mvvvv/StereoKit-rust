@@ -45,6 +45,9 @@ bitflags::bitflags! {
         /// This texture contains depth data, not color data! It is writeable and readable. This makes it great for
         /// shadowmaps or other textures that need to be read from later on.
         const Depthtarget  = 1 << 6;
+        /// This texture can be used as a RWTexture in compute shaders. Create it with a format
+        /// that supports storage images, such as [`TexFormat::Rgba128`].
+        const Compute      = 1 << 7;
         /// A standard color image that also generates mip-maps automatically.
         const Image        = Self::ImageNomips.bits() | Self::Mips.bits();
     }

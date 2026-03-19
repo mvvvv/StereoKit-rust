@@ -979,7 +979,6 @@ impl Material {
     /// Should this material draw only the edges/wires of the mesh? This can be useful for debugging, and even some
     /// kinds of visualization work.
     ///
-    /// TODO/FIXME: Wireframe rendering currently doesn't work with StereoKit's default shaders.
     /// <https://stereokit.net/Pages/StereoKit/Material/Wireframe.html>
     ///
     /// see also [`material_set_wireframe`]
@@ -1642,6 +1641,8 @@ pub enum MaterialParam {
     UInt3 = 14,
     /// A 4 component array composed of u32 values
     UInt4 = 15,
+    /// A structured buffer resource, such as `StructuredBuffer<T>` or `RWStructuredBuffer<T>` in HLSL.
+    Buffer = 16,
 }
 
 #[derive(Debug, PartialEq)]
@@ -1952,7 +1953,7 @@ impl<'a> ParamInfos<'a> {
 
     /// Sets a shader parameter with the given name to the provided value. If no parameter is found, nothing happens,
     /// and the value is not set! Warning, this may work on Int values as you can see in the examples.
-    /// TODO: This doesn't work
+    ///
     /// <https://stereokit.net/Pages/StereoKit/Material/SetUInt.html>
     /// * `name` - the name of the parameter to set
     /// * `value` : up to 4 unsigned integer values
@@ -2283,6 +2284,7 @@ impl<'a> ParamInfos<'a> {
                 }
             }
             MaterialParam::Unknown => None,
+            MaterialParam::Buffer => None,
         }
     }
 
@@ -2557,12 +2559,15 @@ impl<'a> ParamInfos<'a> {
             MaterialParam::UInt2 => format!("{:?}", self.get_int_vector(info.get_name(), MaterialParam::UInt2)),
             MaterialParam::UInt3 => format!("{:?}", self.get_int_vector(info.get_name(), MaterialParam::UInt3)),
             MaterialParam::UInt4 => format!("{:?}", self.get_int_vector(info.get_name(), MaterialParam::UInt4)),
+            MaterialParam::Buffer => "Buffer data...".to_string(),
         }
     }
 }
 
-/// One Info of a Material. This is only useful for [`Material::get_all_param_info`] iterator.
+/// One Info of a Material/Compute. This is only useful for [`Material::get_all_param_info`] or
+/// [`crate::compute::Compute::get_all_param_info`] iterator.
 /// <https://stereokit.net/Pages/StereoKit/Material/GetAllParamInfo.html>
+/// <https://stereokit.net/Pages/StereoKit/Compute/GetAllParamInfo.html>
 ///
 /// see also [ParamInfos] [`Material::get_all_param_info`]
 pub struct ParamInfo {
@@ -2572,7 +2577,7 @@ pub struct ParamInfo {
 
 impl ParamInfo {
     /// Create a new ParamInfo with the given name and type info. There is no reason to use this method as you can
-    /// get values from [`Material`] get_???? methods
+    /// get values from [`Material`] or [`crate::compute::Compute`] get_all_param_info methods
     /// [`Material::get_all_param_info`] iterator
     pub fn new<S: AsRef<str>>(name: S, type_info: MaterialParam) -> ParamInfo {
         ParamInfo { name: name.as_ref().to_string(), type_info }
@@ -2587,13 +2592,6 @@ impl ParamInfo {
     pub fn get_type(&self) -> MaterialParam {
         self.type_info
     }
-}
-
-unsafe extern "C" {
-    pub fn material_buffer_create(size: i32) -> MaterialBufferT;
-    pub fn material_buffer_addref(buffer: MaterialBufferT);
-    pub fn material_buffer_set_data(buffer: MaterialBufferT, buffer_data: *const c_void);
-    pub fn material_buffer_release(buffer: MaterialBufferT);
 }
 
 /// This is a chunk of memory that will get bound to all shaders at a particular register slot. StereoKit uses this to
@@ -2641,6 +2639,17 @@ pub struct MaterialBuffer<T> {
     _material_buffer: MaterialBufferT,
     phantom: PhantomData<T>,
 }
+impl<T> Drop for MaterialBuffer<T> {
+    fn drop(&mut self) {
+        unsafe { material_buffer_release(self._material_buffer) }
+    }
+}
+impl<T> AsRef<MaterialBuffer<T>> for MaterialBuffer<T> {
+    fn as_ref(&self) -> &MaterialBuffer<T> {
+        self
+    }
+}
+
 /// StereoKit internal type.
 #[repr(C)]
 #[derive(Debug)]
@@ -2650,16 +2659,11 @@ pub struct _MaterialBufferT {
 /// StereoKit ffi type.
 pub type MaterialBufferT = *mut _MaterialBufferT;
 
-impl<T> Drop for MaterialBuffer<T> {
-    fn drop(&mut self) {
-        unsafe { material_buffer_release(self._material_buffer) }
-    }
-}
-
-impl<T> AsRef<MaterialBuffer<T>> for MaterialBuffer<T> {
-    fn as_ref(&self) -> &MaterialBuffer<T> {
-        self
-    }
+unsafe extern "C" {
+    pub fn material_buffer_create(size: i32) -> MaterialBufferT;
+    pub fn material_buffer_addref(buffer: MaterialBufferT);
+    pub fn material_buffer_set_data(buffer: MaterialBufferT, buffer_data: *const c_void);
+    pub fn material_buffer_release(buffer: MaterialBufferT);
 }
 
 impl<T> Default for MaterialBuffer<T> {

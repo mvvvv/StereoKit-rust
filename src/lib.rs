@@ -288,9 +288,13 @@ pub use stereokit_macros::test_steps_no_event_loop as test_steps;
 use thiserror::Error;
 
 /// Anchor related structs and functions.
+pub mod anchor;
+
+/// Compute shader related structs, enums and functions.
 ///
 /// With examples which are also unit tests.
-pub mod anchor;
+/// [![Compute](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/compute.jpeg)](compute::Compute)
+pub mod compute;
 
 /// Font related structs and functions.
 ///
@@ -655,6 +659,14 @@ pub enum StereoKitError {
     AnchorCreate(String),
     #[error("failed to find anchor {0} for reason {1}")]
     AnchorFind(String, String),
+    #[error("failed to create compute {0}")]
+    ComputeCreate(String),
+    #[error("failed to find compute {0} for reason {1}")]
+    ComputeFind(String, String),
+    #[error("failed to create compute buffer {0}")]
+    ComputeBufferCreate(String),
+    #[error("failed to find compute buffer {0} for reason {1}")]
+    ComputeBufferFind(String, String),
     #[error("failed to init stereokit with settings {0}")]
     SkInit(String),
     #[cfg(feature = "event-loop")]

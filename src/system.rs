@@ -1,6 +1,7 @@
 use crate::{
     StereoKitError,
     anchor::{_AnchorT, Anchor},
+    compute::{Compute, ComputeBuffer, _ComputeT, _ComputeBufferT},
     font::{_FontT, Font, FontT},
     material::{_MaterialT, Material, MaterialBuffer, MaterialBufferT, MaterialT},
     maths::{Bool32T, Matrix, Pose, Quat, Ray, Rect, Vec2, Vec3, ray_from_mouse},
@@ -92,6 +93,8 @@ pub enum AssetType {
     Solid = 9,
     Anchor = 10,
     RenderList = 11,
+    Compute = 12,
+    ComputeBuffer = 13,
 }
 
 /// If you want to manage loading assets, this is the class for you!
@@ -168,6 +171,8 @@ pub enum Asset {
     Solid(*mut c_void),
     Anchor(Anchor),
     RenderList(RenderList),
+    Compute(Compute),
+    ComputeBuffer(ComputeBuffer),
 }
 
 impl fmt::Display for Asset {
@@ -185,6 +190,8 @@ impl fmt::Display for Asset {
             Asset::Solid(_) => write!(f, "Solid : ... deprecated ..."),
             Asset::Anchor(v) => write!(f, "Anchor : {}", v.get_id()),
             Asset::RenderList(v) => write!(f, "RenderList : {}", v.get_id()),
+            Asset::Compute(v) => write!(f, "Compute : {}", v.get_id()),
+            Asset::ComputeBuffer(v) => write!(f, "ComputeBuffer : {}", v.get_id()),
         }
     }
 }
@@ -249,6 +256,8 @@ impl AssetIter {
             AssetType::Solid => todo!("Solids are deprecated!"),
             AssetType::Anchor => Asset::Anchor(Anchor(NonNull::new(c_id as *mut _AnchorT).unwrap())),
             AssetType::RenderList => Asset::RenderList(RenderList(NonNull::new(c_id as *mut _RenderListT).unwrap())),
+            AssetType::Compute => Asset::Compute(Compute(NonNull::new(c_id as *mut _ComputeT).unwrap())),
+            AssetType::ComputeBuffer => Asset::ComputeBuffer(ComputeBuffer(NonNull::new(c_id as *mut _ComputeBufferT).unwrap())),
         }
     }
 
@@ -504,6 +513,8 @@ pub enum BackendPlatform {
     Android = 3,
     /// This is running in a browser.
     Web = 4,
+    /// This is running as a macOS app
+    Macos = 5,
 }
 
 /// This describes the graphics API thatStereoKit is using for rendering.

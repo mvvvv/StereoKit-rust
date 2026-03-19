@@ -64,7 +64,6 @@ pub mod units {
 /// of value with 2 dimensions to it!
 /// <https://stereokit.net/Pages/StereoKit/Vec2.html>
 ///
-/// see also [`glam::Vec2`]
 /// ### Examples
 /// ```
 /// use stereokit_rust::maths::Vec2;
@@ -883,7 +882,6 @@ impl Neg for Vec2 {
 /// StereoKit uses a right-handed coordinate system, where +x is to the right, +y is upwards, and -z is forward.
 /// <https://stereokit.net/Pages/StereoKit/Vec3.html>
 ///
-/// see also [`glam::Vec3`]
 /// ### Examples
 /// ```
 /// use stereokit_rust::maths::Vec3;
@@ -1868,7 +1866,6 @@ impl Neg for Vec3 {
 /// This is a wrapper on System.Numerics.Vector4, so it’s SIMD optimized, and can be cast to and from implicitly.
 /// <https://stereokit.net/Pages/StereoKit/Vec4.html>
 ///
-/// see also [`glam::Vec4`]
 /// ### Examples
 /// ```
 /// use stereokit_rust::maths::Vec4;
@@ -2482,7 +2479,6 @@ impl Neg for Vec4 {
 /// about them!
 /// <https://stereokit.net/Pages/StereoKit/Quat.html>
 ///
-///  see also [`glam::Quat`]
 /// ### Examples
 /// ```
 /// use stereokit_rust::maths::{Quat, Vec3, Vec4};
@@ -3169,7 +3165,6 @@ impl Sub<Quat> for Quat {
 /// Matrices are prominently used within shaders for mesh transforms!
 /// <https://stereokit.net/Pages/StereoKit/Matrix.html>
 ///
-/// see also [`glam::Mat4`]
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
