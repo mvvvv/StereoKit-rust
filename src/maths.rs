@@ -2,6 +2,7 @@ use crate::{
     material::Cull,
     mesh::{Mesh, VindT, mesh_ray_intersect},
     model::{Model, model_ray_intersect},
+    util::Color128,
 };
 use std::{
     fmt::Display,
@@ -1900,7 +1901,11 @@ impl From<[f32; 4]> for Vec4 {
         Vec4 { x: val[0], y: val[1], z: val[2], w: val[3] }
     }
 }
-
+impl From<Color128> for Vec4 {
+    fn from(value: Color128) -> Self {
+        Self { x: value.r, y: value.g, z: value.b, w: value.a }
+    }
+}
 #[cfg(feature = "with_glam")]
 impl From<Vec4> for glam::Vec4 {
     fn from(value: Vec4) -> Self {

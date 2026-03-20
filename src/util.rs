@@ -1,6 +1,6 @@
 use crate::{
     StereoKitError,
-    maths::{Bool32T, Vec3, lerp},
+    maths::{Bool32T, Vec3, Vec4, lerp},
     sk::DisplayBlend,
     system::TextContext,
     ui::IdHashT,
@@ -83,6 +83,12 @@ impl From<[f32; 4]> for Color128 {
 impl From<Color32> for Color128 {
     fn from(a: Color32) -> Self {
         Self::new(a.r as f32 / 255.0, a.g as f32 / 255.0, a.b as f32 / 255.0, a.a as f32 / 255.0)
+    }
+}
+
+impl From<Vec4> for Color128 {
+    fn from(value: Vec4) -> Self {
+        Self::new(value.x, value.y, value.z, value.w)
     }
 }
 

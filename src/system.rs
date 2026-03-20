@@ -1,7 +1,7 @@
 use crate::{
     StereoKitError,
     anchor::{_AnchorT, Anchor},
-    compute::{Compute, ComputeBuffer, _ComputeT, _ComputeBufferT},
+    compute::{_ComputeBufferT, _ComputeT, Compute, ComputeBuffer},
     font::{_FontT, Font, FontT},
     material::{_MaterialT, Material, MaterialBuffer, MaterialBufferT, MaterialT},
     maths::{Bool32T, Matrix, Pose, Quat, Ray, Rect, Vec2, Vec3, ray_from_mouse},
@@ -257,7 +257,9 @@ impl AssetIter {
             AssetType::Anchor => Asset::Anchor(Anchor(NonNull::new(c_id as *mut _AnchorT).unwrap())),
             AssetType::RenderList => Asset::RenderList(RenderList(NonNull::new(c_id as *mut _RenderListT).unwrap())),
             AssetType::Compute => Asset::Compute(Compute(NonNull::new(c_id as *mut _ComputeT).unwrap())),
-            AssetType::ComputeBuffer => Asset::ComputeBuffer(ComputeBuffer(NonNull::new(c_id as *mut _ComputeBufferT).unwrap())),
+            AssetType::ComputeBuffer => {
+                Asset::ComputeBuffer(ComputeBuffer(NonNull::new(c_id as *mut _ComputeBufferT).unwrap()))
+            }
         }
     }
 
@@ -2257,10 +2259,30 @@ impl Hand {
     /// own, or don’t need the hand itself to be visible.
     /// <https://stereokit.net/Pages/StereoKit/Hand/Visible.html>
     ///
-    /// see also [`input_hand_visible`]
+    /// see also [`input_hand_visible`] [`Input::hand_visible`] [`Hand::is_visible`]
+    ///
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::{Input, Handed, Hand}};
+    ///
+    /// let mut hand = Input::hand(Handed::Right);
+    /// hand.visible(false);
+    /// assert_eq!(hand.is_visible(), false);
+    /// # sk::Sk::shutdown();
+    /// ```
     pub fn visible(&mut self, visible: bool) -> &mut Self {
         unsafe { input_hand_visible(self.handed, visible as Bool32T) }
         self
+    }
+
+    /// Returns whether or not StereoKit is currently rendering this hand.
+    /// <https://stereokit.net/Pages/StereoKit/Hand/Visible.html>
+    ///
+    /// see also [`input_hand_get_visible`] [`Input::hand_get_visible`]
+    /// see example in [`Hand::visible`]
+    pub fn is_visible(&self) -> bool {
+        unsafe { input_hand_get_visible(self.handed) != 0 }
     }
 }
 
@@ -2693,6 +2715,7 @@ unsafe extern "C" {
     pub fn input_text_reset();
     pub fn input_text_inject_char(character: u32);
     pub fn input_hand_visible(hand: Handed, visible: Bool32T);
+    pub fn input_hand_get_visible(hand: Handed) -> Bool32T;
     // Deprecated: pub fn input_hand_solid(hand: Handed, solid: Bool32T);
     pub fn input_hand_material(hand: Handed, material: MaterialT);
     pub fn input_get_finger_glow() -> Bool32T;
@@ -3042,13 +3065,28 @@ impl Input {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::system::{Input, Handed, HandSource};
     ///
-    /// Input::hand_visible(Handed::Right, false);
+    /// Input::hand_visible(Handed::Right, true);
     /// Input::hand_visible(Handed::Max, false);
     /// Input::hand_visible(Handed::Left, true);
+    ///
+    /// assert_eq!(Input::hand_get_visible(Handed::Right), false);
+    /// assert_eq!(Input::hand_get_visible(Handed::Left), true);
+    /// assert_eq!(Input::hand_get_visible(Handed::Max), true);
     /// # sk::Sk::shutdown();
     /// ```
     pub fn hand_visible(hand: Handed, visible: bool) {
         unsafe { input_hand_visible(hand, visible as Bool32T) };
+    }
+
+    /// Returns whether StereoKit is set to render the given hand. If Handed.Max is provided, this returns true if
+    /// either hand is visible.
+    /// <https://stereokit.net/Pages/StereoKit/Input/HandGetVisible.html>
+    /// * `hand` - The hand to check visibility for, or Handed.Max to check if either hand is visible.
+    ///
+    /// see also [`input_hand_get_visible`] [`Hand::is_visible`]
+    /// see example in [`Input::hand_visible`]
+    pub fn hand_get_visible(hand: Handed) -> bool {
+        unsafe { input_hand_get_visible(hand) != 0 }
     }
 
     /// This controls the visibility of StereoKit's finger glow effect on the UI. When true, SK will fill out global
@@ -3063,14 +3101,11 @@ impl Input {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::system::{Input, Handed, HandSource};
     ///
+    /// Input::finger_glow(true);
     /// assert_eq!(Input::get_finger_glow(), true);
     ///
     /// Input::finger_glow(false);
-    ///
     /// assert_eq!(Input::get_finger_glow(), false);
-    ///
-    /// Input::finger_glow(true);
-    /// assert_eq!(Input::get_finger_glow(), true);
     /// # sk::Sk::shutdown();
     /// ```
     pub fn finger_glow(visible: bool) {

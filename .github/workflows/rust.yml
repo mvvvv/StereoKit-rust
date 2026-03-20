@@ -48,17 +48,6 @@ jobs:
     - name: Get Cache
       uses: swatinem/rust-cache@v2
 
-    - name: Install Mesa (lavapipe)
-      shell: powershell
-      run: |
-        $release = Invoke-RestMethod "https://api.github.com/repos/pal1000/mesa-dist-win/releases/latest"
-        $asset = $release.assets | Where-Object { $_.name -like "*release-msvc.7z" } | Select-Object -First 1
-        Invoke-WebRequest -Uri $asset.browser_download_url -OutFile mesa3d.7z
-        7z x mesa3d.7z -omesa3d -y | Out-Null
-        $mesa_dir = "$env:GITHUB_WORKSPACE\mesa3d\x64"
-        echo "$mesa_dir" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-        echo "VK_ICD_FILENAMES=$mesa_dir\lvp_icd.x86_64.json" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
     - name: Install StereoKit
       run: cargo install -F no-event-loop --force --path . 
 

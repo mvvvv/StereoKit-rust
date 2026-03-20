@@ -68,12 +68,21 @@ bitflags::bitflags! {
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
 pub enum DefaultInteractors {
-    /// StereoKit's default interactors, this provides an aim ray for a mouse, aim rays for controllers, and aim, pinch,
-    /// and poke interactors for hands.
+    /// Use the XR backend's default interactor mode. This is 'all' for XR, 'mouse' for simulator and window, and
+    /// 'none' for offscreen.
     Default = 0,
     /// Don't provide any interactors at all. This means you either don't want interaction, or are providing your own
     /// custom interactors.
     None = 1,
+    /// Auto-switch between hands and controllers based on the current input source. This provides aim, pinch, and poke
+    /// interactors for hands, and aim rays for controllers.
+    All = 2,
+    /// Always use the hand interactors, using simulated hands when articulated hand tracking is not available.
+    Hands = 3,
+    /// Always use the controller interactors.
+    Controllers = 4,
+    /// Always use the mouse interactor.
+    Mouse = 5,
 }
 
 unsafe extern "C" {

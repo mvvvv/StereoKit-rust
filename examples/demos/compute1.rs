@@ -91,7 +91,7 @@ impl Default for Compute1 {
         buffer_b.set_data(&data);
 
         // Output texture: Rgba128 storage image written by the compute shader
-        let mut output = Tex::new(TexType::ImageNomips | TexType::Compute, TexFormat::Rgba128, None);
+        let mut output = Tex::new(TexType::ImageNomips | TexType::Compute, TexFormat::Rgba32Linear, None);
         output.set_size(SIM_SIZE as usize, SIM_SIZE as usize, None, None);
 
         // Ping: reads bufferA, writes bufferB, writes result texture

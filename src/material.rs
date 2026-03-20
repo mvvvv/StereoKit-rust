@@ -96,13 +96,16 @@ pub enum Cull {
 ///
 /// let cube = Mesh::cube();
 /// // Create a material with default properties
-/// let mut material_cube = Material::default();
+/// let mut material_cube = Material::unlit().copy();
 ///
 /// // Set some shader properties
-/// material_cube.color_tint   (Color128::new(1.0, 0.5, 0.3, 1.0))
+/// material_cube
+///              .color_tint   (Color128::new(1.0, 0.5, 0.3, 1.0))
 ///              .transparency (Transparency::MSAA)
 ///              .depth_test   (DepthTest::LessOrEq)
-///              .face_cull    (Cull::Front);
+///              .face_cull    (Cull::Front)
+///              ;
+/// # assert_eq!(material_cube.get_all_param_info().get_color("color"), Color128::new(1.0, 0.5, 0.3, 1.0));
 ///
 /// filename_scr = "screenshots/materials.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!

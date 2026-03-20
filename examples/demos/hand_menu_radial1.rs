@@ -102,6 +102,7 @@ impl Default for HandMenuRadial1 {
         // see water
         let mut sea = Material::from_file("shaders/water_pbr.hlsl.sks", "water_pbr".into()).unwrap_or_default();
         sea.diffuse_tex(&bump_inverse_tex)
+            .face_cull(Cull::Front)
             .emission_tex(&bump_tex)
             .occlusion_tex(&bump_inverse_tex)
             .tex_transform(Vec4::new(0.0, 0.0, 1.5, 2.5))
@@ -109,7 +110,6 @@ impl Default for HandMenuRadial1 {
             .metallic_amount(0.1)
             .color_tint(SEA_GREEN)
             .transparency(Transparency::None)
-            .face_cull(Cull::Front)
             .time(3.0);
 
         // fresh water2
