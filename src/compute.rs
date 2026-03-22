@@ -151,7 +151,7 @@ impl Compute {
     /// use stereokit_rust::shader::Shader;
     ///
     /// # {
-    /// let shader = Shader::from_file("shaders/compute_reaction.hlsl.sks")
+    /// let shader = Shader::from_file("shaders/compute_test.hlsl.sks")
     ///     .expect("shader should be compiled — run `cargo compile_sks`");
     /// let compute = Compute::new(&shader)
     ///     .expect("Failed to create Compute from shader");
@@ -176,7 +176,7 @@ impl Compute {
     /// use stereokit_rust::compute::Compute;
     ///
     /// # {
-    /// let mut compute = Compute::from_file("shaders/compute_reaction.hlsl.sks")
+    /// let mut compute = Compute::from_file("shaders/compute_test.hlsl.sks")
     ///     .expect("shader should be compiled — run `cargo compile_sks`");
     ///
     /// assert_eq!(compute.get_id()[..13], *"auto/compute_");
@@ -199,7 +199,7 @@ impl Compute {
     /// use stereokit_rust::compute::Compute;
     ///
     /// # {
-    /// let mut compute = Compute::from_file("shaders/compute_reaction.hlsl.sks")
+    /// let mut compute = Compute::from_file("shaders/compute_test.hlsl.sks")
     ///     .expect("shader should be compiled — run `cargo compile_sks`");
     /// compute.id("find_example");
     ///
@@ -228,7 +228,7 @@ impl Compute {
     /// use stereokit_rust::compute::Compute;
     ///
     /// # {
-    /// let mut compute = Compute::from_file("shaders/compute_reaction.hlsl.sks")
+    /// let mut compute = Compute::from_file("shaders/compute_test.hlsl.sks")
     ///     .expect("shader should be compiled — run `cargo compile_sks`");
     /// compute.id("clone_example");
     ///
@@ -254,7 +254,7 @@ impl Compute {
     /// use stereokit_rust::compute::Compute;
     ///
     /// # {
-    /// let mut compute = Compute::from_file("shaders/compute_reaction.hlsl.sks")
+    /// let mut compute = Compute::from_file("shaders/compute_test.hlsl.sks")
     ///     .expect("shader should be compiled — run `cargo compile_sks`");
     ///
     /// assert_eq!(compute.get_id()[..13], *"auto/compute_");
@@ -365,7 +365,7 @@ impl Compute {
     ///
     /// # {
     /// // Create a Compute dispatch from a compiled shader file.
-    /// let mut compute = Compute::from_file("shaders/compute_reaction.hlsl.sks")
+    /// let mut compute = Compute::from_file("shaders/compute_test.hlsl.sks")
     ///     .expect("shader should be compiled — run `cargo compile_sks`");
     /// compute.id("my_compute");
     ///
@@ -373,13 +373,13 @@ impl Compute {
     ///
     /// // Set and round-trip scalar parameters declared in the shader.
     /// let mut param_infos = compute.get_all_param_info();
-    /// param_infos.set_float("feed",  0.055)
-    ///            .set_float("kill",  0.062)
-    ///            .set_uint("size", 512);
+    /// param_infos.set_float("ring_freq",  1.5)
+    ///            .set_int("arm_count",    6)
+    ///            .set_uint("tex_size", 512);
     ///
-    /// assert_eq!(param_infos.get_float("feed"), 0.055);
-    /// assert_eq!(param_infos.get_float("kill"), 0.062);
-    /// assert_eq!(param_infos.get_uint("size"),  512);
+    /// assert_eq!(param_infos.get_float("ring_freq"), 1.5);
+    /// assert_eq!(param_infos.get_int("arm_count"),   6);
+    /// assert_eq!(param_infos.get_uint("tex_size"),   512);
     ///
     /// // Inspect all parameters exposed by the shader.
     /// let mut param_infos = compute.get_all_param_info();
@@ -492,7 +492,7 @@ impl<'a> ComputeParamInfos<'a> {
     /// use stereokit_rust::tex::{Tex, TexType, TexFormat};
     ///
     /// # {
-    /// let mut compute = Compute::from_file("shaders/compute_reaction.hlsl.sks")
+    /// let mut compute = Compute::from_file("shaders/compute_test.hlsl.sks")
     ///     .expect("shader should be compiled — run `cargo compile_sks`");
     /// let mut param_infos = compute.get_all_param_info();
     ///
@@ -522,15 +522,15 @@ impl<'a> ComputeParamInfos<'a> {
     /// use stereokit_rust::compute::{Compute, ComputeBuffer, ComputeBufferType};
     ///
     /// # {
-    /// let mut compute = Compute::from_file("shaders/compute_reaction.hlsl.sks")
+    /// let mut compute = Compute::from_file("shaders/compute_test.hlsl.sks")
     ///     .expect("shader should be compiled — run `cargo compile_sks`");
     /// let mut param_infos = compute.get_all_param_info();
     ///
-    /// // Storage buffers bound to the input/output slots.
+    /// // compute_test has no structured buffers, so all set_buffer calls return false.
     /// let cells = vec![[1.0_f32, 0.0_f32]; 8 * 8];
     /// let buf_a = ComputeBuffer::with_data(ComputeBufferType::ReadWrite, &cells).unwrap();
     /// let buf_b = ComputeBuffer::with_data(ComputeBufferType::ReadWrite, &cells).unwrap();
-    /// assert!(param_infos.set_buffer("input",  &buf_a));
+    /// assert!(!param_infos.set_buffer("input",        &buf_a));
     /// assert!(!param_infos.set_buffer("do_not_exist", &buf_b));
     /// # } sk::Sk::shutdown();
     /// ```
@@ -549,18 +549,16 @@ impl<'a> ComputeParamInfos<'a> {
     /// use stereokit_rust::compute::Compute;
     ///
     /// # {
-    /// let mut compute = Compute::from_file("shaders/compute_reaction.hlsl.sks")
+    /// let mut compute = Compute::from_file("shaders/compute_test.hlsl.sks")
     ///     .expect("shader should be compiled — run `cargo compile_sks`");
     /// let mut param_infos = compute.get_all_param_info();
     ///
-    /// // 'feed' and 'kill' are float parameters of the reaction-diffusion shader.
-    /// param_infos.set_float("feed", 0.055)
-    ///            .set_float("do_not_exist", 0.999)
-    ///            .set_float("kill", 0.062);
+    /// // 'ring_freq' is the float parameter of compute_test.
+    /// param_infos.set_float("ring_freq",    0.75)
+    ///            .set_float("do_not_exist", 0.999);
     ///
-    /// assert_eq!(param_infos.get_float("feed"), 0.055);
+    /// assert_eq!(param_infos.get_float("ring_freq"),    0.75);
     /// assert_eq!(param_infos.get_float("do_not_exist"), 0.0);
-    /// assert_eq!(param_infos.get_float("kill"), 0.062);
     /// # } sk::Sk::shutdown();
     /// ```
     pub fn set_float<S: AsRef<str>>(&mut self, name: S, value: f32) -> &mut Self {
@@ -608,15 +606,15 @@ impl<'a> ComputeParamInfos<'a> {
     /// use stereokit_rust::compute::Compute;
     ///
     /// # {
-    /// let mut compute = Compute::from_file("shaders/compute_reaction.hlsl.sks")
+    /// let mut compute = Compute::from_file("shaders/compute_test.hlsl.sks")
     ///     .expect("shader should be compiled — run `cargo compile_sks`");
     /// let mut param_infos = compute.get_all_param_info();
     ///
-    /// // 'size' is a uint parameter of the reaction-diffusion shader.
-    /// param_infos.set_uint("size", 512);
+    /// // 'tex_size' is the uint parameter of compute_test.
+    /// param_infos.set_uint("tex_size", 512);
     /// param_infos.set_uint("do_not_exist", 999);
     ///
-    /// assert_eq!(param_infos.get_uint("size"), 512);
+    /// assert_eq!(param_infos.get_uint("tex_size"),     512);
     /// assert_eq!(param_infos.get_uint("do_not_exist"), 0);
     /// # } sk::Sk::shutdown();
     /// ```
