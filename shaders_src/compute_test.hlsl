@@ -12,6 +12,7 @@ float3    spiral_twist;
 float4    highlight;
 float4    base_color;
 float4x4  brightness;
+float     rotation;
 
 // ── output ──────────────────────────────────────────────────────────────────
 RWTexture2D<float4> out_tex : register(u0);
@@ -20,6 +21,9 @@ RWTexture2D<float4> out_tex : register(u0);
 void cs(uint3 id : SV_DispatchThreadID) {
     // Normalised UV in [-1, 1], optionally offset by uv_offset
     float2 uv    = (float2(id.xy) / float(tex_size) - 0.5 + uv_offset) * 2.0;
+    float  cos_r = cos(rotation);
+    float  sin_r = sin(rotation);
+    uv = float2(uv.x * cos_r - uv.y * sin_r, uv.x * sin_r + uv.y * cos_r);
     float  dist  = length(uv);
     float  angle = atan2(uv.y, uv.x) * (1.0 / 6.28318);
 
