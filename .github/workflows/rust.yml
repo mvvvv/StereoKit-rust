@@ -123,7 +123,7 @@ jobs:
         brew install cmake ninja molten-vk vulkan-headers
 
     - name: Install StereoKit
-      run: cargo install--force --path . 
+      run: cargo install --force --path . 
 
     - name: compile shaders
       run: cargo compile_sks --options -f -t s
