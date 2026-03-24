@@ -705,7 +705,7 @@ impl StepperAction {
     /// * `type_id` - The type of the steppers to remove.
     ///
     /// ### Examples
-    /// ```no_run
+    /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::tools::{title::Title, screenshot::ScreenshotViewer};
     ///

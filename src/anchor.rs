@@ -262,7 +262,7 @@ impl Anchor {
     ///
     /// see also [`anchor_try_set_persistent`]
     /// ### Examples
-    /// ```no_run
+    /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{anchor::Anchor, maths::Pose};
     ///
@@ -285,7 +285,7 @@ impl Anchor {
     ///
     /// see also [`anchor_get_capabilities`]
     /// ### Examples
-    /// ```no_run
+    /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{anchor::{Anchor, AnchorCaps}, maths::Pose};
     ///
