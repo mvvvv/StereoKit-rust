@@ -1,6 +1,6 @@
 #[allow(dead_code)]
 #[cfg(not(target_os = "android"))]
-#[cfg(feature = "event-loop")]
+#[cfg(not(feature = "no-event-loop"))]
 fn main() {
     use stereokit_rust::{
         maths::{Pose, Quat, Vec3},
@@ -11,11 +11,11 @@ fn main() {
     };
 
     {
-        let (sk, _event_loop) = SkSettings::default()
+        let sk = SkSettings::default()
             .app_name("stereokit-rust (manual)")
             .origin(OriginMode::Floor)
             .log_filter(LogLevel::Diagnostic)
-            .init_with_event_loop()
+            .init()
             .unwrap();
 
         let position = Vec3::new(-0.5, 0.0, 0.5);

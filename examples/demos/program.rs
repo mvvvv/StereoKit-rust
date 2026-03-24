@@ -34,7 +34,6 @@ use stereokit_rust::{
     ui::{Ui, UiBtnLayout},
     util::{Device, Time},
 };
-use winit::event_loop::EventLoop;
 
 /// Somewhere to copy the log
 static LOG_LOG: Mutex<Vec<LogItem>> = Mutex::new(vec![]);
@@ -43,7 +42,7 @@ use super::{
     Test,
     hand_menu_radial1::{HandMenuRadial1, SHOW_FLOOR},
 };
-pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: bool, start_test: String) {
+pub fn launch(mut sk: Sk, _is_testing: bool, start_test: String) {
     Log::diag(
         "======================================================================================================================== !!",
     );
@@ -451,5 +450,5 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
         }
     })
     .shutdown(|sk| Log::info(format!("QuitReason is {:?}", sk.get_quit_reason())))
-    .run(event_loop);
+    .run();
 }

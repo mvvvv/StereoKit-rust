@@ -42,31 +42,29 @@
 //!     * `export VK_ICD_FILENAMES=$(brew --prefix molten-vk)/share/vulkan/icd.d/MoltenVK_icd.json`
 //!
 //!
-//! Installing the stereokit_rust tools with `cargo install -F no-event-loop stereokit-rust` should help you to check
+//! Installing the stereokit_rust tools with `cargo install stereokit-rust` should help you to check
 //! the missing dependencies.
 //!
 //! # Usage
-//! You have to chose between `event-loop` and `no-event-loop` features. The feature `no-event-loop` is the
-//! lighter but you can't use the [`framework`].
+//! By default, the [`framework`] (event loop, steppers, tools) is enabled. Use the `no-event-loop` feature
+//! for a lighter setup without the framework.
 //!
 //! ## Features
-//! - **`event-loop`**: Enables the framework with Winit integration for window management and event handling.
-//! - **`no-event-loop`**: Lighter weight option without framework support.
+//! - **`no-event-loop`**: Disables the framework (event loop, steppers, tools) for a lighter weight setup.
 //! - **`test-xr-mode`**: For testing - replaces `AppMode::Offscreen` with `AppMode::XR` in test macros to test with real XR devices.
 //! - **`dynamic-openxr`**: Includes OpenXR loader dynamically for Android builds (APK).
 //! - **`build-dynamic-openxr`**: Builds OpenXR loader from Khronos OpenXR project for Android builds (APK).
 //!
-//! Using `event-loop` your `Cargo.toml` should contain the following lines:
+//! Your `Cargo.toml` should contain the following lines:
 //! ```toml
 //! [lib]
 //! crate-type = ["lib", "cdylib"]
 //!
 //! [dependencies]
-//! stereokit-rust = { version = "0.4.0", features= ["event-loop"] }
-//! winit = { version = "0.30", features = [ "android-native-activity" ] }
+//! stereokit-rust = "0.4.0"
 //!
 //! [target.'cfg(target_os = "android")'.dependencies]
-//! stereokit-rust = { version = "0.4.0" , features = ["event-loop", "build-dynamic-openxr"] }
+//! stereokit-rust = { version = "0.4.0" , features = ["build-dynamic-openxr"] }
 //! log = "0.4"
 //! android_logger = "0.15"
 //! ndk-context = "0.1.1"
@@ -91,9 +89,9 @@
 //!     let mut settings = SkSettings::default();
 //!     settings.app_name("Test");
 //!     # settings.mode(stereokit_rust::sk::AppMode::Offscreen);
-//!     let (sk, event_loop) = settings.init_with_event_loop()
+//!     let sk = settings.init()
 //!         .expect("Should initialize StereoKit");
-//!     the_main(sk, event_loop);
+//!     the_main(sk);
 //!     Sk::shutdown();
 //! }
 //!
@@ -103,17 +101,15 @@
 //! fn main() {}
 //!
 //! # use stereokit_rust::prelude::*;
-//! # use winit::event_loop::EventLoop;
-//! # pub fn the_main(sk: Sk, event_loop: EventLoop<StepperAction>) {}
+//! # pub fn the_main(sk: Sk) {}
 //! ```
 //!
 //! In `src/lib.rs` where you can remove the `target_os = "android" code` if you don't want to build for Android:
 //! ```ignore
 //! use stereokit_rust::{framework::SkClosures, prelude::*, sk::Sk, ui::Ui};
-//! use winit::event_loop::EventLoop;
 //!
 //! #[cfg(target_os = "android")]
-//! use winit::platform::android::activity::AndroidApp;
+//! use android_activity::AndroidApp;
 //!
 //! #[unsafe(no_mangle)]
 //! #[cfg(target_os = "android")]
@@ -127,12 +123,12 @@
 //!               .with_max_level(log::LevelFilter::Debug)
 //!               .with_tag("STKit-rs"),
 //!     );
-//!     let (sk, event_loop) = settings.init_with_event_loop(app).unwrap();
-//!     the_main(sk, event_loop);
+//!     let sk = settings.init(app).unwrap();
+//!     the_main(sk);
 //! }
 //!
 //! /// Main function for All!
-//! pub fn the_main(sk: Sk, event_loop: EventLoop<StepperAction>) {
+//! pub fn the_main(sk: Sk) {
 //!     // Create a grabbable window with a button to exit the application
 //!     let mut window_pose = Ui::popup_pose([0.0, -0.4, 0.0]);
 //!     // Main loop
@@ -144,7 +140,7 @@
 //!         }
 //!         Ui::window_end();
 //!     })
-//!     .run(event_loop);
+//!     .run();
 //! }
 //! ```
 //!
@@ -261,25 +257,22 @@
 
 use std::{ffi::NulError, path::PathBuf};
 
-#[cfg(feature = "event-loop")]
+#[cfg(not(feature = "no-event-loop"))]
 pub use stereokit_macros::IStepper;
 
 pub use stereokit_macros::include_asset_tree;
 
-#[cfg(feature = "event-loop")]
-pub use stereokit_macros::test_init_sk_event_loop as test_init_sk;
-#[cfg(feature = "no-event-loop")]
-pub use stereokit_macros::test_init_sk_no_event_loop as test_init_sk;
+pub use stereokit_macros::test_init_sk;
 
 pub use stereokit_macros::offscreen_mode_stop_here;
 pub use stereokit_macros::xr_mode_stop_here;
 
-#[cfg(feature = "event-loop")]
+#[cfg(not(feature = "no-event-loop"))]
 pub use stereokit_macros::test_screenshot_event_loop as test_screenshot;
 #[cfg(feature = "no-event-loop")]
 pub use stereokit_macros::test_screenshot_no_event_loop as test_screenshot;
 
-#[cfg(feature = "event-loop")]
+#[cfg(not(feature = "no-event-loop"))]
 pub use stereokit_macros::test_steps_event_loop as test_steps;
 #[cfg(feature = "no-event-loop")]
 pub use stereokit_macros::test_steps_no_event_loop as test_steps;
@@ -309,7 +302,7 @@ pub mod font;
 /// These are higher level pieces of functionality that do not necessarily adhere to the same goals and restrictions as
 /// StereoKit’s core functionality does. This corresponds to the C# namespace:
 /// <https://stereokit.net/Pages/StereoKit.Framework.html>
-/// - An event loop manager based on Winit.
+/// - An event loop manager.
 /// - HandMenuRadial related structs, enums and functions.
 ///
 /// At the core of this framework is the [`crate::IStepper`] derive macro, which allows you to create a stepper that can
@@ -463,8 +456,8 @@ pub mod shader;
 /// ## Examples
 /// which are also unit tests:
 ///
-/// [![Sk basic example](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sk_basic_example.jpeg)](sk::SkSettings::init_with_event_loop)
-#[cfg(feature = "event-loop")]
+/// [![Sk basic example](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sk_basic_example.jpeg)](sk::SkSettings::init)
+#[cfg(not(feature = "no-event-loop"))]
 pub mod sk;
 
 /// StereoKit-rust specific structs, enums and functions.
@@ -669,9 +662,9 @@ pub enum StereoKitError {
     ComputeBufferFind(String, String),
     #[error("failed to init stereokit with settings {0}")]
     SkInit(String),
-    #[cfg(feature = "event-loop")]
+    #[cfg(not(feature = "no-event-loop"))]
     #[error("failed to init stereokit event_loop")]
-    SkInitEventLoop(#[from] winit::error::EventLoopError),
+    SkInitEventLoop(#[from] crate::framework::EventLoopError),
     #[error("failed to get a string from native C {0}")]
     CStrError(String),
     #[error("failed to read a file {0}: {1}")]

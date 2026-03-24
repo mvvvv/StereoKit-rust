@@ -22,7 +22,6 @@ This project was made possible thanks to the work of many talents on the followi
 
 * [StereoKit](https://github.com/StereoKit/StereoKit/tree/cb6717aa8bc853e039bf3e0751cf4bff24c94910?tab=readme-ov-file#dependencies) which itself is based on valuable projects.
 * [rust_mobile](https://github.com/rust-mobile) used for the android specific code.
-* [winit](https://github.com/rust-windowing/winit) used for cross-platform management.
 * [openxrs](https://github.com/Ralith/openxrs) nice binding of OpenXR.
 * [blender](https://www.blender.org/) for gltf files, HDRI, models and demo animations
 * [gimp](https://www.gimp.org/) for icons files.

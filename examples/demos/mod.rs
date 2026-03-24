@@ -1,4 +1,4 @@
-#![cfg(feature = "event-loop")]
+#![cfg(not(feature = "no-event-loop"))]
 
 use hand_menu_radial0::HandMenuRadial0;
 use input1::Input1;

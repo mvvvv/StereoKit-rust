@@ -7,31 +7,31 @@ pub mod xr_comp_layers;
 pub mod xr_fb_display_refresh_rate;
 pub mod xr_meta_simultaneous_hands_controllers;
 
-#[cfg(feature = "event-loop")]
+#[cfg(not(feature = "no-event-loop"))]
 pub mod file_browser;
 
-#[cfg(feature = "event-loop")]
+#[cfg(not(feature = "no-event-loop"))]
 pub mod fly_over;
 
-#[cfg(feature = "event-loop")]
+#[cfg(not(feature = "no-event-loop"))]
 pub mod log_window;
 
-#[cfg(feature = "event-loop")]
+#[cfg(not(feature = "no-event-loop"))]
 pub mod notif;
 
-#[cfg(feature = "event-loop")]
+#[cfg(not(feature = "no-event-loop"))]
 pub mod screenshot;
 
-#[cfg(feature = "event-loop")]
+#[cfg(not(feature = "no-event-loop"))]
 pub mod xr_fb_passthrough;
 
-#[cfg(feature = "event-loop")]
+#[cfg(not(feature = "no-event-loop"))]
 pub mod xr_fb_render_model;
 
-#[cfg(feature = "event-loop")]
+#[cfg(not(feature = "no-event-loop"))]
 pub mod xr_meta_virtual_keyboard;
 
-#[cfg(feature = "event-loop")]
+#[cfg(not(feature = "no-event-loop"))]
 pub mod title;
 
 /// All extensions encountered so far :

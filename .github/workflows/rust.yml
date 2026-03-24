@@ -49,15 +49,15 @@ jobs:
       uses: swatinem/rust-cache@v2
 
     - name: Install StereoKit
-      run: cargo install -F no-event-loop --force --path . 
+      run: cargo install --force --path . 
 
     - name: compile shaders
       run: cargo compile_sks --options -f -t s
 
-    # - name: Build event-loop
-    #   run: cargo build --verbose --features event-loop --example main_pc
-    # - name: Run tests event-loop
-    #   run: cargo test --verbose --features event-loop -- --nocapture
+    - name: Build 
+      run: cargo build --verbose --example main_pc
+    - name: Run tests 
+      run: cargo test --verbose -- --nocapture
 
     - name: Build no-event-loop
       run: cargo build --verbose --features no-event-loop --example manual
@@ -83,17 +83,19 @@ jobs:
         sudo apt-get install xvfb clang cmake lld ninja-build libx11-dev libxfixes-dev libvulkan-dev libfontconfig-dev libxkbcommon-x11-0 libxkbcommon0 libxrandr-dev libxcursor-dev libwayland-dev wayland-protocols libxkbcommon-dev mesa-vulkan-drivers mesa-utils llvm libx11-xcb1 libxcb-dri3-0
 
     - name: Install StereoKit
-      run: cargo install -F no-event-loop --force --path . 
+      run: cargo install --force --path . 
 
     - name: compile shaders
       run: cargo compile_sks --options -f -t s
 
-    # - name: Build event-loop
-    #   run: cargo build --verbose --features event-loop --example main_pc
-    # - name: Run tests event-loop
-    #   run: |
-    #     export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.x86_64.json
-    #     xvfb-run --auto-servernum -s "-screen 0 1280x1024x16" cargo test --verbose --features event-loop -- --test-threads=1
+    - name: Build 
+      run: cargo build --verbose --example main_pc
+    - name: Run tests
+      timeout-minutes: 15
+      run: |
+        export DISPLAY=:99
+        Xvfb  :99 -screen 0 1280x1024x24 > /dev/null 2>&1 & sleep 5        
+        cargo test --verbose -- --nocapture
 
     - name: Build no-event-loop
       run: cargo build --verbose --features no-event-loop --example manual
@@ -121,18 +123,19 @@ jobs:
         brew install cmake ninja molten-vk vulkan-headers
 
     - name: Install StereoKit
-      run: cargo install -F no-event-loop --force --path . 
+      run: cargo install--force --path . 
 
     - name: compile shaders
       run: cargo compile_sks --options -f -t s
 
-    # - name: Build event-loop
-    #   run: cargo build --verbose --features event-loop --example main_pc
-    # - name: Run tests event-loop
-    #   run: |
-    #     export DYLD_LIBRARY_PATH=$(brew --prefix molten-vk)/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}
-    #     export VK_ICD_FILENAMES=$(brew --prefix molten-vk)/share/vulkan/icd.d/MoltenVK_icd.json
-    #     cargo test --verbose --features event-loop -- --test-threads=1
+    - name: Build 
+      run: cargo build --verbose --example main_pc
+    - name: Run tests 
+      timeout-minutes: 15
+      run: |
+        export DYLD_LIBRARY_PATH=$(brew --prefix molten-vk)/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}
+        export MVK_CONFIG_LOG_LEVEL=0
+        cargo test -- --nocapture
 
     - name: Build no-event-loop
       run: cargo build --verbose --features no-event-loop --example manual

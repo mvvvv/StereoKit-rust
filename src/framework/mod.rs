@@ -1,7 +1,11 @@
-#![cfg(feature = "event-loop")]
+#![cfg(not(feature = "no-event-loop"))]
 
 mod event_loop;
 
+pub use event_loop::EventLoop;
+pub use event_loop::EventLoopClosedError;
+pub use event_loop::EventLoopError;
+pub use event_loop::EventLoopProxy;
 pub use event_loop::ISTEPPER_REMOVED;
 pub use event_loop::ISTEPPER_RUNNING;
 pub use event_loop::IStepper;
@@ -12,6 +16,7 @@ pub use event_loop::StepperHandler;
 pub use event_loop::StepperId;
 pub use event_loop::StepperState;
 pub use event_loop::Steppers;
+pub use event_loop::WindowEvent;
 
 mod hand_menu;
 

@@ -22,7 +22,7 @@ pub const USAGE: &str = r#"Usage : program [OPTION]
 
 #[allow(dead_code)]
 #[cfg(not(target_os = "android"))]
-#[cfg(feature = "event-loop")]
+#[cfg(not(feature = "no-event-loop"))]
 fn main() {
     use demos::program::launch;
     use std::env;
@@ -117,15 +117,15 @@ fn main() {
     BackendOpenXR::request_ext("XR_META_virtual_keyboard");
     BackendOpenXR::request_ext("XR_FB_render_model");
 
-    let (sk, event_loop) = settings.init_with_event_loop().unwrap();
-    launch(sk, event_loop, is_testing, start_test);
+    let sk = settings.init().unwrap();
+    launch(sk, is_testing, start_test);
     Sk::shutdown();
 }
 
 /// Fake main for android
 #[allow(dead_code)]
 #[cfg(target_os = "android")]
-#[cfg(feature = "event-loop")]
+#[cfg(not(feature = "no-event-loop"))]
 fn main() {}
 
 /// Fake main for no-event-loop asked by cargo test --features no-event-loop

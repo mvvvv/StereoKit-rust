@@ -1,6 +1,6 @@
 use crate::{
     sk::{AppFocus, MainThreadToken, QuitReason, Sk, SkInfo, sk_quit, sk_step},
-    system::{Input, Log},
+    system::Log,
 };
 use std::{
     any::{Any, TypeId},
@@ -8,15 +8,106 @@ use std::{
     collections::VecDeque,
     fmt,
     rc::Rc,
+    sync::mpsc,
     thread::sleep,
     time::Duration,
 };
-use winit::{
-    application::ApplicationHandler,
-    event::WindowEvent,
-    event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
-    window::WindowId,
-};
+
+// --- Custom event loop types replacing winit ---
+/// Error type for failed event loop creation (replaces `winit::error::EventLoopError`).
+#[derive(Debug)]
+pub struct EventLoopError(pub String);
+
+impl fmt::Display for EventLoopError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "event loop error: {}", self.0)
+    }
+}
+
+impl std::error::Error for EventLoopError {}
+
+/// Error returned when sending an event to a closed event loop.
+#[derive(Debug)]
+pub struct EventLoopClosedError<T>(pub T);
+
+impl<T> fmt::Display for EventLoopClosedError<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "event loop closed")
+    }
+}
+
+impl<T: fmt::Debug> std::error::Error for EventLoopClosedError<T> {}
+
+/// A thread-safe proxy to send events into the event loop from any thread.
+/// Replaces `winit::event_loop::EventLoopProxy`.
+pub struct EventLoopProxy<T: 'static> {
+    sender: mpsc::Sender<T>,
+}
+
+impl<T> Clone for EventLoopProxy<T> {
+    fn clone(&self) -> Self {
+        Self { sender: self.sender.clone() }
+    }
+}
+
+impl<T: fmt::Debug> fmt::Debug for EventLoopProxy<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("EventLoopProxy").finish()
+    }
+}
+
+impl<T> EventLoopProxy<T> {
+    /// Send an event to the event loop.
+    pub fn send_event(&self, event: T) -> Result<(), EventLoopClosedError<T>> {
+        self.sender.send(event).map_err(|e| EventLoopClosedError(e.0))
+    }
+}
+
+/// A simple event loop that replaces `winit::event_loop::EventLoop`.
+///
+/// Uses an MPSC channel for cross-thread event delivery. The main loop polls
+/// for incoming events each frame.
+pub struct EventLoop<T: 'static> {
+    receiver: mpsc::Receiver<T>,
+    proxy: EventLoopProxy<T>,
+}
+
+impl<T> EventLoop<T> {
+    /// Create a new event loop with an MPSC channel for user events.
+    pub fn new() -> Self {
+        let (sender, receiver) = mpsc::channel();
+        let proxy = EventLoopProxy { sender };
+        Self { receiver, proxy }
+    }
+
+    /// Create a proxy that can be used to send events from other threads.
+    pub fn create_proxy(&self) -> EventLoopProxy<T> {
+        self.proxy.clone()
+    }
+
+    /// Try to receive a pending event without blocking.
+    pub(crate) fn try_recv(&self) -> Result<T, mpsc::TryRecvError> {
+        self.receiver.try_recv()
+    }
+}
+
+/// Simplified window event enum.
+///
+/// This provides a subset of window-related events. In XR mode most of these are
+/// not relevant, but the enum is kept for API compatibility.
+#[derive(Debug, Clone, PartialEq)]
+pub enum WindowEvent {
+    /// The window has been destroyed.
+    Destroyed,
+    /// A redraw has been requested.
+    RedrawRequested,
+    /// The window gained or lost focus.
+    Focused(bool),
+    /// A close has been requested.
+    CloseRequested,
+    /// Keyboard text input.
+    KeyboardInput { text: Option<String> },
+}
 
 type OnStepClosure<'a> = Box<dyn FnMut(&mut Sk, &MainThreadToken) + 'a>;
 type OnDeviceEventClosure<'a> = Box<dyn FnMut(&mut Sk, WindowEvent) + 'a>;
@@ -29,8 +120,7 @@ enum SleepPhase {
     Stopping,
 }
 
-/// Since winit v0.30 we have to implement [winit::application::ApplicationHandler]
-/// and run the app with [SkClosures::run] or [SkClosures::run_app]
+/// Run the app with [SkClosures::run] or [SkClosures::run_app]
 ///
 /// ### Example
 /// ```
@@ -82,7 +172,7 @@ enum SleepPhase {
 ///     assert_eq!(sk.get_quit_reason(), QuitReason::User);
 ///     Log::info(format!("QuitReason is {:?}", sk.get_quit_reason()));
 /// })
-/// .run(event_loop);
+/// .run();
 /// Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sk_closures.jpeg" alt="screenshot" width="200">
@@ -93,146 +183,72 @@ pub struct SkClosures<'a> {
     on_sleeping_step: OnStepClosure<'a>,
     on_window_event: OnDeviceEventClosure<'a>,
     shutdown: Box<dyn FnMut(&mut Sk) + 'a>,
-    window_id: Option<WindowId>,
     sleeping: SleepPhase,
-}
-
-impl ApplicationHandler<StepperAction> for SkClosures<'_> {
-    fn user_event(&mut self, _event_loop: &ActiveEventLoop, user_event: StepperAction) {
-        Log::diag(format!("UserEvent {user_event:?}"));
-        self.sk.send_event(user_event);
-    }
-
-    fn resumed(&mut self, _event_loop: &ActiveEventLoop) {
-        Log::info("Resumed !!");
-    }
-
-    fn window_event(&mut self, event_loop: &ActiveEventLoop, window_id: WindowId, event: WindowEvent) {
-        if event == WindowEvent::Destroyed {
-            Log::info(format!("SkClosure Window {window_id:?} Destroyed !!!"));
-            return;
-        }
-        match event {
-            WindowEvent::RedrawRequested => {
-                Log::diag("RedrawRequested: Time to wake up");
-                self.sleeping = SleepPhase::WakingUp;
-            }
-            WindowEvent::Focused(value) => {
-                Log::diag(format!("!!!Window {window_id:?} focused: {value:?}"));
-                if self.window_id != Some(window_id) {
-                    if self.window_id.is_none() {
-                        self.window_id = Some(window_id);
-                    } else {
-                        Log::warn(format!("There are more than 1 windows: {:?} & {:?}", self.window_id, window_id));
-                    }
-                }
-                if value {
-                    Log::diag("GainedFocus: Time to wake up");
-                    self.sleeping = SleepPhase::WakingUp;
-                }
-            }
-            WindowEvent::CloseRequested => {
-                Log::info("SkClosure LoopExiting !!");
-                // may be the second time we call this
-                self.sk.steppers.shutdown();
-                (self.shutdown)(&mut self.sk);
-                event_loop.exit();
-            }
-            WindowEvent::KeyboardInput { device_id: _, event, is_synthetic: _ } => match &event.state {
-                winit::event::ElementState::Pressed => {}
-                winit::event::ElementState::Released => {
-                    Input::text_inject_chars(event.logical_key.to_text().unwrap_or("?"));
-                }
-            },
-            _ => (self.on_window_event)(&mut self.sk, event),
-        }
-    }
-
-    // commented due to indiscretion on X11
-    // fn device_event(&mut self, _event_loop: &ActiveEventLoop, device_id: DeviceId, event: DeviceEvent) {
-    //     Log::diag(format!("SkClosure DeviceEvent {:?} -> {:?}", device_id, event));
-    // }
-
-    fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
-        if self.sk.get_app_focus() == AppFocus::Hidden && self.sleeping == SleepPhase::WokeUp {
-            self.sleeping = SleepPhase::Sleeping;
-            Log::diag("Time to sleep")
-        }
-        match self.sleeping {
-            SleepPhase::WokeUp => {
-                self.step(event_loop);
-            }
-            SleepPhase::WakingUp => {
-                self.step(event_loop);
-                if self.sk.get_app_focus() != AppFocus::Hidden {
-                    self.sleeping = SleepPhase::WokeUp;
-                    Log::diag("WokeUp");
-                }
-            }
-            SleepPhase::Sleeping => {
-                sleep(Duration::from_millis(200));
-                if cfg!(not(target_os = "android")) {
-                    self.step(event_loop);
-                }
-                (self.on_sleeping_step)(&mut self.sk, &self.token);
-                if self.sk.get_app_focus() == AppFocus::Active {
-                    self.sleeping = SleepPhase::WakingUp;
-                }
-            }
-            SleepPhase::Stopping => {}
-        }
-    }
-
-    // commented because it floods the log
-    // fn new_events(&mut self, _event_loop: &ActiveEventLoop, cause: winit::event::StartCause) {
-    //     Log::diag(format!("New events :{:?}", cause));
-    // }
-
-    fn suspended(&mut self, _event_loop: &ActiveEventLoop) {
-        Log::info("SkClosure Suspended !!");
-    }
-
-    fn exiting(&mut self, _event_loop: &ActiveEventLoop) {
-        Log::info("SkClosure Exiting !!");
-    }
-
-    fn memory_warning(&mut self, _event_loop: &ActiveEventLoop) {
-        Log::warn("SkClosure Memory Warning !!");
-    }
 }
 
 impl<'a> SkClosures<'a> {
     /// This is the main loop call of the application. See [Steppers] for more details.
-    /// * event_loop: the winit event loop
-    fn step(&mut self, event_loop: &ActiveEventLoop) {
+    fn step(&mut self) {
         if unsafe { sk_step(None) } == 0 {
-            self.window_event(event_loop, self.window_id.unwrap_or(WindowId::dummy()), WindowEvent::CloseRequested);
+            // Shutdown sequence
+            self.sk.steppers.shutdown();
+            (self.shutdown)(&mut self.sk);
             self.sleeping = SleepPhase::Stopping;
             Log::diag("sk_step() says stop()!!");
+            return;
         }
         if !self.sk.steppers.step(&mut self.token) {
             self.sk.steppers.shutdown();
             unsafe { sk_quit(QuitReason::User) }
             Log::diag("The app demand to quit()!!");
-            // see WindowEvent::CloseRequested for  (self.shutdown)(&mut self.sk);
         };
         while let Some(mut action) = self.sk.actions.pop_front() {
             action();
         }
-        if self.sleeping != SleepPhase::Stopping {
-            (self.on_step)(&mut self.sk, &self.token);
-        }
+        (self.on_step)(&mut self.sk, &self.token);
 
         self.token.event_report.clear();
+    }
+
+    /// Process pending external events from the event loop channel.
+    fn poll_events(&mut self, event_loop: &EventLoop<StepperAction>) {
+        // Poll Android activity events to prevent ANR (Application Not Responding).
+        // Without this, the system event queue fills up and Android shows the ANR dialog.
+        // Also detect Resume to wake up from sleep when the headset is turned back on.
+        #[cfg(target_os = "android")]
+        {
+            use android_activity::{MainEvent, PollEvent};
+            let sk_info = self.sk.get_sk_info_clone();
+            let sk_info = sk_info.borrow();
+            let android_app = sk_info.get_android_app();
+            let mut resumed = false;
+            android_app.poll_events(Some(Duration::ZERO), |event| match event {
+                PollEvent::Main(MainEvent::Destroy) => {
+                    Log::info("Android MainEvent::Destroy received");
+                }
+                PollEvent::Main(MainEvent::Resume { .. }) => {
+                    resumed = true;
+                }
+                _ => {}
+            });
+            if resumed && self.sleeping == SleepPhase::Sleeping {
+                self.sleeping = SleepPhase::WakingUp;
+                Log::diag("Android Resume: waking up");
+            }
+        }
+
+        while let Ok(action) = event_loop.try_recv() {
+            Log::diag(format!("UserEvent {action:?}"));
+            self.sk.send_event(action);
+        }
     }
 
     /// Common way to run the main loop with only step and shutdown. This will block the thread until the application is
     /// shuting down.
     /// If you need a process when the headset is going to sleep ~~or track window events~~: use [SkClosures::new] instead.
-    /// * sk: the stereokit context.
-    /// * event_loop: the winit event loop.
-    /// * on_step: a callback that will be called every frame.
-    /// * on_shutdown: a callback that will be called when the application is shutting down. After on_step and after the
+    /// * `sk`: the stereokit context.
+    /// * `on_step`: a callback that will be called every frame.
+    /// * `on_shutdown`: a callback that will be called when the application is shutting down. After on_step and after the
     ///   steppers have been shutdown.
     ///
     /// see also [SkClosures::new]
@@ -247,7 +263,7 @@ impl<'a> SkClosures<'a> {
     /// let transform = Matrix::IDENTITY;
     ///
     /// let mut iter = 0;
-    /// SkClosures::run_app(sk, event_loop, |sk: &mut Sk, token: &MainThreadToken|  {
+    /// SkClosures::run_app(sk, |sk: &mut Sk, token: &MainThreadToken|  {
     ///     // Main loop where we draw stuff and do things!!
     ///     if iter > number_of_steps {sk.quit(None)}
     ///
@@ -262,28 +278,21 @@ impl<'a> SkClosures<'a> {
     /// Sk::shutdown();
     /// ```
     pub fn run_app<U: FnMut(&mut Sk, &MainThreadToken) + 'a, S: FnMut(&mut Sk) + 'a>(
-        sk: Sk,
-        event_loop: EventLoop<StepperAction>,
+        mut sk: Sk,
         on_step: U,
         on_shutdown: S,
     ) {
+        let event_loop = sk.take_event_loop().expect("EventLoop already consumed");
         let mut this = Self {
             sk,
             on_step: Box::new(on_step),
             on_sleeping_step: Box::new(|_sk, _main_thread| {}),
             on_window_event: Box::new(|_sk, _window_event| {}),
             shutdown: Box::new(on_shutdown),
-            token: MainThreadToken {
-                #[cfg(feature = "event-loop")]
-                event_report: vec![],
-            },
-            window_id: None,
+            token: MainThreadToken { event_report: vec![] },
             sleeping: SleepPhase::WakingUp,
         };
-        event_loop.set_control_flow(ControlFlow::Poll);
-        if let Err(err) = event_loop.run_app(&mut this) {
-            Log::err(format!("event_loop.run_app returned with an error : {err:?}"));
-        }
+        this.run_loop(event_loop);
     }
 
     /// Create a new SkClosures with a step function.
@@ -328,7 +337,7 @@ impl<'a> SkClosures<'a> {
     ///     assert_eq!(sk.get_quit_reason(), QuitReason::User);
     ///     Log::info(format!("QuitReason is {:?}", sk.get_quit_reason()));
     /// })
-    /// .run(event_loop);
+    /// .run();
     /// Sk::shutdown();
     /// ```
     pub fn new<U: FnMut(&mut Sk, &MainThreadToken) + 'a>(sk: Sk, on_step: U) -> Self {
@@ -338,11 +347,7 @@ impl<'a> SkClosures<'a> {
             on_sleeping_step: Box::new(|_sk, _main_thread| {}),
             on_window_event: Box::new(|_sk, _windows_event| {}),
             shutdown: Box::new(|_sk| {}),
-            token: MainThreadToken {
-                #[cfg(feature = "event-loop")]
-                event_report: vec![],
-            },
-            window_id: None,
+            token: MainThreadToken { event_report: vec![] },
             sleeping: SleepPhase::WakingUp,
         }
     }
@@ -383,12 +388,46 @@ impl<'a> SkClosures<'a> {
     ///
     /// Have to be launched after [SkClosures::new] and eventually [SkClosures::on_sleeping_step] and [SkClosures::shutdown]
     /// see examples [SkClosures]
-    /// * `event_loop` - The event loop to run the app on. Created by [Sk::init_with_event_loop].
-    pub fn run(&mut self, event_loop: EventLoop<StepperAction>) {
-        event_loop.set_control_flow(ControlFlow::Poll);
-        if let Err(err) = event_loop.run_app(self) {
-            Log::err(format!("event_loop.run_app returned with an error : {err:?}"));
+    pub fn run(&mut self) {
+        let event_loop = self.sk.take_event_loop().expect("EventLoop already consumed");
+        self.run_loop(event_loop);
+    }
+
+    /// Internal main loop implementation.
+    fn run_loop(&mut self, event_loop: EventLoop<StepperAction>) {
+        loop {
+            // Process external events from the channel
+            self.poll_events(&event_loop);
+
+            if self.sk.get_app_focus() == AppFocus::Hidden && self.sleeping == SleepPhase::WokeUp {
+                self.sleeping = SleepPhase::Sleeping;
+                Log::diag("Time to sleep")
+            }
+            match self.sleeping {
+                SleepPhase::WokeUp => {
+                    self.step();
+                }
+                SleepPhase::WakingUp => {
+                    self.step();
+                    if self.sk.get_app_focus() != AppFocus::Hidden {
+                        self.sleeping = SleepPhase::WokeUp;
+                        Log::diag("WokeUp");
+                    }
+                }
+                SleepPhase::Sleeping => {
+                    sleep(Duration::from_millis(200));
+                    if cfg!(not(target_os = "android")) {
+                        self.step();
+                    }
+                    (self.on_sleeping_step)(&mut self.sk, &self.token);
+                    if self.sk.get_app_focus() == AppFocus::Active {
+                        self.sleeping = SleepPhase::WakingUp;
+                    }
+                }
+                SleepPhase::Stopping => break,
+            }
         }
+        Log::info("SkClosure Exiting !!");
     }
 }
 
@@ -519,7 +558,7 @@ pub trait IStepper {
 /// trigger an action:
 /// - Main thread/program where you can use sk: [Sk::send_event] or [crate::sk::Sk::quit] directly.
 /// - From any IStepper you should use [SkInfo::send_event].
-/// - From any threads you should use [winit::event_loop::EventLoopProxy::send_event]. You can get a proxy clone
+/// - From any threads you should use [EventLoopProxy::send_event]. You can get a proxy clone
 ///   from [SkInfo::get_event_loop_proxy] or [Sk::get_event_loop_proxy].
 ///
 /// <https://stereokit.net/Pages/StereoKit/SK.html>
@@ -872,14 +911,12 @@ pub const ISTEPPER_REMOVED: &str = "IStepper_Removed";
 /// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/steppers.jpeg" alt="screenshot" width="200">
-#[cfg(feature = "event-loop")]
 pub struct Steppers {
     sk_info: Rc<RefCell<SkInfo>>,
     running_steppers: Vec<StepperHandler>,
     stepper_actions: VecDeque<StepperAction>,
 }
 
-#[cfg(feature = "event-loop")]
 impl Steppers {
     /// The only way to create a Steppers manager. You don't need it unless you want to swap different steppers.
     /// * `sk_info` - A SkInfo Rc clone of the running Sk instance.
@@ -904,7 +941,7 @@ impl Steppers {
     /// Push an action to consumme befor next frame
     /// * `action` - The action to push.
     ///
-    /// see also [Sk::send_event] [winit::event_loop::EventLoopProxy::send_event]
+    /// see also [Sk::send_event] [EventLoopProxy::send_event]
     /// ### Example
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!

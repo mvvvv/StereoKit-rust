@@ -423,7 +423,7 @@ pub fn get_files(
     vec
 }
 
-/// Open winit IME keyboard. Does nothing on Quest
+/// Open IME keyboard. Does nothing on Quest
 #[cfg(target_os = "android")]
 pub fn show_soft_input_ime(sk_info: &Option<Rc<RefCell<SkInfo>>>, show: bool) -> bool {
     if sk_info.is_none() {
@@ -440,7 +440,7 @@ pub fn show_soft_input_ime(sk_info: &Option<Rc<RefCell<SkInfo>>>, show: bool) ->
     }
     true
 }
-/// Open nothing has we don't have a winit IME keyboard
+/// Open nothing has we don't have an IME keyboard
 #[cfg(not(target_os = "android"))]
 pub fn show_soft_input_ime(_sk_info: &Option<Rc<RefCell<SkInfo>>>, _show: bool) -> bool {
     false

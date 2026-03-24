@@ -9,8 +9,6 @@
         "args": [
           "test",
           "--no-run",
-          "--features",
-          "event-loop",
           "--lib",
           "--package=stereokit-rust", 
         ],
@@ -32,8 +30,6 @@
       "cargo": {
         "args": [
           "build",
-          "--features",
-          "event-loop",
           "--example=main_pc"
         ],
         "filter": {
@@ -56,8 +52,6 @@
       "cargo": {
         "args": [
           "build",
-          "--features",
-          "event-loop",
           "--example=main_pc"
         ],
         "filter": {
@@ -74,7 +68,7 @@
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Debug 'manual' example (without winit)",
+      "name": "Debug 'manual' example (without framework, event loop, tools)",
       "cargo": {
         "args": [
           "build",
@@ -100,8 +94,6 @@
       "cargo": {
         "args": [
           "build",
-          "--features",
-          "event-loop",
           "--example=test"
         ],
         "filter": {
