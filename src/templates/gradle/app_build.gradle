@@ -1,0 +1,133 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+
+plugins {
+    id 'org.mozilla.rust-android-gradle.rust-android'
+}
+apply plugin: 'com.android.application'
+
+dependencies {
+    implementation fileTree(dir: '../target/runtime_libs', include: ['sk_app.jar'])
+}
+
+def hostTag
+if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+    hostTag = "windows-x86_64"
+} else if (Os.isFamily(Os.FAMILY_MAC)) {
+    hostTag = "darwin-x86_64"
+} else {
+    hostTag = "linux-x86_64"
+}
+
+def openxrOption = findProperty("cargo.openxr")
+def libDirs = []
+if (openxrOption != null && openxrOption != "use-that-of-the-device") {
+    if (openxrOption == "build-dynamic-openxr") {
+        libDirs.add("../target/runtime_libs")
+    } else {
+        libDirs.add(openxrOption)
+    }
+}
+
+def ndkRoot = System.getenv("ANDROID_NDK_ROOT")
+if (ndkRoot == null || ndkRoot.isEmpty()) {
+    throw new GradleException("ANDROID_NDK_ROOT environment variable is not set. Please install the Android NDK and set ANDROID_NDK_ROOT.")
+}
+
+// android plugin https://developer.android.com/build
+android {
+    namespace findProperty("android.applicationId")
+    compileSdk findProperty("android.compileSdkVersion") as Integer
+    ndkVersion = new File(ndkRoot).getName()
+
+    defaultConfig {
+        targetSdkVersion findProperty("android.targetSdkVersion") as Integer
+        minSdkVersion findProperty("android.minSdkVersion") as Integer
+        applicationId findProperty("android.applicationId")
+        versionCode findProperty("android.versionCode") as Integer
+        versionName findProperty("android.versionName")
+
+        manifestPlaceholders = [
+            appName:   findProperty("android.appname"),
+            libName:   findProperty("cargo.libname"),
+            mainEntry: findProperty("android.main")
+        ]
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    sourceSets {
+        main {
+            java {
+                assets.srcDirs = ['../assets']
+                res.srcDirs = ['../res']
+            }
+            jniLibs {
+                srcDirs += libDirs
+                srcDirs += layout.buildDirectory.dir("ndkLibs")
+            }
+        }
+    }
+
+    signingConfigs {
+        release {
+            storeFile file(findProperty("RELEASE_STORE_FILE") ?: "/dev/null")
+            storePassword findProperty("RELEASE_STORE_PASSWORD") ?: ""
+            keyAlias findProperty("RELEASE_KEY_ALIAS") ?: ""
+            keyPassword findProperty("RELEASE_KEY_PASSWORD") ?: ""
+            v1SigningEnabled true
+            v2SigningEnabled true
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            signingConfig signingConfigs.release
+        }
+        debug {
+            minifyEnabled false
+            debuggable true
+        }
+    }
+}
+
+// cargo-ndk plugin https://github.com/mozilla/rust-android-gradle
+cargo {
+    module = ".."
+    libname = findProperty("cargo.libname")
+    targets = findProperty("cargo.targets").split(",")
+    prebuiltToolchains = true
+    profile = (project.gradle.startParameter.taskNames.any { it.toLowerCase().contains('release') }) ? "release" : "debug"
+}
+
+tasks.whenTaskAdded { task ->
+    if (task.name == 'mergeDebugJniLibFolders' || task.name == 'mergeReleaseJniLibFolders') {
+        task.dependsOn 'cargoBuild'
+        for (target in cargo.targets) {
+            task.dependsOn "copy_libc++_shared${target.capitalize()}"
+        }
+    }
+    if (task.name == 'compileDebugJavaWithJavac' || task.name == 'compileReleaseJavaWithJavac') {
+        task.dependsOn 'cargoBuild'
+    }
+}
+
+for (target in cargo.targets) {
+    tasks.register("copy_libc++_shared${target.capitalize()}", Copy) {
+        def (abi, archTriple) = [
+            arm:    ['armeabi-v7a', 'arm-linux-androideabi'],
+            arm64:  ['arm64-v8a',  'aarch64-linux-android'],
+            x86:    ['x86',        'i686-linux-android'],
+            x86_64: ['x86_64',     'x86_64-linux-android'],
+        ][target]
+
+        def from_path = "${android.ndkDirectory}/toolchains/llvm/prebuilt/$hostTag/sysroot/usr/lib/$archTriple/libc++_shared.so"
+        def into_path = layout.buildDirectory.dir("ndkLibs/$abi")
+
+        from from_path
+        into into_path
+    }
+}

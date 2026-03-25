@@ -45,6 +45,9 @@ crate-type = ["lib", "cdylib"]
 name = "cargo-compile_sks"
 
 [[bin]]
+name = "cargo-new_sk_rs_project"
+
+[[bin]]
 name = "cargo-build_sk_rs"
 
 [build-dependencies]
@@ -56,8 +59,8 @@ thiserror = "2.0"
 bitflags = "2.11"
 glam = { version = "0.32", optional = true }
 openxr-sys = "0.13"
-stereokit-macros = { path = "./stereokit-macros", version = "0.5.1" }
-#stereokit-macros = "0.5.1"
+stereokit-macros = { path = "./stereokit-macros", version = "0.6" }
+#stereokit-macros = "0.6"
 
 [target.'cfg(target_os = "android")'.dependencies]
 log = "0.4"

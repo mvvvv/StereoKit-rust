@@ -1,0 +1,58 @@
+plugins {
+    id 'com.android.application' version '8.5.0' apply false
+    id 'com.android.library' version '8.5.0' apply false
+    id "org.mozilla.rust-android-gradle.rust-android" version "0.9.6"
+}
+
+layout.buildDirectory.set(layout.projectDirectory.dir("target/gradleBuild"))
+
+tasks.register("buildDebug") {
+    description = "Build the Apk for Debug"
+    dependsOn ":app:assembleDebug"
+}
+
+tasks.register("reversePort", Exec) {
+    def from = findProperty("adb.portFrom")
+    def to = findProperty("adb.portTo")
+    commandLine 'adb', 'reverse', from, to
+}
+
+tasks.register("launchDebug", Exec) {
+    dependsOn ":app:installDebug"
+    def packageS = findProperty("android.applicationId")
+    def main = findProperty("android.main")
+    commandLine 'adb', 'shell', 'am', 'start', '-a', 'android.intent.action.MAIN', '-n', packageS + "/" + main
+}
+
+task getUid {
+    description = "Print the adb logcat command for this Apk"
+    dependsOn launchDebug
+    doLast {
+        def packageS = findProperty("android.applicationId")
+        def logcatCmd = "./logcat.cmd"
+        def fileContents = new File(logcatCmd).getText()
+        new ByteArrayOutputStream().withStream { uid ->
+            def result = exec {
+                commandLine = ['adb', 'shell', 'pm', 'list', 'package', '-U', packageS]
+                standardOutput = uid
+            }
+            def app_uid = uid.toString().tokenize(':')[-1]
+            def logcat = 'adb logcat -v color --uid ' +  app_uid.toString()
+            if (fileContents.contains('adb logcat')) {
+                new File(logcatCmd).text = logcat
+            } else {
+                logger.error('File ' + logcatCmd + ' must contain "abi logcat" ')
+            }
+            
+        }
+    }
+}
+
+tasks.register("run") {
+    dependsOn "getUid"
+}
+
+tasks.register("buildRelease") {
+    description = "Build the Apk for Release"
+    dependsOn ":app:assembleRelease"
+}

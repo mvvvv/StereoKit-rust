@@ -396,9 +396,6 @@ impl<'a> SkClosures<'a> {
     /// Internal main loop implementation.
     fn run_loop(&mut self, event_loop: EventLoop<StepperAction>) {
         loop {
-            // Process external events from the channel
-            self.poll_events(&event_loop);
-
             if self.sk.get_app_focus() == AppFocus::Hidden && self.sleeping == SleepPhase::WokeUp {
                 self.sleeping = SleepPhase::Sleeping;
                 Log::diag("Time to sleep")
@@ -415,6 +412,8 @@ impl<'a> SkClosures<'a> {
                     }
                 }
                 SleepPhase::Sleeping => {
+                    // Process external events from the channel
+                    self.poll_events(&event_loop);
                     sleep(Duration::from_millis(200));
                     if cfg!(not(target_os = "android")) {
                         self.step();

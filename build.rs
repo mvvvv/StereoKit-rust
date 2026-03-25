@@ -314,6 +314,13 @@ fn main() {
                 } else if let Err(_e) = fs::remove_file(dest_file_so) {
                 }
 
+                // Copy sk_app.jar for Android APK builds (needed by SkAppActivity)
+                let sk_app_jar = dst.join("build/_deps/sk_app-build/sk_app.jar");
+                if sk_app_jar.exists() {
+                    let dest_jar = target_dir.join("runtime_libs/sk_app.jar");
+                    fs::copy(&sk_app_jar, &dest_jar).expect("Unable to copy sk_app.jar");
+                }
+
                 // // On Android, we must ensure that we're dynamically linking against the C++ standard library.
                 // // For more details, see https://github.com/rust-windowing/android-ndk-rs/issues/167
                 // // build tools do not add libc++_shared.so to the APK so we must do it ourselves

@@ -80,68 +80,12 @@
 //!
 //! In `src/bin/main_vr_app.rs`, if you intend to build a PC VR/MR app:
 //! ```ignore
-//! #[allow(dead_code)]
-//! #[cfg(not(target_os = "android"))]
-//! fn main() {
-//!     use stereokit_rust::sk::{SkSettings, Sk};
-//!     use vr_app::the_main;
-//!     // Initialize StereoKit with default settings
-//!     let mut settings = SkSettings::default();
-//!     settings.app_name("Test");
-//!     # settings.mode(stereokit_rust::sk::AppMode::Offscreen);
-//!     let sk = settings.init()
-//!         .expect("Should initialize StereoKit");
-//!     the_main(sk);
-//!     Sk::shutdown();
-//! }
-//!
-//! #[allow(dead_code)]
-//! #[cfg(target_os = "android")]
-//! //fake main fn for android as entry is lib.rs/android_main(...)
-//! fn main() {}
-//!
-//! # use stereokit_rust::prelude::*;
-//! # pub fn the_main(sk: Sk) {}
+#![doc = include_str!("templates/main_bin.rs")]
 //! ```
 //!
 //! In `src/lib.rs` where you can remove the `target_os = "android" code` if you don't want to build for Android:
 //! ```ignore
-//! use stereokit_rust::{framework::SkClosures, prelude::*, sk::Sk, ui::Ui};
-//!
-//! #[cfg(target_os = "android")]
-//! use android_activity::AndroidApp;
-//!
-//! #[unsafe(no_mangle)]
-//! #[cfg(target_os = "android")]
-//! pub fn android_main(app: AndroidApp) {
-//!     use stereokit_rust::sk::SkSettings;
-//!     // Initialize StereoKit with default settings
-//!     let mut settings = SkSettings::default();
-//!     settings.app_name("Test");
-//!     android_logger::init_once(
-//!         android_logger::Config::default()
-//!               .with_max_level(log::LevelFilter::Debug)
-//!               .with_tag("STKit-rs"),
-//!     );
-//!     let sk = settings.init(app).unwrap();
-//!     the_main(sk);
-//! }
-//!
-//! /// Main function for All!
-//! pub fn the_main(sk: Sk) {
-//!     // Create a grabbable window with a button to exit the application
-//!     let mut window_pose = Ui::popup_pose([0.0, -0.4, 0.0]);
-//!     // Main loop
-//!     SkClosures::new(sk, |sk, _token| {
-//!         // Exit button
-//!         Ui::window_begin("Hello world!", &mut window_pose, None, None, None);
-//!         if Ui::button("Exit", None) {
-//!             sk.quit(None)
-//!         }
-//!         Ui::window_end();
-//!     })
-//!     .run();
-//! }
+#![doc = include_str!("templates/lib_rs.rs")]
 //! ```
 //!
 //! Hundreds of examples (which are also unit tests) are available in this documentation. If you like to learn by

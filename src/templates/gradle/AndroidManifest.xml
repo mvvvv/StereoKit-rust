@@ -1,0 +1,103 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-feature android:name="android.hardware.vulkan.level" android:required="true" />
+    <uses-feature android:name="android.hardware.vr.headtracking" android:required="true" />
+    <uses-feature android:name="oculus.software.handtracking" android:required="false" />
+    <uses-feature android:name="oculus.software.face_tracking" android:required="false" />
+    <uses-feature android:name="oculus.software.eye_tracking" android:required="false" />
+    <uses-feature android:name="oculus.software.overlay_keyboard" android:required="false" />
+    <uses-feature android:name="oculus.software.trackedkeyboard" android:required="false" />
+    <uses-feature android:name="com.oculus.software.body_tracking" android:required="false" />
+    <uses-feature android:name="com.oculus.experimental.enabled" android:required="true" />
+    <uses-feature android:name="com.oculus.feature.PASSTHROUGH" android:required="true" />
+    <uses-feature android:name="com.oculus.feature.RENDER_MODEL" android:required="false" />
+
+    <uses-feature android:name="android.software.xr.api.openxr" android:required="true" />
+    <uses-feature android:name="android.hardware.xr.input.hand_tracking" android:required="false" />
+    <uses-feature android:name="android.hardware.xr.input.controller" android:required="false" />
+    <uses-feature android:name="android.hardware.xr.input.eye_tracking" android:required="false" />
+
+    <uses-feature android:name="wave.feature.handtracking" android:required="false" />
+    <uses-feature android:name="wave.feature.tracker" android:required="false" />
+
+    <uses-permission android:name="org.khronos.openxr.permission.OPENXR" />
+    <uses-permission android:name="org.khronos.openxr.permission.OPENXR_SYSTEM" />
+    <queries>
+        <provider
+            android:authorities="org.khronos.openxr.runtime_broker;org.khronos.openxr.system_runtime_broker"
+            android:name="org.khronos.openxr" />
+        <intent>
+            <action android:name="org.khronos.openxr.OpenXRRuntimeService" />
+        </intent>
+        <intent>
+            <action android:name="org.khronos.openxr.OpenXRApiLayerService" />
+        </intent>
+    </queries>
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.CAPTURE_AUDIO_OUTPUT" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+
+    <uses-permission android:name="horizonos.permission.HAND_TRACKING" />
+    <uses-permission android:name="com.oculus.permission.BODY_TRACKING" />
+    <uses-permission android:name="horizonos.permission.FACE_TRACKING" />
+    <uses-permission android:name="horizonos.permission.EYE_TRACKING" />
+    <uses-permission android:name="com.oculus.permission.RENDER_MODEL" />
+    <uses-permission android:name="horizonos.permission.USE_ANCHOR_API" />
+    <uses-permission android:name="horizonos.permission.USE_SCENE" />
+    <uses-permission android:name="com.oculus.permission.BOUNDARY_VISIBILITY" />
+    <uses-permission android:name="horizonos.permission.IMPORT_EXPORT_IOT_MAP_DATA" />
+    <uses-permission android:name="com.oculus.permission.TRACKED_KEYBOARD" />
+    <uses-permission android:name="com.oculus.permission.USE_COLOCATION_DISCOVERY_API" />
+
+    <uses-permission android:name="android.permission.SCENE_UNDERSTANDING_COARSE" />
+    <uses-permission android:name="android.permission.EYE_TRACKING_FINE" />
+
+    <uses-permission android:name="com.qualcomm.qti.qxr.QXRServiceClientPermission" />
+    <queries>
+        <package android:name="com.qualcomm.qti.spaces.services" />
+        <package android:name="com.qualcomm.qti.openxrruntime" />
+        <intent>
+            <action android:name="com.qualcomm.qti.openxr.spaces.intent.action.BIND" />
+        </intent>
+    </queries>
+    <application
+        android:theme="@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen"
+        android:hasCode="true"
+        android:icon="@mipmap/app_icon"
+        android:label="${appName}">
+        <meta-data android:name="com.oculus.handtracking.version" android:value="V2.0" />
+        <meta-data android:name="com.oculus.ossplash" android:value="true" />
+        <meta-data android:name="com.oculus.supportedDevices" android:value="quest2|questpro|quest3" />
+        <meta-data android:name="com.oculus.intent.category.VR" android:value="vr_only" />
+        <uses-native-library android:name="libopenxr.google.so" android:required="false" />
+
+        <meta-data android:name="pvr.app.type" android:value="vr" />
+        <meta-data android:name="handtracking" android:value="1" />
+
+        <meta-data android:name="spaces.version" android:value="0.15.0" />
+        <property android:name="android.window.PROPERTY_ACTIVITY_XR_START_MODE"
+            android:value="XR_ACTIVITY_START_MODE_FULL_SPACE_UNMANAGED" />
+        <property
+            android:name="android.window.PROPERTY_XR_BOUNDARY_TYPE_RECOMMENDED"
+            android:value="XR_BOUNDARY_TYPE_LARGE" />
+        <activity
+            android:configChanges="density|keyboard|keyboardHidden|navigation|orientation|screenLayout|screenSize|uiMode"
+            android:launchMode="singleTask"
+            android:name="${mainEntry}"
+            android:exported="true"
+            android:screenOrientation="landscape" android:resizeableActivity="false">
+            <meta-data android:name="com.oculus.vr.focusaware" android:value="true" />
+            <meta-data android:name="android.app.lib_name" android:value="${libName}" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="org.khronos.openxr.intent.category.IMMERSIVE_HMD" />
+                <category android:name="com.oculus.intent.category.VR" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
