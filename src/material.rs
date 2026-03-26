@@ -707,7 +707,7 @@ impl Material {
     /// channels, respectively. This represents the texture param ‘metal’.
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
-    /// see also [`Material::metallic_amount`]
+    /// see also [`Material::metallic_amount`] [`crate::tex::TexPackSource`] [`crate::tex::Tex::from_packed`]
     /// see also [`material_set_param_id`]
     /// ### Examples
     /// ```
@@ -774,6 +774,7 @@ impl Material {
         self
     }
 
+    /// See instead [`Material::metal_tex`] applied with [`crate::tex::TexPackSource`]
     /// Used by physically based shaders, this can be used for baked ambient occlusion lighting, or to remove specular
     /// reflections from areas that are surrounded by geometry that would likely block reflections. This represents the
     /// texture param ‘occlusion’.
@@ -785,7 +786,7 @@ impl Material {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{material::Material, tex::Tex};
     ///
-    /// let mut material = Material::pbr().tex_file_copy("textures/parquet2/parquet2.ktx2", true, None).unwrap();
+    /// let mut material = Material::from_file("shaders/large_tile_pbr.hlsl.sks", None).unwrap();
     ///
     /// let tex = Tex::from_file("textures/parquet2/parquet2ao.ktx2", true, None)
     ///                    .expect("tex should be created");
