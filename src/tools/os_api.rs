@@ -7,6 +7,8 @@ use std::path::PathBuf;
 use std::{cell::RefCell, rc::Rc};
 
 use crate::sk::SkInfo;
+#[cfg(target_os = "android")]
+use crate::system::BackendAndroid;
 use crate::system::{Backend, BackendOpenXR, BackendXRType, Log};
 
 /// When browsing files because of Android we need this API.
@@ -451,10 +453,9 @@ pub fn show_soft_input_ime(_sk_info: &Option<Rc<RefCell<SkInfo>>>, _show: bool) 
 pub fn show_soft_input(show: bool) -> bool {
     use jni::{jni_sig, jni_str, objects::JValue};
 
-    let ctx = ndk_context::android_context();
-    let vm = unsafe { jni::JavaVM::from_raw(ctx.vm() as _) };
+    let vm = unsafe { jni::JavaVM::from_raw(BackendAndroid::java_vm() as _) };
     vm.attach_current_thread(|env| -> jni::errors::Result<bool> {
-        let activity = unsafe { jni::objects::JObject::from_raw(env, ctx.context() as _) };
+        let activity = unsafe { jni::objects::JObject::from_raw(env, BackendAndroid::activity() as _) };
         let class_ctxt = env.find_class(jni_str!("android/content/Context"))?;
         let ims = env.get_static_field(class_ctxt, jni_str!("INPUT_METHOD_SERVICE"), jni_sig!("Ljava/lang/String;"))?;
         let im_manager = env
@@ -512,10 +513,9 @@ pub fn launch_browser_android(url: &str) -> bool {
     };
 
     Log::diag(format!("launch_browser_android: Attempting to open URL: {}", url));
-    let ctx = ndk_context::android_context();
-    let vm = unsafe { jni::JavaVM::from_raw(ctx.vm() as _) };
+    let vm = unsafe { jni::JavaVM::from_raw(BackendAndroid::java_vm() as _) };
     vm.attach_current_thread(|env| -> jni::errors::Result<bool> {
-        let activity = unsafe { jni::objects::JObject::from_raw(env, ctx.context() as _) };
+        let activity = unsafe { jni::objects::JObject::from_raw(env, BackendAndroid::activity() as _) };
         // Create ACTION_VIEW object
         let intent_class = env.find_class(jni_str!("android/content/Intent"))?;
         let action_view =
@@ -726,11 +726,10 @@ pub fn system_deep_link(action: SystemAction) -> bool {
         intent_data, uri_value
     ));
 
-    let ctx = ndk_context::android_context();
-    let vm = unsafe { jni::JavaVM::from_raw(ctx.vm() as _) };
+    let vm = unsafe { jni::JavaVM::from_raw(BackendAndroid::java_vm() as _) };
     vm.attach_current_thread(|env| -> jni::errors::Result<bool> {
         use jni::{jni_sig, jni_str};
-        let activity = unsafe { jni::objects::JObject::from_raw(env, ctx.context() as _) };
+        let activity = unsafe { jni::objects::JObject::from_raw(env, BackendAndroid::activity() as _) };
 
         // Get PackageManager from context (following Meta specification)
         let package_manager = env

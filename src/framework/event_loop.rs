@@ -211,29 +211,22 @@ impl<'a> SkClosures<'a> {
     }
 
     /// Process pending external events from the event loop channel.
-    fn poll_events(&mut self, event_loop: &EventLoop<StepperAction>) {
+    fn poll_events(
+        &mut self,
+        event_loop: &EventLoop<StepperAction>,
+        #[cfg(target_os = "android")] android_app: &android_activity::AndroidApp,
+    ) {
         // Poll Android activity events to prevent ANR (Application Not Responding).
         // Without this, the system event queue fills up and Android shows the ANR dialog.
         // Also detect Resume to wake up from sleep when the headset is turned back on.
         #[cfg(target_os = "android")]
         {
-            use android_activity::{MainEvent, PollEvent};
-            let sk_info = self.sk.get_sk_info_clone();
-            let sk_info = sk_info.borrow();
-            let android_app = sk_info.get_android_app();
-            let mut resumed = false;
-            android_app.poll_events(Some(Duration::ZERO), |event| match event {
-                PollEvent::Main(MainEvent::Destroy) => {
-                    Log::info("Android MainEvent::Destroy received");
+            use android_activity::MainEvent;
+            if let Some(MainEvent::Resume { .. }) = Sk::poll_events(android_app) {
+                if self.sleeping == SleepPhase::Sleeping {
+                    self.sleeping = SleepPhase::WakingUp;
+                    Log::diag("Android Resume: waking up");
                 }
-                PollEvent::Main(MainEvent::Resume { .. }) => {
-                    resumed = true;
-                }
-                _ => {}
-            });
-            if resumed && self.sleeping == SleepPhase::Sleeping {
-                self.sleeping = SleepPhase::WakingUp;
-                Log::diag("Android Resume: waking up");
             }
         }
 
@@ -395,7 +388,17 @@ impl<'a> SkClosures<'a> {
 
     /// Internal main loop implementation.
     fn run_loop(&mut self, event_loop: EventLoop<StepperAction>) {
+        // Clone the AndroidApp once before the loop to avoid borrowing SkInfo each frame.
+        #[cfg(target_os = "android")]
+        let android_app = self.sk.get_sk_info_clone().borrow().get_android_app().clone();
+
         loop {
+            self.poll_events(
+                &event_loop,
+                #[cfg(target_os = "android")]
+                &android_app,
+            );
+
             if self.sk.get_app_focus() == AppFocus::Hidden && self.sleeping == SleepPhase::WokeUp {
                 self.sleeping = SleepPhase::Sleeping;
                 Log::diag("Time to sleep")
@@ -412,8 +415,6 @@ impl<'a> SkClosures<'a> {
                     }
                 }
                 SleepPhase::Sleeping => {
-                    // Process external events from the channel
-                    self.poll_events(&event_loop);
                     sleep(Duration::from_millis(200));
                     if cfg!(not(target_os = "android")) {
                         self.step();

@@ -967,6 +967,35 @@ impl Sk {
         }
     }
 
+    /// Poll Android activity events (non-blocking) and return the most significant [`MainEvent`] if any.
+    /// This prevents ANR (Application Not Responding) by draining the system event queue.
+    ///
+    /// Returns `Some(MainEvent::Destroy)` or `Some(MainEvent::Resume{..})` etc. if such events were received,
+    /// or `None` if no significant event occurred.
+    #[cfg(target_os = "android")]
+    pub fn poll_events(app: &AndroidApp) -> Option<MainEvent<'static>> {
+        let mut result: Option<MainEvent<'static>> = None;
+        app.poll_events(Some(std::time::Duration::ZERO), |event| match event {
+            PollEvent::Main(main_event) => match main_event {
+                MainEvent::Destroy => {
+                    Log::info("Android MainEvent::Destroy received");
+                    result = Some(MainEvent::Destroy);
+                }
+                MainEvent::Resume { .. } => {
+                    // Resume takes priority unless Destroy was already seen
+                    if !matches!(result, Some(MainEvent::Destroy)) {
+                        // SAFETY: MainEvent::Resume loader references are valid for 'static
+                        // because AndroidApp holds its state in an Arc
+                        result = Some(unsafe { std::mem::transmute(main_event) });
+                    }
+                }
+                _ => {}
+            },
+            _ => {}
+        });
+        result
+    }
+
     /// Initialize StereoKit with the given settings (here for Android platform)
     /// This should be done after Sk::poll_first_event(...) has been called in the main thread.
     /// <https://stereokit.net/Pages/StereoKit/SK/Initialize.html>
@@ -983,12 +1012,8 @@ impl Sk {
         #[cfg(not(feature = "no-event-loop"))]
         let event_loop_proxy = event_loop.create_proxy();
 
-        let (vm_pointer, jobject_pointer) = {
-            {
-                let context = ndk_context::android_context();
-                (context.vm(), context.context())
-            }
-        };
+        let vm_pointer = app.vm_as_ptr();
+        let jobject_pointer = app.activity_as_ptr();
         settings.android_java_vm = vm_pointer;
         settings.android_activity = jobject_pointer;
 
@@ -1609,19 +1634,12 @@ impl Sk {
     #[deprecated(since = "0.40.0", note = "see [crate::framework::SkClosures] instead")]
     pub fn run<U: FnMut(&mut Sk), S: FnMut(&mut Sk)>(mut self, mut on_step: U, mut on_shutdown: S) {
         let event_loop = self.event_loop.take().expect("EventLoop already consumed");
+        #[cfg(target_os = "android")]
+        let android_app = self.sk_info.borrow().get_android_app().clone();
+
         loop {
-            // Poll Android activity events to prevent ANR
             #[cfg(target_os = "android")]
-            {
-                let sk_info = self.sk_info.borrow();
-                let android_app = sk_info.get_android_app();
-                android_app.poll_events(Some(std::time::Duration::ZERO), |event| match event {
-                    PollEvent::Main(MainEvent::Destroy) => {
-                        Log::info("Android MainEvent::Destroy received");
-                    }
-                    _ => {}
-                });
-            }
+            let _ = Sk::poll_events(&android_app);
 
             // Process external events from the channel
             while let Ok(action) = event_loop.try_recv() {

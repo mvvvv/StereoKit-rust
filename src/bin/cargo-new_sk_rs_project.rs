@@ -181,7 +181,11 @@ fn main() {
     if with_gradle {
         println!();
         println!("To build and run on an Android headset:");
-        println!("  ./gradlew run && ./logcat.cmd");
+        if cfg!(target_os = "windows") {
+            println!("  .\\gradlew run && logcat.cmd");
+        } else {
+            println!("  ./gradlew run && sh logcat.cmd");
+        }
     }
     println!();
     println!("See https://stereokit.net/ and the stereokit-rust documentation for more information.");
@@ -196,7 +200,6 @@ stereokit-rust = {{ version = "{SK_VERSION}", features = ["build-dynamic-openxr"
 log = "0.4"
 android_logger = "0.15"
 android-activity = {{ version = "0.6", features = ["native-activity"] }}
-ndk-context = "0.1.1"
 ndk = "0.9.0"
 "#
         )
@@ -320,6 +323,7 @@ fn write_gradle_files(project_path: &Path, project_name: &str, crate_name: &str)
 
     // Gradle wrapper
     write_file(project_path, "gradlew", GRADLEW);
+    set_executable(project_path, "gradlew");
     write_file(project_path, "gradlew.bat", GRADLEW_BAT);
     fs::create_dir_all(project_path.join("gradle/wrapper"))
         .unwrap_or_else(|e| panic!("Failed to create gradle/wrapper: {e}"));
@@ -347,3 +351,15 @@ fn write_bytes(project_path: &Path, relative: &str, content: &[u8]) {
     let path = project_path.join(relative);
     fs::write(&path, content).unwrap_or_else(|e| panic!("Failed to write {}: {e}", path.display()));
 }
+
+#[cfg(unix)]
+fn set_executable(project_path: &Path, relative: &str) {
+    use std::os::unix::fs::PermissionsExt;
+    let path = project_path.join(relative);
+    let perms = fs::Permissions::from_mode(0o755);
+    fs::set_permissions(&path, perms)
+        .unwrap_or_else(|e| panic!("Failed to set permissions on {}: {e}", path.display()));
+}
+
+#[cfg(not(unix))]
+fn set_executable(_project_path: &Path, _relative: &str) {}

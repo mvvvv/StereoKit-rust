@@ -46,8 +46,7 @@ fn main() {
         .render_scaling(2.0)
         .depth_mode(DepthMode::D32)
         .omit_empty_frames(true)
-        .log_filter(LogLevel::Diagnostic)
-        .no_flatscreen_fallback(true);
+        .log_filter(LogLevel::Diagnostic);
 
     if is_testing {
         if headless {

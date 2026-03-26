@@ -28,6 +28,7 @@ use android_activity::AndroidApp;
 #[unsafe(no_mangle)]
 /// The main function for android app
 fn android_main(app: AndroidApp) {
+    use std::sync::OnceLock;
     use stereokit_rust::sk::{DepthMode, OriginMode, SkSettings};
     let mut settings = SkSettings::default();
     settings
@@ -38,9 +39,12 @@ fn android_main(app: AndroidApp) {
         .depth_mode(DepthMode::Stencil)
         .log_filter(LogLevel::Diagnostic);
 
-    android_logger::init_once(
-        android_logger::Config::default().with_max_level(log::LevelFilter::Debug).with_tag("SKit-rs"),
-    );
+    static APP_ONCE: OnceLock<()> = OnceLock::new();
+    APP_ONCE.get_or_init(|| {
+        android_logger::init_once(
+            android_logger::Config::default().with_max_level(log::LevelFilter::Debug).with_tag("STKit-rs"),
+        );
+    });
     let sk = settings.init(app).unwrap();
 
     _main(sk);

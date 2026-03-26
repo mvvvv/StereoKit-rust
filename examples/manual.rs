@@ -2,6 +2,7 @@
 #[cfg(not(target_os = "android"))]
 #[cfg(feature = "no-event-loop")]
 fn main() {
+    use std::sync::OnceLock;
     use stereokit_rust::{
         maths::{Pose, Quat, Vec3},
         sk::{OriginMode, Sk, SkSettings},
@@ -16,6 +17,12 @@ fn main() {
         .init()
         .unwrap();
 
+    static APP_ONCE: OnceLock<()> = OnceLock::new();
+    APP_ONCE.get_or_init(|| {
+        android_logger::init_once(
+            android_logger::Config::default().with_max_level(log::LevelFilter::Debug).with_tag("STKit-rs"),
+        );
+    });
     let mut window_pose = Pose::new(Vec3::new(0.0, 1.5, -0.5), Some(Quat::from_angles(0.0, 180.0, 0.0)));
     while let Some(_token) = sk.step() {
         Ui::window_begin("test window", &mut window_pose, None, None, None);

@@ -1,5 +1,7 @@
 package ${APPLICATION_ID};
 
+import android.os.Bundle;
+import android.util.Log;
 import net.stereokit.sk_app.SkAppActivity;
 
 public class MainActivity extends SkAppActivity {

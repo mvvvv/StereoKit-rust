@@ -18,6 +18,7 @@ use stereokit_rust::{
 #[cfg(target_os = "android")]
 #[cfg(not(feature = "no-event-loop"))]
 pub fn android_main(app: AndroidApp) {
+    use std::sync::OnceLock;
     use stereokit_rust::sk::DepthMode;
 
     let mut settings = SkSettings::default();
@@ -30,10 +31,16 @@ pub fn android_main(app: AndroidApp) {
         .omit_empty_frames(true)
         .log_filter(LogLevel::Diagnostic);
 
-    android_logger::init_once(
-        android_logger::Config::default().with_max_level(log::LevelFilter::Debug).with_tag("STKit-rs"),
-    );
-
+    static APP_ONCE: OnceLock<()> = OnceLock::new();
+    if APP_ONCE.get().is_some() {
+        Log::err("android_main called multiple times, ignoring subsequent calls");
+        return;
+    }
+    APP_ONCE.get_or_init(|| {
+        android_logger::init_once(
+            android_logger::Config::default().with_max_level(log::LevelFilter::Debug).with_tag("STKit-rs"),
+        );
+    });
     //stereokit_rust::tools::load_all_extensions();
     BackendOpenXR::request_ext("XR_FB_display_refresh_rate");
     BackendOpenXR::request_ext("XR_FB_render_model");
