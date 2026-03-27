@@ -48,6 +48,31 @@ cargo publish
 
 
 
+#---- Testing demos with gradle (sk_app compatible)
+cd ~/dvlt
+cargo new_sk_rs_project sk_demos --with-gradle
+cd sk_demos
+#- modify Cargo.toml:
+  1 - for path = "~dvlt/StereoKit-rust"
+  2 - dependencies
+  3 - [lib]
+      crate-type = ["lib", "cdylib"]
+#- replace src/ assets/ res/ by these links
+ln -s ~/dvlt/StereoKit-rust/examples/main.rs src/lib.rs
+ln -s ~/dvlt/StereoKit-rust/examples/main_pc.rs src/main.rs
+ln -s ~/dvlt/StereoKit-rust/examples/demos/ src/demos
+ln -s ~/dvlt/StereoKit-rust/assets/ .
+ln -s ~/dvlt/StereoKit-rust/res/ .
+ln -s ~/dvlt/StereoKit-rust/shaders_src/ .
+
+
+
+
+
+
+
+
+
 #---- Saving some logs ANDROID
 touch build.rs; clear; cargo apk run --example main > examples/example_of_quest_log.txt 
 ansi2html < examples/example_of_quest_log.txt > examples/example_of_quest_log.html 
