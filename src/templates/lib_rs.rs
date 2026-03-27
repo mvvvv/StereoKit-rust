@@ -15,7 +15,7 @@ pub fn android_main(app: AndroidApp) {
     let mut settings = SkSettings::default();
     settings
         .app_name("Basic Template App")
-        .origin(OriginMode::Floor)
+        .origin(OriginMode::Local)
         .render_multisample(4)
         .render_scaling(1.5)
         .depth_mode(DepthMode::D32)

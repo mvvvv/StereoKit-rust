@@ -4,6 +4,7 @@ plugins {
     id "org.mozilla.rust-android-gradle.rust-android" version "0.9.6"
 }
 
+// Définition moderne du répertoire de build
 layout.buildDirectory.set(layout.projectDirectory.dir("target/gradleBuild"))
 
 tasks.register("buildDebug") {
@@ -12,43 +13,64 @@ tasks.register("buildDebug") {
 }
 
 tasks.register("reversePort", Exec) {
+    description = "Set up adb reverse port forwarding"
     def from = findProperty("adb.portFrom")
     def to = findProperty("adb.portTo")
     commandLine 'adb', 'reverse', from, to
 }
 
 tasks.register("launchDebug", Exec) {
+    description = "Install and launch the debug Apk"
     dependsOn ":app:installDebug"
-    def packageS = findProperty("android.applicationId")
-    def main = findProperty("android.main")
-    commandLine 'adb', 'shell', 'am', 'start', '-a', 'android.intent.action.MAIN', '-n', packageS + "/" + main
+    
+    // Utilisation de doFirst pour évaluer les propriétés au moment de l'exécution
+    doFirst {
+        def packageS = findProperty("android.applicationId")
+        def main = findProperty("android.main")
+        commandLine 'adb', 'shell', 'am', 'start', '-a', 'android.intent.action.MAIN', '-n', "${packageS}/${main}"
+    }
 }
 
-task getUid {
-    description = "Print the adb logcat command for this Apk"
-    dependsOn launchDebug
+tasks.register("getUid") {
+    description = "Update logcat.cmd with the current App UID"
+    dependsOn "launchDebug"
+    
     doLast {
         def packageS = findProperty("android.applicationId")
-        def logcatCmd = "./logcat.cmd"
-        def fileContents = new File(logcatCmd).getText()
-        new ByteArrayOutputStream().withStream { uid ->
-            def result = exec {
-                commandLine = ['adb', 'shell', 'pm', 'list', 'package', '-U', packageS]
-                standardOutput = uid
-            }
-            def app_uid = uid.toString().tokenize(':')[-1]
-            def logcat = 'adb logcat -v color --uid ' +  app_uid.toString()
-            if (fileContents.contains('adb logcat')) {
-                new File(logcatCmd).text = logcat
-            } else {
-                logger.error('File ' + logcatCmd + ' must contain "abi logcat" ')
-            }
+        def logcatCmd = file("./logcat.cmd")
+        
+        // Sécurité : Créer le fichier s'il n'existe pas ou s'il est vide
+        if (!logcatCmd.exists()) {
+            logcatCmd.text = "adb logcat"
+        }
+        
+        def fileContents = logcatCmd.text
+        def uidOutput = new ByteArrayOutputStream()
+        
+        exec {
+            commandLine 'adb', 'shell', 'pm', 'list', 'package', '-U', packageS
+            standardOutput = uidOutput
+        }
+        
+        def outputString = uidOutput.toString().trim()
+        if (outputString.contains(':')) {
+            def app_uid = outputString.tokenize(':')[-1]
+            def logcat = "adb logcat -v color --uid ${app_uid}"
             
+            if (fileContents.contains('adb logcat')) {
+                logcatCmd.text = logcat
+                println "✅ Logcat command updated with UID: ${app_uid}"
+            } else {
+                logger.error("Le fichier ${logcatCmd.name} doit contenir 'adb logcat' pour être mis à jour.")
+            }
+        } else {
+            logger.error("Impossible de trouver l'UID pour le package : ${packageS}")
         }
     }
 }
 
 tasks.register("run") {
+    description = "Full flow: Build, Install, Launch and Setup Logcat"
     dependsOn "getUid"
 }
 

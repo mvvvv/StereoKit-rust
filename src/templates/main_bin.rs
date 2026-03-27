@@ -1,13 +1,16 @@
 #[allow(dead_code)]
 #[cfg(not(target_os = "android"))]
 fn main() {
-    use stereokit_rust::sk::{Sk, SkSettings};
-    use vr_app::the_main;
+    use stereokit_rust::{
+        sk::{DepthMode, OriginMode, Sk, SkSettings},
+        system::LogLevel,
+    };
+    use vr_app::_main;
     // Initialize StereoKit with default settings
     let mut settings = SkSettings::default();
     settings
         .app_name("BasicTemplate App")
-        .origin(OriginMode::Floor)
+        .origin(OriginMode::Local)
         .render_multisample(4)
         .render_scaling(1.5)
         .depth_mode(DepthMode::D32)
@@ -15,7 +18,7 @@ fn main() {
         .log_filter(LogLevel::Diagnostic);
 
     let sk = settings.init().expect("Should initialize StereoKit");
-    the_main(sk);
+    _main(sk);
     Sk::shutdown();
 }
 

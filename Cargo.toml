@@ -51,7 +51,7 @@ name = "cargo-new_sk_rs_project"
 name = "cargo-build_sk_rs"
 
 [build-dependencies]
-cmake = "0.1.57"
+cmake = "0.1.58"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
