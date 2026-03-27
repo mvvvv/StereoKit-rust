@@ -1,5 +1,3 @@
-#![cfg(not(feature = "no-event-loop"))]
-
 use hand_menu_radial0::HandMenuRadial0;
 use input1::Input1;
 use stereokit_rust::prelude::*;

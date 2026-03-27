@@ -3,9 +3,7 @@ pub mod demos;
 #[cfg(target_os = "android")]
 use android_activity::AndroidApp;
 
-#[cfg(not(feature = "no-event-loop"))]
 use demos::program::launch;
-#[cfg(not(feature = "no-event-loop"))]
 use stereokit_rust::{
     sk::Sk,
     sk::{OriginMode, SkSettings},
@@ -16,7 +14,6 @@ use stereokit_rust::{
 
 #[unsafe(no_mangle)]
 #[cfg(target_os = "android")]
-#[cfg(not(feature = "no-event-loop"))]
 pub fn android_main(app: AndroidApp) {
     use std::sync::OnceLock;
     use stereokit_rust::sk::DepthMode;
@@ -54,9 +51,10 @@ pub fn android_main(app: AndroidApp) {
     _main(sk);
 }
 
+// Fake main that cannot be called as main.rs is a cdylib. That's why main_pc.rs exists.
+// We keep it for information
 #[allow(dead_code)]
 #[cfg(not(target_os = "android"))]
-#[cfg(not(feature = "no-event-loop"))]
 fn main() {
     use stereokit_rust::sk::AppMode;
 
@@ -74,7 +72,6 @@ fn main() {
     _main(sk);
 }
 
-#[cfg(not(feature = "no-event-loop"))]
 pub fn _main(sk: Sk) {
     let is_testing = false;
     let start_test = "".to_string();
@@ -82,8 +79,3 @@ pub fn _main(sk: Sk) {
     launch(sk, is_testing, start_test);
     Sk::shutdown();
 }
-
-/// Fake main for no-event-loop asked by cargo test --features no-event-loop
-#[allow(dead_code)]
-#[cfg(feature = "no-event-loop")]
-fn main() {}
