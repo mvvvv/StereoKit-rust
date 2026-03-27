@@ -4,7 +4,7 @@ plugins {
     id "org.mozilla.rust-android-gradle.rust-android" version "0.9.6"
 }
 
-// Définition moderne du répertoire de build
+// Modern definition of the build directory
 layout.buildDirectory.set(layout.projectDirectory.dir("target/gradleBuild"))
 
 tasks.register("buildDebug") {
@@ -23,7 +23,7 @@ tasks.register("launchDebug", Exec) {
     description = "Install and launch the debug Apk"
     dependsOn ":app:installDebug"
     
-    // Utilisation de doFirst pour évaluer les propriétés au moment de l'exécution
+    // Use doFirst to evaluate properties at execution time
     doFirst {
         def packageS = findProperty("android.applicationId")
         def main = findProperty("android.main")
@@ -39,7 +39,7 @@ tasks.register("getUid") {
         def packageS = findProperty("android.applicationId")
         def logcatCmd = file("./logcat.cmd")
         
-        // Sécurité : Créer le fichier s'il n'existe pas ou s'il est vide
+        // Safety: Create the file if it does not exist or is empty
         if (!logcatCmd.exists()) {
             logcatCmd.text = "adb logcat"
         }
@@ -61,10 +61,10 @@ tasks.register("getUid") {
                 logcatCmd.text = logcat
                 println "✅ Logcat command updated with UID: ${app_uid}"
             } else {
-                logger.error("Le fichier ${logcatCmd.name} doit contenir 'adb logcat' pour être mis à jour.")
+                logger.error("The file ${logcatCmd.name} must contain 'adb logcat' to be updated.")
             }
         } else {
-            logger.error("Impossible de trouver l'UID pour le package : ${packageS}")
+            logger.error("Unable to find UID for package: ${packageS}")
         }
     }
 }

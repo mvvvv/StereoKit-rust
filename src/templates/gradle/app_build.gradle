@@ -6,11 +6,11 @@ plugins {
 }
 
 dependencies {
-    // Utilisation de libs locales
+    // Use local libs
     implementation fileTree(dir: '../target/runtime_libs', include: ['sk_app.jar'])
 }
 
-// Détection de l'OS hôte
+// Host OS detection
 def hostTag = Os.isFamily(Os.FAMILY_WINDOWS) ? "windows-x86_64" : 
               (Os.isFamily(Os.FAMILY_MAC) ? "darwin-x86_64" : "linux-x86_64")
 
@@ -55,14 +55,14 @@ android {
 
     sourceSets {
         main {
-            // Chemins relatifs au module app
+            // Paths relative to the app module
             assets.srcDirs = ['../assets']
             res.srcDirs = ['../res']
-            java.srcDirs = ['src/main/java'] // Valeur par défaut explicite
+            java.srcDirs = ['src/main/java'] // Explicit default value
             
             jniLibs {
                 srcDirs += libDirs
-                // Utilisation du buildDirectory configuré dans le projet racine
+                // Use the buildDirectory configured in the root project
                 srcDirs += layout.buildDirectory.dir("ndkLibs").get().asFile
             }
         }
@@ -91,17 +91,17 @@ android {
     }
 }
 
-// Configuration Cargo (Rust)
+// Cargo (Rust) configuration
 cargo {
     module = ".."
     libname = findProperty("cargo.libname")
     targets = findProperty("cargo.targets").split(",")
     prebuiltToolchains = true
-    // Détection propre du profil
+    // Proper profile detection
     profile = project.gradle.startParameter.taskNames.any { it.toLowerCase().contains('release') } ? "release" : "debug"
 }
 
-// Remplacement de whenTaskAdded par configureEach (Compatible Gradle 9)
+// Replace whenTaskAdded with configureEach (Gradle 9 compatible)
 tasks.configureEach { task ->
     if (task.name.startsWith('merge') && task.name.endsWith('JniLibFolders')) {
         task.dependsOn 'cargoBuild'
@@ -114,7 +114,7 @@ tasks.configureEach { task ->
     }
 }
 
-// Enregistrement des tâches de copie des libs NDK
+// Register NDK lib copy tasks
 cargo.targets.each { target ->
     tasks.register("copy_libc++_shared${target.capitalize()}", Copy) {
         def abiMap = [
@@ -126,7 +126,7 @@ cargo.targets.each { target ->
         
         def (abi, archTriple) = abiMap[target]
 
-        // Utilisation de l'API moderne pour localiser le NDK
+        // Use modern API to locate the NDK
         def ndkDir = android.ndkDirectory.absolutePath
         from "${ndkDir}/toolchains/llvm/prebuilt/$hostTag/sysroot/usr/lib/$archTriple/libc++_shared.so"
         into layout.buildDirectory.dir("ndkLibs/$abi")
