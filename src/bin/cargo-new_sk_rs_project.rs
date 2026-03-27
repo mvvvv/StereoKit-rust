@@ -182,7 +182,7 @@ fn main() {
         println!();
         println!("To build and run on an Android headset:");
         if cfg!(target_os = "windows") {
-            println!("  .\\gradlew run && logcat.cmd");
+            println!("  .\\gradlew run && .\\logcat.cmd");
         } else {
             println!("  ./gradlew run && sh logcat.cmd");
         }
