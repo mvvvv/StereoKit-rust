@@ -841,6 +841,7 @@ pub fn system_deep_link(_action: SystemAction) -> bool {
 ///         Device::display_blend(DisplayBlend::Opaque);
 ///     }
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 pub fn get_env_blend_modes(with_log: bool) -> Vec<EnvironmentBlendMode> {
     //>>>>>>>>>>> Get the env blend mode
