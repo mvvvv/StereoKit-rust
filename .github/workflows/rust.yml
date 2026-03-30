@@ -57,13 +57,14 @@ jobs:
     - name: Build 
       run: cargo build --verbose --example main_pc
     - name: Run tests 
-      run: cargo test --verbose -- --nocapture
+      timeout-minutes: 15
+      run: cargo test --verbose -- --nocapture --test-threads=1
 
     - name: Build no-event-loop
       run: cargo build --verbose --features no-event-loop --example manual
     - name: Run tests no-event-loop
       timeout-minutes: 15
-      run: cargo test --features no-event-loop -- --nocapture
+      run: cargo test --features no-event-loop -- --nocapture --test-threads=1
 
   build-linux:
     runs-on: ubuntu-latest
@@ -95,7 +96,7 @@ jobs:
       run: |
         export DISPLAY=:99
         Xvfb  :99 -screen 0 1280x1024x24 > /dev/null 2>&1 & sleep 5        
-        cargo test --verbose -- --nocapture
+        cargo test --verbose -- --nocapture --test-threads=1
 
     - name: Build no-event-loop
       run: cargo build --verbose --features no-event-loop --example manual
@@ -104,7 +105,7 @@ jobs:
       run: |
         export DISPLAY=:99
         Xvfb  :99 -screen 0 1280x1024x24 > /dev/null 2>&1 & sleep 5        
-        cargo test --verbose --features no-event-loop -- --nocapture
+        cargo test --verbose --features no-event-loop -- --nocapture --test-threads=1
 
   build-macos:
     runs-on: macos-latest
@@ -135,7 +136,7 @@ jobs:
       run: |
         export DYLD_LIBRARY_PATH=$(brew --prefix molten-vk)/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}
         export MVK_CONFIG_LOG_LEVEL=0
-        cargo test -- --nocapture
+        cargo test -- --nocapture --test-threads=1
 
     - name: Build no-event-loop
       run: cargo build --verbose --features no-event-loop --example manual
@@ -144,6 +145,6 @@ jobs:
       run: |
         export DYLD_LIBRARY_PATH=$(brew --prefix molten-vk)/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}
         export MVK_CONFIG_LOG_LEVEL=0
-        cargo test --features no-event-loop -- --nocapture
+        cargo test --features no-event-loop -- --nocapture --test-threads=1
 
 
