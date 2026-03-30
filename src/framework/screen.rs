@@ -98,7 +98,7 @@ impl Screen {
     pub fn new(id: &str, screen_tex: impl AsRef<Tex>) -> Self {
         let screen_size = Vec2::new(3.840, 2.160);
         let screen_diagonal = (screen_size.x.powf(2.0) + screen_size.y.powf(2.0)).sqrt();
-        let screen_material = Material::ui().copy();
+        let screen_material = Material::unlit().copy();
 
         let mut this = Self {
             id: id.to_string(),

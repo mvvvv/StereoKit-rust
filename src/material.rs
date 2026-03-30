@@ -188,7 +188,7 @@ impl Default for Material {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{material::Material};
-    /// let mut material = Material::default();
+    /// let material = Material::default();
     /// assert_eq!(material.get_id(), "default/material");
     /// # sk::Sk::shutdown();
     /// ```
@@ -212,7 +212,7 @@ impl Material {
     ///
     /// // Create Mesh and its material
     /// let plane = Mesh::generate_plane(Vec2::ONE, Vec3::NEG_Z, Vec3::X, None,  true);
-    /// let mut material_plane = Material::new(Shader::unlit(), Some("my_material_plane"));
+    /// let material_plane = Material::new(Shader::unlit(), Some("my_material_plane"));
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     plane.draw(token, &material_plane,  Matrix::IDENTITY, None, None);
@@ -279,7 +279,7 @@ impl Material {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::Matrix, util::named_colors, material::Material};
+    /// use stereokit_rust::{util::named_colors, material::Material};
     ///
     /// let mut material_blue = Material::default_copy();
     /// material_blue.metallic_amount(0.63);
@@ -340,7 +340,7 @@ impl Material {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{util::named_colors,material::Material, shader::Shader};
     ///
-    /// let mut material = Material::new(Shader::pbr(), Some("my_material"));
+    /// let material = Material::new(Shader::pbr(), Some("my_material"));
     /// let mut material_red = Material::find("my_material").unwrap();
     /// material_red.id("my_red_material").color_tint(named_colors::RED);
     ///
@@ -368,7 +368,7 @@ impl Material {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{util::named_colors,material::Material, shader::Shader};
     ///
-    /// let mut material = Material::new(Shader::pbr(), Some("my_material"));
+    /// let material = Material::new(Shader::pbr(), Some("my_material"));
     /// let mut material_red = material.clone_ref();
     /// material_red.id("my_red_material").color_tint(named_colors::RED);
     ///
@@ -401,7 +401,7 @@ impl Material {
     ///
     /// let material1 = Material::unlit().copy();
     /// let material2 = Material::unlit().copy();
-    /// let mut material3 = Material::unlit().tex_file_copy("textures/open_gltf.jpeg", true, None)
+    /// let material3 = Material::unlit().tex_file_copy("textures/open_gltf.jpeg", true, None)
     ///                    .expect("open_gltf.jpeg should load");
     ///
     /// assert_eq!(&material1.get_all_param_info().get_texture("diffuse").unwrap().get_id(),
@@ -446,7 +446,7 @@ impl Material {
     /// let material2 = Material::unlit().copy();
     /// let tex = Tex::from_file("textures/open_gltf.jpeg", true, None)
     ///                    .expect("tex should be created");
-    /// let mut material3 = Material::unlit().tex_copy(tex);
+    /// let material3 = Material::unlit().tex_copy(tex);
     ///
     /// assert_eq!(&material1.get_all_param_info().get_texture("diffuse").unwrap().get_id(),
     ///            &material2.get_all_param_info().get_texture("diffuse").unwrap().get_id());
@@ -686,7 +686,7 @@ impl Material {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to init sk !!!!
-    /// use stereokit_rust::{material::Material, util::named_colors};
+    /// use stereokit_rust::material::Material;
     ///
     /// let mut material = Material::pbr().copy();
     /// material.metallic_amount(0.68);
@@ -915,7 +915,7 @@ impl Material {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix, Quat}, util::{named_colors,Color32},
+    /// use stereokit_rust::{maths::{Vec3, Matrix, Quat}, util::named_colors,
     ///                      mesh::Mesh, material::{Material, Transparency}};
     ///
     /// // Creating Meshes and their materials
@@ -950,7 +950,7 @@ impl Material {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::{named_colors,Color32},
+    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::named_colors,
     ///                      mesh::Mesh, material::{Material, Cull}};
     ///
     /// // Creating Meshes and their materials
@@ -989,7 +989,7 @@ impl Material {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix, Quat}, util::{named_colors,Color32},
+    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::named_colors,
     ///                      mesh::Mesh, material::Material};
     ///
     /// // Create Meshes
@@ -1028,7 +1028,7 @@ impl Material {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ util::{named_colors,Color32}, material::{Material, DepthTest}};
+    /// use stereokit_rust::{ util::named_colors, material::{Material, DepthTest}};
     ///
     /// let mut material_cube = Material::pbr().copy();
     /// assert_eq!(material_cube.get_depth_test(), DepthTest::Less);
@@ -1051,7 +1051,7 @@ impl Material {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{util::{named_colors,Color32},material::Material};
+    /// use stereokit_rust::{util::named_colors,material::Material};
     ///
     /// let mut material_cube = Material::pbr().copy();
     /// assert_eq!(material_cube.get_depth_write(), true);
@@ -1096,7 +1096,7 @@ impl Material {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{util::{named_colors,Color32},material::Material};
+    /// use stereokit_rust::{util::named_colors, material::Material};
     ///
     /// let mut material_cube = Material::pbr().copy();
     /// assert_eq!(material_cube.get_queue_offset(), 0);
@@ -1306,7 +1306,7 @@ impl Material {
     ///        "diffuse" | "emission" | "metal" | "occlusion"  
     ///             => assert_eq!(param.type_info, MaterialParam::Texture),
     ///        "color" | "emission_factor"  
-    ///             => assert_eq!(param.type_info, MaterialParam::Vec4), // TODO no more Color32
+    ///             => assert_eq!(param.type_info, MaterialParam::Vec4), // TODO no more Color128
     ///        "metallic" | "roughness"  
     ///             => assert_eq!(param.type_info, MaterialParam::Float),
     ///        "tex_trans"  
@@ -1331,7 +1331,7 @@ impl Material {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{material::Material};
-    /// let mut material = Material::pbr();
+    /// let material = Material::pbr();
     /// assert_eq!(material.get_id(), "default/material_pbr");
     /// # sk::Sk::shutdown();
     /// ```
@@ -1346,7 +1346,7 @@ impl Material {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{material::Material};
-    /// let mut material = Material::pbr_clip();
+    /// let material = Material::pbr_clip();
     /// assert_eq!(material.get_id(), "default/material_pbr_clip");
     /// # sk::Sk::shutdown();
     /// ```
@@ -1364,7 +1364,7 @@ impl Material {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{material::Material};
-    /// let mut material = Material::unlit();
+    /// let material = Material::unlit();
     /// assert_eq!(material.get_id(), "default/material_unlit");
     /// # sk::Sk::shutdown();
     /// ```
@@ -1383,7 +1383,7 @@ impl Material {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{material::Material};
-    /// let mut material = Material::unlit_clip();
+    /// let material = Material::unlit_clip();
     /// assert_eq!(material.get_id(), "default/material_unlit_clip");
     /// # sk::Sk::shutdown();
     /// ```
@@ -1398,7 +1398,7 @@ impl Material {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{material::Material};
-    /// let mut material = Material::equirect();
+    /// let material = Material::equirect();
     /// assert_eq!(material.get_id(), "default/equirect_convert");
     /// # sk::Sk::shutdown();
     /// ```
@@ -1413,7 +1413,7 @@ impl Material {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{material::Material};
-    /// let mut material = Material::font();
+    /// let material = Material::font();
     /// assert_eq!(material.get_id(), "default/material_font");
     /// # sk::Sk::shutdown();
     /// ```
@@ -1428,7 +1428,7 @@ impl Material {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{material::Material};
-    /// let mut material = Material::hand();
+    /// let material = Material::hand();
     /// assert_eq!(material.get_id(), "default/material_hand");
     /// # sk::Sk::shutdown();
     /// ```
@@ -1445,7 +1445,7 @@ impl Material {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{material::Material};
-    /// let mut material = Material::ui();
+    /// let material = Material::ui();
     /// assert_eq!(material.get_id(), "default/material_ui");
     /// # sk::Sk::shutdown();
     /// ```
@@ -1464,7 +1464,7 @@ impl Material {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{material::Material};
-    /// let mut material = Material::ui_box();
+    /// let material = Material::ui_box();
     /// assert_eq!(material.get_id(), "default/material_ui_box");
     /// # sk::Sk::shutdown();
     /// ```
@@ -1480,7 +1480,7 @@ impl Material {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{material::Material};
-    /// let mut material = Material::ui_quadrant();
+    /// let material = Material::ui_quadrant();
     /// assert_eq!(material.get_id(), "default/material_ui_quadrant");
     /// # sk::Sk::shutdown();
     /// ```
@@ -1496,7 +1496,7 @@ impl Material {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{material::Material};
-    /// let mut material = Material::ui_aura();
+    /// let material = Material::ui_aura();
     /// assert_eq!(material.get_id(), "default/material_ui_aura");
     /// # sk::Sk::shutdown();
     /// ```
@@ -1709,8 +1709,8 @@ impl<'a> ParamInfos<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::material::{Material, MaterialParam, ParamInfos};
     ///
-    /// let mut material_cube = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
-    /// let mut param_infos = ParamInfos::from(&material_cube);
+    /// let material_cube = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let param_infos = ParamInfos::from(&material_cube);
     /// assert!(param_infos.has_param("line_color", MaterialParam::Vec3), "line_color is missing");
     /// assert_eq!(param_infos.get_float("edge_pos"), 1.5);
     /// # sk::Sk::shutdown();
@@ -1729,8 +1729,8 @@ impl<'a> ParamInfos<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::material::{Material, MaterialParam, ParamInfos};
     ///
-    /// let mut material_cube = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
-    /// let mut param_infos = ParamInfos::from(&material_cube);
+    /// let material_cube = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let param_infos = ParamInfos::from(&material_cube);
     /// assert!(param_infos.has_param("line_color", MaterialParam::Vec3), "line_color is missing");
     /// assert!(param_infos.has_param("edge_pos", MaterialParam::Float),   "edge_pos is missing");
     /// # sk::Sk::shutdown();
@@ -1760,10 +1760,10 @@ impl<'a> ParamInfos<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::material::{Material, MaterialParam};
     ///
-    /// let mut material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
     /// let mut param_infos = material.get_all_param_info();
     /// // an odd way to do : material.color_tint(...);
-    /// let mut new_color: std::vec::Vec<f32>  = vec![1.0, 0.5, 0.2, 1.0];
+    /// let new_color: std::vec::Vec<f32>  = vec![1.0, 0.5, 0.2, 1.0];
     /// unsafe{
     ///     param_infos.set_data("color", MaterialParam::Color128,
     ///                          new_color.as_ptr() as *mut std::ffi::c_void);
@@ -1800,14 +1800,14 @@ impl<'a> ParamInfos<'a> {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{material::{Material, MaterialParam, Cull},
-    ///                      mesh::Mesh, maths::{Vec3, Vec4, Matrix}, util::Hash};
+    ///                      mesh::Mesh, maths::{Vec4, Matrix}, util::Hash};
     ///
     /// let cube = Mesh::cube();
     /// let mut material_cube = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
     /// material_cube.face_cull(Cull::Front).tex_transform(Vec4::new(0.0, 0.0, 0.04, 0.04));
     /// let mut param_infos = material_cube.get_all_param_info();
     /// // an odd way to do : material.color_tint(...);
-    /// let mut new_color: std::vec::Vec<f32>  = vec![0.2, 0.2, 0.9, 1.0];
+    /// let new_color: std::vec::Vec<f32>  = vec![0.2, 0.2, 0.9, 1.0];
     /// let hash_color = Hash::string("color");
     ///
     /// filename_scr = "screenshots/param_infos_with_id.jpeg";
@@ -1836,9 +1836,9 @@ impl<'a> ParamInfos<'a> {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::material::{Material, MaterialParam};
+    /// use stereokit_rust::material::Material;
     ///
-    /// let mut material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
     /// let mut param_infos = material.get_all_param_info();
     /// param_infos.set_bool("use_occlusion", true);
     ///
@@ -1863,9 +1863,9 @@ impl<'a> ParamInfos<'a> {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{material::{Material, MaterialParam},util::Color128};
+    /// use stereokit_rust::{material::Material,util::Color128};
     ///
-    /// let mut material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
     /// let mut param_infos = material.get_all_param_info();
     /// let new_color = Color128::new(1.0, 0.5, 0.2, 1.0);
     /// // same as Material::color_tint(new_color);
@@ -1892,9 +1892,9 @@ impl<'a> ParamInfos<'a> {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::material::{Material, MaterialParam};
+    /// use stereokit_rust::material::Material;
     ///
-    /// let mut material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
     /// let mut param_infos = material.get_all_param_info();
     /// param_infos.set_float("edge_pos", 0.18);
     ///
@@ -2017,7 +2017,7 @@ impl<'a> ParamInfos<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{material::{Material, MaterialParam}, maths::{Vec3, Matrix}};
     ///
-    /// let mut material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
     /// let mut param_infos = material.get_all_param_info();
     /// assert_eq!( param_infos.get_matrix("useless"), Matrix::NULL );
     /// let new_matrix = Matrix::t( Vec3::new(1.0, 2.0, 3.0));
@@ -2045,9 +2045,9 @@ impl<'a> ParamInfos<'a> {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{material::{Material, MaterialParam}, tex::{Tex}};
+    /// use stereokit_rust::{material::Material, tex::{Tex}};
     ///
-    /// let mut material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
     /// let mut param_infos = material.get_all_param_info();
     /// assert_ne!( param_infos.get_texture("metal").unwrap(), Tex::default() );
     /// let metal_tex = Tex::from_file("textures/open_gltf.jpeg", true, None)
@@ -2074,9 +2074,9 @@ impl<'a> ParamInfos<'a> {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{material::{Material, MaterialParam}, maths::Vec2};
+    /// use stereokit_rust::{material::Material, maths::Vec2};
     ///
-    /// let mut material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
     /// let mut param_infos = material.get_all_param_info();
     /// assert_eq!( param_infos.get_vector2("edge_limit"), Vec2::new(0.1, 0.9) );
     /// let new_vec2 = Vec2::new(0.15, 0.85);
@@ -2102,9 +2102,9 @@ impl<'a> ParamInfos<'a> {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{material::{Material, MaterialParam}, maths::Vec3};
+    /// use stereokit_rust::{material::Material, maths::Vec3};
     ///
-    /// let mut material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
     /// let mut param_infos = material.get_all_param_info();
     /// assert_eq!( param_infos.get_vector3("line_color"), Vec3::new(0.84, 0.84, 0.84) );
     /// let new_vec3 = Vec3::new(0.75, 0.75, 0.75);
@@ -2132,7 +2132,7 @@ impl<'a> ParamInfos<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{material::Material, maths::Vec4};
     ///
-    /// let mut material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
     /// let mut param_infos = material.get_all_param_info();
     /// assert_eq!( param_infos.get_vector4("tex_trans"), Vec4::new(0.0, 0.0, 0.1,0.1) );
     ///
@@ -2509,8 +2509,8 @@ impl<'a> ParamInfos<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::material::Material;
     ///
-    /// let mut material = Material::unlit();
-    /// let mut param_infos = material.get_all_param_info();
+    /// let material = Material::unlit();
+    /// let param_infos = material.get_all_param_info();
     /// assert_eq!( param_infos.get_count(), 5);
     /// # sk::Sk::shutdown();
     /// ```
@@ -2524,11 +2524,11 @@ impl<'a> ParamInfos<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::material::Material;
     ///
-    /// let mut material = Material::unlit();
-    /// let mut param_infos_iter = material.get_all_param_info();
-    /// let mut param_infos = material.get_all_param_info();
+    /// let material = Material::unlit();
+    /// let param_infos_iter = material.get_all_param_info();
+    /// let param_infos = material.get_all_param_info();
     /// for param in param_infos_iter {
-    ///     match (param.get_name()) {
+    ///     match param.get_name() {
     ///         "color" =>
     ///             assert_eq!(param_infos.string_of(&param), "[x:1, y:1, z:1, w:1]"), // TODO: no more color "r:1, g:1, b:1, a:1"),
     ///         "tex_trans" =>

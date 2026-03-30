@@ -47,11 +47,8 @@ const BROWSER_SUFFIX: &str = "_file_browser";
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{maths::Vec3, sk::SkInfo, ui::Ui,
-///                      tools::{file_browser::FILE_BROWSER_OPEN,
-///                              screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW}}};
-///
-/// let sk_info  = Some(sk.get_sk_info_clone());
+/// use stereokit_rust::{ui::Ui, tools::{file_browser::FILE_BROWSER_OPEN,
+///                                      screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW}}};
 ///
 /// let mut screenshot_viewer = ScreenshotViewer::default();
 /// screenshot_viewer.window_pose = Ui::popup_pose([0.0, 0.15, 1.3]);
@@ -116,21 +113,22 @@ impl Default for ScreenshotViewer {
 impl ScreenshotViewer {
     /// Called from IStepper::initialize here you can abort the initialization by returning false
     fn start(&mut self) -> bool {
-        // self.tex = Tex::gen_color(
-        //     Color128::WHITE,
-        //     self.picture_size.x as i32,
-        //     self.picture_size.y as i32,
-        //     TexType::Rendertarget,
-        //     TexFormat::Rgba32Srgb,
-        // );
-        self.tex = Tex::render_target(
-            self.picture_size.x as usize,
-            self.picture_size.y as usize,
-            None,
-            Some(TexFormat::Rgba32Srgb),
-            Some(TexFormat::Depth32),
-        )
-        .unwrap_or_default();
+        self.tex = Tex::gen_color(
+            crate::util::Color128::WHITE,
+            self.picture_size.x as i32,
+            self.picture_size.y as i32,
+            crate::tex::TexType::Rendertarget,
+            TexFormat::Rgba32Srgb,
+        );
+        // TODO: This create an error: [SK error] Zbuffer can only be attached to a rendertarget!
+        // self.tex = Tex::render_target(
+        //     self.picture_size.x as usize,
+        //     self.picture_size.y as usize,
+        //     None,
+        //     Some(TexFormat::Rgba32Srgb),
+        //     Some(TexFormat::Depth32),
+        // )
+        // .unwrap_or_default();
         self.tex.id(CAPTURE_TEXTURE_ID);
         true
     }

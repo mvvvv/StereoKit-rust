@@ -115,7 +115,6 @@ pub enum DisplayBlend {
 /// ### Examples
 /// ```
 /// use stereokit_rust::sk::{Sk, SkSettings, SystemInfo, AppMode};
-/// use stereokit_rust::system::LogLevel;
 ///
 /// let mut settings = SkSettings::default();
 /// settings.app_name("Test").mode(AppMode::Offscreen);
@@ -605,8 +604,8 @@ impl SkSettings {
     /// ```
     /// use stereokit_rust::{prelude::*, system::{LogLevel,Renderer},
     ///                      maths::{Vec3, Matrix, Pose}, util::named_colors};
-    /// use stereokit_rust::sk::{Sk, SkSettings, AppMode, DisplayBlend, DepthMode,
-    ///                          OriginMode, StandbyMode, QuitReason};
+    /// use stereokit_rust::sk::{Sk, SkSettings, AppMode, DepthMode,
+    ///                          OriginMode, QuitReason};
     /// #[cfg(not(feature = "no-event-loop"))]
     /// use stereokit_rust::{framework::SkClosures, tools::title::Title};
     ///
@@ -705,8 +704,7 @@ pub enum QuitReason {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::sk::{Sk, SkSettings, AppMode, SkInfo};
-/// use stereokit_rust::{system::LogLevel, ui::Ui, maths::Pose};
+/// use stereokit_rust::{sk::{Sk, AppMode, SkInfo}, ui::Ui, maths::Pose};
 ///
 /// let sk_info = Some(sk.get_sk_info_clone());
 /// let settings = SkInfo::settings_from(&sk_info);
@@ -730,6 +728,7 @@ pub enum QuitReason {
 ///    
 ///     // get event_loop_proxy clone to use in other threads
 ///     let event_loop_proxy = SkInfo::event_loop_proxy_from(&sk_info);
+///     assert!(event_loop_proxy.is_some());
 ///
 ///     // get a closure, ready to send an event with a given value
 ///     let show_screenshot = SkInfo::get_message_closure(sk_info,
@@ -828,8 +827,8 @@ impl SkInfo {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::sk::{Sk, SkSettings, AppMode, SkInfo, QuitReason};
-    /// use stereokit_rust::framework::SkClosures;
+    /// use stereokit_rust::{sk::{SkInfo, QuitReason}, material::Material, mesh::Mesh,
+    ///                          maths::{Vec3, Matrix}, framework::SkClosures};
     /// use std::thread;
     /// use std::time::Duration;
     ///
@@ -844,9 +843,11 @@ impl SkInfo {
     ///     }
     /// });
     ///
-    /// SkClosures::new(sk, |sk, token|  {
+    /// let mesh = Mesh::generate_cube(Vec3::ONE, None);
+    /// let material = Material::pbr();
+    /// SkClosures::new(sk, |_sk, token|  {
     ///     // Only the thread can stop this test
-    ///     // model.draw(token, Matrix::IDENTITY, None, None);
+    ///     mesh.draw(token, &material, Matrix::IDENTITY, None, None);
     /// })
     /// .shutdown(|sk| {
     ///     assert_eq!(sk.get_quit_reason(), QuitReason::User);
@@ -855,6 +856,7 @@ impl SkInfo {
     ///
     /// // If we are here the thread has finished
     /// handle.join().unwrap();
+    /// # Sk::shutdown();
     /// ```
     #[cfg(not(feature = "no-event-loop"))]
     pub fn event_loop_proxy_from(sk_info: &Option<Rc<RefCell<SkInfo>>>) -> Option<EventLoopProxy<StepperAction>> {
@@ -1101,8 +1103,8 @@ impl Sk {
     /// see also [`sk_step`]
     /// ### Examples
     /// ```
-    /// use stereokit_rust::{prelude::*, system::LogLevel};
-    /// use stereokit_rust::sk::{Sk, SkSettings, AppMode, QuitReason};
+    /// use stereokit_rust::{prelude::*, sk::{SkSettings, AppMode},
+    ///                  material::Material, mesh::Mesh, maths::{Vec3, Matrix}};
     ///
     /// let mut settings = SkSettings::default();
     /// settings
@@ -1111,14 +1113,16 @@ impl Sk {
     ///
     /// let sk = Sk::init(&settings).expect("StereoKit should initialize");
     ///
+    /// let mesh = Mesh::generate_cube(Vec3::ONE, None);
+    /// let material = Material::pbr();
+    ///
     /// let mut iter = 0;
     /// let number_of_steps = 3;
     /// while let Some(token) = sk.step() {
     ///     // Main loop where we draw stuff and do things!!
     ///     if iter > number_of_steps {sk.quit(None)}
     ///
-    ///     //model.draw(token,  transform ,  None, None);
-    ///     //mesh.draw(token, &material,transform, None, None);
+    ///     mesh.draw(token, &material, Matrix::IDENTITY, None, None);
     ///
     ///     iter+=1;
     /// }
@@ -1191,7 +1195,7 @@ impl Sk {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::sk::{Sk, SkSettings, AppMode, SkInfo};
+    /// use stereokit_rust::sk::{AppMode, SkInfo};
     ///
     /// let sk_info = Some(sk.get_sk_info_clone());
     /// let settings = SkInfo::settings_from(&sk_info);
@@ -1220,7 +1224,7 @@ impl Sk {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::sk::{Sk, SkSettings, AppMode};
+    /// use stereokit_rust::sk::{SkSettings, AppMode};
     ///
     /// let settings: SkSettings = sk.get_settings();
     ///
@@ -1243,7 +1247,7 @@ impl Sk {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::sk::{Sk, SystemInfo};
+    /// use stereokit_rust::sk::SystemInfo;
     ///
     /// let system_info: SystemInfo = sk.get_system();
     /// if cfg!(feature = "test-xr-mode") {
@@ -1394,7 +1398,7 @@ impl Sk {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::sk::{SkInfo, QuitReason};
+    /// use stereokit_rust::prelude::*;
     ///
     /// let sk_info = Some(sk.get_sk_info_clone());
     /// sk.execute_on_main(move || {
@@ -1420,8 +1424,7 @@ impl Sk {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{sk::{SkInfo, QuitReason},
-    ///                      tools::{screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW},
+    /// use stereokit_rust::{tools::{screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW},
     ///                              title::Title}};
     ///
     /// sk.send_event(StepperAction::add_default::<ScreenshotViewer>("SCR_ID1"));
@@ -1431,15 +1434,15 @@ impl Sk {
     /// sk.send_event(StepperAction::add("TITLE_ID1", title));
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     if (iter == 1) {
+    ///     if iter == 1 {
     ///         assert_eq!(sk.get_steppers_count(), 2);
     ///         // Remove the screenshot viewer after 1 steps.
     ///         sk.send_event(StepperAction::remove("SCR_ID1"));
-    ///     } else if (iter == 2) {
+    ///     } else if iter == 2 {
     ///         assert_eq!(sk.get_steppers_count(), 1);
     ///         // Remove the all the Title ISteppers after 2 steps.
     ///         sk.send_event(StepperAction::remove_all(std::any::TypeId::of::<Title>()));
-    ///     } else if (iter == 3) {
+    ///     } else if iter == 3 {
     ///         assert_eq!(sk.get_steppers_count(), 0);
     ///         sk.send_event(StepperAction::quit("main", "I'm done!"));
     ///     }
@@ -1461,8 +1464,7 @@ impl Sk {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{tools::{screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW},
-    ///                              title::Title}};
+    /// use stereokit_rust::{tools::{screenshot::ScreenshotViewer, title::Title}};
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     if iter == 0 {
@@ -1497,8 +1499,7 @@ impl Sk {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{tools::{screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW},
-    ///                              title::Title}};
+    /// use stereokit_rust::{tools::{screenshot::ScreenshotViewer, title::Title}};
     ///
     /// sk.send_event(StepperAction::add_default::<ScreenshotViewer>("SCR_ID1"));
     ///
@@ -1542,8 +1543,8 @@ impl Sk {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::sk::{Sk, SkSettings, AppMode, SkInfo, QuitReason};
-    /// use stereokit_rust::framework::SkClosures;
+    /// use stereokit_rust::{mesh::Mesh, material::Material, maths::{Vec3, Matrix},
+    ///                      sk::{QuitReason}, framework::SkClosures};
     /// use std::thread;
     /// use std::time::Duration;
     ///
@@ -1557,9 +1558,12 @@ impl Sk {
     ///     }
     /// });
     ///
-    /// SkClosures::new(sk, |sk, token|  {
+    /// let mesh = Mesh::generate_cube(Vec3::ONE, None);
+    /// let material = Material::pbr();
+    ///
+    /// SkClosures::new(sk, |_sk, token|  {
     ///     // Only the thread can stop this test
-    ///     // model.draw(token, Matrix::IDENTITY, None, None);
+    ///     mesh.draw(token, &material, Matrix::IDENTITY, None, None);
     /// })
     /// .shutdown(|sk| {
     ///     assert_eq!(sk.get_quit_reason(), QuitReason::User);

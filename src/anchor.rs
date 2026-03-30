@@ -37,6 +37,7 @@ use std::{
 ///     let anchor = Anchor::from_pose(Pose::default()).expect("What?!!!?");
 ///     anchor.try_set_persistent(true);
 /// }
+/// # Anchor::clear_store(); // !!!! Clear the store to avoid side effects for other tests !!!!
 /// # sk::Sk::shutdown();
 /// ```
 #[repr(C)]
@@ -145,10 +146,11 @@ impl Anchor {
     /// use stereokit_rust::{anchor::Anchor, maths::Pose};
     ///
     /// // create an anchor in center of the world
-    /// if let Ok(anchor) = Anchor::from_pose(Pose::default()){;
+    /// if let Ok(anchor) = Anchor::from_pose(Pose::default()){
     ///     let same = anchor.clone_ref();
     ///     assert_eq!(same.get_id(), anchor.get_id());
     /// }
+    /// # Anchor::clear_store(); // !!!! Clear the store to avoid side effects for other tests !!!!
     /// # sk::Sk::shutdown();
     /// ```
     pub fn clone_ref(&self) -> Anchor {
@@ -168,9 +170,10 @@ impl Anchor {
     /// use stereokit_rust::{anchor::Anchor, maths::Pose};
     ///
     /// // create an anchor in center of the world
-    /// if let Ok(anchor) = Anchor::from_pose(Pose::default()){;
+    /// if let Ok(anchor) = Anchor::from_pose(Pose::default()){
     ///     anchor.try_set_persistent(true);
     /// }
+    /// # Anchor::clear_store(); // !!!! Clear the store to avoid side effects for other tests !!!!
     /// # sk::Sk::shutdown();
     /// ```
     pub fn from_pose(pose: impl Into<Pose>) -> Result<Anchor, StereoKitError> {
@@ -193,10 +196,11 @@ impl Anchor {
     /// use stereokit_rust::{anchor::Anchor, maths::Pose};
     ///
     /// // create an anchor in center of the world
-    /// if let Ok(mut anchor) = Anchor::from_pose(Pose::default()){;
+    /// if let Ok(mut anchor) = Anchor::from_pose(Pose::default()){
     ///     anchor.id("my_anchor");
     ///     assert_eq!(anchor.get_id(), "my_anchor");
     /// }
+    /// # Anchor::clear_store(); // !!!! Clear the store to avoid side effects for other tests !!!!
     /// # sk::Sk::shutdown();
     /// ```
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
@@ -212,7 +216,7 @@ impl Anchor {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{anchor::Anchor, maths::Pose};
+    /// use stereokit_rust::anchor::Anchor;
     ///
     /// Anchor::clear_store();
     /// assert_eq!(Anchor::anchors().get_count(), 0);
@@ -230,7 +234,7 @@ impl Anchor {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{anchor::Anchor, maths::Pose};
+    /// use stereokit_rust::anchor::Anchor;
     ///
     /// assert_eq!(Anchor::anchors().get_count(), 0);
     /// # sk::Sk::shutdown();
@@ -246,7 +250,7 @@ impl Anchor {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{anchor::Anchor, maths::Pose};
+    /// use stereokit_rust::anchor::Anchor;
     ///
     /// assert_eq!(Anchor::new_anchors().get_count(), 0);
     /// # sk::Sk::shutdown();
@@ -267,7 +271,7 @@ impl Anchor {
     /// use stereokit_rust::{anchor::Anchor, maths::Pose};
     ///
     /// // create an anchor in center of the world
-    /// if let Ok(mut anchor) = Anchor::from_pose(Pose::default()){;
+    /// if let Ok(anchor) = Anchor::from_pose(Pose::default()){
     ///     assert_eq!(anchor.get_persistent(), false);
     ///     anchor.try_set_persistent(true);
     ///     assert_eq!(anchor.get_persistent(), true);
@@ -323,7 +327,7 @@ impl Anchor {
     /// use stereokit_rust::{anchor::Anchor, maths::Pose};
     ///
     /// // create an anchor in center of the world
-    /// if let Ok(mut anchor) = Anchor::from_pose(Pose::default()){;
+    /// if let Ok(anchor) = Anchor::from_pose(Pose::default()){
     ///     assert_eq!(anchor.get_pose(), Pose::default());
     /// }
     /// # sk::Sk::shutdown();
@@ -343,7 +347,7 @@ impl Anchor {
     /// use stereokit_rust::{anchor::Anchor, maths::Pose, system::BtnState};
     ///
     /// // create an anchor in center of the world
-    /// if let Ok(mut anchor) = Anchor::from_pose(Pose::default()){;
+    /// if let Ok(anchor) = Anchor::from_pose(Pose::default()){
     ///     assert_eq!(anchor.get_tracked(), BtnState::Active);
     /// }
     /// # sk::Sk::shutdown();
@@ -369,10 +373,10 @@ impl Anchor {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{anchor::Anchor, maths::Pose, system::BtnState};
+    /// use stereokit_rust::{anchor::Anchor, maths::Pose};
     ///
     /// // create an anchor in center of the world
-    /// if let Ok(mut anchor) = Anchor::from_pose(Pose::default()){;
+    /// if let Ok(anchor) = Anchor::from_pose(Pose::default()){
     ///     assert_eq!(anchor.get_name().is_empty(), false);
     /// }
     /// # sk::Sk::shutdown();

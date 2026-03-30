@@ -351,7 +351,7 @@ impl Vec2 {
     ///
     /// ### Examples
     /// ```
-    /// use stereokit_rust::maths::{Vec2, Vec3};
+    /// use stereokit_rust::maths::Vec2;
     ///
     /// let vec2 = Vec2::new(1.1, 1.2);
     /// assert_eq!(vec2.yx(), Vec2::new(1.2, 1.1));
@@ -2489,9 +2489,9 @@ impl Neg for Vec4 {
 /// use stereokit_rust::maths::{Quat, Vec3, Vec4};
 ///
 /// let mut quat1 = Quat::new(0.0, 0.0, 0.0, 1.0);
-/// let mut quat2 = Quat::from_angles(0.0, 90.0, 0.0);
-/// let mut quat2b :Quat= [0.0, 90.0, 0.0].into();
-/// let mut quat3 = Quat::look_at(Vec3::X, Vec3::ZERO, None);
+/// let quat2 = Quat::from_angles(0.0, 90.0, 0.0);
+/// let quat2b :Quat= [0.0, 90.0, 0.0].into();
+/// let quat3 = Quat::look_at(Vec3::X, Vec3::ZERO, None);
 /// let vec4_w: Vec4 = (quat2 - quat3).into();
 ///
 /// // quat2 == quat3 but because of epsilon here is the demo:
@@ -2642,7 +2642,7 @@ impl Quat {
     /// ```
     /// use stereokit_rust::maths::Quat;
     ///
-    /// let mut q = Quat::new(1.0, 2.0, 3.0, 4.0);
+    /// let q = Quat::new(1.0, 2.0, 3.0, 4.0);
     /// let q2 = q.conjugate();
     /// assert_eq!(q2, Quat { x: -1.0, y: -2.0, z: -3.0, w: 4.0 });
     /// ```
@@ -2748,7 +2748,7 @@ impl Quat {
     ///
     /// ### Examples
     /// ```
-    /// use stereokit_rust::maths::{Quat, Vec3};
+    /// use stereokit_rust::maths::Quat;
     ///
     /// let quat = Quat::from_angles(90.0, 0.0, 0.0);
     /// let angles = quat.to_angles();
@@ -3173,7 +3173,7 @@ impl Sub<Quat> for Quat {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{maths::{Vec3, Quat, Matrix}, model::Model};
+/// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model};
 ///
 /// let model = Model::from_file("center.glb", None).unwrap().copy();
 /// let transform = Matrix::t_r_s(Vec3::NEG_Y * 0.7, [0.0, 155.0, 10.0], Vec3::ONE * 0.3);
@@ -3505,7 +3505,7 @@ impl Matrix {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Quat, Matrix}, mesh::Mesh, material::Material,
+    /// use stereokit_rust::{maths::{Quat, Matrix}, mesh::Mesh, material::Material,
     ///                      util::Time};
     ///
     /// let mesh = Mesh::cube();
@@ -3559,14 +3559,14 @@ impl Matrix {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Quat, Matrix}, mesh::Mesh, material::Material,
+    /// use stereokit_rust::{maths::{Vec3, Matrix}, mesh::Mesh, material::Material,
     ///                      util::Time};
     ///
     /// let mesh = Mesh::cube();
     /// let material = Material::pbr();
     ///
     /// let mut transform = Matrix::IDENTITY;
-    /// let mut delta_scale = 2.0;
+    /// let delta_scale = 2.0;
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     let scale = Vec3::ONE * (delta_scale * Time::get_stepf()).cos();
@@ -3612,7 +3612,7 @@ impl Matrix {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Quat, Matrix}, mesh::Mesh, material::Material,
+    /// use stereokit_rust::{maths::{Vec3, Matrix}, mesh::Mesh, material::Material,
     ///                      util::Time};
     ///
     /// let mesh = Mesh::cube();
@@ -3752,7 +3752,7 @@ impl Matrix {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Quat, Matrix}, mesh::Mesh, material::Material,
+    /// use stereokit_rust::{maths::{Vec3, Matrix}, mesh::Mesh, material::Material,
     ///                      util::Time};
     ///
     /// let mesh = Mesh::cube();
@@ -3760,7 +3760,7 @@ impl Matrix {
     ///
     /// let mut transform = Matrix::IDENTITY;
     /// let mut position = Vec3::ZERO;
-    /// let mut delta_scale = 2.0;
+    /// let delta_scale = 2.0;
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     position += Vec3::NEG_Z * Time::get_stepf();
@@ -3834,7 +3834,7 @@ impl Matrix {
     ///
     /// let mut transform = Matrix::IDENTITY;
     /// let mut position = Vec3::ZERO;
-    /// let mut delta_scale = 2.0;
+    /// let delta_scale = 2.0;
     /// let mut delta_rotate = 90.0;
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
@@ -3904,7 +3904,7 @@ impl Matrix {
     /// see also [`matrix_transpose`]
     /// ### Examples
     /// ```
-    /// use stereokit_rust::maths::{Vec3, Matrix};
+    /// use stereokit_rust::maths::Matrix;
     ///
     /// let mut transform = Matrix::t([1.0, 2.0, 3.0]);
     /// assert_eq!(transform, Matrix::from([
@@ -4030,7 +4030,7 @@ impl Matrix {
     /// see also the `*` operator [`matrix_transform_ray`]
     /// ### Examples
     /// ```
-    /// use stereokit_rust::maths::{Vec3, Matrix, Ray};
+    /// use stereokit_rust::maths::{Matrix, Ray};
     ///
     /// let transform = Matrix::t([1.0, 2.0, 3.0]);
     /// let ray = Ray::new([0.0, 0.0, 0.0], [1.0, 0.0, 0.0]);
@@ -4056,7 +4056,7 @@ impl Matrix {
     /// see also the `*` operator [`matrix_transform_pose`]
     /// ### Examples
     /// ```
-    /// use stereokit_rust::maths::{Pose, Vec3, Matrix};
+    /// use stereokit_rust::maths::{Pose, Matrix};
     ///
     /// let transform = Matrix::t([1.0, 2.0, 3.0]);
     /// let pose = Pose::new([0.0, 0.0, 0.0], None);
@@ -4174,7 +4174,7 @@ impl Matrix {
     /// see also [`matrix_extract_pose`]
     /// ### Examples
     /// ```
-    /// use stereokit_rust::maths::{Vec3, Quat, Matrix, Pose};
+    /// use stereokit_rust::maths::{Vec3, Quat, Matrix};
     ///
     /// let matrix = Matrix::t_r(Vec3::new(1.0, 2.0, 3.0), [0.0, 0.0, 0.0]);
     ///
@@ -4252,7 +4252,7 @@ impl Matrix {
     /// see also [`matrix_transpose`]
     /// ### Examples
     /// ```
-    /// use stereokit_rust::maths::{Vec3, Matrix};
+    /// use stereokit_rust::maths::{Matrix};
     ///
     /// let transform = Matrix::t([1.0, 2.0, 3.0]);
     /// assert_eq!(transform, Matrix::from([
@@ -4445,7 +4445,7 @@ impl Mul<Ray> for Matrix {
 
     /// ### Examples
     /// ```
-    /// use stereokit_rust::maths::{Vec3, Matrix, Ray};
+    /// use stereokit_rust::maths::{Matrix, Ray};
     ///
     /// let transform = Matrix::t([1.0, 2.0, 3.0]);
     /// let ray = Ray::new([0.0, 0.0, 0.0], [1.0, 0.0, 0.0]);
@@ -4465,7 +4465,7 @@ impl Mul<Ray> for Matrix {
 /// see also [`matrix_transform_ray`]
 impl MulAssign<Matrix> for Ray {
     /// ```
-    /// use stereokit_rust::maths::{Vec3, Matrix, Ray};
+    /// use stereokit_rust::maths::{Matrix, Ray};
     ///
     /// let mut ray = Ray::new([0.0, 0.0, 0.0], [1.0, 0.0, 0.0]);
     /// let transform = Matrix::t([1.0, 2.0, 3.0]);
@@ -4490,7 +4490,7 @@ impl Mul<Matrix> for Ray {
 
     /// ### Examples
     /// ```
-    /// use stereokit_rust::maths::{Vec3, Matrix, Ray};
+    /// use stereokit_rust::maths::{Matrix, Ray};
     ///
     /// let transform = Matrix::t([1.0, 2.0, 3.0]);
     /// let ray = Ray::new([0.0, 0.0, 0.0], [1.0, 0.0, 0.0]);
@@ -4581,7 +4581,7 @@ impl Mul<Pose> for Matrix {
 
     /// ### Examples
     /// ```
-    /// use stereokit_rust::maths::{Pose, Vec3, Matrix};
+    /// use stereokit_rust::maths::{Pose, Matrix};
     ///
     /// let transform = Matrix::t([1.0, 2.0, 3.0]);
     /// let pose = Pose::new([0.0, 0.0, 0.0], None);
@@ -4602,7 +4602,7 @@ impl Mul<Pose> for Matrix {
 impl MulAssign<Matrix> for Pose {
     /// ### Examples
     /// ```
-    /// use stereokit_rust::maths::{Pose, Vec3, Matrix};
+    /// use stereokit_rust::maths::{Pose, Matrix};
     ///
     /// let mut pose = Pose::new([0.0, 0.0, 0.0], None);
     /// let transform = Matrix::t([1.0, 2.0, 3.0]);
@@ -4627,7 +4627,7 @@ impl Mul<Matrix> for Pose {
 
     /// ### Examples
     /// ```
-    /// use stereokit_rust::maths::{Pose, Vec3, Matrix};
+    /// use stereokit_rust::maths::{Pose, Matrix};
     ///
     /// let transform = Matrix::t([1.0, 2.0, 3.0]);
     /// let pose = Pose::new([0.0, 0.0, 0.0], None);
@@ -4887,7 +4887,7 @@ impl Bounds {
     /// see also [Bounds::scale_vec] [Bounds::scaled] [Bounds::scaled_vec] and '/' '*' operator
     /// ### Examples
     /// ```
-    /// use stereokit_rust::maths::{Vec3, Matrix, Bounds};
+    /// use stereokit_rust::maths::{Vec3, Bounds};
     ///
     /// let mut bounds = Bounds::from_corners( Vec3::ZERO, Vec3::ONE);
     /// bounds.scale(2.0);
@@ -4910,7 +4910,7 @@ impl Bounds {
     /// see also [Bounds::scale] [Bounds::scaled_vec] [Bounds::scaled] and '/' '*' operator
     /// ### Examples
     /// ```
-    /// use stereokit_rust::maths::{Vec3, Matrix, Bounds};
+    /// use stereokit_rust::maths::{Vec3, Bounds};
     ///
     /// let mut bounds = Bounds::from_corners( Vec3::ZERO, Vec3::ONE);
     /// bounds.scale_vec([1.0, 2.0, 3.0]);
@@ -4934,7 +4934,7 @@ impl Bounds {
     /// see also [`bounds_point_contains`]
     /// ### Examples
     /// ```
-    /// use stereokit_rust::maths::{Vec3, Bounds, Matrix};
+    /// use stereokit_rust::maths::{Bounds, Matrix};
     ///
     /// // A cube of 1 meter per side at this position, aligned with x y and z axis.
     /// let box_transform = Matrix::t([10.0, 1.0, 2.0]);
@@ -4967,7 +4967,7 @@ impl Bounds {
     /// see also [`bounds_line_contains`]
     /// ### Examples
     /// ```
-    /// use stereokit_rust::maths::{Vec3, Bounds, Matrix};
+    /// use stereokit_rust::maths::{Bounds, Matrix};
     ///
     /// // A cube of 1 meter per side at this position, aligned with x y and z axis.
     /// let box_transform = Matrix::t([10.0, 1.0, 2.0]);
@@ -5001,7 +5001,7 @@ impl Bounds {
     /// see also [`bounds_capsule_contains`]
     /// ### Examples
     /// ```
-    /// use stereokit_rust::maths::{Vec3, Bounds, Matrix};
+    /// use stereokit_rust::maths::{Bounds, Matrix};
     ///
     /// // A cube of 1 meter per side at this position, aligned with x y and z axis.
     /// let box_transform = Matrix::t([10.0, 1.0, 2.0]);
@@ -5036,7 +5036,7 @@ impl Bounds {
     /// see also [`bounds_ray_intersect`] same as [`Ray::intersect_bounds`]
     /// ### Examples
     /// ```
-    /// use stereokit_rust::maths::{Vec3, Bounds, Matrix, Ray};
+    /// use stereokit_rust::maths::{Bounds, Matrix, Ray};
     ///
     /// // A cube of 1 meter per side at this position, aligned with x y and z axis.
     /// let box_transform = Matrix::t([10.0, 1.0, 2.0]);
@@ -5181,7 +5181,7 @@ impl Display for Bounds {
     ///
     /// ### Examples
     /// ```
-    /// use stereokit_rust::maths::{Vec3, Bounds};
+    /// use stereokit_rust::maths::Bounds;
     ///
     /// let bounds = Bounds::new([1.1, 2.0, 3.0], [4.0, 5.0, 6.0]);
     /// assert_eq!(format!("{}", bounds),
@@ -5305,7 +5305,7 @@ impl MulAssign<Vec3> for Bounds {
 ///                      mesh::Mesh, material::Material, util::named_colors};
 ///
 /// let plane_mesh = Mesh::generate_plane_up([1.0,1.0], None, true);
-/// let mut material_plane = Material::pbr();
+/// let material_plane = Material::pbr();
 ///
 /// let transform_wall = Matrix::t_r([-0.5, 0.0, 0.0],
 ///                                  [0.0, 0.0, 90.0]);
@@ -5394,7 +5394,7 @@ impl Plane {
     /// <https://stereokit.net/Pages/StereoKit/Plane/Plane.html>
     ///
     /// ## Examples
-    /// ``` ignore
+    /// ```ignore
     /// use stereokit_rust::maths::{Plane,Vec3};
     /// let ground = Plane::from_points([1.0, 1.5, 0.0],
     ///                                 [0.0, 1.5, 1.0],
@@ -5493,7 +5493,7 @@ impl Display for Plane {
     /// Creates a text description of the Plane, in the format of “[normal:X distance:X]”
     /// ### Examples
     /// ```
-    /// use stereokit_rust::maths::{Vec3, Plane};
+    /// use stereokit_rust::maths::Plane;
     ///
     /// let plane = Plane::new([1.1, 2.0, 3.0], 4.0);
     /// assert_eq!(format!("{}", plane),
@@ -5570,11 +5570,11 @@ impl Pose {
     ///
     /// ### Examples
     /// ```
-    /// use stereokit_rust::maths::{Vec3, Pose};
-    /// let mut handle_pose = Pose::new( [0.0, 0.05, 0.90], None);
+    /// use stereokit_rust::maths::Pose;
+    /// let handle_pose = Pose::new( [0.0, 0.05, 0.90], None);
     ///
-    /// let mut window_pose = Pose::new(
-    ///     [0.0, 0.05, 0.90], Some([0.0, 180.0 * 4.0, 0.0].into()));
+    /// let window_pose = Pose::new([0.0, 0.05, 0.90],
+    ///                             Some([0.0, 180.0 * 4.0, 0.0].into()));
     ///
     /// assert_eq!(handle_pose, window_pose);
     #[inline]
@@ -5590,9 +5590,9 @@ impl Pose {
     /// ```
     /// use stereokit_rust::maths::{Vec3, Pose};
     ///
-    /// let mut pose1 = Pose::new( Vec3::Y, None);
-    /// let mut pose2 = Pose::new( Vec3::Y, Some([0.0, 45.0, 0.0].into()));
-    /// let mut pose3 = Pose::new( Vec3::Y, Some([0.0, 90.0, 0.0].into()));
+    /// let pose1 = Pose::new( Vec3::Y, None);
+    /// let pose2 = Pose::new( Vec3::Y, Some([0.0, 45.0, 0.0].into()));
+    /// let pose3 = Pose::new( Vec3::Y, Some([0.0, 90.0, 0.0].into()));
     ///
     /// assert_eq!(Pose::lerp(pose1, pose3, 0.5), pose2);
     #[inline]
@@ -5613,7 +5613,7 @@ impl Pose {
     /// ```
     /// use stereokit_rust::maths::{Vec3, Pose};
     ///
-    /// let mut pose1 = Pose::look_at(Vec3::ZERO, Vec3::NEG_Z );
+    /// let pose1 = Pose::look_at(Vec3::ZERO, Vec3::NEG_Z );
     /// assert_eq!(pose1, Pose::default());
     #[inline]
     pub fn look_at(from: impl Into<Vec3>, at: impl Into<Vec3>) -> Self {
@@ -5628,7 +5628,7 @@ impl Pose {
     ///
     /// ### Examples
     /// ```
-    /// use stereokit_rust::maths::{Vec3, Matrix, Pose};
+    /// use stereokit_rust::maths::{Matrix, Pose};
     ///
     /// let pose1 = Pose::IDENTITY;
     ///
@@ -5723,7 +5723,7 @@ impl Pose {
     ///
     /// ### Examples
     /// ```
-    /// use stereokit_rust::maths::{Vec3, Pose, Ray};
+    /// use stereokit_rust::maths::{Vec3, Pose};
     ///
     /// let pose1 = Pose::default();
     /// assert_eq!(pose1.get_right(), Vec3::X);    
@@ -5741,7 +5741,7 @@ impl Pose {
     ///
     /// ### Examples
     /// ```
-    /// use stereokit_rust::maths::{Vec3, Pose, Ray};
+    /// use stereokit_rust::maths::{Vec3, Pose};
     ///
     /// let pose1 = Pose::default();
     /// assert_eq!(pose1.get_up(), Vec3::Y);    
@@ -5758,7 +5758,7 @@ impl Pose {
     ///
     /// ### Examples
     /// ```
-    /// use stereokit_rust::maths::{Vec3, Pose};
+    /// use stereokit_rust::maths::Pose;
     /// let pose1 = Pose::ZERO;
     /// let pose2 = Pose::IDENTITY;
     /// assert!(pose1.is_zero());
@@ -5775,7 +5775,7 @@ impl Display for Pose {
     /// <https://stereokit.net/Pages/StereoKit/Pose/ToString.html>
     /// ### Examples
     /// ```
-    /// use stereokit_rust::maths::{Vec3, Pose};
+    /// use stereokit_rust::maths::Pose;
     ///
     /// let pose = Pose::new([1.1, 2.0, 3.0], Some([0.0, 90.0, 0.0].into()));
     ///
@@ -5807,7 +5807,6 @@ impl Display for Pose {
 /// material_sphere.color_tint(named_colors::GOLD)
 ///                .border_size(0.05);
 ///
-/// let scale = 0.1;
 /// let transform = Matrix::t(sphere.center);
 /// let ray_x = Ray::new(Vec3::X, Vec3::NEG_X);
 /// let ray_y = Ray::new(Vec3::Y, Vec3::NEG_Y);
@@ -5911,7 +5910,7 @@ impl Display for Sphere {
     /// Creates a text description of the Sphere, in the format of “[center:X radius:X]”
     /// ### Examples
     /// ```
-    /// use stereokit_rust::maths::{Vec3, Sphere};
+    /// use stereokit_rust::maths::Sphere;
     ///
     /// let sphere = Sphere::new([1.1, 2.0, 3.0], 4.0);
     /// assert_eq!(format!("{}", sphere),
@@ -5971,7 +5970,7 @@ impl Rect {
 ///     mesh::Mesh, material::Material, util::named_colors};
 ///
 /// let point = Mesh::sphere();
-/// let mut material_point =Material::unlit();
+/// let material_point =Material::unlit();
 /// let model = Model::from_file("center.glb", None).unwrap().copy();
 /// let cube = Mesh::cube();
 /// let mut material_cube =Material::ui_box();
@@ -6094,7 +6093,7 @@ impl Ray {
     ///
     /// ### Examples
     /// ```
-    /// use stereokit_rust::maths::{Vec3, Plane, Ray};
+    /// use stereokit_rust::maths::{Vec3, Ray};
     ///
     /// let ray = Ray::new(Vec3::ZERO, Vec3::ONE);
     ///
@@ -6165,7 +6164,7 @@ impl Ray {
     /// see also [`bounds_ray_intersect`] same as [`Bounds::intersect`]
     /// ### Examples
     /// ```
-    /// use stereokit_rust::maths::{Vec3, Bounds, Matrix, Ray};
+    /// use stereokit_rust::maths::{Bounds, Matrix, Ray};
     ///
     /// // A cube of 1 meter per side at this position, aligned with x y and z axis.
     /// let box_transform = Matrix::t([10.0, 1.0, 2.0]);
@@ -6283,14 +6282,12 @@ impl Ray {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix, Quat, Ray}, system::Lines,
-    ///     util::{named_colors}, mesh::Mesh, material::{Material, Cull}};
+    /// use stereokit_rust::{maths::{Vec3, Matrix, Quat, Ray}, mesh::Mesh, material::Cull};
     ///
     /// // Create Meshes
     /// let cube = Mesh::generate_cube(Vec3::ONE * 0.8, None);
     /// let sphere = Mesh::generate_sphere(1.0, Some(4));
     ///
-    /// let material = Material::pbr().copy();
     /// let transform = Matrix::r(Quat::from_angles(40.0, 50.0, 20.0));
     /// let inv = transform.get_inverse();
     ///
@@ -6346,7 +6343,7 @@ impl Ray {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix, Ray}, model::Model, system::Lines,
+    /// use stereokit_rust::{maths::{Matrix, Ray}, model::Model, system::Lines,
     ///     mesh::Mesh, material::{Material, Cull}, util::named_colors};
     ///
     /// let model = Model::from_file("center.glb", None).unwrap().copy();
@@ -6398,8 +6395,7 @@ impl Ray {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix, Ray}, model::Model,
-    ///     mesh::Mesh, material::{Material, Cull}, util::named_colors};
+    /// use stereokit_rust::{maths::{Vec3, Matrix, Ray}, model::Model,material::Cull};
     ///
     /// let model = Model::from_file("center.glb", None).unwrap().copy();
     /// let transform = Matrix::t_r([0.0,-2.25,-2.00], [0.0, 140.0, 0.0]);
@@ -6429,7 +6425,7 @@ impl Display for Ray {
     /// <https://stereokit.net/Pages/StereoKit/Ray/ToString.html>
     /// ### Examples
     /// ```
-    /// use stereokit_rust::maths::{Vec3, Ray};
+    /// use stereokit_rust::maths::Ray;
     ///
     /// let ray = Ray::new([1.1, 2.0, 3.0], [4.0, 5.0, 6.0]);
     /// assert_eq!(format!("{}", ray),

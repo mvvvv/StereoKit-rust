@@ -183,7 +183,7 @@ impl Model {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model, mesh::Mesh, material::Material};
+    /// use stereokit_rust::{maths::Matrix, model::Model, mesh::Mesh, material::Material};
     ///
     /// // Let's create a model with two identical spheres.
     /// let sphere =       Mesh::generate_sphere(0.6, None);
@@ -222,7 +222,7 @@ impl Model {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model, mesh::Mesh, material::Material};
+    /// use stereokit_rust::{maths::Matrix, model::Model, mesh::Mesh, material::Material};
     ///
     /// // Let's create a model with two identical spheres.
     /// let sphere =       Mesh::generate_sphere(0.8, None);
@@ -345,7 +345,7 @@ impl Model {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model};
+    /// use stereokit_rust::model::Model;
     ///
     /// let model = Model::from_file("center.glb", None).expect("Model should load");
     /// let model_copy = model.copy();
@@ -373,7 +373,7 @@ impl Model {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model};
+    /// use stereokit_rust::model::Model;
     ///
     /// let mut model = Model::from_file("center.glb", None).expect("Model should load");
     /// model.id("my_model_id");
@@ -399,9 +399,9 @@ impl Model {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model};
+    /// use stereokit_rust::model::Model;
     ///
-    /// let mut model = Model::from_file("center.glb", None).expect("Model should load");
+    /// let model = Model::from_file("center.glb", None).expect("Model should load");
     ///
     /// let same_model = model.clone_ref();
     ///
@@ -420,7 +420,7 @@ impl Model {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model};
+    /// use stereokit_rust::model::Model;
     ///
     /// let mut model = Model::new();
     /// assert!(model.get_id().starts_with("auto/model_"));
@@ -613,8 +613,8 @@ impl Model {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec2, Vec3, Matrix, Bounds}, mesh::{Mesh, Vertex},
-    ///                      model::Model, material::Material, util::named_colors};
+    /// use stereokit_rust::{maths::{Vec2, Vec3, Bounds}, mesh::{Mesh, Vertex},
+    ///                      model::Model, material::Material};
     ///
     /// let material = Material::pbr();
     /// let mut square = Mesh::new();
@@ -657,8 +657,8 @@ impl Model {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec2, Vec3, Matrix, Bounds}, mesh::{Mesh, Vertex},
-    ///                      model::Model, material::Material, util::named_colors};
+    /// use stereokit_rust::{maths::{Vec2, Vec3, Bounds}, mesh::{Mesh, Vertex},
+    ///                      model::Model, material::Material};
     ///
     /// let material = Material::pbr();
     /// let mut square = Mesh::new();
@@ -717,10 +717,8 @@ impl Model {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix, Bounds}, model::Model, mesh::Mesh,
-    ///                      material::Material, util::named_colors};
-    ///
-    /// let cube_bounds  = Mesh::cube();
+    /// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model, mesh::Mesh,
+    ///                      material::Material};
     ///
     /// let cube = Mesh::generate_cube(Vec3::ONE * 0.3, None);
     ///
@@ -729,7 +727,7 @@ impl Model {
     /// let transform3 = Matrix::t([ 1.30, 1.30, 1.30]);
     ///
     /// let material = Material::pbr();
-    /// let mut model = Model::new();
+    /// let model = Model::new();
     /// let mut nodes = model.get_nodes();
     /// nodes.add("cube1", transform1, Some(&cube), Some(&material), true)
     ///      .add("cube2", transform2, Some(&cube), Some(&material), true)
@@ -755,11 +753,11 @@ impl Model {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::model::{Model, Anims, AnimMode};
+    /// use stereokit_rust::model::{Model, AnimMode};
     ///
     /// let model = Model::from_file("mobiles.gltf", None)
     ///                              .expect("Could not load model").copy();
-    /// let mut anims = model.get_anims();
+    /// let anims = model.get_anims();
     /// assert_eq!(anims.get_count(), 3);
     ///
     /// for (iter, anim) in anims.enumerate() {
@@ -790,7 +788,7 @@ impl Model {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix, Bounds, Ray}, model::Model, mesh::Mesh,
+    /// use stereokit_rust::{maths::{Vec3, Matrix, Ray}, model::Model, mesh::Mesh,
     ///                      material::{Material, Cull}, util::named_colors, system::Lines};
     ///
     /// let cube_bounds  = Mesh::cube();
@@ -801,7 +799,7 @@ impl Model {
     /// let transform2 = Matrix::t([ 0.30, 0.30, 0.30]);
     ///
     /// let material = Material::pbr();
-    /// let mut model = Model::new();
+    /// let model = Model::new();
     /// let mut nodes = model.get_nodes();
     /// nodes.add("cube1", transform1, Some(&cube), Some(&material), true)
     ///      .add("cube2", transform2, Some(&cube), Some(&material), true);
@@ -857,10 +855,8 @@ impl Model {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix, Bounds, Ray}, model::Model, mesh::Mesh,
-    ///                      material::{Material, Cull}, util::named_colors, system::Lines};
-    ///
-    /// let cube_bounds  = Mesh::cube();
+    /// use stereokit_rust::{maths::{Vec3, Matrix, Ray}, model::Model, mesh::Mesh,
+    ///                      material::{Material, Cull}};
     ///
     /// let cube = Mesh::generate_cube(Vec3::ONE * 0.4, None);
     ///
@@ -868,7 +864,7 @@ impl Model {
     /// let transform2 = Matrix::t([ 0.30, 0.30, 0.30]);
     ///
     /// let material = Material::pbr();
-    /// let mut model = Model::new();
+    /// let model = Model::new();
     /// let mut nodes = model.get_nodes();
     /// nodes.add("cube1", transform1, Some(&cube), Some(&material), true)
     ///      .add("cube2", transform2, Some(&cube), Some(&material), true);
@@ -902,7 +898,7 @@ impl Model {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{maths::{Vec3, Matrix}, model::{Model, Anims, AnimMode}};
+/// use stereokit_rust::{maths::{Vec3, Matrix}, model::{Model, AnimMode}};
 ///
 /// let model = Model::from_file("center.glb", None)
 ///                              .expect("Could not load model").copy();
@@ -919,7 +915,6 @@ impl Model {
 ///     }
 /// }
 ///
-/// let mut anims = model.get_anims();
 /// filename_scr = "screenshots/anims.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
 ///     model.draw(token, transform, None, None);
@@ -990,13 +985,13 @@ impl<'a> Anims<'a> {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{model::{Model, Anims, AnimMode}, system::Assets};
+    /// use stereokit_rust::{model::Model, system::Assets};
     ///
     /// let model = Model::from_file("mobiles.gltf", None)
     ///                              .expect("Could not load model").copy();
     /// Assets::block_for_priority(i32::MAX);
     ///
-    /// let mut anims = model.get_anims();
+    /// let anims = model.get_anims();
     /// assert_eq!(anims.get_count(), 3);
     /// assert_eq!(anims.get_name_at_index(0), Some("rotate"));
     /// assert_eq!(anims.get_name_at_index(1), Some("flyRotate"));
@@ -1021,11 +1016,11 @@ impl<'a> Anims<'a> {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::model::{Model, Anims, AnimMode};
+    /// use stereokit_rust::model::Model;
     ///
     /// let model = Model::from_file("center.glb", None)
     ///                              .expect("Could not load model").copy();
-    /// let mut anims = model.get_anims();
+    /// let anims = model.get_anims();
     /// assert_eq!(anims.get_count(), 1);
     /// assert_eq!(anims.get_duration_at_index(0), 2.5);
     /// assert_eq!(anims.get_duration_at_index(1), -0.01);
@@ -1052,7 +1047,7 @@ impl<'a> Anims<'a> {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, model::{Model, Anims, AnimMode}};
+    /// use stereokit_rust::{maths::Matrix, model::{Model, AnimMode}};
     ///
     /// let model = Model::from_file("center.glb", None)
     ///                              .expect("Could not load model").copy();
@@ -1085,7 +1080,7 @@ impl<'a> Anims<'a> {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::model::{Model, Anims, AnimMode};
+    /// use stereokit_rust::model::{Model, AnimMode};
     ///
     /// let model = Model::from_file("center.glb", None)
     ///                              .expect("Could not load model").copy();
@@ -1120,7 +1115,7 @@ impl<'a> Anims<'a> {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::model::{Model, Anims, AnimMode};
+    /// use stereokit_rust::model::{Model, AnimMode};
     ///
     /// let model = Model::from_file("center.glb", None)
     ///                              .expect("Could not load model").copy();
@@ -1151,7 +1146,7 @@ impl<'a> Anims<'a> {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::model::{Model, Anims, AnimMode};
+    /// use stereokit_rust::model::{Model, AnimMode};
     ///
     /// let model = Model::from_file("center.glb", None)
     ///                              .expect("Could not load model").copy();
@@ -1188,7 +1183,7 @@ impl<'a> Anims<'a> {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::model::{Model, Anims, AnimMode};
+    /// use stereokit_rust::model::{Model, AnimMode};
     ///
     /// let model = Model::from_file("center.glb", None)
     ///                              .expect("Could not load model").copy();
@@ -1224,7 +1219,7 @@ impl<'a> Anims<'a> {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::model::{Model, Anims};
+    /// use stereokit_rust::model::{Model};
     /// let model = Model::from_file("center.glb", None)
     ///     .expect("Could not load model")
     ///     .copy();
@@ -1924,6 +1919,7 @@ impl ModelNode<'_> {
     /// assert_eq!(node.get_name(), Some("my_root_node"));
     ///
     /// let node = nodes.find("my_root_node").expect("A node should exist!");
+    /// assert_eq!(node.get_name(), Some("my_root_node"));
     /// assert!(nodes.find("root").is_none());
     /// # sk::Sk::shutdown();
     /// ```
@@ -2259,7 +2255,7 @@ impl ModelNode<'_> {
     /// nodes.add("mesh", Matrix::IDENTITY, Some(&Mesh::cube()), Some(&Material::pbr()), true);
     /// nodes.add("mush", Matrix::IDENTITY, Some(&Mesh::cube()), Some(&Material::pbr()), true);
     ///
-    /// let mut node = nodes.find("mosh").expect("Node mosh should exist");
+    /// let node = nodes.find("mosh").expect("Node mosh should exist");
     /// let mut next_node = node.iterate().expect("Node should have a follower");
     /// assert_eq!(next_node.get_name(), Some("mesh"));
     ///
@@ -2433,7 +2429,7 @@ impl ModelNode<'_> {
     /// let mut nodes = model.get_nodes();
     /// nodes.add("some_info", Matrix::IDENTITY, None, None, false);
     ///
-    /// let mut node = nodes.get_root_node().expect("We should have a root node");
+    /// let node = nodes.get_root_node().expect("We should have a root node");
     /// let mut infos = node.get_infos();
     /// infos.set_info( "name1", "value1");
     /// infos.set_info( "name2", "value2");
@@ -2516,14 +2512,14 @@ impl<'a> Infos<'a> {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::Matrix, model::{Model, Info}};
+    /// use stereokit_rust::{maths::Matrix, model::Model};
     ///
     /// let model = Model::new();
     ///
     /// let mut nodes = model.get_nodes();
     /// nodes.add("some_info", Matrix::IDENTITY, None, None, false);
     ///
-    /// let mut node = nodes.get_root_node().expect("We should have a root node");
+    /// let node = nodes.get_root_node().expect("We should have a root node");
     /// let mut infos = node.get_infos();
     /// infos.set_info( "name1", "value1");
     /// infos.set_info( "name2", "value2");
@@ -2546,14 +2542,14 @@ impl<'a> Infos<'a> {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::Matrix, model::{Model, Info}};
+    /// use stereokit_rust::{maths::Matrix, model::Model};
     ///
     /// let model = Model::new();
     ///
     /// let mut nodes = model.get_nodes();
     /// nodes.add("some_info", Matrix::IDENTITY, None, None, false);
     ///
-    /// let mut node = nodes.get_root_node().expect("We should have a root node");
+    /// let node = nodes.get_root_node().expect("We should have a root node");
     /// let mut infos = node.get_infos();
     /// infos.set_info( "name1", "value1");
     /// infos.set_info( "name2", "value2");
@@ -2587,14 +2583,14 @@ impl<'a> Infos<'a> {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::Matrix, model::{Model, Info}};
+    /// use stereokit_rust::{maths::Matrix, model::Model};
     ///
     /// let model = Model::new();
     ///
     /// let mut nodes = model.get_nodes();
     /// nodes.add("some_info", Matrix::IDENTITY, None, None, false);
     ///
-    /// let mut node = nodes.get_root_node().expect("We should have a root node");
+    /// let node = nodes.get_root_node().expect("We should have a root node");
     /// let mut infos = node.get_infos();
     /// infos.set_info( "name1", "value111");
     /// infos.set_info( "name1", "value1");
@@ -2621,14 +2617,14 @@ impl<'a> Infos<'a> {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::Matrix, model::{Model, Info}};
+    /// use stereokit_rust::{maths::Matrix, model::Model};
     ///
     /// let model = Model::new();
     ///
     /// let mut nodes = model.get_nodes();
     /// nodes.add("some_info", Matrix::IDENTITY, None, None, false);
     ///
-    /// let mut node = nodes.get_root_node().expect("We should have a root node");
+    /// let node = nodes.get_root_node().expect("We should have a root node");
     /// let mut infos = node.get_infos();
     /// infos.set_info( "name1", "value1");
     /// infos.set_info( "name2", "value2");
@@ -2656,14 +2652,14 @@ impl<'a> Infos<'a> {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::Matrix, model::{Model, Info}};
+    /// use stereokit_rust::{maths::Matrix, model::Model};
     ///
     /// let model = Model::new();
     ///
     /// let mut nodes = model.get_nodes();
     /// nodes.add("some_info", Matrix::IDENTITY, None, None, false);
     ///
-    /// let mut node = nodes.get_root_node().expect("We should have a root node");
+    /// let node = nodes.get_root_node().expect("We should have a root node");
     /// let mut infos = node.get_infos();
     /// infos.set_info( "name1", "value111");
     /// infos.set_info( "name1", "value1");
@@ -2687,14 +2683,14 @@ impl<'a> Infos<'a> {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::Matrix, model::{Model, Info}};
+    /// use stereokit_rust::{maths::Matrix, model::Model};
     ///
     /// let model = Model::new();
     ///
     /// let mut nodes = model.get_nodes();
     /// nodes.add("some_info", Matrix::IDENTITY, None, None, false);
     ///
-    /// let mut node = nodes.get_root_node().expect("We should have a root node");
+    /// let node = nodes.get_root_node().expect("We should have a root node");
     /// let mut infos = node.get_infos();
     /// infos.set_info( "name0", "value0");
     /// assert_eq!(infos.get_count(), 1);

@@ -50,7 +50,7 @@ pub const PASSTHROUGH_FLIP: &str = "PassthroughFlip";
 /// // Launch the stepper as follow :
 /// use stereokit_rust::tools::xr_fb_passthrough::*;
 /// let mut passthrough = false;
-/// let mut new_passthrough_value = true; // !!!! Get a proper way to decide of this value !!!!
+/// let new_passthrough_value = true; // !!!! Get a proper way to decide of this value !!!!
 /// let passthrough_enabled = system::BackendOpenXR::ext_enabled("XR_FB_passthrough");
 /// if passthrough_enabled {
 ///    sk.send_event(StepperAction::add_default::<FbPassthroughStepper>(

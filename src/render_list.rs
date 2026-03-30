@@ -183,8 +183,7 @@ impl RenderList {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::Matrix,  util::Color128,
-    ///                      material::Material, mesh::Mesh, render_list::RenderList};
+    /// use stereokit_rust::render_list::RenderList;
     ///
     /// let mut render_list = RenderList::new();
     /// render_list.id("my_render_list");
@@ -210,10 +209,9 @@ impl RenderList {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::Matrix,  util::Color128,
-    ///                      material::Material, mesh::Mesh, render_list::RenderList};
+    /// use stereokit_rust::render_list::RenderList;
     ///
-    /// let mut render_list = RenderList::new();
+    /// let render_list = RenderList::new();
     ///
     /// let same_list = render_list.clone_ref();
     /// assert_eq!(render_list, same_list);
@@ -234,8 +232,7 @@ impl RenderList {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::Matrix,  util::Color128,
-    ///                      material::Material, mesh::Mesh, render_list::RenderList};
+    /// use stereokit_rust::render_list::RenderList;
     ///
     /// let mut render_list = RenderList::new();
     /// render_list.id("my_render_list");
@@ -470,9 +467,9 @@ impl RenderList {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix, Rect},  util::{named_colors, Color128, Color32},
+    /// use stereokit_rust::{maths::{Vec3, Matrix, Rect},  util::{named_colors, Color128},
     ///                      tex::{Tex, TexType, TexFormat}, material::Material,
-    ///                      mesh::Mesh, render_list::RenderList, system::{RenderClear, RenderLayer}};
+    ///                      mesh::Mesh, render_list::RenderList, system::RenderClear};
     ///
     /// let cylinder1 = Mesh::generate_cylinder(0.3, 1.5, [ 0.5, 0.5, 0.0],None);
     /// let cylinder2 = Mesh::generate_cylinder(0.3, 1.5, [-0.5, 0.5, 0.0],None);
@@ -482,7 +479,7 @@ impl RenderList {
     ///                       TexType::Rendertarget, TexFormat::Rgba32Srgb);
     /// let mut render_mat = Material::unlit().copy();
     /// render_mat.diffuse_tex(&render_tex);
-    /// let mut screen = Mesh::generate_cube([1.0, 1.0, 1.0], None);
+    /// let screen = Mesh::generate_cube([1.0, 1.0, 1.0], None);
     /// let transform_screen = Matrix::t([0.0, 0.0, -1.0]);
     ///
     /// let at = Vec3::new(-80.0, 1.0, 80.0);
@@ -570,7 +567,7 @@ impl RenderList {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix},  util::named_colors, material::Material,
+    /// use stereokit_rust::{maths::Matrix,  util::named_colors, material::Material,
     ///                      mesh::Mesh, render_list::RenderList};
     ///
     /// let cylinder1 = Mesh::generate_cylinder(0.3, 1.5, [ 0.5, 0.5, 0.0],None);

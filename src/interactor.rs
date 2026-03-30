@@ -154,8 +154,8 @@ unsafe extern "C" {
 /// );
 ///
 /// interactor.update(
-///     Vec3::new(0.0, 0.0, 0.0),
-///     Vec3::new(0.0, 0.0, 0.1),
+///     Vec3::new(1.0, 2.0, 3.0),
+///     Vec3::new(4.0, 5.0, 6.0),
 ///     Pose::IDENTITY,
 ///     Vec3::ZERO,
 ///     Vec3::ZERO,
@@ -170,6 +170,15 @@ unsafe extern "C" {
 /// let focused = interactor.get_focused();
 /// let active = interactor.get_active();
 /// let motion = interactor.get_motion();
+///
+///
+/// assert_eq!(radius,  0.01);
+/// assert_eq!(start,   Vec3::new(1.0, 2.0, 3.0));
+/// assert_eq!(end,     Vec3::new(4.0, 5.0, 6.0));
+/// assert_eq!(tracked, BtnState::Active);
+/// assert_eq!(active,  0u64);
+/// assert_eq!(focused, 0u64);
+/// assert_eq!(motion,  Pose::IDENTITY);
 ///
 /// interactor.destroy();
 /// # sk::Sk::shutdown();
@@ -420,12 +429,13 @@ impl Interactor {
 ///
 /// // Check what interactors are currently set
 /// let current_interactors = Interaction::get_default_interactors();
+/// assert_eq!(current_interactors, DefaultInteractors::Default);
 ///
 /// // Disable the default drawing of interactor indicators
 /// Interaction::set_default_draw(false);
 ///
 /// // Check if default drawing is enabled
-/// let draw_enabled = Interaction::get_default_draw();
+/// assert_eq!(Interaction::get_default_draw(), false);
 /// # sk::Sk::shutdown();
 /// ```
 pub struct Interaction;

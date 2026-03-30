@@ -457,7 +457,6 @@ const LEFT_SHIFT: f32 = 0.04; // Left hand animation timing offset for synchroni
 /// use stereokit_rust::{
 ///     tools::xr_fb_render_model::{XrFbRenderModelStepper, 
 ///     is_fb_render_model_extension_available, DRAW_CONTROLLER},
-///     system::{Input, Handed},
 ///     prelude::*,
 /// };
 ///
@@ -475,7 +474,6 @@ const LEFT_SHIFT: f32 = 0.04; // Left hand animation timing offset for synchroni
 ///     // Enable controller rendering
 ///     sk.send_event(StepperAction::event("animate_controller", DRAW_CONTROLLER, "true"));
 ///     
-///     filename_scr = "screenshots/xr_fb_render_model.jpeg"; fov_scr = 45.0;
 ///     test_steps!( // !!!! Get a proper main loop !!!!
 ///         // The stepper will automatically render controllers with animations
 ///         // based on input state (trigger, grip, etc.)

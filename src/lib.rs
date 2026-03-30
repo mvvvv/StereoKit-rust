@@ -1,3 +1,4 @@
+#![doc(test(attr(deny(warnings), allow(unreachable_code))))]
 //! StereoKit-rust is a binding for the [StereoKit](https://StereoKit.net) C API.
 //! If the name of this crate contains "_rust" (not great for a Rust crate, we agree) it is to emphasize the fact that
 //! StereoKit is first and foremost a C, C++, C# project.
@@ -255,7 +256,7 @@ pub mod font;
 /// which are also unit tests:
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{ font::Font, maths::{Matrix, Quat, Vec3},
+/// use stereokit_rust::{ font::Font, maths::Matrix,
 ///                       system::{Text, TextStyle}, util::named_colors};
 ///
 /// #[derive(IStepper)]

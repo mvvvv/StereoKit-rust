@@ -560,7 +560,7 @@ pub struct UiSliderData {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{ui::{Ui,UiBtnLayout}, maths::{Vec2, Vec3, Pose}, sprite::Sprite};
+/// use stereokit_rust::{ui::{Ui,UiBtnLayout}, maths::{Vec2, Pose}, sprite::Sprite};
 ///
 /// let mut window_pose = Pose::new(
 ///     [0.01, 0.09, 0.88], Some([0.0, 185.0, 0.0].into()));
@@ -1161,7 +1161,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::Ui, maths::{Vec2, Vec3, Pose}, util::named_colors};
+    /// use stereokit_rust::{ui::Ui, maths::Pose, util::named_colors};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.035, 0.92], Some([0.0, 185.0, 0.0].into()));
@@ -1307,7 +1307,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::Ui, maths::{Vec2, Vec3, Pose}};
+    /// use stereokit_rust::{ui::Ui, maths::Pose};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.035, 0.92], Some([0.0, 185.0, 0.0].into()));
@@ -1368,7 +1368,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::Ui, maths::{Vec2, Vec3, Pose}, system::BtnState};
+    /// use stereokit_rust::{ui::Ui, maths::Pose, system::BtnState};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.035, 0.92], Some([0.0, 185.0, 0.0].into()));
@@ -1376,7 +1376,6 @@ impl Ui {
     /// let mut out_button_state = BtnState::empty();
     /// let mut out_focus_state = BtnState::empty();
     /// let mut out_finger_offset = 0.0;
-    /// filename_scr = "screenshots/ui_button_behavior.jpeg";
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("I'm a button", &mut window_pose, None, None, None);
     ///     Ui::button_behavior([0.0, 0.0, 0.005],[0.05, 0.05], "Button1",
@@ -1438,7 +1437,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::Ui, maths::{Vec2, Vec3, Pose}, system::BtnState};
+    /// use stereokit_rust::{ui::Ui, maths::Pose, system::BtnState};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.035, 0.92], Some([0.0, 185.0, 0.0].into()));
@@ -1512,8 +1511,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::{Ui, UiSliderData, UiVisual}, maths::{Vec2, Vec3, Pose},
-    ///                      system::BtnState};
+    /// use stereokit_rust::{ui::{Ui, UiSliderData, UiVisual}, maths::{Vec2, Vec3, Pose}};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.07, 0.90], Some([0.0, 185.0, 0.0].into()));
@@ -1529,7 +1527,6 @@ impl Ui {
     ///
     /// filename_scr = "screenshots/ui_slider_behavior.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     let prev = slider_pt;
     ///     let mut slider = UiSliderData::default();
     ///
     ///     Ui::window_begin("I'm a slider", &mut window_pose, None, None, None);
@@ -1601,7 +1598,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::{Ui,UiBtnLayout}, maths::{Vec2, Vec3, Pose},
+    /// use stereokit_rust::{ui::{Ui,UiBtnLayout}, maths::Pose,
     ///                      sprite::Sprite, util::named_colors};
     ///
     /// let mut window_pose = Pose::new(
@@ -1716,7 +1713,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::Ui, maths::{Vec2, Vec3, Pose}, sprite::Sprite};
+    /// use stereokit_rust::{ui::Ui, maths::Pose, sprite::Sprite};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.035, 0.92], Some([0.0, 185.0, 0.0].into()));
@@ -1784,7 +1781,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::{Ui, UiMove, UiGesture}, maths::{Vec2, Vec3, Pose, Bounds},
+    /// use stereokit_rust::{ui::{Ui, UiMove, UiGesture}, maths::{Pose, Bounds},
     ///                      material::Material, mesh::Mesh, util::named_colors};
     ///
     /// // lets create two handles of the same size:
@@ -1853,8 +1850,8 @@ impl Ui {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{ui::{Ui, UiMove, UiGesture},
-    ///                      maths::{Vec2, Vec3, Pose, Bounds, Matrix},
-    ///                      material::Material, mesh::Mesh, util::named_colors, sprite::Sprite};
+    ///                      maths::{Pose, Bounds, Matrix},
+    ///                      material::Material, mesh::Mesh, util::named_colors};
     ///
     /// // lets create two handles of the same size:
     /// let mut handle_pose1 = Pose::new(
@@ -1920,7 +1917,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::Ui, maths::{Vec2,  Pose}, system::TextStyle,
+    /// use stereokit_rust::{ui::Ui, maths::Pose, system::TextStyle,
     ///                      util::named_colors, font::Font};
     ///
     /// let mut window_pose = Pose::new(
@@ -1977,7 +1974,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::{Ui, UiConfirm, UiNotify}, maths::{Vec2, Vec3, Pose}};
+    /// use stereokit_rust::{ui::{Ui, UiConfirm, UiNotify}, maths::Pose};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.035, 0.92], Some([0.0, 185.0, 0.0].into()));
@@ -2184,7 +2181,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::Ui, maths::{Vec2, Vec3, Pose}, sprite::Sprite};
+    /// use stereokit_rust::{ui::Ui, maths::Pose, sprite::Sprite};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.055, 0.92], Some([0.0, 185.0, 0.0].into()));
@@ -2227,7 +2224,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::Ui, maths::{Vec2, Vec3, Pose},
+    /// use stereokit_rust::{ui::Ui, maths::Pose,
     ///                      system::TextContext};
     ///
     /// let mut window_pose = Pose::new(
@@ -2372,7 +2369,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::Ui, maths::{Vec2, Vec3, Pose}};
+    /// use stereokit_rust::{ui::Ui, maths::Pose};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.035, 0.93], Some([0.0, 185.0, 0.0].into()));
@@ -2408,7 +2405,7 @@ impl Ui {
     /// became inactive” this frame.
     /// see also [`ui_last_element_hand_active`] [`Ui::get_last_element_active`]
     /// ### Examples
-    /// ``` ignore
+    /// ```ignore
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{ui::Ui, maths::{Vec2, Vec3, Pose}, system::{Handed, BtnState}};
     ///
@@ -2445,7 +2442,7 @@ impl Ui {
     /// became focused” this frame.
     /// see also [`ui_last_element_hand_focused`] [`Ui::get_last_element_focused`]
     /// ### Examples
-    /// ``` ignore
+    /// ```ignore
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{ui::Ui, maths::{Vec2, Vec3, Pose}, system::{Handed, BtnState}};
     ///
@@ -2481,7 +2478,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::Ui, maths::{Vec2, Vec3, Pose}, sprite::Sprite};
+    /// use stereokit_rust::{ui::Ui, maths::Pose, sprite::Sprite};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.055, 0.92], Some([0.0, 185.0, 0.0].into()));
@@ -2520,7 +2517,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::{Ui, UiCut}, maths::{Vec2, Vec3, Pose}, sprite::Sprite};
+    /// use stereokit_rust::{ui::{Ui, UiCut}, maths::Pose, sprite::Sprite};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.055, 0.92], Some([0.0, 185.0, 0.0].into()));
@@ -2592,7 +2589,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::Ui, maths::{Vec2, Vec3, Pose, Bounds}};
+    /// use stereokit_rust::{ui::Ui, maths::{Pose, Bounds}};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.055, 0.92], Some([0.0, 185.0, 0.0].into()));
@@ -2625,7 +2622,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::Ui, maths::{Vec2, Vec3, Pose}, model::Model,
+    /// use stereokit_rust::{ui::Ui, maths::Pose, model::Model,
     ///                      mesh::Mesh, material::Material};
     ///
     /// let mut window_pose = Pose::new(
@@ -2657,7 +2654,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::Ui, maths::{Vec2, Vec3, Pose}};
+    /// use stereokit_rust::{ui::Ui, maths::Pose};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.035, 0.93], Some([0.0, 185.0, 0.0].into()));
@@ -2687,7 +2684,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::{Ui, UiPad, UiCut}, maths::{Vec2, Vec3, Pose, Bounds}};
+    /// use stereokit_rust::{ui::{Ui, UiPad, UiCut}, maths::Pose};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.055, 0.90], Some([0.0, 185.0, 0.0].into()));
@@ -2729,7 +2726,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::{Ui, UiPad, UiCut}, maths::{Vec2, Vec3, Pose}};
+    /// use stereokit_rust::{ui::{Ui, UiPad, UiCut}, maths::Pose};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.055, 0.90], Some([0.0, 185.0, 0.0].into()));
@@ -2783,7 +2780,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::{Ui, UiVisual}, maths::{Vec3, Pose}};
+    /// use stereokit_rust::{ui::{Ui, UiVisual}, maths::Pose};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.035, 0.93], Some([0.0, 185.0, 0.0].into()));
@@ -2815,7 +2812,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::{Ui, UiVisual}, maths::{Vec3, Pose}};
+    /// use stereokit_rust::{ui::{Ui, UiVisual}, maths::Pose};
     ///     
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.035, 0.93], Some([0.0, 185.0, 0.0].into()));
@@ -2845,7 +2842,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::{Ui, UiVisual}, maths::{Vec3, Pose}};
+    /// use stereokit_rust::{ui::{Ui, UiVisual}, maths::Pose};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.035, 0.93], Some([0.0, 185.0, 0.0].into()));
@@ -3002,8 +2999,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::{Ui, UiDir}, maths::{Vec2, Vec3, Pose}, font::Font, system::TextStyle,
-    ///                      util::named_colors};
+    /// use stereokit_rust::{ui::{Ui, UiDir}, maths::Pose};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.055, 0.92], Some([0.0, 185.0, 0.0].into()));
@@ -3054,7 +3050,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::Ui, maths::{Vec2, Vec3, Pose}, system::HierarchyParent};
+    /// use stereokit_rust::{ui::Ui, maths::Pose, system::HierarchyParent};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.075, 0.9], Some([0.0, 185.0, 0.0].into()));
@@ -3072,7 +3068,7 @@ impl Ui {
     ///     Ui::hprogress_bar(0.20, 0.08, false);
     ///     Ui::pop_enabled();
     ///
-    ///     let bt2 = Ui::button("Button", None);
+    ///     if Ui::button("Button", None) {panic!("impossible")}
     ///
     ///     Ui::push_enabled(true, Some(HierarchyParent::Ignore));
     ///     assert_eq!(Ui::get_enabled(), true);
@@ -3098,7 +3094,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::Ui, maths::{Vec2, Vec3, Pose}};
+    /// use stereokit_rust::{ui::Ui, maths::Pose};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.055, 0.92], Some([0.0, 185.0, 0.0].into()));
@@ -3131,7 +3127,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::Ui, maths::{Vec2, Vec3, Pose}};
+    /// use stereokit_rust::{ui::Ui, maths::Pose};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.055, 0.92], Some([0.0, 185.0, 0.0].into()));
@@ -3165,7 +3161,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::Ui, maths::{Vec2, Vec3, Pose}};
+    /// use stereokit_rust::{ui::Ui, maths::Pose};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.075, 0.9], Some([0.0, 185.0, 0.0].into()));
@@ -3199,7 +3195,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::Ui, maths::{Vec2, Vec3, Pose}};
+    /// use stereokit_rust::{ui::Ui, maths::Pose};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.075, 0.9], Some([0.0, 185.0, 0.0].into()));
@@ -3237,12 +3233,12 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::{Ui, UiPad}, maths::{Vec2, Vec3, Pose}, util::named_colors,
+    /// use stereokit_rust::{ui::{Ui, UiPad}, maths::Pose, util::named_colors,
     ///                      font::Font, system::TextStyle};
     /// let mut title = String::from("");
     /// let style = TextStyle::from_font(Font::default(), 0.05, named_colors::BLUE);
     ///
-    /// let mut surface_pose = Pose::new(
+    /// let surface_pose = Pose::new(
     ///     [-0.09, 0.075, 0.92], Some([0.0, 185.0, 0.0].into()));
     ///
     /// filename_scr = "screenshots/ui_push_surface.jpeg";
@@ -3272,7 +3268,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::Ui, maths::{Vec2, Vec3, Pose}, font::Font, system::TextStyle,
+    /// use stereokit_rust::{ui::Ui, maths::Pose, font::Font, system::TextStyle,
     ///                      util::named_colors};
     ///
     /// let mut window_pose = Pose::new(
@@ -3325,7 +3321,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::Ui, maths::{Vec2, Vec3, Pose}, util::Color128};
+    /// use stereokit_rust::{ui::Ui, maths::Pose, util::Color128};
     /// let mut title = String::from("Push Tint");
     /// let mut volume = 0.5;
     /// let mut mute = true;
@@ -3373,21 +3369,17 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::{Ui, UiCorner, UiVisual, UiLathePt}, maths::{Vec2, Vec3, Pose, Matrix},
-    ///                      mesh::Mesh, material::Material, util::named_colors};
+    /// use stereokit_rust::{ui::{Ui, UiVisual}, maths::{Vec3, Pose}, mesh::Mesh};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.025, 0.948], Some([0.0, 185.0, 0.0].into()));
-    ///
-    /// let material = Material::pbr();
-    /// let transform1 = Matrix::t_r_s([-0.1, 0.0, 0.74], [0.0, 130.0, 0.0], [3.0, 1.0, 0.05]);
     ///
     /// let mut mesh = Mesh::generate_cube([1.0, 1.0, 1.0], None);
     /// Ui::quadrant_size_mesh(&mut mesh, 0.20);
     ///
     /// let bounds = mesh.get_bounds();
     /// assert_eq!(bounds.center, Vec3 { x: 0.0, y: 0.0, z: 0.0 });
-    /// //TODO:
+    ///
     /// assert_eq!(bounds.dimensions, Vec3 { x: 0.0, y: 0.0, z: 1.0 });
     ///
     /// Ui::set_element_visual(UiVisual::Separator, mesh, None, None);
@@ -3419,25 +3411,20 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::{Ui, UiCorner, UiVisual, UiLathePt},
-    ///                      maths::{Vec2, Vec3, Pose, Matrix},
-    ///                      mesh::Mesh, material::Material, util::named_colors};
+    /// use stereokit_rust::{ui::{Ui, UiVisual}, maths::{Vec3, Pose}, mesh::Mesh};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.025, 0.948], Some([0.0, 185.0, 0.0].into()));
     ///
-    /// let material = Material::pbr();
-    /// let transform1 = Matrix::t_r_s([-0.1, 0.0, 0.74], [0.0, 130.0, 0.0], [3.0, 1.0, 0.05]);
-    ///
-    /// let mut mesh = Mesh::generate_cube([1.0, 1.0, 1.0], None);
-    /// let mut verts = mesh.get_verts();
+    /// let mesh = Mesh::generate_cube([1.0, 1.0, 1.0], None);
+    /// let verts = mesh.get_verts();
     /// Ui::quadrant_size_verts(&verts, 0.0);
     /// let mut remesh = mesh.clone_ref();
     /// remesh.set_verts(&verts, true);
     ///
     /// let bounds = mesh.get_bounds();
     /// assert_eq!(bounds.center, Vec3 { x: 0.0, y: 0.0, z: 0.0 });
-    /// //TODO:
+    ///
     /// assert_eq!(bounds.dimensions, Vec3 { x: 0.0, y: 0.0, z: 1.0 });
     ///
     /// Ui::set_element_visual(UiVisual::Separator, mesh, None, None);
@@ -3473,17 +3460,15 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::{Ui, UiCorner, UiVisual, UiLathePt}, maths::{Vec2, Vec3, Pose, Matrix},
-    ///                      mesh::Mesh, material::Material, util::named_colors};
+    /// use stereokit_rust::{ui::{Ui, UiCorner, UiVisual, UiLathePt}, maths::{Vec3, Pose}};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.028, 0.92], Some([0.0, 185.0, 0.0].into()));
     ///
-    /// let material = Material::pbr();
-    /// let mut mesh_button = Ui::gen_quadrant_mesh(
+    /// let mesh_button = Ui::gen_quadrant_mesh(
     ///     UiCorner::All, 0.002, 8, false, true, &UiLathePt::button())
     ///                        .expect("mesh should be created");
-    /// let mut mesh_input = Ui::gen_quadrant_mesh(
+    /// let mesh_input = Ui::gen_quadrant_mesh(
     ///     UiCorner::All, 0.018, 8, false, true, &UiLathePt::input())
     ///                        .expect("mesh should be created");
     ///
@@ -3592,7 +3577,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::{Ui, UiBtnLayout}, maths::{Vec2, Vec3, Pose}, sprite::Sprite};
+    /// use stereokit_rust::{ui::{Ui, UiBtnLayout}, maths::Pose, sprite::Sprite};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.035, 0.91], Some([0.0, 185.0, 0.0].into()));
@@ -3737,14 +3722,12 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::{Ui, UiColor, UiVisual, UiLathePt, UiCorner}, maths::{Vec2, Vec3, Pose},
-    ///                      mesh::Mesh, material::Material, util::named_colors};
+    /// use stereokit_rust::{ui::{Ui, UiVisual, UiLathePt, UiCorner}, maths::Pose};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.025, 0.92], Some([0.0, 185.0, 0.0].into()));
     ///
-    /// let material = Material::pbr();
-    /// let mut mesh = Ui::gen_quadrant_mesh(
+    /// let mesh = Ui::gen_quadrant_mesh(
     ///     UiCorner::All, 0.005, 8, false, true, &UiLathePt::plane())
     ///                        .expect("mesh should be created");
     ///
@@ -3784,8 +3767,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::{Ui, UiColor, UiVisual}, maths::{Vec2, Vec3, Pose},
-    ///                      util::{named_colors, Color128}};
+    /// use stereokit_rust::{ui::{Ui, UiColor, UiVisual}, maths::Pose, util::Color128};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.025, 0.93], Some([0.0, 185.0, 0.0].into()));
@@ -3828,7 +3810,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::{Ui, UiVisual}, maths::{Vec2, Vec3, Pose}, sound::Sound};
+    /// use stereokit_rust::{ui::{Ui, UiVisual}, maths::Pose, sound::Sound};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.075, 0.9], Some([0.0, 185.0, 0.0].into()));
@@ -3875,7 +3857,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::{Ui, UiVisual}, maths::{Vec2, Vec3, Pose}};
+    /// use stereokit_rust::{ui::{Ui, UiVisual}, maths::Pose};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.075, 0.9], Some([0.0, 185.0, 0.0].into()));
@@ -3939,7 +3921,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::Ui, system::BtnState, maths::{Vec2, Vec3, Pose}};
+    /// use stereokit_rust::{ui::Ui, system::BtnState, maths::Pose};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.075, 0.9], Some([0.0, 185.0, 0.0].into()));
@@ -3977,7 +3959,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::{Ui, UiColor, UiColorState}, maths::{Vec2, Vec3, Pose},
+    /// use stereokit_rust::{ui::{Ui, UiColor, UiColorState}, maths::Pose,
     ///                      util::{named_colors, Color128}};
     ///
     /// let mut window_pose = Pose::new(
@@ -4054,7 +4036,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::Ui, maths::{Vec2, Vec3, Pose}};
+    /// use stereokit_rust::{ui::Ui, maths::Pose};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.075, 0.88], Some([0.0, 185.0, 0.0].into()));
@@ -4082,7 +4064,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::Ui, maths::{Vec2, Vec3, Pose}};
+    /// use stereokit_rust::{ui::Ui, maths::Pose};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.075, 0.88], Some([0.0, 185.0, 0.0].into()));
@@ -4145,7 +4127,8 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::{Ui, UiScroll}, system::{Align, TextFit}, maths::{Vec2, Vec3, Pose}};
+    /// use stereokit_rust::{ui::{Ui, UiScroll}, system::{Align, TextFit},
+    ///                      maths::{Vec2, Pose}};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.075, 0.9], Some([0.0, 185.0, 0.0].into()));
@@ -4270,7 +4253,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::{Ui, UiBtnLayout}, maths::{Vec2, Vec3, Pose}, sprite::Sprite};
+    /// use stereokit_rust::{ui::{Ui, UiBtnLayout}, maths::Pose, sprite::Sprite};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.065, 0.91], Some([0.0, 185.0, 0.0].into()));
@@ -4289,7 +4272,9 @@ impl Ui {
     ///     Ui::same_line();
     ///     if let Some(bool) = Ui::toggle_img("B", &mut choiceB, &off, &on,
     ///                                        Some(UiBtnLayout::Center),
-    ///                                        Some([0.06, 0.05].into())) {todo!()}
+    ///                                        Some([0.06, 0.05].into())) {
+    ///         assert_eq!(bool, choiceB);
+    ///     }
     ///
     ///     Ui::toggle("C", &mut choiceC, None);
     ///     Ui::same_line();
@@ -4298,7 +4283,9 @@ impl Ui {
     ///     Ui::toggle_at("E", &mut choiceE, Some(&off), None, Some(UiBtnLayout::Right),
     ///                     [0.06, -0.12, 0.0], [0.06, 0.03]);
     ///     if let Some(bool) = Ui::toggle_at("F", &mut choiceF, None, None, None,
-    ///                                       [-0.01, -0.12, 0.0], [0.06, 0.03]) {todo!()}
+    ///                                       [-0.01, -0.12, 0.0], [0.06, 0.03]) {
+    ///         assert_eq!(bool, choiceB);
+    ///     }
     ///     Ui::window_end();
     /// );
     /// # sk::Sk::shutdown();
@@ -4455,8 +4442,8 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::{Ui, UiConfirm}, maths::{Vec2, Vec3, Pose, Bounds},
-    ///                      system::{Hand, Handed, BtnState}};
+    /// use stereokit_rust::{ui::{Ui, UiConfirm}, maths::{Pose, Bounds},
+    ///                      system::{Handed, BtnState}};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.075, 0.9], Some([0.0, 185.0, 0.0].into()));
@@ -4511,7 +4498,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::{Ui, UiConfirm, UiNotify}, maths::{Vec2, Vec3, Pose}};
+    /// use stereokit_rust::{ui::{Ui, UiConfirm, UiNotify}, maths::Pose};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.055, 0.91], Some([0.0, 185.0, 0.0].into()));
@@ -4728,7 +4715,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::{Ui, UiMove, UiWin}, maths::{Vec2, Vec3, Pose}};
+    /// use stereokit_rust::{ui::{Ui, UiMove, UiWin}, maths::Pose};
     ///
     /// let mut window_pose1 = Pose::new(
     ///     [-0.07, 0.115, 0.89], Some([0.0, 185.0, 0.0].into()));
@@ -4785,7 +4772,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::{Ui, UiMove, UiWin}, maths::Vec2};
+    /// use stereokit_rust::ui::Ui;
     ///
     /// fov_scr = 10.0;
     /// filename_scr = "screenshots/ui_window_auto.jpeg";
@@ -4861,13 +4848,15 @@ impl Ui {
     /// These are the layout bounds of the most recently reserved layout space. The Z axis dimensions are always 0.
     /// Only UI elements that affect the surface’s layout will report their bounds here. You can reserve your own layout
     /// space via Ui::layout_reserve, and that call will also report here.
+    /// TODO: As you can see in the example, there are some differences between operating systems that reduce the
+    /// accuracy to only 2mm.
     /// <https://stereokit.net/Pages/StereoKit/UI/LayoutLast.html>
     ///
     /// see also [`ui_layout_last`]
-    /// ### Examples TODO: Very very slow under Windows
-    /// ```no_run
+    /// ### Examples
+    /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::{Ui, UiPad, UiCut}, maths::{Vec2, Vec3, Pose, Bounds}};
+    /// use stereokit_rust::{ui::{Ui, UiPad, UiCut}, maths::Pose};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.055, 0.90], Some([0.0, 185.0, 0.0].into()));
@@ -4881,22 +4870,40 @@ impl Ui {
     ///     Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);
     ///     Ui::label("panel 2", None, false);
     ///     Ui::layout_pop();
-    ///     assert_eq!(Ui::get_layout_last(),
-    ///         Bounds { center: Vec3 { x: -0.02382, y: -0.035, z: 0.0 },
-    ///                  dimensions: Vec3 { x: 0.06765, y: 0.05, z: 0.0 } });
+    ///     let b = Ui::get_layout_last();
+    ///     assert!((b.center.x - -0.02382).abs() < 0.001);
+    ///     assert!((b.center.y - -0.035).abs() < 0.000001);
+    ///     # assert!((b.center.z - 0.0).abs() < 0.000001);
+    ///     assert!((b.dimensions.x - 0.06765).abs() < 0.002);
+    ///     assert!((b.dimensions.y - 0.05).abs() < 0.000001);
+    ///     # assert!((b.dimensions.z - 0.0).abs() < 0.000001);
     ///
     ///     Ui::layout_push_cut( UiCut::Bottom, 0.08, false);
     ///     Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);
     ///     Ui::label("panel 3", None, false);
     ///     Ui::layout_pop();
-    ///     assert_eq!(Ui::get_layout_last(),
-    ///         Bounds { center: Vec3 { x: 0.0661, y: -0.075, z: 0.0 },
-    ///                  dimensions: Vec3 { x: 0.0476, y: 0.03, z: 0.0 } });    
+    ///     let b = Ui::get_layout_last();
+    ///     assert!((b.center.x - 0.0661).abs() < 0.001);
+    ///     assert!((b.center.y - -0.075).abs() < 0.000001);
+    ///     # assert!((b.center.z - 0.0).abs() < 0.000001);
+    ///     assert!((b.dimensions.x - 0.0476).abs() < 0.002);
+    ///     assert!((b.dimensions.y - 0.03).abs() < 0.000001);
+    ///     # assert!((b.dimensions.z - 0.0).abs() < 0.000001);
     ///
     ///     Ui::window_end();
     /// );
     /// # sk::Sk::shutdown();
     /// ```
+    /// ```ignore
+    ///     //--- Linux results:
+    ///     assert_eq!(Ui::get_layout_last(),
+    ///         Bounds { center: Vec3 { x: -0.02382, y: -0.035, z: 0.0 },
+    ///                  dimensions: Vec3 { x: 0.06765, y: 0.05, z: 0.0 } });
+    ///
+    ///     assert_eq!(Ui::get_layout_last(),
+    ///         Bounds { center: Vec3 { x: 0.0661, y: -0.075, z: 0.0 },
+    ///                  dimensions: Vec3 { x: 0.0476, y: 0.03, z: 0.0 } });    
+    /// ```    
     pub fn get_layout_last() -> Bounds {
         unsafe { ui_layout_last() }
     }
@@ -4919,7 +4926,7 @@ impl Ui {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::Ui, maths::{Vec2, Vec3, Pose}};
+    /// use stereokit_rust::ui::Ui;
     ///
     /// let line_height = Ui::get_line_height();
     /// assert_eq!(line_height, 0.030000001);

@@ -83,7 +83,7 @@ impl Default for Shader {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{shader::Shader};
-    /// let mut shader = Shader::default();
+    /// let shader = Shader::default();
     /// assert_eq!(shader.get_id(), "default/shader");
     /// # sk::Sk::shutdown();
     /// ```
@@ -104,7 +104,7 @@ impl Shader {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{shader::Shader};
     /// let shader_data = std::include_bytes!("../assets/shaders/brick_pbr.hlsl.sks");
-    /// let mut shader = Shader::from_memory(shader_data).unwrap();
+    /// let shader = Shader::from_memory(shader_data).unwrap();
     /// assert_eq!(shader.get_name(), "the_name_of_brick_pbr");
     /// # sk::Sk::shutdown();
     /// ```
@@ -149,7 +149,7 @@ impl Shader {
     /// let mut shader = Shader::from_file("shaders/brick_pbr.hlsl.sks")
     ///                              .expect("Brick shader should be there");
     /// shader.id("my_brick_shader");
-    /// let mut shader_again = Shader::find("my_brick_shader");
+    /// let shader_again = Shader::find("my_brick_shader");
     /// assert!(shader_again.is_ok(), "Failed to find shader");
     /// assert_eq!(shader_again.unwrap().get_id(), shader.get_id());
     /// # sk::Sk::shutdown();
@@ -175,7 +175,7 @@ impl Shader {
     /// let mut shader = Shader::from_file("shaders/brick_pbr.hlsl.sks")
     ///                              .expect("Brick shader should be there");
     /// shader.id("my_brick_shader");
-    /// let mut shader_again = shader.clone_ref();
+    /// let shader_again = shader.clone_ref();
     /// assert_eq!(shader_again.get_id(), "my_brick_shader");
     /// assert_eq!(shader_again, shader);
     /// # sk::Sk::shutdown();
@@ -240,7 +240,7 @@ impl Shader {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{shader::Shader};
-    /// let mut shader = Shader::blit();
+    /// let shader = Shader::blit();
     /// assert_eq!(shader.get_id(), "default/shader_blit");
     /// # sk::Sk::shutdown();
     /// ```
@@ -254,7 +254,7 @@ impl Shader {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{shader::Shader};
-    /// let mut shader = Shader::light_map();
+    /// let shader = Shader::light_map();
     /// assert_eq!(shader.get_id(), "default/shader_lightmap");
     /// # sk::Sk::shutdown();
     /// ```
@@ -270,7 +270,7 @@ impl Shader {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{shader::Shader};
-    /// let mut shader = Shader::unlit();
+    /// let shader = Shader::unlit();
     /// assert_eq!(shader.get_id(), "default/shader_unlit");
     /// # sk::Sk::shutdown();
     /// ```
@@ -287,7 +287,7 @@ impl Shader {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{shader::Shader};
-    /// let mut shader = Shader::unlit_clip();
+    /// let shader = Shader::unlit_clip();
     /// assert_eq!(shader.get_id(), "default/shader_unlit_clip");
     /// # sk::Sk::shutdown();
     /// ```
@@ -301,7 +301,7 @@ impl Shader {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{shader::Shader};
-    /// let mut shader = Shader::font();
+    /// let shader = Shader::font();
     /// assert_eq!(shader.get_id(), "default/shader_font");
     /// # sk::Sk::shutdown();
     /// ```
@@ -315,7 +315,7 @@ impl Shader {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{shader::Shader};
-    /// let mut shader = Shader::equirect();
+    /// let shader = Shader::equirect();
     /// assert_eq!(shader.get_id(), "default/shader_equirect");
     /// # sk::Sk::shutdown();
     /// ```
@@ -331,7 +331,7 @@ impl Shader {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{shader::Shader};
-    /// let mut shader = Shader::ui();
+    /// let shader = Shader::ui();
     /// assert_eq!(shader.get_id(), "default/shader_ui");
     /// # sk::Sk::shutdown();
     /// ```
@@ -350,7 +350,7 @@ impl Shader {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{shader::Shader};
-    /// let mut shader = Shader::ui_box();
+    /// let shader = Shader::ui_box();
     /// assert_eq!(shader.get_id(), "default/shader_ui_box");
     /// # sk::Sk::shutdown();
     /// ```
@@ -364,7 +364,7 @@ impl Shader {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{shader::Shader};
-    /// let mut shader = Shader::ui_quadrant();
+    /// let shader = Shader::ui_quadrant();
     /// assert_eq!(shader.get_id(), "default/shader_ui_quadrant");
     /// # sk::Sk::shutdown();
     /// ```
@@ -378,7 +378,7 @@ impl Shader {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{shader::Shader};
-    /// let mut shader = Shader::sky();
+    /// let shader = Shader::sky();
     /// assert_eq!(shader.get_id(), "default/shader_sky");
     /// # sk::Sk::shutdown();
     /// ```
@@ -393,7 +393,7 @@ impl Shader {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{shader::Shader};
-    /// let mut shader = Shader::pbr();
+    /// let shader = Shader::pbr();
     /// assert_eq!(shader.get_id(), "default/shader_pbr");
     /// # sk::Sk::shutdown();
     /// ```
@@ -408,7 +408,7 @@ impl Shader {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{shader::Shader};
-    /// let mut shader = Shader::pbr_clip();
+    /// let shader = Shader::pbr_clip();
     /// assert_eq!(shader.get_id(), "default/shader_pbr_clip");
     /// # sk::Sk::shutdown();
     /// ```

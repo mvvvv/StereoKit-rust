@@ -80,9 +80,9 @@ fn main() {
     let mut with_gradle = false;
     let mut basic = false;
 
-    let mut args = env::args().skip(1);
+    let args = env::args().skip(1);
 
-    while let Some(arg) = args.next() {
+    for arg in args {
         match &arg[..] {
             "new_sk_rs_project" => {}
             "--no-android" => {
@@ -244,11 +244,11 @@ fn write_lib_rs(project_path: &Path, with_android: bool, basic: bool) {
     let mut content = if basic { LIB_RS_TEMPLATE.to_string() } else { LIB_RS_FRAMEWORK_TEMPLATE.to_string() };
     if !with_android {
         content = content.replace("\n#[cfg(target_os = \"android\")]\nuse android_activity::AndroidApp;\n", "");
-        if let Some(start) = content.find("\n#[unsafe(no_mangle)]") {
-            if let Some(end_offset) = content[start..].find("\n}\n") {
-                let end = start + end_offset + 3;
-                content = format!("{}{}", &content[..start], &content[end..]);
-            }
+        if let Some(start) = content.find("\n#[unsafe(no_mangle)]")
+            && let Some(end_offset) = content[start..].find("\n}\n")
+        {
+            let end = start + end_offset + 3;
+            content = format!("{}{}", &content[..start], &content[end..]);
         }
     }
 
@@ -275,7 +275,8 @@ fn write_gradle_files(project_path: &Path, project_name: &str, crate_name: &str)
     };
 
     // Create gradle directories
-    for dir in &["app/src/main"] {
+    {
+        let dir = &"app/src/main";
         fs::create_dir_all(project_path.join(dir)).unwrap_or_else(|e| panic!("Failed to create directory {dir}: {e}"));
     }
 

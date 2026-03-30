@@ -25,9 +25,8 @@ pub const SHOW_LOG_WINDOW: &str = "Tool_ShowLogWindow";
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{maths::Vec3, ui::Ui,
-///                      tools::log_window::{LogWindow, basic_log_fmt, SHOW_LOG_WINDOW},
-///                      system::{LogLevel, LogItem,  Log}};
+/// use stereokit_rust::{ui::Ui, system::{LogLevel, LogItem,  Log},
+///                      tools::log_window::{LogWindow, basic_log_fmt, SHOW_LOG_WINDOW}};
 /// use std::sync::Mutex;
 ///
 /// // Somewhere to copy the log

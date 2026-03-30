@@ -39,7 +39,7 @@ pub enum SpriteType {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{maths::{Vec3, Matrix}, sprite::{Sprite, SpriteType},
+/// use stereokit_rust::{maths::Matrix, sprite::{Sprite, SpriteType},
 ///                      tex::Tex, util::{Gradient, Color128, named_colors}, system::Pivot};
 /// let mut gradient = Gradient::new(None);
 /// gradient
@@ -265,8 +265,7 @@ impl Sprite {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!();
-    /// use stereokit_rust::{sprite::{Sprite, SpriteType}, tex::Tex,
-    ///                      util::{Gradient, Color128, named_colors}};
+    /// use stereokit_rust::{sprite::Sprite, tex::Tex, util::{Gradient, Color128}};
     ///
     /// let mut gradient = Gradient::new(None);
     /// gradient
@@ -301,7 +300,7 @@ impl Sprite {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!();
-    /// use stereokit_rust::{sprite::{Sprite, SpriteType}, tex::Tex};
+    /// use stereokit_rust::{sprite::Sprite, tex::Tex};
     ///
     /// let tex = Tex::rough();
     /// let mut sprite = Sprite::from_tex(&tex, None, None)
@@ -329,7 +328,7 @@ impl Sprite {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!();
-    /// use stereokit_rust::{sprite::{Sprite, SpriteType}, tex::Tex};
+    /// use stereokit_rust::{sprite::Sprite, tex::Tex};
     ///
     /// let tex = Tex::rough();
     /// let mut sprite = Sprite::from_tex(&tex, None, None)
@@ -364,8 +363,8 @@ impl Sprite {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!();
-    /// use stereokit_rust::{ maths::Matrix, sprite::{Sprite, SpriteType}, tex::Tex, system::Pivot,
-    ///                      util::{Gradient, Color128, named_colors}};
+    /// use stereokit_rust::{maths::Matrix, sprite::Sprite, system::Pivot,
+    ///                      util::named_colors};
     ///
     /// let sprite = Sprite::close();
     ///
@@ -596,7 +595,7 @@ impl Sprite {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!();
-    /// use stereokit_rust::{sprite::Sprite, maths::{Vec3, Matrix}, system::Pivot};
+    /// use stereokit_rust::{sprite::Sprite, maths::Matrix, system::Pivot};
     ///
     /// let sprite = Sprite::arrow_left();
     /// assert_eq!(sprite.get_id(), "sk/ui/arrow_left");
@@ -620,7 +619,7 @@ impl Sprite {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!();
-    /// use stereokit_rust::{sprite::Sprite, maths::{Vec3, Matrix}, system::Pivot};
+    /// use stereokit_rust::{sprite::Sprite, maths::Matrix, system::Pivot};
     ///
     /// let sprite = Sprite::arrow_right();
     /// assert_eq!(sprite.get_id(), "sk/ui/arrow_right");

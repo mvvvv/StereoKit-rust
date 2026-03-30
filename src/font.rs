@@ -14,8 +14,8 @@ use std::{
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{ui::Ui, maths::{Vec3, Quat, Pose, Matrix},
-///                      font::Font, system::{Assets, Text}, util::named_colors};
+/// use stereokit_rust::{ui::Ui, maths::{Pose, Matrix},font::Font,
+///                      system::{Assets, Text}, util::named_colors};
 ///
 /// // Load font assets
 /// let emoji_font = if cfg!(windows) {
@@ -257,7 +257,7 @@ impl Font {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths:: Matrix, font::Font, system::Text, util::named_colors};
+    /// use stereokit_rust::font::Font;
     ///
     /// let font_files: [&str; 2] = if cfg!(windows) {
     ///     ["C:\\Windows\\Fonts\\Arial.ttf",
@@ -296,7 +296,7 @@ impl Font {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths:: Matrix, font::Font, system::Text, util::named_colors};
+    /// use stereokit_rust::font::Font;
     ///
     /// let font_files: [&str; 2] = if cfg!(windows) {
     ///     ["C:\\Windows\\Fonts\\Arial.ttf",
@@ -330,7 +330,7 @@ impl Font {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths:: Matrix, font::Font, system::Text, util::named_colors};
+    /// use stereokit_rust::font::Font;
     ///
     /// let font_files: [&str; 2] = if cfg!(windows) {
     ///     ["C:\\Windows\\Fonts\\Arial.ttf",

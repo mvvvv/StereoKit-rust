@@ -30,7 +30,7 @@ pub const FILE_BROWSER_SAVE: &str = "File_Browser_save";
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{maths::{Vec2, Vec3}, sk::SkInfo, ui::Ui, tools::os_api::get_external_path,
+/// use stereokit_rust::{maths::Vec2, sk::SkInfo, ui::Ui, tools::os_api::get_external_path,
 ///                      tools::file_browser::{FileBrowser, FILE_BROWSER_OPEN}, };
 ///
 /// let id = "main".to_string();
@@ -67,7 +67,7 @@ pub const FILE_BROWSER_SAVE: &str = "File_Browser_save";
 ///
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{maths::{Vec2, Vec3}, sk::SkInfo, ui::Ui, tools::os_api::get_external_path,
+/// use stereokit_rust::{maths::Vec2, sk::SkInfo, ui::Ui, tools::os_api::get_external_path,
 ///                      tools::file_browser::{FileBrowser, FILE_BROWSER_SAVE}, util::PickerMode, };
 ///
 /// let id = "main_tests".to_string();

@@ -123,7 +123,7 @@ pub enum Memory {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{maths::{Vec3, Matrix, Quat}, util::{named_colors,Color32},
+/// use stereokit_rust::{maths::{Vec3, Matrix}, util::named_colors,
 ///                      mesh::Mesh, material::Material};
 ///
 /// // Create Meshes
@@ -863,7 +863,7 @@ impl Mesh {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec2, Vec3, Matrix, Bounds}, mesh::{Mesh, Vertex},
+    /// use stereokit_rust::{maths::{Vec2, Vec3, Matrix}, mesh::{Mesh, Vertex},
     ///                      material::Material, util::named_colors};
     ///
     /// let material = Material::pbr();
@@ -902,7 +902,7 @@ impl Mesh {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec2, Vec3, Matrix, Bounds}, mesh::{Mesh, Vertex},
+    /// use stereokit_rust::{maths::Matrix, mesh::Mesh,
     ///                      material::Material, util::named_colors};
     ///
     /// let material = Material::pbr();
@@ -952,7 +952,7 @@ impl Mesh {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec2, Vec3, Matrix, Bounds}, mesh::{Mesh, Vertex},
+    /// use stereokit_rust::{maths::{Vec3, Matrix}, mesh::Mesh,
     ///                      material::Material, util::named_colors, system::RenderLayer};
     ///
     /// let material = Material::pbr();
@@ -1103,10 +1103,8 @@ impl Mesh {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec2, Vec3, Matrix, Bounds}, mesh::{Mesh, Vertex},
-    ///                      material::Material, util::named_colors, system::RenderLayer};
+    /// use stereokit_rust::{maths::{Vec2, Vec3}, mesh::{Mesh, Vertex}};
     ///
-    /// let material = Material::pbr();
     /// let plane = Mesh::generate_plane_up(Vec2::ONE, None, false);
     /// assert_eq!(plane.get_vert_count(), 4, "plane should have 4 vertices");
     /// assert_eq!(plane.get_ind_count(), 6, "plane should have 6 indices");
@@ -1217,14 +1215,13 @@ impl Mesh {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix, Quat, Ray}, system::Lines,
-    ///     util::{named_colors}, mesh::Mesh, material::{Material, Cull}};
+    /// use stereokit_rust::{maths::{Vec3, Matrix, Quat, Ray},
+    ///                      mesh::Mesh, material::Cull};
     ///
     /// // Create Meshes
     /// let cube = Mesh::generate_cube(Vec3::ONE * 0.8, None);
     /// let sphere = Mesh::generate_sphere(1.0, Some(4));
     ///
-    /// let material = Material::pbr().copy();
     /// let transform = Matrix::r(Quat::from_angles(40.0, 50.0, 20.0));
     /// let inv = transform.get_inverse();
     ///

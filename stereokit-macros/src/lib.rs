@@ -160,7 +160,7 @@ pub fn derive_istepper(input: TokenStream) -> TokenStream {
 /// * `body` - the path of the assets sub-directory.
 ///
 /// ### Example
-/// ``` ignore
+/// ```ignore
 /// use stereokit_macros::include_asset_tree;
 /// const ASSET_DIR: &[&str] = include_asset_tree!("assets");
 ///
@@ -239,7 +239,10 @@ pub fn test_init_sk(_input: TokenStream) -> TokenStream {
         use stereokit_rust::{*, prelude::*, test_screenshot, test_steps, xr_mode_stop_here, offscreen_mode_stop_here};
         let mut sk_settings = sk::SkSettings::default();
         #[cfg(feature = "test-xr-mode")]
-        sk_settings.mode(sk::AppMode::XR).app_name("cargo test");
+        {
+            sk_settings.mode(sk::AppMode::XR).app_name("cargo test");
+            sk_settings.no_flatscreen_fallback(true);
+        }
         #[cfg(not(feature = "test-xr-mode"))]
         sk_settings.mode(sk::AppMode::Offscreen).app_name("cargo test");
         sk_settings.standby_mode(sk::StandbyMode::None).disable_desktop_input_window(true);

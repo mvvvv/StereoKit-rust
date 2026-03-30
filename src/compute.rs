@@ -24,14 +24,9 @@ use std::{
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{
-///     compute::Compute,
-///     material::{Cull, Material},
-///     maths::{Matrix, Vec2, Vec3, Vec4},
-///     mesh::Mesh,
-///     tex::{Tex, TexFormat, TexType},
-///     util::Color128,
-/// };
+/// use stereokit_rust::{compute::Compute, material::Material,
+///                      maths::{Matrix, Vec2, Vec3, Vec4},mesh::Mesh,
+///                      tex::{Tex, TexFormat, TexType},util::Color128};
 ///
 /// const SIZE:   usize = 512;
 /// const GROUPS: u32   = SIZE as u32 / 8;
@@ -176,7 +171,7 @@ impl Compute {
     /// use stereokit_rust::compute::Compute;
     ///
     /// # {
-    /// let mut compute = Compute::from_file("shaders/compute_test.hlsl.sks")
+    /// let compute = Compute::from_file("shaders/compute_test.hlsl.sks")
     ///     .expect("shader should be compiled — run `cargo compile_sks`");
     ///
     /// assert_eq!(compute.get_id()[..13], *"auto/compute_");
@@ -335,10 +330,9 @@ impl Compute {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::compute::Compute;
-    /// use stereokit_rust::maths::Matrix;
     ///
     /// # {
-    /// let mut compute = Compute::from_file("shaders/compute_test.hlsl.sks")
+    /// let compute = Compute::from_file("shaders/compute_test.hlsl.sks")
     ///     .expect("shader should be compiled — run `cargo compile_sks`");
     /// // The named param must exist in the shader cbuffer to be read back.
     ///
@@ -360,8 +354,7 @@ impl Compute {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::compute::{Compute, ComputeBuffer, ComputeBufferType};
-    /// use stereokit_rust::material::MaterialParam;
+    /// use stereokit_rust::compute::{Compute};
     ///
     /// # {
     /// // Create a Compute dispatch from a compiled shader file.
@@ -382,9 +375,9 @@ impl Compute {
     /// assert_eq!(param_infos.get_uint("tex_size"),   512);
     ///
     /// // Inspect all parameters exposed by the shader.
-    /// let mut param_infos = compute.get_all_param_info();
+    /// let param_infos = compute.get_all_param_info();
     /// assert!(param_infos.get_count() > 0);
-    /// for param in compute.get_all_param_info() {
+    /// for param in param_infos{
     ///     println!("  param: {} ({:?})", param.get_name(), param.get_type());
     /// }
     /// # } sk::Sk::shutdown();
@@ -404,10 +397,10 @@ impl Compute {
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::compute::Compute;
-/// use stereokit_rust::maths::{Vec2, Vec3, Vec4};
+/// use stereokit_rust::maths::{Vec2};
 ///
 /// # {
-/// let mut compute = Compute::from_file("shaders/compute_test.hlsl.sks")
+/// let compute = Compute::from_file("shaders/compute_test.hlsl.sks")
 ///     .expect("shader should be compiled — run `cargo compile_sks`");
 ///
 /// // Set some params and read them back via ComputeParamInfos.
@@ -492,7 +485,7 @@ impl<'a> ComputeParamInfos<'a> {
     /// use stereokit_rust::tex::{Tex, TexType, TexFormat};
     ///
     /// # {
-    /// let mut compute = Compute::from_file("shaders/compute_test.hlsl.sks")
+    /// let compute = Compute::from_file("shaders/compute_test.hlsl.sks")
     ///     .expect("shader should be compiled — run `cargo compile_sks`");
     /// let mut param_infos = compute.get_all_param_info();
     ///
@@ -522,7 +515,7 @@ impl<'a> ComputeParamInfos<'a> {
     /// use stereokit_rust::compute::{Compute, ComputeBuffer, ComputeBufferType};
     ///
     /// # {
-    /// let mut compute = Compute::from_file("shaders/compute_test.hlsl.sks")
+    /// let compute = Compute::from_file("shaders/compute_test.hlsl.sks")
     ///     .expect("shader should be compiled — run `cargo compile_sks`");
     /// let mut param_infos = compute.get_all_param_info();
     ///
@@ -549,7 +542,7 @@ impl<'a> ComputeParamInfos<'a> {
     /// use stereokit_rust::compute::Compute;
     ///
     /// # {
-    /// let mut compute = Compute::from_file("shaders/compute_test.hlsl.sks")
+    /// let compute = Compute::from_file("shaders/compute_test.hlsl.sks")
     ///     .expect("shader should be compiled — run `cargo compile_sks`");
     /// let mut param_infos = compute.get_all_param_info();
     ///
@@ -577,7 +570,7 @@ impl<'a> ComputeParamInfos<'a> {
     /// use stereokit_rust::compute::Compute;
     ///
     /// # {
-    /// let mut compute = Compute::from_file("shaders/compute_test.hlsl.sks")
+    /// let compute = Compute::from_file("shaders/compute_test.hlsl.sks")
     ///     .expect("shader should be compiled — run `cargo compile_sks`");
     /// let mut param_infos = compute.get_all_param_info();
     ///
@@ -606,7 +599,7 @@ impl<'a> ComputeParamInfos<'a> {
     /// use stereokit_rust::compute::Compute;
     ///
     /// # {
-    /// let mut compute = Compute::from_file("shaders/compute_test.hlsl.sks")
+    /// let compute = Compute::from_file("shaders/compute_test.hlsl.sks")
     ///     .expect("shader should be compiled — run `cargo compile_sks`");
     /// let mut param_infos = compute.get_all_param_info();
     ///
@@ -635,7 +628,7 @@ impl<'a> ComputeParamInfos<'a> {
     /// use stereokit_rust::maths::Vec2;
     ///
     /// # {
-    /// let mut compute = Compute::from_file("shaders/compute_test.hlsl.sks")
+    /// let compute = Compute::from_file("shaders/compute_test.hlsl.sks")
     ///     .expect("shader should be compiled — run `cargo compile_sks`");
     /// let mut param_infos = compute.get_all_param_info();
     ///
@@ -664,7 +657,7 @@ impl<'a> ComputeParamInfos<'a> {
     /// use stereokit_rust::maths::Vec3;
     ///
     /// # {
-    /// let mut compute = Compute::from_file("shaders/compute_test.hlsl.sks")
+    /// let compute = Compute::from_file("shaders/compute_test.hlsl.sks")
     ///     .expect("shader should be compiled — run `cargo compile_sks`");
     /// let mut param_infos = compute.get_all_param_info();
     ///
@@ -693,7 +686,7 @@ impl<'a> ComputeParamInfos<'a> {
     /// use stereokit_rust::maths::Vec4;
     ///
     /// # {
-    /// let mut compute = Compute::from_file("shaders/compute_test.hlsl.sks")
+    /// let compute = Compute::from_file("shaders/compute_test.hlsl.sks")
     ///     .expect("shader should be compiled — run `cargo compile_sks`");
     /// let mut param_infos = compute.get_all_param_info();
     ///
@@ -722,7 +715,7 @@ impl<'a> ComputeParamInfos<'a> {
     /// use stereokit_rust::util::Color128;
     ///
     /// # {
-    /// let mut compute = Compute::from_file("shaders/compute_test.hlsl.sks")
+    /// let compute = Compute::from_file("shaders/compute_test.hlsl.sks")
     ///     .expect("shader should be compiled — run `cargo compile_sks`");
     /// let mut param_infos = compute.get_all_param_info();
     ///
@@ -750,7 +743,7 @@ impl<'a> ComputeParamInfos<'a> {
     /// use stereokit_rust::compute::Compute;
     ///
     /// # {
-    /// let mut compute = Compute::from_file("shaders/compute_test.hlsl.sks")
+    /// let compute = Compute::from_file("shaders/compute_test.hlsl.sks")
     ///     .expect("shader should be compiled — run `cargo compile_sks`");
     /// let mut param_infos = compute.get_all_param_info();
     /// // The named param must exist in the shader cbuffer to be read back.
@@ -779,7 +772,7 @@ impl<'a> ComputeParamInfos<'a> {
     /// use stereokit_rust::maths::Matrix;
     ///
     /// # {
-    /// let mut compute = Compute::from_file("shaders/compute_test.hlsl.sks")
+    /// let compute = Compute::from_file("shaders/compute_test.hlsl.sks")
     ///     .expect("shader should be compiled — run `cargo compile_sks`");
     /// let mut param_infos = compute.get_all_param_info();
     /// // The named param must exist in the shader cbuffer to be read back.

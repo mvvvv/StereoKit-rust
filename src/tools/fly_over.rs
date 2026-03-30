@@ -20,14 +20,12 @@ pub const ENABLE_FLY_OVER: &str = "Tool_EnableFlyOver";
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{maths::{Vec3, Matrix},
-///                      tools::fly_over::{FlyOver, ENABLE_FLY_OVER},
+/// use stereokit_rust::{maths::Matrix, tools::fly_over::{FlyOver, ENABLE_FLY_OVER},
 ///                      system::Input, system::{Key, Pivot}, sprite::Sprite};
 ///
 /// let sprite = Sprite::from_file("icons/fly_over.png", None, Some("MY_ID"))
 ///                          .expect("fly_over.png should be able to create sprite");
 ///
-/// let mut fly_over = FlyOver::default();
 /// sk.send_event(StepperAction::add_default::<FlyOver>("FlyOver"));
 ///
 /// filename_scr = "screenshots/fly_over.jpeg"; fov_scr = 45.0;

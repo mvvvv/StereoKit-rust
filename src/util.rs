@@ -223,7 +223,7 @@ impl Color128 {
     /// see also [`color_to_linear`]
     /// ### Examples
     /// ```
-    /// use stereokit_rust::{util::{Color128, named_colors}};
+    /// use stereokit_rust::util::Color128;
     ///
     /// let color = Color128::rgb(0.75, 0.0, 0.25);
     /// let color_linear = color.to_linear();
@@ -240,7 +240,7 @@ impl Color128 {
     /// see also [`color_to_gamma`]
     /// ### Examples
     /// ```
-    /// use stereokit_rust::{util::{Color128, named_colors}};
+    /// use stereokit_rust::util::Color128;
     ///
     /// let color = Color128 { r: 0.5310492, g: 0.0, b: 0.04736614, a: 1.0 };
     /// let color_gamma = color.to_gamma();
@@ -259,7 +259,7 @@ impl Color128 {
     /// see also [`color_to_hsv`]
     /// ### Examples
     /// ```
-    /// use stereokit_rust::{util::{Color128, named_colors}, maths::Vec3};
+    /// use stereokit_rust::{util::Color128, maths::Vec3};
     ///
     /// let color = Color128::rgb(0.75, 0.0, 0.25);
     /// let color_hsv = color.to_hsv();
@@ -277,7 +277,7 @@ impl Color128 {
     /// see also [`color_to_lab`]
     /// ### Examples
     /// ```
-    /// use stereokit_rust::{util::{Color128, named_colors}, maths::Vec3};
+    /// use stereokit_rust::{util::Color128, maths::Vec3};
     ///
     /// let color = Color128::rgb(0.75, 0.0, 0.25);
     /// let color_lab = color.to_lab();
@@ -941,7 +941,8 @@ pub struct FovInfo {
 /// let valid_blend_none  = Device::valid_blend(DisplayBlend::None);
 /// let display_blend_none= Device::display_blend(DisplayBlend::None);
 ///
-/// xr_mode_stop_here!();
+///
+/// # if cfg!(not(feature = "test-xr-mode")) {
 /// // These are the expected results for offscreen tests on a PC:
 /// assert_eq!(display_type, DisplayType::Flatscreen);
 /// assert_eq!(display_blend, DisplayBlend::Opaque);
@@ -953,7 +954,7 @@ pub struct FovInfo {
 /// assert_eq!(has_hand_tracking, false);
 /// assert_eq!(valid_blend_none, false);
 /// assert_eq!(display_blend_none, false);
-/// # sk::Sk::shutdown();
+/// # } sk::Sk::shutdown();
 /// ```
 pub struct Device;
 
@@ -1104,6 +1105,7 @@ impl Device {
     /// use stereokit_rust::util::Device;
     ///
     /// let has_eye_gaze = Device::has_eye_gaze();
+    /// assert_eq!(has_eye_gaze | true, true); // meaningless but useful
     ///
     /// xr_mode_stop_here!();
     /// // These are the expected results for offscreen tests on a PC:
@@ -1125,6 +1127,7 @@ impl Device {
     /// use stereokit_rust::util::Device;
     ///
     /// let has_hand_tracking = Device::has_hand_tracking();
+    /// # assert_eq!(has_hand_tracking | true, true); // meaningless but useful
     ///
     /// xr_mode_stop_here!();
     /// // These are the expected results for offscreen tests on a PC:
@@ -1170,11 +1173,10 @@ impl Device {
     /// use stereokit_rust::util::{Device, DeviceTracking};
     ///
     /// let tracking = Device::get_tracking();
-    ///
-    /// xr_mode_stop_here!();
+    /// # if cfg!(not(feature = "test-xr-mode")) {
     /// // These are the expected results for offscreen tests on a PC:
     /// assert_eq!(tracking, DeviceTracking::None);
-    /// # sk::Sk::shutdown();
+    /// # } sk::Sk::shutdown();
     /// ```
     pub fn get_tracking() -> DeviceTracking {
         unsafe { device_get_tracking() }
@@ -1255,7 +1257,7 @@ impl GradientKey {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{maths::Vec3, system::AssetState, tex::{Tex, SHCubemap},
+/// use stereokit_rust::{maths::Vec3, tex::{Tex, SHCubemap},
 ///                      util::{named_colors, Gradient, GradientKey, Color128}};
 ///
 /// let keys = [
@@ -1277,6 +1279,7 @@ impl GradientKey {
 ///     .add(named_colors::BLUE, 0.5)
 ///     .add(Color128::BLACK, 0.7);
 /// let tex_particule1 = Tex::gen_particle(128, 128, 0.2, Some(gradient));
+/// assert_eq!(tex_particule1.get_sample_comp(), tex::TexSampleComp::None);
 /// # sk::Sk::shutdown();
 /// ```
 pub struct Gradient(pub NonNull<_GradientT>);
@@ -1341,6 +1344,7 @@ impl Gradient {
     /// gradient2.add(named_colors::CYAN, 0.4);
     /// assert_eq!(gradient2.get_count(), 4);
     /// let tex_particule1 = Tex::gen_particle(128, 128, 0.2, Some(gradient2));
+    /// assert_eq!(tex_particule1.get_width(), Some(128));
     /// # sk::Sk::shutdown();
     /// ```
     pub fn new(keys: Option<&[GradientKey]>) -> Self {
@@ -1372,7 +1376,9 @@ impl Gradient {
     ///     .add(named_colors::BLUE, 0.5)
     ///     .add(Color128::BLACK, 0.7);
     /// assert_eq!(gradient.get_count(), 5);
+    ///
     /// let tex_particule1 = Tex::gen_particle(128, 128, 0.2, Some(gradient));
+    /// assert_eq!(tex_particule1.get_sample_mode(), tex::TexSample::Linear);
     /// # sk::Sk::shutdown();
     /// ```
     pub fn add(&mut self, color_linear: impl Into<Color128>, position: f32) -> &mut Self {
@@ -1410,6 +1416,7 @@ impl Gradient {
     /// assert_eq!(gradient.get(0.3), named_colors::RED.into());
     ///
     /// let tex_particule1 = Tex::gen_particle(128, 128, 0.2, Some(gradient));
+    /// assert_eq!(tex_particule1.get_width(), Some(128));
     /// # sk::Sk::shutdown();
     /// ```
     pub fn set(&mut self, index: i32, color_linear: impl Into<Color128>, position: f32) -> &mut Self {
@@ -1447,6 +1454,7 @@ impl Gradient {
     /// assert_eq!(gradient.get(0.4), Color128 { r: 0.25, g: 0.25, b: 0.75, a: 1.0 });
     ///
     /// let tex_particule1 = Tex::gen_particle(128, 128, 0.2, Some(gradient));
+    /// assert_eq!(tex_particule1.get_height(), Some(128));
     /// # sk::Sk::shutdown();
     /// ```
     pub fn remove(&mut self, index: i32) -> &mut Self {
@@ -1479,6 +1487,7 @@ impl Gradient {
     /// assert_eq!(gradient.get_count(), 3);
     ///
     /// let tex_particule1 = Tex::gen_particle(128, 128, 0.2, Some(gradient));
+    /// assert_eq!(tex_particule1.get_width(), Some(128));
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_count(&self) -> i32 {
@@ -1511,6 +1520,7 @@ impl Gradient {
     /// assert_eq!(gradient.get(0.5), named_colors::BLUE.into());
     ///
     /// let tex_particule1 = Tex::gen_particle(128, 128, 0.2, Some(gradient));
+    /// assert_eq!(tex_particule1.get_mips(), Some(8));
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get(&self, at: f32) -> Color128 {
@@ -1544,6 +1554,7 @@ impl Gradient {
     /// assert_eq!(gradient.get32(0.5), named_colors::BLUE);
     ///
     /// let tex_particule1 = Tex::gen_particle(128, 128, 0.2, Some(gradient));
+    /// assert_eq!(tex_particule1.get_format(), Some(tex::TexFormat::Rgba32Linear));
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get32(&self, at: f32) -> Color32 {
@@ -1835,6 +1846,24 @@ impl Platform {
     ///   is case insensitive.
     ///
     /// see also [`platform_file_picker`]
+    ///
+    /// ### Examples
+    /// ```no_run
+    /// # stereokit_rust::test_init_sk!();
+    /// use stereokit_rust::util::{Platform, PickerMode};
+    ///
+    /// filename_scr = "screenshots/file_picker.jpeg"; fov_scr = 45.0;
+    /// test_screenshot!({
+    ///     Platform::file_picker(
+    ///         PickerMode::Open,
+    ///         |filename| println!("Selected: {}", filename),
+    ///         || println!("Cancelled"),
+    ///         &[".txt", ".rs"],
+    ///     );
+    /// });
+    /// # sk::Sk::shutdown();
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/file_picker.jpeg" alt="screenshot" width="200">
     pub fn file_picker<FS: FnMut(&str), FC: FnMut()>(
         mode: PickerMode,
         mut on_select_file: FS,
@@ -1991,7 +2020,7 @@ impl Platform {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{util::{Platform}, system::TextContext};
+    /// use stereokit_rust::util::Platform;
     ///
     /// let mut path = std::env::current_dir().expect("Current directory should be readable");
     /// path.push("config.toml");
@@ -2031,7 +2060,7 @@ impl Platform {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{util::{Platform}, system::TextContext};
+    /// use stereokit_rust::util::Platform;
     ///
     /// let mut path = std::env::current_dir().expect("Current directory should be readable");
     /// path.push("assets/textures/");
@@ -2072,7 +2101,7 @@ impl Platform {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{util::{Platform}, system::TextContext};
+    /// use stereokit_rust::util::Platform;
     ///
     /// let mut path = std::env::current_dir().expect("Current directory should be readable");
     /// path.push("assets/icons/");
@@ -2113,7 +2142,7 @@ impl Platform {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{util::{Platform}, system::TextContext};
+    /// use stereokit_rust::util::Platform;
     ///
     /// let mut path = std::env::current_dir().expect("Current directory should be readable");
     /// path.push("assets/icons/");
@@ -2189,7 +2218,7 @@ impl Platform {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{maths::Vec3, tex::SHCubemap, util::{SHLight, named_colors, Color128}};
+/// use stereokit_rust::{maths::Vec3, util::{SHLight, named_colors, Color128}};
 ///
 /// let light0 = SHLight::new([1.0, 0.2, 0.3], named_colors::RED);
 /// let light1 = SHLight::new(Vec3::new(1.0, 0.2, 0.3), Color128::new(1.0, 0.0, 0.0, 1.0));
@@ -2296,7 +2325,7 @@ impl SphericalHarmonics {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::Vec3,
-    ///                      util::{SHLight, named_colors, Color128, SphericalHarmonics}};
+    ///                      util::{named_colors, Color128, SphericalHarmonics}};
     ///
     /// let mut sh0 = SphericalHarmonics::default();
     /// sh0.add([1.0, 0.0, 1.0], named_colors::RED);
@@ -2324,7 +2353,7 @@ impl SphericalHarmonics {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::Vec3,
-    ///                      util::{SHLight, named_colors, Color128, SphericalHarmonics}};
+    ///                      util::{named_colors, Color128, SphericalHarmonics}};
     ///
     /// let mut sh = SphericalHarmonics::default();
     /// sh.add([1.0, 0.0, 1.0], named_colors::RED)
@@ -2353,7 +2382,7 @@ impl SphericalHarmonics {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::Vec3,
-    ///                      util::{SHLight, named_colors, Color128, SphericalHarmonics}};
+    ///                      util::{named_colors, Color128, SphericalHarmonics}};
     ///
     /// let mut sh = SphericalHarmonics::default();
     /// sh.add([1.0, 0.0, 1.0], named_colors::RED)
@@ -2398,7 +2427,7 @@ impl SphericalHarmonics {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::Vec3,
-    ///                      util::{SHLight, named_colors, Color128, SphericalHarmonics}};
+    ///                      util::{named_colors, SphericalHarmonics}};
     ///
     /// let mut sh = SphericalHarmonics::default();
     /// sh.add([1.0, 0.0, 1.0], named_colors::RED)
@@ -2503,8 +2532,6 @@ impl Time {
     /// // Time passes faster:
     /// Time::scale(2.0);
     ///
-    /// let mut total = 0.0f64;
-    /// let mut totalf = 0.0f32;
     /// number_of_steps = 100;
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     assert_eq!(Time::get_step_unscaled(), Time::get_step() / 2.0);

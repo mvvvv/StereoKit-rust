@@ -450,7 +450,7 @@ pub fn is_meta_virtual_keyboard_extension_available() -> bool {
 ///     if iter == 10 {
 ///         // Create and test virtual keyboard functionality
 ///         if is_meta_virtual_keyboard_extension_available() {
-///             let mut keyboard_stepper = XrMetaVirtualKeyboardStepper::new(true);
+///             let keyboard_stepper = XrMetaVirtualKeyboardStepper::new(true);
 ///             sk.send_event(StepperAction::add("keyboard_test", keyboard_stepper));
 ///             
 ///             // Show the keyboard

@@ -390,17 +390,17 @@ pub struct TexPackSourceT {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{maths::{Vec3, Matrix, Quat}, util::{named_colors,Color32},
+/// use stereokit_rust::{maths::Matrix, util::named_colors,
 ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
 ///
 /// let tex_left = Tex::from_file("textures/open_gltf.jpeg", true, None)
 ///                    .expect("tex_left should be created");
 ///
-/// let mut tex_right = Tex::gen_color(named_colors::RED, 1, 1, TexType::Image, TexFormat::Rgba32Srgb);
+/// let tex_right = Tex::gen_color(named_colors::RED, 1, 1, TexType::Image, TexFormat::Rgba32Srgb);
 ///
-/// let mut tex_back = Tex::gen_particle(128, 128, 0.2, None);
+/// let tex_back = Tex::gen_particle(128, 128, 0.2, None);
 ///
-/// let mut tex_floor = Tex::new(TexType::Image, TexFormat::Rgba32Srgb, None);
+/// let tex_floor = Tex::new(TexType::Image, TexFormat::Rgba32Srgb, None);
 ///
 /// let plane_mesh = Mesh::generate_plane_up([1.0,1.0], None, true);
 /// let material_left  = Material::pbr().tex_copy(tex_left);
@@ -597,16 +597,16 @@ impl Tex {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::{named_colors, Color32, Color128},
+    /// use stereokit_rust::{maths::Matrix, util::{named_colors, Color128},
     ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
     ///
     /// let plane_mesh = Mesh::generate_plane_up([1.0,1.0], None, true);
     ///
-    /// let mut color_dots = [named_colors::CYAN; 128 * 128];
+    /// let color_dots = [named_colors::CYAN; 128 * 128];
     /// let mut tex_left = Tex::new(TexType::Image, TexFormat::Rgba32Srgb, Some("tex_left_ID"));
     /// tex_left.set_colors32(128, 128, &color_dots);
     ///
-    /// let mut color_dots = [Color128::new(0.5, 0.75, 0.25, 1.0); 128 * 128];
+    /// let color_dots = [Color128::new(0.5, 0.75, 0.25, 1.0); 128 * 128];
     /// let mut tex_right = Tex::new(TexType::Image, TexFormat::Rgba128, None);
     /// tex_right.set_colors128(128, 128, &color_dots);
     ///
@@ -646,8 +646,7 @@ impl Tex {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix},
-    ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
+    /// use stereokit_rust::{maths::Matrix, tex::Tex, mesh::Mesh, material::Material};
     ///
     /// let plane_mesh = Mesh::generate_plane_up([1.0,1.0], None, true);
     ///
@@ -787,8 +786,8 @@ impl Tex {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, system::AssetState,
-    ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
+    /// use stereokit_rust::{maths::Matrix, system::AssetState,
+    ///                      tex::Tex, mesh::Mesh, material::Material};
     ///
     /// let plane_mesh = Mesh::generate_plane_up([1.0,1.0], None, true);
     ///
@@ -919,8 +918,8 @@ impl Tex {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::{named_colors, Color32},
-    ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
+    /// use stereokit_rust::{maths::Matrix, util::named_colors,
+    ///                      tex::Tex, mesh::Mesh, material::Material};
     ///
     /// let plane_mesh = Mesh::generate_plane_up([1.0,1.0], None, true);
     ///
@@ -976,8 +975,8 @@ impl Tex {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::{named_colors, Color128},
-    ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
+    /// use stereokit_rust::{maths::Matrix, util::Color128,
+    ///                      tex::Tex, mesh::Mesh, material::Material};
     ///
     /// let plane_mesh = Mesh::generate_plane_up([1.0,1.0], None, true);
     ///
@@ -1034,22 +1033,18 @@ impl Tex {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::{named_colors, Color32},
-    ///                      system::Renderer,
-    ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
-    ///
-    /// let plane_mesh = Mesh::generate_plane_up([1.0,1.0], None, true);
+    /// use stereokit_rust::{system::Renderer, tex::{Tex, TexFormat}, material::Material};
     ///
     /// let tex = Tex::render_target(128, 128, Some(2), Some(TexFormat::Rgba32Srgb), None)
     ///                            .expect("Tex should be created");
     ///
-    /// let material  = Material::pbr().tex_copy(&tex);
-    ///
-    /// let transform  = Matrix::t_r([-0.5, 0.0, 0.0], [0.0, -45.0, 90.0]);
+    /// let material  = Material::from_file("shaders/brick_pbr.hlsl.sks", None)
+    ///                     .expect("Material should be created");
     ///
     /// Renderer::blit(&tex, &material);
     /// # sk::Sk::shutdown();
     /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/tex_render_target.jpeg" alt="screenshot" width="200">
     pub fn render_target(
         width: usize,
         height: usize,
@@ -1084,7 +1079,7 @@ impl Tex {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::{named_colors, Color128},
+    /// use stereokit_rust::{maths::Matrix, util::{named_colors, Color128},
     ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
     ///
     /// let plane_mesh = Mesh::generate_plane_up([1.0,1.0], None, true);
@@ -1129,11 +1124,10 @@ impl Tex {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix, Quat},
-    ///                      util::{named_colors, Gradient, GradientKey, Color128},
-    ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
+    /// use stereokit_rust::{maths::Matrix, tex::Tex, mesh::Mesh, material::Material,
+    ///                      util::{named_colors, Gradient, GradientKey, Color128}};
     ///
-    /// let mut keys = [
+    /// let keys = [
     ///     GradientKey::new(Color128::BLACK_TRANSPARENT, 0.0),
     ///     GradientKey::new(named_colors::RED, 0.1),
     ///     GradientKey::new(named_colors::CYAN, 0.4),
@@ -1188,7 +1182,7 @@ impl Tex {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::{named_colors, Color128},
+    /// use stereokit_rust::{maths::Matrix, util::named_colors,
     ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
     ///
     /// let tex_loading = Tex::gen_color(named_colors::GREEN, 128, 128, TexType::Image, TexFormat::Rgba32Srgb);
@@ -1216,7 +1210,7 @@ impl Tex {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::{named_colors, Color128},
+    /// use stereokit_rust::{maths::Matrix, util::named_colors,
     ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
     ///
     /// let tex_err = Tex::gen_color(named_colors::RED, 128, 128, TexType::Image, TexFormat::Rgba32Srgb);
@@ -1245,8 +1239,7 @@ impl Tex {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::{named_colors, Color128},
-    ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
+    /// use stereokit_rust::{util::named_colors, tex::{Tex, TexFormat, TexType}};
     ///
     /// let mut tex_blue = Tex::gen_color(named_colors::BLUE, 1, 1, TexType::Image, TexFormat::Rgba32Srgb);
     /// assert!(tex_blue.get_id().starts_with("auto/tex_"));
@@ -1282,8 +1275,7 @@ impl Tex {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::{Color32, Color128},
-    ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
+    /// use stereokit_rust::{util::{Color32, Color128}, tex::{Tex, TexFormat, TexType}};
     ///
     ///
     /// let tex_blue = Tex::gen_color(Color32::new(64, 32, 255, 255), 1, 1,
@@ -1293,15 +1285,13 @@ impl Tex {
     ///                             .expect("copy should be done");
     /// let mut color_data = [Color32::WHITE; 1];
     /// assert!(tex_copy.get_color_data::<Color32>(&mut color_data, 0));
-    /// //TODO: windows assert_eq!(color_data[0], Color32 { r: 64, g: 32, b: 255, a: 255 });
-    /// //TODO: linux   assert_eq!(color_data[0], Color32 { r: 137, g: 99, b: 255, a: 255 });
+    /// assert_eq!(color_data[0], Color32 { r: 64, g: 32, b: 255, a: 255 });
     ///
     /// let tex_copy = tex_blue.copy(Some(TexType::Image), Some(TexFormat::Rgba128))
     ///                             .expect("copy should be done");
     /// let mut color_data = [Color128::WHITE; 1];
     /// assert!(tex_copy.get_color_data::<Color128>(&mut color_data, 0));
-    /// //TODO: windows assert_eq!(color_data[0], Color128 { r: 0.0, g: 0.0, b: 0.0, a: 0.0 });
-    /// //TODO: linux   assert_eq!(color_data[0], Color128 { r: 0.2509804, g: 0.1254902, b: 1.0, a:1.0 });
+    /// assert_eq!(color_data[0], Color128 { r: 0.0, g: 0.0, b: 0.0, a: 0.0 });
     /// # sk::Sk::shutdown();
     /// ```
     pub fn copy(&self, tex_type: Option<TexType>, tex_format: Option<TexFormat>) -> Result<Tex, StereoKitError> {
@@ -1319,10 +1309,9 @@ impl Tex {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::{named_colors, Color128},
-    ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
+    /// use stereokit_rust::{util::named_colors,tex::{Tex, TexFormat, TexType}};
     ///
-    /// let mut tex_blue = Tex::gen_color(named_colors::BLUE, 1, 1, TexType::Image, TexFormat::Rgba32Srgb);
+    /// let tex_blue = Tex::gen_color(named_colors::BLUE, 1, 1, TexType::Image, TexFormat::Rgba32Srgb);
     /// assert!(tex_blue.get_id().starts_with("auto/tex_"));
     /// let same_tex_blue = tex_blue.clone_ref();
     /// assert_eq!(tex_blue, same_tex_blue);
@@ -1345,15 +1334,14 @@ impl Tex {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::{named_colors, Color128},
-    ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
+    /// use stereokit_rust::{util::named_colors,tex::{Tex, TexFormat, TexType}};
     ///
     /// let mut tex_blue = Tex::gen_color(named_colors::BLUE, 1, 1, TexType::Image, TexFormat::Rgba32Srgb);
     /// assert!(tex_blue.get_id().starts_with("auto/tex_"));
     /// tex_blue.id("my_tex_blue");
     /// assert_eq!(tex_blue.get_id(), "my_tex_blue");
     ///
-    /// let mut tex = Tex::from_file("textures/open_gltf.jpeg", true, None)
+    /// let tex = Tex::from_file("textures/open_gltf.jpeg", true, None)
     ///                        .expect("tex should be created");
     /// assert_eq!(tex.get_id(), "textures/open_gltf.jpeg");
     /// tex_blue.id("my_tex_image");
@@ -1375,9 +1363,7 @@ impl Tex {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::{named_colors, Color32},
-    ///                      system::Renderer,
-    ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
+    /// use stereokit_rust::{system::Renderer, tex::{Tex, TexFormat}, material::Material};
     ///
     ///
     /// let mut tex = Tex::render_target(128, 128, Some(2), Some(TexFormat::Rgba32Srgb),
@@ -1388,9 +1374,7 @@ impl Tex {
     /// tex.add_zbuffer(TexFormat::Depth16);
     /// assert_ne!(tex.get_zbuffer(), None);
     ///
-    /// let plane_mesh = Mesh::generate_plane_up([1.0,1.0], None, true);
     /// let material  = Material::pbr().tex_copy(&tex);
-    /// let transform  = Matrix::t_r([-0.5, 0.0, 0.0], [0.0, -45.0, 90.0]);
     ///
     /// Renderer::blit(&tex, &material);
     /// # sk::Sk::shutdown();
@@ -1418,7 +1402,7 @@ impl Tex {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix},
+    /// use stereokit_rust::{maths::Matrix,
     ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
     ///
     /// let image_data = std::include_bytes!("../assets/textures/open_gltf.jpeg");
@@ -1469,8 +1453,7 @@ impl Tex {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::{named_colors, Color32},
-    ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
+    /// use stereokit_rust::{util::{named_colors, Color32}, tex::{Tex, TexFormat, TexType}};
     ///
     /// let mut color_dots = [named_colors::CYAN; 16 * 16];
     /// let mut tex = Tex::new(TexType::Image, TexFormat::Rgba32Srgb, None);
@@ -1502,10 +1485,9 @@ impl Tex {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::{named_colors, Color32},
-    ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
+    /// use stereokit_rust::{util::{named_colors, Color32}, tex::{Tex, TexFormat, TexType}};
     ///
-    /// let mut color_dots = [named_colors::CYAN; 16 * 16];
+    /// let color_dots = [named_colors::CYAN; 16 * 16];
     /// let mut tex = Tex::new(TexType::Image, TexFormat::Rgba32Srgb, None);
     ///
     /// tex.set_colors32(16, 16, &color_dots);
@@ -1564,10 +1546,9 @@ impl Tex {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::{named_colors, Color128},
-    ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
+    /// use stereokit_rust::{util::Color128, tex::{Tex, TexFormat, TexType}};
     ///
-    /// let mut color_dots = [Color128{r: 0.25, g: 0.125, b: 1.0, a: 1.0}; 16 * 16];
+    /// let color_dots = [Color128{r: 0.25, g: 0.125, b: 1.0, a: 1.0}; 16 * 16];
     /// let mut tex = Tex::new(TexType::Image, TexFormat::Rgba128, None);
     ///
     /// tex.set_colors128(16, 16, &color_dots);
@@ -1624,10 +1605,9 @@ impl Tex {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix},
-    ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
+    /// use stereokit_rust::tex::{Tex, TexFormat, TexType};
     ///
-    /// let mut color_dots = [125u8; 16 * 16];
+    /// let color_dots = [125u8; 16 * 16];
     /// let mut tex = Tex::new(TexType::Image, TexFormat::R8, None);
     ///
     /// tex.set_colors_r8(16, 16, &color_dots);
@@ -1686,10 +1666,9 @@ impl Tex {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::{named_colors, Color32},
-    ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
+    /// use stereokit_rust::{util::Color32, tex::{Tex, TexFormat, TexType}};
     ///
-    /// let mut color_dots = [127u8; 16 * 16 * 4];
+    /// let color_dots = [127u8; 16 * 16 * 4];
     /// let mut tex = Tex::new(TexType::Image, TexFormat::Rgba32Srgb, None);
     ///
     /// tex.set_colors_u8(16, 16, &color_dots, 4);
@@ -1733,10 +1712,9 @@ impl Tex {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix},
-    ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
+    /// use stereokit_rust::tex::{Tex, TexFormat, TexType};
     ///
-    /// let mut color_dots = [256u16; 16 * 16];
+    /// let color_dots = [256u16; 16 * 16];
     /// let mut tex = Tex::new(TexType::Image, TexFormat::R16un, None);
     ///
     /// tex.set_colors_r16(16, 16, &color_dots);
@@ -1793,10 +1771,9 @@ impl Tex {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix},
-    ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
+    /// use stereokit_rust::tex::{Tex, TexFormat, TexType};
     ///
-    /// let mut color_dots = [0.13f32; 16 * 16];
+    /// let color_dots = [0.13f32; 16 * 16];
     /// let mut tex = Tex::new(TexType::Image, TexFormat::R32f, None);
     ///
     /// tex.set_colors_r32(16, 16, &color_dots);
@@ -1847,12 +1824,10 @@ impl Tex {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::{named_colors, Color32},
-    ///                      system::Renderer,
-    ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
+    /// use stereokit_rust::tex::{Tex, TexFormat};
     ///
     ///
-    /// let mut tex = Tex::render_target(128, 128, Some(2), Some(TexFormat::Rgba32Srgb),
+    /// let tex = Tex::render_target(128, 128, Some(2), Some(TexFormat::Rgba32Srgb),
     ///                                  Some(TexFormat::Depth16))
     ///                            .expect("Tex should be created");
     ///
@@ -1907,7 +1882,6 @@ impl Tex {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// # use stereokit_rust::{tex::{Tex, TexFormat, TexType}};
-    /// # use std::ptr::null_mut;
     ///
     /// let mut tex = Tex::new(TexType::Image, TexFormat::Rgba32Srgb, None);
     /// let native_surface = tex.get_native_surface();
@@ -2005,7 +1979,7 @@ impl Tex {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::{named_colors, Color128},
+    /// use stereokit_rust::{maths::Matrix, util::named_colors,
     ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
     ///
     /// let tex_fallback = Tex::gen_color(named_colors::VIOLET, 128, 128, TexType::Image, TexFormat::Rgba32Srgb);
@@ -2284,7 +2258,7 @@ impl Tex {
     /// use stereokit_rust::{util::{named_colors, Color32}, system::AssetState,
     ///                      tex::{Tex, TexFormat, TexType}};
     ///
-    /// let mut color_dots = [named_colors::CYAN; 16 * 16];
+    /// let color_dots = [named_colors::CYAN; 16 * 16];
     /// let mut tex = Tex::new(TexType::Image, TexFormat::Rgba32Srgb, None);
     /// tex.set_colors32(16, 16, &color_dots);
     ///
@@ -2364,13 +2338,13 @@ impl Tex {
     /// use stereokit_rust::{util::{named_colors, Color32, Color128},
     ///                      tex::{Tex, TexFormat, TexType}};
     ///
-    /// let mut tex = Tex::gen_color(named_colors::CYAN, 8 , 8, TexType::Image, TexFormat::Rgba32Srgb);
+    /// let tex = Tex::gen_color(named_colors::CYAN, 8 , 8, TexType::Image, TexFormat::Rgba32Srgb);
     ///
     /// let check_dots = [Color32::WHITE; 8 * 8];
     /// assert!(tex.get_color_data::<Color32>(&check_dots, 0));
     /// assert_eq!(check_dots[5], named_colors::CYAN);
     ///
-    /// let mut tex = Tex::gen_color(named_colors::MAGENTA, 8 , 8, TexType::Image, TexFormat::Rgba128);
+    /// let tex = Tex::gen_color(named_colors::MAGENTA, 8 , 8, TexType::Image, TexFormat::Rgba128);
     ///
     /// let check_dots = [Color128::WHITE; 8 * 8];
     /// assert!(tex.get_color_data::<Color128>(&check_dots, 0));
@@ -2425,10 +2399,9 @@ impl Tex {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{util::{named_colors, Color32},
-    ///                      tex::{Tex, TexFormat, TexType}};
+    /// use stereokit_rust::{util::named_colors, tex::{Tex, TexFormat, TexType}};
     ///
-    /// let mut tex = Tex::gen_color(named_colors::CYAN, 8 , 8, TexType::Image, TexFormat::Rgba32Srgb);
+    /// let tex = Tex::gen_color(named_colors::CYAN, 8 , 8, TexType::Image, TexFormat::Rgba32Srgb);
     ///
     /// let mut check_dots = [0u8; 8 * 8 * 4];
     /// assert!(tex.get_color_data_u8(&mut check_dots, 4, 0));
@@ -2533,7 +2506,7 @@ impl Tex {
     ///
     /// let tex_icon = Tex::from_file("icons/checked.png", true, None)
     ///                         .expect("Tex_icon should be created");
-    /// // TODO: assert_eq!(tex_icon.get_mips(), None);
+    /// assert_eq!(tex_icon.get_mips(), None);
     ///
     /// let tex_not_icon = Tex::from_file("Not an icon file", true, None)
     ///                             .expect("Tex_not_icon should be created");
@@ -2545,8 +2518,8 @@ impl Tex {
     ///        || tex_not_icon.get_asset_state() == AssetState::Loading { iter -= 1; }
     /// );
     /// assert_eq!(tex_nomips.get_mips(), Some(1));
-    /// // TODO: assert_eq!(tex.get_mips(), Some(8));
-    /// // TODO: assert_eq!(tex_icon.get_mips(), Some(8));
+    /// assert_eq!(tex.get_mips(), Some(8));
+    /// assert_eq!(tex_icon.get_mips(), Some(8));
     /// assert_eq!(tex_not_icon.get_mips(), None);
     /// # sk::Sk::shutdown();
     /// ```
@@ -2719,7 +2692,7 @@ impl Tex {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{maths::Vec3, tex::SHCubemap, system::AssetState};
+/// use stereokit_rust::{tex::SHCubemap, system::AssetState};
 ///
 /// let sh_cubemap = SHCubemap::from_cubemap("hdri/sky_dawn.hdr", true, 9999)
 ///                                .expect("Cubemap should be created");
@@ -2893,7 +2866,7 @@ impl SHCubemap {
     /// use stereokit_rust::{maths::Vec3, tex::SHCubemap, system::AssetState,
     ///                      util::{named_colors, Gradient, GradientKey, Color128}};
     ///
-    /// let mut keys = [
+    /// let keys = [
     ///     GradientKey::new(Color128::BLACK_TRANSPARENT, 0.0),
     ///     GradientKey::new(named_colors::RED, 0.1),
     ///     GradientKey::new(named_colors::CYAN, 0.4),
@@ -3019,12 +2992,15 @@ impl SHCubemap {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::tex::SHCubemap;
+    /// use stereokit_rust::{tex::SHCubemap, system::AssetState};
     ///
     /// let sh_cubemap = SHCubemap::get_rendered_sky();
     ///
     /// let tex = sh_cubemap.tex;
-    /// //Not at first step : assert_eq!(tex.get_id(), "default/cubemap");
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if tex.get_asset_state() != AssetState::Loaded {iter -= 1}
+    ///     assert_eq!(tex.get_id(), "default/cubemap");
+    /// );
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_rendered_sky() -> SHCubemap {
@@ -3059,7 +3035,11 @@ impl SHCubemap {
     /// let sh_cubemap = SHCubemap::get_rendered_sky();
     ///
     /// let cubemap = sh_cubemap.clone_ref();
-    /// //Not at first step: assert_eq!(cubemap.tex.get_id(), "default/cubemap");
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///    if cubemap.tex.get_asset_state() != system::AssetState::Loaded {iter -= 1}
+    ///    assert_eq!(cubemap.tex.get_id(), "default/cubemap");
+    /// );
     /// # sk::Sk::shutdown();
     /// ```
     pub fn clone_ref(&self) -> SHCubemap {
@@ -3074,9 +3054,9 @@ impl SHCubemap {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::Vec3, tex::SHCubemap, system::{AssetState, Renderer}};
+    /// use stereokit_rust::{tex::SHCubemap, system::Renderer};
     ///
-    /// let mut sh_cubemap = SHCubemap::from_cubemap("hdri/sky_dawn.hdr", true, 9999)
+    /// let sh_cubemap = SHCubemap::from_cubemap("hdri/sky_dawn.hdr", true, 9999)
     ///                                .expect("Cubemap should be created");
     /// assert_eq!(Renderer::get_enable_sky(), true);
     ///
@@ -3104,8 +3084,12 @@ impl SHCubemap {
     /// let sh_cubemap = SHCubemap::get_rendered_sky();
     ///
     /// let (sh, tex) = sh_cubemap.get();
-    /// //Not at first step: assert_eq!(tex.get_id(), "default/cubemap");
-    /// //Not at first step: assert_eq!(sh.get_dominent_light_direction(), Vec3 { x: -0.20119436, y: -0.92318374, z: -0.32749438 });
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if tex.get_asset_state() != system::AssetState::Loaded {iter -= 1}
+    ///     assert_eq!(tex.get_id(), "default/cubemap");
+    ///     assert_eq!(sh.get_dominent_light_direction(), Vec3 { x: -0.20119436, y: -0.92318374, z: -0.32749438 });
+    /// );
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get(&self) -> (SphericalHarmonics, Tex) {

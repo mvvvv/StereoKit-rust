@@ -37,8 +37,6 @@ use std::ptr::null_mut;
 ///     util::{named_colors, Color128, Time}, tex::TexFormat, material::Material, mesh::Mesh,
 ///     system::{Backend, BackendXRType, RenderClear}, tools::xr_comp_layers::* };
 ///
-/// use openxr_sys::SwapchainUsageFlags;
-///
 /// // Check if OpenXR is available
 /// if Backend::xr_type() == BackendXRType::OpenXR {
 ///     // Create XrCompLayers instance
@@ -47,7 +45,7 @@ use std::ptr::null_mut;
 ///         
 ///         // Set up rendering components
 ///         let mut render_list = RenderList::new();
-///         let mut material = Material::default().copy();
+///         let material = Material::default().copy();
 ///         let projection = Matrix::orthographic(0.2, 0.2, 0.01, 10.0);
 ///         
 ///         // Add a sphere to the scene
@@ -389,9 +387,9 @@ impl XrCompLayers {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{ maths::{Vec3, Matrix, Pose, Vec2, Rect},  render_list::RenderList,
-///     util::{named_colors, Color128, Time}, tex::TexFormat, material::Material, mesh::Mesh,
-///     system::{Backend, BackendXRType, RenderClear}, tools::xr_comp_layers::* };
+/// use stereokit_rust::{ maths::{Vec3, Matrix, Rect},  render_list::RenderList,
+///     util::{named_colors, Time}, tex::TexFormat, material::Material, mesh::Mesh,
+///     system::RenderClear, tools::xr_comp_layers::* };
 ///
 /// // Create a swapchain
 /// if let Some(mut swapchain) = SwapchainSk::new(TexFormat::Rgba32Srgb, 512, 512, None) {
@@ -471,20 +469,25 @@ impl SwapchainSk {
     /// - `None`: No image is currently acquired or swapchain is empty.
     ///
     /// # Example
-    /// ```no_run
-    /// # use stereokit_rust::tools::xr_comp_layers::SwapchainSk;
-    /// # let mut swapchain: SwapchainSk = todo!();
-    /// if let Ok(_) = swapchain.acquire_image(None) {
-    ///     if let Some(render_target) = swapchain.get_render_target() {
-    ///         // Use render_target for drawing operations
-    ///         println!("Render target size: {}x{}",
-    ///                  render_target.get_width().unwrap_or(0),
-    ///                  render_target.get_height().unwrap_or(0));
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{tools::xr_comp_layers::SwapchainSk, tex::TexFormat};
+    ///
+    /// if let Some(mut swapchain) = SwapchainSk::new(TexFormat::Rgba32Srgb, 512, 512, None) {
+    ///     if let Ok(_) = swapchain.acquire_image(None) {
+    ///         if let Some(render_target) = swapchain.get_render_target() {
+    ///             // Use render_target for drawing operations
+    ///             println!("Render target size: {}x{}",
+    ///                      render_target.get_width().unwrap_or(0),
+    ///                      render_target.get_height().unwrap_or(0));
     ///         
-    ///         // ... perform rendering to render_target ...
+    ///             // ... perform rendering to render_target ...
+    ///             todo!("");
+    ///         }
     ///     }
     ///     swapchain.release_image().expect("Failed to release");
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_render_target(&self) -> Option<&Tex> {
         if self.images.is_empty() {
@@ -595,19 +598,23 @@ impl SwapchainSk {
     /// - `Err(XrResult)`: OpenXR error code if acquisition fails.
     ///
     /// # Example
-    /// ```no_run
-    /// # use stereokit_rust::tools::xr_comp_layers::SwapchainSk;
-    /// # let mut swapchain: SwapchainSk = todo!();
-    /// // Acquire with default timeout
-    /// match swapchain.acquire_image(None) {
-    ///     Ok(image_index) => {
-    ///         println!("Acquired image {}", image_index);
-    ///         // Render to swapchain.get_render_target()
-    ///         // ... rendering code ...
-    ///         swapchain.release_image().expect("Failed to release");
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{ tools::xr_comp_layers::SwapchainSk, tex::TexFormat };
+    ///
+    /// if let Some(mut swapchain) = SwapchainSk::new(TexFormat::Rgba32Srgb, 512, 512, None) {
+    ///     // Acquire with default timeout
+    ///     match swapchain.acquire_image(None) {
+    ///         Ok(image_index) => {
+    ///             println!("Acquired image {}", image_index);
+    ///             // Render to swapchain.get_render_target()
+    ///             // ... rendering code ...
+    ///             swapchain.release_image().expect("Failed to release");
+    ///         }
+    ///         Err(e) => eprintln!("Failed to acquire image: {:?}", e),
     ///     }
-    ///     Err(e) => eprintln!("Failed to acquire image: {:?}", e),
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn acquire_image(&mut self, timeout_ns: Option<i64>) -> std::result::Result<u32, XrResult> {
         let timeout_ns = timeout_ns.unwrap_or(0x7fffffffffffffff);
@@ -640,16 +647,19 @@ impl SwapchainSk {
     /// - `Err(XrResult)`: OpenXR error code if release fails.
     ///
     /// # Example
-    /// ```no_run
-    /// # use stereokit_rust::tools::xr_comp_layers::SwapchainSk;
-    /// # let mut swapchain: SwapchainSk = todo!();
-    /// // After acquiring and rendering to the image
-    /// if let Ok(_) = swapchain.acquire_image(None) {
-    ///     // ... render to swapchain.get_render_target() ...
-    ///     
-    ///     // Must release the image when done
-    ///     swapchain.release_image().expect("Failed to release image");
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{ tools::xr_comp_layers::SwapchainSk, tex::TexFormat };
+    /// if let Some(mut swapchain) = SwapchainSk::new(TexFormat::Rgba32Srgb, 512, 512, None) {
+    ///     // After acquiring and rendering to the image
+    ///     if let Ok(_) = swapchain.acquire_image(None) {
+    ///         // ... render to swapchain.get_render_target() ...
+    ///         
+    ///         // Must release the image when done
+    ///         swapchain.release_image().expect("Failed to release image");
+    ///     }
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn release_image(&mut self) -> std::result::Result<(), XrResult> {
         match unsafe { self.xr_comp_layers.xr_release_swaptchain_image.unwrap()(self.handle, null_mut()) } {

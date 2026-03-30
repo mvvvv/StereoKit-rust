@@ -381,7 +381,7 @@ pub const HAND_MENU_RADIAL_FOCUS: &str = "hand_menu_radial_focus";
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{framework::*, material::Material, system::{Input, Key}};
+/// use stereokit_rust::{framework::*, material::Material};
 ///
 /// // swapping a value
 /// let mut swap_value = true;
@@ -392,7 +392,7 @@ pub const HAND_MENU_RADIAL_FOCUS: &str = "hand_menu_radial_focus";
 /// menu_ico.clip_cutoff(0.1);
 ///
 /// //---Create then load hand menu radial
-/// let mut hand_menu_stepper =
+/// let hand_menu_stepper =
 ///     HandMenuRadial::new(HandRadialLayer::new("root", None, Some(100.0),
 ///     vec![
 ///         HandRadial::layer("Todo!", Some(menu_ico), None,

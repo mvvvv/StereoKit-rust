@@ -319,7 +319,6 @@ pub fn read_asset(sk_info: &Option<Rc<RefCell<SkInfo>>>, asset_path: impl AsRef<
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::tools::os_api::read_asset;
-/// use std::io::Read;
 ///
 /// let sk_info  = Some(sk.get_sk_info_clone());
 ///

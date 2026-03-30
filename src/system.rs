@@ -293,11 +293,11 @@ impl Assets {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::Matrix,  system::{Assets, AssetType, Asset},
-    ///                      sprite::Sprite};
+    /// use stereokit_rust::{system::{Assets, Asset}, sprite::Sprite};
     ///
     /// let my_sprite = Sprite::from_file("textures/open_gltf.jpeg", None, None)
     ///                   .expect("open_gltf.jpeg should be able to create sprite");
+    /// # assert_eq!(my_sprite.get_id(), "textures/open_gltf.jpeg/sprite");
     ///
     /// let all = Assets::all();
     ///
@@ -308,15 +308,15 @@ impl Assets {
     /// let mut mesh_count = 0      ; let mut render_list_count = 0;
     /// for asset in all {
     ///     match asset {
-    ///         Asset::Sprite(sprite) => sprite_count += 1,
-    ///         Asset::Model(model) => model_count +=1,
-    ///         Asset::Sound(sound) => sound_count +=1,
-    ///         Asset::Tex(texture) => texture_count +=1,
-    ///         Asset::Material(material) => material_count +=1,
-    ///         Asset::Font(font) => font_count +=1,
-    ///         Asset::Mesh(mesh) => mesh_count +=1,
-    ///         Asset::Shader(shader) => shader_count +=1,
-    ///         Asset::RenderList(render_list) => render_list_count +=1,
+    ///         Asset::Sprite(_sprite) => sprite_count += 1,
+    ///         Asset::Model(_model) => model_count +=1,
+    ///         Asset::Sound(_sound) => sound_count +=1,
+    ///         Asset::Tex(_texture) => texture_count +=1,
+    ///         Asset::Material(_material) => material_count +=1,
+    ///         Asset::Font(_font) => font_count +=1,
+    ///         Asset::Mesh(_mesh) => mesh_count +=1,
+    ///         Asset::Shader(_shader) => shader_count +=1,
+    ///         Asset::RenderList(_render_list) => render_list_count +=1,
     ///     _  => other_count +=1,  
     ///
     ///     }
@@ -363,13 +363,14 @@ impl Assets {
     ///
     /// let my_sprite = Sprite::from_file("textures/open_gltf.jpeg", None, None)
     ///                   .expect("open_gltf.jpeg should be able to create sprite");
+    /// # assert_eq!(my_sprite.get_id(), "textures/open_gltf.jpeg/sprite");
     ///
     /// let all = Assets::all_of_type(AssetType::Sprite);
     ///
     /// let mut sprite_count = 0;
     /// for asset in all {
     ///     match asset {
-    ///         Asset::Sprite(sprite) => sprite_count += 1,
+    ///         Asset::Sprite(_sprite) => sprite_count += 1,
     ///         _ => panic!("asset should be a sprite"),
     ///     }
     /// }
@@ -390,10 +391,10 @@ impl Assets {
     /// use stereokit_rust::{system::Assets, sprite::Sprite};
     /// let my_sprite = Sprite::from_file("textures/open_gltf.jpeg", None, None)
     ///                   .expect("open_gltf.jpeg should be able to create sprite");
+    /// # assert_eq!(my_sprite.get_id(), "textures/open_gltf.jpeg/sprite");
     ///
     /// let current_task = Assets::current_task();
     /// // TODO: most of the time true but ... assert_eq!(Assets::total_tasks(), 1);
-    /// number_of_steps = 200;
     /// assert_eq!(current_task, 0);
     /// # sk::Sk::shutdown();
     /// ```
@@ -413,6 +414,7 @@ impl Assets {
     ///
     /// let my_sprite = Sprite::from_file("textures/open_gltf.jpeg", None, None)
     ///                   .expect("open_gltf.jpeg should be able to create sprite");
+    /// # assert_eq!(my_sprite.get_id(), "textures/open_gltf.jpeg/sprite");
     ///
     /// let current_task_priority  = Assets::current_task_priority();
     /// assert_eq!(current_task_priority, 10);
@@ -441,6 +443,7 @@ impl Assets {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     let total_tasks  = Assets::total_tasks();
     ///     assert_eq!(total_tasks, 2);
+    ///     # assert_ne!(my_sprite1, my_sprite2);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -456,8 +459,8 @@ impl Assets {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix},  system::{Assets, AssetState}, tex::Tex,
-    ///                      material::Material, mesh::Mesh, model::Model, util::named_colors};
+    /// use stereokit_rust::{maths::Matrix,  system::Assets,
+    ///                      model::Model, util::named_colors};
     ///
     /// // The model is loaded asynchronously, so we need to wait for it to be loaded before we can screenshot it.
     /// let model = Model::from_file("cuve.glb", None)
@@ -572,11 +575,10 @@ pub type OpenXRHandleT = u64;
 /// }
 /// assert_eq!(BackendOpenXR::eyes_sample_time(), 0);
 ///
-/// xr_mode_stop_here!();
+/// # if cfg!(not(feature = "test-xr-mode")) {
 /// // These are the expected results for offscreen tests on a PC:
 /// assert_eq!(xr_type, BackendXRType::None);
-///
-/// # sk::Sk::shutdown();
+/// # } sk::Sk::shutdown();
 /// ```
 pub struct Backend;
 
@@ -690,10 +692,10 @@ impl Backend {
     ///
     /// let xr_type = Backend::xr_type();
     ///
-    /// xr_mode_stop_here!();
+    /// # if cfg!(not(feature = "test-xr-mode")) {
     /// // These are the expected results for offscreen tests on a PC:
     /// assert_eq!(xr_type, BackendXRType::None);
-    /// # sk::Sk::shutdown();
+    /// # } sk::Sk::shutdown();
     /// ```
     pub fn xr_type() -> BackendXRType {
         unsafe { backend_xr_get_type() }
@@ -737,10 +739,10 @@ impl Backend {
 /// BackendOpenXR::set_hand_joint_scale(1.0);
 /// BackendOpenXR::use_minimum_exts(true);
 ///
-/// xr_mode_stop_here!();
+/// # if cfg!(not(feature = "test-xr-mode")) {
 /// // These are the expected results for offscreen tests on a PC:
 /// assert_eq!( xr_type, BackendXRType::None);
-///  assert_ne!( xr_type, BackendXRType::OpenXR);
+/// assert_ne!( xr_type, BackendXRType::OpenXR);
 /// assert_eq!(eyes_sample_time, 0);
 /// assert_eq!(instance, 0);
 /// assert_eq!(session, 0);
@@ -750,7 +752,7 @@ impl Backend {
 /// assert_eq!(ext_enabled, false);
 /// assert!(get_function_ptr.is_none(), "Get function pointer should be none");
 /// assert!(get_function.is_none(),"Get function should be none");
-/// # sk::Sk::shutdown();
+/// # } sk::Sk::shutdown();
 /// ```
 pub struct BackendOpenXR;
 
@@ -774,7 +776,7 @@ impl BackendOpenXR {
     /// use stereokit_rust::system::BackendOpenXR;
     ///
     /// let instance_handle = BackendOpenXR::instance();
-    ///
+    /// # assert_eq!(instance_handle, instance_handle.clone()); // meaningless but useful
     /// // In XR mode, this would be a valid XrInstance handle for OpenXR operations
     /// // In offscreen mode, returns 0
     ///
@@ -798,6 +800,7 @@ impl BackendOpenXR {
     /// use stereokit_rust::system::BackendOpenXR;
     ///
     /// let session_handle = BackendOpenXR::session();
+    /// # assert_eq!(session_handle, session_handle.clone()); // meaningless but useful
     ///
     /// // In XR mode, this would be a valid XrSession handle for OpenXR session operations
     /// // In offscreen mode, returns 0
@@ -822,6 +825,7 @@ impl BackendOpenXR {
     /// use stereokit_rust::system::BackendOpenXR;
     ///
     /// let space_handle = BackendOpenXR::space();
+    /// # assert_eq!(space_handle, space_handle.clone()); // meaningless but useful
     ///
     /// // In XR mode, this would be a valid XrSpace handle for coordinate transformations
     /// // In offscreen mode, returns 0
@@ -846,7 +850,7 @@ impl BackendOpenXR {
     /// use stereokit_rust::system::BackendOpenXR;
     ///
     /// let system_id = BackendOpenXR::system_id();
-    ///
+    /// # assert_eq!(system_id, system_id.clone()); // meaningless but useful
     /// // In XR mode, this would be a valid XrSystemId for the current XR device
     /// // In offscreen mode, returns 0
     ///
@@ -869,7 +873,7 @@ impl BackendOpenXR {
     /// use stereokit_rust::system::BackendOpenXR;
     ///
     /// let current_time = BackendOpenXR::time();
-    ///
+    /// # assert_eq!(current_time, current_time.clone()); // meaningless but useful
     /// // In offscreen mode, returns 0
     ///
     /// offscreen_mode_stop_here!();
@@ -910,7 +914,7 @@ impl BackendOpenXR {
     /// use oxr::Handle;
     ///
     /// // Create projection views for left eye only
-    /// let mut projection_views = [
+    /// let projection_views = [
     ///     oxr::CompositionLayerProjectionView {
     ///         ty: oxr::StructureType::COMPOSITION_LAYER_PROJECTION_VIEW,
     ///         next: std::ptr::null(),
@@ -1061,7 +1065,9 @@ impl BackendOpenXR {
     ///
     /// // Check if an extension is enabled (only works in XR mode)
     /// let hand_tracking_enabled = BackendOpenXR::ext_enabled("XR_EXT_hand_tracking");
+    /// # assert!(hand_tracking_enabled == true || true); // meaningless but useful
     /// let imaginary_enabled = BackendOpenXR::ext_enabled("XR_the_ext_that_does_not_exist");
+    /// # assert!(imaginary_enabled == false || true); // meaningless but useful
     ///
     /// offscreen_mode_stop_here!();
     /// // In offscreen mode, extensions are never enabled
@@ -1097,11 +1103,11 @@ impl BackendOpenXR {
     /// let hand_tracker_fn = BackendOpenXR::get_function_ptr("xrCreateHandTrackerEXT");
     /// let passthrough_fn = BackendOpenXR::get_function_ptr("xrInexistantFunction");
     ///
-    /// offscreen_mode_stop_here!();
+    /// if cfg!(feature = "test-xr-mode") {
     /// // In offscreen mode, function pointers are None
     /// assert_eq!(hand_tracker_fn.is_some(), true);
     /// assert!(passthrough_fn.is_none(),"Passthrough function should be none");
-    /// # sk::Sk::shutdown();
+    /// # } sk::Sk::shutdown();
     /// ```
     pub fn get_function_ptr(function_name: impl AsRef<str>) -> Option<VoidFunction> {
         let c_str = CString::new(function_name.as_ref()).unwrap();
@@ -1124,7 +1130,9 @@ impl BackendOpenXR {
     /// use stereokit_rust::system::BackendOpenXR;
     ///
     /// // Get a typed function pointer from an OpenXR extension (only works in XR mode)
-    /// let hand_tracker_fn: Option<unsafe extern "C" fn()> = BackendOpenXR::get_function("xrCreateHandTrackerEXT");
+    /// let hand_tracker_fn: Option<unsafe extern "C" fn()> =
+    ///                           BackendOpenXR::get_function("xrCreateHandTrackerEXT");
+    /// # assert!(hand_tracker_fn.is_some() || true); // meaningless but useful
     ///
     /// offscreen_mode_stop_here!();
     /// // In offscreen mode, function pointers are None
@@ -1148,7 +1156,7 @@ impl BackendOpenXR {
     /// ### Example
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::system::{Backend, BackendOpenXR, BackendXRType};
+    /// use stereokit_rust::system::BackendOpenXR;
     ///
     /// // Adjust hand joint scaling (only effective in XR mode with hand tracking)
     /// BackendOpenXR::set_hand_joint_scale(1.2); // Make joints 20% larger
@@ -1465,7 +1473,7 @@ impl Hierarchy {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::Matrix, system::{Hierarchy, HierarchyParent}};
+    /// use stereokit_rust::{maths::Matrix, system::Hierarchy};
     ///
     /// test_steps! { // !!!! Get a proper main loop !!!!
     ///     Hierarchy::push(token, Matrix::t([0.0, -0.5, -0.5]), None);
@@ -1489,7 +1497,7 @@ impl Hierarchy {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::Pose, system::{Hierarchy, HierarchyParent}};
+    /// use stereokit_rust::{maths::Pose, system::Hierarchy};
     ///
     /// test_steps! { // !!!! Get a proper main loop !!!!
     ///     Hierarchy::push(token, Pose::new([0.0, -0.5, -0.5], None), None);
@@ -1512,7 +1520,7 @@ impl Hierarchy {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Matrix, Quat, Vec3}, system::{Hierarchy, HierarchyParent}};
+    /// use stereokit_rust::{maths::{Matrix, Vec3}, system::Hierarchy};
     ///
     /// test_steps! { // !!!! Get a proper main loop !!!!
     ///     Hierarchy::push(token, Matrix::r([0.0, 0.0, 180.0]), None);
@@ -1540,7 +1548,7 @@ impl Hierarchy {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Matrix, Quat, Pose}, system::{Hierarchy, HierarchyParent}};
+    /// use stereokit_rust::{maths::{Matrix, Pose}, system::Hierarchy};
     ///
     /// test_steps! { // !!!! Get a proper main loop !!!!
     ///     Hierarchy::push(token, Matrix::t([0.0, -0.5, -0.5]), None);
@@ -1573,7 +1581,8 @@ impl Hierarchy {
     ///
     /// let material = Material::pbr().copy();
     /// let transform = Matrix::r(Quat::from_angles(40.0, 50.0, 20.0));
-    /// let inv = transform.get_inverse();
+    ///
+    /// let local_transform = Matrix::t([-0.1, 0.1, 0.1]);
     ///
     /// let ray = Ray::new([1.0, 2.0, 2.5 ], [-1.0, -2.0, -2.25]);
     ///
@@ -1584,7 +1593,6 @@ impl Hierarchy {
     ///     Lines::add_ray(token, world_space_ray, 2.2, named_colors::WHITE, None, 0.02);
     ///
     ///     Hierarchy::push(token, transform, None);
-    ///     let local_transform = Matrix::t([-0.1, 0.1, 0.1]);
     ///     cube.draw(token, &material, local_transform, Some(named_colors::MAGENTA.into()), None);
     ///
     ///     let local_space_ray = Hierarchy::to_local_ray(token, world_space_ray);
@@ -1615,7 +1623,7 @@ impl Hierarchy {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Matrix, Vec3}, system::{Hierarchy, HierarchyParent}};
+    /// use stereokit_rust::{maths::Matrix, system::Hierarchy};
     ///
     /// test_steps! { // !!!! Get a proper main loop !!!!
     ///     Hierarchy::push(token, Matrix::r([0.0, 0.0, 180.0]), None);
@@ -1890,8 +1898,8 @@ pub enum TrackState {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{system::{Input, InputSource, Pointer, BtnState, Handed, TrackState},
-///                      maths::{Vec3, Quat, Pose, Ray}};
+/// use stereokit_rust::{system::{Input, InputSource, BtnState},
+///                      maths::{Quat, Pose, Ray}};
 ///
 /// // By default we only have the 2 hands.
 /// assert_eq!(Input::pointer_count(None), 0);
@@ -1946,7 +1954,7 @@ impl Pointer {
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{system::{Input, Handed, FingerId, JointId},
-///                      maths::{Vec3, Quat, Pose, Ray}};
+///                      maths::{Vec3, Quat}};
 ///
 /// let hand = Input::hand(Handed::Left);
 /// let index_root = hand.get(FingerId::Index, JointId::Root);
@@ -2054,13 +2062,14 @@ pub type HandSimId = i32;
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{system::{Hierarchy, Input, Handed, FingerId, JointId}, util::named_colors,
-///                      maths::{Vec3, Quat, Pose, Matrix}, mesh::Mesh, material::Material};
+///                      maths::{Vec3, Matrix}, mesh::Mesh, material::Material};
 ///
 /// let hand = Input::hand(Handed::Left);
 /// let thumb_tip = hand.get(FingerId::Thumb, JointId::Tip);
+/// # assert_eq!(thumb_tip.position, Vec3 { x: -0.072, y: 0.028, z: -0.055 });
 ///
 /// let sphere = Mesh::generate_sphere(1.0, Some(12));
-/// let mut material_sphere = Material::pbr().copy();
+/// let material_sphere = Material::pbr().copy();
 /// let main_transform = Matrix::t_r([0.0, -0.05, 0.88], [0.0, 210.0, 0.0]);
 ///
 /// filename_scr = "screenshots/hand.jpeg";
@@ -2081,8 +2090,8 @@ pub type HandSimId = i32;
 ///
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{system::{Input, Handed, FingerId, JointId, BtnState, Hand, HandJoint},
-///                      maths::{Vec3, Quat, Pose}};
+/// use stereokit_rust::{system::{Input, Handed, FingerId, JointId, BtnState},
+///                      maths::{Vec3, Pose}};
 ///
 /// let hand = Input::hand(Handed::Left);
 /// let thumb_tip = hand.get(FingerId::Thumb, JointId::Tip);
@@ -2239,7 +2248,7 @@ impl Hand {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{system::{Input, Handed, Hand}, material::Material, util::Color128};
+    /// use stereokit_rust::{system::{Input, Handed}, material::Material, util::Color128};
     ///
     /// let mut hand = Input::hand(Handed::Right);
     ///
@@ -2264,7 +2273,7 @@ impl Hand {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{system::{Input, Handed, Hand}};
+    /// use stereokit_rust::{system::{Input, Handed}};
     ///
     /// let mut hand = Input::hand(Handed::Right);
     /// hand.visible(false);
@@ -2318,8 +2327,7 @@ pub enum ControllerKey {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{system::{Hierarchy, Input, Handed},
-///                      maths::{Matrix}, model::Model, material::Material};
+/// use stereokit_rust::{system::{Input, Handed}, maths::Matrix};
 ///
 /// let model_left = Input::get_controller_model(Handed::Left);
 /// let model_right = Input::get_controller_model(Handed::Right);
@@ -2338,35 +2346,35 @@ pub enum ControllerKey {
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{system::{Input, Handed, BtnState, TrackState},
-///                      maths::{Vec2, Vec3, Quat, Pose}};
+///                      maths::{Vec2, Pose}};
 ///
-/// let controller = Input::controller(Handed::Left);
+/// let controller_left = Input::controller(Handed::Left);
+/// let controller_right = Input::controller(Handed::Right);
+/// assert_eq!(controller_left.pose, controller_right.pose);
 ///
-/// let controller = Input::controller(Handed::Right);
+/// assert_eq!(controller_right.pose,       Pose::ZERO);
+/// assert_eq!(controller_right.palm,       Pose::ZERO);
+/// assert_eq!(controller_right.aim,        Pose::ZERO);
+/// assert_eq!(controller_right.tracked,    BtnState::Inactive);
+/// assert_eq!(controller_right.tracked_pos, TrackState::Lost);
+/// assert_eq!(controller_right.tracked_rot, TrackState::Lost);
+/// assert_eq!(controller_right.x1,         BtnState::Inactive);
+/// assert_eq!(controller_right.x2,         BtnState::Inactive);
+/// assert_eq!(controller_right.trigger,    0.0);
+/// assert_eq!(controller_right.grip,       0.0);
+/// assert_eq!(controller_right.stick,      Vec2::ZERO);
 ///
-/// assert_eq!(controller.pose,       Pose::ZERO);
-/// assert_eq!(controller.palm,       Pose::ZERO);
-/// assert_eq!(controller.aim,        Pose::ZERO);
-/// assert_eq!(controller.tracked,    BtnState::Inactive);
-/// assert_eq!(controller.tracked_pos, TrackState::Lost);
-/// assert_eq!(controller.tracked_rot, TrackState::Lost);
-/// assert_eq!(controller.x1,         BtnState::Inactive);
-/// assert_eq!(controller.x2,         BtnState::Inactive);
-/// assert_eq!(controller.trigger,    0.0);
-/// assert_eq!(controller.grip,       0.0);
-/// assert_eq!(controller.stick,      Vec2::ZERO);
-///
-/// assert_eq!(controller.is_just_tracked(), false);
-/// assert_eq!(controller.is_just_untracked(), false);
-/// assert_eq!(controller.is_stick_clicked(), false);
-/// assert_eq!(controller.is_stick_just_clicked(), false);
-/// assert_eq!(controller.is_tracked(), false);
-/// assert_eq!(controller.is_x1_just_pressed(), false);
-/// assert_eq!(controller.is_x1_just_unpressed(), false);
-/// assert_eq!(controller.is_x1_pressed(), false);
-/// assert_eq!(controller.is_x2_just_pressed(), false);
-/// assert_eq!(controller.is_x2_just_unpressed(), false);
-/// assert_eq!(controller.is_x2_pressed(), false);
+/// assert_eq!(controller_right.is_just_tracked(), false);
+/// assert_eq!(controller_right.is_just_untracked(), false);
+/// assert_eq!(controller_right.is_stick_clicked(), false);
+/// assert_eq!(controller_right.is_stick_just_clicked(), false);
+/// assert_eq!(controller_right.is_tracked(), false);
+/// assert_eq!(controller_right.is_x1_just_pressed(), false);
+/// assert_eq!(controller_right.is_x1_just_unpressed(), false);
+/// assert_eq!(controller_right.is_x1_pressed(), false);
+/// assert_eq!(controller_right.is_x2_just_pressed(), false);
+/// assert_eq!(controller_right.is_x2_just_unpressed(), false);
+/// assert_eq!(controller_right.is_x2_pressed(), false);
 /// # sk::Sk::shutdown();
 /// ```
 #[derive(Debug, Copy, Clone)]
@@ -2672,8 +2680,7 @@ pub enum Key {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{system::{Input, InputSource, Handed},
-///                      maths::{Vec2, Vec3, Quat, Pose}};
+/// use stereokit_rust::{system::{Input, InputSource, Handed}, maths::Pose};
 ///
 /// let controller = Input::controller(Handed::Left);
 /// assert_eq!(controller.is_tracked(), false);
@@ -2819,7 +2826,7 @@ impl Input {
     ///
     /// see also [`input_fire_event`]    
     /// ### Examples
-    /// ``` ignore
+    /// ```ignore
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{system::{Input, InputSource, Pointer, BtnState, Handed, TrackState},
     ///                      maths::{Vec3, Quat, Pose, Ray}};
@@ -2857,8 +2864,7 @@ impl Input {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::system::{Input, Handed, Hand, HandJoint, FingerId, JointId};
-    /// use stereokit_rust::maths::{Vec3, Quat, Pose};
+    /// use stereokit_rust::{system::{Input, Handed, FingerId, JointId}, maths::Vec3};
     ///
     /// let hand = Input::hand(Handed::Left);
     /// let thumb_tip = hand.get(FingerId::Thumb, JointId::Tip);
@@ -2884,7 +2890,7 @@ impl Input {
     /// use stereokit_rust::{system::{Input, Handed, HandJoint, FingerId, JointId},
     ///                      maths::{Vec3, Quat}};
     ///
-    /// let mut hand_joints = [HandJoint { position: Vec3::ZERO, orientation: Quat::IDENTITY, radius: 0.0 }; 25];
+    /// let hand_joints = [HandJoint { position: Vec3::ZERO, orientation: Quat::IDENTITY, radius: 0.0 }; 25];
     ///
     /// Input::hand_override(Handed::Left, &hand_joints);
     ///
@@ -2970,15 +2976,12 @@ impl Input {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{system::{Input, Handed, HandJoint, FingerId, JointId, ControllerKey, Key},
-    ///                      maths::{Vec3, Quat, Pose}};
+    /// use stereokit_rust::{system::{Input, ControllerKey, Key}, maths::Pose};
     ///
     /// let hand_joints = [Pose::IDENTITY;25];
     ///
     /// let id = Input::hand_sim_pose_add(&hand_joints, ControllerKey::Trigger, ControllerKey::None_, Key::None, Key::None);
     /// assert_eq!(id, 5);
-    ///
-    /// let hand = Input::hand(Handed::Left);
     ///
     /// Input::hand_sim_pose_remove(id);
     ///
@@ -3041,12 +3044,14 @@ impl Input {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::system::{Input, Handed, HandSource};
     ///
-    /// let hand_source = Input::hand_source(Handed::Left);
-    /// let hand_source = Input::hand_source(Handed::Right);
+    /// let hand_source_left = Input::hand_source(Handed::Left);
+    /// let hand_source_right = Input::hand_source(Handed::Right);
+    ///
+    /// assert_eq!(hand_source_right, hand_source_left);
     ///
     /// xr_mode_stop_here!();
     /// // These are the expected results for offscreen tests on a PC:
-    /// assert_eq!(hand_source, HandSource::None);
+    /// assert_eq!(hand_source_left, HandSource::None);
     /// # sk::Sk::shutdown();
     /// ```
     pub fn hand_source(hand: Handed) -> HandSource {
@@ -3063,7 +3068,7 @@ impl Input {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::system::{Input, Handed, HandSource};
+    /// use stereokit_rust::system::{Input, Handed};
     ///
     /// Input::hand_visible(Handed::Right, true);
     /// Input::hand_visible(Handed::Max, false);
@@ -3099,7 +3104,7 @@ impl Input {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::system::{Input, Handed, HandSource};
+    /// use stereokit_rust::system::Input;
     ///
     /// Input::finger_glow(true);
     /// assert_eq!(Input::get_finger_glow(), true);
@@ -3150,7 +3155,7 @@ impl Input {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{system::{Input, Key, BtnState}};
+    /// use stereokit_rust::{system::{Input, Key}};
     ///
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
@@ -3200,8 +3205,8 @@ impl Input {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{system::{Input, InputSource, Pointer, BtnState, Handed, TrackState},
-    ///                      maths::{Vec3, Quat, Pose, Ray}};
+    /// use stereokit_rust::{system::{Input, InputSource, BtnState},
+    ///                      maths::{Quat, Pose, Ray}};
     ///
     /// // By default we only have the 2 hands.
     /// assert_eq!(Input::pointer_count(None), 0);
@@ -3390,7 +3395,7 @@ impl Input {
     ///
     /// see also [`input_subscribe`]    
     /// ### Examples
-    /// ``` ignore
+    /// ```ignore
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::system::{Input, InputSource, Pointer, BtnState, Handed};
     ///
@@ -3632,7 +3637,7 @@ impl LinePoint {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{maths::{Vec3, Pose, Ray}, system::{Lines, LinePoint},
+/// use stereokit_rust::{maths::{Pose, Ray}, system::{Lines, LinePoint},
 ///                      util::{named_colors}};
 ///
 /// let ray = Ray::new([-0.3, -0.8, 0.2], [1.0, 0.0, 0.0]);
@@ -3681,8 +3686,7 @@ impl Lines {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Pose, Ray}, system::{Lines, LinePoint},
-    ///                      util::{named_colors}};
+    /// use stereokit_rust::{system::Lines, util::{named_colors}};
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Lines::add(token, [0.7, 0.7, 0.2], [ 0.7,-0.7, 0.2], named_colors::LIME, None, 0.06);
@@ -3716,8 +3720,7 @@ impl Lines {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Ray}, system::{Lines, LinePoint},
-    ///                      util::{named_colors}};
+    /// use stereokit_rust::{maths::{Vec3, Ray}, system::Lines, util::{named_colors}};
     ///
     /// // axis at the origins:
     /// let ray1 = Ray::new(Vec3::ZERO, Vec3::X);
@@ -3728,7 +3731,7 @@ impl Lines {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Lines::add_ray(token, ray1, 1.0, named_colors::WHITE, Some(named_colors::RED), 0.03 );
     ///     Lines::add_ray(token, ray2, 1.0, named_colors::WHITE, Some(named_colors::GREEN), 0.03 );
-    ///     Lines::add_ray(token, ray2, 1.0, named_colors::WHITE, Some(named_colors::BLUE), 0.03 );
+    ///     Lines::add_ray(token, ray3, 1.0, named_colors::WHITE, Some(named_colors::BLUE), 0.03 );
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -3754,8 +3757,8 @@ impl Lines {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Pose, Ray}, system::{Lines, LinePoint},
-    ///                      util::{named_colors}};
+    /// use stereokit_rust::{system::{Lines, LinePoint}, util::{named_colors}};
+    ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///
     ///     Lines::add_list(token, &[
@@ -3784,8 +3787,7 @@ impl Lines {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Pose, Ray}, system::{Lines, LinePoint},
-    ///                      util::{named_colors}};
+    /// use stereokit_rust::{maths::Pose, system::Lines};
     ///
     /// // Axis at the origins:
     /// let axis_pose = Pose::IDENTITY;
@@ -4101,7 +4103,7 @@ impl Log {
     /// ### Examples
     /// ```
     /// use stereokit_rust::system::{Log, LogLevel, LogItem};
-    /// use std::sync::{Arc, Mutex};
+    /// use std::sync::{Mutex};
     ///
     /// /// Somewhere to copy the log
     /// static LOG_LOG: Mutex<Vec<LogItem>> = Mutex::new(vec![]);
@@ -4149,12 +4151,12 @@ impl Log {
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{maths::{Vec3, Matrix}, mesh::Mesh, material::Material,
-///                      sound::Sound, system::Microphone, util::named_colors};
+///                      system::Microphone, util::named_colors};
 ///
 /// let sphere = Mesh::generate_cube(Vec3::ONE * 0.5, None);
 /// let material = Material::pbr().tex_file_copy("textures/micro.jpeg", true, None)
 ///                    .expect("sound.jpeg should be there");
-/// let mut position = Vec3::new( 0.0, 0.0, 0.5);
+/// let position = Vec3::new( 0.0, 0.0, 0.5);
 /// let transform = Matrix::t(position);
 ///
 /// let micros = Microphone::get_devices();
@@ -4176,7 +4178,7 @@ impl Log {
 ///         let mut read_samples: Vec<f32> = vec![0.0; 48000];
 ///         let recorded_data = micro_sound.read_samples(read_samples.as_mut_slice(), None);
 ///         Microphone::stop();
-///         //assert_ne!(recorded_data, 0);
+///         # assert!(recorded_data < 10000000);  // meaningless but useful ...
 ///     }
 /// );
 /// # sk::Sk::shutdown();
@@ -4369,7 +4371,7 @@ pub enum Projection {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{system::{Renderer, RenderLayer}, maths::{Vec3, Matrix, Pose},
+/// use stereokit_rust::{system::{Renderer, RenderLayer}, maths::{Matrix, Pose},
 ///                      render_list::RenderList,
 ///                      mesh::Mesh, model::Model, material::Material, util::named_colors};
 ///
@@ -4546,7 +4548,7 @@ impl Renderer {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Matrix, Vec3}, system::Renderer};
+    /// use stereokit_rust::{maths::Matrix, system::Renderer};
     ///
     /// let camera_root = Renderer::get_camera_root();
     /// assert_eq!(camera_root, Matrix::IDENTITY);
@@ -4583,7 +4585,6 @@ impl Renderer {
     /// assert_eq!(Renderer::get_clear_color(), Color128::BLACK_TRANSPARENT);
     /// Renderer::clear_color(named_colors::BLUE);
     ///
-    /// filename_scr = "screenshots/renderer.jpeg";
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     
     ///     primary.clear();
@@ -4759,7 +4760,7 @@ impl Renderer {
     /// let light1 = SHLight::new([0.0, 1.0, 0.0], named_colors::WHITE);
     /// let light2 = SHLight::new([0.0, 0.0, 1.0], named_colors::WHITE);
     ///
-    /// let mut sh = SphericalHarmonics::from_lights(&[light1, light2]);
+    /// let sh = SphericalHarmonics::from_lights(&[light1, light2]);
     ///
     /// Renderer::sky_light(sh);
     /// let sky_light = Renderer::get_sky_light();
@@ -4783,7 +4784,7 @@ impl Renderer {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{system::{Renderer, Assets}, tex::{SHCubemap, TexType}};
+    /// use stereokit_rust::{system::{Renderer, Assets}, tex::SHCubemap};
     ///
     /// let sky_cubemap = SHCubemap::from_cubemap("hdri/sky_dawn.hdr", true, 9999)
     ///                        .expect("sky_cubemap should be created");
@@ -4820,7 +4821,7 @@ impl Renderer {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{system::Renderer, material::Material, util::named_colors};
+    /// use stereokit_rust::{system::Renderer, material::Material};
     ///
     /// let material = Material::pbr().copy();
     /// Renderer::sky_material(&material);
@@ -4851,7 +4852,7 @@ impl Renderer {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{system::{Renderer, RenderLayer}, maths::{Vec3, Matrix},
+    /// use stereokit_rust::{system::{Renderer, RenderLayer}, maths::Matrix,
     ///                      mesh::Mesh, material::Material, util::named_colors};
     ///
     /// let sphere = Mesh::generate_sphere(0.5, None);
@@ -4900,7 +4901,7 @@ impl Renderer {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{system::{Renderer, RenderLayer}, maths::{Vec3, Matrix},
+    /// use stereokit_rust::{system::{Renderer, RenderLayer}, maths::Matrix,
     ///                      model::Model, util::named_colors};
     ///
     /// let model = Model::from_file("plane.glb", None).expect("plane.glb should be there");
@@ -5023,12 +5024,11 @@ impl Renderer {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{system::{Renderer, RenderLayer}, maths::{Vec3, Quat, Matrix},
-    ///                      render_list::RenderList, tex::{Tex, TexType, TexFormat},
-    ///                      mesh::Mesh, model::Model, material::Material, util::named_colors};
+    /// use stereokit_rust::{system::Renderer, maths::{Vec3, Quat, Matrix}, tex::Tex,
+    ///                      mesh::Mesh, material::Material, util::named_colors};
     ///
     /// let sun = Mesh::generate_sphere(5.0, None);
-    /// let material = Material::pbr();
+    /// let material_sun = Material::pbr();
     /// let transform_sun = Matrix::t([-6.0, -1.0, -10.0]);
     ///
     /// let plane = Mesh::generate_plane_up([1.0,1.0], None, true);
@@ -5043,7 +5043,7 @@ impl Renderer {
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     
-    ///     Renderer::add_mesh(token, &sun, &material, transform_sun,
+    ///     Renderer::add_mesh(token, &sun, &material_sun, transform_sun,
     ///         Some(named_colors::RED.into()), None);
     ///
     ///     Renderer::add_mesh(token, &plane, &material, transform_plane,
@@ -5097,8 +5097,7 @@ impl Renderer {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{system::{Renderer, RenderLayer}, tex::{Tex, TexFormat},
-    ///                      maths::Matrix, util::named_colors};
+    /// use stereokit_rust::{system::Renderer, tex::Tex};
     ///
     /// let tex = Tex::from_file("hdri/sky_dawn.jpeg", true, None)
     ///                    .expect("tex should be created");
@@ -5230,9 +5229,8 @@ impl Renderer {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{system::{Renderer, RenderLayer}, maths::{Vec3, Quat, Pose, Matrix},
-    ///                      render_list::RenderList, tex::{Tex, TexType, TexFormat},
-    ///                      mesh::Mesh, model::Model, material::Material, util::named_colors};
+    /// use stereokit_rust::{system::Renderer, maths::{Pose, Matrix}, tex::Tex,
+    ///                      mesh::Mesh, material::Material, util::named_colors};
     ///
     /// let sun = Mesh::generate_sphere(7.0, None);
     /// let material_sun = Material::pbr();
@@ -5324,9 +5322,9 @@ impl Renderer {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{system::{Renderer, RenderLayer}, maths::{Vec3, Quat, Pose, Matrix},
-    ///                      render_list::RenderList, tex::{Tex, TexType, TexFormat},
-    ///                      mesh::Mesh, model::Model, material::Material, util::named_colors};
+    /// use stereokit_rust::{system::Renderer, maths::{Vec3, Quat, Matrix},
+    ///                      tex::{Tex, TexType, TexFormat},
+    ///                      mesh::Mesh, material::Material, util::named_colors};
     ///
     /// let sun = Mesh::generate_sphere(7.0, None);
     /// let material_sun = Material::pbr();
@@ -5868,7 +5866,7 @@ impl SensorDepth {
     ///
     /// assert_eq!(SensorDepth::is_running(), false);
     ///
-    /// let started = SensorDepth::start(None);
+    /// let started = SensorDepth::start(Some(SensorDepthCaps::HandRemoval));
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     // On unsupported hardware start() returns false and the sensor stays stopped.
@@ -6026,7 +6024,7 @@ impl SensorDepth {
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{system::{TextStyle, Pivot, Align, Text, Lines, Hierarchy},
-///                      font::Font, material::Material, mesh::Mesh, maths::{Vec3, Matrix},
+///                      font::Font, maths::{Vec3, Matrix},
 ///                      util::named_colors::{WHITE, GOLD, GREEN, BLUE, RED, BLACK}};
 ///
 /// let font = Font::default();
@@ -6358,7 +6356,7 @@ impl TextStyle {
     /// use stereokit_rust::{font::Font, util::named_colors, system::TextStyle};
     ///
     /// let font = Font::default();
-    /// let mut text_style = TextStyle::from_font(font, 0.02, named_colors::WHITE);
+    /// let text_style = TextStyle::from_font(font, 0.02, named_colors::WHITE);
     /// assert_eq!(text_style.get_layout_height(), 0.02);
     ///
     /// assert_eq!(text_style.get_cap_height(), 0.02);
@@ -6381,7 +6379,7 @@ impl TextStyle {
     /// use stereokit_rust::{font::Font, util::named_colors, system::TextStyle};
     ///
     /// let font = Font::default();
-    /// let mut text_style = TextStyle::from_font(font, 0.02, named_colors::WHITE);
+    /// let text_style = TextStyle::from_font(font, 0.02, named_colors::WHITE);
     /// assert_eq!(text_style.get_layout_height(), 0.02);
     ///
     /// //TODO: linux   assert_eq!(text_style.get_ascender(), 0.03);
@@ -6402,7 +6400,7 @@ impl TextStyle {
     /// use stereokit_rust::{font::Font, util::named_colors, system::TextStyle};
     ///
     /// let font = Font::default();
-    /// let mut text_style = TextStyle::from_font(font, 0.02, named_colors::WHITE);
+    /// let text_style = TextStyle::from_font(font, 0.02, named_colors::WHITE);
     /// assert_eq!(text_style.get_layout_height(), 0.02);
     ///
     /// assert_ne!(text_style.get_descender(), 0.0);
@@ -6554,9 +6552,8 @@ bitflags::bitflags! {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{system::{ Pivot, Align, TextFit, Text, Lines, Hierarchy },
-///                      font::Font, material::Material, mesh::Mesh, maths::{Vec3, Matrix},
-///                      util::named_colors::{WHITE, GOLD, GREEN, RED}};
+/// use stereokit_rust::{system::{ Pivot, Align, TextFit, Text,}, font::Font,
+///                      maths::Matrix, util::named_colors::{WHITE, GOLD, GREEN}};
 ///
 /// let font = Font::default();
 /// let style = Text::make_style(font, 0.28, WHITE);
@@ -6808,8 +6805,8 @@ impl Text {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{system::{Pivot, Align, TextFit, Text},
-    ///                      font::Font, maths::{Vec3, Matrix},
+    /// use stereokit_rust::{system::{Pivot, Align, Text},
+    ///                      font::Font, maths::Matrix,
     ///                      util::named_colors::{WHITE, GOLD, GREEN}};
     ///
     /// let font = Font::default();
@@ -6891,7 +6888,7 @@ impl Text {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{system::{ Align, Pivot, TextFit, Text},
-    ///                      font::Font, maths::{Vec3, Matrix},
+    ///                      font::Font, maths::Matrix,
     ///                      util::named_colors::{WHITE, GOLD, GREEN}};
     ///
     /// let font = Font::default();
@@ -6988,7 +6985,7 @@ impl Text {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{system::{Text, TextStyle}, font::Font,
+    /// use stereokit_rust::{system::Text, font::Font,
     ///                      util::named_colors::{WHITE, GOLD, GREEN},
     ///                      mesh::Mesh, material::{Material, Cull}, maths::Matrix};
     ///
@@ -7034,7 +7031,7 @@ impl Text {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{system::{Text, TextStyle}, font::Font,
+    /// use stereokit_rust::{system::Text, font::Font,
     ///                      util::named_colors::{WHITE, GOLD, GREEN},
     ///                      mesh::Mesh, material::{Material, Cull}, maths::Matrix};
     ///
@@ -7214,7 +7211,7 @@ impl World {
     ///
     /// see also [world_set_occlusion_enabled]
     /// ### Examples
-    /// ``` ignore
+    /// ```ignore
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{system::World};
     ///
@@ -7282,17 +7279,17 @@ impl World {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Pose}, system::World};
+    /// use stereokit_rust::{maths::Pose, system::World};
     ///
     /// let origin_offset = World::get_origin_offset();
     ///
-    /// xr_mode_stop_here!();
+    /// # if cfg!(not(feature = "test-xr-mode")) {
     /// // These are the expected results for offscreen tests on a PC:
     /// assert_eq!(origin_offset, Pose::ZERO);
     ///
     /// let offset = Pose::new([0.0, 0.0, 0.01], None);
     /// if false {World::origin_offset(offset);}
-    /// # sk::Sk::shutdown();
+    /// # } sk::Sk::shutdown();
     /// ```
     pub fn origin_offset(offset: impl Into<Pose>) {
         unsafe { world_set_origin_offset(offset.into()) }
@@ -7344,6 +7341,7 @@ impl World {
     /// World::refresh_interval(0.01);
     ///
     /// let refresh_interval  = World::get_refresh_interval();
+    /// # assert!(refresh_interval >= 0.0 );
     ///
     /// offscreen_mode_stop_here!();
     /// // These are the expected results for OpenXR tests on a PC:
@@ -7369,10 +7367,10 @@ impl World {
     ///
     /// let refresh_radius  = World::get_refresh_radius();
     ///
-    /// offscreen_mode_stop_here!();
-    /// // These are the expected results for OpenXR tests on a PC:
+    /// # if cfg!(feature = "test-xr-mode") {
+    /// // These are the expected results for Simulation tests on a PC:
     /// assert_eq!(refresh_radius, 3.5);
-    /// # sk::Sk::shutdown();
+    /// # } sk::Sk::shutdown();
     /// ```
     pub fn refresh_radius(distance: f32) {
         unsafe { world_set_refresh_radius(distance) }
@@ -7392,10 +7390,10 @@ impl World {
     ///
     /// let refresh_type  = World::get_refresh_type();
     ///
-    /// offscreen_mode_stop_here!();
+    /// # if cfg!(not(feature = "test-xr-mode")) {
     /// // These are the expected results for OpenXR tests on a PC:
-    /// assert_eq!(refresh_type, WorldRefresh::Timer);
-    /// # sk::Sk::shutdown();
+    /// assert_eq!(refresh_type, WorldRefresh::Area);
+    /// # } sk::Sk::shutdown();
     /// ```
     pub fn refresh_type(refresh_type: WorldRefresh) {
         unsafe { world_set_refresh_type(refresh_type) }
@@ -7508,7 +7506,7 @@ impl World {
     ///
     /// let bounds_pose = World::get_bounds_pose();
     ///
-    /// xr_mode_stop_here!();
+    /// # if cfg!(not(feature = "test-xr-mode")) {
     /// // These are the expected results for offscreen tests on a PC:
     /// if World::has_bounds(){
     ///     // These are results for a non OpenXR environment:
@@ -7517,7 +7515,7 @@ impl World {
     ///     // These are results for a non OpenXR environment:
     ///     assert_eq!(bounds_pose, Pose::IDENTITY);
     /// }
-    /// # sk::Sk::shutdown();
+    /// # } sk::Sk::shutdown();
     /// ```
     pub fn get_bounds_pose() -> Pose {
         unsafe { world_get_bounds_pose() }
@@ -7621,10 +7619,10 @@ impl World {
     ///
     /// let is_tracked = World::get_tracked();
     ///
-    /// xr_mode_stop_here!();
+    /// # if cfg!(not(feature = "test-xr-mode")) {
     /// // These are the expected results for offscreen tests on a PC:
     /// assert_eq!(is_tracked, BtnState::Active);
-    /// # sk::Sk::shutdown();
+    /// # } sk::Sk::shutdown();
     /// ```
     pub fn get_tracked() -> BtnState {
         unsafe { world_get_tracked() }

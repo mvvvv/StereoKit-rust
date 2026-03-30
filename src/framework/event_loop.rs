@@ -72,6 +72,12 @@ pub struct EventLoop<T: 'static> {
     proxy: EventLoopProxy<T>,
 }
 
+impl<T> Default for EventLoop<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T> EventLoop<T> {
     /// Create a new event loop with an MPSC channel for user events.
     pub fn new() -> Self {
@@ -126,8 +132,8 @@ enum SleepPhase {
 /// ```
 /// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 ///
-/// use stereokit_rust::{maths::{Matrix, Pose},  model::Model, system::Renderer, system::Log,
-///                      material::Material, tools::title::Title, util::named_colors,
+/// use stereokit_rust::{maths::Matrix,  model::Model, system::Log,
+///                      material::Material, tools::title::Title,
 ///                      framework::{SkClosures, StepperAction}, sk::QuitReason};
 ///
 /// let model = Model::from_file("cuve.glb", None).expect("Missing cube.glb").copy();
@@ -135,7 +141,7 @@ enum SleepPhase {
 ///     .expect("Missing shader");
 /// let transform = Matrix::t_r([0.0, 0.0, -6.5], [90.0, 0.0, 0.0]);
 ///
-/// let mut title = Title::new("SkClosures", None, None, None);
+/// let title = Title::new("SkClosures", None, None, None);
 /// sk.send_event(StepperAction::add("Title_ID", title));
 ///
 /// let mut iter = 0;
@@ -163,7 +169,7 @@ enum SleepPhase {
 ///     if let Ok(duration) = now.duration_since(hidden_time) {
 ///         if duration.as_secs() > 15 {
 ///             Log::info("HIDDEN STEP -------> Dreaming ");
-///             hidden_time = now;hidden_time = now;
+///             hidden_time = now;
 ///         }
 ///     }
 /// })
@@ -249,7 +255,7 @@ impl<'a> SkClosures<'a> {
     /// ```
     /// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     ///
-    /// use stereokit_rust::{maths::{Matrix, Pose},  model::Model, system::Renderer, system::Log,
+    /// use stereokit_rust::{maths::Matrix,  model::Model, system::Log,
     ///                      framework::SkClosures , sk::QuitReason};
     ///
     /// let model = Model::from_file("cuve.glb", None).expect("Missing cube.glb").copy();
@@ -298,7 +304,7 @@ impl<'a> SkClosures<'a> {
     /// ```
     /// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     ///
-    /// use stereokit_rust::{maths::{Matrix, Pose},  model::Model, system::Renderer, system::Log,
+    /// use stereokit_rust::{maths::Matrix,  model::Model, system::Log,
     ///                      framework::SkClosures , sk::QuitReason};
     ///
     /// let model = Model::from_file("cuve.glb", None).expect("Missing cube.glb").copy();
@@ -321,7 +327,7 @@ impl<'a> SkClosures<'a> {
     ///     if let Ok(duration) = now.duration_since(hidden_time) {
     ///         if duration.as_secs() > 15 {
     ///             Log::info("HIDDEN STEP -------> Dreaming ");
-    ///             hidden_time = now;hidden_time = now;
+    ///             hidden_time = now;
     ///         }
     ///     }
     /// })
@@ -449,7 +455,7 @@ impl<'a> SkClosures<'a> {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{ font::Font, material::Material, maths::{Matrix, Quat, Vec3},
+/// use stereokit_rust::{ font::Font, material::Material, maths::{Matrix, Vec3},
 ///                       mesh::Mesh, system::{Text, TextStyle}, util::named_colors};
 ///
 /// /// The basic Stepper.
@@ -566,7 +572,7 @@ pub trait IStepper {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{maths::{Vec3, Matrix}, util::named_colors,
+/// use stereokit_rust::{maths::Matrix, util::named_colors,
 ///     tools::{title::Title, screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW}}, };
 /// use std::any::TypeId; // we need this to remove all the steppers of a given type.
 ///
@@ -641,7 +647,7 @@ impl StepperAction {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::tools::screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW};
+    /// use stereokit_rust::tools::screenshot::ScreenshotViewer;
     ///
     /// sk.send_event(StepperAction::add_default::<ScreenshotViewer>("ScreenshotViewer_ID"));
     ///
@@ -649,7 +655,7 @@ impl StepperAction {
     ///     if iter < number_of_steps + 2 {
     ///         assert_eq!(sk.get_steppers_count(), 1);
     ///     } else if iter == number_of_steps + 2 {
-    ///         /// We sk.quit() at 4 and at 5 the stepper has been removed.
+    ///         // We sk.quit() at 4 and at 5 the stepper has been removed.
     ///         assert_eq!(sk.get_steppers_count(), 0);
     ///     } else {
     ///         panic!("there is not iter 6 !!!");
@@ -674,9 +680,7 @@ impl StepperAction {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::named_colors,
-    ///                      tools::title::Title, };
-    /// use std::any::TypeId; // we need this to remove all the steppers of a given type.
+    /// use stereokit_rust::{maths::Matrix, util::named_colors, tools::title::Title, };
     ///
     /// let mut title = Title::new("Stepper 1", Some(named_colors::GREEN), None, None);
     /// title.transform = Matrix::t_r([0.0, 0.0, -1.0], [0.0, 135.0, 0.0]);
@@ -686,7 +690,7 @@ impl StepperAction {
     ///     if iter < number_of_steps + 2 {
     ///         assert_eq!(sk.get_steppers_count(), 1);
     ///     } else if iter == number_of_steps + 2 {
-    ///         /// We sk.quit() at 4 and at 5 the stepper has been removed.
+    ///         // We sk.quit() at 4 and at 5 the stepper has been removed.
     ///         assert_eq!(sk.get_steppers_count(), 0);
     ///     } else {
     ///         panic!("there is not iter 6 !!!");
@@ -764,7 +768,7 @@ impl StepperAction {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::tools::screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW};
+    /// use stereokit_rust::tools::screenshot::ScreenshotViewer;
     ///
     /// sk.send_event(StepperAction::add_default::<ScreenshotViewer>("ScreenshotViewer_ID"));
     ///
@@ -773,7 +777,7 @@ impl StepperAction {
     ///         // Same as Sk::quit()
     ///         sk.send_event(StepperAction::quit("ScreenshotViewer_ID", "test_quit"));
     ///     } else if iter >= number_of_steps + 1 {
-    ///         /// We sk.quit() at 4 and at 5 the stepper has been removed.
+    ///         // We sk.quit() at 4 and at 5 the stepper has been removed.
     ///         assert_eq!(sk.get_steppers_count(), 0);
     ///     } else {
     ///         assert_eq!(sk.get_steppers_count(), 1);
@@ -805,7 +809,7 @@ impl StepperAction {
     ///     if iter < number_of_steps + 2 {
     ///         assert_eq!(sk.get_steppers_count(), 1);
     ///     } else if iter == number_of_steps + 2 {
-    ///         /// We sk.quit() at 4 and at 5 the stepper has been removed.
+    ///         // We sk.quit() at 4 and at 5 the stepper has been removed.
     ///         assert_eq!(sk.get_steppers_count(), 0);
     ///     } else {
     ///         panic!("there is not iter 6 !!!");
@@ -866,7 +870,7 @@ pub const ISTEPPER_REMOVED: &str = "IStepper_Removed";
 /// ### Example
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{maths::{Vec3, Matrix}, util::named_colors, framework::Steppers,
+/// use stereokit_rust::{maths::Matrix, util::named_colors, framework::Steppers,
 ///     tools::{title::Title, screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW}}, };
 ///
 /// let mut steppers = Steppers::new(sk.get_sk_info_clone());
@@ -903,7 +907,7 @@ pub const ISTEPPER_REMOVED: &str = "IStepper_Removed";
 ///         assert_eq!(steppers.get_count(), 1);
 ///         steppers.shutdown();
 ///     } else if iter == number_of_steps + 2 {
-///         /// all the steppers should be removed from Sk and steppers
+///         // all the steppers should be removed from Sk and steppers
 ///         assert_eq!(sk.get_steppers_count(), 0);
 ///         assert_eq!(steppers.get_count(), 0);
 ///     }
@@ -925,9 +929,9 @@ impl Steppers {
     /// ### Example
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, framework::Steppers};
+    /// use stereokit_rust::framework::Steppers;
     ///
-    /// let mut steppers = Steppers::new(sk.get_sk_info_clone());
+    /// let steppers = Steppers::new(sk.get_sk_info_clone());
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     assert_eq!(steppers.get_count(), 0);
@@ -945,12 +949,12 @@ impl Steppers {
     /// ### Example
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::named_colors, framework::Steppers,
+    /// use stereokit_rust::{util::named_colors, framework::Steppers,
     ///     tools::{title::Title, screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW}}, };
     ///
     /// let mut steppers = Steppers::new(sk.get_sk_info_clone());
     ///
-    /// let mut title = Title::new("Steppers", Some(named_colors::BLUE), None, None);
+    /// let title = Title::new("Steppers", Some(named_colors::BLUE), None, None);
     /// steppers.send_event(StepperAction::add("Title_blue_ID1", title.clone()));
     /// steppers.send_event(StepperAction::add("Title_blue_ID2", title.clone()));
     /// steppers.send_event(StepperAction::add_default::<ScreenshotViewer>("ScreenshotViewer_ID"));
@@ -1057,14 +1061,13 @@ impl Steppers {
     /// ### Example
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::named_colors,
-    ///     framework::{Steppers, StepperState, StepperHandler},
-    ///     tools::{title::Title, screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW}}, };
+    /// use stereokit_rust::{util::named_colors,framework::{Steppers, StepperState},
+    ///     tools::{title::Title, screenshot::ScreenshotViewer}, };
     /// use std::any::TypeId;
     ///
     /// let mut steppers = Steppers::new(sk.get_sk_info_clone());
     ///
-    /// let mut title = Title::new("Steppers", Some(named_colors::BLUE), None, None);
+    /// let title = Title::new("Steppers", Some(named_colors::BLUE), None, None);
     /// steppers.send_event(StepperAction::add("Title_blue_ID1", title.clone()));
     /// steppers.send_event(StepperAction::add_default::<ScreenshotViewer>("ScreenshotViewer_ID"));
     ///
@@ -1106,14 +1109,12 @@ impl Steppers {
     /// ### Example
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::named_colors,
-    ///     framework::{Steppers, StepperState, StepperHandler},
-    ///     tools::{title::Title, screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW}}, };
-    /// use std::any::TypeId;
+    /// use stereokit_rust::{util::named_colors,framework::Steppers,
+    ///     tools::{title::Title, screenshot::ScreenshotViewer}, };
     ///
     /// let mut steppers = Steppers::new(sk.get_sk_info_clone());
     ///
-    /// let mut title = Title::new("Steppers", Some(named_colors::BLUE), None, None);
+    /// let title = Title::new("Steppers", Some(named_colors::BLUE), None, None);
     /// steppers.send_event(StepperAction::add("Title_blue_ID1", title.clone()));
     /// steppers.send_event(StepperAction::add_default::<ScreenshotViewer>("ScreenshotViewer_ID"));
     ///
@@ -1177,14 +1178,12 @@ impl Steppers {
     /// ### Example
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::named_colors,
-    ///     framework::{Steppers, StepperState, StepperHandler},
-    ///     tools::{title::Title, screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW}}, };
-    /// use std::any::TypeId;
+    /// use stereokit_rust::{util::named_colors,framework::Steppers,
+    ///     tools::{title::Title, screenshot::ScreenshotViewer}, };
     ///
     /// let mut steppers = Steppers::new(sk.get_sk_info_clone());
     ///
-    /// let mut title = Title::new("Steppers", Some(named_colors::BLUE), None, None);
+    /// let title = Title::new("Steppers", Some(named_colors::BLUE), None, None);
     /// steppers.send_event(StepperAction::add("Title_blue_ID1", title.clone()));
     /// steppers.send_event(StepperAction::add_default::<ScreenshotViewer>("ScreenshotViewer_ID"));
     ///
@@ -1219,8 +1218,8 @@ impl Steppers {
 /// ```
 /// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{font::Font, framework::StepperClosures, material::Material,
-///                      maths::{Matrix, Quat, Vec3},mesh::Mesh, system::{Renderer, Text},
-///                      util::{Time, named_colors},};
+///                      maths::{Matrix, Vec3},mesh::Mesh, system::{Renderer, Text},
+///                      util::named_colors,};
 ///
 /// pub struct BStepper {
 ///     id: StepperId,
@@ -1249,7 +1248,7 @@ impl Steppers {
 ///         self.id = id;
 ///         self.sk_info = Some(sk_info);
 ///
-///         let mut transform = Matrix::t_r([0.0, 1.0, -0.5], [0.0, 180.0, 0.0]);
+///         let transform = Matrix::t_r([0.0, 1.0, -0.5], [0.0, 180.0, 0.0]);
 ///         let mut round_cube = Mesh::generate_rounded_cube(Vec3::ONE / 5.0, 0.005, Some(16));
 ///         round_cube.id("round_cube BStepper");
 ///         let text_style = Some(Text::make_style(Font::default(), 0.3, named_colors::GOLD));
