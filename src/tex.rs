@@ -1278,20 +1278,21 @@ impl Tex {
     /// use stereokit_rust::{util::{Color32, Color128}, tex::{Tex, TexFormat, TexType}};
     ///
     ///
-    /// let tex_blue = Tex::gen_color(Color32::new(64, 32, 255, 255), 1, 1,
+    /// let tex_blue = Tex::gen_color(Color32::new(64, 32, 255, 255), 5, 5,
     ///                               TexType::Image, TexFormat::Rgba32Linear);
     ///
     /// let tex_copy = tex_blue.copy(None, Some(TexFormat::Rgba32Srgb))
     ///                             .expect("copy should be done");
-    /// let mut color_data = [Color32::WHITE; 1];
+    /// let mut color_data = [Color32::WHITE; 25];
     /// assert!(tex_copy.get_color_data::<Color32>(&mut color_data, 0));
     /// assert_eq!(color_data[0], Color32 { r: 64, g: 32, b: 255, a: 255 });
     ///
     /// let tex_copy = tex_blue.copy(Some(TexType::Image), Some(TexFormat::Rgba128))
     ///                             .expect("copy should be done");
-    /// let mut color_data = [Color128::WHITE; 1];
+    /// let mut color_data = [Color128::WHITE; 25];
+    ///
     /// assert!(tex_copy.get_color_data::<Color128>(&mut color_data, 0));
-    /// assert_eq!(color_data[0], Color128 { r: 0.0, g: 0.0, b: 0.0, a: 0.0 });
+    /// assert_eq!(color_data[24], Color128 { r: 0.0, g: 0.0, b: 0.0, a: 0.0 });
     /// # sk::Sk::shutdown();
     /// ```
     pub fn copy(&self, tex_type: Option<TexType>, tex_format: Option<TexFormat>) -> Result<Tex, StereoKitError> {
@@ -1463,6 +1464,7 @@ impl Tex {
     /// let check_dots = [Color32::WHITE; 16 * 16];
     /// assert!(tex.get_color_data::<Color32>(&check_dots, 0));
     /// assert_eq!(check_dots, color_dots);
+    /// # sk::Sk::shutdown();
     /// ```
     pub unsafe fn set_colors(&mut self, width: usize, height: usize, data: *mut std::os::raw::c_void) -> &mut Self {
         unsafe { tex_set_colors(self.0.as_ptr(), width as i32, height as i32, data) };
@@ -2495,7 +2497,7 @@ impl Tex {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{util::named_colors, system::AssetState,
+    /// use stereokit_rust::{util::named_colors, system::{AssetState, Assets},
     ///                      tex::{Tex, TexFormat, TexType}};
     ///
     /// let tex_nomips = Tex::gen_color(named_colors::VIOLET, 128, 128,
@@ -2512,6 +2514,7 @@ impl Tex {
     ///                             .expect("Tex_not_icon should be created");
     /// assert_eq!(tex_not_icon.get_mips(), None);
     ///
+    /// Assets::block_for_priority(99);
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     // We ensure to have the Tex loaded.
     ///     if    tex_icon.get_asset_state()     != AssetState::Loaded
@@ -2755,13 +2758,13 @@ impl SHCubemap {
     ///                                .expect("Cubemap should be created");
     /// sh_cubemap.render_as_sky();
     ///
-    /// assert_ne!(sh_cubemap.sh.coefficients[0], Vec3::ZERO);
-    /// assert_ne!(sh_cubemap.sh.coefficients[8], Vec3::ZERO);
-    ///
     /// let tex = sh_cubemap.tex;
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     if tex.get_asset_state() != AssetState::Loaded {iter -= 1}
+    ///     
+    ///     assert_ne!(sh_cubemap.sh.coefficients[0], Vec3::ZERO);
+    ///     assert_ne!(sh_cubemap.sh.coefficients[8], Vec3::ZERO);
     /// );
     /// assert_eq!(tex.get_asset_state(), AssetState::Loaded);
     /// # sk::Sk::shutdown();

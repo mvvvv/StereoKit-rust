@@ -31,7 +31,7 @@ cargo apk build --example main
 ktx create --cubemap --encode uastc  --format R8G8B8A8_UNORM  --assign-oetf linear --assign-primaries bt709  --generate-mipmap right.png left.png top.png bottom.png front.png back.png cubemap_rgba32.ktx2
 
 #---- launch tests
-clear;cargo test             
+clear;cargo test -- --nocapture            
 clear;cargo test --doc tools -- mesh::Mesh   
 clear;XR_RUNTIME_JSON=/usr/share/openxr/1/openxr_monado.json cargo test --features test-xr-mode -- --test-threads=1
 #- launch tests with llvmpipe:
