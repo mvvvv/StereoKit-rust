@@ -31,7 +31,7 @@ struct psIn {
     float4 pos     : SV_POSITION;
     half3  normal  : NORMAL0;
     float2 uv      : TEXCOORD0;
-    half4  color   : COLOR0;
+    min16float4  color   : COLOR0;
     half3  irradiance: COLOR1;
     float3 world   : TEXCOORD1;
     float3 view_dir: TEXCOORD2;
@@ -55,7 +55,7 @@ psIn vs(vsIn input, sk_ids_t ids) {
 float4 ps(psIn input) : SV_TARGET {
     half2 metal_rough = (half2)metal    .Sample(metal_s,    input.uv * 0.2).gb; // rough is g, b is metallic
     half  ao          = (half )occlusion.Sample(occlusion_s,input.uv * 0.06).r ;  // occlusion is sometimes part of the metal tex, uses r channel
-    half4 albedo      = (half4)diffuse  .Sample(diffuse_s,  input.uv) * input.color;
+    min16float4 albedo      = (min16float4)diffuse  .Sample(diffuse_s,  input.uv) * input.color;
     half3 emissive    = (half3)emission .Sample(emission_s, input.uv).rgb * (half3)emission_factor.rgb;
 
     half metallic_final = metal_rough.y * (half)metallic;

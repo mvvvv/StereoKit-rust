@@ -712,6 +712,42 @@ impl Material {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Matrix, Vec3}, system::AssetState,
+    ///                      tex::{Tex, SHCubemap}, mesh::Mesh,
+    ///                      material::Material};
+    /// let mut sh_cubemap = SHCubemap::from_cubemap("hdri/sky_dawn.hdr", true, 9999)
+    ///                         .expect("Cubemap should be created");
+    /// sh_cubemap.sh.brightness(18.0);
+    /// sh_cubemap.render_as_sky();
+    ///
+    /// let plane_mesh = Mesh::generate_plane_up([2.0, 2.0], None, true);
+    ///
+    /// // Pack two images into a single ORM texture:
+    /// //   source 0 → R channel (Occlusion)
+    /// //   source 1 → G and B channels (Roughness + Metallic)
+    /// let metal_tex = Tex::from_file("textures/screenshot.jpeg", true, None)
+    ///                     .expect("tex should be created");
+    ///
+    /// let mut material = Material::pbr().copy();
+    /// material.metal_tex(&metal_tex).roughness_amount(0.15).metallic_amount(0.99);
+    ///
+    /// let transform = Matrix::t_r([-0.25, -0.8, 0.1], [0.0, 0.0, 20.0]);
+    ///
+    /// filename_scr = "screenshots/material_tex_metal.jpeg";
+    /// from_scr = Vec3::new(0.9, 0.0, 0.5);
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///
+    ///     // We ensure the packed Tex is loaded for the screenshot.
+    ///     if metal_tex.get_asset_state() != AssetState::Loaded { iter -= 1; }
+    ///
+    ///     plane_mesh.draw(token, &material, transform, None, None);
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/material_tex_metal.jpeg" alt="screenshot" width="200">
+    ///
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{material::Material, tex::Tex};
     ///
     /// let mut material = Material::pbr_clip().tex_file_copy("textures/parquet2/parquet2.ktx2", true, Some(0)).unwrap();

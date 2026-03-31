@@ -8,7 +8,7 @@ use std::{
     ffi::{CStr, CString, c_char, c_void},
     mem::size_of,
     path::{Path, PathBuf},
-    ptr::{NonNull, null, null_mut},
+    ptr::{NonNull, null_mut},
 };
 
 bitflags::bitflags! {
@@ -342,46 +342,6 @@ pub enum TexAddress {
     Mirror = 2,
 }
 
-/// Describes a source image for channel packing via [`Tex::from_packed`]. Provide either a `filename`
-/// or in-memory `data`. The `channel_map` is a 4-byte array where each position represents an output
-/// channel (RGBA), and the value selects which source channel to read: `b'R'`, `b'G'`, `b'B'`, `b'A'`,
-/// or `0` to fill that channel from `default_color`.
-/// <https://stereokit.net/Pages/StereoKit/TexPackSource.html>
-///
-/// see also [`Tex::from_packed`] [`TexPackSourceT`]
-#[derive(Debug, Default, Clone)]
-pub struct TexPackSource {
-    /// File path for the source image, or `None` if providing in-memory data.
-    pub filename: Option<PathBuf>,
-    /// Encoded image file data (PNG, JPEG, etc.), or `None` if using a filename instead.
-    pub data: Option<Vec<u8>>,
-    /// A 4-byte array mapping source channels to output channels. Each position is an output channel
-    /// (R, G, B, A). The byte value selects which source channel to read: `b'R'`, `b'G'`, `b'B'`,
-    /// `b'A'`, or `0` to fill with `default_color`.
-    pub channel_map: [u8; 4],
-}
-
-impl TexPackSource {
-    /// Create a new `TexPackSource` from a file path.
-    pub fn from_file(filename: impl AsRef<Path>, channel_map: [u8; 4]) -> Self {
-        Self { filename: Some(filename.as_ref().to_path_buf()), data: None, channel_map }
-    }
-
-    /// Create a new `TexPackSource` from in-memory encoded image data.
-    pub fn from_data(data: Vec<u8>, channel_map: [u8; 4]) -> Self {
-        Self { filename: None, data: Some(data), channel_map }
-    }
-}
-
-/// Native FFI layout for [`TexPackSource`], matching `tex_pack_source_t` in stereokit.h.
-#[repr(C)]
-pub struct TexPackSourceT {
-    filename: *const c_char,
-    data: *mut c_void,
-    data_size: usize,
-    channel_map: [u8; 4],
-}
-
 /// This is the texture asset class! This encapsulates 2D images, texture arrays, cubemaps, and rendertargets! It can
 /// load any image format that stb_image can, (jpg, png, tga, bmp, psd, gif, hdr, pic, ktx2) plus more later on, and you
 /// can also create textures procedurally.
@@ -475,13 +435,6 @@ unsafe extern "C" {
     pub fn tex_create_cubemap_file(cubemap_file: *const c_char, srgb_data: Bool32T, load_priority: i32) -> TexT;
     pub fn tex_create_cubemap_files(
         in_arr_cube_face_file_xxyyzz: *mut *const c_char,
-        srgb_data: Bool32T,
-        load_priority: i32,
-    ) -> TexT;
-    pub fn tex_create_packed(
-        in_arr_sources: *const TexPackSourceT,
-        source_count: i32,
-        default_color: Color128,
         srgb_data: Bool32T,
         load_priority: i32,
     ) -> TexT;
@@ -674,99 +627,6 @@ impl Tex {
         let priority = priority.unwrap_or(10);
         Ok(Tex(NonNull::new(unsafe {
             tex_create_mem(data.as_ptr() as *mut c_void, data.len(), srgb_data as Bool32T, priority)
-        })
-        .ok_or(StereoKitError::TexMemory)?))
-    }
-
-    /// Creates a texture by loading multiple source images and packing their channels into a single output
-    /// texture. Each source specifies which channels to contribute via its `channel_map`. This is useful for
-    /// creating packed textures like ORM (Occlusion/Roughness/Metallic).
-    /// <https://stereokit.net/Pages/StereoKit/Tex/FromPacked.html>
-    /// * `sources` - Array of [`TexPackSource`] describing each image and its channel mapping.
-    /// * `default_color` - Color used for output channels not mapped by any source.
-    /// * `srgb_data` - Is this image color data in sRGB format? Defaults to `false` for packed data textures.
-    /// * `priority` - The priority sort order for this asset in the async loading system. Lower values mean
-    ///   loading sooner. If `None` defaults to 10.
-    ///
-    /// see also [`tex_create_packed`] [`TexPackSource`]
-    /// ### Examples
-    /// ```
-    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Matrix, Vec3}, system::AssetState, util::Color128,
-    ///                      tex::{Tex, TexPackSource, SHCubemap}, mesh::Mesh,
-    ///                      material::Material};
-    /// let mut sh_cubemap = SHCubemap::from_cubemap("hdri/sky_dawn.hdr", true, 9999)
-    ///                         .expect("Cubemap should be created");
-    /// sh_cubemap.sh.brightness(18.0);
-    /// sh_cubemap.render_as_sky();
-    ///
-    /// let plane_mesh = Mesh::generate_plane_up([2.0, 2.0], None, true);
-    ///
-    /// // Pack two images into a single ORM texture:
-    /// //   source 0 → R channel (Occlusion)
-    /// //   source 1 → G and B channels (Roughness + Metallic)
-    /// let ao_data    = std::include_bytes!("../assets/textures/open_gltf.jpeg");
-    /// let metal_data = std::include_bytes!("../assets/textures/screenshot.jpeg");
-    ///
-    /// let sources = [
-    ///     TexPackSource { data: Some(ao_data.to_vec()),    
-    ///                     channel_map: [b'R', 0,    0,    0], ..Default::default() },
-    ///     TexPackSource { data: Some(metal_data.to_vec()),
-    ///                     channel_map: [0,    b'G', b'B', 0], ..Default::default() },
-    /// ];
-    ///
-    /// let orm_tex = Tex::from_packed(&sources, Color128::new(1.0, 1.0, 0.0, 1.0), false, None)
-    ///                   .expect("ORM texture should be created");
-    ///
-    /// let mut material = Material::pbr().copy();
-    /// material.metal_tex(&orm_tex).roughness_amount(0.15).metallic_amount(0.99);
-    ///
-    /// let transform = Matrix::t_r([-0.25, -0.8, 0.1], [0.0, 0.0, 20.0]);
-    ///
-    /// filename_scr = "screenshots/tex_from_packed.jpeg";
-    /// from_scr = Vec3::new(0.9, 0.0, 0.5);
-    /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///
-    ///     // We ensure the packed Tex is loaded for the screenshot.
-    ///     if orm_tex.get_asset_state() != AssetState::Loaded { iter -= 1; }
-    ///
-    ///     plane_mesh.draw(token, &material, transform, None, None);
-    /// );
-    /// assert_eq!(orm_tex.get_asset_state(), AssetState::Loaded);
-    /// # sk::Sk::shutdown();
-    /// ```
-    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/tex_from_packed.jpeg" alt="screenshot" width="200">
-    pub fn from_packed(
-        sources: &[TexPackSource],
-        default_color: Color128,
-        srgb_data: bool,
-        priority: Option<i32>,
-    ) -> Result<Tex, StereoKitError> {
-        let priority = priority.unwrap_or(10);
-        // Build CStrings for filenames - must remain alive until after the FFI call.
-        let mut c_filenames: Vec<Option<CString>> = Vec::with_capacity(sources.len());
-        for s in sources {
-            if let Some(ref path) = s.filename {
-                let path_str =
-                    path.to_str().ok_or_else(|| StereoKitError::TexCString(path.to_string_lossy().into_owned()))?;
-                c_filenames.push(Some(CString::new(path_str)?));
-            } else {
-                c_filenames.push(None);
-            }
-        }
-        // Build the native struct array.
-        let native: Vec<TexPackSourceT> = sources
-            .iter()
-            .zip(c_filenames.iter())
-            .map(|(s, c_name)| TexPackSourceT {
-                filename: c_name.as_ref().map_or(null(), |c| c.as_ptr()),
-                data: s.data.as_ref().map_or(null_mut(), |d| d.as_ptr() as *mut c_void),
-                data_size: s.data.as_ref().map_or(0, |d| d.len()),
-                channel_map: s.channel_map,
-            })
-            .collect();
-        Ok(Tex(NonNull::new(unsafe {
-            tex_create_packed(native.as_ptr(), sources.len() as i32, default_color, srgb_data as Bool32T, priority)
         })
         .ok_or(StereoKitError::TexMemory)?))
     }

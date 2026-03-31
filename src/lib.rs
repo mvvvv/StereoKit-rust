@@ -318,6 +318,7 @@ pub mod framework;
 /// [![Material](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/materials.jpeg)](material::Material)
 /// [![Material Transparency](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/material_transparency.jpeg)](material::Material::transparency)
 /// [![Material Face Cull](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/material_face_cull.jpeg)](material::Material::face_cull)
+/// [![Material Metal Texture](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/material_tex_metal.jpeg)](tex::Tex::from_packed)
 /// [![Material Wireframe](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/wireframe.jpeg)](material::Material::wireframe)
 /// [![Material Parameter Info](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/param_infos.jpeg)](material::ParamInfos)
 /// [![Material Parameter Info with id](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/param_infos_with_id.jpeg)](material::ParamInfos::set_data_with_id)
@@ -473,7 +474,6 @@ pub mod system;
 ///
 /// [![Tex](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/tex.jpeg)](tex::Tex)
 /// [![Tex from file](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/tex_from_file.jpeg)](tex::Tex::from_file)
-/// [![Tex from packed](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/tex_from_packed.jpeg)](tex::Tex::from_packed)
 /// [![Tex gen_particle](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/tex_gen_particle.jpeg)](tex::Tex::gen_particle)
 /// [![SHCubemap](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sh_cubemap.jpeg)](tex::SHCubemap)
 pub mod tex;

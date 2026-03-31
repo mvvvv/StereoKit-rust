@@ -20,7 +20,7 @@ struct psIn {
     float4 pos       : SV_Position;
     float2 uv        : TEXCOORD0;
     float3 world     : TEXCOORD1;
-    half4  color     : COLOR0;
+    min16float4  color     : COLOR0;
 };
 
 psIn vs(vsIn input, sk_ids_t ids) {
@@ -36,7 +36,7 @@ psIn vs(vsIn input, sk_ids_t ids) {
 }
 
 
-float4 ps(psIn input) : SV_TARGET {
-    half4 col = (half4)diffuse.Sample(diffuse_s, input.uv);
-    return (float4)(col * input.color);
+min16float4 ps(psIn input) : SV_TARGET {
+    min16float4 col = (min16float4)diffuse.Sample(diffuse_s, input.uv);
+    return (min16float4)(col * input.color);
 }

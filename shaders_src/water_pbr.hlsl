@@ -32,7 +32,7 @@ struct psIn {
     float4 pos       : SV_Position;
     float2 uv        : TEXCOORD0;
     half3  normal    : NORMAL0;
-    half4  color     : COLOR0;
+    min16float4  color     : COLOR0;
     half3  irradiance: COLOR1;
     float3 world     : TEXCOORD1;    
     float3 view_dir  : TEXCOORD2;
@@ -59,7 +59,7 @@ float4 ps(psIn input) : SV_TARGET {
     float offset = time* sk_time/100;
     uv.x += sin (sk_time * time+ (uv.x + uv.y) * 25) * 0.01;
     uv.y += cos (sk_time * time+ (uv.x - uv.y) * 25) * 0.01;
-    half4 albedo       = (half4)diffuse.  Sample(diffuse_s,  uv) * input.color;
+    min16float4 albedo       = (min16float4)diffuse.  Sample(diffuse_s,  uv) * input.color;
     
     uv.x += offset;
     uv.y += offset;

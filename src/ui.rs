@@ -2856,6 +2856,8 @@ impl Ui {
     ///     Ui::label("This will play the 'off' sound\nassociated with the given UIVisual\nat the local position.", None, false);
     ///     Ui::window_end();
     /// );
+    /// # sk::Sk::shutdown();
+    /// ```
     pub fn play_sound_off(element_visual: UiVisual, at_local: impl Into<Vec3>) {
         unsafe {
             ui_play_sound_off(element_visual, at_local.into());
