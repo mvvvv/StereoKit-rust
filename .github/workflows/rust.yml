@@ -21,6 +21,11 @@ on:
           type: boolean
           required: false
           default: true
+      validateGradleWrapper:
+          description: 'Validate Gradle Wrapper!'
+          type: boolean
+          required: false
+          default: true
 
 
 permissions:
@@ -33,6 +38,16 @@ env:
   RUST_BACKTRACE: 1
 
 jobs:
+
+  validate-gradle-wrapper:
+    runs-on: ubuntu-latest
+    if: ${{ inputs.validateGradleWrapper }}
+    steps:
+    - uses: actions/checkout@v5
+      with:
+        ref: ${{ inputs.branch || github.ref }}
+        submodules: 'recursive'
+    - uses: gradle/actions/wrapper-validation@v4
 
   build-windows:
     runs-on: windows-latest

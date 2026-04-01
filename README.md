@@ -70,18 +70,14 @@ On Linux, you may have to set `RUSTFLAGS="-Clinker-plugin-lto"` if you encounter
 - Download the target: `rustup target add aarch64-linux-android` for most of the existing android headsets.
 - Launch: `cargo apk run --example main`
 
-### Use your own event manager (PC only - see gradle templates for an android build)
+### Use your own event manager (PC only)
 
 The demos above are using an event loop based framework. If you want to use your own loop and event manager, have a look to [manual.rs](https://github.com/mvvvv/StereoKit-rust/blob/master/examples/manual.rs).
 This is the shortest way to launch your first PC VR/MR program[^1]: `cargo run --features no-event-loop --example manual`
 
 ## Templates to create your own project
 
-There is 3 templates used to build android versions (they can also create a PC VR/MR executable). The default choice, branch `main`, will use cargo-apk (like demos above). The branch `gradle` will let you use gradle with the event-loop framework. Then the branch `gradle-no-event-loop` will use gradle without the event-loop framework.
-
-- `git clone -b $branch https://github.com/mvvvv/stereokit-template/`
-- In Cargo.toml, change the dependency path to the local path of StereoKit-rust (uncomment the local path and comment the crates.io path).
-- If you don't clone the template project in the same directory than the StereoKit-rust project, you'll have to modify the path of the Stereokit-rust dependency.
+Use the commande `cargo new_sk_rs_project` to create your project [see the documentation](https://docs.rs/stereokit-rust/latest/stereokit_rust/).
 
 ## Build the project's demo for Windows_x64 using GNU from Linux (and Windows and probably Mac)
 

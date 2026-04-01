@@ -75,7 +75,7 @@
 //! # Examples
 //! Here is a simple "Hello World" StereoKit-rust app for all platforms:
 //! ```bash
-//! cargo new --lib vr_app
+//! cargo new_sk_rs_project org.my_org.vr_app --with-gradle --basic
 //! cd vr_app
 //! ```
 //!
@@ -120,37 +120,23 @@
 //! * Check that `adb` ($ANDROID_HOME/platform_tools/adb) is connecting to your headset.
 //! * Download the target: `rustup target add aarch64-linux-android` for most existing android headsets.
 //! * Create a keystore for signing your app (using keytool or Android Studio).
-//! ##### If you don't need some java/kotlin code, you can use cargo-apk  (cargo-xbuild is an alternative but lacks some documentation):
-//!   - Install: `cargo install cargo-apk`.
-//!   - The manifest file will be generated from the `Cargo.toml` (see the `package.metadata.android` section). Here are
-//!     some examples:
-//!     - [StereoKit-template](https://github.com/mvvvv/stereokit-template/blob/main/Cargo.toml#L27)
-//!     - [StereoKit-rust](https://github.com/mvvvv/StereoKit-rust/blob/master/Cargo.toml#L77)
-//!   - Create a res directory with the icons of your app (i.e. with <https://icon.kitchen>)
-//!   - Set the path and password to your keystore in the `Cargo.toml` [package.metadata.android.signing.release] or
-//!     in the `CARGO_APK_RELEASE_KEYSTORE` and  `CARGO_APK_RELEASE_KEYSTORE_PASSWORD` environment variables.
-//!   - Launch the debug on your headset: `cargo apk run --lib`
-//!   - Generate the release apk: `cargo apk build --lib --release`. The apk will be in `target/release/apk/`.
-//! ##### Otherwise, you have to use Gradle with cargo-ndk:
-//!   - Install: `cargo install cargo-ndk`.
-//!   - Clone or extract a ZIP of [gradle template](https://github.com/mvvvv/stereokit-template/tree/gradle).
-//!   - Name your project in the `package.name` entry in `Cargo.toml`.
-//!   - Set `cargo.libName` (same as `package.name` from `Cargo.toml`), `android.applicationId` and `android.main` in
-//!     `gradle.properties`.
-//!   - In `app/src/main/AndroidManifest.xml` delete or modify the path and package name of `MainActivity.java` (your
-//!     choice impacts android.main ↑ and android:hasCode attribute).
-//!   - Replace the content of the res directory with the icons of your app (i.e. with <https://icon.kitchen>)
-//!   - Store your keystore values in one of the hidden gradle properties files (ie. `~/.gradle/gradle.properties`)
+//  * Install: `cargo install cargo-ndk`.
+//! * Create your project:
+//! ```bash
+//! cargo new_sk_rs_project com.my_com.my_vr_app --with-gradle
+//! cd vr_app
+//! ```
+//! * Replace the content of the res directory with the icons of your app (i.e. with <https://icon.kitchen>)
+//! * Store your keystore values in one of the hidden gradle properties files (ie. `~/.gradle/gradle.properties`)
 //!     to store and forget the confidential values:
 //!     - RELEASE_STORE_FILE=/home/**/**/my_release_key.keystore
 //!     - RELEASE_STORE_PASSWORD=******
 //!     - RELEASE_KEY_ALIAS=*****
 //!     - RELEASE_KEY_PASSWORD=******
-//!   - If any, remove the .git folder.
-//!   - Launch the debug on your connected headset:
+//! * Launch the debug on your connected headset:
 //!     - On Windows, launch: `./gradlew.bat run && cmd /c logcat.cmd` or `(./gradlew.bat run) -and (cmd /c logcat.cmd)`
-//!     - On others, launch: `./gradlew run && ./logcat.cmd`
-//!   - Generate the release apk: `./gradlew buildRelease`. The apk will be in `app/build/outputs/apk/release`
+//!     - On others, launch: `./gradlew run && sh ./logcat.cmd`
+//! * Generate the release apk: `./gradlew buildRelease`. The apk will be in `app/build/outputs/apk/release`
 //!
 //! ## Building your Windows GNU PC VR/MR app:
 //! Thanks to Steam Proton, you can test and run your Windows exe on Linux. Knowing that, we can also build Windows .exe files on Linux using GNU toolchain.
@@ -318,7 +304,7 @@ pub mod framework;
 /// [![Material](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/materials.jpeg)](material::Material)
 /// [![Material Transparency](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/material_transparency.jpeg)](material::Material::transparency)
 /// [![Material Face Cull](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/material_face_cull.jpeg)](material::Material::face_cull)
-/// [![Material Metal Texture](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/material_tex_metal.jpeg)](tex::Tex::from_packed)
+/// [![Material Metal Texture](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/material_tex_metal.jpeg)](material::Material::metal_tex)
 /// [![Material Wireframe](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/wireframe.jpeg)](material::Material::wireframe)
 /// [![Material Parameter Info](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/param_infos.jpeg)](material::ParamInfos)
 /// [![Material Parameter Info with id](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/param_infos_with_id.jpeg)](material::ParamInfos::set_data_with_id)

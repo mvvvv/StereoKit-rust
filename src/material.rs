@@ -707,7 +707,7 @@ impl Material {
     /// channels, respectively. This represents the texture param ‘metal’.
     /// <https://stereokit.net/Pages/StereoKit/MatParamName.html>
     ///
-    /// see also [`Material::metallic_amount`] [`crate::tex::TexPackSource`] [`crate::tex::Tex::from_packed`]
+    /// see also [`Material::metallic_amount`]
     /// see also [`material_set_param_id`]
     /// ### Examples
     /// ```
@@ -810,7 +810,7 @@ impl Material {
         self
     }
 
-    /// See instead [`Material::metal_tex`] applied with [`crate::tex::TexPackSource`]
+    /// See also [`Material::metal_tex`]
     /// Used by physically based shaders, this can be used for baked ambient occlusion lighting, or to remove specular
     /// reflections from areas that are surrounded by geometry that would likely block reflections. This represents the
     /// texture param ‘occlusion’.

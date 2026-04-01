@@ -54,6 +54,9 @@ Usage : cargo new_sk_rs_project [Options] <project_name>
         --with-gradle  : Add Gradle files for building an Android APK with cargo-ndk.
         -h|--help      : Display help
 
+    <project_name> can be a simple name (e.g. my_project) or a reverse-domain identifier
+    (e.g. com.my_com.my_project or org.my_org.my_project) for Android package naming.
+
     Creates a new Rust library project configured for StereoKit-rust
     with the following structure:
         <project_name>/
