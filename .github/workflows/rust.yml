@@ -175,26 +175,26 @@ jobs:
         export DYLD_LIBRARY_PATH=$(brew --prefix molten-vk)/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}
         export MVK_CONFIG_LOG_LEVEL=0
         failed=0
-        timeout 1m cargo test --doc sk          || failed=1
-        timeout 1m cargo test --doc mesh        || failed=1
-        timeout 1m cargo test --doc model       || failed=1
-        timeout 1m cargo test --doc maths       || failed=1
-        timeout 1m cargo test --doc ui          || failed=1
-        timeout 1m cargo test --doc framework   || failed=1
-        timeout 1m cargo test --doc tools       || failed=1
-        timeout 1m cargo test --doc sound       || failed=1
-        timeout 1m cargo test --doc interactor  || failed=1
-        timeout 1m cargo test --doc system      || failed=1
-        timeout 1m cargo test --doc permission  || failed=1
-        timeout 1m cargo test --doc material    || failed=1
-        timeout 1m cargo test --doc shader      || failed=1
-        timeout 1m cargo test --doc tex         || failed=1
-        timeout 1m cargo test --doc sprite      || failed=1
-        timeout 1m cargo test --doc font        || failed=1
-        timeout 1m cargo test --doc render_list || failed=1
-        timeout 1m cargo test --doc anchor      || failed=1
-        timeout 1m cargo test --doc compute     || failed=1
-        timeout 1m cargo test --doc util        || failed=1
+        timeout 1m cargo test --doc sk          -- --nocapture --test-threads=1 || failed=1
+        timeout 1m cargo test --doc mesh        -- --nocapture --test-threads=1 || failed=1
+        timeout 1m cargo test --doc model       -- --nocapture --test-threads=1 || failed=1
+        timeout 1m cargo test --doc maths       -- --nocapture --test-threads=1 || failed=1
+        timeout 1m cargo test --doc ui          -- --nocapture --test-threads=1 || failed=1
+        timeout 1m cargo test --doc framework   -- --nocapture --test-threads=1 || failed=1
+        timeout 1m cargo test --doc tools       -- --nocapture --test-threads=1 || failed=1
+        timeout 1m cargo test --doc sound       -- --nocapture --test-threads=1 || failed=1
+        timeout 1m cargo test --doc interactor  -- --nocapture --test-threads=1 || failed=1
+        timeout 1m cargo test --doc system      -- --nocapture --test-threads=1 || failed=1
+        timeout 1m cargo test --doc permission  -- --nocapture --test-threads=1 || failed=1
+        timeout 1m cargo test --doc material    -- --nocapture --test-threads=1 || failed=1
+        timeout 1m cargo test --doc shader      -- --nocapture --test-threads=1 || failed=1
+        timeout 1m cargo test --doc tex         -- --nocapture --test-threads=1 || failed=1
+        timeout 1m cargo test --doc sprite      -- --nocapture --test-threads=1 || failed=1
+        timeout 1m cargo test --doc font        -- --nocapture --test-threads=1 || failed=1
+        timeout 1m cargo test --doc render_list -- --nocapture --test-threads=1 || failed=1
+        timeout 1m cargo test --doc anchor      -- --nocapture --test-threads=1 || failed=1
+        timeout 1m cargo test --doc compute     -- --nocapture --test-threads=1 || failed=1
+        timeout 1m cargo test --doc util        -- --nocapture --test-threads=1 || failed=1
         exit $failed
 
     - name: Build no-event-loop
