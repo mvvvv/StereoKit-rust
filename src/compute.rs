@@ -572,12 +572,13 @@ impl<'a> ComputeParamInfos<'a> {
     /// # {
     /// let compute = Compute::from_file("shaders/compute_test.hlsl.sks")
     ///     .expect("shader should be compiled — run `cargo compile_sks`");
+    ///
     /// let mut param_infos = compute.get_all_param_info();
     ///
     /// // The named param must exist in the shader cbuffer to be read back.
     /// // Undeclared params are ignored (get_int returns 0).
-    /// param_infos.set_int("arm_count", 123);
-    /// param_infos.set_int("do_not_exist", 999);
+    /// param_infos.set_int("arm_count", 123)
+    ///            .set_int("do_not_exist", 999);
     ///
     /// assert_eq!(param_infos.get_int("arm_count"), 123);
     /// assert_eq!(param_infos.get_int("do_not_exist"), 0);

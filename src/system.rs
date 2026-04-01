@@ -569,9 +569,12 @@ pub type OpenXRHandleT = u64;
 /// if cfg!(target_os = "windows") {
 ///     assert_eq!(graphics, BackendGraphics::Vulkan);
 ///     assert_eq!(platform, BackendPlatform::Win32);
-/// } else {
+/// } else if cfg!(target_os = "linux") {
 ///     assert_eq!(graphics, BackendGraphics::Vulkan);
 ///     assert_eq!(platform, BackendPlatform::Linux);
+/// } else {
+///    assert_eq!(graphics, BackendGraphics::Vulkan);
+///    assert_eq!(platform, BackendPlatform::Macos);
 /// }
 /// assert_eq!(BackendOpenXR::eyes_sample_time(), 0);
 ///
@@ -671,8 +674,10 @@ impl Backend {
     /// let platform = Backend::platform();
     /// if cfg!(target_os = "windows") {
     ///     assert_eq!(platform, BackendPlatform::Win32);
-    /// } else {
+    /// } else if cfg!(target_os = "linux") {
     ///     assert_eq!(platform, BackendPlatform::Linux);
+    /// } else if cfg!(target_os = "macos") {
+    ///     assert_eq!(platform, BackendPlatform::Macos);
     /// }
     /// # sk::Sk::shutdown();
     /// ```
