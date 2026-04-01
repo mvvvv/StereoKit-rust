@@ -158,7 +158,8 @@ jobs:
 
     - name: Install Prerequisites
       run: |
-        brew install cmake ninja molten-vk vulkan-headers
+        brew install cmake ninja molten-vk vulkan-headers coreutils
+        echo "$(brew --prefix coreutils)/libexec/gnubin" >> $GITHUB_PATH
 
     - name: Install StereoKit
       run: cargo install --force --path . 
