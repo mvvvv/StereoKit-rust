@@ -73,7 +73,29 @@ jobs:
       run: cargo build --verbose --example main_pc
     - name: Run tests 
       timeout-minutes: 15
-      run: cargo test --verbose -- --nocapture --test-threads=1
+      run: |
+        $failed = $false
+        cargo test --doc sk;          if ($LASTEXITCODE -ne 0) { $failed = $true }
+        cargo test --doc mesh;        if ($LASTEXITCODE -ne 0) { $failed = $true }
+        cargo test --doc model;       if ($LASTEXITCODE -ne 0) { $failed = $true }
+        cargo test --doc maths;       if ($LASTEXITCODE -ne 0) { $failed = $true }
+        cargo test --doc ui;          if ($LASTEXITCODE -ne 0) { $failed = $true }
+        cargo test --doc framework;   if ($LASTEXITCODE -ne 0) { $failed = $true }
+        cargo test --doc tools;       if ($LASTEXITCODE -ne 0) { $failed = $true }
+        cargo test --doc sound;       if ($LASTEXITCODE -ne 0) { $failed = $true }
+        cargo test --doc interactor;  if ($LASTEXITCODE -ne 0) { $failed = $true }
+        cargo test --doc system;      if ($LASTEXITCODE -ne 0) { $failed = $true }
+        cargo test --doc permission;  if ($LASTEXITCODE -ne 0) { $failed = $true }
+        cargo test --doc material;    if ($LASTEXITCODE -ne 0) { $failed = $true }
+        cargo test --doc shader;      if ($LASTEXITCODE -ne 0) { $failed = $true }
+        cargo test --doc tex;         if ($LASTEXITCODE -ne 0) { $failed = $true }
+        cargo test --doc sprite;      if ($LASTEXITCODE -ne 0) { $failed = $true }
+        cargo test --doc font;        if ($LASTEXITCODE -ne 0) { $failed = $true }
+        cargo test --doc render_list; if ($LASTEXITCODE -ne 0) { $failed = $true }
+        cargo test --doc anchor;      if ($LASTEXITCODE -ne 0) { $failed = $true }
+        cargo test --doc compute;     if ($LASTEXITCODE -ne 0) { $failed = $true }
+        cargo test --doc util;        if ($LASTEXITCODE -ne 0) { $failed = $true }
+        if ($failed) { exit 1 }
 
     - name: Build no-event-loop
       run: cargo build --verbose --features no-event-loop --example manual
@@ -146,12 +168,33 @@ jobs:
 
     - name: Build 
       run: cargo build --verbose --example main_pc
-    - name: Run tests 
+    - name: Run tests
       timeout-minutes: 15
       run: |
         export DYLD_LIBRARY_PATH=$(brew --prefix molten-vk)/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}
         export MVK_CONFIG_LOG_LEVEL=0
-        cargo test -- --nocapture --test-threads=1
+        failed=0
+        timeout 2m cargo test --doc sk          || failed=1
+        timeout 2m cargo test --doc mesh        || failed=1
+        timeout 2m cargo test --doc model       || failed=1
+        timeout 2m cargo test --doc maths       || failed=1
+        timeout 2m cargo test --doc ui          || failed=1
+        timeout 2m cargo test --doc framework   || failed=1
+        timeout 2m cargo test --doc tools       || failed=1
+        timeout 2m cargo test --doc sound       || failed=1
+        timeout 2m cargo test --doc interactor  || failed=1
+        timeout 2m cargo test --doc system      || failed=1
+        timeout 2m cargo test --doc permission  || failed=1
+        timeout 2m cargo test --doc material    || failed=1
+        timeout 2m cargo test --doc shader      || failed=1
+        timeout 2m cargo test --doc tex         || failed=1
+        timeout 2m cargo test --doc sprite      || failed=1
+        timeout 2m cargo test --doc font        || failed=1
+        timeout 2m cargo test --doc render_list || failed=1
+        timeout 2m cargo test --doc anchor      || failed=1
+        timeout 2m cargo test --doc compute     || failed=1
+        timeout 2m cargo test --doc util        || failed=1
+        exit $failed
 
     - name: Build no-event-loop
       run: cargo build --verbose --features no-event-loop --example manual

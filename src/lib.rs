@@ -91,7 +91,8 @@
 //!
 //! Hundreds of examples (which are also unit tests) are available in this documentation. If you like to learn by
 //! examples, check out  the modules in the following order: [`sk`], [`mesh`], [`model`], [`maths`], [`ui`], [`framework`],
-//! [`tools`], [`sound`], [`interactor`], [`system`], [`permission`] [`material`], [`shader`], [`tex`], [`sprite`], [`font`], [`render_list`].
+//! [`tools`], [`sound`], [`interactor`], [`system`], [`permission`] [`material`], [`shader`], [`tex`], [`sprite`], [`font`],
+//! [`render_list`] [`anchor`] [`compute`] [`util`].
 //!
 //! # How to build and test your application:
 //!
