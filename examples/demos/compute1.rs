@@ -33,8 +33,8 @@ struct ComputeReaction {
     // Ping-pong compute shaders: ping reads buffer_a, writes buffer_b; pong the reverse.
     compute_ping: Compute,
     compute_pong: Compute,
-    buffer_a: ComputeBuffer,
-    buffer_b: ComputeBuffer,
+    buffer_a: ComputeBuffer<Cell>,
+    buffer_b: ComputeBuffer<Cell>,
     // Kept alive as owner of the GPU texture referenced by output_sprite.
     #[allow(dead_code)]
     output: Tex,
@@ -90,10 +90,10 @@ impl ComputeReaction {
 
         // Ping: reads buffer_a, writes buffer_b, writes result texture
         let mut cp_param = compute_ping.get_all_param_info();
-        if !cp_param.set_buffer("input", &buffer_a) {
+        if !cp_param.set_storage("input", &buffer_a) {
             Log::warn("Failed to set bufferA on compute_ping — check shader parameter names?");
         }
-        if !cp_param.set_buffer("output", &buffer_b) {
+        if !cp_param.set_storage("output", &buffer_b) {
             Log::warn("Failed to set bufferB on compute_ping — check shader parameter names?");
         }
         if !cp_param.set_texture("out_tex", &output) {
@@ -102,10 +102,10 @@ impl ComputeReaction {
 
         // Pong: reads buffer_b, writes buffer_a, writes result texture
         let mut cp_param = compute_pong.get_all_param_info();
-        if !cp_param.set_buffer("input", &buffer_b) {
+        if !cp_param.set_storage("input", &buffer_b) {
             Log::warn("Failed to set bufferB on compute_pong — check shader parameter names?");
         }
-        if !cp_param.set_buffer("output", &buffer_a) {
+        if !cp_param.set_storage("output", &buffer_a) {
             Log::warn("Failed to set bufferA on compute_pong — check shader parameter names?");
         }
         if !cp_param.set_texture("out_tex", &output) {

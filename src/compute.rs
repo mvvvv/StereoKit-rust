@@ -1,6 +1,6 @@
 use crate::{
     StereoKitError,
-    material::{MaterialParam, ParamInfo},
+    material::{MaterialBuffer, MaterialBufferT, MaterialParam, ParamInfo},
     maths::{Bool32T, Matrix, Vec2, Vec3, Vec4},
     shader::{Shader, ShaderT},
     system::IAsset,
@@ -9,6 +9,7 @@ use crate::{
 };
 use std::{
     ffi::{CStr, CString, c_char, c_void},
+    marker::PhantomData,
     mem::size_of,
     path::Path,
     ptr::NonNull,
@@ -114,7 +115,8 @@ unsafe extern "C" {
     pub fn compute_get_color(compute: ComputeT, name: *const c_char) -> Color128;
     pub fn compute_get_matrix(compute: ComputeT, name: *const c_char) -> Matrix;
     pub fn compute_set_texture(compute: ComputeT, name: *const c_char, texture: TexT) -> Bool32T;
-    pub fn compute_set_buffer(compute: ComputeT, name: *const c_char, buffer: ComputeBufferT) -> Bool32T;
+    pub fn compute_set_storage(compute: ComputeT, name: *const c_char, buffer: ComputeBufferT) -> Bool32T;
+    pub fn compute_set_constant(compute: ComputeT, name: *const c_char, buffer: MaterialBufferT) -> Bool32T;
     pub fn compute_dispatch(compute: ComputeT, group_count_x: u32, group_count_y: u32, group_count_z: u32);
     pub fn compute_get_param_count(compute: ComputeT) -> i32;
     pub fn compute_get_param_info(
@@ -505,10 +507,15 @@ impl<'a> ComputeParamInfos<'a> {
         unsafe { compute_set_texture(self.compute.0.as_ptr(), c.as_ptr(), texture.as_ref().0.as_ptr()) != 0 }
     }
 
-    /// Bind a [`ComputeBuffer`] to this compute shader by parameter name.
-    /// <https://stereokit.net/Pages/StereoKit/Compute/SetBuffer.html>
+    /// Sets a RW/StructuredBuffer or ByteAddressBuffer on the shader. This is used to provide BIG arrays of data to
+    /// the GPU, for both reading and writing! These perform very similarly to textures, and can be thought of as big
+    /// textures of just data!
+    /// <https://stereokit.net/Pages/StereoKit/Compute/SetStorage.html>
+    /// * `name` - the name of the shader parameter in the HLSL
+    /// * `buffer` - the [`ComputeBuffer`] to bind (an array of <T> elements)
+    /// * `<T>` - The element type of the cells of buffer.
     ///
-    /// see also [`compute_set_buffer`]
+    /// see also [`compute_set_storage`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -519,17 +526,30 @@ impl<'a> ComputeParamInfos<'a> {
     ///     .expect("shader should be compiled — run `cargo compile_sks`");
     /// let mut param_infos = compute.get_all_param_info();
     ///
-    /// // compute_test has no structured buffers, so all set_buffer calls return false.
+    /// // compute_test has no structured buffers, so all set_storage calls return false.
     /// let cells = vec![[1.0_f32, 0.0_f32]; 8 * 8];
     /// let buf_a = ComputeBuffer::with_data(ComputeBufferType::ReadWrite, &cells).unwrap();
     /// let buf_b = ComputeBuffer::with_data(ComputeBufferType::ReadWrite, &cells).unwrap();
-    /// assert!(!param_infos.set_buffer("input",        &buf_a));
-    /// assert!(!param_infos.set_buffer("do_not_exist", &buf_b));
+    /// assert!(!param_infos.set_storage("input",        &buf_a));
+    /// assert!(!param_infos.set_storage("do_not_exist", &buf_b));
     /// # } sk::Sk::shutdown();
     /// ```
-    pub fn set_buffer<S: AsRef<str>>(&mut self, name: S, buffer: &ComputeBuffer) -> bool {
+    pub fn set_storage<T, S: AsRef<str>>(&mut self, name: S, buffer: &ComputeBuffer<T>) -> bool {
         let c = CString::new(name.as_ref()).unwrap();
-        unsafe { compute_set_buffer(self.compute.0.as_ptr(), c.as_ptr(), buffer.0.as_ptr()) != 0 }
+        unsafe { compute_set_storage(self.compute.0.as_ptr(), c.as_ptr(), buffer.as_ptr()) != 0 }
+    }
+
+    /// Sets a constant/uniform buffer (cbuffer) on the shader. This is for smaller chunks of data (16kb max) that can
+    /// be read from faster than textures or StructuredBuffers.
+    /// <https://stereokit.net/Pages/StereoKit/Compute/SetConstant.html>
+    /// * `name` - the name of the shader parameter in the HLSL
+    /// * `buffer` - the [`MaterialBuffer`] to bind
+    /// * `<T>` - The element type of the buffer.
+    ///
+    /// see also [`compute_set_constant`]
+    pub fn set_constant<S: AsRef<str>, T>(&mut self, name: S, buffer: &MaterialBuffer<T>) -> bool {
+        let c = CString::new(name.as_ref()).unwrap();
+        unsafe { compute_set_constant(self.compute.0.as_ptr(), c.as_ptr(), buffer.as_ptr()) != 0 }
     }
 
     /// Set a float shader parameter by name.
@@ -933,7 +953,7 @@ pub enum ComputeBufferType {
 ///
 /// # {
 /// // Create an empty ReadWrite buffer
-/// let mut buf = ComputeBuffer::new(
+/// let mut buf: ComputeBuffer<Particle> = ComputeBuffer::new(
 ///     ComputeBufferType::ReadWrite,
 ///     4,                              // 4 elements
 ///     size_of::<Particle>() as i32,   // 16 bytes per element
@@ -952,7 +972,7 @@ pub enum ComputeBufferType {
 /// buf.set_data(&src);
 ///
 /// // Read back from the GPU
-/// let dst = buf.get_data::<Particle>();
+/// let dst = buf.get_data();
 /// assert_eq!(dst.len(), 4);
 /// assert_eq!(dst[0].x, 0.0);
 /// assert_eq!(dst[1].y, 0.0);
@@ -965,14 +985,17 @@ pub enum ComputeBufferType {
 /// ```
 #[repr(C)]
 #[derive(Debug, PartialEq)]
-pub struct ComputeBuffer(pub NonNull<_ComputeBufferT>);
-impl Drop for ComputeBuffer {
+pub struct ComputeBuffer<T> {
+    _compute_buffer: ComputeBufferT,
+    phantom: PhantomData<T>,
+}
+impl<T> Drop for ComputeBuffer<T> {
     fn drop(&mut self) {
-        unsafe { compute_buffer_release(self.0.as_ptr()) };
+        unsafe { compute_buffer_release(self._compute_buffer) };
     }
 }
-impl AsRef<ComputeBuffer> for ComputeBuffer {
-    fn as_ref(&self) -> &ComputeBuffer {
+impl<T> AsRef<ComputeBuffer<T>> for ComputeBuffer<T> {
+    fn as_ref(&self) -> &ComputeBuffer<T> {
         self
     }
 }
@@ -1003,23 +1026,25 @@ unsafe extern "C" {
     pub fn compute_buffer_release(buffer: ComputeBufferT);
 }
 
-impl IAsset for ComputeBuffer {
+impl<T> IAsset for ComputeBuffer<T> {
     fn get_id(&self) -> &str {
         self.get_id()
     }
 }
 
-impl ComputeBuffer {
+impl<T> ComputeBuffer<T> {
     /// Creates an empty GPU storage buffer with the given element count and element stride.
     /// <https://stereokit.net/Pages/StereoKit/ComputeBuffer/ComputeBuffer.html>
     ///
     /// see also [`compute_buffer_create`]
     /// see example in [`ComputeBuffer`]
     pub fn new(type_: ComputeBufferType, element_count: i32, element_size: i32) -> Result<Self, StereoKitError> {
-        Ok(ComputeBuffer(
-            NonNull::new(unsafe { compute_buffer_create(type_, element_count, element_size, std::ptr::null()) })
-                .ok_or(StereoKitError::ComputeBufferCreate("compute_buffer_create failed".to_string()))?,
-        ))
+        let ptr = unsafe { compute_buffer_create(type_, element_count, element_size, std::ptr::null()) };
+        if ptr.is_null() {
+            Err(StereoKitError::ComputeBufferCreate("compute_buffer_create failed".to_string()))
+        } else {
+            Ok(ComputeBuffer { _compute_buffer: ptr, phantom: PhantomData })
+        }
     }
 
     /// Gets or sets the unique identifier of this asset resource.
@@ -1029,7 +1054,7 @@ impl ComputeBuffer {
     /// see example in [`ComputeBuffer`]
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
         let c_str = CString::new(id.as_ref()).unwrap();
-        unsafe { compute_buffer_set_id(self.0.as_ptr(), c_str.as_ptr()) };
+        unsafe { compute_buffer_set_id(self._compute_buffer, c_str.as_ptr()) };
         self
     }
 
@@ -1053,19 +1078,22 @@ impl ComputeBuffer {
     /// assert_eq!(buf.get_count(),  8);
     /// assert_eq!(buf.get_stride(), 4); // f32 = 4 bytes
     ///
-    /// let readback = buf.get_data::<f32>();
+    /// let readback = buf.get_data();
     /// assert_eq!(readback[3], 3.0_f32);
     /// # } sk::Sk::shutdown();
     /// ```
-    pub fn with_data<T: Sized>(type_: ComputeBufferType, data: &[T]) -> Result<Self, StereoKitError> {
+    pub fn with_data(type_: ComputeBufferType, data: &[T]) -> Result<Self, StereoKitError>
+    where
+        T: Sized,
+    {
         let element_size = size_of::<T>() as i32;
         let element_count = data.len() as i32;
-        Ok(ComputeBuffer(
-            NonNull::new(unsafe {
-                compute_buffer_create(type_, element_count, element_size, data.as_ptr() as *const c_void)
-            })
-            .ok_or(StereoKitError::ComputeBufferCreate("compute_buffer_create failed".to_string()))?,
-        ))
+        let ptr = unsafe { compute_buffer_create(type_, element_count, element_size, data.as_ptr() as *const c_void) };
+        if ptr.is_null() {
+            Err(StereoKitError::ComputeBufferCreate("compute_buffer_create failed".to_string()))
+        } else {
+            Ok(ComputeBuffer { _compute_buffer: ptr, phantom: PhantomData })
+        }
     }
 
     /// Upload new data to the GPU buffer. Uploads at most `data.len()` or the buffer capacity,
@@ -1074,9 +1102,9 @@ impl ComputeBuffer {
     ///
     /// see also [`compute_buffer_set_data`]
     /// see example in [`ComputeBuffer`]
-    pub fn set_data<T: Sized>(&mut self, data: &[T]) {
+    pub fn set_data(&mut self, data: &[T]) {
         unsafe {
-            compute_buffer_set_data(self.0.as_ptr(), data.as_ptr() as *const c_void, data.len() as i32);
+            compute_buffer_set_data(self._compute_buffer, data.as_ptr() as *const c_void, data.len() as i32);
         }
     }
 
@@ -1086,11 +1114,14 @@ impl ComputeBuffer {
     ///
     /// see also [`compute_buffer_get_data`] [`ComputeBuffer::get_data_into`]
     /// see example in [`ComputeBuffer`] [`ComputeBuffer::with_data`]
-    pub fn get_data<T: Sized + Default + Clone>(&self) -> Vec<T> {
+    pub fn get_data(&self) -> Vec<T>
+    where
+        T: Sized + Default + Clone,
+    {
         let count = self.get_count() as usize;
         let mut data = vec![T::default(); count];
         unsafe {
-            compute_buffer_get_data(self.0.as_ptr(), data.as_mut_ptr() as *mut c_void, count as i32);
+            compute_buffer_get_data(self._compute_buffer, data.as_mut_ptr() as *mut c_void, count as i32);
         }
         data
     }
@@ -1120,9 +1151,12 @@ impl ComputeBuffer {
     /// assert_eq!(out[1], 10.0);
     /// # } sk::Sk::shutdown();
     /// ```
-    pub fn get_data_into<T: Sized>(&self, out: &mut [T]) {
+    pub fn get_data_into(&self, out: &mut [T])
+    where
+        T: Sized,
+    {
         unsafe {
-            compute_buffer_get_data(self.0.as_ptr(), out.as_mut_ptr() as *mut c_void, out.len() as i32);
+            compute_buffer_get_data(self._compute_buffer, out.as_mut_ptr() as *mut c_void, out.len() as i32);
         }
     }
 
@@ -1132,7 +1166,7 @@ impl ComputeBuffer {
     /// see also [`compute_buffer_get_count`]
     /// see example in [`ComputeBuffer`] [`ComputeBuffer::with_data`]
     pub fn get_count(&self) -> i32 {
-        unsafe { compute_buffer_get_count(self.0.as_ptr()) }
+        unsafe { compute_buffer_get_count(self._compute_buffer) }
     }
 
     /// Size in bytes of a single element.
@@ -1141,7 +1175,7 @@ impl ComputeBuffer {
     /// see also [`compute_buffer_get_stride`]
     /// see example in [`ComputeBuffer`] [`ComputeBuffer::with_data`]
     pub fn get_stride(&self) -> i32 {
-        unsafe { compute_buffer_get_stride(self.0.as_ptr()) }
+        unsafe { compute_buffer_get_stride(self._compute_buffer) }
     }
 
     /// The id of this compute buffer.
@@ -1150,15 +1184,27 @@ impl ComputeBuffer {
     /// see also [`compute_buffer_get_id`]
     /// see example in [`ComputeBuffer`]
     pub fn get_id(&self) -> &str {
-        unsafe { CStr::from_ptr(compute_buffer_get_id(self.0.as_ptr())) }.to_str().unwrap()
+        unsafe { CStr::from_ptr(compute_buffer_get_id(self._compute_buffer)) }.to_str().unwrap()
     }
 
     /// Creates a clone of the same reference. Basically the new variable is the same asset.
     ///
     /// see also [`compute_buffer_addref`]
     /// see example in [`ComputeBuffer`]
-    pub fn clone_ref(&self) -> ComputeBuffer {
-        unsafe { compute_buffer_addref(self.0.as_ptr()) };
-        ComputeBuffer(self.0)
+    pub fn clone_ref(&self) -> ComputeBuffer<T> {
+        unsafe { compute_buffer_addref(self._compute_buffer) };
+        ComputeBuffer { _compute_buffer: self._compute_buffer, phantom: PhantomData }
+    }
+
+    /// Returns the raw internal FFI pointer.
+    pub fn as_ptr(&self) -> ComputeBufferT {
+        self._compute_buffer
+    }
+}
+
+impl ComputeBuffer<()> {
+    /// Wraps a raw FFI pointer without incrementing the refcount. For internal use (Assets iterator).
+    pub(crate) fn from_raw(ptr: ComputeBufferT) -> Self {
+        ComputeBuffer { _compute_buffer: ptr, phantom: PhantomData }
     }
 }

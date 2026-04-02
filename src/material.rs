@@ -1,4 +1,5 @@
 use crate::StereoKitError;
+use crate::compute::{ComputeBuffer, ComputeBufferT};
 use crate::maths::{Bool32T, Matrix, Vec2, Vec3, Vec4};
 use crate::shader::{Shader, ShaderT};
 use crate::system::{IAsset, Log};
@@ -1608,6 +1609,8 @@ unsafe extern "C" {
     pub fn material_set_matrix(material: MaterialT, name: *const c_char, value: Matrix);
     pub fn material_set_texture(material: MaterialT, name: *const c_char, value: TexT) -> Bool32T;
     pub fn material_set_texture_id(material: MaterialT, id: u64, value: TexT) -> Bool32T;
+    pub fn material_set_storage(material: MaterialT, name: *const c_char, buffer: ComputeBufferT) -> Bool32T;
+    pub fn material_set_constant(material: MaterialT, name: *const c_char, buffer: MaterialBufferT) -> Bool32T;
     pub fn material_get_float(material: MaterialT, name: *const c_char) -> f32;
     pub fn material_get_vector2(material: MaterialT, name: *const c_char) -> Vec2;
     pub fn material_get_vector3(material: MaterialT, name: *const c_char) -> Vec3;
@@ -2098,6 +2101,30 @@ impl<'a> ParamInfos<'a> {
             material_set_texture(self.material.0.as_ptr(), cstr.as_ptr(), value.as_ref().0.as_ptr())
         };
         self
+    }
+
+    /// Sets a RW/StructuredBuffer or ByteAddressBuffer on the shader. Provide data from a [`crate::compute::ComputeBuffer`].
+    /// <https://stereokit.net/Pages/StereoKit/Material/SetStorage.html>
+    /// * `name` - the name of the shader parameter in the HLSL
+    /// * `buffer` - the [`ComputeBuffer`] to bind (an array of <T> elements)
+    /// * `<T>` - The element type of the cells of buffer.
+    ///
+    /// see also [`material_set_storage`]
+    pub fn set_storage<T>(&mut self, name: impl AsRef<str>, buffer: &ComputeBuffer<T>) -> bool {
+        let cstr = CString::new(name.as_ref()).unwrap_or_default();
+        unsafe { material_set_storage(self.material.0.as_ptr(), cstr.as_ptr(), buffer.as_ptr()) != 0 }
+    }
+
+    /// Sets a constant/uniform buffer (cbuffer) on the shader.
+    /// <https://stereokit.net/Pages/StereoKit/Material/SetConstant.html>
+    /// * `name` - the name of the shader parameter in the HLSL
+    /// * `buffer` - the [`MaterialBuffer`] to bind
+    /// * `<T>` - The element type of the buffer.
+    ///
+    /// see also [`material_set_constant`]
+    pub fn set_constant<T>(&mut self, name: impl AsRef<str>, buffer: &MaterialBuffer<T>) -> bool {
+        let cstr = CString::new(name.as_ref()).unwrap_or_default();
+        unsafe { material_set_constant(self.material.0.as_ptr(), cstr.as_ptr(), buffer.as_ptr()) != 0 }
     }
 
     /// Sets a shader parameter with the given name to the provided value. If no parameter is found, nothing happens,

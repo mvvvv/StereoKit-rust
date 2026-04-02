@@ -172,7 +172,7 @@ pub enum Asset {
     Anchor(Anchor),
     RenderList(RenderList),
     Compute(Compute),
-    ComputeBuffer(ComputeBuffer),
+    ComputeBuffer(ComputeBuffer<()>),
 }
 
 impl fmt::Display for Asset {
@@ -258,7 +258,7 @@ impl AssetIter {
             AssetType::RenderList => Asset::RenderList(RenderList(NonNull::new(c_id as *mut _RenderListT).unwrap())),
             AssetType::Compute => Asset::Compute(Compute(NonNull::new(c_id as *mut _ComputeT).unwrap())),
             AssetType::ComputeBuffer => {
-                Asset::ComputeBuffer(ComputeBuffer(NonNull::new(c_id as *mut _ComputeBufferT).unwrap()))
+                Asset::ComputeBuffer(ComputeBuffer::from_raw(c_id as *mut _ComputeBufferT))
             }
         }
     }

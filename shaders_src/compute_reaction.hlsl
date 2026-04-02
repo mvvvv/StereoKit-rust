@@ -1,1 +1,1 @@
-/home/mv/dvlt/StereoKit-rust/StereoKit/Examples/Assets/Shaders/compute_reaction.hlsl
+../StereoKit/Examples/Assets/Shaders/compute_reaction.hlsl
