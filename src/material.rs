@@ -2110,6 +2110,22 @@ impl<'a> ParamInfos<'a> {
     /// * `<T>` - The element type of the cells of buffer.
     ///
     /// see also [`material_set_storage`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way
+    /// use stereokit_rust::{material::Material, compute::{ ComputeBuffer, ComputeBufferType }};
+    ///
+    /// let material = Material::from_file("shaders/compute_test.hlsl.sks", None).
+    ///                  expect("material should be created");
+    /// let mut param_infos = material.get_all_param_info();
+    ///
+    /// let compute_buffer : ComputeBuffer<f32> =
+    ///           ComputeBuffer::new(ComputeBufferType::ReadWrite, 1, size_of::<f32>() as i32)
+    ///                         .expect("compute buffer should be created");
+    /// // this buffer is not actually used in the shader, so it should not be set successfully
+    /// assert!(!param_infos.set_storage("my_buffer", &compute_buffer));
+    /// # sk::Sk::shutdown();
+    /// ```
     pub fn set_storage<T>(&mut self, name: impl AsRef<str>, buffer: &ComputeBuffer<T>) -> bool {
         let cstr = CString::new(name.as_ref()).unwrap_or_default();
         unsafe { material_set_storage(self.material.0.as_ptr(), cstr.as_ptr(), buffer.as_ptr()) != 0 }
@@ -2122,6 +2138,23 @@ impl<'a> ParamInfos<'a> {
     /// * `<T>` - The element type of the buffer.
     ///
     /// see also [`material_set_constant`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way
+    ///
+    /// use stereokit_rust::{material::{Material, MaterialBuffer}, maths::Vec4};
+    /// let material = Material::from_file("shaders/compute_test.hlsl.sks", None).
+    ///                  expect("material should be created");
+    /// let mut param_infos = material.get_all_param_info();
+    /// let mut global_data = Vec4::new(1.0, 2.0, 3.0, 4.0);
+    ///
+    /// # {
+    /// let material_buffer =  MaterialBuffer::<Vec4>::new();
+    /// material_buffer.set(&mut global_data as *mut _);
+    /// // this buffer is not actually used in the shader, so it should not be set successfully
+    /// assert!(!param_infos.set_constant("my_cbuffer", &material_buffer));
+    /// # } sk::Sk::shutdown();
+    /// ```
     pub fn set_constant<T>(&mut self, name: impl AsRef<str>, buffer: &MaterialBuffer<T>) -> bool {
         let cstr = CString::new(name.as_ref()).unwrap_or_default();
         unsafe { material_set_constant(self.material.0.as_ptr(), cstr.as_ptr(), buffer.as_ptr()) != 0 }
