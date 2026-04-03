@@ -77,7 +77,6 @@
         <meta-data android:name="com.oculus.ossplash" android:value="true" />
         <meta-data android:name="com.oculus.ossplash.background" android:value="passthrough-contextual"/>        
         <meta-data android:name="com.oculus.supportedDevices" android:value="quest2|questpro|quest3" />
-        <meta-data android:name="com.oculus.feature.PASSTHROUGH" android:value="required" />
         <meta-data android:name="com.oculus.intent.category.VR" android:value="vr_only" />
         <uses-native-library android:name="libopenxr_forwardloader.oculus.so" android:required="false"/>
         <!-- Pico -->
