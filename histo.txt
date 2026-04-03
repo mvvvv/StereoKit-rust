@@ -64,6 +64,7 @@ ln -s ~/dvlt/StereoKit-rust/examples/demos/ src/demos
 ln -s ~/dvlt/StereoKit-rust/assets/ .
 ln -s ~/dvlt/StereoKit-rust/res/ .
 ln -s ~/dvlt/StereoKit-rust/shaders_src/ .
+ln -s ~/dvlt/StereoKit-rust/src/templates/gradle/AndroidManifest.xml app/src/main/.
 clear; ./gradlew run --warning-mode all && sh logcat.cmd
 
 
