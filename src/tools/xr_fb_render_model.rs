@@ -396,10 +396,12 @@ impl XrFbRenderModel {
                 Log::diag(format!("   Render model: <{}>", path));
                 match self.get_render_model_properties(&path) {
                     Ok(properties) => {
-                        Log::diag(format!("     Model: {:?}", properties.model_name));
-                        Log::diag(format!("     Vendor ID: {}", properties.vendor_id));
-                        Log::diag(format!("     Model version: {}", properties.model_version));
-                        Log::diag(format!("     Model flags: 0x{:?}", properties.flags));
+                        if self.with_log {
+                            Log::diag(format!("     Model: {:?}", properties.model_name));
+                            Log::diag(format!("     Vendor ID: {}", properties.vendor_id));
+                            Log::diag(format!("     Model version: {}", properties.model_version));
+                            Log::diag(format!("     Model flags: 0x{:?}", properties.flags));
+                        }
                     }
                     Err(e) => {
                         Log::diag(format!("     No properties for model: {}: {:?}", path, e));
@@ -556,9 +558,9 @@ impl XrFbRenderModelStepper {
         match XrFbRenderModel::new(false) {
             Some(xr_model) => {
                 // Explore available models
-                // if let Err(e) = xr_model.explore_render_models() {
-                //     Log::warn(format!("❌ Failed to explore XR_FB_render_models: {:?}", e));
-                // }
+                if let Err(e) = xr_model.explore_render_models() {
+                    Log::warn(format!("❌ Failed to explore XR_FB_render_models: {:?}", e));
+                }
                 self.xr_render_model = Some(xr_model);
                 true
             }

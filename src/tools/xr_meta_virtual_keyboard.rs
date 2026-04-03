@@ -583,7 +583,7 @@ impl XrMetaVirtualKeyboardStepper {
         };
 
         // Check system support
-        let _sys_prop = match meta_kdb.check_system_support(false) {
+        let _sys_prop = match meta_kdb.check_system_support(true) {
             Ok(val) => val,
             Err(e) => {
                 Log::err(format!("❌ Failed to check system support: {:?}", e));
