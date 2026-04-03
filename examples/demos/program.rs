@@ -10,7 +10,10 @@ use stereokit_rust::{
     sk::{AppFocus, DisplayBlend},
     sound::{Sound, SoundInst},
     sprite::Sprite,
-    system::{Backend, BackendOpenXR, BackendXRType, Input, Key, Lines, LogItem, LogLevel, Projection, Renderer, Text},
+    system::{
+        Backend, BackendOpenXR, BackendXRType, DefaultInteractors, Input, Interaction, Key, Lines, LogItem, LogLevel,
+        Projection, Renderer, Text,
+    },
     tex::Tex,
     tools::{
         fly_over::FlyOver,
@@ -65,7 +68,6 @@ pub fn launch(mut sk: Sk, _is_testing: bool, start_test: String) {
     let mut passthough_blend_enabled = false;
     let mut nice_controllers = true;
     let nice_controllers_available = is_fb_render_model_extension_available();
-    let mut simultaneous_hands_controllers = false;
     let simultaneous_hands_controllers_available = is_simultaneous_hands_and_controllers_supported(false);
     //--------------------------------------------------------------------
 
@@ -144,6 +146,33 @@ pub fn launch(mut sk: Sk, _is_testing: bool, start_test: String) {
         Log::diag("No editable refresh rate !");
     }
 
+    // Build the list of DefaultInteractors choices based on the backend type
+    let interactor_choices: Vec<(DefaultInteractors, bool, &str)> = {
+        let xr_tp = Backend::xr_type();
+        if xr_tp == BackendXRType::OpenXR {
+            let mut choices: Vec<(DefaultInteractors, bool, &str)> = vec![
+                (DefaultInteractors::Default, false, "Interaction: Default"),
+                (DefaultInteractors::All, false, "Interaction: All"),
+            ];
+            if simultaneous_hands_controllers_available {
+                choices.push((DefaultInteractors::All, true, "Interaction: Hands & Controllers"));
+            }
+            choices.push((DefaultInteractors::Hands, false, "Interaction: Hands"));
+            choices.push((DefaultInteractors::Controllers, false, "Interaction: Controllers"));
+            choices
+        } else {
+            // Simulator only Mouse
+            vec![
+                (DefaultInteractors::Default, false, "Interaction: Default"),
+                (DefaultInteractors::All, false, "Interaction: Mouse"),
+            ]
+        }
+    };
+    let mut current_interactor_idx = 0usize;
+    Interaction::set_default_interactors(interactor_choices[current_interactor_idx].0);
+
+    let next_interactor_image = Sprite::arrow_right();
+
     let mut viewport_scaling = Renderer::get_viewport_scaling();
 
     //---Above this value, there is distortion
@@ -193,16 +222,15 @@ pub fn launch(mut sk: Sk, _is_testing: bool, start_test: String) {
     // Activate simultaneous hand & controller
     if simultaneous_hands_controllers_available {
         Log::info("✅ Simultaneous hands and controllers tracking available");
-
-        if simultaneous_hands_controllers {
+        if interactor_choices[current_interactor_idx].1 {
             if resume_simultaneous_hands_and_controllers(true) {
                 Log::info("Simultaneous hands and controllers tracking enabled at start");
             } else {
-                Log::err("❌ Failed to enable simultaneous hands and controllers tracking");
-                simultaneous_hands_controllers = false;
+                Log::err("❌ Failed to enable simultaneous hands and controllers tracking at start");
+                current_interactor_idx =
+                    (current_interactor_idx + interactor_choices.len() - 1) % interactor_choices.len();
+                Interaction::set_default_interactors(interactor_choices[current_interactor_idx].0);
             }
-        } else {
-            Log::info("Simultaneous hands and controllers tracking disabled at start");
         }
     } else {
         Log::diag("Simultaneous hands and controllers tracking not available");
@@ -355,28 +383,33 @@ pub fn launch(mut sk: Sk, _is_testing: bool, start_test: String) {
             }
         }
 
-        // Simultaneous hands and controllers toggle - only if extension is available
-        if simultaneous_hands_controllers_available {
-            Ui::same_line();
-            if let Some(new_value) = Ui::toggle("Hands+Controllers", &mut simultaneous_hands_controllers, None) {
-                if new_value {
-                    Log::info("Enabling simultaneous hands and controllers tracking");
-                    if !resume_simultaneous_hands_and_controllers(true) {
-                        Log::err("Failed to enable simultaneous hands and controllers tracking");
-                        simultaneous_hands_controllers = false;
-                    }
-                } else {
-                    Log::info("Disabling simultaneous hands and controllers tracking");
-                    if !pause_simultaneous_hands_and_controllers(true) {
-                        Log::err("Failed to disable simultaneous hands and controllers tracking");
-                        simultaneous_hands_controllers = true;
-                    }
-                }
-            }
-        }
-
+        Ui::same_line();
         fps = ((1.0 / Time::get_step()) + fps) / 2.0;
         Ui::label(format!("FPS: {fps:3.0}"), Some(Vec2::new(0.1, 0.0)), true);
+
+        // DefaultInteractors choice - cycling button
+        if interactor_choices.len() > 1 {
+            if Ui::button_img(interactor_choices[current_interactor_idx].2, &next_interactor_image, None, None, None) {
+                // Deactivate simultaneous if currently active
+                if interactor_choices[current_interactor_idx].1 {
+                    pause_simultaneous_hands_and_controllers(true);
+                }
+                // Cycle to next
+                current_interactor_idx = (current_interactor_idx + 1) % interactor_choices.len();
+                let (new_interactor, new_simultaneous, new_label) = interactor_choices[current_interactor_idx];
+                Interaction::set_default_interactors(new_interactor);
+                if new_simultaneous && !resume_simultaneous_hands_and_controllers(true) {
+                    Log::err("Failed to enable simultaneous hands and controllers tracking");
+                    // Fall back to previous choice
+                    current_interactor_idx =
+                        (current_interactor_idx + interactor_choices.len() - 1) % interactor_choices.len();
+                    Interaction::set_default_interactors(interactor_choices[current_interactor_idx].0);
+                }
+                Log::info(format!("Interactors set to: {new_label}"));
+            }
+        } else {
+            Ui::label(interactor_choices[0].2, None, true);
+        }
 
         Ui::same_line();
 

@@ -64,7 +64,7 @@ bitflags::bitflags! {
 /// Options for what type of interactors StereoKit provides by default.
 /// <https://stereokit.net/Pages/StereoKit/DefaultInteractors.html>
 ///
-/// see also [`Interactor`]
+/// see also [`Interactor`] [`Interaction`]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
 pub enum DefaultInteractors {
