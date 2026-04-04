@@ -2106,7 +2106,7 @@ impl<'a> ParamInfos<'a> {
     /// Sets a RW/StructuredBuffer or ByteAddressBuffer on the shader. Provide data from a [`crate::compute::ComputeBuffer`].
     /// <https://stereokit.net/Pages/StereoKit/Material/SetStorage.html>
     /// * `name` - the name of the shader parameter in the HLSL
-    /// * `buffer` - the [`ComputeBuffer`] to bind (an array of <T> elements)
+    /// * `buffer` - the [`ComputeBuffer`] to bind (an array of `<T>` elements)
     /// * `<T>` - The element type of the cells of buffer.
     ///
     /// see also [`material_set_storage`]

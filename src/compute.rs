@@ -512,7 +512,7 @@ impl<'a> ComputeParamInfos<'a> {
     /// textures of just data!
     /// <https://stereokit.net/Pages/StereoKit/Compute/SetStorage.html>
     /// * `name` - the name of the shader parameter in the HLSL
-    /// * `buffer` - the [`ComputeBuffer`] to bind (an array of <T> elements)
+    /// * `buffer` - the [`ComputeBuffer`] to bind (an array of `<T>` elements)
     /// * `<T>` - The element type of the cells of buffer.
     ///
     /// see also [`compute_set_storage`]
