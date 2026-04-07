@@ -1100,8 +1100,34 @@ impl<T> ComputeBuffer<T> {
     /// whichever is smaller.
     /// <https://stereokit.net/Pages/StereoKit/ComputeBuffer/SetData.html>
     ///
-    /// see also [`compute_buffer_set_data`]
+    /// see also [`compute_buffer_set_data`] [`ComputeBuffer::get_data`] [`ComputeBuffer::get_data_into`]
     /// see example in [`ComputeBuffer`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way
+    /// use stereokit_rust::compute::{ComputeBuffer, ComputeBufferType};
+    /// use std::mem::size_of;
+    ///
+    /// #[repr(C)]
+    /// #[derive(Clone, Copy, Debug, Default, PartialEq)]
+    /// struct Particle { x: f32, y: f32, vx: f32, vy: f32 }
+    ///
+    /// # {
+    /// let mut buf: ComputeBuffer<Particle> = ComputeBuffer::new(
+    ///     ComputeBufferType::ReadWrite,
+    ///     4,                              // 4 elements
+    ///     size_of::<Particle>() as i32,   // 16 bytes per element
+    /// ).expect("Failed to create ComputeBuffer");
+    /// let src = [
+    ///     Particle { x: 5.0, y: 1.0, vx:  1.0, vy:  0.0 },
+    ///     Particle { x: 1.0, y: 2.0, vx:  0.0, vy:  1.0 },
+    /// ];
+    /// buf.set_data(&src);
+    /// let readback = buf.get_data();
+    /// assert_eq!(readback[0].x, 5.0);
+    /// assert_eq!(readback[1].y, 2.0);
+    /// # } sk::Sk::shutdown();
+    /// ```
     pub fn set_data(&mut self, data: &[T]) {
         unsafe {
             compute_buffer_set_data(self._compute_buffer, data.as_ptr() as *const c_void, data.len() as i32);
@@ -1113,7 +1139,7 @@ impl<T> ComputeBuffer<T> {
     /// <https://stereokit.net/Pages/StereoKit/ComputeBuffer/GetData.html>
     ///
     /// see also [`compute_buffer_get_data`] [`ComputeBuffer::get_data_into`]
-    /// see example in [`ComputeBuffer`] [`ComputeBuffer::with_data`]
+    /// see example in [`ComputeBuffer`] [`ComputeBuffer::with_data`] [`ComputeBuffer::set_data`]
     pub fn get_data(&self) -> Vec<T>
     where
         T: Sized + Default + Clone,
@@ -1130,8 +1156,7 @@ impl<T> ComputeBuffer<T> {
     /// every frame without creating new allocations. Reads `min(out.len(), capacity)` elements.
     /// <https://stereokit.net/Pages/StereoKit/ComputeBuffer/GetData.html>
     ///
-    /// see also [`compute_buffer_get_data`]
-    ///
+    /// see also [`compute_buffer_get_data`] [`ComputeBuffer::get_data`] [`ComputeBuffer::set_data`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!

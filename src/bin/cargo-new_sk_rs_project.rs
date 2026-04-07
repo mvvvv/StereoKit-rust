@@ -1,6 +1,7 @@
 use std::{
     env, fs,
     path::{Path, PathBuf},
+    process,
 };
 
 const SK_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -77,6 +78,11 @@ fn show_help() {
     println!("{USAGE}");
 }
 
+fn panic_error(msg: &str) -> ! {
+    eprintln!("\x1b[1;31m{msg}\x1b[0m");
+    process::exit(1);
+}
+
 fn main() {
     let mut project_name = String::new();
     let mut with_android = true;
@@ -104,7 +110,7 @@ fn main() {
             _ => {
                 if arg.starts_with('-') {
                     println!("Unknown argument {arg}");
-                    panic!("{}", USAGE);
+                    panic_error(USAGE);
                 } else if project_name.is_empty() {
                     // Validate project name: alphanumeric, hyphens, underscores, and dots (for package id)
                     if arg.chars().all(|c| c.is_alphanumeric() || c == '_' || c == '-' || c == '.') && !arg.is_empty() {
@@ -114,11 +120,11 @@ fn main() {
                         println!(
                             "Project name must only contain alphanumeric characters, hyphens, underscores or dots."
                         );
-                        panic!("{}", USAGE);
+                        panic_error(USAGE);
                     }
                 } else {
                     println!("Unknown positional argument {arg}");
-                    panic!("{}", USAGE);
+                    panic_error(USAGE);
                 }
             }
         }
@@ -126,7 +132,7 @@ fn main() {
 
     if project_name.is_empty() {
         println!("You must specify a project name.");
-        panic!("{}", USAGE);
+        panic_error(USAGE);
     }
 
     // If project_name contains dots (e.g. "com.mycompany.my_app"), extract the last segment
@@ -137,12 +143,12 @@ fn main() {
 
     let project_path = PathBuf::from(&project_name);
     if project_path.exists() {
-        panic!("Directory '{}' already exists!", project_name);
+        panic_error(&format!("Directory '{}' already exists!", project_name));
     }
 
     if with_gradle && !with_android {
         println!("--with-gradle requires Android support. Remove --no-android or remove --with-gradle.");
-        panic!("{}", USAGE);
+        panic_error(USAGE);
     }
 
     // The crate/module name uses underscores (Rust convention)
@@ -156,7 +162,7 @@ fn main() {
     for dir in &dirs {
         let dir_path = project_path.join(dir);
         fs::create_dir_all(&dir_path)
-            .unwrap_or_else(|e| panic!("Failed to create directory {}: {e}", dir_path.display()));
+            .unwrap_or_else(|e| panic_error(&format!("Failed to create directory {}: {e}", dir_path.display())));
     }
 
     // Copy asset files
@@ -228,7 +234,7 @@ stereokit-rust = "{SK_VERSION}"
     );
 
     let path = project_path.join("Cargo.toml");
-    fs::write(&path, content).unwrap_or_else(|e| panic!("Failed to write {}: {e}", path.display()));
+    fs::write(&path, content).unwrap_or_else(|e| panic_error(&format!("Failed to write {}: {e}", path.display())));
 }
 
 fn write_config_toml(project_path: &Path) {
@@ -240,7 +246,7 @@ SK_RUST_SHADERS_SKS_DIR = "shaders"
 "#;
 
     let path = project_path.join("config.toml");
-    fs::write(&path, content).unwrap_or_else(|e| panic!("Failed to write {}: {e}", path.display()));
+    fs::write(&path, content).unwrap_or_else(|e| panic_error(&format!("Failed to write {}: {e}", path.display())));
 }
 
 fn write_lib_rs(project_path: &Path, with_android: bool, basic: bool) {
@@ -256,7 +262,7 @@ fn write_lib_rs(project_path: &Path, with_android: bool, basic: bool) {
     }
 
     let path = project_path.join("src/lib.rs");
-    fs::write(&path, content).unwrap_or_else(|e| panic!("Failed to write {}: {e}", path.display()));
+    fs::write(&path, content).unwrap_or_else(|e| panic_error(&format!("Failed to write {}: {e}", path.display())));
 }
 
 fn write_main_rs(project_path: &Path, crate_name: &str, basic: bool) {
@@ -267,7 +273,7 @@ fn write_main_rs(project_path: &Path, crate_name: &str, basic: bool) {
     };
 
     let path = project_path.join(format!("src/bin/main_{crate_name}.rs"));
-    fs::write(&path, content).unwrap_or_else(|e| panic!("Failed to write {}: {e}", path.display()));
+    fs::write(&path, content).unwrap_or_else(|e| panic_error(&format!("Failed to write {}: {e}", path.display())));
 }
 
 fn write_gradle_files(project_path: &Path, project_name: &str, crate_name: &str) {
@@ -280,7 +286,8 @@ fn write_gradle_files(project_path: &Path, project_name: &str, crate_name: &str)
     // Create gradle directories
     {
         let dir = &"app/src/main";
-        fs::create_dir_all(project_path.join(dir)).unwrap_or_else(|e| panic!("Failed to create directory {dir}: {e}"));
+        fs::create_dir_all(project_path.join(dir))
+            .unwrap_or_else(|e| panic_error(&format!("Failed to create directory {dir}: {e}")));
     }
 
     // Copy res icons
@@ -293,7 +300,7 @@ fn write_gradle_files(project_path: &Path, project_name: &str, crate_name: &str)
         ("res/mipmap-xxxhdpi", RES_ICON_XXXHDPI),
     ] {
         fs::create_dir_all(project_path.join(subdir))
-            .unwrap_or_else(|e| panic!("Failed to create directory {subdir}: {e}"));
+            .unwrap_or_else(|e| panic_error(&format!("Failed to create directory {subdir}: {e}")));
         write_bytes(project_path, &format!("{subdir}/app_icon.png"), data);
     }
 
@@ -319,7 +326,7 @@ fn write_gradle_files(project_path: &Path, project_name: &str, crate_name: &str)
     // MainActivity.java
     let package_dir = format!("app/src/main/java/{}", application_id.replace('.', "/"));
     fs::create_dir_all(project_path.join(&package_dir))
-        .unwrap_or_else(|e| panic!("Failed to create directory {package_dir}: {e}"));
+        .unwrap_or_else(|e| panic_error(&format!("Failed to create directory {package_dir}: {e}")));
     let main_activity = GRADLE_MAIN_ACTIVITY
         .replace("${APPLICATION_ID}", &application_id)
         .replace("${CARGO_LIBNAME}", crate_name);
@@ -330,7 +337,7 @@ fn write_gradle_files(project_path: &Path, project_name: &str, crate_name: &str)
     set_executable(project_path, "gradlew");
     write_file(project_path, "gradlew.bat", GRADLEW_BAT);
     fs::create_dir_all(project_path.join("gradle/wrapper"))
-        .unwrap_or_else(|e| panic!("Failed to create gradle/wrapper: {e}"));
+        .unwrap_or_else(|e| panic_error(&format!("Failed to create gradle/wrapper: {e}")));
     write_bytes(project_path, "gradle/wrapper/gradle-wrapper.jar", GRADLE_WRAPPER_JAR);
     write_file(project_path, "gradle/wrapper/gradle-wrapper.properties", GRADLE_WRAPPER_PROPS);
     write_file(project_path, "gradle/wrapper/action.yml", GRADLE_WRAPPER_ACTION);
@@ -348,12 +355,12 @@ fn write_gradle_files(project_path: &Path, project_name: &str, crate_name: &str)
 
 fn write_file(project_path: &Path, relative: &str, content: &str) {
     let path = project_path.join(relative);
-    fs::write(&path, content).unwrap_or_else(|e| panic!("Failed to write {}: {e}", path.display()));
+    fs::write(&path, content).unwrap_or_else(|e| panic_error(&format!("Failed to write {}: {e}", path.display())));
 }
 
 fn write_bytes(project_path: &Path, relative: &str, content: &[u8]) {
     let path = project_path.join(relative);
-    fs::write(&path, content).unwrap_or_else(|e| panic!("Failed to write {}: {e}", path.display()));
+    fs::write(&path, content).unwrap_or_else(|e| panic_error(&format!("Failed to write {}: {e}", path.display())));
 }
 
 #[cfg(unix)]
@@ -362,7 +369,7 @@ fn set_executable(project_path: &Path, relative: &str) {
     let path = project_path.join(relative);
     let perms = fs::Permissions::from_mode(0o755);
     fs::set_permissions(&path, perms)
-        .unwrap_or_else(|e| panic!("Failed to set permissions on {}: {e}", path.display()));
+        .unwrap_or_else(|e| panic_error(&format!("Failed to set permissions on {}: {e}", path.display())));
 }
 
 #[cfg(not(unix))]
