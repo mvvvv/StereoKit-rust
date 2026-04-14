@@ -97,6 +97,7 @@
             android:name="${mainEntry}"
             android:exported="true"
             android:screenOrientation="landscape"
+            android:windowSoftInputMode="adjustNothing"
             android:resizeableActivity="false" >
             <meta-data android:name="com.oculus.vr.focusaware" android:value="true" />
             <meta-data android:name="android.app.lib_name" android:value="${libName}" />

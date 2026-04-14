@@ -16,7 +16,7 @@ use stereokit_rust::{
     },
     tex::Tex,
     tools::{
-        fly_over::FlyOver,
+        fly_over::{FLY_OVER_ID, FlyOver},
         log_window::{LogWindow, basic_log_fmt},
         notif::HudNotification,
         os_api::get_env_blend_modes,
@@ -43,7 +43,7 @@ static LOG_LOG: Mutex<Vec<LogItem>> = Mutex::new(vec![]);
 
 use super::{
     Test,
-    hand_menu_radial1::{HandMenuRadial1, SHOW_FLOOR},
+    hand_menu_radial1::{HAND_MENU_RADIAL1_ID, HandMenuRadial1, SHOW_FLOOR},
 };
 pub fn launch(mut sk: Sk, _is_testing: bool, start_test: String) {
     Log::diag(
@@ -112,10 +112,10 @@ pub fn launch(mut sk: Sk, _is_testing: bool, start_test: String) {
         Log::diag(format!("{:?}", iter.get_mesh().unwrap().get_id()));
     }
 
-    sk.send_event(StepperAction::add_default::<HandMenuRadial1>("HandMenuRadial1"));
-    sk.send_event(StepperAction::add("LogWindow", log_window));
-    sk.send_event(StepperAction::add_default::<ScreenshotViewer>("Screenshoot"));
-    sk.send_event(StepperAction::add_default::<FlyOver>("FlyOver"));
+    sk.send_event(StepperAction::add_default::<HandMenuRadial1>(HAND_MENU_RADIAL1_ID));
+    sk.send_event(StepperAction::add("Tool_LogWindow", log_window));
+    sk.send_event(StepperAction::add_default::<ScreenshotViewer>("Tool_Screenshoot"));
+    sk.send_event(StepperAction::add_default::<FlyOver>(FLY_OVER_ID));
 
     let blend_modes = get_env_blend_modes(true);
     if blend_modes.contains(&EnvironmentBlendMode::ADDITIVE) || blend_modes.contains(&EnvironmentBlendMode::ALPHA_BLEND)
@@ -223,7 +223,7 @@ pub fn launch(mut sk: Sk, _is_testing: bool, start_test: String) {
     if simultaneous_hands_controllers_available {
         Log::info("✅ Simultaneous hands and controllers tracking available");
         if interactor_choices[current_interactor_idx].1 {
-            if resume_simultaneous_hands_and_controllers(true) {
+            if resume_simultaneous_hands_and_controllers(sk.get_sk_info_clone(), true) {
                 Log::info("Simultaneous hands and controllers tracking enabled at start");
             } else {
                 Log::err("❌ Failed to enable simultaneous hands and controllers tracking at start");
@@ -392,13 +392,13 @@ pub fn launch(mut sk: Sk, _is_testing: bool, start_test: String) {
             if Ui::button_img(interactor_choices[current_interactor_idx].2, &next_interactor_image, None, None, None) {
                 // Deactivate simultaneous if currently active
                 if interactor_choices[current_interactor_idx].1 {
-                    pause_simultaneous_hands_and_controllers(true);
+                    pause_simultaneous_hands_and_controllers(sk.get_sk_info_clone(), true);
                 }
                 // Cycle to next
                 current_interactor_idx = (current_interactor_idx + 1) % interactor_choices.len();
                 let (new_interactor, new_simultaneous, new_label) = interactor_choices[current_interactor_idx];
                 Interaction::set_default_interactors(new_interactor);
-                if new_simultaneous && !resume_simultaneous_hands_and_controllers(true) {
+                if new_simultaneous && !resume_simultaneous_hands_and_controllers(sk.get_sk_info_clone(), true) {
                     Log::err("Failed to enable simultaneous hands and controllers tracking");
                     // Fall back to previous choice
                     current_interactor_idx =

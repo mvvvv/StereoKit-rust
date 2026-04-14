@@ -25,7 +25,8 @@ use std::{
 
 // Re-export interactor types for convenient access
 pub use crate::interactor::{
-    DefaultInteractors, Interaction, Interactor, InteractorActivation, InteractorEvent, InteractorType,
+    DefaultInteractors, Interaction, Interactor, InteractorActivation, InteractorController, InteractorEvent,
+    InteractorType,
 };
 
 /// All StereoKit assets implement this interface! This is mostly to help group and hold Asset objects, and is
@@ -257,9 +258,7 @@ impl AssetIter {
             AssetType::Anchor => Asset::Anchor(Anchor(NonNull::new(c_id as *mut _AnchorT).unwrap())),
             AssetType::RenderList => Asset::RenderList(RenderList(NonNull::new(c_id as *mut _RenderListT).unwrap())),
             AssetType::Compute => Asset::Compute(Compute(NonNull::new(c_id as *mut _ComputeT).unwrap())),
-            AssetType::ComputeBuffer => {
-                Asset::ComputeBuffer(ComputeBuffer::from_raw(c_id as *mut _ComputeBufferT))
-            }
+            AssetType::ComputeBuffer => Asset::ComputeBuffer(ComputeBuffer::from_raw(c_id as *mut _ComputeBufferT)),
         }
     }
 

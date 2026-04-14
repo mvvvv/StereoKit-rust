@@ -447,62 +447,6 @@ pub fn show_soft_input_ime(_sk_info: &Option<Rc<RefCell<SkInfo>>>, _show: bool) 
     false
 }
 
-/// Open Android IMS keyboard. This doesn't work for accentuated characters.
-#[cfg(target_os = "android")]
-pub fn show_soft_input(show: bool) -> bool {
-    use jni::{jni_sig, jni_str, objects::JValue};
-
-    let vm = unsafe { jni::JavaVM::from_raw(BackendAndroid::java_vm() as _) };
-    vm.attach_current_thread(|env| -> jni::errors::Result<bool> {
-        let activity = unsafe { jni::objects::JObject::from_raw(env, BackendAndroid::activity() as _) };
-        let class_ctxt = env.find_class(jni_str!("android/content/Context"))?;
-        let ims = env.get_static_field(class_ctxt, jni_str!("INPUT_METHOD_SERVICE"), jni_sig!("Ljava/lang/String;"))?;
-        let im_manager = env
-            .call_method(
-                &activity,
-                jni_str!("getSystemService"),
-                jni_sig!("(Ljava/lang/String;)Ljava/lang/Object;"),
-                &[ims.borrow()],
-            )?
-            .l()?;
-        let jni_window =
-            env.call_method(&activity, jni_str!("getWindow"), jni_sig!("()Landroid/view/Window;"), &[])?.l()?;
-        let view =
-            env.call_method(jni_window, jni_str!("getDecorView"), jni_sig!("()Landroid/view/View;"), &[])?.l()?;
-        if show {
-            Ok(env
-                .call_method(
-                    im_manager,
-                    jni_str!("showSoftInput"),
-                    jni_sig!("(Landroid/view/View;I)Z"),
-                    &[JValue::Object(&view), 0i32.into()],
-                )?
-                .z()?)
-        } else {
-            let window_token =
-                env.call_method(view, jni_str!("getWindowToken"), jni_sig!("()Landroid/os/IBinder;"), &[])?.l()?;
-            Ok(env
-                .call_method(
-                    im_manager,
-                    jni_str!("hideSoftInputFromWindow"),
-                    jni_sig!("(Landroid/os/IBinder;I)Z"),
-                    &[JValue::Object(&window_token), 0i32.into()],
-                )?
-                .z()?)
-        }
-    })
-    .unwrap_or_else(|e| {
-        Log::err(format!("virtual_kbd error: {:?}", e));
-        false
-    })
-}
-
-/// Open nothing has we don't have a virtual keyboard
-#[cfg(not(target_os = "android"))]
-pub fn show_soft_input(_show: bool) -> bool {
-    false
-}
-
 /// Open the default browser. Adapted from https://github.com/amodm/webbrowser-rs
 #[cfg(target_os = "android")]
 pub fn launch_browser_android(url: &str) -> bool {

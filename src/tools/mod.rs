@@ -7,6 +7,12 @@ pub mod xr_comp_layers;
 pub mod xr_fb_display_refresh_rate;
 pub mod xr_meta_simultaneous_hands_controllers;
 
+#[cfg(all(target_os = "android", not(feature = "no-event-loop")))]
+pub mod android_soft_kdb;
+
+#[cfg(not(feature = "no-event-loop"))]
+pub mod xr_meta_detached_controllers;
+
 #[cfg(not(feature = "no-event-loop"))]
 pub mod file_browser;
 

@@ -2,6 +2,7 @@ use crate::{
     maths::{Bool32T, Bounds, Pose, Vec3},
     system::BtnState,
     ui::IdHashT,
+    util::Color32,
 };
 
 /// Should this interactor behave like a single point in space interacting with elements? Or should it behave more like
@@ -474,5 +475,173 @@ impl Interaction {
     /// see also [`interaction_set_default_draw`] [`Interaction::get_default_draw`]
     pub fn set_default_draw(draw_interactors: bool) {
         unsafe { interaction_set_default_draw(if draw_interactors { 1 } else { 0 }) }
+    }
+}
+
+/// A controller-based interactor that mirrors `interact_mode_controllers*()` from the C++ StereoKit code.
+///
+/// This creates a `Line` interactor with `Poke | Pinch` events and `State`-based activation,
+/// driven by a controller's aim pose and trigger. It is intended for a single hand.
+///
+/// see also [`Interactor`] [`crate::system::Controller`] [`crate::system::Input::controller`]
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::interactor::InteractorController;
+/// use stereokit_rust::system::Handed;
+///
+/// let ctrl_interactor = InteractorController::new(Handed::Right);
+///
+/// // Each frame, call step() to read the controller and update the interactor
+/// // ctrl_interactor.step();
+///
+/// // When done:
+/// ctrl_interactor.destroy();
+/// # sk::Sk::shutdown();
+/// ```
+pub struct InteractorController {
+    interactor: Interactor,
+    hand: crate::system::Handed,
+    trigger_last: f32,
+    ray_visible: f32,
+    ray_active: f32,
+}
+
+impl InteractorController {
+    /// Create a new controller interactor for the given hand.
+    ///
+    /// Mirrors `interact_mode_controllers_start()`:
+    /// creates a `Line` interactor with `Poke | Pinch` events, `State` activation,
+    /// capsule radius 0.005 m, and 2 secondary motion dimensions (stick X/Y).
+    pub fn new(hand: crate::system::Handed) -> Self {
+        let interactor = Interactor::create(
+            InteractorType::Line,
+            InteractorEvent::Poke | InteractorEvent::Pinch,
+            InteractorActivation::State,
+            -1,
+            0.005,
+            2,
+        );
+        Self { interactor, hand, trigger_last: 0.0, ray_visible: 0.0, ray_active: 0.0 }
+    }
+
+    /// Update the interactor with the current frame's controller data.
+    ///
+    /// Mirrors `interact_mode_controllers_step()`:
+    /// - capsule start/end: aim ray extending 100 m forward
+    /// - motion: aim pose
+    /// - motion anchor: head position offset by -0.12 m on Y
+    /// - secondary motion: stick * 0.02
+    /// - active: trigger > 0.5 transitions
+    /// - tracked: controller tracked state
+    pub fn step(&mut self) {
+        let ctrl = crate::system::Input::controller(self.hand);
+        let head = crate::system::Input::get_head();
+
+        // aim ray: start at aim position, end 100 m in the aim direction
+        let capsule_start = ctrl.aim.position;
+        let capsule_end = ctrl.aim.position + ctrl.aim.orientation * Vec3::FORWARD * 100.0;
+
+        let motion = ctrl.aim;
+        let motion_anchor = head.position + Vec3::new(0.0, -0.12, 0.0);
+        let secondary_motion = Vec3::new(ctrl.stick.x, ctrl.stick.y, 0.0) * 0.02;
+
+        let active = BtnState::make(self.trigger_last > 0.5, ctrl.trigger > 0.5);
+        let tracked = ctrl.tracked;
+
+        self.interactor
+            .update(capsule_start, capsule_end, motion, motion_anchor, secondary_motion, active, tracked);
+        self.trigger_last = ctrl.trigger;
+    }
+
+    /// Draw the controller aim ray indicator, mirroring `interactor_show_ray()` from the C++ code.
+    ///
+    /// Draws a smooth curved line from the interactor's aim origin outward. The ray animates
+    /// its visibility and thickness based on whether the interactor has a focused or active element.
+    ///
+    /// * `token` - The main thread token for drawing.
+    pub fn draw_ray(&mut self, token: &crate::sk::MainThreadToken) {
+        use crate::{
+            maths::lerp,
+            system::{LinePoint, Lines},
+            util::Time,
+        };
+
+        let interactor = &self.interactor;
+        if !interactor.get_tracked().is_active() {
+            return;
+        }
+
+        let _focused = interactor.get_focused() != 0;
+        let active_elem = interactor.get_active() != 0;
+        let dt = 16.0 * Time::get_step_unscaledf();
+
+        // Animate visibility: visible when focused (or always for controllers — hide_inactive=false)
+        self.ray_visible = lerp(self.ray_visible, 1.0_f32, dt);
+        let visibility = self.ray_visible;
+        if visibility < 0.001 {
+            return;
+        }
+
+        // Animate active state
+        self.ray_active = lerp(self.ray_active, if active_elem { 1.0 } else { 0.0 }, dt);
+        let active_amt = self.ray_active;
+
+        let motion_pos = interactor.get_motion().position;
+        let capsule_end = interactor.get_end();
+        let uncentered_dir = (capsule_end - motion_pos).get_normalized();
+
+        // If focused, adjust ray toward the focused element
+        let (mut length, centered_dir) =
+            if let Some((pose_world, bounds_local, at_local)) = interactor.try_get_focus_bounds() {
+                let pt = pose_world.to_matrix(None).transform_point(bounds_local.center + at_local);
+                let l = (pt - motion_pos).magnitude();
+                let d = (pt - motion_pos).get_normalized();
+                (l, d)
+            } else {
+                (0.35_f32, uncentered_dir)
+            };
+        length = lerp(0.35, length, visibility);
+        length = length.max(0.0);
+
+        let alpha = 0.35 + active_amt * 0.65;
+
+        const CT: usize = 20;
+        const RAY_SNAP: f32 = 1.0;
+        let mut pts = [LinePoint { pt: Vec3::ZERO, thickness: 0.0, color: Color32::WHITE }; CT];
+        for (i, pt) in pts.iter_mut().enumerate() {
+            let pct = i as f32 / (CT - 1) as f32;
+            let blend = pct * pct * pct * RAY_SNAP;
+            let d = pct * length;
+
+            let pct_i = 1.0 - pct;
+            let curve = lerp(
+                (pct_i * pct_i * std::f32::consts::PI).sin(),
+                ((pct * pct * std::f32::consts::PI).sin() * 1.5).min(1.0),
+                active_amt,
+            );
+            let width = (0.002 + curve * 0.003) * visibility;
+            let pos = motion_pos + Vec3::lerp(uncentered_dir * d, centered_dir * d, blend);
+            let a = (curve * alpha * 255.0) as u8;
+            *pt = LinePoint { pt: pos, thickness: width, color: Color32::rgba(255, 255, 255, a) };
+        }
+        Lines::add_list(token, &pts);
+    }
+
+    /// Returns a reference to the underlying [`Interactor`].
+    pub fn interactor(&self) -> &Interactor {
+        &self.interactor
+    }
+
+    /// Returns the hand this controller interactor is bound to.
+    pub fn hand(&self) -> crate::system::Handed {
+        self.hand
+    }
+
+    /// Destroy the underlying interactor. Must be called when done.
+    ///
+    /// Mirrors `interact_mode_controllers_stop()`.
+    pub fn destroy(&self) {
+        self.interactor.destroy();
     }
 }

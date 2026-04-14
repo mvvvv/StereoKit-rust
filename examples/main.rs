@@ -35,7 +35,9 @@ pub fn android_main(app: AndroidApp) {
     }
     APP_ONCE.get_or_init(|| {
         android_logger::init_once(
-            android_logger::Config::default().with_max_level(log::LevelFilter::Debug).with_tag("STKit-rs"),
+            android_logger::Config::default()
+                .with_max_level(log::LevelFilter::Debug)
+                .with_tag("STKit-rs"),
         );
     });
     //stereokit_rust::tools::load_all_extensions();
@@ -43,7 +45,7 @@ pub fn android_main(app: AndroidApp) {
     BackendOpenXR::request_ext("XR_FB_render_model");
     BackendOpenXR::request_ext("XR_META_virtual_keyboard");
     BackendOpenXR::request_ext("XR_META_simultaneous_hands_and_controllers");
-    //BackendOpenXR::exclude_ext("XR_META_detached_controllers"); // uncomment if you don't want to see detached controllers
+    BackendOpenXR::request_ext("XR_META_detached_controllers");
     BackendOpenXR::request_ext("XR_KHR_android_surface_swapchain");
 
     let sk = settings.init(app).unwrap();

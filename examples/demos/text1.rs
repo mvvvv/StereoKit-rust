@@ -6,16 +6,15 @@ use stereokit_rust::{
     sound::{Sound, SoundInst},
     sprite::Sprite,
     system::{Input, Key, Log, Text, TextContext, TextStyle},
-    tools::{
-        os_api::show_soft_input,
-        xr_meta_virtual_keyboard::{KEYBOARD_SHOW, XR_META_VIRTUAL_KEYBOARD_EXTENSION_NAME},
-    },
     ui::{Ui, UiBtnLayout},
     util::{
         Platform,
         named_colors::{RED, WHITE},
     },
 };
+
+#[cfg(target_os = "android")]
+use stereokit_rust::tools::android_soft_kdb::{ANDROID_SOFT_KBD_ID, AndroidSoftKbd};
 
 pub const FR_KEY_TEXT: &str = r#"²|&|é|"|'|(|\-|è|_|ç|à|)|=|{|}|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
 Tab-\t-9-3|a|z|e|r|t|y|u|i|o|p|^|$|[|]|\|
@@ -39,6 +38,7 @@ Ctrl--17-4-mod|Cmd--91-3|Alt--18-3-go_0| - -32-13|Alt--18-3-go_0|Ctrl--17-3-mod|
 pub struct Text1 {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
+    shutdown_completed: bool,
 
     pub transform: Matrix,
     pub window_demo_pose: Pose,
@@ -67,6 +67,7 @@ impl Default for Text1 {
         Self {
             id: "Text1".to_string(),
             sk_info: None,
+            shutdown_completed: false,
 
             transform: Matrix::t_r((Vec3::NEG_Z * -2.5) + Vec3::Y, Quat::from_angles(0.0, 180.0, 0.0)),
             window_demo_pose: Pose::new(Vec3::new(0.0, 1.5, -1.3), Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0)))),
@@ -154,21 +155,23 @@ impl Text1 {
         }
         Ui::next_line();
 
-        if cfg!(target_os = "android") {
+        #[cfg(target_os = "android")]
+        {
+            use stereokit_rust::tools::xr_meta_virtual_keyboard::{
+                KEYBOARD_SHOW, XR_META_VIRTUAL_KEYBOARD_EXTENSION_NAME,
+            };
+
             if let Some(new_value) = Ui::toggle("Android Keyboard", &mut self.android_keyboard, None) {
                 if new_value {
                     Platform::force_fallback_keyboard(false);
+                    SkInfo::send_event(
+                        &self.sk_info,
+                        StepperAction::add_default::<AndroidSoftKbd>(ANDROID_SOFT_KBD_ID),
+                    );
                 } else {
                     Platform::force_fallback_keyboard(true);
+                    SkInfo::send_event(&self.sk_info, StepperAction::remove(ANDROID_SOFT_KBD_ID));
                 }
-            }
-
-            if self.android_keyboard && Platform::is_keyboard_visible() {
-                Platform::keyboard_show(false, TextContext::Text);
-                Input::key_inject_press(Key::Left);
-                Input::key_inject_release(Key::Left);
-
-                show_soft_input(true);
             }
 
             Ui::same_line();
@@ -242,5 +245,15 @@ impl Text1 {
         Ui::window_end();
 
         Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
+    }
+
+    fn close(&mut self, _shutting_down: bool) -> bool {
+        #[cfg(target_os = "android")]
+        if self.android_keyboard {
+            SkInfo::send_event(&self.sk_info, StepperAction::remove(ANDROID_SOFT_KBD_ID));
+            self.android_keyboard = false;
+        }
+        self.shutdown_completed = true;
+        self.shutdown_completed
     }
 }

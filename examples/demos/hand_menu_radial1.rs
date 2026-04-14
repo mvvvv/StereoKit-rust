@@ -16,10 +16,11 @@ use stereokit_rust::{
         },
     },
 };
-pub const SHOW_SHADOWS: &str = "ShowShadows";
-pub const SHOW_FLOOR: &str = "ShowFloor";
-pub const CHANGE_FLOOR: &str = "ChangeFlor";
-pub const SKY_DOME_CHANGED: &str = "SkyDomeChanged";
+pub const HAND_MENU_RADIAL1_ID: &str = "Demo_HandMenuRadial1";
+pub const SHOW_SHADOWS: &str = "Demo_ShowShadows";
+pub const SHOW_FLOOR: &str = "Demo_ShowFloor";
+pub const CHANGE_FLOOR: &str = "Demo_ChangeFlor";
+pub const SKY_DOME_CHANGED: &str = "Demo_SkyDomeChanged";
 const ID: &str = "demo_1";
 
 /// The basic Stepper. This stepper is used for Thread1 demo, we must ensure the StereoKit code stay in the main thread
@@ -164,6 +165,11 @@ impl Default for HandMenuRadial1 {
 impl HandMenuRadial1 {
     /// Called from IStepper::initialize here you can abort the initialization by returning false
     fn start(&mut self) -> bool {
+        if self.id != HAND_MENU_RADIAL1_ID {
+            Log::err(format!("HandMenuRadial1: Wrong Unique ID, expected {}, got {}", HAND_MENU_RADIAL1_ID, self.id));
+            return false;
+        }
+
         self.id = HandMenuRadial::build_id(ID);
         let id: StepperId = self.id.clone();
         let sk_info = self.sk_info.clone();

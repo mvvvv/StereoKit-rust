@@ -4,13 +4,27 @@
 //! which allows applications to track both hands and controllers simultaneously.
 //! <https://registry.khronos.org/OpenXR/specs/1.1/html/xrspec.html#XR_META_simultaneous_hands_and_controllers>
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use openxr_sys::pfn::GetSystemProperties;
 use openxr_sys::{
     Bool32, Handle, Instance, Result, Session, StructureType, SystemGraphicsProperties, SystemId, SystemProperties,
     SystemTrackingProperties,
 };
 
-use crate::system::{Backend, BackendOpenXR, BackendXRType, Log};
+use crate::{
+    sk::SkInfo,
+    system::{Backend, BackendOpenXR, BackendXRType, Log},
+};
+
+#[cfg(not(feature = "no-event-loop"))]
+use crate::{
+    framework::StepperAction,
+    tools::xr_meta_detached_controllers::{
+        META_DETACHED_CTRLRS_ID, XrMetaDetachedControllersStepper, is_meta_detached_controllers_available,
+    },
+};
 
 /// Check if simultaneous hands and controllers tracking is supported by the runtime.
 /// * with_log - whether to log diagnostic information
@@ -90,7 +104,12 @@ pub fn is_simultaneous_hands_and_controllers_supported(with_log: bool) -> bool {
 }
 
 /// Resume (enable) simultaneous hands and controllers tracking if supported.
+/// * `sk_info` - The SkInfo smart pointer, used to add the [`XrMetaDetachedControllersStepper`] if the
+///   detached controllers extension is available.
 /// * `with_log` - If true, will log the operation status
+///
+/// When resuming successfully and the `XR_META_detached_controllers` extension is enabled,
+/// an [`XrMetaDetachedControllersStepper`] is automatically added to draw detached controllers.
 ///
 /// Returns true if the operation was successful or if already enabled.
 /// see also [`is_simultaneous_hands_and_controllers_supported`] [`pause_simultaneous_hands_and_controllers`]
@@ -105,12 +124,13 @@ pub fn is_simultaneous_hands_and_controllers_supported(with_log: bool) -> bool {
 ///                                     is_simultaneous_hands_and_controllers_supported};
 ///
 /// if is_simultaneous_hands_and_controllers_supported(true) {
-///     let success = resume_simultaneous_hands_and_controllers(true);
+///     let success = resume_simultaneous_hands_and_controllers(sk.get_sk_info_clone(), true);
 ///     assert_eq!(success, true);
 /// }
 /// # sk::Sk::shutdown();
 /// ```
-pub fn resume_simultaneous_hands_and_controllers(with_log: bool) -> bool {
+pub fn resume_simultaneous_hands_and_controllers(sk_info: Rc<RefCell<SkInfo>>, with_log: bool) -> bool {
+    let sk_info = Some(sk_info);
     if !is_simultaneous_hands_and_controllers_supported(with_log) {
         if with_log {
             Log::info("❌ XR_META_simultaneous_hands_and_controllers extension is not available.");
@@ -145,6 +165,16 @@ pub fn resume_simultaneous_hands_and_controllers(with_log: bool) -> bool {
                 if with_log {
                     Log::info("✅ Simultaneous hands and controllers tracking resumed successfully.");
                 }
+                #[cfg(not(feature = "no-event-loop"))]
+                if is_meta_detached_controllers_available() {
+                    SkInfo::send_event(
+                        &sk_info,
+                        StepperAction::add_default::<XrMetaDetachedControllersStepper>(META_DETACHED_CTRLRS_ID),
+                    );
+                    if with_log {
+                        Log::info("✅ XrMetaDetachedControllersStepper added.");
+                    }
+                }
                 true
             }
             otherwise => {
@@ -163,7 +193,11 @@ pub fn resume_simultaneous_hands_and_controllers(with_log: bool) -> bool {
 }
 
 /// Pause (disable) simultaneous hands and controllers tracking if supported.
+/// * `sk_info` - The SkInfo smart pointer, used to remove the [`XrMetaDetachedControllersStepper`] if it was added.
 /// * `with_log` - If true, will log the operation status
+///
+/// When pausing successfully, the [`XrMetaDetachedControllersStepper`] (if previously added by
+/// [`resume_simultaneous_hands_and_controllers`]) is automatically removed.
 ///
 /// Returns true if the operation was successful or if already paused.
 /// see also [`resume_simultaneous_hands_and_controllers`] [`is_simultaneous_hands_and_controllers_supported`]
@@ -178,12 +212,13 @@ pub fn resume_simultaneous_hands_and_controllers(with_log: bool) -> bool {
 ///                                     is_simultaneous_hands_and_controllers_supported};
 ///
 /// if is_simultaneous_hands_and_controllers_supported(true) {
-///     let success = pause_simultaneous_hands_and_controllers(true);
+///     let success = pause_simultaneous_hands_and_controllers(sk.get_sk_info_clone(), true);
 ///     assert_eq!(success, true);
 /// }
 /// # sk::Sk::shutdown();
 /// ```
-pub fn pause_simultaneous_hands_and_controllers(with_log: bool) -> bool {
+pub fn pause_simultaneous_hands_and_controllers(sk_info: Rc<RefCell<SkInfo>>, with_log: bool) -> bool {
+    let sk_info = Some(sk_info);
     if !is_simultaneous_hands_and_controllers_supported(with_log) {
         if with_log {
             Log::info("❌ XR_META_simultaneous_hands_and_controllers extension is not available.");
@@ -217,6 +252,13 @@ pub fn pause_simultaneous_hands_and_controllers(with_log: bool) -> bool {
             Result::SUCCESS => {
                 if with_log {
                     Log::info("✅ Simultaneous hands and controllers tracking paused successfully.");
+                }
+                #[cfg(not(feature = "no-event-loop"))]
+                {
+                    SkInfo::send_event(&sk_info, StepperAction::remove(META_DETACHED_CTRLRS_ID));
+                    if with_log {
+                        Log::info("XrMetaDetachedControllersStepper removed.");
+                    }
                 }
                 true
             }

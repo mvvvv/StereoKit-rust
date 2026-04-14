@@ -977,6 +977,7 @@ impl Sk {
     #[cfg(target_os = "android")]
     pub fn poll_events(app: &AndroidApp) -> Option<MainEvent<'static>> {
         let mut result: Option<MainEvent<'static>> = None;
+        // Drain Android activity events to prevent ANR.
         app.poll_events(Some(std::time::Duration::ZERO), |event| match event {
             PollEvent::Main(main_event) => match main_event {
                 MainEvent::Destroy => {
@@ -991,9 +992,17 @@ impl Sk {
                         result = Some(unsafe { std::mem::transmute(main_event) });
                     }
                 }
-                _ => {}
+                MainEvent::InputAvailable { .. } => {
+                    Log::diag("Android MainEvent::InputAvailable received");
+                }
+                otherwise => {
+                    Log::diag(format!("Android MainEvent {:?} received", otherwise));
+                }
             },
-            _ => {}
+            PollEvent::Timeout => {}
+            otherwise => {
+                Log::diag(format!("Android PollEvent {:?} received", otherwise));
+            }
         });
         result
     }
