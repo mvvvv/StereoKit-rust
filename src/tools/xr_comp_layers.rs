@@ -88,7 +88,6 @@ use std::ptr::null_mut;
 ///         );
 ///         
 ///         // Clean up
-///         swapchain.destroy();
 ///     }
 /// }
 /// # sk::Sk::shutdown();
@@ -424,7 +423,6 @@ impl XrCompLayers {
 ///     );
 ///    
 ///     // Clean up
-///     swapchain.destroy();
 /// }
 /// # sk::Sk::shutdown();
 /// ```
@@ -436,6 +434,13 @@ pub struct SwapchainSk {
     pub acquired: u32,
     images: Vec<Tex>,
     vk_images: Vec<openxr_sys::SwapchainImageVulkanKHR>,
+}
+
+impl Drop for SwapchainSk {
+    fn drop(&mut self) {
+        XrCompLayers::destroy_swapchain(self.handle);
+        self.handle = Swapchain::default();
+    }
 }
 
 impl SwapchainSk {
@@ -666,12 +671,6 @@ impl SwapchainSk {
             XrResult::SUCCESS => Ok(()),
             otherwise => Err(otherwise),
         }
-    }
-
-    /// Destroy the swapchain and all associated resources.
-    pub fn destroy(&mut self) {
-        XrCompLayers::destroy_swapchain(self.handle);
-        self.handle = Swapchain::default();
     }
 }
 

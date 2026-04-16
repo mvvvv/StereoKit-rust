@@ -2715,6 +2715,7 @@ unsafe extern "C" {
     pub fn input_controller_menu() -> BtnState;
     pub fn input_controller_model_set(hand: Handed, model: ModelT);
     pub fn input_controller_model_get(hand: Handed) -> ModelT;
+    pub fn input_controller_detached(hand: Handed) -> Pose;
     pub fn input_head() -> Pose;
     pub fn input_eyes() -> Pose;
     pub fn input_eyes_tracked() -> BtnState;
@@ -3466,6 +3467,16 @@ impl Input {
             Some(model) => Model(model),
             None => Model::new(),
         }
+    }
+
+    /// This is the state of the controller’s detachment from the user’s hand. When a controller is detached, it will
+    /// be used to render it
+    /// <https://stereokit.net/Pages/StereoKit/Input/ControllerDetached.html>
+    /// * `handed` - The hand of the controller to check detachment for.
+    ///
+    /// Returns the pose of the detached controller
+    pub fn get_controller_detached(handed: Handed) -> Pose {
+        unsafe { input_controller_detached(handed) }
     }
 
     /// This is the state of the controller’s menu button, this is not attached to any particular hand, so it’s

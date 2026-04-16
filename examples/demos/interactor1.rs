@@ -93,11 +93,6 @@ impl Interactor1 {
     }
 
     fn recreate_interactor(&mut self) {
-        // Destroy existing interactor if it exists
-        if let Some(interactor) = self.test_interactor.take() {
-            interactor.destroy();
-        }
-
         // Create new interactor with current configuration
         let interactor = Interactor::create(
             self.shape_type,
@@ -426,11 +421,6 @@ impl Interactor1 {
         }
         // Restore default interactors
         Interaction::set_default_interactors(DefaultInteractors::Default);
-
-        // Clean up interactor
-        if let Some(interactor) = self.test_interactor.take() {
-            interactor.destroy();
-        }
 
         Log::info("Interactor Demo: Cleaned up and restored default interactors");
         self.shutdown_completed = true;

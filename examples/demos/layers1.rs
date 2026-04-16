@@ -29,7 +29,6 @@ use stereokit_rust::{
 pub struct Layers1 {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
-    shutdown_completed: bool,
 
     material: Material,
     window_pose: Pose,
@@ -54,7 +53,6 @@ impl Default for Layers1 {
         Self {
             id: "Layers1".into(),
             sk_info: None,
-            shutdown_completed: false,
 
             material: Material::pbr().copy(),
             window_pose,
@@ -221,14 +219,5 @@ impl Layers1 {
         Ui::window_end();
 
         Text::add_at(token, &self.text, self.transform, self.text_style, None, None, None, None, None, None);
-    }
-
-    fn close(&mut self, _triggering: bool) -> bool {
-        if let Some(sc) = &mut self.swapchain_sk {
-            sc.destroy();
-        }
-        self.swapchain_sk = None;
-        self.shutdown_completed = true;
-        self.shutdown_completed
     }
 }

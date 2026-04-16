@@ -1,0 +1,181 @@
+use stereokit_rust::{
+    maths::{Pose, Quat, Vec2, Vec3, units::CM},
+    prelude::*,
+    ui::{Ui, UiConfirm, UiCut, UiNotify},
+};
+
+/// Demo showcasing all slider variants: hslider, hslider_f64, hslider_at, hslider_at_f64,
+/// vslider, vslider_f64, vslider_at, vslider_at_f64.
+#[derive(IStepper)]
+pub struct Ui3 {
+    id: StepperId,
+    sk_info: Option<Rc<RefCell<SkInfo>>>,
+
+    pub window_pose: Pose,
+
+    // hslider values
+    h_f32: f32,
+    h_f64: f64,
+    h_f32_step: f32,
+    h_f32_pinch: f32,
+    h_f32_finalize: f32,
+    h_f32_finalized: f32,
+
+    // hslider_at values
+    hat_f32: f32,
+    hat_f64: f64,
+
+    // vslider values
+    v_f32: f32,
+    v_f64: f64,
+    v_f32_step: f32,
+    v_f32_pinch: f32,
+
+    // vslider_at values
+    vat_f32: f32,
+    vat_f64: f64,
+}
+
+unsafe impl Send for Ui3 {}
+
+impl Default for Ui3 {
+    fn default() -> Self {
+        Self {
+            id: "Ui3".to_string(),
+            sk_info: None,
+            window_pose: Pose::new(Vec3::new(0.0, 1.4, -0.6), Some(Quat::look_dir(-Vec3::FORWARD))),
+
+            h_f32: 0.5,
+            h_f64: 0.5,
+            h_f32_step: 0.0,
+            h_f32_pinch: 0.5,
+            h_f32_finalize: 0.5,
+            h_f32_finalized: 0.5,
+
+            hat_f32: 0.5,
+            hat_f64: 0.5,
+
+            v_f32: 0.5,
+            v_f64: 0.5,
+            v_f32_step: 0.0,
+            v_f32_pinch: 0.5,
+
+            vat_f32: 0.5,
+            vat_f64: 0.5,
+        }
+    }
+}
+
+impl Ui3 {
+    fn start(&mut self) -> bool {
+        true
+    }
+
+    fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
+
+    fn draw(&mut self, _token: &MainThreadToken) {
+        // 50 cm wide window: right ~23 cm for vsliders, left remainder for hsliders
+        Ui::window_begin("Sliders", &mut self.window_pose, Some(Vec2::new(50.0, 0.0) * CM), None, None);
+
+        // ── Right panel: vertical sliders ────────────────────────────────
+        Ui::layout_push_cut(UiCut::Right, 23.3 * CM, false);
+
+        Ui::label(format!("vslider f32: {:.2}", self.v_f32), None, false);
+        Ui::same_line();
+        Ui::vslider("v_f32", &mut self.v_f32, 0.0, 1.0, None, Some(11.7 * CM), None, None);
+
+        Ui::label(format!("vslider_f64: {:.2}", self.v_f64), None, false);
+        Ui::same_line();
+        Ui::vslider_f64("v_f64", &mut self.v_f64, 0.0, 1.0, None, Some(11.7 * CM), None, None);
+
+        Ui::label(format!("step=0.1: {:.2}", self.v_f32_step), None, false);
+        Ui::same_line();
+        Ui::vslider("v_f32_step", &mut self.v_f32_step, 0.0, 1.0, Some(0.1), Some(11.7 * CM), None, None);
+
+        Ui::label(format!("Pinch: {:.2}", self.v_f32_pinch), None, false);
+        Ui::same_line();
+        Ui::vslider(
+            "v_f32_pinch",
+            &mut self.v_f32_pinch,
+            0.0,
+            1.0,
+            None,
+            Some(11.7 * CM),
+            Some(UiConfirm::Pinch),
+            None,
+        );
+
+        Ui::hseparator();
+
+        Ui::label(format!("vslider_at f32:{:.2} f64:{:.2}", self.vat_f32, self.vat_f64), None, false);
+        Ui::same_line();
+        let at = Ui::get_layout_at();
+        Ui::vslider_at("vat_f32", &mut self.vat_f32, 0.0, 1.0, None, at, Vec2::new(2.5 * CM, 8.3 * CM), None, None);
+        let at2 = at - Vec3::X * (3.3 * CM);
+        Ui::vslider_at_f64(
+            "vat_f64",
+            &mut self.vat_f64,
+            0.0,
+            1.0,
+            None,
+            at2,
+            Vec2::new(2.5 * CM, 8.3 * CM),
+            None,
+            None,
+        );
+        Ui::layout_reserve(Vec2::new(0.0, 8.3 * CM), false, 0.0);
+
+        Ui::layout_pop(); // end right panel
+
+        // ── Left panel: horizontal sliders ───────────────────────────────
+        Ui::label(format!("hslider f32: {:.2}", self.h_f32), None, false);
+        Ui::hslider("h_f32", &mut self.h_f32, 0.0, 1.0, None, None, None, None);
+
+        Ui::label(format!("hslider_f64: {:.2}", self.h_f64), None, false);
+        Ui::hslider_f64("h_f64", &mut self.h_f64, 0.0, 1.0, None, None, None, None);
+
+        Ui::label(format!("hslider step=0.1: {:.2}", self.h_f32_step), None, false);
+        Ui::hslider("h_f32_step", &mut self.h_f32_step, 0.0, 1.0, Some(0.1), None, None, None);
+
+        Ui::label(format!("hslider Pinch: {:.2}", self.h_f32_pinch), None, false);
+        Ui::hslider("h_f32_pinch", &mut self.h_f32_pinch, 0.0, 1.0, None, None, Some(UiConfirm::Pinch), None);
+
+        Ui::label(format!("hslider Finalize: {:.2}", self.h_f32_finalized), None, false);
+        if let Some(finalized) = Ui::hslider(
+            "h_f32_finalize",
+            &mut self.h_f32_finalize,
+            0.0,
+            1.0,
+            None,
+            None,
+            None,
+            Some(UiNotify::Finalize),
+        ) {
+            self.h_f32_finalized = finalized;
+        }
+
+        Ui::hseparator();
+
+        Ui::label(format!("hslider_at f32: {:.2}", self.hat_f32), None, false);
+        let at = Ui::get_layout_at();
+        Ui::hslider_at("hat_f32", &mut self.hat_f32, 0.0, 1.0, None, at, Vec2::new(20.0 * CM, 1.5 * CM), None, None);
+        Ui::layout_reserve(Vec2::new(0.0, 1.5 * CM), false, 0.0);
+
+        Ui::label(format!("hslider_at_f64: {:.2}", self.hat_f64), None, false);
+        let at = Ui::get_layout_at();
+        Ui::hslider_at_f64(
+            "hat_f64",
+            &mut self.hat_f64,
+            0.0,
+            1.0,
+            None,
+            at,
+            Vec2::new(20.0 * CM, 1.5 * CM),
+            None,
+            None,
+        );
+        Ui::layout_reserve(Vec2::new(0.0, 1.5 * CM), false, 0.0);
+
+        Ui::window_end();
+    }
+}

@@ -150,12 +150,13 @@ pub fn launch(mut sk: Sk, _is_testing: bool, start_test: String) {
     let interactor_choices: Vec<(DefaultInteractors, bool, &str)> = {
         let xr_tp = Backend::xr_type();
         if xr_tp == BackendXRType::OpenXR {
+
             let mut choices: Vec<(DefaultInteractors, bool, &str)> = vec![
                 (DefaultInteractors::Default, false, "Interaction: Default"),
                 (DefaultInteractors::All, false, "Interaction: All"),
             ];
             if simultaneous_hands_controllers_available {
-                choices.push((DefaultInteractors::All, true, "Interaction: Hands & Controllers"));
+                choices.insert(0,(DefaultInteractors::All, true, "Interaction: Hands & Controllers"));
             }
             choices.push((DefaultInteractors::Hands, false, "Interaction: Hands"));
             choices.push((DefaultInteractors::Controllers, false, "Interaction: Controllers"));
