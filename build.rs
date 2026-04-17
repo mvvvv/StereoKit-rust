@@ -139,6 +139,8 @@ fn main() {
             cargo_link!("user32");
             cargo_link!("shell32");
             cargo_link!("gdi32");
+            cargo_link!("advapi32");
+            cargo_link!("ole32");
             if cfg!(feature = "profile") {
                 cargo_link!("TracyClient");
             }
@@ -173,6 +175,14 @@ fn main() {
                     // C++ runtime libraries must come last
                     cargo_link!("stdc++");
                     cargo_link!("gcc_eh");
+                    // GNU ld processes libs left-to-right: system import libs must appear AFTER
+                    // the static libs that reference them, so repeat them here as link-arg
+                    // (which is placed at the end of the linker command).
+                    println!("cargo:rustc-link-arg=-ladvapi32");
+                    println!("cargo:rustc-link-arg=-lole32");
+                    println!("cargo:rustc-link-arg=-lshell32");
+                    println!("cargo:rustc-link-arg=-lgdi32");
+                    println!("cargo:rustc-link-arg=-lcomdlg32");
                 } else {
                     //---- We have to extract the DLL i.e. ".\target\x86_64-pc-windows-gnu\debug\build\stereokit-rust-be362d37871b9048\out\build\StereoKitC.dll"
                     //---- and copy it to ".\target\x86_64-pc-windows-gnu\debug\deps\
