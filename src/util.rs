@@ -1682,7 +1682,8 @@ impl Hash {
     }
 }
 
-/// TODO: UNSTABLE: When opening the Platform.FilePicker, this enum describes how the picker should look and behave.
+/// TODO: ANDROID only. On PC this will open a desktop file picker.
+/// When opening the Platform.FilePicker, this enum describes how the picker should look and behave.
 /// <https://stereokit.net/Pages/StereoKit/PickerMode.html>
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
@@ -1825,7 +1826,8 @@ impl Platform {
         unsafe { platform_keyboard_set_force_fallback(force_fallback as Bool32T) }
     }
 
-    /// TODO: UNSTABLE: Starts a file picker window! This will create a native file picker window if one is available in the current
+    /// TODO: ANDROID only. On PC this will open a desktop file picker.
+    /// Starts a file picker window! This will create a native file picker window if one is available in the current
     /// setup, and if it is not, it’ll create a fallback filepicker build using StereoKit’s UI.
     ///
     /// Flatscreen apps will show traditional file pickers, and UWP has an OS provided file picker that works in MR. All
@@ -1852,8 +1854,7 @@ impl Platform {
     /// # stereokit_rust::test_init_sk!();
     /// use stereokit_rust::util::{Platform, PickerMode};
     ///
-    /// filename_scr = "screenshots/file_picker.jpeg"; fov_scr = 45.0;
-    /// test_screenshot!({
+    /// test_steps!({
     ///     Platform::file_picker(
     ///         PickerMode::Open,
     ///         |filename| println!("Selected: {}", filename),
@@ -1863,7 +1864,6 @@ impl Platform {
     /// });
     /// # sk::Sk::shutdown();
     /// ```
-    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/file_picker.jpeg" alt="screenshot" width="200">
     pub fn file_picker<FS: FnMut(&str), FC: FnMut()>(
         mode: PickerMode,
         mut on_select_file: FS,
@@ -1887,7 +1887,8 @@ impl Platform {
         }
     }
 
-    /// TODO: UNSTABLE: Starts a file picker window! This will create a native file picker window if one is available in the current
+    /// TODO: ANDROID only. On PC this will open a desktop file picker.
+    /// Starts a file picker window! This will create a native file picker window if one is available in the current
     /// setup, and if it is not, it’ll create a fallback filepicker build using StereoKit’s UI.
     ///
     /// Flatscreen apps will show traditional file pickers, and UWP has an OS provided file picker that works in MR. All
@@ -1926,7 +1927,8 @@ impl Platform {
         }
     }
 
-    /// TODO: UNSTABLE: If the picker is visible, this will close it and immediately trigger a cancel event for the active picker.
+    /// TODO: ANDROID only. On PC this will open a desktop file picker.
+    /// If the picker is visible, this will close it and immediately trigger a cancel event for the active picker.
     /// <https://stereokit.net/Pages/StereoKit/Platform/FilePickerClose.html>
     ///
     /// see also [`platform_file_picker_close`]
@@ -2172,7 +2174,8 @@ impl Platform {
         }
     }
 
-    /// TODO: UNSTABLE: This will check if the file picker interface is currently visible. Some pickers will never show this, as they
+    /// TODO: ANDROID only. On PC this will open a desktop file picker.
+    /// This will check if the file picker interface is currently visible. Some pickers will never show this, as they
     /// block the application until the picker has completed.
     /// <https://stereokit.net/Pages/StereoKit/Platform/FilePickerVisible.html>
     ///
