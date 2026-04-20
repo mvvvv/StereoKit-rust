@@ -204,7 +204,7 @@ impl Anchor {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
-        let c_str = CString::new(id.as_ref()).unwrap();
+        let c_str = CString::new(id.as_ref()).unwrap_or_default();
         unsafe { anchor_set_id(self.0.as_ptr(), c_str.as_ptr()) };
         self
     }
@@ -312,7 +312,7 @@ impl Anchor {
     /// see also [`anchor_get_id`]
     /// see example in [`Anchor::id`]
     pub fn get_id(&self) -> &str {
-        unsafe { CStr::from_ptr(anchor_get_id(self.0.as_ptr())) }.to_str().unwrap()
+        unsafe { CStr::from_ptr(anchor_get_id(self.0.as_ptr())) }.to_str().unwrap_or_default()
     }
 
     /// The most recently identified Pose of the Anchor. While an Anchor will generally be in the same position once
@@ -382,7 +382,7 @@ impl Anchor {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_name(&self) -> &str {
-        unsafe { CStr::from_ptr(anchor_get_name(self.0.as_ptr())).to_str().unwrap() }
+        unsafe { CStr::from_ptr(anchor_get_name(self.0.as_ptr())).to_str().unwrap_or_default() }
     }
 
     /// Tries to get the underlying perception spatial anchor for platforms using Microsoft spatial anchors.

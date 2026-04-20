@@ -219,7 +219,6 @@ pub struct XrMetaDetachedControllersStepper {
     profile_state: Option<DetachedProfileState>,
 
     /// was the controller detached in the previous frame? Used to detect changes in state and avoid unnecessary updates.
-    was_detached: [bool; 2],
 
     /// Interactors for left and right. Created on start, stepped each frame.
     controller_interactors: [Option<InteractorController>; 2],
@@ -235,7 +234,7 @@ impl Default for XrMetaDetachedControllersStepper {
             shutdown_completed: false,
 
             profile_state: None,
-            was_detached: [false; 2],
+
             controller_interactors: [None, None],
             hand_interactors: [None, None],
         }
@@ -312,7 +311,6 @@ impl XrMetaDetachedControllersStepper {
                 hand_interactor.step();
                 hand_interactor.draw_ray(token);
             }
-            self.was_detached[hand_idx] = true;
         } else {
             // Controller is held in hand — update saved pose and draw.
             if controller.is_tracked() {
@@ -322,7 +320,6 @@ impl XrMetaDetachedControllersStepper {
                 if let Some(ref mut ctrl_interactor) = self.controller_interactors[hand_idx] {
                     ctrl_interactor.step();
                     ctrl_interactor.draw_ray(token);
-                    if self.was_detached[hand_idx] {}
                 }
             } else {
                 if let Some(ref mut hand_interactor) = self.hand_interactors[hand_idx] {
@@ -330,7 +327,6 @@ impl XrMetaDetachedControllersStepper {
                     hand_interactor.draw_ray(token);
                 }
             }
-            self.was_detached[hand_idx] = false;
         }
     }
 

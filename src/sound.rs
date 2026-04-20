@@ -359,7 +359,7 @@ impl Sound {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
-        let cstr_id = CString::new(id.as_ref()).unwrap();
+        let cstr_id = CString::new(id.as_ref()).unwrap_or_default();
         unsafe { sound_set_id(self.0.as_ptr(), cstr_id.as_ptr()) };
         self
     }
@@ -518,7 +518,7 @@ impl Sound {
     /// see also [`sound_get_id`]
     /// see example in [`Sound::id`]
     pub fn get_id(&self) -> &str {
-        unsafe { CStr::from_ptr(sound_get_id(self.0.as_ptr())) }.to_str().unwrap()
+        unsafe { CStr::from_ptr(sound_get_id(self.0.as_ptr())) }.to_str().unwrap_or_default()
     }
 
     /// This is the current position of the playback cursor, measured in samples from the start of the audio data.
@@ -677,8 +677,8 @@ impl Sound {
     /// # } sk::Sk::shutdown();
     /// ```
     pub fn click() -> Self {
-        let cstr_id = CString::new("default/sound_click").unwrap();
-        Sound(NonNull::new(unsafe { sound_find(cstr_id.as_ptr()) }).unwrap())
+        let cstr_id = CString::new("default/sound_click").unwrap_or_default();
+        Sound(NonNull::new(unsafe { sound_find(cstr_id.as_ptr()) }).expect("default/sound_click should be found!"))
     }
 
     /// A default unclick sound that lasts for 300ms. It’s a procedurally generated sound based on a mouse press, with
@@ -706,8 +706,8 @@ impl Sound {
     /// # } sk::Sk::shutdown();
     /// ```
     pub fn unclick() -> Self {
-        let cstr_id = CString::new("default/sound_unclick").unwrap();
-        Sound(NonNull::new(unsafe { sound_find(cstr_id.as_ptr()) }).unwrap())
+        let cstr_id = CString::new("default/sound_unclick").unwrap_or_default();
+        Sound(NonNull::new(unsafe { sound_find(cstr_id.as_ptr()) }).expect("default/sound_unclick should be found!"))
     }
 
     /// A default grab sound
@@ -734,8 +734,8 @@ impl Sound {
     /// # } sk::Sk::shutdown();
     /// ```
     pub fn grab() -> Self {
-        let cstr_id = CString::new("default/sound_grab").unwrap();
-        Sound(NonNull::new(unsafe { sound_find(cstr_id.as_ptr()) }).unwrap())
+        let cstr_id = CString::new("default/sound_grab").unwrap_or_default();
+        Sound(NonNull::new(unsafe { sound_find(cstr_id.as_ptr()) }).expect("default/sound_grab should be found!"))
     }
 
     /// A default ungrab sound
@@ -762,8 +762,8 @@ impl Sound {
     /// # } sk::Sk::shutdown();
     /// ```
     pub fn ungrab() -> Self {
-        let cstr_id = CString::new("default/sound_ungrab").unwrap();
-        Sound(NonNull::new(unsafe { sound_find(cstr_id.as_ptr()) }).unwrap())
+        let cstr_id = CString::new("default/sound_ungrab").unwrap_or_default();
+        Sound(NonNull::new(unsafe { sound_find(cstr_id.as_ptr()) }).expect("default/sound_ungrab should be found!"))
     }
 }
 

@@ -28,7 +28,7 @@ use std::{
 ///                      tex::{Tex, TexType, TexFormat}, material::Material,
 ///                      mesh::Mesh, render_list::RenderList, system::RenderClear};
 ///
-/// let model = Model::from_file("plane.glb", None).unwrap().copy();
+/// let model = Model::from_file("plane.glb", None).unwrap_or_default().copy();
 ///
 /// let render_tex = Tex::gen_color(Color128::WHITE, 128, 128,
 ///                       TexType::Rendertarget, TexFormat::Rgba32Srgb);
@@ -172,7 +172,7 @@ impl RenderList {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn new() -> Self {
-        RenderList(NonNull::new(unsafe { render_list_create() }).unwrap())
+        RenderList(NonNull::new(unsafe { render_list_create() }).expect("RenderList::new should work"))
     }
 
     /// Looks for a RenderList matching the given id!
@@ -241,7 +241,7 @@ impl RenderList {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
-        let cstr_id = CString::new(id.as_ref()).unwrap();
+        let cstr_id = CString::new(id.as_ref()).unwrap_or_default();
         unsafe { render_list_set_id(self.0.as_ptr(), cstr_id.as_ptr()) };
         self
     }
@@ -373,7 +373,7 @@ impl RenderList {
     ///                      tex::{Tex, TexType, TexFormat}, material::Material,
     ///                      mesh::Mesh, render_list::RenderList, system::{RenderClear, RenderLayer}};
     ///
-    /// let model = Model::from_file("plane.glb", None).unwrap().copy();
+    /// let model = Model::from_file("plane.glb", None).unwrap_or_default().copy();
     ///
     /// let at = Vec3::new(-2.0, 400.0, 1000.9);
     /// let perspective = Matrix::perspective(45.0, 1.0, 0.01, 1550.0);
@@ -555,7 +555,7 @@ impl RenderList {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn primary() -> Self {
-        RenderList(NonNull::new(unsafe { render_get_primary_list() }).unwrap())
+        RenderList(NonNull::new(unsafe { render_get_primary_list() }).expect("RenderList::primary should work!"))
     }
 
     /// All draw calls that don't specify a render list will get submitted to the active RenderList at the top of the
@@ -606,7 +606,7 @@ impl RenderList {
     /// see also [`render_list_get_id`]
     /// see example [`RenderList::id`]
     pub fn get_id(&self) -> &str {
-        unsafe { CStr::from_ptr(render_list_get_id(self.0.as_ptr())) }.to_str().unwrap()
+        unsafe { CStr::from_ptr(render_list_get_id(self.0.as_ptr())) }.to_str().unwrap_or_default()
     }
 
     /// The number of Mesh/Material pairs that have been submitted to the render list so far this frame.

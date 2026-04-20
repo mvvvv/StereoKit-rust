@@ -341,7 +341,7 @@ impl Sprite {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
-        let cstr_id = CString::new(id.as_ref()).unwrap();
+        let cstr_id = CString::new(id.as_ref()).unwrap_or_default();
         unsafe { sprite_set_id(self.0.as_ptr(), cstr_id.as_ptr()) };
         self
     }
@@ -395,7 +395,7 @@ impl Sprite {
     /// see also [`sprite_get_id`]
     /// see example in [`Sprite::id`]
     pub fn get_id(&self) -> &str {
-        unsafe { CStr::from_ptr(sprite_get_id(self.0.as_ptr())) }.to_str().unwrap()
+        unsafe { CStr::from_ptr(sprite_get_id(self.0.as_ptr())) }.to_str().unwrap_or_default()
     }
 
     /// The aspect ratio of the sprite! This is width/height. You may also be interested in the NormalizedDimensions property,
@@ -508,8 +508,8 @@ impl Sprite {
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_radio_on.jpeg" alt="screenshot" width="48">
     pub fn radio_on() -> Self {
-        let cstr_id = CString::new("sk/ui/radio_on").unwrap();
-        Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).unwrap())
+        let cstr_id = CString::new("sk/ui/radio_on").unwrap_or_default();
+        Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).expect("sk/ui/radio_on should be found!"))
     }
 
     /// This is a 64x64 image of an empty hole. This is common iconography for radio buttons which use an empty hole to
@@ -533,8 +533,8 @@ impl Sprite {
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_radio_off.jpeg" alt="screenshot" width="48">
     pub fn radio_off() -> Self {
-        let cstr_id = CString::new("sk/ui/radio_off").unwrap();
-        Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).unwrap())
+        let cstr_id = CString::new("sk/ui/radio_off").unwrap_or_default();
+        Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).expect("sk/ui/radio_off should be found!"))
     }
 
     /// This is a 64x64 image of a filled rounded square. This is common iconography for checkboxes which use an
@@ -559,8 +559,8 @@ impl Sprite {
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_toggle_on.jpeg" alt="screenshot" width="48">
     pub fn toggle_on() -> Self {
-        let cstr_id = CString::new("sk/ui/toggle_on").unwrap();
-        Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).unwrap())
+        let cstr_id = CString::new("sk/ui/toggle_on").unwrap_or_default();
+        Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).expect("sk/ui/toggle_on should be found!"))
     }
 
     /// This is a 64x64 image of an empty rounded square. This is common iconography for checkboxes which use an empty
@@ -585,8 +585,8 @@ impl Sprite {
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_toggle_off.jpeg" alt="screenshot" width="48">
     pub fn toggle_off() -> Self {
-        let cstr_id = CString::new("sk/ui/toggle_off").unwrap();
-        Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).unwrap())
+        let cstr_id = CString::new("sk/ui/toggle_off").unwrap_or_default();
+        Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).expect("sk/ui/toggle_off should be found!"))
     }
 
     /// This is a 64x64 image of a slightly rounded triangle pointing left.
@@ -609,8 +609,8 @@ impl Sprite {
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_arrow_left.jpeg" alt="screenshot" width="48">
     pub fn arrow_left() -> Self {
-        let cstr_id = CString::new("sk/ui/arrow_left").unwrap();
-        Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).unwrap())
+        let cstr_id = CString::new("sk/ui/arrow_left").unwrap_or_default();
+        Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).expect("sk/ui/arrow_left should be found!"))
     }
 
     /// This is a 64x64 image of a slightly rounded triangle pointing right.
@@ -633,8 +633,8 @@ impl Sprite {
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_arrow_right.jpeg" alt="screenshot" width="48">
     pub fn arrow_right() -> Self {
-        let cstr_id = CString::new("sk/ui/arrow_right").unwrap();
-        Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).unwrap())
+        let cstr_id = CString::new("sk/ui/arrow_right").unwrap_or_default();
+        Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).expect("sk/ui/arrow_right should be found!"))
     }
 
     /// This is a 64x64 image of a slightly rounded triangle pointing up.
@@ -657,8 +657,8 @@ impl Sprite {
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_arrow_up.jpeg" alt="screenshot" width="48">
     pub fn arrow_up() -> Self {
-        let cstr_id = CString::new("sk/ui/arrow_up").unwrap();
-        Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).unwrap())
+        let cstr_id = CString::new("sk/ui/arrow_up").unwrap_or_default();
+        Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).expect("sk/ui/arrow_up should be found!"))
     }
 
     /// This is a 64x64 image of a slightly rounded triangle pointing down.
@@ -681,8 +681,8 @@ impl Sprite {
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_arrow_down.jpeg" alt="screenshot" width="48">
     pub fn arrow_down() -> Self {
-        let cstr_id = CString::new("sk/ui/arrow_down").unwrap();
-        Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).unwrap())
+        let cstr_id = CString::new("sk/ui/arrow_down").unwrap_or_default();
+        Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).expect("sk/ui/arrow_down should be found!"))
     }
 
     /// This is a 64x64 image of a backspace action button, similar to a backspace button you might find on a mobile
@@ -706,8 +706,8 @@ impl Sprite {
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_backspace.jpeg" alt="screenshot" width="48">
     pub fn backspace() -> Self {
-        let cstr_id = CString::new("sk/ui/backspace").unwrap();
-        Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).unwrap())
+        let cstr_id = CString::new("sk/ui/backspace").unwrap_or_default();
+        Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).expect("sk/ui/backspace should be found!"))
     }
 
     /// This is a 64x64 image of an upward facing rounded arrow. This is a triangular top with a narrow rectangular
@@ -731,8 +731,8 @@ impl Sprite {
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_shift.jpeg" alt="screenshot" width="48">
     pub fn shift() -> Self {
-        let cstr_id = CString::new("sk/ui/shift").unwrap();
-        Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).unwrap())
+        let cstr_id = CString::new("sk/ui/shift").unwrap_or_default();
+        Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).expect("sk/ui/shift should be found!"))
     }
 
     /// This is a 64x64 image of a square aspect X, with rounded edge. It’s used to indicate a ‘close’ icon.
@@ -755,8 +755,8 @@ impl Sprite {
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_close.jpeg" alt="screenshot" width="48">
     pub fn close() -> Self {
-        let cstr_id = CString::new("sk/ui/close").unwrap();
-        Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).unwrap())
+        let cstr_id = CString::new("sk/ui/close").unwrap_or_default();
+        Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).expect("sk/ui/close should be found!"))
     }
 
     /// <https://stereokit.net/Pages/StereoKit/Sprite/List.html>
@@ -778,8 +778,8 @@ impl Sprite {
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_list.jpeg" alt="screenshot" width="48">
     pub fn list() -> Self {
-        let cstr_id = CString::new("sk/ui/list").unwrap();
-        Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).unwrap())
+        let cstr_id = CString::new("sk/ui/list").unwrap_or_default();
+        Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).expect("sk/ui/list should be found!"))
     }
 
     /// <https://stereokit.net/Pages/StereoKit/Sprite/Grid.html>
@@ -801,7 +801,7 @@ impl Sprite {
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_grid.jpeg" alt="screenshot" width="48">
     pub fn grid() -> Self {
-        let cstr_id = CString::new("sk/ui/grid").unwrap();
-        Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).unwrap())
+        let cstr_id = CString::new("sk/ui/grid").unwrap_or_default();
+        Sprite(NonNull::new(unsafe { sprite_find(cstr_id.as_ptr()) }).expect("sk/ui/grid should be found!"))
     }
 }

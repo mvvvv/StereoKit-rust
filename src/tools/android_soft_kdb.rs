@@ -71,7 +71,7 @@ impl AndroidSoftKbd {
             Log::err(format!("AndroidSoftKbd wrong Unique ID, expected {}, got {}", ANDROID_SOFT_KBD_ID, self.id));
             return false;
         }
-        let sk_i = self.sk_info.as_ref().unwrap().borrow();
+        let sk_i = self.sk_info.as_ref().expect("sk_info should be Some").borrow();
         self.android_app = Some(sk_i.get_android_app().clone());
         // Log::info("AndroidSoftKbd: initialized");
         true
@@ -108,7 +108,7 @@ impl AndroidSoftKbd {
             }
             if unsafe { crate::sk::sk_app_focus() } == crate::sk::AppFocus::Active {
                 Log::diag("AndroidSoftKbd: app is Active → IME was closed externally");
-                *self.edit_text.lock().unwrap() = 0;
+                *self.edit_text.lock().expect("Failed to lock edit_text mutex") = 0;
                 Platform::keyboard_show(false, TextContext::Text);
                 self.ime_open = false;
             }
@@ -121,7 +121,7 @@ impl AndroidSoftKbd {
         use crate::system::BackendAndroid;
         use jni::{jni_sig, jni_str};
 
-        let raw = *self.edit_text.lock().unwrap();
+        let raw = *self.edit_text.lock().expect("Failed to lock edit_text mutex");
         if raw <= 1 {
             return None;
         }
@@ -159,7 +159,7 @@ impl AndroidSoftKbd {
     fn show_ime_kdb(&mut self, app: &AndroidApp, show_keyboard_after: bool) {
         use jni::{jni_sig, jni_str, objects::JValue};
 
-        let state = *self.edit_text.lock().unwrap();
+        let state = *self.edit_text.lock().expect("Failed to lock edit_text mutex");
         if state == 1 {
             // Creation already in progress, skip.
             return;
@@ -167,7 +167,7 @@ impl AndroidSoftKbd {
 
         // Save the raw pointer of any existing EditText so the callback can remove it.
         let old_raw = if state > 1 { state } else { 0 };
-        *self.edit_text.lock().unwrap() = 1;
+        *self.edit_text.lock().expect("Failed to lock edit_text mutex") = 1;
 
         let app2 = app.clone();
         let edit_text_ref = Arc::clone(&self.edit_text);
@@ -251,7 +251,7 @@ impl AndroidSoftKbd {
                 let global = env.new_global_ref(&edit_text)?;
                 let raw = global.as_raw() as usize;
                 std::mem::forget(global);
-                *edit_text_ref.lock().unwrap() = raw;
+                *edit_text_ref.lock().expect("Failed to lock edit_text mutex") = raw;
                 // Log::diag(format!("AndroidSoftKbd: stored EditText global ref 0x{raw:x}"));
 
                 // ---- show soft keyboard in the same callback (avoids race) ----
@@ -291,7 +291,7 @@ impl AndroidSoftKbd {
             });
             if let Err(e) = result {
                 Log::err(format!("AndroidSoftKbd: JNI failed: {e:?}"));
-                *edit_text_ref.lock().unwrap() = 0;
+                *edit_text_ref.lock().expect("Failed to lock edit_text mutex") = 0;
             }
         }));
     }
@@ -415,7 +415,7 @@ impl AndroidSoftKbd {
     fn schedule_edit_text_reset(&self, app: &AndroidApp) {
         use jni::{jni_sig, jni_str, objects::JValue};
 
-        let edit_text_raw = *self.edit_text.lock().unwrap();
+        let edit_text_raw = *self.edit_text.lock().expect("Failed to lock edit_text mutex");
         if edit_text_raw <= 1 {
             return;
         }

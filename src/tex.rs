@@ -576,9 +576,10 @@ impl Tex {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn new(texture_type: TexType, format: TexFormat, id: Option<&str>) -> Tex {
-        let tex = Tex(NonNull::new(unsafe { tex_create(texture_type, format) }).unwrap());
+        let tex =
+            Tex(NonNull::new(unsafe { tex_create(texture_type, format) }).expect("Tex::new should create texture"));
         if let Some(id) = id {
-            let c_str = CString::new(id).unwrap();
+            let c_str = CString::new(id).unwrap_or_default();
             unsafe { tex_set_id(tex.0.as_ptr(), c_str.as_ptr()) };
         }
         tex
@@ -745,8 +746,9 @@ impl Tex {
         for path in files_utf8 {
             let path = path.as_ref();
             let path_buf = path.to_path_buf();
-            let c_str =
-                CString::new(path.to_str().ok_or(StereoKitError::TexCString(path_buf.to_str().unwrap().to_owned()))?)?;
+            let c_str = CString::new(
+                path.to_str().ok_or(StereoKitError::TexCString(path_buf.to_str().unwrap_or_default().to_owned()))?,
+            )?;
             c_files.push(c_str);
         }
         let mut c_files_ptr = Vec::new();
@@ -1031,7 +1033,8 @@ impl Tex {
                 Gradient::new(Some(&keys))
             }
         };
-        Tex(NonNull::new(unsafe { tex_gen_particle(width, height, roundness, gradient_linear.0.as_ptr()) }).unwrap())
+        Tex(NonNull::new(unsafe { tex_gen_particle(width, height, roundness, gradient_linear.0.as_ptr()) })
+            .expect("Tex::gen_particle should create texture"))
     }
 
     /// This is the texture that all Tex objects will fall back to by default if they are still loading. Assigning a
@@ -1210,7 +1213,7 @@ impl Tex {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
-        let c_str = CString::new(id.as_ref()).unwrap();
+        let c_str = CString::new(id.as_ref()).unwrap_or_default();
         unsafe { tex_set_id(self.0.as_ptr(), c_str.as_ptr()) };
         self
     }
@@ -1970,7 +1973,7 @@ impl Tex {
     /// see also [`tex_get_id`]
     /// see example in [`Tex::id`]
     pub fn get_id(&self) -> &str {
-        unsafe { CStr::from_ptr(tex_get_id(self.0.as_ptr())) }.to_str().unwrap()
+        unsafe { CStr::from_ptr(tex_get_id(self.0.as_ptr())) }.to_str().unwrap_or_default()
     }
 
     /// Textures are loaded asyncronously, so this tells you the current state of this texture! This also can tell if
@@ -2420,7 +2423,8 @@ impl Tex {
     pub fn get_cubemap_lighting(&self) -> SHCubemap {
         SHCubemap {
             sh: unsafe { tex_get_cubemap_lighting(self.0.as_ptr()) },
-            tex: Tex(NonNull::new(unsafe { tex_find(tex_get_id(self.0.as_ptr())) }).unwrap()),
+            tex: Tex(NonNull::new(unsafe { tex_find(tex_get_id(self.0.as_ptr())) })
+                .expect("SHCubemap::get_cubemap_lighting Tex should be found!")),
         }
     }
 
@@ -2437,7 +2441,7 @@ impl Tex {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn black() -> Self {
-        Self::find("default/tex_black").unwrap()
+        Self::find("default/tex_black").unwrap_or_default()
     }
 
     /// This is a white checkered grid texture used to easily add visual features to materials. By default, this is used
@@ -2454,7 +2458,7 @@ impl Tex {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn dev_tex() -> Self {
-        Self::find("default/tex_devtex").unwrap()
+        Self::find("default/tex_devtex").unwrap_or_default()
     }
 
     /// This is a red checkered grid texture used to indicate some sort of error has occurred. By default, this is used
@@ -2471,7 +2475,7 @@ impl Tex {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn error() -> Self {
-        Self::find("default/tex_error").unwrap()
+        Self::find("default/tex_error").unwrap_or_default()
     }
 
     /// Default 2x2 flat normal texture, this is a normal that faces out from the, face, and has a color value of
@@ -2488,7 +2492,7 @@ impl Tex {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn flat() -> Self {
-        Self::find("default/tex_flat").unwrap()
+        Self::find("default/tex_flat").unwrap_or_default()
     }
 
     /// Default 2x2 middle gray (0.5,0.5,0.5) opaque texture, this is the texture referred to as ‘gray’ in the shader
@@ -2505,7 +2509,7 @@ impl Tex {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn gray() -> Self {
-        Self::find("default/tex_gray").unwrap()
+        Self::find("default/tex_gray").unwrap_or_default()
     }
 
     /// Default 2x2 roughness color (1,1,0,1) texture, this is the texture referred to as ‘rough’ in the shader texture
@@ -2522,7 +2526,7 @@ impl Tex {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn rough() -> Self {
-        Self::find("default/tex_rough").unwrap()
+        Self::find("default/tex_rough").unwrap_or_default()
     }
 
     /// Default 2x2 white opaque texture, this is the texture referred to as ‘white’ in the shader texture defaults.
@@ -2538,13 +2542,13 @@ impl Tex {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn white() -> Self {
-        Self::find("default/tex").unwrap()
+        Self::find("default/tex").unwrap_or_default()
     }
 
     // /// The equirectangular texture used for the default dome
     // /// <https://stereokit.net/Pages/StereoKit/Tex.html>
     // pub fn cubemap() -> Self {
-    //     Self::find("default/tex_cubemap").unwrap()
+    //     Self::find("default/tex_cubemap").unwrap_or_default()
     // }
 }
 
@@ -2636,7 +2640,9 @@ impl SHCubemap {
     ) -> Result<SHCubemap, StereoKitError> {
         let path = cubemap_file.as_ref();
         let path_buf = path.to_path_buf();
-        let c_str = CString::new(path.to_str().ok_or(StereoKitError::TexCString(path.to_str().unwrap().to_owned()))?)?;
+        let c_str = CString::new(
+            path.to_str().ok_or(StereoKitError::TexCString(path.to_str().unwrap_or_default().to_owned()))?,
+        )?;
         let tex =
             Tex(
                 NonNull::new(unsafe { tex_create_cubemap_file(c_str.as_ptr(), srgb_data as Bool32T, load_priority) })
@@ -2692,8 +2698,9 @@ impl SHCubemap {
         for path in files_utf8 {
             let path = path.as_ref();
             let path_buf = path.to_path_buf();
-            let c_str =
-                CString::new(path.to_str().ok_or(StereoKitError::TexCString(path_buf.to_str().unwrap().to_owned()))?)?;
+            let c_str = CString::new(
+                path.to_str().ok_or(StereoKitError::TexCString(path_buf.to_str().unwrap_or_default().to_owned()))?,
+            )?;
             c_files.push(c_str);
         }
         let mut c_files_ptr = Vec::new();
@@ -2757,7 +2764,7 @@ impl SHCubemap {
         let tex = Tex(NonNull::new(unsafe {
             tex_gen_cubemap(gradient.as_ref().0.as_ptr(), gradient_dir.into(), resolution, &mut sh)
         })
-        .unwrap());
+        .expect("SHCubemap::gen_cubemap_gradient should create texture"));
         //unsafe { sk.tex_addref(&cubemap.1) }
         SHCubemap { sh, tex }
     }
@@ -2807,7 +2814,7 @@ impl SHCubemap {
         let tex = Tex(NonNull::new(unsafe {
             tex_gen_cubemap_sh(&lighting, resolution, light_spot_size_pct, light_spot_intensity)
         })
-        .unwrap());
+        .expect("SHCubemap::gen_cubemap_sh should create texture"));
         SHCubemap { sh: lighting, tex }
     }
 
@@ -2843,7 +2850,8 @@ impl SHCubemap {
     pub fn get_cubemap_lighting(cubemap_texture: impl AsRef<Tex>) -> SHCubemap {
         SHCubemap {
             sh: unsafe { tex_get_cubemap_lighting(cubemap_texture.as_ref().0.as_ptr()) },
-            tex: Tex(NonNull::new(unsafe { tex_find(tex_get_id(cubemap_texture.as_ref().0.as_ptr())) }).unwrap()),
+            tex: Tex(NonNull::new(unsafe { tex_find(tex_get_id(cubemap_texture.as_ref().0.as_ptr())) })
+                .expect("SHCubemap::get_cubemap_lighting Tex should be found!")),
         }
     }
 
@@ -2956,6 +2964,10 @@ impl SHCubemap {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get(&self) -> (SphericalHarmonics, Tex) {
-        (self.sh, Tex(NonNull::new(unsafe { tex_find(tex_get_id(self.tex.0.as_ptr())) }).unwrap()))
+        (
+            self.sh,
+            Tex(NonNull::new(unsafe { tex_find(tex_get_id(self.tex.0.as_ptr())) })
+                .expect("SHCubemap::get Tex should be found!")),
+        )
     }
 }

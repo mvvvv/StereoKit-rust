@@ -25,7 +25,7 @@ use crate::tools::os_api::{get_assets_dir, get_shaders_sks_dir, get_shaders_sour
 ///
 /// let skshaderc_exe_path = get_skshaderc(bin_dir, true);
 /// assert!(skshaderc_exe_path.is_ok());
-/// assert!(skshaderc_exe_path.unwrap().ends_with("skshaderc.exe"));
+/// assert!(skshaderc_exe_path.unwrap_or_default().ends_with("skshaderc.exe"));
 /// ```
 pub fn get_skshaderc(bin_dir: PathBuf, with_wine: bool) -> Result<PathBuf, io::Error> {
     let mut target_root = bin_dir.clone();
@@ -255,7 +255,7 @@ pub fn get_cargo_name() -> Result<String, Error> {
         let line = line.trim();
         if in_package {
             if line.starts_with("name=") || line.starts_with("name") {
-                return Ok(line.split("=").last().unwrap().trim().replace("\"", ""));
+                return Ok(line.split("=").last().unwrap_or_default().trim().replace("\"", ""));
             }
         } else if line.contains("[package]") {
             in_package = true;

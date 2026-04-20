@@ -20,7 +20,7 @@ use std::{
 ///                      mesh::Mesh, maths::{Matrix, Vec2, Vec3, Vec4}};
 ///
 /// let plane = Mesh::generate_plane( Vec2::ONE*2.0, Vec3::NEG_Z, Vec3::X, None, true);
-/// let shader = Shader::from_file("shaders/brick_pbr.hlsl.sks").unwrap();
+/// let shader = Shader::from_file("shaders/brick_pbr.hlsl.sks").unwrap_or_default();
 /// let mut material = Material::new(shader,Some("my_material"));
 /// material.tex_transform(Vec4::new(0.0, 0.0, 0.03, 0.03));
 ///
@@ -88,7 +88,7 @@ impl Default for Shader {
     /// # sk::Sk::shutdown();
     /// ```
     fn default() -> Self {
-        Self::find("default/shader").unwrap()
+        Self::find("default/shader").unwrap_or_default()
     }
 }
 impl Shader {
@@ -104,7 +104,7 @@ impl Shader {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{shader::Shader};
     /// let shader_data = std::include_bytes!("../assets/shaders/brick_pbr.hlsl.sks");
-    /// let shader = Shader::from_memory(shader_data).unwrap();
+    /// let shader = Shader::from_memory(shader_data).unwrap_or_default();
     /// assert_eq!(shader.get_name(), "the_name_of_brick_pbr");
     /// # sk::Sk::shutdown();
     /// ```
@@ -151,7 +151,7 @@ impl Shader {
     /// shader.id("my_brick_shader");
     /// let shader_again = Shader::find("my_brick_shader");
     /// assert!(shader_again.is_ok(), "Failed to find shader");
-    /// assert_eq!(shader_again.unwrap().get_id(), shader.get_id());
+    /// assert_eq!(shader_again.unwrap_or_default().get_id(), shader.get_id());
     /// # sk::Sk::shutdown();
     /// ```
     pub fn find<S: AsRef<str>>(id: S) -> Result<Shader, StereoKitError> {
@@ -202,7 +202,7 @@ impl Shader {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
-        let c_str = CString::new(id.as_ref()).unwrap();
+        let c_str = CString::new(id.as_ref()).unwrap_or_default();
         unsafe { shader_set_id(self.0.as_ptr(), c_str.as_ptr()) };
         self
     }
@@ -214,7 +214,7 @@ impl Shader {
     ///
     /// see example in [`Shader::id`]
     pub fn get_id(&self) -> &str {
-        unsafe { CStr::from_ptr(shader_get_id(self.0.as_ptr())) }.to_str().unwrap()
+        unsafe { CStr::from_ptr(shader_get_id(self.0.as_ptr())) }.to_str().unwrap_or_default()
     }
 
     /// The name of the shader, provided in the shader file itself. Not the filename or id.
@@ -231,7 +231,7 @@ impl Shader {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_name(&self) -> &str {
-        unsafe { CStr::from_ptr(shader_get_name(self.0.as_ptr())) }.to_str().unwrap()
+        unsafe { CStr::from_ptr(shader_get_name(self.0.as_ptr())) }.to_str().unwrap_or_default()
     }
 
     /// <https://stereokit.net/Pages/StereoKit/Shader/Blit.html>
@@ -245,7 +245,7 @@ impl Shader {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn blit() -> Self {
-        Self::find("default/shader_blit").unwrap()
+        Self::find("default/shader_blit").unwrap_or_default()
     }
 
     /// <https://stereokit.net/Pages/StereoKit/Shader/LightMap.html>
@@ -259,7 +259,7 @@ impl Shader {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn light_map() -> Self {
-        Self::find("default/shader_lightmap").unwrap()
+        Self::find("default/shader_lightmap").unwrap_or_default()
     }
 
     /// Sometimes lighting just gets in the way! This is an extremely simple and fast shader that uses a ‘diffuse’
@@ -275,7 +275,7 @@ impl Shader {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn unlit() -> Self {
-        Self::find("default/shader_unlit").unwrap()
+        Self::find("default/shader_unlit").unwrap_or_default()
     }
 
     /// Sometimes lighting just gets in the way! This is an extremely simple and fast shader that uses a ‘diffuse’
@@ -292,7 +292,7 @@ impl Shader {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn unlit_clip() -> Self {
-        Self::find("default/shader_unlit_clip").unwrap()
+        Self::find("default/shader_unlit_clip").unwrap_or_default()
     }
 
     /// <https://stereokit.net/Pages/StereoKit/Shader/Font.html>
@@ -306,7 +306,7 @@ impl Shader {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn font() -> Self {
-        Self::find("default/shader_font").unwrap()
+        Self::find("default/shader_font").unwrap_or_default()
     }
 
     /// <https://stereokit.net/Pages/StereoKit/Shader/equirect.html>
@@ -320,7 +320,7 @@ impl Shader {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn equirect() -> Self {
-        Self::find("default/shader_equirect").unwrap()
+        Self::find("default/shader_equirect").unwrap_or_default()
     }
 
     /// A shader for UI or interactable elements, this’ll be the same as the Shader, but with an additional finger
@@ -336,7 +336,7 @@ impl Shader {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn ui() -> Self {
-        Self::find("default/shader_ui").unwrap()
+        Self::find("default/shader_ui").unwrap_or_default()
     }
 
     /// A shader for indicating interaction volumes! It renders a border around the edges of the UV coordinates that
@@ -355,7 +355,7 @@ impl Shader {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn ui_box() -> Self {
-        Self::find("default/shader_ui_box").unwrap()
+        Self::find("default/shader_ui_box").unwrap_or_default()
     }
 
     /// <https://stereokit.net/Pages/StereoKit/Shader.html>
@@ -369,7 +369,7 @@ impl Shader {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn ui_quadrant() -> Self {
-        Self::find("default/shader_ui_quadrant").unwrap()
+        Self::find("default/shader_ui_quadrant").unwrap_or_default()
     }
 
     /// <https://stereokit.net/Pages/StereoKit/Shader.html>
@@ -383,7 +383,7 @@ impl Shader {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn sky() -> Self {
-        Self::find("default/shader_sky").unwrap()
+        Self::find("default/shader_sky").unwrap_or_default()
     }
 
     /// A physically based shader.
@@ -398,7 +398,7 @@ impl Shader {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn pbr() -> Self {
-        Self::find("default/shader_pbr").unwrap()
+        Self::find("default/shader_pbr").unwrap_or_default()
     }
 
     /// Same as ShaderPBR, but with a discard clip for transparency.
@@ -413,6 +413,6 @@ impl Shader {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn pbr_clip() -> Self {
-        Self::find("default/shader_pbr_clip").unwrap()
+        Self::find("default/shader_pbr_clip").unwrap_or_default()
     }
 }

@@ -98,10 +98,10 @@ pub struct XrCompLayers {
     xr_create_swapchain_android: Option<CreateSwapchainAndroidSurfaceKHR>,
     xr_create_swapchain: Option<CreateSwapchain>,
     xr_destroy_swapchain: Option<DestroySwapchain>,
-    xr_enumerate_swaptchain_images: Option<EnumerateSwapchainImages>,
+    xr_enumerate_swapchain_images: Option<EnumerateSwapchainImages>,
     xr_acquire_swapchain_image: Option<AcquireSwapchainImage>,
-    xr_wait_swaptchain_image: Option<WaitSwapchainImage>,
-    xr_release_swaptchain_image: Option<ReleaseSwapchainImage>,
+    xr_wait_swapchain_image: Option<WaitSwapchainImage>,
+    xr_release_swapchain_image: Option<ReleaseSwapchainImage>,
 }
 
 impl Default for XrCompLayers {
@@ -115,14 +115,12 @@ impl Default for XrCompLayers {
             xr_create_swapchain: BackendOpenXR::get_function::<CreateSwapchain>("xrCreateSwapchain"),
 
             xr_destroy_swapchain: BackendOpenXR::get_function::<DestroySwapchain>("xrDestroySwapchain"),
-            xr_enumerate_swaptchain_images: BackendOpenXR::get_function::<EnumerateSwapchainImages>(
+            xr_enumerate_swapchain_images: BackendOpenXR::get_function::<EnumerateSwapchainImages>(
                 "xrEnumerateSwapchainImages",
             ),
             xr_acquire_swapchain_image: BackendOpenXR::get_function::<AcquireSwapchainImage>("xrAcquireSwapchainImage"),
-            xr_wait_swaptchain_image: BackendOpenXR::get_function::<WaitSwapchainImage>("xrWaitSwapchainImage"),
-            xr_release_swaptchain_image: BackendOpenXR::get_function::<ReleaseSwapchainImage>(
-                "xrReleaseSwapchainImage",
-            ),
+            xr_wait_swapchain_image: BackendOpenXR::get_function::<WaitSwapchainImage>("xrWaitSwapchainImage"),
+            xr_release_swapchain_image: BackendOpenXR::get_function::<ReleaseSwapchainImage>("xrReleaseSwapchainImage"),
         }
     }
 }
@@ -163,10 +161,10 @@ impl XrCompLayers {
 
         swapchain_func_present
             && self.xr_destroy_swapchain.is_some()
-            && self.xr_enumerate_swaptchain_images.is_some()
+            && self.xr_enumerate_swapchain_images.is_some()
             && self.xr_acquire_swapchain_image.is_some()
-            && self.xr_wait_swaptchain_image.is_some()
-            && self.xr_release_swaptchain_image.is_some()
+            && self.xr_wait_swapchain_image.is_some()
+            && self.xr_release_swapchain_image.is_some()
     }
 
     /// Convert a StereoKit `TexFormat` into the corresponding native OpenXR format value.
@@ -317,7 +315,7 @@ impl XrCompLayers {
     /// Destroy the given Android swapchain handle.
     #[cfg(target_os = "android")]
     pub fn destroy_android_swapchain(&self, handle: Swapchain) {
-        match unsafe { self.xr_destroy_swapchain.unwrap()(handle) } {
+        match unsafe { self.xr_destroy_swapchain.expect("Failed to get xrDestroySwapchain function")(handle) } {
             XrResult::SUCCESS => {}
             otherwise => {
                 Log::err(format!("❌ xrDestroySwapchain failed: {otherwise}"));
@@ -352,7 +350,11 @@ impl XrCompLayers {
         };
 
         match unsafe {
-            self.xr_create_swapchain.unwrap()(Session::from_raw(BackendOpenXR::session()), &info, &mut swapchain)
+            self.xr_create_swapchain.expect("XrCompLayers: Failed to get xrCreateSwapchain function")(
+                Session::from_raw(BackendOpenXR::session()),
+                &info,
+                &mut swapchain,
+            )
         } {
             XrResult::SUCCESS => {}
             otherwise => {
@@ -516,8 +518,16 @@ impl SwapchainSk {
 
         // Get the image count
         let mut image_count = 0;
-        match unsafe { xr_comp_layers.xr_enumerate_swaptchain_images.unwrap()(handle, 0, &mut image_count, null_mut()) }
-        {
+        match unsafe {
+            xr_comp_layers
+                .xr_enumerate_swapchain_images
+                .expect("XrCompLayers: Failed to get xrEnumerateSwapchainImages function")(
+                handle,
+                0,
+                &mut image_count,
+                null_mut(),
+            )
+        } {
             XrResult::SUCCESS => {}
             err => {
                 Log::err(format!("❌ xrEnumerateSwapchainImages failed: {err}"));
@@ -540,7 +550,9 @@ impl SwapchainSk {
             let mut final_count = 0;
             Log::diag("SwapchainSk::wrap: Calling xrEnumerateSwapchainImages...");
             match unsafe {
-                xr_comp_layers.xr_enumerate_swaptchain_images.unwrap()(
+                xr_comp_layers
+                    .xr_enumerate_swapchain_images
+                    .expect("XrCompLayers: Failed to get xrEnumerateSwapchainImages function")(
                     handle,
                     image_count,
                     &mut final_count,
@@ -565,8 +577,8 @@ impl SwapchainSk {
             // Wrap each Vulkan image into a Tex object
             for (idx, img) in this.vk_images.iter().enumerate() {
                 Log::diag(format!("SwapchainSk::wrap: Processing image {}: {:#?}", idx, img));
-                let mut image_sk =
-                    Tex::render_target(width as usize, height as usize, Some(1), Some(format), None).unwrap();
+                let mut image_sk = Tex::render_target(width as usize, height as usize, Some(1), Some(format), None)
+                    .unwrap_or_default();
 
                 Log::diag(format!("SwapchainSk::wrap: Setting native surface for image {}...", idx));
                 unsafe {
@@ -625,7 +637,13 @@ impl SwapchainSk {
         let timeout_ns = timeout_ns.unwrap_or(0x7fffffffffffffff);
         let timeout = Duration::from_nanos(timeout_ns);
         match unsafe {
-            self.xr_comp_layers.xr_acquire_swapchain_image.unwrap()(self.handle, null_mut(), &mut self.acquired)
+            self.xr_comp_layers
+                .xr_acquire_swapchain_image
+                .expect("XrCompLayers: Failed to get xrAcquireSwapchainImage function")(
+                self.handle,
+                null_mut(),
+                &mut self.acquired,
+            )
         } {
             XrResult::SUCCESS => {}
             otherwise => return Err(otherwise),
@@ -634,8 +652,14 @@ impl SwapchainSk {
         let swapchain_image_wait_info =
             SwapchainImageWaitInfo { ty: StructureType::SWAPCHAIN_IMAGE_WAIT_INFO, next: null_mut(), timeout };
 
-        match unsafe { self.xr_comp_layers.xr_wait_swaptchain_image.unwrap()(self.handle, &swapchain_image_wait_info) }
-        {
+        match unsafe {
+            self.xr_comp_layers
+                .xr_wait_swapchain_image
+                .expect("XrCompLayers: Failed to get xrWaitSwapchainImage function")(
+                self.handle,
+                &swapchain_image_wait_info,
+            )
+        } {
             XrResult::SUCCESS => Ok(self.acquired),
             otherwise => Err(otherwise),
         }
@@ -667,7 +691,13 @@ impl SwapchainSk {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn release_image(&mut self) -> std::result::Result<(), XrResult> {
-        match unsafe { self.xr_comp_layers.xr_release_swaptchain_image.unwrap()(self.handle, null_mut()) } {
+        match unsafe {
+            self.xr_comp_layers
+                .xr_release_swapchain_image
+                .expect("XrCompLayers: Failed to get xrReleaseSwapchainImage function")(
+                self.handle, null_mut()
+            )
+        } {
             XrResult::SUCCESS => Ok(()),
             otherwise => Err(otherwise),
         }

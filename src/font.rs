@@ -105,8 +105,8 @@ impl Default for Font {
     ///
     /// see also [`font_find`]
     fn default() -> Self {
-        let c_str = CString::new("default/font").unwrap();
-        Font(NonNull::new(unsafe { font_find(c_str.as_ptr()) }).unwrap())
+        let c_str = CString::new("default/font").unwrap_or_default();
+        Font(NonNull::new(unsafe { font_find(c_str.as_ptr()) }).expect("Default font should exist"))
     }
 }
 
@@ -192,7 +192,7 @@ impl Font {
         for path in files_utf8 {
             let path = path.as_ref();
             let c_str = CString::new(path.to_str().ok_or(StereoKitError::FontFiles(
-                path.to_str().unwrap().to_string(),
+                path.to_str().unwrap_or_default().to_string(),
                 "CString conversion".to_string(),
             ))?)?;
             c_files.push(c_str);
@@ -353,7 +353,7 @@ impl Font {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
-        let c_str = CString::new(id.as_ref()).unwrap();
+        let c_str = CString::new(id.as_ref()).unwrap_or_default();
         unsafe { font_set_id(self.0.as_ptr(), c_str.as_ptr()) };
         self
     }
@@ -364,6 +364,6 @@ impl Font {
     /// see also [`font_get_id`]
     /// see example [`Font::id`]
     pub fn get_id(&self) -> &str {
-        unsafe { CStr::from_ptr(font_get_id(self.0.as_ptr())) }.to_str().unwrap()
+        unsafe { CStr::from_ptr(font_get_id(self.0.as_ptr())) }.to_str().unwrap_or_default()
     }
 }

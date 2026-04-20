@@ -261,7 +261,7 @@ impl Compute {
     /// # } sk::Sk::shutdown();
     /// ```
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
-        let c_str = CString::new(id.as_ref()).unwrap();
+        let c_str = CString::new(id.as_ref()).unwrap_or_default();
         unsafe { compute_set_id(self.0.as_ptr(), c_str.as_ptr()) };
         self
     }
@@ -320,7 +320,7 @@ impl Compute {
     /// see also [`compute_get_id`]
     /// see example in [`Compute::id`]
     pub fn get_id(&self) -> &str {
-        unsafe { CStr::from_ptr(compute_get_id(self.0.as_ptr())) }.to_str().unwrap()
+        unsafe { CStr::from_ptr(compute_get_id(self.0.as_ptr())) }.to_str().unwrap_or_default()
     }
 
     /// Gets the shader this Compute was built from.
@@ -344,7 +344,10 @@ impl Compute {
     /// # } sk::Sk::shutdown();
     /// ```
     pub fn get_shader(&self) -> Shader {
-        Shader(NonNull::new(unsafe { compute_get_shader(self.0.as_ptr()) }).unwrap())
+        Shader(
+            NonNull::new(unsafe { compute_get_shader(self.0.as_ptr()) })
+                .expect("compute_get_shader shouldn't return null"),
+        )
     }
 
     /// Returns all shader parameters as an iterable [`ComputeParamInfos`].
@@ -503,7 +506,7 @@ impl<'a> ComputeParamInfos<'a> {
     /// # } sk::Sk::shutdown();
     /// ```
     pub fn set_texture<S: AsRef<str>>(&mut self, name: S, texture: impl AsRef<Tex>) -> bool {
-        let c = CString::new(name.as_ref()).unwrap();
+        let c = CString::new(name.as_ref()).unwrap_or_default();
         unsafe { compute_set_texture(self.compute.0.as_ptr(), c.as_ptr(), texture.as_ref().0.as_ptr()) != 0 }
     }
 
@@ -528,14 +531,16 @@ impl<'a> ComputeParamInfos<'a> {
     ///
     /// // compute_test has no structured buffers, so all set_storage calls return false.
     /// let cells = vec![[1.0_f32, 0.0_f32]; 8 * 8];
-    /// let buf_a = ComputeBuffer::with_data(ComputeBufferType::ReadWrite, &cells).unwrap();
-    /// let buf_b = ComputeBuffer::with_data(ComputeBufferType::ReadWrite, &cells).unwrap();
+    /// let buf_a = ComputeBuffer::with_data(ComputeBufferType::ReadWrite, &cells)
+    ///                .expect("should create compute buffer with data");
+    /// let buf_b = ComputeBuffer::with_data(ComputeBufferType::ReadWrite, &cells)
+    ///                .expect("should create compute buffer with data");
     /// assert!(!param_infos.set_storage("input",        &buf_a));
     /// assert!(!param_infos.set_storage("do_not_exist", &buf_b));
     /// # } sk::Sk::shutdown();
     /// ```
     pub fn set_storage<T, S: AsRef<str>>(&mut self, name: S, buffer: &ComputeBuffer<T>) -> bool {
-        let c = CString::new(name.as_ref()).unwrap();
+        let c = CString::new(name.as_ref()).unwrap_or_default();
         unsafe { compute_set_storage(self.compute.0.as_ptr(), c.as_ptr(), buffer.as_ptr()) != 0 }
     }
 
@@ -548,7 +553,7 @@ impl<'a> ComputeParamInfos<'a> {
     ///
     /// see also [`compute_set_constant`]
     pub fn set_constant<S: AsRef<str>, T>(&mut self, name: S, buffer: &MaterialBuffer<T>) -> bool {
-        let c = CString::new(name.as_ref()).unwrap();
+        let c = CString::new(name.as_ref()).unwrap_or_default();
         unsafe { compute_set_constant(self.compute.0.as_ptr(), c.as_ptr(), buffer.as_ptr()) != 0 }
     }
 
@@ -575,7 +580,7 @@ impl<'a> ComputeParamInfos<'a> {
     /// # } sk::Sk::shutdown();
     /// ```
     pub fn set_float<S: AsRef<str>>(&mut self, name: S, value: f32) -> &mut Self {
-        let c = CString::new(name.as_ref()).unwrap();
+        let c = CString::new(name.as_ref()).unwrap_or_default();
         unsafe { compute_set_float(self.compute.0.as_ptr(), c.as_ptr(), value) };
         self
     }
@@ -605,7 +610,7 @@ impl<'a> ComputeParamInfos<'a> {
     /// # } sk::Sk::shutdown();
     /// ```
     pub fn set_int<S: AsRef<str>>(&mut self, name: S, value: i32) -> &mut Self {
-        let c = CString::new(name.as_ref()).unwrap();
+        let c = CString::new(name.as_ref()).unwrap_or_default();
         unsafe { compute_set_int(self.compute.0.as_ptr(), c.as_ptr(), value) };
         self
     }
@@ -633,7 +638,7 @@ impl<'a> ComputeParamInfos<'a> {
     /// # } sk::Sk::shutdown();
     /// ```
     pub fn set_uint<S: AsRef<str>>(&mut self, name: S, value: u32) -> &mut Self {
-        let c = CString::new(name.as_ref()).unwrap();
+        let c = CString::new(name.as_ref()).unwrap_or_default();
         unsafe { compute_set_uint(self.compute.0.as_ptr(), c.as_ptr(), value) };
         self
     }
@@ -662,7 +667,7 @@ impl<'a> ComputeParamInfos<'a> {
     /// # } sk::Sk::shutdown();
     /// ```
     pub fn set_vector2<S: AsRef<str>>(&mut self, name: S, value: impl Into<Vec2>) -> &mut Self {
-        let c = CString::new(name.as_ref()).unwrap();
+        let c = CString::new(name.as_ref()).unwrap_or_default();
         unsafe { compute_set_vector2(self.compute.0.as_ptr(), c.as_ptr(), value.into()) };
         self
     }
@@ -691,7 +696,7 @@ impl<'a> ComputeParamInfos<'a> {
     /// # } sk::Sk::shutdown();
     /// ```
     pub fn set_vector3<S: AsRef<str>>(&mut self, name: S, value: impl Into<Vec3>) -> &mut Self {
-        let c = CString::new(name.as_ref()).unwrap();
+        let c = CString::new(name.as_ref()).unwrap_or_default();
         unsafe { compute_set_vector3(self.compute.0.as_ptr(), c.as_ptr(), value.into()) };
         self
     }
@@ -720,7 +725,7 @@ impl<'a> ComputeParamInfos<'a> {
     /// # } sk::Sk::shutdown();
     /// ```
     pub fn set_vector4<S: AsRef<str>>(&mut self, name: S, value: impl Into<Vec4>) -> &mut Self {
-        let c = CString::new(name.as_ref()).unwrap();
+        let c = CString::new(name.as_ref()).unwrap_or_default();
         unsafe { compute_set_vector4(self.compute.0.as_ptr(), c.as_ptr(), value.into()) };
         self
     }
@@ -749,7 +754,7 @@ impl<'a> ComputeParamInfos<'a> {
     /// # } sk::Sk::shutdown();
     /// ```
     pub fn set_color<S: AsRef<str>>(&mut self, name: S, color_gamma: impl Into<Color128>) -> &mut Self {
-        let c = CString::new(name.as_ref()).unwrap();
+        let c = CString::new(name.as_ref()).unwrap_or_default();
         unsafe { compute_set_color(self.compute.0.as_ptr(), c.as_ptr(), color_gamma.into()) };
         self
     }
@@ -777,7 +782,7 @@ impl<'a> ComputeParamInfos<'a> {
     /// # } sk::Sk::shutdown();
     /// ```
     pub fn set_bool<S: AsRef<str>>(&mut self, name: S, value: bool) -> &mut Self {
-        let c = CString::new(name.as_ref()).unwrap();
+        let c = CString::new(name.as_ref()).unwrap_or_default();
         unsafe { compute_set_bool(self.compute.0.as_ptr(), c.as_ptr(), value as Bool32T) };
         self
     }
@@ -805,7 +810,7 @@ impl<'a> ComputeParamInfos<'a> {
     /// # } sk::Sk::shutdown();
     /// ```
     pub fn set_matrix<S: AsRef<str>>(&mut self, name: S, value: impl Into<Matrix>) -> &mut Self {
-        let c = CString::new(name.as_ref()).unwrap();
+        let c = CString::new(name.as_ref()).unwrap_or_default();
         unsafe { compute_set_matrix(self.compute.0.as_ptr(), c.as_ptr(), value.into()) };
         self
     }
@@ -836,7 +841,7 @@ impl<'a> ComputeParamInfos<'a> {
     /// see also [`compute_get_float`]
     /// see example in [`ComputeParamInfos::set_float`]
     pub fn get_float<S: AsRef<str>>(&self, name: S) -> f32 {
-        let c = CString::new(name.as_ref()).unwrap();
+        let c = CString::new(name.as_ref()).unwrap_or_default();
         unsafe { compute_get_float(self.compute.0.as_ptr(), c.as_ptr()) }
     }
 
@@ -846,7 +851,7 @@ impl<'a> ComputeParamInfos<'a> {
     /// see also [`compute_get_int`]
     /// see example in [`ComputeParamInfos::set_int`]
     pub fn get_int<S: AsRef<str>>(&self, name: S) -> i32 {
-        let c = CString::new(name.as_ref()).unwrap();
+        let c = CString::new(name.as_ref()).unwrap_or_default();
         unsafe { compute_get_int(self.compute.0.as_ptr(), c.as_ptr()) }
     }
 
@@ -856,7 +861,7 @@ impl<'a> ComputeParamInfos<'a> {
     /// see also [`compute_get_uint`]
     /// see example in [`ComputeParamInfos::set_uint`]
     pub fn get_uint<S: AsRef<str>>(&self, name: S) -> u32 {
-        let c = CString::new(name.as_ref()).unwrap();
+        let c = CString::new(name.as_ref()).unwrap_or_default();
         unsafe { compute_get_uint(self.compute.0.as_ptr(), c.as_ptr()) }
     }
 
@@ -866,7 +871,7 @@ impl<'a> ComputeParamInfos<'a> {
     /// see also [`compute_get_vector2`]
     /// see example in [`ComputeParamInfos::set_vector2`]
     pub fn get_vector2<S: AsRef<str>>(&self, name: S) -> Vec2 {
-        let c = CString::new(name.as_ref()).unwrap();
+        let c = CString::new(name.as_ref()).unwrap_or_default();
         unsafe { compute_get_vector2(self.compute.0.as_ptr(), c.as_ptr()) }
     }
 
@@ -876,7 +881,7 @@ impl<'a> ComputeParamInfos<'a> {
     /// see also [`compute_get_vector3`]
     /// see example in [`ComputeParamInfos::set_vector3`]
     pub fn get_vector3<S: AsRef<str>>(&self, name: S) -> Vec3 {
-        let c = CString::new(name.as_ref()).unwrap();
+        let c = CString::new(name.as_ref()).unwrap_or_default();
         unsafe { compute_get_vector3(self.compute.0.as_ptr(), c.as_ptr()) }
     }
 
@@ -886,7 +891,7 @@ impl<'a> ComputeParamInfos<'a> {
     /// see also [`compute_get_vector4`]
     /// see example in [`ComputeParamInfos::set_vector4`]
     pub fn get_vector4<S: AsRef<str>>(&self, name: S) -> Vec4 {
-        let c = CString::new(name.as_ref()).unwrap();
+        let c = CString::new(name.as_ref()).unwrap_or_default();
         unsafe { compute_get_vector4(self.compute.0.as_ptr(), c.as_ptr()) }
     }
 
@@ -896,7 +901,7 @@ impl<'a> ComputeParamInfos<'a> {
     /// see also [`compute_get_color`]
     /// see example in [`ComputeParamInfos::set_color`]
     pub fn get_color<S: AsRef<str>>(&self, name: S) -> Color128 {
-        let c = CString::new(name.as_ref()).unwrap();
+        let c = CString::new(name.as_ref()).unwrap_or_default();
         unsafe { compute_get_color(self.compute.0.as_ptr(), c.as_ptr()) }
     }
 
@@ -906,7 +911,7 @@ impl<'a> ComputeParamInfos<'a> {
     /// see also [`compute_get_bool`]
     /// see example in [`ComputeParamInfos::set_bool`]
     pub fn get_bool<S: AsRef<str>>(&self, name: S) -> bool {
-        let c = CString::new(name.as_ref()).unwrap();
+        let c = CString::new(name.as_ref()).unwrap_or_default();
         unsafe { compute_get_bool(self.compute.0.as_ptr(), c.as_ptr()) != 0 }
     }
 
@@ -916,7 +921,7 @@ impl<'a> ComputeParamInfos<'a> {
     /// see also [`compute_get_matrix`]
     /// see example in [`ComputeParamInfos::set_matrix`]
     pub fn get_matrix<S: AsRef<str>>(&self, name: S) -> Matrix {
-        let c = CString::new(name.as_ref()).unwrap();
+        let c = CString::new(name.as_ref()).unwrap_or_default();
         unsafe { compute_get_matrix(self.compute.0.as_ptr(), c.as_ptr()) }
     }
 }
@@ -1053,7 +1058,7 @@ impl<T> ComputeBuffer<T> {
     /// see also [`compute_buffer_set_id`]
     /// see example in [`ComputeBuffer`]
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
-        let c_str = CString::new(id.as_ref()).unwrap();
+        let c_str = CString::new(id.as_ref()).unwrap_or_default();
         unsafe { compute_buffer_set_id(self._compute_buffer, c_str.as_ptr()) };
         self
     }
@@ -1209,7 +1214,7 @@ impl<T> ComputeBuffer<T> {
     /// see also [`compute_buffer_get_id`]
     /// see example in [`ComputeBuffer`]
     pub fn get_id(&self) -> &str {
-        unsafe { CStr::from_ptr(compute_buffer_get_id(self._compute_buffer)) }.to_str().unwrap()
+        unsafe { CStr::from_ptr(compute_buffer_get_id(self._compute_buffer)) }.to_str().unwrap_or_default()
     }
 
     /// Creates a clone of the same reference. Basically the new variable is the same asset.

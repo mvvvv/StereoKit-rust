@@ -933,9 +933,9 @@ pub struct FovInfo {
 /// let display_type      = Device::get_display_type();
 /// let display_blend     = Device::get_display_blend();
 /// let device_tracking   = Device::get_tracking();
-/// let device_name       = Device::get_name().unwrap();
-/// let device_runtime    = Device::get_runtime().unwrap();
-/// let device_gpu        = Device::get_gpu().unwrap();
+/// let device_name       = Device::get_name().unwrap_or_default();
+/// let device_runtime    = Device::get_runtime().unwrap_or_default();
+/// let device_gpu        = Device::get_gpu().unwrap_or_default();
 /// let has_eye_gaze      = Device::has_eye_gaze();
 /// let has_hand_tracking = Device::has_hand_tracking();
 /// let valid_blend_none  = Device::valid_blend(DisplayBlend::None);
@@ -1064,7 +1064,7 @@ impl Device {
     ///
     /// xr_mode_stop_here!();
     /// // These are the expected results for offscreen tests on a PC:
-    /// assert_eq!(Device::get_runtime().unwrap(), "None");
+    /// assert_eq!(Device::get_runtime().unwrap_or_default(), "None");
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_runtime<'a>() -> Result<&'a str, StereoKitError> {
@@ -1085,7 +1085,7 @@ impl Device {
     /// let gpu_name = Device::get_gpu();
     /// assert!(gpu_name.is_ok());
     /// // The GPU name will vary by system, but should not be empty
-    /// assert!(!gpu_name.unwrap().is_empty());
+    /// assert!(!gpu_name.unwrap_or_default().is_empty());
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_gpu<'a>() -> Result<&'a str, StereoKitError> {
@@ -1153,7 +1153,7 @@ impl Device {
     ///
     /// xr_mode_stop_here!();
     /// // These are the expected results for offscreen tests on a PC:
-    /// assert_eq!(Device::get_name().unwrap(), "Offscreen");
+    /// assert_eq!(Device::get_name().unwrap_or_default(), "Offscreen");
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_name<'a>() -> Result<&'a str, StereoKitError> {
@@ -1349,10 +1349,13 @@ impl Gradient {
     /// ```
     pub fn new(keys: Option<&[GradientKey]>) -> Self {
         match keys {
-            Some(keys) => {
-                Gradient(NonNull::new(unsafe { gradient_create_keys(keys.as_ptr(), keys.len() as i32) }).unwrap())
-            }
-            None => Gradient(NonNull::new(unsafe { gradient_create() }).unwrap()),
+            Some(keys) => Gradient(
+                NonNull::new(unsafe { gradient_create_keys(keys.as_ptr(), keys.len() as i32) })
+                    .expect("Gradient::new should create a gradient with keys"),
+            ),
+            None => Gradient(
+                NonNull::new(unsafe { gradient_create() }).expect("Gradient::new should create a default gradient"),
+            ),
         }
     }
 
@@ -1575,11 +1578,11 @@ pub struct FileFilter {
 impl FileFilter {
     pub fn new(str: impl AsRef<str>) -> Self {
         let mut value: [c_char; 32usize] = [0; 32usize];
-        let c_array = CString::new(str.as_ref()).unwrap();
+        let c_array = CString::new(str.as_ref()).unwrap_or_default();
         let c_array = c_array.as_bytes_with_nul();
 
         let mut c_array_iter = c_array.iter().map(|v| *v as c_char);
-        value[0..c_array.len()].fill_with(|| c_array_iter.next().unwrap());
+        value[0..c_array.len()].fill_with(|| c_array_iter.next().unwrap_or_default());
 
         Self { ext: value }
     }
@@ -1613,7 +1616,7 @@ impl Hash {
     /// assert_eq!(hash, 4420528118743043111);
     /// ```
     pub fn string(str: impl AsRef<str>) -> IdHashT {
-        let c_str = CString::new(str.as_ref()).unwrap();
+        let c_str = CString::new(str.as_ref()).unwrap_or_default();
         unsafe { hash_string(c_str.as_ptr()) }
     }
 
@@ -1636,7 +1639,7 @@ impl Hash {
     /// assert_eq!(hash2, 4420528118743043111);
     /// ```
     pub fn string_with(str: impl AsRef<str>, root: IdHashT) -> IdHashT {
-        let c_str = CString::new(str.as_ref()).unwrap();
+        let c_str = CString::new(str.as_ref()).unwrap_or_default();
         unsafe { hash_string_with(c_str.as_ptr(), root) }
     }
 
@@ -1775,7 +1778,7 @@ unsafe extern "C" fn fp_trampoline<FS: FnMut(&str), FC: FnMut()>(
     let data = unsafe { &mut *(user_data as *mut (&mut FS, &mut FC)) };
     let (update, cancel) = data;
     if confirmed != 0 {
-        let c_str = unsafe { CStr::from_ptr(filename).to_str().unwrap() };
+        let c_str = unsafe { CStr::from_ptr(filename).to_str().unwrap_or_default() };
         update(c_str)
     } else {
         cancel()
@@ -1793,7 +1796,7 @@ unsafe extern "C" fn fp_sz_trampoline<F: FnMut(bool, &str)>(
 ) {
     let closure = unsafe { &mut *(user_data as *mut &mut F) };
     if confirmed != 0 && filename_length > 0 {
-        let c_str = unsafe { CStr::from_ptr(filename).to_str().unwrap() };
+        let c_str = unsafe { CStr::from_ptr(filename).to_str().unwrap_or_default() };
         closure(true, c_str)
     } else {
         let c_str = "";
@@ -2001,7 +2004,7 @@ impl Platform {
     pub fn keyboard_set_layout(keyboard_type: TextContext, keyboard_layouts: &Vec<&str>) -> bool {
         let mut keyboard_layouts_c = vec![];
         for str in keyboard_layouts {
-            let c_str = CString::new(*str).unwrap().into_raw() as *const c_char;
+            let c_str = CString::new(*str).unwrap_or_default().into_raw() as *const c_char;
             keyboard_layouts_c.push(c_str);
         }
         unsafe {

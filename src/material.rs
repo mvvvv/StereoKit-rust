@@ -194,8 +194,8 @@ impl Default for Material {
     /// # sk::Sk::shutdown();
     /// ```
     fn default() -> Self {
-        let c_str = CString::new("default/material").unwrap();
-        Material(NonNull::new(unsafe { material_find(c_str.as_ptr()) }).unwrap())
+        let c_str = CString::new("default/material").unwrap_or_default();
+        Material(NonNull::new(unsafe { material_find(c_str.as_ptr()) }).expect("Default material should exist"))
     }
 }
 
@@ -221,7 +221,10 @@ impl Material {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn new(shader: impl AsRef<Shader>, id: Option<&str>) -> Material {
-        let mut mat = Material(NonNull::new(unsafe { material_create(shader.as_ref().0.as_ptr()) }).unwrap());
+        let mut mat = Material(
+            NonNull::new(unsafe { material_create(shader.as_ref().0.as_ptr()) })
+                .expect("Material::new should create a material!"),
+        );
         if let Some(id) = id {
             mat.id(id);
         }
@@ -243,7 +246,8 @@ impl Material {
     /// // Create Mesh and its material
     /// let circle = Mesh::generate_circle(1.0, Vec3::NEG_Z, Vec3::X, None,  true);
     /// let material_circle =
-    ///     Material::from_file("shaders/blinker.hlsl.sks", Some("my_material_circle")).unwrap();
+    ///     Material::from_file("shaders/blinker.hlsl.sks", Some("my_material_circle"))
+    ///                 .expect("blinker shader should load and create a material!");
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     circle.draw(token, &material_circle,  Matrix::IDENTITY, None, None);
@@ -254,7 +258,10 @@ impl Material {
         let shader = Shader::from_file(&shader_file_name);
         match shader {
             Ok(shader) => {
-                let mut mat = Material(NonNull::new(unsafe { material_create(shader.as_ref().0.as_ptr()) }).unwrap());
+                let mut mat = Material(
+                    NonNull::new(unsafe { material_create(shader.as_ref().0.as_ptr()) })
+                        .expect("Material::from_file should create a material!"),
+                );
                 if let Some(id) = id {
                     mat.id(id);
                 }
@@ -296,7 +303,9 @@ impl Material {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn copy(&self) -> Material {
-        Material(NonNull::new(unsafe { material_copy(self.0.as_ptr()) }).unwrap())
+        Material(
+            NonNull::new(unsafe { material_copy(self.0.as_ptr()) }).expect("Material::copy should create a material!"),
+        )
     }
 
     /// Creates a new Material asset with the same shader and properties! Draw calls with the new Material will not
@@ -313,7 +322,7 @@ impl Material {
     ///
     /// let mut material = Material::new(Shader::pbr(), Some("my_material"));
     /// material.roughness_amount(0.42);
-    /// let mut material_red = Material::copy_id("my_material").unwrap();
+    /// let mut material_red = Material::copy_id("my_material").unwrap_or_default();
     /// material_red.id("my_red_material").color_tint(named_colors::RED);
     ///
     /// assert_eq!(&material.get_all_param_info().get_float("roughness"),
@@ -342,7 +351,7 @@ impl Material {
     /// use stereokit_rust::{util::named_colors,material::Material, shader::Shader};
     ///
     /// let material = Material::new(Shader::pbr(), Some("my_material"));
-    /// let mut material_red = Material::find("my_material").unwrap();
+    /// let mut material_red = Material::find("my_material").unwrap_or_default();
     /// material_red.id("my_red_material").color_tint(named_colors::RED);
     ///
     /// assert_eq!(&material.get_all_param_info().get_color("color"),
@@ -405,10 +414,10 @@ impl Material {
     /// let material3 = Material::unlit().tex_file_copy("textures/open_gltf.jpeg", true, None)
     ///                    .expect("open_gltf.jpeg should load");
     ///
-    /// assert_eq!(&material1.get_all_param_info().get_texture("diffuse").unwrap().get_id(),
-    ///            &material2.get_all_param_info().get_texture("diffuse").unwrap().get_id());
-    /// assert_ne!(&material2.get_all_param_info().get_texture("diffuse").unwrap().get_id(),
-    ///            &material3.get_all_param_info().get_texture("diffuse").unwrap().get_id());
+    /// assert_eq!(&material1.get_all_param_info().get_texture("diffuse").unwrap_or_default().get_id(),
+    ///            &material2.get_all_param_info().get_texture("diffuse").unwrap_or_default().get_id());
+    /// assert_ne!(&material2.get_all_param_info().get_texture("diffuse").unwrap_or_default().get_id(),
+    ///            &material3.get_all_param_info().get_texture("diffuse").unwrap_or_default().get_id());
     /// # sk::Sk::shutdown();
     /// ```
     pub fn tex_file_copy(
@@ -449,10 +458,10 @@ impl Material {
     ///                    .expect("tex should be created");
     /// let material3 = Material::unlit().tex_copy(tex);
     ///
-    /// assert_eq!(&material1.get_all_param_info().get_texture("diffuse").unwrap().get_id(),
-    ///            &material2.get_all_param_info().get_texture("diffuse").unwrap().get_id());
-    /// assert_ne!(&material2.get_all_param_info().get_texture("diffuse").unwrap().get_id(),
-    ///            &material3.get_all_param_info().get_texture("diffuse").unwrap().get_id());
+    /// assert_eq!(&material1.get_all_param_info().get_texture("diffuse").unwrap_or_default().get_id(),
+    ///            &material2.get_all_param_info().get_texture("diffuse").unwrap_or_default().get_id());
+    /// assert_ne!(&material2.get_all_param_info().get_texture("diffuse").unwrap_or_default().get_id(),
+    ///            &material3.get_all_param_info().get_texture("diffuse").unwrap_or_default().get_id());
     /// # sk::Sk::shutdown();
     /// ```
     pub fn tex_copy(&mut self, tex: impl AsRef<Tex>) -> Material {
@@ -478,7 +487,7 @@ impl Material {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
-        let c_str = CString::new(id.as_ref()).unwrap();
+        let c_str = CString::new(id.as_ref()).unwrap_or_default();
         unsafe { material_set_id(self.0.as_ptr(), c_str.as_ptr()) };
         self
     }
@@ -591,13 +600,13 @@ impl Material {
     /// use stereokit_rust::{material::Material, tex::Tex};
     ///
     /// let mut material = Material::unlit().copy();
-    /// let default_tex = material.get_all_param_info().get_texture("diffuse").unwrap();
+    /// let default_tex = material.get_all_param_info().get_texture("diffuse").unwrap_or_default();
     ///
     /// let tex = Tex::from_file("textures/open_gltf.jpeg", true, None)
     ///                    .expect("tex should be created");
     /// material.diffuse_tex(&tex);
     ///
-    /// assert_eq!(&material.get_all_param_info().get_texture("diffuse").unwrap().get_id(),
+    /// assert_eq!(&material.get_all_param_info().get_texture("diffuse").unwrap_or_default().get_id(),
     ///            &tex.get_id());
     /// assert_ne!(&default_tex.get_id(),
     ///            &tex.get_id());
@@ -654,14 +663,16 @@ impl Material {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{util::named_colors, material::Material, tex::Tex};
     ///
-    /// let mut material = Material::pbr_clip().tex_file_copy("textures/water/bump_large.ktx2", true, Some(0)).unwrap();
+    /// let mut material = Material::pbr_clip()
+    ///                       .tex_file_copy("textures/water/bump_large.ktx2", true, Some(0))
+    ///                       .expect("tex bump_large.ktx2 should be created");
     ///
     /// let tex = Tex::from_file("textures/water/bump_large_inverse.ktx2", true, None)
     ///                    .expect("tex should be created");
     /// material.emission_tex(&tex).emission_factor(named_colors::RED);
     ///
-    /// assert_eq!(&material.get_all_param_info().get_texture("emission").unwrap().get_id(),
-    ///            &tex.get_id());
+    /// assert_eq!(&material.get_all_param_info().get_texture("emission")
+    ///            .unwrap_or_default().get_id(), &tex.get_id());
     /// # use stereokit_rust::util::Hash;
     /// # assert_eq!(Hash::string("emission"), 17756472659261185998);
     /// # sk::Sk::shutdown();
@@ -751,14 +762,16 @@ impl Material {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{material::Material, tex::Tex};
     ///
-    /// let mut material = Material::pbr_clip().tex_file_copy("textures/parquet2/parquet2.ktx2", true, Some(0)).unwrap();
+    /// let mut material = Material::pbr_clip()
+    ///                     .tex_file_copy("textures/parquet2/parquet2.ktx2", true, Some(0))
+    ///                     .unwrap_or_default();
     ///
     /// let tex = Tex::from_file("textures/parquet2/parquet2metal.ktx2", true, None)
     ///                    .expect("tex should be created");
     /// material.metal_tex(&tex).metallic_amount(0.68);
     ///
-    /// assert_eq!(&material.get_all_param_info().get_texture("metal").unwrap().get_id(),
-    ///            &tex.get_id());
+    /// assert_eq!(&material.get_all_param_info().get_texture("metal")
+    ///              .unwrap_or_default().get_id(), &tex.get_id());
     /// # use stereokit_rust::util::Hash;
     /// # assert_eq!(Hash::string("metal"), 4582786214424138428);
     /// # sk::Sk::shutdown();
@@ -787,14 +800,15 @@ impl Material {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{material::Material, tex::Tex};
     ///
-    /// let mut material = Material::from_file("shaders/water_pbr2.hlsl.sks", None).unwrap();
+    /// let mut material = Material::from_file("shaders/water_pbr2.hlsl.sks", None)
+    ///                      .unwrap_or_default();
     ///
     /// let tex = Tex::from_file("textures/water/bump_large.ktx2", true, None)
     ///                    .expect("tex should be created");
     /// material.normal_tex(&tex);
     ///
-    /// assert_eq!(&material.get_all_param_info().get_texture("normal").unwrap().get_id(),
-    ///            &tex.get_id());
+    /// assert_eq!(&material.get_all_param_info().get_texture("normal")
+    ///               .unwrap_or_default().get_id(), &tex.get_id());
     /// # use stereokit_rust::util::Hash;
     /// # assert_eq!(Hash::string("normal"), 6991063326977151602);
     /// # sk::Sk::shutdown();
@@ -823,14 +837,15 @@ impl Material {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{material::Material, tex::Tex};
     ///
-    /// let mut material = Material::from_file("shaders/large_tile_pbr.hlsl.sks", None).unwrap();
+    /// let mut material = Material::from_file("shaders/large_tile_pbr.hlsl.sks", None)
+    ///                       .unwrap_or_default();
     ///
     /// let tex = Tex::from_file("textures/parquet2/parquet2ao.ktx2", true, None)
     ///                    .expect("tex should be created");
     /// material.occlusion_tex(&tex);
     ///
-    /// assert_eq!(&material.get_all_param_info().get_texture("occlusion").unwrap().get_id(),
-    ///            &tex.get_id());
+    /// assert_eq!(&material.get_all_param_info().get_texture("occlusion")
+    ///                .unwrap_or_default().get_id(), &tex.get_id());
     /// # use stereokit_rust::util::Hash;
     /// # assert_eq!(Hash::string("occlusion"), 10274420935108893154);
     /// # sk::Sk::shutdown();
@@ -882,7 +897,7 @@ impl Material {
     pub fn tex_scale(&mut self, scale: f32) -> &mut Self {
         let ptr: *const f32 = &scale;
         unsafe {
-            let cstr = &CString::new("tex_scale").unwrap();
+            let cstr = &CString::new("tex_scale").unwrap_or_default();
             material_set_param(self.0.as_ptr(), cstr.as_ptr(), MaterialParam::Float, ptr as *const c_void);
         }
         self
@@ -897,7 +912,8 @@ impl Material {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::material::Material;
     ///
-    /// let mut material = Material::from_file("shaders/water_pbr2.hlsl.sks", None).unwrap();
+    /// let mut material = Material::from_file("shaders/water_pbr2.hlsl.sks", None)
+    ///                        .unwrap_or_default();
     /// material.time(0.38);
     ///
     /// assert_eq!(material.get_all_param_info().get_float("time"), 0.38);
@@ -1162,7 +1178,8 @@ impl Material {
     /// let mut material_to_chain = Material::ui_quadrant().copy();
     /// material_to_chain.id("material_to_chain");
     /// material_cube.chain(&material_to_chain);
-    /// assert_eq!(material_cube.get_chain().unwrap().get_id(), material_to_chain.get_id());
+    /// assert_eq!(material_cube.get_chain().unwrap_or_default().get_id(),
+    ///            material_to_chain.get_id());
     /// # sk::Sk::shutdown();
     /// ```
     pub fn chain(&mut self, chained_material: &Material) -> &mut Self {
@@ -1200,7 +1217,8 @@ impl Material {
     /// // Verify the variant was set
     /// assert!(main_material.get_variant(0).is_none());
     /// assert!(main_material.get_variant(1).is_some());
-    /// assert_eq!(main_material.get_variant(1).unwrap().get_id(), "shadow_variant");
+    /// assert_eq!(main_material.get_variant(1).unwrap_or_default().get_id(),
+    ///            "shadow_variant");
     /// # sk::Sk::shutdown();
     /// ```
     pub fn set_variant(&mut self, variant_index: i32, variant_material: Option<&Material>) -> &mut Self {
@@ -1219,7 +1237,7 @@ impl Material {
     ///
     /// see example in [`Material::id`]
     pub fn get_id(&self) -> &str {
-        unsafe { CStr::from_ptr(material_get_id(self.0.as_ptr())) }.to_str().unwrap()
+        unsafe { CStr::from_ptr(material_get_id(self.0.as_ptr())) }.to_str().unwrap_or_default()
     }
 
     /// Get the [`Material::shader`] of the material.
@@ -1229,7 +1247,9 @@ impl Material {
     ///
     /// see example in [`Material::shader`]
     pub fn get_shader(&self) -> Shader {
-        unsafe { Shader(NonNull::new(material_get_shader(self.0.as_ptr())).unwrap()) }
+        unsafe {
+            Shader(NonNull::new(material_get_shader(self.0.as_ptr())).expect("Material::get_shader should work!"))
+        }
     }
 
     /// Get the [`Material::transparency`] of the material.
@@ -1373,7 +1393,7 @@ impl Material {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn pbr() -> Self {
-        Self::find("default/material_pbr").unwrap()
+        Self::find("default/material_pbr").unwrap_or_default()
     }
 
     /// Same as MaterialPBR, but it uses a discard clip for transparency.
@@ -1388,7 +1408,7 @@ impl Material {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn pbr_clip() -> Self {
-        Self::find("default/material_pbr_clip").unwrap()
+        Self::find("default/material_pbr_clip").unwrap_or_default()
     }
 
     /// The default unlit material! This is used by StereoKit any time a mesh or model needs to be rendered with an
@@ -1406,7 +1426,7 @@ impl Material {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn unlit() -> Self {
-        Self::find("default/material_unlit").unwrap()
+        Self::find("default/material_unlit").unwrap_or_default()
     }
 
     /// The default unlit material with alpha clipping! This is used by StereoKit for unlit content with transparency,
@@ -1425,7 +1445,7 @@ impl Material {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn unlit_clip() -> Self {
-        Self::find("default/material_unlit_clip").unwrap()
+        Self::find("default/material_unlit_clip").unwrap_or_default()
     }
 
     /// The material used by cubemap
@@ -1440,7 +1460,7 @@ impl Material {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn equirect() -> Self {
-        Self::find("default/equirect_convert").unwrap()
+        Self::find("default/equirect_convert").unwrap_or_default()
     }
 
     /// The material used by font
@@ -1455,7 +1475,7 @@ impl Material {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn font() -> Self {
-        Self::find("default/material_font").unwrap()
+        Self::find("default/material_font").unwrap_or_default()
     }
 
     /// The material used for hands
@@ -1470,7 +1490,7 @@ impl Material {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn hand() -> Self {
-        Self::find("default/material_hand").unwrap()
+        Self::find("default/material_hand").unwrap_or_default()
     }
 
     /// The material used by the UI! By default, it uses a shader that creates a ‘finger shadow’ that shows how close
@@ -1487,7 +1507,7 @@ impl Material {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn ui() -> Self {
-        Self::find("default/material_ui").unwrap()
+        Self::find("default/material_ui").unwrap_or_default()
     }
 
     /// A material for indicating interaction volumes! It renders a border around the edges of the UV coordinates that
@@ -1506,7 +1526,7 @@ impl Material {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn ui_box() -> Self {
-        Self::find("default/material_ui_box").unwrap()
+        Self::find("default/material_ui_box").unwrap_or_default()
     }
 
     /// The material used by the UI for Quadrant Sized UI elements. See UI.QuadrantSizeMesh for additional details.
@@ -1522,7 +1542,7 @@ impl Material {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn ui_quadrant() -> Self {
-        Self::find("default/material_ui_quadrant").unwrap()
+        Self::find("default/material_ui_quadrant").unwrap_or_default()
     }
 
     /// The material used by the UI for Aura, an extra space and visual element that goes around Window elements to make
@@ -1538,7 +1558,7 @@ impl Material {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn ui_aura() -> Self {
-        Self::find("default/material_ui_aura").unwrap()
+        Self::find("default/material_ui_aura").unwrap_or_default()
     }
 }
 
@@ -1554,7 +1574,8 @@ impl Material {
 ///                      mesh::Mesh, maths::{Vec3, Vec4, Matrix}};
 ///
 /// let cube = Mesh::cube();
-/// let mut material_cube = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+/// let mut material_cube = Material::from_file("shaders/brick_pbr.hlsl.sks", None)
+///                             .unwrap_or_default();
 /// material_cube.face_cull(Cull::Front).tex_transform(Vec4::new(0.0, 0.0, 0.04, 0.04));
 /// let mut param_infos = material_cube.get_all_param_info();
 /// assert!(param_infos.has_param("line_color", MaterialParam::Vec3), "line_color is missing");
@@ -1748,7 +1769,8 @@ impl<'a> ParamInfos<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::material::{Material, MaterialParam, ParamInfos};
     ///
-    /// let material_cube = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let material_cube = Material::from_file("shaders/brick_pbr.hlsl.sks", None)
+    ///                         .unwrap_or_default();
     /// let param_infos = ParamInfos::from(&material_cube);
     /// assert!(param_infos.has_param("line_color", MaterialParam::Vec3), "line_color is missing");
     /// assert_eq!(param_infos.get_float("edge_pos"), 1.5);
@@ -1768,10 +1790,13 @@ impl<'a> ParamInfos<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::material::{Material, MaterialParam, ParamInfos};
     ///
-    /// let material_cube = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let material_cube = Material::from_file("shaders/brick_pbr.hlsl.sks", None)
+    ///                         .unwrap_or_default();
     /// let param_infos = ParamInfos::from(&material_cube);
-    /// assert!(param_infos.has_param("line_color", MaterialParam::Vec3), "line_color is missing");
-    /// assert!(param_infos.has_param("edge_pos", MaterialParam::Float),   "edge_pos is missing");
+    /// assert!(param_infos.has_param("line_color", MaterialParam::Vec3),
+    ///         "line_color is missing");
+    /// assert!(param_infos.has_param("edge_pos", MaterialParam::Float),
+    ///         "edge_pos is missing");
     /// # sk::Sk::shutdown();
     /// ```
     pub fn has_param<S: AsRef<str>>(&self, name: S, type_: MaterialParam) -> bool {
@@ -1799,7 +1824,8 @@ impl<'a> ParamInfos<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::material::{Material, MaterialParam};
     ///
-    /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None)
+    ///                    .unwrap_or_default();
     /// let mut param_infos = material.get_all_param_info();
     /// // an odd way to do : material.color_tint(...);
     /// let new_color: std::vec::Vec<f32>  = vec![1.0, 0.5, 0.2, 1.0];
@@ -1842,7 +1868,8 @@ impl<'a> ParamInfos<'a> {
     ///                      mesh::Mesh, maths::{Vec4, Matrix}, util::Hash};
     ///
     /// let cube = Mesh::cube();
-    /// let mut material_cube = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let mut material_cube = Material::from_file("shaders/brick_pbr.hlsl.sks", None)
+    ///                             .unwrap_or_default();
     /// material_cube.face_cull(Cull::Front).tex_transform(Vec4::new(0.0, 0.0, 0.04, 0.04));
     /// let mut param_infos = material_cube.get_all_param_info();
     /// // an odd way to do : material.color_tint(...);
@@ -1877,7 +1904,8 @@ impl<'a> ParamInfos<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::material::Material;
     ///
-    /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None)
+    ///                    .unwrap_or_default();
     /// let mut param_infos = material.get_all_param_info();
     /// param_infos.set_bool("use_occlusion", true);
     ///
@@ -1904,7 +1932,8 @@ impl<'a> ParamInfos<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{material::Material,util::Color128};
     ///
-    /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None)
+    ///                    .unwrap_or_default();
     /// let mut param_infos = material.get_all_param_info();
     /// let new_color = Color128::new(1.0, 0.5, 0.2, 1.0);
     /// // same as Material::color_tint(new_color);
@@ -1933,7 +1962,8 @@ impl<'a> ParamInfos<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::material::Material;
     ///
-    /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None)
+    ///                    .unwrap_or_default();
     /// let mut param_infos = material.get_all_param_info();
     /// param_infos.set_float("edge_pos", 0.18);
     ///
@@ -1964,13 +1994,14 @@ impl<'a> ParamInfos<'a> {
     /// use stereokit_rust::material::{Material, MaterialParam};
     ///
     /// # {
-    /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None)
+    ///                    .unwrap_or_default();
     /// let mut param_infos = material.get_all_param_info();
     /// let new_factors = vec![302,50,20,10];
     /// param_infos.set_int("size_factors", new_factors.as_slice());
     ///
     /// assert_eq!( param_infos.get_int_vector("size_factors",
-    ///             MaterialParam::Int4).unwrap(), new_factors);
+    ///             MaterialParam::Int4).unwrap_or_default(), new_factors);
     /// # } sk::Sk::shutdown();
     /// ```
     pub fn set_int<S: AsRef<str>>(&mut self, name: S, values: &[i32]) -> &mut Self {
@@ -2010,17 +2041,18 @@ impl<'a> ParamInfos<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::material::{Material, MaterialParam};
     ///
-    /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None)
+    ///                    .unwrap_or_default();
     /// let mut param_infos = material.get_all_param_info();
     /// assert_eq!( param_infos.get_uint_vector("u_size_factors",
-    ///             MaterialParam::UInt4).unwrap(), vec![300, 100, 50, 25]);
+    ///             MaterialParam::UInt4).unwrap_or_default(), vec![300, 100, 50, 25]);
     /// let new_factors = vec![303,502,201,100];
     /// param_infos.set_uint("u_size_factors", new_factors.as_slice());
     ///
     /// assert!( param_infos.has_param("u_size_factors",
     ///          MaterialParam::UInt4),"size_factors should be here");
     /// assert_eq!( param_infos.get_uint_vector("u_size_factors",
-    ///             MaterialParam::UInt4).unwrap(), new_factors);
+    ///             MaterialParam::UInt4).unwrap_or_default(), new_factors);
     /// # sk::Sk::shutdown();
     /// ```
     pub fn set_uint<S: AsRef<str>>(&mut self, name: S, values: &[u32]) -> &mut Self {
@@ -2056,7 +2088,8 @@ impl<'a> ParamInfos<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{material::{Material, MaterialParam}, maths::{Vec3, Matrix}};
     ///
-    /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None)
+    ///                    .unwrap_or_default();
     /// let mut param_infos = material.get_all_param_info();
     /// assert_eq!( param_infos.get_matrix("useless"), Matrix::NULL );
     /// let new_matrix = Matrix::t( Vec3::new(1.0, 2.0, 3.0));
@@ -2086,13 +2119,14 @@ impl<'a> ParamInfos<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{material::Material, tex::{Tex}};
     ///
-    /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None)
+    ///                    .unwrap_or_default();
     /// let mut param_infos = material.get_all_param_info();
-    /// assert_ne!( param_infos.get_texture("metal").unwrap(), Tex::default() );
+    /// assert_ne!( param_infos.get_texture("metal").unwrap_or_default(), Tex::default() );
     /// let metal_tex = Tex::from_file("textures/open_gltf.jpeg", true, None)
     ///                    .expect("tex should be created");
     /// param_infos.set_texture("metal", &metal_tex);
-    /// assert_eq!( param_infos.get_texture("metal").unwrap(), metal_tex );
+    /// assert_eq!( param_infos.get_texture("metal").unwrap_or_default(), metal_tex );
     /// # sk::Sk::shutdown();
     /// ```
     pub fn set_texture<S: AsRef<str>>(&mut self, name: S, value: impl AsRef<Tex>) -> &mut Self {
@@ -2172,7 +2206,8 @@ impl<'a> ParamInfos<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{material::Material, maths::Vec2};
     ///
-    /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None)
+    ///                    .unwrap_or_default();
     /// let mut param_infos = material.get_all_param_info();
     /// assert_eq!( param_infos.get_vector2("edge_limit"), Vec2::new(0.1, 0.9) );
     /// let new_vec2 = Vec2::new(0.15, 0.85);
@@ -2200,7 +2235,8 @@ impl<'a> ParamInfos<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{material::Material, maths::Vec3};
     ///
-    /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None)
+    ///                    .unwrap_or_default();
     /// let mut param_infos = material.get_all_param_info();
     /// assert_eq!( param_infos.get_vector3("line_color"), Vec3::new(0.84, 0.84, 0.84) );
     /// let new_vec3 = Vec3::new(0.75, 0.75, 0.75);
@@ -2228,7 +2264,8 @@ impl<'a> ParamInfos<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{material::Material, maths::Vec4};
     ///
-    /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None)
+    ///                    .unwrap_or_default();
     /// let mut param_infos = material.get_all_param_info();
     /// assert_eq!( param_infos.get_vector4("tex_trans"), Vec4::new(0.0, 0.0, 0.1,0.1) );
     ///
@@ -2248,10 +2285,10 @@ impl<'a> ParamInfos<'a> {
 
     /// Get the name and type of the info at given index
     fn material_get_param_info(&self, index: i32) -> Option<(&str, MaterialParam)> {
-        let name_info = CString::new("H").unwrap().into_raw() as *mut *mut c_char;
+        let name_info = CString::new("H").unwrap_or_default().into_raw() as *mut *mut c_char;
         let mut type_info = MaterialParam::Unknown;
         unsafe { material_get_param_info(self.material.0.as_ptr(), index, name_info, &mut type_info) }
-        let name_info = unsafe { CStr::from_ptr(*name_info).to_str().unwrap() };
+        let name_info = unsafe { CStr::from_ptr(*name_info).to_str().unwrap_or_default() };
         Some((name_info, type_info))
     }
 
@@ -2570,7 +2607,8 @@ impl<'a> ParamInfos<'a> {
     /// use stereokit_rust::material::{Material, MaterialParam, MaterialParamData};
     ///
     /// # {
-    /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None).unwrap();
+    /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None)
+    ///                    .unwrap_or_default();
     /// let param_infos = material.get_all_param_info();
     /// if let Some(MaterialParamData::Int4(vec4)) = param_infos.get_data("size_factors", MaterialParam::Int4) {
     ///     assert_eq!( vec4, [300, -100, 50, 25] );
@@ -2578,7 +2616,7 @@ impl<'a> ParamInfos<'a> {
     /// # } sk::Sk::shutdown();
     /// ```
     pub fn get_data<S: AsRef<str>>(&self, name: S, type_info: MaterialParam) -> Option<MaterialParamData> {
-        let cstr = CString::new(name.as_ref()).unwrap();
+        let cstr = CString::new(name.as_ref()).unwrap_or_default();
         self.get_data_impl(type_info, |out_value| unsafe {
             material_get_param(self.material.0.as_ptr(), cstr.as_ptr(), type_info, out_value)
         })

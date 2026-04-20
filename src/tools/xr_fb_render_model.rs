@@ -326,8 +326,8 @@ impl XrFbRenderModel {
         }
 
         match handed {
-            Handed::Left => Ok(self.left_controller_data.as_ref().unwrap()),
-            Handed::Right => Ok(self.right_controller_data.as_ref().unwrap()),
+            Handed::Left => Ok(self.left_controller_data.as_ref().expect("XrFbRenderModel: Left controller model not loaded")),
+            Handed::Right => Ok(self.right_controller_data.as_ref().expect("XrFbRenderModel: Right controller model not loaded")),
             Handed::Max => unreachable!(),
         }
     }

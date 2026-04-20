@@ -32,7 +32,7 @@ pub const SHOW_LOG_WINDOW: &str = "Tool_ShowLogWindow";
 /// // Somewhere to copy the log
 /// static LOG_LOG: Mutex<Vec<LogItem>> = Mutex::new(vec![]);
 /// let fn_mut = |level: LogLevel, log_text: &str| {
-///    let items = LOG_LOG.lock().unwrap();
+///    let items = LOG_LOG.lock().expect("Failed to lock log mutex");
 ///    basic_log_fmt(level, log_text, 20, items);
 /// };
 /// Log::subscribe(fn_mut);
@@ -129,7 +129,7 @@ impl<'a> LogWindow<'a> {
 
     fn draw_logs(&mut self, token: &MainThreadToken) {
         let text_size = Vec2::new(Ui::get_layout_remaining().x, 0.024);
-        let items = self.log_log.lock().unwrap();
+        let items = self.log_log.lock().expect("Failed to lock log_log");
 
         Ui::layout_push_cut(UiCut::Top, text_size.y * self.y_len, false);
         Ui::layout_push_cut(UiCut::Right, Ui::get_line_height() * 0.6, false);

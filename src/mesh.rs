@@ -298,7 +298,7 @@ impl Mesh {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn new() -> Mesh {
-        Mesh(NonNull::new(unsafe { mesh_create() }).unwrap())
+        Mesh(NonNull::new(unsafe { mesh_create() }).expect("Mesh::new should work!"))
     }
 
     /// Generates a plane with an arbitrary orientation that is optionally subdivided, pre-sized to the given
@@ -356,7 +356,7 @@ impl Mesh {
                     double_sided as Bool32T,
                 )
             })
-            .unwrap(),
+            .expect("Mesh::generate_plane should work!"),
         )
     }
 
@@ -409,7 +409,7 @@ impl Mesh {
             NonNull::new(unsafe {
                 mesh_gen_plane(dimensions.into(), Vec3::UP, Vec3::FORWARD, subdivisions, double_sided as Bool32T)
             })
-            .unwrap(),
+            .expect("Mesh::generate_plane_up should work!"),
         )
     }
 
@@ -469,7 +469,7 @@ impl Mesh {
                     double_sided as Bool32T,
                 )
             })
-            .unwrap(),
+            .expect("Mesh::generate_circle should work!"),
         )
     }
 
@@ -516,7 +516,7 @@ impl Mesh {
             NonNull::new(unsafe {
                 mesh_gen_circle(diameter, Vec3::UP, Vec3::FORWARD, spokes, double_sided as Bool32T)
             })
-            .unwrap(),
+            .expect("Mesh::generate_circle_up should work!"),
         )
     }
 
@@ -550,7 +550,10 @@ impl Mesh {
     /// ```
     pub fn generate_cube(dimensions: impl Into<Vec3>, subdivisions: Option<i32>) -> Mesh {
         let subdivisions = subdivisions.unwrap_or(0);
-        Mesh(NonNull::new(unsafe { mesh_gen_cube(dimensions.into(), subdivisions) }).unwrap())
+        Mesh(
+            NonNull::new(unsafe { mesh_gen_cube(dimensions.into(), subdivisions) })
+                .expect("Mesh::generate_cube should work!"),
+        )
     }
 
     /// Generates a cube mesh with rounded corners, pre-sized to the given dimensions. UV coordinates are 0,0 -> 1,1 on
@@ -587,7 +590,10 @@ impl Mesh {
     /// ```
     pub fn generate_rounded_cube(dimensions: impl Into<Vec3>, edge_radius: f32, subdivisions: Option<i32>) -> Mesh {
         let subdivisions = subdivisions.unwrap_or(4);
-        Mesh(NonNull::new(unsafe { mesh_gen_rounded_cube(dimensions.into(), edge_radius, subdivisions) }).unwrap())
+        Mesh(
+            NonNull::new(unsafe { mesh_gen_rounded_cube(dimensions.into(), edge_radius, subdivisions) })
+                .expect("Mesh::generate_rounded_cube should work!"),
+        )
     }
 
     /// Generates a sphere mesh, pre-sized to the given diameter, created by sphereifying a subdivided cube! UV
@@ -621,7 +627,10 @@ impl Mesh {
     /// ```
     pub fn generate_sphere(diameter: f32, subdivisions: Option<i32>) -> Mesh {
         let subdivisions = subdivisions.unwrap_or(4);
-        Mesh(NonNull::new(unsafe { mesh_gen_sphere(diameter, subdivisions) }).unwrap())
+        Mesh(
+            NonNull::new(unsafe { mesh_gen_sphere(diameter, subdivisions) })
+                .expect("Mesh::generate_sphere should work!"),
+        )
     }
 
     /// Generates a cylinder mesh, pre-sized to the given diameter and depth, UV coordinates are from a flattened top
@@ -657,7 +666,10 @@ impl Mesh {
     /// ```
     pub fn generate_cylinder(diameter: f32, depth: f32, direction: impl Into<Vec3>, subdivisions: Option<i32>) -> Mesh {
         let subdivisions = subdivisions.unwrap_or(16);
-        Mesh(NonNull::new(unsafe { mesh_gen_cylinder(diameter, depth, direction.into(), subdivisions) }).unwrap())
+        Mesh(
+            NonNull::new(unsafe { mesh_gen_cylinder(diameter, depth, direction.into(), subdivisions) })
+                .expect("Mesh::generate_cylinder should work!"),
+        )
     }
 
     /// Finds the Mesh with the matching id, and returns a reference to it. If no Mesh is found, it returns
@@ -732,7 +744,7 @@ impl Mesh {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
-        let cstr = CString::new(id.as_ref()).unwrap();
+        let cstr = CString::new(id.as_ref()).unwrap_or_default();
         unsafe { mesh_set_id(self.0.as_ptr(), cstr.as_ptr()) };
         self
     }
@@ -991,7 +1003,7 @@ impl Mesh {
     /// see also [`mesh_get_id`]
     /// see example in [`Mesh::id`]
     pub fn get_id(&self) -> &str {
-        unsafe { CStr::from_ptr(mesh_get_id(self.0.as_ptr())) }.to_str().unwrap()
+        unsafe { CStr::from_ptr(mesh_get_id(self.0.as_ptr())) }.to_str().unwrap_or_default()
     }
     /// This is a bounding box that encapsulates the Mesh! It's used for collision, visibility testing, UI layout, and
     /// probably  other things. While it's normally calculated from the mesh vertices, you can also override this to
@@ -1043,7 +1055,7 @@ impl Mesh {
     /// see also [Mesh::get_inds_copy] [`mesh_get_inds`]
     /// see example in [`Mesh::set_inds`]
     pub fn get_inds(&self) -> &[u32] {
-        let inds_ptr = CString::new("H").unwrap().into_raw() as *mut *mut u32;
+        let inds_ptr = CString::new("H").unwrap_or_default().into_raw() as *mut *mut u32;
         let mut inds_len = 0;
         unsafe {
             mesh_get_inds(self.0.as_ptr(), inds_ptr, &mut inds_len, Memory::Reference);
@@ -1073,7 +1085,7 @@ impl Mesh {
     /// see also [Mesh::get_verts_copy] [`mesh_get_verts`]
     /// see example in [`Mesh::set_verts`]
     pub fn get_verts(&self) -> &[Vertex] {
-        let verts_pointer = CString::new("H").unwrap().into_raw() as *mut *mut Vertex;
+        let verts_pointer = CString::new("H").unwrap_or_default().into_raw() as *mut *mut Vertex;
         let mut verts_len = 0;
         unsafe {
             mesh_get_verts(self.0.as_ptr(), verts_pointer, &mut verts_len, Memory::Reference);
@@ -1276,7 +1288,7 @@ impl Mesh {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn cube() -> Self {
-        Mesh::find("default/mesh_cube").unwrap()
+        Mesh::find("default/mesh_cube").unwrap_or_default()
     }
 
     /// A default quad mesh, 2 triangles, 4 verts, from (-0.5,-0.5,0) to (0.5,0.5,0) and facing forward on the Z axis
@@ -1294,13 +1306,13 @@ impl Mesh {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn screen_quad() -> Self {
-        Mesh::find("default/mesh_screen_quad").unwrap()
+        Mesh::find("default/mesh_screen_quad").unwrap_or_default()
     }
 
     // see screen_quad instead ! TODO: Why this ?
     // <https://stereokit.net/Pages/StereoKit/Mesh/Quad.html>
     // pub fn quad() -> Self {
-    //     Mesh::find("default/mesh_quad").unwrap()
+    //     Mesh::find("default/mesh_quad").unwrap_or_default()
     // }
 
     /// A sphere mesh with a diameter of 1. This is equivalent to Mesh.GenerateSphere(1,4).
@@ -1317,7 +1329,7 @@ impl Mesh {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn sphere() -> Self {
-        Mesh::find("default/mesh_sphere").unwrap()
+        Mesh::find("default/mesh_sphere").unwrap_or_default()
     }
 
     /// A clone mesh of the left hand
@@ -1335,7 +1347,7 @@ impl Mesh {
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/left_hand.jpeg" alt="screenshot" width="200">
     pub fn left_hand() -> Self {
-        Mesh::find("default/mesh_lefthand").unwrap()
+        Mesh::find("default/mesh_lefthand").unwrap_or_default()
     }
 
     /// A clone mesh of the right hand
@@ -1352,6 +1364,6 @@ impl Mesh {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn right_hand() -> Self {
-        Mesh::find("default/mesh_righthand").unwrap()
+        Mesh::find("default/mesh_righthand").unwrap_or_default()
     }
 }

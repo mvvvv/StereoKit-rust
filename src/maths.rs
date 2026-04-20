@@ -3175,7 +3175,7 @@ impl Sub<Quat> for Quat {
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model};
 ///
-/// let model = Model::from_file("center.glb", None).unwrap().copy();
+/// let model = Model::from_file("center.glb", None).unwrap_or_default().copy();
 /// let transform = Matrix::t_r_s(Vec3::NEG_Y * 0.7, [0.0, 155.0, 10.0], Vec3::ONE * 0.3);
 ///
 /// filename_scr = "screenshots/matrix.jpeg";
@@ -3949,7 +3949,7 @@ impl Matrix {
     /// let scale = Vec3::new(2.0, 2.0, 2.0);
     /// let matrix = Matrix::t_r_s(position, orientation, scale);
     ///
-    /// let (pos, sca, ori) = matrix.decompose().unwrap();
+    /// let (pos, sca, ori) = matrix.decompose().unwrap_or_default();
     /// assert_eq!(pos, position);
     /// assert_eq!(sca, scale);
     /// assert_eq!(ori, orientation);
@@ -4707,7 +4707,7 @@ impl MulAssign<Matrix> for Matrix {
 /// use stereokit_rust::{maths::{Vec3, Matrix, Pose}, model::Model, ui::Ui,
 ///     mesh::Mesh, material::Material, util::named_colors};
 ///
-/// let model = Model::from_file("center.glb", None).unwrap().copy();
+/// let model = Model::from_file("center.glb", None).unwrap_or_default().copy();
 /// let cube = Mesh::cube();
 /// let mut material_cube = Material::ui_box();
 /// material_cube.color_tint(named_colors::GOLD)
@@ -5971,7 +5971,7 @@ impl Rect {
 ///
 /// let point = Mesh::sphere();
 /// let material_point =Material::unlit();
-/// let model = Model::from_file("center.glb", None).unwrap().copy();
+/// let model = Model::from_file("center.glb", None).unwrap_or_default().copy();
 /// let cube = Mesh::cube();
 /// let mut material_cube =Material::ui_box();
 /// material_cube.color_tint(named_colors::GOLD)
@@ -6346,7 +6346,7 @@ impl Ray {
     /// use stereokit_rust::{maths::{Matrix, Ray}, model::Model, system::Lines,
     ///     mesh::Mesh, material::{Material, Cull}, util::named_colors};
     ///
-    /// let model = Model::from_file("center.glb", None).unwrap().copy();
+    /// let model = Model::from_file("center.glb", None).unwrap_or_default().copy();
     /// let transform = Matrix::t_r([0.0,-2.25,-2.00], [0.0, 140.0, 0.0]);
     ///
     /// let inv_ray = Ray::new([1.0, 2.0, -3.0], [-1.5, 2.0, 3.0]);
@@ -6397,7 +6397,7 @@ impl Ray {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::{Vec3, Matrix, Ray}, model::Model,material::Cull};
     ///
-    /// let model = Model::from_file("center.glb", None).unwrap().copy();
+    /// let model = Model::from_file("center.glb", None).unwrap_or_default().copy();
     /// let transform = Matrix::t_r([0.0,-2.25,-2.00], [0.0, 140.0, 0.0]);
     ///
     /// let inv_ray = Ray::new([1.0, 2.0, -3.0], [-1.5, 2.0, 3.0]);

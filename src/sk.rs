@@ -395,7 +395,7 @@ impl SkSettings {
     /// this at 128 characters. Default is "StereoKitApp"
     /// <https://stereokit.net/Pages/StereoKit/SKSettings/appName.html>
     pub fn app_name(&mut self, app_name: impl AsRef<str>) -> &mut Self {
-        let c_str = CString::new(app_name.as_ref()).unwrap();
+        let c_str = CString::new(app_name.as_ref()).unwrap_or_default();
         self.app_name = c_str.into_raw();
         self
     }
@@ -406,7 +406,7 @@ impl SkSettings {
     ///
     /// Not pub anymore, please change variable SK_RUST_ASSET_DIR.
     fn assets_folder(assets_folder: impl AsRef<Path>) -> *mut c_char {
-        let c_str = CString::new(assets_folder.as_ref().to_str().unwrap()).unwrap();
+        let c_str = CString::new(assets_folder.as_ref().to_str().unwrap_or_default()).unwrap_or_default();
         c_str.into_raw()
     }
 
@@ -584,7 +584,7 @@ impl SkSettings {
     }
 
     // fn to_string(&self) -> String {
-    //     unsafe { CStr::from_ptr(self.app_name) }.to_str().unwrap().to_string()
+    //     unsafe { CStr::from_ptr(self.app_name) }.to_str().unwrap_or_default().to_string()
     // }
 }
 impl SkSettings {
@@ -795,13 +795,12 @@ impl SkInfo {
     ///
     /// see also [`Sk::get_settings`]
     pub fn settings_from(sk_info: &Option<Rc<RefCell<SkInfo>>>) -> SkSettings {
-        if sk_info.is_none() {
+        if let Some(rc_sk) = sk_info {
+            rc_sk.borrow().get_settings()
+        } else {
             Log::err("The stepper must be initialized. SkInfo::setting_from(??) returns an invalid default value.");
-            return SkSettings::default();
+            SkSettings::default()
         }
-        let rc_sk = sk_info.as_ref().unwrap();
-        let sk = rc_sk.as_ref();
-        sk.borrow().get_settings()
     }
 
     /// This structure contains information about the current system and its capabilities. There’s a lot of different MR
@@ -811,13 +810,12 @@ impl SkInfo {
     ///
     /// see also [`Sk::get_system`]
     pub fn system_from(sk_info: &Option<Rc<RefCell<SkInfo>>>) -> SystemInfo {
-        if sk_info.is_none() {
+        if let Some(rc_sk) = sk_info {
+            rc_sk.borrow().get_system()
+        } else {
             Log::err("The stepper must be initialized. SkInfo::system_from(??) returns an invalid default value.");
-            return SystemInfo::default();
+            SystemInfo::default()
         }
-        let rc_sk = sk_info.as_ref().unwrap();
-        let sk = rc_sk.as_ref();
-        sk.borrow().get_system()
     }
 
     /// Get an event_loop_proxy clone to send events
@@ -839,7 +837,7 @@ impl SkInfo {
     /// let handle = thread::spawn(move || {
     ///     thread::sleep(Duration::from_millis(100));
     ///     if let Some(proxy) = event_loop_proxy {
-    ///         proxy.send_event(StepperAction::quit("thread", "I'm done!")).unwrap();
+    ///         proxy.send_event(StepperAction::quit("thread", "I'm done!")).unwrap_or_default();
     ///     }
     /// });
     ///
@@ -855,18 +853,17 @@ impl SkInfo {
     /// .run();
     ///
     /// // If we are here the thread has finished
-    /// handle.join().unwrap();
+    /// handle.join().unwrap_or_default();
     /// # Sk::shutdown();
     /// ```
     #[cfg(not(feature = "no-event-loop"))]
     pub fn event_loop_proxy_from(sk_info: &Option<Rc<RefCell<SkInfo>>>) -> Option<EventLoopProxy<StepperAction>> {
-        if sk_info.is_none() {
+        if let Some(rc_sk) = sk_info {
+            rc_sk.borrow().get_event_loop_proxy()
+        } else {
             Log::err("The stepper must be initialized. SkInfo::event_loop_proxy_from(??) returns None.");
-            return None;
+            None
         }
-        let rc_sk = sk_info.as_ref().unwrap();
-        let sk = rc_sk.as_ref();
-        sk.borrow().get_event_loop_proxy()
     }
 
     /// Send a StepperAction to the event loop
@@ -877,7 +874,7 @@ impl SkInfo {
     #[cfg(not(feature = "no-event-loop"))]
     pub fn send_event(sk_info: &Option<Rc<RefCell<SkInfo>>>, message: StepperAction) {
         if let Some(proxy) = Self::event_loop_proxy_from(sk_info) {
-            proxy.send_event(message).unwrap();
+            proxy.send_event(message).unwrap_or_default();
         } else {
             Log::err("The stepper must be initialized. SkInfo::send_event(??) not sent.");
         }
@@ -1298,7 +1295,7 @@ impl Sk {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_version_name(&self) -> &str {
-        unsafe { CStr::from_ptr(sk_version_name()) }.to_str().unwrap()
+        unsafe { CStr::from_ptr(sk_version_name()) }.to_str().unwrap_or_default()
     }
 
     /// Lets StereoKit know it should quit! It’ll finish the current frame, and after that Step will return that it
@@ -1563,7 +1560,7 @@ impl Sk {
     /// let handle = thread::spawn(move || {
     ///     thread::sleep(Duration::from_millis(100));
     ///     if let Some(proxy) = event_loop_proxy {
-    ///         proxy.send_event(StepperAction::quit("thread", "I'm done!")).unwrap();
+    ///         proxy.send_event(StepperAction::quit("thread", "I'm done!")).unwrap_or_default();
     ///     }
     /// });
     ///
@@ -1580,7 +1577,7 @@ impl Sk {
     /// .run();
     ///
     /// // If we are here the thread has finished
-    /// handle.join().unwrap();
+    /// handle.join().unwrap_or_default();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_event_loop_proxy(&self) -> Option<EventLoopProxy<StepperAction>> {

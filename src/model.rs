@@ -209,7 +209,7 @@ impl Model {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn new() -> Model {
-        Model(NonNull::new(unsafe { model_create() }).unwrap())
+        Model(NonNull::new(unsafe { model_create() }).expect("Model::new should work!"))
     }
 
     /// Creates a single mesh subset Model using the indicated Mesh and Material!
@@ -251,7 +251,8 @@ impl Model {
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_from_mesh.jpeg" alt="screenshot" width="200">
     pub fn from_mesh<Me: AsRef<Mesh>, Ma: AsRef<Material>>(mesh: Me, material: Ma) -> Model {
         Model(
-            NonNull::new(unsafe { model_create_mesh(mesh.as_ref().0.as_ptr(), material.as_ref().0.as_ptr()) }).unwrap(),
+            NonNull::new(unsafe { model_create_mesh(mesh.as_ref().0.as_ptr(), material.as_ref().0.as_ptr()) })
+                .expect("Model::from_mesh should work!"),
         )
     }
 
@@ -274,7 +275,8 @@ impl Model {
     ///
     /// let my_bytes = std::include_bytes!("../assets/plane.glb");
     ///
-    /// let model = Model::from_memory("my_bytes_center.glb", my_bytes, None).unwrap().copy();
+    /// let model = Model::from_memory("my_bytes_center.glb", my_bytes, None)
+    ///                 .unwrap_or_default().copy();
     /// let transform = Matrix::t_r_s(Vec3::Y * 0.10, [0.0, 110.0, 0.0], Vec3::ONE * 0.09);
     ///
     /// filename_scr = "screenshots/model_from_memory.jpeg";
@@ -330,7 +332,7 @@ impl Model {
     pub fn from_file(file: impl AsRef<Path>, shader: Option<Shader>) -> Result<Model, StereoKitError> {
         let path = file.as_ref();
         let path_buf = path.to_path_buf();
-        let c_str = CString::new(path.to_str().unwrap())?;
+        let c_str = CString::new(path.to_str().unwrap_or_default())?;
         let shader = shader.map(|shader| shader.0.as_ptr()).unwrap_or(null_mut());
         match NonNull::new(unsafe { model_create_file(c_str.as_ptr(), shader) }) {
             Some(model) => Ok(Model(model)),
@@ -362,7 +364,7 @@ impl Model {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn copy(&self) -> Model {
-        Model(NonNull::new(unsafe { model_copy(self.0.as_ptr()) }).unwrap())
+        Model(NonNull::new(unsafe { model_copy(self.0.as_ptr()) }).expect("Model::copy should work!"))
     }
 
     /// Looks for a Model asset that’s already loaded, matching the given id!
@@ -430,7 +432,7 @@ impl Model {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
-        let c_str = CString::new(id.as_ref()).unwrap();
+        let c_str = CString::new(id.as_ref()).unwrap_or_default();
         unsafe { model_set_id(self.0.as_ptr(), c_str.as_ptr()) };
         self
     }
@@ -569,7 +571,7 @@ impl Model {
     ///            .border_size(0.01);
     ///
     /// let material_brick =Material::from_file("shaders/brick_pbr.hlsl.sks",
-    ///                                         Some("my_material_brick")).unwrap();
+    ///                                         Some("my_material_brick")).unwrap_or_default();
     ///
     /// filename_scr = "screenshots/model_draw_with_material.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
@@ -698,7 +700,7 @@ impl Model {
     /// see also [`model_get_id`] [`model_set_id`]
     /// see example in [`Model::id`]
     pub fn get_id(&self) -> &str {
-        unsafe { CStr::from_ptr(model_get_id(self.0.as_ptr())) }.to_str().unwrap()
+        unsafe { CStr::from_ptr(model_get_id(self.0.as_ptr())) }.to_str().unwrap_or_default()
     }
 
     /// Get the bounds
@@ -1101,7 +1103,7 @@ impl<'a> Anims<'a> {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn play_anim(&mut self, animation_name: impl AsRef<str>, mode: AnimMode) -> &mut Self {
-        let c_str = CString::new(animation_name.as_ref()).unwrap();
+        let c_str = CString::new(animation_name.as_ref()).unwrap_or_default();
         unsafe { model_play_anim(self.model.0.as_ptr(), c_str.as_ptr(), mode) };
         self
     }
@@ -1573,7 +1575,7 @@ impl<'a> Nodes<'a> {
         material: Option<&Material>,
         solid: bool,
     ) -> &mut Self {
-        let c_str = CString::new(name.as_ref()).unwrap();
+        let c_str = CString::new(name.as_ref()).unwrap_or_default();
         let mesh = match mesh {
             Some(mesh) => mesh.0.as_ptr(),
             None => null_mut(),
@@ -1706,7 +1708,7 @@ impl<'a> Nodes<'a> {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn find<S: AsRef<str>>(&'_ self, name: S) -> Option<ModelNode<'_>> {
-        let c_str = CString::new(name.as_ref()).unwrap();
+        let c_str = CString::new(name.as_ref()).unwrap_or_default();
         match unsafe { model_node_find(self.model.0.as_ptr(), c_str.as_ptr()) } {
             -1 => None,
             otherwise => Some(ModelNode { model: self.model, id: otherwise }),
@@ -1924,7 +1926,7 @@ impl ModelNode<'_> {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn name<S: AsRef<str>>(&mut self, name: S) -> &mut Self {
-        let c_str = CString::new(name.as_ref()).unwrap();
+        let c_str = CString::new(name.as_ref()).unwrap_or_default();
         unsafe { model_node_set_name(self.model.0.as_ptr(), self.id, c_str.as_ptr()) };
         self
     }
@@ -2127,7 +2129,7 @@ impl ModelNode<'_> {
         material: Option<&Material>,
         solid: bool,
     ) -> &mut Self {
-        let c_str = CString::new(name.as_ref()).unwrap();
+        let c_str = CString::new(name.as_ref()).unwrap_or_default();
         let mesh = match mesh {
             Some(mesh) => mesh.0.as_ptr(),
             None => null_mut(),
@@ -2488,8 +2490,8 @@ impl<'a> Infos<'a> {
 
     /// iterator of the node infos
     fn info_iterate(model: &Model, mut iterator: i32, node: ModelNodeId) -> Option<(&str, &str, i32)> {
-        let out_key_utf8 = CString::new("H").unwrap().into_raw() as *mut *const c_char;
-        let out_value_utf8 = CString::new("H").unwrap().into_raw() as *mut *const c_char;
+        let out_key_utf8 = CString::new("H").unwrap_or_default().into_raw() as *mut *const c_char;
+        let out_value_utf8 = CString::new("H").unwrap_or_default().into_raw() as *mut *const c_char;
 
         let ref_iterator = &mut iterator as *mut i32;
 
@@ -2498,7 +2500,7 @@ impl<'a> Infos<'a> {
             if res != 0 {
                 let key = CStr::from_ptr(*out_key_utf8);
                 let value = CStr::from_ptr(*out_value_utf8);
-                Some((key.to_str().unwrap(), value.to_str().unwrap(), *ref_iterator))
+                Some((key.to_str().unwrap_or_default(), value.to_str().unwrap_or_default(), *ref_iterator))
             } else {
                 None
             }
@@ -2567,7 +2569,7 @@ impl<'a> Infos<'a> {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn remove_info<S: AsRef<str>>(&mut self, info_key_utf8: S) -> &mut Self {
-        let c_str = CString::new(info_key_utf8.as_ref()).unwrap();
+        let c_str = CString::new(info_key_utf8.as_ref()).unwrap_or_default();
         unsafe {
             if model_node_info_remove(self.model.0.as_ptr(), self.node_id, c_str.as_ptr()) == 0 {
                 Log::err(format!("Info {:?} was not found during remove", info_key_utf8.as_ref()));
@@ -2603,8 +2605,8 @@ impl<'a> Infos<'a> {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn set_info<S: AsRef<str>>(&mut self, info_key_utf8: S, info_value_utf8: S) -> &mut Self {
-        let c_str = CString::new(info_key_utf8.as_ref()).unwrap();
-        let c_value = CString::new(info_value_utf8.as_ref()).unwrap();
+        let c_str = CString::new(info_key_utf8.as_ref()).unwrap_or_default();
+        let c_value = CString::new(info_value_utf8.as_ref()).unwrap_or_default();
         unsafe { model_node_info_set(self.model.0.as_ptr(), self.node_id, c_str.as_ptr(), c_value.as_ptr()) };
         self
     }
@@ -2637,7 +2639,7 @@ impl<'a> Infos<'a> {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_info<S: AsRef<str>>(&self, info_key_utf8: S) -> Option<&str> {
-        let c_str = CString::new(info_key_utf8.as_ref()).unwrap();
+        let c_str = CString::new(info_key_utf8.as_ref()).unwrap_or_default();
         match NonNull::new(unsafe { model_node_info_get(self.model.0.as_ptr(), self.node_id, c_str.as_ptr()) }) {
             Some(non_null) => unsafe { CStr::from_ptr(non_null.as_ref()).to_str().ok() },
             None => None,

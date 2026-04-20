@@ -52,7 +52,7 @@ pub fn get_assets(
         return vec![];
     }
 
-    let sk_i = sk_info.as_ref().unwrap().borrow_mut();
+    let sk_i = sk_info.as_ref().expect("sk_info should be Some").borrow_mut();
     let app = sk_i.get_android_app();
     let mut exts = vec![];
     for extension in file_extensions {
@@ -138,7 +138,7 @@ pub fn get_assets(
         exts.push(OsString::from(extension));
     }
 
-    let path_text = env::current_dir().unwrap().to_owned().join(get_assets_dir());
+    let path_text = env::current_dir().unwrap_or_default().to_owned().join(get_assets_dir());
     let path_asset = path_text.join(sub_dir);
     let mut vec = vec![];
 
@@ -182,7 +182,7 @@ pub fn get_internal_path(sk_info: &Option<Rc<RefCell<SkInfo>>>) -> Option<PathBu
         return None;
     }
 
-    let sk_i = sk_info.as_ref().unwrap().borrow_mut();
+    let sk_i = sk_info.as_ref().expect("sk_info should be Some").borrow_mut();
     let app = sk_i.get_android_app();
     app.internal_data_path()
 }
@@ -201,7 +201,7 @@ pub fn get_external_path(sk_info: &Option<Rc<RefCell<SkInfo>>>) -> Option<PathBu
         return None;
     }
 
-    let sk_i = sk_info.as_ref().unwrap().borrow_mut();
+    let sk_i = sk_info.as_ref().expect("sk_info should be Some").borrow_mut();
     let app = sk_i.get_android_app();
     app.external_data_path()
 }
@@ -211,7 +211,7 @@ pub fn get_external_path(sk_info: &Option<Rc<RefCell<SkInfo>>>) -> Option<PathBu
 pub fn get_external_path(_sk_info: &Option<Rc<RefCell<SkInfo>>>) -> Option<PathBuf> {
     use std::env;
 
-    let path_assets = env::current_dir().unwrap().join(get_assets_dir());
+    let path_assets = env::current_dir().unwrap_or_default().join(get_assets_dir());
     Some(path_assets)
 }
 
@@ -225,7 +225,7 @@ pub fn open_asset(sk_info: &Option<Rc<RefCell<SkInfo>>>, asset_path: impl AsRef<
         return None;
     }
 
-    let sk_i = sk_info.as_ref().unwrap().borrow_mut();
+    let sk_i = sk_info.as_ref().expect("sk_info should be Some").borrow_mut();
     let app = sk_i.get_android_app();
 
     if let Ok(cstring) = CString::new(asset_path.as_ref().to_str().unwrap_or("Error!!!")) {
@@ -273,7 +273,7 @@ pub fn open_asset(sk_info: &Option<Rc<RefCell<SkInfo>>>, asset_path: impl AsRef<
 pub fn open_asset(_sk_info: &Option<Rc<RefCell<SkInfo>>>, asset_path: impl AsRef<Path>) -> Option<File> {
     use std::env;
 
-    let path_assets = env::current_dir().unwrap().join(get_assets_dir());
+    let path_assets = env::current_dir().unwrap_or_default().join(get_assets_dir());
     let path_asset = path_assets.join(asset_path);
     File::open(path_asset).ok()
 }
@@ -288,7 +288,7 @@ pub fn read_asset(sk_info: &Option<Rc<RefCell<SkInfo>>>, asset_path: impl AsRef<
         return None;
     }
 
-    let sk_i = sk_info.as_ref().unwrap().borrow_mut();
+    let sk_i = sk_info.as_ref().expect("sk_info should be Some").borrow_mut();
     let app = sk_i.get_android_app();
 
     if let Ok(cstring) = CString::new(asset_path.as_ref().to_str().unwrap_or("Error!!!")) {
@@ -332,7 +332,7 @@ pub fn read_asset(sk_info: &Option<Rc<RefCell<SkInfo>>>, asset_path: impl AsRef<
 pub fn read_asset(_sk_info: &Option<Rc<RefCell<SkInfo>>>, asset_path: impl AsRef<Path>) -> Option<Vec<u8>> {
     use std::{env, io::Read};
 
-    let path_assets = env::current_dir().unwrap().join(get_assets_dir());
+    let path_assets = env::current_dir().unwrap_or_default().join(get_assets_dir());
     let path_asset = path_assets.join(&asset_path);
     let mut fd = match File::open(path_asset).ok() {
         Some(file) => file,
@@ -432,7 +432,7 @@ pub fn show_soft_input_ime(sk_info: &Option<Rc<RefCell<SkInfo>>>, show: bool) ->
         return false;
     }
 
-    let sk_i = sk_info.as_ref().unwrap().borrow_mut();
+    let sk_i = sk_info.as_ref().expect("sk_info should be Some").borrow_mut();
     let app = sk_i.get_android_app();
     if show {
         app.show_soft_input(false);
@@ -640,7 +640,11 @@ pub fn system_deep_link(action: SystemAction) -> bool {
                 uri,
                 format!(
                     "Opening store{}",
-                    if app_id.is_some() { format!(" for app: {}", app_id.as_ref().unwrap()) } else { String::new() }
+                    if app_id.is_some() {
+                        format!(" for app: {}", app_id.as_ref().expect("app_id should be Some"))
+                    } else {
+                        String::new()
+                    }
                 ),
             )
         }

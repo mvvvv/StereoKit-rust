@@ -1328,7 +1328,7 @@ impl Ui {
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_button.jpeg" alt="screenshot" width="200">
     pub fn button(text: impl AsRef<str>, size: Option<Vec2>) -> bool {
-        let cstr = CString::new(text.as_ref()).unwrap();
+        let cstr = CString::new(text.as_ref()).unwrap_or_default();
         match size {
             Some(size) => unsafe { ui_button_sz(cstr.as_ptr(), size) != 0 },
             None => unsafe { ui_button(cstr.as_ptr()) != 0 },
@@ -1346,7 +1346,7 @@ impl Ui {
     /// see also [`ui_button_at`] [`Ui::button_behavior`]
     /// see example in [`Ui::button`]
     pub fn button_at(text: impl AsRef<str>, top_left_corner: impl Into<Vec3>, size: impl Into<Vec2>) -> bool {
-        let cstr = CString::new(text.as_ref()).unwrap();
+        let cstr = CString::new(text.as_ref()).unwrap_or_default();
 
         unsafe { ui_button_at(cstr.as_ptr(), top_left_corner.into(), size.into()) != 0 }
     }
@@ -1650,7 +1650,7 @@ impl Ui {
         size: Option<Vec2>,
         color: Option<Color128>,
     ) -> bool {
-        let cstr = CString::new(text.as_ref()).unwrap();
+        let cstr = CString::new(text.as_ref()).unwrap_or_default();
         let image_layout = image_layout.unwrap_or(UiBtnLayout::Left);
         let color = color.unwrap_or(Color128::WHITE);
         match size {
@@ -1685,7 +1685,7 @@ impl Ui {
         size: impl Into<Vec2>,
         color: Option<Color128>,
     ) -> bool {
-        let cstr = CString::new(text.as_ref()).unwrap();
+        let cstr = CString::new(text.as_ref()).unwrap_or_default();
         let image_layout = image_layout.unwrap_or(UiBtnLayout::Left);
         let color = color.unwrap_or(Color128::WHITE);
         unsafe {
@@ -1738,7 +1738,7 @@ impl Ui {
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_button_round.jpeg" alt="screenshot" width="200">
     pub fn button_round(id: impl AsRef<str>, image: impl AsRef<Sprite>, diameter: f32) -> bool {
-        let cstr = CString::new(id.as_ref()).unwrap();
+        let cstr = CString::new(id.as_ref()).unwrap_or_default();
         unsafe { ui_button_round(cstr.as_ptr(), image.as_ref().0.as_ptr(), diameter) != 0 }
     }
 
@@ -1759,7 +1759,7 @@ impl Ui {
         top_left_corner: impl Into<Vec3>,
         diameter: f32,
     ) -> bool {
-        let cstr = CString::new(id.as_ref()).unwrap();
+        let cstr = CString::new(id.as_ref()).unwrap_or_default();
         unsafe { ui_button_round_at(cstr.as_ptr(), image.as_ref().0.as_ptr(), top_left_corner.into(), diameter) != 0 }
     }
 
@@ -1821,7 +1821,7 @@ impl Ui {
     ) -> bool {
         let move_type = move_type.unwrap_or(UiMove::Exact);
         let allower_gesture = allower_gesture.unwrap_or(UiGesture::Pinch);
-        let cstr = CString::new(id.as_ref()).unwrap();
+        let cstr = CString::new(id.as_ref()).unwrap_or_default();
         let result = unsafe {
             ui_handle_begin(cstr.as_ptr(), pose, handle, draw_handle as Bool32T, move_type, allower_gesture) != 0
         };
@@ -1896,7 +1896,7 @@ impl Ui {
     ) -> bool {
         let move_type = move_type.unwrap_or(UiMove::Exact);
         let allower_gesture = allower_gesture.unwrap_or(UiGesture::Pinch);
-        let cstr = CString::new(id.as_ref()).unwrap();
+        let cstr = CString::new(id.as_ref()).unwrap_or_default();
         unsafe { ui_handle_begin(cstr.as_ptr(), pose, handle, draw_handle as Bool32T, move_type, allower_gesture) != 0 }
     }
 
@@ -2018,7 +2018,7 @@ impl Ui {
         confirm_method: Option<UiConfirm>,
         notify_on: Option<UiNotify>,
     ) -> Option<f32> {
-        let cstr = CString::new(id.as_ref()).unwrap();
+        let cstr = CString::new(id.as_ref()).unwrap_or_default();
         let step = step.unwrap_or(0.0);
         let width = width.unwrap_or(0.0);
         let confirm_method = confirm_method.unwrap_or(UiConfirm::Push);
@@ -2057,7 +2057,7 @@ impl Ui {
         confirm_method: Option<UiConfirm>,
         notify_on: Option<UiNotify>,
     ) -> Option<f64> {
-        let cstr = CString::new(id.as_ref()).unwrap();
+        let cstr = CString::new(id.as_ref()).unwrap_or_default();
         let step = step.unwrap_or(0.0);
         let width = width.unwrap_or(0.0);
         let confirm_method = confirm_method.unwrap_or(UiConfirm::Push);
@@ -2098,7 +2098,7 @@ impl Ui {
         confirm_method: Option<UiConfirm>,
         notify_on: Option<UiNotify>,
     ) -> Option<f32> {
-        let cstr = CString::new(id.as_ref()).unwrap();
+        let cstr = CString::new(id.as_ref()).unwrap_or_default();
         let step = step.unwrap_or(0.0);
         let confirm_method = confirm_method.unwrap_or(UiConfirm::Push);
         let notify_on = notify_on.unwrap_or(UiNotify::Change);
@@ -2149,7 +2149,7 @@ impl Ui {
         confirm_method: Option<UiConfirm>,
         notify_on: Option<UiNotify>,
     ) -> Option<f64> {
-        let cstr = CString::new(id.as_ref()).unwrap();
+        let cstr = CString::new(id.as_ref()).unwrap_or_default();
         let step = step.unwrap_or(0.0);
         let confirm_method = confirm_method.unwrap_or(UiConfirm::Push);
         let notify_on = notify_on.unwrap_or(UiNotify::Change);
@@ -2260,8 +2260,8 @@ impl Ui {
         size: Option<Vec2>,
         type_text: Option<TextContext>,
     ) -> Option<String> {
-        let cstr = CString::new(id.as_ref()).unwrap();
-        let c_value = CString::new(out_value.as_str()).unwrap();
+        let cstr = CString::new(id.as_ref()).unwrap_or_default();
+        let c_value = CString::new(out_value.as_str()).unwrap_or_default();
         let size = size.unwrap_or(Vec2::ZERO);
         let type_text = type_text.unwrap_or(TextContext::Text);
         if unsafe {
@@ -2301,8 +2301,8 @@ impl Ui {
         size: impl Into<Vec2>,
         type_text: Option<TextContext>,
     ) -> Option<String> {
-        let cstr = CString::new(id.as_ref()).unwrap();
-        let c_value = CString::new(out_value.as_str()).unwrap();
+        let cstr = CString::new(id.as_ref()).unwrap_or_default();
+        let c_value = CString::new(out_value.as_str()).unwrap_or_default();
         let size = size.into();
         let type_text = type_text.unwrap_or(TextContext::Text);
         if unsafe {
@@ -2388,7 +2388,7 @@ impl Ui {
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_label.jpeg" alt="screenshot" width="200">
     pub fn label(text: impl AsRef<str>, size: Option<Vec2>, use_padding: bool) {
-        let cstr = CString::new(text.as_ref()).unwrap();
+        let cstr = CString::new(text.as_ref()).unwrap_or_default();
         match size {
             Some(size) => unsafe { ui_label_sz(cstr.as_ptr(), size, use_padding as Bool32T) },
             None => unsafe { ui_label(cstr.as_ptr(), use_padding as Bool32T) },
@@ -3116,7 +3116,7 @@ impl Ui {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn push_id(root_id: impl AsRef<str>) -> IdHashT {
-        let cstr = CString::new(root_id.as_ref()).unwrap();
+        let cstr = CString::new(root_id.as_ref()).unwrap_or_default();
         unsafe { ui_push_id(cstr.as_ptr()) }
     }
 
@@ -3532,7 +3532,7 @@ impl Ui {
     /// see also [`ui_toggle_img`] [`ui_toggle_img_sz`]
     #[deprecated(since = "0.0.1", note = "Performence issues, use radio_img instead")]
     pub fn radio(text: impl AsRef<str>, active: bool, size: Option<Vec2>) -> bool {
-        let cstr = CString::new(text.as_ref()).unwrap();
+        let cstr = CString::new(text.as_ref()).unwrap_or_default();
         let mut active: Bool32T = active as Bool32T;
         let active_ptr: *mut Bool32T = &mut active;
         match size {
@@ -3625,7 +3625,7 @@ impl Ui {
         image_layout: UiBtnLayout,
         size: Option<Vec2>,
     ) -> bool {
-        let cstr = CString::new(text.as_ref()).unwrap();
+        let cstr = CString::new(text.as_ref()).unwrap_or_default();
         let mut active: Bool32T = active as Bool32T;
         let active_ptr: *mut Bool32T = &mut active;
         match size {
@@ -3678,7 +3678,7 @@ impl Ui {
         top_left_corner: impl Into<Vec3>,
         size: impl Into<Vec2>,
     ) -> bool {
-        let cstr = CString::new(text.as_ref()).unwrap();
+        let cstr = CString::new(text.as_ref()).unwrap_or_default();
         let mut active: Bool32T = active as Bool32T;
         let active_ptr: *mut Bool32T = &mut active;
         unsafe {
@@ -4103,7 +4103,7 @@ impl Ui {
     /// assert_eq!(hash2, 5305247587935581291);
     /// ```
     pub fn stack_hash(id: impl AsRef<str>) -> IdHashT {
-        let cstr = CString::new(id.as_ref()).unwrap();
+        let cstr = CString::new(id.as_ref()).unwrap_or_default();
         unsafe { ui_stack_hash(cstr.as_ptr()) }
     }
 
@@ -4165,7 +4165,7 @@ impl Ui {
         text_align: Option<Align>,
         fit: Option<TextFit>,
     ) -> bool {
-        let cstr = CString::new(text.as_ref()).unwrap();
+        let cstr = CString::new(text.as_ref()).unwrap_or_default();
         let scroll_direction = scroll_direction.unwrap_or(UiScroll::None);
         let height = height.unwrap_or(0.0);
         let text_align = text_align.unwrap_or(Align::TopLeft);
@@ -4212,7 +4212,7 @@ impl Ui {
         size: impl Into<Vec2>,
     ) -> bool {
         let scroll_direction = scroll_direction.unwrap_or(UiScroll::None);
-        let cstr = CString::new(text.as_ref()).unwrap();
+        let cstr = CString::new(text.as_ref()).unwrap_or_default();
         match scroll {
             Some(scroll) => unsafe {
                 ui_text_at(
@@ -4294,7 +4294,7 @@ impl Ui {
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_toggle.jpeg" alt="screenshot" width="200">
     pub fn toggle(text: impl AsRef<str>, out_value: &mut bool, size: Option<Vec2>) -> Option<bool> {
-        let cstr = CString::new(text.as_ref()).unwrap();
+        let cstr = CString::new(text.as_ref()).unwrap_or_default();
         let mut active: Bool32T = *out_value as Bool32T;
         let active_ptr: *mut Bool32T = &mut active;
         let change = match size {
@@ -4338,7 +4338,7 @@ impl Ui {
         image_layout: Option<UiBtnLayout>,
         size: Option<Vec2>,
     ) -> Option<bool> {
-        let cstr = CString::new(id.as_ref()).unwrap();
+        let cstr = CString::new(id.as_ref()).unwrap_or_default();
         let mut active: Bool32T = *out_value as Bool32T;
         let active_ptr: *mut Bool32T = &mut active;
         let image_layout = image_layout.unwrap_or(UiBtnLayout::Left);
@@ -4398,7 +4398,7 @@ impl Ui {
         top_left_corner: impl Into<Vec3>,
         size: impl Into<Vec2>,
     ) -> Option<bool> {
-        let cstr = CString::new(id.as_ref()).unwrap();
+        let cstr = CString::new(id.as_ref()).unwrap_or_default();
         let mut active: Bool32T = *out_value as Bool32T;
         let active_ptr: *mut Bool32T = &mut active;
         let change = match toggle_off {
@@ -4475,7 +4475,7 @@ impl Ui {
         out_hand: Option<*mut Handed>,
         out_focus_state: Option<*mut BtnState>,
     ) -> BtnState {
-        let cstr = CString::new(id.as_ref()).unwrap();
+        let cstr = CString::new(id.as_ref()).unwrap_or_default();
         let hand = out_hand.unwrap_or(null_mut());
         let focus_state = out_focus_state.unwrap_or(null_mut());
         unsafe { ui_volume_at(cstr.as_ptr(), bounds.into(), interact_type, hand, focus_state) }
@@ -4546,7 +4546,7 @@ impl Ui {
         confirm_method: Option<UiConfirm>,
         notify_on: Option<UiNotify>,
     ) -> Option<f32> {
-        let cstr = CString::new(id.as_ref()).unwrap();
+        let cstr = CString::new(id.as_ref()).unwrap_or_default();
         let step = step.unwrap_or(0.0);
         let height = height.unwrap_or(0.0);
         let confirm_method = confirm_method.unwrap_or(UiConfirm::Push);
@@ -4585,7 +4585,7 @@ impl Ui {
         confirm_method: Option<UiConfirm>,
         notify_on: Option<UiNotify>,
     ) -> Option<f64> {
-        let cstr = CString::new(id.as_ref()).unwrap();
+        let cstr = CString::new(id.as_ref()).unwrap_or_default();
         let step = step.unwrap_or(0.0);
         let height = height.unwrap_or(0.0);
         let confirm_method = confirm_method.unwrap_or(UiConfirm::Push);
@@ -4625,7 +4625,7 @@ impl Ui {
         confirm_method: Option<UiConfirm>,
         notify_on: Option<UiNotify>,
     ) -> Option<f32> {
-        let cstr = CString::new(id.as_ref()).unwrap();
+        let cstr = CString::new(id.as_ref()).unwrap_or_default();
         let step = step.unwrap_or(0.0);
         let confirm_method = confirm_method.unwrap_or(UiConfirm::Push);
         let notify_on = notify_on.unwrap_or(UiNotify::Change);
@@ -4676,7 +4676,7 @@ impl Ui {
         confirm_method: Option<UiConfirm>,
         notify_on: Option<UiNotify>,
     ) -> Option<f64> {
-        let cstr = CString::new(id.as_ref()).unwrap();
+        let cstr = CString::new(id.as_ref()).unwrap_or_default();
         let step = step.unwrap_or(0.0);
         let confirm_method = confirm_method.unwrap_or(UiConfirm::Push);
         let notify_on = notify_on.unwrap_or(UiNotify::Change);
@@ -4750,7 +4750,7 @@ impl Ui {
         window_type: Option<UiWin>,
         move_type: Option<UiMove>,
     ) {
-        let cstr = CString::new(text.as_ref()).unwrap();
+        let cstr = CString::new(text.as_ref()).unwrap_or_default();
         let window_type = window_type.unwrap_or(UiWin::Normal);
         let move_type = move_type.unwrap_or(UiMove::FaceUser);
         let size = size.unwrap_or(Vec2::ZERO);
@@ -4792,7 +4792,7 @@ impl Ui {
         window_type: Option<UiWin>,
         move_type: Option<UiMove>,
     ) {
-        let cstr = CString::new(text.as_ref()).unwrap();
+        let cstr = CString::new(text.as_ref()).unwrap_or_default();
         let window_type = window_type.unwrap_or(UiWin::Normal);
         let move_type = move_type.unwrap_or(UiMove::FaceUser);
         let size = size.unwrap_or(Vec2::ZERO);

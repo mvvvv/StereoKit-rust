@@ -54,7 +54,7 @@ const BROWSER_SUFFIX: &str = "_file_browser";
 /// screenshot_viewer.window_pose = Ui::popup_pose([0.0, 0.15, 1.3]);
 /// sk.send_event(StepperAction::add("ScrViewer", screenshot_viewer));
 ///
-/// let screenshot_path = std::env::current_dir().unwrap().join("assets/textures/screenshot.raw");
+/// let screenshot_path = std::env::current_dir().unwrap_or_default().join("assets/textures/screenshot.raw");
 /// assert!(screenshot_path.exists());
 /// let scr_file = screenshot_path.to_str().expect("String should be valid");
 ///
@@ -142,7 +142,7 @@ impl ScreenshotViewer {
             }
         } else if id == &self.id {
             if key.eq(FILE_BROWSER_OPEN) {
-                let mut file_name = FILE_NAME.lock().unwrap();
+                let mut file_name = FILE_NAME.lock().expect("ScreenshotViewer: Failed to lock FILE_NAME mutex");
                 file_name.clear();
                 file_name.push_str(value);
                 self.screen = None;
@@ -163,7 +163,7 @@ impl ScreenshotViewer {
             Ui::image(sprite, Vec2::new(0.4, 0.3));
         } else {
             Ui::vspace(30.0 * CM);
-            let mut file_name_lock = FILE_NAME.lock().unwrap();
+            let mut file_name_lock = FILE_NAME.lock().expect("ScreenshotViewer: Failed to lock FILE_NAME mutex");
             let file_name = file_name_lock.to_string();
             if !file_name.is_empty() {
                 if let Ok(mut file) = File::open(&file_name) {
@@ -226,7 +226,7 @@ impl ScreenshotViewer {
                 Platform::file_picker_sz(
                     PickerMode::Open,
                     move |ok, file_name| {
-                        let mut name = FILE_NAME.lock().unwrap();
+                        let mut name = FILE_NAME.lock().expect("ScreenshotViewer: Failed to lock FILE_NAME mutex");
                         name.clear();
                         if ok {
                             Log::diag(format!("Open screenshot {file_name}"));

@@ -246,18 +246,38 @@ impl AssetIter {
     fn to_asset(self, asset_type: AssetType, c_id: *mut c_void) -> Asset {
         match asset_type {
             AssetType::None => Asset::None,
-            AssetType::Mesh => Asset::Mesh(Mesh(NonNull::new(c_id as *mut _MeshT).unwrap())),
-            AssetType::Tex => Asset::Tex(Tex(NonNull::new(c_id as *mut _TexT).unwrap())),
-            AssetType::Shader => Asset::Shader(Shader(NonNull::new(c_id as *mut _ShaderT).unwrap())),
-            AssetType::Material => Asset::Material(Material(NonNull::new(c_id as *mut _MaterialT).unwrap())),
-            AssetType::Model => Asset::Model(Model(NonNull::new(c_id as *mut _ModelT).unwrap())),
-            AssetType::Font => Asset::Font(Font(NonNull::new(c_id as *mut _FontT).unwrap())),
-            AssetType::Sprite => Asset::Sprite(Sprite(NonNull::new(c_id as *mut _SpriteT).unwrap())),
-            AssetType::Sound => Asset::Sound(Sound(NonNull::new(c_id as *mut _SoundT).unwrap())),
+            AssetType::Mesh => {
+                Asset::Mesh(Mesh(NonNull::new(c_id as *mut _MeshT).expect("Mesh asset should not be null!")))
+            }
+            AssetType::Tex => Asset::Tex(Tex(NonNull::new(c_id as *mut _TexT).expect("Tex asset should not be null!"))),
+            AssetType::Shader => {
+                Asset::Shader(Shader(NonNull::new(c_id as *mut _ShaderT).expect("Shader asset should not be null!")))
+            }
+            AssetType::Material => Asset::Material(Material(
+                NonNull::new(c_id as *mut _MaterialT).expect("Material asset should not be null!"),
+            )),
+            AssetType::Model => {
+                Asset::Model(Model(NonNull::new(c_id as *mut _ModelT).expect("Model asset should not be null!")))
+            }
+            AssetType::Font => {
+                Asset::Font(Font(NonNull::new(c_id as *mut _FontT).expect("Font asset should not be null!")))
+            }
+            AssetType::Sprite => {
+                Asset::Sprite(Sprite(NonNull::new(c_id as *mut _SpriteT).expect("Sprite asset should not be null!")))
+            }
+            AssetType::Sound => {
+                Asset::Sound(Sound(NonNull::new(c_id as *mut _SoundT).expect("Sound asset should not be null!")))
+            }
             AssetType::Solid => todo!("Solids are deprecated!"),
-            AssetType::Anchor => Asset::Anchor(Anchor(NonNull::new(c_id as *mut _AnchorT).unwrap())),
-            AssetType::RenderList => Asset::RenderList(RenderList(NonNull::new(c_id as *mut _RenderListT).unwrap())),
-            AssetType::Compute => Asset::Compute(Compute(NonNull::new(c_id as *mut _ComputeT).unwrap())),
+            AssetType::Anchor => {
+                Asset::Anchor(Anchor(NonNull::new(c_id as *mut _AnchorT).expect("Anchor asset should not be null!")))
+            }
+            AssetType::RenderList => Asset::RenderList(RenderList(
+                NonNull::new(c_id as *mut _RenderListT).expect("RenderList asset should not be null!"),
+            )),
+            AssetType::Compute => Asset::Compute(Compute(
+                NonNull::new(c_id as *mut _ComputeT).expect("Compute asset should not be null!"),
+            )),
             AssetType::ComputeBuffer => Asset::ComputeBuffer(ComputeBuffer::from_raw(c_id as *mut _ComputeBufferT)),
         }
     }
@@ -1022,7 +1042,7 @@ impl BackendOpenXR {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn exclude_ext(extension_name: impl AsRef<str>) {
-        let c_str = CString::new(extension_name.as_ref()).unwrap();
+        let c_str = CString::new(extension_name.as_ref()).unwrap_or_default();
         unsafe { backend_openxr_ext_exclude(c_str.as_ptr()) }
     }
 
@@ -1051,7 +1071,7 @@ impl BackendOpenXR {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn request_ext(extension_name: impl AsRef<str>) {
-        let c_str = CString::new(extension_name.as_ref()).unwrap();
+        let c_str = CString::new(extension_name.as_ref()).unwrap_or_default();
         unsafe { backend_openxr_ext_request(c_str.as_ptr()) }
     }
 
@@ -1081,7 +1101,7 @@ impl BackendOpenXR {
     /// ```
     pub fn ext_enabled(extension_name: impl AsRef<str>) -> bool {
         if Backend::xr_type() == BackendXRType::OpenXR {
-            let c_str = CString::new(extension_name.as_ref()).unwrap();
+            let c_str = CString::new(extension_name.as_ref()).unwrap_or_default();
             unsafe { backend_openxr_ext_enabled(c_str.as_ptr()) != 0 }
         } else {
             false
@@ -1114,7 +1134,7 @@ impl BackendOpenXR {
     /// # } sk::Sk::shutdown();
     /// ```
     pub fn get_function_ptr(function_name: impl AsRef<str>) -> Option<VoidFunction> {
-        let c_str = CString::new(function_name.as_ref()).unwrap();
+        let c_str = CString::new(function_name.as_ref()).unwrap_or_default();
         unsafe { backend_openxr_get_function(c_str.as_ptr()) }
     }
 
@@ -1144,7 +1164,7 @@ impl BackendOpenXR {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_function<T>(function_name: impl AsRef<str>) -> Option<T> {
-        let c_str = CString::new(function_name.as_ref()).unwrap();
+        let c_str = CString::new(function_name.as_ref()).unwrap_or_default();
         let function = unsafe { backend_openxr_get_function(c_str.as_ptr()) };
         unsafe { transmute_copy(&function) }
     }
@@ -3971,7 +3991,7 @@ unsafe extern "C" fn log_trampoline<'a, F: FnMut(LogLevel, &str) + 'a>(
     text: *const c_char,
 ) {
     let closure = unsafe { &mut *(context as *mut &mut F) };
-    let c_str = unsafe { CStr::from_ptr(text).to_str().unwrap().trim_end() };
+    let c_str = unsafe { CStr::from_ptr(text).to_str().unwrap_or_default().trim_end() };
     closure(log_level, c_str)
 }
 
@@ -4033,7 +4053,7 @@ impl Log {
     /// Log::err(format!("My problematic value is {}", value));
     /// ```
     pub fn err<S: AsRef<str>>(text: S) {
-        let c_str = CString::new(text.as_ref()).unwrap();
+        let c_str = CString::new(text.as_ref()).unwrap_or_default();
         unsafe { log_err(c_str.as_ptr()) }
     }
 
@@ -4051,7 +4071,7 @@ impl Log {
     /// Log::info(format!("My value is {}", value));
     /// ```
     pub fn info<S: AsRef<str>>(text: S) {
-        let c_str = CString::new(text.as_ref()).unwrap();
+        let c_str = CString::new(text.as_ref()).unwrap_or_default();
         unsafe { log_info(c_str.as_ptr()) }
     }
 
@@ -4069,7 +4089,7 @@ impl Log {
     /// Log::warn(format!("My not so good value is {}", value));
     /// ```
     pub fn warn<S: AsRef<str>>(text: S) {
-        let c_str = CString::new(text.as_ref()).unwrap();
+        let c_str = CString::new(text.as_ref()).unwrap_or_default();
         unsafe { log_warn(c_str.as_ptr()) }
     }
 
@@ -4087,7 +4107,7 @@ impl Log {
     /// Log::diag(format!("My value to check is {}", value));
     /// ```
     pub fn diag<S: AsRef<str>>(text: S) {
-        let c_str = CString::new(text.as_ref()).unwrap();
+        let c_str = CString::new(text.as_ref()).unwrap_or_default();
         unsafe { log_diag(c_str.as_ptr()) }
     }
 
@@ -4105,7 +4125,7 @@ impl Log {
     /// Log::write(LogLevel::Error, format!("My problematic value is {}", value));
     /// ```
     pub fn write<S: AsRef<str>>(level: LogLevel, text: S) {
-        let c_str = CString::new(text.as_ref()).unwrap();
+        let c_str = CString::new(text.as_ref()).unwrap_or_default();
         unsafe { log_write(level, c_str.as_ptr()) }
     }
 
@@ -4124,7 +4144,7 @@ impl Log {
     /// static LOG_LOG: Mutex<Vec<LogItem>> = Mutex::new(vec![]);
     ///
     /// let fn_mut = |level: LogLevel, log_text: &str| {
-    ///     let mut items = LOG_LOG.lock().unwrap();
+    ///     let mut items = LOG_LOG.lock().expect("Failed to lock log mutex");
     ///     items.push(LogItem { level, text: log_text.to_owned(), count: 1 });
     /// };
     /// Log::subscribe( fn_mut );
@@ -4133,7 +4153,7 @@ impl Log {
     /// Log::warn("This is a warning message");
     /// Log::err("This is an error message");
     ///
-    /// let messages = LOG_LOG.lock().unwrap();
+    /// let messages = LOG_LOG.lock().expect("Failed to lock log mutex");
     /// assert_eq!(messages.len(), 3);
     /// assert_eq!(messages[0].level, LogLevel::Inform);
     /// assert_eq!(messages[1].text, "This is a warning message");
@@ -4248,7 +4268,7 @@ impl Microphone {
     pub fn get_devices() -> Vec<String> {
         let mut devices = Vec::new();
         for iter in 0..unsafe { mic_device_count() } {
-            let device_name = unsafe { CStr::from_ptr(mic_device_name(iter)) }.to_str().unwrap().to_string();
+            let device_name = unsafe { CStr::from_ptr(mic_device_name(iter)) }.to_str().unwrap_or_default().to_string();
             devices.push(device_name);
         }
         devices
@@ -4269,7 +4289,7 @@ impl Microphone {
         if let Some(device_name) = device_name
             && !device_name.is_empty()
         {
-            let cstr = CString::new(device_name).unwrap();
+            let cstr = CString::new(device_name).unwrap_or_default();
             return unsafe { mic_start(cstr.as_ptr() as *const c_char) != 0 };
         }
         // Here we call for a null_mut device_name
@@ -5223,7 +5243,7 @@ impl Renderer {
         field_of_view: Option<f32>,
     ) {
         let path = filename.as_ref();
-        let c_str = CString::new(path.to_str().unwrap_or("!!!path.to_str error!!!").to_owned()).unwrap();
+        let c_str = CString::new(path.to_str().unwrap_or("!!!path.to_str error!!!").to_owned()).unwrap_or_default();
         let field_of_view = field_of_view.unwrap_or(90.0);
         unsafe { render_screenshot(c_str.as_ptr(), file_quality, viewpoint, width, height, field_of_view) }
     }
@@ -5719,7 +5739,7 @@ impl Renderer {
     /// see also [`render_get_skymaterial`]
     /// see example in [`Renderer::sky_material`]
     pub fn get_sky_material() -> Material {
-        Material(NonNull::new(unsafe { render_get_skymaterial() }).unwrap())
+        Material(NonNull::new(unsafe { render_get_skymaterial() }).expect("Sky material should not be null!"))
     }
 }
 
@@ -6318,7 +6338,9 @@ impl TextStyle {
     /// see also [`text_style_get_material`]
     /// see example in [`TextStyle::from_font_and material`]
     pub fn get_material(&self) -> Material {
-        Material(NonNull::new(unsafe { text_style_get_material(*self) }).unwrap())
+        Material(
+            NonNull::new(unsafe { text_style_get_material(*self) }).expect("TextStyle material should not be null!"),
+        )
     }
 
     /// Returns the maximum height of a text character using this style, in meters.
@@ -6855,7 +6877,7 @@ impl Text {
         off_y: Option<f32>,
         off_z: Option<f32>,
     ) {
-        let c_str = CString::new(text.as_ref()).unwrap();
+        let c_str = CString::new(text.as_ref()).unwrap_or_default();
         let style = text_style.unwrap_or_default();
         let vertex_tint_linear = vertex_tint_linear.unwrap_or(Color128::WHITE);
         let position = position.unwrap_or(Pivot::Center);
@@ -6940,7 +6962,7 @@ impl Text {
         off_y: Option<f32>,
         off_z: Option<f32>,
     ) -> f32 {
-        let c_str = CString::new(text.as_ref()).unwrap();
+        let c_str = CString::new(text.as_ref()).unwrap_or_default();
         let style = text_style.unwrap_or_default();
         let vertex_tint_linear = vertex_tint_linear.unwrap_or(Color128::WHITE);
         let position = position.unwrap_or(Pivot::Center);
@@ -6976,7 +6998,7 @@ impl Text {
     /// see also [`text_size_layout`] [`text_size_layout_constrained`]
     #[deprecated(since = "0.40.0", note = "please Text::use size_layout")]
     pub fn size(text: impl AsRef<str>, text_style: Option<TextStyle>, max_width: Option<f32>) -> Vec2 {
-        let c_str = CString::new(text.as_ref()).unwrap();
+        let c_str = CString::new(text.as_ref()).unwrap_or_default();
         let style = text_style.unwrap_or_default();
         if let Some(max_width) = max_width {
             unsafe { text_size_layout_constrained(c_str.as_ptr(), style, max_width) }
@@ -7023,7 +7045,7 @@ impl Text {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn size_layout(text: impl AsRef<str>, text_style: Option<TextStyle>, max_width: Option<f32>) -> Vec2 {
-        let c_str = CString::new(text.as_ref()).unwrap();
+        let c_str = CString::new(text.as_ref()).unwrap_or_default();
         let style = text_style.unwrap_or_default();
         if let Some(max_width) = max_width {
             unsafe { text_size_layout_constrained(c_str.as_ptr(), style, max_width) }
@@ -7464,7 +7486,7 @@ impl World {
         spatial_node_type: SpatialNodeType,
         qpc_time: i64,
     ) -> Option<Pose> {
-        let c_str = CString::new(spatial_graph_node_id.as_ref()).unwrap();
+        let c_str = CString::new(spatial_graph_node_id.as_ref()).unwrap_or_default();
         let mut pose = Pose::IDENTITY;
         if unsafe {
             world_try_from_spatial_graph(c_str.as_ptr() as *mut u8, spatial_node_type, qpc_time, &mut pose) != 0
@@ -7593,7 +7615,9 @@ impl World {
     /// see also [world_get_occlusion_material]
     /// see example in [`World::occlusion_material`]
     pub fn get_occlusion_material() -> Material {
-        Material(NonNull::new(unsafe { world_get_occlusion_material() }).unwrap())
+        Material(
+            NonNull::new(unsafe { world_get_occlusion_material() }).expect("Occlusion material should not be null!"),
+        )
     }
 
     /// The mode or “reference space” that StereoKit uses for determining its base origin. This is determined by the
