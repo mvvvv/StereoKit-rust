@@ -1986,7 +1986,7 @@ impl Ui {
     ///
     /// filename_scr = "screenshots/ui_hslider.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("VSlider", &mut window_pose, None, None, None);
+    ///     Ui::window_begin("HSlider", &mut window_pose, None, None, None);
     ///     Ui::hslider(    "scaling1", &mut scaling1, 0.0, 1.0, Some(0.05), Some(0.10),
     ///                     None, None);
     ///     Ui::hslider_f64("scaling2", &mut scaling2, 0.0, 1.0, None, Some(0.12),
@@ -4512,7 +4512,7 @@ impl Ui {
     ///
     /// filename_scr = "screenshots/ui_vslider.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("HSlider", &mut window_pose, Some([0.18, 0.14].into()), None, None);
+    ///     Ui::window_begin("VSlider", &mut window_pose, Some([0.18, 0.14].into()), None, None);
     ///     Ui::vslider(    "scaling1", &mut scaling1, 0.0, 1.0, Some(0.05), Some(0.10),
     ///                     None, None);
     ///     Ui::same_line();

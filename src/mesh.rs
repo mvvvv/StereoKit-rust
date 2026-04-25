@@ -3,11 +3,11 @@ use crate::{
     material::{Cull, Material, MaterialT},
     maths::{Bool32T, Bounds, Matrix, Ray, Vec2, Vec3, Vec4},
     sk::MainThreadToken,
-    system::{IAsset, RenderLayer},
+    system::{AssetState, IAsset, RenderLayer},
     util::{Color32, Color128},
 };
 use std::{
-    ffi::{CStr, CString, c_char},
+    ffi::{CStr, CString, c_char, c_void},
     ptr::{NonNull, slice_from_raw_parts_mut},
 };
 
@@ -19,7 +19,8 @@ use std::{
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{maths::{Vec3, Vec2, Matrix}, util::Color32, mesh::{Mesh,Vertex}, material::Material};
+/// use stereokit_rust::{maths::{Vec3, Vec2, Matrix}, util::Color32,
+///                      mesh::{Mesh, Vertex}, material::Material};
 ///
 /// // Creating vertices with all fields specified
 /// let vertices = [
@@ -29,7 +30,7 @@ use std::{
 /// ];
 /// let indices = [0, 1, 2, 2, 1, 0];
 /// let mut mesh = Mesh::new();
-/// mesh.id("most_basic_mesh").keep_data(true).set_data(&vertices, &indices, true);
+/// mesh.id("most_basic_mesh").keep_data(true).set_data(&vertices, &indices, None, None);
 /// let material = Material::pbr();
 ///
 /// filename_scr = "screenshots/basic_mesh.jpeg";
@@ -110,6 +111,24 @@ pub enum Memory {
     Copy = 1,
 }
 
+bitflags::bitflags! {
+    /// Flags that control how mesh data is set. These can be combined to enable multiple behaviors at once.
+    /// <https://stereokit.net/Pages/StereoKit/MeshData.html>
+    ///
+    /// see also [`Mesh::set_data`] [`Mesh::from_data`]
+    #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+    #[repr(C)]
+    pub struct MeshData: u32 {
+        /// No options set, data upload is synchronous and bounds will not be recalculated.
+        const None        = 0;
+        /// Recalculate the mesh's bounds after uploading the data.
+        const CalcBounds = 1 << 0;
+        /// Upload the mesh data asynchronously on a background thread. The mesh will be skipped during rendering until
+        /// the upload completes.
+        const Async       = 1 << 1;
+    }
+}
+
 /// A Mesh is a single collection of triangular faces with extra surface information to enhance rendering! StereoKit
 /// meshes are composed of a list of vertices, and a list of indices to connect the vertices into faces. Nothing more
 /// than that is stored here, so typically meshes are combined with Materials, or added to Models in order to draw them.
@@ -147,6 +166,7 @@ pub enum Memory {
 pub struct Mesh(pub NonNull<_MeshT>);
 impl Drop for Mesh {
     fn drop(&mut self) {
+        self.on_load_remove();
         unsafe { mesh_release(self.0.as_ptr()) }
     }
 }
@@ -185,7 +205,8 @@ unsafe extern "C" {
         vertex_count: i32,
         in_arr_indices: *const VindT,
         index_count: i32,
-        calculate_bounds: Bool32T,
+        flags: MeshData,
+        priority: i32,
     );
     pub fn mesh_set_verts(mesh: MeshT, in_arr_vertices: *const Vertex, vertex_count: i32, calculate_bounds: Bool32T);
     pub fn mesh_get_verts(
@@ -257,6 +278,29 @@ unsafe extern "C" {
     pub fn mesh_gen_rounded_cube(dimensions: Vec3, edge_radius: f32, subdivisions: i32) -> MeshT;
     pub fn mesh_gen_cylinder(diameter: f32, depth: f32, direction: Vec3, subdivisions: i32) -> MeshT;
     pub fn mesh_gen_cone(diameter: f32, depth: f32, direction: Vec3, subdivisions: i32) -> MeshT;
+    pub fn mesh_asset_state(mesh: MeshT) -> AssetState;
+    pub fn mesh_on_load(
+        mesh: MeshT,
+        asset_on_load_callback: Option<unsafe extern "C" fn(mesh: MeshT, context: *mut c_void)>,
+        context: *mut c_void,
+    );
+    pub fn mesh_on_load_remove(
+        mesh: MeshT,
+        asset_on_load_callback: Option<unsafe extern "C" fn(mesh: MeshT, context: *mut c_void)>,
+    );
+}
+
+/// Trampoline that forwards a C `mesh_on_load` callback to a boxed Rust closure.
+///
+/// The `context` pointer must point to a heap-allocated `Box<dyn Fn(Mesh)>` created by
+/// [`Mesh::on_load`]. The box remains alive after the call; it is only freed when the
+/// corresponding [`MeshOnLoadHandle`] is dropped.
+unsafe extern "C" fn mesh_on_load_trampoline(mesh: MeshT, context: *mut c_void) {
+    let callback = unsafe { &*(context as *const Box<dyn Fn(Mesh)>) };
+    unsafe { mesh_addref(mesh) };
+    if let Some(nn) = NonNull::new(mesh) {
+        callback(Mesh(nn));
+    }
 }
 
 impl IAsset for Mesh {
@@ -266,6 +310,10 @@ impl IAsset for Mesh {
 
     fn get_id(&self) -> &str {
         self.get_id()
+    }
+
+    fn as_asset(&self) -> crate::system::AssetT {
+        self.0.as_ptr() as crate::system::AssetT
     }
 }
 
@@ -299,6 +347,41 @@ impl Mesh {
     /// ```
     pub fn new() -> Mesh {
         Mesh(NonNull::new(unsafe { mesh_create() }).expect("Mesh::new should work!"))
+    }
+
+    /// Creates a Mesh asset and sets its vertex and index data with control over upload behavior. This is a shorthand for
+    /// creating a Mesh with [`Mesh::new`] and calling [`Mesh::set_data`].
+    /// <https://stereokit.net/Pages/StereoKit/Mesh/Mesh.html>
+    /// * `vertices` - An array of vertices for the mesh. An empty slice is okay here, but may require a special shader.
+    /// * `indices` - A list of face indices, must be a multiple of 3.
+    /// * `flags` - Flags controlling upload behavior. Defaults to [`MeshData::CalcBounds`]. Pass [`MeshData::Async`]
+    ///   for background upload.
+    /// * `priority` - Loading priority for async upload. Lower values load sooner. Defaults to 0.
+    ///
+    /// see also [`mesh_create`] [`mesh_set_data`] [`Mesh::set_data`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{mesh::{Mesh, Vertex}, system::AssetState};
+    ///
+    /// let vertices = [
+    ///     Vertex::new([-0.5, -0.5, 0.0], [0.0, 0.0, -1.0], None, None),
+    ///     Vertex::new([ 0.5, -0.5, 0.0], [0.0, 0.0, -1.0], None, None),
+    ///     Vertex::new([ 0.5,  0.5, 0.0], [0.0, 0.0, -1.0], None, None),
+    ///     Vertex::new([-0.5,  0.5, 0.0], [0.0, 0.0, -1.0], None, None),
+    /// ];
+    /// let indices = [2u32, 1, 0, 3, 2, 0];
+    ///
+    /// let mesh_sync = Mesh::from_data(&vertices, &indices, None, None);
+    /// assert_eq!(mesh_sync.get_asset_state(), AssetState::Loaded);
+    /// assert_eq!(mesh_sync.get_vert_count(), 4);
+    /// assert_eq!(mesh_sync.get_ind_count(), 6);
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn from_data(vertices: &[Vertex], indices: &[u32], flags: Option<MeshData>, priority: Option<i32>) -> Mesh {
+        let mut mesh = Mesh::new();
+        mesh.set_data(vertices, indices, flags, priority);
+        mesh
     }
 
     /// Generates a plane with an arbitrary orientation that is optionally subdivided, pre-sized to the given
@@ -822,10 +905,8 @@ impl Mesh {
         self
     }
 
-    /// Assigns the vertices and indices for this Mesh! This will create a vertex buffer and index buffer object on the
-    /// graphics card. If you're calling this a second time, the buffers will be marked as dynamic and re-allocated. If
-    /// you're calling this a third time, the buffer will only re-allocate if the buffer is too small, otherwise it just
-    /// copies in the data!
+    /// Assigns the vertices and indices for this Mesh with control over upload behavior via flags! This will create a
+    /// vertex buffer and index buffer object on the graphics card.
     ///
     /// Remember to set all the relevant values! Your material will often show black if the Normals or Colors are left
     /// at their default values.
@@ -833,17 +914,25 @@ impl Mesh {
     /// Calling SetData is slightly more efficient than calling SetVerts and SetInds separately.
     /// <https://stereokit.net/Pages/StereoKit/Mesh/SetData.html>
     /// * `vertices` - An array of vertices to add to the mesh. Remember to set all the relevant values! Your material
-    ///   will often show black if the Normals or Colors are left at their default values.
+    ///   will often show black if the Normals or Colors are left at their default values. An empty slice is okay here,
+    ///   but may require a special shader.
     /// * `indices` - A list of face indices, must be a multiple of 3. Each index represents a vertex from the provided
     ///   vertex array.
-    /// * `calculate_bounds` - If true, this will also update the Mesh's bounds based on the vertices provided. Since this
-    ///   does require iterating through all the verts with some logic, there is performance cost to doing this. If
-    ///   you're updating a mesh frequently or need all the performance you can get, setting this to false is a nice way
-    ///   to gain some speed!
+    /// * `flags` - Flags controlling upload behavior. See [`MeshData`] for options. Use [`MeshData::CalcBounds`] to
+    ///   recalculate bounds, [`MeshData::Async`] for background upload. None has default value of MeshData::CalcBounds.
+    /// * `priority` - Loading priority for async upload. Lower values load sooner. None has default value of 0.
     ///
-    /// see also [`mesh_set_data`]
+    /// see also [`mesh_set_data`] [`Mesh::from_data`]
     /// see example[`Vertex`]
-    pub fn set_data(&mut self, vertices: &[Vertex], indices: &[u32], calculate_bounds: bool) -> &mut Self {
+    pub fn set_data(
+        &mut self,
+        vertices: &[Vertex],
+        indices: &[u32],
+        flags: Option<MeshData>,
+        priority: Option<i32>,
+    ) -> &mut Self {
+        let flags = flags.unwrap_or(MeshData::CalcBounds);
+        let priority = priority.unwrap_or(0);
         unsafe {
             mesh_set_data(
                 self.0.as_ptr(),
@@ -851,7 +940,8 @@ impl Mesh {
                 vertices.len() as i32,
                 indices.as_ptr(),
                 indices.len() as i32,
-                calculate_bounds as Bool32T,
+                flags,
+                priority,
             )
         };
         self
@@ -865,7 +955,8 @@ impl Mesh {
     /// at their default values.
     /// <https://stereokit.net/Pages/StereoKit/Mesh/SetVerts.html>
     /// * `vertices` - An array of vertices to add to the mesh. Remember to set all the relevant values! Your material
-    ///   will often show black if the Normals or Colors are left at their default values.
+    ///   will often show black if the Normals or Colors are left at their default values. An empty slice is okay here,
+    ///   but may require a special shader.
     /// * `calculate_bounds` - If true, this will also update the Mesh's bounds based on the vertices provided. Since this
     ///   does require iterating through all the verts with some logic, there is performance cost to doing this. If
     ///   you're updating a mesh frequently or need all the performance you can get, setting this to false is a nice way
@@ -947,6 +1038,70 @@ impl Mesh {
         self
     }
 
+    /// Registers a Rust closure as a mesh-load callback. The closure is called once when
+    /// the Mesh finishes uploading to the GPU. For synchronous uploads it fires before this
+    /// call returns; for async uploads ([`MeshData::Async`]) it fires on a future frame.
+    ///
+    /// You have to keep the closure alive until on_load_remove
+    /// <https://stereokit.net/Pages/StereoKit/Mesh/OnLoaded.html>
+    /// * `callback` - A `Fn(Mesh)` closure. The `Mesh` argument is the loaded mesh (with its
+    ///   own addref'd reference — it will be released when that `Mesh` is dropped).
+    ///
+    /// see also [`mesh_on_load`] [`Mesh::on_load`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{mesh::{Mesh, Vertex}, system::Assets};
+    /// use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
+    ///
+    /// let fired = Arc::new(AtomicBool::new(false));
+    /// let fired2 = fired.clone();
+    /// let triggered = Arc::new(AtomicBool::new(false));
+    /// let triggered2 = triggered.clone();
+    ///
+    /// // Upload data first so the mesh is already in loaded state …
+    /// let mut mesh = Mesh::new();
+    /// let vertices = [
+    ///     Vertex::new([-0.5, -0.5, 0.0], [0.0, 0.0, -1.0], None, None),
+    ///     Vertex::new([ 0.5, -0.5, 0.0], [0.0, 0.0, -1.0], None, None),
+    ///     Vertex::new([ 0.5,  0.5, 0.0], [0.0, 0.0, -1.0], None, None),
+    ///     Vertex::new([-0.5,  0.5, 0.0], [0.0, 0.0, -1.0], None, None),
+    /// ];
+    /// mesh.set_data(&vertices, &[2u32, 1, 0, 3, 2, 0], None, None);
+    /// mesh.on_load(move |_m| {
+    ///     fired2.store(true, Ordering::SeqCst);
+    /// });
+    /// mesh.on_load(move |_m| {
+    ///     triggered2.store(true, Ordering::SeqCst);
+    /// });
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     Assets::block_for_priority(i32::MAX);
+    /// );
+    /// assert!(fired.load(Ordering::SeqCst));
+    /// assert!(triggered.load(Ordering::SeqCst));
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn on_load<F: Fn(Mesh) + 'static>(&mut self, callback: F) {
+        // Double-box: outer Box<Box<dyn Fn>> gives a thin pointer for FFI context.
+        let boxed: Box<dyn Fn(Mesh)> = Box::new(callback);
+        let context = Box::into_raw(Box::new(boxed)) as *mut c_void;
+        let mesh = self.0.as_ptr();
+        unsafe {
+            mesh_on_load(mesh, Some(mesh_on_load_trampoline), context);
+        }
+    }
+
+    /// Unregisters the trampoline.
+    /// <https://stereokit.net/Pages/StereoKit/Mesh/OnLoaded.html>
+    ///
+    /// see also [`mesh_on_load_remove`] [`Mesh::on_load`]
+    pub fn on_load_remove(&mut self) {
+        let mesh = self.0.as_ptr();
+        unsafe {
+            mesh_on_load_remove(mesh, Some(mesh_on_load_trampoline));
+        }
+    }
+
     /// Adds a mesh to the render queue for this frame! If the Hierarchy has a transform on it, that transform is
     /// combined with the Matrix provided here.
     /// <https://stereokit.net/Pages/StereoKit/Mesh/Draw.html>
@@ -1005,6 +1160,38 @@ impl Mesh {
     pub fn get_id(&self) -> &str {
         unsafe { CStr::from_ptr(mesh_get_id(self.0.as_ptr())) }.to_str().unwrap_or_default()
     }
+
+    /// Gets the loading state of this Mesh asset. The AssetState will be AssetState::Loaded once all mesh data has
+    /// been uploaded to the GPU. For synchronous uploads this will be immediate; for async uploads (MeshData::Async)
+    /// check this each frame.
+    /// <https://stereokit.net/Pages/StereoKit/Mesh/AssetState.html>
+    ///
+    /// see also [`mesh_asset_state`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{mesh::{Mesh, MeshData}, system::{Assets, AssetState}};
+    ///
+    /// let mut mesh = Mesh::new();
+    /// mesh.set_data(&[], &[], Some(MeshData::Async | MeshData::CalcBounds), Some(139));
+    /// assert_eq!(mesh.get_asset_state(), AssetState::Loading);
+    ///
+    /// let cube_mesh = Mesh::generate_cube( [0.1, 0.1, 0.1], None);
+    /// assert_eq!(cube_mesh.get_asset_state(), AssetState::Loaded);
+    ///
+    /// Assets::block_for_priority(0);
+    ///
+    /// number_of_steps = 100000;
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    /// );
+    /// assert_eq!(mesh.get_asset_state(), AssetState::LoadedMeta);
+    /// assert_eq!(cube_mesh.get_asset_state(), AssetState::Loaded);
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn get_asset_state(&self) -> AssetState {
+        unsafe { mesh_asset_state(self.0.as_ptr()) }
+    }
+
     /// This is a bounding box that encapsulates the Mesh! It's used for collision, visibility testing, UI layout, and
     /// probably  other things. While it's normally calculated from the mesh vertices, you can also override this to
     /// suit your needs.

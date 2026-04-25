@@ -114,7 +114,8 @@ pub enum DisplayBlend {
 /// see also: [`SkInfo::get_system`] [`Sk::get_system`]
 /// ### Examples
 /// ```
-/// use stereokit_rust::sk::{Sk, SkSettings, SystemInfo, AppMode};
+/// use stereokit_rust::{sk::{Sk, SkSettings, SystemInfo, AppMode},
+///                      system::Assets};
 ///
 /// let mut settings = SkSettings::default();
 /// settings.app_name("Test").mode(AppMode::Offscreen);
@@ -122,6 +123,9 @@ pub enum DisplayBlend {
 /// let system_info: SystemInfo = sk.get_system();
 /// // 0 everywhere:
 /// assert_eq!(system_info, SystemInfo::default());
+///
+/// // Don't stop until all assets are loaded.
+/// Assets::block_for_priority(i32::MAX);
 /// Sk::shutdown();
 /// ```
 #[derive(Default, Debug, Clone, PartialEq)]
@@ -299,13 +303,18 @@ pub const DEFAULT_NAME: *const c_char = {
 /// see also [`Sk::init`] [`Sk::get_settings`] [`SkInfo::settings_from`] [`sk_init`]
 /// ### Examples
 /// ```
-/// use stereokit_rust::sk::{Sk, SkSettings, AppMode, DisplayBlend, DepthMode, OriginMode, StandbyMode};
-/// use stereokit_rust::{system::LogLevel, tex::TexFormat};
+/// use stereokit_rust::{sk::{Sk, SkSettings, AppMode, DisplayBlend,
+///                           DepthMode, OriginMode, StandbyMode},
+///                      system::{LogLevel, Assets}, tex::TexFormat};
 ///
 /// let mut settings = SkSettings::default();
 /// settings.app_name("Test").mode(AppMode::Offscreen);
 /// let sk = Sk::init(&settings).expect("StereoKit should initialize");
 /// let settings = sk.get_settings();
+///
+/// // Don't stop until all assets are loaded.
+/// Assets::block_for_priority(i32::MAX);
+///
 /// assert_eq!(settings.mode,                        AppMode::Offscreen);
 /// assert_eq!(settings.blend_preference,            DisplayBlend::None);
 /// assert_eq!(settings.no_flatscreen_fallback,      0);

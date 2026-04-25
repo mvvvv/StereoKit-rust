@@ -6,7 +6,7 @@ use crate::{
     maths::{Bounds, Ray, Vec3},
     mesh::{Mesh, MeshT},
     shader::{Shader, ShaderT},
-    system::{IAsset, Log, RenderLayer},
+    system::{AssetState, IAsset, Log, RenderLayer},
     util::Color128,
 };
 use std::{
@@ -60,6 +60,7 @@ use std::{
 pub struct Model(pub NonNull<_ModelT>);
 impl Drop for Model {
     fn drop(&mut self) {
+        self.on_load_remove();
         unsafe { model_release(self.0.as_ptr()) }
     }
 }
@@ -95,12 +96,23 @@ unsafe extern "C" {
         data: *const c_void,
         data_size: usize,
         shader: ShaderT,
+        priority: i32,
     ) -> ModelT;
-    pub fn model_create_file(filename_utf8: *const c_char, shader: ShaderT) -> ModelT;
+    pub fn model_create_file(filename_utf8: *const c_char, shader: ShaderT, priority: i32) -> ModelT;
     pub fn model_set_id(model: ModelT, id: *const c_char);
     pub fn model_get_id(model: ModelT) -> *const c_char;
     pub fn model_addref(model: ModelT);
     pub fn model_release(model: ModelT);
+    pub fn model_asset_state(model: ModelT) -> AssetState;
+    pub fn model_on_load(
+        model: ModelT,
+        asset_on_load_callback: Option<unsafe extern "C" fn(model: ModelT, context: *mut c_void)>,
+        context: *mut c_void,
+    );
+    pub fn model_on_load_remove(
+        model: ModelT,
+        asset_on_load_callback: Option<unsafe extern "C" fn(model: ModelT, context: *mut c_void)>,
+    );
     pub fn model_draw(model: ModelT, transform: Matrix, color_linear: Color128, layer: RenderLayer);
     pub fn model_draw_mat(
         model: ModelT,
@@ -155,6 +167,15 @@ unsafe extern "C" {
     // Deprecated :pub fn model_add_subset(model: ModelT, mesh: MeshT, material: MaterialT, transform: *const Matrix) -> i32;
 }
 
+/// Trampoline that forwards a C `model_on_load` callback to a boxed Rust closure.
+unsafe extern "C" fn model_on_load_trampoline(model: ModelT, context: *mut c_void) {
+    let callback = unsafe { &*(context as *const Box<dyn Fn(Model)>) };
+    unsafe { model_addref(model) };
+    if let Some(nn) = NonNull::new(model) {
+        callback(Model(nn));
+    }
+}
+
 impl IAsset for Model {
     // fn id(&mut self, id: impl AsRef<str>) {
     //     self.id(id);
@@ -162,6 +183,10 @@ impl IAsset for Model {
 
     fn get_id(&self) -> &str {
         self.get_id()
+    }
+
+    fn as_asset(&self) -> crate::system::AssetT {
+        self.0.as_ptr() as crate::system::AssetT
     }
 }
 
@@ -266,16 +291,18 @@ impl Model {
     /// * `data` - The binary data of a model file, this is NOT a raw array of vertex and index data!
     /// * `shader` - The shader to use for the model's materials!, if None, this will automatically determine the best
     ///   available shader to use.
+    /// * `priority` - The priority loading queue to process the mesh on.
+    ///   Lower values will process first, using i32::MAX will push this mesh to the end. None will default to 10.
     ///
     /// see also [`model_create_mem`] [`Model::from_file`]
     /// ### Examples
     /// ```
-    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!!
     /// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model, util::named_colors};
     ///
     /// let my_bytes = std::include_bytes!("../assets/plane.glb");
     ///
-    /// let model = Model::from_memory("my_bytes_center.glb", my_bytes, None)
+    /// let model = Model::from_memory("my_bytes_center.glb", my_bytes, None, None)
     ///                 .unwrap_or_default().copy();
     /// let transform = Matrix::t_r_s(Vec3::Y * 0.10, [0.0, 110.0, 0.0], Vec3::ONE * 0.09);
     ///
@@ -290,11 +317,13 @@ impl Model {
         file_name: S,
         data: &[u8],
         shader: Option<Shader>,
+        priority: Option<i32>,
     ) -> Result<Model, StereoKitError> {
         let c_file_name = CString::new(file_name.as_ref())?;
         let shader = shader.map(|shader| shader.0.as_ptr()).unwrap_or(null_mut());
+        let priority = priority.unwrap_or(10);
         match NonNull::new(unsafe {
-            model_create_mem(c_file_name.as_ptr(), data.as_ptr() as *const c_void, data.len(), shader)
+            model_create_mem(c_file_name.as_ptr(), data.as_ptr() as *const c_void, data.len(), shader, priority)
         }) {
             Some(model) => Ok(Model(model)),
             None => Err(StereoKitError::ModelFromMem(file_name.as_ref().to_owned(), "file not found!".to_owned())),
@@ -311,6 +340,8 @@ impl Model {
     ///   is specified in the path.
     /// * `shader` - The shader to use for the model’s materials! If None, this will automatically determine the best
     ///   shader available to use.
+    /// * `priority` - The priority loading queue to process the mesh on. Lower values will process first, None
+    ///   will default to 10.
     ///
     /// see also [`model_create_file`] [`Model::from_memory`]
     /// ### Examples
@@ -318,8 +349,8 @@ impl Model {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model};
     ///
-    /// let model = Model::from_file("center.glb", None)
-    ///                              .expect("Could not load model").copy();
+    /// let model = Model::from_file("center.glb", None, None)
+    ///                              .expect("Should load the model from file").copy();
     /// let transform = Matrix::t_r_s(Vec3::NEG_Y * 0.40, [0.0, 190.0, 0.0], Vec3::ONE * 0.25);
     ///
     /// filename_scr = "screenshots/model_from_file.jpeg";
@@ -329,12 +360,17 @@ impl Model {
     /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_from_file.jpeg" alt="screenshot" width="200">
-    pub fn from_file(file: impl AsRef<Path>, shader: Option<Shader>) -> Result<Model, StereoKitError> {
+    pub fn from_file(
+        file: impl AsRef<Path>,
+        shader: Option<Shader>,
+        priority: Option<i32>,
+    ) -> Result<Model, StereoKitError> {
         let path = file.as_ref();
         let path_buf = path.to_path_buf();
         let c_str = CString::new(path.to_str().unwrap_or_default())?;
         let shader = shader.map(|shader| shader.0.as_ptr()).unwrap_or(null_mut());
-        match NonNull::new(unsafe { model_create_file(c_str.as_ptr(), shader) }) {
+        let priority = priority.unwrap_or(10);
+        match NonNull::new(unsafe { model_create_file(c_str.as_ptr(), shader, priority) }) {
             Some(model) => Ok(Model(model)),
             None => Err(StereoKitError::ModelFromFile(path_buf.to_owned(), "file not found!".to_owned())),
         }
@@ -349,7 +385,7 @@ impl Model {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::model::Model;
     ///
-    /// let model = Model::from_file("center.glb", None).expect("Model should load");
+    /// let model = Model::from_file("center.glb", None, None).expect("Model should load");
     /// let model_copy = model.copy();
     ///
     /// assert_ne!(model, model_copy);
@@ -375,13 +411,14 @@ impl Model {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::model::Model;
+    /// use stereokit_rust::{model::Model, system::{Assets, AssetState}};
     ///
-    /// let mut model = Model::from_file("center.glb", None).expect("Model should load");
+    /// let mut model = Model::from_file("center.glb", None, None).expect("Model should load");
     /// model.id("my_model_id");
     ///
     /// let same_model = Model::find("my_model_id").expect("Model should be found");
     ///
+    /// Assets::block_until(&model, AssetState::Loaded);
     /// assert_eq!(model, same_model);
     /// # sk::Sk::shutdown();
     /// ```
@@ -401,13 +438,19 @@ impl Model {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::model::Model;
+    /// use stereokit_rust::{model::Model, system::{Assets, AssetState}};
     ///
-    /// let model = Model::from_file("center.glb", None).expect("Model should load");
+    /// let model = Model::from_file("center.glb", None, None).expect("Model should load");
     ///
     /// let same_model = model.clone_ref();
     ///
+    /// Assets::block_for_priority(i32::MAX);
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     while same_model.get_asset_state() == AssetState::Loading {iter -=1;}
+    /// );
+    ///
     /// assert_eq!(model, same_model);
+    /// assert_eq!(model.get_asset_state(), AssetState::Loaded);
     /// # sk::Sk::shutdown();
     /// ```
     pub fn clone_ref(&self) -> Model {
@@ -437,8 +480,9 @@ impl Model {
         self
     }
 
-    /// Set the bounds of this model. This is a bounding box that encapsulates the Model and all its subsets! It’s used for collision,
-    /// visibility testing, UI layout, and probably other things. While it’s normally calculated from the mesh bounds, you can also override this to suit your needs.
+    /// Set the bounds of this model. This is a bounding box that encapsulates the Model and all its subsets! It’s used
+    /// for collision, visibility testing, UI layout, and probably other things. While it’s normally calculated from
+    /// the mesh bounds, you can also override this to suit your needs by using this method.
     /// <https://stereokit.net/Pages/StereoKit/Model/Bounds.html>
     ///
     /// see also [`model_set_bounds`]
@@ -492,6 +536,32 @@ impl Model {
         self
     }
 
+    /// Registers a Rust closure as a model-load callback fires when the Model has finished loading
+    /// its hierarchy and submitted all mesh and texture data for upload.
+    /// <https://stereokit.net/Pages/StereoKit/Model/OnLoaded.html>
+    /// * `callback` - The callback to be called when the model is loaded. The callback receives a copy of the model as
+    ///   parameter.
+    ///
+    /// see also [`model_on_load`] [`Model::on_load_remove`]
+    pub fn on_load<F: Fn(Model) + 'static>(&mut self, callback: F) {
+        let boxed: Box<dyn Fn(Model)> = Box::new(callback);
+        let context = Box::into_raw(Box::new(boxed)) as *mut c_void;
+        let model = self.0.as_ptr();
+        unsafe {
+            model_addref(model);
+            model_on_load(model, Some(model_on_load_trampoline), context);
+        }
+    }
+
+    /// Unregisters a model-load callback
+    /// <https://stereokit.net/Pages/StereoKit/Model/OnLoaded.html>
+    ///
+    /// see also [`model_on_load_remove`] [`Model::on_load`]
+    pub fn on_load_remove(&mut self) -> &mut Self {
+        unsafe { model_on_load_remove(self.0.as_ptr(), Some(model_on_load_trampoline)) };
+        self
+    }
+
     /// Adds this Model to the render queue for this frame! If the Hierarchy has a transform on it, that transform is
     /// combined with the Matrix provided here.
     /// <https://stereokit.net/Pages/StereoKit/Model/Draw.html>
@@ -512,7 +582,7 @@ impl Model {
     /// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model, util::named_colors,
     ///                      system::RenderLayer};
     ///
-    /// let model = Model::from_file("center.glb", None)
+    /// let model = Model::from_file("center.glb", None, None)
     ///                        .expect("Could not load model").copy();
     /// let transform1 = Matrix::t_r_s([-0.70, -0.70, 0.0], [0.0, 190.0, 0.0], [0.25, 0.25, 0.25]);
     /// let transform2 = transform1 * Matrix::t(Vec3::X * 0.70);
@@ -560,7 +630,7 @@ impl Model {
     /// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model, util::named_colors,
     ///                      material::Material, system::RenderLayer};
     ///
-    /// let model = Model::from_file("cuve.glb", None)
+    /// let model = Model::from_file("cuve.glb", None, None)
     ///                        .expect("Could not load model").copy();
     /// let transform1 = Matrix::t_r_s([-0.50, -0.10, 0.0], [45.0, 0.0, 0.0], [0.07, 0.07, 0.07]);
     /// let transform2 = transform1 * Matrix::t(Vec3::X * 0.70);
@@ -703,7 +773,36 @@ impl Model {
         unsafe { CStr::from_ptr(model_get_id(self.0.as_ptr())) }.to_str().unwrap_or_default()
     }
 
-    /// Get the bounds
+    /// This tells you the current state of the Model asset. A Model starts in the Loading state when created from a
+    /// file, transitions to LoadedMeta when the hierarchy is available, and Loaded once all mesh and texture data has
+    /// been submitted for upload. This also reflects if an error occured while loading the Model with a variety of
+    /// asset error codes!
+    /// <https://stereokit.net/Pages/StereoKit/Model/AssetState.html>
+    ///
+    /// see also [`model_asset_state`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{model::Model, system::{Assets, AssetState}};
+    /// # {
+    /// let model = Model::from_file("center.glb", None, None).expect("Model should load");
+    /// assert_eq!(model.get_asset_state(), AssetState::Loading);
+    ///
+    /// Assets::block_for_priority(i32::MAX);
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     while model.get_asset_state() == AssetState::Loading {iter -=1;}
+    /// );
+    /// assert_eq!(model.get_asset_state(), AssetState::Loaded);
+    /// # } sk::Sk::shutdown();
+    /// ```
+    pub fn get_asset_state(&self) -> AssetState {
+        unsafe { model_asset_state(self.0.as_ptr()) }
+    }
+
+    /// This is a bounding box that encapsulates the Model and all its subsets! It's used for collision, visibility
+    /// testing, UI layout, and probably other things. While it's normally calculated from the mesh bounds, you can
+    /// also override this ([`Model::bounds`]) to suit your needs. If the Model is still loading, this returns a default
+    /// 10cm cube.
     /// <https://stereokit.net/Pages/StereoKit/Model/Bounds.html>
     ///
     /// see also [`model_get_bounds`] [`model_set_bounds`]
@@ -712,7 +811,9 @@ impl Model {
         unsafe { model_get_bounds(self.0.as_ptr()) }
     }
 
-    /// Get the nodes
+    /// This is an enumerable collection of all the nodes in this Model (choose `[Nodes::all]` or [`Nodes::visuals`]),
+    /// ordered non-hierarchically by when they were added. Accessing Count or iterating will block until the Model's
+    /// metadata has finished loading.
     /// <https://stereokit.net/Pages/StereoKit/ModelNodeCollection.html>
     ///
     /// see also [Nodes]
@@ -748,7 +849,8 @@ impl Model {
         Nodes::from(self)
     }
 
-    /// Get the anims
+    /// An enumerable collection of animations attached to this Model. Accessing Count or iterating will block until the
+    /// Model has fully finished loading.
     /// <https://stereokit.net/Pages/StereoKit/ModelAnimCollection.html>
     ///
     /// see also [Anims]
@@ -757,7 +859,7 @@ impl Model {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::model::{Model, AnimMode};
     ///
-    /// let model = Model::from_file("mobiles.gltf", None)
+    /// let model = Model::from_file("mobiles.gltf", None, None)
     ///                              .expect("Could not load model").copy();
     /// let anims = model.get_anims();
     /// assert_eq!(anims.get_count(), 3);
@@ -779,7 +881,8 @@ impl Model {
 
     /// Checks the intersection point of a ray and the Solid flagged Meshes in the Model’s visual nodes. Ray must
     /// be in model space, intersection point will be in model space too. You can use the inverse of the mesh’s world
-    /// transform matrix to bring the ray into model space, see the example in the docs!
+    /// transform matrix to bring the ray into model space, see the example in the docs! If the Model is still loading,
+    /// this returns false immediately.
     /// <https://stereokit.net/Pages/StereoKit/Model/Intersect.html>
     /// * `ray` - Ray must be in model space, the intersection point will be in model space too. You can use the inverse
     ///   of the mesh’s world transform matrix to bring the ray into model space, see the example in the docs!
@@ -843,7 +946,8 @@ impl Model {
 
     /// Checks the intersection point of a ray and the Solid flagged Meshes in the Model’s visual nodes. Ray must
     /// be in model space, intersection point will be in model space too. You can use the inverse of the mesh’s world
-    /// transform matrix to bring the ray into model space, see the example in the docs!
+    /// transform matrix to bring the ray into model space, see the example in the docs! If the Model is still loading,
+    /// this returns false immediately.
     /// <https://stereokit.net/Pages/StereoKit/Model/Intersect.html>
     /// * `ray` - Ray must be in model space, the intersection point will be in model space too. You can use the inverse
     ///   of the mesh’s world transform matrix to bring the ray into model space, see the example in the docs!
@@ -900,16 +1004,17 @@ impl Model {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{maths::{Vec3, Matrix}, model::{Model, AnimMode}};
+/// use stereokit_rust::{maths::{Vec3, Matrix}, model::{Model, AnimMode}, system::Assets};
 ///
-/// let model = Model::from_file("center.glb", None)
+/// let model = Model::from_file("center.glb", None, None)
 ///                              .expect("Could not load model").copy();
 /// let transform = Matrix::t_r_s(Vec3::NEG_Y * 0.40, [0.0, 190.0, 0.0], Vec3::ONE * 0.25);
 ///
 /// let mut anims = model.get_anims();
 /// assert_eq!(anims.get_count(), 1);
 /// anims.play_anim("SuzanneAction", AnimMode::Manual).anim_completion(0.80);
-///
+/// // Don't stop until all assets are loaded.
+/// Assets::block_for_priority(i32::MAX);
 /// for (iter, anim) in anims.enumerate() {
 ///     match iter {
 ///         0 => assert_eq!(anim.name, "SuzanneAction"),
@@ -981,7 +1086,7 @@ impl<'a> Anims<'a> {
         Anims { model: model.as_ref(), curr: -1 }
     }
 
-    /// Get the name of the animation at given index
+    /// Get the name of the animation at given index. This will block until the Model's metadata has finished loading.
     ///
     /// see also [`model_anim_get_name`]
     /// ### Examples
@@ -989,7 +1094,7 @@ impl<'a> Anims<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{model::Model, system::Assets};
     ///
-    /// let model = Model::from_file("mobiles.gltf", None)
+    /// let model = Model::from_file("mobiles.gltf", None, None)
     ///                              .expect("Could not load model").copy();
     /// Assets::block_for_priority(i32::MAX);
     ///
@@ -1011,7 +1116,7 @@ impl<'a> Anims<'a> {
         }
     }
 
-    /// Get the duration of the animation at given index
+    /// Get the duration of the animation at given index. This will block until the Model's metadata has finished loading.
     ///
     /// Returns `-0.01` if the index is out of bounds.
     /// see also [`model_anim_get_duration`]
@@ -1020,7 +1125,7 @@ impl<'a> Anims<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::model::Model;
     ///
-    /// let model = Model::from_file("center.glb", None)
+    /// let model = Model::from_file("center.glb", None, None)
     ///                              .expect("Could not load model").copy();
     /// let anims = model.get_anims();
     /// assert_eq!(anims.get_count(), 1);
@@ -1051,7 +1156,7 @@ impl<'a> Anims<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::Matrix, model::{Model, AnimMode}};
     ///
-    /// let model = Model::from_file("center.glb", None)
+    /// let model = Model::from_file("center.glb", None, None)
     ///                              .expect("Could not load model").copy();
     /// let mut anims = model.get_anims();
     /// assert_eq!(anims.get_count(), 1);
@@ -1084,7 +1189,7 @@ impl<'a> Anims<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::model::{Model, AnimMode};
     ///
-    /// let model = Model::from_file("center.glb", None)
+    /// let model = Model::from_file("center.glb", None, None)
     ///                              .expect("Could not load model").copy();
     /// let mut anims = model.get_anims();
     ///
@@ -1119,7 +1224,7 @@ impl<'a> Anims<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::model::{Model, AnimMode};
     ///
-    /// let model = Model::from_file("center.glb", None)
+    /// let model = Model::from_file("center.glb", None, None)
     ///                              .expect("Could not load model").copy();
     /// let mut anims = model.get_anims();
     ///
@@ -1150,7 +1255,7 @@ impl<'a> Anims<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::model::{Model, AnimMode};
     ///
-    /// let model = Model::from_file("center.glb", None)
+    /// let model = Model::from_file("center.glb", None, None)
     ///                              .expect("Could not load model").copy();
     /// let mut anims = model.get_anims();
     /// anims.play_anim_idx(0, AnimMode::Manual);
@@ -1187,7 +1292,7 @@ impl<'a> Anims<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::model::{Model, AnimMode};
     ///
-    /// let model = Model::from_file("center.glb", None)
+    /// let model = Model::from_file("center.glb", None, None)
     ///                              .expect("Could not load model").copy();
     /// let mut anims = model.get_anims();
     /// anims.play_anim_idx(0, AnimMode::Manual);
@@ -1214,15 +1319,17 @@ impl<'a> Anims<'a> {
         self
     }
 
-    /// get anim by name
+    /// Search the list of animations for the fist one matching the given name. This will block until the
+    /// Model has fully finished loading.
     /// <https://stereokit.net/Pages/StereoKit/Model/FindAnim.html>
+    /// * `name` - The name of the animation to find. Case sensitive.
     ///
     /// see also [`model_anim_find`] [`Anims::play_anim`] [`Anims::play_anim_idx]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::model::{Model};
-    /// let model = Model::from_file("center.glb", None)
+    /// let model = Model::from_file("center.glb", None, None)
     ///     .expect("Could not load model")
     ///     .copy();
     ///
@@ -1241,7 +1348,7 @@ impl<'a> Anims<'a> {
         if index < 0 { None } else { Some(index) }
     }
 
-    /// Get the number of animations
+    /// Get the number of animations. This will block until the Model has fully finished loading.
     /// <https://stereokit.net/Pages/StereoKit/Model/ModelAnimCollection.html>
     ///
     /// see also [`model_anim_count`]
@@ -1250,7 +1357,7 @@ impl<'a> Anims<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::model::{Model};
     ///
-    /// let model = Model::from_file("mobiles.gltf", None)
+    /// let model = Model::from_file("mobiles.gltf", None, None)
     ///                             .expect("Could not load model").copy();
     ///
     /// let count = model.get_anims().get_count();
@@ -1271,7 +1378,7 @@ impl<'a> Anims<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::model::{Model, AnimMode};
     ///
-    /// let model = Model::from_file("mobiles.gltf", None)
+    /// let model = Model::from_file("mobiles.gltf", None, None)
     ///                            .expect("Could not load model").copy();
     ///
     /// let mut anims = model.get_anims();
@@ -1294,7 +1401,7 @@ impl<'a> Anims<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::model::{Model, AnimMode};
     ///
-    /// let model = Model::from_file("mobiles.gltf", None)
+    /// let model = Model::from_file("mobiles.gltf", None, None)
     ///                           .expect("Could not load model").copy();
     ///
     /// let mut anims = model.get_anims();
@@ -1319,7 +1426,7 @@ impl<'a> Anims<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::model::{Model, AnimMode};
     ///
-    /// let model = Model::from_file("center.glb", None)
+    /// let model = Model::from_file("center.glb", None, None)
     ///                           .expect("Could not load model").copy();
     ///
     /// let mut anims = model.get_anims();
@@ -1342,7 +1449,7 @@ impl<'a> Anims<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::model::{Model, AnimMode};
     ///
-    /// let model = Model::from_file("center.glb", None)
+    /// let model = Model::from_file("center.glb", None, None)
     ///                          .expect("Could not load model").copy();
     /// let mut anims = model.get_anims();
     /// assert_eq!(anims.get_anim_completion(), 0.0);
@@ -1367,7 +1474,7 @@ impl<'a> Anims<'a> {
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{maths::{Vec3, Matrix} ,model::Model, util::Color128};
 ///
-/// let model = Model::from_file("center.glb", None)
+/// let model = Model::from_file("center.glb", None, None)
 ///                           .expect("Could not load model").copy();
 /// let transform = Matrix::t_r_s(Vec3::NEG_Y * 0.40, [0.0, 190.0, 0.0], Vec3::ONE * 0.25);
 ///
@@ -1464,7 +1571,8 @@ unsafe extern "C" {
 
 }
 
-/// Iterator of the nodes of a model. Can be instanciate from [Model]
+/// Iterator of the nodes of a model. Can be instanciate from [Model]. Iterating will block until the Model's metadata
+/// has finished loading.
 ///
 /// see also [Nodes::all] [Nodes::visuals]
 #[derive(Debug, Copy, Clone)]
@@ -1540,7 +1648,7 @@ impl<'a> Nodes<'a> {
 
     /// This adds a root node to the Model’s node hierarchy! If There is already an initial root node,
     /// this node will still be a root node, but will be a Sibling of the Model’s RootNode. If this is the first root node added,
-    /// you’ll be able to access it via [Nodes::get_root_node].
+    /// you’ll be able to access it via [`Nodes::get_root_node`].
     /// <https://stereokit.net/Pages/StereoKit/Model/AddNode.html>
     ///
     /// see also [ModelNode::add_child] [`model_node_add`]
@@ -1675,7 +1783,9 @@ impl<'a> Nodes<'a> {
         NodeIter::visuals_from(self.model)
     }
 
-    /// get node by name
+    /// Searches the entire list of Nodes, and will return the first on that matches this name exactly. If no ModelNode
+    /// is found, then this will return None. Node Names are not guaranteed to be unique. This will block until the
+    /// Model's metadata is loaded.
     /// <https://stereokit.net/Pages/StereoKit/Model/FindNode.html>
     /// * `name` - Exact name to match against. ASCII only for now.
     ///
@@ -1715,7 +1825,7 @@ impl<'a> Nodes<'a> {
         }
     }
 
-    /// Get the number of node.
+    /// Get the number of node of the model. This will block until the Model's metadata has finished loading.
     /// <https://stereokit.net/Pages/StereoKit/ModelNodeCollection.html>
     ///
     /// see also [NodeIter] [`model_node_count`]
@@ -1737,7 +1847,7 @@ impl<'a> Nodes<'a> {
         unsafe { model_node_count(self.model.0.as_ptr()) }
     }
 
-    /// Get the number of visual node
+    /// Get the number of visual node of the model. This will block until the Model's metadata has finished loading.
     /// <https://stereokit.net/Pages/StereoKit/ModelVisualCollection.html>
     ///
     /// see also [NodeIter] [`model_node_visual_count`]
@@ -1761,7 +1871,7 @@ impl<'a> Nodes<'a> {
         unsafe { model_node_visual_count(self.model.0.as_ptr()) }
     }
 
-    /// Get the node at index
+    /// Get the node at index. This will block until the Model's metadata has finished loading.
     /// <https://stereokit.net/Pages/StereoKit/ModelNodeCollection.html>
     ///
     /// see also [NodeIter] [`model_node_index`]
@@ -1791,7 +1901,7 @@ impl<'a> Nodes<'a> {
         }
     }
 
-    /// Get the visual node at index
+    /// Get the visual node at index. This will block until the Model's metadata has finished loading.
     /// <https://stereokit.net/Pages/StereoKit/ModelVisualCollection.html>
     ///
     /// see also [NodeIter] [`model_node_visual_index`]
@@ -1821,7 +1931,9 @@ impl<'a> Nodes<'a> {
         }
     }
 
-    /// Get the root node
+    /// Returns the first root node in the Model's hierarchy. There may be additional root nodes, and these will be
+    /// Siblings of this ModelNode. If there are no nodes present on the Model, this will be null. This will block
+    /// until the Model's metadata has finished loading.
     /// <https://stereokit.net/Pages/StereoKit/Model/RootNode.html>
     ///
     /// see also [`model_node_get_root`]
@@ -1986,10 +2098,10 @@ impl ModelNode<'_> {
         self
     }
 
-    /// Set the material of the node
+    /// Set the material of the node. Use [`ModelNode::remove_material`] to remove the material from the node.
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/Material.html>
     ///
-    /// see also [`model_node_set_material`]
+    /// see also [`model_node_set_material`] [`ModelNode::remove_material`] [`ModelNode::get_material`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -2012,10 +2124,36 @@ impl ModelNode<'_> {
         self
     }
 
-    /// Set the mesh of the node
+    /// Remove the material of the node if any. Use [`ModelNode::material`] to set a material to the node.
+    /// <https://stereokit.net/Pages/StereoKit/ModelNode/Material.html>
+    ///
+    /// see also [`model_node_set_material`] [`ModelNode::material`] [`ModelNode::get_material`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Matrix, model::Model, mesh::Mesh, material::Material};
+    ///
+    /// let model = Model::new();
+    ///
+    /// let mut nodes = model.get_nodes();
+    /// nodes.add("cube", Matrix::IDENTITY, Some(&Mesh::cube()), Some(&Material::pbr()), true);
+    ///
+    /// let mut node = nodes.find("cube").expect("A node should exist!");
+    /// assert_eq!(node.get_material(), Some(Material::pbr()));
+    ///
+    /// node.remove_material();
+    /// assert_eq!(node.get_material(), None);
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn remove_material(&mut self) -> &mut Self {
+        unsafe { model_node_set_material(self.model.0.as_ptr(), self.id, std::ptr::null_mut()) };
+        self
+    }
+
+    /// Set the mesh of the node. Use [`ModelNode::remove_mesh`] to remove the mesh from the node.
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/Mesh.html>
     ///
-    /// see also [`model_node_set_mesh`]
+    /// see also [`model_node_set_mesh`] [`ModelNode::remove_mesh`] [`ModelNode::get_mesh`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -2035,6 +2173,32 @@ impl ModelNode<'_> {
     /// ```
     pub fn mesh<M: AsRef<Mesh>>(&mut self, mesh: M) -> &mut Self {
         unsafe { model_node_set_mesh(self.model.0.as_ptr(), self.id, mesh.as_ref().0.as_ptr()) };
+        self
+    }
+
+    /// Remove the mesh of the node if any. Use [`ModelNode::mesh`] to set a mesh to the node.
+    /// <https://stereokit.net/Pages/StereoKit/ModelNode/Mesh.html>
+    ///
+    /// see also [`model_node_set_mesh`] [`ModelNode::mesh`] [`ModelNode::get_mesh`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Matrix, model::Model, mesh::Mesh, material::Material};
+    ///
+    /// let model = Model::new();
+    ///
+    /// let mut nodes = model.get_nodes();
+    /// nodes.add("mesh", Matrix::IDENTITY, Some(&Mesh::cube()), Some(&Material::pbr()), true);
+    ///
+    /// let mut node = nodes.find("mesh").expect("A node should exist!");
+    /// assert_eq!(node.get_mesh(), Some(Mesh::cube()));
+    ///
+    /// node.remove_mesh();
+    /// assert_eq!(node.get_mesh(), None);
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn remove_mesh(&mut self) -> &mut Self {
+        unsafe { model_node_set_mesh(self.model.0.as_ptr(), self.id, std::ptr::null_mut()) };
         self
     }
 
@@ -2205,20 +2369,22 @@ impl ModelNode<'_> {
         unsafe { model_node_get_visible(self.model.0.as_ptr(), self.id) != 0 }
     }
 
-    /// Get the material of the node
+    /// The Material associated with this node. May be None, or may also be re-used elsewhere. Getting this will block
+    /// until the Model's metadata has finished loading.
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/Material.html>
     ///
     /// see also [`model_node_get_material`]
-    /// see example [`ModelNode::material`]
+    /// see examples [`ModelNode::material`] [`ModelNode::remove_material`]
     pub fn get_material(&self) -> Option<Material> {
         NonNull::new(unsafe { model_node_get_material(self.model.0.as_ptr(), self.id) }).map(Material)
     }
 
-    /// Get the mesh of the node
+    /// The Mesh associated with this node. May be None, or may also be re-used elsewhere. Getting this will block
+    /// until the Model has fully finished loading.
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/Mesh.html>
     ///
     /// see also [`model_node_get_mesh`]
-    /// see example [`ModelNode::mesh`]
+    /// see examples [`ModelNode::mesh`] [`ModelNode::remove_mesh`]
     pub fn get_mesh(&self) -> Option<Mesh> {
         NonNull::new(unsafe { model_node_get_mesh(self.model.0.as_ptr(), self.id) }).map(Mesh)
     }

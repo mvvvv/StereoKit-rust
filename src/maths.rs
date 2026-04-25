@@ -3175,7 +3175,7 @@ impl Sub<Quat> for Quat {
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model};
 ///
-/// let model = Model::from_file("center.glb", None).unwrap_or_default().copy();
+/// let model = Model::from_file("center.glb", None, None).unwrap_or_default().copy();
 /// let transform = Matrix::t_r_s(Vec3::NEG_Y * 0.7, [0.0, 155.0, 10.0], Vec3::ONE * 0.3);
 ///
 /// filename_scr = "screenshots/matrix.jpeg";
@@ -4705,9 +4705,10 @@ impl MulAssign<Matrix> for Matrix {
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{maths::{Vec3, Matrix, Pose}, model::Model, ui::Ui,
-///     mesh::Mesh, material::Material, util::named_colors};
+///                      mesh::Mesh, material::Material, util::named_colors};
 ///
-/// let model = Model::from_file("center.glb", None).unwrap_or_default().copy();
+/// let model = Model::from_file("center.glb", None, None).unwrap_or_default().copy();
+/// model.recalculate_bounds();
 /// let cube = Mesh::cube();
 /// let mut material_cube = Material::ui_box();
 /// material_cube.color_tint(named_colors::GOLD)
@@ -5513,7 +5514,7 @@ impl Display for Plane {
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{ui::Ui, maths::{Vec3, Pose, Matrix}, model::Model };
 ///
-/// let plane = Model::from_file("plane.glb", None).unwrap_or_default();
+/// let plane = Model::from_file("plane.glb", None, None).unwrap_or_default();
 /// let bounds = plane.get_bounds();
 /// let mut handle_pose = Pose::look_at(
 ///     [0.0, -5.5, -10.0], (Vec3::Z + Vec3::X) * 100.0);
@@ -5966,18 +5967,21 @@ impl Rect {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{maths::{Vec3, Matrix, Ray}, model::Model, system::Lines,
+/// use stereokit_rust::{maths::{Vec3, Matrix, Ray}, model::Model, system::{Assets, Lines},
 ///     mesh::Mesh, material::Material, util::named_colors};
 ///
 /// let point = Mesh::sphere();
 /// let material_point =Material::unlit();
-/// let model = Model::from_file("center.glb", None).unwrap_or_default().copy();
+/// let model = Model::from_file("center.glb", None, None).unwrap_or_default().copy();
 /// let cube = Mesh::cube();
-/// let mut material_cube =Material::ui_box();
+/// let mut material_cube = Material::ui_box();
 /// material_cube.color_tint(named_colors::GOLD)
 ///              .border_size(0.05);
 ///
+/// Assets::block_for_priority(i32::MAX);
+///
 /// let center = Vec3::new(0.0, -2.5, -2.5);
+/// model.recalculate_bounds();
 /// let bounds = model.get_bounds();
 /// let transform = Matrix::t_r(center, [0.0, 220.0, 0.0]);
 /// let transform_cube = Matrix::t_s( bounds.center, bounds.dimensions) * transform;
@@ -6346,10 +6350,12 @@ impl Ray {
     /// use stereokit_rust::{maths::{Matrix, Ray}, model::Model, system::Lines,
     ///     mesh::Mesh, material::{Material, Cull}, util::named_colors};
     ///
-    /// let model = Model::from_file("center.glb", None).unwrap_or_default().copy();
+    /// let model = Model::from_file("center.glb", None, None).unwrap_or_default().copy();
     /// let transform = Matrix::t_r([0.0,-2.25,-2.00], [0.0, 140.0, 0.0]);
     ///
     /// let inv_ray = Ray::new([1.0, 2.0, -3.0], [-1.5, 2.0, 3.0]);
+    ///
+    /// model.recalculate_bounds();
     ///
     /// let contact_model = inv_ray.intersect_model( &model, Some(Cull::Back))
     ///     .expect("Ray should touch model");
@@ -6397,10 +6403,12 @@ impl Ray {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::{Vec3, Matrix, Ray}, model::Model,material::Cull};
     ///
-    /// let model = Model::from_file("center.glb", None).unwrap_or_default().copy();
+    /// let model = Model::from_file("center.glb", None, None).unwrap_or_default().copy();
     /// let transform = Matrix::t_r([0.0,-2.25,-2.00], [0.0, 140.0, 0.0]);
     ///
     /// let inv_ray = Ray::new([1.0, 2.0, -3.0], [-1.5, 2.0, 3.0]);
+    ///
+    /// model.recalculate_bounds();
     ///
     /// let mut inv_contact_model_ray = Ray::default();
     /// assert!(inv_ray.intersect_model_to_ptr( &model, Some(Cull::Back), &mut inv_contact_model_ray)

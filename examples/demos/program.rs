@@ -106,7 +106,7 @@ pub fn launch(mut sk: Sk, _is_testing: bool, start_test: String) {
     }
     sk.send_event(StepperAction::add("HudNotif1", notif));
 
-    let mobile = Model::from_file("mobiles.gltf", Some(Shader::pbr())).unwrap();
+    let mobile = Model::from_file("mobiles.gltf", Some(Shader::pbr()), None).unwrap_or_default();
     Log::diag(format!("{:?}", mobile.get_id()));
     for iter in mobile.get_nodes().visuals() {
         Log::diag(format!("{:?}", iter.get_mesh().unwrap().get_id()));
@@ -150,13 +150,12 @@ pub fn launch(mut sk: Sk, _is_testing: bool, start_test: String) {
     let interactor_choices: Vec<(DefaultInteractors, bool, &str)> = {
         let xr_tp = Backend::xr_type();
         if xr_tp == BackendXRType::OpenXR {
-
             let mut choices: Vec<(DefaultInteractors, bool, &str)> = vec![
                 (DefaultInteractors::Default, false, "Interaction: Default"),
                 (DefaultInteractors::All, false, "Interaction: All"),
             ];
             if simultaneous_hands_controllers_available {
-                choices.insert(0,(DefaultInteractors::All, true, "Interaction: Hands & Controllers"));
+                choices.insert(0, (DefaultInteractors::All, true, "Interaction: Hands & Controllers"));
             }
             choices.push((DefaultInteractors::Hands, false, "Interaction: Hands"));
             choices.push((DefaultInteractors::Controllers, false, "Interaction: Controllers"));

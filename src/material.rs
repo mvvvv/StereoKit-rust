@@ -97,7 +97,7 @@ pub enum Cull {
 ///
 /// let cube = Mesh::cube();
 /// // Create a material with default properties
-/// let mut material_cube = Material::unlit().copy();
+/// let mut material_cube = Material::pbr().copy();
 ///
 /// // Set some shader properties
 /// material_cube
@@ -174,6 +174,10 @@ impl IAsset for Material {
 
     fn get_id(&self) -> &str {
         self.get_id()
+    }
+
+    fn as_asset(&self) -> crate::system::AssetT {
+        self.0.as_ptr() as crate::system::AssetT
     }
 }
 

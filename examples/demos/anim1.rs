@@ -27,7 +27,7 @@ unsafe impl Send for Anim1 {}
 
 impl Default for Anim1 {
     fn default() -> Self {
-        let mobile = Model::from_file("mobiles.gltf", Some(Shader::pbr())).unwrap().copy();
+        let mobile = Model::from_file("mobiles.gltf", Some(Shader::pbr()), None).unwrap_or_default().copy();
 
         let calcaire = Material::find("clean_tile").unwrap_or_default();
         let mut brick_wall_material = calcaire.copy();

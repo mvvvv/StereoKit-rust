@@ -639,7 +639,7 @@ impl XrMetaVirtualKeyboardStepper {
                         Ok(model_data) => {
                             Log::info(format!("   Loaded {} bytes of keyboard model data", model_data.len()));
 
-                            match Model::from_memory("virtual_keyboard.gltf", &model_data, None) {
+                            match Model::from_memory("virtual_keyboard.gltf", &model_data, None, None) {
                                 Ok(model) => {
                                     self.keyboard_model = Some(model);
                                     Log::info("   Keyboard 3D model created successfully");

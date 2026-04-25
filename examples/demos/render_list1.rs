@@ -45,7 +45,7 @@ impl Default for RenderList1 {
         let render_tex = Tex::gen_color(BLUE_VIOLET, 128, 128, TexType::Rendertarget, TexFormat::Rgba32Srgb);
         //let render_tex = Tex::render_target(128, 128, None, None, None).unwrap_or_default();
         let mut render_mat = Material::pbr().copy();
-        let model = Model::from_file("plane.glb", None).unwrap();
+        let model = Model::from_file("plane.glb", None, None).unwrap_or_default();
         list.add_model(model, None, Matrix::r(Quat::from_angles(90.0, 90.0, 145.0)), Color128::WHITE, None);
         //list.add_mesh(&quad, &render_mat, Matrix::IDENTITY, BLUE_VIOLET, None);
 

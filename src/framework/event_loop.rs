@@ -136,7 +136,7 @@ enum SleepPhase {
 ///                      material::Material, tools::title::Title,
 ///                      framework::{SkClosures, StepperAction}, sk::QuitReason};
 ///
-/// let model = Model::from_file("cuve.glb", None).expect("Missing cube.glb").copy();
+/// let model = Model::from_file("cuve.glb", None, None).expect("Missing cube.glb").copy();
 /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None)
 ///     .expect("Missing shader");
 /// let transform = Matrix::t_r([0.0, 0.0, -6.5], [90.0, 0.0, 0.0]);
@@ -258,7 +258,7 @@ impl<'a> SkClosures<'a> {
     /// use stereokit_rust::{maths::Matrix,  model::Model, system::Log,
     ///                      framework::SkClosures , sk::QuitReason};
     ///
-    /// let model = Model::from_file("cuve.glb", None).expect("Missing cube.glb").copy();
+    /// let model = Model::from_file("cuve.glb", None, None).expect("Missing cube.glb").copy();
     /// let transform = Matrix::IDENTITY;
     ///
     /// let mut iter = 0;
@@ -307,7 +307,7 @@ impl<'a> SkClosures<'a> {
     /// use stereokit_rust::{maths::Matrix,  model::Model, system::Log,
     ///                      framework::SkClosures , sk::QuitReason};
     ///
-    /// let model = Model::from_file("cuve.glb", None).expect("Missing cube.glb").copy();
+    /// let model = Model::from_file("cuve.glb", None, None).expect("Missing cube.glb").copy();
     /// let transform = Matrix::IDENTITY;
     ///
     /// let mut iter = 0;

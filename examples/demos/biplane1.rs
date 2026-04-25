@@ -38,7 +38,7 @@ unsafe impl Send for Biplane1 {}
 impl Default for Biplane1 {
     /// Creates a new instance of Biplane1 with default values.
     fn default() -> Self {
-        let model = Model::from_file("plane.glb", None).unwrap_or_default();
+        let model = Model::from_file("plane.glb", None, None).unwrap_or_default();
         let nodes = model.get_nodes();
         let plane = match nodes.find("Plane") {
             Some(plane) => match plane.get_mesh() {

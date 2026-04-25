@@ -310,7 +310,7 @@ impl XrFbRenderModel {
 
         if needs_loading {
             let data = self.load_render_model(model_path)?;
-            let model = Model::from_memory(format!("{model_path}.gltf"), &data, None)?;
+            let model = Model::from_memory(format!("{model_path}.gltf"), &data, None, None)?;
 
             if let Some(mut n) = model.get_nodes().get_root_node() {
                 let new_rotation = Quat::from_angles(0.0, 0.0, 0.0);

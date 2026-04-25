@@ -42,6 +42,9 @@ pub trait IAsset {
     /// finding them later on!
     /// <https://stereokit.net/Pages/StereoKit/IAsset/Id.html>
     fn get_id(&self) -> &str;
+
+    /// Gets the raw StereoKit asset handle backing this asset wrapper.
+    fn as_asset(&self) -> AssetT;
 }
 
 /// StereoKit uses an asynchronous loading system to prevent assets from blocking execution! This means that asset
@@ -145,6 +148,7 @@ unsafe extern "C" {
     pub fn assets_total_tasks() -> i32;
     pub fn assets_current_task_priority() -> i32;
     pub fn assets_block_for_priority(priority: i32);
+    pub fn assets_block_until(asset: AssetT, state: AssetState);
     pub fn assets_count() -> i32;
     pub fn assets_get_index(index: i32) -> AssetT;
     pub fn assets_get_type(index: i32) -> AssetType;
@@ -408,13 +412,21 @@ impl Assets {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{system::Assets, sprite::Sprite};
+    ///
+    /// let current_task = Assets::current_task();
+    /// assert_eq!(current_task, 2);
+    ///
     /// let my_sprite = Sprite::from_file("textures/open_gltf.jpeg", None, None)
     ///                   .expect("open_gltf.jpeg should be able to create sprite");
     /// # assert_eq!(my_sprite.get_id(), "textures/open_gltf.jpeg/sprite");
     ///
     /// let current_task = Assets::current_task();
-    /// // TODO: most of the time true but ... assert_eq!(Assets::total_tasks(), 1);
-    /// assert_eq!(current_task, 0);
+    /// assert_eq!(current_task, 2);
+    ///
+    /// Assets::block_for_priority(i32::MAX);
+    ///
+    /// let current_task = Assets::current_task();
+    /// assert_eq!(current_task, 3);
     /// # sk::Sk::shutdown();
     /// ```
     pub fn current_task() -> i32 {
@@ -453,16 +465,21 @@ impl Assets {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{system::Assets, sprite::Sprite};
     ///
+    /// let total_tasks  = Assets::total_tasks();
+    /// assert_eq!(total_tasks, 2);
+    ///
     /// let my_sprite1 = Sprite::from_file("textures/open_gltf.jpeg", None, None)
     ///                   .expect("open_gltf.jpeg should be able to create sprite");
     ///
     /// let my_sprite2 = Sprite::from_file("textures/log_viewer.jpeg", None, None)
     ///                   .expect("log_viewer.jpeg should be able to create sprite");
     ///
+    /// Assets::block_for_priority(i32::MAX);
+    ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     let total_tasks  = Assets::total_tasks();
-    ///     assert_eq!(total_tasks, 2);
-    ///     # assert_ne!(my_sprite1, my_sprite2);
+    ///     assert_eq!(total_tasks, 4);
+    ///     assert_ne!(my_sprite1, my_sprite2);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -482,7 +499,7 @@ impl Assets {
     ///                      model::Model, util::named_colors};
     ///
     /// // The model is loaded asynchronously, so we need to wait for it to be loaded before we can screenshot it.
-    /// let model = Model::from_file("cuve.glb", None)
+    /// let model = Model::from_file("cuve.glb", None, None)
     ///                 .expect("mobiles.gltf should be a valid model");
     /// let transform = Matrix::t_r_s([0.15, -0.75, -1.0], [0.0, 110.0, 0.0], [0.4, 0.4, 0.4]);
     ///
@@ -497,6 +514,46 @@ impl Assets {
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/assets_block_for_priority.jpeg" alt="screenshot" width="200">
     pub fn block_for_priority(priority: i32) {
         unsafe { assets_block_for_priority(priority) }
+    }
+
+    /// This will block execution until the given asset reaches the specified loading state. If the asset has already
+    /// reached or passed that state, this returns immediately. If the asset is in an error state, this also returns
+    /// immediately.
+    /// <https://stereokit.net/Pages/StereoKit/Assets/BlockUntil.html>
+    /// * `asset` - Any StereoKit asset implementing [`IAsset`].
+    /// * `state` - The AssetState to block until. For example, if you want to block until an asset is fully loaded,
+    ///   pass in `AssetState::Loaded` for this.
+    ///
+    /// see also [`assets_block_until`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Matrix, system::{Assets, AssetState}, material::Material,
+    ///                      mesh::{Mesh, Vertex, MeshData}, util::named_colors};
+    ///
+    /// // The mesh is loaded asynchronously, so we need to wait for it to be loaded before we can screenshot it.
+    /// let vertices = [
+    ///     Vertex::new([-0.5, -0.5, 0.0], [0.0, 0.0, -1.0], None, None),
+    ///     Vertex::new([ 0.5, -0.5, 0.0], [0.0, 0.0, -1.0], None, None),
+    ///     Vertex::new([ 0.5,  0.5, 0.0], [0.0, 0.0, -1.0], None, None),
+    ///     Vertex::new([-0.5,  0.5, 0.0], [0.0, 0.0, -1.0], None, None),
+    /// ];
+    /// let indices = [2u32, 1, 0, 3, 2, 0];
+    ///
+    /// let mesh_sync = Mesh::from_data(&vertices, &indices, Some(MeshData::Async), None);
+    ///
+    /// let transform = Matrix::t_r_s([0.15, -0.75, -1.0], [0.0, 110.0, 0.0], [0.4, 0.4, 0.4]);
+    /// let material = Material::default();
+    ///
+    /// Assets::block_until(&mesh_sync, AssetState::Loaded);
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     mesh_sync.draw(token, &material, transform, Some(named_colors::MISTY_ROSE.into()), None);
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn block_until(asset: &impl IAsset, state: AssetState) {
+        unsafe { assets_block_until(asset.as_asset(), state) }
     }
 }
 
@@ -1724,11 +1781,11 @@ impl Hierarchy {
 }
 
 bitflags::bitflags! {
-/// What type of device is the source of the pointer? This is a bit-flag that can contain some input source family
-/// information.
-/// <https://stereokit.net/Pages/StereoKit/InputSource.html>
-///
-/// see also [`Pointer`] [`Input`]
+    /// What type of device is the source of the pointer? This is a bit-flag that can contain some input source family
+    /// information.
+    /// <https://stereokit.net/Pages/StereoKit/InputSource.html>
+    ///
+    /// see also [`Pointer`] [`Input`]
     #[derive(Debug, Copy, Clone, PartialEq, Eq)]
     #[repr(C)]
     pub struct InputSource: u32 {
@@ -2798,12 +2855,13 @@ impl Input {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{system::{Input, Handed}, model::Model};
+    /// use stereokit_rust::{system::{Assets, Input, Handed}, model::Model};
     ///
     /// assert_eq!(Input::get_controller_model(Handed::Left).get_id(), "default/model_controller_l");
     ///
-    /// let model_left = Model::from_file("center.glb", None)
+    /// let model_left = Model::from_file("center.glb", None, None)
     ///                     .expect("mobiles.gltf should be a valid model");
+    /// Assets::block_for_priority(i32::MAX);
     ///
     /// Input::set_controller_model(Handed::Left, Some(&model_left));
     /// assert_eq!(Input::get_controller_model(Handed::Left).get_id(), "center.glb");
@@ -4406,7 +4464,7 @@ pub enum Projection {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{system::{Renderer, RenderLayer}, maths::{Matrix, Pose},
+/// use stereokit_rust::{system::{Assets, Renderer, RenderLayer}, maths::{Matrix, Pose},
 ///                      render_list::RenderList,
 ///                      mesh::Mesh, model::Model, material::Material, util::named_colors};
 ///
@@ -4414,13 +4472,15 @@ pub enum Projection {
 /// let material = Material::pbr();
 /// let transform_sun = Matrix::t([-6.0, -4.0, -10.0]);
 ///
-/// let plane = Model::from_file("plane.glb", None).expect("plane.glb should be there");
+/// let plane = Model::from_file("plane.glb", None, None).expect("plane.glb should be there");
 /// let transform_plane = Matrix::t_r_s([0.0, 0.2, -0.7], [0.0, 120.0, 0.0], [0.15, 0.15, 0.15]);
 ///
 /// // We want to replace the gray background with a dark blue sky:
 /// let mut primary = RenderList::primary();
 /// assert_eq!(primary.get_count(), 0);
 /// Renderer::clear_color(named_colors::BLUE);
+///
+/// Assets::block_for_priority(i32::MAX);
 ///
 /// filename_scr = "screenshots/renderer.jpeg";
 /// test_steps!( // !!!! Get a proper main loop !!!!
@@ -4939,7 +4999,7 @@ impl Renderer {
     /// use stereokit_rust::{system::{Renderer, RenderLayer}, maths::Matrix,
     ///                      model::Model, util::named_colors};
     ///
-    /// let model = Model::from_file("plane.glb", None).expect("plane.glb should be there");
+    /// let model = Model::from_file("plane.glb", None, None).expect("plane.glb should be there");
     /// let transform1 = Matrix::t([-2.5, 0.0, -5.0]);
     /// let transform2 = Matrix::t([ 2.5, 0.0, -5.0]);
     ///
@@ -4975,14 +5035,16 @@ impl Renderer {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{system::Renderer, material::Material, tex::Tex};
+    /// use stereokit_rust::{system::{Assets, Renderer}, material::Material, tex::Tex};
     ///
     /// let material = Material::pbr();
     /// let tex = Tex::render_target(200,200, None, None, None)
     ///                    .expect("RenderTarget should be created");
     ///
+    /// Assets::block_for_priority(i32::MAX);
+    ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     Renderer::blit(&tex, &material);
+    ///     if iter == number_of_steps {Renderer::blit(&tex, &material);}
     /// );
     /// # sk::Sk::shutdown();
     /// ```

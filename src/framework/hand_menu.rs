@@ -1027,8 +1027,7 @@ fn generate_slice_mesh(angle: f32, min_dist: f32, max_dist: f32, gap: f32, mesh:
         }
     }
 
-    mesh.set_verts(verts.as_slice(), true);
-    mesh.set_inds(inds.as_slice());
+    mesh.set_data(verts.as_slice(), inds.as_slice(), None, None);
 }
 
 fn generate_activation_button(radius: f32) -> Mesh {
@@ -1059,11 +1058,7 @@ fn generate_activation_button(radius: f32) -> Mesh {
         }
     }
 
-    let mut mesh = Mesh::new();
-
-    mesh.set_inds(inds.as_slice());
-    mesh.set_verts(verts.as_slice(), true);
-    mesh
+    Mesh::from_data(verts.as_slice(), inds.as_slice(), None, None)
 }
 
 fn generate_activation_hamburger(radius: f32) -> Mesh {
@@ -1096,11 +1091,7 @@ fn generate_activation_hamburger(radius: f32) -> Mesh {
         inds.push(a);
     }
 
-    let mut mesh = Mesh::new();
-    mesh.set_inds(inds.as_slice());
-    mesh.set_verts(verts.as_slice(), true);
-
-    mesh
+    Mesh::from_data(verts.as_slice(), inds.as_slice(), None, None)
 }
 
 fn generate_child_indicator(distance: f32, radius: f32) -> Mesh {
@@ -1115,11 +1106,7 @@ fn generate_child_indicator(distance: f32, radius: f32) -> Mesh {
     inds.push(1);
     inds.push(2);
 
-    let mut mesh = Mesh::new();
-    mesh.set_inds(inds.as_slice());
-    mesh.set_verts(verts.as_slice(), true);
-
-    mesh
+    Mesh::from_data(verts.as_slice(), inds.as_slice(), None, None)
 }
 
 fn generate_img_frame(distance: f32, radius: f32) -> Mesh {

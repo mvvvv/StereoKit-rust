@@ -125,6 +125,10 @@ impl IAsset for Sprite {
     fn get_id(&self) -> &str {
         self.get_id()
     }
+
+    fn as_asset(&self) -> crate::system::AssetT {
+        self.0.as_ptr() as crate::system::AssetT
+    }
 }
 
 /// A Default sprite is asked when a Sprite creation or find returned an error. (close is the default sprite)

@@ -28,7 +28,7 @@ use std::{
 ///                      tex::{Tex, TexType, TexFormat}, material::Material,
 ///                      mesh::Mesh, render_list::RenderList, system::RenderClear};
 ///
-/// let model = Model::from_file("plane.glb", None).unwrap_or_default().copy();
+/// let model = Model::from_file("plane.glb", None, None).unwrap_or_default().copy();
 ///
 /// let render_tex = Tex::gen_color(Color128::WHITE, 128, 128,
 ///                       TexType::Rendertarget, TexFormat::Rgba32Srgb);
@@ -149,6 +149,10 @@ impl IAsset for RenderList {
 
     fn get_id(&self) -> &str {
         self.get_id()
+    }
+
+    fn as_asset(&self) -> crate::system::AssetT {
+        self.0.as_ptr() as crate::system::AssetT
     }
 }
 
@@ -373,7 +377,7 @@ impl RenderList {
     ///                      tex::{Tex, TexType, TexFormat}, material::Material,
     ///                      mesh::Mesh, render_list::RenderList, system::{RenderClear, RenderLayer}};
     ///
-    /// let model = Model::from_file("plane.glb", None).unwrap_or_default().copy();
+    /// let model = Model::from_file("plane.glb", None, None).unwrap_or_default().copy();
     ///
     /// let at = Vec3::new(-2.0, 400.0, 1000.9);
     /// let perspective = Matrix::perspective(45.0, 1.0, 0.01, 1550.0);

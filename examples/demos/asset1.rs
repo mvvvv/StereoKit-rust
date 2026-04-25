@@ -205,7 +205,7 @@ impl Asset1 {
         if let Some(ext) = file_path.extension() {
             let ext = ".".to_string() + ext.to_str().unwrap_or("!!ERROR!!");
             if Assets::MODEL_FORMATS.contains(&ext.as_str()) {
-                if let Ok(model) = Model::from_file(name, None) {
+                if let Ok(model) = Model::from_file(name, None, None) {
                     let mut anims = model.get_anims();
                     if anims.get_count() > 0 {
                         anims.play_anim_idx(0, AnimMode::Loop);
