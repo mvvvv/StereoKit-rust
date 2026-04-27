@@ -97,26 +97,11 @@ impl<T> EventLoop<T> {
     }
 }
 
-/// Simplified window event enum.
-///
-/// This provides a subset of window-related events. In XR mode most of these are
-/// not relevant, but the enum is kept for API compatibility.
-#[derive(Debug, Clone, PartialEq)]
-pub enum WindowEvent {
-    /// The window has been destroyed.
-    Destroyed,
-    /// A redraw has been requested.
-    RedrawRequested,
-    /// The window gained or lost focus.
-    Focused(bool),
-    /// A close has been requested.
-    CloseRequested,
-    /// Keyboard text input.
-    KeyboardInput { text: Option<String> },
-}
-
 type OnStepClosure<'a> = Box<dyn FnMut(&mut Sk, &MainThreadToken) + 'a>;
-type OnDeviceEventClosure<'a> = Box<dyn FnMut(&mut Sk, WindowEvent) + 'a>;
+#[cfg(target_os = "android")]
+type OnDeviceEventClosure<'a> = Box<dyn FnMut(&mut Sk, &android_activity::AndroidApp) + 'a>;
+#[cfg(not(target_os = "android"))]
+type OnDeviceEventClosure<'a> = Box<dyn FnMut(&mut Sk) + 'a>;
 
 #[derive(PartialEq)]
 enum SleepPhase {
@@ -193,6 +178,20 @@ pub struct SkClosures<'a> {
 }
 
 impl<'a> SkClosures<'a> {
+    #[cfg(target_os = "android")]
+    fn default_window_event_handler(_sk: &mut Sk, android_app: &android_activity::AndroidApp) {
+        use android_activity::InputStatus;
+
+        // --- KeyEvent path: intercept Backspace / ForwardDel before sk_app sees them ---
+        // sk_app only feeds key *state* for these, never the SK text queue.
+        if let Ok(mut iter) = android_app.input_events_iter() {
+            while iter.next(|_event| InputStatus::Unhandled) {}
+        }
+    }
+
+    #[cfg(not(target_os = "android"))]
+    fn default_window_event_handler(_sk: &mut Sk) {}
+
     /// This is the main loop call of the application. See [Steppers] for more details.
     fn step(&mut self) {
         if unsafe { sk_step(None) } == 0 {
@@ -227,13 +226,33 @@ impl<'a> SkClosures<'a> {
         // Also detect Resume to wake up from sleep when the headset is turned back on.
         #[cfg(target_os = "android")]
         {
-            use android_activity::MainEvent;
-            if let Some(MainEvent::Resume { .. }) = Sk::poll_events(android_app) {
-                if self.sleeping == SleepPhase::Sleeping {
-                    self.sleeping = SleepPhase::WakingUp;
-                    Log::diag("Android Resume: waking up");
+            use android_activity::{MainEvent, PollEvent};
+
+            android_app.poll_events(Some(Duration::ZERO), |event| match event {
+                PollEvent::Main(main_event) => match main_event {
+                    MainEvent::Resume { .. } => {
+                        if self.sleeping == SleepPhase::Sleeping {
+                            self.sleeping = SleepPhase::WakingUp;
+                            Log::diag("Android Resume: waking up");
+                        }
+                    }
+                    MainEvent::Destroy => {
+                        Log::info("Android MainEvent::Destroy received");
+                    }
+                    MainEvent::InputAvailable { .. } => {
+                        // We have some Android input events to process, but we don't want to block the main loop,
+                        // so we will drain them in the next frames until there is no more.
+                        (self.on_window_event)(&mut self.sk, android_app);
+                    }
+                    otherwise => {
+                        Log::diag(format!("Android MainEvent {:?} received", otherwise));
+                    }
+                },
+                PollEvent::Timeout => {}
+                otherwise => {
+                    Log::diag(format!("Android PollEvent {:?} received", otherwise));
                 }
-            }
+            });
         }
 
         while let Ok(action) = event_loop.try_recv() {
@@ -286,7 +305,7 @@ impl<'a> SkClosures<'a> {
             sk,
             on_step: Box::new(on_step),
             on_sleeping_step: Box::new(|_sk, _main_thread| {}),
-            on_window_event: Box::new(|_sk, _window_event| {}),
+            on_window_event: Box::new(Self::default_window_event_handler),
             shutdown: Box::new(on_shutdown),
             token: MainThreadToken { event_report: vec![] },
             sleeping: SleepPhase::WakingUp,
@@ -295,7 +314,7 @@ impl<'a> SkClosures<'a> {
     }
 
     /// Create a new SkClosures with a step function.
-    /// Add some callbacks with [SkClosures::on_sleeping_step], ~~[SkClosures::on_window_event]~~  and [SkClosures::shutdown]
+    /// Add some callbacks with [SkClosures::on_sleeping_step], [SkClosures::on_window_event] and [SkClosures::shutdown]
     /// * sk : the Sk context.
     /// * on_step : the function to call on each step.
     ///
@@ -344,7 +363,7 @@ impl<'a> SkClosures<'a> {
             sk,
             on_step: Box::new(on_step),
             on_sleeping_step: Box::new(|_sk, _main_thread| {}),
-            on_window_event: Box::new(|_sk, _windows_event| {}),
+            on_window_event: Box::new(Self::default_window_event_handler),
             shutdown: Box::new(|_sk| {}),
             token: MainThreadToken { event_report: vec![] },
             sleeping: SleepPhase::WakingUp,
@@ -362,12 +381,12 @@ impl<'a> SkClosures<'a> {
         self
     }
 
-    /// Not usefull right now, but will be used to handle external controller events in the future.
+    /// Handle host window input events, including Android key events for external devices.
     /// * `on_window_event` - The function to call when a window event is received that as not been handled by the
     ///   Steppers controller.
     ///
     /// May be set after [SkClosures::new]
-    pub fn on_window_event<U: FnMut(&mut Sk, WindowEvent) + 'a>(&mut self, on_window_event: U) -> &mut Self {
+    pub fn on_window_event(&mut self, on_window_event: OnDeviceEventClosure<'a>) -> &mut Self {
         self.on_window_event = Box::new(on_window_event);
         self
     }

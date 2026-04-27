@@ -119,7 +119,7 @@ impl AndroidSoftKbd {
     /// Returns `None` if the view is not ready yet.
     fn poll_edit_text(&self) -> Option<(String, i32, i32)> {
         use crate::system::BackendAndroid;
-        use jni::{jni_sig, jni_str};
+        use jni::{jni_sig, jni_str, objects::JString};
 
         let raw = *self.edit_text.lock().expect("Failed to lock edit_text mutex");
         if raw <= 1 {
@@ -128,13 +128,15 @@ impl AndroidSoftKbd {
 
         let vm = unsafe { jni::JavaVM::from_raw(BackendAndroid::java_vm() as _) };
         vm.attach_current_thread(|env| -> jni::errors::Result<Option<(String, i32, i32)>> {
-            let edit_text = unsafe { jni::objects::JObject::from_raw(env, raw as jni::sys::jobject) };
+            let edit_text_raw = unsafe { jni::objects::JObject::from_raw(env, raw as jni::sys::jobject) };
+            let edit_text = env.new_local_ref(&edit_text_raw)?;
+            std::mem::forget(edit_text_raw);
 
             let editable =
                 env.call_method(&edit_text, jni_str!("getText"), jni_sig!("()Landroid/text/Editable;"), &[])?.l()?;
             let text_obj =
                 env.call_method(&editable, jni_str!("toString"), jni_sig!("()Ljava/lang/String;"), &[])?.l()?;
-            let jstr = unsafe { jni::objects::JString::from_raw(env, text_obj.as_raw()) };
+            let jstr = unsafe { JString::from_raw(env, text_obj.into_raw() as jni::sys::jstring) };
             let text = jstr.to_string();
 
             let start = env.call_method(&edit_text, jni_str!("getSelectionStart"), jni_sig!("()I"), &[])?.i()?;
@@ -195,7 +197,10 @@ impl AndroidSoftKbd {
 
                 // ---- remove previous EditText if present ----
                 if old_raw > 1 {
-                    let old_edit_text = unsafe { jni::objects::JObject::from_raw(env, old_raw as jni::sys::jobject) };
+                    let old_edit_text_raw =
+                        unsafe { jni::objects::JObject::from_raw(env, old_raw as jni::sys::jobject) };
+                    let old_edit_text = env.new_local_ref(&old_edit_text_raw)?;
+                    std::mem::forget(old_edit_text_raw);
                     let _ = env.call_method(
                         &decor_view,
                         jni_str!("removeView"),
@@ -318,36 +323,42 @@ impl AndroidSoftKbd {
     /// processing while a reset is in flight to avoid double-injection.
     fn poll_input_events(&mut self, app: &AndroidApp) {
         use crate::system::{Input, Key};
-        use android_activity::InputStatus;
-        use android_activity::input::{InputEvent, KeyAction, Keycode};
+        // use android_activity::InputStatus;
+        // use android_activity::input::{InputEvent, KeyAction, Keycode};
 
-        // --- KeyEvent path: intercept Backspace / ForwardDel before sk_app sees them ---
-        // sk_app only feeds key *state* for these, never the SK text queue.
-        if let Ok(mut iter) = app.input_events_iter() {
-            loop {
-                let read_input = iter.next(|event| match event {
-                    InputEvent::KeyEvent(key_event) if key_event.action() == KeyAction::Down => {
-                        match key_event.key_code() {
-                            Keycode::Del => {
-                                // Log::diag("AndroidSoftKbd: KeyEvent Del → inject \\x08");
-                                Input::text_inject_char('\x08');
-                                InputStatus::Handled
-                            }
-                            Keycode::ForwardDel => {
-                                //Log::diag("AndroidSoftKbd: KeyEvent ForwardDel → inject \\x7f");
-                                Input::text_inject_char('\x7f');
-                                InputStatus::Handled
-                            }
-                            _ => InputStatus::Unhandled,
-                        }
-                    }
-                    _ => InputStatus::Unhandled,
-                });
-                if !read_input {
-                    break;
-                }
-            }
-        }
+        // // --- KeyEvent path: intercept Backspace / ForwardDel before sk_app sees them ---
+        // // sk_app only feeds key *state* for these, never the SK text queue.
+        // if let Ok(mut iter) = app.input_events_iter() {
+        //     loop {
+        //         let read_input = iter.next(|event| match event {
+        //             InputEvent::KeyEvent(key_event) if key_event.action() == KeyAction::Down => {
+        //                 match key_event.key_code() {
+        //                     Keycode::Del => {
+        //                         Log::diag("AndroidSoftKbd: KeyEvent Del → inject \\x08");
+        //                         Input::text_inject_char('\x08');
+        //                         InputStatus::Handled
+        //                     }
+        //                     Keycode::ForwardDel => {
+        //                         Log::diag("AndroidSoftKbd: KeyEvent ForwardDel → inject \\x7f");
+        //                         Input::text_inject_char('\x7f');
+        //                         InputStatus::Handled
+        //                     }
+        //                     otherwise => {
+        //                         Log::diag(format!("AndroidSoftKbd: {:?} KeyEvent Unhandled", otherwise));
+        //                         InputStatus::Unhandled
+        //                     }
+        //                 }
+        //             }
+        //             otherwise => {
+        //                 Log::diag(format!("AndroidSoftKbd: {:?} InputEvent Unhandled", otherwise));
+        //                 InputStatus::Unhandled
+        //             }
+        //         });
+        //         if !read_input {
+        //             break;
+        //         }
+        //     }
+        // }
 
         // --- IME / InputConnection text-diff path ---
         let (text, start, _end) = match self.poll_edit_text() {
@@ -402,7 +413,17 @@ impl AndroidSoftKbd {
                 }
             }
         } else {
-            // Log::diag(format!("AndroidSoftKbd: 2-char unexpected content, reset silently text={:?}", text));
+            // 2 chars but not "  " → likely an accented char inserted at position 0 by a long-press.
+            Log::diag(format!(
+                "AndroidSoftKbd: unexpected text \"{}\" cursor {}, injecting char at pos 0",
+                text, start
+            ));
+            if start == 1 {
+                // we delete the non accented char and inject the accented one instead.
+                let chars: Vec<char> = text.chars().collect();
+                Input::text_inject_char('\x08');
+                Input::text_inject_char(chars[0]);
+            }
         }
 
         // Reset the EditText back to "  " cursor 1 on the Java main thread.
@@ -423,7 +444,9 @@ impl AndroidSoftKbd {
         app.run_on_java_main_thread(Box::new(move || {
             let jvm = unsafe { jni::JavaVM::from_raw(crate::system::BackendAndroid::java_vm() as _) };
             let result = jvm.attach_current_thread(|env| -> jni::errors::Result<()> {
-                let edit_text = unsafe { jni::objects::JObject::from_raw(env, edit_text_raw as jni::sys::jobject) };
+                let edit_text_raw = unsafe { jni::objects::JObject::from_raw(env, edit_text_raw as jni::sys::jobject) };
+                let edit_text = env.new_local_ref(&edit_text_raw)?;
+                std::mem::forget(edit_text_raw);
 
                 let two_spaces = env.new_string("  ")?;
                 env.call_method(

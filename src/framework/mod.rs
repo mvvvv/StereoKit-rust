@@ -16,7 +16,6 @@ pub use event_loop::StepperHandler;
 pub use event_loop::StepperId;
 pub use event_loop::StepperState;
 pub use event_loop::Steppers;
-pub use event_loop::WindowEvent;
 
 mod hand_menu;
 

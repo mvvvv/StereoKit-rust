@@ -950,6 +950,24 @@ pub struct Sk {
 }
 
 impl Sk {
+    /// See [`framework::SkClosure::on_window_events`] for a way to handle events.
+    #[cfg(target_os = "android")]
+    fn drain_input_events(app: &AndroidApp) -> usize {
+        use android_activity::InputStatus;
+
+        let Ok(mut iter) = app.input_events_iter() else {
+            return 0;
+        };
+
+        let mut drained = 0;
+        while iter.next(|_event| {
+            drained += 1;
+            InputStatus::Unhandled
+        }) {}
+
+        drained
+    }
+
     /// OpenXR won't leave IDLE state if we do not purge the first events :
     /// PostSessionStateChange: XR_SESSION_STATE_IDLE -> XR_SESSION_STATE_READY
     ///
@@ -975,6 +993,8 @@ impl Sk {
         }
     }
 
+    /// See [`framework::SkClosure::poll_events`] for a way to handle events.
+    ///
     /// Poll Android activity events (non-blocking) and return the most significant [`MainEvent`] if any.
     /// This prevents ANR (Application Not Responding) by draining the system event queue.
     ///
@@ -999,7 +1019,8 @@ impl Sk {
                     }
                 }
                 MainEvent::InputAvailable { .. } => {
-                    Log::diag("Android MainEvent::InputAvailable received");
+                    let drained = Self::drain_input_events(app);
+                    Log::diag(format!("Android MainEvent::InputAvailable received ({drained} input event(s))"));
                 }
                 otherwise => {
                     Log::diag(format!("Android MainEvent {:?} received", otherwise));
