@@ -127,7 +127,7 @@ Ctrl--17-4-mod|Cmd--91-3|Alt--18-3-go_2| - -32-13|Alt--18-3-go_2|Ctrl--17-3-mod|
 /// Portuguese QWERTY keyboard (Brazil) — alt layer (AltGr characters and common accented letters).
 pub const PT_BR_KEY_TEXT_ALT: &str = r#"`|¹|²|³|£|€|¥|{|[|]|}|\\|~|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
 Tab-\t-9-3|@|ẃ|€|ŕ|ŧ|ý|ú|í|ó|þ|´|{
-Enter-\n-13-4|á|ã|ê|ã|õ|ħ|ĵ|ĸ|ł|ç|~|\||Enter-\n-13-3
+Enter-\n-13-4|á|ã|ê|â|õ|ħ|ĵ|ĸ|ł|ç|~|\||Enter-\n-13-3
 spr:sk/ui/shift--16-3-go_1|/|ź|χ|©|ν|β|ñ|µ|·|…|–|spr:sk/ui/shift--16-2-go_1|spr:sk/ui/arrow_up--38
 Ctrl--17-4-mod|Cmd--91-3|Alt--18-3-go_0| - -32-13|Alt--18-3-go_0|Ctrl--17-3-mod|spr:sk/ui/arrow_left--37|spr:sk/ui/arrow_down--40|spr:sk/ui/arrow_right--39|"#;
 
@@ -180,7 +180,7 @@ Ctrl--17-4-mod|Cmd--91-3|Alt--18-3-go_2| - -32-13|Alt--18-3-go_2|Ctrl--17-3-mod|
 /// Standard AltGr positions: `@` `£` `$` `€` `¥` `{` `[` `]` `}` `\` `€` `~`.
 pub const SV_KEY_TEXT_ALT: &str = r#"§|\||@|£|$|€|¥|{|[|]|}|\\|~|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
 Tab-\t-9-3|@|ẃ|€|ŕ|ŧ|ý|ú|í|ó|þ|å|^
-Enter-\n-13-4|á|ś|ð|ø|ğ|ħ|ĵ|ĸ|ł|ø|ä|\||Enter-\n-13-3
+Enter-\n-13-4|á|ś|ð|œ|ğ|ħ|ĵ|ĸ|ł|ø|ä|\||Enter-\n-13-3
 spr:sk/ui/shift--16-3-go_1|\||ź|χ|©|ν|β|ñ|µ|·|…|–|spr:sk/ui/shift--16-2-go_1|spr:sk/ui/arrow_up--38
 Ctrl--17-4-mod|Cmd--91-3|Alt--18-3-go_0| - -32-13|Alt--18-3-go_0|Ctrl--17-3-mod|spr:sk/ui/arrow_left--37|spr:sk/ui/arrow_down--40|spr:sk/ui/arrow_right--39|"#;
 
