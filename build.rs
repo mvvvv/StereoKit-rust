@@ -1,5 +1,5 @@
 use cmake::Config;
-use std::{env, fs, path::Path};
+use std::{env, fs, path::Path, path::PathBuf};
 
 macro_rules! cargo_link {
     ($feature:expr) => {
@@ -84,6 +84,16 @@ fn main() {
     }
     cmake_config.define("SK_BUILD_TESTS", "OFF");
     if target_os == "android" {
+        let android_ndk_root = env::var("ANDROID_NDK_ROOT")
+            .or_else(|_| env::var("ANDROID_NDK_HOME"))
+            .expect("ANDROID_NDK_ROOT or ANDROID_NDK_HOME not set");
+        let android_toolchain_file: PathBuf =
+            Path::new(&android_ndk_root).join("build").join("cmake").join("android.toolchain.cmake");
+
+        cmake_config.define("CMAKE_TOOLCHAIN_FILE", android_toolchain_file.to_str().unwrap());
+        cmake_config.define("CMAKE_ANDROID_NDK", &android_ndk_root);
+        cmake_config.define("ANDROID_ABI", &abi);
+        cmake_config.define("CMAKE_ANDROID_ARCH_ABI", &abi);
         cmake_config.define("CMAKE_ANDROID_API", "32");
         cmake_config.define("ANDROID_PLATFORM", "android-32");
         cmake_config.define("CMAKE_INSTALL_INCLUDEDIR", "install");

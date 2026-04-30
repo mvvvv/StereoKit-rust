@@ -469,10 +469,10 @@ pub fn launch(mut sk: Sk, _is_testing: bool, start_test: String) {
 
         Ui::window_end();
     })
-    .on_window_event(|_sk, event| {
-        // we hope to flood the log with external controllers soon ...
-        Log::diag(format!("{event:?}"));
-    })
+    // .on_window_event(|_sk| {
+    //     // we hope to flood the log with external controllers soon ...
+    //     Log::diag(format!("{event:?}"));
+    // })
     .on_sleeping_step(|_sk, _token| {
         now = std::time::SystemTime::now();
         if let Ok(duration) = now.duration_since(hidden_time)
