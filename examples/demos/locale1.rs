@@ -1,5 +1,3 @@
-use std::env;
-
 use stereokit_rust::{
     font::Font,
     locale::*,
@@ -85,30 +83,14 @@ fn make_locale_entries() -> Vec<LocaleEntry> {
             layers: vec![TR_KEY_TEXT, TR_KEY_TEXT_SHIFT, TR_KEY_TEXT_ALT],
         },
         LocaleEntry {
-            code: "ru",
-            label: "Русский (ЙЦУКЕН)",
-            layers: vec![RU_KEY_TEXT, RU_KEY_TEXT_SHIFT],
+            code: "ru", label: "Русский (ЙЦУКЕН)", layers: vec![RU_KEY_TEXT, RU_KEY_TEXT_SHIFT]
         },
         LocaleEntry {
-            code: "uk",
-            label: "Українська (Кирилиця)",
-            layers: vec![UK_KEY_TEXT, UK_KEY_TEXT_SHIFT],
+            code: "uk", label: "Українська (Кирилиця)", layers: vec![UK_KEY_TEXT, UK_KEY_TEXT_SHIFT]
         },
-        LocaleEntry {
-            code: "el",
-            label: "Ελληνικά (Greek)",
-            layers: vec![GR_KEY_TEXT, GR_KEY_TEXT_SHIFT],
-        },
-        LocaleEntry {
-            code: "ar",
-            label: "العربية (Arabic)",
-            layers: vec![AR_KEY_TEXT, AR_KEY_TEXT_SHIFT],
-        },
-        LocaleEntry {
-            code: "he",
-            label: "עברית (Hebrew)",
-            layers: vec![HE_KEY_TEXT, HE_KEY_TEXT_SHIFT],
-        },
+        LocaleEntry { code: "el", label: "Ελληνικά (Greek)", layers: vec![GR_KEY_TEXT, GR_KEY_TEXT_SHIFT] },
+        LocaleEntry { code: "ar", label: "العربية (Arabic)", layers: vec![AR_KEY_TEXT, AR_KEY_TEXT_SHIFT] },
+        LocaleEntry { code: "he", label: "עברית (Hebrew)", layers: vec![HE_KEY_TEXT, HE_KEY_TEXT_SHIFT] },
         LocaleEntry {
             code: "ja",
             label: "日本語 (Hiragana)",
@@ -126,26 +108,16 @@ fn make_locale_entries() -> Vec<LocaleEntry> {
 /// yields `"ja"`.  Returns an empty string if no usable value is found
 /// (common on Windows when `LANG` is unset).
 fn detect_language_code() -> String {
-    for var in &["LANG", "LANGUAGE", "LC_ALL", "LC_CTYPE"] {
-        if let Ok(val) = env::var(var) {
-            // Split on common separators: "fr_FR.UTF-8", "fr:en_GB", "fr-FR"
-            let code = val.split(['_', '.', ':', ' ', '-']).next().unwrap_or("").to_lowercase();
-            if code.len() >= 2 && code != "c" && code != "posix" {
-                return code;
-            }
-        }
-    }
-    String::new()
-}
+    use stereokit_rust::tools::os_api;
 
-/// Return the index in `entries` whose code matches the detected system locale,
-/// or `None` if no match is found.
-fn find_locale_index(entries: &[LocaleEntry]) -> Option<usize> {
-    let code = detect_language_code();
-    if code.is_empty() {
-        return None;
-    }
-    entries.iter().position(|e| e.code == code.as_str())
+    os_api::get_locale()
+        .split('.')
+        .next()
+        .unwrap_or_default()
+        .split('_')
+        .next()
+        .unwrap_or_default()
+        .to_string()
 }
 
 // ─── IStepper ─────────────────────────────────────────────────────────────────
@@ -198,10 +170,7 @@ impl Default for Locale1 {
             id: "Locale1".to_string(),
             sk_info: None,
 
-            window_demo_pose: Pose::new(
-                Vec3::new(0.0, 1.5, -1.3),
-                Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0))),
-            ),
+            window_demo_pose: Pose::new(Vec3::new(0.0, 1.5, -1.3), Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0)))),
             demo_win_width: 80.0 * CM,
 
             locale_entries,
@@ -214,10 +183,7 @@ impl Default for Locale1 {
 
             text: String::with_capacity(256),
             text_style: Text::make_style(Font::default(), 0.3, RED),
-            transform: Matrix::t_r(
-                (Vec3::NEG_Z * -2.5) + Vec3::Y,
-                Quat::from_angles(0.0, 180.0, 0.0),
-            ),
+            transform: Matrix::t_r((Vec3::NEG_Z * -2.5) + Vec3::Y, Quat::from_angles(0.0, 180.0, 0.0)),
         }
     }
 }
@@ -270,8 +236,8 @@ impl Locale1 {
         let mut curr_width = ui_settings.margin * 2.0;
 
         for i in 0..self.locale_entries.len() {
-            let btn_width = Text::size_layout(self.locale_entries[i].label, Some(style), None).x
-                + ui_settings.padding * 2.0;
+            let btn_width =
+                Text::size_layout(self.locale_entries[i].label, Some(style), None).x + ui_settings.padding * 2.0;
 
             // Wrap to next line when the button would overflow
             if i > 0 && curr_width + btn_width + ui_settings.gutter > self.demo_win_width {
@@ -309,15 +275,9 @@ impl Locale1 {
 
         // ── Status line ───────────────────────────────────────────────────────
         let status = if let Some(idx) = self.selected_index {
-            format!(
-                "Active: {}  •  detected locale: \"{}\"",
-                self.locale_entries[idx].label, self.detected_code
-            )
+            format!("Active: {}  •  detected locale: \"{}\"", self.locale_entries[idx].label, self.detected_code)
         } else {
-            format!(
-                "No match for detected locale \"{}\" — using StereoKit default",
-                self.detected_code
-            )
+            format!("No match for detected locale \"{}\" — using StereoKit default", self.detected_code)
         };
         Ui::label(&status, None, false);
         Ui::next_line();
@@ -335,17 +295,6 @@ impl Locale1 {
 
         Ui::window_end();
 
-        Text::add_at(
-            token,
-            &self.text,
-            self.transform,
-            Some(self.text_style),
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-        );
+        Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
     }
 }

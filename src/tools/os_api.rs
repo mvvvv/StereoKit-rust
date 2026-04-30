@@ -215,6 +215,46 @@ pub fn get_external_path(_sk_info: &Option<Rc<RefCell<SkInfo>>>) -> Option<PathB
     Some(path_assets)
 }
 
+/// Get the current locale of the system. For Android, it uses Java APIs to get the default locale.
+#[cfg(target_os = "android")]
+pub fn get_locale() -> String {
+    use jni::{jni_sig, jni_str, objects::JString};
+
+    let vm = unsafe { jni::JavaVM::from_raw(BackendAndroid::java_vm() as _) };
+    vm.attach_current_thread(|env| -> jni::errors::Result<String> {
+        let locale_class = env.find_class(jni_str!("java/util/Locale"))?;
+        let default_locale = env
+            .call_static_method(&locale_class, jni_str!("getDefault"), jni_sig!("()Ljava/util/Locale;"), &[])?
+            .l()?;
+
+        let locale_str =
+            env.call_method(&default_locale, jni_str!("toString"), jni_sig!("()Ljava/lang/String;"), &[])?.l()?;
+
+        let java_str = unsafe { JString::from_raw(env, locale_str.into_raw() as jni::sys::jstring) };
+        let rust_str: String = java_str.to_string();
+
+        Ok(rust_str) // i.e "fr_FR"
+    })
+    .unwrap_or_else(|e| {
+        Log::warn(format!("Failed to get locale from Android: {}", e));
+        String::from("en_US")
+    })
+}
+
+/// Get the current locale of the system. For Linux
+#[cfg(not(target_os = "android"))]
+pub fn get_locale() -> String {
+    let vars = ["LANG", "LANGUAGE", "LC_ALL", "LC_CTYPE"];
+    for var in vars.iter() {
+        if let Ok(val) = std::env::var(var)
+            && !val.is_empty()
+        {
+            return val;
+        }
+    }
+    String::new()
+}
+
 /// Open an asset like a file
 #[cfg(target_os = "android")]
 pub fn open_asset(sk_info: &Option<Rc<RefCell<SkInfo>>>, asset_path: impl AsRef<Path>) -> Option<File> {
