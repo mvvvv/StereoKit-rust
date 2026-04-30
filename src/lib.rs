@@ -360,6 +360,14 @@ pub mod font;
 /// [![StepperClosures](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/stepper_closures.jpeg)](framework::StepperClosures)
 pub mod framework;
 
+/// International keyboard layout constants for use with
+/// [`util::Platform::keyboard_set_layout`].
+///
+/// Contains pre-built layouts for French AZERTY, German QWERTZ, Spanish,
+/// Portuguese (Brazil), Italian, Swedish/Nordic, Polish, Czech, Turkish,
+/// Russian, Ukrainian, Greek, Arabic, Hebrew and Japanese.
+pub mod locale;
+
 /// Material specific structs, enums and functions.
 ///
 /// ## Examples
