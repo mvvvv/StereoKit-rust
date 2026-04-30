@@ -18,6 +18,7 @@ pub mod hand_menu_radial1;
 pub mod input1;
 pub mod interactor1;
 pub mod layers1;
+pub mod locale1;
 pub mod math1;
 pub mod permission1;
 pub mod program;
@@ -37,7 +38,8 @@ pub mod ui2;
 
 use self::{
     a_stepper::AStepper, anchor1::Anchor1, anim1::Anim1, asset1::Asset1, b_stepper::BStepper, biplane1::Biplane1,
-    c_stepper::CStepper, font1::Font1, interactor1::Interactor1, layers1::Layers1, math1::Math1,
+    c_stepper::CStepper, font1::Font1, interactor1::Interactor1, layers1::Layers1,
+    locale1::Locale1, math1::Math1,
     permission1::Permission1, render_list1::RenderList1, screen1::Screen1, shaders1::Shader1, shadows1::Shadows1,
     sprite1::Sprite1, tex1::Tex1, text1::Text1, text2::Text2, threads1::Threads1, threads2::Threads2, ui1::Ui1,
     ui2::Ui2,
@@ -86,6 +88,10 @@ impl Test {
             Test::new("Text1", |sk| {
                 sk.send_event(StepperAction::add_default::<Text1>("Text1"));
                 "Text1".to_string()
+            }),
+            Test::new("Locale1", |sk| {
+                sk.send_event(StepperAction::add_default::<Locale1>("Locale1"));
+                "Locale1".to_string()
             }),
             Test::new("Font1", |sk| {
                 sk.send_event(StepperAction::add_default::<Font1>("Font1"));
