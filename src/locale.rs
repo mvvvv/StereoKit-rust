@@ -64,7 +64,7 @@ Ctrl--17-4-mod|Cmd--91-3|Alt--18-3-go_0| - -32-13|Alt--18-3-go_0|Ctrl--17-3-mod|
 pub const DE_KEY_TEXT: &str = r#"^|1|2|3|4|5|6|7|8|9|0|ß|´|{|}|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
 Tab-\t-9-3|q|w|e|r|t|z|u|i|o|p|ü|+|[|]|\|
 Enter-\n-13-4|a|s|d|f|g|h|j|k|l|ö|ä|#|~|Enter-\n-13-3
-spr:sk/ui/shift--16-3-go_1|<|y|x|c|v|b|n|m|,|.|-|€|@|spr:sk/ui/shift--16-2-go_1|spr:sk/ui/arrow_up--38
+spr:sk/ui/shift--16-3-go_1|<|y|x|c|v|b|n|m|,|.|\-|€|@|spr:sk/ui/shift--16-2-go_1|spr:sk/ui/arrow_up--38
 Ctrl--17-4-mod|Cmd--91-3|Alt--18-3-go_2| - -32-13|Alt--18-3-go_2|Ctrl--17-3-mod|spr:sk/ui/arrow_left--37|spr:sk/ui/arrow_down--40|spr:sk/ui/arrow_right--39|"#;
 
 /// German QWERTZ keyboard — shift layer.
@@ -80,7 +80,7 @@ Ctrl--17-4-mod|Cmd--91-3|Alt--18-3-go_2| - -32-13|Alt--18-3-go_2|Ctrl--17-3-mod|
 pub const DE_KEY_TEXT_ALT: &str = r#"`|¹|²|³|¼|½|¬|{|[|]|}|\\|¸|æ|œ|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
 Tab-\t-9-3|@|ā|€|ŕ|ŧ|ź|ú|í|ó|þ|ü|~|«|»|¤
 Enter-\n-13-4|á|ß|ð|ó|ğ|ħ|ĵ|ĸ|ł|ø|ä||%|Enter-\n-13-3
-spr:sk/ui/shift--16-3-go_1||ý|χ|©|ν|β|ñ|µ|·|…|–|✋|spr:sk/ui/shift--16-2-go_1|spr:sk/ui/arrow_up--38
+spr:sk/ui/shift--16-3-go_1|£|$|ý|χ|©|ν|β|ñ|µ|·|…|–|✋|spr:sk/ui/shift--16-2-go_1|spr:sk/ui/arrow_up--38
 Ctrl--17-4-mod|Cmd--91-3|Alt--18-3-go_0| - -32-13|Alt--18-3-go_0|Ctrl--17-3-mod|spr:sk/ui/arrow_left--37|spr:sk/ui/arrow_down--40|spr:sk/ui/arrow_right--39|"#;
 
 // ─── Spanish QWERTY — Spain (ES) ─────────────────────────────────────────────
@@ -89,7 +89,7 @@ Ctrl--17-4-mod|Cmd--91-3|Alt--18-3-go_0| - -32-13|Alt--18-3-go_0|Ctrl--17-3-mod|
 pub const ES_KEY_TEXT: &str = r#"º|1|2|3|4|5|6|7|8|9|0|'|¡|{|}|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
 Tab-\t-9-3|q|w|e|r|t|y|u|i|o|p|`|+|[|]|\|
 Enter-\n-13-4|a|s|d|f|g|h|j|k|l|ñ|´|#|~|Enter-\n-13-3
-spr:sk/ui/shift--16-3-go_1|<|z|x|c|v|b|n|m|,|.|-|€|@|spr:sk/ui/shift--16-2-go_1|spr:sk/ui/arrow_up--38
+spr:sk/ui/shift--16-3-go_1|<|z|x|c|v|b|n|m|,|.|\-|€|@|spr:sk/ui/shift--16-2-go_1|spr:sk/ui/arrow_up--38
 Ctrl--17-4-mod|Cmd--91-3|Alt--18-3-go_2| - -32-13|Alt--18-3-go_2|Ctrl--17-3-mod|spr:sk/ui/arrow_left--37|spr:sk/ui/arrow_down--40|spr:sk/ui/arrow_right--39|"#;
 
 /// Spanish QWERTY keyboard (Spain) — shift layer.
@@ -105,13 +105,13 @@ Ctrl--17-4-mod|Cmd--91-3|Alt--18-3-go_2| - -32-13|Alt--18-3-go_2|Ctrl--17-3-mod|
 pub const ES_KEY_TEXT_ALT: &str = r#"°||@|#|~|½|¬|{|[|]|}|\\|¿|æ|œ|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
 Tab-\t-9-3|@|ẃ|€|ŕ|ŧ|ý|ú|í|ó|þ|[|]|«|»|¤
 Enter-\n-13-4|á|ś|ð|ó|ğ|ħ|ĵ|ĸ|ł|ñ|{|}|%|Enter-\n-13-3
-spr:sk/ui/shift--16-3-go_1|\\|ź|χ|©|ν|β|ñ|µ|·|…|–|✋|spr:sk/ui/shift--16-2-go_1|spr:sk/ui/arrow_up--38
+spr:sk/ui/shift--16-3-go_1|\\|£|ź|χ|©|ν|β|ñ|µ|·|…|–|✋|spr:sk/ui/shift--16-2-go_1|spr:sk/ui/arrow_up--38
 Ctrl--17-4-mod|Cmd--91-3|Alt--18-3-go_0| - -32-13|Alt--18-3-go_0|Ctrl--17-3-mod|spr:sk/ui/arrow_left--37|spr:sk/ui/arrow_down--40|spr:sk/ui/arrow_right--39|"#;
 
 // ─── Portuguese QWERTY — Brazil (PT_BR) ──────────────────────────────────────
 
 /// Portuguese QWERTY keyboard (Brazil) — normal layer.
-pub const PT_BR_KEY_TEXT: &str = r#"'|1|2|3|4|5|6|7|8|9|0|-|=|{|}|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
+pub const PT_BR_KEY_TEXT: &str = r#"'|1|2|3|4|5|6|7|8|9|0|\-|=|{|}|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
 Tab-\t-9-3|q|w|e|r|t|y|u|i|o|p|´|[|]|#||
 Enter-\n-13-4|a|s|d|f|g|h|j|k|l|ç|~|\\|/|Enter-\n-13-3
 spr:sk/ui/shift--16-3-go_1|\\|z|x|c|v|b|n|m|,|.|;|€|@|spr:sk/ui/shift--16-2-go_1|spr:sk/ui/arrow_up--38
@@ -128,7 +128,7 @@ Ctrl--17-4-mod|Cmd--91-3|Alt--18-3-go_2| - -32-13|Alt--18-3-go_2|Ctrl--17-3-mod|
 pub const PT_BR_KEY_TEXT_ALT: &str = r#"`|¹|²|³|£|€|¥|{|[|]|}|\\|~|æ|œ|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
 Tab-\t-9-3|@|ẃ|€|ŕ|ŧ|ý|ú|í|ó|þ|´|{|}|«|»
 Enter-\n-13-4|á|ã|ê|â|õ|ħ|ĵ|ĸ|ł|ç|~||%|Enter-\n-13-3
-spr:sk/ui/shift--16-3-go_1|/|ź|χ|©|ν|β|ñ|µ|·|…|–|✋|spr:sk/ui/shift--16-2-go_1|spr:sk/ui/arrow_up--38
+spr:sk/ui/shift--16-3-go_1|\\|£|ź|χ|©|ν|β|ñ|µ|·|…|–|✋|spr:sk/ui/shift--16-2-go_1|spr:sk/ui/arrow_up--38
 Ctrl--17-4-mod|Cmd--91-3|Alt--18-3-go_0| - -32-13|Alt--18-3-go_0|Ctrl--17-3-mod|spr:sk/ui/arrow_left--37|spr:sk/ui/arrow_down--40|spr:sk/ui/arrow_right--39|"#;
 
 // ─── Italian QWERTY (IT) ─────────────────────────────────────────────────────
@@ -137,11 +137,11 @@ Ctrl--17-4-mod|Cmd--91-3|Alt--18-3-go_0| - -32-13|Alt--18-3-go_0|Ctrl--17-3-mod|
 pub const IT_KEY_TEXT: &str = r#"\\|1|2|3|4|5|6|7|8|9|0|'|ì|{|}|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
 Tab-\t-9-3|q|w|e|r|t|y|u|i|o|p|è|+|[|]|~
 Enter-\n-13-4|a|s|d|f|g|h|j|k|l|ò|à|ù|/|Enter-\n-13-3
-spr:sk/ui/shift--16-3-go_1|<|z|x|c|v|b|n|m|,|.|-|€|@|spr:sk/ui/shift--16-2-go_1|spr:sk/ui/arrow_up--38
+spr:sk/ui/shift--16-3-go_1|<|z|x|c|v|b|n|m|,|.|\-|€|@|spr:sk/ui/shift--16-2-go_1|spr:sk/ui/arrow_up--38
 Ctrl--17-4-mod|Cmd--91-3|Alt--18-3-go_2| - -32-13|Alt--18-3-go_2|Ctrl--17-3-mod|spr:sk/ui/arrow_left--37|spr:sk/ui/arrow_down--40|spr:sk/ui/arrow_right--39|"#;
 
 /// Italian QWERTY keyboard — shift layer.
-pub const IT_KEY_TEXT_SHIFT: &str = r#"||!|"|£|$|%|&|/|(|)|=|?|^|Æ|Œ|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
+pub const IT_KEY_TEXT_SHIFT: &str = r#"\||!|"|£|$|%|&|/|(|)|=|?|^|Æ|Œ|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
 Tab-\t-9-3|Q|W|E|R|T|Y|U|I|O|P|é|*|«|»|¤
 Enter-\n-13-4|A|S|D|F|G|H|J|K|L|ç|°|§|?|Enter-\n-13-3
 spr:sk/ui/shift--16-3-go_0|>|Z|X|C|V|B|N|M|;|:|_|©|®|spr:sk/ui/shift--16-2-go_0|spr:sk/ui/arrow_up--38
@@ -152,8 +152,8 @@ Ctrl--17-4-mod|Cmd--91-3|Alt--18-3-go_2| - -32-13|Alt--18-3-go_2|Ctrl--17-3-mod|
 /// Standard AltGr positions: `@` `#` `[` `]` `{` `}` `€` `~`.
 pub const IT_KEY_TEXT_ALT: &str = r#"`|¹|²|³|¼|½|¬|{|[|]|}|@|~|æ|œ|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
 Tab-\t-9-3|@|ẃ|€|ŕ|ŧ|ý|ú|í|ó|þ|[|]|£|¥|\|
-Enter-\n-13-4|á|ś|ð|ó|ğ|ħ|ĵ|ĸ|ł|ø|ä||%|Enter-\n-13-3
-spr:sk/ui/shift--16-3-go_1||ý|χ|©|ν|β|ñ|µ|·|…|–|✋|spr:sk/ui/shift--16-2-go_1|spr:sk/ui/arrow_up--38
+Enter-\n-13-4|á|ś|ð|ó|ğ|ħ|ĵ|ĸ|ł|ø|ä|$|%|Enter-\n-13-3
+spr:sk/ui/shift--16-3-go_1|\\|£|ź|χ|©|ν|β|ñ|µ|·|…|–|✋|spr:sk/ui/shift--16-2-go_1|spr:sk/ui/arrow_up--38
 Ctrl--17-4-mod|Cmd--91-3|Alt--18-3-go_0| - -32-13|Alt--18-3-go_0|Ctrl--17-3-mod|spr:sk/ui/arrow_left--37|spr:sk/ui/arrow_down--40|spr:sk/ui/arrow_right--39|"#;
 
 // ─── Swedish / Nordic QWERTY (SV) ────────────────────────────────────────────
@@ -165,7 +165,7 @@ Ctrl--17-4-mod|Cmd--91-3|Alt--18-3-go_0| - -32-13|Alt--18-3-go_0|Ctrl--17-3-mod|
 pub const SV_KEY_TEXT: &str = r#"§|1|2|3|4|5|6|7|8|9|0|+|´|{|}|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
 Tab-\t-9-3|q|w|e|r|t|y|u|i|o|p|å|¨|[|]|\|
 Enter-\n-13-4|a|s|d|f|g|h|j|k|l|ö|ä|'|~|Enter-\n-13-3
-spr:sk/ui/shift--16-3-go_1|<|z|x|c|v|b|n|m|,|.|-|€|@|spr:sk/ui/shift--16-2-go_1|spr:sk/ui/arrow_up--38
+spr:sk/ui/shift--16-3-go_1|<|z|x|c|v|b|n|m|,|.|\-|€|@|spr:sk/ui/shift--16-2-go_1|spr:sk/ui/arrow_up--38
 Ctrl--17-4-mod|Cmd--91-3|Alt--18-3-go_2| - -32-13|Alt--18-3-go_2|Ctrl--17-3-mod|spr:sk/ui/arrow_left--37|spr:sk/ui/arrow_down--40|spr:sk/ui/arrow_right--39|"#;
 
 /// Swedish / Nordic QWERTY keyboard — shift layer.
@@ -178,10 +178,10 @@ Ctrl--17-4-mod|Cmd--91-3|Alt--18-3-go_2| - -32-13|Alt--18-3-go_2|Ctrl--17-3-mod|
 /// Swedish / Nordic QWERTY keyboard — alt layer (standard AltGr characters).
 ///
 /// Standard AltGr positions: `@` `£` `$` `€` `¥` `{` `[` `]` `}` `\` `€` `~`.
-pub const SV_KEY_TEXT_ALT: &str = r#"§||@|£|$|€|¥|{|[|]|}|\\|~|æ|œ|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
+pub const SV_KEY_TEXT_ALT: &str = r#"§|€|@|£|$|€|¥|{|[|]|}|\\|~|æ|œ|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
 Tab-\t-9-3|@|ẃ|€|ŕ|ŧ|ý|ú|í|ó|þ|å|^|«|»|¤
 Enter-\n-13-4|á|ś|ð|œ|ğ|ħ|ĵ|ĸ|ł|ø|ä||%|Enter-\n-13-3
-spr:sk/ui/shift--16-3-go_1||ź|χ|©|ν|β|ñ|µ|·|…|–|✋|spr:sk/ui/shift--16-2-go_1|spr:sk/ui/arrow_up--38
+spr:sk/ui/shift--16-3-go_1|£|ź|χ|©|ν|β|ñ|µ|·|…|–|✋|spr:sk/ui/shift--16-2-go_1|spr:sk/ui/arrow_up--38
 Ctrl--17-4-mod|Cmd--91-3|Alt--18-3-go_0| - -32-13|Alt--18-3-go_0|Ctrl--17-3-mod|spr:sk/ui/arrow_left--37|spr:sk/ui/arrow_down--40|spr:sk/ui/arrow_right--39|"#;
 
 // ─── Polish QWERTY (PL) ──────────────────────────────────────────────────────
@@ -239,7 +239,7 @@ Ctrl--17-4-mod|Cmd--91-3|Alt--18-3-go_0| - -32-13|Alt--18-3-go_0|Ctrl--17-3-mod|
 /// Turkish QWERTY keyboard — normal layer.
 ///
 /// Turkish-specific keys: `ğ` `ü` `ş` `ı` (dotless-i) `i` (dotted-i) `ö` `ç`.
-pub const TR_KEY_TEXT: &str = r#"`|1|2|3|4|5|6|7|8|9|0|-|=|{|}|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
+pub const TR_KEY_TEXT: &str = r#"`|1|2|3|4|5|6|7|8|9|0|\-|=|{|}|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
 Tab-\t-9-3|q|w|e|r|t|y|u|ı|o|p|ğ|ü|[|]||
 Enter-\n-13-4|a|s|d|f|g|h|j|k|l|ş|i|,|/|Enter-\n-13-3
 spr:sk/ui/shift--16-3-go_1|<|z|x|c|v|b|n|m|ö|ç|.|€|@|spr:sk/ui/shift--16-2-go_1|spr:sk/ui/arrow_up--38
@@ -264,14 +264,14 @@ Ctrl--17-4-mod|Cmd--91-3|Alt--18-3-go_0| - -32-13|Alt--18-3-go_0|Ctrl--17-3-mod|
 // ─── Russian Cyrillic ЙЦУКЕН (RU) ────────────────────────────────────────────
 
 /// Russian ЙЦУКЕН keyboard — normal layer (lowercase Cyrillic).
-pub const RU_KEY_TEXT: &str = r#"ё|1|2|3|4|5|6|7|8|9|0|-|=|{|}|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
+pub const RU_KEY_TEXT: &str = r#"ё|1|2|3|4|5|6|7|8|9|0|\-|=|{|}|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
 Tab-\t-9-3|й|ц|у|к|е|н|г|ш|щ|з|х|ъ|[|]|\\
 Enter-\n-13-4|ф|ы|в|а|п|р|о|л|д|ж|э|\\|/|Enter-\n-13-3
 spr:sk/ui/shift--16-3-go_1|/|я|ч|с|м|и|т|ь|б|ю|.|€|@|spr:sk/ui/shift--16-2-go_1|spr:sk/ui/arrow_up--38
 Ctrl--17-4-mod|Cmd--91-3|Alt--18-3| - -32-13|Alt--18-3|Ctrl--17-3-mod|spr:sk/ui/arrow_left--37|spr:sk/ui/arrow_down--40|spr:sk/ui/arrow_right--39|"#;
 
 /// Russian ЙЦУКЕН keyboard — shift layer (uppercase Cyrillic).
-pub const RU_KEY_TEXT_SHIFT: &str = r#"Ё|!|"№|;|%|:|?|*|(|)|_|+|Æ|Œ|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
+pub const RU_KEY_TEXT_SHIFT: &str = r#"Ё|!|"№|;|%|:|?|*|(|)|_|+|Æ|Œ|£|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
 Tab-\t-9-3|Й|Ц|У|К|Е|Н|Г|Ш|Щ|З|Х|Ъ|«|»|¤
 Enter-\n-13-4|Ф|Ы|В|А|П|Р|О|Л|Д|Ж|Э|/|©|Enter-\n-13-3
 spr:sk/ui/shift--16-3-go_0|\\|Я|Ч|С|М|И|Т|Ь|Б|Ю|,|®|µ|spr:sk/ui/shift--16-2-go_0|spr:sk/ui/arrow_up--38
@@ -282,14 +282,14 @@ Ctrl--17-4-mod|Cmd--91-3|Alt--18-3| - -32-13|Alt--18-3|Ctrl--17-3-mod|spr:sk/ui/
 /// Ukrainian Cyrillic keyboard — normal layer (lowercase).
 ///
 /// Ukrainian-specific letters: `і` `ї` `є` `ґ` (absent in Russian).
-pub const UK_KEY_TEXT: &str = r#"'|1|2|3|4|5|6|7|8|9|0|-|=|{|}|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
+pub const UK_KEY_TEXT: &str = r#"'|1|2|3|4|5|6|7|8|9|0|\-|=|{|}|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
 Tab-\t-9-3|й|ц|у|к|е|н|г|ш|щ|з|х|ї|[|]|\\
 Enter-\n-13-4|ф|і|в|а|п|р|о|л|д|ж|є|\\|/|Enter-\n-13-3
 spr:sk/ui/shift--16-3-go_1|/|я|ч|с|м|и|т|ь|б|ю|ґ|€|@|spr:sk/ui/shift--16-2-go_1|spr:sk/ui/arrow_up--38
 Ctrl--17-4-mod|Cmd--91-3|Alt--18-3| - -32-13|Alt--18-3|Ctrl--17-3-mod|spr:sk/ui/arrow_left--37|spr:sk/ui/arrow_down--40|spr:sk/ui/arrow_right--39|"#;
 
 /// Ukrainian Cyrillic keyboard — shift layer (uppercase).
-pub const UK_KEY_TEXT_SHIFT: &str = r#"'|!|"№|;|%|:|?|*|(|)|_|+|Æ|Œ|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
+pub const UK_KEY_TEXT_SHIFT: &str = r#"'|!|"№|;|%|:|?|*|(|)|_|+|Æ|Œ|£|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
 Tab-\t-9-3|Й|Ц|У|К|Е|Н|Г|Ш|Щ|З|Х|Ї|«|»|¤
 Enter-\n-13-4|Ф|І|В|А|П|Р|О|Л|Д|Ж|Є|/|©|Enter-\n-13-3
 spr:sk/ui/shift--16-3-go_0|\\|Я|Ч|С|М|И|Т|Ь|Б|Ю|Ґ|®|µ|spr:sk/ui/shift--16-2-go_0|spr:sk/ui/arrow_up--38
@@ -301,7 +301,7 @@ Ctrl--17-4-mod|Cmd--91-3|Alt--18-3| - -32-13|Alt--18-3|Ctrl--17-3-mod|spr:sk/ui/
 ///
 /// Layout maps to standard Greek ISO keyboard positions.
 /// The `;` key produces the Greek semicolon/erotimatiko (U+003B maps to `;` here).
-pub const GR_KEY_TEXT: &str = r#"`|1|2|3|4|5|6|7|8|9|0|-|=|{|}|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
+pub const GR_KEY_TEXT: &str = r#"`|1|2|3|4|5|6|7|8|9|0|\-|=|{|}|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
 Tab-\t-9-3|;|ς|ε|ρ|τ|υ|θ|ι|ο|π|[|]|«|»|\\
 Enter-\n-13-4|α|σ|δ|φ|γ|η|ξ|κ|λ|΄|'|\\|/|Enter-\n-13-3
 spr:sk/ui/shift--16-3-go_1|<|ζ|χ|ψ|ω|β|ν|μ|,|.|/|€|@|spr:sk/ui/shift--16-2-go_1|spr:sk/ui/arrow_up--38
@@ -320,7 +320,7 @@ Ctrl--17-4-mod|Cmd--91-3|Alt--18-3| - -32-13|Alt--18-3|Ctrl--17-3-mod|spr:sk/ui/
 ///
 /// Based on the standard Arabic (101) keyboard layout.
 /// Ligatures لا لإ لأ لآ are pre-composed Unicode sequences.
-pub const AR_KEY_TEXT: &str = r#"ذ|1|2|3|4|5|6|7|8|9|0|-|=|{|}|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
+pub const AR_KEY_TEXT: &str = r#"ذ|1|2|3|4|5|6|7|8|9|0|\-|=|{|}|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
 Tab-\t-9-3|ض|ص|ث|ق|ف|غ|ع|ه|خ|ح|ج|د|«|»|\\
 Enter-\n-13-4|ش|س|ي|ب|ل|ا|ت|ن|م|ك|ط|\\|/|Enter-\n-13-3
 spr:sk/ui/shift--16-3-go_1|ئ|ء|ؤ|ر|لا|ى|ة|و|ز|ظ|/|€|@|spr:sk/ui/shift--16-2-go_1|spr:sk/ui/arrow_up--38
@@ -329,8 +329,8 @@ Ctrl--17-4-mod|Cmd--91-3|Alt--18-3| - -32-13|Alt--18-3|Ctrl--17-3-mod|spr:sk/ui/
 /// Arabic keyboard — shift layer (diacritics, special punctuation and ligatures).
 pub const AR_KEY_TEXT_SHIFT: &str = r#"ّ|!|@|#|$|%|^|&|*|(|)|_|+|Æ|Œ|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
 Tab-\t-9-3|َ|ً|ُ|ٌ|لإ|إ|`|÷|×|؛|<|>|£|¥|¤
-Enter-\n-13-4|ِ|ٍ|]|[|لأ|أ|ـ|،|/|:|"|©|Enter-\n-13-3
-spr:sk/ui/shift--16-3-go_0|~|\||{|}|لآ|آ|'|,|.|?|®|µ|spr:sk/ui/shift--16-2-go_0|spr:sk/ui/arrow_up--38
+Enter-\n-13-4|ِ|ٍ|]|[|لأ|أ|ـ|،|/|:|"|©|€|Enter-\n-13-3
+spr:sk/ui/shift--16-3-go_0|~|\||{|}|لآ|آ|'|,|.|?|®|µ|$|spr:sk/ui/shift--16-2-go_0|spr:sk/ui/arrow_up--38
 Ctrl--17-4-mod|Cmd--91-3|Alt--18-3| - -32-13|Alt--18-3|Ctrl--17-3-mod|spr:sk/ui/arrow_left--37|spr:sk/ui/arrow_down--40|spr:sk/ui/arrow_right--39|"#;
 
 // ─── Hebrew (HE) ─────────────────────────────────────────────────────────────
@@ -339,7 +339,7 @@ Ctrl--17-4-mod|Cmd--91-3|Alt--18-3| - -32-13|Alt--18-3|Ctrl--17-3-mod|spr:sk/ui/
 ///
 /// Based on the standard Israeli Hebrew keyboard layout.
 /// The shift layer provides Latin/ASCII characters (standard Israeli dual layout).
-pub const HE_KEY_TEXT: &str = r#";|1|2|3|4|5|6|7|8|9|0|-|=|{|}|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
+pub const HE_KEY_TEXT: &str = r#";|1|2|3|4|5|6|7|8|9|0|\-|=|{|}|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
 Tab-\t-9-3|/|'|ק|ר|א|ט|ו|ן|ם|פ|]|[|«|»|\\
 Enter-\n-13-4|ש|ד|ג|כ|ע|י|ח|ל|ך|ף|,|\\|/|Enter-\n-13-3
 spr:sk/ui/shift--16-3-go_1|ז|ס|ב|ה|נ|מ|צ|ת|ץ|.|\\|€|@|spr:sk/ui/shift--16-2-go_1|spr:sk/ui/arrow_up--38
@@ -348,8 +348,8 @@ Ctrl--17-4-mod|Cmd--91-3|Alt--18-3| - -32-13|Alt--18-3|Ctrl--17-3-mod|spr:sk/ui/
 /// Hebrew keyboard — shift layer (Latin/ASCII characters, standard Israeli dual layout).
 pub const HE_KEY_TEXT_SHIFT: &str = r#"~|!|@|#|$|%|^|&|*|(|)|_|+|Æ|Œ|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
 Tab-\t-9-3|Q|W|E|R|T|Y|U|I|O|P|{|}|£|¥|¤
-Enter-\n-13-4|A|S|D|F|G|H|J|K|L|:|"||/@|©|Enter-\n-13-3
-spr:sk/ui/shift--16-3-go_0|Z|X|C|V|B|N|M|<|>|?||/@|®|µ|spr:sk/ui/shift--16-2-go_0|spr:sk/ui/arrow_up--38
+Enter-\n-13-4|A|S|D|F|G|H|J|K|L|:|"|/@|©|Enter-\n-13-3
+spr:sk/ui/shift--16-3-go_0|Z|X|C|V|B|N|M|<|>|?|/@|®|µ|spr:sk/ui/shift--16-2-go_0|spr:sk/ui/arrow_up--38
 Ctrl--17-4-mod|Cmd--91-3|Alt--18-3| - -32-13|Alt--18-3|Ctrl--17-3-mod|spr:sk/ui/arrow_left--37|spr:sk/ui/arrow_down--40|spr:sk/ui/arrow_right--39|"#;
 
 // ─── Japanese Hiragana / Katakana (JA) ───────────────────────────────────────
