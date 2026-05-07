@@ -1977,7 +1977,7 @@ pub enum TrackState {
 ///
 /// see also [`Input`]
 /// ### Examples
-/// ```
+/// ```ignore
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{system::{Input, InputSource, BtnState},
 ///                      maths::{Quat, Pose, Ray}};
@@ -2376,7 +2376,223 @@ impl Hand {
     }
 }
 
-/// Represents an input from an XR headset’s controller!
+/// Index values for input poses. These represent tracked spatial poses from the XR system, such as hand or controller
+/// positions and orientations.
+/// <https://stereokit.net/Pages/StereoKit/InputPose.html>
+///
+/// see also [`Input::pose`]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(u32)]
+pub enum InputPose {
+    /// The user's eye gaze, where they're looking in the world. Requires eye tracking hardware and permissions to
+    /// provide meaningful data.
+    Eyes = 0,
+    /// The left hand/controller grip pose, centered in the hand where you'd hold something like a sword hilt or a tool
+    /// handle.
+    LGrip,
+    /// The left hand/controller palm pose, located at the surface of the palm facing outward. This uses the palm pose
+    /// OpenXR extension when available, and falls back to an approximation when it's not.
+    LPalm,
+    /// The left hand/controller aim pose. This points forward from the hand like a laser pointer, useful for UI
+    /// interaction at a distance.
+    LAim,
+    /// The left pose of a "detached controller", when the user has both hands and controllers active in the scene.
+    LDetached,
+    /// The right hand/controller grip pose, centered in the hand where you'd hold something like a sword hilt or a tool
+    /// handle.
+    RGrip,
+    /// The right hand/controller palm pose, located at the surface of the palm facing outward. This uses the palm pose
+    /// OpenXR extension when available, and falls back to an approximation when it's not.
+    RPalm,
+    /// The right hand/controller aim pose. This points forward from the hand like a laser pointer, useful for UI
+    /// interaction at a distance.
+    RAim,
+    /// The right pose of a "detached controller", when the user has both hands and controllers active in the scene.
+    RDetached,
+    /// Total number of input pose types.
+    Max,
+}
+
+/// Index values for analog float inputs from controllers. These are inputs that range from 0-1 based on how far the
+/// user has pressed them.
+/// <https://stereokit.net/Pages/StereoKit/InputFloat.html>
+///
+/// see also [`Input::float`] [`Hand::pinch_activation`] [`Hand::grip_activation`]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(u32)]
+pub enum InputFloat {
+    /// The trigger on the left controller, where the user's index finger typically rests.
+    LTrigger = 0,
+    /// The grip button on the left controller, usually where the remaining fingers sit.
+    LGrip,
+    /// The trigger on the right controller, where the user's index finger typically rests.
+    RTrigger,
+    /// The grip button on the right controller, usually where the remaining fingers sit.
+    RGrip,
+    /// Total number of input float types.
+    Max,
+}
+
+/// Index values for boolean button inputs from controllers. These are on/off inputs that provide button_state_
+/// information.
+/// <https://stereokit.net/Pages/StereoKit/InputButton.html>
+///
+/// see also [`Input::button`] [`Input::hand`] [`Hand::is_pinched`] [`Hand::is_gripped`]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(u32)]
+pub enum InputButton {
+    /// Is the left hand ready to interact at a distance? This maps to the pinch_ext/ready_ext binding from the hand
+    /// interaction extension, and factors in facing direction and pinch readiness.
+    LAimReady = 0,
+    /// The left controller's thumbstick button, pressed by clicking the stick inward. This has nothing to do with the
+    /// stick's XY position.
+    LStick,
+    /// The lower of the two left thumb buttons, sometimes labelled X, and sometimes A.
+    LX1,
+    /// The upper of the two left thumb buttons, sometimes labelled Y, and sometimes B.
+    LX2,
+    /// The menu or settings button on the left controller.
+    LMenu,
+    /// Is the right hand ready to interact at a distance? This maps to the pinch_ext/ready_ext binding from the hand
+    /// interaction extension, and factors in facing direction and pinch readiness.
+    RAimReady,
+    /// The right controller's thumbstick button, pressed by clicking the stick inward. This has nothing to do with the
+    /// stick's XY position.
+    RStick,
+    /// The lower of the two right thumb buttons, sometimes labelled X, and sometimes A.
+    RX1,
+    /// The upper of the two right thumb buttons, sometimes labelled Y, and sometimes B.
+    RX2,
+    /// The menu or settings button on the right controller.
+    RMenu,
+    /// Total number of input button types.
+    Max,
+}
+
+/// Index values for 2D axis inputs from controllers, like thumbsticks. These provide a vec2 with X and Y ranging
+/// from -1 to 1..
+/// <https://stereokit.net/Pages/StereoKit/InputXY.html>
+///
+/// see also [`Input::xy`]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(u32)]
+pub enum InputXY {
+    /// The thumbstick on the left controller. X is left/right, Y is forward/back.
+    LStick = 0,
+    /// The thumbstick on the right controller. X is left/right, Y is forward/back.
+    RStick,
+    /// Total number of input XY types.
+    Max,
+}
+
+/// Index values for haptic outputs on controllers. These represent a destination for vibration playback, requested via
+/// [`Input::haptic_pulse`], [`Input::haptic_waveform`], or [`Input::haptic_curve`].
+/// <https://stereokit.net/Pages/StereoKit/InputHaptic.html>
+///
+/// see also [`Input::haptic_caps`] [`Input::haptic_pulse`] [`Input::haptic_waveform`] [`Input::haptic_curve`]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(u32)]
+pub enum InputHaptic {
+    /// The left controller's primary haptic actuator.
+    LController = 0,
+    /// The right controller's primary haptic actuator.
+    RController,
+    /// Total number of haptic output.
+    Max,
+}
+
+bitflags::bitflags! {
+    /// Describe what playback modes a haptic output currently supports. Queryable via Input.HapticCaps.
+    /// The set of supported modes may change at runtime whenever the active OpenXR interaction profile changes, which
+    /// typically happens as the user picks up, sets down, or swaps a controller.
+    /// <https://stereokit.net/Pages/StereoKit/InputHapticCaps.html>
+    ///
+    /// see also [`Input::haptic_caps`]
+    #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+    #[repr(transparent)]
+    pub struct InputHapticCaps: u32 {
+        /// No haptic output is available right now (e.g. no controller is bound, or the haptic action isn't active).
+        const None = 0;
+        /// Simple frequency / amplitude / duration vibration via [`Input::haptic_pulse`]. Supported by every controller
+        /// that has any haptic actuator.
+        const Pulse = 1 << 0;
+        /// Sample-by-sample PCM playback via [`Input::haptic_waveform`]. Requires the XR_FB_haptic_pcm OpenXR
+        /// extension.
+        const Waveform = 1 << 1;
+        /// Amplitude envelope playback via [`Input::haptic_curve`]. Requires the XR_FB_haptic_amplitude_envelope OpenXR
+        /// extension.
+        const Curve = 1 << 2;
+    }
+}
+
+bitflags::bitflags! {
+    /// Describes the tracking state of a pose, with separate bits for position and orientation. The PosAny, RotAny, and
+    /// Any combinations are handy when you only care if there's tracking at all, and not whether it's directly measured
+    /// or just an educated guess.
+    /// <https://stereokit.net/Pages/StereoKit/PoseState.html>
+    ///
+    /// see also [`Pointer::get_pose`] [`Input::pose`] [`Input::hand`] [`Hand::get`] [`HandJoint`]
+    #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+    #[repr(transparent)]
+    pub struct PoseState: u32 {
+        /// The pose has no tracking at all, neither position nor orientation should be trusted.
+        const Lost = 0;
+        /// The position isn't directly tracked, but the system has an educated guess for it. For example, a
+        /// controller's accelerometer can keep dead-reckoning the position for a short time after it leaves optical view.
+        const PosInferred = 1 << 0;
+        /// The orientation isn't directly tracked, but the system has an educated guess for it, often from an IMU
+        /// after the source has left direct view.
+        const RotInferred = 1 << 1;
+        /// The position is actively tracked by the underlying hardware, to the best of its ability.
+        const PosKnown = 1 << 2;
+        /// The orientation is actively tracked by the underlying hardware, to the best of its ability.
+        const RotKnown = 1 << 3;
+        /// Matches any positional tracking, whether the position is directly known or just inferred.
+        const PosAny = Self::PosInferred.bits() | Self::PosKnown.bits();
+        /// Matches any orientation tracking, whether the orientation is directly known or just inferred.
+        const RotAny = Self::RotInferred.bits() | Self::RotKnown.bits();
+        /// Matches any tracking at all, on position or orientation. A pose with no overlap with this is fully lost.
+        const Any = Self::PosAny.bits() | Self::RotAny.bits();
+    }
+}
+
+impl PoseState {
+    /// Is the pose tracked at all, on either position or orientation?
+    ///
+    /// Returns true if any tracking is present, false if fully lost.
+    pub fn is_tracked(&self) -> bool {
+        self.intersects(PoseState::Any)
+    }
+
+    /// Is the position an educated guess rather than directly tracked?
+    ///
+    /// Returns true if inferred, false if not.
+    pub fn is_pos_inferred(&self) -> bool {
+        self.intersects(PoseState::PosInferred)
+    }
+
+    /// Is the position actively tracked by the hardware?
+    ///
+    /// Returns true if directly known, false if not.
+    pub fn is_pos_known(&self) -> bool {
+        self.intersects(PoseState::PosKnown)
+    }
+
+    /// Is the orientation an educated guess rather than directly tracked?
+    ///
+    /// Returns true if inferred, false if not.
+    pub fn is_rot_inferred(&self) -> bool {
+        self.intersects(PoseState::RotInferred)
+    }
+
+    /// Is the orientation actively tracked by the hardware?
+    ///
+    /// Returns true if directly known, false if not.
+    pub fn is_rot_known(&self) -> bool {
+        self.intersects(PoseState::RotKnown)
+    }
+}
+
 /// <https://stereokit.net/Pages/StereoKit/ControllerKey.html>
 ///
 /// see also [`Input::hand_sim_pose_add`]
@@ -2783,8 +2999,6 @@ pub enum Key {
 pub struct Input;
 
 unsafe extern "C" {
-    pub fn input_pointer_count(filter: InputSource) -> i32;
-    pub fn input_pointer(index: i32, filter: InputSource) -> Pointer;
     pub fn input_hand(hand: Handed) -> *const Hand;
     pub fn input_hand_override(hand: Handed, in_arr_hand_joints: *const HandJoint);
     pub fn input_hand_source(hand: Handed) -> HandSource;
@@ -2797,7 +3011,6 @@ unsafe extern "C" {
     pub fn input_eyes() -> Pose;
     pub fn input_eyes_tracked() -> BtnState;
     pub fn input_mouse() -> *const Mouse;
-    pub fn input_key(key: Key) -> BtnState;
     pub fn input_key_inject_press(key: Key);
     pub fn input_key_inject_release(key: Key);
     pub fn input_text_consume() -> u32;
@@ -2809,6 +3022,30 @@ unsafe extern "C" {
     pub fn input_hand_material(hand: Handed, material: MaterialT);
     pub fn input_get_finger_glow() -> Bool32T;
     pub fn input_set_finger_glow(visible: Bool32T);
+    pub fn input_pose(pose_type: InputPose) -> Pose;
+    pub fn input_pose_state(pose_type: InputPose) -> PoseState;
+    pub fn input_float(float_type: InputFloat) -> f32;
+    pub fn input_button(button_type: InputButton) -> BtnState;
+    pub fn input_xy(xy_type: InputXY) -> Vec2;
+    pub fn input_key(key: Key) -> BtnState;
+    pub fn input_haptic_caps(haptic_type: InputHaptic) -> InputHapticCaps;
+    pub fn input_haptic_preferred_rate(haptic_type: InputHaptic) -> f32;
+    pub fn input_haptic_pulse(haptic_type: InputHaptic, frequency: f32, amplitude: f32, duration_seconds: f32);
+    pub fn input_haptic_waveform(
+        haptic_type: InputHaptic,
+        in_arr_samples: *const f32,
+        sample_count: i32,
+        sample_rate_hz: f32,
+        append: Bool32T,
+        out_prev_samples_consumed: *mut i32,
+    );
+    pub fn input_haptic_curve(
+        haptic_type: InputHaptic,
+        in_arr_amplitudes: *const f32,
+        sample_count: i32,
+        sample_rate_hz: f32,
+    );
+    pub fn input_haptic_stop(haptic_type: InputHaptic);
     pub fn input_hand_sim_pose_add(
         in_arr_palm_relative_hand_joints_25: *const Pose,
         button1: ControllerKey,
@@ -2818,6 +3055,8 @@ unsafe extern "C" {
     ) -> HandSimId;
     pub fn input_hand_sim_pose_remove(id: HandSimId);
     pub fn input_hand_sim_pose_clear();
+    pub fn input_pointer_count(filter: InputSource) -> i32;
+    pub fn input_pointer(index: i32, filter: InputSource) -> Pointer;
 
     #[deprecated(since = "0.4.0", note = "Not working anymore")]
     pub fn input_subscribe(
@@ -3286,7 +3525,7 @@ impl Input {
     /// Returns the Pointer data.
     /// see also [`input_pointer`]    
     /// ### Examples
-    /// ```
+    /// ```ignore
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{system::{Input, InputSource, BtnState},
     ///                      maths::{Quat, Pose, Ray}};
@@ -3303,6 +3542,7 @@ impl Input {
     /// assert_eq!(pointer.get_pose(), Pose::ZERO);
     /// # sk::Sk::shutdown();
     /// ```
+    /// TODO: #[deprecated(since = "0.4.0", note = "We can have many interactors")]
     pub fn pointer(index: i32, filter: Option<InputSource>) -> Pointer {
         let filter = filter.unwrap_or(InputSource::Any);
         unsafe { input_pointer(index, filter) }
@@ -3315,6 +3555,7 @@ impl Input {
     /// Returns the number of Pointers StereoKit knows about that matches the given filter.
     /// see also [`input_pointer_count`]  
     /// see example in [`Input::pointer`]  
+    /// TODO: #[deprecated(since = "0.4.0", note = "We can have many interactors")]
     pub fn pointer_count(filter: Option<InputSource>) -> i32 {
         let filter = filter.unwrap_or(InputSource::Any);
         unsafe { input_pointer_count(filter) }
@@ -3691,6 +3932,163 @@ impl Input {
     /// see example in [`Input::finger_glow`]
     pub fn get_finger_glow() -> bool {
         unsafe { input_get_finger_glow() != 0 }
+    }
+
+    /// Gets a tracked pose from the input system by type. These are spatial poses provided by the XR runtime, such as
+    /// hand or controller positions and orientations.
+    /// <https://stereokit.net/Pages/StereoKit/Input/Pose.html>
+    /// * `pose_type` - The type of pose to retrieve.
+    ///
+    /// Returns the most recent pose of the given type.
+    /// see also [`input_pose`]
+    pub fn pose(pose_type: InputPose) -> Pose {
+        unsafe { input_pose(pose_type) }
+    }
+
+    /// Gets the tracking state of a tracked pose. This tells you whether the position and rotation components are
+    /// actively being tracked by the XR system, and at what quality.
+    /// <https://stereokit.net/Pages/StereoKit/Input/PoseState.html>
+    /// * `pose_type` - The type of pose to check tracking state for.
+    ///
+    /// Returns the current tracking state for the given pose type.
+    /// see also [`input_pose_state`]
+    pub fn pose_state(pose_type: InputPose) -> PoseState {
+        unsafe { input_pose_state(pose_type) }
+    }
+
+    /// Gets an analog float input value from the input system. These are inputs like controller triggers and grip
+    /// buttons that range from 0 to 1.
+    /// <https://stereokit.net/Pages/StereoKit/Input/Float.html>
+    /// * `float_type` - The type of float input to retrieve.
+    ///
+    /// Returns a value from 0 to 1 representing how far the input is pressed.
+    /// see also [`input_float`]
+    pub fn float(float_type: InputFloat) -> f32 {
+        unsafe { input_float(float_type) }
+    }
+
+    /// Gets a binary button state from the input system. These are on/off inputs like controller face buttons and
+    /// thumbstick clicks.
+    /// <https://stereokit.net/Pages/StereoKit/Input/Button.html>
+    /// * `button_type` - The type of button input to retrieve.
+    ///
+    /// Returns a BtnState describing whether the button is active, just became active, or just became
+    /// inactive this frame.
+    /// see also [`input_button`]
+    pub fn button(button_type: InputButton) -> BtnState {
+        unsafe { input_button(button_type) }
+    }
+
+    /// Gets a 2D axis input from the input system, like a controller thumbstick. X is left/right, and Y is
+    /// forward/back, each ranging from -1 to 1.
+    /// <https://stereokit.net/Pages/StereoKit/Input/XY.html>
+    /// * `xy_type` - The type of XY input to retrieve.
+    ///
+    /// Returns a Vec2 representing the current stick position.
+    /// see also [`input_xy`]
+    pub fn xy(xy_type: InputXY) -> Vec2 {
+        unsafe { input_xy(xy_type) }
+    }
+
+    /// Returns the playback modes the given haptic output supports right now. The result depends on which
+    /// controller is active and which OpenXR extensions are available, so it can change at runtime whenever
+    /// the active OpenXR interaction profile changes — typically when the user picks up, sets down, or swaps a
+    /// controller. Code that relies on [`Input::haptic_waveform`] or [`Input::haptic_curve`] should check this first
+    /// and fall back to [`Input::haptic_pulse`] when the relevant capability bit is missing.
+    /// <https://stereokit.net/Pages/StereoKit/Input/HapticCaps.html>
+    /// * `haptic_type` - Which haptic output to query.
+    ///
+    /// Returns a flags value with one bit per supported playback mode, or None if the output isn't currently bound.
+    /// see also [`input_haptic_caps`]
+    pub fn haptic_caps(haptic_type: InputHaptic) -> InputHapticCaps {
+        unsafe { input_haptic_caps(haptic_type) }
+    }
+
+    /// Reports the controller's preferred PCM sample rate in Hz. Authoring [`Input::haptic_waveform`] buffers at this
+    /// rate avoids runtime resampling, which matters for procedural / streaming use. Returns 0 when the runtime
+    /// accepts any rate or PCM playback isn't available on this device.
+    /// <https://stereokit.net/Pages/StereoKit/Input/HapticPreferredRate.html>
+    /// * `haptic_type` - Which haptic output to query.
+    ///
+    /// Returns a preferred sample rate in Hz, or 0 if unspecified.
+    /// see also [`input_haptic_preferred_rate`]
+    pub fn haptic_preferred_rate(haptic_type: InputHaptic) -> f32 {
+        unsafe { input_haptic_preferred_rate(haptic_type) }
+    }
+
+    /// Plays a single sustained vibration on the given output. This is the simplest haptic mode and works on every
+    /// controller that has any actuator at all. Cancels any in-flight [`Input::haptic_waveform`] stream on this output
+    /// before playing.
+    /// <https://stereokit.net/Pages/StereoKit/Input/HapticPulse.html>
+    /// * `haptic_type` - Which haptic output to vibrate.
+    /// * `frequency` - Carrier frequency in Hz. Pass 0 or negative to let the runtime pick a sensible default for the
+    ///   device.
+    /// * `amplitude` - Vibration intensity, 0 (off) to 1 (full). Values outside this range are clamped.
+    /// * `duration_seconds` - How long to vibrate, in seconds. Pass 0 or negative for the shortest pulse the device
+    ///   supports.
+    ///
+    /// see also [`input_haptic_pulse`]
+    pub fn haptic_pulse(haptic_type: InputHaptic, frequency: f32, amplitude: f32, duration_seconds: f32) {
+        unsafe { input_haptic_pulse(haptic_type, frequency, amplitude, duration_seconds) }
+    }
+
+    /// Plays a PCM waveform on the given output. Samples are signed values in [-1, 1] sampled at `sample_rate_hz`,
+    /// like an audio buffer. Requires the [`InputHapticCaps::Waveform`] capability bit; the call is a silent no-op on
+    /// devices that lack XR_FB_haptic_pcm.
+    ///
+    /// Buffers longer than the runtime's per-call limit are streamed transparently — pass any length and StereoKit
+    /// will drip-feed chunks to the device over multiple frames. For procedural use, reuse the same float[] buffer
+    /// across calls to avoid per-frame allocations. To explicitly cut a stream mid-playback, pass append=false here, or
+    /// call [`Input::haptic_stop`] / [`Input::haptic_pulse`].
+    /// <https://stereokit.net/Pages/StereoKit/Input/HapticWaveform.html>
+    /// * `haptic_type` - Which haptic output to vibrate.
+    /// * `samples` - Signed [-1, 1] PCM samples.
+    /// * `sample_rate_hz` - The sample rate the buffer was authored at. See [`Input::haptic_preferred_rate`] for the
+    ///   device's native rate. If this differs from the in-flight stream's rate, append behavior degrades to a restart.
+    /// * `append` - When true, queues these samples after any playback already in flight on this output. When false
+    ///   (default), cancels any current playback and starts the new buffer immediately.
+    ///
+    /// Returns Receives the runtime's samplesConsumed count for the most recent chunk StereoKit submitted to the
+    /// device, or 0 if no chunk was in flight. This is reported at chunk granularity, not at the granularity of
+    /// [`Input::haptic_waveform`] calls — a single [`Input::haptic_waveform`] call may span multiple internal chunks.
+    /// see also [`input_haptic_waveform`]
+    pub fn haptic_waveform(haptic_type: InputHaptic, samples: &[f32], sample_rate_hz: f32, append: bool) -> i32 {
+        let mut consumed = 0;
+        unsafe {
+            input_haptic_waveform(
+                haptic_type,
+                samples.as_ptr(),
+                samples.len() as i32,
+                sample_rate_hz,
+                append as Bool32T,
+                &mut consumed,
+            );
+        }
+        consumed
+    }
+
+    /// Plays an amplitude curve on the given output. Both phase (frequency tracking) and amplitude are driven by
+    /// curves along a timeline. Requires the [`InputHapticCaps::Curve`] capability bit; the call is a silent no-op on
+    /// devices that lack XR_HTC_haptic_amp_freq_map.
+    /// <https://stereokit.net/Pages/StereoKit/Input/HapticCurve.html>
+    /// * `haptic_type` - Which haptic output to vibrate.
+    /// * `amplitudes` - Unsigned [0, 1] intensity samples.
+    /// * `sample_rate_hz` - The sample rate the envelope was authored at.
+    ///
+    /// see also [`input_haptic_curve`]
+    pub fn haptic_curve(haptic_type: InputHaptic, amplitudes: &[f32], sample_rate_hz: f32) {
+        unsafe {
+            input_haptic_curve(haptic_type, amplitudes.as_ptr(), amplitudes.len() as i32, sample_rate_hz);
+        }
+    }
+
+    /// Cancels any haptic playback on the given output, including in-flight PCM streams.
+    /// <https://stereokit.net/Pages/StereoKit/Input/HapticStop.html>
+    /// * `haptic_type` - Which haptic output to stop.
+    ///
+    /// see also [`input_haptic_stop`]
+    pub fn haptic_stop(haptic_type: InputHaptic) {
+        unsafe { input_haptic_stop(haptic_type) }
     }
 }
 

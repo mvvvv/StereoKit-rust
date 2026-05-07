@@ -411,9 +411,13 @@ impl Interactor {
     ///
     /// Returns an Interactor.
     /// see also [`interactor_get`] [`Interactor::count`]
-    pub fn get(index: i32) -> Self {
-        let inst = unsafe { interactor_get(index) };
-        Self { inst }
+    pub fn get(index: i32) -> Option<Self> {
+        if index < 0 || index >= Self::count() {
+            None
+        } else {
+            let inst = unsafe { interactor_get(index) };
+            Some(Self { inst })
+        }
     }
 }
 

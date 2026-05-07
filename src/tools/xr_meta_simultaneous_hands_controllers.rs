@@ -169,7 +169,7 @@ pub fn resume_simultaneous_hands_and_controllers(sk_info: Rc<RefCell<SkInfo>>, w
                 if is_meta_detached_controllers_available() {
                     SkInfo::send_event(
                         &sk_info,
-                        StepperAction::add_default::<XrMetaDetachedControllersStepper>(META_DETACHED_CTRLRS_ID),
+                        StepperAction::insert_default::<XrMetaDetachedControllersStepper>(META_DETACHED_CTRLRS_ID),
                     );
                     if with_log {
                         Log::info("✅ XrMetaDetachedControllersStepper added.");

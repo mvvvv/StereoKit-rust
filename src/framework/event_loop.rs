@@ -626,6 +626,9 @@ pub trait IStepper {
 pub enum StepperAction {
     /// Add a new stepper of TypeID,  identified by its StepperID
     Add(Box<dyn for<'a> IStepper + Send + 'static>, TypeId, StepperId),
+    /// Insert a stepper of TypeID at the beginning, identified by its StepperID.
+    /// This was created for [`crate::interactor::Interactor::update`]
+    Insert(Box<dyn for<'a> IStepper + Send + 'static>, TypeId, StepperId),
     /// Remove all steppers of TypeID
     RemoveAll(TypeId),
     /// Remove the stepper identified by its StepperID
@@ -642,6 +645,9 @@ impl fmt::Debug for StepperAction {
         match self {
             StepperAction::Add(_stepper, _id, stepper_id) => {
                 write!(f, "StepperAction::Add(..., type_id: ... , stepper_id:{stepper_id:?} )")
+            }
+            StepperAction::Insert(_stepper, _id, stepper_id) => {
+                write!(f, "StepperAction::Insert(..., type_id: ... , stepper_id:{stepper_id:?} )")
             }
             StepperAction::RemoveAll(type_id) => write!(f, "StepperAction::RemoveAll( type_id:{type_id:?} )"),
             StepperAction::Remove(stepper_id) => write!(f, "StepperAction::Remove( id:{stepper_id:?} )"),
@@ -720,6 +726,79 @@ impl StepperAction {
     pub fn add<T: IStepper + Send + 'static>(stepper_id: impl AsRef<str>, stepper: T) -> Self {
         let stepper_type = stepper.type_id();
         StepperAction::Add(Box::new(stepper), stepper_type, stepper_id.as_ref().to_string())
+    }
+
+    /// This instantiates and registers an instance of the IStepper type provided as the generic parameter. SK will hold
+    /// onto it, Initialize it, Step it every frame BEFORE EVERY OTHER STEPPERS, and call Shutdown when the
+    /// application ends. This is generally safe to do before Sk.initialize is called, the constructor is called right
+    /// away, and Initialize is called right after Sk.initialize, or at the start of the next frame before the next main
+    /// Step callback if SK is already initialized.
+    /// It will be added to the beginning of the stepper list instead of the end, meaning its step() will be called
+    /// before those added normally. This was created for [`crate::interactor::Interactor::update`]
+    /// <https://stereokit.net/Pages/StereoKit/SK/AddStepper.html>
+    /// * `stepper_id` - The id to give to the stepper.
+    ///
+    /// see also [`StepperAction::add_default`] [`StepperAction::insert`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::tools::screenshot::ScreenshotViewer;
+    ///
+    /// sk.send_event(StepperAction::insert_default::<ScreenshotViewer>("ScreenshotViewer_ID"));
+    ///
+    /// test_steps!(  // !!!! Get a proper main loop !!!!
+    ///     if iter < number_of_steps + 2 {
+    ///         assert_eq!(sk.get_steppers_count(), 1);
+    ///     } else if iter == number_of_steps + 2 {
+    ///         // We sk.quit() at 4 and at 5 the stepper has been removed.
+    ///         assert_eq!(sk.get_steppers_count(), 0);
+    ///     } else {
+    ///         panic!("there is not iter 6 !!!");
+    ///     }
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn insert_default<T: IStepper + Send + Default + 'static>(stepper_id: impl AsRef<str>) -> Self {
+        let stepper = <T>::default();
+        let stepper_type = stepper.type_id();
+        StepperAction::Insert(Box::new(stepper), stepper_type, stepper_id.as_ref().to_owned())
+    }
+
+    /// This instantiates and registers an instance of the IStepper type provided as the generic parameter. SK will hold
+    /// onto it, Initialize it, Step it every frame BEFORE EVERY OTHER STEPPERS, and call Shutdown when the application
+    /// ends. This is generally safe to do before Sk.initialize is called, the constructor is called right away, and
+    /// Initialize is called right after Sk.initialize, or at the start of the next frame before the next main Step
+    /// callback if SK is already initialized.
+    /// It will be added to the beginning of the stepper list instead of the end, meaning its step() will be called
+    /// before those added normally. This was created for [`crate::interactor::Interactor::update`]
+    /// <https://stereokit.net/Pages/StereoKit/SK/AddStepper.html>
+    /// * `stepper_id` - The id of the stepper.
+    /// * `stepper` - The stepper to insert.
+    ///
+    /// see also [`StepperAction::add`] [`StepperAction::insert_default`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Matrix, util::named_colors, tools::title::Title, };
+    /// let mut title = Title::new("Stepper 1", Some(named_colors::GREEN), None, None);
+    /// title.transform = Matrix::t_r([0.0, 0.0, -1.0], [0.0, 135.0, 0.0]);
+    /// sk.send_event(StepperAction::insert("Title_green_ID", title.clone()));
+    ///
+    /// test_steps!(  // !!!! Get a proper main loop !!!!
+    ///     if iter < number_of_steps + 2 {
+    ///         assert_eq!(sk.get_steppers_count(), 1);
+    ///     } else if iter == number_of_steps + 2 {
+    ///         // We sk.quit() at 4 and at 5 the stepper has been removed.
+    ///         assert_eq!(sk.get_steppers_count(), 0);
+    ///     } else {
+    ///         panic!("there is not iter 6 !!!");
+    ///     }
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn insert<T: IStepper + Send + 'static>(stepper_id: impl AsRef<str>, stepper: T) -> Self {
+        let stepper_type = stepper.type_id();
+        StepperAction::Insert(Box::new(stepper), stepper_type, stepper_id.as_ref().to_string())
     }
 
     /// This removes all IStepper instances that are assignable to the generic type specified. This will call the
@@ -1006,6 +1085,16 @@ impl Steppers {
                         let stepper_h =
                             StepperHandler { id: stepper_id, type_id, stepper, state: StepperState::Initializing };
                         self.running_steppers.push(stepper_h);
+                    } else {
+                        Log::warn(format!("Stepper {stepper_id} did not initialize"));
+                        token.event_report.push(StepperAction::event(stepper_id.as_str(), ISTEPPER_REMOVED, "false"));
+                    }
+                }
+                StepperAction::Insert(mut stepper, type_id, stepper_id) => {
+                    if stepper.initialize(stepper_id.clone(), self.sk_info.clone()) {
+                        let stepper_h =
+                            StepperHandler { id: stepper_id, type_id, stepper, state: StepperState::Initializing };
+                        self.running_steppers.insert(0, stepper_h);
                     } else {
                         Log::warn(format!("Stepper {stepper_id} did not initialize"));
                         token.event_report.push(StepperAction::event(stepper_id.as_str(), ISTEPPER_REMOVED, "false"));

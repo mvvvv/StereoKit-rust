@@ -71,6 +71,49 @@ pub fn launch(mut sk: Sk, _is_testing: bool, start_test: String) {
     let simultaneous_hands_controllers_available = is_simultaneous_hands_and_controllers_supported(false);
     //--------------------------------------------------------------------
 
+    // First set the default interactors based on the backend, then try to activate simultaneous hand & controller if available
+    // Build the list of DefaultInteractors choices based on the backend type
+    let interactor_choices: Vec<(DefaultInteractors, bool, &str)> = {
+        let xr_tp = Backend::xr_type();
+        if xr_tp == BackendXRType::OpenXR {
+            let mut choices: Vec<(DefaultInteractors, bool, &str)> = vec![
+                (DefaultInteractors::Default, false, "Interaction: Default"),
+                (DefaultInteractors::All, false, "Interaction: All"),
+            ];
+            if simultaneous_hands_controllers_available {
+                choices.insert(0, (DefaultInteractors::All, true, "Interaction: Hands & Controllers"));
+            }
+            choices.push((DefaultInteractors::Hands, false, "Interaction: Hands"));
+            choices.push((DefaultInteractors::Controllers, false, "Interaction: Controllers"));
+            choices
+        } else {
+            // Simulator only Mouse
+            vec![
+                (DefaultInteractors::Default, false, "Interaction: Default"),
+                (DefaultInteractors::All, false, "Interaction: Mouse"),
+            ]
+        }
+    };
+    let mut current_interactor_idx = 0usize;
+    Interaction::set_default_interactors(interactor_choices[current_interactor_idx].0);
+
+    // Activate simultaneous hand & controller
+    if simultaneous_hands_controllers_available {
+        Log::info("✅ Simultaneous hands and controllers tracking available");
+        if interactor_choices[current_interactor_idx].1 {
+            if resume_simultaneous_hands_and_controllers(sk.get_sk_info_clone(), true) {
+                Log::info("Simultaneous hands and controllers tracking enabled at start");
+            } else {
+                Log::err("❌ Failed to enable simultaneous hands and controllers tracking at start");
+                current_interactor_idx =
+                    (current_interactor_idx + interactor_choices.len() - 1) % interactor_choices.len();
+                Interaction::set_default_interactors(interactor_choices[current_interactor_idx].0);
+            }
+        }
+    } else {
+        Log::diag("Simultaneous hands and controllers tracking not available");
+    }
+
     // Sending formated log to our mutex for the log window.
     let fn_mut = |level: LogLevel, log_text: &str| {
         let items = LOG_LOG.lock().unwrap();
@@ -146,31 +189,6 @@ pub fn launch(mut sk: Sk, _is_testing: bool, start_test: String) {
         Log::diag("No editable refresh rate !");
     }
 
-    // Build the list of DefaultInteractors choices based on the backend type
-    let interactor_choices: Vec<(DefaultInteractors, bool, &str)> = {
-        let xr_tp = Backend::xr_type();
-        if xr_tp == BackendXRType::OpenXR {
-            let mut choices: Vec<(DefaultInteractors, bool, &str)> = vec![
-                (DefaultInteractors::Default, false, "Interaction: Default"),
-                (DefaultInteractors::All, false, "Interaction: All"),
-            ];
-            if simultaneous_hands_controllers_available {
-                choices.insert(0, (DefaultInteractors::All, true, "Interaction: Hands & Controllers"));
-            }
-            choices.push((DefaultInteractors::Hands, false, "Interaction: Hands"));
-            choices.push((DefaultInteractors::Controllers, false, "Interaction: Controllers"));
-            choices
-        } else {
-            // Simulator only Mouse
-            vec![
-                (DefaultInteractors::Default, false, "Interaction: Default"),
-                (DefaultInteractors::All, false, "Interaction: Mouse"),
-            ]
-        }
-    };
-    let mut current_interactor_idx = 0usize;
-    Interaction::set_default_interactors(interactor_choices[current_interactor_idx].0);
-
     let next_interactor_image = Sprite::arrow_right();
 
     let mut viewport_scaling = Renderer::get_viewport_scaling();
@@ -219,22 +237,6 @@ pub fn launch(mut sk: Sk, _is_testing: bool, start_test: String) {
         Log::diag("XR_FB_render_model extension not available");
     }
 
-    // Activate simultaneous hand & controller
-    if simultaneous_hands_controllers_available {
-        Log::info("✅ Simultaneous hands and controllers tracking available");
-        if interactor_choices[current_interactor_idx].1 {
-            if resume_simultaneous_hands_and_controllers(sk.get_sk_info_clone(), true) {
-                Log::info("Simultaneous hands and controllers tracking enabled at start");
-            } else {
-                Log::err("❌ Failed to enable simultaneous hands and controllers tracking at start");
-                current_interactor_idx =
-                    (current_interactor_idx + interactor_choices.len() - 1) % interactor_choices.len();
-                Interaction::set_default_interactors(interactor_choices[current_interactor_idx].0);
-            }
-        }
-    } else {
-        Log::diag("Simultaneous hands and controllers tracking not available");
-    }
 
     let ui_text_style = Ui::get_text_style();
     ui_text_style.get_material().face_cull(Cull::Back);
