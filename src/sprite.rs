@@ -145,7 +145,7 @@ impl Sprite {
     /// * `sprite_type` - Should this sprite be atlased, or an individual image? Adding this as an atlased image is better for
     ///   performance, but will cause the atlas to be rebuilt! Images that take up too much space on the atlas, or might
     ///   be loaded or unloaded during runtime may be better as Single rather than Atlased!
-    ///   If None has default of Atlased.
+    ///   If None has default of Single.
     /// * `atlas_id` - The name of which atlas the sprite should belong to, this is only relevant if the SpriteType is
     ///   Atlased. If None has default of "default".
     ///
@@ -189,7 +189,7 @@ impl Sprite {
         sprite_type: Option<SpriteType>,
         atlas_id: Option<String>,
     ) -> Result<Sprite, StereoKitError> {
-        let sprite_type = sprite_type.unwrap_or(SpriteType::Atlased);
+        let sprite_type = sprite_type.unwrap_or(SpriteType::Single);
         let atlas_id = match atlas_id {
             Some(s) => s,
             None => "default".to_owned(),
@@ -208,7 +208,7 @@ impl Sprite {
     /// * `sprite_type` - Should this sprite be atlased, or an individual image? Adding this as an atlased image is
     ///   better for performance, but will cause the atlas to be rebuilt! Images that take up too much space on the
     ///   atlas, or might be loaded or unloaded during runtime may be better as Single rather than Atlased!
-    ///   If None has default of Atlased
+    ///   If None has default of Single.
     /// * `atlas_id` - The name of which atlas the sprite should belong to, this is only relevant if the SpriteType is
     ///   Atlased. If None has default of "default".
     ///
@@ -243,7 +243,7 @@ impl Sprite {
         sprite_type: Option<SpriteType>,
         atlas_id: Option<&str>,
     ) -> Result<Sprite, StereoKitError> {
-        let sprite_type = sprite_type.unwrap_or(SpriteType::Atlased);
+        let sprite_type = sprite_type.unwrap_or(SpriteType::Single);
         let atlas_id = match atlas_id {
             Some(s) => s.to_owned(),
             None => "default".to_owned(),
