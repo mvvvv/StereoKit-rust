@@ -48,7 +48,7 @@ use crate::{
     interactor::{InteractorController, InteractorHand},
     maths::Pose,
     prelude::*,
-    system::{Backend, BackendOpenXR, BackendXRType, Handed, Input, Interaction, Log},
+    system::{Backend, BackendOpenXR, BackendXRType, Handed, Input, InputHaptic, Interaction, Log},
 };
 
 /// Extension name constant for XR_META_detached_controllers
@@ -280,6 +280,11 @@ impl XrMetaDetachedControllersStepper {
         // Disable far interac since we provide our own ray-based interactors
         // Ui::enable_far_interact(false);
         Interaction::set_default_draw(false);
+
+        // We call the controller detached function to trigger the runtime to provide the detached pose if supported.
+        Input::haptic_pulse(InputHaptic::LController, 1.0, 0.5, 0.5);
+        Input::haptic_pulse(InputHaptic::RController, 1.0, 0.5, 0.5);
+
         true
     }
 
@@ -296,17 +301,17 @@ impl XrMetaDetachedControllersStepper {
 
     /// Draw controllers for a single hand based on current tracking state.
     ///
-    fn draw_hand_controller(&mut self, token: &MainThreadToken, hand: Handed) {
-        let controller = Input::controller(hand);
-        let hand_idx = hand as usize;
+    fn draw_hand_controller(&mut self, token: &MainThreadToken, handed: Handed) {
+        let controller = Input::controller(handed);
+        let hand_idx = handed as usize;
 
-        let is_detached = self.profile_state.as_ref().is_some_and(|state| state.is_detached(hand));
+        let is_detached = self.profile_state.as_ref().is_some_and(|state| state.is_detached(handed));
         if is_detached {
             // Controller is put down. Input::controller() now tracks the hand,
             // not the physical controller. Draw at the last pose from when it
             // was still held.
-            let pose = Input::get_controller_detached(hand);
-            Self::draw_controller_at_pose(token, hand, pose);
+            let pose = Input::get_controller_detached(handed);
+            Self::draw_controller_at_pose(token, handed, pose);
             if let Some(ref mut hand_interactor) = self.hand_interactors[hand_idx] {
                 hand_interactor.step();
                 hand_interactor.draw_ray(token);
@@ -314,7 +319,7 @@ impl XrMetaDetachedControllersStepper {
         } else {
             // Controller is held in hand — update saved pose and draw.
             if controller.is_tracked() {
-                Self::draw_controller_at_pose(token, hand, controller.pose);
+                Self::draw_controller_at_pose(token, handed, controller.pose);
                 // Controller-based hand simulation — step the controller interactor
                 // so it drives UI interaction via its aim ray, then draw the model.
                 if let Some(ref mut ctrl_interactor) = self.controller_interactors[hand_idx] {

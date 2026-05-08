@@ -2,7 +2,7 @@ use stereokit_rust::{
     font::Font,
     maths::{Matrix, Pose, Quat, Vec2, Vec3, units::CM},
     prelude::*,
-    system::{Handed, Input, Text, TextStyle},
+    system::{Handed, Input, InputButton, InputFloat, InputXY, Text, TextStyle},
     ui::{IdHashT, Ui, UiCut, UiSliderData, UiVisual},
     util::{
         Color128,
@@ -15,12 +15,20 @@ use stereokit_rust::{
 pub struct Input1 {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
-    pub window_demo_pose: Pose,
+
     pub demo_win_width: f32,
+
+    pub window_demo_pose: Pose,
     pub id_slider_left: String,
     id_slider_left_hash: IdHashT,
     pub id_slider_right: String,
     id_slider_right_hash: IdHashT,
+
+    pub window_demo_pose_old: Pose,
+    pub id_slider_left_old: String,
+    id_slider_left_old_hash: IdHashT,
+    pub id_slider_right_old: String,
+    id_slider_right_old_hash: IdHashT,
 
     pub text: String,
     pub text_style: TextStyle,
@@ -34,15 +42,22 @@ impl Default for Input1 {
         // Default slider IDs.
         let id_slider_left = "left sticker".into();
         let id_slider_right = "right sticker".into();
+        let id_slider_left_old = "left sticker old".into();
+        let id_slider_right_old = "right sticker old".into();
         Self {
             id: "Input1".to_string(),
             sk_info: None,
             window_demo_pose: Ui::popup_pose([0.0, 0.0, -0.1]),
+            window_demo_pose_old: Ui::popup_pose([-0.36, 0.0, -0.1]),
             demo_win_width: 30.0 * CM,
             id_slider_left_hash: Ui::stack_hash(&id_slider_left),
             id_slider_left,
             id_slider_right_hash: Ui::stack_hash(&id_slider_right),
             id_slider_right,
+            id_slider_left_old_hash: Ui::stack_hash(&id_slider_left_old),
+            id_slider_left_old,
+            id_slider_right_old_hash: Ui::stack_hash(&id_slider_right_old),
+            id_slider_right_old,
 
             text: "Input1".to_owned(), // Default text.
             text_style: Text::make_style(Font::default(), 0.3, RED),
@@ -60,6 +75,8 @@ impl Input1 {
         // Hash the slider IDs.
         self.id_slider_left_hash = Ui::stack_hash(&self.id_slider_left);
         self.id_slider_right_hash = Ui::stack_hash(&self.id_slider_right);
+        self.id_slider_left_old_hash = Ui::stack_hash(&self.id_slider_left_old);
+        self.id_slider_right_old_hash = Ui::stack_hash(&self.id_slider_right_old);
         true
     }
 
@@ -71,7 +88,121 @@ impl Input1 {
     /// This function creates a window with labels and visual representations of controller inputs,
     /// including stick positions, button states, trigger values, and grip values.
     fn draw(&mut self, token: &MainThreadToken) {
+        //--------New Window using Input::button, Input::float, and Input::xy--------
         Ui::window_begin("Input", &mut self.window_demo_pose, Some(Vec2::new(self.demo_win_width, 0.4)), None, None);
+
+        // Left
+        Ui::layout_push_cut(UiCut::Left, 0.14, true);
+        Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);
+        Ui::label("Left", None, false);
+        //let move_ctrler = Input::controller(Handed::Left);
+        let stick_vec2 = Input::xy(InputXY::LStick);
+        let slider_pt = stick_vec2 * Vec2 { x: 1.0, y: -1.0 };
+        let id_slider_hash = self.id_slider_left_hash;
+        let stick = Input::button(InputButton::LStick);
+        let stick_color: Color128 = if stick.is_active() { RED.into() } else { WHITE.into() };
+        Ui::push_tint(stick_color.to_gamma());
+        draw_slider(slider_pt, id_slider_hash);
+        Ui::pop_tint();
+
+        // Button Y
+        Ui::hspace(0.07);
+        let y = Input::button(InputButton::LX2);
+        let y_color: Color128 = if y.is_active() { RED.into() } else { WHITE.into() };
+        Ui::push_tint(y_color.to_gamma());
+        Ui::button_at("Y", [0.06, -0.22, 0.005], [0.03, 0.03]);
+        Ui::pop_tint();
+
+        // Button X
+        Ui::hspace(0.02);
+        let x = Input::button(InputButton::LX1);
+        let x_color: Color128 = if x.is_active() { RED.into() } else { WHITE.into() };
+        Ui::push_tint(x_color.to_gamma());
+        Ui::button_at("X", [0.10, -0.25, 0.005], [0.03, 0.03]);
+        Ui::pop_tint();
+
+        // Trigger
+        Ui::vspace(0.07);
+        Ui::hspace(0.01);
+        let trigger = Input::float(InputFloat::LTrigger);
+        let trigger_color: Color128 = if trigger > 0.0 { RED.into() } else { WHITE.into() };
+        let trigger_text = format!("L_Trigger: {trigger:.2}");
+        Ui::push_tint(trigger_color.to_gamma());
+        Ui::button_at(trigger_text, [0.12, -0.295, 0.005], [0.10, 0.03]);
+        Ui::pop_tint();
+
+        // Grip
+        Ui::hspace(0.1);
+        let grip = Input::float(InputFloat::LGrip);
+        let grip_color: Color128 = if grip > 0.0 { RED.into() } else { WHITE.into() };
+        Ui::push_tint(grip_color.to_gamma());
+        let grip_text = format!("L_Grip: {grip:.2}");
+        Ui::button_at(grip_text, [0.10, -0.34, 0.005], [0.09, 0.03]);
+        Ui::pop_tint();
+
+        Ui::layout_pop();
+
+        // Right
+        Ui::layout_push_cut(UiCut::Right, 0.14, true);
+        Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);
+        Ui::label("Right", None, false);
+        //let move_ctrler = Input::controller(Handed::Right);
+        let stick_vec2 = Input::xy(InputXY::RStick);
+        let slider_pt = stick_vec2 * Vec2 { x: 1.0, y: -1.0 };
+        let id_slider_hash = self.id_slider_right_hash;
+        let stick = Input::button(InputButton::RStick);
+        let stick_color: Color128 = if stick.is_active() { RED.into() } else { WHITE.into() };
+        Ui::push_tint(stick_color.to_gamma());
+        draw_slider(slider_pt, id_slider_hash);
+        Ui::pop_tint();
+
+        // Button B
+        Ui::hspace(0.07);
+        let b = Input::button(InputButton::RX2);
+        let b_color: Color128 = if b.is_active() { RED.into() } else { WHITE.into() };
+        Ui::push_tint(b_color.to_gamma());
+        Ui::button_at("B", [-0.03, -0.22, 0.005], [0.03, 0.03]);
+        Ui::pop_tint();
+
+        // Button A
+        Ui::hspace(0.02);
+        let a = Input::button(InputButton::RX1);
+        let a_color: Color128 = if a.is_active() { RED.into() } else { WHITE.into() };
+        Ui::push_tint(a_color.to_gamma());
+        Ui::button_at("A", [-0.07, -0.25, 0.005], [0.03, 0.03]);
+        Ui::pop_tint();
+
+        // Trigger
+        Ui::vspace(0.07);
+        Ui::hspace(0.01);
+        let trigger = Input::float(InputFloat::RTrigger);
+        let trigger_color: Color128 = if trigger > 0.0 { RED.into() } else { WHITE.into() };
+        let trigger_text = format!("R_Trigger: {trigger:.2}");
+        Ui::push_tint(trigger_color.to_gamma());
+        Ui::button_at(trigger_text, [-0.02, -0.295, 0.005], [0.10, 0.03]);
+        Ui::pop_tint();
+
+        // Grip
+        Ui::hspace(0.1);
+        let grip = Input::float(InputFloat::RGrip);
+        let grip_color: Color128 = if grip > 0.0 { RED.into() } else { WHITE.into() };
+        Ui::push_tint(grip_color.to_gamma());
+        let grip_text = format!("R_Grip: {grip:.2}");
+        Ui::button_at(grip_text, [-0.01, -0.34, 0.005], [0.09, 0.03]);
+        Ui::pop_tint();
+
+        Ui::layout_pop();
+
+        Ui::window_end();
+
+        //--------Old Window for comparison--------
+        Ui::window_begin(
+            "Input::controller (Old)",
+            &mut self.window_demo_pose_old,
+            Some(Vec2::new(self.demo_win_width, 0.4)),
+            None,
+            None,
+        );
 
         // Left
         Ui::layout_push_cut(UiCut::Left, 0.14, true);
@@ -79,7 +210,7 @@ impl Input1 {
         Ui::label("Left", None, false);
         let move_ctrler = Input::controller(Handed::Left);
         let slider_pt = move_ctrler.stick * Vec2 { x: 1.0, y: -1.0 };
-        let id_slider_hash = self.id_slider_left_hash;
+        let id_slider_hash = self.id_slider_left_old_hash;
         let stick = move_ctrler.stick_click;
         let stick_color: Color128 = if stick.is_active() { RED.into() } else { WHITE.into() };
         Ui::push_tint(stick_color.to_gamma());
@@ -129,7 +260,7 @@ impl Input1 {
         Ui::label("Right", None, false);
         let move_ctrler = Input::controller(Handed::Right);
         let slider_pt = move_ctrler.stick * Vec2 { x: 1.0, y: -1.0 };
-        let id_slider_hash = self.id_slider_right_hash;
+        let id_slider_hash = self.id_slider_right_old_hash;
         let stick = move_ctrler.stick_click;
         let stick_color: Color128 = if stick.is_active() { RED.into() } else { WHITE.into() };
         Ui::push_tint(stick_color.to_gamma());

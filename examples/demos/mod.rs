@@ -1,4 +1,5 @@
 use hand_menu_radial0::HandMenuRadial0;
+use haptic1::Haptic1;
 use input1::Input1;
 use stereokit_rust::prelude::*;
 
@@ -14,6 +15,7 @@ pub mod compute1;
 pub mod font1;
 pub mod hand_menu_radial0;
 pub mod hand_menu_radial1;
+pub mod haptic1;
 pub mod input1;
 pub mod interactor1;
 pub mod layers1;
@@ -127,6 +129,10 @@ impl Test {
             Test::new("Input1", |sk| {
                 sk.send_event(StepperAction::add_default::<Input1>("Input1"));
                 "Input1".to_string()
+            }),
+            Test::new("Haptic1", |sk| {
+                sk.send_event(StepperAction::add_default::<Haptic1>("Haptic1"));
+                "Haptic1".to_string()
             }),
             Test::new("Interactor1", |sk| {
                 sk.send_event(StepperAction::add_default::<Interactor1>("Interactor1"));

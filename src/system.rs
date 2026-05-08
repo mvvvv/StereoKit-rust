@@ -2531,7 +2531,7 @@ bitflags::bitflags! {
     /// or just an educated guess.
     /// <https://stereokit.net/Pages/StereoKit/PoseState.html>
     ///
-    /// see also [`Pointer::get_pose`] [`Input::pose`] [`Input::hand`] [`Hand::get`] [`HandJoint`]
+    /// see also [`Input::pose_state`] [`Input::hand`] [`Hand::get`] [`HandJoint`]
     #[derive(Debug, Copy, Clone, PartialEq, Eq)]
     #[repr(transparent)]
     pub struct PoseState: u32 {
@@ -3941,6 +3941,36 @@ impl Input {
     ///
     /// Returns the most recent pose of the given type.
     /// see also [`input_pose`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::{Input, InputPose}, maths::Pose};
+    ///
+    /// // On PC test, these will be the same IDENTITY pose, as long as we don't have any XR input sources!
+    /// let eyes = Input::pose(InputPose::Eyes);
+    /// # assert_eq!(eyes, Pose::IDENTITY);
+    ///
+    /// let lgrip = Input::pose(InputPose::LGrip);
+    /// # assert_eq!(lgrip, Pose::IDENTITY);
+    /// let lpalm = Input::pose(InputPose::LPalm);
+    /// # assert_eq!(lpalm, Pose::IDENTITY);
+    /// let laim  = Input::pose(InputPose::LAim);
+    /// # assert_eq!(laim, Pose::IDENTITY);
+    /// let ldetached_pose = Input::pose(InputPose::LDetached);
+    /// # assert_eq!(ldetached_pose, Pose::IDENTITY);
+    ///
+    /// let rgrip = Input::pose(InputPose::RGrip);
+    /// # assert_eq!(rgrip, Pose::IDENTITY);
+    /// let rpalm = Input::pose(InputPose::RPalm);
+    /// # assert_eq!(rpalm, Pose::IDENTITY);
+    /// let raim  = Input::pose(InputPose::RAim);
+    /// # assert_eq!(raim, Pose::IDENTITY);
+    /// let rdetached_pose = Input::pose(InputPose::RDetached);
+    /// # assert_eq!(rdetached_pose, Pose::IDENTITY);
+    ///
+    /// assert_eq!(InputPose::Max as i32, 9);
+    /// # sk::Sk::shutdown();
+    /// ```
     pub fn pose(pose_type: InputPose) -> Pose {
         unsafe { input_pose(pose_type) }
     }
@@ -3952,6 +3982,34 @@ impl Input {
     ///
     /// Returns the current tracking state for the given pose type.
     /// see also [`input_pose_state`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::{Input, InputPose, PoseState}};
+    ///
+    /// // On PC tests, these will be Lost, as long as we don't have any XR input sources!
+    /// let eyes_tracked = Input::pose_state(InputPose::Eyes);
+    /// assert_eq!(eyes_tracked, PoseState::Lost);
+    /// assert_eq!(eyes_tracked.is_all(), false);
+    /// assert_eq!(eyes_tracked.is_empty(), true);
+    /// assert_eq!(eyes_tracked.is_pos_inferred(), false);
+    /// assert_eq!(eyes_tracked.is_pos_known(), false);
+    /// assert_eq!(eyes_tracked.is_rot_inferred(), false);
+    /// assert_eq!(eyes_tracked.is_rot_known(), false);
+    /// assert_eq!(eyes_tracked.is_tracked(), false);
+    ///
+    /// let lgrip_tracked = Input::pose_state(InputPose::LGrip);
+    /// assert_eq!(lgrip_tracked, PoseState::Lost);
+    /// assert_eq!(lgrip_tracked.is_all(), false);
+    /// assert_eq!(lgrip_tracked.is_empty(), true);
+    /// assert_eq!(lgrip_tracked.is_pos_inferred(), false);
+    /// assert_eq!(lgrip_tracked.is_pos_known(), false);
+    /// assert_eq!(lgrip_tracked.is_rot_inferred(), false);
+    /// assert_eq!(lgrip_tracked.is_rot_known(), false);
+    /// assert_eq!(lgrip_tracked.is_tracked(), false);
+    ///
+    /// # Sk::shutdown();
+    /// ```
     pub fn pose_state(pose_type: InputPose) -> PoseState {
         unsafe { input_pose_state(pose_type) }
     }
@@ -3963,6 +4021,22 @@ impl Input {
     ///
     /// Returns a value from 0 to 1 representing how far the input is pressed.
     /// see also [`input_float`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::{Input, InputFloat}};
+    ///
+    /// // On PC tests, these will be 0.0, as long as we don't have any XR input sources!
+    /// let ltrigger = Input::float(InputFloat::LTrigger);
+    /// # assert_eq!(ltrigger, 0.0);
+    /// let rtrigger = Input::float(InputFloat::RTrigger);
+    /// # assert_eq!(rtrigger, 0.0);
+    /// let lgrip = Input::float(InputFloat::LGrip);
+    /// # assert_eq!(lgrip, 0.0);
+    /// let rgrip = Input::float(InputFloat::RGrip);
+    /// # assert_eq!(rgrip, 0.0);
+    /// # Sk::shutdown();
+    /// ```
     pub fn float(float_type: InputFloat) -> f32 {
         unsafe { input_float(float_type) }
     }
@@ -3975,6 +4049,35 @@ impl Input {
     /// Returns a BtnState describing whether the button is active, just became active, or just became
     /// inactive this frame.
     /// see also [`input_button`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::{Input, InputButton, BtnState}};
+    ///
+    /// // On PC tests, these will be Inactive, as long as we don't have any XR input sources!
+    /// let l_aim_button = Input::button(InputButton::LAimReady);
+    /// # assert_eq!(l_aim_button, BtnState::Inactive);
+    /// let l_stick_button = Input::button(InputButton::LStick);
+    /// # assert_eq!(l_stick_button, BtnState::Inactive);
+    /// let l_x1_button = Input::button(InputButton::LX1);
+    /// # assert_eq!(l_x1_button, BtnState::Inactive);
+    /// let l_x2_button = Input::button(InputButton::LX2);
+    /// # assert_eq!(l_x2_button, BtnState::Inactive);
+    /// let l_menu_button = Input::button(InputButton::LMenu);
+    /// # assert_eq!(l_menu_button, BtnState::Inactive);
+    ///
+    /// let r_aim_button = Input::button(InputButton::RAimReady);
+    /// # assert_eq!(r_aim_button, BtnState::Inactive);
+    /// let r_stick_button = Input::button(InputButton::RStick);
+    /// # assert_eq!(r_stick_button, BtnState::Inactive);
+    /// let r_x1_button = Input::button(InputButton::RX1);
+    /// # assert_eq!(r_x1_button, BtnState::Inactive);
+    /// let r_x2_button = Input::button(InputButton::RX2);
+    /// # assert_eq!(r_x2_button, BtnState::Inactive);
+    /// let r_menu_button = Input::button(InputButton::RMenu);
+    /// # assert_eq!(r_menu_button, BtnState::Inactive);
+    /// # Sk::shutdown();
+    /// ```
     pub fn button(button_type: InputButton) -> BtnState {
         unsafe { input_button(button_type) }
     }
@@ -3986,6 +4089,19 @@ impl Input {
     ///
     /// Returns a Vec2 representing the current stick position.
     /// see also [`input_xy`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::{Input, InputXY}, maths::Vec2};
+    ///
+    /// // On PC tests, these will be (0, 0), as long as we don't have any XR input sources!
+    /// let l_stick = Input::xy(InputXY::LStick);
+    /// assert_eq!(l_stick, Vec2::ZERO);
+    ///
+    /// let r_stick = Input::xy(InputXY::RStick);
+    /// assert_eq!(r_stick, Vec2::ZERO);
+    /// # Sk::shutdown();
+    /// ```
     pub fn xy(xy_type: InputXY) -> Vec2 {
         unsafe { input_xy(xy_type) }
     }
@@ -4000,6 +4116,21 @@ impl Input {
     ///
     /// Returns a flags value with one bit per supported playback mode, or None if the output isn't currently bound.
     /// see also [`input_haptic_caps`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::{Input, InputHaptic, InputHapticCaps}};
+    ///
+    /// // On PC tests, these will be None, as long as we don't have any XR input sources!
+    /// let left_caps = Input::haptic_caps(InputHaptic::LController);
+    /// assert_eq!(left_caps, InputHapticCaps::None);
+    /// assert_ne!(left_caps, InputHapticCaps::Waveform | InputHapticCaps::Curve | InputHapticCaps::Pulse);
+    ///
+    /// let right_caps = Input::haptic_caps(InputHaptic::RController);
+    /// assert_eq!(right_caps, InputHapticCaps::None);
+    /// assert_ne!(right_caps, InputHapticCaps::Waveform | InputHapticCaps::Curve | InputHapticCaps::Pulse);
+    /// # Sk::shutdown();
+    /// ```
     pub fn haptic_caps(haptic_type: InputHaptic) -> InputHapticCaps {
         unsafe { input_haptic_caps(haptic_type) }
     }
@@ -4012,6 +4143,18 @@ impl Input {
     ///
     /// Returns a preferred sample rate in Hz, or 0 if unspecified.
     /// see also [`input_haptic_preferred_rate`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::{Input, InputHaptic}};
+    ///
+    /// // On PC tests, these will be 0.0, as long as we don't have any XR input sources!
+    /// let left_rate = Input::haptic_preferred_rate(InputHaptic::LController);
+    /// assert_eq!(left_rate, 0.0);
+    /// let right_rate = Input::haptic_preferred_rate(InputHaptic::RController);
+    /// assert_eq!(right_rate, 0.0);
+    /// # Sk::shutdown();
+    /// ```
     pub fn haptic_preferred_rate(haptic_type: InputHaptic) -> f32 {
         unsafe { input_haptic_preferred_rate(haptic_type) }
     }
@@ -4027,7 +4170,23 @@ impl Input {
     /// * `duration_seconds` - How long to vibrate, in seconds. Pass 0 or negative for the shortest pulse the device
     ///   supports.
     ///
-    /// see also [`input_haptic_pulse`]
+    /// see also [`input_haptic_pulse`] [`Input::haptic_stop`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::{Input, InputHaptic}};
+    ///
+    /// number_of_steps = 1000;
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter == 0 {
+    ///         Input::haptic_pulse(InputHaptic::LController, 150.0, 0.5, 0.2);
+    ///         Input::haptic_pulse(InputHaptic::RController, 110.0, 0.4, 0.2);
+    ///     } else if iter == number_of_steps {
+    ///         Input::haptic_stop(InputHaptic::Max);
+    ///     }
+    /// );
+    /// # Sk::shutdown();
+    /// ```
     pub fn haptic_pulse(haptic_type: InputHaptic, frequency: f32, amplitude: f32, duration_seconds: f32) {
         unsafe { input_haptic_pulse(haptic_type, frequency, amplitude, duration_seconds) }
     }
@@ -4052,6 +4211,38 @@ impl Input {
     /// device, or 0 if no chunk was in flight. This is reported at chunk granularity, not at the granularity of
     /// [`Input::haptic_waveform`] calls — a single [`Input::haptic_waveform`] call may span multiple internal chunks.
     /// see also [`input_haptic_waveform`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::{Input, InputHaptic}, maths::Vec2, util::Time};
+    ///
+    /// let sample_rate = 60.0;
+    /// let duration_seconds = 1.0;
+    /// let num_samples = (sample_rate * duration_seconds) as usize;
+    /// let mut samples = vec![0.0; num_samples];
+    /// for i in 0..num_samples {
+    ///     let t = i as f32 / sample_rate;
+    ///     samples[i] = (t * 440.0 * std::f32::consts::TAU).sin()
+    ///                     * Vec2::dot([1.0, 0.5].into(),[(t * 0.5).sin(), (t * 0.25).sin()].into());
+    /// }
+    /// let mut next_time = duration_seconds;
+    ///
+    /// // On PC tests, consumed will be 0, as long as we don't have any XR input sources to consume haptics!
+    /// number_of_steps = 1000;
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter == 0 {
+    ///         let consumed = Input::haptic_waveform(InputHaptic::LController, &samples, sample_rate, false);
+    ///         assert_eq!(consumed, 0);
+    ///     } else if iter == number_of_steps {
+    ///         Input::haptic_stop(InputHaptic::LController);
+    ///     } else if Time::get_totalf() > next_time {
+    ///         next_time += duration_seconds;
+    ///         let consumed = Input::haptic_waveform(InputHaptic::LController, &samples, sample_rate, true);
+    ///         assert_eq!(consumed, 0);
+    ///     }
+    /// );
+    /// # Sk::shutdown();
+    /// ```
     pub fn haptic_waveform(haptic_type: InputHaptic, samples: &[f32], sample_rate_hz: f32, append: bool) -> i32 {
         let mut consumed = 0;
         unsafe {
@@ -4076,6 +4267,30 @@ impl Input {
     /// * `sample_rate_hz` - The sample rate the envelope was authored at.
     ///
     /// see also [`input_haptic_curve`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::{Input, InputHaptic}};
+    ///
+    /// let sample_rate = 60.0;
+    /// let duration_seconds = 1.0;
+    /// let num_samples = (sample_rate * duration_seconds) as usize;
+    /// let mut amplitudes = vec![0.0; num_samples];
+    /// for i in 0..num_samples {
+    ///     let t = i as f32 / sample_rate;
+    ///     amplitudes[i] = (t * 0.25).sin() * 0.5 + 0.5;
+    /// }
+    ///
+    /// // On PC tests, these will be no-ops, as long as we don't have any XR input sources to consume haptics!
+    /// number_of_steps = 1000;
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter == 0 {
+    ///         Input::haptic_curve(InputHaptic::LController, &amplitudes, sample_rate);
+    ///     } else if iter == number_of_steps {
+    ///         Input::haptic_stop(InputHaptic::LController);
+    ///     }
+    /// );
+    /// # Sk::shutdown();
     pub fn haptic_curve(haptic_type: InputHaptic, amplitudes: &[f32], sample_rate_hz: f32) {
         unsafe {
             input_haptic_curve(haptic_type, amplitudes.as_ptr(), amplitudes.len() as i32, sample_rate_hz);
@@ -4087,6 +4302,7 @@ impl Input {
     /// * `haptic_type` - Which haptic output to stop.
     ///
     /// see also [`input_haptic_stop`]
+    /// see example in [`Input::haptic_pulse`] [`Input::haptic_waveform`] [`Input::haptic_curve`]
     pub fn haptic_stop(haptic_type: InputHaptic) {
         unsafe { input_haptic_stop(haptic_type) }
     }
