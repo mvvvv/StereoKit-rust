@@ -1,9 +1,13 @@
 use stereokit_rust::{
     maths::{Pose, Vec2},
     prelude::*,
-    system::{Input, InputHaptic},
-    ui::{Ui, UiCut},
-    util::{Color128, named_colors::RED},
+    sprite::Sprite,
+    system::{Input, InputHaptic, InputHapticCaps},
+    ui::{Ui, UiBtnLayout, UiCut},
+    util::{
+        Color128,
+        named_colors::{GREEN, RED},
+    },
 };
 
 /// A basic Stepper to test haptic feedback. We must ensure the StereoKit code stays in the main thread.
@@ -14,6 +18,8 @@ pub struct Haptic1 {
     sk_info: Option<Rc<RefCell<SkInfo>>>,
 
     pub window_demo_pose: Pose,
+    sprite_on: Option<Sprite>,
+    sprite_off: Option<Sprite>,
 }
 
 unsafe impl Send for Haptic1 {}
@@ -21,7 +27,13 @@ unsafe impl Send for Haptic1 {}
 /// This code may be called in some threads, so no StereoKit code
 impl Default for Haptic1 {
     fn default() -> Self {
-        Self { id: "Haptic1".to_string(), sk_info: None, window_demo_pose: Ui::popup_pose([0.0, 0.0, -0.1]) }
+        Self {
+            id: "Haptic1".to_string(),
+            sk_info: None,
+            window_demo_pose: Ui::popup_pose([0.0, 0.0, -0.1]),
+            sprite_on: None,
+            sprite_off: None,
+        }
     }
 }
 
@@ -29,11 +41,19 @@ impl Default for Haptic1 {
 impl Haptic1 {
     /// Called from IStepper::initialize here you can abort the initialization by returning false
     fn start(&mut self) -> bool {
+        self.sprite_on = Some(Sprite::toggle_on());
+        self.sprite_off = Some(Sprite::close());
         true
     }
 
     /// Called from IStepper::step, here you can check the event report
     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
+
+    fn button_indicator(&self, text: &str, has_cap: bool) -> bool {
+        let color_tint: Color128 = if has_cap { GREEN.into() } else { RED.into() };
+        let sprite = if has_cap { self.sprite_on.as_ref().unwrap() } else { self.sprite_off.as_ref().unwrap() };
+        Ui::button_img(text, sprite, Some(UiBtnLayout::Left), None, Some(color_tint.to_gamma()))
+    }
 
     /// Called from IStepper::step, after check_event here you can draw your UI and scene
     fn draw(&mut self, _token: &MainThreadToken) {
@@ -48,12 +68,16 @@ impl Haptic1 {
             Ui::layout_push_cut(cut, 0.18, true);
             Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);
             Ui::label(label, None, false);
+
             Ui::push_id(id);
             Ui::hseparator();
-            if Ui::button("Pulse", None) {
+
+            let caps = Input::haptic_caps(haptic);
+
+            if self.button_indicator("Pulse", caps.contains(InputHapticCaps::Pulse)) {
                 Input::haptic_pulse(haptic, 1.0, 0.5, 0.5);
             }
-            if Ui::button("Waveform", None) {
+            if self.button_indicator("Waveform", caps.contains(InputHapticCaps::Waveform)) {
                 let sample_rate = 60.0;
                 let duration_seconds = 1.0;
                 let num_samples = (sample_rate * duration_seconds) as usize;
@@ -65,7 +89,7 @@ impl Haptic1 {
                 }
                 Input::haptic_waveform(haptic, &samples, sample_rate, false);
             }
-            if Ui::button("Curve", None) {
+            if self.button_indicator("Curve", caps.contains(InputHapticCaps::Curve)) {
                 let sample_rate = 60.0;
                 let duration_seconds = 1.0;
                 let num_samples = (sample_rate * duration_seconds) as usize;
