@@ -3753,7 +3753,7 @@ impl Matrix {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::{Vec3, Matrix}, mesh::Mesh, material::Material,
-    ///                      util::Time};
+    ///                      util::Time, system::Assets};
     ///
     /// let mesh = Mesh::cube();
     /// let material = Material::pbr();
@@ -3761,6 +3761,7 @@ impl Matrix {
     /// let mut transform = Matrix::IDENTITY;
     /// let mut position = Vec3::ZERO;
     /// let delta_scale = 2.0;
+    /// Assets::block_for_priority(i32::MAX);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     position += Vec3::NEG_Z * Time::get_stepf();

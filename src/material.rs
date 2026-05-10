@@ -380,11 +380,15 @@ impl Material {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{util::named_colors,material::Material, shader::Shader};
+    /// use stereokit_rust::{util::named_colors, material::Material, shader::Shader,
+    ///                      system::Assets};
     ///
     /// let material = Material::new(Shader::pbr(), Some("my_material"));
+    /// Assets::block_for_priority(i32::MAX);
+    ///
     /// let mut material_red = material.clone_ref();
     /// material_red.id("my_red_material").color_tint(named_colors::RED);
+    /// Assets::block_for_priority(i32::MAX);
     ///
     /// assert_eq!(&material.get_all_param_info().get_color("color"),
     ///            &material_red.get_all_param_info().get_color("color"));

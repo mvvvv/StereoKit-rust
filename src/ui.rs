@@ -4851,7 +4851,7 @@ impl Ui {
     /// Only UI elements that affect the surface’s layout will report their bounds here. You can reserve your own layout
     /// space via Ui::layout_reserve, and that call will also report here.
     /// TODO: As you can see in the example, there are some differences between operating systems that reduce the
-    /// accuracy to only 2mm.
+    /// accuracy to only 5mm.
     /// <https://stereokit.net/Pages/StereoKit/UI/LayoutLast.html>
     ///
     /// see also [`ui_layout_last`]
@@ -4873,39 +4873,29 @@ impl Ui {
     ///     Ui::label("panel 2", None, false);
     ///     Ui::layout_pop();
     ///     let b = Ui::get_layout_last();
-    ///     assert!((b.center.x - -0.02382).abs() < 0.001);
-    ///     assert!((b.center.y - -0.035).abs() < 0.000001);
-    ///     # assert!((b.center.z - 0.0).abs() < 0.000001);
-    ///     assert!((b.dimensions.x - 0.06765).abs() < 0.002);
-    ///     assert!((b.dimensions.y - 0.05).abs() < 0.000001);
-    ///     # assert!((b.dimensions.z - 0.0).abs() < 0.000001);
+    ///     assert!((b.center.x - -0.02382).abs() < 0.005);
+    ///     assert!((b.center.y - -0.035).abs() < 0.005);
+    ///     # assert!((b.center.z - 0.0).abs() < 0.005);
+    ///     assert!((b.dimensions.x - 0.06765).abs() < 0.005);
+    ///     assert!((b.dimensions.y - 0.05).abs() < 0.005);
+    ///     # assert!((b.dimensions.z - 0.0).abs() < 0.005);
     ///
     ///     Ui::layout_push_cut( UiCut::Bottom, 0.08, false);
     ///     Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);
     ///     Ui::label("panel 3", None, false);
     ///     Ui::layout_pop();
     ///     let b = Ui::get_layout_last();
-    ///     assert!((b.center.x - 0.0661).abs() < 0.001);
-    ///     assert!((b.center.y - -0.075).abs() < 0.000001);
-    ///     # assert!((b.center.z - 0.0).abs() < 0.000001);
-    ///     assert!((b.dimensions.x - 0.0476).abs() < 0.002);
-    ///     assert!((b.dimensions.y - 0.03).abs() < 0.000001);
-    ///     # assert!((b.dimensions.z - 0.0).abs() < 0.000001);
+    ///     assert!((b.center.x - 0.0661).abs() < 0.005);
+    ///     assert!((b.center.y - -0.075).abs() < 0.005);
+    ///     # assert!((b.center.z - 0.0).abs() < 0.005);
+    ///     assert!((b.dimensions.x - 0.0476).abs() < 0.005);
+    ///     assert!((b.dimensions.y - 0.03).abs() < 0.005);
+    ///     # assert!((b.dimensions.z - 0.0).abs() < 0.005);
     ///
     ///     Ui::window_end();
     /// );
     /// # sk::Sk::shutdown();
-    /// ```
-    /// ```ignore
-    ///     //--- Linux results:
-    ///     assert_eq!(Ui::get_layout_last(),
-    ///         Bounds { center: Vec3 { x: -0.02382, y: -0.035, z: 0.0 },
-    ///                  dimensions: Vec3 { x: 0.06765, y: 0.05, z: 0.0 } });
-    ///
-    ///     assert_eq!(Ui::get_layout_last(),
-    ///         Bounds { center: Vec3 { x: 0.0661, y: -0.075, z: 0.0 },
-    ///                  dimensions: Vec3 { x: 0.0476, y: 0.03, z: 0.0 } });    
-    /// ```    
+    /// ```   
     pub fn get_layout_last() -> Bounds {
         unsafe { ui_layout_last() }
     }

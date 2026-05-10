@@ -168,16 +168,24 @@ impl Permission {
     /// use stereokit_rust::permission::{Permission, PermissionType, PermissionState};
     ///
     /// // Check if we need to request microphone permission
+    ///
     /// if Permission::get_state(PermissionType::Microphone) == PermissionState::Capable {
-    ///     println!("Requesting microphone permission...");
-    ///     Permission::request(PermissionType::Microphone);
-    ///     panic!("On desktop, Microphone permission is automatic");
+    ///     if Permission::is_interactive(PermissionType::Microphone) {
+    ///         println!("Microphone permission requires user approval. We can't request it in an unit test");
+    ///     } else {
+    ///         println!("Requesting microphone permission...");
+    ///         Permission::request(PermissionType::Microphone);
+    ///     }
     /// }
     ///
     /// // Check for eye tracking permission
     /// if Permission::get_state(PermissionType::EyeInput) == PermissionState::Capable {
-    ///     Permission::request(PermissionType::EyeInput);
-    ///     panic!("On desktop, EyeInput permission is automatic");
+    ///     if Permission::is_interactive(PermissionType::EyeInput) {
+    ///         println!("Eye Input permission requires user approval. We can't request it in an unit test");
+    ///     } else {
+    ///         println!("Requesting Eye Input permission...");
+    ///         Permission::request(PermissionType::EyeInput);
+    ///     }
     /// }
     /// # sk::Sk::shutdown();
     /// ```

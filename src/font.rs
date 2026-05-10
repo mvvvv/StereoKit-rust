@@ -226,11 +226,11 @@ impl Font {
     /// use stereokit_rust::{maths:: Matrix, font::Font, system::Text, util::named_colors};
     ///
     /// let font_family = if cfg!(windows) {
-    ///     "Arial, Helvetica, Verdana, Geneva, Tahoma, sans-serif;"
+    ///     "Arial, \"Helvetica Neue\", Helvetica, sans-serif"
     /// } else if cfg!(target_os = "macos") {
-    ///     "Helvetica, Geneva, Arial, sans-serif;"
+    ///     "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif"
     /// } else {
-    ///     "FreeSans, Liberation Sans, Nimbus Sans L, DejaVu Sans, Bitstream Vera Sans, sans-serif;"
+    ///     "FreeSans, \"Liberation Sans\", \"Nimbus Sans L\", \"DejaVu Sans\", sans-serif"
     /// };
     ///
     /// let text_font = Font::from_family(&font_family).unwrap_or_default();

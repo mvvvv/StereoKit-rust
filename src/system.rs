@@ -5940,7 +5940,7 @@ impl Renderer {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{system::Renderer, maths::{Pose, Matrix}, tex::Tex,
+    /// use stereokit_rust::{system::{Assets, Renderer}, maths::{Pose, Matrix}, tex::Tex,
     ///                      mesh::Mesh, material::Material, util::named_colors};
     ///
     /// let sun = Mesh::generate_sphere(7.0, None);
@@ -5956,6 +5956,7 @@ impl Renderer {
     /// let transform_plane = Matrix::t([0.0, -0.55, 0.0]);
     ///
     /// let camera_pose = Pose::new([0.0, 0.0, 1.0], None);
+    /// Assets::block_for_priority(i32::MAX);
     ///
     /// number_of_steps = 20;
     /// filename_scr = "screenshots/screenshot_capture.jpeg";
@@ -5966,7 +5967,7 @@ impl Renderer {
     ///
     ///     Renderer::add_mesh(token, &plane, &material, transform_plane,
     ///         None, None);
-    ///
+    ///     
     ///     Renderer::screenshot_capture( token,
     ///         move |dots, width, height| {
     ///             let tex = Tex::find("CAPTURE_TEXTURE_ID").ok();
@@ -6033,7 +6034,7 @@ impl Renderer {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{system::Renderer, maths::{Vec3, Quat, Matrix},
+    /// use stereokit_rust::{system::{Assets, Renderer}, maths::{Vec3, Quat, Matrix},
     ///                      tex::{Tex, TexType, TexFormat},
     ///                      mesh::Mesh, material::Material, util::named_colors};
     ///
@@ -6051,6 +6052,7 @@ impl Renderer {
     ///
     /// let camera = Matrix::t_r(Vec3::Z * 2.0, Quat::look_at(Vec3::Z, Vec3::ZERO, None));
     /// let projection = Matrix::perspective(90.0, 1.0, 0.1, 20.0);
+    /// Assets::block_for_priority(i32::MAX);
     ///
     /// number_of_steps = 200;
     /// filename_scr = "screenshots/screenshot_viewpoint.jpeg";

@@ -1580,7 +1580,7 @@ impl Sk {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{mesh::Mesh, material::Material, maths::{Vec3, Matrix},
-    ///                      sk::{QuitReason}, framework::SkClosures};
+    ///                      sk::{QuitReason}, framework::SkClosures, system::Assets};
     /// use std::thread;
     /// use std::time::Duration;
     ///
@@ -1596,6 +1596,7 @@ impl Sk {
     ///
     /// let mesh = Mesh::generate_cube(Vec3::ONE, None);
     /// let material = Material::pbr();
+    /// Assets::block_for_priority(i32::MAX);
     ///
     /// SkClosures::new(sk, |_sk, token|  {
     ///     // Only the thread can stop this test

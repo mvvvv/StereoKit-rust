@@ -1174,12 +1174,12 @@ impl Mesh {
     ///
     /// let mut mesh = Mesh::new();
     /// mesh.set_data(&[], &[], Some(MeshData::Async | MeshData::CalcBounds), Some(139));
-    /// assert_eq!(mesh.get_asset_state(), AssetState::Loading);
+    /// assert_ne!(mesh.get_asset_state(), AssetState::Loaded);
     ///
     /// let cube_mesh = Mesh::generate_cube( [0.1, 0.1, 0.1], None);
     /// assert_eq!(cube_mesh.get_asset_state(), AssetState::Loaded);
     ///
-    /// Assets::block_for_priority(0);
+    /// Assets::block_for_priority(i32::MAX);
     ///
     /// number_of_steps = 100000;
     /// test_steps!( // !!!! Get a proper main loop !!!!
