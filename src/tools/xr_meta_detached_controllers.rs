@@ -11,13 +11,9 @@
 //! The stepper draws controller models at the appropriate poses:
 //! - When a controller is attached (held by the user, `HandSource::Simulated`): draws the controller
 //!   model at the regular controller pose from `Input::controller()`.
-//! - When a controller is detached (articulated hand active, detached profile detected): draws the
+//! - When a controller is detached (articulated hand active, detached state detected): draws the
 //!   controller model at the detached controller pose.
 //! - When hand tracking is active with no controller: does not draw a controller.
-//!
-//! Detection of the detached state is done by querying the OpenXR interaction profiles for the
-//! `/user/detached_controller_meta/left` and `/user/detached_controller_meta/right` top-level
-//! paths, mirroring the logic of `oxri_update_profiles()` in the C++ StereoKit code.
 //!
 //! ## Detached controller pose
 //!
@@ -36,13 +32,6 @@
 //!
 //! See also the StereoKit C++ implementation:
 //! <https://github.com/StereoKit/StereoKit/pull/1272>
-
-use std::ffi::CString;
-
-use openxr_sys::{
-    Handle, Instance, InteractionProfileState, Path, Result as XrResult, Session,
-    pfn::{GetCurrentInteractionProfile, StringToPath},
-};
 
 use crate::{
     interactor::{InteractorController, InteractorHand},
@@ -83,105 +72,12 @@ pub fn is_meta_detached_controllers_available() -> bool {
         && BackendOpenXR::ext_enabled(XR_META_DETACHED_CONTROLLERS_EXTENSION_NAME)
 }
 
-/// Holds the state needed for querying OpenXR interaction profiles to detect detached controllers.
-///
-/// This mirrors the logic of `oxri_update_profiles()` in the C++ StereoKit code:
-/// for each detached controller top-level path, we call `xrGetCurrentInteractionProfile`
-/// to check whether the runtime has activated a profile for that path.
-struct DetachedProfileState {
-    xr_get_current_interaction_profile: GetCurrentInteractionProfile,
-    session: Session,
-    detached_path_left: Path,
-    detached_path_right: Path,
-    left_detached: bool,
-    right_detached: bool,
-}
-
-impl DetachedProfileState {
-    /// Initialize the profile detection state.
-    ///
-    /// Converts the detached controller top-level path strings to XrPath values
-    /// and stores function pointers for querying interaction profiles.
-    ///
-    /// Returns `None` if the required OpenXR functions are not available or if the
-    /// path strings cannot be converted (e.g., the extension is not enabled by the runtime).
-    fn new() -> Option<Self> {
-        let xr_string_to_path = BackendOpenXR::get_function::<StringToPath>("xrStringToPath")?;
-        let xr_get_current_interaction_profile =
-            BackendOpenXR::get_function::<GetCurrentInteractionProfile>("xrGetCurrentInteractionProfile")?;
-
-        let instance = Instance::from_raw(BackendOpenXR::instance());
-        let session = Session::from_raw(BackendOpenXR::session());
-
-        let left_str = CString::new("/user/detached_controller_meta/left").ok()?;
-        let right_str = CString::new("/user/detached_controller_meta/right").ok()?;
-
-        let mut path_left = Path::NULL;
-        let mut path_right = Path::NULL;
-
-        unsafe {
-            if xr_string_to_path(instance, left_str.as_ptr(), &mut path_left) != XrResult::SUCCESS {
-                Log::diag("Failed to convert /user/detached_controller_meta/left to XrPath");
-                return None;
-            }
-            if xr_string_to_path(instance, right_str.as_ptr(), &mut path_right) != XrResult::SUCCESS {
-                Log::diag("Failed to convert /user/detached_controller_meta/right to XrPath");
-                return None;
-            }
-        }
-
-        Some(Self {
-            xr_get_current_interaction_profile,
-            session,
-            detached_path_left: path_left,
-            detached_path_right: path_right,
-            left_detached: false,
-            right_detached: false,
-        })
-    }
-
-    /// Query the OpenXR runtime to update the detached state for both hands.
-    ///
-    /// This mirrors the relevant part of `oxri_update_profiles()`:
-    /// for each `/user/detached_controller_meta/*` top-level path, call
-    /// `xrGetCurrentInteractionProfile` and check whether a non-null profile is active.
-    fn update_profiles(&mut self) {
-        self.left_detached = self.check_profile_active(self.detached_path_left);
-        self.right_detached = self.check_profile_active(self.detached_path_right);
-    }
-
-    /// Check whether the given top-level path has an active interaction profile.
-    fn check_profile_active(&self, path: Path) -> bool {
-        let mut profile_state = InteractionProfileState {
-            ty: InteractionProfileState::TYPE,
-            next: std::ptr::null_mut(),
-            interaction_profile: Path::NULL,
-        };
-
-        let result = unsafe { (self.xr_get_current_interaction_profile)(self.session, path, &mut profile_state) };
-
-        result == XrResult::SUCCESS && profile_state.interaction_profile != Path::NULL
-    }
-
-    /// Returns whether the given hand has a detached controller.
-    fn is_detached(&self, hand: Handed) -> bool {
-        match hand {
-            Handed::Left => self.left_detached,
-            Handed::Right => self.right_detached,
-            _ => false,
-        }
-    }
-}
-
 /// IStepper implementation for drawing controllers (detached or attached).
 ///
 /// This stepper manages the rendering of controller models based on the current hand/controller
 /// tracking state. It supports both the standard case (controllers held in hand) and the
 /// detached case (controllers tracked separately from hand tracking via
 /// `XR_META_detached_controllers`).
-///
-/// Detection of the detached state is performed each frame by querying OpenXR interaction
-/// profiles for `/user/detached_controller_meta/left|right`.
 ///
 /// ### Rendering logic per hand:
 /// 1. **Articulated hand + detached controller**: The hand mesh is drawn by StereoKit natively.
@@ -215,11 +111,6 @@ pub struct XrMetaDetachedControllersStepper {
     enabled: bool,
     shutdown_completed: bool,
 
-    /// OpenXR profile detection state. We'll be initialized at start()
-    profile_state: Option<DetachedProfileState>,
-
-    /// was the controller detached in the previous frame? Used to detect changes in state and avoid unnecessary updates.
-
     /// Interactors for left and right. Created on start, stepped each frame.
     controller_interactors: [Option<InteractorController>; 2],
     hand_interactors: [Option<InteractorHand>; 2],
@@ -233,8 +124,6 @@ impl Default for XrMetaDetachedControllersStepper {
             enabled: true,
             shutdown_completed: false,
 
-            profile_state: None,
-
             controller_interactors: [None, None],
             hand_interactors: [None, None],
         }
@@ -244,7 +133,7 @@ impl Default for XrMetaDetachedControllersStepper {
 unsafe impl Send for XrMetaDetachedControllersStepper {}
 
 impl XrMetaDetachedControllersStepper {
-    /// Called from IStepper::initialize — sets up OpenXR profile detection.
+    /// Called from IStepper::initialize.
     fn start(&mut self) -> bool {
         if !is_meta_detached_controllers_available() {
             Log::warn("XR_META_detached_controllers extension is not available");
@@ -259,19 +148,6 @@ impl XrMetaDetachedControllersStepper {
             return false;
         }
 
-        match DetachedProfileState::new() {
-            Some(state) => {
-                self.profile_state = Some(state);
-            }
-            None => {
-                Log::err(
-                    "XR_META_detached_controllers: could not initialize profile detection \
-                     (xrStringToPath or xrGetCurrentInteractionProfile unavailable).",
-                );
-                return false;
-            }
-        }
-
         // Create controller interactors for both hands
         self.controller_interactors =
             [Some(InteractorController::new(Handed::Left)), Some(InteractorController::new(Handed::Right))];
@@ -280,10 +156,6 @@ impl XrMetaDetachedControllersStepper {
         // Disable far interac since we provide our own ray-based interactors
         // Ui::enable_far_interact(false);
         Interaction::set_default_draw(false);
-
-        // We call the controller detached function to trigger the runtime to provide the detached pose if supported.
-        Input::haptic_pulse(InputHaptic::LController, 1.0, 0.5, 0.5);
-        Input::haptic_pulse(InputHaptic::RController, 1.0, 0.5, 0.5);
 
         true
     }
@@ -301,11 +173,12 @@ impl XrMetaDetachedControllersStepper {
 
     /// Draw controllers for a single hand based on current tracking state.
     ///
-    fn draw_hand_controller(&mut self, token: &MainThreadToken, handed: Handed) {
+    fn draw_hand_controller(&mut self, token: &MainThreadToken, handed: Handed, haptic_type: InputHaptic) {
         let controller = Input::controller(handed);
         let hand_idx = handed as usize;
 
-        let is_detached = self.profile_state.as_ref().is_some_and(|state| state.is_detached(handed));
+        //let is_detached = self.profile_state.as_ref().is_some_and(|state| state.is_detached(handed));
+        let is_detached = Input::haptic_caps(haptic_type).is_empty();
         if is_detached {
             // Controller is put down. Input::controller() now tracks the hand,
             // not the physical controller. Draw at the last pose from when it
@@ -337,14 +210,8 @@ impl XrMetaDetachedControllersStepper {
 
     /// Called from IStepper::step — queries profiles and draws controllers each frame.
     fn draw(&mut self, token: &MainThreadToken) {
-        // Update the detached profile state by querying the OpenXR interaction profiles,
-        // mirroring oxri_update_profiles() from the C++ code.
-        if let Some(ref mut state) = self.profile_state {
-            state.update_profiles();
-        }
-
-        self.draw_hand_controller(token, Handed::Left);
-        self.draw_hand_controller(token, Handed::Right);
+        self.draw_hand_controller(token, Handed::Left, InputHaptic::LController);
+        self.draw_hand_controller(token, Handed::Right, InputHaptic::RController);
     }
 
     /// Clean up controller interactors on shutdown.
