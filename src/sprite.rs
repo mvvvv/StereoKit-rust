@@ -505,6 +505,7 @@ impl Sprite {
     ///
     /// width_scr = 48; height_scr = 48; fov_scr = 65.0;
     /// filename_scr = "screenshots/sprite_radio_on.jpeg";
+    /// # system::Assets::block_for_priority(i32::MAX);
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
     /// );
@@ -530,6 +531,7 @@ impl Sprite {
     ///
     /// width_scr = 48; height_scr = 48; fov_scr = 65.0;
     /// filename_scr = "screenshots/sprite_radio_off.jpeg";
+    /// # system::Assets::block_for_priority(i32::MAX);
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
     /// );
@@ -556,6 +558,7 @@ impl Sprite {
     ///
     /// width_scr = 48; height_scr = 48; fov_scr = 65.0;
     /// filename_scr = "screenshots/sprite_toggle_on.jpeg";
+    /// # system::Assets::block_for_priority(i32::MAX);
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
     /// );
@@ -582,6 +585,7 @@ impl Sprite {
     ///
     /// width_scr = 48; height_scr = 48; fov_scr = 65.0;
     /// filename_scr = "screenshots/sprite_toggle_off.jpeg";
+    /// # system::Assets::block_for_priority(i32::MAX);
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
     /// );
@@ -606,6 +610,7 @@ impl Sprite {
     ///
     /// width_scr = 48; height_scr = 48; fov_scr = 65.0;
     /// filename_scr = "screenshots/sprite_arrow_left.jpeg";
+    /// # system::Assets::block_for_priority(i32::MAX);
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
     /// );
@@ -630,6 +635,7 @@ impl Sprite {
     ///
     /// width_scr = 48; height_scr = 48; fov_scr = 65.0;
     /// filename_scr = "screenshots/sprite_arrow_right.jpeg";
+    /// # system::Assets::block_for_priority(i32::MAX);
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
     /// );
@@ -654,6 +660,7 @@ impl Sprite {
     ///
     /// width_scr = 48; height_scr = 48; fov_scr = 65.0;
     /// filename_scr = "screenshots/sprite_arrow_up.jpeg";
+    /// # system::Assets::block_for_priority(i32::MAX);
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
     /// );
@@ -678,6 +685,7 @@ impl Sprite {
     ///
     /// width_scr = 48; height_scr = 48; fov_scr = 65.0;
     /// filename_scr = "screenshots/sprite_arrow_down.jpeg";
+    /// # system::Assets::block_for_priority(i32::MAX);
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
     /// );
@@ -703,6 +711,7 @@ impl Sprite {
     ///
     /// width_scr = 48; height_scr = 48; fov_scr = 65.0;
     /// filename_scr = "screenshots/sprite_backspace.jpeg";
+    /// # system::Assets::block_for_priority(i32::MAX);
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
     /// );
@@ -728,6 +737,7 @@ impl Sprite {
     ///
     /// width_scr = 48; height_scr = 48; fov_scr = 65.0;
     /// filename_scr = "screenshots/sprite_shift.jpeg";
+    /// # system::Assets::block_for_priority(i32::MAX);
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
     /// );
@@ -752,6 +762,7 @@ impl Sprite {
     ///
     /// width_scr = 48; height_scr = 48; fov_scr = 65.0;
     /// filename_scr = "screenshots/sprite_close.jpeg";
+    /// # system::Assets::block_for_priority(i32::MAX);
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
     /// );
@@ -775,6 +786,7 @@ impl Sprite {
     ///
     /// width_scr = 48; height_scr = 48; fov_scr = 65.0;
     /// filename_scr = "screenshots/sprite_list.jpeg";
+    /// # system::Assets::block_for_priority(i32::MAX);
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
     /// );
@@ -798,6 +810,7 @@ impl Sprite {
     ///
     /// width_scr = 48; height_scr = 48; fov_scr = 65.0;
     /// filename_scr = "screenshots/sprite_grid.jpeg";
+    /// # system::Assets::block_for_priority(i32::MAX);
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
     /// );

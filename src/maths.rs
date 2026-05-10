@@ -2752,7 +2752,7 @@ impl Quat {
     ///
     /// let quat = Quat::from_angles(90.0, 0.0, 0.0);
     /// let angles = quat.to_angles();
-    /// assert!(angles == [1.5707964, 0.0, 0.0]);
+    /// assert_eq!(angles, [1.5707964, 0.0, 0.0]);
     /// ```
     #[inline]
     pub fn to_angles(&self) -> [f32; 3] {

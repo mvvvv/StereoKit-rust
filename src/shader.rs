@@ -245,6 +245,7 @@ impl Shader {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{shader::Shader};
     /// let shader = Shader::blit();
+    /// # system::Assets::block_for_priority(i32::MAX);
     /// assert_eq!(shader.get_id(), "default/shader_blit");
     /// # sk::Sk::shutdown();
     /// ```
@@ -259,6 +260,7 @@ impl Shader {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{shader::Shader};
     /// let shader = Shader::light_map();
+    /// # system::Assets::block_for_priority(i32::MAX);
     /// assert_eq!(shader.get_id(), "default/shader_lightmap");
     /// # sk::Sk::shutdown();
     /// ```
@@ -275,6 +277,7 @@ impl Shader {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{shader::Shader};
     /// let shader = Shader::unlit();
+    /// # system::Assets::block_for_priority(i32::MAX);
     /// assert_eq!(shader.get_id(), "default/shader_unlit");
     /// # sk::Sk::shutdown();
     /// ```
@@ -292,6 +295,7 @@ impl Shader {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{shader::Shader};
     /// let shader = Shader::unlit_clip();
+    /// # system::Assets::block_for_priority(i32::MAX);
     /// assert_eq!(shader.get_id(), "default/shader_unlit_clip");
     /// # sk::Sk::shutdown();
     /// ```
@@ -306,6 +310,7 @@ impl Shader {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{shader::Shader};
     /// let shader = Shader::font();
+    /// # system::Assets::block_for_priority(i32::MAX);
     /// assert_eq!(shader.get_id(), "default/shader_font");
     /// # sk::Sk::shutdown();
     /// ```
@@ -320,6 +325,7 @@ impl Shader {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{shader::Shader};
     /// let shader = Shader::equirect();
+    /// # system::Assets::block_for_priority(i32::MAX);
     /// assert_eq!(shader.get_id(), "default/shader_equirect");
     /// # sk::Sk::shutdown();
     /// ```
@@ -336,6 +342,7 @@ impl Shader {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{shader::Shader};
     /// let shader = Shader::ui();
+    /// # system::Assets::block_for_priority(i32::MAX);
     /// assert_eq!(shader.get_id(), "default/shader_ui");
     /// # sk::Sk::shutdown();
     /// ```
@@ -355,6 +362,7 @@ impl Shader {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{shader::Shader};
     /// let shader = Shader::ui_box();
+    /// # system::Assets::block_for_priority(i32::MAX);
     /// assert_eq!(shader.get_id(), "default/shader_ui_box");
     /// # sk::Sk::shutdown();
     /// ```
@@ -369,6 +377,7 @@ impl Shader {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{shader::Shader};
     /// let shader = Shader::ui_quadrant();
+    /// # system::Assets::block_for_priority(i32::MAX);
     /// assert_eq!(shader.get_id(), "default/shader_ui_quadrant");
     /// # sk::Sk::shutdown();
     /// ```
@@ -383,6 +392,7 @@ impl Shader {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{shader::Shader};
     /// let shader = Shader::sky();
+    /// # system::Assets::block_for_priority(i32::MAX);
     /// assert_eq!(shader.get_id(), "default/shader_sky");
     /// # sk::Sk::shutdown();
     /// ```
@@ -398,6 +408,7 @@ impl Shader {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{shader::Shader};
     /// let shader = Shader::pbr();
+    /// # system::Assets::block_for_priority(i32::MAX);
     /// assert_eq!(shader.get_id(), "default/shader_pbr");
     /// # sk::Sk::shutdown();
     /// ```
@@ -413,6 +424,7 @@ impl Shader {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{shader::Shader};
     /// let shader = Shader::pbr_clip();
+    /// # system::Assets::block_for_priority(i32::MAX);
     /// assert_eq!(shader.get_id(), "default/shader_pbr_clip");
     /// # sk::Sk::shutdown();
     /// ```

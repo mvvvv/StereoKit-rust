@@ -75,8 +75,6 @@ jobs:
       timeout-minutes: 15
       run: |
         $failed = $false
-        cargo test --doc mesh;        if ($LASTEXITCODE -ne 0) { $failed = $true }
-        cargo test --doc model;       if ($LASTEXITCODE -ne 0) { $failed = $true }
         cargo test --doc maths;       if ($LASTEXITCODE -ne 0) { $failed = $true }
         cargo test --doc ui;          if ($LASTEXITCODE -ne 0) { $failed = $true }
         cargo test --doc framework;   if ($LASTEXITCODE -ne 0) { $failed = $true }
@@ -95,6 +93,8 @@ jobs:
         cargo test --doc compute;     if ($LASTEXITCODE -ne 0) { $failed = $true }
         cargo test --doc util;        if ($LASTEXITCODE -ne 0) { $failed = $true }
         cargo test --doc sk;          if ($LASTEXITCODE -ne 0) { $failed = $true }
+        cargo test --doc mesh;        if ($LASTEXITCODE -ne 0) { $failed = $true }
+        cargo test --doc model;       if ($LASTEXITCODE -ne 0) { $failed = $true }
         if ($failed) { exit 1 }
 
     - name: Build no-event-loop
@@ -175,9 +175,7 @@ jobs:
         export DYLD_LIBRARY_PATH=$(brew --prefix molten-vk)/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}
         export MVK_CONFIG_LOG_LEVEL=0
         failed=0
-        timeout 1m cargo test --doc mesh        -- --nocapture --test-threads=1 || failed=1
-        timeout 1m cargo test --doc model       -- --nocapture --test-threads=1 || failed=1
-        timeout 1m cargo test --doc maths       -- --nocapture --test-threads=1 || failed=1
+        timeout 3m cargo test --doc maths       -- --nocapture --test-threads=1 || failed=1
         timeout 1m cargo test --doc ui          -- --nocapture --test-threads=1 || failed=1
         timeout 1m cargo test --doc framework   -- --nocapture --test-threads=1 || failed=1
         timeout 1m cargo test --doc tools       -- --nocapture --test-threads=1 || failed=1
@@ -195,6 +193,8 @@ jobs:
         timeout 1m cargo test --doc compute     -- --nocapture --test-threads=1 || failed=1
         timeout 1m cargo test --doc util        -- --nocapture --test-threads=1 || failed=1
         timeout 1m cargo test --doc sk          -- --nocapture --test-threads=1 || failed=1
+        timeout 1m cargo test --doc mesh        -- --nocapture --test-threads=1 || failed=1
+        timeout 1m cargo test --doc model       -- --nocapture --test-threads=1 || failed=1
         exit $failed
 
     - name: Build no-event-loop
