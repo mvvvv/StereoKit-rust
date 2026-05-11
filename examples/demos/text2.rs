@@ -20,7 +20,6 @@ pub struct Text2 {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
 
-    pub transform: Matrix,
     pub window_demo_pose: Pose,
     pub demo_win_width: f32,
     font_selected: u8,
@@ -30,10 +29,12 @@ pub struct Text2 {
     scroll2: Vec2,
     scroll3: Vec2,
     scroll4: Vec2,
-    text: String,
-    text_style: TextStyle,
     radio_on: Sprite,
     radio_off: Sprite,
+
+    text: String,
+    text_style: TextStyle,
+    pub transform: Matrix,
 }
 
 unsafe impl Send for Text2 {}
@@ -45,7 +46,6 @@ impl Default for Text2 {
             id: "Text2".to_string(),
             sk_info: None,
 
-            transform: Matrix::t_r((Vec3::NEG_Z * -2.5) + Vec3::Y, Quat::from_angles(0.0, 180.0, 0.0)),
             window_demo_pose: Pose::new(Vec3::new(0.0, 1.5, -1.3), Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0)))),
             demo_win_width: 40.0 * CM,
             font_selected: 1,
@@ -55,10 +55,12 @@ impl Default for Text2 {
             scroll2: Vec2::ZERO,
             scroll3: Vec2::ZERO,
             scroll4: Vec2::ZERO,
-            text: "Text2".to_owned(),
-            text_style: Text::make_style(Font::default(), 0.3, RED),
             radio_on: Sprite::radio_on(),
             radio_off: Sprite::radio_off(),
+
+            text: "Text2".to_owned(),
+            text_style: Text::make_style(Font::default(), 0.3, RED),
+            transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, Quat::from_angles(0.0, 180.0, 0.0)),
         }
     }
 }

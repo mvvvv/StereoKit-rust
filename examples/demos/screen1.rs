@@ -1,4 +1,12 @@
-use stereokit_rust::{framework::Screen, prelude::*, system::Input, tex::Tex, util::Time};
+use stereokit_rust::{
+    font::Font,
+    framework::Screen,
+    maths::{Matrix, Quat, Vec3},
+    prelude::*,
+    system::{Input, Text, TextStyle},
+    tex::Tex,
+    util::{Time, named_colors::RED},
+};
 
 /// Demo that displays a screen cycling through JPEG textures from assets/textures
 #[derive(IStepper)]
@@ -11,6 +19,10 @@ pub struct Screen1 {
     current_texture_index: usize,
     last_switch_time: f32,
     switch_interval: f32, // seconds between automatic switches
+
+    pub text: String,
+    pub text_style: TextStyle,
+    pub transform: Matrix,
 }
 
 unsafe impl Send for Screen1 {}
@@ -53,6 +65,9 @@ impl Default for Screen1 {
             current_texture_index: 0,
             last_switch_time: 0.0,
             switch_interval: 3.0, // Change image every 3 seconds
+            text: "Screen1".to_owned(),
+            text_style: Text::make_style(Font::default(), 0.3, RED),
+            transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, Quat::from_angles(0.0, 180.0, 0.0)),
         }
     }
 }
@@ -82,6 +97,8 @@ impl Screen1 {
                 Log::info(format!("Screen touched at: {:?}x{:?}", touched.0, touched.1));
             }
         }
+
+        Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
     }
 
     // Called by derive macro for event handling

@@ -7,11 +7,14 @@
 
 use stereokit_rust::{
     compute::{Compute, ComputeBuffer, ComputeBufferType},
+    font::Font,
     maths::{Matrix, Pose, Quat, Vec2, Vec3, Vec4},
     prelude::*,
     sprite::{Sprite, SpriteType},
+    system::{Text, TextStyle},
     tex::{Tex, TexFormat, TexType},
     ui::Ui,
+    util::named_colors::RED,
 };
 
 /// Number of cells per side of the simulation grid.
@@ -52,6 +55,10 @@ struct ComputeReaction {
     pub diff_a: f32,
     pub diff_b: f32,
     pub timestep: f32,
+
+    pub text: String,
+    pub text_style: TextStyle,
+    pub transform: Matrix,
 }
 
 impl ComputeReaction {
@@ -130,6 +137,10 @@ impl ComputeReaction {
             diff_a: 1.0,
             diff_b: 0.5,
             timestep: 1.0,
+
+            text: "Compute1".to_string(),
+            text_style: Text::make_style(Font::default(), 0.3, RED),
+            transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, Quat::from_angles(0.0, 180.0, 0.0)),
         };
         this.set_params();
         Ok(this)
@@ -178,7 +189,7 @@ impl ComputeReaction {
     }
 
     /// Advance the simulation and render the UI panel (image + controls).
-    fn draw(&mut self, _token: &MainThreadToken) {
+    fn draw(&mut self, token: &MainThreadToken) {
         const STEPS_PER_FRAME: u32 = 10;
         if self.active {
             for _ in 0..STEPS_PER_FRAME {
@@ -215,6 +226,8 @@ impl ComputeReaction {
             self.reset();
         }
         Ui::window_end();
+
+        Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
     }
 }
 

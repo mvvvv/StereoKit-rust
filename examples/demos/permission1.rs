@@ -4,12 +4,13 @@
 use std::{cell::RefCell, rc::Rc};
 use stereokit_rust::{
     font::Font,
+    maths::{Matrix, Quat, Vec3},
     permission::{Permission, PermissionState, PermissionType},
     prelude::*,
-    system::{Align, TextStyle},
+    system::{Align, Text, TextStyle},
     tools::os_api::{SystemAction, system_deep_link},
     ui::{Ui, UiPad},
-    util::named_colors::CYAN,
+    util::named_colors::{CYAN, RED},
 };
 
 /// Demo that shows permission handling functionality
@@ -21,6 +22,10 @@ pub struct Permission1 {
     title: String,
     description: String,
     style_description: TextStyle,
+
+    pub text: String,
+    pub text_style: TextStyle,
+    pub transform: Matrix,
 }
 
 unsafe impl Send for Permission1 {}
@@ -37,7 +42,21 @@ desktop code!"
             .to_string();
 
         let style_description = TextStyle::from_font(Font::default(), 0.03, CYAN);
-        Self { id: "Permission1".to_string(), sk_info: None, title, description, style_description }
+        Self {
+            id: "Permission1".to_string(),
+            sk_info: None,
+
+            title,
+            description,
+            style_description,
+
+            text: "Permission1".to_owned(), // Default text.
+            text_style: Text::make_style(Font::default(), 0.3, RED),
+            transform: Matrix::t_r(
+                (Vec3::NEG_Z * 2.5) + Vec3::Y, //
+                Quat::from_angles(0.0, 180.0, 0.0),
+            ),
+        }
     }
 }
 
@@ -48,7 +67,7 @@ impl Permission1 {
     }
 
     /// Called by derive macro during IStepper::step
-    fn draw(&mut self, _token: &MainThreadToken) {
+    fn draw(&mut self, token: &MainThreadToken) {
         Ui::window_begin_auto(&self.title, Some([0.4, 0.0].into()), None, None);
 
         Ui::push_text_style(self.style_description);
@@ -96,6 +115,8 @@ impl Permission1 {
             Log::info(format!("Open VR Shell App Settings - Result: {:?}", result));
         }
         Ui::window_end();
+
+        Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
     }
 
     /// Called by derive macro for event handling

@@ -40,7 +40,6 @@ pub struct Text1 {
     sk_info: Option<Rc<RefCell<SkInfo>>>,
     shutdown_completed: bool,
 
-    pub transform: Matrix,
     pub window_demo_pose: Pose,
     pub demo_win_width: f32,
     pub android_keyboard: bool,
@@ -53,11 +52,13 @@ pub struct Text1 {
     font_selected: u8,
     text_context: TextContext,
     text_style_test: TextStyle,
-    text: String,
-    text_style: TextStyle,
     next_value: Sprite,
     radio_on: Sprite,
     radio_off: Sprite,
+
+    text: String,
+    text_style: TextStyle,
+    pub transform: Matrix,
 }
 
 unsafe impl Send for Text1 {}
@@ -69,7 +70,6 @@ impl Default for Text1 {
             sk_info: None,
             shutdown_completed: false,
 
-            transform: Matrix::t_r((Vec3::NEG_Z * -2.5) + Vec3::Y, Quat::from_angles(0.0, 180.0, 0.0)),
             window_demo_pose: Pose::new(Vec3::new(0.0, 1.5, -1.3), Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0)))),
             demo_win_width: 80.0 * CM,
             android_keyboard: false,
@@ -81,12 +81,14 @@ impl Default for Text1 {
             text_sample: String::from("😃‣‣‣‣😃"),
             font_selected: 1,
             text_context: TextContext::Text,
-            text_style_test: Text::make_style(Font::default(), 0.05, WHITE),
-            text: String::with_capacity(2048),
-            text_style: Text::make_style(Font::default(), 0.3, RED),
             next_value: Sprite::arrow_right(),
             radio_on: Sprite::radio_on(),
             radio_off: Sprite::radio_off(),
+            text_style_test: Text::make_style(Font::default(), 0.05, WHITE),
+
+            text: "text1".to_owned(),
+            text_style: Text::make_style(Font::default(), 0.3, RED),
+            transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, Quat::from_angles(0.0, 180.0, 0.0)),
         }
     }
 }

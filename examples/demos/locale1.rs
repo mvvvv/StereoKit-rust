@@ -181,9 +181,9 @@ impl Default for Locale1 {
             text_context: TextContext::Text,
             text_style_test: Text::make_style(Font::default(), 0.025, WHITE),
 
-            text: String::with_capacity(256),
+            text: "locale1".to_owned(),
             text_style: Text::make_style(Font::default(), 0.3, RED),
-            transform: Matrix::t_r((Vec3::NEG_Z * -2.5) + Vec3::Y, Quat::from_angles(0.0, 180.0, 0.0)),
+            transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, Quat::from_angles(0.0, 180.0, 0.0)),
         }
     }
 }

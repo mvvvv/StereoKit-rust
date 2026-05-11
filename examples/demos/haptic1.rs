@@ -1,8 +1,9 @@
 use stereokit_rust::{
-    maths::{Pose, Vec2},
+    font::Font,
+    maths::{Matrix, Pose, Quat, Vec2, Vec3},
     prelude::*,
     sprite::Sprite,
-    system::{Input, InputHaptic, InputHapticCaps},
+    system::{Input, InputHaptic, InputHapticCaps, Text, TextStyle},
     ui::{Ui, UiBtnLayout, UiCut},
     util::{
         Color128,
@@ -20,6 +21,10 @@ pub struct Haptic1 {
     pub window_demo_pose: Pose,
     sprite_on: Option<Sprite>,
     sprite_off: Option<Sprite>,
+
+    pub text: String,
+    pub text_style: TextStyle,
+    pub transform: Matrix,
 }
 
 unsafe impl Send for Haptic1 {}
@@ -30,9 +35,17 @@ impl Default for Haptic1 {
         Self {
             id: "Haptic1".to_string(),
             sk_info: None,
+
             window_demo_pose: Ui::popup_pose([0.0, 0.0, -0.1]),
             sprite_on: None,
             sprite_off: None,
+
+            text: "Haptic1".to_owned(), // Default text.
+            text_style: Text::make_style(Font::default(), 0.3, RED),
+            transform: Matrix::t_r(
+                (Vec3::NEG_Z * 2.5) + Vec3::Y, //
+                Quat::from_angles(0.0, 180.0, 0.0),
+            ),
         }
     }
 }
@@ -56,7 +69,7 @@ impl Haptic1 {
     }
 
     /// Called from IStepper::step, after check_event here you can draw your UI and scene
-    fn draw(&mut self, _token: &MainThreadToken) {
+    fn draw(&mut self, token: &MainThreadToken) {
         Ui::window_begin("Haptic Demos", &mut self.window_demo_pose, Some(Vec2::new(0.40, 0.25)), None, None);
 
         let controllers = [
@@ -117,5 +130,7 @@ impl Haptic1 {
         }
 
         Ui::window_end();
+
+        Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
     }
 }

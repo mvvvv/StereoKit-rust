@@ -1,7 +1,10 @@
 use stereokit_rust::{
-    maths::{Pose, Quat, Vec2, Vec3, units::CM},
+    font::Font,
+    maths::{Matrix, Pose, Quat, Vec2, Vec3, units::CM},
     prelude::*,
+    system::{Text, TextStyle},
     ui::{Ui, UiConfirm, UiCut, UiNotify},
+    util::named_colors::RED,
 };
 
 /// Demo showcasing all slider variants: hslider, hslider_f64, hslider_at, hslider_at_f64,
@@ -34,6 +37,10 @@ pub struct Ui3 {
     // vslider_at values
     vat_f32: f32,
     vat_f64: f64,
+
+    pub text: String,
+    pub text_style: TextStyle,
+    pub transform: Matrix,
 }
 
 unsafe impl Send for Ui3 {}
@@ -62,6 +69,10 @@ impl Default for Ui3 {
 
             vat_f32: 0.5,
             vat_f64: 0.5,
+
+            text: "Ui3".to_string(),
+            text_style: Text::make_style(Font::default(), 0.3, RED),
+            transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, Quat::from_angles(0.0, 180.0, 0.0)),
         }
     }
 }
@@ -73,7 +84,7 @@ impl Ui3 {
 
     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
-    fn draw(&mut self, _token: &MainThreadToken) {
+    fn draw(&mut self, token: &MainThreadToken) {
         // 50 cm wide window: right ~23 cm for vsliders, left remainder for hsliders
         Ui::window_begin("Sliders", &mut self.window_pose, Some(Vec2::new(50.0, 0.0) * CM), None, None);
 
@@ -177,5 +188,7 @@ impl Ui3 {
         Ui::layout_reserve(Vec2::new(0.0, 1.5 * CM), false, 0.0);
 
         Ui::window_end();
+
+        Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
     }
 }
