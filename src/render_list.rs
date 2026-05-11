@@ -173,6 +173,7 @@ impl RenderList {
     ///
     /// render_list.add_mesh(Mesh::cube(), Material::unlit(), Matrix::IDENTITY, Color128::WHITE, None);
     /// assert_eq!(render_list.get_count(), 1);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn new() -> Self {
@@ -194,6 +195,7 @@ impl RenderList {
     ///
     /// let same_list = RenderList::find("my_render_list").expect("my_render_list should be found");
     /// assert_eq!(render_list, same_list);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn find<S: AsRef<str>>(id: S) -> Result<RenderList, StereoKitError> {
@@ -219,6 +221,7 @@ impl RenderList {
     ///
     /// let same_list = render_list.clone_ref();
     /// assert_eq!(render_list, same_list);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn clone_ref(&self) -> RenderList {
@@ -242,6 +245,7 @@ impl RenderList {
     /// render_list.id("my_render_list");
     ///
     /// assert_eq!(render_list.get_id(), "my_render_list");
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
@@ -271,6 +275,7 @@ impl RenderList {
     /// render_list.clear();
     /// assert_eq!(render_list.get_count(), 0);
     /// assert_eq!(render_list.get_prev_count(), 1);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn clear(&mut self) -> &mut Self {
@@ -556,6 +561,7 @@ impl RenderList {
     /// let primary_list = RenderList::primary();
     /// assert_eq!   (primary_list.get_id(),"sk/render/primary_renderlist");
     /// assert_eq!   (primary_list.get_count(), 0);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn primary() -> Self {
@@ -629,6 +635,7 @@ impl RenderList {
     ///
     /// render_list.add_mesh(Mesh::cube(), Material::unlit(), Matrix::IDENTITY, Color128::WHITE, None);
     /// assert_eq!(render_list.get_count(), 1);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_count(&self) -> i32 {
@@ -656,6 +663,7 @@ impl RenderList {
     /// render_list.clear();
     /// assert_eq!(render_list.get_count(), 0);
     /// assert_eq!(render_list.get_prev_count(), 1);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_prev_count(&self) -> i32 {

@@ -89,6 +89,7 @@ impl Default for Shader {
     /// use stereokit_rust::{shader::Shader};
     /// let shader = Shader::default();
     /// assert_eq!(shader.get_id(), "default/shader");
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     fn default() -> Self {
@@ -110,6 +111,7 @@ impl Shader {
     /// let shader_data = std::include_bytes!("../assets/shaders/brick_pbr.hlsl.sks");
     /// let shader = Shader::from_memory(shader_data).unwrap_or_default();
     /// assert_eq!(shader.get_name(), "the_name_of_brick_pbr");
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn from_memory(data: &[u8]) -> Result<Shader, StereoKitError> {
@@ -156,6 +158,7 @@ impl Shader {
     /// let shader_again = Shader::find("my_brick_shader");
     /// assert!(shader_again.is_ok(), "Failed to find shader");
     /// assert_eq!(shader_again.unwrap_or_default().get_id(), shader.get_id());
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn find<S: AsRef<str>>(id: S) -> Result<Shader, StereoKitError> {
@@ -182,6 +185,7 @@ impl Shader {
     /// let shader_again = shader.clone_ref();
     /// assert_eq!(shader_again.get_id(), "my_brick_shader");
     /// assert_eq!(shader_again, shader);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn clone_ref(&self) -> Shader {
@@ -203,6 +207,7 @@ impl Shader {
     ///                              .expect("Brick shader should be there");
     /// shader.id("my_brick_shader");
     /// assert_eq!(shader.get_id(), "my_brick_shader");
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
@@ -232,6 +237,7 @@ impl Shader {
     /// let shader = Shader::from_file("shaders/brick_pbr.hlsl.sks")
     ///                              .expect("Brick shader should be there");
     /// assert_eq!(shader.get_name(), "the_name_of_brick_pbr");
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_name(&self) -> &str {
@@ -247,6 +253,7 @@ impl Shader {
     /// let shader = Shader::blit();
     /// # system::Assets::block_for_priority(i32::MAX);
     /// assert_eq!(shader.get_id(), "default/shader_blit");
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn blit() -> Self {
@@ -262,6 +269,7 @@ impl Shader {
     /// let shader = Shader::light_map();
     /// # system::Assets::block_for_priority(i32::MAX);
     /// assert_eq!(shader.get_id(), "default/shader_lightmap");
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn light_map() -> Self {
@@ -279,6 +287,7 @@ impl Shader {
     /// let shader = Shader::unlit();
     /// # system::Assets::block_for_priority(i32::MAX);
     /// assert_eq!(shader.get_id(), "default/shader_unlit");
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn unlit() -> Self {
@@ -297,6 +306,7 @@ impl Shader {
     /// let shader = Shader::unlit_clip();
     /// # system::Assets::block_for_priority(i32::MAX);
     /// assert_eq!(shader.get_id(), "default/shader_unlit_clip");
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn unlit_clip() -> Self {
@@ -312,6 +322,7 @@ impl Shader {
     /// let shader = Shader::font();
     /// # system::Assets::block_for_priority(i32::MAX);
     /// assert_eq!(shader.get_id(), "default/shader_font");
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn font() -> Self {
@@ -327,6 +338,7 @@ impl Shader {
     /// let shader = Shader::equirect();
     /// # system::Assets::block_for_priority(i32::MAX);
     /// assert_eq!(shader.get_id(), "default/shader_equirect");
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn equirect() -> Self {
@@ -344,6 +356,7 @@ impl Shader {
     /// let shader = Shader::ui();
     /// # system::Assets::block_for_priority(i32::MAX);
     /// assert_eq!(shader.get_id(), "default/shader_ui");
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn ui() -> Self {
@@ -364,6 +377,7 @@ impl Shader {
     /// let shader = Shader::ui_box();
     /// # system::Assets::block_for_priority(i32::MAX);
     /// assert_eq!(shader.get_id(), "default/shader_ui_box");
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn ui_box() -> Self {
@@ -379,6 +393,7 @@ impl Shader {
     /// let shader = Shader::ui_quadrant();
     /// # system::Assets::block_for_priority(i32::MAX);
     /// assert_eq!(shader.get_id(), "default/shader_ui_quadrant");
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn ui_quadrant() -> Self {
@@ -394,6 +409,7 @@ impl Shader {
     /// let shader = Shader::sky();
     /// # system::Assets::block_for_priority(i32::MAX);
     /// assert_eq!(shader.get_id(), "default/shader_sky");
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn sky() -> Self {
@@ -410,6 +426,7 @@ impl Shader {
     /// let shader = Shader::pbr();
     /// # system::Assets::block_for_priority(i32::MAX);
     /// assert_eq!(shader.get_id(), "default/shader_pbr");
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn pbr() -> Self {
@@ -426,6 +443,7 @@ impl Shader {
     /// let shader = Shader::pbr_clip();
     /// # system::Assets::block_for_priority(i32::MAX);
     /// assert_eq!(shader.get_id(), "default/shader_pbr_clip");
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn pbr_clip() -> Self {

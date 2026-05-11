@@ -863,6 +863,7 @@ impl BackendOpenXR {
     ///
     /// offscreen_mode_stop_here!();
     /// assert_ne!(instance_handle, 0);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn instance() -> OpenXRHandleT {
@@ -888,6 +889,7 @@ impl BackendOpenXR {
     ///
     /// offscreen_mode_stop_here!();
     /// assert_ne!(session_handle, 0);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn session() -> OpenXRHandleT {
@@ -913,6 +915,7 @@ impl BackendOpenXR {
     ///
     /// offscreen_mode_stop_here!();
     /// assert_ne!(space_handle, 0);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn space() -> OpenXRHandleT {
@@ -937,6 +940,7 @@ impl BackendOpenXR {
     ///
     /// offscreen_mode_stop_here!();
     /// assert_ne!(system_id, 0);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn system_id() -> OpenXRHandleT {
@@ -959,6 +963,7 @@ impl BackendOpenXR {
     ///
     /// offscreen_mode_stop_here!();
     /// assert_ne!(current_time, 0);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn time() -> i64 {
@@ -1096,6 +1101,7 @@ impl BackendOpenXR {
     /// // Later, we can check if the extensions were not loaded:
     /// assert_eq!(BackendOpenXR::ext_enabled("XR_EXT_hand_tracking"), false);
     /// assert_eq!(BackendOpenXR::ext_enabled("XR_FB_passthrough"), false);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn exclude_ext(extension_name: impl AsRef<str>) {
@@ -1125,6 +1131,7 @@ impl BackendOpenXR {
     /// // Later, check if extensions were loaded as we can't be sure they are ok for this runtime:
     /// assert_eq!(BackendOpenXR::ext_enabled("XR_EXT_hand_tracking"), true);
     /// assert_eq!(BackendOpenXR::ext_enabled("XR_the_ext_that_does_not_exist"), false);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn request_ext(extension_name: impl AsRef<str>) {
@@ -1154,6 +1161,7 @@ impl BackendOpenXR {
     /// // In offscreen mode, extensions are never enabled
     /// assert_eq!(hand_tracking_enabled, true);
     /// assert_eq!(imaginary_enabled, false);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn ext_enabled(extension_name: impl AsRef<str>) -> bool {
@@ -1188,7 +1196,8 @@ impl BackendOpenXR {
     /// // In offscreen mode, function pointers are None
     /// assert_eq!(hand_tracker_fn.is_some(), true);
     /// assert!(passthrough_fn.is_none(),"Passthrough function should be none");
-    /// # } sk::Sk::shutdown();
+    /// # } test_steps!();
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_function_ptr(function_name: impl AsRef<str>) -> Option<VoidFunction> {
         let c_str = CString::new(function_name.as_ref()).unwrap_or_default();
@@ -1218,6 +1227,7 @@ impl BackendOpenXR {
     /// offscreen_mode_stop_here!();
     /// // In offscreen mode, function pointers are None
     /// assert_eq!(hand_tracker_fn.is_some(), true);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_function<T>(function_name: impl AsRef<str>) -> Option<T> {
@@ -1247,6 +1257,7 @@ impl BackendOpenXR {
     ///
     /// // Reset to default
     /// BackendOpenXR::set_hand_joint_scale(1.0);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn set_hand_joint_scale(joint_scale_factor: f32) {
@@ -1273,6 +1284,7 @@ impl BackendOpenXR {
 /// assert_eq!(activity, std::ptr::null_mut());
 /// assert_eq!(java_vm, std::ptr::null_mut());
 /// assert_eq!(jni_environment, std::ptr::null_mut());
+/// # test_steps!();
 /// # sk::Sk::shutdown();
 /// ```
 pub struct BackendAndroid;
