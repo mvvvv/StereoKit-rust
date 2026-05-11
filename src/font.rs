@@ -282,6 +282,7 @@ impl Font {
     /// let same_font = Font::find(id).unwrap_or_default();
     ///
     /// assert_eq!(text_font.get_id(), same_font.get_id());
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn find<S: AsRef<str>>(id: S) -> Result<Font, StereoKitError> {
@@ -320,6 +321,7 @@ impl Font {
     /// let same_font = text_font.clone_ref();
     ///
     /// assert_eq!(text_font.get_id(), same_font.get_id());
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn clone_ref(&self) -> Font {
@@ -355,6 +357,7 @@ impl Font {
     /// let same_font = Font::find("my_font").unwrap_or_default();
     ///
     /// assert_eq!(text_font.get_id(), same_font.get_id());
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {

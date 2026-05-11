@@ -3195,6 +3195,7 @@ impl Input {
     /// let hand = Input::hand(Handed::Right);
     /// let thumb_tip = hand.get(FingerId::Thumb, JointId::Tip);
     /// assert_eq!(thumb_tip.position, Vec3 { x: 0.072, y: 0.028, z: -0.055 });
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn hand(handed: Handed) -> Hand {
@@ -8231,7 +8232,8 @@ impl World {
     ///     // These are results for a non OpenXR environment:
     ///     assert_eq!(bounds_pose, Pose::IDENTITY);
     /// }
-    /// # } sk::Sk::shutdown();
+    /// # } test_steps!();
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_bounds_pose() -> Pose {
         unsafe { world_get_bounds_pose() }

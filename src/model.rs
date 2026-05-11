@@ -1104,6 +1104,7 @@ impl<'a> Anims<'a> {
     /// assert_eq!(anims.get_name_at_index(1), Some("flyRotate"));
     /// assert_eq!(anims.get_name_at_index(2), Some("fly"));
     /// assert_eq!(anims.get_name_at_index(3), None);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_name_at_index(&self, index: i32) -> Option<&str> {
@@ -1131,6 +1132,7 @@ impl<'a> Anims<'a> {
     /// assert_eq!(anims.get_count(), 1);
     /// assert_eq!(anims.get_duration_at_index(0), 2.5);
     /// assert_eq!(anims.get_duration_at_index(1), -0.01);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_duration_at_index(&self, index: i32) -> f32 {
@@ -1205,6 +1207,7 @@ impl<'a> Anims<'a> {
     /// // If anim does not exist:
     /// anims.play_anim("Not exist", AnimMode::Manual);
     /// assert_eq!(anims.get_anim_mode(), AnimMode::Manual);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn play_anim(&mut self, animation_name: impl AsRef<str>, mode: AnimMode) -> &mut Self {
@@ -1237,6 +1240,7 @@ impl<'a> Anims<'a> {
     /// // If index does not exist:
     /// anims.play_anim_idx(102, AnimMode::Manual);
     /// assert_eq!(anims.get_anim_mode(), AnimMode::Once);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn play_anim_idx(&mut self, idx: i32, mode: AnimMode) -> &mut Self {
@@ -1275,6 +1279,7 @@ impl<'a> Anims<'a> {
     /// // if the asking for animation longer than the duration (AnimMode::Loop):
     /// anims.anim_time(4.0);
     /// assert_eq!(anims.get_anim_completion(), 0.6);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn anim_time(&mut self, time: f32) -> &mut Self {
@@ -1312,6 +1317,7 @@ impl<'a> Anims<'a> {
     /// // if the asking for a completion over 100% (AnimMode::Loop):
     /// anims.anim_completion(1.8);
     /// assert_eq!(anims.get_anim_time(), 2.0);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn anim_completion(&mut self, percent: f32) -> &mut Self {
@@ -1337,6 +1343,7 @@ impl<'a> Anims<'a> {
     ///
     /// assert_eq!(anims.find_anim("SuzanneAction"), Some(0));
     /// assert_eq!(anims.find_anim("Not exist"), None);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn find_anim<S: AsRef<str>>(&self, name: S) -> Option<i32> {
@@ -1363,6 +1370,7 @@ impl<'a> Anims<'a> {
     /// let count = model.get_anims().get_count();
     ///
     /// assert_eq!(count, 3);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_count(&self) -> i32 {
@@ -1386,6 +1394,7 @@ impl<'a> Anims<'a> {
     ///
     /// anims.play_anim("flyRotate", AnimMode::Loop);
     /// assert_eq!(anims.get_active_anim(), 1);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_active_anim(&self) -> i32 {
@@ -1412,6 +1421,7 @@ impl<'a> Anims<'a> {
     ///
     /// anims.play_anim("fly", AnimMode::Manual);
     /// assert_eq!(anims.get_anim_mode(), AnimMode::Manual);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_anim_mode(&self) -> AnimMode {
@@ -1434,6 +1444,7 @@ impl<'a> Anims<'a> {
     ///
     /// anims.play_anim("SuzanneAction", AnimMode::Loop ).anim_completion(0.5);
     /// assert_eq!(anims.get_anim_time(), 1.25);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_anim_time(&self) -> f32 {
@@ -1457,6 +1468,7 @@ impl<'a> Anims<'a> {
     /// anims.play_anim("SuzanneAction", AnimMode::Loop);
     /// anims.anim_time(0.5);
     /// assert_eq!(anims.get_anim_completion(), 0.2);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_anim_completion(&self) -> f32 {

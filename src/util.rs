@@ -954,7 +954,8 @@ pub struct FovInfo {
 /// assert_eq!(has_hand_tracking, false);
 /// assert_eq!(valid_blend_none, false);
 /// assert_eq!(display_blend_none, false);
-/// # } sk::Sk::shutdown();
+/// # } test_steps!();
+/// # sk::Sk::shutdown();
 /// ```
 pub struct Device;
 
@@ -993,6 +994,7 @@ impl Device {
     /// assert_eq!(Device::display_blend(DisplayBlend::AnyTransparent), false);
     /// assert_eq!(Device::display_blend(DisplayBlend::None), false);
     /// assert_eq!(Device::display_blend(DisplayBlend::Additive), false);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn display_blend(blend: DisplayBlend) -> bool {
@@ -1021,6 +1023,7 @@ impl Device {
     /// xr_mode_stop_here!();
     /// // These are the expected results for offscreen tests on a PC:
     /// assert_eq!(Device::get_display_type(), DisplayType::Flatscreen);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_display_type() -> DisplayType {
@@ -1043,6 +1046,7 @@ impl Device {
     /// xr_mode_stop_here!();
     /// // 90 seams to be the default for the headless.
     /// assert_eq!(refresh_rate, 90.0);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_display_refresh_rate() -> f32 {
@@ -1065,6 +1069,7 @@ impl Device {
     /// xr_mode_stop_here!();
     /// // These are the expected results for offscreen tests on a PC:
     /// assert_eq!(Device::get_runtime().unwrap_or_default(), "None");
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_runtime<'a>() -> Result<&'a str, StereoKitError> {
@@ -1086,6 +1091,7 @@ impl Device {
     /// assert!(gpu_name.is_ok());
     /// // The GPU name will vary by system, but should not be empty
     /// assert!(!gpu_name.unwrap_or_default().is_empty());
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_gpu<'a>() -> Result<&'a str, StereoKitError> {
@@ -1110,6 +1116,7 @@ impl Device {
     /// xr_mode_stop_here!();
     /// // These are the expected results for offscreen tests on a PC:
     /// assert_eq!(has_eye_gaze, false);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn has_eye_gaze() -> bool {
@@ -1132,6 +1139,7 @@ impl Device {
     /// xr_mode_stop_here!();
     /// // These are the expected results for offscreen tests on a PC:
     /// assert_eq!(has_hand_tracking, false);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn has_hand_tracking() -> bool {
@@ -1154,6 +1162,7 @@ impl Device {
     /// xr_mode_stop_here!();
     /// // These are the expected results for offscreen tests on a PC:
     /// assert_eq!(Device::get_name().unwrap_or_default(), "Offscreen");
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_name<'a>() -> Result<&'a str, StereoKitError> {
@@ -1176,6 +1185,7 @@ impl Device {
     /// # if cfg!(not(feature = "test-xr-mode")) {
     /// // These are the expected results for offscreen tests on a PC:
     /// assert_eq!(tracking, DeviceTracking::None);
+    /// # test_steps!();
     /// # } sk::Sk::shutdown();
     /// ```
     pub fn get_tracking() -> DeviceTracking {
@@ -1200,6 +1210,7 @@ impl Device {
     /// assert_eq!(Device::valid_blend(DisplayBlend::Additive), false);
     /// assert_eq!(Device::valid_blend(DisplayBlend::Blend), false);
     /// assert_eq!(Device::valid_blend(DisplayBlend::AnyTransparent), false);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn valid_blend(blend: DisplayBlend) -> bool {

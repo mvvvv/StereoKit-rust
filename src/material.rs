@@ -470,6 +470,7 @@ impl Material {
     ///            &material2.get_all_param_info().get_texture("diffuse").unwrap_or_default().get_id());
     /// assert_ne!(&material2.get_all_param_info().get_texture("diffuse").unwrap_or_default().get_id(),
     ///            &material3.get_all_param_info().get_texture("diffuse").unwrap_or_default().get_id());
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn tex_copy(&mut self, tex: impl AsRef<Tex>) -> Material {
@@ -492,6 +493,7 @@ impl Material {
     ///
     /// material.id("my_new_material");
     /// assert_eq!(material.get_id(), "my_new_material");
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
@@ -514,6 +516,7 @@ impl Material {
     ///
     /// material.shader(Shader::unlit());
     /// assert_eq!(material.get_shader().get_id(), Shader::unlit().get_id());
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn shader(&mut self, shader: impl AsRef<Shader>) -> &mut Self {
@@ -536,6 +539,7 @@ impl Material {
     /// assert_eq!(material.get_all_param_info().get_float("border_size"), 0.0428);
     /// # use stereokit_rust::util::Hash;
     /// # assert_eq!(Hash::string("border_size"), 12300782195362451721);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn border_size(&mut self, time: f32) -> &mut Self {
@@ -561,6 +565,7 @@ impl Material {
     /// assert_eq!(material.get_all_param_info().get_float("cutoff"), 0.53);
     /// # use stereokit_rust::util::Hash;
     /// # assert_eq!(Hash::string("cutoff"), 9874215895386126464);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn clip_cutoff(&mut self, cutoff: f32) -> &mut Self {
@@ -586,6 +591,7 @@ impl Material {
     /// assert_eq!(material.get_all_param_info().get_color("color"), named_colors::RED.into());
     /// # use stereokit_rust::util::Hash;
     /// # assert_eq!(Hash::string("color"), 8644027876048135736);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn color_tint(&mut self, color: impl Into<Color128>) -> &mut Self {
@@ -620,6 +626,7 @@ impl Material {
     ///            &tex.get_id());
     /// # use stereokit_rust::util::Hash;
     /// # assert_eq!(Hash::string("diffuse"), 17401384459118377917);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn diffuse_tex(&mut self, texture: impl AsRef<Tex>) -> &mut Self {
@@ -650,6 +657,7 @@ impl Material {
     /// assert_eq!(material.get_all_param_info().get_color("emission_factor"), named_colors::RED.into());
     /// # use stereokit_rust::util::Hash;
     /// # assert_eq!(Hash::string("emission_factor"), 5248711978018327020);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn emission_factor(&mut self, color: impl Into<Color128>) -> &mut Self {
@@ -683,6 +691,7 @@ impl Material {
     ///            .unwrap_or_default().get_id(), &tex.get_id());
     /// # use stereokit_rust::util::Hash;
     /// # assert_eq!(Hash::string("emission"), 17756472659261185998);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn emission_tex(&mut self, texture: impl AsRef<Tex>) -> &mut Self {
@@ -713,6 +722,7 @@ impl Material {
     /// assert_eq!(material.get_all_param_info().get_float("metallic"), 0.68);
     /// # use stereokit_rust::util::Hash;
     /// # assert_eq!(Hash::string("metallic"), 16113330016842241480);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn metallic_amount(&mut self, amount: f32) -> &mut Self {
@@ -819,6 +829,7 @@ impl Material {
     ///               .unwrap_or_default().get_id(), &tex.get_id());
     /// # use stereokit_rust::util::Hash;
     /// # assert_eq!(Hash::string("normal"), 6991063326977151602);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn normal_tex(&mut self, texture: impl AsRef<Tex>) -> &mut Self {
@@ -856,6 +867,7 @@ impl Material {
     ///                .unwrap_or_default().get_id(), &tex.get_id());
     /// # use stereokit_rust::util::Hash;
     /// # assert_eq!(Hash::string("occlusion"), 10274420935108893154);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn occlusion_tex(&mut self, texture: impl AsRef<Tex>) -> &mut Self {
@@ -886,6 +898,7 @@ impl Material {
     /// assert_eq!(material.get_all_param_info().get_float("roughness"), 0.78);
     /// # use stereokit_rust::util::Hash;
     /// # assert_eq!(Hash::string("roughness"), 14293098357166276437);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn roughness_amount(&mut self, amount: f32) -> &mut Self {
@@ -927,6 +940,7 @@ impl Material {
     /// assert_eq!(material.get_all_param_info().get_float("time"), 0.38);
     /// # use stereokit_rust::util::Hash;
     /// # assert_eq!(Hash::string("time"), 2185518981507421060);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn time(&mut self, time: f32) -> &mut Self {
@@ -955,6 +969,7 @@ impl Material {
     /// assert_eq!(material.get_all_param_info().get_vector4("tex_trans"), Vec4::ONE * 5.5);
     /// # use stereokit_rust::util::Hash;
     /// # assert_eq!(Hash::string("tex_trans"), 11548192078170871263);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn tex_transform(&mut self, transform: impl Into<Vec4>) -> &mut Self {
@@ -1095,6 +1110,7 @@ impl Material {
     /// assert_eq!(material_cube.get_depth_test(), DepthTest::Less);
     /// material_cube.depth_test(DepthTest::Greater).color_tint(named_colors::CYAN);
     /// assert_eq!(material_cube.get_depth_test(), DepthTest::Greater);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn depth_test(&mut self, depth_test_mode: DepthTest) -> &mut Self {
@@ -1118,6 +1134,7 @@ impl Material {
     /// assert_eq!(material_cube.get_depth_write(), true);
     /// material_cube.depth_write(false).color_tint(named_colors::CYAN);
     /// assert_eq!(material_cube.get_depth_write(), false);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn depth_write(&mut self, write_enabled: bool) -> &mut Self {
@@ -1139,6 +1156,7 @@ impl Material {
     /// assert_eq!(material.get_depth_clamp(), false);
     /// material.depth_clamp(false);
     /// assert_eq!(material.get_depth_clamp(), false);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn depth_clamp(&mut self, clip_enabled: bool) -> &mut Self {
@@ -1163,6 +1181,7 @@ impl Material {
     /// assert_eq!(material_cube.get_queue_offset(), 0);
     /// material_cube.queue_offset(8).color_tint(named_colors::CYAN);
     /// assert_eq!(material_cube.get_queue_offset(), 8);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn queue_offset(&mut self, offset: i32) -> &mut Self {
@@ -1188,6 +1207,7 @@ impl Material {
     /// material_cube.chain(&material_to_chain);
     /// assert_eq!(material_cube.get_chain().unwrap_or_default().get_id(),
     ///            material_to_chain.get_id());
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn chain(&mut self, chained_material: &Material) -> &mut Self {
@@ -1227,6 +1247,7 @@ impl Material {
     /// assert!(main_material.get_variant(1).is_some());
     /// assert_eq!(main_material.get_variant(1).unwrap_or_default().get_id(),
     ///            "shadow_variant");
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn set_variant(&mut self, variant_index: i32, variant_material: Option<&Material>) -> &mut Self {

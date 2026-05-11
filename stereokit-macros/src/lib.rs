@@ -331,6 +331,7 @@ pub fn test_screenshot_event_loop(input: TokenStream) -> TokenStream {
         stereokit_rust::system::Assets::block_for_priority(i32::MAX);
         let mut iter = 0;
         {
+            system::Assets::block_for_priority(i32::MAX);
             framework::SkClosures::new(sk, |sk, token| {
                 if iter > number_of_steps {sk.quit(None)}
 
@@ -358,6 +359,7 @@ pub fn test_screenshot_no_event_loop(input: TokenStream) -> TokenStream {
         stereokit_rust::system::Assets::block_for_priority(i32::MAX);
         let mut iter = 0;
         {
+            system::Assets::block_for_priority(i32::MAX);
             while let Some(token) = sk.step() {
                 if iter > number_of_steps {break}
 
@@ -384,6 +386,7 @@ pub fn test_steps_event_loop(input: TokenStream) -> TokenStream {
     let expanded = quote! {
         let mut iter = 0;
         {
+            system::Assets::block_for_priority(i32::MAX);
             framework::SkClosures::new(sk, |sk, token| {
                 if iter > number_of_steps {sk.quit(None)}
 
@@ -406,6 +409,7 @@ pub fn test_steps_no_event_loop(input: TokenStream) -> TokenStream {
     let expanded = quote! {
         let mut iter = 0;
         {
+            system::Assets::block_for_priority(i32::MAX);
             while let Some(token) = sk.step() {
                 if iter > number_of_steps {break}
 
