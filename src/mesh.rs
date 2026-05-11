@@ -419,6 +419,7 @@ impl Mesh {
     /// let mesh = Mesh::generate_plane([1.0, 1.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0], Some(1), true);
     /// assert_eq!(mesh.get_ind_count(), 48);
     /// assert_eq!(mesh.get_vert_count(), 18);
+    /// # system::Assets::block_for_priority(i32::MAX);
     /// # sk::Sk::shutdown();
     /// ```
     pub fn generate_plane<V: Into<Vec3>>(
@@ -484,6 +485,7 @@ impl Mesh {
     /// let mesh = Mesh::generate_plane_up([1.0, 1.0], Some(1), true);
     /// assert_eq!(mesh.get_inds().len(), 48);
     /// assert_eq!(mesh.get_verts().len(), 18);
+    /// # system::Assets::block_for_priority(i32::MAX);
     /// # sk::Sk::shutdown();
     /// ```
     pub fn generate_plane_up(dimensions: impl Into<Vec2>, subdivisions: Option<i32>, double_sided: bool) -> Mesh {
@@ -532,6 +534,7 @@ impl Mesh {
     /// let mesh = Mesh::generate_circle(1.0, [0.0, 1.0, 0.0], [0.0, 0.0, 1.0], Some(1), true);
     /// assert_eq!(mesh.get_inds().len(), 6);
     /// assert_eq!(mesh.get_verts().len(), 6);
+    /// # system::Assets::block_for_priority(i32::MAX);
     /// # sk::Sk::shutdown();
     /// ```
     pub fn generate_circle<V: Into<Vec3>>(
@@ -591,6 +594,7 @@ impl Mesh {
     /// let mesh = Mesh::generate_circle_up(1.0 , Some(1), true);
     /// assert_eq!(mesh.get_inds().len(), 6);
     /// assert_eq!(mesh.get_verts().len(), 6);
+    /// # system::Assets::block_for_priority(i32::MAX);
     /// # sk::Sk::shutdown();
     /// ```
     pub fn generate_circle_up(diameter: f32, spokes: Option<i32>, double_sided: bool) -> Mesh {
@@ -629,6 +633,7 @@ impl Mesh {
     /// let mesh = Mesh::generate_cube([1.0, 1.0, 1.0], Some(1));
     /// assert_eq!(mesh.get_inds().len(), 144);
     /// assert_eq!(mesh.get_verts().len(), 54);
+    /// # system::Assets::block_for_priority(i32::MAX);
     /// # sk::Sk::shutdown();
     /// ```
     pub fn generate_cube(dimensions: impl Into<Vec3>, subdivisions: Option<i32>) -> Mesh {
@@ -669,6 +674,7 @@ impl Mesh {
     /// let mesh = Mesh::generate_rounded_cube([1.0, 1.0, 1.0], 0.2, Some(1));
     /// assert_eq!(mesh.get_inds().len(), 324);
     /// assert_eq!(mesh.get_verts().len(), 96);
+    /// # system::Assets::block_for_priority(i32::MAX);
     /// # sk::Sk::shutdown();
     /// ```
     pub fn generate_rounded_cube(dimensions: impl Into<Vec3>, edge_radius: f32, subdivisions: Option<i32>) -> Mesh {
@@ -706,6 +712,7 @@ impl Mesh {
     /// let mesh = Mesh::generate_sphere(1.0 , Some(1));
     /// assert_eq!(mesh.get_inds().len(), 144);
     /// assert_eq!(mesh.get_verts().len(), 54);
+    /// # system::Assets::block_for_priority(i32::MAX);
     /// # sk::Sk::shutdown();
     /// ```
     pub fn generate_sphere(diameter: f32, subdivisions: Option<i32>) -> Mesh {
@@ -745,6 +752,7 @@ impl Mesh {
     /// let mesh = Mesh::generate_cylinder(1.0, 1.0, [0.0, 1.0, 0.0], Some(1));
     /// assert_eq!(mesh.get_inds().len(), 12);
     /// assert_eq!(mesh.get_verts().len(), 10);
+    /// # system::Assets::block_for_priority(i32::MAX);
     /// # sk::Sk::shutdown();
     /// ```
     pub fn generate_cylinder(diameter: f32, depth: f32, direction: impl Into<Vec3>, subdivisions: Option<i32>) -> Mesh {

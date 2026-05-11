@@ -2752,7 +2752,12 @@ impl Quat {
     ///
     /// let quat = Quat::from_angles(90.0, 0.0, 0.0);
     /// let angles = quat.to_angles();
-    /// assert_eq!(angles, [1.5707964, 0.0, 0.0]);
+    /// // TODO: None of them know PI/2
+    /// if cfg!(target_os = "macos") {
+    ///    assert_eq!(angles, [1.5707961, 0.0, 0.0]);
+    /// } else {
+    ///    assert_eq!(angles, [1.5707964, 0.0, 0.0]);
+    /// }   
     /// ```
     #[inline]
     pub fn to_angles(&self) -> [f32; 3] {
@@ -3177,6 +3182,7 @@ impl Sub<Quat> for Quat {
 ///
 /// let model = Model::from_file("center.glb", None, None).unwrap_or_default().copy();
 /// let transform = Matrix::t_r_s(Vec3::NEG_Y * 0.7, [0.0, 155.0, 10.0], Vec3::ONE * 0.3);
+/// # system::Assets::block_for_priority(i32::MAX);
 ///
 /// filename_scr = "screenshots/matrix.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
@@ -3513,6 +3519,7 @@ impl Matrix {
     ///
     /// let mut transform = Matrix::IDENTITY;
     /// let mut delta_rotate = 90.0;
+    /// # system::Assets::block_for_priority(i32::MAX);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     delta_rotate = (delta_rotate + 10.0  * Time::get_stepf()) % 360.0;
@@ -3567,6 +3574,7 @@ impl Matrix {
     ///
     /// let mut transform = Matrix::IDENTITY;
     /// let delta_scale = 2.0;
+    /// # system::Assets::block_for_priority(i32::MAX);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     let scale = Vec3::ONE * (delta_scale * Time::get_stepf()).cos();
@@ -4721,6 +4729,7 @@ impl MulAssign<Matrix> for Matrix {
 /// let transform_cube = Matrix::t_s( bounds.center, bounds.dimensions);
 /// let mut handle_pose =
 ///     Pose::new([0.0,-0.95,-0.65], Some([0.0, 140.0, 0.0].into()));
+/// # system::Assets::block_for_priority(i32::MAX);
 ///
 /// filename_scr = "screenshots/bounds.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!

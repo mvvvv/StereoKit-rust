@@ -6075,6 +6075,7 @@ impl Renderer {
     ///         camera, projection, 200, 200, None, None, None, None
     ///     );
     /// );
+    /// # system::Assets::block_for_priority(i32::MAX);
     /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/screenshot_viewpoint.jpeg" alt="screenshot" width="200">

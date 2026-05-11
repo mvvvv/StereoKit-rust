@@ -235,6 +235,7 @@ impl Font {
     ///
     /// let text_font = Font::from_family(&font_family).unwrap_or_default();
     /// let text_style = Some(Text::make_style(&text_font, 0.025, named_colors::GREEN));
+    /// # system::Assets::block_for_priority(i32::MAX);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Text::add_at(token, "My Green Text", Matrix::IDENTITY, text_style,
