@@ -5,7 +5,7 @@ use stereokit_rust::{
     mesh::Mesh,
     model::Model,
     prelude::*,
-    render_list::RenderList,
+    render_list::{RenderList, RenderListRefs},
     system::{Assets, RenderClear, Renderer, Text, TextStyle},
     tex::{Tex, TexFormat, TexType},
     ui::Ui,
@@ -32,6 +32,7 @@ pub struct RenderList1 {
     quad: Mesh,
     perspective: Matrix,
     clear_primary: bool,
+
     pub transform: Matrix,
     text: String,
     text_style: TextStyle,
@@ -40,7 +41,7 @@ pub struct RenderList1 {
 impl Default for RenderList1 {
     fn default() -> Self {
         let quad = Mesh::screen_quad();
-        let mut list = RenderList::new();
+        let mut list = RenderList::new_with(RenderListRefs::Tracked);
         list.id("PlaneList");
         let render_tex = Tex::gen_color(BLUE_VIOLET, 128, 128, TexType::Rendertarget, TexFormat::Rgba32Srgb);
         //let render_tex = Tex::render_target(128, 128, None, None, None).unwrap_or_default();
@@ -50,7 +51,7 @@ impl Default for RenderList1 {
         //list.add_mesh(&quad, &render_mat, Matrix::IDENTITY, BLUE_VIOLET, None);
 
         Assets::block_for_priority(i32::MAX);
-        let at = Vec3::new(-2.0, 1.0, 1000.9);
+        let at = Vec3::new(-2.0, 1.0, 200.9);
 
         render_mat.diffuse_tex(&render_tex);
         render_mat.face_cull(stereokit_rust::material::Cull::None);
@@ -71,6 +72,7 @@ impl Default for RenderList1 {
             at,
             quad,
             perspective,
+
             transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, Quat::from_angles(0.0, 180.0, 0.0)),
             text: "RenderList1".to_owned(),
             text_style: Text::make_style(Font::default(), 0.3, RED),
@@ -95,7 +97,7 @@ impl RenderList1 {
     fn draw(&mut self, token: &MainThreadToken) {
         if self.clear_primary {
             self.primary.clear();
-        };
+        }
 
         self.list.draw_now(
             &self.render_tex,

@@ -2879,7 +2879,7 @@ impl Quat {
     /// use stereokit_rust::maths::{Quat, Vec3};
     ///
     /// let from = Vec3::new(1.0, 0.0, 0.0);
-    /// let at = Vec3::new(0.0, 0.0, 1.0);
+    /// let at = [0.0, 0.0, 1.0];
     /// let up = Vec3::new(0.0, 1.0, 0.0);
     /// let quat = Quat::look_at(from, at, Some(up));
     /// assert_eq!(quat, Quat::from_angles(0.0, 135.0, 0.0));
@@ -2888,7 +2888,7 @@ impl Quat {
     /// assert_eq!(quat, Quat::from_angles(0.0, 135.0, 0.0));
     /// ```
     #[inline]
-    pub fn look_at<V: Into<Vec3>>(from: V, at: V, up: Option<Vec3>) -> Self {
+    pub fn look_at(from: impl Into<Vec3>, at: impl Into<Vec3>, up: Option<Vec3>) -> Self {
         let from = from.into();
         let at = at.into();
         match up {
@@ -3346,11 +3346,35 @@ impl Matrix {
     /// let point = Vec3::new(1.0, 2.0, 3.0);
     ///
     /// let projection = translate * point;
-    /// assert_eq!(projection,  Vec3 { x: 72.946686, y: 145.89337, z: -3.1031032 });
+    /// assert_eq!(projection,  Vec3 { x: 1.0, y: 2.0, z: -3.1031032 });
     /// ```
     #[inline]
     pub fn perspective(fov_degrees: f32, aspect_ratio: f32, near_clip: f32, far_clip: f32) -> Self {
-        unsafe { matrix_perspective(fov_degrees.to_radians(), aspect_ratio, near_clip, far_clip) }
+        let f = 1.0 / (fov_degrees.to_radians() / 2.0).tan();
+        let f_range = far_clip / (near_clip - far_clip);
+        Self {
+            m: [
+                f / aspect_ratio,
+                0.0,
+                0.0,
+                0.0,
+                //
+                0.0,
+                f,
+                0.0,
+                0.0,
+                //
+                0.0,
+                0.0,
+                f_range,
+                -1.0,
+                //
+                0.0,
+                0.0,
+                f_range * near_clip,
+                0.0,
+            ],
+        }
     }
 
     /// This creates a matrix used for projecting 3D geometry onto a 2D surface for rasterization. With the known camera
@@ -3423,7 +3447,7 @@ impl Matrix {
     /// ```
     /// use stereokit_rust::maths::{Vec3, Matrix};
     ///
-    /// let from = Vec3::new(1.0, 0.0, 0.0);
+    /// let from = [1.0, 0.0, 0.0];
     /// let at = Vec3::new(0.0, 0.0, 0.0);
     /// let up = Vec3::new(0.0, 1.0, 0.0);
     /// let transform = Matrix::look_at(from, at, Some(up));
@@ -3438,7 +3462,9 @@ impl Matrix {
     /// assert_eq!(transform, transform_b);
     /// ```
     #[inline]
-    pub fn look_at(from: Vec3, at: Vec3, up: Option<Vec3>) -> Self {
+    pub fn look_at(from: impl Into<Vec3>, at: impl Into<Vec3>, up: Option<Vec3>) -> Self {
+        let from = from.into();
+        let at = at.into();
         let up = up.unwrap_or(Vec3::UP);
         let forward = (from - at).get_normalized();
         let right_v = Vec3::perpendicular_right(forward, up).get_normalized();

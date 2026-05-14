@@ -596,8 +596,8 @@ mod tests_matrix {
     fn test_matrix_perspective() {
         let perspective = Matrix::perspective(90.0, 1.0, 0.1, 100.0);
         unsafe {
-            assert_eq!((perspective.m[0] - 1.0).abs(), 71.946686);
-            assert_eq!((perspective.m[5] - 1.0).abs(), 71.946686);
+            assert!((perspective.m[0] - 1.0).abs() < 0.0001);
+            assert!((perspective.m[5] - 1.0).abs() < 0.0001);
             assert_eq!((perspective.m[10] + 1.002002).abs(), 0.0010010004);
             assert_eq!((perspective.m[11] + -1.0).abs(), 2.0);
             assert_eq!((perspective.m[14] + 0.2002002).abs(), 0.1001001);

@@ -118,6 +118,7 @@ unsafe extern "C" {
     pub fn compute_set_storage(compute: ComputeT, name: *const c_char, buffer: ComputeBufferT) -> Bool32T;
     pub fn compute_set_constant(compute: ComputeT, name: *const c_char, buffer: MaterialBufferT) -> Bool32T;
     pub fn compute_dispatch(compute: ComputeT, group_count_x: u32, group_count_y: u32, group_count_z: u32);
+    pub fn compute_dispatch_now(compute: ComputeT, group_count_x: u32, group_count_y: u32, group_count_z: u32);
     pub fn compute_get_param_count(compute: ComputeT) -> i32;
     pub fn compute_get_param_info(
         compute: ComputeT,
@@ -270,10 +271,22 @@ impl Compute {
         self
     }
 
-    /// Fire off the compute shader on the GPU! The parameters here are the number of thread
-    /// *groups*, not individual threads. The total thread count will be
-    /// `group_count * numthreads` (as defined in your HLSL). So if your shader declares
-    /// `[numthreads(8,8,1)]` and you dispatch `(64,64,1)`, you'll get 512×512 total threads.
+    /// Queue this compute dispatch into the render pipeline. It will run during the next frame's render setup phase, in
+    /// source order with other queued render actions ([`crate::system::Renderer::render_to`],
+    /// [`crate::system::Renderer::set_global_buffer`], [`crate::system::Renderer::set_global_texture`]). This is the
+    /// recommended path for compute work that participates in the frame's rendering pipeline (e.g. populating a texture
+    /// that a later RenderTo or the main pass will sample), since sk_renderer can manage the necessary GPU barriers
+    /// between queued items.
+    ///
+    /// IMPORTANT: bindings (textures, buffers, constants, scalar parameters) are NOT snapshotted when Dispatch is
+    /// called — they are read at execute time, which happens later in the frame. If you change a binding between two
+    /// queued Dispatch calls on the same Compute, both dispatches will see the final binding state, not the state at
+    /// their respective Dispatch times. To dispatch the same Compute with different bindings, either issue each
+    /// Dispatch with DispatchNow, or use a separate Compute instance per binding set.
+    ///
+    /// The parameters are the number of thread _groups_, not individual threads. Total thread count = groupCount *
+    /// numthreads (as defined in your HLSL). So if your shader says [numthreads(8,8,1)] and you dispatch (64,64,1),
+    /// you'll get 512*512 threads.
     /// <https://stereokit.net/Pages/StereoKit/Compute/Dispatch.html>
     ///
     /// ### Examples
@@ -316,6 +329,19 @@ impl Compute {
     /// ```
     pub fn dispatch(&self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {
         unsafe { compute_dispatch(self.0.as_ptr(), group_count_x, group_count_y, group_count_z) };
+    }
+
+    /// Run this compute dispatch synchronously, right now, on the calling thread. Use this for ad-hoc work that doesn't
+    /// belong in the per-frame render pipeline (debugging, one-shot tasks, immediate readbacks). For compute work that
+    /// feeds into later render passes within the same frame, prefer [`Compute::dispatch`], which queues into the
+    /// pipeline and lets sk_renderer handle ordering and barriers automatically.
+    /// <https://stereokit.net/Pages/StereoKit/Compute/DispatchNow.html>
+    ///
+    /// The parameters are the number of thread _groups_, not individual threads. Total thread count = groupCount *
+    /// numthreads (as defined in your HLSL). So if your shader says [numthreads(8,8,1)] and you dispatch (64,64,1),
+    /// you'll get 512*512 threads.
+    pub fn dispatch_now(&self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {
+        unsafe { compute_dispatch_now(self.0.as_ptr(), group_count_x, group_count_y, group_count_z) };
     }
 
     /// The id of this compute object.

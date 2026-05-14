@@ -48,6 +48,9 @@ bitflags::bitflags! {
         /// This texture can be used as a RWTexture in compute shaders. Create it with a format
         /// that supports storage images, such as [`TexFormat::Rgba128`].
         const Compute      = 1 << 7;
+        /// A volumetric (3D) texture, sized with width, height, and depth. Volume textures are mutually exclusive with
+        /// Cubemap and array textures, and don't pair with a zbuffer.
+        const Volume       = 1 << 8;
         /// A standard color image that also generates mip-maps automatically.
         const Image        = Self::ImageNomips.bits() | Self::Mips.bits();
     }
@@ -468,12 +471,23 @@ unsafe extern "C" {
         asset_on_load_callback: ::std::option::Option<unsafe extern "C" fn(texture: TexT, context: *mut c_void)>,
     );
     pub fn tex_set_colors(texture: TexT, width: i32, height: i32, data: *mut c_void);
+    pub fn tex_set_colors_3d(texture: TexT, width: i32, height: i32, depth: i32, data: *mut c_void);
     pub fn tex_set_color_arr(
         texture: TexT,
         width: i32,
         height: i32,
         array_data: *mut *mut c_void,
         array_count: i32,
+        multisample: i32,
+        out_sh_lighting_info: *mut SphericalHarmonics,
+    );
+    pub fn tex_set_color_arr_mips(
+        texture: TexT,
+        width: i32,
+        height: i32,
+        array_data: *mut *mut c_void,
+        array_count: i32,
+        mip_count: i32,
         multisample: i32,
         out_sh_lighting_info: *mut SphericalHarmonics,
     );
@@ -506,6 +520,7 @@ unsafe extern "C" {
     pub fn tex_get_format(texture: TexT) -> TexFormat;
     pub fn tex_get_width(texture: TexT) -> i32;
     pub fn tex_get_height(texture: TexT) -> i32;
+    pub fn tex_get_depth(texture: TexT) -> i32;
     pub fn tex_set_sample(texture: TexT, sample: TexSample);
     pub fn tex_get_sample(texture: TexT) -> TexSample;
     pub fn tex_set_sample_comp(texture: TexT, compare: TexSampleComp);
@@ -1683,6 +1698,168 @@ impl Tex {
         self
     }
 
+    /// Set the contents of a 3D (volume) texture from a contiguous block of memory. The texture must be created
+    /// with [`TexType::Volume`]. Pass `std::ptr::null_mut()` to allocate an empty volume (e.g. for use as a compute
+    /// UAV). Slice-major layout: all of slice 0, then slice 1, etc., each slice being `width * height` pixels of
+    /// the texture's format.
+    /// <https://stereokit.net/Pages/StereoKit/Tex/SetColors.html>
+    /// * `width` - Width in pixels.
+    /// * `height` - Height in pixels.
+    /// * `depth` - Depth in pixels (number of slices).
+    /// * `data` - A pointer to `width * height * depth` pixels of the texture's format, or null to allocate an
+    ///   empty volume.
+    ///
+    /// # Safety
+    /// The data pointer must be valid for `width * height * depth * format_size` bytes, or null.
+    ///
+    /// see also [`tex_set_colors_3d`] [`Tex::set_colors_3d`] [`Tex::get_depth`] [`Tex::get_color_data`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{util::{Color32, named_colors}, tex::{Tex, TexFormat, TexType}};
+    ///
+    /// let mut volume_data = [named_colors::MAGENTA; 4 * 4 * 4];
+    /// let mut tex = Tex::new(TexType::Volume, TexFormat::Rgba32Srgb, None);
+    ///
+    /// unsafe { tex.set_colors_3d_ptr(4, 4, 4, volume_data.as_mut_ptr() as *mut std::os::raw::c_void); }
+    ///
+    /// let check_data = [Color32::WHITE; 4 * 4];
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     assert_eq!(tex.get_color_data::<Color32>(&check_data, 0), true);
+    ///     assert_eq!(check_data, [named_colors::MAGENTA; 4 * 4]);
+    ///     assert_eq!(tex.get_depth(), Some(4));
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub unsafe fn set_colors_3d_ptr(
+        &mut self,
+        width: usize,
+        height: usize,
+        depth: usize,
+        data: *mut std::os::raw::c_void,
+    ) -> &mut Self {
+        unsafe { tex_set_colors_3d(self.0.as_ptr(), width as i32, height as i32, depth as i32, data) };
+        self
+    }
+
+    /// Set the contents of a 3D (volume) texture from a byte array. The texture must be created with
+    /// [`TexType::Volume`] and a single-channel format such as [`TexFormat::R8`]. Slice-major layout: all of
+    /// slice 0, then slice 1, etc., each slice being `width * height` bytes.
+    /// <https://stereokit.net/Pages/StereoKit/Tex/SetColors.html>
+    /// * `width` - Width in pixels.
+    /// * `height` - Height in pixels.
+    /// * `depth` - Depth in pixels (number of slices).
+    /// * `data` - An array of `width * height * depth` bytes.
+    ///
+    /// see also [`tex_set_colors_3d`] [`Tex::get_depth`] [`Tex::get_color_data`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::tex::{Tex, TexFormat, TexType};
+    ///
+    /// let volume_data = [127u8; 4 * 4 * 4];
+    /// let mut tex = Tex::new(TexType::Volume, TexFormat::R8, None);
+    ///
+    /// tex.set_colors_3d(4, 4, 4, &volume_data);
+    ///
+    /// let check_data = [0u8; 4 * 4];
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     assert_eq!(tex.get_color_data::<u8>(&check_data, 0), true);
+    ///     assert_eq!(check_data, [127u8; 4 * 4]);
+    ///     assert_eq!(tex.get_depth(), Some(4));
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn set_colors_3d(&mut self, width: usize, height: usize, depth: usize, data: &[u8]) -> &mut Self {
+        if width * height * depth != data.len() {
+            Log::err(format!(
+                "{}x{}x{} differ from {} for Tex::set_colors_3d_r8 for texture {}",
+                width,
+                height,
+                depth,
+                data.len(),
+                self.get_id()
+            ));
+            return self;
+        }
+        unsafe {
+            tex_set_colors_3d(
+                self.0.as_ptr(),
+                width as i32,
+                height as i32,
+                depth as i32,
+                data.as_ptr() as *mut std::os::raw::c_void,
+            )
+        };
+        self
+    }
+
+    /// Set the contents of a 3D (volume) texture from a [`Color32`] array. The texture must be created with
+    /// [`TexType::Volume`] and a format of [`TexFormat::Rgba32Srgb`] or [`TexFormat::Rgba32Linear`].
+    /// Slice-major layout: all of slice 0, then slice 1, etc., each slice being `width * height` pixels.
+    /// <https://stereokit.net/Pages/StereoKit/Tex/SetColors.html>
+    /// * `width` - Width in pixels.
+    /// * `height` - Height in pixels.
+    /// * `depth` - Depth in pixels (number of slices).
+    /// * `data` - An array of `width * height * depth` [`Color32`] values.
+    ///
+    /// see also [`tex_set_colors_3d`] [`Tex::set_colors_3d_ptr`] [`Tex::get_depth`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{util::{Color32, named_colors}, tex::{Tex, TexFormat, TexType}};
+    ///
+    /// let volume_data = [named_colors::MAGENTA; 4 * 4 * 4];
+    /// let mut tex = Tex::new(TexType::Volume, TexFormat::Rgba32Srgb, None);
+    ///
+    /// tex.set_colors_3d_32(4, 4, 4, &volume_data);
+    ///
+    /// let check_data = [Color32::WHITE; 4 * 4];
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     assert_eq!(tex.get_color_data::<Color32>(&check_data, 0), true);
+    ///     assert_eq!(check_data, [named_colors::MAGENTA; 4 * 4]);
+    ///     assert_eq!(tex.get_depth(), Some(4));
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn set_colors_3d_32(&mut self, width: usize, height: usize, depth: usize, data: &[Color32]) -> &mut Self {
+        match self.get_format() {
+            Some(TexFormat::Rgba32Srgb) | Some(TexFormat::Rgba32Linear) => (),
+            Some(_) => {
+                Log::err(format!(
+                    "The format of the texture {} is not compatible with Tex::set_colors_3d_32",
+                    self.get_id()
+                ));
+                return self;
+            }
+            None => {
+                Log::err(format!("The texture {} is not loaded during Tex::set_colors_3d_32", self.get_id()));
+                return self;
+            }
+        }
+        if width * height * depth != data.len() {
+            Log::err(format!(
+                "{}x{}x{} differ from {} for Tex::set_colors_3d_32 for texture {}",
+                width,
+                height,
+                depth,
+                data.len(),
+                self.get_id()
+            ));
+            return self;
+        }
+        unsafe {
+            tex_set_colors_3d(
+                self.0.as_ptr(),
+                width as i32,
+                height as i32,
+                depth as i32,
+                data.as_ptr() as *mut std::os::raw::c_void,
+            )
+        };
+        self
+    }
+
     /// This allows you to attach a z/depth buffer from a rendertarget texture. This texture _must_ be a
     /// rendertarget to set this, and the zbuffer texture _must_ be a depth format (or null). For no-rendertarget
     /// textures, this will always be None.
@@ -1834,6 +2011,222 @@ impl Tex {
                 array_count as i32,
                 msaa,
                 null_mut(), // out_sh_lighting_info = None
+            )
+        };
+        self
+    }
+
+    /// Set the texture's pixels for a multi-layer and/or mip-mapped texture, using an array of raw pointers.
+    /// Each pointer in `array_data` represents one layer (face for cubemaps, slice for array textures), and points
+    /// to a tightly packed block containing all mip levels for that layer in the order `[mip0][mip1][mip2]...`.
+    /// The memory layout per mip should match the texture's format. This is the raw pointer variant for advanced use
+    /// cases like uploading pre-decoded image data from native code.
+    /// <https://stereokit.net/Pages/StereoKit/Tex/SetColors.html>
+    /// * `width` - Width in pixels of mip 0. Powers of two are generally best!
+    /// * `height` - Height in pixels of mip 0. Powers of two are generally best!
+    /// * `array_data` - An array of raw pointers, one per layer. Each layer points to packed mip data
+    ///   `[mip0][mip1][mip2]...`.
+    /// * `mip_count` - The number of mip levels packed into each layer's data. Use 1 if no mip data is provided
+    ///   beyond the base.
+    /// * `multisample` - Multisample count, only relevant for rendertarget textures. If None, defaults to 1.
+    ///
+    /// # Safety
+    /// Each pointer in `array_data` must be valid for the corresponding layer's packed mip data.
+    ///
+    /// see also [`tex_set_color_arr_mips`] [`Tex::set_colors_arr_mips`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{util::{named_colors, Color32}, tex::{Tex, TexFormat, TexType}};
+    /// let layer0_mip0 = [named_colors::RED; 16 * 16];
+    /// let layer0_mip1 = [named_colors::GREEN; 8 * 8];
+    /// let layer1_mip0 = [named_colors::BLUE; 64 * 64];
+    /// let layer1_mip1 = [named_colors::YELLOW; 32 * 32];
+    /// let mut array_data = [
+    ///     layer0_mip0.as_ptr() as *mut std::os::raw::c_void,
+    ///     layer0_mip1.as_ptr() as *mut std::os::raw::c_void,
+    ///     layer1_mip0.as_ptr() as *mut std::os::raw::c_void,
+    ///     layer1_mip1.as_ptr() as *mut std::os::raw::c_void,
+    /// ];
+    /// let mut tex = Tex::new(TexType::Image, TexFormat::Rgba32Srgb, None);
+    /// unsafe {
+    ///     tex.set_colors_arr_mips_ptr(16, 16, &mut array_data, 2, None);
+    /// }
+    /// let check_data256 = [named_colors::BLACK; 16 * 16];
+    /// let check_data64 = [named_colors::BLACK; 8 * 8];
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     assert_eq!(tex.get_color_data::<Color32>(&check_data256, 0), true);
+    ///     assert_eq!(check_data256, [named_colors::RED; 16 * 16]);
+    ///     assert_eq!(tex.get_color_data::<Color32>(&check_data64, 1), true);
+    ///     assert_eq!(check_data64, [named_colors::GREEN; 8 * 8]);
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub unsafe fn set_colors_arr_mips_ptr(
+        &mut self,
+        width: usize,
+        height: usize,
+        array_data: &mut [*mut c_void],
+        mip_count: i32,
+        multisample: Option<i32>,
+    ) -> &mut Self {
+        let multisample = multisample.unwrap_or(1);
+        unsafe {
+            tex_set_color_arr_mips(
+                self.0.as_ptr(),
+                width as i32,
+                height as i32,
+                array_data.as_mut_ptr(),
+                array_data.len() as i32,
+                mip_count,
+                multisample,
+                null_mut(),
+            )
+        };
+        self
+    }
+
+    /// Set the texture's pixels for a multi-layer and/or mip-mapped texture using a jagged [`Color32`] array.
+    /// Each entry in `array_data` is one layer (face for cubemaps, slice for array textures), packed as
+    /// `[mip0][mip1][mip2]...`. This function should only be called on textures with a format of
+    /// [`TexFormat::Rgba32Srgb`] or [`TexFormat::Rgba32Linear`].
+    /// <https://stereokit.net/Pages/StereoKit/Tex/SetColors.html>
+    /// * `width` - Width in pixels of mip 0. Powers of two are generally best!
+    /// * `height` - Height in pixels of mip 0. Powers of two are generally best!
+    /// * `array_data` - A slice of slices, where each inner slice contains all mip levels for that layer packed as
+    ///   `[mip0][mip1][mip2]...` with mip 0 sized `width * height`, mip 1 sized `(width/2) * (height/2)`, etc.
+    /// * `mip_count` - The number of mip levels packed into each layer's data. Use 1 if no mip data is provided
+    ///   beyond the base.
+    /// * `multisample` - Multisample count, only relevant for rendertarget textures. If None, defaults to 1.
+    ///
+    /// see also [`tex_set_color_arr_mips`] [`Tex::set_colors_arr_mips`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{util::{named_colors, Color32}, tex::{Tex, TexFormat, TexType}};
+    /// let layer0_mip0 = [named_colors::RED; 16 * 16];
+    /// let layer0_mip1 = [named_colors::GREEN; 8 * 8];
+    /// let layer1_mip0 = [named_colors::BLUE; 64 * 64];
+    /// let layer1_mip1 = [named_colors::YELLOW; 32 * 32];
+    /// let array_data = [
+    ///     &layer0_mip0[..],
+    ///     &layer0_mip1[..],
+    ///     &layer1_mip0[..],
+    ///     &layer1_mip1[..],
+    /// ];
+    /// let mut tex = Tex::new(TexType::Image, TexFormat::Rgba32Srgb, None);
+    /// tex.set_colors_arr_mips32(16, 16, &array_data, 2, None);
+    /// let check_data256 = [named_colors::BLACK; 16 * 16];
+    /// let check_data64 = [named_colors::BLACK; 8 * 8];
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     assert_eq!(tex.get_color_data::<Color32>(&check_data256, 0), true);
+    ///     assert_eq!(check_data256, [named_colors::RED; 16 * 16]);
+    ///     assert_eq!(tex.get_color_data::<Color32>(&check_data64, 1), true);
+    ///     assert_eq!(check_data64, [named_colors::GREEN; 8 * 8]);
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn set_colors_arr_mips32(
+        &mut self,
+        width: usize,
+        height: usize,
+        array_data: &[&[Color32]],
+        mip_count: i32,
+        multisample: Option<i32>,
+    ) -> &mut Self {
+        match self.get_format() {
+            Some(TexFormat::Rgba32Srgb) => (),
+            Some(TexFormat::Rgba32Linear) => (),
+            Some(fmt) => {
+                Log::err(format!(
+                    "Can't set a {:?} format texture from Color32 data in Tex::set_colors_arr_mips32 for texture {}!",
+                    fmt,
+                    self.get_id()
+                ));
+                return self;
+            }
+            None => {
+                Log::err(format!("The texture {} is not loaded during Tex::set_colors_arr_mips32", self.get_id()));
+                return self;
+            }
+        }
+        let multisample = multisample.unwrap_or(1);
+        let mut ptrs: Vec<*mut c_void> = array_data.iter().map(|s| s.as_ptr() as *mut c_void).collect();
+        unsafe {
+            tex_set_color_arr_mips(
+                self.0.as_ptr(),
+                width as i32,
+                height as i32,
+                ptrs.as_mut_ptr(),
+                ptrs.len() as i32,
+                mip_count,
+                multisample,
+                null_mut(),
+            )
+        };
+        self
+    }
+
+    /// Set the texture's pixels for a multi-layer and/or mip-mapped texture using a jagged byte array. Each entry
+    /// in `array_data` is one layer (face for cubemaps, slice for array textures), packed as
+    /// `[mip0][mip1][mip2]...`. The byte layout per mip should match the texture's format.
+    /// <https://stereokit.net/Pages/StereoKit/Tex/SetColors.html>
+    /// * `width` - Width in pixels of mip 0. Powers of two are generally best!
+    /// * `height` - Height in pixels of mip 0. Powers of two are generally best!
+    /// * `array_data` - A slice of slices, where each inner slice contains all mip levels for that layer as bytes,
+    ///   packed as `[mip0][mip1][mip2]...`.
+    /// * `mip_count` - The number of mip levels packed into each layer's data. Use 1 if no mip data is provided
+    ///   beyond the base.
+    /// * `multisample` - Multisample count, only relevant for rendertarget textures. If None, defaults to 1.
+    ///
+    /// see also [`tex_set_color_arr_mips`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{util::{named_colors, Color32}, tex::{Tex, TexFormat, TexType}};
+    /// let layer0_mip0 = [named_colors::RED; 16 * 16];
+    /// let layer0_mip1 = [named_colors::GREEN; 8 * 8];
+    /// let layer1_mip0 = [named_colors::BLUE; 64 * 64];
+    /// let layer1_mip1 = [named_colors::YELLOW; 32 * 32];
+    /// let (b0, b1, b2, b3) = unsafe { (
+    ///     std::slice::from_raw_parts(layer0_mip0.as_ptr() as *const u8, 16 * 16 * 4),
+    ///     std::slice::from_raw_parts(layer0_mip1.as_ptr() as *const u8, 8 * 8 * 4),
+    ///     std::slice::from_raw_parts(layer1_mip0.as_ptr() as *const u8, 64 * 64 * 4),
+    ///     std::slice::from_raw_parts(layer1_mip1.as_ptr() as *const u8, 32 * 32 * 4),
+    /// )};
+    /// let array_data = [b0, b1, b2, b3];
+    /// let mut tex = Tex::new(TexType::Image, TexFormat::Rgba32Srgb, None);
+    /// tex.set_colors_arr_mips(16, 16, &array_data, 2, None);
+    /// let check_data256 = [named_colors::BLACK; 16 * 16];
+    /// let check_data64 = [named_colors::BLACK; 8 * 8];
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     assert_eq!(tex.get_color_data::<Color32>(&check_data256, 0), true);
+    ///     assert_eq!(check_data256, [named_colors::RED; 16 * 16]);
+    ///     assert_eq!(tex.get_color_data::<Color32>(&check_data64, 1), true);
+    ///     assert_eq!(check_data64, [named_colors::GREEN; 8 * 8]);
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn set_colors_arr_mips(
+        &mut self,
+        width: usize,
+        height: usize,
+        array_data: &[&[u8]],
+        mip_count: i32,
+        multisample: Option<i32>,
+    ) -> &mut Self {
+        let multisample = multisample.unwrap_or(1);
+        let mut ptrs: Vec<*mut c_void> = array_data.iter().map(|s| s.as_ptr() as *mut c_void).collect();
+        unsafe {
+            tex_set_color_arr_mips(
+                self.0.as_ptr(),
+                width as i32,
+                height as i32,
+                ptrs.as_mut_ptr(),
+                ptrs.len() as i32,
+                mip_count,
+                multisample,
+                null_mut(),
             )
         };
         self
@@ -2110,6 +2503,22 @@ impl Tex {
             _ => return None,
         }
         Some(unsafe { tex_get_height(self.0.as_ptr()) } as usize)
+    }
+
+    /// The depth of the texture, in pixels. Only meaningful for 3D (volume) textures created with
+    /// [`TexType::Volume`] — for 2D, array, and cubemap textures this is 1. This will be a blocking call if
+    /// AssetState is less than LoadedMeta so None will be returned instead.
+    /// <https://stereokit.net/Pages/StereoKit/Tex/Depth.html>
+    ///
+    /// see also [`tex_get_depth`] [`TexType::Volume`] [`Tex::set_colors`]
+    pub fn get_depth(&self) -> Option<usize> {
+        match self.get_asset_state() {
+            AssetState::Loaded => (),
+            AssetState::LoadedMeta => (),
+            AssetState::None => (),
+            _ => return None,
+        }
+        Some(unsafe { tex_get_depth(self.0.as_ptr()) } as usize)
     }
 
     /// Non-canon function which returns a tuple made of (width, heigh, size) of the corresponding texture.
@@ -2547,6 +2956,22 @@ impl Tex {
     /// ```
     pub fn white() -> Self {
         Self::find("default/tex").unwrap_or_default()
+    }
+
+    /// Default 1x1x1 transparent black volume texture used as the fallback for unloaded or errored 3D textures.
+    /// <https://stereokit.net/Pages/StereoKit/Tex.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::tex::Tex;
+    ///
+    /// let tex = Tex::volume_3d();
+    /// assert_eq!(tex.get_id(), "default/tex_3d");
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn volume_3d() -> Self {
+        Self::find("default/tex_3d").unwrap_or_default()
     }
 
     // /// The equirectangular texture used for the default dome

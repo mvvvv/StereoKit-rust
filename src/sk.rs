@@ -12,7 +12,7 @@ use std::{
     ffi::{CStr, CString, c_char, c_void},
     fmt::{self, Formatter},
     path::Path,
-    ptr::null_mut,
+    ptr::{null, null_mut},
     rc::Rc,
 };
 
@@ -341,6 +341,7 @@ pub const DEFAULT_NAME: *const c_char = {
 pub struct SkSettings {
     pub app_name: *const c_char,
     pub assets_folder: *const c_char,
+    pub default_font_family: *const c_char,
     pub mode: AppMode,
     pub blend_preference: DisplayBlend,
     pub no_flatscreen_fallback: Bool32T,
@@ -368,6 +369,7 @@ impl Default for SkSettings {
         Self {
             app_name: DEFAULT_NAME,
             assets_folder: Self::assets_folder(get_assets_dir()),
+            default_font_family: null(),
             mode: AppMode::XR,
             blend_preference: DisplayBlend::None,
             no_flatscreen_fallback: 0,
@@ -406,6 +408,18 @@ impl SkSettings {
     pub fn app_name(&mut self, app_name: impl AsRef<str>) -> &mut Self {
         let c_str = CString::new(app_name.as_ref()).unwrap_or_default();
         self.app_name = c_str.into_raw();
+        self
+    }
+
+    /// A CSS-style comma-separated list of font families to use for StereoKit's default font,
+    /// e.g. `"Segoe UI, Arial, sans-serif"`. The first family that resolves on the host system
+    /// is used, with the remainder acting as fallbacks for missing glyphs. The built-in Aileron
+    /// font can be specified with the keyword `builtin`. File paths are also accepted as tokens.
+    /// If null, empty, or unresolvable, StereoKit falls back to its built-in per-platform default.
+    /// <https://stereokit.net/Pages/StereoKit/SKSettings/defaultFontFamily.html>
+    pub fn default_font_family(&mut self, font_family: impl AsRef<str>) -> &mut Self {
+        let c_str = CString::new(font_family.as_ref()).unwrap_or_default();
+        self.default_font_family = c_str.into_raw();
         self
     }
 

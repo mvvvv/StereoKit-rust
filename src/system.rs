@@ -3,7 +3,7 @@ use crate::{
     anchor::{_AnchorT, Anchor},
     compute::{_ComputeBufferT, _ComputeT, Compute, ComputeBuffer},
     font::{_FontT, Font, FontT},
-    material::{_MaterialT, Material, MaterialBuffer, MaterialBufferT, MaterialT},
+    material::{_MaterialBufferT, _MaterialT, Material, MaterialBuffer, MaterialBufferT, MaterialT},
     maths::{Bool32T, Matrix, Pose, Quat, Ray, Rect, Vec2, Vec3, ray_from_mouse},
     mesh::{_MeshT, Mesh, MeshT},
     model::{_ModelT, Model, ModelT},
@@ -99,6 +99,7 @@ pub enum AssetType {
     RenderList = 11,
     Compute = 12,
     ComputeBuffer = 13,
+    MaterialBuffer = 14,
 }
 
 /// If you want to manage loading assets, this is the class for you!
@@ -178,6 +179,7 @@ pub enum Asset {
     RenderList(RenderList),
     Compute(Compute),
     ComputeBuffer(ComputeBuffer<()>),
+    MaterialBuffer(MaterialBuffer<()>),
 }
 
 impl fmt::Display for Asset {
@@ -197,6 +199,7 @@ impl fmt::Display for Asset {
             Asset::RenderList(v) => write!(f, "RenderList : {}", v.get_id()),
             Asset::Compute(v) => write!(f, "Compute : {}", v.get_id()),
             Asset::ComputeBuffer(v) => write!(f, "ComputeBuffer : {}", v.get_id()),
+            Asset::MaterialBuffer(v) => write!(f, "MaterialBuffer : {}", v.get_id()),
         }
     }
 }
@@ -283,6 +286,7 @@ impl AssetIter {
                 NonNull::new(c_id as *mut _ComputeT).expect("Compute asset should not be null!"),
             )),
             AssetType::ComputeBuffer => Asset::ComputeBuffer(ComputeBuffer::from_raw(c_id as *mut _ComputeBufferT)),
+            AssetType::MaterialBuffer => Asset::MaterialBuffer(MaterialBuffer::from_raw(c_id as *mut _MaterialBufferT)),
         }
     }
 
@@ -329,6 +333,8 @@ impl Assets {
     /// let mut material_count = 0  ; let mut shader_count = 0;
     /// let mut font_count = 0      ; let mut other_count = 0;
     /// let mut mesh_count = 0      ; let mut render_list_count = 0;
+    /// let mut material_buffer_count = 0; let mut compute_buffer_count = 0;
+    ///
     /// for asset in all {
     ///     match asset {
     ///         Asset::Sprite(_sprite) => sprite_count += 1,
@@ -340,13 +346,15 @@ impl Assets {
     ///         Asset::Mesh(_mesh) => mesh_count +=1,
     ///         Asset::Shader(_shader) => shader_count +=1,
     ///         Asset::RenderList(_render_list) => render_list_count +=1,
-    ///     _  => other_count +=1,  
+    ///         Asset::MaterialBuffer(_material_buffer) => material_buffer_count +=1,
+    ///         Asset::ComputeBuffer(_compute_buffer) => compute_buffer_count +=1,
+    ///         _  => other_count +=1,  
     ///
     ///     }
     /// }
     /// if cfg!(feature = "test-xr-mode") {
     ///     assert_eq!(sprite_count,    13 + 1 );
-    ///     assert_eq!(texture_count,   29 + 1 );
+    ///     assert_eq!(texture_count,   30 + 1 );
     ///     assert_eq!(model_count,     2);
     ///     assert_eq!(sound_count,     5);
     ///     assert_eq!(material_count,  38 + 1 );
@@ -354,10 +362,12 @@ impl Assets {
     ///     assert_eq!(font_count,      1);
     ///     assert_eq!(mesh_count,  26);
     ///     assert_eq!(render_list_count, 1);
+    ///     assert_eq!(material_buffer_count, 1);
+    ///     assert_eq!(compute_buffer_count, 0);
     ///     assert_eq!(other_count, 0);
     /// } else {
     ///     assert_eq!(sprite_count,    13 + 1 );
-    ///     assert_eq!(texture_count,   23 + 1 );
+    ///     assert_eq!(texture_count,   24 + 1 );
     ///     assert_eq!(model_count,     2);
     ///     assert_eq!(sound_count,     5);
     ///     assert_eq!(material_count,  38 + 1 );
@@ -365,6 +375,8 @@ impl Assets {
     ///     assert_eq!(font_count,      1);
     ///     assert_eq!(mesh_count,  26);
     ///     assert_eq!(render_list_count, 1);
+    ///     assert_eq!(material_buffer_count, 1);
+    ///     assert_eq!(compute_buffer_count, 0);
     ///     assert_eq!(other_count, 0);
     /// }
     /// # sk::Sk::shutdown();
@@ -5222,8 +5234,9 @@ unsafe extern "C" {
     pub fn render_to(
         to_rendertarget: TexT,
         to_target_index: i32,
-        camera: *const Matrix,
-        projection: *const Matrix,
+        arr_camera: *const Matrix,
+        arr_projection: *const Matrix,
+        view_count: i32,
         layer_filter: RenderLayer,
         material_variant: i32,
         clear: RenderClear,
@@ -5751,32 +5764,36 @@ impl Renderer {
     /// use stereokit_rust::{system::Renderer, maths::{Vec3, Quat, Matrix}, tex::Tex,
     ///                      mesh::Mesh, material::Material, util::named_colors};
     ///
-    /// let sun = Mesh::generate_sphere(5.0, None);
+    /// let sun = Mesh::generate_sphere(2.0, None);
     /// let material_sun = Material::pbr();
-    /// let transform_sun = Matrix::t([-6.0, -1.0, -10.0]);
+    /// let transform_sun = Matrix::t([-0.0, 1.0, -4.0]);
     ///
     /// let plane = Mesh::generate_plane_up([1.0,1.0], None, true);
-    /// let mut material = Material::unlit().copy();
+    /// let mut material = Material::pbr().copy();
     /// let tex = Tex::render_target(200,200, None, None, None)
     ///                    .expect("RenderTarget should be created");
-    /// material.diffuse_tex(&tex);
+    /// material.diffuse_tex(&tex).color_tint(named_colors::CYAN);
     /// let transform_plane = Matrix::t([0.0, -0.55, 0.0]);
     ///
-    /// let camera = Matrix::t_r(Vec3::Z * 2.0, Quat::look_at(Vec3::Z, Vec3::ZERO, None));
-    /// let projection = Matrix::perspective(90.0, 1.0, 0.1, 20.0);
+    /// let camera = Matrix::t_r(Vec3::Z * 1.0, Quat::look_at(Vec3::Z, Vec3::ZERO, None));
+    /// let projection = Matrix::perspective(90.0, 1.0, 0.1, 50.0);
     ///
-    /// test_steps!( // !!!! Get a proper main loop !!!!
+    /// filename_scr = "screenshots/render_to.jpeg";
+    /// number_of_steps = 30;
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     
     ///     Renderer::add_mesh(token, &sun, &material_sun, transform_sun,
     ///         Some(named_colors::RED.into()), None);
     ///
+    ///     Renderer::render_to(token, &tex, None, camera, projection,
+    ///                         None, None, None, None);
+    ///
     ///     Renderer::add_mesh(token, &plane, &material, transform_plane,
     ///         None, None);
-    ///
-    ///     Renderer::render_to(token, &tex, None, camera, projection, None, None, None, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_to.jpeg" alt="screenshot" width="200">
     #[allow(clippy::too_many_arguments)]
     pub fn render_to<M: Into<Matrix>>(
         _token: &MainThreadToken,
@@ -5801,6 +5818,103 @@ impl Renderer {
                 to_target_index,
                 &camera.into(),
                 &projection.into(),
+                1,
+                layer_filter,
+                material_variant,
+                clear,
+                viewport,
+            )
+        }
+    }
+
+    /// Multi-view variant of [`Renderer::render_to`]. Queues a single render pass that draws the
+    /// active list into N views at once, with one camera + projection per view, writing into N
+    /// consecutive layers of an array rendertarget. The number of views is capped at 6. Like the
+    /// single-view RenderTo, this is queued for the next pipeline frame.
+    /// <https://stereokit.net/Pages/StereoKit/Renderer/RenderTo.html>
+    /// * `to_render_target` - An array or cubemap rendertarget with at least `cameras.len()`
+    ///   layers.
+    /// * `cameras` - One TRS matrix per view. Each matrix gets inverted internally. The length
+    ///   must equal `projections.len()` and is capped at 6.
+    /// * `projections` - One projection matrix per view. The length must equal `cameras.len()`.
+    /// * `layer_filter` - This is a bit flag that allows you to change which layers StereoKit
+    ///   renders for this particular render viewpoint. If None has default value of RenderLayer::All
+    /// * `material_variant` - Specifies which Material variant should be used for rendering. If
+    ///   None has default value of 0
+    /// * `clear` - Describes if and how the rendertarget should be cleared before rendering. If
+    ///   None has default value of RenderClear::All
+    /// * `viewport` - Allows you to specify a region of the rendertarget to draw to! This is in
+    ///   normalized coordinates, 0-1. If None has default value of (0, 0, 0, 0)
+    ///
+    /// see also [`render_to`] [`Renderer::render_to`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{system::Renderer, maths::{Vec3, Quat, Matrix}, tex::Tex,
+    ///                      mesh::Mesh, material::Material, util::named_colors};
+    ///
+    /// let sphere = Mesh::generate_sphere(1.0, None);
+    /// let mut material = Material::pbr().copy();
+    /// material.color_tint(named_colors::CYAN);
+    /// let transform_sphere = Matrix::t([0.0, -0.55, -0.30]);
+    ///
+    /// let camera1 = Matrix::t_r(Vec3::Z * 2.0, Quat::look_at(Vec3::Z, Vec3::ZERO, None));
+    /// let camera2 = Matrix::t_r(Vec3::Z * -2.0, Quat::look_at(Vec3::Z, Vec3::ZERO, None));
+    /// let projection = Matrix::perspective(90.0, 1.0, 0.1, 20.0);
+    ///
+    /// // Two materials to display the two array layers (slice 0 and slice 1) of the render target
+    /// let tex = Tex::render_target(200,200, None, None, None)
+    ///                    .expect("RenderTarget should be created");
+    /// let quad = Mesh::screen_quad();
+    /// let mut mat0 = Material::unlit().copy();
+    /// let mut mat1 = Material::unlit().copy();
+    /// mat0.diffuse_tex(&tex);
+    /// mat1.diffuse_tex(&tex);
+    /// // Transforms to place the two quads side by side in the scene
+    /// let transform_q0 = Matrix::t_s([-0.50, 0.45, 0.12], [0.45, 0.45, 0.45]);
+    /// let transform_q1 = Matrix::t_s([ 0.50, 0.45, 0.12], [0.45, 0.45, 0.45]);
+    ///
+    /// filename_scr = "screenshots/render_to_multiview.jpeg";
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     Renderer::add_mesh(token, &sphere, &material, transform_sphere,
+    ///         None, None);
+    ///     if iter < number_of_steps - 2 {
+    ///         Renderer::render_to_multiview(token, &tex, &[camera1, camera2],
+    ///                                       &[projection, projection],
+    ///                                       None, None, None, None);
+    ///     }
+    ///
+    ///     // Display array slice 0 and slice 1 of the render target as screen quads
+    ///     quad.draw(token, &mat0, transform_q0, None, None);
+    ///     quad.draw(token, &mat1, transform_q1, None, None);
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_to_multiview.jpeg" alt="screenshot" width="200">
+    #[allow(clippy::too_many_arguments)]
+    pub fn render_to_multiview(
+        _token: &MainThreadToken,
+        to_render_target: impl AsRef<Tex>,
+        cameras: &[Matrix],
+        projections: &[Matrix],
+        layer_filter: Option<RenderLayer>,
+        material_variant: Option<i32>,
+        clear: Option<RenderClear>,
+        viewport: Option<Rect>,
+    ) {
+        assert_eq!(cameras.len(), projections.len(), "cameras and projections must have the same length");
+        let layer_filter = layer_filter.unwrap_or(RenderLayer::All);
+        let material_variant = material_variant.unwrap_or(0);
+        let clear = clear.unwrap_or(RenderClear::All);
+        let viewport = viewport.unwrap_or_default();
+
+        unsafe {
+            render_to(
+                to_render_target.as_ref().0.as_ptr(),
+                0,
+                cameras.as_ptr(),
+                projections.as_ptr(),
+                cameras.len() as i32,
                 layer_filter,
                 material_variant,
                 clear,

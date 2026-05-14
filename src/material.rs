@@ -2,7 +2,7 @@ use crate::StereoKitError;
 use crate::compute::{ComputeBuffer, ComputeBufferT};
 use crate::maths::{Bool32T, Matrix, Vec2, Vec3, Vec4};
 use crate::shader::{Shader, ShaderT};
-use crate::system::{IAsset, Log};
+use crate::system::{IAsset, Log, asset_get_id, asset_set_id};
 use crate::tex::{Tex, TexT};
 use crate::ui::IdHashT;
 use crate::util::Color128;
@@ -2789,19 +2789,23 @@ impl ParamInfo {
 ///
 /// # {
 /// // Create the GPU buffer once.
-/// let buffer = MaterialBuffer::<Globals>::new();
+/// let mut buffer = MaterialBuffer::<Globals>::new();
 ///
 /// // Update data you want the shader(s) to read.
-/// let mut globals = Globals { time: 1.234, wind: [0.1, 0.2, 0.3],
-///                             ..Default::default() };
+/// let mut globals = Globals { time: 1.234, wind: [0.1, 0.2, 0.3]};
 ///
 /// // Upload to GPU so every shader using this global slot can access it.
-/// buffer.set(&mut globals as *mut _);
-/// # } sk::Sk::shutdown();
+/// buffer.id("globals_material_buffer").set(&mut globals as *mut _);
+/// test_steps!(
+///     assert_eq!(buffer.get_id(), "auto/material_buffer_128");
+/// );
+/// # }
+/// # sk::Sk::shutdown();
 ///
 /// // In your shader, declare a matching cbuffer bound to the slot you
 /// // bind this MaterialBuffer to (see Renderer::set_global_buffer in StereoKit).
 /// ```
+#[derive(Debug, PartialEq)]
 pub struct MaterialBuffer<T> {
     _material_buffer: MaterialBufferT,
     phantom: PhantomData<T>,
@@ -2833,6 +2837,16 @@ unsafe extern "C" {
     pub fn material_buffer_release(buffer: MaterialBufferT);
 }
 
+impl<T> IAsset for MaterialBuffer<T> {
+    fn get_id(&self) -> &str {
+        self.get_id()
+    }
+
+    fn as_asset(&self) -> crate::system::AssetT {
+        self._material_buffer as crate::system::AssetT
+    }
+}
+
 impl<T> Default for MaterialBuffer<T> {
     fn default() -> Self {
         Self::new()
@@ -2850,6 +2864,17 @@ impl<T> MaterialBuffer<T> {
         MaterialBuffer { _material_buffer: mat_buffer, phantom: PhantomData }
     }
 
+    /// Gets or sets the unique identifier of this asset resource.
+    /// <https://stereokit.net/Pages/StereoKit/MaterialBuffer/Id.html>
+    ///
+    /// see also [`asset_set_id`] [`MaterialBuffer::get_id`]
+    /// see example in [`MaterialBuffer`]
+    pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
+        let c_str = CString::new(id.as_ref()).unwrap_or_default();
+        unsafe { asset_set_id(self._material_buffer as *mut _, c_str.as_ptr()) };
+        self
+    }
+
     /// This will upload your data to the GPU for shaders to use.
     /// <https://stereokit.net/Pages/StereoKit/MaterialBuffer/Set.html>
     ///
@@ -2857,9 +2882,26 @@ impl<T> MaterialBuffer<T> {
     pub fn set(&self, in_data: *mut T) {
         unsafe { material_buffer_set_data(self._material_buffer, in_data as *const c_void) };
     }
+    /// The id of this material buffer.
+    /// <https://stereokit.net/Pages/StereoKit/MaterialBuffer/Id.html>
+    ///
+    /// see also [`asset_get_id`] [`MaterialBuffer::id`]
+    /// see example in [`MaterialBuffer`]
+    pub fn get_id(&self) -> &str {
+        unsafe { CStr::from_ptr(asset_get_id(self._material_buffer as *mut _)) }
+            .to_str()
+            .unwrap_or_default()
+    }
 
     /// Internal: returns raw pointer for FFI binding usage (Renderer::set_global_buffer).
     pub(crate) fn as_ptr(&self) -> MaterialBufferT {
         self._material_buffer
+    }
+}
+
+impl MaterialBuffer<()> {
+    /// Wraps a raw FFI pointer without incrementing the refcount. For internal use (Assets iterator).
+    pub(crate) fn from_raw(ptr: MaterialBufferT) -> Self {
+        MaterialBuffer { _material_buffer: ptr, phantom: PhantomData }
     }
 }

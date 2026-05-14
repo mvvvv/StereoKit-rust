@@ -35,7 +35,7 @@ use std::{
 /// let mut render_mat = Material::unlit().copy();
 /// render_mat.diffuse_tex(&render_tex);
 ///
-/// let at = Vec3::new(-2.0, 1.0, 1000.9);
+/// let at = Vec3::new(-3.0, 2.0, 20.9);
 /// let perspective = Matrix::perspective(45.0, 1.0, 0.01, 1010.0);
 /// let transform_plane = Matrix::r([90.0, 90.0, 145.0]);
 /// let transform_cam  = Matrix::look_at(at, Vec3::ZERO, Some(Vec3::new(1.0, 1.0, 1.0)));
@@ -86,12 +86,27 @@ pub struct _RenderListT {
 /// StereoKit ffi type.
 pub type RenderListT = *mut _RenderListT;
 
+/// Controls whether a RenderList holds asset references for the items it contains. Tracked lists are safe to keep
+/// around across frames at the cost of an addref/releaseref pair per item.
+#[repr(u32)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Default)]
+pub enum RenderListRefs {
+    /// The list calls addref on each item's mesh/material when added, and releaseref when cleared. This keeps assets
+    /// alive for as long as the list holds them, and is the safe default.
+    #[default]
+    Tracked = 0,
+    /// The list does not addref or releaseref its items. The caller is responsible for ensuring referenced assets
+    /// remain valid until the list is cleared. Useful for per-frame lists that are filled and drained inside a single
+    /// frame.
+    None = 1,
+}
+
 unsafe extern "C" {
     pub fn render_list_find(id: *const c_char) -> RenderListT;
     pub fn render_list_set_id(render_list: RenderListT, id: *const c_char);
     pub fn render_list_get_id(render_list: RenderListT) -> *const c_char;
     pub fn render_get_primary_list() -> RenderListT;
-    pub fn render_list_create() -> RenderListT;
+    pub fn render_list_create(refs: RenderListRefs) -> RenderListT;
     pub fn render_list_addref(list: RenderListT);
     pub fn render_list_release(list: RenderListT);
     pub fn render_list_clear(list: RenderListT);
@@ -123,8 +138,9 @@ unsafe extern "C" {
     pub fn render_list_draw_now(
         list: RenderListT,
         to_rendertarget: TexT,
-        camera: Matrix,
-        projection: Matrix,
+        in_arr_cameras: *const Matrix,
+        in_arr_projections: *const Matrix,
+        view_count: i32,
         clear_color: Color128,
         clear: RenderClear,
         viewport_pct: Rect,
@@ -160,12 +176,16 @@ impl RenderList {
     /// Creates a new empty RenderList.
     /// <https://stereokit.net/Pages/StereoKit/RenderList/RenderList.html>
     ///
-    /// see also [`render_list_create`]
+    /// * `refs` - Controls whether the list tracks asset references for the Meshes and Materials added to it. The
+    ///   default, `Tracked`, is safe across frames. `None` skips the addref/release pair on each add and clear, but
+    ///   the caller must ensure the list is cleared before any referenced asset could be released.
+    ///
+    /// see also [`render_list_create`] [`RenderList::new_with`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::Matrix,  util::Color128,
-    ///                      material::Material, mesh::Mesh, render_list::RenderList};
+    /// use stereokit_rust::{maths::Matrix,  util::Color128,material::Material, mesh::Mesh,
+    ///                      render_list::RenderList};
     ///
     /// let mut render_list = RenderList::new();
     /// assert!   (render_list.get_id().starts_with("auto/render_list_"));
@@ -177,7 +197,36 @@ impl RenderList {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn new() -> Self {
-        RenderList(NonNull::new(unsafe { render_list_create() }).expect("RenderList::new should work"))
+        RenderList(
+            NonNull::new(unsafe { render_list_create(RenderListRefs::Tracked) }).expect("RenderList::new should work"),
+        )
+    }
+
+    /// Creates a new empty RenderList.
+    /// <https://stereokit.net/Pages/StereoKit/RenderList/RenderList.html>
+    ///
+    /// * `refs` - Controls whether the list tracks asset references for the Meshes and Materials added to it. The
+    ///   default, `Tracked`, is safe across frames. `None` skips the addref/release pair on each add and clear, but
+    ///   the caller must ensure the list is cleared before any referenced asset could be released.
+    ///
+    /// see also [`render_list_create`] [`RenderList::new`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Matrix,  util::Color128,material::Material, mesh::Mesh,
+    ///                      render_list::{RenderList, RenderListRefs}};
+    ///
+    /// let mut render_list = RenderList::new_with(RenderListRefs::None);
+    /// assert!   (render_list.get_id().starts_with("auto/render_list_"));
+    /// assert_eq!(render_list.get_count(), 0);
+    ///
+    /// render_list.add_mesh(Mesh::cube(), Material::unlit(), Matrix::IDENTITY, Color128::WHITE, None);
+    /// assert_eq!(render_list.get_count(), 1);
+    /// # test_steps!();
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn new_with(refs: RenderListRefs) -> Self {
+        RenderList(NonNull::new(unsafe { render_list_create(refs) }).expect("RenderList::new_with should work"))
     }
 
     /// Looks for a RenderList matching the given id!
@@ -308,7 +357,7 @@ impl RenderList {
     /// let cylinder2 = Mesh::generate_cylinder(0.3, 1.5, [-0.5, 0.5, 0.0],None);
     /// let cylinder_mat = Material::pbr();
     ///
-    /// let at = Vec3::new(-80.0, 1.0, 80.0);
+    /// let at = Vec3::new(-2.0, 1.0, 2.0);
     /// let perspective = Matrix::perspective(45.0, 1.0, 0.01, 120.0);
     /// let transform_cam  = Matrix::look_at(at, Vec3::ZERO, None);
     ///
@@ -384,7 +433,7 @@ impl RenderList {
     ///
     /// let model = Model::from_file("plane.glb", None, None).unwrap_or_default().copy();
     ///
-    /// let at = Vec3::new(-2.0, 400.0, 1000.9);
+    /// let at = Vec3::new(-2.0, 8.0, 20.9);
     /// let perspective = Matrix::perspective(45.0, 1.0, 0.01, 1550.0);
     /// let transform_plane1 = Matrix::t([ 5.0, 2.0, 0.0]);
     /// let transform_plane2 = Matrix::t([2.0, -6.0, -10.0]);
@@ -472,7 +521,7 @@ impl RenderList {
     ///   default material, any others will generally be application defined by setting up each Material's Variant
     ///   with specific shaders. If a Material has no corresponding variant, it will not be drawn.
     ///
-    /// see also [`render_list_draw_now`]
+    /// see also [`render_list_draw_now`] [`RenderList::draw_now_multi_view`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -491,8 +540,8 @@ impl RenderList {
     /// let screen = Mesh::generate_cube([1.0, 1.0, 1.0], None);
     /// let transform_screen = Matrix::t([0.0, 0.0, -1.0]);
     ///
-    /// let at = Vec3::new(-80.0, 1.0, 80.0);
-    /// let perspective = Matrix::perspective(45.0, 1.0, 0.01, 120.0);
+    /// let at = Vec3::new(-1.0, 0.0, 1.0);
+    /// let orthographic = Matrix::orthographic(1.5, 1.5, 0.01, 120.0);
     /// let transform_cam  = Matrix::look_at(at, Vec3::ZERO, None);
     ///
     /// let mut render_list = RenderList::new();
@@ -506,7 +555,7 @@ impl RenderList {
     ///     screen.draw(token, &render_mat, Matrix::IDENTITY, None, None);
     ///     render_list.draw_now( &render_tex,
     ///         transform_cam,
-    ///         perspective,
+    ///         orthographic,
     ///         None,
     ///         Some(RenderClear::None),
     ///         Rect::new(0.0, 0.0, 1.0, 1.0),
@@ -533,12 +582,113 @@ impl RenderList {
         let clear = clear.unwrap_or(RenderClear::All);
         let clear_color = clear_color.unwrap_or_default();
         let material_variant = material_variant.unwrap_or(0);
+        let camera = camera.into();
+        let projection = projection.into();
         unsafe {
             render_list_draw_now(
                 self.0.as_ptr(),
                 to_rendertarget.as_ref().0.as_ptr(),
-                camera.into(),
-                projection.into(),
+                &camera,
+                &projection,
+                1,
+                clear_color,
+                clear,
+                viewport_pct,
+                layer_filter,
+                material_variant,
+            )
+        }
+    }
+
+    /// Multi-view variant of draw_now. Renders the list once across multiple views in a single pass, with one camera +
+    /// projection per view. Each view writes to its corresponding layer of the (array) render target. The number of
+    /// views is capped at 6.
+    /// <https://stereokit.net/Pages/StereoKit/RenderList/DrawNow.html>
+    ///
+    /// * `to_render_target` - An array or cubemap rendertarget with at least `cameras.len()` layers.
+    /// * `cameras` - View transforms, one per view. Length must equal `projections.len()` and cannot exceed
+    ///   Renderer::MaxViews.
+    /// * `projections` - Projection matrices, one per view. Same length as `cameras`.
+    /// * `clear_color` - If `clear` clears color, this is the color used. Default is transparent black.
+    /// * `clear` - Whether and how to clear the rendertarget before rendering.
+    /// * `viewport_pct` - Subregion of the rendertarget to draw to, in normalized coordinates 0-1. Width of zero
+    ///   draws to the entire target.
+    /// * `layer_filter` - Bit flag controlling which render layers are drawn this pass.
+    /// * `material_variant` - Which material variant to use. 0 is the default; non-zero indexes into
+    ///   Material.Variants.
+    ///
+    /// see also [`render_list_draw_now`] [`RenderList::draw_now`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix, Rect},  util::{named_colors, Color128},
+    ///                      tex::{Tex, TexType, TexFormat}, material::Material,
+    ///                      mesh::Mesh, render_list::RenderList, system::RenderClear};
+    ///
+    /// let cylinder1 = Mesh::generate_cylinder(0.3, 1.5, [ 0.5, 0.5, 0.0],None);
+    /// let cylinder2 = Mesh::generate_cylinder(0.3, 1.5, [-0.5, 0.5, 0.0],None);
+    /// let cylinder_mat = Material::pbr().copy();
+    ///
+    /// let render_tex = Tex::gen_color(Color128::WHITE, 128, 128,
+    ///                       TexType::Rendertarget, TexFormat::Rgba32Srgb);
+    /// let mut render_mat = Material::unlit().copy();
+    /// render_mat.diffuse_tex(&render_tex);
+    /// let screen = Mesh::generate_cube([1.0, 1.0, 1.0], None);
+    /// let transform_screen = Matrix::t([0.0, 0.0, -1.0]);
+    ///
+    /// let at = Vec3::new(-1.0, 0.0, 1.0);
+    /// let orthographic = Matrix::orthographic(1.5, 1.5, 0.01, 120.0);
+    /// let transform_cam1  = Matrix::look_at(at, [0.0, 0.0, 0.0], None);
+    /// let transform_cam2  = Matrix::look_at(at, [0.1, 0.0, 0.0], None);
+    /// let cameras = [transform_cam1, transform_cam2];
+    /// let projections = [orthographic; 2];
+    ///
+    /// let mut render_list = RenderList::new();
+    /// render_list
+    ///     .add_mesh(&cylinder1, &cylinder_mat, Matrix::IDENTITY, named_colors::RED, None)
+    ///     .add_mesh(&cylinder2, &cylinder_mat, Matrix::IDENTITY, named_colors::GREEN,None)
+    ///     .add_mesh(&screen,    &render_mat,   transform_screen, named_colors::GRAY, None);
+    ///
+    /// filename_scr = "screenshots/render_list_draw_now_multi_view.jpeg";
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     screen.draw(token, &render_mat, Matrix::IDENTITY, None, None);
+    ///     render_list.draw_now_multi_view( &render_tex,
+    ///         &cameras,
+    ///         &projections,
+    ///         None,
+    ///         Some(RenderClear::None),
+    ///         Rect::new(0.0, 0.0, 1.0, 1.0),
+    ///         None,
+    ///         None,
+    ///     );
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_list_draw_now_multi_view.jpeg" alt="screenshot" width="200">
+    #[allow(clippy::too_many_arguments)]
+    pub fn draw_now_multi_view(
+        &mut self,
+        to_rendertarget: impl AsRef<Tex>,
+        cameras: &[Matrix],
+        projections: &[Matrix],
+        clear_color: Option<Color128>,
+        clear: Option<RenderClear>,
+        viewport_pct: Rect,
+        layer_filter: Option<RenderLayer>,
+        material_variant: Option<i32>,
+    ) {
+        assert_eq!(cameras.len(), projections.len(), "cameras and projections must have the same length");
+        let layer_filter = layer_filter.unwrap_or(RenderLayer::all());
+        let clear = clear.unwrap_or(RenderClear::All);
+        let clear_color = clear_color.unwrap_or_default();
+        let material_variant = material_variant.unwrap_or(0);
+        unsafe {
+            render_list_draw_now(
+                self.0.as_ptr(),
+                to_rendertarget.as_ref().0.as_ptr(),
+                cameras.as_ptr(),
+                projections.as_ptr(),
+                cameras.len() as i32,
                 clear_color,
                 clear,
                 viewport_pct,

@@ -67,7 +67,7 @@ ln -s ~/dvlt/StereoKit-rust/shaders_src/ .
 ln -s ~/dvlt/StereoKit-rust/src/templates/gradle/AndroidManifest.xml app/src/main/.
 clear; ./gradlew run --warning-mode all && sh logcat.cmd
 
-
+cargo clean && ./gradlew clean
 
 
 
