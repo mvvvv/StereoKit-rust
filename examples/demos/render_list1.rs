@@ -28,7 +28,7 @@ pub struct RenderList1 {
     render_mat: Material,
     render_tex: Tex,
     old_clear_color: Color128,
-    at: Vec3,
+    camera_pos: Vec3,
     quad: Mesh,
     perspective: Matrix,
     clear_primary: bool,
@@ -41,17 +41,23 @@ pub struct RenderList1 {
 impl Default for RenderList1 {
     fn default() -> Self {
         let quad = Mesh::screen_quad();
-        let mut list = RenderList::new_with(RenderListRefs::Tracked);
+        let mut list = RenderList::new_with(RenderListRefs::None);
         list.id("PlaneList");
         let render_tex = Tex::gen_color(BLUE_VIOLET, 128, 128, TexType::Rendertarget, TexFormat::Rgba32Srgb);
         //let render_tex = Tex::render_target(128, 128, None, None, None).unwrap_or_default();
         let mut render_mat = Material::pbr().copy();
         let model = Model::from_file("plane.glb", None, None).unwrap_or_default();
-        list.add_model(model, None, Matrix::r(Quat::from_angles(90.0, 90.0, 145.0)), Color128::WHITE, None);
-        //list.add_mesh(&quad, &render_mat, Matrix::IDENTITY, BLUE_VIOLET, None);
+        list.add_model(
+            model,
+            Some(&render_mat),
+            Matrix::r(Quat::from_angles(90.0, 90.0, 145.0)),
+            Color128::WHITE,
+            None,
+        );
+        list.add_mesh(&quad, &render_mat, Matrix::IDENTITY, BLUE_VIOLET, None);
 
         Assets::block_for_priority(i32::MAX);
-        let at = Vec3::new(-2.0, 1.0, 200.9);
+        let camera_pos = Vec3::new(-2.0, 1.0, 5.9);
 
         render_mat.diffuse_tex(&render_tex);
         render_mat.face_cull(stereokit_rust::material::Cull::None);
@@ -69,7 +75,7 @@ impl Default for RenderList1 {
             render_mat,
             render_tex,
             old_clear_color: Color128::BLACK_TRANSPARENT,
-            at,
+            camera_pos,
             quad,
             perspective,
 
@@ -101,7 +107,7 @@ impl RenderList1 {
 
         self.list.draw_now(
             &self.render_tex,
-            Matrix::look_at(self.at, Vec3::ZERO, Some(Vec3::new(1.0, Time::get_totalf().sin(), 1.0))),
+            Matrix::look_at(self.camera_pos, Vec3::ZERO, Some(Vec3::new(1.0, Time::get_totalf().sin(), 1.0))),
             self.perspective,
             Some(Color128::new(0.4, 0.3, 0.2, 0.5)),
             Some(RenderClear::Color),
@@ -114,7 +120,7 @@ impl RenderList1 {
         Ui::label(format!("Render items: {}/{}", self.primary.get_count(), self.primary.get_prev_count()), None, true);
         if let Some(value) = Ui::toggle("Clear", &mut self.clear_primary, None) {
             if value {
-                self.perspective = Matrix::perspective_focal(Vec2::ONE * 2048.0, 100000.0, 0.01, 1010.0)
+                self.perspective = Matrix::perspective_focal(Vec2::ONE * 2048.0, 1500.0, 0.01, 1010.0)
             } else {
                 self.perspective = Matrix::perspective(90.0, 1.0, 0.01, 1010.0)
             }

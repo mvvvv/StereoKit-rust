@@ -35,10 +35,10 @@ use std::{
 /// let mut render_mat = Material::unlit().copy();
 /// render_mat.diffuse_tex(&render_tex);
 ///
-/// let at = Vec3::new(-3.0, 2.0, 20.9);
+/// let from = Vec3::new(-3.0, 2.0, 20.9);
 /// let perspective = Matrix::perspective(45.0, 1.0, 0.01, 1010.0);
 /// let transform_plane = Matrix::r([90.0, 90.0, 145.0]);
-/// let transform_cam  = Matrix::look_at(at, Vec3::ZERO, Some(Vec3::new(1.0, 1.0, 1.0)));
+/// let transform_cam  = Matrix::look_at(from, Vec3::ZERO, Some(Vec3::new(1.0, 1.0, 1.0)));
 ///
 /// let mut render_list = RenderList::new();
 /// render_list.add_model(&model, None, transform_plane, Color128::WHITE, None);
@@ -471,7 +471,7 @@ impl RenderList {
     pub fn add_model(
         &mut self,
         model: impl AsRef<Model>,
-        material_override: Option<Material>,
+        material_override: Option<impl AsRef<Material>>,
         transform: impl Into<Matrix>,
         color_linear: impl Into<Color128>,
         layer: Option<RenderLayer>,

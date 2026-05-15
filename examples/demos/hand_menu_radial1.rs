@@ -471,7 +471,7 @@ impl HandMenuRadial1 {
         // draw a floor if needed
         if self.show_floor {
             if self.show_shadows && self.floor == 5 {
-                let light_pos = Renderer::get_sky_light().get_dominent_light_direction() * -500.0;
+                let light_pos = Renderer::get_sky_light().get_dominent_light_direction() * -15.0;
                 let camera = Matrix::t_r(light_pos, Quat::look_at(light_pos, Vec3::ZERO, None));
                 //Log::diag(format!("Camera at {:}", &light_pos));
 
