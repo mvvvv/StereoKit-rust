@@ -63,6 +63,30 @@ jobs:
     - name: Get Cache
       uses: swatinem/rust-cache@v2
 
+    - name: Install Mesa lavapipe (software Vulkan)
+      shell: pwsh
+      run: |
+        $version = "26.0.7"
+        $url = "https://github.com/pal1000/mesa-dist-win/releases/download/$version/mesa3d-$version-release-msvc.7z"
+        Invoke-WebRequest -Uri $url -OutFile mesa.7z
+        7z x mesa.7z -omesa -y
+        $icd = (Get-ChildItem -Path mesa -Recurse -Filter "lvp_icd.x86_64.json" | Select-Object -First 1).FullName
+        if (-not $icd) { throw "lavapipe ICD JSON not found in extracted archive" }
+        $icdDir = Split-Path -Parent $icd
+        Write-Host "Using ICD: $icd"
+
+        # The Vulkan loader on GH Actions runs elevated and ignores VK_DRIVER_FILES /
+        # VK_ICD_FILENAMES for security reasons. Register the ICD in the registry
+        # instead — the loader reads HKLM\SOFTWARE\Khronos\Vulkan\Drivers regardless
+        # of elevation. Value name is the absolute ICD JSON path, value data is a
+        # DWORD 0 meaning "enabled".
+        $regKey = "HKLM:\SOFTWARE\Khronos\Vulkan\Drivers"
+        New-Item -Path $regKey -Force | Out-Null
+        New-ItemProperty -Path $regKey -Name $icd -PropertyType DWord -Value 0 -Force | Out-Null
+
+        # Mesa folder on PATH so vulkan_lvp.dll's dependencies resolve.
+        "PATH=$icdDir;$env:PATH" >> $env:GITHUB_ENV
+
     - name: Install StereoKit
       run: cargo install --force --path . 
 
@@ -75,6 +99,7 @@ jobs:
       timeout-minutes: 15
       run: |
         $failed = $false
+        cargo test tests;             if ($LASTEXITCODE -ne 0) { $failed = $true }
         cargo test --doc maths;       if ($LASTEXITCODE -ne 0) { $failed = $true }
         cargo test --doc ui;          if ($LASTEXITCODE -ne 0) { $failed = $true }
         cargo test --doc framework;   if ($LASTEXITCODE -ne 0) { $failed = $true }
@@ -175,26 +200,27 @@ jobs:
         export DYLD_LIBRARY_PATH=$(brew --prefix molten-vk)/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}
         export MVK_CONFIG_LOG_LEVEL=0
         failed=0
-        timeout 3m cargo test --doc maths       -- --nocapture --test-threads=1 || failed=1
-        timeout 1m cargo test --doc ui          -- --nocapture --test-threads=1 || failed=1
-        timeout 1m cargo test --doc framework   -- --nocapture --test-threads=1 || failed=1
-        timeout 1m cargo test --doc tools       -- --nocapture --test-threads=1 || failed=1
-        timeout 1m cargo test --doc sound       -- --nocapture --test-threads=1 || failed=1
-        timeout 1m cargo test --doc interactor  -- --nocapture --test-threads=1 || failed=1
-        timeout 3m cargo test --doc system      -- --nocapture --test-threads=1 || failed=1
-        timeout 1m cargo test --doc permission  -- --nocapture --test-threads=1 || failed=1
-        timeout 1m cargo test --doc material    -- --nocapture --test-threads=1 || failed=1
-        timeout 1m cargo test --doc shader      -- --nocapture --test-threads=1 || failed=1
-        timeout 2m cargo test --doc tex         -- --nocapture --test-threads=1 || failed=1
-        timeout 1m cargo test --doc sprite      -- --nocapture --test-threads=1 || failed=1
-        timeout 1m cargo test --doc font        -- --nocapture --test-threads=1 || failed=1
-        timeout 1m cargo test --doc render_list -- --nocapture --test-threads=1 || failed=1
-        timeout 1m cargo test --doc anchor      -- --nocapture --test-threads=1 || failed=1
-        timeout 1m cargo test --doc compute     -- --nocapture --test-threads=1 || failed=1
-        timeout 2m cargo test --doc util        -- --nocapture --test-threads=1 || failed=1
-        timeout 1m cargo test --doc sk          -- --nocapture --test-threads=1 || failed=1
-        timeout 1m cargo test --doc mesh        -- --nocapture --test-threads=1 || failed=1
-        timeout 1m cargo test --doc model       -- --nocapture --test-threads=1 || failed=1
+        timeout 1m cargo test tests             -- --test-threads=1 || failed=1
+        timeout 3m cargo test --doc maths       -- --test-threads=1 || failed=1
+        timeout 1m cargo test --doc ui          -- --test-threads=1 || failed=1
+        timeout 1m cargo test --doc framework   -- --test-threads=1 || failed=1
+        timeout 1m cargo test --doc tools       -- --test-threads=1 || failed=1
+        timeout 1m cargo test --doc sound       -- --test-threads=1 || failed=1
+        timeout 1m cargo test --doc interactor  -- --test-threads=1 || failed=1
+        timeout 3m cargo test --doc system      -- --test-threads=1 || failed=1
+        timeout 1m cargo test --doc permission  -- --test-threads=1 || failed=1
+        timeout 1m cargo test --doc material    -- --test-threads=1 || failed=1
+        timeout 1m cargo test --doc shader      -- --test-threads=1 || failed=1
+        timeout 2m cargo test --doc tex         -- --test-threads=1 || failed=1
+        timeout 1m cargo test --doc sprite      -- --test-threads=1 || failed=1
+        timeout 1m cargo test --doc font        -- --test-threads=1 || failed=1
+        timeout 1m cargo test --doc render_list -- --test-threads=1 || failed=1
+        timeout 1m cargo test --doc anchor      -- --test-threads=1 || failed=1
+        timeout 1m cargo test --doc compute     -- --test-threads=1 || failed=1
+        timeout 2m cargo test --doc util        -- --test-threads=1 || failed=1
+        timeout 1m cargo test --doc sk          -- --test-threads=1 || failed=1
+        timeout 1m cargo test --doc mesh        -- --test-threads=1 || failed=1
+        timeout 1m cargo test --doc model       -- --test-threads=1 || failed=1
         exit $failed
 
     - name: Build no-event-loop

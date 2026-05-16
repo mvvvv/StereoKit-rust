@@ -38,6 +38,7 @@ use std::{
 ///     anchor.try_set_persistent(true);
 /// }
 /// # Anchor::clear_store(); // !!!! Clear the store to avoid side effects for other tests !!!!
+/// # test_steps!();
 /// # sk::Sk::shutdown();
 /// ```
 #[repr(C)]
@@ -128,6 +129,7 @@ impl Anchor {
     ///
     /// let my_anchor = Anchor::find("the_anchor that doesn't exist");
     /// assert!(my_anchor.is_err());
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn find<S: AsRef<str>>(id: S) -> Result<Anchor, StereoKitError> {
@@ -155,6 +157,7 @@ impl Anchor {
     ///     assert_eq!(same.get_id(), anchor.get_id());
     /// }
     /// # Anchor::clear_store(); // !!!! Clear the store to avoid side effects for other tests !!!!
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn clone_ref(&self) -> Anchor {
@@ -178,6 +181,7 @@ impl Anchor {
     ///     anchor.try_set_persistent(true);
     /// }
     /// # Anchor::clear_store(); // !!!! Clear the store to avoid side effects for other tests !!!!
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn from_pose(pose: impl Into<Pose>) -> Result<Anchor, StereoKitError> {
@@ -205,6 +209,7 @@ impl Anchor {
     ///     assert_eq!(anchor.get_id(), "my_anchor");
     /// }
     /// # Anchor::clear_store(); // !!!! Clear the store to avoid side effects for other tests !!!!
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
@@ -225,6 +230,7 @@ impl Anchor {
     /// Anchor::clear_store();
     /// assert_eq!(Anchor::anchors().get_count(), 0);
     /// assert_eq!(Anchor::new_anchors().get_count(), 0);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn clear_store() {
@@ -241,6 +247,7 @@ impl Anchor {
     /// use stereokit_rust::anchor::Anchor;
     ///
     /// assert_eq!(Anchor::anchors().get_count(), 0);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn anchors() -> AnchorIter {
@@ -257,6 +264,7 @@ impl Anchor {
     /// use stereokit_rust::anchor::Anchor;
     ///
     /// assert_eq!(Anchor::new_anchors().get_count(), 0);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn new_anchors() -> AnchorIter {
@@ -280,6 +288,7 @@ impl Anchor {
     ///     anchor.try_set_persistent(true);
     ///     assert_eq!(anchor.get_persistent(), true);
     /// }
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn try_set_persistent(&self, persistent: bool) -> bool {
@@ -304,6 +313,7 @@ impl Anchor {
     ///     let anchor = Anchor::from_pose(Pose::default()).expect("What?!!!?");
     ///     anchor.try_set_persistent(true);
     /// }
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_capabilities() -> AnchorCaps {
@@ -334,6 +344,7 @@ impl Anchor {
     /// if let Ok(anchor) = Anchor::from_pose(Pose::default()){
     ///     assert_eq!(anchor.get_pose(), Pose::default());
     /// }
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_pose(&self) -> Pose {
@@ -354,6 +365,7 @@ impl Anchor {
     /// if let Ok(anchor) = Anchor::from_pose(Pose::default()){
     ///     assert_eq!(anchor.get_tracked(), BtnState::Active);
     /// }
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_tracked(&self) -> BtnState {
@@ -383,6 +395,7 @@ impl Anchor {
     /// if let Ok(anchor) = Anchor::from_pose(Pose::default()){
     ///     assert_eq!(anchor.get_name().is_empty(), false);
     /// }
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_name(&self) -> &str {
@@ -430,6 +443,7 @@ impl Anchor {
 /// for anchor in  AnchorIter::new_anchors() {
 ///     println!("New Anchor: {:?}", anchor);
 /// }
+/// # test_steps!();
 /// # sk::Sk::shutdown();
 /// ```
 pub struct AnchorIter {
@@ -491,6 +505,7 @@ impl AnchorIter {
     ///
     /// let new_anchors = Anchor::new_anchors();
     /// assert_eq!(new_anchors.get_count(), new_anchors.count() as i32);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_count(&self) -> i32 {
@@ -510,6 +525,7 @@ impl AnchorIter {
     /// for anchor in  AnchorIter::anchors() {
     ///     println!("Anchor: {:?}", anchor);
     /// }
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn anchors() -> AnchorIter {
@@ -529,6 +545,7 @@ impl AnchorIter {
     /// for anchor in  AnchorIter::new_anchors() {
     ///     println!("New Anchor: {:?}", anchor);
     /// }
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn new_anchors() -> AnchorIter {

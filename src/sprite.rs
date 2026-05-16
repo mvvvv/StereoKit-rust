@@ -286,6 +286,7 @@ impl Sprite {
     ///                        .expect("Should be able to find sprite");
     ///
     /// assert_eq!(same_sprite, sprite);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn find<S: AsRef<str>>(id: S) -> Result<Sprite, StereoKitError> {
@@ -316,6 +317,7 @@ impl Sprite {
     /// let same_sprite = sprite.clone_ref();
     ///
     /// assert_eq!(same_sprite, sprite);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn clone_ref(&self) -> Sprite {
@@ -342,6 +344,7 @@ impl Sprite {
     /// sprite.id("My_sprite_ID");
     ///
     /// assert_eq!(sprite.get_id(), "My_sprite_ID");
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
@@ -419,6 +422,7 @@ impl Sprite {
     /// let sprite = Sprite::from_file("hdri/sky_dawn.hdr", None, None)
     ///                  .expect("open_gltf.jpeg should be able to create sprite");
     /// assert_eq!(sprite.get_aspect(), 2.0);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_aspect(&self) -> f32 {
@@ -441,6 +445,7 @@ impl Sprite {
     /// let sprite = Sprite::from_file("hdri/sky_dawn.hdr", None, None)
     ///                  .expect("open_gltf.jpeg should be able to create sprite");
     /// assert_eq!(sprite.get_height(), 2048);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_height(&self) -> i32 {
@@ -463,6 +468,7 @@ impl Sprite {
     /// let sprite = Sprite::from_file("hdri/sky_dawn.hdr", None, None)
     ///                  .expect("open_gltf.jpeg should be able to create sprite");
     /// assert_eq!(sprite.get_width(), 4096);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_width(&self) -> i32 {
@@ -485,6 +491,7 @@ impl Sprite {
     /// let sprite = Sprite::from_file("hdri/sky_dawn.hdr", None, None)
     ///                  .expect("open_gltf.jpeg should be able to create sprite");
     /// assert_eq!(sprite.get_normalized_dimensions(), Vec2::new(1.0, 0.5));
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_normalized_dimensions(&self) -> Vec2 {
