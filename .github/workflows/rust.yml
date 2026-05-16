@@ -97,30 +97,31 @@ jobs:
       run: cargo build --verbose --example main_pc
     - name: Run tests 
       timeout-minutes: 15
-      run: |
-        $failed = $false
-        cargo test tests;             if ($LASTEXITCODE -ne 0) { $failed = $true }
-        cargo test --doc maths;       if ($LASTEXITCODE -ne 0) { $failed = $true }
-        cargo test --doc ui;          if ($LASTEXITCODE -ne 0) { $failed = $true }
-        cargo test --doc framework;   if ($LASTEXITCODE -ne 0) { $failed = $true }
-        cargo test --doc tools;       if ($LASTEXITCODE -ne 0) { $failed = $true }
-        cargo test --doc sound;       if ($LASTEXITCODE -ne 0) { $failed = $true }
-        cargo test --doc interactor;  if ($LASTEXITCODE -ne 0) { $failed = $true }
-        cargo test --doc system;      if ($LASTEXITCODE -ne 0) { $failed = $true }
-        cargo test --doc permission;  if ($LASTEXITCODE -ne 0) { $failed = $true }
-        cargo test --doc material;    if ($LASTEXITCODE -ne 0) { $failed = $true }
-        cargo test --doc shader;      if ($LASTEXITCODE -ne 0) { $failed = $true }
-        cargo test --doc tex;         if ($LASTEXITCODE -ne 0) { $failed = $true }
-        cargo test --doc sprite;      if ($LASTEXITCODE -ne 0) { $failed = $true }
-        cargo test --doc font;        if ($LASTEXITCODE -ne 0) { $failed = $true }
-        cargo test --doc render_list; if ($LASTEXITCODE -ne 0) { $failed = $true }
-        cargo test --doc anchor;      if ($LASTEXITCODE -ne 0) { $failed = $true }
-        cargo test --doc compute;     if ($LASTEXITCODE -ne 0) { $failed = $true }
-        cargo test --doc util;        if ($LASTEXITCODE -ne 0) { $failed = $true }
-        cargo test --doc sk;          if ($LASTEXITCODE -ne 0) { $failed = $true }
-        cargo test --doc mesh;        if ($LASTEXITCODE -ne 0) { $failed = $true }
-        cargo test --doc model;       if ($LASTEXITCODE -ne 0) { $failed = $true }
-        if ($failed) { exit 1 }
+      run: cargo test -- --test-threads=1
+      # run: |
+      #   $failed = $false
+      #   cargo test tests;             if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc maths;       if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc ui;          if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc framework;   if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc tools;       if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc sound;       if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc interactor;  if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc system;      if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc permission;  if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc material;    if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc shader;      if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc tex;         if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc sprite;      if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc font;        if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc render_list; if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc anchor;      if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc compute;     if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc util;        if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc sk;          if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc mesh;        if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc model;       if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   if ($failed) { exit 1 }
 
     - name: Build no-event-loop
       run: cargo build --verbose --features no-event-loop --example manual
@@ -158,7 +159,7 @@ jobs:
       run: |
         export DISPLAY=:99
         Xvfb  :99 -screen 0 1280x1024x24 > /dev/null 2>&1 & sleep 5        
-        cargo test --verbose -- --nocapture --test-threads=1
+        cargo test --verbose -- --test-threads=1
 
     - name: Build no-event-loop
       run: cargo build --verbose --features no-event-loop --example manual

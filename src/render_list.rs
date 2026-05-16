@@ -41,7 +41,7 @@ use std::{
 /// let transform_cam  = Matrix::look_at(from, Vec3::ZERO, Some(Vec3::new(1.0, 1.0, 1.0)));
 ///
 /// let mut render_list = RenderList::new();
-/// render_list.add_model(&model, None, transform_plane, Color128::WHITE, None);
+/// render_list.add_model(&model, None::<Material>, transform_plane, Color128::WHITE, None);
 ///
 /// let screen = Mesh::screen_quad();
 ///
@@ -441,8 +441,8 @@ impl RenderList {
     ///
     /// let mut render_list = RenderList::new();
     /// render_list
-    ///     .add_model(&model, None, transform_plane1, named_colors::RED, None)
-    ///     .add_model(&model, None, transform_plane2, named_colors::BLUE,
+    ///     .add_model(&model, None::<Material>, transform_plane1, named_colors::RED, None)
+    ///     .add_model(&model, None::<Material>, transform_plane2, named_colors::BLUE,
     ///                Some(RenderLayer::Layer1));
     ///
     /// let render_tex = Tex::gen_color(Color128::WHITE, 128, 128,

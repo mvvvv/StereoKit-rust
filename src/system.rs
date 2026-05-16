@@ -5350,6 +5350,7 @@ impl Renderer {
     ///
     /// Renderer::enable_sky(true);
     /// assert_eq!(Renderer::get_enable_sky(), true);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn enable_sky(enable: bool) {
@@ -5374,6 +5375,7 @@ impl Renderer {
     ///
     /// Renderer::layer_filter(RenderLayer::AllFirstPerson);
     /// assert_eq!(Renderer::get_layer_filter(), RenderLayer::AllFirstPerson);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn layer_filter(filter: RenderLayer) {
@@ -5399,6 +5401,7 @@ impl Renderer {
     ///
     /// Renderer::multisample(1);
     /// assert_eq!(Renderer::get_multisample(), 1);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn multisample(level: i32) {
@@ -5426,6 +5429,7 @@ impl Renderer {
     ///
     /// Renderer::projection(Projection::Perspective);
     /// assert_eq!(Renderer::get_projection(), Projection::Perspective);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn projection(projection: Projection) {
@@ -5451,6 +5455,7 @@ impl Renderer {
     ///
     /// Renderer::scaling(1.0);
     /// assert_eq!(Renderer::get_scaling(), 1.0);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn scaling(scaling: f32) {
@@ -5475,6 +5480,7 @@ impl Renderer {
     ///
     /// Renderer::viewport_scaling(1.0);
     /// assert_eq!(Renderer::get_viewport_scaling(), 1.0);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn viewport_scaling(scaling: f32) {
@@ -5503,6 +5509,7 @@ impl Renderer {
     /// assert_eq!(sky_light, sh);
     /// assert_eq!(sh.get_dominent_light_direction(),
     ///            Vec3 { x: -0.0, y: -1.0, z: -1.0 }.get_normalized());
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn sky_light(light_info: SphericalHarmonics) {
@@ -5532,6 +5539,7 @@ impl Renderer {
     /// let sky_tex_get = Renderer::get_sky_tex();
     ///
     /// assert_eq!(sky_tex_get, sky_tex);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn sky_tex(tex: impl AsRef<Tex>) {
@@ -5563,6 +5571,7 @@ impl Renderer {
     ///
     /// let same_material = Renderer::get_sky_material();
     /// assert_eq!(same_material, material);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn sky_material(material: impl AsRef<Material>) {
