@@ -23,7 +23,7 @@
     <uses-permission android:name="com.oculus.permission.USE_COLOCATION_DISCOVERY_API" />
     <!-- Android XR -->
     <uses-feature android:name="android.software.xr.immersive" android:required="true" />
-    <uses-feature android:name="android.software.xr.api.openxr" android:required="true" />
+    <uses-feature android:name="android.software.xr.api.openxr" android:version="0x00010001" android:required="true" />
     <uses-feature android:name="android.hardware.xr.input.hand_tracking" android:required="false" />
     <uses-feature android:name="android.hardware.xr.input.controller" android:required="false" />
     <uses-feature android:name="android.hardware.xr.input.eye_tracking" android:required="false" />
