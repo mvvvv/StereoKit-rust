@@ -57,7 +57,7 @@ cmake = "0.1.58"
 [dependencies]
 thiserror = "2.0"
 bitflags = "2.11"
-glam = { version = "0.32", optional = true }
+glam = { version = "0.33", optional = true }
 openxr-sys = "0.13"
 stereokit-macros = { path = "./stereokit-macros", version = "0.6" }
 #stereokit-macros = "0.6"

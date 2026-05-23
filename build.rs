@@ -291,9 +291,9 @@ fn main() {
             println!("cargo:rustc-link-search=native={}/build/_deps/sk_renderer-build", dst.display());
             println!("cargo:rustc-link-search=native={}/build/_deps/sk_app-build", dst.display());
 
-            cargo_link!("static=StereoKitC");
-            cargo_link!("static=sk_app");
-            cargo_link!("static=sk_renderer");
+            cargo_link!("StereoKitC");
+            cargo_link!("sk_app");
+            cargo_link!("sk_renderer");
 
             cargo_link!("openxr_loader");
             cargo_link!("meshoptimizer");
