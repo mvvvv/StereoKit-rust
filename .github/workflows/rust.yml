@@ -94,7 +94,8 @@ jobs:
       run: cargo compile_sks --options -f -t s
 
     - name: Build 
-      run: cargo build --verbose --example main_pc
+      run: cargo build --verbose --release --example main_pc
+
     - name: Run tests 
       timeout-minutes: 15
       run: cargo test 
@@ -153,7 +154,8 @@ jobs:
       run: cargo compile_sks --options -f -t s
 
     - name: Build 
-      run: cargo build --verbose --example main_pc
+      run: cargo build --verbose --release --example main_pc
+
     - name: Run tests
       timeout-minutes: 15
       run: |
@@ -194,7 +196,8 @@ jobs:
       run: cargo compile_sks --options -f -t s
 
     - name: Build 
-      run: cargo build --verbose --example main_pc
+      run: cargo build --verbose --release --example main_pc
+      
     - name: Run tests
       timeout-minutes: 30
       run: |
