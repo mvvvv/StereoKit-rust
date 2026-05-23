@@ -209,7 +209,7 @@ impl XrCompLayers {
         visibility: Option<EyeVisibility>,
         xr_space: Option<u64>,
     ) {
-        let orientation = (world_pose.orientation * Quat::from_angles(180.0, 0.0, 0.0)).conjugate();
+        let orientation = world_pose.orientation;
         let xr_space = xr_space.unwrap_or_else(BackendOpenXR::space);
         let mut quad_layer = CompositionLayerQuad {
             ty: StructureType::COMPOSITION_LAYER_QUAD,

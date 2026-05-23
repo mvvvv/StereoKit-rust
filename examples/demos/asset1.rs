@@ -104,19 +104,6 @@ impl Asset1 {
 
     /// Draws the asset model and handles user interactions.
     fn draw(&mut self, token: &MainThreadToken) {
-        // If a model has been selected, we draw it
-        if let Some(model) = &self.model_to_show {
-            if Ui::handle("Model1", &mut self.asset_pose, model.get_bounds() * self.asset_scale, false, None, None)
-                && let Some(mut sound) = self.sound_to_play
-            {
-                sound.position(self.asset_pose.position);
-            }
-            let model_transform = self.asset_pose.to_matrix(Some(self.asset_scale));
-            Renderer::add_model(token, model, model_transform, None, None);
-        } else {
-            self.asset_selected = 0;
-        }
-
         let mut new_asset_files = None;
 
         // The window to select existing model in this crate
@@ -195,6 +182,19 @@ impl Asset1 {
             self.asset_selected = 0;
         }
         Ui::window_end();
+
+        // If a model has been selected, we draw it
+        if let Some(model) = &self.model_to_show {
+            if Ui::handle("Model1", &mut self.asset_pose, model.get_bounds() * self.asset_scale, false, None, None)
+                && let Some(mut sound) = self.sound_to_play
+            {
+                sound.position(self.asset_pose.position);
+            }
+            let model_transform = self.asset_pose.to_matrix(Some(self.asset_scale));
+            Renderer::add_model(token, model, model_transform, None, None);
+        } else {
+            self.asset_selected = 0;
+        }
 
         Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
     }

@@ -49,17 +49,19 @@ impl Default for Layers1 {
     fn default() -> Self {
         let content_pose = Pose::new(Vec3::ZERO, None);
         let window_pose = content_pose * Matrix::t_r([-0.2, 1.5, -1.0], [0.0, 180.0, 0.0]);
-        let preview_pose = content_pose * Matrix::t_r([0.2, 1.5, -1.0], [0.0, 180.0, 0.0]);
+        let preview_pose = content_pose * Matrix::t([0.2, 1.5, -1.0]);
+        let mut material = Material::ui_box().copy();
+        material.color_tint(named_colors::GOLD).border_size(0.005);
         Self {
             id: "Layers1".into(),
             sk_info: None,
 
-            material: Material::pbr().copy(),
+            material,
             window_pose,
             preview_pose,
             swapchain_sk: None,
             render_list: RenderList::new(),
-            projection: Matrix::orthographic(0.2, 0.2, 0.01, 10.0),
+            projection: Matrix::orthographic(0.2, 0.2, 0.01, 50.0),
             sort_order: 1.0,
 
             transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, [0.0, 180.0, 0.0]),
@@ -99,7 +101,7 @@ impl Layers1 {
                 mat.diffuse_tex(&floor);
             }
             self.render_list
-                .add_mesh(Mesh::sphere(), mat, Matrix::s(0.05 * Vec3::ONE), named_colors::WHITE, None);
+                .add_mesh(Mesh::sphere(), mat, Matrix::s(0.1 * Vec3::ONE), named_colors::WHITE, None);
             true
         } else {
             Log::warn("OpenXR backend is not available, cannot start Layers1 demo");
@@ -117,7 +119,7 @@ impl Layers1 {
         Ui::handle(
             "QuadLayer",
             &mut self.preview_pose,
-            Bounds::new([0.0, 0.0, 0.0], [SIZE, SIZE, SIZE]),
+            Bounds::new([0.0, 0.0, 0.0], [SIZE, SIZE, 0.04]),
             false,
             None,
             None,
@@ -125,7 +127,7 @@ impl Layers1 {
         Mesh::cube().draw(
             token,
             &self.material,
-            Matrix::t_s(self.preview_pose.position, Vec3::new(SIZE, SIZE, 0.04)),
+            self.preview_pose.to_matrix(Some(Vec3::new(SIZE, SIZE, 0.04))),
             None,
             None,
         );
@@ -142,7 +144,7 @@ impl Layers1 {
             let render_tex = sc.get_render_target().expect("SwapchainSk should have a render target");
             self.render_list.draw_now(
                 render_tex,
-                Matrix::look_at(Vec3::angle_xy(Time::get_totalf() * 90.0, 0.0), Vec3::ZERO, None),
+                Matrix::look_at(Vec3::angle_xz(Time::get_totalf() * 90.0, 0.0), Vec3::ZERO, None),
                 self.projection,
                 Some(Color128::new(0.4, 0.3, 0.2, 1.0)),
                 Some(RenderClear::Color),
