@@ -5,7 +5,7 @@
 //! <https://registry.khronos.org/OpenXR/specs/1.1/html/xrspec.html#XR_KHR_android_surface_swapchain>
 
 use crate::{
-    maths::{Pose, Quat, Rect, Vec2},
+    maths::{Pose, Rect, Vec2},
     prelude::*,
     system::{Backend, BackendGraphics, BackendOpenXR, BackendXRType},
     tex::{Tex, TexFormat, TexType},
