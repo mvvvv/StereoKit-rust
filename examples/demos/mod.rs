@@ -27,6 +27,7 @@ pub mod render_list1;
 pub mod screen1;
 pub mod shaders1;
 pub mod shadows1;
+pub mod skin1;
 pub mod sprite1;
 pub mod system_deep_link1;
 pub mod tex1;
@@ -43,8 +44,8 @@ use self::{
     a_stepper::AStepper, anchor1::Anchor1, anim1::Anim1, asset1::Asset1, b_stepper::BStepper, biplane1::Biplane1,
     c_stepper::CStepper, compute1::Compute1, font1::Font1, interactor1::Interactor1, layers1::Layers1,
     locale1::Locale1, math1::Math1, permission1::Permission1, render_list1::RenderList1, screen1::Screen1,
-    shaders1::Shaders1, shadows1::Shadows1, sprite1::Sprite1, tex1::Tex1, tex2::Tex2, text1::Text1, text2::Text2,
-    threads1::Threads1, threads2::Threads2, ui1::Ui1, ui2::Ui2, ui3::Ui3,
+    shaders1::Shaders1, shadows1::Shadows1, skin1::Skin1, sprite1::Sprite1, tex1::Tex1, tex2::Tex2, text1::Text1,
+    text2::Text2, threads1::Threads1, threads2::Threads2, ui1::Ui1, ui2::Ui2, ui3::Ui3,
 };
 
 pub struct Test {
@@ -182,6 +183,10 @@ impl Test {
             Test::new("Shadows1", |sk| {
                 sk.send_event(StepperAction::add_default::<Shadows1>("Shadows1"));
                 "Shadows1".to_string()
+            }),
+            Test::new("Skin1", |sk| {
+                sk.send_event(StepperAction::add_default::<Skin1>("Skin1"));
+                "Skin1".to_string()
             }),
             #[cfg(target_os = "android")]
             Test::new("Browser1", |sk| {

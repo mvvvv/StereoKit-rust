@@ -503,6 +503,14 @@ impl SwapchainSk {
         Some(&self.images[self.acquired as usize])
     }
 
+    /// Return a mutable reference to the currently acquired render-target texture, if any.
+    pub fn get_render_target_mut(&mut self) -> Option<&mut Tex> {
+        if self.images.is_empty() {
+            return None;
+        }
+        Some(&mut self.images[self.acquired as usize])
+    }
+
     /// Wrap Vulkan swapchain images into `Tex` objects.
     pub fn wrap(
         handle: Swapchain,
@@ -577,9 +585,13 @@ impl SwapchainSk {
             // Wrap each Vulkan image into a Tex object
             for (idx, img) in this.vk_images.iter().enumerate() {
                 Log::diag(format!("SwapchainSk::wrap: Processing image {}: {:#?}", idx, img));
-                let mut image_sk = Tex::render_target(width as usize, height as usize, Some(1), Some(format), None)
-                    .unwrap_or_default();
-
+                let mut image_sk = Tex::gen_color(
+                    crate::util::Color128::WHITE,
+                    width as i32,
+                    height as i32,
+                    crate::tex::TexType::Rendertarget,
+                    format,
+                );
                 Log::diag(format!("SwapchainSk::wrap: Setting native surface for image {}...", idx));
                 unsafe {
                     image_sk.set_native_surface(

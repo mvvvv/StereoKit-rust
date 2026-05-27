@@ -2,7 +2,6 @@ use std::f32::consts::PI;
 
 use crate::util::named_colors;
 use crate::{
-    framework::StepperId,
     material::Material,
     maths::{Bounds, Matrix, Pose, Quat, Ray, Vec2, Vec3},
     mesh::{Inds, Mesh, Vertex},
@@ -13,6 +12,8 @@ use crate::{
     tex::Tex,
     ui::{Ui, UiBtnLayout, UiMove, UiWin},
 };
+use crate::{maths::Rect, tools::xr_comp_layers::XrCompLayers};
+use openxr_sys::Swapchain;
 
 pub struct ScreenRepo {
     id_btn_show_hide_param: String,
@@ -64,9 +65,9 @@ impl ScreenRepo {
 /// # sk::Sk::shutdown();
 /// ```
 pub struct Screen {
-    id: StepperId,
-
     repo: ScreenRepo,
+    width: u32,
+    height: u32,
     screen_distance: f32,
     screen_flattening: f32,
     screen_size: Vec2,
@@ -84,6 +85,8 @@ pub struct Screen {
     sound_left_inst: Option<SoundInst>,
     sound_right: Sound,
     sound_right_inst: Option<SoundInst>,
+
+    openxr_swapchain: Option<Swapchain>,
 }
 
 unsafe impl Send for Screen {}
@@ -96,14 +99,17 @@ impl Screen {
 
     /// Create the screen
     pub fn new(id: &str, screen_tex: impl AsRef<Tex>) -> Self {
-        let screen_size = Vec2::new(3.840, 2.160);
+        let width = 3840u32;
+        let height = 2160u32;
+        let screen_size = Vec2::new(width as f32 / 1000.0, height as f32 / 1000.0);
         let screen_diagonal = (screen_size.x.powf(2.0) + screen_size.y.powf(2.0)).sqrt();
         let screen_material = Material::unlit().copy();
 
         let mut this = Self {
-            id: id.to_string(),
-
             repo: ScreenRepo::new(id.to_string()),
+
+            width,
+            height,
             screen_distance: 2.20,
             screen_flattening: 0.99,
             screen_size,
@@ -121,6 +127,8 @@ impl Screen {
             sound_left_inst: None,
             sound_right: Sound::click(),
             sound_right_inst: None,
+
+            openxr_swapchain: None,
         };
 
         let screen_tex = screen_tex.as_ref().clone_ref();
@@ -129,8 +137,8 @@ impl Screen {
         this.screen_material.id(&this.repo.id_material);
         this.update_material_texture();
 
-        this.sound_left = Sound::create_stream(200.0).unwrap_or_default();
-        this.sound_right = Sound::create_stream(200.0).unwrap_or_default();
+        this.sound_left = Sound::create_stream(2.0).unwrap_or_default();
+        this.sound_right = Sound::create_stream(2.0).unwrap_or_default();
 
         this.screen_pose = Input::get_head() * Matrix::r(Quat::from_angles(0.0, 180.0, 0.0));
         this.adapt_screen();
@@ -247,7 +255,10 @@ impl Screen {
     pub fn draw(&mut self, token: &MainThreadToken) {
         let screen_transform = self.screen_param();
 
-        Renderer::add_mesh(token, &self.screen, &self.screen_material, screen_transform, None, None);
+        // If a swapchain is set, submit a quad layer instead of rendering the mesh
+        if !self.draw_swapchain() {
+            Renderer::add_mesh(token, &self.screen, &self.screen_material, screen_transform, None, None);
+        }
     }
 
     /// Here is managed the screen position, its rotundity, size and distance
@@ -471,8 +482,7 @@ impl Screen {
             }
 
             let mut mesh = Mesh::new();
-            mesh.set_inds(inds.as_slice());
-            mesh.set_verts(verts.as_slice(), true);
+            mesh.set_data(verts.as_slice(), inds.as_slice(), None, None);
 
             mesh
         };
@@ -541,8 +551,64 @@ impl Screen {
         Some((hit_uv.x, hit_uv.y))
     }
 
-    pub fn get_id(&self) -> &str {
-        &self.id
+    /// Set the pixel resolution of the screen content, updating the physical size accordingly.
+    pub fn resolution(&mut self, width: u32, height: u32) -> &mut Self {
+        self.width = width;
+        self.height = height;
+        self.screen_size = Vec2::new(width as f32 / 1000.0, height as f32 / 1000.0);
+        self.screen_diagonal = (self.screen_size.x.powf(2.0) + self.screen_size.y.powf(2.0)).sqrt();
+        self.adapt_screen();
+        self
+    }
+
+    /// Set the OpenXR swapchain handle to use for quad-layer submission.
+    /// When set, [`Self::draw`] will submit a composition quad layer instead of rendering the mesh.
+    /// The caller retains ownership of the swapchain lifecycle (e.g. via [`SwapchainSk`]).
+    pub fn set_swapchain(&mut self, swapchain: Swapchain) -> &mut Self {
+        self.openxr_swapchain = Some(swapchain);
+        self
+    }
+
+    /// Clear the swapchain handle. The caller is responsible for destroying the underlying swapchain.
+    pub fn clear_swapchain(&mut self) -> &mut Self {
+        self.openxr_swapchain = None;
+        self
+    }
+
+    /// Stop the spatial audio streams and clear the swapchain handle.
+    /// Call this when the owner stepper is shutting down.
+    pub fn shutdown(&mut self) {
+        if let Some(inst) = self.sound_left_inst.take() {
+            inst.stop();
+        }
+        if let Some(inst) = self.sound_right_inst.take() {
+            inst.stop();
+        }
+        self.openxr_swapchain = None;
+    }
+
+    /// Submit a quad layer using the OpenXR swapchain if one is set.
+    /// Returns `true` if the frame was submitted via swapchain (mesh rendering should be skipped).
+    fn draw_swapchain(&mut self) -> bool {
+        if let Some(swapchain) = &self.openxr_swapchain {
+            let rect = Rect::new(0.0, 0.0, self.width as f32, self.height as f32);
+
+            let bounds = self.screen.get_bounds();
+            let local_offset = self.screen_pose.orientation * Vec3::new(0.0, 0.0, bounds.center.z);
+            let at = self.screen_pose.position + local_offset;
+            let from = Input::get_head().position;
+            let layer_orientation = Quat::look_at(from, at, Some(self.screen_pose.get_up()));
+            let swapchain_pose = Pose::new(at, Some(layer_orientation));
+
+            XrCompLayers::submit_quad_layer(swapchain_pose, self.screen_size, *swapchain, rect, 0, 1, None, None);
+            return true;
+        }
+        false
+    }
+
+    /// Get the IDs of the left and right sounds as a tuple `(left_id, right_id)`.
+    pub fn get_sound_ids(&self) -> (&str, &str) {
+        (self.sound_left.get_id(), self.sound_right.get_id())
     }
 
     /// Get the screen mesh

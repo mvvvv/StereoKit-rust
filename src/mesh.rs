@@ -1046,6 +1046,160 @@ impl Mesh {
         self
     }
 
+    /// Indicates whether this Mesh has CPU skinning data attached. A Mesh gains skin data when [`Mesh::set_skin`] is
+    /// called, or when it's loaded from a skinned glTF.
+    /// <https://stereokit.net/Pages/StereoKit/Mesh/HasSkin.html>
+    ///
+    /// see also [`mesh_has_skin`] [`Mesh::set_skin`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec4, Matrix}, mesh::Mesh};
+    ///
+    /// let mut mesh = Mesh::generate_cube([0.1, 0.1, 0.1], None);
+    /// assert!(!mesh.has_skin());
+    ///
+    /// let vert_count = mesh.get_vert_count() as usize;
+    /// let bone_ids: Vec<u16>  = vec![0u16; vert_count * 4];
+    /// let bone_weights: Vec<Vec4> = vec![Vec4::new(1.0, 0.0, 0.0, 0.0); vert_count];
+    /// let resting: Vec<Matrix> = vec![Matrix::IDENTITY];
+    /// mesh.set_skin(&bone_ids, &bone_weights, &resting);
+    /// assert!(mesh.has_skin());
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn has_skin(&self) -> bool {
+        unsafe { mesh_has_skin(self.0.as_ptr()) != 0 }
+    }
+
+    /// Creates an independent duplicate of this Mesh. Vertices, indices, bounds, and (if present) skin data are copied;
+    /// the new Mesh has its own GPU buffers and shares no state with the source.
+    ///
+    /// This is useful when one source mesh is shared across N animated entities: [`Mesh::update_skin`] mutates the
+    /// target mesh's vertex buffer in place, so each entity needs its own Mesh instance to deform independently.
+    ///
+    /// The source Mesh must have `keep_data` set to true.
+    /// <https://stereokit.net/Pages/StereoKit/Mesh/Copy.html>
+    ///
+    /// see also [`mesh_copy`] [`Mesh::set_skin`] [`Mesh::update_skin`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec4, Matrix}, mesh::Mesh};
+    ///
+    /// let mut src = Mesh::generate_cube([0.1, 0.1, 0.1], None);
+    ///
+    /// let vert_count = src.get_vert_count() as usize;
+    /// let bone_ids: Vec<u16>  = vec![0u16; vert_count * 4];
+    /// let bone_weights: Vec<Vec4> = vec![Vec4::new(1.0, 0.0, 0.0, 0.0); vert_count];
+    /// let resting: Vec<Matrix> = vec![Matrix::IDENTITY];
+    /// src.set_skin(&bone_ids, &bone_weights, &resting);
+    ///
+    /// let a = src.copy();
+    /// let b = src.copy();
+    /// assert!(a.has_skin());
+    /// assert!(b.has_skin());
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn copy(&self) -> Mesh {
+        Mesh(NonNull::new(unsafe { mesh_copy(self.0.as_ptr()) }).expect("Mesh::copy failed!"))
+    }
+
+    /// Attaches CPU skinning data to this Mesh. Once skin data is set, call [`Mesh::update_skin`] each frame with the
+    /// current bone palette to deform the vertex buffer.
+    ///
+    /// `keep_data` must be true and vertex data must already be set before calling this — the deformation runs on the
+    /// CPU and needs a copy of the rest-pose vertices to work from.
+    ///
+    /// The bone palette passed to [`Mesh::update_skin`] is expected to be bone world transforms in the same coordinate
+    /// system the resting transforms were authored in. The skinning matrix for bone `i` is computed as
+    /// `bone_palette[i] * inverse(bone_resting_transforms[i])`.
+    /// <https://stereokit.net/Pages/StereoKit/Mesh/SetSkin.html>
+    /// * `bone_ids` - Per-vertex bone indices, packed 4 per vertex (so this slice has length `vert_count * 4`). Each
+    ///   index references a slot in the bone palette and resting transforms.
+    /// * `bone_weights` - Per-vertex bone weights, one [`Vec4`] per vertex (length must equal `vert_count`). The four
+    ///   components correspond to the four bone ids for that vertex. Weights should sum to ~1 for a stable result.
+    /// * `bone_resting_transforms` - Bind-pose transform for each bone, expressed in the mesh's model space. StereoKit
+    ///   inverts these internally to produce the inverse-bind matrices used by the skinning math.
+    ///
+    /// see also [`mesh_set_skin`] [`Mesh::update_skin`] [`Mesh::has_skin`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec4, Matrix}, mesh::Mesh};
+    ///
+    /// let mut mesh = Mesh::generate_cube([0.1, 0.1, 0.1], None);
+    /// let vert_count = mesh.get_vert_count() as usize;
+    /// let bone_ids: Vec<u16>  = vec![0u16; vert_count * 4];
+    /// let bone_weights: Vec<Vec4> = vec![Vec4::new(1.0, 0.0, 0.0, 0.0); vert_count];
+    /// let resting: Vec<Matrix> = vec![Matrix::IDENTITY];
+    ///
+    /// mesh.set_skin(&bone_ids, &bone_weights, &resting);
+    /// assert!(mesh.has_skin());
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn set_skin(
+        &mut self,
+        bone_ids: &[u16],
+        bone_weights: &[Vec4],
+        bone_resting_transforms: &[Matrix],
+    ) -> &mut Self {
+        unsafe {
+            mesh_set_skin(
+                self.0.as_ptr(),
+                bone_ids.as_ptr(),
+                (bone_ids.len() / 4) as i32,
+                bone_weights.as_ptr(),
+                bone_weights.len() as i32,
+                bone_resting_transforms.as_ptr(),
+                bone_resting_transforms.len() as i32,
+            )
+        };
+        self
+    }
+
+    /// Drives the per-frame CPU deformation for a skinned Mesh. [`Mesh::set_skin`] must have been called first. This
+    /// walks every vertex, blends the bone transforms by weight, and re-uploads the deformed vertices to the GPU.
+    ///
+    /// `bone_palette` holds the current world-space transform for each bone, in the same coordinate system the resting
+    /// transforms passed to [`Mesh::set_skin`] were authored in. Its length must match the bone count supplied to
+    /// [`Mesh::set_skin`].
+    ///
+    /// Because deformation mutates this Mesh's vertex buffer in place, two entities driven by different bone palettes
+    /// need their own Mesh instance — use [`Mesh::copy`] on a shared source mesh to get per-instance deformation.
+    /// <https://stereokit.net/Pages/StereoKit/Mesh/UpdateSkin.html>
+    /// * `bone_palette` - World-space transform per bone for this frame. Length must match the bone count supplied to
+    ///   [`Mesh::set_skin`].
+    ///
+    /// see also [`mesh_update_skin`] [`Mesh::set_skin`] [`Mesh::copy`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec4, Matrix}, mesh::Mesh};
+    ///
+    /// let mut src = Mesh::generate_cube([0.1, 0.1, 0.1], None);
+    /// let vert_count = src.get_vert_count() as usize;
+    /// let bone_ids: Vec<u16>  = vec![0u16; vert_count * 4];
+    /// let bone_weights: Vec<Vec4> = vec![Vec4::new(1.0, 0.0, 0.0, 0.0); vert_count];
+    /// let resting: Vec<Matrix> = vec![Matrix::IDENTITY];
+    /// src.set_skin(&bone_ids, &bone_weights, &resting);
+    ///
+    /// let mut a = src.copy();
+    /// let mut b = src.copy();
+    ///
+    /// a.update_skin(&[Matrix::t([0.0,  0.05, 0.0])]);
+    /// b.update_skin(&[Matrix::t([0.0, -0.05, 0.0])]);
+    ///
+    /// let bounds_a = a.get_bounds();
+    /// let bounds_b = b.get_bounds();
+    /// assert!(bounds_a.center.y > 0.0);
+    /// assert!(bounds_b.center.y < 0.0);
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn update_skin(&mut self, bone_palette: &[Matrix]) -> &mut Self {
+        unsafe { mesh_update_skin(self.0.as_ptr(), bone_palette.as_ptr(), bone_palette.len() as i32) };
+        self
+    }
+
     /// Registers a Rust closure as a mesh-load callback. The closure is called once when
     /// the Mesh finishes uploading to the GPU. For synchronous uploads it fires before this
     /// call returns; for async uploads ([`MeshData::Async`]) it fires on a future frame.
