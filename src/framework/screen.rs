@@ -8,7 +8,7 @@ use crate::{
     sk::MainThreadToken,
     sound::{Sound, SoundInst},
     sprite::Sprite,
-    system::{Input, Lines, Renderer},
+    system::{Align, Input, Lines, Renderer, TextFit},
     tex::Tex,
     ui::{Ui, UiBtnLayout, UiMove, UiWin},
 };
@@ -87,6 +87,14 @@ pub struct Screen {
     sound_right_inst: Option<SoundInst>,
 
     openxr_swapchain: Option<Swapchain>,
+
+    /// Text displayed via [`Ui::text_at`] inside the control window on every frame.
+    /// Set with [`Screen::set_overlay_text`]. Empty string disables the display.
+    overlay_text: String,
+
+    /// Optional callback invoked at the end of the params panel (when the hamburger menu is open).
+    /// Set with [`Screen::set_extra_param_ui`].
+    extra_param_ui: Option<Box<dyn FnMut() + Send + 'static>>,
 }
 
 unsafe impl Send for Screen {}
@@ -129,6 +137,9 @@ impl Screen {
             sound_right_inst: None,
 
             openxr_swapchain: None,
+
+            overlay_text: String::new(),
+            extra_param_ui: None,
         };
 
         let screen_tex = screen_tex.as_ref().clone_ref();
@@ -224,6 +235,37 @@ impl Screen {
         self
     }
 
+    /// Set text to display inside the control window on every frame via [`Ui::text_at`].
+    /// Inspired by the FPS overlay in `video1.rs`. Pass an empty string to clear.
+    ///
+    /// # Example
+    /// ```ignore
+    /// screen.set_overlay_text(format!("{:.0} FPS", fps));
+    /// ```
+    pub fn set_overlay_text(&mut self, text: impl Into<String>) -> &mut Self {
+        self.overlay_text = text.into();
+        self
+    }
+
+    /// Register a closure that will be called at the end of the params panel (hamburger menu).
+    /// Use it to append extra sliders, toggles, or labels without subclassing `Screen`.
+    ///
+    /// The closure is called on every frame while the panel is open, via `Option::take` to
+    /// avoid borrow conflicts with the rest of `Screen`.
+    ///
+    /// # Example
+    /// ```ignore
+    /// screen.set_extra_param_ui(move || {
+    ///     Ui::label("Quality", None, true);
+    ///     Ui::same_line();
+    ///     Ui::hslider("quality", &mut quality, 0.0, 1.0, None, None, None, None);
+    /// });
+    /// ```
+    pub fn set_extra_param_ui(&mut self, f: impl FnMut() + Send + 'static) -> &mut Self {
+        self.extra_param_ui = Some(Box::new(f));
+        self
+    }
+
     /// Set the current texture index (0 or 1)
     pub fn set_tex_curr(&mut self, tex_index: usize) -> &mut Self {
         if tex_index < 2 {
@@ -267,7 +309,7 @@ impl Screen {
 
         let bounds = self.screen.get_bounds();
 
-        let factor_size = (self.screen_distance.max(1.0).powf(2.0) + self.screen_diagonal.max(1.0).powf(2.0)).sqrt();
+        let factor_size = self.factor_size();
 
         let grab_position = Vec3::new(
             0.0, //
@@ -358,27 +400,59 @@ impl Screen {
             {
                 self.screen_flattening(new_value);
             }
+
+            // Invoke the user-supplied extra parameter UI (e.g. quality sliders, mode toggles).
+            // Uses `take` + restore to avoid a simultaneous borrow of `self`.
+            if let Some(mut f) = self.extra_param_ui.take() {
+                f();
+                self.extra_param_ui = Some(f);
+            }
+
+            Ui::window_end();
         } else {
             let info_position = Vec3::new(
                 0.0, //
                 self.screen_size.y / 2.0 + 0.04 * factor_size,
                 bounds.center.z,
             );
-            let mut window_pose = Pose::new(info_position, None) * screen_transform;
-            Ui::window_begin(&self.repo.id_window_param, &mut window_pose, None, Some(UiWin::Body), Some(UiMove::None));
+            let button_pose = Pose::new(info_position, None) * screen_transform;
+            let d = self.screen_distance;
+            let btn_size = Vec2::new(0.06 * d.sqrt(), 0.06 * d.sqrt());
+            let surface_size = btn_size * 1.1;
+            Ui::push_surface(button_pose, Vec3::X * 0.03 * d.sqrt(), surface_size);
             if Ui::button_img(
                 &self.repo.id_btn_show_hide_param,
                 &self.repo.sprite_show_param,
                 Some(UiBtnLayout::CenterNoText),
-                Some(Vec2::new(0.03 * factor_size, 0.03 * factor_size)),
+                Some(btn_size),
                 None,
             ) {
                 self.repo.show_param = true;
                 let head = Input::get_head();
                 self.screen_pose.position = head.position;
             }
+            Ui::pop_surface();
         }
-        Ui::window_end();
+
+        // Overlay text — rendered on its own surface anchored above the screen centre,
+        // independent of the control window state.
+        if !self.overlay_text.is_empty() {
+            let overlay_y = self.screen_size.y / 2.0 + 0.04 * factor_size;
+            let overlay_pos = Vec3::new(-0.05, overlay_y, bounds.center.z);
+            let overlay_pose = Pose::new(overlay_pos, None) * screen_transform;
+            Ui::push_surface(overlay_pose, Vec3::ZERO, Vec2::ZERO);
+            Ui::text(
+                &self.overlay_text,
+                None,
+                None,
+                Some(0.04 * self.screen_distance),
+                Some(0.15 * self.screen_distance),
+                Some(Align::Center),
+                Some(TextFit::Exact),
+            );
+            Ui::pop_surface();
+        }
+
         screen_transform
     }
 
@@ -649,5 +723,35 @@ impl Screen {
     /// Get the current ray thickness
     pub fn get_ray_thickness(&self) -> f32 {
         self.ray_thickness
+    }
+
+    /// Shared factor used to scale UI elements relative to screen distance and diagonal.
+    fn factor_size(&self) -> f32 {
+        (self.screen_distance.max(1.0).powf(2.0) + self.screen_diagonal.max(1.0).powf(2.0)).sqrt()
+    }
+
+    /// Returns a world-space [`Pose`] at the top-centre edge of the screen. The window origin is placed just above the
+    /// top edge, outside the screen content area, at the same height as the compact hamburger button.
+    /// `offset` is added in screen-local space before applying the screen transform, allowing the caller to shift the
+    /// pose horizontally to avoid overlapping other windows.
+    /// Useful for anchoring a UI window (e.g. transport controls) with [`UiMove::None`].
+    pub fn get_top(&self, offset: impl Into<Vec3>) -> Pose {
+        let bounds = self.screen.get_bounds();
+        let factor_size = self.factor_size();
+        let screen_transform = self.screen_pose.to_matrix(None);
+        let pos = Vec3::new(0.0, self.screen_size.y / 2.0 + 0.04 * factor_size, bounds.center.z) + offset.into();
+        Pose::new(pos, None) * screen_transform
+    }
+
+    /// Returns a world-space [`Pose`] at the bottom-centre edge of the screen. The window origin is placed just below
+    /// the bottom edge, outside the screen content area. `offset` is added in screen-local space before applying the
+    /// screen transform.
+    /// Useful for anchoring a UI window (e.g. status bar) with [`UiMove::None`].
+    pub fn get_bottom(&self, offset: impl Into<Vec3>) -> Pose {
+        let bounds = self.screen.get_bounds();
+        let factor_size = self.factor_size();
+        let screen_transform = self.screen_pose.to_matrix(None);
+        let pos = Vec3::new(0.0, -(self.screen_size.y / 2.0 + 0.04 * factor_size), bounds.center.z) + offset.into();
+        Pose::new(pos, None) * screen_transform
     }
 }

@@ -1,5 +1,8 @@
 use openxr_sys::SwapchainUsageFlags;
-use std::rc::Rc;
+use std::{
+    rc::Rc,
+    sync::{Arc, Mutex},
+};
 use stereokit_rust::{
     font::Font,
     framework::Screen,
@@ -12,7 +15,7 @@ use stereokit_rust::{
     tex::{Tex, TexFormat},
     tools::xr_comp_layers::{SwapchainSk, XrCompLayers},
     ui::{Ui, UiBtnLayout},
-    util::{Color32, Time, named_colors::RED},
+    util::{Color32, Color128, Time, named_colors::RED},
 };
 
 /// Demo test for Screen: sound playback (right / left) and a choice between
@@ -27,13 +30,20 @@ pub struct Screen1 {
     textures: Vec<Tex>,
     current_texture_index: usize,
     last_switch_time: f32,
-    switch_interval: f32,
+    /// Shared with the `extra_param_ui` closure so the slider can mutate it.
+    switch_interval: Arc<Mutex<f32>>,
+    paused: bool,
 
     // Display mode: texture (default) or swapchain quad-layer
     use_swapchain: bool,
     swapchain_sk: Option<SwapchainSk>,
     tex_width: usize,
     tex_height: usize,
+
+    sprite_prev: Sprite,
+    sprite_next: Sprite,
+    sprite_play: Sprite,
+    sprite_pause: Sprite,
 
     window_pose: Pose,
     pub text: String,
@@ -78,12 +88,18 @@ impl Default for Screen1 {
             textures,
             current_texture_index: 0,
             last_switch_time: 0.0,
-            switch_interval: 3.0,
+            switch_interval: Arc::new(Mutex::new(3.0)),
+            paused: false,
 
             use_swapchain: false,
             swapchain_sk: None,
             tex_width: 0,
             tex_height: 0,
+
+            sprite_prev: Sprite::arrow_left(),
+            sprite_next: Sprite::arrow_right(),
+            sprite_play: Sprite::toggle_off(),
+            sprite_pause: Sprite::toggle_on(),
 
             window_pose: Pose::new(Vec3::new(-0.3, 1.5, -0.6), Some(Quat::Y_180)),
             text: "Screen1".to_owned(),
@@ -105,6 +121,19 @@ impl Screen1 {
             self.tex_width = w;
             self.tex_height = h;
         }
+
+        // Register the slide-speed slider inside Screen's hamburger panel.
+        // The closure captures a clone of the Arc so it can read/write switch_interval
+        // without borrowing self (required by the 'static + Send bound).
+        let shared_interval = Arc::clone(&self.switch_interval);
+        self.screen.set_extra_param_ui(move || {
+            let mut interval = shared_interval.lock().unwrap();
+            Ui::label("Slide speed", None, true);
+            Ui::same_line();
+            Ui::label(format!("{:.1}s", *interval), None, true);
+            Ui::same_line();
+            Ui::hslider("slide_interval", &mut interval, 0.5, 10.0, None, None, None, None);
+        });
 
         // Create an OpenXR swapchain when the backend supports it.
         if Backend::xr_type() == BackendXRType::OpenXR
@@ -135,9 +164,22 @@ impl Screen1 {
 
     fn draw(&mut self, token: &MainThreadToken) {
         let current_time = Time::get_totalf();
+        let interval = *self.switch_interval.lock().unwrap();
+
+        // Show current image index and time remaining until next switch in Screen's overlay.
+        let n = self.textures.len();
+        let remaining = (interval - (current_time - self.last_switch_time)).max(0.0);
+        self.screen.set_overlay_text(format!(
+            "{}/{} | {:.1}s / {:.1}s{}",
+            self.current_texture_index + 1,
+            n,
+            remaining,
+            interval,
+            if self.paused { " [PAUSED]" } else { "" },
+        ));
 
         // Auto-advance textures every switch_interval seconds.
-        if current_time - self.last_switch_time > self.switch_interval {
+        if !self.paused && current_time - self.last_switch_time > interval {
             self.next_texture();
             self.last_switch_time = current_time;
 
@@ -178,6 +220,40 @@ impl Screen1 {
 
         // Draw the Screen: submits a quad-layer if a swapchain is set, otherwise renders the mesh.
         self.screen.draw(token);
+
+        // Video-player transport controls anchored just above the screen via get_top().
+        let d = self.screen.get_screen_distance();
+        let btn_size = Vec2::new(0.06 * d.sqrt(), 0.06 * d.sqrt());
+        let surface_size = Vec2::new(0.4 * d, 0.1 * d);
+        let controls_pose = self.screen.get_top(Vec3::new(0.30 * d.sqrt(), 0.0, 0.0));
+        Ui::push_surface(controls_pose, Vec3::ZERO, surface_size);
+        // Previous
+        if Ui::button_img("prev", &self.sprite_prev, Some(UiBtnLayout::CenterNoText), Some(btn_size), None) {
+            self.prev_texture();
+            self.last_switch_time = current_time;
+        }
+        Ui::same_line();
+        // Play / Pause — green tint when playing
+        if self.paused {
+            if Ui::button_img("play", &self.sprite_play, Some(UiBtnLayout::Center), Some(btn_size), None) {
+                self.paused = false;
+                self.last_switch_time = current_time;
+            }
+        } else {
+            Ui::push_tint(Color128::new(0.3, 1.0, 0.3, 1.0));
+            let clicked = Ui::button_img("pause", &self.sprite_pause, Some(UiBtnLayout::Center), Some(btn_size), None);
+            Ui::pop_tint();
+            if clicked {
+                self.paused = true;
+            }
+        }
+        Ui::same_line();
+        // Next
+        if Ui::button_img("next", &self.sprite_next, Some(UiBtnLayout::CenterNoText), Some(btn_size), None) {
+            self.next_texture();
+            self.last_switch_time = current_time;
+        }
+        Ui::pop_surface();
 
         // Control window
         Ui::window_begin("Screen1", &mut self.window_pose, Some(Vec2::new(0.24, 0.0)), None, None);
@@ -245,6 +321,14 @@ impl Screen1 {
             return;
         }
         self.current_texture_index = (self.current_texture_index + 1) % self.textures.len();
+        self.update_display();
+    }
+
+    fn prev_texture(&mut self) {
+        if self.textures.is_empty() {
+            return;
+        }
+        self.current_texture_index = (self.current_texture_index + self.textures.len() - 1) % self.textures.len();
         self.update_display();
     }
 
