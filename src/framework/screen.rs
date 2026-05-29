@@ -49,21 +49,52 @@ impl ScreenRepo {
     }
 }
 
-/// The screen struct
-/// ```ignore
-/// // Create a screen with a first texture
-/// let mut screen = Screen::new("my_screen", texture1);
+/// A virtual curved screen that can display a [`Tex`] or an OpenXR swapchain quad layer.
 ///
-/// // Add a second texture
-/// screen.set_texture(1, Some(texture2));
+/// The screen is a concave spherical mesh whose curvature, diagonal, and distance from
+/// the viewer are adjustable at runtime. It ships with:
+/// * a grab handle (drag to reposition)
+/// * a hamburger settings panel (distance, diagonal, curvature sliders)
+/// * two spatial stereo audio streams (left / right)
+/// * an optional single-line overlay text rendered above the content
+/// * an optional extra-param UI callback injected into the settings panel
 ///
-/// // Switch to the second texture
-/// screen.set_tex_curr(1);
+/// Two texture slots (`0` and `1`) allow cross-fading between images without dropping GPU handles.
+/// Use [`Screen::set_texture`] to upload a new frame into the inactive slot, then
+/// [`Screen::set_tex_curr`] to flip to it.
 ///
-/// // Return to the first texture
-/// screen.set_tex_curr(0);
+/// For OpenXR deployments, plug in a [`crate::tools::xr_comp_layers::SwapchainSk`] handle via
+/// [`Screen::set_swapchain`] to submit a composition quad layer instead of rendering the mesh —
+/// this bypasses the StereoKit render pipeline and gives compositor-level reprojection.
+///
+/// See the `screen1` demo for a full example with a slideshow, transport controls, and optional
+/// swapchain quad-layer rendering.
+///
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{framework::Screen, tex::{Tex, TexFormat, TexType},
+///                      util::named_colors::DOGER_BLUE};
+///
+/// // Create a solid-colour texture to display on the screen
+/// let tex = Tex::gen_color(DOGER_BLUE, 64, 36, TexType::Image, TexFormat::Rgba32Srgb);
+///
+/// // Build the screen — default distance is 2.2 m, default diagonal ≈ 4.4 m
+/// let mut screen = Screen::new("doc_screen", &tex);
+///
+/// // Bring the screen close, give it a tight diagonal, slight curvature, and an overlay
+/// screen.resolution(320,240)
+///       .screen_distance(2.3)   // 2.3 m away from the viewer
+///       .screen_diagonal(1.2)   // 1.2 m diagonal (compact)
+///       .set_overlay_text("Hello, Screen!");
+///
+/// filename_scr = "screenshots/screen.jpeg"; fov_scr = 20.0;
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+///     screen.draw(token);
+/// );
 /// # sk::Sk::shutdown();
 /// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/screen.jpeg" alt="screenshot" width="200">
 pub struct Screen {
     repo: ScreenRepo,
     width: u32,
@@ -95,6 +126,10 @@ pub struct Screen {
     /// Optional callback invoked at the end of the params panel (when the hamburger menu is open).
     /// Set with [`Screen::set_extra_param_ui`].
     extra_param_ui: Option<Box<dyn FnMut() + Send + 'static>>,
+
+    /// When `true`, the hamburger settings button is not rendered.
+    /// Set with [`Screen::hide_hamburger`]. Defaults to `false`.
+    hide_hamburger: bool,
 }
 
 unsafe impl Send for Screen {}
@@ -140,6 +175,7 @@ impl Screen {
 
             overlay_text: String::new(),
             extra_param_ui: None,
+            hide_hamburger: false,
         };
 
         let screen_tex = screen_tex.as_ref().clone_ref();
@@ -247,6 +283,14 @@ impl Screen {
         self
     }
 
+    /// Hide or show the hamburger settings button. Defaults to `false` (visible). If you hide it you'll have to manage
+    /// the screen parameters via your own UI, but this can be useful if you want a more permanent control panel or
+    /// want to avoid accidental adjustments.
+    pub fn hide_hamburger(&mut self, hide: bool) -> &mut Self {
+        self.hide_hamburger = hide;
+        self
+    }
+
     /// Register a closure that will be called at the end of the params panel (hamburger menu).
     /// Use it to append extra sliders, toggles, or labels without subclassing `Screen`.
     ///
@@ -334,6 +378,8 @@ impl Screen {
         }
 
         let screen_transform = self.screen_pose.to_matrix(None);
+        let d = self.screen_distance.sqrt(); // Adjust the UI element sizes based on distance.
+
         if self.repo.show_param {
             let info_position = Vec3::new(bounds.center.x, bounds.center.y, GRAB_X_MARGIN * 1.5);
             let mut window_pose = Pose::new(info_position, None) * screen_transform;
@@ -409,17 +455,16 @@ impl Screen {
             }
 
             Ui::window_end();
-        } else {
+        } else if !self.hide_hamburger {
             let info_position = Vec3::new(
                 0.0, //
                 self.screen_size.y / 2.0 + 0.04 * factor_size,
                 bounds.center.z,
             );
             let button_pose = Pose::new(info_position, None) * screen_transform;
-            let d = self.screen_distance;
-            let btn_size = Vec2::new(0.06 * d.sqrt(), 0.06 * d.sqrt());
+            let btn_size = Vec2::new(0.06 * d, 0.06 * d);
             let surface_size = btn_size * 1.1;
-            Ui::push_surface(button_pose, Vec3::X * 0.03 * d.sqrt(), surface_size);
+            Ui::push_surface(button_pose, Vec3::X * 0.02 * d, surface_size);
             if Ui::button_img(
                 &self.repo.id_btn_show_hide_param,
                 &self.repo.sprite_show_param,
@@ -440,7 +485,7 @@ impl Screen {
             let overlay_y = self.screen_size.y / 2.0 + 0.04 * factor_size;
             let overlay_pos = Vec3::new(-0.05, overlay_y, bounds.center.z);
             let overlay_pose = Pose::new(overlay_pos, None) * screen_transform;
-            Ui::push_surface(overlay_pose, Vec3::ZERO, Vec2::ZERO);
+            Ui::push_surface(overlay_pose, Vec3::X * -0.01 * d, Vec2::ZERO);
             Ui::text(
                 &self.overlay_text,
                 None,
@@ -637,7 +682,7 @@ impl Screen {
 
     /// Set the OpenXR swapchain handle to use for quad-layer submission.
     /// When set, [`Self::draw`] will submit a composition quad layer instead of rendering the mesh.
-    /// The caller retains ownership of the swapchain lifecycle (e.g. via [`SwapchainSk`]).
+    /// The caller retains ownership of the swapchain lifecycle (e.g. via [`crate::tools::xr_comp_layers::SwapchainSk`]).
     pub fn set_swapchain(&mut self, swapchain: Swapchain) -> &mut Self {
         self.openxr_swapchain = Some(swapchain);
         self

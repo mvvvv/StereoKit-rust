@@ -342,8 +342,11 @@ pub mod maths;
 /// [![Mesh](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/meshes.jpeg)](mesh::Mesh)
 /// [![Vertex](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/basic_mesh.jpeg)](mesh::Vertex)
 /// [![Mesh bounds](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_bounds.jpeg)](mesh::Mesh::bounds)
-/// [![Mesh set_verts](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_set_verts.jpeg)](mesh::Mesh::set_verts)
+/// [![Mesh set_data](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_set_data.jpeg)](mesh::Mesh::set_data)
 /// [![Mesh set_inds](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_set_inds.jpeg)](mesh::Mesh::set_inds)
+/// [![Mesh set_skin](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_set_skin.jpeg)](mesh::Mesh::set_skin)
+/// [![Mesh copy](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_copy.jpeg)](mesh::Mesh::copy)
+/// [![Mesh update_skin](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_update_skin.jpeg)](mesh::Mesh::update_skin)
 /// [![Mesh draw](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_draw.jpeg)](mesh::Mesh::draw)
 /// [![Mesh intersect](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_intersect.jpeg)](mesh::Mesh::intersect)
 pub mod mesh;
@@ -487,6 +490,7 @@ pub mod tex;
 /// [![Hud Notification](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/hud_notification.jpeg)](tools::notif::HudNotification)
 /// [![Screenshot viewer](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/screenshot_viewer.jpeg)](tools::screenshot::ScreenshotViewer)
 /// [![Title](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/title.jpeg)](tools::title::Title)
+/// [![Screen](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/screen.jpeg)](tools::screen::Screen)
 pub mod tools;
 
 /// The UI module is a collection of functions and structs that allow you to create a user interface.

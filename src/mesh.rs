@@ -931,7 +931,28 @@ impl Mesh {
     /// * `priority` - Loading priority for async upload. Lower values load sooner. None has default value of 0.
     ///
     /// see also [`mesh_set_data`] [`Mesh::from_data`]
-    /// see example[`Vertex`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec2, Vec3, Matrix}, mesh::{Mesh, Vertex},
+    ///                      material::Material, util::named_colors};
+    ///
+    /// let material = Material::pbr();
+    /// let mut square = Mesh::new();
+    /// square.set_data(&[
+    ///     Vertex::new([-1.0, -1.0, 0.0].into(), Vec3::UP, None,            Some(named_colors::BLUE)),
+    ///     Vertex::new([ 1.0, -1.0, 0.0].into(), Vec3::UP, Some(Vec2::X),   None),
+    ///     Vertex::new([-1.0,  1.0, 0.0].into(), Vec3::UP, Some(Vec2::Y),   None),
+    ///     Vertex::new([ 1.0,  1.0, 0.0].into(), Vec3::UP, Some(Vec2::ONE), Some(named_colors::YELLOW)),
+    ///     ], &[0, 1, 2, 2, 1, 3], None, None);
+    ///
+    /// filename_scr = "screenshots/mesh_set_data.jpeg";
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     square.draw(token, &material, Matrix::IDENTITY, None, None);
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_set_data.jpeg" alt="screenshot" width="200">
     pub fn set_data(
         &mut self,
         vertices: &[Vertex],
@@ -955,6 +976,7 @@ impl Mesh {
         self
     }
 
+    /// Use [`Mesh::set_data`] or [`Mesh::from_data`] instead!
     /// Assigns the vertices for this Mesh! This will create a vertex buffer object on the graphics card. If you're
     /// calling this a second time, the buffer will be marked as dynamic and re-allocated. If you're calling this a
     /// third time, the buffer will only re-allocate if the buffer is too small, otherwise it just copies in the data!
@@ -970,14 +992,12 @@ impl Mesh {
     ///   you're updating a mesh frequently or need all the performance you can get, setting this to false is a nice way
     ///   to gain some speed!
     ///
-    /// see also [`mesh_set_verts`] [`Vertex`] [`Mesh::set_data`]
+    /// see also [`mesh_set_verts`] [`Vertex`] [`Mesh::set_data`] [`Mesh::from_data`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec2, Vec3, Matrix}, mesh::{Mesh, Vertex},
-    ///                      material::Material, util::named_colors};
+    /// use stereokit_rust::{maths::{Vec2, Vec3}, mesh::{Mesh, Vertex}, util::named_colors};
     ///
-    /// let material = Material::pbr();
     /// let mut square = Mesh::new();
     /// square.set_verts(&[
     ///     Vertex::new([-1.0, -1.0, 0.0].into(), Vec3::UP, None,            Some(named_colors::BLUE)),
@@ -986,14 +1006,9 @@ impl Mesh {
     ///     Vertex::new([ 1.0,  1.0, 0.0].into(), Vec3::UP, Some(Vec2::ONE), Some(named_colors::YELLOW)),
     ///     ], true)
     ///    .set_inds(&[0, 1, 2, 2, 1, 3]);
-    ///
-    /// filename_scr = "screenshots/mesh_set_verts.jpeg";
-    /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     square.draw(token, &material , Matrix::IDENTITY, None, None);
-    /// );
+    /// assert_eq!(square.get_vert_count(), 4);
     /// # sk::Sk::shutdown();
     /// ```
-    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_set_verts.jpeg" alt="screenshot" width="200">
     pub fn set_verts(&mut self, vertices: &[Vertex], calculate_bounds: bool) -> &mut Self {
         unsafe {
             mesh_set_verts(self.0.as_ptr(), vertices.as_ptr(), vertices.len() as i32, calculate_bounds as Bool32T)
@@ -1054,17 +1069,33 @@ impl Mesh {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec4, Matrix}, mesh::Mesh};
+    /// use stereokit_rust::{maths::{Vec4, Matrix}, mesh::{Mesh, Vertex}, material::Material,
+    ///                      util::named_colors::{RED, BLUE, YELLOW,GREEN}};
     ///
-    /// let mut mesh = Mesh::generate_cube([0.1, 0.1, 0.1], None);
+    /// let material = Material::pbr();
+    /// // 4-vertex strip along Y: top pair at y=+0.1, bottom pair at y=-0.1
+    /// let mut mesh = Mesh::from_data(&[
+    ///         Vertex::new([-0.05,  0.1, 0.0], [0.0, 0.0, 1.0], None, Some(RED)),
+    ///         Vertex::new([ 0.05,  0.1, 0.0], [0.0, 0.0, 1.0], None, Some(BLUE)),
+    ///         Vertex::new([-0.05, -0.1, 0.0], [0.0, 0.0, 1.0], None, Some(YELLOW)),
+    ///         Vertex::new([ 0.05, -0.1, 0.0], [0.0, 0.0, 1.0], None, Some(GREEN)),
+    ///     ], &[0, 2, 1, 1, 2, 3], None, None);
     /// assert!(!mesh.has_skin());
     ///
-    /// let vert_count = mesh.get_vert_count() as usize;
-    /// let bone_ids: Vec<u16>  = vec![0u16; vert_count * 4];
-    /// let bone_weights: Vec<Vec4> = vec![Vec4::new(1.0, 0.0, 0.0, 0.0); vert_count];
-    /// let resting: Vec<Matrix> = vec![Matrix::IDENTITY];
-    /// mesh.set_skin(&bone_ids, &bone_weights, &resting);
+    /// // Top vertices → bone 0 (resting at y=+0.1), bottom → bone 1 (resting at y=-0.1)
+    /// let bone_ids = [0u16, 0, 0, 0,  0, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0];
+    /// let bone_weights = vec![Vec4::new(1.0, 0.0, 0.0, 0.0); 4];
+    /// mesh.set_skin(&bone_ids, &bone_weights,
+    ///               &[Matrix::t([0.0,  0.1, 0.0]), Matrix::t([0.0, -0.1, 0.0])]);
     /// assert!(mesh.has_skin());
+    ///
+    /// // Deform: bone 0 stays at rest, bone 1 inclined 90° around Z
+    /// let mut deformed = mesh.copy();
+    /// deformed.update_skin(&[Matrix::t([0.0, 0.1, 0.0]), Matrix::r([0.0, 0.0, -90.0])]);
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     deformed.draw(token, &material, Matrix::IDENTITY, None, None);
+    /// );
     /// # sk::Sk::shutdown();
     /// ```
     pub fn has_skin(&self) -> bool {
@@ -1084,22 +1115,40 @@ impl Mesh {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec4, Matrix}, mesh::Mesh};
+    /// use stereokit_rust::{maths::{Vec4, Matrix}, mesh::{Mesh, Vertex}, material::Material,
+    ///                      util::named_colors::{RED, BLUE, YELLOW,GREEN}};
     ///
-    /// let mut src = Mesh::generate_cube([0.1, 0.1, 0.1], None);
+    /// let material = Material::pbr();
+    /// // 4-vertex strip along Y: top pair at y=+0.1, bottom pair at y=-0.1
+    /// let mut mesh = Mesh::from_data(&[
+    ///         Vertex::new([-0.05,  0.1, 0.0], [0.0, 0.0, 1.0], None, Some(RED)),
+    ///         Vertex::new([ 0.05,  0.1, 0.0], [0.0, 0.0, 1.0], None, Some(BLUE)),
+    ///         Vertex::new([-0.05, -0.1, 0.0], [0.0, 0.0, 1.0], None, Some(YELLOW)),
+    ///         Vertex::new([ 0.05, -0.1, 0.0], [0.0, 0.0, 1.0], None, Some(GREEN)),
+    ///     ], &[0, 2, 1, 1, 2, 3], None, None);
+    /// let bone_ids = [0u16, 0, 0, 0,  0, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0];
+    /// let bone_weights = vec![Vec4::new(1.0, 0.0, 0.0, 0.0); 4];
+    /// mesh.set_skin(&bone_ids, &bone_weights,
+    ///              &[Matrix::t([0.0,  0.1, 0.0]), Matrix::t([0.0, -0.1, 0.0])]);
     ///
-    /// let vert_count = src.get_vert_count() as usize;
-    /// let bone_ids: Vec<u16>  = vec![0u16; vert_count * 4];
-    /// let bone_weights: Vec<Vec4> = vec![Vec4::new(1.0, 0.0, 0.0, 0.0); vert_count];
-    /// let resting: Vec<Matrix> = vec![Matrix::IDENTITY];
-    /// src.set_skin(&bone_ids, &bone_weights, &resting);
+    /// // Each copy has its own vertex buffer — update_skin on one won't affect the other
+    /// let mut a = mesh.copy();
+    /// let mut b = mesh.copy();
+    /// assert!(a.has_skin() && b.has_skin());
+    /// assert_eq!(a.get_vert_count(), mesh.get_vert_count());
     ///
-    /// let a = src.copy();
-    /// let b = src.copy();
-    /// assert!(a.has_skin());
-    /// assert!(b.has_skin());
+    /// // Same source, two different deformations: bone 1 inclined -90° and -45° around Z
+    /// a.update_skin(&[Matrix::t([0.0, 0.1, 0.0]), Matrix::r([0.0, 0.0, -90.0])]);
+    /// b.update_skin(&[Matrix::t([0.0, 0.1, 0.0]), Matrix::r([0.0, 0.0, -45.0])]);
+    ///
+    /// filename_scr = "screenshots/mesh_copy.jpeg"; fov_scr = 12.0;
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     a.draw(token, &material, Matrix::t([-0.05, 0.0, 0.0]), None, None);
+    ///     b.draw(token, &material, Matrix::t([ 0.05, 0.0, 0.0]), None, None);
+    /// );
     /// # sk::Sk::shutdown();
     /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_copy.jpeg" alt="screenshot" width="200">
     pub fn copy(&self) -> Mesh {
         Mesh(NonNull::new(unsafe { mesh_copy(self.0.as_ptr()) }).expect("Mesh::copy failed!"))
     }
@@ -1125,18 +1174,39 @@ impl Mesh {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec4, Matrix}, mesh::Mesh};
+    /// use stereokit_rust::{maths::{Vec4, Matrix}, mesh::{Mesh, Vertex}, material::Material,
+    ///                      util::named_colors::{RED, BLUE, YELLOW,GREEN}};
     ///
-    /// let mut mesh = Mesh::generate_cube([0.1, 0.1, 0.1], None);
-    /// let vert_count = mesh.get_vert_count() as usize;
-    /// let bone_ids: Vec<u16>  = vec![0u16; vert_count * 4];
-    /// let bone_weights: Vec<Vec4> = vec![Vec4::new(1.0, 0.0, 0.0, 0.0); vert_count];
-    /// let resting: Vec<Matrix> = vec![Matrix::IDENTITY];
+    /// let material = Material::pbr();
+    /// // 4-vertex strip along Y: top pair at y=+0.1, bottom pair at y=-0.1
+    /// let mut mesh = Mesh::from_data(&[
+    ///         Vertex::new([-0.05,  0.1, 0.0], [0.0, 0.0, 1.0], None, Some(RED)),
+    ///         Vertex::new([ 0.05,  0.1, 0.0], [0.0, 0.0, 1.0], None, Some(BLUE)),
+    ///         Vertex::new([-0.05, -0.1, 0.0], [0.0, 0.0, 1.0], None, Some(YELLOW)),
+    ///         Vertex::new([ 0.05, -0.1, 0.0], [0.0, 0.0, 1.0], None, Some(GREEN)),
+    ///     ], &[0, 2, 1, 1, 2, 3], None, None);
     ///
+    /// // 4 slots per vertex: [bone_idx, 0, 0, 0]. Top verts → bone 0, bottom → bone 1
+    /// let bone_ids = [0u16, 0, 0, 0,  0, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0];
+
+    /// // Single bone per vertex → weight 1.0 on slot 0
+    /// let bone_weights = vec![Vec4::new(1.0, 0.0, 0.0, 0.0); 4];
+    /// // Resting positions match vertex positions: bone 0 at top, bone 1 at bottom
+    /// let resting = [Matrix::t([0.0,  0.1, 0.0]), Matrix::t([0.0, -0.1, 0.0])];
     /// mesh.set_skin(&bone_ids, &bone_weights, &resting);
     /// assert!(mesh.has_skin());
+    ///
+    /// // Deform: bone 0 stays at rest, bone 1 inclined 45° around Z
+    /// let mut deformed = mesh.copy();
+    /// deformed.update_skin(&[Matrix::t([0.0, 0.1, 0.0]), Matrix::r([0.0, 0.0, -90.0])]);
+    ///
+    /// filename_scr = "screenshots/mesh_set_skin.jpeg"; fov_scr = 12.0;
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     deformed.draw(token, &material, Matrix::IDENTITY, None, None);
+    /// );
     /// # sk::Sk::shutdown();
     /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_set_skin.jpeg" alt="screenshot" width="200">
     pub fn set_skin(
         &mut self,
         bone_ids: &[u16],
@@ -1174,27 +1244,45 @@ impl Mesh {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec4, Matrix}, mesh::Mesh};
+    /// use stereokit_rust::{maths::{Vec4, Matrix}, mesh::{Mesh, Vertex}, material::Material};
     ///
-    /// let mut src = Mesh::generate_cube([0.1, 0.1, 0.1], None);
-    /// let vert_count = src.get_vert_count() as usize;
-    /// let bone_ids: Vec<u16>  = vec![0u16; vert_count * 4];
-    /// let bone_weights: Vec<Vec4> = vec![Vec4::new(1.0, 0.0, 0.0, 0.0); vert_count];
-    /// let resting: Vec<Matrix> = vec![Matrix::IDENTITY];
-    /// src.set_skin(&bone_ids, &bone_weights, &resting);
+    /// let mut material = Material::pbr();
+    /// material.color_tint([0.5, 1.0, 0.5, 0.4]);
+    /// // Stack N thin cylinder segments along Y to get intermediate rings.
+    /// // generate_cylinder alone only has top/bottom rings, so stacking gives
+    /// // the per-height vertices needed for smooth bone blending.
+    /// let (n, sides, rad, hh) = (4usize, 10usize, 0.04f32, 0.2f32);
+    /// let seg_h = 2.0 * hh / n as f32;
+    /// let (mut verts, mut inds) = (Vec::<Vertex>::new(), Vec::<u32>::new());
+    /// for i in 0..n {
+    ///     let y = -hh + (i as f32 + 0.5) * seg_h;
+    ///     let seg = Mesh::generate_cylinder(rad * 2.0, seg_h, [0.0, 1.0, 0.0], Some(sides as i32));
+    ///     let base = verts.len() as u32;
+    ///     verts.extend(seg.get_verts().iter()
+    ///         .map(|v| { let mut nv = *v; nv.pos.y += y; nv }));
+    ///     inds.extend(seg.get_inds().iter().map(|&idx| idx + base));
+    /// }
+    /// let mut src = Mesh::from_data(&verts, &inds, None, None);
     ///
-    /// let mut a = src.copy();
-    /// let mut b = src.copy();
+    /// // Both bones anchored at origin (resting = IDENTITY → ball-joint pivot at y=0)
+    /// let bone_ids: Vec<u16> = (0..verts.len()).flat_map(|_| [0u16, 1, 0, 0]).collect();
+    /// let bone_weights: Vec<Vec4> = verts.iter()
+    ///     .map(|v| { let w = ((v.pos.y + hh) / (2.0 * hh)).clamp(0.0, 1.0);
+    ///                Vec4::new(w, 1.0 - w, 0.0, 0.0) }).collect();
+    /// src.set_skin(&bone_ids, &bone_weights, &[Matrix::IDENTITY, Matrix::IDENTITY]);
     ///
-    /// a.update_skin(&[Matrix::t([0.0,  0.05, 0.0])]);
-    /// b.update_skin(&[Matrix::t([0.0, -0.05, 0.0])]);
+    /// let mut mesh = src.copy();
+    /// // Bone 0 stays fixed, bone 1 rotated 60° around Z → smooth elbow bend at center
+    /// mesh.update_skin(&[Matrix::IDENTITY, Matrix::r([0.0, -60.0, 60.0])]);
+    /// assert!(mesh.has_skin());
     ///
-    /// let bounds_a = a.get_bounds();
-    /// let bounds_b = b.get_bounds();
-    /// assert!(bounds_a.center.y > 0.0);
-    /// assert!(bounds_b.center.y < 0.0);
+    /// filename_scr = "screenshots/mesh_update_skin.jpeg"; fov_scr = 25.0;
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     mesh.draw(token, &material, Matrix::IDENTITY, None, None);
+    /// );
     /// # sk::Sk::shutdown();
     /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_update_skin.jpeg" alt="screenshot" width="200">
     pub fn update_skin(&mut self, bone_palette: &[Matrix]) -> &mut Self {
         unsafe { mesh_update_skin(self.0.as_ptr(), bone_palette.as_ptr(), bone_palette.len() as i32) };
         self

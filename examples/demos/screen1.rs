@@ -101,7 +101,7 @@ impl Default for Screen1 {
             sprite_play: Sprite::toggle_off(),
             sprite_pause: Sprite::toggle_on(),
 
-            window_pose: Pose::new(Vec3::new(-0.3, 1.5, -0.6), Some(Quat::Y_180)),
+            window_pose: Pose::new(Vec3::new(0.35, 1.5, -0.6), Some(Quat::Y_180)),
             text: "Screen1".to_owned(),
             text_style: None,
             transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, Quat::Y_180),
