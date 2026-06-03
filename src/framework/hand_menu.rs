@@ -1146,8 +1146,7 @@ fn generate_img_frame(distance: f32, radius: f32) -> Mesh {
     inds.push(3);
 
     let mut mesh = Mesh::new();
-    mesh.set_inds(inds.as_slice());
-    mesh.set_verts(verts.as_slice(), true);
+    mesh.set_data(verts.as_slice(), inds.as_slice(), None, None);
 
     mesh
 }

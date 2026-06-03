@@ -97,8 +97,8 @@ jobs:
       run: cargo build --verbose --release --example main_pc
 
     - name: Run tests 
-      timeout-minutes: 25
-      run: cargo test 
+      timeout-minutes: 15
+      run: cargo test --verbose -- --nocapture
       # run: |
       #   $failed = $false
       #   cargo test tests;             if ($LASTEXITCODE -ne 0) { $failed = $true }
