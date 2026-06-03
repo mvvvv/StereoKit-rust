@@ -2031,6 +2031,7 @@ impl<'a> ParamInfos<'a> {
     ///
     /// assert_eq!( param_infos.get_int_vector("size_factors",
     ///             MaterialParam::Int4).unwrap_or_default(), new_factors);
+    /// # test_steps!();
     /// # } sk::Sk::shutdown();
     /// ```
     pub fn set_int<S: AsRef<str>>(&mut self, name: S, values: &[i32]) -> &mut Self {
@@ -2082,6 +2083,7 @@ impl<'a> ParamInfos<'a> {
     ///          MaterialParam::UInt4),"size_factors should be here");
     /// assert_eq!( param_infos.get_uint_vector("u_size_factors",
     ///             MaterialParam::UInt4).unwrap_or_default(), new_factors);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn set_uint<S: AsRef<str>>(&mut self, name: S, values: &[u32]) -> &mut Self {
@@ -2126,6 +2128,7 @@ impl<'a> ParamInfos<'a> {
     ///
     /// assert!( param_infos.has_param("useless", MaterialParam::Matrix),"size_factors should be here");
     /// assert_eq!( param_infos.get_matrix("useless"), new_matrix);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn set_matrix<S: AsRef<str>>(&mut self, name: S, value: impl Into<Matrix>) -> &mut Self {
@@ -2156,6 +2159,7 @@ impl<'a> ParamInfos<'a> {
     ///                    .expect("tex should be created");
     /// param_infos.set_texture("metal", &metal_tex);
     /// assert_eq!( param_infos.get_texture("metal").unwrap_or_default(), metal_tex );
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn set_texture<S: AsRef<str>>(&mut self, name: S, value: impl AsRef<Tex>) -> &mut Self {
@@ -2187,6 +2191,7 @@ impl<'a> ParamInfos<'a> {
     ///                         .expect("compute buffer should be created");
     /// // this buffer is not actually used in the shader, so it should not be set successfully
     /// assert!(!param_infos.set_storage("my_buffer", &compute_buffer));
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn set_storage<T>(&mut self, name: impl AsRef<str>, buffer: &ComputeBuffer<T>) -> bool {
@@ -2216,6 +2221,7 @@ impl<'a> ParamInfos<'a> {
     /// material_buffer.set(&mut global_data as *mut _);
     /// // this buffer is not actually used in the shader, so it should not be set successfully
     /// assert!(!param_infos.set_constant("my_cbuffer", &material_buffer));
+    /// # test_steps!();
     /// # } sk::Sk::shutdown();
     /// ```
     pub fn set_constant<T>(&mut self, name: impl AsRef<str>, buffer: &MaterialBuffer<T>) -> bool {
@@ -2242,6 +2248,7 @@ impl<'a> ParamInfos<'a> {
     /// let new_vec2 = Vec2::new(0.15, 0.85);
     /// param_infos.set_vector2("edge_limit", new_vec2);
     /// assert_eq!( param_infos.get_vector2("edge_limit"), new_vec2);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn set_vector2<S: AsRef<str>>(&mut self, name: S, value: impl Into<Vec2>) -> &mut Self {
@@ -2271,6 +2278,7 @@ impl<'a> ParamInfos<'a> {
     /// let new_vec3 = Vec3::new(0.75, 0.75, 0.75);
     /// param_infos.set_vector3("line_color", new_vec3);
     /// assert_eq!( param_infos.get_vector3("line_color"), new_vec3);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn set_vector3<S: AsRef<str>>(&mut self, name: S, value: impl Into<Vec3>) -> &mut Self {
@@ -2302,6 +2310,7 @@ impl<'a> ParamInfos<'a> {
     /// // same as material.tex_transform(new_vec4)
     /// param_infos.set_vector4("tex_trans", new_vec4);
     /// assert_eq!( param_infos.get_vector4("tex_trans"), new_vec4);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn set_vector4<S: AsRef<str>>(&mut self, name: S, value: impl Into<Vec4>) -> &mut Self {

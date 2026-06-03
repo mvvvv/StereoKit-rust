@@ -97,7 +97,7 @@ jobs:
       run: cargo build --verbose --release --example main_pc
 
     - name: Run tests 
-      timeout-minutes: 15
+      timeout-minutes: 25
       run: cargo test 
       # run: |
       #   $failed = $false
