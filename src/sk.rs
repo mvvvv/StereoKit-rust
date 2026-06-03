@@ -1602,7 +1602,7 @@ impl Sk {
     ///
     /// // Spawn a new thread to send an event after a delay
     /// let handle = thread::spawn(move || {
-    ///     thread::sleep(Duration::from_millis(100));
+    ///     thread::sleep(Duration::from_millis(500));
     ///     if let Some(proxy) = event_loop_proxy {
     ///         proxy.send_event(StepperAction::quit("thread", "I'm done!")).unwrap_or_default();
     ///     }

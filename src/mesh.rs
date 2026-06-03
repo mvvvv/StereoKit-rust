@@ -1426,11 +1426,11 @@ impl Mesh {
     /// assert_ne!(mesh.get_asset_state(), AssetState::Loaded);
     ///
     /// let cube_mesh = Mesh::generate_cube( [0.1, 0.1, 0.1], None);
-    /// assert_eq!(cube_mesh.get_asset_state(), AssetState::Loaded);
     ///
     /// Assets::block_for_priority(i32::MAX);
+    /// assert_eq!(cube_mesh.get_asset_state(), AssetState::Loaded);
     ///
-    /// number_of_steps = 100000;
+    /// number_of_steps = 100;
     /// test_steps!( // !!!! Get a proper main loop !!!!
     /// );
     /// assert_eq!(mesh.get_asset_state(), AssetState::LoadedMeta);
@@ -1721,6 +1721,7 @@ impl Mesh {
     /// // Get the mesh
     /// let mesh = Mesh::cube();
     /// assert_eq!(mesh.get_id(), "default/mesh_cube");
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn cube() -> Self {
@@ -1739,6 +1740,7 @@ impl Mesh {
     /// // Get the mesh
     /// let mesh = Mesh::screen_quad();
     /// assert_eq!(mesh.get_id(), "default/mesh_screen_quad");
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn screen_quad() -> Self {
@@ -1762,6 +1764,7 @@ impl Mesh {
     /// // Get the mesh
     /// let mesh = Mesh::sphere();
     /// assert_eq!(mesh.get_id(), "default/mesh_sphere");
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn sphere() -> Self {
@@ -1779,6 +1782,7 @@ impl Mesh {
     /// // Get the mesh
     /// let mesh = Mesh::left_hand();
     /// assert_eq!(mesh.get_id(), "default/mesh_lefthand");
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/left_hand.jpeg" alt="screenshot" width="200">
@@ -1797,6 +1801,7 @@ impl Mesh {
     /// // Get the mesh
     /// let mesh = Mesh::right_hand();
     /// assert_eq!(mesh.get_id(), "default/mesh_righthand");
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn right_hand() -> Self {

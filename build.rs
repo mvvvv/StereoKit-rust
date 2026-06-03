@@ -247,6 +247,15 @@ fn main() {
                     cargo_link!("sk_app");
                 }
 
+                // Fix CRT linkage for Windows MSVC: CMake builds C++ libraries with debug CRT
+                // in debug builds (/MDd), but Rust defaults to release CRT. We need to match
+                // the CRT version to avoid symbol conflicts like __imp__CrtDbgReport, etc.
+                if cfg!(debug_assertions) {
+                    // Use debug CRT in debug builds to match openxr_loaderd.lib and StereoKitC.lib
+                    println!("cargo:rustc-link-arg=/NODEFAULTLIB:msvcrt");
+                    println!("cargo:rustc-link-arg=/DEFAULTLIB:msvcrtd");
+                }
+
                 let lib: String = "StereoKitC".into();
                 let deuleuleu = lib.clone() + ".dll";
                 let lib_lib = lib.clone() + ".lib";

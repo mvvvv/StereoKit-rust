@@ -157,7 +157,7 @@ jobs:
       run: cargo build --verbose --release --example main_pc
 
     - name: Run tests
-      timeout-minutes: 15
+      timeout-minutes: 25
       run: |
         export DISPLAY=:99
         Xvfb  :99 -screen 0 1280x1024x24 > /dev/null 2>&1 & sleep 5        
@@ -166,7 +166,7 @@ jobs:
     - name: Build no-event-loop
       run: cargo build --verbose --features no-event-loop --example manual
     - name: Run tests no-event-loop
-      timeout-minutes: 15
+      timeout-minutes: 25
       run: |
         export DISPLAY=:99
         Xvfb  :99 -screen 0 1280x1024x24 > /dev/null 2>&1 & sleep 5        

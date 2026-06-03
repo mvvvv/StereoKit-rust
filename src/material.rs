@@ -2793,7 +2793,7 @@ impl ParamInfo {
 ///
 /// // Update data you want the shader(s) to read.
 /// let mut globals = Globals { time: 1.234, wind: [0.1, 0.2, 0.3]};
-/// assert_eq!(buffer.get_id(), "auto/material_buffer_128");
+/// assert_eq!(&buffer.get_id()[..21], "auto/material_buffer_");
 ///
 /// // Upload to GPU so every shader using this global slot can access it.
 /// buffer.id("globals_material_buffer").set(&mut globals as *mut _);

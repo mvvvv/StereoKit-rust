@@ -3841,6 +3841,7 @@ impl Input {
     /// assert_eq!(button_state.is_just_active(), false);
     /// assert_eq!(button_state.is_just_inactive(), false);
     /// assert_eq!(button_state.is_changed(), false);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_controller_menu_button() -> BtnState {
@@ -3866,6 +3867,7 @@ impl Input {
     ///
     /// assert_eq!(eyes_pose, Pose::IDENTITY);
     /// assert_eq!(Input::get_eyes_tracked(), BtnState::Inactive);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_eyes() -> Pose {
@@ -3896,6 +3898,7 @@ impl Input {
     /// assert_eq!(eyes_tracked, BtnState::Inactive);
     ///
     /// assert_eq!(Input::get_eyes(),Pose::IDENTITY);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_eyes_tracked() -> BtnState {
@@ -3915,6 +3918,7 @@ impl Input {
     /// let head_pose = Input::get_head();
     ///
     /// assert_eq!(head_pose, Pose::IDENTITY);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_head() -> Pose {
@@ -3941,6 +3945,7 @@ impl Input {
     /// assert_eq!(mouse.get_ray().position, Vec3::ZERO);
     /// // Warning: No ray if the mouse isn't available!
     /// // assert_eq!(mouse.get_ray().direction, Vec3::new(f32::NAN, f32::NAN, f32::NAN));
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_mouse() -> Mouse {
@@ -3994,6 +3999,7 @@ impl Input {
     /// # assert_eq!(rdetached_pose, Pose::IDENTITY);
     ///
     /// assert_eq!(InputPose::Max as i32, 9);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn pose(pose_type: InputPose) -> Pose {
@@ -4033,6 +4039,7 @@ impl Input {
     /// assert_eq!(lgrip_tracked.is_rot_known(), false);
     /// assert_eq!(lgrip_tracked.is_tracked(), false);
     ///
+    /// # test_steps!();
     /// # Sk::shutdown();
     /// ```
     pub fn pose_state(pose_type: InputPose) -> PoseState {
@@ -4060,6 +4067,7 @@ impl Input {
     /// # assert_eq!(lgrip, 0.0);
     /// let rgrip = Input::float(InputFloat::RGrip);
     /// # assert_eq!(rgrip, 0.0);
+    /// # test_steps!();
     /// # Sk::shutdown();
     /// ```
     pub fn float(float_type: InputFloat) -> f32 {
@@ -4101,6 +4109,7 @@ impl Input {
     /// # assert_eq!(r_x2_button, BtnState::Inactive);
     /// let r_menu_button = Input::button(InputButton::RMenu);
     /// # assert_eq!(r_menu_button, BtnState::Inactive);
+    /// # test_steps!();
     /// # Sk::shutdown();
     /// ```
     pub fn button(button_type: InputButton) -> BtnState {
@@ -4125,6 +4134,7 @@ impl Input {
     ///
     /// let r_stick = Input::xy(InputXY::RStick);
     /// assert_eq!(r_stick, Vec2::ZERO);
+    /// # test_steps!();
     /// # Sk::shutdown();
     /// ```
     pub fn xy(xy_type: InputXY) -> Vec2 {
@@ -4154,6 +4164,7 @@ impl Input {
     /// let right_caps = Input::haptic_caps(InputHaptic::RController);
     /// assert_eq!(right_caps, InputHapticCaps::None);
     /// assert_ne!(right_caps, InputHapticCaps::Waveform | InputHapticCaps::Curve | InputHapticCaps::Pulse);
+    /// # test_steps!();
     /// # Sk::shutdown();
     /// ```
     pub fn haptic_caps(haptic_type: InputHaptic) -> InputHapticCaps {
@@ -4178,6 +4189,7 @@ impl Input {
     /// assert_eq!(left_rate, 0.0);
     /// let right_rate = Input::haptic_preferred_rate(InputHaptic::RController);
     /// assert_eq!(right_rate, 0.0);
+    /// # test_steps!();
     /// # Sk::shutdown();
     /// ```
     pub fn haptic_preferred_rate(haptic_type: InputHaptic) -> f32 {
@@ -5856,6 +5868,7 @@ impl Renderer {
     ///   normalized coordinates, 0-1. If None has default value of (0, 0, 0, 0)
     ///
     /// see also [`render_to`] [`Renderer::render_to`]
+    /// TODO: This example hangs on Momado simulator if render_to_multiview is called once (-3 is never reached).
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -5887,7 +5900,7 @@ impl Renderer {
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     Renderer::add_mesh(token, &sphere, &material, transform_sphere,
     ///         None, None);
-    ///     if iter < number_of_steps - 2 {
+    ///     if iter < number_of_steps - 3 {
     ///         Renderer::render_to_multiview(token, &tex, &[camera1, camera2],
     ///                                       &[projection, projection],
     ///                                       None, None, None, None);
