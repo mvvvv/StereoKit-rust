@@ -295,6 +295,7 @@ pub mod font;
 /// [![StepperAction](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/stepper_actions.jpeg)](framework::StepperAction)
 /// [![Steppers](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/steppers.jpeg)](framework::Steppers)
 /// [![StepperClosures](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/stepper_closures.jpeg)](framework::StepperClosures)
+/// [![Screen](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/screen.jpeg)](framework::Screen)
 pub mod framework;
 
 /// International keyboard layout constants for use with
@@ -490,7 +491,6 @@ pub mod tex;
 /// [![Hud Notification](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/hud_notification.jpeg)](tools::notif::HudNotification)
 /// [![Screenshot viewer](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/screenshot_viewer.jpeg)](tools::screenshot::ScreenshotViewer)
 /// [![Title](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/title.jpeg)](tools::title::Title)
-/// [![Screen](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/screen.jpeg)](tools::screen::Screen)
 pub mod tools;
 
 /// The UI module is a collection of functions and structs that allow you to create a user interface.
