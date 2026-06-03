@@ -15,6 +15,42 @@ use crate::{
 use crate::{maths::Rect, tools::xr_comp_layers::XrCompLayers};
 use openxr_sys::Swapchain;
 
+/// Values derived from screen parameters and pose that are constant between parameter/pose changes.
+/// Cached to avoid redundant computation inside [`Screen::draw_swapchain`] every frame.
+/// - Layer-param fields are updated by [`Screen::adapt_screen`].
+/// - Pose fields (`local_offset`, `layer_orientation`) are updated by [`Screen::update_pose_cache`],
+///   which is called only when `screen_pose.position` changes.
+#[derive(Clone, Copy)]
+struct SwapchainLayerCache {
+    // --- layer-param fields (updated by adapt_screen) ---
+    rect: Rect,
+    bounds_center_z: f32,
+    use_cylinder: bool,
+    radius: f32,
+    central_angle: f32,
+    aspect_ratio: f32,
+    // --- pose fields (updated by update_pose_cache) ---
+    /// `screen_pose.orientation * Vec3(0, 0, bounds_center_z)` — offset from position to layer centre.
+    local_offset: Vec3,
+    /// Orientation for the XR layer, derived from `screen_pose` orientation.
+    layer_orientation: Quat,
+}
+
+impl Default for SwapchainLayerCache {
+    fn default() -> Self {
+        Self {
+            rect: Rect::default(),
+            bounds_center_z: 0.0,
+            use_cylinder: false,
+            radius: 1.0,
+            central_angle: 1.0,
+            aspect_ratio: 1.0,
+            local_offset: Vec3::ZERO,
+            layer_orientation: Quat::IDENTITY,
+        }
+    }
+}
+
 pub struct ScreenRepo {
     id_btn_show_hide_param: String,
     id_window_param: String,
@@ -49,7 +85,7 @@ impl ScreenRepo {
     }
 }
 
-/// A virtual curved screen that can display a [`Tex`] or an OpenXR swapchain quad layer.
+/// A virtual curved screen that can display a [`Tex`] or an OpenXR swapchain quad/cylinder layer.
 ///
 /// The screen is a concave spherical mesh whose curvature, diagonal, and distance from
 /// the viewer are adjustable at runtime. It ships with:
@@ -64,11 +100,11 @@ impl ScreenRepo {
 /// [`Screen::set_tex_curr`] to flip to it.
 ///
 /// For OpenXR deployments, plug in a [`crate::tools::xr_comp_layers::SwapchainSk`] handle via
-/// [`Screen::set_swapchain`] to submit a composition quad layer instead of rendering the mesh —
+/// [`Screen::set_swapchain`] to submit a composition quad/cylinder layer instead of rendering the mesh —
 /// this bypasses the StereoKit render pipeline and gives compositor-level reprojection.
 ///
 /// See the `screen1` demo for a full example with a slideshow, transport controls, and optional
-/// swapchain quad-layer rendering.
+/// swapchain quad/cylinder layer rendering.
 ///
 /// ### Examples
 /// ```
@@ -100,7 +136,11 @@ pub struct Screen {
     width: u32,
     height: u32,
     screen_distance: f32,
-    screen_flattening: f32,
+    /// When `true` (default), screen is a cylinder. Curvature slider snaps to `0.0` (flat) or `1.0` (cylinder).
+    /// When `false`, screen is spherical and any value in `[0.0, 1.0]` is accepted for intermediate curvatures.
+    cylindrical: bool,
+    /// Shape of the screen: `0.0` = flat plane (quad layer), `1.0` = cylinder or spherical.
+    curvature: f32,
     screen_size: Vec2,
     screen_diagonal: f32,
     screen_pose: Pose,
@@ -118,6 +158,7 @@ pub struct Screen {
     sound_right_inst: Option<SoundInst>,
 
     openxr_swapchain: Option<Swapchain>,
+    layer_cache: SwapchainLayerCache,
 
     /// Text displayed via [`Ui::text_at`] inside the control window on every frame.
     /// Set with [`Screen::set_overlay_text`]. Empty string disables the display.
@@ -154,7 +195,7 @@ impl Screen {
             width,
             height,
             screen_distance: 2.20,
-            screen_flattening: 0.99,
+            curvature: 1.0,
             screen_size,
             screen_diagonal,
             screen_pose: Pose::IDENTITY,
@@ -172,10 +213,12 @@ impl Screen {
             sound_right_inst: None,
 
             openxr_swapchain: None,
+            layer_cache: SwapchainLayerCache::default(),
 
             overlay_text: String::new(),
             extra_param_ui: None,
             hide_hamburger: false,
+            cylindrical: true,
         };
 
         let screen_tex = screen_tex.as_ref().clone_ref();
@@ -187,7 +230,8 @@ impl Screen {
         this.sound_left = Sound::create_stream(2.0).unwrap_or_default();
         this.sound_right = Sound::create_stream(2.0).unwrap_or_default();
 
-        this.screen_pose = Input::get_head() * Matrix::r(Quat::from_angles(0.0, 180.0, 0.0));
+        this.screen_pose = Input::get_head() * Matrix::Y_180;
+        this.update_pose_cache(Input::get_head().position);
         this.adapt_screen();
 
         this.sound_left_inst = Some(this.sound_left.play(this.sound_position(-1), Some(1.0)));
@@ -198,7 +242,7 @@ impl Screen {
 
     /// Set the screen distance
     pub fn screen_distance(&mut self, distance: f32) -> &mut Self {
-        let max_size = self.screen_distance * PI;
+        let max_size = distance * PI;
         let screen_size = self.screen_size;
         if screen_size.x > max_size || self.screen_size.y > max_size {
             // self.screen_distance = old_value;
@@ -210,10 +254,33 @@ impl Screen {
         self
     }
 
-    /// Set the screen flattening (0.0 to 1.0)
-    pub fn screen_flattening(&mut self, flattening: f32) -> &mut Self {
-        self.screen_flattening = flattening.clamp(0.0, 1.0);
+    /// Set the curvature of the screen: `0.0` = flat plane (quad layer), `1.0` = tight cylinder
+    /// (cylinder layer) matching the XR cylinder composition layer. Intermediate values produce a
+    /// wider-radius cylinder and are only accepted when `cylindrical` is `false`.
+    pub fn curvature(&mut self, curvature: f32) -> &mut Self {
+        self.curvature =
+            if self.cylindrical { if curvature >= 0.5 { 1.0 } else { 0.0 } } else { curvature.clamp(0.0, 1.0) };
         self.adapt_screen();
+        self
+    }
+
+    /// When `true` (default), the curvature slider only allows `0.0` (flat) or `1.0` (cylinder).
+    /// When `false`, the slider accepts any value in `[0.0, 1.0]` for intermediate curvatures.
+    /// Reapplies the current curvature value under the new mode.
+    pub fn cylindrical(&mut self, cylindrical: bool) -> &mut Self {
+        self.cylindrical = cylindrical;
+        // re-snap or re-clamp the current curvature value
+        let cur = self.curvature;
+        self.curvature(cur)
+    }
+
+    /// Set the screen orientation and recompute the pose-dependent layer cache fields.
+    pub fn screen_orientation(&mut self, orientation: impl Into<Quat>) -> &mut Self {
+        self.screen_pose.orientation = orientation.into();
+        let local_offset = self.screen_pose.orientation * Vec3::new(0.0, 0.0, self.layer_cache.bounds_center_z);
+        let layer_orientation = Quat::look_at(Vec3::ZERO, local_offset, Some(self.screen_pose.get_up()));
+        self.layer_cache.local_offset = local_offset;
+        self.layer_cache.layer_orientation = layer_orientation;
         self
     }
 
@@ -239,7 +306,7 @@ impl Screen {
     pub fn screen_diagonal(&mut self, diagonal: f32) -> &mut Self {
         let max_size = self.screen_distance * PI;
         let screen_size = self.screen_size * diagonal / self.screen_diagonal;
-        if screen_size.x > max_size || self.screen_size.y > max_size {
+        if screen_size.x > max_size || screen_size.y > max_size {
             // self.screen_diagonal = old_value;
         } else {
             self.screen_size = screen_size;
@@ -247,15 +314,6 @@ impl Screen {
 
             self.adapt_screen();
         }
-        self
-    }
-
-    /// Set the screen orientation (position remains anchored to head)
-    pub fn screen_orientation(&mut self, orientation: impl Into<Quat>) -> &mut Self {
-        let orientation = orientation.into();
-        let head = Input::get_head();
-        self.screen_pose.orientation = orientation;
-        self.screen_pose.position = head.position;
         self
     }
 
@@ -341,8 +399,9 @@ impl Screen {
     pub fn draw(&mut self, token: &MainThreadToken) {
         let screen_transform = self.screen_param();
 
-        // If a swapchain is set, submit a quad layer instead of rendering the mesh
-        if !self.draw_swapchain() {
+        // When the param menu is open, always render the mesh so the user can see shape changes.
+        // Otherwise, prefer the swapchain quad/cylinder layer when one is set.
+        if self.repo.show_param || !self.draw_swapchain() {
             Renderer::add_mesh(token, &self.screen, &self.screen_material, screen_transform, None, None);
         }
     }
@@ -374,7 +433,7 @@ impl Screen {
             None,
         ) {
             let head = Input::get_head();
-            self.screen_pose.position = head.position;
+            self.update_pose_cache(head.position);
         }
 
         let screen_transform = self.screen_pose.to_matrix(None);
@@ -438,13 +497,14 @@ impl Screen {
 
             Ui::label("Curvature", None, true);
             Ui::same_line();
-            Ui::label(format!("{:.2}", self.screen_flattening), None, true);
+            Ui::label(format!("{:.2}", self.curvature), None, true);
             Ui::same_line();
-            let mut screen_flattening = self.screen_flattening;
+            let mut curvature = self.curvature;
+            let step = if self.cylindrical { Some(1.0) } else { None };
             if let Some(new_value) =
-                Ui::hslider(&self.repo.id_slider_flattening, &mut screen_flattening, 0.0, 1.0, None, None, None, None)
+                Ui::hslider(&self.repo.id_slider_flattening, &mut curvature, 0.0, 1.0, step, None, None, None)
             {
-                self.screen_flattening(new_value);
+                self.curvature(new_value);
             }
 
             // Invoke the user-supplied extra parameter UI (e.g. quality sliders, mode toggles).
@@ -474,7 +534,7 @@ impl Screen {
             ) {
                 self.repo.show_param = true;
                 let head = Input::get_head();
-                self.screen_pose.position = head.position;
+                self.update_pose_cache(head.position);
             }
             Ui::pop_surface();
         }
@@ -501,6 +561,47 @@ impl Screen {
         screen_transform
     }
 
+    /// Submit a quad/cylinder layer using the OpenXR swapchain if one is set.
+    /// Returns `true` if the frame was submitted via swapchain (mesh rendering should be skipped).
+    fn draw_swapchain(&mut self) -> bool {
+        if let Some(swapchain) = &self.openxr_swapchain {
+            let cache = self.layer_cache;
+            // Only per-frame computation: translate cached local_offset by current position.
+            let at = self.screen_pose.position + cache.local_offset;
+
+            if cache.use_cylinder {
+                let cylinder_position = at + cache.layer_orientation * Vec3::new(0.0, 0.0, cache.radius);
+                let cylinder_pose = Pose::new(cylinder_position, Some(cache.layer_orientation));
+                XrCompLayers::submit_cylinder_layer(
+                    cylinder_pose,
+                    cache.radius,
+                    cache.central_angle,
+                    cache.aspect_ratio,
+                    *swapchain,
+                    cache.rect,
+                    0,
+                    1,
+                    None,
+                    None,
+                );
+            } else {
+                let swapchain_pose = Pose::new(at, Some(cache.layer_orientation));
+                XrCompLayers::submit_quad_layer(
+                    swapchain_pose,
+                    self.screen_size,
+                    *swapchain,
+                    cache.rect,
+                    0,
+                    1,
+                    None,
+                    None,
+                );
+            }
+            return true;
+        }
+        false
+    }
+
     /// Calculate sound position. If factor < 0 this is for left else for right
     fn sound_position(&self, factor: i8) -> Vec3 {
         let up = self.screen_pose.get_up();
@@ -510,8 +611,85 @@ impl Screen {
     }
 
     fn adapt_screen(&mut self) {
+        let radius = if self.curvature <= 0.0 { f32::MAX } else { self.screen_distance / self.curvature };
+        if self.curvature <= 0.0 {
+            self.adapt_screen_spherical();
+        } else {
+            self.adapt_screen_cylinder(radius);
+        }
+
+        let bounds = self.screen.get_bounds();
+        self.layer_cache = SwapchainLayerCache {
+            rect: Rect::new(0.0, 0.0, self.width as f32, self.height as f32),
+            bounds_center_z: bounds.center.z,
+            use_cylinder: self.curvature > 0.0,
+            radius,
+            central_angle: self.screen_size.x / radius,
+            aspect_ratio: self.screen_size.x / self.screen_size.y,
+            // pose fields computed from current orientation below
+            local_offset: Vec3::ZERO,
+            layer_orientation: Quat::IDENTITY,
+        };
+        let local_offset = self.screen_pose.orientation * Vec3::new(0.0, 0.0, self.layer_cache.bounds_center_z);
+        self.layer_cache.layer_orientation = Quat::look_at(Vec3::ZERO, local_offset, Some(self.screen_pose.get_up()));
+        self.layer_cache.local_offset = local_offset;
+    }
+
+    /// Build a cylindrical mesh with the given `radius`. `radius = screen_distance / curvature`.
+    /// At `curvature = 1.0` the mesh exactly matches the XR cylinder composition layer geometry.
+    fn adapt_screen_cylinder(&mut self, radius: f32) {
+        let central_angle = self.screen_size.x / radius;
+        let height = self.screen_size.y;
+
+        let subdiv_u = 60u32;
+        let subdiv_v = 30u32;
+        let cols = subdiv_u + 1;
+
+        let mut verts: Vec<Vertex> = vec![];
+        let mut inds: Vec<Inds> = vec![];
+
+        for j in 0..=subdiv_v {
+            let t_v = j as f32 / subdiv_v as f32;
+            let y = -height / 2.0 + t_v * height;
+            for i in 0..=subdiv_u {
+                let t_u = i as f32 / subdiv_u as f32;
+                let angle = -central_angle / 2.0 + t_u * central_angle;
+                let x = radius * angle.sin();
+                let z = radius * angle.cos();
+                // inward-pointing normal (concave face toward the viewer at origin)
+                let normal = Vec3::new(-angle.sin(), 0.0, -angle.cos());
+                verts.push(Vertex::new(Vec3::new(x, y, z), normal, Some(Vec2::new(1.0 - t_u, 1.0 - t_v)), None));
+
+                if i < subdiv_u && j < subdiv_v {
+                    let a = j * cols + i;
+                    let b = j * cols + i + 1;
+                    let c = (j + 1) * cols + i;
+                    let d = (j + 1) * cols + i + 1;
+                    // double-sided: push each triangle in both windings
+                    inds.push(a);
+                    inds.push(b);
+                    inds.push(c);
+                    inds.push(a);
+                    inds.push(c);
+                    inds.push(b);
+                    inds.push(b);
+                    inds.push(d);
+                    inds.push(c);
+                    inds.push(b);
+                    inds.push(c);
+                    inds.push(d);
+                }
+            }
+        }
+
+        let mut mesh = Mesh::new();
+        mesh.set_data(verts.as_slice(), inds.as_slice(), None, None);
+        self.screen = mesh;
+    }
+
+    fn adapt_screen_spherical(&mut self) {
         let distance = self.screen_distance;
-        let flattening = if self.screen_flattening <= 0.0 { 500.0 } else { 1.0 / self.screen_flattening - 1.0 };
+        let flattening = 500.0_f32; // legacy: always flat sphere, kept for reference
         let radius = distance + flattening;
 
         let width = self.screen_size.x;
@@ -605,6 +783,16 @@ impl Screen {
 
             mesh
         };
+    }
+
+    /// Set `screen_pose.position` and recompute the pose-dependent fields of `layer_cache`.
+    /// Must be called only when `screen_pose.position` actually changes.
+    pub fn update_pose_cache(&mut self, position: Vec3) {
+        self.screen_pose.position = position;
+        let local_offset = self.screen_pose.orientation * Vec3::new(0.0, 0.0, self.layer_cache.bounds_center_z);
+        let layer_orientation = Quat::look_at(Vec3::ZERO, local_offset, Some(self.screen_pose.get_up()));
+        self.layer_cache.local_offset = local_offset;
+        self.layer_cache.layer_orientation = layer_orientation;
     }
 
     /// Check if the screen has been touched and return the position (x,y) in screen coordinates
@@ -706,25 +894,6 @@ impl Screen {
         self.openxr_swapchain = None;
     }
 
-    /// Submit a quad layer using the OpenXR swapchain if one is set.
-    /// Returns `true` if the frame was submitted via swapchain (mesh rendering should be skipped).
-    fn draw_swapchain(&mut self) -> bool {
-        if let Some(swapchain) = &self.openxr_swapchain {
-            let rect = Rect::new(0.0, 0.0, self.width as f32, self.height as f32);
-
-            let bounds = self.screen.get_bounds();
-            let local_offset = self.screen_pose.orientation * Vec3::new(0.0, 0.0, bounds.center.z);
-            let at = self.screen_pose.position + local_offset;
-            let from = Input::get_head().position;
-            let layer_orientation = Quat::look_at(from, at, Some(self.screen_pose.get_up()));
-            let swapchain_pose = Pose::new(at, Some(layer_orientation));
-
-            XrCompLayers::submit_quad_layer(swapchain_pose, self.screen_size, *swapchain, rect, 0, 1, None, None);
-            return true;
-        }
-        false
-    }
-
     /// Get the IDs of the left and right sounds as a tuple `(left_id, right_id)`.
     pub fn get_sound_ids(&self) -> (&str, &str) {
         (self.sound_left.get_id(), self.sound_right.get_id())
@@ -740,9 +909,9 @@ impl Screen {
         self.screen_distance
     }
 
-    /// Get the current screen flattening
-    pub fn get_screen_flattening(&self) -> f32 {
-        self.screen_flattening
+    /// Get the current curvature (0.0 = flat, 1.0 = tight cylinder)
+    pub fn get_curvature(&self) -> f32 {
+        self.curvature
     }
 
     /// Get the current screen size

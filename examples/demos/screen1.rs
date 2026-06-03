@@ -74,7 +74,7 @@ impl Default for Screen1 {
         let initial_texture = textures.first().map(|t| t.clone_ref()).unwrap_or_else(Tex::default);
 
         let mut screen = Screen::new("screen1_demo", initial_texture);
-        screen.screen_orientation([0.0, 180.0, 0.0]).resolution(1024, 1024);
+        screen.resolution(1024, 1024).screen_orientation(Quat::Y_180);
         if textures.len() > 1 {
             screen.set_texture(1, Some(textures[1].clone_ref()));
         }
@@ -179,26 +179,25 @@ impl Screen1 {
         ));
 
         // Auto-advance textures every switch_interval seconds.
-        if !self.paused && current_time - self.last_switch_time > interval {
+        let slide_changed = !self.paused && current_time - self.last_switch_time > interval;
+        if slide_changed {
             self.next_texture();
             self.last_switch_time = current_time;
+        }
 
-            // In swapchain mode, copy the current texture pixels directly into the swapchain image.
-            if self.use_swapchain
-                && let Some(sc) = &mut self.swapchain_sk
-            {
-                if let Err(e) = sc.acquire_image(None) {
-                    Log::warn(format!("Screen1: Failed to acquire swapchain image: {e}"));
-                    self.swapchain_sk = None;
-                } else if let Some(render_tex) = sc.get_render_target_mut() {
+        // In swapchain mode, acquire+release every frame (required by OpenXR: any swapchain
+        // referenced in a composition layer must be acquired and released in the same frame).
+        // Re-render only when the slide changed; on other frames acquire+release with no draw.
+        if self.use_swapchain
+            && let Some(sc) = &mut self.swapchain_sk
+        {
+            if let Err(e) = sc.acquire_image(None) {
+                Log::warn(format!("Screen1: Failed to acquire swapchain image: {e}"));
+                self.swapchain_sk = None;
+            } else {
+                if slide_changed && let Some(render_tex) = sc.get_render_target_mut() {
                     let idx = self.current_texture_index;
                     if let Some(tex) = self.textures.get(idx) {
-                        Log::info(format!(
-                            "Screen1: format {:?}, dimensions {}x{}",
-                            tex.get_format(),
-                            tex.get_width().unwrap(),
-                            tex.get_height().unwrap()
-                        ));
                         if let Some((w, h, count)) = tex.get_data_infos(0) {
                             let pixels = vec![Color32::default(); count];
                             tex.get_color_data::<Color32>(&pixels, 0);
@@ -207,13 +206,13 @@ impl Screen1 {
                     } else {
                         Log::warn(format!("Screen1: No texture for index {idx}"));
                     }
-                    if let Err(e) = sc.release_image() {
-                        Log::warn(format!("Screen1: Failed to release swapchain image: {e}"));
-                        self.swapchain_sk = None;
-                    } else {
-                        let handle = sc.handle;
-                        self.screen.set_swapchain(handle);
-                    }
+                }
+                if let Err(e) = sc.release_image() {
+                    Log::warn(format!("Screen1: Failed to release swapchain image: {e}"));
+                    self.swapchain_sk = None;
+                } else {
+                    let handle = sc.handle;
+                    self.screen.set_swapchain(handle);
                 }
             }
         }

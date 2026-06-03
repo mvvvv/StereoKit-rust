@@ -1188,7 +1188,6 @@ impl Mesh {
     ///
     /// // 4 slots per vertex: [bone_idx, 0, 0, 0]. Top verts → bone 0, bottom → bone 1
     /// let bone_ids = [0u16, 0, 0, 0,  0, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0];
-
     /// // Single bone per vertex → weight 1.0 on slot 0
     /// let bone_weights = vec![Vec4::new(1.0, 0.0, 0.0, 0.0); 4];
     /// // Resting positions match vertex positions: bone 0 at top, bone 1 at bottom

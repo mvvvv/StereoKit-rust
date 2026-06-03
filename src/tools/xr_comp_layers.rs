@@ -14,9 +14,10 @@ use crate::{
 use openxr_sys::{pfn::CreateSwapchainAndroidSurfaceKHR, platform::jobject};
 
 use openxr_sys::{
-    CompositionLayerFlags, CompositionLayerQuad, Duration, Extent2Df, Extent2Di, EyeVisibility, Handle, Offset2Di,
-    Posef, Quaternionf, Rect2Di, Result as XrResult, Session, Space, StructureType, Swapchain, SwapchainCreateFlags,
-    SwapchainCreateInfo, SwapchainImageWaitInfo, SwapchainSubImage, SwapchainUsageFlags, Vector3f,
+    CompositionLayerCylinderKHR, CompositionLayerFlags, CompositionLayerQuad, Duration, Extent2Df, Extent2Di,
+    EyeVisibility, Handle, Offset2Di, Posef, Quaternionf, Rect2Di, Result as XrResult, Session, Space, StructureType,
+    Swapchain, SwapchainCreateFlags, SwapchainCreateInfo, SwapchainImageWaitInfo, SwapchainSubImage,
+    SwapchainUsageFlags, Vector3f,
     pfn::{
         AcquireSwapchainImage, CreateSwapchain, DestroySwapchain, EnumerateSwapchainImages, ReleaseSwapchainImage,
         WaitSwapchainImage,
@@ -233,6 +234,63 @@ impl XrCompLayers {
         };
 
         BackendOpenXR::add_composition_layer(&mut quad_layer, composition_sort_order);
+    }
+
+    /// Submit a cylinder layer to the OpenXR composition.
+    ///
+    /// Displays a texture mapped onto a cylinder section in 3D space.
+    /// Defined by [`XR_KHR_composition_layer_cylinder`](https://registry.khronos.org/OpenXR/specs/1.1/html/xrspec.html#XR_KHR_composition_layer_cylinder).
+    ///
+    /// # Parameters
+    /// - `world_pose`: Pose (position and orientation) of the cylinder's axis center.
+    /// - `radius`: Radius of the cylinder in meters.
+    /// - `central_angle`: Angular width of the visible arc in radians (must be in `(0, 2π]`).
+    /// - `aspect_ratio`: Width-to-height ratio of the mapped texture surface (`width / height`).
+    /// - `swapchain`: Swapchain handle to sample the texture from.
+    /// - `swapchain_rect`: Texture rectangle within the swapchain image (in pixel coordinates).
+    /// - `swapchain_array_index`: Array slice index for texture arrays (usually 0).
+    /// - `composition_sort_order`: Ordering for layer submission (higher values render on top).
+    /// - `visibility`: Optional eye visibility mask (None means both eyes).
+    /// - `xr_space`: Optional XR space handle (None uses default space).
+    #[allow(clippy::too_many_arguments)]
+    pub fn submit_cylinder_layer(
+        world_pose: Pose,
+        radius: f32,
+        central_angle: f32,
+        aspect_ratio: f32,
+        swapchain: Swapchain,
+        swapchain_rect: Rect,
+        swapchain_array_index: u32,
+        composition_sort_order: i32,
+        visibility: Option<EyeVisibility>,
+        xr_space: Option<u64>,
+    ) {
+        let orientation = world_pose.orientation;
+        let xr_space = xr_space.unwrap_or_else(BackendOpenXR::space);
+        let mut cylinder_layer = CompositionLayerCylinderKHR {
+            ty: StructureType::COMPOSITION_LAYER_CYLINDER_KHR,
+            next: null_mut(),
+            layer_flags: CompositionLayerFlags::BLEND_TEXTURE_SOURCE_ALPHA,
+            space: Space::from_raw(xr_space),
+            eye_visibility: visibility.unwrap_or(EyeVisibility::BOTH),
+            sub_image: SwapchainSubImage {
+                swapchain,
+                image_rect: Rect2Di {
+                    offset: Offset2Di { x: swapchain_rect.x as i32, y: swapchain_rect.y as i32 },
+                    extent: Extent2Di { width: swapchain_rect.width as i32, height: swapchain_rect.height as i32 },
+                },
+                image_array_index: swapchain_array_index,
+            },
+            pose: Posef {
+                orientation: Quaternionf { x: orientation.x, y: orientation.y, z: orientation.z, w: orientation.w },
+                position: Vector3f { x: world_pose.position.x, y: world_pose.position.y, z: world_pose.position.z },
+            },
+            radius,
+            central_angle,
+            aspect_ratio,
+        };
+
+        BackendOpenXR::add_composition_layer(&mut cylinder_layer, composition_sort_order);
     }
 
     /// Create an Android surface swapchain via `XR_KHR_android_surface_swapchain`.
