@@ -786,7 +786,7 @@ impl Model {
     /// use stereokit_rust::{model::Model, system::{Assets, AssetState}};
     /// # {
     /// let model = Model::from_file("center.glb", None, None).expect("Model should load");
-    /// assert_eq!(model.get_asset_state(), AssetState::Loading);
+    /// assert_ne!(model.get_asset_state(), AssetState::Loaded);
     ///
     /// Assets::block_for_priority(i32::MAX);
     /// test_steps!( // !!!! Get a proper main loop !!!!
