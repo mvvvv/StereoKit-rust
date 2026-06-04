@@ -117,15 +117,17 @@ impl RenderList1 {
         );
 
         Ui::window_begin("Render Lists", &mut self.window_pose, Some(Vec2::new(0.23, 0.35)), None, None);
-        Ui::label(format!("Render items: {}/{}", self.primary.get_count(), self.primary.get_prev_count()), None, true);
-        if let Some(value) = Ui::toggle("Clear", &mut self.clear_primary, None) {
+        Ui::label_builder(format!("Render items: {}/{}", self.primary.get_count(), self.primary.get_prev_count()))
+            .use_padding(true)
+            .draw();
+        if let Some(value) = Ui::toggle_builder("Clear", &mut self.clear_primary).interact() {
             if value {
                 self.perspective = Matrix::perspective_focal(Vec2::ONE * 2048.0, 1500.0, 0.01, 1010.0)
             } else {
                 self.perspective = Matrix::perspective(90.0, 1.0, 0.01, 1010.0)
             }
         };
-        Ui::label("Offscreen List:", None, true);
+        Ui::label_builder("Offscreen List:").use_padding(true).draw();
         let b = Ui::layout_reserve(Vec2::new(0.1, 0.1), false, 0.0);
         self.quad.draw(
             token,

@@ -1,3 +1,4 @@
+pub mod ui_builders;
 use crate::{
     StereoKitError,
     material::{Material, MaterialT},
@@ -13,6 +14,7 @@ use std::{
     ffi::{CStr, CString, c_char, c_ushort},
     ptr::{NonNull, null_mut},
 };
+pub use ui_builders::*;
 
 bitflags::bitflags! {
 /// A description of what type of window to draw! This is a bit flag, so it can contain multiple elements.
@@ -575,27 +577,29 @@ pub struct UiSliderData {
 ///     Ui::window_begin("Question", &mut window_pose, None, None, None);
 ///     Ui::text("Are you a robot ?", None, None, None, Some(0.13), None, None);
 ///     Ui::hseparator();
-///     Ui::label("Respond wisely", Some([0.08, 0.03].into()), false);
-///     if Ui::radio_img("yes", choice == "A", &off, &on, UiBtnLayout::Left, None) {
+///     Ui::label_builder("Respond wisely").size([0.08, 0.03]).use_padding(false).draw();
+///     if Ui::radio_builder("yes", choice == "A").images(&off, &on).image_layout(UiBtnLayout::Left).press() {
 ///         choice = "A"; scaling = 0.0;
 ///     }
 ///     Ui::same_line();
-///     if Ui::radio_img("no", choice == "B", &off, &on, UiBtnLayout::Left, None){
+///     if Ui::radio_builder("no", choice == "B").images(&off, &on).image_layout(UiBtnLayout::Left).press(){
 ///         choice = "B"; scaling = 1.0;
 ///     }
 ///     Ui::same_line();
-///     if Ui::radio_img("maybe", choice == "C", &off, &on, UiBtnLayout::Left, None) {
+///     if Ui::radio_builder("maybe", choice == "C").images(&off, &on).image_layout(UiBtnLayout::Left).press() {
 ///         choice = "C"; scaling = 0.5;
 ///     }
 ///     Ui::panel_begin(None);
-///     Ui::toggle("Doubt value:", &mut doubt, None);
+///     Ui::toggle_builder("Doubt value:", &mut doubt).interact();
 ///     Ui::push_enabled(doubt, None);
 ///     Ui::hslider("scaling", &mut scaling, 0.0, 1.0,Some(0.05), Some(0.14), None, None);
 ///     Ui::pop_enabled();
 ///     Ui::panel_end();
 ///     Ui::same_line();
-///     if Ui::button_img("Exit", &exit_sprite, Some(UiBtnLayout::CenterNoText),
-///                       Some(Vec2::new(0.08, 0.08)), None) {
+///     if Ui::button_img_builder("Exit", &exit_sprite)
+///         .image_layout(UiBtnLayout::CenterNoText)
+///         .size(Vec2::new(0.08, 0.08))
+///         .press() {
 ///        sk.quit(None);
 ///     }
 ///     Ui::window_end();
@@ -744,25 +748,9 @@ unsafe extern "C" {
     // Deprecated : pub fn ui_volume_at(id: *const c_char, bounds: Bounds) -> Bool32T;
     // Deprecated : pub fn ui_volume_at_16(id: *const c_ushort, bounds: Bounds) -> Bool32T;
     // Deprecated : pub fn ui_interact_volume_at(bounds: Bounds, out_hand: *mut Handed) -> BtnState;
-    pub fn ui_label(text: *const c_char, use_padding: Bool32T);
-    pub fn ui_label_16(text: *const c_ushort, use_padding: Bool32T);
-    pub fn ui_label_sz(text: *const c_char, size: Vec2, use_padding: Bool32T);
-    pub fn ui_label_sz_16(text: *const c_ushort, size: Vec2, use_padding: Bool32T);
+    pub fn ui_label(text: *const c_char, size: Vec2, use_padding: Bool32T, text_align: Align);
+    pub fn ui_label_16(text: *const c_ushort, size: Vec2, use_padding: Bool32T, text_align: Align);
     pub fn ui_text(
-        text: *const c_char,
-        scroll: *mut Vec2,
-        scroll_direction: UiScroll,
-        height: f32,
-        text_align: Align,
-    ) -> Bool32T;
-    pub fn ui_text_16(
-        text: *const c_ushort,
-        scroll: *mut Vec2,
-        scroll_direction: UiScroll,
-        height: f32,
-        text_align: Align,
-    ) -> Bool32T;
-    pub fn ui_text_sz(
         text: *const c_char,
         scroll: *mut Vec2,
         scroll_direction: UiScroll,
@@ -770,7 +758,7 @@ unsafe extern "C" {
         text_align: Align,
         fit: TextFit,
     ) -> Bool32T;
-    pub fn ui_text_sz_16(
+    pub fn ui_text_16(
         text: *const c_ushort,
         scroll: *mut Vec2,
         scroll_direction: UiScroll,
@@ -796,32 +784,25 @@ unsafe extern "C" {
         window_relative_pos: Vec3,
         size: Vec2,
     ) -> Bool32T;
-    pub fn ui_button(text: *const c_char) -> Bool32T;
-    pub fn ui_button_16(text: *const c_ushort) -> Bool32T;
-    pub fn ui_button_sz(text: *const c_char, size: Vec2) -> Bool32T;
-    pub fn ui_button_sz_16(text: *const c_ushort, size: Vec2) -> Bool32T;
-    pub fn ui_button_at(text: *const c_char, window_relative_pos: Vec3, size: Vec2) -> Bool32T;
-    pub fn ui_button_at_16(text: *const c_ushort, window_relative_pos: Vec3, size: Vec2) -> Bool32T;
-    pub fn ui_button_img(text: *const c_char, image: SpriteT, image_layout: UiBtnLayout, color: Color128) -> Bool32T;
-    pub fn ui_button_img_16(
-        text: *const c_ushort,
-        image: SpriteT,
-        image_layout: UiBtnLayout,
-        color: Color128,
-    ) -> Bool32T;
-    pub fn ui_button_img_sz(
+    pub fn ui_button(text: *const c_char, size: Vec2, text_align: Align) -> Bool32T;
+    pub fn ui_button_16(text: *const c_ushort, size: Vec2, text_align: Align) -> Bool32T;
+    pub fn ui_button_at(text: *const c_char, window_relative_pos: Vec3, size: Vec2, text_align: Align) -> Bool32T;
+    pub fn ui_button_at_16(text: *const c_ushort, window_relative_pos: Vec3, size: Vec2, text_align: Align) -> Bool32T;
+    pub fn ui_button_img(
         text: *const c_char,
         image: SpriteT,
         image_layout: UiBtnLayout,
         size: Vec2,
         color: Color128,
+        text_align: Align,
     ) -> Bool32T;
-    pub fn ui_button_img_sz_16(
+    pub fn ui_button_img_16(
         text: *const c_ushort,
         image: SpriteT,
         image_layout: UiBtnLayout,
         size: Vec2,
         color: Color128,
+        text_align: Align,
     ) -> Bool32T;
     pub fn ui_button_img_at(
         text: *const c_char,
@@ -830,6 +811,7 @@ unsafe extern "C" {
         window_relative_pos: Vec3,
         size: Vec2,
         color: Color128,
+        text_align: Align,
     ) -> Bool32T;
     pub fn ui_button_img_at_16(
         text: *const c_ushort,
@@ -838,6 +820,7 @@ unsafe extern "C" {
         window_relative_pos: Vec3,
         size: Vec2,
         color: Color128,
+        text_align: Align,
     ) -> Bool32T;
     pub fn ui_button_round(id: *const c_char, image: SpriteT, diameter: f32) -> Bool32T;
     pub fn ui_button_round_16(id: *const c_ushort, image: SpriteT, diameter: f32) -> Bool32T;
@@ -848,16 +831,21 @@ unsafe extern "C" {
         window_relative_pos: Vec3,
         diameter: f32,
     ) -> Bool32T;
-    pub fn ui_toggle(text: *const c_char, pressed: *mut Bool32T) -> Bool32T;
-    pub fn ui_toggle_16(text: *const c_ushort, pressed: *mut Bool32T) -> Bool32T;
-    pub fn ui_toggle_sz(text: *const c_char, pressed: *mut Bool32T, size: Vec2) -> Bool32T;
-    pub fn ui_toggle_sz_16(text: *const c_ushort, pressed: *mut Bool32T, size: Vec2) -> Bool32T;
-    pub fn ui_toggle_at(text: *const c_char, pressed: *mut Bool32T, window_relative_pos: Vec3, size: Vec2) -> Bool32T;
+    pub fn ui_toggle(text: *const c_char, pressed: *mut Bool32T, size: Vec2, text_align: Align) -> Bool32T;
+    pub fn ui_toggle_16(text: *const c_ushort, pressed: *mut Bool32T, size: Vec2, text_align: Align) -> Bool32T;
+    pub fn ui_toggle_at(
+        text: *const c_char,
+        pressed: *mut Bool32T,
+        window_relative_pos: Vec3,
+        size: Vec2,
+        text_align: Align,
+    ) -> Bool32T;
     pub fn ui_toggle_at_16(
         text: *const c_ushort,
         pressed: *mut Bool32T,
         window_relative_pos: Vec3,
         size: Vec2,
+        text_align: Align,
     ) -> Bool32T;
     pub fn ui_toggle_img(
         text: *const c_char,
@@ -865,6 +853,9 @@ unsafe extern "C" {
         toggle_off: SpriteT,
         toggle_on: SpriteT,
         image_layout: UiBtnLayout,
+        size: Vec2,
+        image_tint: Color128,
+        text_align: Align,
     ) -> Bool32T;
     pub fn ui_toggle_img_16(
         text: *const c_ushort,
@@ -872,22 +863,9 @@ unsafe extern "C" {
         toggle_off: SpriteT,
         toggle_on: SpriteT,
         image_layout: UiBtnLayout,
-    ) -> Bool32T;
-    pub fn ui_toggle_img_sz(
-        text: *const c_char,
-        pressed: *mut Bool32T,
-        toggle_off: SpriteT,
-        toggle_on: SpriteT,
-        image_layout: UiBtnLayout,
         size: Vec2,
-    ) -> Bool32T;
-    pub fn ui_toggle_img_sz_16(
-        text: *const c_ushort,
-        pressed: *mut Bool32T,
-        toggle_off: SpriteT,
-        toggle_on: SpriteT,
-        image_layout: UiBtnLayout,
-        size: Vec2,
+        image_tint: Color128,
+        text_align: Align,
     ) -> Bool32T;
     pub fn ui_toggle_img_at(
         text: *const c_char,
@@ -897,6 +875,8 @@ unsafe extern "C" {
         image_layout: UiBtnLayout,
         window_relative_pos: Vec3,
         size: Vec2,
+        image_tint: Color128,
+        text_align: Align,
     ) -> Bool32T;
     pub fn ui_toggle_img_at_16(
         text: *const c_ushort,
@@ -906,6 +886,8 @@ unsafe extern "C" {
         image_layout: UiBtnLayout,
         window_relative_pos: Vec3,
         size: Vec2,
+        image_tint: Color128,
+        text_align: Align,
     ) -> Bool32T;
     pub fn ui_hslider(
         id: *const c_char,
@@ -923,26 +905,6 @@ unsafe extern "C" {
         min: f32,
         max: f32,
         step: f32,
-        width: f32,
-        confirm_method: UiConfirm,
-        notify_on: UiNotify,
-    ) -> Bool32T;
-    pub fn ui_hslider_f64(
-        id: *const c_char,
-        value: *mut f64,
-        min: f64,
-        max: f64,
-        step: f64,
-        width: f32,
-        confirm_method: UiConfirm,
-        notify_on: UiNotify,
-    ) -> Bool32T;
-    pub fn ui_hslider_f64_16(
-        id: *const c_ushort,
-        value: *mut f64,
-        min: f64,
-        max: f64,
-        step: f64,
         width: f32,
         confirm_method: UiConfirm,
         notify_on: UiNotify,
@@ -969,28 +931,6 @@ unsafe extern "C" {
         confirm_method: UiConfirm,
         notify_on: UiNotify,
     ) -> Bool32T;
-    pub fn ui_hslider_at_f64(
-        id: *const c_char,
-        value: *mut f64,
-        min: f64,
-        max: f64,
-        step: f64,
-        window_relative_pos: Vec3,
-        size: Vec2,
-        confirm_method: UiConfirm,
-        notify_on: UiNotify,
-    ) -> Bool32T;
-    pub fn ui_hslider_at_f64_16(
-        id: *const c_ushort,
-        value: *mut f64,
-        min: f64,
-        max: f64,
-        step: f64,
-        window_relative_pos: Vec3,
-        size: Vec2,
-        confirm_method: UiConfirm,
-        notify_on: UiNotify,
-    ) -> Bool32T;
     pub fn ui_vslider(
         id: *const c_char,
         value: *mut f32,
@@ -1007,26 +947,6 @@ unsafe extern "C" {
         min: f32,
         max: f32,
         step: f32,
-        height: f32,
-        confirm_method: UiConfirm,
-        notify_on: UiNotify,
-    ) -> Bool32T;
-    pub fn ui_vslider_f64(
-        id: *const c_char,
-        value: *mut f64,
-        min: f64,
-        max: f64,
-        step: f64,
-        height: f32,
-        confirm_method: UiConfirm,
-        notify_on: UiNotify,
-    ) -> Bool32T;
-    pub fn ui_vslider_f64_16(
-        id: *const c_ushort,
-        value: *mut f64,
-        min: f64,
-        max: f64,
-        step: f64,
         height: f32,
         confirm_method: UiConfirm,
         notify_on: UiNotify,
@@ -1048,28 +968,6 @@ unsafe extern "C" {
         min: f32,
         max: f32,
         step: f32,
-        window_relative_pos: Vec3,
-        size: Vec2,
-        confirm_method: UiConfirm,
-        notify_on: UiNotify,
-    ) -> Bool32T;
-    pub fn ui_vslider_at_f64(
-        id: *const c_char,
-        value: *mut f64,
-        min: f64,
-        max: f64,
-        step: f64,
-        window_relative_pos: Vec3,
-        size: Vec2,
-        confirm_method: UiConfirm,
-        notify_on: UiNotify,
-    ) -> Bool32T;
-    pub fn ui_vslider_at_f64_16(
-        id: *const c_ushort,
-        value: *mut f64,
-        min: f64,
-        max: f64,
-        step: f64,
         window_relative_pos: Vec3,
         size: Vec2,
         confirm_method: UiConfirm,
@@ -1153,6 +1051,486 @@ unsafe extern "C" {
 }
 
 impl Ui {
+    /// Adds some text to the layout! Text uses the UI’s current font settings, which can be changed with
+    /// Ui::push/pop_text_style. Can contain newlines!
+    /// <https://stereokit.net/Pages/StereoKit/UI/Label.html>
+    /// * `text` - Label text to display. Can contain newlines! Doesn't use text as id, so it can be non-unique.
+    /// * `size` - The layout size for this element in Hierarchy space. If an axis is left as zero, it will be
+    ///   auto-calculated. For X this is the remaining width of the current layout, and for Y this is
+    ///   [`Ui::get_line_height`]. Set with [`UiLabelBuilder::size`].
+    /// * `use_padding` - Should padding be included for positioning this text? Sometimes you just want un-padded text!
+    ///   Set with [`UiLabelBuilder::use_padding`].
+    /// * `text_align` - Where should the text position itself within its bounds? Set with
+    ///   [`UiLabelBuilder::text_align`].
+    ///
+    /// Use this builder to configure size/padding/alignment and call [`UiLabelBuilder::draw`].
+    ///
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{ui::Ui, maths::Pose};
+    ///
+    /// let mut window_pose = Pose::new(
+    ///     [0.01, 0.035, 0.93], Some([0.0, 185.0, 0.0].into()));
+    ///
+    /// filename_scr = "screenshots/ui_label.jpeg";
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     Ui::window_begin("Labels", &mut window_pose, None, None, None);
+    ///     Ui::label_builder("Label 1").use_padding(false).draw();
+    ///     Ui::same_line();
+    ///     Ui::label_builder("Label 2").size([0.025, 0.0]).use_padding(false).draw();
+    ///     Ui::label_builder("Label 3").size([0.1,   0.01]).use_padding(true).draw();
+    ///     Ui::label_builder("Label 4").size([0.0,   0.0045]).use_padding(false).draw();
+    ///     Ui::window_end();
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_label.jpeg" alt="screenshot" width="200">
+    pub fn label_builder(text: impl AsRef<str>) -> UiLabelBuilder {
+        UiLabelBuilder::new(text)
+    }
+
+    /// A pressable button! A button will expand to fit the text provided to it, vertically and horizontally.
+    /// Text is re-used as the id. Will return true only on the first frame it is pressed.
+    /// <https://stereokit.net/Pages/StereoKit/UI/Button.html>
+    /// * `text` - Text to display on the button and id for tracking element state. MUST be unique within current
+    ///   hierarchy.
+    /// * `size` - The layout size for this element in Hierarchy space. If an axis is left as zero, it will be
+    ///   auto-calculated. For X this is the remaining width of the current layout, and for Y this is Ui::get_line_height.
+    ///   Set with [`UiButtonBuilder::size`].
+    /// * `text_align` - Where should the text position itself within its bounds? Set with
+    ///   [`UiButtonBuilder::text_align`].
+    ///
+    /// Use this builder for layout buttons, then call [`UiButtonBuilder::press`].
+    ///
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{ui::Ui, maths::Pose};
+    ///
+    /// let mut window_pose = Pose::new(
+    ///     [0.01, 0.035, 0.92], Some([0.0, 185.0, 0.0].into()));
+    ///
+    /// let mut button = 0;
+    /// filename_scr = "screenshots/ui_button.jpeg";
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     Ui::window_begin("Press a button", &mut window_pose, None, None, None);
+    ///     if Ui::button_builder("1").press() {button = 1}
+    ///     Ui::same_line();
+    ///     if Ui::button_builder("2").size([0.025, 0.025]).press() {button = 2}
+    ///     if Ui::button_builder("3").size([0.04, 0.04]).press() {button = 3}
+    ///     if Ui::button_at_builder("4", [-0.01, -0.01, 0.005],[0.05, 0.05]).press() {button = 4}
+    ///     if Ui::button_at_builder("5", [-0.04, -0.08, 0.005],[0.03, 0.03]).press() {button = 5}
+    ///     Ui::window_end();
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_button.jpeg" alt="screenshot" width="200">
+    pub fn button_builder(text: impl AsRef<str>) -> UiButtonBuilder {
+        UiButtonBuilder::new(text)
+    }
+
+    /// A variant of button that doesn’t use the layout system, and instead goes exactly where you put it.
+    /// <https://stereokit.net/Pages/StereoKit/UI/ButtonAt.html>
+    /// * `text` - Text to display on the button and id for tracking element state. MUST be unique within current
+    ///   hierarchy.
+    /// * `top_left_corner` - Top-left corner of the UI element relative to the current hierarchy.
+    /// * `size` - Layout size for this element in hierarchy space.
+    /// * `text_align` - Where should the text position itself within its bounds? Set with
+    ///   [`UiButtonAtBuilder::text_align`].
+    ///
+    /// Use this builder for absolute-positioned buttons, then call [`UiButtonAtBuilder::press`].
+    ///
+    /// ### Examples
+    /// ```ignore
+    /// if Ui::button_at_builder("4", [-0.01, -0.01, 0.005],[0.05, 0.05]).press() {
+    ///     // ...
+    /// }
+    /// if Ui::button_at_builder("5", [-0.04, -0.08, 0.005],[0.03, 0.03]).press() {
+    ///     // ...
+    /// }
+    /// ```
+    pub fn button_at_builder(
+        text: impl AsRef<str>,
+        top_left_corner: impl Into<Vec3>,
+        size: impl Into<Vec2>,
+    ) -> UiButtonAtBuilder {
+        UiButtonAtBuilder::new(text, top_left_corner, size)
+    }
+
+    /// A pressable button accompanied by an image.
+    /// <https://stereokit.net/Pages/StereoKit/UI/ButtonImg.html>
+    /// * `text` - Text to display on the button and id for tracking element state. MUST be unique within current
+    ///   hierarchy.
+    /// * `image` - This is the image that will be drawn along with the text. See image_layout for where the image gets
+    ///   drawn!
+    /// * `image_layout` - This enum specifies how the text and image should be laid out on the button. For example,
+    ///   UiBtnLayout::Left will have the image on the left, and text on the right. If not set, default value is
+    ///   UiBtnLayout::Left. Set with [`UiButtonImgBuilder::image_layout`].
+    /// * `size` - The layout size for this element in Hierarchy space. If an axis is left as zero, it will be
+    ///   auto-calculated. For X this is the remaining width of the current layout, and for Y this is Ui::get_line_height.
+    ///   Set with [`UiButtonImgBuilder::size`].
+    /// * `color` - The Sprite's color will be multiplied by this tint. If not set, default value is white. Set with
+    ///   [`UiButtonImgBuilder::image_tint`].
+    /// * `text_align` - Where should the text position itself within its bounds? Set with
+    ///   [`UiButtonImgBuilder::text_align`].
+    ///
+    /// Use this builder for layout image buttons, then call [`UiButtonImgBuilder::press`].
+    /// This supports the new PR 1364 parameters: text alignment and image tint.
+    ///
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{ui::{Ui,UiBtnLayout}, maths::Pose,
+    ///                      sprite::Sprite, util::named_colors};
+    ///
+    /// let mut window_pose = Pose::new(
+    ///     [-0.01, 0.095, 0.88], Some([0.0, 185.0, 0.0].into()));
+    ///
+    /// let mut choice = "C";
+    /// let log_sprite = Sprite::from_file("icons/log_viewer.png", None, None)
+    ///                               .expect("log_viewer.jpeg should be ok");
+    /// let scr_sprite = Sprite::from_file("icons/screenshot.png", None, None)
+    ///                               .expect("screenshot.jpeg should be ok");
+    /// let app_sprite = Sprite::grid();
+    ///
+    /// let fly_sprite = Sprite::from_file("icons/fly_over.png", None, None)
+    ///                               .expect("fly_over.jpeg should be ok");
+    /// let close_sprite = Sprite::close();
+    ///
+    /// filename_scr = "screenshots/ui_button_img.jpeg";
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     Ui::window_begin("Choose a pretty image", &mut window_pose, None, None, None);
+    ///     if Ui::button_img_builder("Log", &log_sprite)
+    ///         .image_layout(UiBtnLayout::Center)
+    ///         .size([0.07, 0.07])
+    ///         .image_tint(named_colors::GOLD)
+    ///         .press() {
+    ///         choice = "A";
+    ///     }
+    ///     if Ui::button_img_builder("screenshot", &scr_sprite)
+    ///         .image_layout(UiBtnLayout::CenterNoText)
+    ///         .size([0.07, 0.07])
+    ///         .press(){
+    ///         choice = "B";
+    ///     }
+    ///     if Ui::button_img_builder("Applications", &app_sprite)
+    ///         .image_layout(UiBtnLayout::Right)
+    ///         .size([0.17, 0.04])
+    ///         .press() {
+    ///         choice = "C";
+    ///     }
+    ///     if Ui::button_img_at_builder("fly", &fly_sprite, [-0.01, -0.04, 0.0], [0.12, 0.12])
+    ///         .image_layout(UiBtnLayout::CenterNoText)
+    ///         .image_tint(named_colors::CYAN)
+    ///         .press() {
+    ///         choice = "D";
+    ///     }
+    ///     if Ui::button_img_at_builder("close", &close_sprite, [-0.08, 0.03, 0.0], [0.05, 0.05])
+    ///         .image_layout(UiBtnLayout::CenterNoText)
+    ///         .press() {
+    ///         sk.quit(None);
+    ///     }
+    ///     Ui::window_end();
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_button_img.jpeg" alt="screenshot" width="200">
+    pub fn button_img_builder(text: impl AsRef<str>, image: impl AsRef<Sprite>) -> UiButtonImgBuilder {
+        UiButtonImgBuilder::new(text, image)
+    }
+
+    /// A variant of image button that doesn’t use the layout system.
+    /// <https://stereokit.net/Pages/StereoKit/UI/ButtonImgAt.html>
+    /// * `text` - Text to display on the button and id for tracking element state. MUST be unique within current
+    ///   hierarchy.
+    /// * `image` - This is the image that will be drawn along with the text. See image_layout for where the image gets
+    ///   drawn!
+    /// * `image_layout` - This enum specifies how the text and image should be laid out on the button. For example,
+    ///   UiBtnLayout::Left will have the image on the left, and text on the right. If not set, default value is
+    ///   UiBtnLayout::Left. Set with [`UiButtonImgAtBuilder::image_layout`].
+    /// * `top_left_corner` - Top-left corner of the UI element relative to the current hierarchy.
+    /// * `size` - Layout size for this element in hierarchy space.
+    /// * `color` - The Sprite's color will be multiplied by this tint. If not set, default value is white. Set with
+    ///   [`UiButtonImgAtBuilder::image_tint`].
+    /// * `text_align` - Where should the text position itself within its bounds? Set with
+    ///   [`UiButtonImgAtBuilder::text_align`].
+    ///
+    /// Use this builder for absolute-positioned image buttons, then call [`UiButtonImgAtBuilder::press`].
+    ///
+    /// ### Examples
+    /// ```ignore
+    /// if Ui::button_img_at_builder("fly", &fly_sprite, [-0.01, -0.04, 0.0], [0.12, 0.12])
+    ///     .image_layout(UiBtnLayout::CenterNoText)
+    ///     .image_tint(named_colors::CYAN)
+    ///     .press() {
+    ///     // ...
+    /// }
+    /// ```
+    pub fn button_img_at_builder(
+        text: impl AsRef<str>,
+        image: impl AsRef<Sprite>,
+        top_left_corner: impl Into<Vec3>,
+        size: impl Into<Vec2>,
+    ) -> UiButtonImgAtBuilder {
+        UiButtonImgAtBuilder::new(text, image, top_left_corner, size)
+    }
+
+    /// A toggleable button.
+    /// <https://stereokit.net/Pages/StereoKit/UI/Toggle.html>
+    /// * `text` - Text to display on the Toggle and id for tracking element state. MUST be unique within current
+    ///   hierarchy.
+    /// * `out_value` - The current state of the toggle button! True means it's toggled on, and false means it's
+    ///   toggled off.
+    /// * `size` - The layout size for this element in Hierarchy space. If an axis is left as zero, it will be
+    ///   auto-calculated. For X this is the remaining width of the current layout, and for Y this is Ui::get_line_height.
+    ///   Set with [`UiToggleBuilder::size`].
+    /// * `text_align` - Where should the text position itself within its bounds? Set with
+    ///   [`UiToggleBuilder::text_align`].
+    ///
+    /// Use this builder for text toggles, then call [`UiToggleBuilder::interact`].
+    ///
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{ui::{Ui, UiBtnLayout}, maths::Pose, sprite::Sprite};
+    ///
+    /// let mut window_pose = Pose::new(
+    ///     [0.01, 0.065, 0.91], Some([0.0, 185.0, 0.0].into()));
+    ///
+    /// let (on, off) = (Sprite::arrow_up(), Sprite::arrow_down());
+    ///
+    /// let mut choiceA = false; let mut choiceB = true;
+    /// let mut choiceC = false; let mut choiceD = true;
+    /// let mut choiceE = false; let mut choiceF = true;
+    ///
+    /// filename_scr = "screenshots/ui_toggle.jpeg";
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     Ui::window_begin("Toggle button", &mut window_pose, None, None, None);
+    ///     Ui::toggle_img_builder("A", &mut choiceA, &off, &on)
+    ///         .image_layout(UiBtnLayout::Right)
+    ///         .size([0.06, 0.05])
+    ///         .interact();
+    ///     Ui::same_line();
+    ///     if let Some(bool) = Ui::toggle_img_builder("B", &mut choiceB, &off, &on)
+    ///         .image_layout(UiBtnLayout::Center)
+    ///         .size([0.06, 0.05])
+    ///         .interact() {
+    ///         assert_eq!(bool, choiceB);
+    ///     }
+    ///
+    ///     Ui::toggle_builder("C", &mut choiceC).interact();
+    ///     Ui::same_line();
+    ///     Ui::toggle_builder("D", &mut choiceD).size([0.06, 0.04]).interact();
+    ///
+    ///     Ui::toggle_at_builder("E", &mut choiceE, [0.06, -0.12, 0.0], [0.06, 0.03])
+    ///         .toggle_images(&off, &off)
+    ///         .image_layout(UiBtnLayout::Right)
+    ///         .interact();
+    ///     if let Some(bool) = Ui::toggle_at_builder("F", &mut choiceF, [-0.01, -0.12, 0.0], [0.06, 0.03])
+    ///         .interact() {
+    ///         assert_eq!(bool, choiceB);
+    ///     }
+    ///     Ui::window_end();
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_toggle.jpeg" alt="screenshot" width="200">
+    pub fn toggle_builder<'a>(text: impl AsRef<str>, out_value: &'a mut bool) -> UiToggleBuilder<'a> {
+        UiToggleBuilder::new(text, out_value)
+    }
+
+    /// A toggleable button with custom images.
+    /// <https://stereokit.net/Pages/StereoKit/UI/Toggle.html>
+    /// * `id` - Text to display on the Toggle and id for tracking element state. MUST be unique within current
+    ///   hierarchy.
+    /// * `out_value` - The current state of the toggle button! True means it's toggled on, and false means it's
+    ///   toggled off.
+    /// * `toggle_off` - Image to use when the toggle value is false.
+    /// * `toggle_on` - Image to use when the toggle value is true.
+    /// * `image_layout` - This enum specifies how the text and image should be laid out on the button. If not set,
+    ///   default [`UiBtnLayout::Left`] will have the image on the left, and text on the right. Set with
+    ///   [`UiToggleImgBuilder::image_layout`].
+    /// * `size` - The layout size for this element in Hierarchy space. If an axis is left as zero, it will be
+    ///   auto-calculated. For X this is the remaining width of the current layout, and for Y this is Ui::line_height.
+    ///   Set with [`UiToggleImgBuilder::size`].
+    /// * `image_tint` - The Sprite's color will be multiplied by this tint. If not set, default value is white. Set with
+    ///   [`UiToggleImgBuilder::image_tint`].
+    /// * `text_align` - Where should the text position itself within its bounds? Set with
+    ///   [`UiToggleImgBuilder::text_align`].
+    ///
+    /// Use this builder for layout image toggles, then call [`UiToggleImgBuilder::interact`].
+    /// This supports the new PR 1364 parameters: text alignment and image tint.
+    ///
+    /// ### Examples
+    /// ```ignore
+    /// Ui::toggle_img_builder("A", &mut choiceA, &off, &on)
+    ///     .image_layout(UiBtnLayout::Right)
+    ///     .size([0.06, 0.05])
+    ///     .interact();
+    /// ```
+    pub fn toggle_img_builder<'a>(
+        id: impl AsRef<str>,
+        out_value: &'a mut bool,
+        toggle_off: impl AsRef<Sprite>,
+        toggle_on: impl AsRef<Sprite>,
+    ) -> UiToggleImgBuilder<'a> {
+        UiToggleImgBuilder::new(id, out_value, toggle_off, toggle_on)
+    }
+
+    /// A variant of toggle that doesn’t use the layout system.
+    /// <https://stereokit.net/Pages/StereoKit/UI/ToggleAt.html>
+    /// * `id` - Text to display on the Toggle and id for tracking element state. MUST be unique within current
+    ///   hierarchy.
+    /// * `out_value` - The current state of the toggle button! True means it's toggled on, and false means it's
+    ///   toggled off.
+    /// * `toggle_off`- Image to use when the toggle value is false or when no toggle-on image is specified. Set with
+    ///   [`UiToggleAtBuilder::toggle_images`].
+    /// * `toggle_on` - Image to use when the toggle value is true and toggle-off has been specified. If not provided,
+    ///   `toggle_off` image is reused. Set with [`UiToggleAtBuilder::toggle_images`].
+    /// * `imageLayout` - This enum specifies how the text and image should be laid out on the button. If not set,
+    ///   default [`UiBtnLayout::Left`] will have the image on the left, and text on the right. Set with
+    ///   [`UiToggleAtBuilder::image_layout`].
+    /// * `image_tint` - The Sprite's color will be multiplied by this tint. If not set, default value is white. Set with
+    ///   [`UiToggleAtBuilder::image_tint`].
+    /// * `top_left_corner` - Top-left corner of the UI element relative to the current hierarchy.
+    /// * `size` - Layout size for this element in hierarchy space.
+    /// * `text_align` - Where should the text position itself within its bounds? Set with
+    ///   [`UiToggleAtBuilder::text_align`].
+    ///
+    /// Use this builder for absolute-positioned toggles, then call [`UiToggleAtBuilder::interact`].
+    ///
+    /// ### Examples
+    /// ```ignore
+    /// Ui::toggle_at_builder("E", &mut choiceE, [0.06, -0.12, 0.0], [0.06, 0.03])
+    ///     .toggle_images(&off, &off)
+    ///     .image_layout(UiBtnLayout::Right)
+    ///     .interact();
+    /// ```
+    pub fn toggle_at_builder<'a>(
+        id: impl AsRef<str>,
+        out_value: &'a mut bool,
+        top_left_corner: impl Into<Vec3>,
+        size: impl Into<Vec2>,
+    ) -> UiToggleAtBuilder<'a> {
+        UiToggleAtBuilder::new(id, out_value, top_left_corner, size)
+    }
+
+    /// A radio-like pressable element using default radio sprites.
+    /// <https://stereokit.net/Pages/StereoKit/UI/Radio.html>
+    /// * `text` - Text to display on the Radio and id for tracking element state. MUST be unique within current
+    ///   hierarchy.
+    /// * `active` - Does this button look like it's pressed?
+    /// * `image_off` - Image to use when the radio value is false. Set with [`UiRadioBuilder::images`].
+    /// * `image_on` - Image to use when the radio value is true. Set with [`UiRadioBuilder::images`].
+    /// * `image_layout` - This enum specifies how the text and image should be laid out on the radio. For example,
+    ///   UiBtnLayout::Left will have the image on the left, and text on the right. Set with
+    ///   [`UiRadioBuilder::image_layout`].
+    /// * `size` - The layout size for this element in Hierarchy space. If an axis is left as zero, it will be
+    ///   auto-calculated. For X this is the remaining width of the current layout, and for Y this is
+    ///   [`Ui::get_line_height`]. Set with [`UiRadioBuilder::size`].
+    /// * `image_tint` - The Sprite's color will be multiplied by this tint. If not set, default value is white. Set with
+    ///   [`UiRadioBuilder::image_tint`].
+    /// * `text_align` - Where should the text position itself within its bounds? Set with
+    ///   [`UiRadioBuilder::text_align`].
+    ///
+    /// Use this builder for layout radio elements, then call [`UiRadioBuilder::press`].
+    ///
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{ui::{Ui, UiBtnLayout}, maths::Pose, sprite::Sprite};
+    ///
+    /// let mut window_pose = Pose::new(
+    ///     [0.01, 0.035, 0.91], Some([0.0, 185.0, 0.0].into()));
+    ///
+    /// let (on, off) = (Sprite::radio_on(), Sprite::radio_off());
+    ///
+    /// let mut choice = "A";
+    ///
+    /// filename_scr = "screenshots/ui_radio.jpeg";
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     Ui::window_begin("Radio", &mut window_pose, None, None, None);
+    ///     if Ui::radio_builder("A", choice == "A")
+    ///         .images(&off, &on)
+    ///         .image_layout(UiBtnLayout::Right)
+    ///         .size([0.06, 0.05])
+    ///         .press() {
+    ///         choice = "A";
+    ///     }
+    ///     Ui::same_line();
+    ///     if Ui::radio_builder("B", choice == "B")
+    ///         .images(&off, &on)
+    ///         .image_layout(UiBtnLayout::Center)
+    ///         .size([0.03, 0.05])
+    ///         .press(){
+    ///         choice = "B";
+    ///     }
+    ///     Ui::same_line();
+    ///     if Ui::radio_builder("C", choice == "C")
+    ///         .images(&off, &on)
+    ///         .image_layout(UiBtnLayout::Left)
+    ///         .press() {
+    ///         choice = "C";
+    ///     }
+    ///     if Ui::radio_at_builder("D", choice == "D", [0.06, -0.07, 0.0], [0.06, 0.03])
+    ///         .images(&off, &on)
+    ///         .image_layout(UiBtnLayout::Right)
+    ///         .press() {
+    ///         choice = "D";
+    ///     }
+    ///     if Ui::radio_at_builder("E", choice == "E", [-0.01, -0.07, 0.0], [0.06, 0.03])
+    ///         .images(&off, &on)
+    ///         .image_layout(UiBtnLayout::Left)
+    ///         .press() {
+    ///         choice = "E";
+    ///     }
+    ///     Ui::window_end();
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_radio.jpeg" alt="screenshot" width="200">
+    pub fn radio_builder(text: impl AsRef<str>, active: bool) -> UiRadioBuilder {
+        UiRadioBuilder::new(text, active)
+    }
+
+    /// A radio-like pressable element at an explicit position.
+    /// <https://stereokit.net/Pages/StereoKit/UI/RadioAt.html>
+    /// * `text` - Text to display on the Radio and id for tracking element state. MUST be unique within current
+    ///   hierarchy.
+    /// * `active` - Does this button look like it's pressed?
+    /// * `image_off` - Image to use when the radio value is false. Set with [`UiRadioAtBuilder::images`].
+    /// * `image_on` - Image to use when the radio value is true. Set with [`UiRadioAtBuilder::images`].
+    /// * `image_layout` - This enum specifies how the text and image should be laid out on the radio. For example,
+    ///   UiBtnLayout::Left will have the image on the left, and text on the right. Set with
+    ///   [`UiRadioAtBuilder::image_layout`].
+    /// * `image_tint` - The Sprite's color will be multiplied by this tint. If not set, default value is white. Set with
+    ///   [`UiRadioAtBuilder::image_tint`].
+    /// * `top_left_corner` - Top-left corner of the UI element relative to the current hierarchy.
+    /// * `size` - Layout size for this element in hierarchy space.
+    /// * `text_align` - Where should the text position itself within its bounds? Set with
+    ///   [`UiRadioAtBuilder::text_align`].
+    ///
+    /// Use this builder for absolute-positioned radio elements, then call [`UiRadioAtBuilder::press`].
+    ///
+    /// ### Examples
+    /// ```ignore
+    /// if Ui::radio_at_builder("D", choice == "D", [0.06, -0.07, 0.0], [0.06, 0.03])
+    ///     .images(&off, &on)
+    ///     .image_layout(UiBtnLayout::Right)
+    ///     .press() {
+    ///     choice = "D";
+    /// }
+    /// ```
+    pub fn radio_at_builder(
+        text: impl AsRef<str>,
+        active: bool,
+        top_left_corner: impl Into<Vec3>,
+        size: impl Into<Vec2>,
+    ) -> UiRadioAtBuilder {
+        UiRadioAtBuilder::new(text, active, top_left_corner, size)
+    }
+
     /// StereoKit will generate a color palette from this gamma space color, and use it to skin the UI! To explicitly
     /// adjust individual theme colors, see Ui::set_theme_color.
     ///  <https://stereokit.net/Pages/StereoKit/UI/ColorScheme.html>
@@ -1176,9 +1554,9 @@ impl Ui {
     ///     Ui::panel_begin(None);
     ///     Ui::hslider("scaling", &mut scaling, 0.0, 1.0, Some(0.05), Some(0.14), None, None);
     ///     Ui::panel_end();
-    ///     Ui::toggle("I agree!",&mut agree, None);
+    ///     Ui::toggle_builder("I agree!",&mut agree).interact();
     ///     Ui::same_line();
-    ///     if Ui::button("Exit", None) {
+    ///     if Ui::button_builder("Exit").press() {
     ///        sk.quit(None);
     ///     }
     ///     Ui::window_end();
@@ -1303,35 +1681,14 @@ impl Ui {
     ///   auto-calculated. For X this is the remaining width of the current layout, and for Y this is Ui::get_line_height.
     ///
     /// Returns true if the button was pressed this frame.
-    /// see also [`ui_button`] [`ui_button_sz`] [`Ui::button_at`]  [`Ui::button_behavior`]
-    /// ### Examples
-    /// ```
-    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::Ui, maths::Pose};
-    ///
-    /// let mut window_pose = Pose::new(
-    ///     [0.01, 0.035, 0.92], Some([0.0, 185.0, 0.0].into()));
-    ///
-    /// let mut button = 0;
-    /// filename_scr = "screenshots/ui_button.jpeg";
-    /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Press a button", &mut window_pose, None, None, None);
-    ///     if Ui::button("1", None) {button = 1}
-    ///     Ui::same_line();
-    ///     if Ui::button("2", Some([0.025, 0.025].into())) {button = 2}
-    ///     if Ui::button("3", Some([0.04, 0.04].into())) {button = 3}
-    ///     if Ui::button_at("4", [-0.01, -0.01, 0.005],[0.05, 0.05]) {button = 4}
-    ///     if Ui::button_at("5", [-0.04, -0.08, 0.005],[0.03, 0.03]) {button = 5}
-    ///     Ui::window_end();
-    /// );
-    /// # sk::Sk::shutdown();
-    /// ```
-    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_button.jpeg" alt="screenshot" width="200">
+    /// see also [`ui_button`] [`Ui::button_at`]  [`Ui::button_behavior`]
+    /// see example in [`Ui::button_builder`]
+    #[deprecated(since = "0.4.0", note = "Use Ui::button_builder(...).press()")]
     pub fn button(text: impl AsRef<str>, size: Option<Vec2>) -> bool {
-        let cstr = CString::new(text.as_ref()).unwrap_or_default();
+        let text = text.as_ref();
         match size {
-            Some(size) => unsafe { ui_button_sz(cstr.as_ptr(), size) != 0 },
-            None => unsafe { ui_button(cstr.as_ptr()) != 0 },
+            Some(size) => Ui::button_builder(text).size(size).press(),
+            None => Ui::button_builder(text).press(),
         }
     }
 
@@ -1344,11 +1701,10 @@ impl Ui {
     ///
     /// Returns true if the button was pressed this frame.
     /// see also [`ui_button_at`] [`Ui::button_behavior`]
-    /// see example in [`Ui::button`]
+    /// see example in [`Ui::button_at_builder`]
+    #[deprecated(since = "0.4.0", note = "Use Ui::button_at_builder(...).press()")]
     pub fn button_at(text: impl AsRef<str>, top_left_corner: impl Into<Vec3>, size: impl Into<Vec2>) -> bool {
-        let cstr = CString::new(text.as_ref()).unwrap_or_default();
-
-        unsafe { ui_button_at(cstr.as_ptr(), top_left_corner.into(), size.into()) != 0 }
+        Ui::button_at_builder(text, top_left_corner, size).press()
     }
 
     /// This is the core functionality of StereoKit’s buttons, without any of the rendering parts! If you’re trying to
@@ -1543,7 +1899,7 @@ impl Ui {
     ///     if slider.active_state.is_just_inactive() {
     ///        println!("Slider1 moved");
     ///     }
-    ///     Ui::label(format!("x: {:.2}          y: {:.2}", slider_pt.x, slider_pt.y), None, true);
+    ///     Ui::label_builder(format!("x: {:.2}          y: {:.2}", slider_pt.x, slider_pt.y)).use_padding(true).draw();
     ///     Ui::window_end();
     /// );
     /// # sk::Sk::shutdown();
@@ -1594,55 +1950,9 @@ impl Ui {
     /// * `color` - The Sprite’s color will be multiplied by this tint. None will have default value of white.
     ///
     /// Returns true only on the first frame it is pressed!
-    /// see also [`ui_button_img`] [`ui_button_img_sz`] [`Ui::button_img_at`]
-    /// ### Examples
-    /// ```
-    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::{Ui,UiBtnLayout}, maths::Pose,
-    ///                      sprite::Sprite, util::named_colors};
-    ///
-    /// let mut window_pose = Pose::new(
-    ///     [-0.01, 0.095, 0.88], Some([0.0, 185.0, 0.0].into()));
-    ///
-    /// let mut choice = "C";
-    /// let log_sprite = Sprite::from_file("icons/log_viewer.png", None, None)
-    ///                               .expect("log_viewer.jpeg should be ok");
-    /// let scr_sprite = Sprite::from_file("icons/screenshot.png", None, None)
-    ///                               .expect("screenshot.jpeg should be ok");
-    /// let app_sprite = Sprite::grid();
-    ///
-    /// let fly_sprite = Sprite::from_file("icons/fly_over.png", None, None)
-    ///                               .expect("fly_over.jpeg should be ok");
-    /// let close_sprite = Sprite::close();
-    ///
-    /// filename_scr = "screenshots/ui_button_img.jpeg";
-    /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Choose a pretty image", &mut window_pose, None, None, None);
-    ///     if Ui::button_img("Log", &log_sprite, Some(UiBtnLayout::Center),
-    ///                       Some([0.07, 0.07].into()), Some(named_colors::GOLD.into())) {
-    ///         choice = "A";
-    ///     }
-    ///     if Ui::button_img("screenshot", &scr_sprite, Some(UiBtnLayout::CenterNoText),
-    ///                       Some([0.07, 0.07].into()), None){
-    ///         choice = "B";
-    ///     }
-    ///     if Ui::button_img("Applications", &app_sprite, Some(UiBtnLayout::Right),
-    ///                       Some([0.17, 0.04].into()), None) {
-    ///         choice = "C";
-    ///     }
-    ///     if Ui::button_img_at("fly", &fly_sprite, Some(UiBtnLayout::CenterNoText),
-    ///                          [-0.01, -0.04, 0.0], [0.12, 0.12], Some(named_colors::CYAN.into())) {
-    ///         choice = "D";
-    ///     }
-    ///     if Ui::button_img_at("close", &close_sprite, Some(UiBtnLayout::CenterNoText),
-    ///                         [-0.08, 0.03, 0.0], [0.05, 0.05], None) {
-    ///         sk.quit(None);
-    ///     }
-    ///     Ui::window_end();
-    /// );
-    /// # sk::Sk::shutdown();
-    /// ```
-    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_button_img.jpeg" alt="screenshot" width="200">
+    /// see also [`ui_button_img`] [`Ui::button_img_at`]
+    /// see example in [`Ui::button_img_builder`]
+    #[deprecated(since = "0.4.0", note = "Use Ui::button_img_builder(...).press()")]
     pub fn button_img(
         text: impl AsRef<str>,
         image: impl AsRef<Sprite>,
@@ -1650,15 +1960,16 @@ impl Ui {
         size: Option<Vec2>,
         color: Option<Color128>,
     ) -> bool {
-        let cstr = CString::new(text.as_ref()).unwrap_or_default();
+        let text = text.as_ref();
         let image_layout = image_layout.unwrap_or(UiBtnLayout::Left);
-        let color = color.unwrap_or(Color128::WHITE);
-        match size {
-            Some(size) => unsafe {
-                ui_button_img_sz(cstr.as_ptr(), image.as_ref().0.as_ptr(), image_layout, size, color) != 0
-            },
-            None => unsafe { ui_button_img(cstr.as_ptr(), image.as_ref().0.as_ptr(), image_layout, color) != 0 },
+        let mut builder = Ui::button_img_builder(text, image).image_layout(image_layout);
+        if let Some(size) = size {
+            builder = builder.size(size);
         }
+        if let Some(color) = color {
+            builder = builder.image_tint(color);
+        }
+        builder.press()
     }
 
     /// A variant of UI::button_img that doesn’t use the layout system, and instead goes exactly where you put it.
@@ -1677,6 +1988,7 @@ impl Ui {
     /// Returns true only on the first frame it is pressed!
     /// see also [`ui_button_img_at`]
     /// see example in [`Ui::button_img`]
+    #[deprecated(since = "0.4.0", note = "Use Ui::button_img_at_builder(...).press()")]
     pub fn button_img_at(
         text: impl AsRef<str>,
         image: impl AsRef<Sprite>,
@@ -1685,19 +1997,12 @@ impl Ui {
         size: impl Into<Vec2>,
         color: Option<Color128>,
     ) -> bool {
-        let cstr = CString::new(text.as_ref()).unwrap_or_default();
         let image_layout = image_layout.unwrap_or(UiBtnLayout::Left);
-        let color = color.unwrap_or(Color128::WHITE);
-        unsafe {
-            ui_button_img_at(
-                cstr.as_ptr(),
-                image.as_ref().0.as_ptr(),
-                image_layout,
-                top_left_corner.into(),
-                size.into(),
-                color,
-            ) != 0
+        let mut builder = Ui::button_img_at_builder(text, image, top_left_corner, size).image_layout(image_layout);
+        if let Some(color) = color {
+            builder = builder.image_tint(color);
         }
+        builder.press()
     }
 
     /// A pressable round button! This button has a square layout,Add commentMore actions and only shows an image, no
@@ -1932,7 +2237,7 @@ impl Ui {
     ///
     /// filename_scr = "screenshots/ui_hseparator.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Separators", &mut window_pose, Some([0.17, 0.0].into()), None, None);
+    ///     Ui::window_begin("Separators", &mut window_pose, Some([0.18, 0.0].into()), None, None);
     ///     Ui::push_text_style(style_big);
     ///     Ui::text("The first part", None, None, None, None, None, None);
     ///     Ui::hseparator();
@@ -1969,7 +2274,7 @@ impl Ui {
     /// * `notify_on` - Allows you to modify the behavior of the return value. None is default UiNotify::Change.
     ///
     /// Returns new value of the slider if it has changed during this step.
-    /// see also [`ui_hslider`] [`Ui::hslider_f64`] [`Ui::hslider_at`] [`Ui::hslider_at_f64`]
+    /// see also [`ui_hslider`] [`Ui::hslider_at`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -1988,12 +2293,12 @@ impl Ui {
     ///     Ui::window_begin("HSlider", &mut window_pose, None, None, None);
     ///     Ui::hslider(    "scaling1", &mut scaling1, 0.0, 1.0, Some(0.05), Some(0.10),
     ///                     None, None);
-    ///     Ui::hslider_f64("scaling2", &mut scaling2, 0.0, 1.0, None, Some(0.12),
+    ///     Ui::hslider(    "scaling2", &mut scaling2, 0.0, 1.0, None, Some(0.12),
     ///                     Some(UiConfirm::Pinch), None);
     ///     Ui::hslider_at( "scaling3", &mut scaling3, 0.0, 1.0, None,
     ///                     [0.0, 0.0, 0.0], [0.08, 0.02],
     ///                     None, Some(UiNotify::Finalize));
-    ///     if let Some(new_value) = Ui::hslider_at_f64(
+    ///     if let Some(new_value) = Ui::hslider_at(
     ///                     "scaling4", &mut scaling4, 0.0, 1.0, None,
     ///                     [0.07, -0.085, 0.0], [0.15, 0.036],
     ///                     Some(UiConfirm::VariablePinch), None) {
@@ -2029,46 +2334,6 @@ impl Ui {
     }
 
     /// A vertical slider element! You can stick your finger in it, and slide the value up and down.
-    /// <https://stereokit.net/Pages/StereoKit/UI/HSlider.html>
-    /// * `id` - An id for tracking element state. MUST be unique within current hierarchy.
-    /// * `out_value` - The value that the slider will store slider state in.
-    /// * `min` - The minimum value the slider can set, left side of the slider.
-    /// * `max` - The maximum value the slider can set, right side of the slider.
-    /// * `step` - Locks the value to increments of step. Starts at min, and increments by step. None is default 0
-    ///   and means "don't lock to increments".
-    /// * `width` - Physical width of the slider on the window. None is default 0 will fill the remaining amount of
-    ///   window space.
-    /// * `confirm_method` - How should the slider be activated? None is default Push will be a push-button the user
-    ///   must press first, and pinch will be a tab that the user must pinch and drag around.
-    /// * `notify_on` - Allows you to modify the behavior of the return value. None is default UiNotify::Change.
-    ///
-    /// Returns new value of the slider if it has changed during this step.
-    /// see also [`ui_hslider_f64`] [`Ui::hslider`] [`Ui::hslider_at`] [`Ui::hslider_at_f64`]
-    /// see example in [`Ui::hslider`]
-    #[allow(clippy::too_many_arguments)]
-    pub fn hslider_f64(
-        id: impl AsRef<str>,
-        out_value: &mut f64,
-        min: f64,
-        max: f64,
-        step: Option<f64>,
-        width: Option<f32>,
-        confirm_method: Option<UiConfirm>,
-        notify_on: Option<UiNotify>,
-    ) -> Option<f64> {
-        let cstr = CString::new(id.as_ref()).unwrap_or_default();
-        let step = step.unwrap_or(0.0);
-        let width = width.unwrap_or(0.0);
-        let confirm_method = confirm_method.unwrap_or(UiConfirm::Push);
-        let notify_on = notify_on.unwrap_or(UiNotify::Change);
-        match unsafe { ui_hslider_f64(cstr.as_ptr(), out_value, min, max, step, width, confirm_method, notify_on) != 0 }
-        {
-            true => Some(*out_value),
-            false => None,
-        }
-    }
-
-    /// A vertical slider element! You can stick your finger in it, and slide the value up and down.
     /// <https://stereokit.net/Pages/StereoKit/UI/HSliderAt.html>
     /// * `id` - An id for tracking element state. MUST be unique within current hierarchy.
     /// * `out_value` - The value that the slider will store slider state in.
@@ -2083,7 +2348,7 @@ impl Ui {
     /// * `notify_on` - Allows you to modify the behavior of the return value. None is default UiNotify::Change.
     ///
     /// Returns new value of the slider if it has changed during this step.
-    /// see also [`ui_hslider_at`] [`Ui::hslider_f64`] [`Ui::hslider`] [`Ui::hslider_at_f64`]
+    /// see also [`ui_hslider_at`] [`Ui::hslider`]
     /// see example in [`Ui::hslider`]
     #[allow(clippy::too_many_arguments)]
     pub fn hslider_at(
@@ -2103,57 +2368,6 @@ impl Ui {
         let notify_on = notify_on.unwrap_or(UiNotify::Change);
         match unsafe {
             ui_hslider_at(
-                cstr.as_ptr(),
-                out_value,
-                min,
-                max,
-                step,
-                top_left_corner.into(),
-                size.into(),
-                confirm_method,
-                notify_on,
-            ) != 0
-        } {
-            true => Some(*out_value),
-            false => None,
-        }
-    }
-
-    /// A vertical slider element! You can stick your finger in it, and slide the value up and down.
-    /// <https://stereokit.net/Pages/StereoKit/UI/HSliderAt.html>
-    /// * `id` - An id for tracking element state. MUST be unique within current hierarchy.
-    /// * `out_value` - The value that the slider will store slider state in.
-    /// * `min` - The minimum value the slider can set, left side of the slider.
-    /// * `max` - The maximum value the slider can set, right side of the slider.
-    /// * `step` - Locks the value to increments of step. Starts at min, and increments by step. None is default 0
-    ///   and means "don't lock to increments".
-    /// * `top_left_corner` - This is the top left corner of the UI element relative to the current Hierarchy.
-    /// * `size` - The layout size for this element in Hierarchy space.
-    /// * `confirm_method` - How should the slider be activated? None is default Push will be a push-button the user
-    ///   must press first, and pinch will be a tab that the user must pinch and drag around.
-    /// * `notify_on` - Allows you to modify the behavior of the return value. None is default UiNotify::Change.
-    ///
-    /// Returns new value of the slider if it has changed during this step.
-    /// see also [`ui_hslider_at_f64`] [`Ui::hslider_f64`] [`Ui::hslider`] [`Ui::hslider_at`]
-    /// see example in [`Ui::hslider`]
-    #[allow(clippy::too_many_arguments)]
-    pub fn hslider_at_f64(
-        id: impl AsRef<str>,
-        out_value: &mut f64,
-        min: f64,
-        max: f64,
-        step: Option<f64>,
-        top_left_corner: impl Into<Vec3>,
-        size: impl Into<Vec2>,
-        confirm_method: Option<UiConfirm>,
-        notify_on: Option<UiNotify>,
-    ) -> Option<f64> {
-        let cstr = CString::new(id.as_ref()).unwrap_or_default();
-        let step = step.unwrap_or(0.0);
-        let confirm_method = confirm_method.unwrap_or(UiConfirm::Push);
-        let notify_on = notify_on.unwrap_or(UiNotify::Change);
-        match unsafe {
-            ui_hslider_at_f64(
                 cstr.as_ptr(),
                 out_value,
                 min,
@@ -2364,34 +2578,16 @@ impl Ui {
     ///   [`Ui::get_line_height`]. If None, both axis will be auto-calculated.
     /// * `use_padding` - Should padding be included for positioning this text? Sometimes you just want un-padded text!
     ///
-    /// see also [`ui_label`] [`ui_label_sz`]
-    /// ### Examples
-    /// ```
-    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::Ui, maths::Pose};
-    ///
-    /// let mut window_pose = Pose::new(
-    ///     [0.01, 0.035, 0.93], Some([0.0, 185.0, 0.0].into()));
-    ///
-    /// filename_scr = "screenshots/ui_label.jpeg";
-    /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Labels", &mut window_pose, None, None, None);
-    ///     Ui::label("Label 1", None, false);
-    ///     Ui::same_line();
-    ///     Ui::label("Label 2", Some([0.025, 0.0].into()), false);
-    ///     Ui::label("Label 3", Some([0.1,   0.01].into()), true);
-    ///     Ui::label("Label 4", Some([0.0,   0.0045].into()), false);
-    ///     Ui::window_end();
-    /// );
-    /// # sk::Sk::shutdown();
-    /// ```
-    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_label.jpeg" alt="screenshot" width="200">
+    /// see also [`ui_label`] [`Ui::label_builder`]
+    /// see example in [`Ui::label_builder`]
+    #[deprecated(since = "0.4.0", note = "Use Ui::label_builder(...).draw()")]
     pub fn label(text: impl AsRef<str>, size: Option<Vec2>, use_padding: bool) {
-        let cstr = CString::new(text.as_ref()).unwrap_or_default();
-        match size {
-            Some(size) => unsafe { ui_label_sz(cstr.as_ptr(), size, use_padding as Bool32T) },
-            None => unsafe { ui_label(cstr.as_ptr(), use_padding as Bool32T) },
+        let text = text.as_ref();
+        let mut builder = Ui::label_builder(text).use_padding(use_padding);
+        if let Some(size) = size {
+            builder = builder.size(size);
         }
+        builder.draw();
     }
 
     /// Tells if the hand was involved in the active state of the most recently called UI element using an id. Active
@@ -2413,7 +2609,7 @@ impl Ui {
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Last Element Hand Active", &mut window_pose, None, None, None);
-    ///     Ui::button("Button1", None);
+    ///     Ui::button_builder("Button1").press();
     ///     let state_hand = Ui::last_element_hand_active(Handed::Right);
     ///     let state_element = Ui::get_last_element_active();
     ///
@@ -2450,7 +2646,7 @@ impl Ui {
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Last Element Hand Focuse", &mut window_pose, None, None, None);
-    ///     Ui::button("Button1", None);
+    ///     Ui::button_builder("Button1").press();
     ///     let state_hand = Ui::last_element_hand_focused(Handed::Right);
     ///     let state_element = Ui::get_last_element_focused();
     ///     assert_eq!( state_hand.is_just_active(), false);
@@ -2491,7 +2687,7 @@ impl Ui {
     ///     Ui::layout_area([0.1, -0.04, 0.0], [0.01, 0.01], true);
     ///     Ui::image(&sprite, [0.07, 0.07]);
     ///     Ui::layout_area([0.00, -0.01, 0.0], [0.01, 0.01], true);
-    ///     Ui::label("Text and more", None, false);
+    ///     Ui::label_builder("Text and more").use_padding(false).draw();
     ///     Ui::window_end();
     /// );
     /// # sk::Sk::shutdown();
@@ -2531,9 +2727,9 @@ impl Ui {
     ///     Ui::image(&sprite, [0.07, 0.07]);
     ///     Ui::layout_pop();
     ///     Ui::layout_push_cut( UiCut::Right, 0.1, true);
-    ///     Ui::label("Text and more ...", None, false);
+    ///     Ui::label_builder("Text and more ...").use_padding(false).draw();
     ///     Ui::layout_push_cut( UiCut::Bottom, 0.02, true);
-    ///     Ui::label("And again and again ...", None, false);
+    ///     Ui::label_builder("And again and again ...").use_padding(false).draw();
     ///     Ui::layout_pop();
     ///     Ui::layout_pop();
     ///     Ui::window_end();
@@ -2660,11 +2856,11 @@ impl Ui {
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Next line", &mut window_pose, None, None, None);
-    ///     Ui::label("Line 1", None, false);
+    ///     Ui::label_builder("Line 1").use_padding(false).draw();
     ///     Ui::next_line();
     ///     Ui::next_line();
     ///     Ui::next_line();
-    ///     Ui::label("Line 5", None, false);
+    ///     Ui::label_builder("Line 5").use_padding(false).draw();
     ///     Ui::window_end();
     /// );
     /// # sk::Sk::shutdown();
@@ -2692,16 +2888,16 @@ impl Ui {
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Panel at", &mut window_pose, Some([0.2, 0.15].into()), None, None);
     ///     Ui::panel_at([0.11, -0.01, 0.0], [0.08, 0.03], Some(UiPad::None));
-    ///     Ui::label("panel 1", None, false);
+    ///     Ui::label_builder("panel 1").use_padding(false).draw();
     ///
     ///     Ui::layout_push_cut( UiCut::Right, 0.1, true);
     ///     Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);
-    ///     Ui::label("panel 2", None, false);
+    ///     Ui::label_builder("panel 2").use_padding(false).draw();
     ///     Ui::layout_pop();
     ///
     ///     Ui::layout_push_cut( UiCut::Bottom, 0.08, false);
     ///     Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);
-    ///     Ui::label("panel 3", None, false);
+    ///     Ui::label_builder("panel 3").use_padding(false).draw();
     ///     Ui::layout_pop();
     ///
     ///     Ui::window_end();
@@ -2734,18 +2930,18 @@ impl Ui {
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Panel begin", &mut window_pose, Some([0.2, 0.15].into()), None, None);
     ///     Ui::panel_begin(Some(UiPad::None));
-    ///     Ui::label("panel 1", None, false);
+    ///     Ui::label_builder("panel 1").use_padding(false).draw();
     ///     Ui::panel_end();
     ///
     ///     Ui::layout_push_cut( UiCut::Right, 0.1, true);
     ///     Ui::panel_begin(None);
-    ///     Ui::label("panel 2", None, false);
+    ///     Ui::label_builder("panel 2").use_padding(false).draw();
     ///     Ui::panel_end();
     ///     Ui::layout_pop();
     ///
     ///     Ui::layout_push_cut( UiCut::Bottom, 0.08, false);
     ///     Ui::panel_begin(Some(UiPad::Inside));
-    ///     Ui::label("panel 3\nwith CRLF", None, false);
+    ///     Ui::label_builder("panel 3\nwith CRLF").use_padding(false).draw();
     ///     Ui::panel_end();
     ///     Ui::layout_pop();
     ///
@@ -2791,7 +2987,7 @@ impl Ui {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin(id, &mut window_pose, None, None, None);
     ///     Ui::play_sound_on_off(element_visual, id_hash, window_pose.position);
-    ///     Ui::label("This will play the 'on' sound\nfor the given (id / UiVisual)\nat the local position.", None, false);           
+    ///     Ui::label_builder("This will play the 'on' sound\nfor the given (id / UiVisual)\nat the local position.").use_padding(false).draw();           
     ///     Ui::window_end();
     /// );
     /// # sk::Sk::shutdown();
@@ -2821,7 +3017,7 @@ impl Ui {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Play sound on", &mut window_pose, None, None, None);
     ///     Ui::play_sound_on(element_visual, window_pose.position);
-    ///     Ui::label("This will play the 'on' sound\nassociated with the given UIVisual\nat the local position.", None, false);           
+    ///     Ui::label_builder("This will play the 'on' sound\nassociated with the given UIVisual\nat the local position.").use_padding(false).draw();           
     ///     Ui::window_end();
     /// );
     /// # sk::Sk::shutdown();
@@ -2852,7 +3048,7 @@ impl Ui {
     ///     Ui::window_begin("Play sound off", &mut window_pose, None, None, None);
     ///     Ui::hslider("Slider1", &mut value, 0.0, 1.0,  None, None, None, None);
     ///     Ui::play_sound_off(element_visual, window_pose.position);
-    ///     Ui::label("This will play the 'off' sound\nassociated with the given UIVisual\nat the local position.", None, false);
+    ///     Ui::label_builder("This will play the 'off' sound\nassociated with the given UIVisual\nat the local position.").use_padding(false).draw();
     ///     Ui::window_end();
     /// );
     /// # sk::Sk::shutdown();
@@ -3061,7 +3257,7 @@ impl Ui {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Push Enabled", &mut window_pose, None, None, None);
     ///     assert_eq!(Ui::get_enabled(), true);
-    ///     Ui::toggle("Enabled", &mut enabled_value, None);
+    ///     Ui::toggle_builder("Enabled", &mut enabled_value).interact();
     ///     Ui::push_enabled(enabled_value, None);
     ///
     ///     Ui::push_enabled(true, None);
@@ -3069,11 +3265,11 @@ impl Ui {
     ///     Ui::hprogress_bar(0.20, 0.08, false);
     ///     Ui::pop_enabled();
     ///
-    ///     if Ui::button("Button", None) {panic!("impossible")}
+    ///     if Ui::button_builder("Button").press() {panic!("impossible")}
     ///
     ///     Ui::push_enabled(true, Some(HierarchyParent::Ignore));
     ///     assert_eq!(Ui::get_enabled(), true);
-    ///     Ui::toggle("I'm a robot!",&mut toggle_value, None);
+    ///     Ui::toggle_builder("I'm a robot!",&mut toggle_value).interact();
     ///     Ui::pop_enabled();
     ///
     ///     Ui::pop_enabled();
@@ -3105,10 +3301,10 @@ impl Ui {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Push Id", &mut window_pose, None, None, None);
     ///     Ui::push_id("group1");
-    ///     Ui::toggle("Choice 1",&mut toggle_value1, None);
+    ///     Ui::toggle_builder("Choice 1",&mut toggle_value1).interact();
     ///     Ui::pop_id();
     ///     Ui::push_id("group2");
-    ///     Ui::toggle("Choice 1",&mut toggle_value1b, None);
+    ///     Ui::toggle_builder("Choice 1",&mut toggle_value1b).interact();
     ///     Ui::pop_id();
     ///     Ui::window_end();
     /// );
@@ -3138,10 +3334,10 @@ impl Ui {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Push Id", &mut window_pose, None, None, None);
     ///     Ui::push_id_int(1);
-    ///     Ui::toggle("Choice 1",&mut toggle_value1, None);
+    ///     Ui::toggle_builder("Choice 1",&mut toggle_value1).interact();
     ///     Ui::pop_id();
     ///     Ui::push_id_int(2);
-    ///     Ui::toggle("Choice 1",&mut toggle_value1b, None);
+    ///     Ui::toggle_builder("Choice 1",&mut toggle_value1b).interact();
     ///     Ui::pop_id();
     ///     Ui::window_end();
     /// );
@@ -3177,7 +3373,7 @@ impl Ui {
     ///     Ui::input("Title", &mut title, Some([0.15, 0.03].into()), None);
     ///     Ui::input("Author", &mut author, Some([0.15, 0.03].into()), None);
     ///     Ui::hslider("volume", &mut volume, 0.0, 1.0, Some(0.05), None, None, None);
-    ///     Ui::toggle("mute", &mut mute, None);
+    ///     Ui::toggle_builder("mute", &mut mute).interact();
     ///     Ui::pop_preserve_keyboard();
     ///     Ui::window_end();
     /// );
@@ -3208,7 +3404,7 @@ impl Ui {
     ///     Ui::push_grab_aura(false);
     ///     assert_eq!(Ui::grab_aura_enabled(), false);
     ///     Ui::window_begin("Write a title", &mut window_pose, None, None, None);
-    ///     Ui::label("Title:", None, false);
+    ///     Ui::label_builder("Title:").use_padding(false).draw();
     ///     Ui::input("Title", &mut title, Some([0.15, 0.03].into()), None);
     ///     Ui::window_end();
     ///     Ui::pop_grab_aura();
@@ -3246,10 +3442,10 @@ impl Ui {
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     Ui::push_surface(surface_pose, [0.0, 0.0, 0.0], [0.1, 0.1]);
     ///     Ui::push_text_style(style);
-    ///     Ui::label("Surface", Some([0.25, 0.03].into()), false);
+    ///     Ui::label_builder("Surface").size([0.25, 0.03]).use_padding(false).draw();
     ///     Ui::pop_text_style();
     ///     Ui::panel_begin(Some(UiPad::Inside));
-    ///     Ui::label("Give a title:", None, false);
+    ///     Ui::label_builder("Give a title:").use_padding(false).draw();
     ///     Ui::input("Title", &mut title, Some([0.15, 0.03].into()), None);
     ///     Ui::panel_end();
     ///     Ui::pop_surface();
@@ -3344,7 +3540,7 @@ impl Ui {
     ///     Ui::hslider("volume", &mut volume, 0.0, 1.0, Some(0.05), None, None, None);
     ///     Ui::pop_tint();
     ///     Ui::push_tint(green.to_gamma());
-    ///     Ui::toggle("mute", &mut mute, None);
+    ///     Ui::toggle_builder("mute", &mut mute).interact();
     ///     Ui::pop_tint();
     ///     Ui::window_end();
     /// );
@@ -3388,7 +3584,7 @@ impl Ui {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Push Tint", &mut window_pose, None, None, None);
     ///     Ui::hseparator();
-    ///     if Ui::button("Exit", None) {sk.quit(None);}
+    ///     if Ui::button_builder("Exit").press() {sk.quit(None);}
     ///     Ui::hseparator();
     ///     Ui::window_end();
     /// );
@@ -3433,7 +3629,7 @@ impl Ui {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Push Tint", &mut window_pose, None, None, None);
     ///     Ui::hseparator();
-    ///     if Ui::button("Exit", None) {sk.quit(None);}
+    ///     if Ui::button_builder("Exit").press() {sk.quit(None);}
     ///     Ui::hseparator();
     ///     Ui::window_end();
     /// );
@@ -3486,7 +3682,7 @@ impl Ui {
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("gen_quadrant_mesh", &mut window_pose, None, None, None);
     ///     Ui::input("input", &mut text, None, None );
-    ///     if Ui::button("Exit", None) {sk.quit(None);}
+    ///     if Ui::button_builder("Exit").press() {sk.quit(None);}
     ///     Ui::window_end();
     /// );
     /// # sk::Sk::shutdown();
@@ -3528,32 +3724,13 @@ impl Ui {
     ///   [`Ui::get_line_height`].
     ///
     /// Returns true only on the first frame it is pressed.
-    /// see also [`ui_toggle_img`] [`ui_toggle_img_sz`]
+    /// see also [`ui_toggle_img`]
     #[deprecated(since = "0.0.1", note = "Performence issues, use radio_img instead")]
     pub fn radio(text: impl AsRef<str>, active: bool, size: Option<Vec2>) -> bool {
-        let cstr = CString::new(text.as_ref()).unwrap_or_default();
-        let mut active: Bool32T = active as Bool32T;
-        let active_ptr: *mut Bool32T = &mut active;
+        let text = text.as_ref();
         match size {
-            Some(size) => unsafe {
-                ui_toggle_img_sz(
-                    cstr.as_ptr(),
-                    active_ptr,
-                    Sprite::radio_off().0.as_ptr(),
-                    Sprite::radio_on().0.as_ptr(),
-                    UiBtnLayout::Left,
-                    size,
-                ) != 0
-            },
-            None => unsafe {
-                ui_toggle_img(
-                    cstr.as_ptr(),
-                    active_ptr,
-                    Sprite::radio_off().0.as_ptr(),
-                    Sprite::radio_on().0.as_ptr(),
-                    UiBtnLayout::Left,
-                ) != 0
-            },
+            Some(size) => Ui::radio_builder(text, active).size(size).press(),
+            None => Ui::radio_builder(text, active).press(),
         }
     }
 
@@ -3574,48 +3751,9 @@ impl Ui {
     ///   [`Ui::get_line_height`].
     ///
     /// Returns true only on the first frame it is pressed.
-    /// see also [`ui_toggle_img`] [`ui_toggle_img_sz`] [Ui::radio_at]
-    /// ### Examples
-    /// ```
-    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::{Ui, UiBtnLayout}, maths::Pose, sprite::Sprite};
-    ///
-    /// let mut window_pose = Pose::new(
-    ///     [0.01, 0.035, 0.91], Some([0.0, 185.0, 0.0].into()));
-    ///
-    /// let (on, off) = (Sprite::radio_on(), Sprite::radio_off());
-    ///
-    /// let mut choice = "A";
-    ///
-    /// filename_scr = "screenshots/ui_radio.jpeg";
-    /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Radio", &mut window_pose, None, None, None);
-    ///     if Ui::radio_img("A", choice == "A", &off, &on, UiBtnLayout::Right,
-    ///                      Some([0.06, 0.05].into())) {
-    ///         choice = "A";
-    ///     }
-    ///     Ui::same_line();
-    ///     if Ui::radio_img("B", choice == "B", &off, &on, UiBtnLayout::Center,
-    ///                      Some([0.03, 0.05].into())){
-    ///         choice = "B";
-    ///     }
-    ///     Ui::same_line();
-    ///     if Ui::radio_img("C", choice == "C", &off, &on, UiBtnLayout::Left, None) {
-    ///         choice = "C";
-    ///     }
-    ///     if Ui::radio_at("D", choice == "D", &off, &on, UiBtnLayout::Right,
-    ///                     [0.06, -0.07, 0.0], [0.06, 0.03]) {
-    ///         choice = "D";
-    ///     }    
-    ///     if Ui::radio_at("E", choice == "E", &off, &on, UiBtnLayout::Left,
-    ///                     [-0.01, -0.07, 0.0], [0.06, 0.03]) {
-    ///         choice = "E";
-    ///     }
-    ///     Ui::window_end();
-    /// );
-    /// # sk::Sk::shutdown();
-    /// ```
-    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_radio.jpeg" alt="screenshot" width="200">
+    /// see also [`ui_toggle_img`] [Ui::radio_at]
+    /// see example in [`Ui::radio_builder`]
+    #[deprecated(since = "0.4.0", note = "Use Ui::radio_builder(...).images(...).press()")]
     pub fn radio_img(
         text: impl AsRef<str>,
         active: bool,
@@ -3624,30 +3762,12 @@ impl Ui {
         image_layout: UiBtnLayout,
         size: Option<Vec2>,
     ) -> bool {
-        let cstr = CString::new(text.as_ref()).unwrap_or_default();
-        let mut active: Bool32T = active as Bool32T;
-        let active_ptr: *mut Bool32T = &mut active;
-        match size {
-            Some(size) => unsafe {
-                ui_toggle_img_sz(
-                    cstr.as_ptr(),
-                    active_ptr,
-                    image_off.as_ref().0.as_ptr(),
-                    image_on.as_ref().0.as_ptr(),
-                    image_layout,
-                    size,
-                ) != 0
-            },
-            None => unsafe {
-                ui_toggle_img(
-                    cstr.as_ptr(),
-                    active_ptr,
-                    image_off.as_ref().0.as_ptr(),
-                    image_on.as_ref().0.as_ptr(),
-                    image_layout,
-                ) != 0
-            },
+        let text = text.as_ref();
+        let mut builder = Ui::radio_builder(text, active).images(image_off, image_on).image_layout(image_layout);
+        if let Some(size) = size {
+            builder = builder.size(size);
         }
+        builder.press()
     }
 
     /// A Radio is similar to a button, except you can specify if it looks pressed or not regardless of interaction.
@@ -3668,6 +3788,7 @@ impl Ui {
     /// Returns true only on the first frame it is pressed.
     /// see also [`ui_toggle_img_at`]
     /// see example in [`Ui::radio_img`]
+    #[deprecated(since = "0.4.0", note = "Use Ui::radio_at_builder(...).images(...).press()")]
     pub fn radio_at(
         text: impl AsRef<str>,
         active: bool,
@@ -3677,20 +3798,10 @@ impl Ui {
         top_left_corner: impl Into<Vec3>,
         size: impl Into<Vec2>,
     ) -> bool {
-        let cstr = CString::new(text.as_ref()).unwrap_or_default();
-        let mut active: Bool32T = active as Bool32T;
-        let active_ptr: *mut Bool32T = &mut active;
-        unsafe {
-            ui_toggle_img_at(
-                cstr.as_ptr(),
-                active_ptr,
-                image_off.as_ref().0.as_ptr(),
-                image_on.as_ref().0.as_ptr(),
-                image_layout,
-                top_left_corner.into(),
-                size.into(),
-            ) != 0
-        }
+        Ui::radio_at_builder(text, active, top_left_corner, size)
+            .images(image_off, image_on)
+            .image_layout(image_layout)
+            .press()
     }
 
     /// Moves the current layout position back to the end of the line that just finished, so it can continue on the same
@@ -3737,7 +3848,7 @@ impl Ui {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("set element visual", &mut window_pose, None, None, None);
     ///     Ui::hseparator();
-    ///     if Ui::button("Exit", None) {sk.quit(None);}
+    ///     if Ui::button_builder("Exit").press() {sk.quit(None);}
     ///     Ui::hseparator();
     ///     Ui::window_end();
     /// );
@@ -3789,7 +3900,7 @@ impl Ui {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("set_element_color", &mut window_pose, None, None, None);
     ///     Ui::hseparator();
-    ///     if Ui::button("Exit", None) {sk.quit(None);}
+    ///     if Ui::button_builder("Exit").press() {sk.quit(None);}
     ///     Ui::hseparator();
     ///     Ui::window_end();
     /// );
@@ -3823,8 +3934,8 @@ impl Ui {
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Set Element Sound", &mut window_pose, None, None, None);
-    ///     if Ui::button("Button1", None) {todo!();}
-    ///     if Ui::button("Button2", None) {todo!();}
+    ///     if Ui::button_builder("Button1").press() {todo!();}
+    ///     if Ui::button_builder("Button2").press() {todo!();}
     ///     Ui::window_end();
     /// );
     /// # sk::Sk::shutdown();
@@ -3929,7 +4040,7 @@ impl Ui {
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Get Anim Focus", &mut window_pose, None, None, None);
-    ///     if Ui::button("button1", None) {todo!()}
+    ///     if Ui::button_builder("button1").press() {todo!()}
     ///     let id = Ui::stack_hash("button1");
     ///     let focus = Ui::get_anim_focus(id, BtnState::Inactive, BtnState::Inactive);
     ///     assert_eq!(focus, 0.0);
@@ -3988,10 +4099,10 @@ impl Ui {
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("set_theme_color", &mut window_pose, None, None, None);
     ///     Ui::push_enabled(false, None);
-    ///     if Ui::button("Button", None) { todo!() };
+    ///     if Ui::button_builder("Button").press() { todo!() };
     ///     Ui::pop_enabled();
     ///     Ui::hseparator();
-    ///     if Ui::button("Exit", None) {sk.quit(None);}
+    ///     if Ui::button_builder("Exit").press() {sk.quit(None);}
     ///     Ui::window_end();
     /// );
     /// # sk::Sk::shutdown();
@@ -4044,11 +4155,11 @@ impl Ui {
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("VSpace", &mut window_pose, None, None, None);
-    ///     Ui::label("Line 1", None, false);
+    ///     Ui::label_builder("Line 1").use_padding(false).draw();
     ///     Ui::vspace(0.02);
-    ///     Ui::label("Line 2", None, false);
+    ///     Ui::label_builder("Line 2").use_padding(false).draw();
     ///     Ui::vspace(0.04);
-    ///     if Ui::button("Exit", None) {sk.quit(None);}
+    ///     if Ui::button_builder("Exit").press() {sk.quit(None);}
     ///     Ui::window_end();
     /// );
     /// # sk::Sk::shutdown();
@@ -4072,10 +4183,10 @@ impl Ui {
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("HSpace", &mut window_pose, None, None, None);
-    ///     Ui::label("Bla bla ...", None, false);
+    ///     Ui::label_builder("Bla bla ...").use_padding(false).draw();
     ///     Ui::same_line();
     ///     Ui::hspace(0.08);
-    ///     if Ui::button("Exit", None) {sk.quit(None);}
+    ///     if Ui::button_builder("Exit").press() {sk.quit(None);}
     ///     Ui::window_end();
     /// );
     /// # sk::Sk::shutdown();
@@ -4169,19 +4280,13 @@ impl Ui {
         let height = height.unwrap_or(0.0);
         let text_align = text_align.unwrap_or(Align::TopLeft);
         let fit = fit.unwrap_or(TextFit::Wrap);
-        if let Some(width) = width {
-            let size = Vec2::new(width, height);
-            match scroll {
-                Some(scroll) => unsafe {
-                    ui_text_sz(cstr.as_ptr(), scroll, scroll_direction, size, text_align, fit) != 0
-                },
-                None => unsafe { ui_text_sz(cstr.as_ptr(), null_mut(), UiScroll::None, size, text_align, fit) != 0 },
-            }
-        } else {
-            match scroll {
-                Some(scroll) => unsafe { ui_text(cstr.as_ptr(), scroll, scroll_direction, height, text_align) != 0 },
-                None => unsafe { ui_text(cstr.as_ptr(), null_mut(), UiScroll::None, 0.0, text_align) != 0 },
-            }
+        let size = match width {
+            Some(width) => Vec2::new(width, height),
+            None => Vec2::new(0.0, height),
+        };
+        match scroll {
+            Some(scroll) => unsafe { ui_text(cstr.as_ptr(), scroll, scroll_direction, size, text_align, fit) != 0 },
+            None => unsafe { ui_text(cstr.as_ptr(), null_mut(), UiScroll::None, size, text_align, fit) != 0 },
         }
     }
 
@@ -4250,63 +4355,14 @@ impl Ui {
     ///   None is for auto-calculated.
     ///
     /// Will return the new value (same as `out_value`) any time the toggle value changes.
-    /// see also [`ui_toggle`] [`ui_toggle_sz`] [`Ui::toggle_img`] [`Ui::toggle_at`]
-    /// ### Examples
-    /// ```
-    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::{Ui, UiBtnLayout}, maths::Pose, sprite::Sprite};
-    ///
-    /// let mut window_pose = Pose::new(
-    ///     [0.01, 0.065, 0.91], Some([0.0, 185.0, 0.0].into()));
-    ///
-    /// let (on, off) = (Sprite::arrow_up(), Sprite::arrow_down());
-    ///
-    /// let mut choiceA = false; let mut choiceB = true;
-    /// let mut choiceC = false; let mut choiceD = true;
-    /// let mut choiceE = false; let mut choiceF = true;
-    ///
-    /// filename_scr = "screenshots/ui_toggle.jpeg";
-    /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Toggle button", &mut window_pose, None, None, None);
-    ///     Ui::toggle_img("A", &mut choiceA, &off, &on, Some(UiBtnLayout::Right),
-    ///                    Some([0.06, 0.05].into()));
-    ///     Ui::same_line();
-    ///     if let Some(bool) = Ui::toggle_img("B", &mut choiceB, &off, &on,
-    ///                                        Some(UiBtnLayout::Center),
-    ///                                        Some([0.06, 0.05].into())) {
-    ///         assert_eq!(bool, choiceB);
-    ///     }
-    ///
-    ///     Ui::toggle("C", &mut choiceC, None);
-    ///     Ui::same_line();
-    ///     Ui::toggle("D", &mut choiceD, Some([0.06, 0.04].into()));
-    ///
-    ///     Ui::toggle_at("E", &mut choiceE, Some(&off), None, Some(UiBtnLayout::Right),
-    ///                     [0.06, -0.12, 0.0], [0.06, 0.03]);
-    ///     if let Some(bool) = Ui::toggle_at("F", &mut choiceF, None, None, None,
-    ///                                       [-0.01, -0.12, 0.0], [0.06, 0.03]) {
-    ///         assert_eq!(bool, choiceB);
-    ///     }
-    ///     Ui::window_end();
-    /// );
-    /// # sk::Sk::shutdown();
-    /// ```
-    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_toggle.jpeg" alt="screenshot" width="200">
+    /// see also [`ui_toggle`] [`Ui::toggle_img`] [`Ui::toggle_at`]
+    /// see example in [`Ui::toggle_builder`]
+    #[deprecated(since = "0.4.0", note = "Use Ui::toggle_builder(...).interact()")]
     pub fn toggle(text: impl AsRef<str>, out_value: &mut bool, size: Option<Vec2>) -> Option<bool> {
-        let cstr = CString::new(text.as_ref()).unwrap_or_default();
-        let mut active: Bool32T = *out_value as Bool32T;
-        let active_ptr: *mut Bool32T = &mut active;
-        let change = match size {
-            Some(size) => unsafe { ui_toggle_sz(cstr.as_ptr(), active_ptr, size) != 0 },
-            None => unsafe { ui_toggle(cstr.as_ptr(), active_ptr) != 0 },
-        };
-
-        match change {
-            true => {
-                *out_value = active != 0;
-                Some(*out_value)
-            }
-            false => None,
+        let text = text.as_ref();
+        match size {
+            Some(size) => Ui::toggle_builder(text, out_value).size(size).interact(),
+            None => Ui::toggle_builder(text, out_value).interact(),
         }
     }
 
@@ -4327,8 +4383,9 @@ impl Ui {
     ///   None is for auto-calculated.
     ///
     /// Will return the new value (same as `out_value`) any time the toggle value changes.
-    /// see also [`ui_toggle_img`] [`ui_toggle_img_sz`] [`Ui::toggle`] [`Ui::toggle_at`]
+    /// see also [`ui_toggle_img`] [`Ui::toggle`] [`Ui::toggle_at`]
     /// see example in [`Ui::toggle`]
+    #[deprecated(since = "0.4.0", note = "Use Ui::toggle_img_builder(...).interact()")]
     pub fn toggle_img(
         id: impl AsRef<str>,
         out_value: &mut bool,
@@ -4337,38 +4394,13 @@ impl Ui {
         image_layout: Option<UiBtnLayout>,
         size: Option<Vec2>,
     ) -> Option<bool> {
-        let cstr = CString::new(id.as_ref()).unwrap_or_default();
-        let mut active: Bool32T = *out_value as Bool32T;
-        let active_ptr: *mut Bool32T = &mut active;
+        let id = id.as_ref();
         let image_layout = image_layout.unwrap_or(UiBtnLayout::Left);
-        let change = match size {
-            Some(size) => unsafe {
-                ui_toggle_img_sz(
-                    cstr.as_ptr(),
-                    active_ptr,
-                    toggle_off.as_ref().0.as_ptr(),
-                    toggle_on.as_ref().0.as_ptr(),
-                    image_layout,
-                    size,
-                ) != 0
-            },
-            None => unsafe {
-                ui_toggle_img(
-                    cstr.as_ptr(),
-                    active_ptr,
-                    toggle_off.as_ref().0.as_ptr(),
-                    toggle_on.as_ref().0.as_ptr(),
-                    image_layout,
-                ) != 0
-            },
-        };
-        match change {
-            true => {
-                *out_value = active != 0;
-                Some(*out_value)
-            }
-            false => None,
+        let mut builder = Ui::toggle_img_builder(id, out_value, toggle_off, toggle_on).image_layout(image_layout);
+        if let Some(size) = size {
+            builder = builder.size(size);
         }
+        builder.interact()
     }
 
     /// A variant of Ui::toggle that doesn’t use the layout system, and instead goes exactly where you put it.
@@ -4388,6 +4420,7 @@ impl Ui {
     /// Will return the new value (same as `out_value`) any time the toggle value changes.
     /// see also [`ui_toggle_img_at`] [`ui_toggle_at`] [`Ui::toggle_img`] [`Ui::toggle`]
     /// see example in [`Ui::toggle`]
+    #[deprecated(since = "0.4.0", note = "Use Ui::toggle_at_builder(...).interact()")]
     pub fn toggle_at(
         id: impl AsRef<str>,
         out_value: &mut bool,
@@ -4397,35 +4430,15 @@ impl Ui {
         top_left_corner: impl Into<Vec3>,
         size: impl Into<Vec2>,
     ) -> Option<bool> {
-        let cstr = CString::new(id.as_ref()).unwrap_or_default();
-        let mut active: Bool32T = *out_value as Bool32T;
-        let active_ptr: *mut Bool32T = &mut active;
-        let change = match toggle_off {
-            Some(image_off) => {
-                let image_layout = image_layout.unwrap_or(UiBtnLayout::Left);
-                let sprite_off = image_off.0.as_ptr();
-                let image_on = toggle_on.unwrap_or(image_off);
-                unsafe {
-                    ui_toggle_img_at(
-                        cstr.as_ptr(),
-                        active_ptr as *mut Bool32T,
-                        sprite_off,
-                        image_on.0.as_ptr(),
-                        image_layout,
-                        top_left_corner.into(),
-                        size.into(),
-                    ) != 0
-                }
-            }
-            None => unsafe { ui_toggle_at(cstr.as_ptr(), active_ptr, top_left_corner.into(), size.into()) != 0 },
-        };
-        match change {
-            true => {
-                *out_value = active != 0;
-                Some(*out_value)
-            }
-            false => None,
+        let mut builder = Ui::toggle_at_builder(id, out_value, top_left_corner, size)
+            .image_layout(image_layout.unwrap_or(UiBtnLayout::Left));
+
+        if let Some(image_off) = toggle_off {
+            let image_on = toggle_on.unwrap_or(image_off);
+            builder = builder.toggle_images(image_off, image_on);
         }
+
+        builder.interact()
     }
 
     /// A volume for helping to build one handed interactions. This checks for the presence of a hand inside the bounds,
@@ -4495,7 +4508,7 @@ impl Ui {
     /// * `notify_on` - Allows you to modify the behavior of the return value. None is default UiNotify::Change.
     ///
     /// Returns new value of the slider if it has changed during this step.
-    /// see also [`ui_vslider`] [`Ui::vslider_f64`] [`Ui::vslider_at`]  [`Ui::vslider_at_f64`]
+    /// see also [`ui_vslider`] [`Ui::vslider_at`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -4515,13 +4528,13 @@ impl Ui {
     ///     Ui::vslider(    "scaling1", &mut scaling1, 0.0, 1.0, Some(0.05), Some(0.10),
     ///                     None, None);
     ///     Ui::same_line();
-    ///     Ui::vslider_f64("scaling2", &mut scaling2, 0.0, 1.0, None, Some(0.12),
+    ///     Ui::vslider(    "scaling2", &mut scaling2, 0.0, 1.0, None, Some(0.12),
     ///                     Some(UiConfirm::Pinch), None);
     ///
     ///     Ui::vslider_at( "scaling3", &mut scaling3, 0.0, 1.0, None,
     ///                     [-0.01, -0.01, 0.0], [0.02, 0.08],
     ///                     None, Some(UiNotify::Finalize));
-    ///     if let Some(new_value) = Ui::vslider_at_f64(
+    ///     if let Some(new_value) = Ui::vslider_at(
     ///                     "scaling4", &mut scaling4, 0.0, 1.0, None,
     ///                     [-0.05, -0.01, 0.0], [0.036, 0.15],
     ///                     Some(UiConfirm::VariablePinch), None) {
@@ -4557,45 +4570,6 @@ impl Ui {
     }
 
     /// A vertical slider element! You can stick your finger in it, and slide the value up and down.
-    /// <https://stereokit.net/Pages/StereoKit/UI/VSlider.html>
-    /// * `id` - An id for tracking element state. MUST be unique within current hierarchy.
-    /// * `out_value` - The value that the slider will store slider state in.
-    /// * `min` - The minimum value the slider can set, left side of the slider.
-    /// * `max` - The maximum value the slider can set, right side of the slider.
-    /// * `step` - Locks the value to increments of step. Starts at min, and increments by step. None is default 0
-    ///   and means "don't lock to increments".
-    /// * `height` - Physical height of the slider on the window. None is default 0 will fill the remaining amount of
-    ///   window space.
-    /// * `confirm_method` - How should the slider be activated? None is default Push will be a push-button the user
-    ///   must press first, and pinch will be a tab that the user must pinch and drag around.
-    /// * `notify_on` - Allows you to modify the behavior of the return value. None is default UiNotify::Change.
-    ///
-    /// Returns new value of the slider if it has changed during this step.
-    /// see also [`ui_vslider_f64`] [`Ui::vslider`] [`Ui::vslider_at`]  [`Ui::vslider_at_f64`]
-    /// see example in [`Ui::vslider`]
-    #[allow(clippy::too_many_arguments)]
-    pub fn vslider_f64(
-        id: impl AsRef<str>,
-        value: &mut f64,
-        min: f64,
-        max: f64,
-        step: Option<f64>,
-        height: Option<f32>,
-        confirm_method: Option<UiConfirm>,
-        notify_on: Option<UiNotify>,
-    ) -> Option<f64> {
-        let cstr = CString::new(id.as_ref()).unwrap_or_default();
-        let step = step.unwrap_or(0.0);
-        let height = height.unwrap_or(0.0);
-        let confirm_method = confirm_method.unwrap_or(UiConfirm::Push);
-        let notify_on = notify_on.unwrap_or(UiNotify::Change);
-        match unsafe { ui_vslider_f64(cstr.as_ptr(), value, min, max, step, height, confirm_method, notify_on) != 0 } {
-            true => Some(*value),
-            false => None,
-        }
-    }
-
-    /// A vertical slider element! You can stick your finger in it, and slide the value up and down.
     /// <https://stereokit.net/Pages/StereoKit/UI/VSliderAt.html>
     /// * `id` - An id for tracking element state. MUST be unique within current hierarchy.
     /// * `out_value` - The value that the slider will store slider state in.
@@ -4610,7 +4584,7 @@ impl Ui {
     /// * `notify_on` - Allows you to modify the behavior of the return value. None is default UiNotify::Change.
     ///
     /// Returns new value of the slider if it has changed during this step.
-    /// see also [`ui_vslider_at`] [`Ui::vslider`] [`Ui::vslider_f64`]  [`Ui::vslider_at_f64`]
+    /// see also [`ui_vslider_at`] [`Ui::vslider`]
     /// see example in [`Ui::vslider`]
     #[allow(clippy::too_many_arguments)]
     pub fn vslider_at(
@@ -4630,57 +4604,6 @@ impl Ui {
         let notify_on = notify_on.unwrap_or(UiNotify::Change);
         match unsafe {
             ui_vslider_at(
-                cstr.as_ptr(),
-                value,
-                min,
-                max,
-                step,
-                top_left_corner.into(),
-                size.into(),
-                confirm_method,
-                notify_on,
-            ) != 0
-        } {
-            true => Some(*value),
-            false => None,
-        }
-    }
-
-    /// A vertical slider element! You can stick your finger in it, and slide the value up and down.
-    /// <https://stereokit.net/Pages/StereoKit/UI/VSliderAt.html>
-    /// * `id` - An id for tracking element state. MUST be unique within current hierarchy.
-    /// * `out_value` - The value that the slider will store slider state in.
-    /// * `min` - The minimum value the slider can set, left side of the slider.
-    /// * `max` - The maximum value the slider can set, right side of the slider.
-    /// * `step` - Locks the value to increments of step. Starts at min, and increments by step. None is default 0
-    ///   and means "don't lock to increments".
-    /// * `top_left_corner` - This is the top left corner of the UI element relative to the current Hierarchy.
-    /// * `size` - The layout size for this element in Hierarchy space.
-    /// * `confirm_method` - How should the slider be activated? None is default Push will be a push-button the user
-    ///   must press first, and pinch will be a tab that the user must pinch and drag around.
-    /// * `notify_on` - Allows you to modify the behavior of the return value. None is default UiNotify::Change.
-    ///
-    /// Returns new value of the slider if it has changed during this step.
-    /// see also [`ui_vslider_at_f64`] [`Ui::vslider`] [`Ui::vslider_at`]  [`Ui::vslider_f64`]
-    /// see example in [`Ui::vslider`]
-    #[allow(clippy::too_many_arguments)]
-    pub fn vslider_at_f64(
-        id: impl AsRef<str>,
-        value: &mut f64,
-        min: f64,
-        max: f64,
-        step: Option<f64>,
-        top_left_corner: impl Into<Vec3>,
-        size: impl Into<Vec2>,
-        confirm_method: Option<UiConfirm>,
-        notify_on: Option<UiNotify>,
-    ) -> Option<f64> {
-        let cstr = CString::new(id.as_ref()).unwrap_or_default();
-        let step = step.unwrap_or(0.0);
-        let confirm_method = confirm_method.unwrap_or(UiConfirm::Push);
-        let notify_on = notify_on.unwrap_or(UiNotify::Change);
-        match unsafe {
-            ui_vslider_at_f64(
                 cstr.as_ptr(),
                 value,
                 min,
@@ -4728,15 +4651,15 @@ impl Ui {
     /// filename_scr = "screenshots/ui_window.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Window A", &mut window_pose1, None, Some(UiWin::Body), None);
-    ///     Ui::label("Hello", None, true);
+    ///     Ui::label_builder("Hello").use_padding(true).draw();
     ///     Ui::window_end();
     ///
     ///     Ui::window_begin("Window B", &mut window_pose2, Some([0.19, 0.05].into()), None, None);
-    ///     Ui::label("World", None, true);
+    ///     Ui::label_builder("World").use_padding(true).draw();
     ///     Ui::window_end();
     ///
     ///     Ui::window_begin("Window C", &mut window_pose3, None, None, Some(UiMove::Exact));
-    ///     Ui::label("!!", None, true);
+    ///     Ui::label_builder("!!").use_padding(true).draw();
     ///     Ui::window_end();
     /// );
     /// # sk::Sk::shutdown();
@@ -4779,7 +4702,7 @@ impl Ui {
     /// filename_scr = "screenshots/ui_window_auto.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin_auto("Window very very large", None, None, None);
-    ///     Ui::label("Hello", None, true);
+    ///     Ui::label_builder("Hello").use_padding(true).draw();
     ///     Ui::window_end();
     /// );
     /// # sk::Sk::shutdown();
@@ -4865,11 +4788,11 @@ impl Ui {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Panel at", &mut window_pose, Some([0.2, 0.15].into()), None, None);
     ///     Ui::panel_at([0.11, -0.01, 0.0], [0.08, 0.03], Some(UiPad::None));
-    ///     Ui::label("panel 1", None, false);
+    ///     Ui::label_builder("panel 1").use_padding(false).draw();
     ///
     ///     Ui::layout_push_cut( UiCut::Right, 0.1, true);
     ///     Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);
-    ///     Ui::label("panel 2", None, false);
+    ///     Ui::label_builder("panel 2").use_padding(false).draw();
     ///     Ui::layout_pop();
     ///     let b = Ui::get_layout_last();
     ///     assert!((b.center.x - -0.02382).abs() < 0.005);
@@ -4881,7 +4804,7 @@ impl Ui {
     ///
     ///     Ui::layout_push_cut( UiCut::Bottom, 0.08, false);
     ///     Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);
-    ///     Ui::label("panel 3", None, false);
+    ///     Ui::label_builder("panel 3").use_padding(false).draw();
     ///     Ui::layout_pop();
     ///     let b = Ui::get_layout_last();
     ///     assert!((b.center.x - 0.0661).abs() < 0.005);

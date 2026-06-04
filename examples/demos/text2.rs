@@ -85,26 +85,31 @@ impl Text2 {
         );
         //Bug #1020 to solve
         Ui::push_enabled(cfg!(windows), None);
-        if Ui::radio_img(
-            "Default Font",
-            self.font_selected == 1,
-            &self.radio_off,
-            &self.radio_on,
-            UiBtnLayout::Left,
-            None,
-        ) {
+        if Ui::radio_builder("Default Font", self.font_selected == 1)
+            .images(&self.radio_off, &self.radio_on)
+            .image_layout(UiBtnLayout::Left)
+            .press()
+        {
             let font = Font::default();
             self.text_style_test = Text::make_style(font, self.text_size, WHITE);
             self.font_selected = 1;
         }
         Ui::same_line();
-        if Ui::radio_img("Font 1", self.font_selected == 2, &self.radio_off, &self.radio_on, UiBtnLayout::Left, None) {
+        if Ui::radio_builder("Font 1", self.font_selected == 2)
+            .images(&self.radio_off, &self.radio_on)
+            .image_layout(UiBtnLayout::Left)
+            .press()
+        {
             let font = Font::from_family("Arial, Helvetica, Verdana, Geneva, Tahoma, sans-serif;").unwrap_or_default();
             self.text_style_test = Text::make_style(font, self.text_size, WHITE);
             self.font_selected = 2;
         }
         Ui::same_line();
-        if Ui::radio_img("Font 2", self.font_selected == 3, &self.radio_off, &self.radio_on, UiBtnLayout::Left, None) {
+        if Ui::radio_builder("Font 2", self.font_selected == 3)
+            .images(&self.radio_off, &self.radio_on)
+            .image_layout(UiBtnLayout::Left)
+            .press()
+        {
             let font = Font::from_family("'Times New Roman', Times, serif;").unwrap_or_default();
             self.text_style_test = Text::make_style(font, self.text_size, WHITE);
             self.font_selected = 3;

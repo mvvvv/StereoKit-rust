@@ -183,26 +183,20 @@ impl Interactor1 {
         // Column 1: Shape Type selection
         Ui::text("Shape Type:", None, None, None, None, None, None);
         Ui::panel_begin(Some(UiPad::Outside));
-        if Ui::radio_img(
-            "Point",
-            self.shape_type == InteractorType::Point,
-            &radio_off,
-            &radio_on,
-            UiBtnLayout::Left,
-            None,
-        ) && self.shape_type != InteractorType::Point
+        if Ui::radio_builder("Point", self.shape_type == InteractorType::Point)
+            .images(&radio_off, &radio_on)
+            .image_layout(UiBtnLayout::Left)
+            .press()
+            && self.shape_type != InteractorType::Point
         {
             self.shape_type = InteractorType::Point;
             changed = true;
         }
-        if Ui::radio_img(
-            "Line",
-            self.shape_type == InteractorType::Line,
-            &radio_off,
-            &radio_on,
-            UiBtnLayout::Left,
-            None,
-        ) && self.shape_type != InteractorType::Line
+        if Ui::radio_builder("Line", self.shape_type == InteractorType::Line)
+            .images(&radio_off, &radio_on)
+            .image_layout(UiBtnLayout::Left)
+            .press()
+            && self.shape_type != InteractorType::Line
         {
             self.shape_type = InteractorType::Line;
             changed = true;
@@ -216,7 +210,7 @@ impl Interactor1 {
         Ui::panel_begin(None);
 
         let mut poke_enabled = (self.events & InteractorEvent::Poke) != InteractorEvent::empty();
-        if Ui::toggle("Poke", &mut poke_enabled, None).is_some() {
+        if Ui::toggle_builder("Poke", &mut poke_enabled).interact().is_some() {
             if poke_enabled {
                 self.events |= InteractorEvent::Poke;
             } else {
@@ -226,7 +220,7 @@ impl Interactor1 {
         }
 
         let mut pinch_enabled = (self.events & InteractorEvent::Pinch) != InteractorEvent::empty();
-        if Ui::toggle("Pinch", &mut pinch_enabled, None).is_some() {
+        if Ui::toggle_builder("Pinch", &mut pinch_enabled).interact().is_some() {
             if pinch_enabled {
                 self.events |= InteractorEvent::Pinch;
             } else {
@@ -236,7 +230,7 @@ impl Interactor1 {
         }
 
         let mut grip_enabled = (self.events & InteractorEvent::Grip) != InteractorEvent::empty();
-        if Ui::toggle("Grip", &mut grip_enabled, None).is_some() {
+        if Ui::toggle_builder("Grip", &mut grip_enabled).interact().is_some() {
             if grip_enabled {
                 self.events |= InteractorEvent::Grip;
             } else {
@@ -252,26 +246,20 @@ impl Interactor1 {
         Ui::layout_push(Vec3::new(-0.1, -0.04, 0.0), Vec2::new(0.45, 0.4), false);
         Ui::text("Activation:", None, None, None, None, None, None);
         Ui::panel_begin(Some(UiPad::Outside));
-        if Ui::radio_img(
-            "Position",
-            self.activation_type == InteractorActivation::Position,
-            &radio_off,
-            &radio_on,
-            UiBtnLayout::Left,
-            None,
-        ) && self.activation_type != InteractorActivation::Position
+        if Ui::radio_builder("Position", self.activation_type == InteractorActivation::Position)
+            .images(&radio_off, &radio_on)
+            .image_layout(UiBtnLayout::Left)
+            .press()
+            && self.activation_type != InteractorActivation::Position
         {
             self.activation_type = InteractorActivation::Position;
             changed = true;
         }
-        if Ui::radio_img(
-            "State",
-            self.activation_type == InteractorActivation::State,
-            &radio_off,
-            &radio_on,
-            UiBtnLayout::Left,
-            None,
-        ) && self.activation_type != InteractorActivation::State
+        if Ui::radio_builder("State", self.activation_type == InteractorActivation::State)
+            .images(&radio_off, &radio_on)
+            .image_layout(UiBtnLayout::Left)
+            .press()
+            && self.activation_type != InteractorActivation::State
         {
             self.activation_type = InteractorActivation::State;
             changed = true;

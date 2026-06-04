@@ -256,7 +256,7 @@ impl Locale1 {
                 Ui::push_tint(Color128::hsv(0.12, 0.85, 1.0, 1.0));
             }
 
-            if Ui::button(self.locale_entries[i].label, Some(Vec2::new(btn_width, 0.0))) {
+            if Ui::button_builder(self.locale_entries[i].label).size(Vec2::new(btn_width, 0.0)).press() {
                 new_selection = Some(i);
             }
 
@@ -279,7 +279,7 @@ impl Locale1 {
         } else {
             format!("No match for detected locale \"{}\" — using StereoKit default", self.detected_code)
         };
-        Ui::label(&status, None, false);
+        Ui::label_builder(&status).draw();
         Ui::next_line();
         Ui::hseparator();
 

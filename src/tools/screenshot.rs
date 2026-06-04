@@ -206,7 +206,7 @@ impl ScreenshotViewer {
             }
         }
         Ui::hseparator();
-        if Ui::button("Open", None) {
+        if Ui::button_builder("Open").press() {
             if true {
                 let mut file_browser = FileBrowser::default();
 
@@ -242,7 +242,7 @@ impl ScreenshotViewer {
             }
         }
         Ui::same_line();
-        if Ui::button("Take Screenshot", None) {
+        if Ui::button_builder("Take Screenshot").press() {
             let mut camera_at = self.window_pose;
             camera_at.orientation = Quat::look_dir(camera_at.get_forward() * -1.0);
             let width_i = self.picture_size.x as i32;
@@ -269,7 +269,7 @@ impl ScreenshotViewer {
         }
         Ui::same_line();
         Ui::push_enabled(self.screen.is_some(), None);
-        if Ui::button("Save", None) && !Platform::get_file_picker_visible() {
+        if Ui::button_builder("Save").press() && !Platform::get_file_picker_visible() {
             if cfg!(target_os = "android")
                 && let Some(img_dir) = get_external_path(&self.sk_info)
                 && let Err(err) = set_current_dir(&img_dir)

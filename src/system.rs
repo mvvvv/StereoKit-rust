@@ -7285,9 +7285,12 @@ bitflags::bitflags! {
     /// <https://stereokit.net/Pages/StereoKit/Align.html>
     ///
     /// see also [`Text`] [`crate::ui::Ui`]
-    #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+    #[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]
     #[repr(C)]
     pub struct Align: u32 {
+        /// No alignment specified. For elements that have a natural default alignment (such as image button), this
+        /// falls back to that default.
+        const None = 0;
         /// On the x axis, this item should start on the left.
         const XLeft = 1 << 0;
         /// On the y axis, this item should start at the top.

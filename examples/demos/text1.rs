@@ -111,27 +111,21 @@ impl Text1 {
             None,
             None,
         );
-        if Ui::radio_img(
-            "Default Font",
-            self.font_selected == 1,
-            &self.radio_off,
-            &self.radio_on,
-            UiBtnLayout::Left,
-            None,
-        ) {
+        if Ui::radio_builder("Default Font", self.font_selected == 1)
+            .images(&self.radio_off, &self.radio_on)
+            .image_layout(UiBtnLayout::Left)
+            .press()
+        {
             let font = Font::default();
             self.text_style_test = Text::make_style(font, 0.05, WHITE);
             self.font_selected = 1;
         }
         Ui::same_line();
-        if Ui::radio_img(
-            "Font Emoji",
-            self.font_selected == 2,
-            &self.radio_off,
-            &self.radio_on,
-            UiBtnLayout::Left,
-            None,
-        ) {
+        if Ui::radio_builder("Font Emoji", self.font_selected == 2)
+            .images(&self.radio_off, &self.radio_on)
+            .image_layout(UiBtnLayout::Left)
+            .press()
+        {
             let font = if cfg!(windows) {
                 Font::from_files(&[
                     "C:\\Windows\\Fonts\\Seguiemj.ttf",
@@ -145,7 +139,10 @@ impl Text1 {
             self.font_selected = 2;
         }
         Ui::same_line();
-        if Ui::radio_img("Font text", self.font_selected == 3, &self.radio_off, &self.radio_on, UiBtnLayout::Left, None)
+        if Ui::radio_builder("Font text", self.font_selected == 3)
+            .images(&self.radio_off, &self.radio_on)
+            .image_layout(UiBtnLayout::Left)
+            .press()
         {
             let font = if cfg!(windows) {
                 Font::from_file("C:\\Windows\\Fonts\\Arial.ttf").unwrap_or_default()
@@ -163,7 +160,7 @@ impl Text1 {
                 KEYBOARD_SHOW, XR_META_VIRTUAL_KEYBOARD_EXTENSION_NAME,
             };
 
-            if let Some(new_value) = Ui::toggle("Android Keyboard", &mut self.android_keyboard, None) {
+            if let Some(new_value) = Ui::toggle_builder("Android Keyboard", &mut self.android_keyboard).interact() {
                 if new_value {
                     Platform::force_fallback_keyboard(false);
                     SkInfo::send_event(
@@ -177,7 +174,9 @@ impl Text1 {
             }
 
             Ui::same_line();
-            if let Some(new_value) = Ui::toggle("Meta Virtual Keyboard", &mut self.virtual_keyboard_visible, None) {
+            if let Some(new_value) =
+                Ui::toggle_builder("Meta Virtual Keyboard", &mut self.virtual_keyboard_visible).interact()
+            {
                 let event_value = if new_value { "true" } else { "false" };
                 SkInfo::send_event(
                     &self.sk_info,
@@ -186,7 +185,7 @@ impl Text1 {
             }
 
             // Ui::same_line();
-            // if let Some(new_value) = Ui::toggle("Winit IME Keyboard", self.android_keyboard_ime, None) {
+            // if let Some(new_value) = Ui::toggle_builder("Winit IME Keyboard", self.android_keyboard_ime).interact() {
             //     self.android_keyboard_ime = new_value;
             //     if new_value {
             //         Platform::force_fallback_keyboard(false);
@@ -203,7 +202,7 @@ impl Text1 {
             // }
         }
         Ui::same_line();
-        if let Some(new_value) = Ui::toggle("French keyboard", &mut self.keyboard_layout_fr, None) {
+        if let Some(new_value) = Ui::toggle_builder("French keyboard", &mut self.keyboard_layout_fr).interact() {
             self.keyboard_layout_fr = true; // we can't reverse right now ^_^
             let keyboard_layouts = vec![FR_KEY_TEXT, FR_KEY_TEXT_SHIFT, FR_KEY_TEXT_ALT];
             if new_value {
@@ -222,15 +221,15 @@ impl Text1 {
         }
 
         Ui::same_line();
-        if Ui::button_img(format!("{:?}", self.text_context), &self.next_value, None, None, None) {
+        if Ui::button_img_builder(format!("{:?}", self.text_context), &self.next_value).press() {
             self.text_context =
                 unsafe { transmute::<u32, stereokit_rust::system::TextContext>(((self.text_context.bits()) + 1) % 4) };
         }
-        if Ui::button("Quit Demos", None) {
+        if Ui::button_builder("Quit Demos").press() {
             SkInfo::send_event(&self.sk_info, StepperAction::quit(&self.id, "Quit button test"));
         }
         Ui::same_line();
-        if Ui::button("test inject key F1", None) {
+        if Ui::button_builder("test inject key F1").press() {
             Input::key_inject_press(Key::F1);
             Input::key_inject_release(Key::F1);
         }

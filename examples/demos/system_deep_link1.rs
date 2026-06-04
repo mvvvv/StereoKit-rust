@@ -54,24 +54,24 @@ impl SystemDeepLink1 {
         );
 
         // Browser Actions Row
-        Ui::label("Open Browser:", None, true);
-        if Ui::button("Google", None) {
+        Ui::label_builder("Open Browser:").use_padding(true).draw();
+        if Ui::button_builder("Google").press() {
             let result = system_deep_link(SystemAction::Browser { url: "https://www.google.com".to_string() });
             Log::info(format!("Open Google - Result: {:?}", result));
         }
         Ui::same_line();
-        if Ui::button("Youtube", None) {
+        if Ui::button_builder("Youtube").press() {
             let result = system_deep_link(SystemAction::Browser { url: "https://www.youtube.com".to_string() });
             Log::info(format!("Open Youtube - Result: {:?}", result));
         }
         Ui::same_line();
 
-        if Ui::button("StereoKit Website", None) {
+        if Ui::button_builder("StereoKit Website").press() {
             let result = system_deep_link(SystemAction::Browser { url: "https://stereokit.net".to_string() });
             Log::info(format!("Open StereoKit Website - Result: {:?}", result));
         }
         Ui::same_line();
-        if Ui::button("StereoKit-rust GitHub", None) {
+        if Ui::button_builder("StereoKit-rust GitHub").press() {
             let result =
                 system_deep_link(SystemAction::Browser { url: "https://github.com/mvvvv/StereoKit-rust".to_string() });
             Log::info(format!("Open StereoKit-rust doc - Result: {:?}", result));
@@ -80,73 +80,73 @@ impl SystemDeepLink1 {
         Ui::hseparator();
 
         // Store section
-        Ui::label("Open Store:", None, true);
-        if Ui::button("Front Page", None) {
+        Ui::label_builder("Open Store:").use_padding(true).draw();
+        if Ui::button_builder("Front Page").press() {
             let result = system_deep_link(SystemAction::Store { app_id: None });
             Log::info(format!("Open Store Front Page - Result: {:?}", result));
         }
         Ui::same_line();
-        if Ui::button("A great game", None) {
+        if Ui::button_builder("A great game").press() {
             let result = system_deep_link(SystemAction::Store { app_id: Some("3749621795127676".to_string()) });
             Log::info(format!("Open Specific App - Result: {:?}", result));
         }
         Ui::same_line();
-        if Ui::button("Another great game", None) {
+        if Ui::button_builder("Another great game").press() {
             let result = system_deep_link(SystemAction::Store { app_id: Some("4015163475201433".to_string()) });
             Log::info(format!("Open Specific App - Result: {:?}", result));
         }
         Ui::hseparator();
 
         // Settings section
-        Ui::label("Open Settings:", None, true);
-        if Ui::button("General", None) {
+        Ui::label_builder("Open Settings:").use_padding(true).draw();
+        if Ui::button_builder("General").press() {
             let result = system_deep_link(SystemAction::Settings { setting: Some("/system".to_string()) });
             Log::info(format!("Open General Settings - Result: {:?}", result));
         }
         Ui::same_line();
-        if Ui::button("Controllers", None) {
+        if Ui::button_builder("Controllers").press() {
             let result = system_deep_link(SystemAction::Settings { setting: Some("/controllers".to_string()) });
             Log::info(format!("Open Controllers Settings - Result: {:?}", result));
         }
         Ui::same_line();
-        if Ui::button("Movement Tracking", None) {
+        if Ui::button_builder("Movement Tracking").press() {
             let result = system_deep_link(SystemAction::Settings { setting: Some("/hands".to_string()) });
             Log::info(format!("Open Movement Tracking Settings - Result: {:?}", result));
         }
         Ui::same_line();
-        if Ui::button("Bluetooth", None) {
+        if Ui::button_builder("Bluetooth").press() {
             let result = system_deep_link(SystemAction::Settings { setting: Some("/bluetooth".to_string()) });
             Log::info(format!("Open Bluetooth Settings - Result: {:?}", result));
         }
         Ui::same_line();
         // Third row of settings
-        if Ui::button("WiFi", None) {
+        if Ui::button_builder("WiFi").press() {
             let result = system_deep_link(SystemAction::Settings { setting: Some("/wifi".to_string()) });
             Log::info(format!("Open WiFi Settings - Result: {:?}", result));
         }
 
-        if Ui::button("Display", None) {
+        if Ui::button_builder("Display").press() {
             let result = system_deep_link(SystemAction::Settings { setting: Some("/device".to_string()) });
             Log::info(format!("Open Display & brightness Settings - Result: {:?}", result));
         }
         Ui::same_line();
-        if Ui::button("Guardian", None) {
+        if Ui::button_builder("Guardian").press() {
             let result = system_deep_link(SystemAction::Settings { setting: Some("/guardian".to_string()) });
             Log::info(format!("Open Guardian Settings - Result: {:?}", result));
         }
         Ui::same_line();
         // Fourth row of settings
-        if Ui::button("Accounts", None) {
+        if Ui::button_builder("Accounts").press() {
             let result = system_deep_link(SystemAction::Settings { setting: Some("/accounts".to_string()) });
             Log::info(format!("Open Accounts Settings - Result: {:?}", result));
         }
         Ui::same_line();
-        if Ui::button("Notifications", None) {
+        if Ui::button_builder("Notifications").press() {
             let result = system_deep_link(SystemAction::Settings { setting: Some("/notifications".to_string()) });
             Log::info(format!("Open Notifications Settings - Result: {:?}", result));
         }
 
-        if Ui::button("App Settings", None) {
+        if Ui::button_builder("App Settings").press() {
             let result = system_deep_link(SystemAction::Settings {
                 setting: Some("/applications?package=com.stereokit.rust_binding.demos".to_string()),
             });
@@ -156,18 +156,18 @@ impl SystemDeepLink1 {
         Ui::hseparator();
 
         // File Manager section
-        Ui::label("Open File Manager:", None, true);
-        if Ui::button("Recents Tab", None) {
+        Ui::label_builder("Open File Manager:").use_padding(true).draw();
+        if Ui::button_builder("Recents Tab").press() {
             let result = system_deep_link(SystemAction::FileManager { path: None });
             Log::info(format!("Open File Manager (Recents) - Result: {:?}", result));
         }
         Ui::same_line();
-        if Ui::button("Media Tab", None) {
+        if Ui::button_builder("Media Tab").press() {
             let result = system_deep_link(SystemAction::FileManager { path: Some("/media/".to_string()) });
             Log::info(format!("Open Media Tab - Result: {:?}", result));
         }
         Ui::same_line();
-        if Ui::button("Downloads Tab", None) {
+        if Ui::button_builder("Downloads Tab").press() {
             let result = system_deep_link(SystemAction::FileManager { path: Some("/downloads/".to_string()) });
             Log::info(format!("Open Downloads Tab - Result: {:?}", result));
         }
@@ -175,8 +175,8 @@ impl SystemDeepLink1 {
         Ui::hseparator();
 
         // Bug Report section
-        Ui::label("System Actions:", None, true);
-        if Ui::button("Open Bug Reporter", None) {
+        Ui::label_builder("System Actions:").use_padding(true).draw();
+        if Ui::button_builder("Open Bug Reporter").press() {
             let result = system_deep_link(SystemAction::BugReport);
             Log::info(format!("Open Bug Reporter - Result: {:?}", result));
         }

@@ -44,6 +44,8 @@ pub struct Screen1 {
     sprite_next: Sprite,
     sprite_play: Sprite,
     sprite_pause: Sprite,
+    radio_off: Sprite,
+    radio_on: Sprite,
 
     window_pose: Pose,
     pub text: String,
@@ -100,6 +102,8 @@ impl Default for Screen1 {
             sprite_next: Sprite::arrow_right(),
             sprite_play: Sprite::toggle_off(),
             sprite_pause: Sprite::toggle_on(),
+            radio_off: Sprite::radio_off(),
+            radio_on: Sprite::radio_on(),
 
             window_pose: Pose::new(Vec3::new(0.35, 1.5, -0.6), Some(Quat::Y_180)),
             text: "Screen1".to_owned(),
@@ -128,9 +132,9 @@ impl Screen1 {
         let shared_interval = Arc::clone(&self.switch_interval);
         self.screen.set_extra_param_ui(move || {
             let mut interval = shared_interval.lock().unwrap();
-            Ui::label("Slide speed", None, true);
+            Ui::label_builder("Slide speed").use_padding(true).draw();
             Ui::same_line();
-            Ui::label(format!("{:.1}s", *interval), None, true);
+            Ui::label_builder(format!("{:.1}s", *interval)).use_padding(true).draw();
             Ui::same_line();
             Ui::hslider("slide_interval", &mut interval, 0.5, 10.0, None, None, None, None);
         });
@@ -227,20 +231,31 @@ impl Screen1 {
         let controls_pose = self.screen.get_top(Vec3::new(0.30 * d.sqrt(), 0.0, 0.0));
         Ui::push_surface(controls_pose, Vec3::ZERO, surface_size);
         // Previous
-        if Ui::button_img("prev", &self.sprite_prev, Some(UiBtnLayout::CenterNoText), Some(btn_size), None) {
+        if Ui::button_img_builder("prev", &self.sprite_prev)
+            .image_layout(UiBtnLayout::CenterNoText)
+            .size(btn_size)
+            .press()
+        {
             self.prev_texture();
             self.last_switch_time = current_time;
         }
         Ui::same_line();
         // Play / Pause — green tint when playing
         if self.paused {
-            if Ui::button_img("play", &self.sprite_play, Some(UiBtnLayout::Center), Some(btn_size), None) {
+            if Ui::button_img_builder("play", &self.sprite_play)
+                .image_layout(UiBtnLayout::Center)
+                .size(btn_size)
+                .press()
+            {
                 self.paused = false;
                 self.last_switch_time = current_time;
             }
         } else {
             Ui::push_tint(Color128::new(0.3, 1.0, 0.3, 1.0));
-            let clicked = Ui::button_img("pause", &self.sprite_pause, Some(UiBtnLayout::Center), Some(btn_size), None);
+            let clicked = Ui::button_img_builder("pause", &self.sprite_pause)
+                .image_layout(UiBtnLayout::Center)
+                .size(btn_size)
+                .press();
             Ui::pop_tint();
             if clicked {
                 self.paused = true;
@@ -248,7 +263,11 @@ impl Screen1 {
         }
         Ui::same_line();
         // Next
-        if Ui::button_img("next", &self.sprite_next, Some(UiBtnLayout::CenterNoText), Some(btn_size), None) {
+        if Ui::button_img_builder("next", &self.sprite_next)
+            .image_layout(UiBtnLayout::CenterNoText)
+            .size(btn_size)
+            .press()
+        {
             self.next_texture();
             self.last_switch_time = current_time;
         }
@@ -258,7 +277,7 @@ impl Screen1 {
         Ui::window_begin("Screen1", &mut self.window_pose, Some(Vec2::new(0.24, 0.0)), None, None);
 
         // Sound buttons — write a 1-second beep into Screen's spatial audio streams.
-        if Ui::button("Sound Left", None) {
+        if Ui::button_builder("Sound Left").press() {
             let (left_id, _) = self.screen.get_sound_ids();
             if let Ok(stream) = Sound::find(left_id) {
                 let samples: Vec<f32> =
@@ -267,7 +286,7 @@ impl Screen1 {
             }
         }
         Ui::same_line();
-        if Ui::button("Sound Right", None) {
+        if Ui::button_builder("Sound Right").press() {
             let (_, right_id) = self.screen.get_sound_ids();
             if let Ok(stream) = Sound::find(right_id) {
                 let samples: Vec<f32> =
@@ -280,14 +299,20 @@ impl Screen1 {
 
         // Display mode: Texture (default) or Swapchain quad-layer
         let want_swapchain = self.use_swapchain;
-        if Ui::radio_img("Texture", !want_swapchain, Sprite::radio_off(), Sprite::radio_on(), UiBtnLayout::Left, None)
+        if Ui::radio_builder("Texture", !want_swapchain)
+            .images(&self.radio_off, &self.radio_on)
+            .image_layout(UiBtnLayout::Left)
+            .press()
             && want_swapchain
         {
             self.use_swapchain = false;
             self.screen.clear_swapchain();
         }
         Ui::same_line();
-        if Ui::radio_img("Swapchain", want_swapchain, Sprite::radio_off(), Sprite::radio_on(), UiBtnLayout::Left, None)
+        if Ui::radio_builder("Swapchain", want_swapchain)
+            .images(&self.radio_off, &self.radio_on)
+            .image_layout(UiBtnLayout::Left)
+            .press()
             && !want_swapchain
         {
             if let Some(sc) = &self.swapchain_sk {

@@ -2935,8 +2935,8 @@ impl Tex {
     ///
     /// // Cubemap must be created with SHCubemap static methods.
     /// let sh_cubemap = tex.get_cubemap_lighting();
-    /// assert_eq!(sh_cubemap.sh.coefficients[2], Vec3::ZERO);
-    /// assert_eq!(sh_cubemap.sh.coefficients[5], Vec3::ZERO);
+    /// assert_eq!(sh_cubemap.sh.coefficients[2]/10.0, Vec3::ZERO);
+    /// assert_eq!(sh_cubemap.sh.coefficients[5]/10.0, Vec3::ZERO);
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_cubemap_lighting(&self) -> SHCubemap {

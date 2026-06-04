@@ -107,7 +107,7 @@ impl Ui1 {
 
         self.custom_button_mesh(token, "Custom Button Mesh", UiVisual::ExtraSlot02);
         self.custom_button_element(token, "Custom Button Element");
-        Ui::button("Standard Button", None);
+        Ui::button_builder("Standard Button").press();
 
         Ui::push_enabled(false, None);
         self.custom_button_mesh(token, "Custom Button Mesh Disabled", UiVisual::ExtraSlot01);
@@ -123,7 +123,9 @@ impl Ui1 {
 
         let size = Vec2::ONE * Ui::get_layout_remaining().x;
         self.ui_touch_panel(size);
-        Ui::label(format!("{:>6.2} * {:>6.2}", self.slider_pt.x * 100.0, self.slider_pt.y * 100.0), None, true);
+        Ui::label_builder(format!("{:>6.2} * {:>6.2}", self.slider_pt.x * 100.0, self.slider_pt.y * 100.0))
+            .use_padding(true)
+            .draw();
 
         Ui::hseparator();
 
