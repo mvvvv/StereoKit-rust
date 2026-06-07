@@ -196,7 +196,7 @@ impl FileBrowser {
         window_text2.push_str(&window_text);
 
         Ui::window_begin(&window_text, &mut self.window_pose, Some(self.window_size), Some(UiWin::Normal), None);
-        if Ui::button_img_at_builder(
+        if Ui::button_img_at(
             "a",
             &self.close,
             Vec3::new(self.window_size.x / 2.0 + 0.04, 0.03, 0.01),
@@ -209,7 +209,7 @@ impl FileBrowser {
 
         if self.picker_mode == PickerMode::Save {
             Ui::push_tint(self.input_tint);
-            Ui::label_builder("File name: ").draw();
+            Ui::label("File name: ").draw();
             Ui::same_line();
             Ui::input("filename_to_save", &mut self.file_name_to_save, None, None);
             let file = self.dir.join(&self.file_name_to_save);
@@ -223,14 +223,14 @@ impl FileBrowser {
             }
 
             if file.exists() && !self.file_name_to_save.is_empty() {
-                Ui::toggle_builder("Replace existing file", &mut self.replace_existing_file).interact();
+                Ui::toggle("Replace existing file", &mut self.replace_existing_file).interact();
             } else {
                 self.replace_existing_file = false;
             }
             ok_to_save = ok_to_save && (!file.exists() || file.exists() && self.replace_existing_file);
             Ui::push_enabled(ok_to_save, None);
             Ui::same_line();
-            if Ui::button_builder("Save").press() {
+            if Ui::button("Save").press() {
                 // Be sure we can save the file
                 SkInfo::send_event(
                     &self.sk_info,
@@ -254,7 +254,7 @@ impl FileBrowser {
             if let PathEntry::File(name) = file_name {
                 let file_name_str = name.to_str().unwrap_or("OsString error!!");
                 Ui::same_line();
-                if Ui::radio_builder(file_name_str, self.file_selected == i)
+                if Ui::radio(file_name_str, self.file_selected == i)
                     .images(&self.radio_off, &self.radio_on)
                     .image_layout(UiBtnLayout::Left)
                     .press()
@@ -288,7 +288,7 @@ impl FileBrowser {
         {
             Ui::push_enabled(self.dir != self.start_dir, None);
             //---back button
-            if Ui::button_builder("..").press() {
+            if Ui::button("..").press() {
                 self.dir.pop();
                 dir_selected = Some(get_files(&self.sk_info, self.dir.clone(), &self.exts, true));
             }
@@ -305,7 +305,7 @@ impl FileBrowser {
             if let PathEntry::Dir(name) = file_name {
                 let dir_name = name.to_str().unwrap_or("OsString error!!");
                 Ui::same_line();
-                if Ui::button_builder(dir_name).press() {
+                if Ui::button(dir_name).press() {
                     self.dir.push(dir_name);
                     dir_selected = Some(get_files(&self.sk_info, self.dir.clone(), &self.exts, true));
                 }

@@ -18,7 +18,6 @@ use crate::{
     system::{Backend, BackendOpenXR, BackendXRType, Log},
 };
 
-#[cfg(not(feature = "no-event-loop"))]
 use crate::{
     framework::StepperAction,
     tools::xr_meta_detached_controllers::{
@@ -165,11 +164,10 @@ pub fn resume_simultaneous_hands_and_controllers(sk_info: Rc<RefCell<SkInfo>>, w
                 if with_log {
                     Log::info("✅ Simultaneous hands and controllers tracking resumed successfully.");
                 }
-                #[cfg(not(feature = "no-event-loop"))]
                 if is_meta_detached_controllers_available() {
                     SkInfo::send_event(
                         &sk_info,
-                        StepperAction::insert_default::<XrMetaDetachedControllersStepper>(META_DETACHED_CTRLRS_ID),
+                        StepperAction::add_default::<XrMetaDetachedControllersStepper>(META_DETACHED_CTRLRS_ID),
                     );
                     if with_log {
                         Log::info("✅ XrMetaDetachedControllersStepper added.");
@@ -253,12 +251,9 @@ pub fn pause_simultaneous_hands_and_controllers(sk_info: Rc<RefCell<SkInfo>>, wi
                 if with_log {
                     Log::info("✅ Simultaneous hands and controllers tracking paused successfully.");
                 }
-                #[cfg(not(feature = "no-event-loop"))]
-                {
-                    SkInfo::send_event(&sk_info, StepperAction::remove(META_DETACHED_CTRLRS_ID));
-                    if with_log {
-                        Log::info("XrMetaDetachedControllersStepper removed.");
-                    }
+                SkInfo::send_event(&sk_info, StepperAction::remove(META_DETACHED_CTRLRS_ID));
+                if with_log {
+                    Log::info("XrMetaDetachedControllersStepper removed.");
                 }
                 true
             }

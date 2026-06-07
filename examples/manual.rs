@@ -1,5 +1,4 @@
 #[allow(dead_code)]
-#[cfg(not(target_os = "android"))]
 #[cfg(feature = "no-event-loop")]
 fn main() {
     use std::sync::OnceLock;
@@ -19,6 +18,7 @@ fn main() {
 
     static APP_ONCE: OnceLock<()> = OnceLock::new();
     APP_ONCE.get_or_init(|| {
+        #[cfg(target_os = "android")]
         android_logger::init_once(
             android_logger::Config::default().with_max_level(log::LevelFilter::Debug).with_tag("STKit-rs"),
         );
@@ -26,7 +26,7 @@ fn main() {
     let mut window_pose = Pose::new(Vec3::new(0.0, 1.5, -0.5), Some(Quat::from_angles(0.0, 180.0, 0.0)));
     while let Some(_token) = sk.step() {
         Ui::window_begin("test window", &mut window_pose, None, None, None);
-        if Ui::button("quit lel", None) {
+        if Ui::button("quit lel").press() {
             break;
         }
         Ui::window_end();

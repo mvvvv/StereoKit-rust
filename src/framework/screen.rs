@@ -450,15 +450,15 @@ impl Screen {
                 Some(UiMove::None),
             );
 
-            if Ui::button_img_builder(&self.repo.id_btn_show_hide_param, &self.repo.sprite_hide_param)
+            if Ui::button_img(&self.repo.id_btn_show_hide_param, &self.repo.sprite_hide_param)
                 .image_layout(UiBtnLayout::CenterNoText)
                 .press()
             {
                 self.repo.show_param = false;
             }
-            Ui::label_builder("Distance").use_padding(true).draw();
+            Ui::label("Distance").use_padding(true).draw();
             Ui::same_line();
-            Ui::label_builder(format!("{:.2}", self.screen_distance)).use_padding(true).draw();
+            Ui::label(format!("{:.2}", self.screen_distance)).use_padding(true).draw();
             Ui::same_line();
             let mut screen_distance = self.screen_distance;
             if let Some(new_value) = Ui::hslider(
@@ -474,9 +474,9 @@ impl Screen {
                 self.screen_distance(new_value);
             }
 
-            Ui::label_builder("Diagonal").use_padding(true).draw();
+            Ui::label("Diagonal").use_padding(true).draw();
             Ui::same_line();
-            Ui::label_builder(format!("{:.2}", self.screen_diagonal)).use_padding(true).draw();
+            Ui::label(format!("{:.2}", self.screen_diagonal)).use_padding(true).draw();
             Ui::same_line();
             let mut screen_diagonal = self.screen_diagonal;
             if let Some(new_value) = Ui::hslider(
@@ -492,9 +492,9 @@ impl Screen {
                 self.screen_diagonal(new_value);
             }
 
-            Ui::label_builder("Curvature").use_padding(true).draw();
+            Ui::label("Curvature").use_padding(true).draw();
             Ui::same_line();
-            Ui::label_builder(format!("{:.2}", self.curvature)).use_padding(true).draw();
+            Ui::label(format!("{:.2}", self.curvature)).use_padding(true).draw();
             Ui::same_line();
             let mut curvature = self.curvature;
             let step = if self.cylindrical { Some(1.0) } else { None };
@@ -522,7 +522,7 @@ impl Screen {
             let btn_size = Vec2::new(0.06 * d, 0.06 * d);
             let surface_size = btn_size * 1.1;
             Ui::push_surface(button_pose, Vec3::X * 0.02 * d, surface_size);
-            if Ui::button_img_builder(&self.repo.id_btn_show_hide_param, &self.repo.sprite_show_param)
+            if Ui::button_img(&self.repo.id_btn_show_hide_param, &self.repo.sprite_show_param)
                 .image_layout(UiBtnLayout::CenterNoText)
                 .size(btn_size)
                 .press()

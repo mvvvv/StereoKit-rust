@@ -194,6 +194,7 @@ impl<'a> SkClosures<'a> {
 
     /// This is the main loop call of the application. See [Steppers] for more details.
     fn step(&mut self) {
+        // 1 - Run the sk_step to know if we can continue to run the app.
         if unsafe { sk_step(None) } == 0 {
             // Shutdown sequence
             self.sk.steppers.shutdown();
@@ -202,15 +203,24 @@ impl<'a> SkClosures<'a> {
             Log::diag("sk_step() says stop()!!");
             return;
         }
+
+        // 2 - Run the StepperAction then the step_pre_app steppers.
         if !self.sk.steppers.step(&mut self.token) {
             self.sk.steppers.shutdown();
             unsafe { sk_quit(QuitReason::User) }
             Log::diag("The app demand to quit()!!");
         };
+
+        // 2-1 run the actions if any.
         while let Some(mut action) = self.sk.actions.pop_front() {
             action();
         }
+
+        // 2-2 run the main step
         (self.on_step)(&mut self.sk, &self.token);
+
+        // 2-3 run the step_post_app steppers
+        self.sk.steppers.step_post_app(&mut self.token);
 
         self.token.event_report.clear();
     }
@@ -560,10 +570,24 @@ pub trait IStepper {
         true
     }
 
-    /// This Step method will be called every frame of the application, as long as Enabled is true. This happens
-    /// immediately before the main application’s Step callback.
+    /// This Step method will be called every frame of the application, as long as Enabled is true.
+    ///
+    /// By default this happens immediately before the app's main Step callback, but this can be configured with
+    /// [`IStepper::step_priority`]:
+    /// - `priority <= 0`: step before the app callback
+    /// - `priority > 0`: step after the app callback
+    ///
+    /// ISteppers are stepped in ascending order of priority, and ties preserve insertion order.
     /// <https://stereokit.net/Pages/StereoKit.Framework/IStepper/Step.html>
     fn step(&mut self, token: &MainThreadToken);
+
+    /// The priority value for this IStepper.
+    ///
+    /// Negative or zero values step before the app callback, positive values step after it.
+    /// ISteppers are sorted in ascending order by this value.
+    fn step_priority(&self) -> i32 {
+        0
+    }
 
     /// This is called when the IStepper is removed, or the application shuts down. This is always called on the main
     /// thread, and happens at the start of the next frame, before the main application’s Step callback.
@@ -626,9 +650,6 @@ pub trait IStepper {
 pub enum StepperAction {
     /// Add a new stepper of TypeID,  identified by its StepperID
     Add(Box<dyn for<'a> IStepper + Send + 'static>, TypeId, StepperId),
-    /// Insert a stepper of TypeID at the beginning, identified by its StepperID.
-    /// This was created for [`crate::interactor::Interactor::update`]
-    Insert(Box<dyn for<'a> IStepper + Send + 'static>, TypeId, StepperId),
     /// Remove all steppers of TypeID
     RemoveAll(TypeId),
     /// Remove the stepper identified by its StepperID
@@ -645,9 +666,6 @@ impl fmt::Debug for StepperAction {
         match self {
             StepperAction::Add(_stepper, _id, stepper_id) => {
                 write!(f, "StepperAction::Add(..., type_id: ... , stepper_id:{stepper_id:?} )")
-            }
-            StepperAction::Insert(_stepper, _id, stepper_id) => {
-                write!(f, "StepperAction::Insert(..., type_id: ... , stepper_id:{stepper_id:?} )")
             }
             StepperAction::RemoveAll(type_id) => write!(f, "StepperAction::RemoveAll( type_id:{type_id:?} )"),
             StepperAction::Remove(stepper_id) => write!(f, "StepperAction::Remove( id:{stepper_id:?} )"),
@@ -726,79 +744,6 @@ impl StepperAction {
     pub fn add<T: IStepper + Send + 'static>(stepper_id: impl AsRef<str>, stepper: T) -> Self {
         let stepper_type = stepper.type_id();
         StepperAction::Add(Box::new(stepper), stepper_type, stepper_id.as_ref().to_string())
-    }
-
-    /// This instantiates and registers an instance of the IStepper type provided as the generic parameter. SK will hold
-    /// onto it, Initialize it, Step it every frame BEFORE EVERY OTHER STEPPERS, and call Shutdown when the
-    /// application ends. This is generally safe to do before Sk.initialize is called, the constructor is called right
-    /// away, and Initialize is called right after Sk.initialize, or at the start of the next frame before the next main
-    /// Step callback if SK is already initialized.
-    /// It will be added to the beginning of the stepper list instead of the end, meaning its step() will be called
-    /// before those added normally. This was created for [`crate::interactor::Interactor::update`]
-    /// <https://stereokit.net/Pages/StereoKit/SK/AddStepper.html>
-    /// * `stepper_id` - The id to give to the stepper.
-    ///
-    /// see also [`StepperAction::add_default`] [`StepperAction::insert`]
-    /// ### Examples
-    /// ```
-    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::tools::screenshot::ScreenshotViewer;
-    ///
-    /// sk.send_event(StepperAction::insert_default::<ScreenshotViewer>("ScreenshotViewer_ID"));
-    ///
-    /// test_steps!(  // !!!! Get a proper main loop !!!!
-    ///     if iter < number_of_steps + 2 {
-    ///         assert_eq!(sk.get_steppers_count(), 1);
-    ///     } else if iter == number_of_steps + 2 {
-    ///         // We sk.quit() at 4 and at 5 the stepper has been removed.
-    ///         assert_eq!(sk.get_steppers_count(), 0);
-    ///     } else {
-    ///         panic!("there is not iter 6 !!!");
-    ///     }
-    /// );
-    /// # sk::Sk::shutdown();
-    /// ```
-    pub fn insert_default<T: IStepper + Send + Default + 'static>(stepper_id: impl AsRef<str>) -> Self {
-        let stepper = <T>::default();
-        let stepper_type = stepper.type_id();
-        StepperAction::Insert(Box::new(stepper), stepper_type, stepper_id.as_ref().to_owned())
-    }
-
-    /// This instantiates and registers an instance of the IStepper type provided as the generic parameter. SK will hold
-    /// onto it, Initialize it, Step it every frame BEFORE EVERY OTHER STEPPERS, and call Shutdown when the application
-    /// ends. This is generally safe to do before Sk.initialize is called, the constructor is called right away, and
-    /// Initialize is called right after Sk.initialize, or at the start of the next frame before the next main Step
-    /// callback if SK is already initialized.
-    /// It will be added to the beginning of the stepper list instead of the end, meaning its step() will be called
-    /// before those added normally. This was created for [`crate::interactor::Interactor::update`]
-    /// <https://stereokit.net/Pages/StereoKit/SK/AddStepper.html>
-    /// * `stepper_id` - The id of the stepper.
-    /// * `stepper` - The stepper to insert.
-    ///
-    /// see also [`StepperAction::add`] [`StepperAction::insert_default`]
-    /// ### Examples
-    /// ```
-    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::Matrix, util::named_colors, tools::title::Title, };
-    /// let mut title = Title::new("Stepper 1", Some(named_colors::GREEN), None, None);
-    /// title.transform = Matrix::t_r([0.0, 0.0, -1.0], [0.0, 135.0, 0.0]);
-    /// sk.send_event(StepperAction::insert("Title_green_ID", title.clone()));
-    ///
-    /// test_steps!(  // !!!! Get a proper main loop !!!!
-    ///     if iter < number_of_steps + 2 {
-    ///         assert_eq!(sk.get_steppers_count(), 1);
-    ///     } else if iter == number_of_steps + 2 {
-    ///         // We sk.quit() at 4 and at 5 the stepper has been removed.
-    ///         assert_eq!(sk.get_steppers_count(), 0);
-    ///     } else {
-    ///         panic!("there is not iter 6 !!!");
-    ///     }
-    /// );
-    /// # sk::Sk::shutdown();
-    /// ```
-    pub fn insert<T: IStepper + Send + 'static>(stepper_id: impl AsRef<str>, stepper: T) -> Self {
-        let stepper_type = stepper.type_id();
-        StepperAction::Insert(Box::new(stepper), stepper_type, stepper_id.as_ref().to_string())
     }
 
     /// This removes all IStepper instances that are assignable to the generic type specified. This will call the
@@ -1017,6 +962,7 @@ pub struct Steppers {
     sk_info: Rc<RefCell<SkInfo>>,
     running_steppers: Vec<StepperHandler>,
     stepper_actions: VecDeque<StepperAction>,
+    steppers_post_app: Vec<usize>,
 }
 
 impl Steppers {
@@ -1037,7 +983,7 @@ impl Steppers {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn new(sk_info: Rc<RefCell<SkInfo>>) -> Self {
-        Self { sk_info, running_steppers: vec![], stepper_actions: VecDeque::new() }
+        Self { sk_info, running_steppers: vec![], stepper_actions: VecDeque::new(), steppers_post_app: vec![] }
     }
 
     /// Push an action to consumme befor next frame
@@ -1085,16 +1031,6 @@ impl Steppers {
                         let stepper_h =
                             StepperHandler { id: stepper_id, type_id, stepper, state: StepperState::Initializing };
                         self.running_steppers.push(stepper_h);
-                    } else {
-                        Log::warn(format!("Stepper {stepper_id} did not initialize"));
-                        token.event_report.push(StepperAction::event(stepper_id.as_str(), ISTEPPER_REMOVED, "false"));
-                    }
-                }
-                StepperAction::Insert(mut stepper, type_id, stepper_id) => {
-                    if stepper.initialize(stepper_id.clone(), self.sk_info.clone()) {
-                        let stepper_h =
-                            StepperHandler { id: stepper_id, type_id, stepper, state: StepperState::Initializing };
-                        self.running_steppers.insert(0, stepper_h);
                     } else {
                         Log::warn(format!("Stepper {stepper_id} did not initialize"));
                         token.event_report.push(StepperAction::event(stepper_id.as_str(), ISTEPPER_REMOVED, "false"));
@@ -1152,13 +1088,31 @@ impl Steppers {
         });
 
         // 2 - Running the Running steppers
-        for stepper_h in
-            &mut self.running_steppers.iter_mut().filter(|stepper_h| stepper_h.state == StepperState::Running)
-        {
-            stepper_h.stepper.step(token)
+        let (mut step_pre_app, mut step_post_app): (Vec<usize>, Vec<usize>) = (0..self.running_steppers.len())
+            .partition(|&index| self.running_steppers[index].stepper.step_priority() <= 0);
+        step_pre_app.sort_by_key(|&index| self.running_steppers[index].stepper.step_priority());
+        step_post_app.sort_by_key(|&index| self.running_steppers[index].stepper.step_priority());
+
+        // 2-1 - Running the pre app steppers
+        for index in step_pre_app {
+            if self.running_steppers[index].state == StepperState::Running {
+                self.running_steppers[index].stepper.step(token);
+            }
         }
 
+        // 2-3 - memorize the post app steppers to let the app run and then run them after.
+        self.steppers_post_app = step_post_app;
         true
+    }
+
+    /// Execute the post app steppers. This must be call from the running [Sk] instance only, and right after the app step.
+    pub(crate) fn step_post_app(&mut self, token: &mut MainThreadToken) {
+        let step_post_app = std::mem::take(&mut self.steppers_post_app);
+        for index in step_post_app {
+            if self.running_steppers[index].state == StepperState::Running {
+                self.running_steppers[index].stepper.step(token);
+            }
+        }
     }
 
     /// An enumerable list of all currently active ISteppers registered with StereoKit. This does not include Steppers

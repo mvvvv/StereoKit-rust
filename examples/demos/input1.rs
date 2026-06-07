@@ -94,7 +94,7 @@ impl Input1 {
         // Left
         Ui::layout_push_cut(UiCut::Left, 0.14, true);
         Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);
-        Ui::label_builder("Left").draw();
+        Ui::label("Left").draw();
         //let move_ctrler = Input::controller(Handed::Left);
         let stick_vec2 = Input::xy(InputXY::LStick);
         let slider_pt = stick_vec2 * Vec2 { x: 1.0, y: -1.0 };
@@ -110,7 +110,7 @@ impl Input1 {
         let y = Input::button(InputButton::LX2);
         let y_color: Color128 = if y.is_active() { RED.into() } else { WHITE.into() };
         Ui::push_tint(y_color.to_gamma());
-        Ui::button_at_builder("Y", [0.06, -0.22, 0.005], [0.03, 0.03]).press();
+        Ui::button_at("Y", [0.06, -0.22, 0.005], [0.03, 0.03]).press();
         Ui::pop_tint();
 
         // Button X
@@ -118,7 +118,7 @@ impl Input1 {
         let x = Input::button(InputButton::LX1);
         let x_color: Color128 = if x.is_active() { RED.into() } else { WHITE.into() };
         Ui::push_tint(x_color.to_gamma());
-        Ui::button_at_builder("X", [0.10, -0.25, 0.005], [0.03, 0.03]).press();
+        Ui::button_at("X", [0.10, -0.25, 0.005], [0.03, 0.03]).press();
         Ui::pop_tint();
 
         // Trigger
@@ -128,7 +128,7 @@ impl Input1 {
         let trigger_color: Color128 = if trigger > 0.0 { RED.into() } else { WHITE.into() };
         let trigger_text = format!("L_Trigger: {trigger:.2}");
         Ui::push_tint(trigger_color.to_gamma());
-        Ui::button_at_builder(trigger_text, [0.12, -0.295, 0.005], [0.10, 0.03]).press();
+        Ui::button_at(trigger_text, [0.12, -0.295, 0.005], [0.10, 0.03]).press();
         Ui::pop_tint();
 
         // Grip
@@ -137,7 +137,7 @@ impl Input1 {
         let grip_color: Color128 = if grip > 0.0 { RED.into() } else { WHITE.into() };
         Ui::push_tint(grip_color.to_gamma());
         let grip_text = format!("L_Grip: {grip:.2}");
-        Ui::button_at_builder(grip_text, [0.10, -0.34, 0.005], [0.09, 0.03]).press();
+        Ui::button_at(grip_text, [0.10, -0.34, 0.005], [0.09, 0.03]).press();
         Ui::pop_tint();
 
         Ui::layout_pop();
@@ -145,7 +145,7 @@ impl Input1 {
         // Right
         Ui::layout_push_cut(UiCut::Right, 0.14, true);
         Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);
-        Ui::label_builder("Right").draw();
+        Ui::label("Right").draw();
         //let move_ctrler = Input::controller(Handed::Right);
         let stick_vec2 = Input::xy(InputXY::RStick);
         let slider_pt = stick_vec2 * Vec2 { x: 1.0, y: -1.0 };
@@ -161,7 +161,7 @@ impl Input1 {
         let b = Input::button(InputButton::RX2);
         let b_color: Color128 = if b.is_active() { RED.into() } else { WHITE.into() };
         Ui::push_tint(b_color.to_gamma());
-        Ui::button_at_builder("B", [-0.03, -0.22, 0.005], [0.03, 0.03]).press();
+        Ui::button_at("B", [-0.03, -0.22, 0.005], [0.03, 0.03]).press();
         Ui::pop_tint();
 
         // Button A
@@ -169,7 +169,7 @@ impl Input1 {
         let a = Input::button(InputButton::RX1);
         let a_color: Color128 = if a.is_active() { RED.into() } else { WHITE.into() };
         Ui::push_tint(a_color.to_gamma());
-        Ui::button_at_builder("A", [-0.07, -0.25, 0.005], [0.03, 0.03]).press();
+        Ui::button_at("A", [-0.07, -0.25, 0.005], [0.03, 0.03]).press();
         Ui::pop_tint();
 
         // Trigger
@@ -179,7 +179,7 @@ impl Input1 {
         let trigger_color: Color128 = if trigger > 0.0 { RED.into() } else { WHITE.into() };
         let trigger_text = format!("R_Trigger: {trigger:.2}");
         Ui::push_tint(trigger_color.to_gamma());
-        Ui::button_at_builder(trigger_text, [-0.02, -0.295, 0.005], [0.10, 0.03]).press();
+        Ui::button_at(trigger_text, [-0.02, -0.295, 0.005], [0.10, 0.03]).press();
         Ui::pop_tint();
 
         // Grip
@@ -188,7 +188,7 @@ impl Input1 {
         let grip_color: Color128 = if grip > 0.0 { RED.into() } else { WHITE.into() };
         Ui::push_tint(grip_color.to_gamma());
         let grip_text = format!("R_Grip: {grip:.2}");
-        Ui::button_at_builder(grip_text, [-0.01, -0.34, 0.005], [0.09, 0.03]).press();
+        Ui::button_at(grip_text, [-0.01, -0.34, 0.005], [0.09, 0.03]).press();
         Ui::pop_tint();
 
         Ui::layout_pop();
@@ -207,7 +207,7 @@ impl Input1 {
         // Left
         Ui::layout_push_cut(UiCut::Left, 0.14, true);
         Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);
-        Ui::label_builder("Left").draw();
+        Ui::label("Left").draw();
         let move_ctrler = Input::controller(Handed::Left);
         let slider_pt = move_ctrler.stick * Vec2 { x: 1.0, y: -1.0 };
         let id_slider_hash = self.id_slider_left_old_hash;
@@ -222,7 +222,7 @@ impl Input1 {
         let y = move_ctrler.x2;
         let y_color: Color128 = if y.is_active() { RED.into() } else { WHITE.into() };
         Ui::push_tint(y_color.to_gamma());
-        Ui::button_at_builder("Y", [0.06, -0.22, 0.005], [0.03, 0.03]).press();
+        Ui::button_at("Y", [0.06, -0.22, 0.005], [0.03, 0.03]).press();
         Ui::pop_tint();
 
         // Button X
@@ -230,7 +230,7 @@ impl Input1 {
         let x = move_ctrler.x1;
         let x_color: Color128 = if x.is_active() { RED.into() } else { WHITE.into() };
         Ui::push_tint(x_color.to_gamma());
-        Ui::button_at_builder("X", [0.10, -0.25, 0.005], [0.03, 0.03]).press();
+        Ui::button_at("X", [0.10, -0.25, 0.005], [0.03, 0.03]).press();
         Ui::pop_tint();
 
         // Trigger
@@ -240,7 +240,7 @@ impl Input1 {
         let trigger_color: Color128 = if trigger > 0.0 { RED.into() } else { WHITE.into() };
         let trigger_text = format!("L_Trigger: {trigger:.2}");
         Ui::push_tint(trigger_color.to_gamma());
-        Ui::button_at_builder(trigger_text, [0.12, -0.295, 0.005], [0.10, 0.03]).press();
+        Ui::button_at(trigger_text, [0.12, -0.295, 0.005], [0.10, 0.03]).press();
         Ui::pop_tint();
 
         // Grip
@@ -249,7 +249,7 @@ impl Input1 {
         let grip_color: Color128 = if grip > 0.0 { RED.into() } else { WHITE.into() };
         Ui::push_tint(grip_color.to_gamma());
         let grip_text = format!("L_Grip: {grip:.2}");
-        Ui::button_at_builder(grip_text, [0.10, -0.34, 0.005], [0.09, 0.03]).press();
+        Ui::button_at(grip_text, [0.10, -0.34, 0.005], [0.09, 0.03]).press();
         Ui::pop_tint();
 
         Ui::layout_pop();
@@ -257,7 +257,7 @@ impl Input1 {
         // Right
         Ui::layout_push_cut(UiCut::Right, 0.14, true);
         Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);
-        Ui::label_builder("Right").draw();
+        Ui::label("Right").draw();
         let move_ctrler = Input::controller(Handed::Right);
         let slider_pt = move_ctrler.stick * Vec2 { x: 1.0, y: -1.0 };
         let id_slider_hash = self.id_slider_right_old_hash;
@@ -272,7 +272,7 @@ impl Input1 {
         let b = move_ctrler.x2;
         let b_color: Color128 = if b.is_active() { RED.into() } else { WHITE.into() };
         Ui::push_tint(b_color.to_gamma());
-        Ui::button_at_builder("B", [-0.03, -0.22, 0.005], [0.03, 0.03]).press();
+        Ui::button_at("B", [-0.03, -0.22, 0.005], [0.03, 0.03]).press();
         Ui::pop_tint();
 
         // Button A
@@ -280,7 +280,7 @@ impl Input1 {
         let a = move_ctrler.x1;
         let a_color: Color128 = if a.is_active() { RED.into() } else { WHITE.into() };
         Ui::push_tint(a_color.to_gamma());
-        Ui::button_at_builder("A", [-0.07, -0.25, 0.005], [0.03, 0.03]).press();
+        Ui::button_at("A", [-0.07, -0.25, 0.005], [0.03, 0.03]).press();
         Ui::pop_tint();
 
         // Trigger
@@ -290,7 +290,7 @@ impl Input1 {
         let trigger_color: Color128 = if trigger > 0.0 { RED.into() } else { WHITE.into() };
         let trigger_text = format!("R_Trigger: {trigger:.2}");
         Ui::push_tint(trigger_color.to_gamma());
-        Ui::button_at_builder(trigger_text, [-0.02, -0.295, 0.005], [0.10, 0.03]).press();
+        Ui::button_at(trigger_text, [-0.02, -0.295, 0.005], [0.10, 0.03]).press();
         Ui::pop_tint();
 
         // Grip
@@ -299,7 +299,7 @@ impl Input1 {
         let grip_color: Color128 = if grip > 0.0 { RED.into() } else { WHITE.into() };
         Ui::push_tint(grip_color.to_gamma());
         let grip_text = format!("R_Grip: {grip:.2}");
-        Ui::button_at_builder(grip_text, [-0.01, -0.34, 0.005], [0.09, 0.03]).press();
+        Ui::button_at(grip_text, [-0.01, -0.34, 0.005], [0.09, 0.03]).press();
         Ui::pop_tint();
 
         Ui::layout_pop();
@@ -348,5 +348,5 @@ fn draw_slider(mut slider_pt: Vec2, id_slider_hash: u64) {
     );
     Ui::draw_element(UiVisual::SliderPush, None, slider.button_center.xy0() + btn_size.xy0(), btn_size, focus);
 
-    Ui::label_builder(format!("{:>5.2} * {:>5.2}", slider_pt.x, slider_pt.y)).use_padding(true).draw();
+    Ui::label(format!("{:>5.2} * {:>5.2}", slider_pt.x, slider_pt.y)).use_padding(true).draw();
 }

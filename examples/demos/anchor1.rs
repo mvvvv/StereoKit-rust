@@ -67,19 +67,19 @@ impl Anchor1 {
         // checking if we support anchors
         Ui::layout_push_cut(UiCut::Left, 0.1, true);
         Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);
-        Ui::label_builder("Capabilities:").draw();
+        Ui::label("Capabilities:").draw();
         Ui::hseparator();
 
         let storable = !(Anchor::get_capabilities() & AnchorCaps::Storable).is_empty();
         let stability = !(Anchor::get_capabilities() & AnchorCaps::Stability).is_empty();
         if !storable && !stability {
-            Ui::label_builder("None").draw()
+            Ui::label("None").draw()
         } else {
             if storable {
-                Ui::label_builder("Storable").draw()
+                Ui::label("Storable").draw()
             }
             if stability {
-                Ui::label_builder("Stability").draw()
+                Ui::label("Stability").draw()
             }
         }
         Ui::layout_pop();
@@ -88,7 +88,7 @@ impl Anchor1 {
         let mut pose_tip = hand_pose;
         pose_tip.position += ray.direction * 0.5;
         Ui::push_enabled(storable || stability, None);
-        if Ui::button_builder("Create New").press() {
+        if Ui::button("Create New").press() {
             if let Ok(anchor) = Anchor::from_pose(pose_tip) {
                 anchor.try_set_persistent(true);
                 self.anchors.push(anchor);

@@ -625,12 +625,8 @@ impl SkSettings {
     /// see also [`Sk::init`]
     /// ### Examples
     /// ```
-    /// use stereokit_rust::{prelude::*, system::{LogLevel,Renderer},
-    ///                      maths::{Vec3, Matrix, Pose}, util::named_colors};
-    /// use stereokit_rust::sk::{Sk, SkSettings, AppMode, DepthMode,
-    ///                          OriginMode, QuitReason};
-    /// #[cfg(not(feature = "no-event-loop"))]
-    /// use stereokit_rust::{framework::SkClosures, tools::title::Title};
+    /// use stereokit_rust::{ system::LogLevel, sk::{Sk, SkSettings, AppMode, DepthMode,
+    ///                                              OriginMode, QuitReason,}};
     ///
     /// let mut settings = SkSettings::default();
     /// settings
@@ -644,11 +640,17 @@ impl SkSettings {
     ///     .log_filter(LogLevel::Diagnostic)
     ///     .no_flatscreen_fallback(true);
     ///
-    /// let mut sk = settings.init()
-    ///                      .expect("StereoKit should initialize");
+    /// #[cfg(feature = "no-event-loop")]
+    /// let sk = settings.init().expect("StereoKit should initialize");
+    ///
+    /// #[cfg(not(feature = "no-event-loop"))]
+    /// let mut sk = settings.init().expect("StereoKit should initialize");
     ///
     /// #[cfg(not(feature = "no-event-loop"))]
     /// {
+    ///     use stereokit_rust::{framework::SkClosures, tools::title::Title};
+    ///     use stereokit_rust::{prelude::*, system::Renderer,
+    ///                          maths::{Vec3, Matrix, Pose}, util::named_colors};
     ///     let mut title = Title::new("Sk basic example", Some(named_colors::BLUE), None, None);
     ///     title.transform = Matrix::t_r([0.5, 0.5, -1.9], [0.0, 200.0, 0.0]);
     ///     sk.send_event(StepperAction::add("Title_blue_ID1", title));
@@ -727,7 +729,7 @@ pub enum QuitReason {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{sk::{Sk, AppMode, SkInfo}, ui::Ui, maths::Pose};
+/// use stereokit_rust::{sk::{Sk, AppMode, SkInfo}};
 ///
 /// let sk_info = Some(sk.get_sk_info_clone());
 /// let settings = SkInfo::settings_from(&sk_info);
@@ -744,7 +746,8 @@ pub enum QuitReason {
 ///
 /// #[cfg(not(feature = "no-event-loop"))]
 /// {
-///     use stereokit_rust::tools::screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW};
+///     use stereokit_rust::{ui::Ui, maths::Pose,
+///                          tools::screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW}};
 ///     // send event
 ///     SkInfo::send_event(&sk_info,
 ///                    StepperAction::add_default::<ScreenshotViewer>("SCR_ID1"));
@@ -759,7 +762,7 @@ pub enum QuitReason {
 ///     let mut window_pose = Pose::IDENTITY;
 ///     test_steps!(// !!!! Get a proper main loop !!!!
 ///         Ui::window_begin("Default Font", &mut window_pose, None, None, None);
-///         if Ui::button("Show screenshot", None) {
+///         if Ui::button("Show screenshot").press() {
 ///             show_screenshot("true".into())
 ///         }
 ///         Ui::window_end();
@@ -1648,6 +1651,8 @@ impl Sk {
         }
 
         on_step(self);
+
+        self.steppers.step_post_app(&mut self.token);
 
         true
     }

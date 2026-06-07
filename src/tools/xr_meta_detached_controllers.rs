@@ -109,6 +109,7 @@ pub struct XrMetaDetachedControllersStepper {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
     enabled: bool,
+    priority: i32,
     shutdown_completed: bool,
 
     /// Interactors for left and right. Created on start, stepped each frame.
@@ -122,6 +123,7 @@ impl Default for XrMetaDetachedControllersStepper {
             id: "XrMetaDetachedControllersStepper".to_string(),
             sk_info: None,
             enabled: true,
+            priority: -999,
             shutdown_completed: false,
 
             controller_interactors: [None, None],

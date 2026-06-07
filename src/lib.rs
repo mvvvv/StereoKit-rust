@@ -522,13 +522,14 @@ pub mod tools;
 /// [![Ui push_text_style](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_push_text_style.jpeg)](ui::Ui::push_text_style)
 /// [![Ui push_tint](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_push_tint.jpeg)](ui::Ui::push_tint)
 /// [![Ui gen_quadrant_mesh](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_gen_quadrant_mesh.jpeg)](ui::Ui::gen_quadrant_mesh)
-/// [![Ui radio button](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_radio.jpeg)](ui::Ui::radio_img)
+/// [![Ui radio button](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_radio.jpeg)](ui::Ui::radio)
 /// [![Ui toggle](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_toggle.jpeg)](ui::Ui::toggle)
 /// [![Ui draw_element](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_draw_element.jpeg)](ui::Ui::draw_element)
 /// [![Ui set_theme_color](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_set_theme_color.jpeg)](ui::Ui::set_theme_color)
 /// [![Ui text](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_text.jpeg)](ui::Ui::text)
 /// [![Ui window](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_window.jpeg)](ui::Ui::window_begin)
 pub mod ui;
+pub mod ui_builders;
 
 /// Many utility structs, enums and functions.
 pub mod util;

@@ -121,7 +121,7 @@ impl Asset1 {
             if let PathEntry::File(name) = file_name {
                 let file_name_str = name.to_str().unwrap_or("OsString error!!");
                 Ui::same_line();
-                if Ui::radio_builder(file_name_str, self.asset_selected == i)
+                if Ui::radio(file_name_str, self.asset_selected == i)
                     .images(&self.radio_off, &self.radio_on)
                     .image_layout(UiBtnLayout::Left)
                     .press()
@@ -146,7 +146,7 @@ impl Asset1 {
             && !sub_dir_name.is_empty()
         {
             //---back button
-            if Ui::button_builder("..").press() {
+            if Ui::button("..").press() {
                 self.asset_sub_dir.pop();
                 new_asset_files = Some(get_assets(&self.sk_info, self.asset_sub_dir.clone(), &self.exts));
             }
@@ -165,7 +165,7 @@ impl Asset1 {
                 let name = &dir_name_str[split_pos..];
                 if !name.contains('/') {
                     Ui::same_line();
-                    if Ui::button_builder(name).press() {
+                    if Ui::button(name).press() {
                         self.asset_sub_dir.push(name);
                         new_asset_files = Some(get_assets(&self.sk_info, self.asset_sub_dir.clone(), &self.exts));
                     }

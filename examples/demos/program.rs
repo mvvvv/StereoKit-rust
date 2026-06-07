@@ -300,7 +300,7 @@ pub fn launch(mut sk: Sk, _is_testing: bool, start_test: String) {
                     let curr_width = Text::size_layout(&test_in_line.name, Some(style), None).x
                         + ui_settings.padding * 2.0
                         + inflate;
-                    if Ui::button_builder(&test_in_line.name).size(Vec2::new(curr_width, 0.0)).press() {
+                    if Ui::button(&test_in_line.name).size(Vec2::new(curr_width, 0.0)).press() {
                         Log::info(format!("Starting scene: {}", &test_in_line.name.to_string()));
                         next_scene = Some(test_in_line);
                     }
@@ -317,7 +317,7 @@ pub fn launch(mut sk: Sk, _is_testing: bool, start_test: String) {
             let test = tests.get(t).unwrap();
             let curr_width = Text::size_layout(&test.name, Some(style), None).x + ui_settings.padding * 2.0;
 
-            if Ui::button_builder(&test.name).size(Vec2::new(curr_width, 0.0)).press() {
+            if Ui::button(&test.name).size(Vec2::new(curr_width, 0.0)).press() {
                 Log::info(format!("Starting scene: {}", &test.name.to_string()));
                 next_scene = Some(test);
             }
@@ -326,7 +326,7 @@ pub fn launch(mut sk: Sk, _is_testing: bool, start_test: String) {
         Ui::pop_enabled();
         Ui::next_line();
         Ui::hseparator();
-        if Ui::button_img_builder("Exit", &exit_button)
+        if Ui::button_img("Exit", &exit_button)
             .image_layout(UiBtnLayout::CenterNoText)
             .size(Vec2::new(0.10, 0.10))
             .press()
@@ -342,9 +342,7 @@ pub fn launch(mut sk: Sk, _is_testing: bool, start_test: String) {
         }
         Ui::same_line();
         Ui::panel_begin(None);
-        if passthough_blend_enabled
-            && let Some(new_value) = Ui::toggle_builder("Passthrough MR", &mut passthrough).interact()
-        {
+        if passthough_blend_enabled && let Some(new_value) = Ui::toggle("Passthrough MR", &mut passthrough).interact() {
             if new_value {
                 Log::info("Activate passthrough");
                 sk.send_event(StepperAction::event("main", SHOW_FLOOR, "false"));
@@ -358,11 +356,11 @@ pub fn launch(mut sk: Sk, _is_testing: bool, start_test: String) {
 
         Ui::same_line();
         fps = ((1.0 / Time::get_step()) + fps) / 2.0;
-        Ui::label_builder(format!("FPS: {fps:3.0}")).size(Vec2::new(0.1, 0.0)).use_padding(true).draw();
+        Ui::label(format!("FPS: {fps:3.0}")).size(Vec2::new(0.1, 0.0)).use_padding(true).draw();
 
         // DefaultInteractors choice - cycling button
         if interactor_choices.len() > 1 {
-            if Ui::button_img_builder(interactor_choices[current_interactor_idx].2, &next_interactor_image).press() {
+            if Ui::button_img(interactor_choices[current_interactor_idx].2, &next_interactor_image).press() {
                 // Deactivate simultaneous if currently active
                 if interactor_choices[current_interactor_idx].1 {
                     pause_simultaneous_hands_and_controllers(sk.get_sk_info_clone(), true);
@@ -381,14 +379,13 @@ pub fn launch(mut sk: Sk, _is_testing: bool, start_test: String) {
                 Log::info(format!("Interactors set to: {new_label}"));
             }
         } else {
-            Ui::label_builder(interactor_choices[0].2).use_padding(true).draw();
+            Ui::label(interactor_choices[0].2).use_padding(true).draw();
         }
 
         Ui::same_line();
 
         if refresh_rate_editable
-            && Ui::button_img_builder(format!("Up to {:?} FPS", current_refresh_rate as u32), &next_refresh_rate_image)
-                .press()
+            && Ui::button_img(format!("Up to {:?} FPS", current_refresh_rate as u32), &next_refresh_rate_image).press()
         {
             let mut restart = true;
             for i in &refresh_rates {
@@ -407,9 +404,9 @@ pub fn launch(mut sk: Sk, _is_testing: bool, start_test: String) {
         }
 
         Ui::next_line();
-        Ui::label_builder("Viewport scaling:").use_padding(true).draw();
+        Ui::label("Viewport scaling:").use_padding(true).draw();
         Ui::same_line();
-        Ui::label_builder(format!("{viewport_scaling:.2}")).use_padding(true).draw();
+        Ui::label(format!("{viewport_scaling:.2}")).use_padding(true).draw();
         Ui::same_line();
         if let Some(new_value) = Ui::hslider("scaling", &mut viewport_scaling, 0.1, 1.0, Some(0.05), None, None, None) {
             Renderer::viewport_scaling(new_value);
@@ -424,9 +421,9 @@ pub fn launch(mut sk: Sk, _is_testing: bool, start_test: String) {
             reduce_to = 1.0
         }
 
-        // Ui::label_builder("MSAA:").use_padding(true).draw();
+        // Ui::label("MSAA:").use_padding(true).draw();
         // Ui::same_line();
-        // Ui::label_builder(format!("{:.0}", multisample)).use_padding(true).draw();
+        // Ui::label(format!("{:.0}", multisample)).use_padding(true).draw();
         // Ui::same_line();
         // if let Some(new_value) = Ui::hslider("msaa", &mut multisample, 0.1, 8.0, Some(1.0), None, None, None) {
         //     Renderer::multisample(new_value as i32);

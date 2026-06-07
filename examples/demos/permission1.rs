@@ -71,7 +71,7 @@ impl Permission1 {
         Ui::window_begin_auto(&self.title, Some([0.4, 0.0].into()), None, None);
 
         Ui::push_text_style(self.style_description);
-        Ui::label_builder(&self.description).size([0.395, 0.12]).use_padding(false).draw();
+        Ui::label(&self.description).size([0.395, 0.12]).use_padding(false).draw();
         Ui::pop_text_style();
         Ui::hseparator();
 
@@ -99,7 +99,7 @@ impl Permission1 {
             // Column 4: Request button with fixed size
             if state == PermissionState::Capable {
                 Ui::same_line();
-                if Ui::button_builder("Request").size([0.05, 0.0]).press() {
+                if Ui::button("Request").size([0.05, 0.0]).press() {
                     Permission::request(permission);
                 }
             }
@@ -107,7 +107,7 @@ impl Permission1 {
             Ui::panel_end();
             Ui::pop_id();
         }
-        if cfg!(target_os = "android") && Ui::button_builder("App Settings").press() {
+        if cfg!(target_os = "android") && Ui::button("App Settings").press() {
             Ui::hseparator();
             let result = system_deep_link(SystemAction::Settings {
                 setting: Some("/applications?package=com.stereokit.rust_binding.demos".to_string()),

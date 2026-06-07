@@ -123,6 +123,11 @@ unsafe extern "C" {
         out_at_local: *mut Vec3,
     ) -> Bool32T;
     pub fn interactor_get_motion(interactor: i32) -> Pose;
+    pub fn interactor_get_type(interactor: i32) -> InteractorType;
+    pub fn interactor_get_events(interactor: i32) -> InteractorEvent;
+    pub fn interactor_get_activation(interactor: i32) -> InteractorActivation;
+    pub fn interactor_get_input_source_id(interactor: i32) -> i32;
+    pub fn interactor_get_secondary_dims(interactor: i32) -> i32;
     pub fn interactor_count() -> i32;
     pub fn interactor_get(index: i32) -> i32;
 
@@ -171,6 +176,11 @@ unsafe extern "C" {
 /// let focused = interactor.get_focused();
 /// let active = interactor.get_active();
 /// let motion = interactor.get_motion();
+/// let shape_type = interactor.get_type();
+/// let events = interactor.get_events();
+/// let activation = interactor.get_activation();
+/// let input_source_id = interactor.get_input_source_id();
+/// let secondary_dims = interactor.get_secondary_dims();
 ///
 ///
 /// assert_eq!(radius,  0.01);
@@ -180,6 +190,11 @@ unsafe extern "C" {
 /// assert_eq!(active,  0u64);
 /// assert_eq!(focused, 0u64);
 /// assert_eq!(motion,  Pose::IDENTITY);
+/// assert_eq!(shape_type, InteractorType::Point);
+/// assert_eq!(events, InteractorEvent::Poke);
+/// assert_eq!(activation, InteractorActivation::State);
+/// assert_eq!(input_source_id, 0);
+/// assert_eq!(secondary_dims, 0);
 ///
 /// # sk::Sk::shutdown();
 /// ```
@@ -215,7 +230,9 @@ impl Interactor {
     ///   and aim on a hand would all come from a single hand, and if one is actively interacting, then the whole hand
     ///   source is considered busy.
     /// * `capsule_radius` - The radius of the interactor's capsule, in meters.
-    /// * `secondary_motion_dimensions` - How many axes of secondary motion can this interactor provide? This should be 0-3.
+    /// * `secondary_motion_dimensions` - How many axes of secondary motion can this interactor provide? Secondary
+    ///   motion is input from a source other than the interactor's own movement, such as a mouse's scroll wheel
+    ///   (1 axis) or a controller's analog thumbstick (2 axes, X/Y). This should be 0-3.
     ///
     /// Returns the Interactor that was just created.
     /// see also [`interactor_create`]
@@ -372,6 +389,49 @@ impl Interactor {
     /// see also [`interactor_get_motion`] [`Interactor::update`]
     pub fn get_motion(&self) -> Pose {
         unsafe { interactor_get_motion(self.inst) }
+    }
+
+    /// A line, or a point? These interactors behave slightly differently with respect to distance checks and
+    /// directionality. See `InteractorType` for more details. This is set at creation time and does not change.
+    ///
+    /// see also [`interactor_get_type`] [`Interactor::create`]
+    pub fn get_type(&self) -> InteractorType {
+        unsafe { interactor_get_type(self.inst) }
+    }
+
+    /// What type of interaction events does this interactor fire? Interaction elements use this bitflag as a filter to
+    /// avoid interacting with certain interactors. This is set at creation time and does not change.
+    ///
+    /// see also [`interactor_get_events`] [`Interactor::create`]
+    pub fn get_events(&self) -> InteractorEvent {
+        unsafe { interactor_get_events(self.inst) }
+    }
+
+    /// How does this interactor activate elements? Does it use the physical position of the interactor, or its
+    /// activation state? This is set at creation time and does not change.
+    ///
+    /// see also [`interactor_get_activation`] [`Interactor::create`]
+    pub fn get_activation(&self) -> InteractorActivation {
+        unsafe { interactor_get_activation(self.inst) }
+    }
+
+    /// An identifier that uniquely indicates a shared source for inputs. Interactors that share a source will
+    /// deactivate each other when one becomes active, for example the poke, pinch, and aim interactors of a single
+    /// hand. A negative id indicates a unique source that does not check against others. This is set at creation time
+    /// and does not change.
+    ///
+    /// see also [`interactor_get_input_source_id`] [`Interactor::create`]
+    pub fn get_input_source_id(&self) -> i32 {
+        unsafe { interactor_get_input_source_id(self.inst) }
+    }
+
+    /// How many axes of secondary motion can this interactor provide? Secondary motion is input that comes from
+    /// somewhere other than the interactor's own movement through space. For example, a mouse's scroll wheel is 1 axis,
+    /// and a controller's analog thumbstick is 2 axes (X/Y). This should be 0-3.
+    ///
+    /// see also [`interactor_get_secondary_dims`] [`Interactor::create`]
+    pub fn get_secondary_dims(&self) -> i32 {
+        unsafe { interactor_get_secondary_dims(self.inst) }
     }
 
     /// If this interactor has an element focused, this will output information about the location of that element, as

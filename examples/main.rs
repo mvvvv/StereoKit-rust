@@ -1,3 +1,4 @@
+#![cfg(not(feature = "no-event-loop"))]
 pub mod demos;
 
 #[cfg(target_os = "android")]

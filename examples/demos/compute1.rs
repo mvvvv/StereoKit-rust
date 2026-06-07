@@ -198,31 +198,31 @@ impl ComputeReaction {
         }
 
         Ui::window_begin("Compute Shader", &mut self.window_pose, Some(Vec2::new(0.28, 0.0)), None, None);
-        Ui::toggle_builder("Run the test", &mut self.active).interact();
+        Ui::toggle("Run the test", &mut self.active).interact();
         Ui::image(&self.output_sprite, Vec2::ONE * 0.26);
-        Ui::label_builder(format!("Step: {}", self.step)).use_padding(true).draw();
+        Ui::label(format!("Step: {}", self.step)).use_padding(true).draw();
 
         let params_changed = {
-            Ui::label_builder("feed").size(Vec2::new(0.07, 0.0)).draw();
+            Ui::label("feed").size(Vec2::new(0.07, 0.0)).draw();
             Ui::same_line();
             let r = Ui::hslider("feed", &mut self.feed, 0.01, 0.1, Some(0.001), None, None, None).is_some();
-            Ui::label_builder("kill").size(Vec2::new(0.07, 0.0)).draw();
+            Ui::label("kill").size(Vec2::new(0.07, 0.0)).draw();
             Ui::same_line();
             let r = r | Ui::hslider("kill", &mut self.kill, 0.01, 0.1, Some(0.001), None, None, None).is_some();
-            Ui::label_builder("diffuseA").size(Vec2::new(0.07, 0.0)).draw();
+            Ui::label("diffuseA").size(Vec2::new(0.07, 0.0)).draw();
             Ui::same_line();
             let r = r | Ui::hslider("diffuseA", &mut self.diff_a, 0.1, 2.0, Some(0.01), None, None, None).is_some();
-            Ui::label_builder("diffuseB").size(Vec2::new(0.07, 0.0)).draw();
+            Ui::label("diffuseB").size(Vec2::new(0.07, 0.0)).draw();
             Ui::same_line();
             let r = r | Ui::hslider("diffuseB", &mut self.diff_b, 0.1, 1.0, Some(0.01), None, None, None).is_some();
-            Ui::label_builder("timestep").size(Vec2::new(0.07, 0.0)).draw();
+            Ui::label("timestep").size(Vec2::new(0.07, 0.0)).draw();
             Ui::same_line();
             r | Ui::hslider("timestep", &mut self.timestep, 0.1, 2.0, Some(0.01), None, None, None).is_some()
         };
         if params_changed {
             self.set_params();
         }
-        if Ui::button_builder("Reset").press() {
+        if Ui::button("Reset").press() {
             self.reset();
         }
         Ui::window_end();
@@ -352,38 +352,38 @@ impl ComputeTest {
         }
 
         Ui::window_begin("Compute Test", &mut self.window_pose, Some(Vec2::new(0.28, 0.0)), None, None);
-        Ui::toggle_builder("Run the test", &mut self.active).interact();
+        Ui::toggle("Run the test", &mut self.active).interact();
         Ui::image(&self.output_sprite, Vec2::ONE * 0.26);
-        Ui::label_builder(format!("Step: {}", self.step)).use_padding(true).draw();
+        Ui::label(format!("Step: {}", self.step)).use_padding(true).draw();
 
         let params_changed = {
-            Ui::label_builder("ring_freq").size(Vec2::new(0.07, 0.0)).draw();
+            Ui::label("ring_freq").size(Vec2::new(0.07, 0.0)).draw();
             Ui::same_line();
             let r = Ui::hslider("ring_freq", &mut self.ring_freq, 0.1, 5.0, Some(0.1), None, None, None).is_some();
-            Ui::label_builder("arm_count").size(Vec2::new(0.07, 0.0)).draw();
+            Ui::label("arm_count").size(Vec2::new(0.07, 0.0)).draw();
             Ui::same_line();
             let r = r | Ui::hslider("arm_count", &mut self.arm_count, 1.0, 12.0, Some(1.0), None, None, None).is_some();
-            Ui::label_builder("uv x").size(Vec2::new(0.07, 0.0)).draw();
+            Ui::label("uv x").size(Vec2::new(0.07, 0.0)).draw();
             Ui::same_line();
             let r = r | Ui::hslider("uv_x", &mut self.uv_x, -0.5, 0.5, Some(0.01), None, None, None).is_some();
-            Ui::label_builder("uv y").size(Vec2::new(0.07, 0.0)).draw();
+            Ui::label("uv y").size(Vec2::new(0.07, 0.0)).draw();
             Ui::same_line();
             let r = r | Ui::hslider("uv_y", &mut self.uv_y, -0.5, 0.5, Some(0.01), None, None, None).is_some();
-            Ui::label_builder("twist").size(Vec2::new(0.07, 0.0)).draw();
+            Ui::label("twist").size(Vec2::new(0.07, 0.0)).draw();
             Ui::same_line();
             let r = r | Ui::hslider("spiral_twist", &mut self.spiral_twist, -3.0, 3.0, Some(0.1), None, None, None)
                 .is_some();
-            Ui::label_builder("rot speed").size(Vec2::new(0.07, 0.0)).draw();
+            Ui::label("rot speed").size(Vec2::new(0.07, 0.0)).draw();
             Ui::same_line();
             let r =
                 r | Ui::hslider("rotation_speed", &mut self.rotation_speed, -0.1, 0.1, Some(0.001), None, None, None)
                     .is_some();
-            Ui::label_builder("col speed").size(Vec2::new(0.07, 0.0)).draw();
+            Ui::label("col speed").size(Vec2::new(0.07, 0.0)).draw();
             Ui::same_line();
             let r = r | Ui::hslider("color_speed", &mut self.color_speed, 0.0, 0.05, Some(0.001), None, None, None)
                 .is_some();
             let prev_glow = self.center_glow;
-            Ui::toggle_builder("center_glow", &mut self.center_glow).interact();
+            Ui::toggle("center_glow", &mut self.center_glow).interact();
             r | (self.center_glow != prev_glow)
         };
         if params_changed {

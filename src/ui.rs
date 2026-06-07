@@ -1,4 +1,3 @@
-pub mod ui_builders;
 use crate::{
     StereoKitError,
     material::{Material, MaterialT},
@@ -8,13 +7,13 @@ use crate::{
     sound::{Sound, SoundT},
     sprite::{Sprite, SpriteT},
     system::{Align, BtnState, Handed, HierarchyParent, Log, TextContext, TextFit, TextStyle},
+    ui_builders::*,
     util::{Color32, Color128},
 };
 use std::{
     ffi::{CStr, CString, c_char, c_ushort},
     ptr::{NonNull, null_mut},
 };
-pub use ui_builders::*;
 
 bitflags::bitflags! {
 /// A description of what type of window to draw! This is a bit flag, so it can contain multiple elements.
@@ -158,7 +157,7 @@ pub enum UiConfirm {
 /// the image, with the text filling the remaining space.
 /// <https://stereokit.net/Pages/StereoKit/UIBtnLayout.html>
 ///
-/// see [`Ui::button_img`]  [`Ui::radio_img`]  [`Ui::toggle_img`]
+/// see [`Ui::button_img`]  [`Ui::radio`]  [`Ui::toggle_img`]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u32)]
 pub enum UiBtnLayout {
@@ -267,8 +266,8 @@ pub enum UiVisual {
     ButtonRound = 16,
     /// Refers to Ui::panel_(begin/end) elements.
     Panel = 17,
-    /// Refers to the text position indicator carat on text input elements.
-    Carat = 18,
+    /// Refers to the text position indicator caret on text input elements.
+    Caret = 18,
     /// An aura ...
     Aura = 19,
     /// A maximum enum value to allow for iterating through enum values.
@@ -577,26 +576,26 @@ pub struct UiSliderData {
 ///     Ui::window_begin("Question", &mut window_pose, None, None, None);
 ///     Ui::text("Are you a robot ?", None, None, None, Some(0.13), None, None);
 ///     Ui::hseparator();
-///     Ui::label_builder("Respond wisely").size([0.08, 0.03]).use_padding(false).draw();
-///     if Ui::radio_builder("yes", choice == "A").images(&off, &on).image_layout(UiBtnLayout::Left).press() {
+///     Ui::label("Respond wisely").size([0.08, 0.03]).use_padding(false).draw();
+///     if Ui::radio("yes", choice == "A").images(&off, &on).image_layout(UiBtnLayout::Left).press() {
 ///         choice = "A"; scaling = 0.0;
 ///     }
 ///     Ui::same_line();
-///     if Ui::radio_builder("no", choice == "B").images(&off, &on).image_layout(UiBtnLayout::Left).press(){
+///     if Ui::radio("no", choice == "B").images(&off, &on).image_layout(UiBtnLayout::Left).press(){
 ///         choice = "B"; scaling = 1.0;
 ///     }
 ///     Ui::same_line();
-///     if Ui::radio_builder("maybe", choice == "C").images(&off, &on).image_layout(UiBtnLayout::Left).press() {
+///     if Ui::radio("maybe", choice == "C").images(&off, &on).image_layout(UiBtnLayout::Left).press() {
 ///         choice = "C"; scaling = 0.5;
 ///     }
 ///     Ui::panel_begin(None);
-///     Ui::toggle_builder("Doubt value:", &mut doubt).interact();
+///     Ui::toggle("Doubt value:", &mut doubt).interact();
 ///     Ui::push_enabled(doubt, None);
 ///     Ui::hslider("scaling", &mut scaling, 0.0, 1.0,Some(0.05), Some(0.14), None, None);
 ///     Ui::pop_enabled();
 ///     Ui::panel_end();
 ///     Ui::same_line();
-///     if Ui::button_img_builder("Exit", &exit_sprite)
+///     if Ui::button_img("Exit", &exit_sprite)
 ///         .image_layout(UiBtnLayout::CenterNoText)
 ///         .size(Vec2::new(0.08, 0.08))
 ///         .press() {
@@ -1051,486 +1050,6 @@ unsafe extern "C" {
 }
 
 impl Ui {
-    /// Adds some text to the layout! Text uses the UI’s current font settings, which can be changed with
-    /// Ui::push/pop_text_style. Can contain newlines!
-    /// <https://stereokit.net/Pages/StereoKit/UI/Label.html>
-    /// * `text` - Label text to display. Can contain newlines! Doesn't use text as id, so it can be non-unique.
-    /// * `size` - The layout size for this element in Hierarchy space. If an axis is left as zero, it will be
-    ///   auto-calculated. For X this is the remaining width of the current layout, and for Y this is
-    ///   [`Ui::get_line_height`]. Set with [`UiLabelBuilder::size`].
-    /// * `use_padding` - Should padding be included for positioning this text? Sometimes you just want un-padded text!
-    ///   Set with [`UiLabelBuilder::use_padding`].
-    /// * `text_align` - Where should the text position itself within its bounds? Set with
-    ///   [`UiLabelBuilder::text_align`].
-    ///
-    /// Use this builder to configure size/padding/alignment and call [`UiLabelBuilder::draw`].
-    ///
-    /// ### Examples
-    /// ```
-    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::Ui, maths::Pose};
-    ///
-    /// let mut window_pose = Pose::new(
-    ///     [0.01, 0.035, 0.93], Some([0.0, 185.0, 0.0].into()));
-    ///
-    /// filename_scr = "screenshots/ui_label.jpeg";
-    /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Labels", &mut window_pose, None, None, None);
-    ///     Ui::label_builder("Label 1").use_padding(false).draw();
-    ///     Ui::same_line();
-    ///     Ui::label_builder("Label 2").size([0.025, 0.0]).use_padding(false).draw();
-    ///     Ui::label_builder("Label 3").size([0.1,   0.01]).use_padding(true).draw();
-    ///     Ui::label_builder("Label 4").size([0.0,   0.0045]).use_padding(false).draw();
-    ///     Ui::window_end();
-    /// );
-    /// # sk::Sk::shutdown();
-    /// ```
-    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_label.jpeg" alt="screenshot" width="200">
-    pub fn label_builder(text: impl AsRef<str>) -> UiLabelBuilder {
-        UiLabelBuilder::new(text)
-    }
-
-    /// A pressable button! A button will expand to fit the text provided to it, vertically and horizontally.
-    /// Text is re-used as the id. Will return true only on the first frame it is pressed.
-    /// <https://stereokit.net/Pages/StereoKit/UI/Button.html>
-    /// * `text` - Text to display on the button and id for tracking element state. MUST be unique within current
-    ///   hierarchy.
-    /// * `size` - The layout size for this element in Hierarchy space. If an axis is left as zero, it will be
-    ///   auto-calculated. For X this is the remaining width of the current layout, and for Y this is Ui::get_line_height.
-    ///   Set with [`UiButtonBuilder::size`].
-    /// * `text_align` - Where should the text position itself within its bounds? Set with
-    ///   [`UiButtonBuilder::text_align`].
-    ///
-    /// Use this builder for layout buttons, then call [`UiButtonBuilder::press`].
-    ///
-    /// ### Examples
-    /// ```
-    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::Ui, maths::Pose};
-    ///
-    /// let mut window_pose = Pose::new(
-    ///     [0.01, 0.035, 0.92], Some([0.0, 185.0, 0.0].into()));
-    ///
-    /// let mut button = 0;
-    /// filename_scr = "screenshots/ui_button.jpeg";
-    /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Press a button", &mut window_pose, None, None, None);
-    ///     if Ui::button_builder("1").press() {button = 1}
-    ///     Ui::same_line();
-    ///     if Ui::button_builder("2").size([0.025, 0.025]).press() {button = 2}
-    ///     if Ui::button_builder("3").size([0.04, 0.04]).press() {button = 3}
-    ///     if Ui::button_at_builder("4", [-0.01, -0.01, 0.005],[0.05, 0.05]).press() {button = 4}
-    ///     if Ui::button_at_builder("5", [-0.04, -0.08, 0.005],[0.03, 0.03]).press() {button = 5}
-    ///     Ui::window_end();
-    /// );
-    /// # sk::Sk::shutdown();
-    /// ```
-    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_button.jpeg" alt="screenshot" width="200">
-    pub fn button_builder(text: impl AsRef<str>) -> UiButtonBuilder {
-        UiButtonBuilder::new(text)
-    }
-
-    /// A variant of button that doesn’t use the layout system, and instead goes exactly where you put it.
-    /// <https://stereokit.net/Pages/StereoKit/UI/ButtonAt.html>
-    /// * `text` - Text to display on the button and id for tracking element state. MUST be unique within current
-    ///   hierarchy.
-    /// * `top_left_corner` - Top-left corner of the UI element relative to the current hierarchy.
-    /// * `size` - Layout size for this element in hierarchy space.
-    /// * `text_align` - Where should the text position itself within its bounds? Set with
-    ///   [`UiButtonAtBuilder::text_align`].
-    ///
-    /// Use this builder for absolute-positioned buttons, then call [`UiButtonAtBuilder::press`].
-    ///
-    /// ### Examples
-    /// ```ignore
-    /// if Ui::button_at_builder("4", [-0.01, -0.01, 0.005],[0.05, 0.05]).press() {
-    ///     // ...
-    /// }
-    /// if Ui::button_at_builder("5", [-0.04, -0.08, 0.005],[0.03, 0.03]).press() {
-    ///     // ...
-    /// }
-    /// ```
-    pub fn button_at_builder(
-        text: impl AsRef<str>,
-        top_left_corner: impl Into<Vec3>,
-        size: impl Into<Vec2>,
-    ) -> UiButtonAtBuilder {
-        UiButtonAtBuilder::new(text, top_left_corner, size)
-    }
-
-    /// A pressable button accompanied by an image.
-    /// <https://stereokit.net/Pages/StereoKit/UI/ButtonImg.html>
-    /// * `text` - Text to display on the button and id for tracking element state. MUST be unique within current
-    ///   hierarchy.
-    /// * `image` - This is the image that will be drawn along with the text. See image_layout for where the image gets
-    ///   drawn!
-    /// * `image_layout` - This enum specifies how the text and image should be laid out on the button. For example,
-    ///   UiBtnLayout::Left will have the image on the left, and text on the right. If not set, default value is
-    ///   UiBtnLayout::Left. Set with [`UiButtonImgBuilder::image_layout`].
-    /// * `size` - The layout size for this element in Hierarchy space. If an axis is left as zero, it will be
-    ///   auto-calculated. For X this is the remaining width of the current layout, and for Y this is Ui::get_line_height.
-    ///   Set with [`UiButtonImgBuilder::size`].
-    /// * `color` - The Sprite's color will be multiplied by this tint. If not set, default value is white. Set with
-    ///   [`UiButtonImgBuilder::image_tint`].
-    /// * `text_align` - Where should the text position itself within its bounds? Set with
-    ///   [`UiButtonImgBuilder::text_align`].
-    ///
-    /// Use this builder for layout image buttons, then call [`UiButtonImgBuilder::press`].
-    /// This supports the new PR 1364 parameters: text alignment and image tint.
-    ///
-    /// ### Examples
-    /// ```
-    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::{Ui,UiBtnLayout}, maths::Pose,
-    ///                      sprite::Sprite, util::named_colors};
-    ///
-    /// let mut window_pose = Pose::new(
-    ///     [-0.01, 0.095, 0.88], Some([0.0, 185.0, 0.0].into()));
-    ///
-    /// let mut choice = "C";
-    /// let log_sprite = Sprite::from_file("icons/log_viewer.png", None, None)
-    ///                               .expect("log_viewer.jpeg should be ok");
-    /// let scr_sprite = Sprite::from_file("icons/screenshot.png", None, None)
-    ///                               .expect("screenshot.jpeg should be ok");
-    /// let app_sprite = Sprite::grid();
-    ///
-    /// let fly_sprite = Sprite::from_file("icons/fly_over.png", None, None)
-    ///                               .expect("fly_over.jpeg should be ok");
-    /// let close_sprite = Sprite::close();
-    ///
-    /// filename_scr = "screenshots/ui_button_img.jpeg";
-    /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Choose a pretty image", &mut window_pose, None, None, None);
-    ///     if Ui::button_img_builder("Log", &log_sprite)
-    ///         .image_layout(UiBtnLayout::Center)
-    ///         .size([0.07, 0.07])
-    ///         .image_tint(named_colors::GOLD)
-    ///         .press() {
-    ///         choice = "A";
-    ///     }
-    ///     if Ui::button_img_builder("screenshot", &scr_sprite)
-    ///         .image_layout(UiBtnLayout::CenterNoText)
-    ///         .size([0.07, 0.07])
-    ///         .press(){
-    ///         choice = "B";
-    ///     }
-    ///     if Ui::button_img_builder("Applications", &app_sprite)
-    ///         .image_layout(UiBtnLayout::Right)
-    ///         .size([0.17, 0.04])
-    ///         .press() {
-    ///         choice = "C";
-    ///     }
-    ///     if Ui::button_img_at_builder("fly", &fly_sprite, [-0.01, -0.04, 0.0], [0.12, 0.12])
-    ///         .image_layout(UiBtnLayout::CenterNoText)
-    ///         .image_tint(named_colors::CYAN)
-    ///         .press() {
-    ///         choice = "D";
-    ///     }
-    ///     if Ui::button_img_at_builder("close", &close_sprite, [-0.08, 0.03, 0.0], [0.05, 0.05])
-    ///         .image_layout(UiBtnLayout::CenterNoText)
-    ///         .press() {
-    ///         sk.quit(None);
-    ///     }
-    ///     Ui::window_end();
-    /// );
-    /// # sk::Sk::shutdown();
-    /// ```
-    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_button_img.jpeg" alt="screenshot" width="200">
-    pub fn button_img_builder(text: impl AsRef<str>, image: impl AsRef<Sprite>) -> UiButtonImgBuilder {
-        UiButtonImgBuilder::new(text, image)
-    }
-
-    /// A variant of image button that doesn’t use the layout system.
-    /// <https://stereokit.net/Pages/StereoKit/UI/ButtonImgAt.html>
-    /// * `text` - Text to display on the button and id for tracking element state. MUST be unique within current
-    ///   hierarchy.
-    /// * `image` - This is the image that will be drawn along with the text. See image_layout for where the image gets
-    ///   drawn!
-    /// * `image_layout` - This enum specifies how the text and image should be laid out on the button. For example,
-    ///   UiBtnLayout::Left will have the image on the left, and text on the right. If not set, default value is
-    ///   UiBtnLayout::Left. Set with [`UiButtonImgAtBuilder::image_layout`].
-    /// * `top_left_corner` - Top-left corner of the UI element relative to the current hierarchy.
-    /// * `size` - Layout size for this element in hierarchy space.
-    /// * `color` - The Sprite's color will be multiplied by this tint. If not set, default value is white. Set with
-    ///   [`UiButtonImgAtBuilder::image_tint`].
-    /// * `text_align` - Where should the text position itself within its bounds? Set with
-    ///   [`UiButtonImgAtBuilder::text_align`].
-    ///
-    /// Use this builder for absolute-positioned image buttons, then call [`UiButtonImgAtBuilder::press`].
-    ///
-    /// ### Examples
-    /// ```ignore
-    /// if Ui::button_img_at_builder("fly", &fly_sprite, [-0.01, -0.04, 0.0], [0.12, 0.12])
-    ///     .image_layout(UiBtnLayout::CenterNoText)
-    ///     .image_tint(named_colors::CYAN)
-    ///     .press() {
-    ///     // ...
-    /// }
-    /// ```
-    pub fn button_img_at_builder(
-        text: impl AsRef<str>,
-        image: impl AsRef<Sprite>,
-        top_left_corner: impl Into<Vec3>,
-        size: impl Into<Vec2>,
-    ) -> UiButtonImgAtBuilder {
-        UiButtonImgAtBuilder::new(text, image, top_left_corner, size)
-    }
-
-    /// A toggleable button.
-    /// <https://stereokit.net/Pages/StereoKit/UI/Toggle.html>
-    /// * `text` - Text to display on the Toggle and id for tracking element state. MUST be unique within current
-    ///   hierarchy.
-    /// * `out_value` - The current state of the toggle button! True means it's toggled on, and false means it's
-    ///   toggled off.
-    /// * `size` - The layout size for this element in Hierarchy space. If an axis is left as zero, it will be
-    ///   auto-calculated. For X this is the remaining width of the current layout, and for Y this is Ui::get_line_height.
-    ///   Set with [`UiToggleBuilder::size`].
-    /// * `text_align` - Where should the text position itself within its bounds? Set with
-    ///   [`UiToggleBuilder::text_align`].
-    ///
-    /// Use this builder for text toggles, then call [`UiToggleBuilder::interact`].
-    ///
-    /// ### Examples
-    /// ```
-    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::{Ui, UiBtnLayout}, maths::Pose, sprite::Sprite};
-    ///
-    /// let mut window_pose = Pose::new(
-    ///     [0.01, 0.065, 0.91], Some([0.0, 185.0, 0.0].into()));
-    ///
-    /// let (on, off) = (Sprite::arrow_up(), Sprite::arrow_down());
-    ///
-    /// let mut choiceA = false; let mut choiceB = true;
-    /// let mut choiceC = false; let mut choiceD = true;
-    /// let mut choiceE = false; let mut choiceF = true;
-    ///
-    /// filename_scr = "screenshots/ui_toggle.jpeg";
-    /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Toggle button", &mut window_pose, None, None, None);
-    ///     Ui::toggle_img_builder("A", &mut choiceA, &off, &on)
-    ///         .image_layout(UiBtnLayout::Right)
-    ///         .size([0.06, 0.05])
-    ///         .interact();
-    ///     Ui::same_line();
-    ///     if let Some(bool) = Ui::toggle_img_builder("B", &mut choiceB, &off, &on)
-    ///         .image_layout(UiBtnLayout::Center)
-    ///         .size([0.06, 0.05])
-    ///         .interact() {
-    ///         assert_eq!(bool, choiceB);
-    ///     }
-    ///
-    ///     Ui::toggle_builder("C", &mut choiceC).interact();
-    ///     Ui::same_line();
-    ///     Ui::toggle_builder("D", &mut choiceD).size([0.06, 0.04]).interact();
-    ///
-    ///     Ui::toggle_at_builder("E", &mut choiceE, [0.06, -0.12, 0.0], [0.06, 0.03])
-    ///         .toggle_images(&off, &off)
-    ///         .image_layout(UiBtnLayout::Right)
-    ///         .interact();
-    ///     if let Some(bool) = Ui::toggle_at_builder("F", &mut choiceF, [-0.01, -0.12, 0.0], [0.06, 0.03])
-    ///         .interact() {
-    ///         assert_eq!(bool, choiceB);
-    ///     }
-    ///     Ui::window_end();
-    /// );
-    /// # sk::Sk::shutdown();
-    /// ```
-    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_toggle.jpeg" alt="screenshot" width="200">
-    pub fn toggle_builder<'a>(text: impl AsRef<str>, out_value: &'a mut bool) -> UiToggleBuilder<'a> {
-        UiToggleBuilder::new(text, out_value)
-    }
-
-    /// A toggleable button with custom images.
-    /// <https://stereokit.net/Pages/StereoKit/UI/Toggle.html>
-    /// * `id` - Text to display on the Toggle and id for tracking element state. MUST be unique within current
-    ///   hierarchy.
-    /// * `out_value` - The current state of the toggle button! True means it's toggled on, and false means it's
-    ///   toggled off.
-    /// * `toggle_off` - Image to use when the toggle value is false.
-    /// * `toggle_on` - Image to use when the toggle value is true.
-    /// * `image_layout` - This enum specifies how the text and image should be laid out on the button. If not set,
-    ///   default [`UiBtnLayout::Left`] will have the image on the left, and text on the right. Set with
-    ///   [`UiToggleImgBuilder::image_layout`].
-    /// * `size` - The layout size for this element in Hierarchy space. If an axis is left as zero, it will be
-    ///   auto-calculated. For X this is the remaining width of the current layout, and for Y this is Ui::line_height.
-    ///   Set with [`UiToggleImgBuilder::size`].
-    /// * `image_tint` - The Sprite's color will be multiplied by this tint. If not set, default value is white. Set with
-    ///   [`UiToggleImgBuilder::image_tint`].
-    /// * `text_align` - Where should the text position itself within its bounds? Set with
-    ///   [`UiToggleImgBuilder::text_align`].
-    ///
-    /// Use this builder for layout image toggles, then call [`UiToggleImgBuilder::interact`].
-    /// This supports the new PR 1364 parameters: text alignment and image tint.
-    ///
-    /// ### Examples
-    /// ```ignore
-    /// Ui::toggle_img_builder("A", &mut choiceA, &off, &on)
-    ///     .image_layout(UiBtnLayout::Right)
-    ///     .size([0.06, 0.05])
-    ///     .interact();
-    /// ```
-    pub fn toggle_img_builder<'a>(
-        id: impl AsRef<str>,
-        out_value: &'a mut bool,
-        toggle_off: impl AsRef<Sprite>,
-        toggle_on: impl AsRef<Sprite>,
-    ) -> UiToggleImgBuilder<'a> {
-        UiToggleImgBuilder::new(id, out_value, toggle_off, toggle_on)
-    }
-
-    /// A variant of toggle that doesn’t use the layout system.
-    /// <https://stereokit.net/Pages/StereoKit/UI/ToggleAt.html>
-    /// * `id` - Text to display on the Toggle and id for tracking element state. MUST be unique within current
-    ///   hierarchy.
-    /// * `out_value` - The current state of the toggle button! True means it's toggled on, and false means it's
-    ///   toggled off.
-    /// * `toggle_off`- Image to use when the toggle value is false or when no toggle-on image is specified. Set with
-    ///   [`UiToggleAtBuilder::toggle_images`].
-    /// * `toggle_on` - Image to use when the toggle value is true and toggle-off has been specified. If not provided,
-    ///   `toggle_off` image is reused. Set with [`UiToggleAtBuilder::toggle_images`].
-    /// * `imageLayout` - This enum specifies how the text and image should be laid out on the button. If not set,
-    ///   default [`UiBtnLayout::Left`] will have the image on the left, and text on the right. Set with
-    ///   [`UiToggleAtBuilder::image_layout`].
-    /// * `image_tint` - The Sprite's color will be multiplied by this tint. If not set, default value is white. Set with
-    ///   [`UiToggleAtBuilder::image_tint`].
-    /// * `top_left_corner` - Top-left corner of the UI element relative to the current hierarchy.
-    /// * `size` - Layout size for this element in hierarchy space.
-    /// * `text_align` - Where should the text position itself within its bounds? Set with
-    ///   [`UiToggleAtBuilder::text_align`].
-    ///
-    /// Use this builder for absolute-positioned toggles, then call [`UiToggleAtBuilder::interact`].
-    ///
-    /// ### Examples
-    /// ```ignore
-    /// Ui::toggle_at_builder("E", &mut choiceE, [0.06, -0.12, 0.0], [0.06, 0.03])
-    ///     .toggle_images(&off, &off)
-    ///     .image_layout(UiBtnLayout::Right)
-    ///     .interact();
-    /// ```
-    pub fn toggle_at_builder<'a>(
-        id: impl AsRef<str>,
-        out_value: &'a mut bool,
-        top_left_corner: impl Into<Vec3>,
-        size: impl Into<Vec2>,
-    ) -> UiToggleAtBuilder<'a> {
-        UiToggleAtBuilder::new(id, out_value, top_left_corner, size)
-    }
-
-    /// A radio-like pressable element using default radio sprites.
-    /// <https://stereokit.net/Pages/StereoKit/UI/Radio.html>
-    /// * `text` - Text to display on the Radio and id for tracking element state. MUST be unique within current
-    ///   hierarchy.
-    /// * `active` - Does this button look like it's pressed?
-    /// * `image_off` - Image to use when the radio value is false. Set with [`UiRadioBuilder::images`].
-    /// * `image_on` - Image to use when the radio value is true. Set with [`UiRadioBuilder::images`].
-    /// * `image_layout` - This enum specifies how the text and image should be laid out on the radio. For example,
-    ///   UiBtnLayout::Left will have the image on the left, and text on the right. Set with
-    ///   [`UiRadioBuilder::image_layout`].
-    /// * `size` - The layout size for this element in Hierarchy space. If an axis is left as zero, it will be
-    ///   auto-calculated. For X this is the remaining width of the current layout, and for Y this is
-    ///   [`Ui::get_line_height`]. Set with [`UiRadioBuilder::size`].
-    /// * `image_tint` - The Sprite's color will be multiplied by this tint. If not set, default value is white. Set with
-    ///   [`UiRadioBuilder::image_tint`].
-    /// * `text_align` - Where should the text position itself within its bounds? Set with
-    ///   [`UiRadioBuilder::text_align`].
-    ///
-    /// Use this builder for layout radio elements, then call [`UiRadioBuilder::press`].
-    ///
-    /// ### Examples
-    /// ```
-    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::{Ui, UiBtnLayout}, maths::Pose, sprite::Sprite};
-    ///
-    /// let mut window_pose = Pose::new(
-    ///     [0.01, 0.035, 0.91], Some([0.0, 185.0, 0.0].into()));
-    ///
-    /// let (on, off) = (Sprite::radio_on(), Sprite::radio_off());
-    ///
-    /// let mut choice = "A";
-    ///
-    /// filename_scr = "screenshots/ui_radio.jpeg";
-    /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Radio", &mut window_pose, None, None, None);
-    ///     if Ui::radio_builder("A", choice == "A")
-    ///         .images(&off, &on)
-    ///         .image_layout(UiBtnLayout::Right)
-    ///         .size([0.06, 0.05])
-    ///         .press() {
-    ///         choice = "A";
-    ///     }
-    ///     Ui::same_line();
-    ///     if Ui::radio_builder("B", choice == "B")
-    ///         .images(&off, &on)
-    ///         .image_layout(UiBtnLayout::Center)
-    ///         .size([0.03, 0.05])
-    ///         .press(){
-    ///         choice = "B";
-    ///     }
-    ///     Ui::same_line();
-    ///     if Ui::radio_builder("C", choice == "C")
-    ///         .images(&off, &on)
-    ///         .image_layout(UiBtnLayout::Left)
-    ///         .press() {
-    ///         choice = "C";
-    ///     }
-    ///     if Ui::radio_at_builder("D", choice == "D", [0.06, -0.07, 0.0], [0.06, 0.03])
-    ///         .images(&off, &on)
-    ///         .image_layout(UiBtnLayout::Right)
-    ///         .press() {
-    ///         choice = "D";
-    ///     }
-    ///     if Ui::radio_at_builder("E", choice == "E", [-0.01, -0.07, 0.0], [0.06, 0.03])
-    ///         .images(&off, &on)
-    ///         .image_layout(UiBtnLayout::Left)
-    ///         .press() {
-    ///         choice = "E";
-    ///     }
-    ///     Ui::window_end();
-    /// );
-    /// # sk::Sk::shutdown();
-    /// ```
-    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_radio.jpeg" alt="screenshot" width="200">
-    pub fn radio_builder(text: impl AsRef<str>, active: bool) -> UiRadioBuilder {
-        UiRadioBuilder::new(text, active)
-    }
-
-    /// A radio-like pressable element at an explicit position.
-    /// <https://stereokit.net/Pages/StereoKit/UI/RadioAt.html>
-    /// * `text` - Text to display on the Radio and id for tracking element state. MUST be unique within current
-    ///   hierarchy.
-    /// * `active` - Does this button look like it's pressed?
-    /// * `image_off` - Image to use when the radio value is false. Set with [`UiRadioAtBuilder::images`].
-    /// * `image_on` - Image to use when the radio value is true. Set with [`UiRadioAtBuilder::images`].
-    /// * `image_layout` - This enum specifies how the text and image should be laid out on the radio. For example,
-    ///   UiBtnLayout::Left will have the image on the left, and text on the right. Set with
-    ///   [`UiRadioAtBuilder::image_layout`].
-    /// * `image_tint` - The Sprite's color will be multiplied by this tint. If not set, default value is white. Set with
-    ///   [`UiRadioAtBuilder::image_tint`].
-    /// * `top_left_corner` - Top-left corner of the UI element relative to the current hierarchy.
-    /// * `size` - Layout size for this element in hierarchy space.
-    /// * `text_align` - Where should the text position itself within its bounds? Set with
-    ///   [`UiRadioAtBuilder::text_align`].
-    ///
-    /// Use this builder for absolute-positioned radio elements, then call [`UiRadioAtBuilder::press`].
-    ///
-    /// ### Examples
-    /// ```ignore
-    /// if Ui::radio_at_builder("D", choice == "D", [0.06, -0.07, 0.0], [0.06, 0.03])
-    ///     .images(&off, &on)
-    ///     .image_layout(UiBtnLayout::Right)
-    ///     .press() {
-    ///     choice = "D";
-    /// }
-    /// ```
-    pub fn radio_at_builder(
-        text: impl AsRef<str>,
-        active: bool,
-        top_left_corner: impl Into<Vec3>,
-        size: impl Into<Vec2>,
-    ) -> UiRadioAtBuilder {
-        UiRadioAtBuilder::new(text, active, top_left_corner, size)
-    }
-
     /// StereoKit will generate a color palette from this gamma space color, and use it to skin the UI! To explicitly
     /// adjust individual theme colors, see Ui::set_theme_color.
     ///  <https://stereokit.net/Pages/StereoKit/UI/ColorScheme.html>
@@ -1554,9 +1073,9 @@ impl Ui {
     ///     Ui::panel_begin(None);
     ///     Ui::hslider("scaling", &mut scaling, 0.0, 1.0, Some(0.05), Some(0.14), None, None);
     ///     Ui::panel_end();
-    ///     Ui::toggle_builder("I agree!",&mut agree).interact();
+    ///     Ui::toggle("I agree!",&mut agree).interact();
     ///     Ui::same_line();
-    ///     if Ui::button_builder("Exit").press() {
+    ///     if Ui::button("Exit").press() {
     ///        sk.quit(None);
     ///     }
     ///     Ui::window_end();
@@ -1672,39 +1191,185 @@ impl Ui {
         unsafe { ui_system_set_move_type(move_type) };
     }
 
-    /// A pressable button! A button will expand to fit the text provided to it, vertically and horizontally. Text is
-    /// re-used as the id. Will return true only on the first frame it is pressed!
+    /// A pressable button! A button will expand to fit the text provided to it, vertically and horizontally.
+    /// Text is re-used as the id. Will return true only on the first frame it is pressed.
     /// <https://stereokit.net/Pages/StereoKit/UI/Button.html>
     /// * `text` - Text to display on the button and id for tracking element state. MUST be unique within current
     ///   hierarchy.
-    /// * `size` - The layout size for this element in Hierarchy space. If an axis is left as zero, it will be
-    ///   auto-calculated. For X this is the remaining width of the current layout, and for Y this is Ui::get_line_height.
+    /// * [`UiButtonBuilder::size`] - The layout size for this element in Hierarchy space. If an axis is left as zero,
+    ///   it will be auto-calculated. For X this is the remaining width of the current layout, and for Y this is
+    ///   [`Ui::get_line_height`].
+    /// * [`UiButtonBuilder::text_align`] - Where should the text position itself within its bounds?
     ///
-    /// Returns true if the button was pressed this frame.
-    /// see also [`ui_button`] [`Ui::button_at`]  [`Ui::button_behavior`]
-    /// see example in [`Ui::button_builder`]
-    #[deprecated(since = "0.4.0", note = "Use Ui::button_builder(...).press()")]
-    pub fn button(text: impl AsRef<str>, size: Option<Vec2>) -> bool {
-        let text = text.as_ref();
-        match size {
-            Some(size) => Ui::button_builder(text).size(size).press(),
-            None => Ui::button_builder(text).press(),
-        }
+    /// Use this builder for layout buttons, then call [`UiButtonBuilder::press`].
+    ///
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{ui::Ui, maths::Pose};
+    ///
+    /// let mut window_pose = Pose::new(
+    ///     [0.01, 0.035, 0.92], Some([0.0, 185.0, 0.0].into()));
+    ///
+    /// let mut button = 0;
+    /// filename_scr = "screenshots/ui_button.jpeg";
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     Ui::window_begin("Press a button", &mut window_pose, None, None, None);
+    ///     if Ui::button("1").press() {button = 1}
+    ///     Ui::same_line();
+    ///     if Ui::button("2").size([0.025, 0.025]).press() {button = 2}
+    ///     if Ui::button("3").size([0.04, 0.04]).press() {button = 3}
+    ///     if Ui::button("4").at([-0.01, -0.01, 0.005],[0.05, 0.05]).press() {button = 4}
+    ///     if Ui::button("5").at([-0.04, -0.08, 0.005],[0.03, 0.03]).press() {button = 5}
+    ///     Ui::window_end();
+    ///     # assert_eq!(button, 0);
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_button.jpeg" alt="screenshot" width="200">
+    pub fn button(text: impl AsRef<str>) -> UiButtonBuilder {
+        UiButtonBuilder::new(text)
     }
 
-    /// A variant of Ui::button that doesn’t use the layout system, and instead goes exactly where you put it.
+    /// A variant of button that doesn’t use the layout system, and instead goes exactly where you put it.
     /// <https://stereokit.net/Pages/StereoKit/UI/ButtonAt.html>
     /// * `text` - Text to display on the button and id for tracking element state. MUST be unique within current
-    /// * `top_left_corner` - This is the top left corner of the UI element relative to the current Hierarchy.
     ///   hierarchy.
-    /// * `size` - The layout size for this element in Hierarchy space.
+    /// * `top_left_corner` - Top-left corner of the UI element relative to the current hierarchy.
+    /// * `size` - Layout size for this element in hierarchy space.
+    /// * [`UiButtonBuilder::text_align`] - Where should the text position itself within its bounds?
     ///
-    /// Returns true if the button was pressed this frame.
-    /// see also [`ui_button_at`] [`Ui::button_behavior`]
-    /// see example in [`Ui::button_at_builder`]
-    #[deprecated(since = "0.4.0", note = "Use Ui::button_at_builder(...).press()")]
-    pub fn button_at(text: impl AsRef<str>, top_left_corner: impl Into<Vec3>, size: impl Into<Vec2>) -> bool {
-        Ui::button_at_builder(text, top_left_corner, size).press()
+    /// Use this builder for absolute-positioned buttons, then call [`UiButtonBuilder::press`].
+    ///
+    /// ### Examples
+    /// ```ignore
+    /// if Ui::button_at("4", [-0.01, -0.01, 0.005],[0.05, 0.05]).press() { /*Same as:*/}
+    /// if Ui::button("5").at([-0.04, -0.08, 0.005],[0.03, 0.03]).press() {}
+    /// ```
+    pub fn button_at(
+        text: impl AsRef<str>,
+        top_left_corner: impl Into<Vec3>,
+        size: impl Into<Vec2>,
+    ) -> UiButtonBuilder {
+        UiButtonBuilder::new(text).at(top_left_corner, size)
+    }
+
+    /// A pressable button accompanied by an image.
+    /// <https://stereokit.net/Pages/StereoKit/UI/ButtonImg.html>
+    /// * `text` - Text to display on the button and id for tracking element state. MUST be unique within current
+    ///   hierarchy.
+    /// * `image` - This is the image that will be drawn along with the text. See image_layout for where the image gets
+    ///   drawn!
+    /// * [`UiButtonBuilder::image_layout`] - This enum specifies how the text and image should be laid out on the
+    ///   button. For example, UiBtnLayout::Left will have the image on the left, and text on the right. If not set,
+    ///   default value is [`UiBtnLayout::Left`].
+    /// * [`UiButtonBuilder::size`] - The layout size for this element in Hierarchy space. If an axis is left as zero,
+    ///   it will be auto-calculated. For X this is the remaining width of the current layout, and for Y this is
+    ///   [`Ui::get_line_height`].
+    /// * [`UiButtonBuilder::image_tint`] - The Sprite's color will be multiplied by this tint. If not set, default
+    ///   value is white.
+    /// * [`UiButtonBuilder::text_align`] - Where should the text position itself within its bounds?
+    ///
+    /// Use this builder for layout image buttons, then call [`UiButtonBuilder::press`].
+    /// This supports the new PR 1364 parameters: text alignment and image tint.
+    ///
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{ui::{Ui,UiBtnLayout}, maths::Pose,
+    ///                      sprite::Sprite, util::named_colors};
+    ///
+    /// let mut window_pose = Pose::new(
+    ///     [-0.01, 0.095, 0.88], Some([0.0, 185.0, 0.0].into()));
+    ///
+    /// let mut choice = "C";
+    /// let log_sprite = Sprite::from_file("icons/log_viewer.png", None, None)
+    ///                               .expect("log_viewer.jpeg should be ok");
+    /// let scr_sprite = Sprite::from_file("icons/screenshot.png", None, None)
+    ///                               .expect("screenshot.jpeg should be ok");
+    /// let app_sprite = Sprite::grid();
+    ///
+    /// let fly_sprite = Sprite::from_file("icons/fly_over.png", None, None)
+    ///                               .expect("fly_over.jpeg should be ok");
+    /// let close_sprite = Sprite::close();
+    ///
+    /// filename_scr = "screenshots/ui_button_img.jpeg";
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     Ui::window_begin("Choose a pretty image", &mut window_pose, None, None, None);
+    ///     if Ui::button_img("Log", &log_sprite)
+    ///         .image_layout(UiBtnLayout::Center)
+    ///         .size([0.07, 0.07])
+    ///         .image_tint(named_colors::GOLD)
+    ///         .press() {
+    ///         choice = "A";
+    ///     }
+    ///     if Ui::button_img("screenshot", &scr_sprite)
+    ///         .image_layout(UiBtnLayout::CenterNoText)
+    ///         .size([0.07, 0.07])
+    ///         .press(){
+    ///         choice = "B";
+    ///     }
+    ///     if Ui::button("Applications").image(&app_sprite)
+    ///         .image_layout(UiBtnLayout::Right)
+    ///         .size([0.17, 0.04])
+    ///         .press() {
+    ///         choice = "C";
+    ///     }
+    ///     if Ui::button_img_at("fly", &fly_sprite, [-0.01, -0.04, 0.0], [0.12, 0.12])
+    ///         .image_layout(UiBtnLayout::CenterNoText)
+    ///         .image_tint(named_colors::CYAN)
+    ///         .press() {
+    ///         choice = "D";
+    ///     }
+    ///     if Ui::button("close").image(&close_sprite).at([-0.08, 0.03, 0.0], [0.05, 0.05])
+    ///         .image_layout(UiBtnLayout::CenterNoText)
+    ///         .press() {
+    ///         sk.quit(None);
+    ///     }
+    ///     Ui::window_end();
+    ///     # assert_eq!(choice, "C");
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_button_img.jpeg" alt="screenshot" width="200">
+    pub fn button_img(text: impl AsRef<str>, image: impl AsRef<Sprite>) -> UiButtonBuilder {
+        UiButtonBuilder::new(text).image(image)
+    }
+
+    /// A variant of image button that doesn’t use the layout system.
+    /// <https://stereokit.net/Pages/StereoKit/UI/ButtonImgAt.html>
+    /// * `text` - Text to display on the button and id for tracking element state. MUST be unique within current
+    ///   hierarchy.
+    /// * `image` - This is the image that will be drawn along with the text. See image_layout for where the image gets
+    ///   drawn!
+    /// * `image_layout` - This enum specifies how the text and image should be laid out on the button. For example,
+    ///   UiBtnLayout::Left will have the image on the left, and text on the right. If not set, default value is
+    ///   UiBtnLayout::Left. Set with [`UiButtonBuilder::image_layout`].
+    /// * `top_left_corner` - Top-left corner of the UI element relative to the current hierarchy.
+    /// * `size` - Layout size for this element in hierarchy space.
+    /// * [`UiButtonBuilder::image_tint`] - The Sprite's color will be multiplied by this tint. If not set, default
+    ///   value is white.
+    /// * [`UiButtonBuilder::text_align`] - Where should the text position itself within its bounds?
+    ///
+    /// Use this builder for absolute-positioned image buttons, then call [`UiButtonBuilder::press`].
+    ///
+    /// ### Examples
+    /// ```ignore
+    /// if Ui::button_img_at("fly", &fly_sprite, [-0.01, -0.04, 0.0], [0.12, 0.12])
+    ///     .image_layout(UiBtnLayout::CenterNoText)
+    ///     .image_tint(named_colors::CYAN)
+    ///     .press() {/*same as :*/}
+    /// if Ui::button("close").image(&close_sprite).at([-0.08, 0.03, 0.0], [0.05, 0.05])
+    ///     .image_layout(UiBtnLayout::CenterNoText)
+    ///     .press() {}
+    /// ```
+    pub fn button_img_at(
+        text: impl AsRef<str>,
+        image: impl AsRef<Sprite>,
+        top_left_corner: impl Into<Vec3>,
+        size: impl Into<Vec2>,
+    ) -> UiButtonBuilder {
+        UiButtonBuilder::new(text).image(image).at(top_left_corner, size)
     }
 
     /// This is the core functionality of StereoKit’s buttons, without any of the rendering parts! If you’re trying to
@@ -1899,7 +1564,7 @@ impl Ui {
     ///     if slider.active_state.is_just_inactive() {
     ///        println!("Slider1 moved");
     ///     }
-    ///     Ui::label_builder(format!("x: {:.2}          y: {:.2}", slider_pt.x, slider_pt.y)).use_padding(true).draw();
+    ///     Ui::label(format!("x: {:.2}          y: {:.2}", slider_pt.x, slider_pt.y)).use_padding(true).draw();
     ///     Ui::window_end();
     /// );
     /// # sk::Sk::shutdown();
@@ -1935,76 +1600,6 @@ impl Ui {
         }
     }
 
-    /// A pressable button accompanied by an image! The button will expand to fit the text provided to it, horizontally.
-    /// Text is re-used as the id. Will return true only on the first frame it is pressed!
-    /// <https://stereokit.net/Pages/StereoKit/UI/ButtonImg.html>
-    /// * `text` - Text to display on the button and id for tracking element state. MUST be unique within current
-    ///   hierarchy.
-    /// * `image` - This is the image that will be drawn along with the text. See imageLayout for where the image gets
-    ///   drawn!
-    /// * `image_layout` - This enum specifies how the text and image should be laid out on the button. For example,
-    ///   UiBtnLayout::Left will have the image on the left, and text on the right. If None will have default value of
-    ///   UiBtnLayout::Left
-    /// * `size` - The layout size for this element in Hierarchy space. If an axis is left as zero, it will be
-    ///   auto-calculated. For X this is the remaining width of the current layout, and for Y this is Ui::get_line_height.
-    /// * `color` - The Sprite’s color will be multiplied by this tint. None will have default value of white.
-    ///
-    /// Returns true only on the first frame it is pressed!
-    /// see also [`ui_button_img`] [`Ui::button_img_at`]
-    /// see example in [`Ui::button_img_builder`]
-    #[deprecated(since = "0.4.0", note = "Use Ui::button_img_builder(...).press()")]
-    pub fn button_img(
-        text: impl AsRef<str>,
-        image: impl AsRef<Sprite>,
-        image_layout: Option<UiBtnLayout>,
-        size: Option<Vec2>,
-        color: Option<Color128>,
-    ) -> bool {
-        let text = text.as_ref();
-        let image_layout = image_layout.unwrap_or(UiBtnLayout::Left);
-        let mut builder = Ui::button_img_builder(text, image).image_layout(image_layout);
-        if let Some(size) = size {
-            builder = builder.size(size);
-        }
-        if let Some(color) = color {
-            builder = builder.image_tint(color);
-        }
-        builder.press()
-    }
-
-    /// A variant of UI::button_img that doesn’t use the layout system, and instead goes exactly where you put it.
-    /// <https://stereokit.net/Pages/StereoKit/UI/ButtonImgAt.html>
-    /// * `text` - Text to display on the button and id for tracking element state. MUST be unique within current
-    ///   hierarchy.
-    /// * `image` - This is the image that will be drawn along with the text. See imageLayout for where the image gets
-    ///   drawn!
-    /// * `image_layout` - This enum specifies how the text and image should be laid out on the button. For example,
-    ///   UiBtnLayout::Left will have the image on the left, and text on the right. If None will have default value of
-    ///   UiBtnLayout::Left
-    /// * `top_left_corner` - This is the top left corner of the UI element relative to the current Hierarchy.
-    /// * `size` - The layout size for this element in Hierarchy space.
-    /// * `color` - The Sprite’s color will be multiplied by this tint. None will have default value of white.
-    ///
-    /// Returns true only on the first frame it is pressed!
-    /// see also [`ui_button_img_at`]
-    /// see example in [`Ui::button_img`]
-    #[deprecated(since = "0.4.0", note = "Use Ui::button_img_at_builder(...).press()")]
-    pub fn button_img_at(
-        text: impl AsRef<str>,
-        image: impl AsRef<Sprite>,
-        image_layout: Option<UiBtnLayout>,
-        top_left_corner: impl Into<Vec3>,
-        size: impl Into<Vec2>,
-        color: Option<Color128>,
-    ) -> bool {
-        let image_layout = image_layout.unwrap_or(UiBtnLayout::Left);
-        let mut builder = Ui::button_img_at_builder(text, image, top_left_corner, size).image_layout(image_layout);
-        if let Some(color) = color {
-            builder = builder.image_tint(color);
-        }
-        builder.press()
-    }
-
     /// A pressable round button! This button has a square layout,Add commentMore actions and only shows an image, no
     /// text. Will return true only on the first frame it is pressed!
     /// <https://stereokit.net/Pages/StereoKit/UI/ButtonRound.html>
@@ -2038,6 +1633,7 @@ impl Ui {
     ///     if Ui::button_round_at("3", &list_sprite, [-0.04, 0.04, 0.005], 0.03) {button = 3}
     ///     if Ui::button_round_at("4", &backspace_sprite, [-0.04, -0.08, 0.005], 0.04) {button = 4}
     ///     Ui::window_end();
+    ///     # assert_eq!(button, 0);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -2284,7 +1880,7 @@ impl Ui {
     ///     [0.01, 0.035, 0.92], Some([0.0, 185.0, 0.0].into()));
     ///
     /// let mut scaling1 = 0.15;
-    /// let mut scaling2 = 0.50f64;
+    /// let mut scaling2 = 0.50;
     /// let mut scaling3 = 0.0;
     /// let mut scaling4 = 0.85;
     ///
@@ -2572,22 +2168,38 @@ impl Ui {
     /// Adds some text to the layout! Text uses the UI’s current font settings, which can be changed with
     /// Ui::push/pop_text_style. Can contain newlines!
     /// <https://stereokit.net/Pages/StereoKit/UI/Label.html>
-    /// * `text` - Label text to display. Can contain newlines! Doesn’t use text as id, so it can be non-unique.
-    /// * `size` - The layout size for this element in Hierarchy space. If an axis is left as zero, it will be
+    /// * `text` - Label text to display. Can contain newlines! Doesn't use text as id, so it can be non-unique.
+    /// * [`UiLabelBuilder::size`] - The layout size for this element in Hierarchy space. If an axis is left as zero, it will be
     ///   auto-calculated. For X this is the remaining width of the current layout, and for Y this is
-    ///   [`Ui::get_line_height`]. If None, both axis will be auto-calculated.
-    /// * `use_padding` - Should padding be included for positioning this text? Sometimes you just want un-padded text!
+    ///   [`Ui::get_line_height`].
+    /// * [`UiLabelBuilder::use_padding`] - Should padding be included for positioning this text? Sometimes you just want un-padded text!
+    /// * [`UiLabelBuilder::text_align`] - Where should the text position itself within its bounds?
     ///
-    /// see also [`ui_label`] [`Ui::label_builder`]
-    /// see example in [`Ui::label_builder`]
-    #[deprecated(since = "0.4.0", note = "Use Ui::label_builder(...).draw()")]
-    pub fn label(text: impl AsRef<str>, size: Option<Vec2>, use_padding: bool) {
-        let text = text.as_ref();
-        let mut builder = Ui::label_builder(text).use_padding(use_padding);
-        if let Some(size) = size {
-            builder = builder.size(size);
-        }
-        builder.draw();
+    /// Use this builder to configure size/padding/alignment and call [`UiLabelBuilder::draw`].
+    ///
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{ui::Ui, maths::Pose};
+    ///
+    /// let mut window_pose = Pose::new(
+    ///     [0.01, 0.035, 0.93], Some([0.0, 185.0, 0.0].into()));
+    ///
+    /// filename_scr = "screenshots/ui_label.jpeg";
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     Ui::window_begin("Labels", &mut window_pose, None, None, None);
+    ///     Ui::label("Label 1").use_padding(false).draw();
+    ///     Ui::same_line();
+    ///     Ui::label("Label 2").size([0.025, 0.0]).use_padding(false).draw();
+    ///     Ui::label("Label 3").size([0.1,   0.01]).use_padding(true).draw();
+    ///     Ui::label("Label 4").size([0.0,   0.0045]).use_padding(false).draw();
+    ///     Ui::window_end();
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_label.jpeg" alt="screenshot" width="200">
+    pub fn label(text: impl AsRef<str>) -> UiLabelBuilder {
+        UiLabelBuilder::new(text)
     }
 
     /// Tells if the hand was involved in the active state of the most recently called UI element using an id. Active
@@ -2609,7 +2221,7 @@ impl Ui {
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Last Element Hand Active", &mut window_pose, None, None, None);
-    ///     Ui::button_builder("Button1").press();
+    ///     Ui::button("Button1").press();
     ///     let state_hand = Ui::last_element_hand_active(Handed::Right);
     ///     let state_element = Ui::get_last_element_active();
     ///
@@ -2646,7 +2258,7 @@ impl Ui {
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Last Element Hand Focuse", &mut window_pose, None, None, None);
-    ///     Ui::button_builder("Button1").press();
+    ///     Ui::button("Button1").press();
     ///     let state_hand = Ui::last_element_hand_focused(Handed::Right);
     ///     let state_element = Ui::get_last_element_focused();
     ///     assert_eq!( state_hand.is_just_active(), false);
@@ -2687,7 +2299,7 @@ impl Ui {
     ///     Ui::layout_area([0.1, -0.04, 0.0], [0.01, 0.01], true);
     ///     Ui::image(&sprite, [0.07, 0.07]);
     ///     Ui::layout_area([0.00, -0.01, 0.0], [0.01, 0.01], true);
-    ///     Ui::label_builder("Text and more").use_padding(false).draw();
+    ///     Ui::label("Text and more").use_padding(false).draw();
     ///     Ui::window_end();
     /// );
     /// # sk::Sk::shutdown();
@@ -2727,9 +2339,9 @@ impl Ui {
     ///     Ui::image(&sprite, [0.07, 0.07]);
     ///     Ui::layout_pop();
     ///     Ui::layout_push_cut( UiCut::Right, 0.1, true);
-    ///     Ui::label_builder("Text and more ...").use_padding(false).draw();
+    ///     Ui::label("Text and more ...").use_padding(false).draw();
     ///     Ui::layout_push_cut( UiCut::Bottom, 0.02, true);
-    ///     Ui::label_builder("And again and again ...").use_padding(false).draw();
+    ///     Ui::label("And again and again ...").use_padding(false).draw();
     ///     Ui::layout_pop();
     ///     Ui::layout_pop();
     ///     Ui::window_end();
@@ -2856,11 +2468,11 @@ impl Ui {
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Next line", &mut window_pose, None, None, None);
-    ///     Ui::label_builder("Line 1").use_padding(false).draw();
+    ///     Ui::label("Line 1").use_padding(false).draw();
     ///     Ui::next_line();
     ///     Ui::next_line();
     ///     Ui::next_line();
-    ///     Ui::label_builder("Line 5").use_padding(false).draw();
+    ///     Ui::label("Line 5").use_padding(false).draw();
     ///     Ui::window_end();
     /// );
     /// # sk::Sk::shutdown();
@@ -2888,16 +2500,16 @@ impl Ui {
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Panel at", &mut window_pose, Some([0.2, 0.15].into()), None, None);
     ///     Ui::panel_at([0.11, -0.01, 0.0], [0.08, 0.03], Some(UiPad::None));
-    ///     Ui::label_builder("panel 1").use_padding(false).draw();
+    ///     Ui::label("panel 1").use_padding(false).draw();
     ///
     ///     Ui::layout_push_cut( UiCut::Right, 0.1, true);
     ///     Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);
-    ///     Ui::label_builder("panel 2").use_padding(false).draw();
+    ///     Ui::label("panel 2").use_padding(false).draw();
     ///     Ui::layout_pop();
     ///
     ///     Ui::layout_push_cut( UiCut::Bottom, 0.08, false);
     ///     Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);
-    ///     Ui::label_builder("panel 3").use_padding(false).draw();
+    ///     Ui::label("panel 3").use_padding(false).draw();
     ///     Ui::layout_pop();
     ///
     ///     Ui::window_end();
@@ -2930,18 +2542,18 @@ impl Ui {
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Panel begin", &mut window_pose, Some([0.2, 0.15].into()), None, None);
     ///     Ui::panel_begin(Some(UiPad::None));
-    ///     Ui::label_builder("panel 1").use_padding(false).draw();
+    ///     Ui::label("panel 1").use_padding(false).draw();
     ///     Ui::panel_end();
     ///
     ///     Ui::layout_push_cut( UiCut::Right, 0.1, true);
     ///     Ui::panel_begin(None);
-    ///     Ui::label_builder("panel 2").use_padding(false).draw();
+    ///     Ui::label("panel 2").use_padding(false).draw();
     ///     Ui::panel_end();
     ///     Ui::layout_pop();
     ///
     ///     Ui::layout_push_cut( UiCut::Bottom, 0.08, false);
     ///     Ui::panel_begin(Some(UiPad::Inside));
-    ///     Ui::label_builder("panel 3\nwith CRLF").use_padding(false).draw();
+    ///     Ui::label("panel 3\nwith CRLF").use_padding(false).draw();
     ///     Ui::panel_end();
     ///     Ui::layout_pop();
     ///
@@ -2987,7 +2599,7 @@ impl Ui {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin(id, &mut window_pose, None, None, None);
     ///     Ui::play_sound_on_off(element_visual, id_hash, window_pose.position);
-    ///     Ui::label_builder("This will play the 'on' sound\nfor the given (id / UiVisual)\nat the local position.").use_padding(false).draw();           
+    ///     Ui::label("This will play the 'on' sound\nfor the given (id / UiVisual)\nat the local position.").use_padding(false).draw();           
     ///     Ui::window_end();
     /// );
     /// # sk::Sk::shutdown();
@@ -3017,7 +2629,7 @@ impl Ui {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Play sound on", &mut window_pose, None, None, None);
     ///     Ui::play_sound_on(element_visual, window_pose.position);
-    ///     Ui::label_builder("This will play the 'on' sound\nassociated with the given UIVisual\nat the local position.").use_padding(false).draw();           
+    ///     Ui::label("This will play the 'on' sound\nassociated with the given UIVisual\nat the local position.").use_padding(false).draw();           
     ///     Ui::window_end();
     /// );
     /// # sk::Sk::shutdown();
@@ -3048,7 +2660,7 @@ impl Ui {
     ///     Ui::window_begin("Play sound off", &mut window_pose, None, None, None);
     ///     Ui::hslider("Slider1", &mut value, 0.0, 1.0,  None, None, None, None);
     ///     Ui::play_sound_off(element_visual, window_pose.position);
-    ///     Ui::label_builder("This will play the 'off' sound\nassociated with the given UIVisual\nat the local position.").use_padding(false).draw();
+    ///     Ui::label("This will play the 'off' sound\nassociated with the given UIVisual\nat the local position.").use_padding(false).draw();
     ///     Ui::window_end();
     /// );
     /// # sk::Sk::shutdown();
@@ -3257,7 +2869,7 @@ impl Ui {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Push Enabled", &mut window_pose, None, None, None);
     ///     assert_eq!(Ui::get_enabled(), true);
-    ///     Ui::toggle_builder("Enabled", &mut enabled_value).interact();
+    ///     Ui::toggle("Enabled", &mut enabled_value).interact();
     ///     Ui::push_enabled(enabled_value, None);
     ///
     ///     Ui::push_enabled(true, None);
@@ -3265,11 +2877,11 @@ impl Ui {
     ///     Ui::hprogress_bar(0.20, 0.08, false);
     ///     Ui::pop_enabled();
     ///
-    ///     if Ui::button_builder("Button").press() {panic!("impossible")}
+    ///     if Ui::button("Button").press() {panic!("impossible")}
     ///
     ///     Ui::push_enabled(true, Some(HierarchyParent::Ignore));
     ///     assert_eq!(Ui::get_enabled(), true);
-    ///     Ui::toggle_builder("I'm a robot!",&mut toggle_value).interact();
+    ///     Ui::toggle("I'm a robot!",&mut toggle_value).interact();
     ///     Ui::pop_enabled();
     ///
     ///     Ui::pop_enabled();
@@ -3301,10 +2913,10 @@ impl Ui {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Push Id", &mut window_pose, None, None, None);
     ///     Ui::push_id("group1");
-    ///     Ui::toggle_builder("Choice 1",&mut toggle_value1).interact();
+    ///     Ui::toggle("Choice 1",&mut toggle_value1).interact();
     ///     Ui::pop_id();
     ///     Ui::push_id("group2");
-    ///     Ui::toggle_builder("Choice 1",&mut toggle_value1b).interact();
+    ///     Ui::toggle("Choice 1",&mut toggle_value1b).interact();
     ///     Ui::pop_id();
     ///     Ui::window_end();
     /// );
@@ -3334,10 +2946,10 @@ impl Ui {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Push Id", &mut window_pose, None, None, None);
     ///     Ui::push_id_int(1);
-    ///     Ui::toggle_builder("Choice 1",&mut toggle_value1).interact();
+    ///     Ui::toggle("Choice 1",&mut toggle_value1).interact();
     ///     Ui::pop_id();
     ///     Ui::push_id_int(2);
-    ///     Ui::toggle_builder("Choice 1",&mut toggle_value1b).interact();
+    ///     Ui::toggle("Choice 1",&mut toggle_value1b).interact();
     ///     Ui::pop_id();
     ///     Ui::window_end();
     /// );
@@ -3373,7 +2985,7 @@ impl Ui {
     ///     Ui::input("Title", &mut title, Some([0.15, 0.03].into()), None);
     ///     Ui::input("Author", &mut author, Some([0.15, 0.03].into()), None);
     ///     Ui::hslider("volume", &mut volume, 0.0, 1.0, Some(0.05), None, None, None);
-    ///     Ui::toggle_builder("mute", &mut mute).interact();
+    ///     Ui::toggle("mute", &mut mute).interact();
     ///     Ui::pop_preserve_keyboard();
     ///     Ui::window_end();
     /// );
@@ -3404,7 +3016,7 @@ impl Ui {
     ///     Ui::push_grab_aura(false);
     ///     assert_eq!(Ui::grab_aura_enabled(), false);
     ///     Ui::window_begin("Write a title", &mut window_pose, None, None, None);
-    ///     Ui::label_builder("Title:").use_padding(false).draw();
+    ///     Ui::label("Title:").use_padding(false).draw();
     ///     Ui::input("Title", &mut title, Some([0.15, 0.03].into()), None);
     ///     Ui::window_end();
     ///     Ui::pop_grab_aura();
@@ -3442,10 +3054,10 @@ impl Ui {
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     Ui::push_surface(surface_pose, [0.0, 0.0, 0.0], [0.1, 0.1]);
     ///     Ui::push_text_style(style);
-    ///     Ui::label_builder("Surface").size([0.25, 0.03]).use_padding(false).draw();
+    ///     Ui::label("Surface").size([0.25, 0.03]).use_padding(false).draw();
     ///     Ui::pop_text_style();
     ///     Ui::panel_begin(Some(UiPad::Inside));
-    ///     Ui::label_builder("Give a title:").use_padding(false).draw();
+    ///     Ui::label("Give a title:").use_padding(false).draw();
     ///     Ui::input("Title", &mut title, Some([0.15, 0.03].into()), None);
     ///     Ui::panel_end();
     ///     Ui::pop_surface();
@@ -3540,7 +3152,7 @@ impl Ui {
     ///     Ui::hslider("volume", &mut volume, 0.0, 1.0, Some(0.05), None, None, None);
     ///     Ui::pop_tint();
     ///     Ui::push_tint(green.to_gamma());
-    ///     Ui::toggle_builder("mute", &mut mute).interact();
+    ///     Ui::toggle("mute", &mut mute).interact();
     ///     Ui::pop_tint();
     ///     Ui::window_end();
     /// );
@@ -3584,7 +3196,7 @@ impl Ui {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Push Tint", &mut window_pose, None, None, None);
     ///     Ui::hseparator();
-    ///     if Ui::button_builder("Exit").press() {sk.quit(None);}
+    ///     if Ui::button("Exit").press() {sk.quit(None);}
     ///     Ui::hseparator();
     ///     Ui::window_end();
     /// );
@@ -3629,7 +3241,7 @@ impl Ui {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Push Tint", &mut window_pose, None, None, None);
     ///     Ui::hseparator();
-    ///     if Ui::button_builder("Exit").press() {sk.quit(None);}
+    ///     if Ui::button("Exit").press() {sk.quit(None);}
     ///     Ui::hseparator();
     ///     Ui::window_end();
     /// );
@@ -3682,7 +3294,7 @@ impl Ui {
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("gen_quadrant_mesh", &mut window_pose, None, None, None);
     ///     Ui::input("input", &mut text, None, None );
-    ///     if Ui::button_builder("Exit").press() {sk.quit(None);}
+    ///     if Ui::button("Exit").press() {sk.quit(None);}
     ///     Ui::window_end();
     /// );
     /// # sk::Sk::shutdown();
@@ -3712,96 +3324,106 @@ impl Ui {
         }
     }
 
-    /// A Radio is similar to a button, except you can specify if it looks pressed or not regardless of interaction.
-    /// This can be useful for radio-like behavior! Check an enum for a value, and use that as the ‘active’ state, Then
-    /// switch to that enum value if Radio returns true.
+    /// A radio-like pressable element using radio sprites to add with [`UiRadioBuilder::images`].
     /// <https://stereokit.net/Pages/StereoKit/UI/Radio.html>
     /// * `text` - Text to display on the Radio and id for tracking element state. MUST be unique within current
     ///   hierarchy.
-    /// * `active` - Does this button look like it’s pressed?
-    /// * `size` - The layout size for this element in Hierarchy space. If an axis is left as zero, it will be
-    ///   auto-calculated. For X this is the remaining width of the current layout, and for Y this is
+    /// * `active` - Does this button look like it's pressed?
+    /// * [`UiRadioBuilder::images`] - Images to use when the radio value is false/true.
+    /// * [`UiRadioBuilder::image_layout`] - This enum specifies how the text and image should be laid out on the radio.
+    ///   For example, UiBtnLayout::Left will have the image on the left, and text on the right.
+    /// * [`UiRadioBuilder::size`] - The layout size for this element in Hierarchy space. If an axis is left as zero,
+    ///   it will be auto-calculated. For X this is the remaining width of the current layout, and for Y this is
     ///   [`Ui::get_line_height`].
+    /// * [`UiRadioBuilder::image_tint`] - The Sprite's color will be multiplied by this tint. If not set, default
+    ///   value is white.
+    /// * [`UiRadioBuilder::text_align`] - Where should the text position itself within its bounds?
     ///
-    /// Returns true only on the first frame it is pressed.
-    /// see also [`ui_toggle_img`]
-    #[deprecated(since = "0.0.1", note = "Performence issues, use radio_img instead")]
-    pub fn radio(text: impl AsRef<str>, active: bool, size: Option<Vec2>) -> bool {
-        let text = text.as_ref();
-        match size {
-            Some(size) => Ui::radio_builder(text, active).size(size).press(),
-            None => Ui::radio_builder(text, active).press(),
-        }
+    /// Use this builder for layout radio elements, then call [`UiRadioBuilder::press`].
+    ///
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{ui::{Ui, UiBtnLayout}, maths::Pose, sprite::Sprite, util::named_colors};
+    ///
+    /// let mut window_pose = Pose::new(
+    ///     [0.01, 0.035, 0.91], Some([0.0, 185.0, 0.0].into()));
+    ///
+    /// let (on, off) = (Sprite::radio_on(), Sprite::radio_off());
+    ///
+    /// let mut choice = "A";
+    ///
+    /// filename_scr = "screenshots/ui_radio.jpeg";
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     Ui::window_begin("Radio", &mut window_pose, None, None, None);
+    ///     if Ui::radio("A", choice == "A")
+    ///         .images(&off, &on)
+    ///         .image_layout(UiBtnLayout::Right)
+    ///         .size([0.06, 0.05])
+    ///         .press() { choice = "A";}
+    ///     Ui::same_line();
+    ///     if Ui::radio("B", choice == "B")
+    ///         .images(&off, &on).image_tint(named_colors::RED)
+    ///         .image_layout(UiBtnLayout::Center)
+    ///         .size([0.03, 0.05])
+    ///         .press(){choice = "B";}
+    ///     Ui::same_line();
+    ///     if Ui::radio("C", choice == "C")
+    ///         .images(&off, &on)
+    ///         .image_layout(UiBtnLayout::Left)
+    ///         .press() {choice = "C";}
+    ///     if Ui::radio_at("D", choice == "D", [0.06, -0.07, 0.0], [0.06, 0.03])
+    ///         .images(&off, &on)
+    ///         .image_layout(UiBtnLayout::Right)
+    ///         .press() {choice = "D";}
+    ///     if Ui::radio("E", choice == "E").at([-0.01, -0.07, 0.0], [0.06, 0.03])
+    ///         .images(&off, &on)
+    ///         .image_layout(UiBtnLayout::Left)
+    ///         .press() {choice = "E";}
+    ///     Ui::window_end();
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_radio.jpeg" alt="screenshot" width="200">
+    pub fn radio(text: impl AsRef<str>, active: bool) -> UiRadioBuilder {
+        UiRadioBuilder::new(text, active)
     }
 
-    /// A Radio is similar to a button, except you can specify if it looks pressed or not regardless of interaction.
-    /// This can be useful for radio-like behavior! Check an enum for a value, and use that as the ‘active’ state, Then
-    /// switch to that enum value if Radio returns true.
-    /// This version allows you to override the images used by the Radio.
-    /// <https://stereokit.net/Pages/StereoKit/UI/Radio.html>
-    /// * `text` - Text to display on the Radio and id for tracking element state. MUST be unique within current
-    ///   hierarchy.
-    /// * `active` - Does this button look like it’s pressed?
-    /// * `image_off` - Image to use when the radio value is false.
-    /// * `image_on` - Image to use when the radio value is true.
-    /// * `image_layout` - This enum specifies how the text and image should be laid out on the radio. For example,
-    ///   UiBtnLayout::Left will have the image on the left, and text on the right.
-    /// * `size` - The layout size for this element in Hierarchy space. If an axis is left as zero, it will be
-    ///   auto-calculated. For X this is the remaining width of the current layout, and for Y this is
-    ///   [`Ui::get_line_height`].
-    ///
-    /// Returns true only on the first frame it is pressed.
-    /// see also [`ui_toggle_img`] [Ui::radio_at]
-    /// see example in [`Ui::radio_builder`]
-    #[deprecated(since = "0.4.0", note = "Use Ui::radio_builder(...).images(...).press()")]
-    pub fn radio_img(
-        text: impl AsRef<str>,
-        active: bool,
-        image_off: impl AsRef<Sprite>,
-        image_on: impl AsRef<Sprite>,
-        image_layout: UiBtnLayout,
-        size: Option<Vec2>,
-    ) -> bool {
-        let text = text.as_ref();
-        let mut builder = Ui::radio_builder(text, active).images(image_off, image_on).image_layout(image_layout);
-        if let Some(size) = size {
-            builder = builder.size(size);
-        }
-        builder.press()
-    }
-
-    /// A Radio is similar to a button, except you can specify if it looks pressed or not regardless of interaction.
-    /// This can be useful for radio-like behavior! Check an enum for a value, and use that as the ‘active’ state, Then
-    /// switch to that enum value if Radio returns true. This version allows you to override the images used by
-    /// the Radio.
+    /// A radio-like pressable element at an explicit position.
     /// <https://stereokit.net/Pages/StereoKit/UI/RadioAt.html>
     /// * `text` - Text to display on the Radio and id for tracking element state. MUST be unique within current
     ///   hierarchy.
-    /// * `active` - Does this button look like it’s pressed?
-    /// * `image_off` - Image to use when the radio value is false.
-    /// * `image_on` - Image to use when the radio value is true.
-    /// * `image_layout` - This enum specifies how the text and image should be laid out on the radio. For example,
+    /// * `active` - Does this button look like it's pressed?
+    /// * `top_left_corner` - Top-left corner of the UI element relative to the current hierarchy.
+    /// * `size` - Layout size for this element in hierarchy space.
+    /// * [`UiRadioBuilder::images`]- Images to use when the radio value is false/true.
+    /// * [`UiRadioBuilder::image_layout`] - This enum specifies how the text and image should be laid out on the radio.
+    ///   For example,
     ///   UiBtnLayout::Left will have the image on the left, and text on the right.
-    /// * `top_left_corner` - This is the top left corner of the UI element relative to the current Hierarchy.
-    /// * size - The layout size for this element in Hierarchy space.
+    /// * [`UiRadioBuilder::image_tint`] - The Sprite's color will be multiplied by this tint. If not set, default
+    ///   value is white.
+    /// * [`UiRadioBuilder::text_align`] - Where should the text position itself within its bounds?
     ///
-    /// Returns true only on the first frame it is pressed.
-    /// see also [`ui_toggle_img_at`]
-    /// see example in [`Ui::radio_img`]
-    #[deprecated(since = "0.4.0", note = "Use Ui::radio_at_builder(...).images(...).press()")]
+    /// Use this builder for absolute-positioned radio elements, then call [`UiRadioBuilder::press`].
+    ///
+    /// ### Examples
+    /// ```ignore
+    /// if Ui::radio_at("D", choice == "D", [0.06, -0.07, 0.0], [0.06, 0.03])
+    ///     .images(&off, &on)
+    ///     .image_layout(UiBtnLayout::Right)
+    ///     .press() { choice = "D"; /*Same as:*/}
+    /// if Ui::radio("D", choice == "D").at([0.06, -0.07, 0.0], [0.06, 0.03])
+    ///     .images(&off, &on)
+    ///     .image_layout(UiBtnLayout::Right)
+    ///     .press() { choice = "D"; }
+    /// ```
     pub fn radio_at(
         text: impl AsRef<str>,
         active: bool,
-        image_off: impl AsRef<Sprite>,
-        image_on: impl AsRef<Sprite>,
-        image_layout: UiBtnLayout,
         top_left_corner: impl Into<Vec3>,
         size: impl Into<Vec2>,
-    ) -> bool {
-        Ui::radio_at_builder(text, active, top_left_corner, size)
-            .images(image_off, image_on)
-            .image_layout(image_layout)
-            .press()
+    ) -> UiRadioBuilder {
+        UiRadioBuilder::new(text, active).at(top_left_corner, size)
     }
 
     /// Moves the current layout position back to the end of the line that just finished, so it can continue on the same
@@ -3848,7 +3470,7 @@ impl Ui {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("set element visual", &mut window_pose, None, None, None);
     ///     Ui::hseparator();
-    ///     if Ui::button_builder("Exit").press() {sk.quit(None);}
+    ///     if Ui::button("Exit").press() {sk.quit(None);}
     ///     Ui::hseparator();
     ///     Ui::window_end();
     /// );
@@ -3900,7 +3522,7 @@ impl Ui {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("set_element_color", &mut window_pose, None, None, None);
     ///     Ui::hseparator();
-    ///     if Ui::button_builder("Exit").press() {sk.quit(None);}
+    ///     if Ui::button("Exit").press() {sk.quit(None);}
     ///     Ui::hseparator();
     ///     Ui::window_end();
     /// );
@@ -3934,8 +3556,8 @@ impl Ui {
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Set Element Sound", &mut window_pose, None, None, None);
-    ///     if Ui::button_builder("Button1").press() {todo!();}
-    ///     if Ui::button_builder("Button2").press() {todo!();}
+    ///     if Ui::button("Button1").press() {todo!();}
+    ///     if Ui::button("Button2").press() {todo!();}
     ///     Ui::window_end();
     /// );
     /// # sk::Sk::shutdown();
@@ -3984,7 +3606,7 @@ impl Ui {
     ///     Ui::draw_element(UiVisual::Separator, None, [0.1, -0.08, 0.0], [0.2, 0.005, 0.005], 1.0);
     ///     Ui::draw_element(UiVisual::Aura, None, [0.1, -0.1, 0.0], [0.08, 0.08, 0.005], 0.5);
     ///     Ui::draw_element(UiVisual::Default, None, [0.0, -0.1, 0.0], [0.1, 0.025, 0.005], 0.0);
-    ///     Ui::draw_element(UiVisual::Carat, None, [0.0, -0.14, 0.0], [0.025, 0.025, 0.005], 1.0);
+    ///     Ui::draw_element(UiVisual::Caret, None, [0.0, -0.14, 0.0], [0.025, 0.025, 0.005], 1.0);
     ///     Ui::window_end();
     /// );
     /// # sk::Sk::shutdown();
@@ -4040,7 +3662,7 @@ impl Ui {
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Get Anim Focus", &mut window_pose, None, None, None);
-    ///     if Ui::button_builder("button1").press() {todo!()}
+    ///     if Ui::button("button1").press() {todo!()}
     ///     let id = Ui::stack_hash("button1");
     ///     let focus = Ui::get_anim_focus(id, BtnState::Inactive, BtnState::Inactive);
     ///     assert_eq!(focus, 0.0);
@@ -4099,10 +3721,10 @@ impl Ui {
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("set_theme_color", &mut window_pose, None, None, None);
     ///     Ui::push_enabled(false, None);
-    ///     if Ui::button_builder("Button").press() { todo!() };
+    ///     if Ui::button("Button").press() { todo!() };
     ///     Ui::pop_enabled();
     ///     Ui::hseparator();
-    ///     if Ui::button_builder("Exit").press() {sk.quit(None);}
+    ///     if Ui::button("Exit").press() {sk.quit(None);}
     ///     Ui::window_end();
     /// );
     /// # sk::Sk::shutdown();
@@ -4155,11 +3777,11 @@ impl Ui {
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("VSpace", &mut window_pose, None, None, None);
-    ///     Ui::label_builder("Line 1").use_padding(false).draw();
+    ///     Ui::label("Line 1").use_padding(false).draw();
     ///     Ui::vspace(0.02);
-    ///     Ui::label_builder("Line 2").use_padding(false).draw();
+    ///     Ui::label("Line 2").use_padding(false).draw();
     ///     Ui::vspace(0.04);
-    ///     if Ui::button_builder("Exit").press() {sk.quit(None);}
+    ///     if Ui::button("Exit").press() {sk.quit(None);}
     ///     Ui::window_end();
     /// );
     /// # sk::Sk::shutdown();
@@ -4183,10 +3805,10 @@ impl Ui {
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("HSpace", &mut window_pose, None, None, None);
-    ///     Ui::label_builder("Bla bla ...").use_padding(false).draw();
+    ///     Ui::label("Bla bla ...").use_padding(false).draw();
     ///     Ui::same_line();
     ///     Ui::hspace(0.08);
-    ///     if Ui::button_builder("Exit").press() {sk.quit(None);}
+    ///     if Ui::button("Exit").press() {sk.quit(None);}
     ///     Ui::window_end();
     /// );
     /// # sk::Sk::shutdown();
@@ -4343,102 +3965,136 @@ impl Ui {
         }
     }
 
-    /// A toggleable button! A button will expand to fit the text provided to it, vertically and horizontally. Text is
-    /// re-used as the id. Will return the toggle value any time the toggle value changes or None if no change occurs
+    /// A toggleable button.
     /// <https://stereokit.net/Pages/StereoKit/UI/Toggle.html>
     /// * `text` - Text to display on the Toggle and id for tracking element state. MUST be unique within current
     ///   hierarchy.
-    /// * `out_value` - The current state of the toggle button! True means it’s toggled on, and false means it’s
+    /// * `out_value` - The current state of the toggle button! True means it's toggled on, and false means it's
     ///   toggled off.
-    /// * `size` - The layout size for this element in Hierarchy space. If an axis is left as zero, it will be
+    /// * [`UiToggleBuilder::size`] - The layout size for this element in Hierarchy space. If an axis is left as zero, it will be
     ///   auto-calculated. For X this is the remaining width of the current layout, and for Y this is Ui::get_line_height.
-    ///   None is for auto-calculated.
+    /// * [`UiToggleBuilder::text_align`] - Where should the text position itself within its bounds?
     ///
-    /// Will return the new value (same as `out_value`) any time the toggle value changes.
-    /// see also [`ui_toggle`] [`Ui::toggle_img`] [`Ui::toggle_at`]
-    /// see example in [`Ui::toggle_builder`]
-    #[deprecated(since = "0.4.0", note = "Use Ui::toggle_builder(...).interact()")]
-    pub fn toggle(text: impl AsRef<str>, out_value: &mut bool, size: Option<Vec2>) -> Option<bool> {
-        let text = text.as_ref();
-        match size {
-            Some(size) => Ui::toggle_builder(text, out_value).size(size).interact(),
-            None => Ui::toggle_builder(text, out_value).interact(),
-        }
+    /// Use this builder for text toggles, then call [`UiToggleBuilder::interact`].
+    ///
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{ui::{Ui, UiBtnLayout}, maths::Pose, sprite::Sprite};
+    ///
+    /// let mut window_pose = Pose::new(
+    ///     [0.01, 0.065, 0.91], Some([0.0, 185.0, 0.0].into()));
+    ///
+    /// let (on, off) = (Sprite::arrow_up(), Sprite::arrow_down());
+    ///
+    /// let mut choiceA = false; let mut choiceB = true;
+    /// let mut choiceC = false; let mut choiceD = true;
+    /// let mut choiceE = false; let mut choiceF = true;
+    ///
+    /// filename_scr = "screenshots/ui_toggle.jpeg";
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     Ui::window_begin("Toggle button", &mut window_pose, None, None, None);
+    ///     Ui::toggle_img("A", &mut choiceA, &off, &on)
+    ///         .image_layout(UiBtnLayout::Right)
+    ///         .size([0.06, 0.05])
+    ///         .interact();
+    ///     Ui::same_line();
+    ///     if let Some(bool) = Ui::toggle_img("B", &mut choiceB, &off, &on)
+    ///         .image_layout(UiBtnLayout::Center)
+    ///         .size([0.06, 0.05])
+    ///         .interact() {
+    ///         assert_eq!(bool, choiceB);
+    ///     }
+    ///
+    ///     Ui::toggle("C", &mut choiceC).interact();
+    ///     Ui::same_line();
+    ///     Ui::toggle("D", &mut choiceD).size([0.06, 0.04]).interact();
+    ///
+    ///     Ui::toggle_at("E", &mut choiceE, [0.06, -0.12, 0.0], [0.06, 0.03])
+    ///         .toggle_images(&off, &off)
+    ///         .image_layout(UiBtnLayout::Right)
+    ///         .interact();
+    ///     if let Some(bool) = Ui::toggle_at("F", &mut choiceF, [-0.01, -0.12, 0.0], [0.06, 0.03])
+    ///         .interact() {
+    ///         assert_eq!(bool, choiceB);
+    ///     }
+    ///     Ui::window_end();
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_toggle.jpeg" alt="screenshot" width="200">
+    pub fn toggle<'a>(text: impl AsRef<str>, out_value: &'a mut bool) -> UiToggleBuilder<'a> {
+        UiToggleBuilder::new(text, out_value)
     }
 
-    /// A toggleable button! A button will expand to fit the text provided to it, vertically and horizontally. Text is
-    /// re-used as the id. Will return the toggle value any time the toggle value changes or None if no change occurs
+    /// A toggleable button with custom images.
     /// <https://stereokit.net/Pages/StereoKit/UI/Toggle.html>
-    /// * `text` - Text to display on the Toggle and id for tracking element state. MUST be unique within current
+    /// * `id` - Text to display on the Toggle and id for tracking element state. MUST be unique within current
     ///   hierarchy.
-    /// * `out_value` - The current state of the toggle button! True means it’s toggled on, and false means it’s
+    /// * `out_value` - The current state of the toggle button! True means it's toggled on, and false means it's
     ///   toggled off.
     /// * `toggle_off` - Image to use when the toggle value is false.
     /// * `toggle_on` - Image to use when the toggle value is true.
-    /// * `image_layout` - This enum specifies how the text and image should be laid out on the button. Default
-    ///   [`UiBtnLayout::Left`]
-    ///   will have the image on the left, and text on the right.
-    /// * `size` - The layout size for this element in Hierarchy space. If an axis is left as zero, it will be
-    ///   auto-calculated. For X this is the remaining width of the current layout, and for Y this is Ui::line_height.
-    ///   None is for auto-calculated.
+    /// * [`UiToggleBuilder::image_layout`] - This enum specifies how the text and image should be laid out on the button. If not set,
+    ///   default [`UiBtnLayout::Left`] will have the image on the left, and text on the right.
+    /// * [`UiToggleBuilder::size`] - The layout size for this element in Hierarchy space. If an axis is left as zero, it will be
+    ///   auto-calculated. For X this is the remaining width of the current layout, and for Y this is Ui::line_height
+    /// * [`UiToggleBuilder::image_tint`] - The Sprite's color will be multiplied by this tint. If not set, default value is white.
+    /// * [`UiToggleBuilder::text_align`] - Where should the text position itself within its bounds?
     ///
-    /// Will return the new value (same as `out_value`) any time the toggle value changes.
-    /// see also [`ui_toggle_img`] [`Ui::toggle`] [`Ui::toggle_at`]
-    /// see example in [`Ui::toggle`]
-    #[deprecated(since = "0.4.0", note = "Use Ui::toggle_img_builder(...).interact()")]
-    pub fn toggle_img(
+    /// Use this builder for layout image toggles, then call [`UiToggleBuilder::interact`].
+    /// This supports the new PR 1364 parameters: text alignment and image tint.
+    ///
+    /// ### Examples
+    /// ```ignore
+    /// Ui::toggle_img("A", &mut choiceA, &off, &on)
+    ///     .image_layout(UiBtnLayout::Right)
+    ///     .size([0.06, 0.05])
+    ///     .interact();
+    /// ```
+    pub fn toggle_img<'a>(
         id: impl AsRef<str>,
-        out_value: &mut bool,
+        out_value: &'a mut bool,
         toggle_off: impl AsRef<Sprite>,
         toggle_on: impl AsRef<Sprite>,
-        image_layout: Option<UiBtnLayout>,
-        size: Option<Vec2>,
-    ) -> Option<bool> {
-        let id = id.as_ref();
-        let image_layout = image_layout.unwrap_or(UiBtnLayout::Left);
-        let mut builder = Ui::toggle_img_builder(id, out_value, toggle_off, toggle_on).image_layout(image_layout);
-        if let Some(size) = size {
-            builder = builder.size(size);
-        }
-        builder.interact()
+    ) -> UiToggleBuilder<'a> {
+        UiToggleBuilder::new(id, out_value).toggle_images(toggle_off, toggle_on)
     }
 
-    /// A variant of Ui::toggle that doesn’t use the layout system, and instead goes exactly where you put it.
+    /// A variant of toggle that doesn’t use the layout system.
     /// <https://stereokit.net/Pages/StereoKit/UI/ToggleAt.html>
-    /// * `text` - Text to display on the Toggle and id for tracking element state. MUST be unique within current
+    /// * `id` - Text to display on the Toggle and id for tracking element state. MUST be unique within current
     ///   hierarchy.
-    /// * `out_value` - The current state of the toggle button! True means it’s toggled on, and false means it’s
+    /// * `out_value` - The current state of the toggle button! True means it's toggled on, and false means it's
     ///   toggled off.
-    /// * `toggle_off`- Image to use when the toggle value is false or when no toggle-on image is specified.
-    /// * `toggle_on` - Image to use when the toggle value is true and toggle-off has been specified. None will use
-    ///   `toggle_off` image if it has been specified.
-    /// * `imageLayout` - This enum specifies how the text and image should be laid out on the button.
-    ///   None is [`UiBtnLayout::Left`] will have the image on the left, and text on the right.
-    /// * `top_left_corner` - This is the top left corner of the UI element relative to the current Hierarchy.
-    /// * `size` - The layout size for this element in Hierarchy space.
+    /// * `top_left_corner` - Top-left corner of the UI element relative to the current hierarchy.
+    /// * `size` - Layout size for this element in hierarchy space.
+    /// * [`UiToggleBuilder::toggle_images`] - Image to use when the toggle value is false or when no toggle-on image
+    ///   is specified.
+    /// * [`UiToggleBuilder::toggle_images`] - Image to use when the toggle value is true and toggle-off has been
+    ///   specified. If not provided, `toggle_off` image is reused.
+    /// * [`UiToggleBuilder::image_layout`] - This enum specifies how the text and image should be laid out on the
+    ///   button. If not set, default [`UiBtnLayout::Left`] will have the image on the left, and text on the right.
+    /// * [`UiToggleBuilder::image_tint`] - The Sprite's color will be multiplied by this tint. If not set, default
+    ///   value is white.
+    /// * [`UiToggleBuilder::text_align`] - Where should the text position itself within its bounds?
     ///
-    /// Will return the new value (same as `out_value`) any time the toggle value changes.
-    /// see also [`ui_toggle_img_at`] [`ui_toggle_at`] [`Ui::toggle_img`] [`Ui::toggle`]
-    /// see example in [`Ui::toggle`]
-    #[deprecated(since = "0.4.0", note = "Use Ui::toggle_at_builder(...).interact()")]
-    pub fn toggle_at(
+    /// Use this builder for absolute-positioned toggles, then call [`UiToggleBuilder::interact`].
+    ///
+    /// ### Examples
+    /// ```ignore
+    /// Ui::toggle_at("E", &mut choiceE, [0.06, -0.12, 0.0], [0.06, 0.03])
+    ///     .toggle_images(&off, &off)
+    ///     .image_layout(UiBtnLayout::Right)
+    ///     .interact();
+    /// ```
+    pub fn toggle_at<'a>(
         id: impl AsRef<str>,
-        out_value: &mut bool,
-        toggle_off: Option<&Sprite>,
-        toggle_on: Option<&Sprite>,
-        image_layout: Option<UiBtnLayout>,
+        out_value: &'a mut bool,
         top_left_corner: impl Into<Vec3>,
         size: impl Into<Vec2>,
-    ) -> Option<bool> {
-        let mut builder = Ui::toggle_at_builder(id, out_value, top_left_corner, size)
-            .image_layout(image_layout.unwrap_or(UiBtnLayout::Left));
-
-        if let Some(image_off) = toggle_off {
-            let image_on = toggle_on.unwrap_or(image_off);
-            builder = builder.toggle_images(image_off, image_on);
-        }
-
-        builder.interact()
+    ) -> UiToggleBuilder<'a> {
+        UiToggleBuilder::new(id, out_value).at(top_left_corner, size)
     }
 
     /// A volume for helping to build one handed interactions. This checks for the presence of a hand inside the bounds,
@@ -4518,7 +4174,7 @@ impl Ui {
     ///     [0.01, 0.055, 0.91], Some([0.0, 185.0, 0.0].into()));
     ///
     /// let mut scaling1 = 0.15;
-    /// let mut scaling2 = 0.50f64;
+    /// let mut scaling2 = 0.50;
     /// let mut scaling3 = 0.0;
     /// let mut scaling4 = 0.85;
     ///
@@ -4651,15 +4307,15 @@ impl Ui {
     /// filename_scr = "screenshots/ui_window.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Window A", &mut window_pose1, None, Some(UiWin::Body), None);
-    ///     Ui::label_builder("Hello").use_padding(true).draw();
+    ///     Ui::label("Hello").use_padding(true).draw();
     ///     Ui::window_end();
     ///
     ///     Ui::window_begin("Window B", &mut window_pose2, Some([0.19, 0.05].into()), None, None);
-    ///     Ui::label_builder("World").use_padding(true).draw();
+    ///     Ui::label("World").use_padding(true).draw();
     ///     Ui::window_end();
     ///
     ///     Ui::window_begin("Window C", &mut window_pose3, None, None, Some(UiMove::Exact));
-    ///     Ui::label_builder("!!").use_padding(true).draw();
+    ///     Ui::label("!!").use_padding(true).draw();
     ///     Ui::window_end();
     /// );
     /// # sk::Sk::shutdown();
@@ -4702,7 +4358,7 @@ impl Ui {
     /// filename_scr = "screenshots/ui_window_auto.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin_auto("Window very very large", None, None, None);
-    ///     Ui::label_builder("Hello").use_padding(true).draw();
+    ///     Ui::label("Hello").use_padding(true).draw();
     ///     Ui::window_end();
     /// );
     /// # sk::Sk::shutdown();
@@ -4788,11 +4444,11 @@ impl Ui {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Panel at", &mut window_pose, Some([0.2, 0.15].into()), None, None);
     ///     Ui::panel_at([0.11, -0.01, 0.0], [0.08, 0.03], Some(UiPad::None));
-    ///     Ui::label_builder("panel 1").use_padding(false).draw();
+    ///     Ui::label("panel 1").use_padding(false).draw();
     ///
     ///     Ui::layout_push_cut( UiCut::Right, 0.1, true);
     ///     Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);
-    ///     Ui::label_builder("panel 2").use_padding(false).draw();
+    ///     Ui::label("panel 2").use_padding(false).draw();
     ///     Ui::layout_pop();
     ///     let b = Ui::get_layout_last();
     ///     assert!((b.center.x - -0.02382).abs() < 0.005);
@@ -4804,7 +4460,7 @@ impl Ui {
     ///
     ///     Ui::layout_push_cut( UiCut::Bottom, 0.08, false);
     ///     Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);
-    ///     Ui::label_builder("panel 3").use_padding(false).draw();
+    ///     Ui::label("panel 3").use_padding(false).draw();
     ///     Ui::layout_pop();
     ///     let b = Ui::get_layout_last();
     ///     assert!((b.center.x - 0.0661).abs() < 0.005);

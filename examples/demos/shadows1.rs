@@ -268,10 +268,10 @@ impl Shadows1 {
         const WINDOW_SIZE: Vec2 = Vec2::new(0.34, 0.32);
         Ui::window_begin("Shadow Settings", &mut self.window_pose, Some(WINDOW_SIZE), None, None);
 
-        Ui::label_builder("Shadow Mode:").use_padding(false).draw();
+        Ui::label("Shadow Mode:").use_padding(false).draw();
 
         // Radio buttons for each shadow mode using radio_img
-        if Ui::radio_builder("Quantized", matches!(self.current_shadow_mode, ShadowMode::Quantized))
+        if Ui::radio("Quantized", matches!(self.current_shadow_mode, ShadowMode::Quantized))
             .images(&self.radio_off, &self.radio_on)
             .image_layout(UiBtnLayout::Left)
             .press()
@@ -280,7 +280,7 @@ impl Shadows1 {
             self.previous_light_pos = Vec3::ZERO; // Reset for temporal filtering
         }
 
-        if Ui::radio_builder("Stable", matches!(self.current_shadow_mode, ShadowMode::Stable))
+        if Ui::radio("Stable", matches!(self.current_shadow_mode, ShadowMode::Stable))
             .images(&self.radio_off, &self.radio_on)
             .image_layout(UiBtnLayout::Left)
             .press()
@@ -289,7 +289,7 @@ impl Shadows1 {
             self.previous_light_pos = Vec3::ZERO;
         }
 
-        if Ui::radio_builder("Scene Centered", matches!(self.current_shadow_mode, ShadowMode::SceneCentered))
+        if Ui::radio("Scene Centered", matches!(self.current_shadow_mode, ShadowMode::SceneCentered))
             .images(&self.radio_off, &self.radio_on)
             .image_layout(UiBtnLayout::Left)
             .press()
@@ -298,7 +298,7 @@ impl Shadows1 {
             self.previous_light_pos = Vec3::ZERO;
         }
 
-        if Ui::radio_builder("Temporal Filtered", matches!(self.current_shadow_mode, ShadowMode::TemporalFiltered))
+        if Ui::radio("Temporal Filtered", matches!(self.current_shadow_mode, ShadowMode::TemporalFiltered))
             .images(&self.radio_off, &self.radio_on)
             .image_layout(UiBtnLayout::Left)
             .press()
@@ -315,11 +315,11 @@ impl Shadows1 {
             ShadowMode::SceneCentered => "Scene Centered: Fixed relative to scene objects",
             ShadowMode::TemporalFiltered => "Temporal Filtered: Smoothed position changes",
         };
-        Ui::label_builder(mode_description).size([0.32, 0.0]).use_padding(true).draw();
+        Ui::label(mode_description).size([0.32, 0.0]).use_padding(true).draw();
 
         // Resolution info
         Ui::hseparator();
-        Ui::label_builder(format!("Resolution: {}x{}", SHADOW_MAP_RESOLUTION, SHADOW_MAP_RESOLUTION)).draw();
+        Ui::label(format!("Resolution: {}x{}", SHADOW_MAP_RESOLUTION, SHADOW_MAP_RESOLUTION)).draw();
 
         Ui::window_end();
     }

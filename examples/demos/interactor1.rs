@@ -183,7 +183,7 @@ impl Interactor1 {
         // Column 1: Shape Type selection
         Ui::text("Shape Type:", None, None, None, None, None, None);
         Ui::panel_begin(Some(UiPad::Outside));
-        if Ui::radio_builder("Point", self.shape_type == InteractorType::Point)
+        if Ui::radio("Point", self.shape_type == InteractorType::Point)
             .images(&radio_off, &radio_on)
             .image_layout(UiBtnLayout::Left)
             .press()
@@ -192,7 +192,7 @@ impl Interactor1 {
             self.shape_type = InteractorType::Point;
             changed = true;
         }
-        if Ui::radio_builder("Line", self.shape_type == InteractorType::Line)
+        if Ui::radio("Line", self.shape_type == InteractorType::Line)
             .images(&radio_off, &radio_on)
             .image_layout(UiBtnLayout::Left)
             .press()
@@ -210,7 +210,7 @@ impl Interactor1 {
         Ui::panel_begin(None);
 
         let mut poke_enabled = (self.events & InteractorEvent::Poke) != InteractorEvent::empty();
-        if Ui::toggle_builder("Poke", &mut poke_enabled).interact().is_some() {
+        if Ui::toggle("Poke", &mut poke_enabled).interact().is_some() {
             if poke_enabled {
                 self.events |= InteractorEvent::Poke;
             } else {
@@ -220,7 +220,7 @@ impl Interactor1 {
         }
 
         let mut pinch_enabled = (self.events & InteractorEvent::Pinch) != InteractorEvent::empty();
-        if Ui::toggle_builder("Pinch", &mut pinch_enabled).interact().is_some() {
+        if Ui::toggle("Pinch", &mut pinch_enabled).interact().is_some() {
             if pinch_enabled {
                 self.events |= InteractorEvent::Pinch;
             } else {
@@ -230,7 +230,7 @@ impl Interactor1 {
         }
 
         let mut grip_enabled = (self.events & InteractorEvent::Grip) != InteractorEvent::empty();
-        if Ui::toggle_builder("Grip", &mut grip_enabled).interact().is_some() {
+        if Ui::toggle("Grip", &mut grip_enabled).interact().is_some() {
             if grip_enabled {
                 self.events |= InteractorEvent::Grip;
             } else {
@@ -246,7 +246,7 @@ impl Interactor1 {
         Ui::layout_push(Vec3::new(-0.1, -0.04, 0.0), Vec2::new(0.45, 0.4), false);
         Ui::text("Activation:", None, None, None, None, None, None);
         Ui::panel_begin(Some(UiPad::Outside));
-        if Ui::radio_builder("Position", self.activation_type == InteractorActivation::Position)
+        if Ui::radio("Position", self.activation_type == InteractorActivation::Position)
             .images(&radio_off, &radio_on)
             .image_layout(UiBtnLayout::Left)
             .press()
@@ -255,7 +255,7 @@ impl Interactor1 {
             self.activation_type = InteractorActivation::Position;
             changed = true;
         }
-        if Ui::radio_builder("State", self.activation_type == InteractorActivation::State)
+        if Ui::radio("State", self.activation_type == InteractorActivation::State)
             .images(&radio_off, &radio_on)
             .image_layout(UiBtnLayout::Left)
             .press()
@@ -303,14 +303,31 @@ impl Interactor1 {
         Ui::vspace(0.03);
 
         // Show current interactor info
-        if self.test_interactor.is_some() {
+        if let Some(interactor) = &self.test_interactor {
             Ui::text("Current Interactor:", None, None, None, None, None, None);
-            Ui::text(format!("Type: {:?}", self.shape_type), None, None, None, None, None, None);
-            Ui::text(format!("Events: {:?}", self.events), None, None, None, None, None, None);
-            Ui::text(format!("Activation: {:?}", self.activation_type), None, None, None, None, None, None);
-            Ui::text(format!("Min distance: {}", self.min_distance), None, None, None, None, None, None);
-            Ui::text(format!("Radius: {:.3}", self.capsule_radius), None, None, None, None, None, None);
-            Ui::text(format!("Sec. Motion: {}", self.secondary_motion_dimensions), None, None, None, None, None, None);
+            Ui::text(format!("    Type: {:?}", interactor.get_type()), None, None, None, None, None, None);
+            Ui::text(format!("    Events: {:?}", interactor.get_events()), None, None, None, None, None, None);
+            Ui::text(format!("    Activation: {:?}", interactor.get_activation()), None, None, None, None, None, None);
+            Ui::text(
+                format!("    Input Source ID: {}", interactor.get_input_source_id()),
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+            );
+            Ui::text(format!("    Min distance: {}", self.min_distance), None, None, None, None, None, None);
+            Ui::text(format!("    Radius: {:.3}", interactor.get_radius()), None, None, None, None, None, None);
+            Ui::text(
+                format!("    Sec. Motion: {}", interactor.get_secondary_dims()),
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+            );
         }
         Ui::vspace(0.03);
         Ui::hseparator();

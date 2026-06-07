@@ -55,37 +55,37 @@ impl Browser1 {
         );
 
         // Buttons to test different URLs
-        if Ui::button_builder("Open StereoKit").press() {
+        if Ui::button("Open StereoKit").press() {
             let url = "https://stereokit.net";
             let result = launch_browser_android(url);
             Log::info(format!("Open StereoKit ({}) - Result: {}", url, result));
         }
         Ui::same_line();
-        if Ui::button_builder("Open StereoKit-rust").press() {
+        if Ui::button("Open StereoKit-rust").press() {
             let url = "https://docs.rs/stereokit-rust/latest/stereokit_rust/";
             let result = launch_browser_android(url);
             Log::info(format!("Open StereoKit-rust ({}) - Result: {}", url, result));
         }
         Ui::same_line();
-        if Ui::button_builder("Open GitHub").press() {
+        if Ui::button("Open GitHub").press() {
             let url = "https://github.com";
             let result = launch_browser_android(url);
             Log::info(format!("Open GitHub ({}) - Result: {}", url, result));
         }
 
-        if Ui::button_builder("Open Google").press() {
+        if Ui::button("Open Google").press() {
             let url = "https://www.google.com";
             let result = launch_browser_android(url);
             Log::info(format!("Open Google ({}) - Result: {}", url, result));
         }
         Ui::same_line();
-        if Ui::button_builder("Open YouTube").press() {
+        if Ui::button("Open YouTube").press() {
             let url = "https://www.youtube.com";
             let result = launch_browser_android(url);
             Log::info(format!("Open YouTube ({}) - Result: {}", url, result));
         }
         Ui::same_line();
-        if Ui::button_builder("Test Meta Quest Store").press() {
+        if Ui::button("Test Meta Quest Store").press() {
             let url = "https://www.oculus.com/experiences/quest/";
             let result = launch_browser_android(url);
             Log::info(format!("Test Meta Quest Store ({}) - Result: {}", url, result));

@@ -27,6 +27,7 @@ fn has_field(field_name: &str, input: &DeriveInput) -> bool {
 ///   - **sk_info**: `Option<Rc<RefCell<SkInfo>>>`,
 ///   - *Optional* when the stepper should initialize on more than one step : **initialize_completed**: bool
 ///   - *Optional* when you want to implement an active/inactive flag: **enabled**: bool
+///   - *Optional* to define pre/post app ordering: **priority**: i32
 ///   - *Optional* when the stepper should shutdown some stuffs : **shutdown_completed**: bool
 /// * Functions:
 ///   - IStepper::initialize calls **fn start(&mut self) -> bool** where you can abort the initialization by returning false:
@@ -34,6 +35,7 @@ fn has_field(field_name: &str, input: &DeriveInput) -> bool {
 ///     **fn start_completed(&mut self) -> bool** where you can tell the initialization is done:
 ///   - IStepper::step calls  **fn check_event(&mut self, _key: &str, _value: &str)** where you can check the event report:
 ///   - IStepper::step calls **fn draw(&mut self, token: &MainThreadToken)** after check_event where you can draw your UI:
+///   - *Optional* if field **priority** is present IStepper::step_priority returns `self.priority`.
 ///   - *Optional* if field **shutdown_completed** is present IStepper::shutdown and IStepper::shutdown_done call
 ///     **fn close(&mut self, triggering:bool) -> bool**
 ///     where you can close your resources.
@@ -103,6 +105,16 @@ pub fn derive_istepper(input: TokenStream) -> TokenStream {
         quote! {}
     };
 
+    let priority_fn = if has_field("priority", &input) {
+        quote! {
+            fn step_priority(&self) -> i32 {
+                self.priority
+            }
+        }
+    } else {
+        quote! {}
+    };
+
     let close_fn = if has_field("shutdown_completed", &input) {
         quote! {
 
@@ -124,6 +136,8 @@ pub fn derive_istepper(input: TokenStream) -> TokenStream {
             #init_completed
 
             #enabled_fn
+
+            #priority_fn
 
             fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
                 self.id = id;

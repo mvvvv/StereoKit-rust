@@ -85,7 +85,7 @@ impl Text2 {
         );
         //Bug #1020 to solve
         Ui::push_enabled(cfg!(windows), None);
-        if Ui::radio_builder("Default Font", self.font_selected == 1)
+        if Ui::radio("Default Font", self.font_selected == 1)
             .images(&self.radio_off, &self.radio_on)
             .image_layout(UiBtnLayout::Left)
             .press()
@@ -95,7 +95,7 @@ impl Text2 {
             self.font_selected = 1;
         }
         Ui::same_line();
-        if Ui::radio_builder("Font 1", self.font_selected == 2)
+        if Ui::radio("Font 1", self.font_selected == 2)
             .images(&self.radio_off, &self.radio_on)
             .image_layout(UiBtnLayout::Left)
             .press()
@@ -105,7 +105,7 @@ impl Text2 {
             self.font_selected = 2;
         }
         Ui::same_line();
-        if Ui::radio_builder("Font 2", self.font_selected == 3)
+        if Ui::radio("Font 2", self.font_selected == 3)
             .images(&self.radio_off, &self.radio_on)
             .image_layout(UiBtnLayout::Left)
             .press()

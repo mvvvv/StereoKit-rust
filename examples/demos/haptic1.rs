@@ -65,7 +65,7 @@ impl Haptic1 {
     fn button_indicator(&self, text: &str, has_cap: bool) -> bool {
         let color_tint: Color128 = if has_cap { GREEN.into() } else { RED.into() };
         let sprite = if has_cap { self.sprite_on.as_ref().unwrap() } else { self.sprite_off.as_ref().unwrap() };
-        Ui::button_img_builder(text, sprite)
+        Ui::button_img(text, sprite)
             .image_layout(UiBtnLayout::Left)
             .image_tint(color_tint.to_gamma())
             .press()
@@ -83,7 +83,7 @@ impl Haptic1 {
         for (cut, label, id, haptic) in controllers {
             Ui::layout_push_cut(cut, 0.18, true);
             Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);
-            Ui::label_builder(label).draw();
+            Ui::label(label).draw();
 
             Ui::push_id(id);
             Ui::hseparator();
@@ -124,7 +124,7 @@ impl Haptic1 {
             }
             let red: Color128 = RED.into();
             Ui::push_tint(red.to_gamma());
-            if Ui::button_builder("Stop").size(Vec2::new(stop_width, 0.0)).press() {
+            if Ui::button("Stop").size(Vec2::new(stop_width, 0.0)).press() {
                 Input::haptic_stop(haptic);
             }
             Ui::pop_tint();
