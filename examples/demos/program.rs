@@ -326,7 +326,8 @@ pub fn launch(mut sk: Sk, _is_testing: bool, start_test: String) {
         Ui::pop_enabled();
         Ui::next_line();
         Ui::hseparator();
-        if Ui::button_img("Exit", &exit_button)
+        if Ui::button("Exit")
+            .image(&exit_button)
             .image_layout(UiBtnLayout::CenterNoText)
             .size(Vec2::new(0.10, 0.10))
             .press()
@@ -360,7 +361,7 @@ pub fn launch(mut sk: Sk, _is_testing: bool, start_test: String) {
 
         // DefaultInteractors choice - cycling button
         if interactor_choices.len() > 1 {
-            if Ui::button_img(interactor_choices[current_interactor_idx].2, &next_interactor_image).press() {
+            if Ui::button(interactor_choices[current_interactor_idx].2).image(&next_interactor_image).press() {
                 // Deactivate simultaneous if currently active
                 if interactor_choices[current_interactor_idx].1 {
                     pause_simultaneous_hands_and_controllers(sk.get_sk_info_clone(), true);
@@ -385,7 +386,9 @@ pub fn launch(mut sk: Sk, _is_testing: bool, start_test: String) {
         Ui::same_line();
 
         if refresh_rate_editable
-            && Ui::button_img(format!("Up to {:?} FPS", current_refresh_rate as u32), &next_refresh_rate_image).press()
+            && Ui::button(format!("Up to {:?} FPS", current_refresh_rate as u32))
+                .image(&next_refresh_rate_image)
+                .press()
         {
             let mut restart = true;
             for i in &refresh_rates {

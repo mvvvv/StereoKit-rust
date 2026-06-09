@@ -65,7 +65,8 @@ impl Haptic1 {
     fn button_indicator(&self, text: &str, has_cap: bool) -> bool {
         let color_tint: Color128 = if has_cap { GREEN.into() } else { RED.into() };
         let sprite = if has_cap { self.sprite_on.as_ref().unwrap() } else { self.sprite_off.as_ref().unwrap() };
-        Ui::button_img(text, sprite)
+        Ui::button(text)
+            .image(sprite)
             .image_layout(UiBtnLayout::Left)
             .image_tint(color_tint.to_gamma())
             .press()

@@ -124,18 +124,26 @@ pub fn launch(mut sk: Sk, _is_testing: bool) {
         sk,
         |sk, _token| {
             Ui::window_begin("Template", &mut window_demo_pose, Some(Vec2::new(demo_win_width, 0.0)), None, None);
-            if Ui::radio_img("Blue light", sky == 1, &radio_off, &radio_on, UiBtnLayout::Left, None) {
+            if Ui::radio("Blue light", sky == 1)
+                .images(&radio_off, &radio_on)
+                .image_layout(UiBtnLayout::Left)
+                .press()
+            {
                 cube0.render_as_sky();
                 sky = 1;
             }
             Ui::same_line();
-            if Ui::radio_img("Default light", sky == 2, &radio_off, &radio_on, UiBtnLayout::Left, None) {
+            if Ui::radio("Default light", sky == 2)
+                .images(&radio_off, &radio_on)
+                .image_layout(UiBtnLayout::Left)
+                .press()
+            {
                 cube_default.render_as_sky();
                 sky = 2;
             }
             Ui::same_line();
             if passthough_blend_enabled {
-                if let Some(new_value) = Ui::toggle("Passthrough MR", &mut passthrough, None) {
+                if let Some(new_value) = Ui::toggle("Passthrough MR", &mut passthrough).interact() {
                     if new_value {
                         Log::diag("Activate passthrough");
                         Device::display_blend(DisplayBlend::AnyTransparent);
@@ -153,7 +161,7 @@ pub fn launch(mut sk: Sk, _is_testing: bool) {
             }
             Ui::next_line();
             Ui::hseparator();
-            if Ui::button("Exit", Some(Vec2::new(0.10, 0.10))) {
+            if Ui::button("Exit").size(Vec2::new(0.10, 0.10)).press() {
                 sk.quit(None);
             }
             //Ui::image(&power_button, Vec2::new(0.1, 0.1));

@@ -450,7 +450,8 @@ impl Screen {
                 Some(UiMove::None),
             );
 
-            if Ui::button_img(&self.repo.id_btn_show_hide_param, &self.repo.sprite_hide_param)
+            if Ui::button(&self.repo.id_btn_show_hide_param)
+                .image(&self.repo.sprite_hide_param)
                 .image_layout(UiBtnLayout::CenterNoText)
                 .press()
             {
@@ -522,7 +523,8 @@ impl Screen {
             let btn_size = Vec2::new(0.06 * d, 0.06 * d);
             let surface_size = btn_size * 1.1;
             Ui::push_surface(button_pose, Vec3::X * 0.02 * d, surface_size);
-            if Ui::button_img(&self.repo.id_btn_show_hide_param, &self.repo.sprite_show_param)
+            if Ui::button(&self.repo.id_btn_show_hide_param)
+                .image(&self.repo.sprite_show_param)
                 .image_layout(UiBtnLayout::CenterNoText)
                 .size(btn_size)
                 .press()

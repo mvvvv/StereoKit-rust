@@ -41,7 +41,7 @@ pub fn _main(sk: Sk) {
     SkClosures::new(sk, |sk, _token| {
         // Exit button
         Ui::window_begin("Hello world!", &mut window_pose, None, None, None);
-        if Ui::button("Exit", None) {
+        if Ui::button("Exit").press() {
             sk.quit(None)
         }
         Ui::window_end();

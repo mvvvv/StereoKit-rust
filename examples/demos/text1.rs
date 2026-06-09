@@ -220,7 +220,7 @@ impl Text1 {
         }
 
         Ui::same_line();
-        if Ui::button_img(format!("{:?}", self.text_context), &self.next_value).press() {
+        if Ui::button(format!("{:?}", self.text_context)).image(&self.next_value).press() {
             self.text_context =
                 unsafe { transmute::<u32, stereokit_rust::system::TextContext>(((self.text_context.bits()) + 1) % 4) };
         }

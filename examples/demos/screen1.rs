@@ -231,7 +231,8 @@ impl Screen1 {
         let controls_pose = self.screen.get_top(Vec3::new(0.30 * d.sqrt(), 0.0, 0.0));
         Ui::push_surface(controls_pose, Vec3::ZERO, surface_size);
         // Previous
-        if Ui::button_img("prev", &self.sprite_prev)
+        if Ui::button("prev")
+            .image(&self.sprite_prev)
             .image_layout(UiBtnLayout::CenterNoText)
             .size(btn_size)
             .press()
@@ -242,14 +243,17 @@ impl Screen1 {
         Ui::same_line();
         // Play / Pause — green tint when playing
         if self.paused {
-            if Ui::button_img("play", &self.sprite_play).image_layout(UiBtnLayout::Center).size(btn_size).press() {
+            if Ui::button("play").image(&self.sprite_play).image_layout(UiBtnLayout::Center).size(btn_size).press() {
                 self.paused = false;
                 self.last_switch_time = current_time;
             }
         } else {
             Ui::push_tint(Color128::new(0.3, 1.0, 0.3, 1.0));
-            let clicked =
-                Ui::button_img("pause", &self.sprite_pause).image_layout(UiBtnLayout::Center).size(btn_size).press();
+            let clicked = Ui::button("pause")
+                .image(&self.sprite_pause)
+                .image_layout(UiBtnLayout::Center)
+                .size(btn_size)
+                .press();
             Ui::pop_tint();
             if clicked {
                 self.paused = true;
@@ -257,7 +261,8 @@ impl Screen1 {
         }
         Ui::same_line();
         // Next
-        if Ui::button_img("next", &self.sprite_next)
+        if Ui::button("next")
+            .image(&self.sprite_next)
             .image_layout(UiBtnLayout::CenterNoText)
             .size(btn_size)
             .press()

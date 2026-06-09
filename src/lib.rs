@@ -501,7 +501,7 @@ pub mod tools;
 /// [![Ui](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui.jpeg)](ui::Ui)
 /// [![Ui color_scheme](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_color_scheme.jpeg)](ui::Ui::color_scheme)
 /// [![Ui button](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_button.jpeg)](ui::Ui::button)
-/// [![Ui button_img](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_button_img.jpeg)](ui::Ui::button_img)
+/// [![Ui button_img](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_button_img.jpeg)](ui::Ui::button)
 /// [![Ui button_round](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_button_round.jpeg)](ui::Ui::button_round)
 /// [![Ui handle](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_handle.jpeg)](ui::Ui::handle)
 /// [![Ui handle_begin](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_handle_begin.jpeg)](ui::Ui::handle_begin)

@@ -5,8 +5,8 @@ use crate::{
     sprite::{Sprite, SpriteT},
     system::Align,
     ui::{
-        UiBtnLayout, ui_button, ui_button_at, ui_button_img, ui_button_img_at, ui_label, ui_toggle, ui_toggle_at,
-        ui_toggle_img, ui_toggle_img_at,
+        UiBtnLayout, ui_button, ui_button_at, ui_button_img, ui_button_img_at, ui_button_round, ui_button_round_at,
+        ui_label, ui_toggle, ui_toggle_at, ui_toggle_img, ui_toggle_img_at,
     },
     util::Color128,
 };
@@ -29,6 +29,12 @@ impl UiLabelBuilder {
             use_padding: true,
             text_align: Align::empty(),
         }
+    }
+
+    /// Changes the text of this label.
+    pub fn update_text(mut self, text: impl AsRef<str>) -> Self {
+        self.text = CString::new(text.as_ref()).unwrap_or_default();
+        self
     }
 
     /// The layout size for this element in Hierarchy space.
@@ -59,10 +65,13 @@ impl UiLabelBuilder {
     }
 }
 
-/// see [`Ui::button`](crate::ui::Ui::button) and related button builders:`
-///     [`Ui::button_at`](crate::ui::Ui::button_at)  
-///     [`Ui::button_img`](crate::ui::Ui::button_img)  
-///     [`Ui::button_img_at`](crate::ui::Ui::button_img_at)
+/// see [`Ui::button`](crate::ui::Ui::button)
+///
+/// StereoKit original docs :
+/// [Button](https://stereokit.net/Pages/StereoKit/UI/Button.html)
+/// [ButtonAt](https://stereokit.net/Pages/StereoKit/UI/ButtonAt.html)
+/// [ButtonAtImg](https://stereokit.net/Pages/StereoKit/UI/ButtonAtImg.html)
+/// [ButtonImg](https://stereokit.net/Pages/StereoKit/UI/ButtonImg.html)
 #[must_use = "UiButtonBuilder does nothing until you call .press() on it"]
 pub struct UiButtonBuilder {
     text: CString,
@@ -90,18 +99,27 @@ impl UiButtonBuilder {
         }
     }
 
-    /// Switches this button to absolute-position mode (`button_at`).
+    /// Switches this button to absolute-position mode.
     ///
     /// `top_left_corner` is relative to the current hierarchy.
+    /// [ButtonAt](https://stereokit.net/Pages/StereoKit/UI/ButtonAt.html)
     pub fn at(mut self, top_left_corner: impl Into<Vec3>, size: impl Into<Vec2>) -> Self {
         self.top_left_corner = Some(top_left_corner.into());
         self.size = size.into();
         self
     }
 
-    /// Sets the image drawn with button text (`button_img`).
+    /// Sets the image drawn with button text.
+    ///
+    /// [ButtonImg](https://stereokit.net/Pages/StereoKit/UI/ButtonImg.html)
     pub fn image(mut self, image: impl AsRef<Sprite>) -> Self {
         self.image = Some(image.as_ref().0.as_ptr());
+        self
+    }
+
+    /// Change the text of this button in case you want to keep the Builder alive (ie: as a IStepper property)
+    pub fn update_text(mut self, text: impl AsRef<str>) -> Self {
+        self.text = CString::new(text.as_ref()).unwrap_or_default();
         self
     }
 
@@ -163,13 +181,57 @@ impl UiButtonBuilder {
     }
 }
 
-pub type UiButtonAtBuilder = UiButtonBuilder;
-pub type UiButtonImgBuilder = UiButtonBuilder;
-pub type UiButtonImgAtBuilder = UiButtonBuilder;
+/// see [`Ui::button_round`](crate::ui::Ui::button_round)
+/// StereoKit original docs :
+/// [Button](https://stereokit.net/Pages/StereoKit/UI/ButtonRound.html)
+/// [ButtonAt](https://stereokit.net/Pages/StereoKit/UI/ButtonRoundAt.html)
+#[must_use = "UiButtonRoundBuilder does nothing until you call .press() on it"]
+pub struct UiButtonRoundBuilder {
+    id: CString,
+    image: SpriteT,
+    diameter: f32,
+    top_left_corner: Option<Vec3>,
+}
 
-/// see [`Ui::toggle`](crate::ui::Ui::toggle) and related toggle builders:
-///     [`Ui::toggle_at`](crate::ui::Ui::toggle_at)  
-///     [`Ui::toggle_img`](crate::ui::Ui::toggle_img)  
+impl UiButtonRoundBuilder {
+    /// Creates a new button round builder.
+    pub fn new(id: impl AsRef<str>, image: impl AsRef<Sprite>, diameter: f32) -> Self {
+        Self {
+            id: CString::new(id.as_ref()).unwrap_or_default(),
+            image: image.as_ref().0.as_ptr(),
+            diameter,
+            top_left_corner: None,
+        }
+    }
+
+    /// Switches this button to absolute-position mode.
+    ///
+    /// `top_left_corner` is relative to the current hierarchy.
+    ///
+    /// [ButtonAt](https://stereokit.net/Pages/StereoKit/UI/ButtonRoundAt.html)
+    pub fn at(mut self, top_left_corner: impl Into<Vec3>) -> Self {
+        self.top_left_corner = Some(top_left_corner.into());
+        self
+    }
+
+    /// Executes the button interaction.
+    ///
+    /// Returns `true` only on the first frame it is pressed.
+    pub fn press(self) -> bool {
+        match self.top_left_corner {
+            None => unsafe { ui_button_round(self.id.as_ptr(), self.image, self.diameter) != 0 },
+            Some(top_left_corner) => unsafe {
+                ui_button_round_at(self.id.as_ptr(), self.image, top_left_corner, self.diameter) != 0
+            },
+        }
+    }
+}
+
+/// see [`Ui::toggle`](crate::ui::Ui::toggle)
+/// StereoKit original docs :
+/// [Toggle](https://stereokit.net/Pages/StereoKit/UI/Toggle.html)
+/// [ToggleAt](https://stereokit.net/Pages/StereoKit/UI/ToggleAt.html)
+/// [ToggleImg](https://stereokit.net/Pages/StereoKit/UI/ToggleImg.html)
 #[must_use = "UiToggleBuilder does nothing until you call .interact() on it"]
 pub struct UiToggleBuilder<'a> {
     id: CString,
@@ -200,9 +262,25 @@ impl<'a> UiToggleBuilder<'a> {
     /// Switches this toggle to absolute-position mode (`toggle_at`).
     ///
     /// `top_left_corner` is relative to the current hierarchy.
+    /// [ToggleAt](https://stereokit.net/Pages/StereoKit/UI/ToggleAt.html)
     pub fn at(mut self, top_left_corner: impl Into<Vec3>, size: impl Into<Vec2>) -> Self {
         self.top_left_corner = Some(top_left_corner.into());
         self.size = size.into();
+        self
+    }
+
+    /// Sets the images used when toggle is off/on.
+    ///
+    /// This change the default image
+    /// [ToggleImg](https://stereokit.net/Pages/StereoKit/UI/ToggleImg.html)
+    pub fn images(mut self, toggle_off: impl AsRef<Sprite>, toggle_on: impl AsRef<Sprite>) -> Self {
+        self.toggle_images = Some((toggle_off.as_ref().0.as_ptr(), toggle_on.as_ref().0.as_ptr()));
+        self
+    }
+
+    /// Change the id/text of this toggle in case you want to keep the Builder alive (ie: as a IStepper property)
+    pub fn update_id(mut self, text: impl AsRef<str>) -> Self {
+        self.id = CString::new(text.as_ref()).unwrap_or_default();
         self
     }
 
@@ -219,14 +297,6 @@ impl<'a> UiToggleBuilder<'a> {
     /// If not set, default value is [`UiBtnLayout::Left`].
     pub fn image_layout(mut self, image_layout: UiBtnLayout) -> Self {
         self.image_layout = image_layout;
-        self
-    }
-
-    /// Sets the images used when toggle is off/on.
-    ///
-    /// This enables image-toggle behavior.
-    pub fn toggle_images(mut self, toggle_off: impl AsRef<Sprite>, toggle_on: impl AsRef<Sprite>) -> Self {
-        self.toggle_images = Some((toggle_off.as_ref().0.as_ptr(), toggle_on.as_ref().0.as_ptr()));
         self
     }
 
@@ -291,11 +361,10 @@ impl<'a> UiToggleBuilder<'a> {
     }
 }
 
-pub type UiToggleImgBuilder<'a> = UiToggleBuilder<'a>;
-pub type UiToggleAtBuilder<'a> = UiToggleBuilder<'a>;
-
-/// see [`Ui::radio`](crate::ui::Ui::radio) and related radio builders:
-///     [`Ui::radio_at`](crate::ui::Ui::radio_at)
+/// see [`Ui::radio`](crate::ui::Ui::radio)
+/// StereoKit original docs :
+/// [Radio](https://stereokit.net/Pages/StereoKit/UI/Radio.html)
+/// [RadioAt](https://stereokit.net/Pages/StereoKit/UI/RadioAt.html)
 #[must_use = "UiRadioBuilder does nothing until you call .press() on it"]
 pub struct UiRadioBuilder {
     text: CString,
@@ -328,16 +397,24 @@ impl UiRadioBuilder {
     /// Switches this radio to absolute-position mode (`radio_at`).
     ///
     /// `top_left_corner` is relative to the current hierarchy.
+    /// [RadioAt](https://stereokit.net/Pages/StereoKit/UI/RadioAt.html)
     pub fn at(mut self, top_left_corner: impl Into<Vec3>, size: impl Into<Vec2>) -> Self {
         self.top_left_corner = Some(top_left_corner.into());
         self.size = size.into();
         self
     }
 
-    /// Sets the images used when radio is off/on.
+    /// Sets the images used when radio is off/on. You have to set two different images if you want to see the state
+    /// of the radio button.
     pub fn images(mut self, image_off: impl AsRef<Sprite>, image_on: impl AsRef<Sprite>) -> Self {
         self.image_off = image_off.as_ref().0.as_ptr();
         self.image_on = image_on.as_ref().0.as_ptr();
+        self
+    }
+
+    /// Change the text of this radio in case you want to keep the Builder alive (ie: as a IStepper property)
+    pub fn update_text(mut self, text: impl AsRef<str>) -> Self {
+        self.text = CString::new(text.as_ref()).unwrap_or_default();
         self
     }
 
@@ -407,5 +484,3 @@ impl UiRadioBuilder {
         pressed && !self.active
     }
 }
-
-pub type UiRadioAtBuilder = UiRadioBuilder;
