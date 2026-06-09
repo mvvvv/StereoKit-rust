@@ -26,7 +26,7 @@ use std::{
 // Re-export interactor types for convenient access
 pub use crate::interactor::{
     DefaultInteractors, Interaction, Interactor, InteractorActivation, InteractorController, InteractorEvent,
-    InteractorType,
+    InteractorSource, InteractorType,
 };
 
 /// All StereoKit assets implement this interface! This is mostly to help group and hold Asset objects, and is
@@ -3567,7 +3567,7 @@ impl Input {
     /// assert_eq!(pointer.get_pose(), Pose::ZERO);
     /// # sk::Sk::shutdown();
     /// ```
-    /// TODO: #[deprecated(since = "0.4.0", note = "We can have many interactors")]
+    /// TODO: #[deprecated(since = "0.4.0", note = "The Pointer system is superseded by the Interactor system, use Interactor.All instead.")]
     pub fn pointer(index: i32, filter: Option<InputSource>) -> Pointer {
         let filter = filter.unwrap_or(InputSource::Any);
         unsafe { input_pointer(index, filter) }
@@ -3580,7 +3580,7 @@ impl Input {
     /// Returns the number of Pointers StereoKit knows about that matches the given filter.
     /// see also [`input_pointer_count`]  
     /// see example in [`Input::pointer`]  
-    /// TODO: #[deprecated(since = "0.4.0", note = "We can have many interactors")]
+    /// TODO: #[deprecated(since = "0.4.0", note = "The Pointer system is superseded by the Interactor system, use Interactor.All instead.")]
     pub fn pointer_count(filter: Option<InputSource>) -> i32 {
         let filter = filter.unwrap_or(InputSource::Any);
         unsafe { input_pointer_count(filter) }

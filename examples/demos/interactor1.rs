@@ -6,8 +6,8 @@ use stereokit_rust::{
     prelude::*,
     sprite::Sprite,
     system::{
-        DefaultInteractors, Interaction, Interactor, InteractorActivation, InteractorEvent, InteractorType, Lines, Log,
-        Text, TextStyle,
+        DefaultInteractors, Interaction, Interactor, InteractorActivation, InteractorEvent, InteractorSource,
+        InteractorType, Lines, Log, Text, TextStyle,
     },
     ui::{Ui, UiBtnLayout, UiPad},
     util::{Color128, named_colors},
@@ -98,7 +98,7 @@ impl Interactor1 {
             self.shape_type,
             self.events,
             self.activation_type,
-            -1,
+            InteractorSource::Unique,
             self.capsule_radius,
             self.secondary_motion_dimensions,
         );
@@ -308,15 +308,7 @@ impl Interactor1 {
             Ui::text(format!("    Type: {:?}", interactor.get_type()), None, None, None, None, None, None);
             Ui::text(format!("    Events: {:?}", interactor.get_events()), None, None, None, None, None, None);
             Ui::text(format!("    Activation: {:?}", interactor.get_activation()), None, None, None, None, None, None);
-            Ui::text(
-                format!("    Input Source ID: {}", interactor.get_input_source_id()),
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
-            );
+            Ui::text(format!("    Source: {:?}", interactor.get_source()), None, None, None, None, None, None);
             Ui::text(format!("    Min distance: {}", self.min_distance), None, None, None, None, None, None);
             Ui::text(format!("    Radius: {:.3}", interactor.get_radius()), None, None, None, None, None, None);
             Ui::text(

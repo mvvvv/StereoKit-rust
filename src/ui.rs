@@ -6,7 +6,9 @@ use crate::{
     model::{Model, ModelT},
     sound::{Sound, SoundT},
     sprite::{Sprite, SpriteT},
-    system::{Align, BtnState, Handed, HierarchyParent, Log, TextContext, TextFit, TextStyle},
+    system::{
+        Align, BtnState, Handed, HierarchyParent, Interactor, InteractorSource, Log, TextContext, TextFit, TextStyle,
+    },
     ui_builders::*,
     util::{Color32, Color128},
 };
@@ -686,14 +688,10 @@ unsafe extern "C" {
     pub fn ui_layout_push_cut(cut_to: UiCut, size: f32, add_margin: Bool32T);
     pub fn ui_layout_pop();
     // Deprecaded: pub fn ui_last_element_hand_used(hand: Handed) -> BtnState;
-    /// TODO: v0.4 These functions use hands instead of interactors, they need replaced!
-    pub fn ui_is_interacting(hand: Handed) -> Bool32T;
-    /// TODO: v0.4 These functions use hands instead of interactors, they need replaced!
-    pub fn ui_last_element_hand_active(hand: Handed) -> BtnState;
-    /// TODO: v0.4 These functions use hands instead of interactors, they need replaced!
-    pub fn ui_last_element_hand_focused(hand: Handed) -> BtnState;
     pub fn ui_last_element_active() -> BtnState;
     pub fn ui_last_element_focused() -> BtnState;
+    pub fn ui_last_element_source_active(source: InteractorSource) -> BtnState;
+    pub fn ui_last_element_source_focused(source: InteractorSource) -> BtnState;
     // Deprecated: pub fn ui_area_remaining() -> Vec2;
     pub fn ui_nextline();
     pub fn ui_sameline();
@@ -705,7 +703,7 @@ unsafe extern "C" {
         out_finger_offset: *mut f32,
         out_button_state: *mut BtnState,
         out_focus_state: *mut BtnState,
-        out_opt_hand: *mut i32,
+        out_opt_interactor: *mut Interactor,
     );
     pub fn ui_button_behavior_depth(
         window_relative_pos: Vec3,
@@ -716,7 +714,7 @@ unsafe extern "C" {
         out_finger_offset: *mut f32,
         out_button_state: *mut BtnState,
         out_focus_state: *mut BtnState,
-        out_opt_hand: *mut i32,
+        out_opt_interactor: *mut Interactor,
     );
     pub fn ui_slider_behavior(
         window_relative_pos: Vec3,
@@ -734,14 +732,14 @@ unsafe extern "C" {
         id: *const c_char,
         bounds: Bounds,
         interact_type: UiConfirm,
-        out_opt_hand: *mut Handed,
+        out_opt_interactor: *mut Interactor,
         out_opt_focus_state: *mut BtnState,
     ) -> BtnState;
     pub fn ui_volume_at_16(
         id: *const c_ushort,
         bounds: Bounds,
         interact_type: UiConfirm,
-        out_opt_hand: *mut Handed,
+        out_opt_interactor: *mut Interactor,
         out_opt_focus_state: *mut BtnState,
     ) -> BtnState;
     // Deprecated : pub fn ui_volume_at(id: *const c_char, bounds: Bounds) -> Bool32T;
@@ -1389,11 +1387,11 @@ impl Ui {
         out_finger_offset: &mut f32,
         out_button_state: &mut BtnState,
         out_focus_state: &mut BtnState,
-        out_hand: Option<&mut i32>,
+        out_interactor: Option<&mut Interactor>,
     ) {
         let id_hash = Ui::stack_hash(id);
-        let mut nevermind = 0;
-        let out_opt_hand = out_hand.unwrap_or(&mut nevermind);
+        let mut nevermind = Interactor::NONE;
+        let out_opt_interactor = out_interactor.unwrap_or(&mut nevermind);
 
         unsafe {
             ui_button_behavior(
@@ -1403,7 +1401,7 @@ impl Ui {
                 out_finger_offset,
                 out_button_state,
                 out_focus_state,
-                out_opt_hand,
+                out_opt_interactor,
             )
         }
     }
@@ -1461,11 +1459,11 @@ impl Ui {
         out_finger_offset: &mut f32,
         out_button_state: &mut BtnState,
         out_focus_state: &mut BtnState,
-        out_opt_hand: Option<&mut i32>,
+        out_opt_interactor: Option<&mut Interactor>,
     ) {
         let id_hash = Ui::stack_hash(id);
-        let mut nevermind = 0;
-        let out_opt_hand = out_opt_hand.unwrap_or(&mut nevermind);
+        let mut nevermind = Interactor::NONE;
+        let out_opt_interactor = out_opt_interactor.unwrap_or(&mut nevermind);
 
         unsafe {
             ui_button_behavior_depth(
@@ -1477,7 +1475,7 @@ impl Ui {
                 out_finger_offset,
                 out_button_state,
                 out_focus_state,
-                out_opt_hand,
+                out_opt_interactor,
             )
         }
     }
@@ -2046,6 +2044,17 @@ impl Ui {
         }
     }
 
+    /// Maps the legacy Handed concept onto interactor sources: a side covers its hand and controller, and the right
+    /// side also covers the mouse (which historically reported as the right hand). Used to back the deprecated
+    /// hand-based functions with the interactor source system.
+    fn hand_to_source(hand: Handed) -> Option<InteractorSource> {
+        match hand {
+            Handed::Left => Some(InteractorSource::HandLeft),
+            Handed::Right => Some(InteractorSource::HandRight),
+            _ => None,
+        }
+    }
+
     /// Tells if the user is currently interacting with a UI element! This will be true if the hand has an active or
     /// focused UI element.
     /// TODO: v0.4 These functions use hands instead of interactors, they need replaced!
@@ -2053,7 +2062,7 @@ impl Ui {
     /// * `hand` - The hand to check for interaction.
     ///
     /// Returns true if the hand has an active or focused UI element. False otherwise.
-    /// see also [`ui_is_interacting`]
+    /// see also [`Interactor::is_interacting`]
     /// ### Examples
     /// ```ignore
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -2071,7 +2080,7 @@ impl Ui {
         note = "TODO: These functions use hands instead of interactors, they need replaced!"
     )]
     pub fn is_interacting(hand: Handed) -> bool {
-        unsafe { ui_is_interacting(hand) != 0 }
+        if let Some(source) = Ui::hand_to_source(hand) { Interactor::is_interacting(source) } else { false }
     }
 
     /// Adds some text to the layout! Text uses the UI’s current font settings, which can be changed with
@@ -2119,7 +2128,7 @@ impl Ui {
     ///
     /// Returns a BtnState that indicated the hand was “just active” this frame, is currently “active” or if it “just
     /// became inactive” this frame.
-    /// see also [`ui_last_element_hand_active`] [`Ui::get_last_element_active`]
+    /// see also [`Ui::last_element_source_active`] [`Ui::get_last_element_active`]
     /// ### Examples
     /// ```ignore
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -2144,7 +2153,11 @@ impl Ui {
         note = "TODO: These functions use hands instead of interactors, they need replaced!"
     )]
     pub fn last_element_hand_active(hand: Handed) -> BtnState {
-        unsafe { ui_last_element_hand_active(hand) }
+        if let Some(source) = Ui::hand_to_source(hand) {
+            Ui::last_element_source_active(source)
+        } else {
+            BtnState::Inactive
+        }
     }
 
     /// Tells if the hand was involved in the focus state of the most recently called UI element using an id. Focus
@@ -2156,7 +2169,7 @@ impl Ui {
     ///
     /// Returns a BtnState that indicated the hand was “just focused” this frame, is currently “focused” or if it “just
     /// became focused” this frame.
-    /// see also [`ui_last_element_hand_focused`] [`Ui::get_last_element_focused`]
+    /// see also [`Ui::last_element_source_focused`] [`Ui::get_last_element_focused`]
     /// ### Examples
     /// ```ignore
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -2180,7 +2193,88 @@ impl Ui {
         note = "TODO: These functions use hands instead of interactors, they need replaced!"
     )]
     pub fn last_element_hand_focused(hand: Handed) -> BtnState {
-        unsafe { ui_last_element_hand_focused(hand) }
+        let source = match hand {
+            Handed::Left => InteractorSource::HandLeft,
+            Handed::Right => InteractorSource::HandRight,
+            _ => return BtnState::Inactive,
+        };
+        Ui::last_element_source_focused(source)
+    }
+
+    /// Tells if an interactor from the given source(s) was involved in the active state of the most recently called UI
+    /// element using an id. Active state is frequently a single frame in the case of Buttons, but could be many in the
+    /// case of Sliders or Handles.
+    /// <https://stereokit.net/Pages/StereoKit/UI/LastElementSourceActive.html>
+    /// * `source` - A bitflag of interactor sources to check.
+    ///
+    /// Returns a BtnState that indicated an interactor from the given source was "just active" this frame, is currently
+    /// "active" or if it "just became inactive" this frame.
+    ///
+    /// see also [`ui_last_element_source_active`] [`Ui::get_last_element_active`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{ui::Ui, maths::Pose, system::{BtnState, InteractorSource}};
+    ///
+    /// let mut window_pose = Pose::new(
+    ///     [0.01, 0.035, 0.92], Some([0.0, 185.0, 0.0].into()));
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     Ui::window_begin("Last Element Source Active", &mut window_pose, None, None, None);
+    ///     Ui::button("Button1").press();
+    ///     let left_active = Ui::last_element_source_active(
+    ///         InteractorSource::HandLeft | InteractorSource::ControllerLeft
+    ///     );
+    ///     assert_eq!( left_active, BtnState::Inactive);
+    ///
+    ///     let right_active = Ui::last_element_source_active(
+    ///         InteractorSource::HandRight | InteractorSource::ControllerRight | InteractorSource::Mouse
+    ///     );
+    ///     assert_eq!( right_active, BtnState::Inactive);
+    ///     Ui::window_end();
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn last_element_source_active(source: InteractorSource) -> BtnState {
+        unsafe { ui_last_element_source_active(source) }
+    }
+
+    /// Tells if an interactor from the given source(s) was involved in the focus state of the most recently called UI
+    /// element using an id. Focus occurs when the interactor is in or near an element, in such a way that indicates
+    /// the user may be about to interact with it.
+    /// <https://stereokit.net/Pages/StereoKit/UI/LastElementSourceFocused.html>
+    /// * `source` - A bitflag of interactor sources to check.
+    ///
+    /// Returns a BtnState that indicated an interactor from the given source was "just focused" this frame, is currently
+    /// "focused" or if it "just became unfocused" this frame.
+    ///
+    /// see also [`ui_last_element_source_focused`] [`Ui::get_last_element_focused`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{ui::Ui, maths::Pose, system::{BtnState, InteractorSource}};
+    ///
+    /// let mut window_pose = Pose::new(
+    ///     [0.01, 0.035, 0.92], Some([0.0, 185.0, 0.0].into()));
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     Ui::window_begin("Last Element Source Focused", &mut window_pose, None, None, None);
+    ///     Ui::button("Button1").press();
+    ///     let left_focused = Ui::last_element_source_focused(
+    ///         InteractorSource::HandLeft | InteractorSource::ControllerLeft
+    ///     );
+    ///     assert_eq!(left_focused, BtnState::Inactive);
+    ///
+    ///     let right_focused = Ui::last_element_source_focused(
+    ///         InteractorSource::HandRight | InteractorSource::ControllerRight | InteractorSource::Mouse
+    ///     );
+    ///     assert_eq!(right_focused, BtnState::Inactive);
+    ///     Ui::window_end();
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn last_element_source_focused(source: InteractorSource) -> BtnState {
+        unsafe { ui_last_element_source_focused(source) }
     }
 
     /// Manually define what area is used for the UI layout. This is in the current Hierarchy’s coordinate space on the
@@ -3926,20 +4020,20 @@ impl Ui {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{ui::{Ui, UiConfirm}, maths::{Pose, Bounds},
-    ///                      system::{Handed, BtnState}};
+    ///                      system::BtnState, interactor::Interactor};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.075, 0.9], Some([0.0, 185.0, 0.0].into()));
     ///
     /// let bounds = Bounds::new([0.0, -0.05, 0.0], [0.05, 0.05, 0.05]);
     ///
-    /// let mut hand_volume = Handed::Max;
+    /// let mut interactor = Interactor::NONE;
     /// let mut focus_state = BtnState::Inactive;
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Volume At", &mut window_pose, None, None, None);
     ///     let is_active = Ui::volume_at("volume", bounds, UiConfirm::Push,
-    ///                                   Some(&mut hand_volume), Some(&mut focus_state));
+    ///                                   Some(&mut interactor), Some(&mut focus_state));
     ///     assert_eq!(is_active, BtnState::Inactive);
     ///
     ///     let is_active = Ui::volume_at("volume", bounds, UiConfirm::Pinch,
@@ -3953,13 +4047,13 @@ impl Ui {
         id: impl AsRef<str>,
         bounds: impl Into<Bounds>,
         interact_type: UiConfirm,
-        out_hand: Option<*mut Handed>,
+        out_interactor: Option<*mut Interactor>,
         out_focus_state: Option<*mut BtnState>,
     ) -> BtnState {
         let cstr = CString::new(id.as_ref()).unwrap_or_default();
-        let hand = out_hand.unwrap_or(null_mut());
+        let interactor = out_interactor.unwrap_or(null_mut());
         let focus_state = out_focus_state.unwrap_or(null_mut());
-        unsafe { ui_volume_at(cstr.as_ptr(), bounds.into(), interact_type, hand, focus_state) }
+        unsafe { ui_volume_at(cstr.as_ptr(), bounds.into(), interact_type, interactor, focus_state) }
     }
 
     /// A vertical slider element! You can stick your finger in it, and slide the value up and down.

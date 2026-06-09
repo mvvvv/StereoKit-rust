@@ -4,7 +4,7 @@ use stereokit_rust::{
     maths::{Matrix, Quat, Vec2, Vec3, units::CM},
     mesh::Mesh,
     prelude::*,
-    system::{BtnState, Pivot, Text, TextStyle},
+    system::{BtnState, Interactor, Pivot, Text, TextStyle},
     ui::{IdHashT, Ui, UiColor, UiCorner, UiLathePt, UiSliderData, UiVisual},
     util::{
         Color32, Color128, Time,
@@ -141,7 +141,7 @@ impl Ui1 {
         let mut out_finger_offset: f32 = 0.0;
         let mut out_button_state: BtnState = BtnState::empty();
         let mut out_focus_state = BtnState::empty();
-        let mut out_opt_hand: i32 = 0;
+        let mut out_opt_interactor = Interactor::NONE;
         Ui::button_behavior(
             layout.tlc(),
             size,
@@ -149,7 +149,7 @@ impl Ui1 {
             &mut out_finger_offset,
             &mut out_button_state,
             &mut out_focus_state,
-            Some(&mut out_opt_hand),
+            Some(&mut out_opt_interactor),
         );
         layout.center.z -= out_finger_offset / 2.0;
         layout.dimensions.z = out_finger_offset;
@@ -185,7 +185,7 @@ impl Ui1 {
         let mut out_finger_offset: f32 = 0.0;
         let mut out_button_state: BtnState = BtnState::empty();
         let mut out_focus_state = BtnState::empty();
-        let mut out_opt_hand: i32 = 0;
+        let mut out_opt_interactor = Interactor::NONE;
         Ui::button_behavior(
             layout.tlc(),
             size,
@@ -193,7 +193,7 @@ impl Ui1 {
             &mut out_finger_offset,
             &mut out_button_state,
             &mut out_focus_state,
-            Some(&mut out_opt_hand),
+            Some(&mut out_opt_interactor),
         );
         layout.center.z -= out_finger_offset / 2.0;
         layout.dimensions.z = out_finger_offset;

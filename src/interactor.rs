@@ -24,8 +24,10 @@ pub enum InteractorType {
     Line = 1,
 }
 
-/// This describes how an interactor activates elements. Does it use the
-/// physical position of the interactor, or the activation state?
+/// This describes how an interactor commits an interaction with an element - does it activate from the physical
+/// position of the interactor (like a finger poking through a button), or from its activation/button state (like a
+/// pinch or a trigger click)? This is independent of `InteractorType`, which describes the interactor's shape rather
+/// than what triggers it.
 /// <https://stereokit.net/Pages/StereoKit/InteractorActivation.html>
 ///
 /// see also [`Interactor`]
@@ -62,6 +64,56 @@ bitflags::bitflags! {
     }
 }
 
+bitflags::bitflags! {
+    /// A bit-flag describing the physical source an interactor's input comes from, such as a specific hand, controller,
+    /// or the mouse. Interactors that share a source are mutually exclusive: while one is actively interacting, the
+    /// others won't begin a new interaction. This is how the poke, pinch, and aim interactors of a single hand avoid
+    /// fighting over the same element. The bits at and above `InteractorSource::Max` are free for your own custom
+    /// sources.
+    /// <https://stereokit.net/Pages/StereoKit/InteractorSource.html>
+    ///
+    /// see also [`Interactor`]
+    #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+    #[repr(C)]
+    pub struct InteractorSource: u32 {
+        /// A unique, independent source. Interactors with this source never group with any other interactor, and are
+        /// invisible to source queries like `Interactor::is_interacting`. This is the default 'shares nothing' source.
+        const Unique = 0;
+        /// The left hand.
+        const HandLeft = 1 << 0;
+        /// The right hand.
+        const HandRight = 1 << 1;
+        /// The left motion controller.
+        const ControllerLeft = 1 << 2;
+        /// The right motion controller.
+        const ControllerRight = 1 << 3;
+        /// Gaze or eye tracking based input.
+        const Gaze = 1 << 4;
+        /// The mouse (or other pointing device).
+        const Mouse = 1 << 5;
+        /// All interactor sources combined.
+        const Any = Self::HandLeft.bits() | Self::HandRight.bits() | Self::ControllerLeft.bits() | Self::ControllerRight.bits() | Self::Gaze.bits() | Self::Mouse.bits();
+        /// The first bit available for custom user-defined sources.
+        const Max = 1 << 6;
+        const ExtraInteractor01 = 1 << 7;
+        const ExtraInteractor02 = 1 << 8;
+        const ExtraInteractor03 = 1 << 9;
+        const ExtraInteractor04 = 1 << 10;
+        const ExtraInteractor05 = 1 << 11;
+        const ExtraInteractor06 = 1 << 12;
+        const ExtraInteractor07 = 1 << 13;
+        const ExtraInteractor08 = 1 << 14;
+        const ExtraInteractor09 = 1 << 15;
+        const ExtraInteractor10 = 1 << 16;
+        const ExtraInteractor11 = 1 << 17;
+        const ExtraInteractor12 = 1 << 18;
+        const ExtraInteractor13 = 1 << 19;
+        const ExtraInteractor14 = 1 << 20;
+        const ExtraInteractor15 = 1 << 21;
+        const ExtraInteractor16 = 1 << 22;
+    }
+}
+
 /// Options for what type of interactors StereoKit provides by default.
 /// <https://stereokit.net/Pages/StereoKit/DefaultInteractors.html>
 ///
@@ -92,7 +144,7 @@ unsafe extern "C" {
         shape_type: InteractorType,
         events: InteractorEvent,
         activation_type: InteractorActivation,
-        input_source_id: i32,
+        source: InteractorSource,
         capsule_radius: f32,
         secondary_motion_dimensions: i32,
     ) -> i32;
@@ -126,10 +178,11 @@ unsafe extern "C" {
     pub fn interactor_get_type(interactor: i32) -> InteractorType;
     pub fn interactor_get_events(interactor: i32) -> InteractorEvent;
     pub fn interactor_get_activation(interactor: i32) -> InteractorActivation;
-    pub fn interactor_get_input_source_id(interactor: i32) -> i32;
+    pub fn interactor_get_source(interactor: i32) -> InteractorSource;
     pub fn interactor_get_secondary_dims(interactor: i32) -> i32;
     pub fn interactor_count() -> i32;
     pub fn interactor_get(index: i32) -> i32;
+    pub fn interactor_is_interacting(source: InteractorSource) -> Bool32T;
 
     // Interaction system functions
     pub fn interaction_set_default_interactors(default_interactors: DefaultInteractors);
@@ -147,14 +200,14 @@ unsafe extern "C" {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{system::{Interactor, InteractorType, InteractorEvent, InteractorActivation, BtnState},
+/// use stereokit_rust::{system::{Interactor, InteractorType, InteractorEvent, InteractorActivation, InteractorSource, BtnState},
 ///                      maths::{Vec3, Pose}};
 ///
 /// let interactor = Interactor::create(
 ///     InteractorType::Point,
 ///     InteractorEvent::Poke,
 ///     InteractorActivation::State,
-///     0,
+///     InteractorSource::Unique,
 ///     0.01,
 ///     0
 /// );
@@ -179,7 +232,7 @@ unsafe extern "C" {
 /// let shape_type = interactor.get_type();
 /// let events = interactor.get_events();
 /// let activation = interactor.get_activation();
-/// let input_source_id = interactor.get_input_source_id();
+/// let source = interactor.get_source();
 /// let secondary_dims = interactor.get_secondary_dims();
 ///
 ///
@@ -193,12 +246,13 @@ unsafe extern "C" {
 /// assert_eq!(shape_type, InteractorType::Point);
 /// assert_eq!(events, InteractorEvent::Poke);
 /// assert_eq!(activation, InteractorActivation::State);
-/// assert_eq!(input_source_id, 0);
+/// assert_eq!(source, InteractorSource::Unique);
 /// assert_eq!(secondary_dims, 0);
 ///
 /// # sk::Sk::shutdown();
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[repr(transparent)]
 pub struct Interactor {
     inst: i32,
 }
@@ -218,6 +272,13 @@ impl Drop for Interactor {
 }
 
 impl Interactor {
+    /// An empty Interactor that represents "no interactor". UI
+    /// building blocks like `UI::button_behavior` and `UI::volume_at` report
+    /// this when nothing is interacting with them, so you can test their
+    /// result against `Interactor::None`.
+    /// <https://stereokit.net/Pages/StereoKit/Interactor/None.html>
+    pub const NONE: Self = Self { inst: -1 };
+
     /// Create a new custom Interactor.
     /// <https://stereokit.net/Pages/StereoKit/Interactor/Create.html>
     /// * `shape_type` - A line, or a point? These interactors behave slightly differently with respect to distance
@@ -225,10 +286,11 @@ impl Interactor {
     /// * `events` - What type of interaction events should this interactor fire? Interaction elements use this bitflag
     ///   as a filter to avoid interacting with certain interactors.
     /// * `activation_type` - How does this interactor activate elements?
-    /// * `input_source_id` - An identifier that uniquely indicates a shared source for inputs. This will deactivate
-    ///   other interactors with a shared source if one is already active. For example, 3 interactors for poke, pinch,
-    ///   and aim on a hand would all come from a single hand, and if one is actively interacting, then the whole hand
-    ///   source is considered busy.
+    /// * `source` - The physical source this interactor's input comes from. Interactors that share a source will
+    ///   deactivate each other if one is already active. For example, the poke, pinch, and aim interactors of a single
+    ///   hand all share that hand's source, so if one is actively interacting the whole hand is considered busy. Use
+    ///   `InteractorSource::Unique` for a source that never groups with others, or a custom value at or above
+    ///   `InteractorSource::Max` for your own sources.
     /// * `capsule_radius` - The radius of the interactor's capsule, in meters.
     /// * `secondary_motion_dimensions` - How many axes of secondary motion can this interactor provide? Secondary
     ///   motion is input from a source other than the interactor's own movement, such as a mouse's scroll wheel
@@ -240,19 +302,12 @@ impl Interactor {
         shape_type: InteractorType,
         events: InteractorEvent,
         activation_type: InteractorActivation,
-        input_source_id: i32,
+        source: InteractorSource,
         capsule_radius: f32,
         secondary_motion_dimensions: i32,
     ) -> Self {
         let inst = unsafe {
-            interactor_create(
-                shape_type,
-                events,
-                activation_type,
-                input_source_id,
-                capsule_radius,
-                secondary_motion_dimensions,
-            )
+            interactor_create(shape_type, events, activation_type, source, capsule_radius, secondary_motion_dimensions)
         };
         Self { inst }
     }
@@ -415,14 +470,15 @@ impl Interactor {
         unsafe { interactor_get_activation(self.inst) }
     }
 
-    /// An identifier that uniquely indicates a shared source for inputs. Interactors that share a source will
-    /// deactivate each other when one becomes active, for example the poke, pinch, and aim interactors of a single
-    /// hand. A negative id indicates a unique source that does not check against others. This is set at creation time
-    /// and does not change.
+    /// The physical source this interactor's input comes from. Interactors that share a source won't interact at the
+    /// same time, this is how the poke, pinch, and aim interactors of a single hand avoid fighting over an element.
+    /// `InteractorSource::Unique` opts out, indicating a source that does not need to check against other interactors.
+    /// This is set at creation time and does not change.
+    /// <https://stereokit.net/Pages/StereoKit/Interactor/Source.html>
     ///
-    /// see also [`interactor_get_input_source_id`] [`Interactor::create`]
-    pub fn get_input_source_id(&self) -> i32 {
-        unsafe { interactor_get_input_source_id(self.inst) }
+    /// see also [`interactor_get_source`] [`Interactor::create`]
+    pub fn get_source(&self) -> InteractorSource {
+        unsafe { interactor_get_source(self.inst) }
     }
 
     /// How many axes of secondary motion can this interactor provide? Secondary motion is input that comes from
@@ -457,20 +513,60 @@ impl Interactor {
         if result != 0 { Some((pose_world, bounds_local, at_local)) } else { None }
     }
 
+    /// Is any interactor from the given source currently interacting with an element, that is, actively pressing or
+    /// focusing it? Sources can be combined as a bit-flag to ask about several at once, e.g.
+    /// `InteractorSource::HandLeft | InteractorSource::HandRight`.
+    /// <https://stereokit.net/Pages/StereoKit/Interactor/IsInteracting.html>
+    /// * `source` - The source, or combination of sources, to check
+    ///
+    /// Returns `true` if a matching interactor has an active element.
+    ///
+    /// see also [`interactor_is_interacting`] [`InteractorSource`]
+    pub fn is_interacting(source: InteractorSource) -> bool {
+        unsafe { interactor_is_interacting(source) != 0 }
+    }
+
+    /// Returns an allocation-free iterator over all active interactors in the system.
+    /// This replaces the older pattern of using `Interactor::count()` and `Interactor::get(index)`.
+    /// <https://stereokit.net/Pages/StereoKit/Interactor/All.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!();
+    /// use stereokit_rust::system::Interactor;
+    ///
+    /// let mut i = 0;
+    /// for interactor in Interactor::all() {
+    ///     let _source = interactor.get_source();
+    ///     let _tracked = interactor.get_tracked();
+    ///     i+=1;
+    ///     // Process each interactor...
+    /// }
+    /// assert_eq!(i, 0); // No interactors should be active in this test
+    /// # sk::Sk::shutdown();
+    /// ```
+    ///
+    /// see also [`InteractorIter`]
+    pub fn all() -> InteractorIter {
+        InteractorIter { index: 0, count: Self::count() }
+    }
+
     /// The number of interactors currently in the system. Can be used with `get`.
+    /// Note: Consider using `Interactor::all()` instead for a more ergonomic iterator-based approach.
     /// <https://stereokit.net/Pages/StereoKit/Interactor/Count.html>
     ///
-    /// see also [`interactor_count`] [`Interactor::get`]
+    /// see also [`interactor_count`] [`Interactor::get`] [`Interactor::all`]
     pub fn count() -> i32 {
         unsafe { interactor_count() }
     }
 
     /// Returns the `Interactor` at the given index. Should be used with `count`.
+    /// Note: Consider using `Interactor::all()` instead for a more ergonomic iterator-based approach.
     /// <https://stereokit.net/Pages/StereoKit/Interactor/Get.html>
     /// * `index` - The index.
     ///
     /// Returns an Interactor.
-    /// see also [`interactor_get`] [`Interactor::count`]
+    /// see also [`interactor_get`] [`Interactor::count`] [`Interactor::all`]
     pub fn get(index: i32) -> Option<Self> {
         if index < 0 || index >= Self::count() {
             None
@@ -478,6 +574,41 @@ impl Interactor {
             let inst = unsafe { interactor_get(index) };
             Some(Self { inst })
         }
+    }
+}
+
+/// An allocation-free iterator over all active interactors.
+/// Created by [`Interactor::all`].
+///
+/// see also [`Interactor`]
+#[derive(Debug, Clone)]
+pub struct InteractorIter {
+    index: i32,
+    count: i32,
+}
+
+impl Iterator for InteractorIter {
+    type Item = Interactor;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index < self.count {
+            let inst = unsafe { interactor_get(self.index) };
+            self.index += 1;
+            Some(Interactor { inst })
+        } else {
+            None
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let remaining = (self.count - self.index).max(0) as usize;
+        (remaining, Some(remaining))
+    }
+}
+
+impl ExactSizeIterator for InteractorIter {
+    fn len(&self) -> usize {
+        (self.count - self.index).max(0) as usize
     }
 }
 
@@ -584,11 +715,16 @@ impl InteractorController {
     /// creates a `Line` interactor with `Poke | Pinch` events, `State` activation,
     /// capsule radius 0.005 m, and 2 secondary motion dimensions (stick X/Y).
     pub fn new(hand: crate::system::Handed) -> Self {
+        let source = if hand == crate::system::Handed::Right {
+            InteractorSource::ControllerRight
+        } else {
+            InteractorSource::ControllerLeft
+        };
         let interactor = Interactor::create(
             InteractorType::Line,
             InteractorEvent::Poke | InteractorEvent::Pinch,
             InteractorActivation::State,
-            -1,
+            source,
             0.005,
             2,
         );
@@ -758,16 +894,20 @@ impl InteractorHand {
     /// Create a new hand interactor for the given hand.
     ///
     /// Mirrors `interact_mode_hands_start()`:
-    /// - poke: `Point`, `Poke`, `Position`, input_source_id = 1000 + hand index, radius 0, 0 secondary dims.
-    /// - pinch: `Point`, `Pinch`, `State`, input_source_id = 1000 + hand index, radius 0, 0 secondary dims.
-    /// - far: `Line`, `Poke | Pinch`, `State`, input_source_id = 1000 + hand index, radius 0.01 m, 2 secondary dims.
+    /// - poke: `Point`, `Poke`, `Position`, source = HandLeft/Right, radius 0, 0 secondary dims.
+    /// - pinch: `Point`, `Pinch`, `State`, source = HandLeft/Right, radius 0, 0 secondary dims.
+    /// - far: `Line`, `Poke | Pinch`, `State`, source = HandLeft/Right, radius 0.01 m, 2 secondary dims.
     pub fn new(hand: crate::system::Handed) -> Self {
-        let src_id = 1000 + hand as i32;
+        let source = if hand == crate::system::Handed::Right {
+            InteractorSource::HandRight
+        } else {
+            InteractorSource::HandLeft
+        };
         let poke = Interactor::create(
             InteractorType::Point,
             InteractorEvent::Poke,
             InteractorActivation::Position,
-            src_id,
+            source,
             0.0,
             0,
         );
@@ -775,7 +915,7 @@ impl InteractorHand {
             InteractorType::Point,
             InteractorEvent::Pinch,
             InteractorActivation::State,
-            src_id,
+            source,
             0.0,
             0,
         );
@@ -783,7 +923,7 @@ impl InteractorHand {
             InteractorType::Line,
             InteractorEvent::Poke | InteractorEvent::Pinch,
             InteractorActivation::State,
-            src_id,
+            source,
             0.01,
             2,
         );
