@@ -45,6 +45,7 @@ pub struct Ui1 {
     pub id_slider: String,
     id_slider_hash: IdHashT,
     slider_pt: Vec2,
+    out_opt_interactor: Interactor,
 
     pub text: String,
     pub text_style: TextStyle,
@@ -59,15 +60,15 @@ impl Default for Ui1 {
         Self {
             id: "Ui1".to_string(),
             sk_info: None,
-            transform: Matrix::t_r(
-                (Vec3::NEG_Z * 2.5) + Vec3::Y, //
-                Quat::from_angles(0.0, 180.0, 0.0),
-            ),
+
             demo_win_width: 36.0 * CM,
             ui_material: Material::ui().copy(),
             id_slider_hash: Ui::stack_hash(&id_slider),
             id_slider,
             slider_pt: Vec2::ONE * 0.5,
+            out_opt_interactor: Interactor::NONE,
+
+            transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, Quat::Y_180),
             text: "Ui1".to_owned(),
             text_style: Text::make_style(Font::default(), 0.3, RED),
         }
@@ -141,7 +142,9 @@ impl Ui1 {
         let mut out_finger_offset: f32 = 0.0;
         let mut out_button_state: BtnState = BtnState::empty();
         let mut out_focus_state = BtnState::empty();
-        let mut out_opt_interactor = Interactor::NONE;
+
+        self.out_opt_interactor = Interactor::NONE;
+
         Ui::button_behavior(
             layout.tlc(),
             size,
@@ -149,7 +152,7 @@ impl Ui1 {
             &mut out_finger_offset,
             &mut out_button_state,
             &mut out_focus_state,
-            Some(&mut out_opt_interactor),
+            Some(&mut self.out_opt_interactor),
         );
         layout.center.z -= out_finger_offset / 2.0;
         layout.dimensions.z = out_finger_offset;
