@@ -504,7 +504,7 @@ pub mod tools;
 /// [![Ui button_img](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_button_img.jpeg)](ui::Ui::button)
 /// [![Ui button_round](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_button_round.jpeg)](ui::Ui::button_round)
 /// [![Ui handle](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_handle.jpeg)](ui::Ui::handle)
-/// [![Ui handle_begin](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_handle_begin.jpeg)](ui::Ui::handle_begin)
+/// [![Ui handle begin/end](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_handle_begin.jpeg)](ui::Ui::handle_end)
 /// [![Ui hseparator](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_hseparator.jpeg)](ui::Ui::hseparator)
 /// [![Ui hslider](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_hslider.jpeg)](ui::Ui::hslider)
 /// [![Ui vslider](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_vslider.jpeg)](ui::Ui::vslider)

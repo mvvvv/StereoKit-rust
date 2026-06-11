@@ -4759,8 +4759,7 @@ impl MulAssign<Matrix> for Matrix {
 ///
 /// filename_scr = "screenshots/bounds.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
-///     Ui::handle_begin( "Model Handle", &mut handle_pose,
-///                       bounds, false, None, None);
+///     Ui::handle( "Model Handle", &mut handle_pose, bounds).begin_grab();
 ///     model.draw(token, transform, None, None);
 ///     cube.draw(token, &material_cube, transform_cube, None, None);
 ///     Ui::handle_end();
@@ -5560,8 +5559,7 @@ impl Display for Plane {
 ///
 /// filename_scr = "screenshots/pose.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
-///     Ui::handle_begin( "Model Handle", &mut handle_pose,
-///                       bounds, false, None, None);
+///     Ui::handle( "Model Handle", &mut handle_pose, bounds).begin_grab();
 ///     plane.draw(token, Matrix::IDENTITY, None, None);
 ///     Ui::handle_end();
 ///

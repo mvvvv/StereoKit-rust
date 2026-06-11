@@ -161,14 +161,7 @@ impl Layers1 {
     fn draw(&mut self, token: &MainThreadToken) {
         const SIZE: f32 = 0.3;
         // interactive handle
-        Ui::handle(
-            "QuadLayer",
-            &mut self.quad_pose,
-            Bounds::new([0.0, 0.0, 0.0], [SIZE, SIZE, 0.04]),
-            false,
-            None,
-            None,
-        );
+        Ui::handle("QuadLayer", &mut self.quad_pose, Bounds::new([0.0, 0.0, 0.0], [SIZE, SIZE, 0.04])).grab();
         Mesh::cube().draw(
             token,
             &self.material,

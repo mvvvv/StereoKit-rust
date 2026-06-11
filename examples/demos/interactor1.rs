@@ -372,7 +372,7 @@ impl Interactor1 {
         let bounds = Bounds::new(Vec3::ZERO, Vec3::new(*radius * 2.0, *radius * 2.0, *radius * 2.0));
 
         // Create an interactive handle for the sphere
-        if Ui::handle(handle_id, &mut sphere_pose, bounds, false, None, None) {
+        if Ui::handle(handle_id, &mut sphere_pose, bounds).grab() {
             // Update sphere position when handle is moved
             *pos = sphere_pose.position;
         }
@@ -418,6 +418,9 @@ impl Interactor1 {
         }
         // Restore default interactors
         Interaction::set_default_interactors(DefaultInteractors::Default);
+        if let Some(mut interactor_to_delete) = self.test_interactor.take() {
+            interactor_to_delete.destroy();
+        }
 
         Log::info("Interactor Demo: Cleaned up and restored default interactors");
         self.shutdown_completed = true;

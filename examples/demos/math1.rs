@@ -72,7 +72,7 @@ impl Math1 {
 
     /// Called from IStepper::step after check_event, here you can draw the scene
     fn draw(&mut self, token: &MainThreadToken) {
-        Ui::handle("Handle_Sphere", &mut self.model_pose, self.model.get_bounds(), false, None, None);
+        Ui::handle("Handle_Sphere", &mut self.model_pose, self.model.get_bounds()).grab();
 
         let right_hand = Input::hand(Handed::Right);
 

@@ -11,8 +11,8 @@ use stereokit_rust::{
     sound::{Sound, SoundInst},
     sprite::Sprite,
     system::{
-        Backend, BackendOpenXR, BackendXRType, DefaultInteractors, Input, Interaction, Key, Lines, LogItem, LogLevel,
-        Projection, Renderer, Text,
+        Backend, BackendOpenXR, BackendXRType, DefaultInteractors, Input, Interaction, Interactor, Key, Lines, LogItem,
+        LogLevel, Projection, Renderer, Text,
     },
     tex::Tex,
     tools::{
@@ -87,7 +87,7 @@ pub fn launch(mut sk: Sk, _is_testing: bool, start_test: String) {
             // Simulator only Mouse
             vec![
                 (DefaultInteractors::Default, false, "Interaction: Default"),
-                (DefaultInteractors::All, false, "Interaction: Mouse"),
+                (DefaultInteractors::Mouse, false, "Interaction: Mouse"),
             ]
         }
     };
@@ -235,6 +235,11 @@ pub fn launch(mut sk: Sk, _is_testing: bool, start_test: String) {
 
             if !set_display_refresh_rate(current_refresh_rate, true) {
                 current_refresh_rate = 0.0;
+            }
+
+            Log::diag("Current Interactors after focus change:");
+            for interactor in Interactor::all() {
+                Log::diag(format!("----Type: {:?} / {:?}", interactor.get_type(), interactor.get_source()));
             }
         }
 

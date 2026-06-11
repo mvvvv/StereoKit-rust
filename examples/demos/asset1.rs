@@ -182,7 +182,7 @@ impl Asset1 {
 
         // If a model has been selected, we draw it
         if let Some(model) = &self.model_to_show {
-            if Ui::handle("Model1", &mut self.asset_pose, model.get_bounds() * self.asset_scale, false, None, None)
+            if Ui::handle("Model1", &mut self.asset_pose, model.get_bounds() * self.asset_scale).grab()
                 && let Some(mut sound) = self.sound_to_play
             {
                 sound.position(self.asset_pose.position);

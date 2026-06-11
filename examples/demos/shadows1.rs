@@ -167,7 +167,7 @@ impl Shadows1 {
         // Show shadow settings window
         self.draw_shadow_settings_window(token);
 
-        Ui::handle("ModelShadow", &mut self.model_pose, self.model.get_bounds(), false, None, None);
+        Ui::handle("ModelShadow", &mut self.model_pose, self.model.get_bounds()).grab();
         self.model.draw(token, self.model_pose.to_matrix(None), None, None);
 
         // Display title and description text like in math1 demo

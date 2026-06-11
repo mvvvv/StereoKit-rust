@@ -1579,13 +1579,15 @@ impl Ui {
     /// * `pose` - The pose state for the handle! The user will be able to grab this handle and move it around.
     ///   The pose is relative to the current hierarchy stack.
     /// * `handle` - Size and location of the handle, relative to the pose.
-    /// * `draw_handle` - Should this function draw the handle for you, or will you draw that yourself?
-    /// * `move_type` - Describes how the handle will move when dragged around. If None, has default value of UiMove::Exact
-    /// * `allower_gesture` - Which hand gestures are used for interacting with this Handle? If None, has default value of
-    ///   UiGesture::Pinch
+    /// * [`UiHandleBuilder::draw_handle`] - Should this function draw the handle for you, or will you draw that
+    ///   yourself?
+    /// * [`UiHandleBuilder::move_type`] - Describes how the handle will move when dragged around. Default value is
+    ///   [`UiMove::Exact`]
+    /// * [`UiHandleBuilder::allower_gesture`] - Which hand gestures are used for interacting with this Handle? Default
+    ///   value is [`UiGesture::Pinch`]
     ///
-    /// Returns true for every frame the user is grabbing the handle.
-    /// see also [`ui_handle_begin`] [`ui_handle_end`] [`Ui::handle_begin`]
+    /// Must be evaluated using [`UiHandleBuilder::grab`] or [`UiHandleBuilder::begin_grab`]
+    /// see also [`ui_handle_begin`] [`ui_handle_end`] [`Ui::handle_end`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -1606,53 +1608,29 @@ impl Ui {
     /// filename_scr = "screenshots/ui_handle.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     // Handles are drawn
-    ///     Ui::handle("Handle1", &mut handle_pose1, handle_bounds, true,
-    ///                Some(UiMove::FaceUser), Some(UiGesture::Pinch));
+    ///     Ui::handle("Handle1", &mut handle_pose1, handle_bounds).draw_handle(true)
+    ///               .move_type(UiMove::FaceUser)
+    ///               .allower_gesture(UiGesture::Pinch).grab();
     ///
     ///     // Handles aren't drawn so we draw a cube_bound to show where they are.
-    ///     Ui::handle("Handle2", &mut handle_pose2, handle_bounds, false,
-    ///                Some(UiMove::PosOnly), Some(UiGesture::PinchGrip));
+    ///     Ui::handle("Handle2", &mut handle_pose2, handle_bounds)
+    ///               .move_type(UiMove::PosOnly)
+    ///               .allower_gesture(UiGesture::PinchGrip).grab();
     ///     cube_bounds.draw(token, &material_bound,
     ///                      handle_pose2.to_matrix(Some(handle_bounds.dimensions)), None, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_handle.jpeg" alt="screenshot" width="200">
-    pub fn handle(
-        id: impl AsRef<str>,
-        pose: &mut Pose,
-        handle: Bounds,
-        draw_handle: bool,
-        move_type: Option<UiMove>,
-        allower_gesture: Option<UiGesture>,
-    ) -> bool {
-        let move_type = move_type.unwrap_or(UiMove::Exact);
-        let allower_gesture = allower_gesture.unwrap_or(UiGesture::Pinch);
-        let cstr = CString::new(id.as_ref()).unwrap_or_default();
-        let result = unsafe {
-            ui_handle_begin(cstr.as_ptr(), pose, handle, draw_handle as Bool32T, move_type, allower_gesture) != 0
-        };
-        unsafe { ui_handle_end() }
-        result
+    pub fn handle<'a>(id: impl AsRef<str> + 'a, pose: &'a mut Pose, handle: Bounds) -> UiHandleBuilder<'a> {
+        UiHandleBuilder::new(id, pose, handle)
     }
 
-    /// This begins a new UI group with its own layout! Much like a window, except with a more flexible handle, and no
-    /// header. You can draw the handle, but it will have no text on it. The pose value is always relative to the
-    /// current hierarchy stack. This call will also push the pose transform onto the hierarchy stack, so any objects
-    /// drawn up to the corresponding Ui::handle_end() will get transformed by the handle pose. Returns true for every
-    /// frame the user is grabbing the handle.
-    /// <https://stereokit.net/Pages/StereoKit/UI/HandleBegin.html>
-    /// * `id` - An id for tracking element state. MUST be unique within current hierarchy.
-    /// * `pose` - The pose state for the handle! The user will be able to grab this handle and move it around.
-    ///   The pose is relative to the current hierarchy stack.
-    /// * `handle` - Size and location of the handle, relative to the pose.
-    /// * `draw_handle` - Should this function draw the handle for you, or will you draw that yourself?
-    /// * `move_type` - Describes how the handle will move when dragged around. If None, has default value of UiMove::Exact
-    /// * `allower_gesture` - Which hand gestures are used for interacting with this Handle? If None, has default value of
-    ///   UiGesture::Pinch
+    /// Finishes a handle! Must be called after [`Ui::handle`] and all elements have been drawn. Pops the pose
+    /// transform pushed by [`UiHandleBuilder::begin_grab`] from the hierarchy stack.
+    /// <https://stereokit.net/Pages/StereoKit/UI/HandleEnd.html>
     ///
-    /// Returns true for every frame the user is grabbing the handle.
-    /// see also [`ui_handle_begin`] [`Ui::handle`]
+    /// see also [`ui_handle_end`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -1678,14 +1656,14 @@ impl Ui {
     /// filename_scr = "screenshots/ui_handle_begin.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     // Handles aren't drawn so we draw som cube_bounds to show where they are.
-    ///     Ui::handle_begin("Handle1", &mut handle_pose1, handle_bounds, false,
-    ///                Some(UiMove::FaceUser), Some(UiGesture::Pinch));
+    ///     Ui::handle("Handle1", &mut handle_pose1, handle_bounds).move_type(UiMove::FaceUser)
+    ///               .allower_gesture(UiGesture::Pinch).begin_grab();
     ///     sphere.draw(token, &material_sphere, Matrix::IDENTITY, None, None);
     ///     cube_bounds.draw(token, &material_bound, Matrix::s(handle_bounds.dimensions), None, None);
     ///     Ui::handle_end();
     ///
-    ///     Ui::handle_begin("Handle2", &mut handle_pose2, handle_bounds, false,
-    ///                Some(UiMove::PosOnly), Some(UiGesture::PinchGrip));
+    ///     Ui::handle("Handle2", &mut handle_pose2, handle_bounds).move_type(UiMove::PosOnly)
+    ///               .allower_gesture(UiGesture::PinchGrip).begin_grab();
     ///     sphere.draw(token, &material_sphere, Matrix::IDENTITY, None, None);
     ///     cube_bounds.draw(token, &material_bound, Matrix::s(handle_bounds.dimensions), None, None);
     ///     Ui::handle_end();
@@ -1693,26 +1671,6 @@ impl Ui {
     /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_handle_begin.jpeg" alt="screenshot" width="200">
-    pub fn handle_begin(
-        id: impl AsRef<str>,
-        pose: &mut Pose,
-        handle: Bounds,
-        draw_handle: bool,
-        move_type: Option<UiMove>,
-        allower_gesture: Option<UiGesture>,
-    ) -> bool {
-        let move_type = move_type.unwrap_or(UiMove::Exact);
-        let allower_gesture = allower_gesture.unwrap_or(UiGesture::Pinch);
-        let cstr = CString::new(id.as_ref()).unwrap_or_default();
-        unsafe { ui_handle_begin(cstr.as_ptr(), pose, handle, draw_handle as Bool32T, move_type, allower_gesture) != 0 }
-    }
-
-    /// Finishes a handle! Must be called after [`Ui::handle_begin`] and all elements have been drawn. Pops the pose
-    /// transform pushed by Ui::handle_begin() from the hierarchy stack.
-    /// <https://stereokit.net/Pages/StereoKit/UI/HandleEnd.html>
-    ///
-    /// see also [`ui_handle_end`]
-    /// see example in [`Ui::handle_begin`]
     pub fn handle_end() {
         unsafe { ui_handle_end() };
     }
@@ -2047,7 +2005,7 @@ impl Ui {
     /// Maps the legacy Handed concept onto interactor sources: a side covers its hand and controller, and the right
     /// side also covers the mouse (which historically reported as the right hand). Used to back the deprecated
     /// hand-based functions with the interactor source system.
-    fn hand_to_source(hand: Handed) -> Option<InteractorSource> {
+    pub fn hand_to_source(hand: Handed) -> Option<InteractorSource> {
         match hand {
             Handed::Left => Some(InteractorSource::HandLeft),
             Handed::Right => Some(InteractorSource::HandRight),

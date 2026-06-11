@@ -73,7 +73,7 @@ bitflags::bitflags! {
     /// <https://stereokit.net/Pages/StereoKit/InteractorSource.html>
     ///
     /// see also [`Interactor`]
-    #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+    #[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]
     #[repr(C)]
     pub struct InteractorSource: u32 {
         /// A unique, independent source. Interactors with this source never group with any other interactor, and are
@@ -257,20 +257,6 @@ pub struct Interactor {
     inst: i32,
 }
 
-/// Interactors, unlike Assets, don't destroy themselves! You must explicitly Destroy an Interactor if you're
-/// finished with it, otherwise it will continue to interact with StereoKit's interactors. This function immediately
-/// removes the interactor from the interactor list.
-/// <https://stereokit.net/Pages/StereoKit/Interactor/Destroy.html>
-///
-/// see also [`interactor_destroy`]
-impl Drop for Interactor {
-    fn drop(&mut self) {
-        unsafe {
-            interactor_destroy(self.inst);
-        }
-    }
-}
-
 impl Interactor {
     /// An empty Interactor that represents "no interactor". UI
     /// building blocks like `UI::button_behavior` and `UI::volume_at` report
@@ -353,6 +339,17 @@ impl Interactor {
                 active,
                 tracked,
             );
+        }
+    }
+
+    /// Interactors, unlike Assets, don't destroy themselves! You must explicitly Destroy an Interactor if you're
+    /// finished with it, otherwise it will continue to interact with StereoKit's interactors. This function immediately
+    /// removes the interactor from the interactor list.
+    /// <https://stereokit.net/Pages/StereoKit/Interactor/Destroy.html>
+    ///
+    pub fn destroy(&mut self) {
+        unsafe {
+            interactor_destroy(self.inst);
         }
     }
 
@@ -708,6 +705,14 @@ pub struct InteractorController {
     ray_active: f32,
 }
 
+/// We have to implement `Drop` to ensure the interactor is properly destroyed when the `InteractorController`
+/// is dropped
+impl Drop for InteractorController {
+    fn drop(&mut self) {
+        self.interactor.destroy();
+    }
+}
+
 impl InteractorController {
     /// Create a new controller interactor for the given hand.
     ///
@@ -888,6 +893,15 @@ pub struct InteractorHand {
     ray_visible: f32,
     ray_active: f32,
     prev_active: bool,
+}
+
+/// We have to destroy explicitly the interactors we created, so we implement Drop to make sure that happens.
+impl Drop for InteractorHand {
+    fn drop(&mut self) {
+        self.poke.destroy();
+        self.pinch.destroy();
+        self.far.destroy();
+    }
 }
 
 impl InteractorHand {
