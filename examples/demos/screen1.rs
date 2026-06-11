@@ -136,7 +136,7 @@ impl Screen1 {
             Ui::same_line();
             Ui::label(format!("{:.1}s", *interval)).use_padding(true).draw();
             Ui::same_line();
-            Ui::hslider("slide_interval", &mut interval, 0.5, 10.0, None, None, None, None);
+            Ui::hslider("slide_interval", &mut interval, 0.5, 10.0).interact();
         });
 
         // Create an OpenXR swapchain when the backend supports it.

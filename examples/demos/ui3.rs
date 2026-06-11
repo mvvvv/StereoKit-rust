@@ -85,31 +85,25 @@ impl Ui3 {
 
         Ui::label(format!("vslider: {:.2}", self.v_f32)).draw();
         Ui::same_line();
-        Ui::vslider("v_f32", &mut self.v_f32, 0.0, 1.0, None, Some(11.7 * CM), None, None);
+        Ui::vslider("v_f32", &mut self.v_f32, 0.0, 1.0).space(11.7 * CM).interact();
 
         Ui::label(format!("step=0.1: {:.2}", self.v_f32_step)).draw();
         Ui::same_line();
-        Ui::vslider("v_f32_step", &mut self.v_f32_step, 0.0, 1.0, Some(0.1), Some(11.7 * CM), None, None);
+        Ui::vslider("v_f32_step", &mut self.v_f32_step, 0.0, 1.0).step(0.1).space(11.7 * CM).interact();
 
         Ui::label(format!("Pinch: {:.2}", self.v_f32_pinch)).draw();
         Ui::same_line();
-        Ui::vslider(
-            "v_f32_pinch",
-            &mut self.v_f32_pinch,
-            0.0,
-            1.0,
-            None,
-            Some(11.7 * CM),
-            Some(UiConfirm::Pinch),
-            None,
-        );
+        Ui::vslider("v_f32_pinch", &mut self.v_f32_pinch, 0.0, 1.0)
+            .space(11.7 * CM)
+            .confirm_method(UiConfirm::Pinch)
+            .interact();
 
         Ui::hseparator();
 
         Ui::label(format!("vslider_at:{:.2}", self.vat_f32)).draw();
         Ui::same_line();
         let at = Ui::get_layout_at();
-        Ui::vslider_at("vat_f32", &mut self.vat_f32, 0.0, 1.0, None, at, Vec2::new(2.5 * CM, 8.3 * CM), None, None);
+        Ui::vslider("vat_f32", &mut self.vat_f32, 0.0, 1.0).at(at, Vec2::new(2.5 * CM, 8.3 * CM)).interact();
 
         Ui::layout_reserve(Vec2::new(0.0, 8.3 * CM), false, 0.0);
 
@@ -117,25 +111,21 @@ impl Ui3 {
 
         // ── Left panel: horizontal sliders ───────────────────────────────
         Ui::label(format!("hslider: {:.2}", self.h_f32)).draw();
-        Ui::hslider("h_f32", &mut self.h_f32, 0.0, 1.0, None, None, None, None);
+        Ui::hslider("h_f32", &mut self.h_f32, 0.0, 1.0).interact();
 
         Ui::label(format!("hslider step=0.1: {:.2}", self.h_f32_step)).draw();
-        Ui::hslider("h_f32_step", &mut self.h_f32_step, 0.0, 1.0, Some(0.1), None, None, None);
+        Ui::hslider("h_f32_step", &mut self.h_f32_step, 0.0, 1.0).step(0.1).interact();
 
         Ui::label(format!("hslider Pinch: {:.2}", self.h_f32_pinch)).draw();
-        Ui::hslider("h_f32_pinch", &mut self.h_f32_pinch, 0.0, 1.0, None, None, Some(UiConfirm::Pinch), None);
+        Ui::hslider("h_f32_pinch", &mut self.h_f32_pinch, 0.0, 1.0)
+            .confirm_method(UiConfirm::Pinch)
+            .interact();
 
         Ui::label(format!("hslider Finalize: {:.2}", self.h_f32_finalized)).draw();
-        if let Some(finalized) = Ui::hslider(
-            "h_f32_finalize",
-            &mut self.h_f32_finalize,
-            0.0,
-            1.0,
-            None,
-            None,
-            None,
-            Some(UiNotify::Finalize),
-        ) {
+        if let Some(finalized) = Ui::hslider("h_f32_finalize", &mut self.h_f32_finalize, 0.0, 1.0)
+            .notify_on(UiNotify::Finalize)
+            .interact()
+        {
             self.h_f32_finalized = finalized;
         }
 
@@ -143,7 +133,9 @@ impl Ui3 {
 
         Ui::label(format!("hslider_at: {:.2}", self.hat_f32)).draw();
         let at = Ui::get_layout_at();
-        Ui::hslider_at("hat_f32", &mut self.hat_f32, 0.0, 1.0, None, at, Vec2::new(20.0 * CM, 1.5 * CM), None, None);
+        Ui::hslider("hat_f32", &mut self.hat_f32, 0.0, 1.0)
+            .at(at, Vec2::new(20.0 * CM, 1.5 * CM))
+            .interact();
         Ui::layout_reserve(Vec2::new(0.0, 1.5 * CM), false, 0.0);
 
         Ui::layout_reserve(Vec2::new(0.0, 1.5 * CM), false, 0.0);

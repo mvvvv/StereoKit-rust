@@ -142,9 +142,7 @@ impl<'a> LogWindow<'a> {
             //     self.log_index = 0.0;
             // }
         }
-        if let Some(pos) =
-            Ui::vslider("scroll", &mut self.log_index, 0.0, items.len() as f32, Some(1.0), None, None, None)
-        {
+        if let Some(pos) = Ui::vslider("scroll", &mut self.log_index, 0.0, items.len() as f32).step(1.0).interact() {
             self.log_index = f32::max(f32::min(pos, items.len() as f32 - 1.0), 0.0);
         }
 

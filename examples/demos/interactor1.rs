@@ -273,7 +273,7 @@ impl Interactor1 {
 
         // Input Source slider (convert to f32 for slider)
         Ui::text("Min Distance::", None, None, None, None, None, None);
-        if Ui::hslider("min_distance", &mut self.min_distance, -1.0, 3.0, None, Some(0.2), None, None).is_some()
+        if Ui::hslider("min_distance", &mut self.min_distance, -1.0, 3.0).space(0.2).interact().is_some()
             && let Some(interactor) = &self.test_interactor
         {
             interactor.min_distance(self.min_distance);
@@ -281,14 +281,19 @@ impl Interactor1 {
 
         // Capsule Radius slider
         Ui::text("Capsule Radius:", None, None, None, None, None, None);
-        if Ui::hslider("radius", &mut self.capsule_radius, 0.001, 0.1, Some(0.001), Some(0.2), None, None).is_some() {
+        if Ui::hslider("radius", &mut self.capsule_radius, 0.001, 0.1)
+            .step(0.001)
+            .space(0.2)
+            .interact()
+            .is_some()
+        {
             changed = true;
         }
 
         // Secondary Motion Dimensions slider (convert to f32 for slider)
         Ui::text("Secondary Motion Dims:", None, None, None, None, None, None);
         let mut sec_motion_f32 = self.secondary_motion_dimensions as f32;
-        if Ui::hslider("dims", &mut sec_motion_f32, 0.0, 3.0, Some(1.0), Some(0.2), None, None).is_some() {
+        if Ui::hslider("dims", &mut sec_motion_f32, 0.0, 3.0).step(1.0).space(0.2).interact().is_some() {
             self.secondary_motion_dimensions = sec_motion_f32 as i32;
             changed = true;
         }

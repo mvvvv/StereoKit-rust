@@ -5,9 +5,9 @@ use crate::{
     sprite::{Sprite, SpriteT},
     system::Align,
     ui::{
-        UiBtnLayout, UiGesture, UiMove, ui_button, ui_button_at, ui_button_img, ui_button_img_at, ui_button_round,
-        ui_button_round_at, ui_handle_begin, ui_handle_end, ui_label, ui_toggle, ui_toggle_at, ui_toggle_img,
-        ui_toggle_img_at,
+        UiBtnLayout, UiConfirm, UiGesture, UiMove, UiNotify, ui_button, ui_button_at, ui_button_img, ui_button_img_at,
+        ui_button_round, ui_button_round_at, ui_handle_begin, ui_handle_end, ui_hslider, ui_hslider_at, ui_label,
+        ui_toggle, ui_toggle_at, ui_toggle_img, ui_toggle_img_at, ui_vslider, ui_vslider_at,
     },
     util::Color128,
 };
@@ -176,7 +176,7 @@ impl UiButtonRoundBuilder {
 
 /// see [`Ui::handle`](crate::ui::Ui::handle) and [`Ui::handle_end`](crate::ui::Ui::handle_end)
 /// StereoKit original docs :
-/// [Handle](https://stereokit.net/Pages/StereoKit/UI/Handle.html
+/// [Handle](https://stereokit.net/Pages/StereoKit/UI/Handle.html)
 /// [HandleBegin](https://stereokit.net/Pages/StereoKit/UI/HandleBegin.html)
 #[must_use = "UiHandleBuilder does nothing until you call .grab() or begin_grab() on it"]
 pub struct UiHandleBuilder<'a> {
@@ -437,6 +437,168 @@ impl UiRadioBuilder {
             },
         };
         pressed && !self.active
+    }
+}
+
+/// see [`Ui::hslider`](crate::ui::Ui::hslider) and [`Ui::vslider`](crate::ui::Ui::vslider)
+/// StereoKit original docs :
+/// [HSlider](https://stereokit.net/Pages/StereoKit/UI/HSlider.html)
+/// [HSliderAt](https://stereokit.net/Pages/StereoKit/UI/HSlider.html)
+/// [VSlider](https://stereokit.net/Pages/StereoKit/UI/VSlider.html)
+/// [VSliderAt](https://stereokit.net/Pages/StereoKit/UI/VSliderAt.html)
+#[must_use = "UiSliderBuilder does nothing until you call .interact() on it"]
+pub struct UiSliderBuilder<'a> {
+    id: CString,
+    value: &'a mut f32,
+    min: f32,
+    max: f32,
+    step: f32,
+    space: f32,
+    confirm_method: UiConfirm,
+    notify_on: UiNotify,
+    horizontal: bool,
+    top_left_corner: Option<Vec3>,
+    size: Vec2,
+}
+
+impl<'a> UiSliderBuilder<'a> {
+    /// Creates a new horizontal slider builder.
+    pub fn new_h(id: impl AsRef<str>, out_value: &'a mut f32, min: f32, max: f32) -> Self {
+        Self {
+            id: CString::new(id.as_ref()).unwrap_or_default(),
+            value: out_value,
+            min,
+            max,
+            step: 0.0,
+            space: 0.0,
+            confirm_method: UiConfirm::Push,
+            notify_on: UiNotify::Change,
+            horizontal: true,
+            top_left_corner: None,
+            size: Vec2::ZERO,
+        }
+    }
+
+    /// Creates a new vertical slider builder.
+    pub fn new_v(id: impl AsRef<str>, out_value: &'a mut f32, min: f32, max: f32) -> Self {
+        Self {
+            id: CString::new(id.as_ref()).unwrap_or_default(),
+            value: out_value,
+            min,
+            max,
+            step: 0.0,
+            space: 0.0,
+            confirm_method: UiConfirm::Push,
+            notify_on: UiNotify::Change,
+            horizontal: false,
+            top_left_corner: None,
+            size: Vec2::ZERO,
+        }
+    }
+
+    /// Switches this slider to absolute-position mode that doesn’t use the layout system, and instead goes exactly
+    /// where you put it.
+    ///
+    /// `top_left_corner` is relative to the current hierarchy.
+    /// `size` is the layout size for this element in Hierarchy space.
+    pub fn at(mut self, top_left_corner: impl Into<Vec3>, size: impl Into<Vec2>) -> Self {
+        self.top_left_corner = Some(top_left_corner.into());
+        self.size = size.into();
+        self
+    }
+
+    /// Locks the value to increments of step. Starts at min, and increments by step. Default is 0, which means "don't
+    /// lock to increments".
+    pub fn step(mut self, step: f32) -> Self {
+        self.step = step;
+        self
+    }
+
+    /// Physical width of the slider if horizontal, height if vertical. Default is 0 will fill the remaining amount of
+    /// window space. Doesn't mean nothing if the slider is in absolute-position mode.
+    pub fn space(mut self, space: f32) -> Self {
+        self.space = space;
+        self
+    }
+
+    /// How should the slider be activated? Default is [`UiConfirm::Push`].
+    ///
+    /// Push will be a push-button the user must press first, and pinch will be a tab that the user must pinch and drag
+    /// around
+    pub fn confirm_method(mut self, confirm_method: UiConfirm) -> Self {
+        self.confirm_method = confirm_method;
+        self
+    }
+
+    /// Allows you to modify the behavior of the return value. Default is [`UiNotify::Change`].
+    pub fn notify_on(mut self, notify_on: UiNotify) -> Self {
+        self.notify_on = notify_on;
+        self
+    }
+
+    /// Executes slider interaction.
+    ///
+    /// Returns the updated value when it changes, otherwise `None`.
+    pub fn interact(self) -> Option<f32> {
+        let changed = if self.horizontal {
+            match self.top_left_corner {
+                Some(top_left_corner) => unsafe {
+                    ui_hslider_at(
+                        self.id.as_ptr(),
+                        self.value,
+                        self.min,
+                        self.max,
+                        self.step,
+                        top_left_corner,
+                        self.size,
+                        self.confirm_method,
+                        self.notify_on,
+                    ) != 0
+                },
+                None => unsafe {
+                    ui_hslider(
+                        self.id.as_ptr(),
+                        self.value,
+                        self.min,
+                        self.max,
+                        self.step,
+                        self.space,
+                        self.confirm_method,
+                        self.notify_on,
+                    ) != 0
+                },
+            }
+        } else {
+            match self.top_left_corner {
+                Some(top_left_corner) => unsafe {
+                    ui_vslider_at(
+                        self.id.as_ptr(),
+                        self.value,
+                        self.min,
+                        self.max,
+                        self.step,
+                        top_left_corner,
+                        self.size,
+                        self.confirm_method,
+                        self.notify_on,
+                    ) != 0
+                },
+                None => unsafe {
+                    ui_vslider(
+                        self.id.as_ptr(),
+                        self.value,
+                        self.min,
+                        self.max,
+                        self.step,
+                        self.space,
+                        self.confirm_method,
+                        self.notify_on,
+                    ) != 0
+                },
+            }
+        };
+
+        if changed { Some(*self.value) } else { None }
     }
 }
 

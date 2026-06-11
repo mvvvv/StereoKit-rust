@@ -205,19 +205,19 @@ impl ComputeReaction {
         let params_changed = {
             Ui::label("feed").size(Vec2::new(0.07, 0.0)).draw();
             Ui::same_line();
-            let r = Ui::hslider("feed", &mut self.feed, 0.01, 0.1, Some(0.001), None, None, None).is_some();
+            let r = Ui::hslider("feed", &mut self.feed, 0.01, 0.1).step(0.001).interact().is_some();
             Ui::label("kill").size(Vec2::new(0.07, 0.0)).draw();
             Ui::same_line();
-            let r = r | Ui::hslider("kill", &mut self.kill, 0.01, 0.1, Some(0.001), None, None, None).is_some();
+            let r = r | Ui::hslider("kill", &mut self.kill, 0.01, 0.1).step(0.001).interact().is_some();
             Ui::label("diffuseA").size(Vec2::new(0.07, 0.0)).draw();
             Ui::same_line();
-            let r = r | Ui::hslider("diffuseA", &mut self.diff_a, 0.1, 2.0, Some(0.01), None, None, None).is_some();
+            let r = r | Ui::hslider("diffuseA", &mut self.diff_a, 0.1, 2.0).step(0.01).interact().is_some();
             Ui::label("diffuseB").size(Vec2::new(0.07, 0.0)).draw();
             Ui::same_line();
-            let r = r | Ui::hslider("diffuseB", &mut self.diff_b, 0.1, 1.0, Some(0.01), None, None, None).is_some();
+            let r = r | Ui::hslider("diffuseB", &mut self.diff_b, 0.1, 1.0).step(0.01).interact().is_some();
             Ui::label("timestep").size(Vec2::new(0.07, 0.0)).draw();
             Ui::same_line();
-            r | Ui::hslider("timestep", &mut self.timestep, 0.1, 2.0, Some(0.01), None, None, None).is_some()
+            r | Ui::hslider("timestep", &mut self.timestep, 0.1, 2.0).step(0.01).interact().is_some()
         };
         if params_changed {
             self.set_params();
@@ -359,29 +359,26 @@ impl ComputeTest {
         let params_changed = {
             Ui::label("ring_freq").size(Vec2::new(0.07, 0.0)).draw();
             Ui::same_line();
-            let r = Ui::hslider("ring_freq", &mut self.ring_freq, 0.1, 5.0, Some(0.1), None, None, None).is_some();
+            let r = Ui::hslider("ring_freq", &mut self.ring_freq, 0.1, 5.0).step(0.1).interact().is_some();
             Ui::label("arm_count").size(Vec2::new(0.07, 0.0)).draw();
             Ui::same_line();
-            let r = r | Ui::hslider("arm_count", &mut self.arm_count, 1.0, 12.0, Some(1.0), None, None, None).is_some();
+            let r = r | Ui::hslider("arm_count", &mut self.arm_count, 1.0, 12.0).step(1.0).interact().is_some();
             Ui::label("uv x").size(Vec2::new(0.07, 0.0)).draw();
             Ui::same_line();
-            let r = r | Ui::hslider("uv_x", &mut self.uv_x, -0.5, 0.5, Some(0.01), None, None, None).is_some();
+            let r = r | Ui::hslider("uv_x", &mut self.uv_x, -0.5, 0.5).step(0.01).interact().is_some();
             Ui::label("uv y").size(Vec2::new(0.07, 0.0)).draw();
             Ui::same_line();
-            let r = r | Ui::hslider("uv_y", &mut self.uv_y, -0.5, 0.5, Some(0.01), None, None, None).is_some();
+            let r = r | Ui::hslider("uv_y", &mut self.uv_y, -0.5, 0.5).step(0.01).interact().is_some();
             Ui::label("twist").size(Vec2::new(0.07, 0.0)).draw();
             Ui::same_line();
-            let r = r | Ui::hslider("spiral_twist", &mut self.spiral_twist, -3.0, 3.0, Some(0.1), None, None, None)
-                .is_some();
+            let r = r | Ui::hslider("spiral_twist", &mut self.spiral_twist, -3.0, 3.0).step(0.1).interact().is_some();
             Ui::label("rot speed").size(Vec2::new(0.07, 0.0)).draw();
             Ui::same_line();
             let r =
-                r | Ui::hslider("rotation_speed", &mut self.rotation_speed, -0.1, 0.1, Some(0.001), None, None, None)
-                    .is_some();
+                r | Ui::hslider("rotation_speed", &mut self.rotation_speed, -0.1, 0.1).step(0.001).interact().is_some();
             Ui::label("col speed").size(Vec2::new(0.07, 0.0)).draw();
             Ui::same_line();
-            let r = r | Ui::hslider("color_speed", &mut self.color_speed, 0.0, 0.05, Some(0.001), None, None, None)
-                .is_some();
+            let r = r | Ui::hslider("color_speed", &mut self.color_speed, 0.0, 0.05).step(0.001).interact().is_some();
             let prev_glow = self.center_glow;
             Ui::toggle("center_glow", &mut self.center_glow).interact();
             r | (self.center_glow != prev_glow)

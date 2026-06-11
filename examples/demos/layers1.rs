@@ -279,7 +279,7 @@ impl Layers1 {
         Ui::window_begin("Composition Layers", &mut self.window_pose, Some(Vec2::new(0.2, 0.0)), None, None);
         Ui::label(format!("Sort Order {}", self.quad_sort_order as i32)).size(Vec2::new(0.1, 0.0)).draw();
         Ui::same_line();
-        Ui::hslider("Sort Order", &mut self.quad_sort_order, -1.0, 1.0, Some(1.0), None, None, None);
+        Ui::hslider("Sort Order", &mut self.quad_sort_order, -1.0, 1.0).step(1.0).interact();
 
         Ui::hseparator();
         Ui::label("Cylinder Layer").draw();
@@ -287,16 +287,16 @@ impl Layers1 {
             .size(Vec2::new(0.1, 0.0))
             .draw();
         Ui::same_line();
-        Ui::hslider("Cyl Sort Order", &mut self.cylinder_sort_order, -1.0, 1.0, Some(1.0), None, None, None);
+        Ui::hslider("Cyl Sort Order", &mut self.cylinder_sort_order, -1.0, 1.0).step(1.0).interact();
         Ui::label(format!("Radius {:.2}m", self.cylinder_radius)).size(Vec2::new(0.1, 0.0)).draw();
         Ui::same_line();
-        Ui::hslider("Cyl Radius", &mut self.cylinder_radius, 0.2, 3.0, None, None, None, None);
+        Ui::hslider("Cyl Radius", &mut self.cylinder_radius, 0.2, 3.0).interact();
         Ui::label(format!("Arc {:.0}°", self.cylinder_angle.to_degrees())).size(Vec2::new(0.1, 0.0)).draw();
         Ui::same_line();
-        Ui::hslider("Cyl Angle", &mut self.cylinder_angle, 0.1, std::f32::consts::TAU, None, None, None, None);
+        Ui::hslider("Cyl Angle", &mut self.cylinder_angle, 0.1, std::f32::consts::TAU).interact();
         Ui::label(format!("Aspect {:.2}", self.cylinder_aspect)).size(Vec2::new(0.1, 0.0)).draw();
         Ui::same_line();
-        Ui::hslider("Cyl Aspect", &mut self.cylinder_aspect, 0.5, 2.0, None, None, None, None);
+        Ui::hslider("Cyl Aspect", &mut self.cylinder_aspect, 0.5, 2.0).interact();
 
         #[cfg(target_os = "android")]
         {

@@ -416,7 +416,7 @@ pub fn launch(mut sk: Sk, _is_testing: bool, start_test: String) {
         Ui::same_line();
         Ui::label(format!("{viewport_scaling:.2}")).use_padding(true).draw();
         Ui::same_line();
-        if let Some(new_value) = Ui::hslider("scaling", &mut viewport_scaling, 0.1, 1.0, Some(0.05), None, None, None) {
+        if let Some(new_value) = Ui::hslider("scaling", &mut viewport_scaling, 0.1, 1.0).step(0.05).interact() {
             Renderer::viewport_scaling(new_value);
             viewport_scaling = new_value;
         }

@@ -360,7 +360,7 @@ impl Screen {
     /// screen.set_extra_param_ui(move || {
     ///     Ui::label("Quality", None, true);
     ///     Ui::same_line();
-    ///     Ui::hslider("quality", &mut quality, 0.0, 1.0, None, None, None, None);
+    ///     Ui::hslider("quality", &mut quality, 0.0, 1.0).interact();
     /// });
     /// ```
     pub fn set_extra_param_ui(&mut self, f: impl FnMut() + Send + 'static) -> &mut Self {
@@ -463,11 +463,9 @@ impl Screen {
                 &mut screen_distance,
                 GRAB_X_MARGIN * 2.0,
                 Self::MAX_DISTANCE,
-                None,
-                None,
-                None,
-                None,
-            ) {
+            )
+            .interact()
+            {
                 self.screen_distance(new_value);
             }
 
@@ -476,16 +474,10 @@ impl Screen {
             Ui::label(format!("{:.2}", self.screen_diagonal)).use_padding(true).draw();
             Ui::same_line();
             let mut screen_diagonal = self.screen_diagonal;
-            if let Some(new_value) = Ui::hslider(
-                &self.repo.id_slider_size,
-                &mut screen_diagonal,
-                Self::MIN_DIAGONAL,
-                Self::MAX_DIAGONAL,
-                None,
-                None,
-                None,
-                None,
-            ) {
+            if let Some(new_value) =
+                Ui::hslider(&self.repo.id_slider_size, &mut screen_diagonal, Self::MIN_DIAGONAL, Self::MAX_DIAGONAL)
+                    .interact()
+            {
                 self.screen_diagonal(new_value);
             }
 
@@ -494,9 +486,9 @@ impl Screen {
             Ui::label(format!("{:.2}", self.curvature)).use_padding(true).draw();
             Ui::same_line();
             let mut curvature = self.curvature;
-            let step = if self.cylindrical { Some(1.0) } else { None };
+            let step = if self.cylindrical { 1.0 } else { 0.0 };
             if let Some(new_value) =
-                Ui::hslider(&self.repo.id_slider_flattening, &mut curvature, 0.0, 1.0, step, None, None, None)
+                Ui::hslider(&self.repo.id_slider_flattening, &mut curvature, 0.0, 1.0).step(step).interact()
             {
                 self.curvature(new_value);
             }

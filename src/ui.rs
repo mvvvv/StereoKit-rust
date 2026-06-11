@@ -41,7 +41,7 @@ pub struct UiWin : u32
 /// This describes how a UI element moves when being dragged around by a user!
 /// <https://stereokit.net/Pages/StereoKit/UIMove.html>
 ///
-/// see [`Ui::window_begin`] [`Ui::handle_begin`] [`Ui::handle`] [`Ui::system_move_type`]
+/// see [`Ui::window_begin`] [`Ui::handle`] [`Ui::system_move_type`]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u32)]
 pub enum UiMove {
@@ -593,7 +593,7 @@ pub struct UiSliderData {
 ///     Ui::panel_begin(None);
 ///     Ui::toggle("Doubt value:", &mut doubt).interact();
 ///     Ui::push_enabled(doubt, None);
-///     Ui::hslider("scaling", &mut scaling, 0.0, 1.0,Some(0.05), Some(0.14), None, None);
+///     Ui::hslider("scaling", &mut scaling, 0.0, 1.0).step(0.05).space(0.14).interact();
 ///     Ui::pop_enabled();
 ///     Ui::panel_end();
 ///     Ui::same_line();
@@ -1069,7 +1069,7 @@ impl Ui {
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Give a value", &mut window_pose, None, None, None);
     ///     Ui::panel_begin(None);
-    ///     Ui::hslider("scaling", &mut scaling, 0.0, 1.0, Some(0.05), Some(0.14), None, None);
+    ///     Ui::hslider("scaling", &mut scaling, 0.0, 1.0).step(0.05).space(0.14).interact();
     ///     Ui::panel_end();
     ///     Ui::toggle("I agree!",&mut agree).interact();
     ///     Ui::same_line();
@@ -1622,7 +1622,7 @@ impl Ui {
     /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_handle.jpeg" alt="screenshot" width="200">
-    pub fn handle<'a>(id: impl AsRef<str> + 'a, pose: &'a mut Pose, handle: Bounds) -> UiHandleBuilder<'a> {
+    pub fn handle(id: impl AsRef<str>, pose: &mut Pose, handle: Bounds) -> UiHandleBuilder<'_> {
         UiHandleBuilder::new(id, pose, handle)
     }
 
@@ -1726,16 +1726,20 @@ impl Ui {
     /// * `out_value` - The value that the slider will store slider state in.
     /// * `min` - The minimum value the slider can set, left side of the slider.
     /// * `max` - The maximum value the slider can set, right side of the slider.
-    /// * `step` - Locks the value to increments of step. Starts at min, and increments by step. None is default 0
-    ///   and means "don't lock to increments".
-    /// * `width` - Physical width of the slider on the window. None is default 0 will fill the remaining amount of
-    ///   window space.
-    /// * `confirm_method` - How should the slider be activated? None is default Push will be a push-button the user
-    ///   must press first, and pinch will be a tab that the user must pinch and drag around.
-    /// * `notify_on` - Allows you to modify the behavior of the return value. None is default UiNotify::Change.
+    /// * [`UiSliderBuilder::step`] - Locks the value to increments of step. Starts at min, and increments by step.
+    ///   Default 0 and means "don't lock to increments".
+    /// * Either [`UiSliderBuilder::at`]  or [`UiSliderBuilder::space`] :
+    ///   - `at` - This is the top left corner of the UI element relative to the current Hierarchy, and the layout size
+    ///     for this element in Hierarchy space.
+    ///   - `space` - Physical width of the slider on the window. Default is 0 will fill the remaining amount of window
+    ///     space.
+    /// * [`UiSliderBuilder::confirm_method`] - How should the slider be activated? None is default Push will be a
+    ///   push-button the user must press first, and pinch will be a tab that the user must pinch and drag around.
+    /// * [`UiSliderBuilder::notify_on`] - Allows you to modify the behavior of the return value. None is default
+    ///   UiNotify::Change.
     ///
-    /// Returns new value of the slider if it has changed during this step.
-    /// see also [`ui_hslider`] [`Ui::hslider_at`]
+    /// Must be evaluated using [`UiSliderBuilder::interact`]
+    /// see also [`ui_hslider`] [`ui_hslider_at`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -1752,17 +1756,16 @@ impl Ui {
     /// filename_scr = "screenshots/ui_hslider.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("HSlider", &mut window_pose, None, None, None);
-    ///     Ui::hslider(    "scaling1", &mut scaling1, 0.0, 1.0, Some(0.05), Some(0.10),
-    ///                     None, None);
-    ///     Ui::hslider(    "scaling2", &mut scaling2, 0.0, 1.0, None, Some(0.12),
-    ///                     Some(UiConfirm::Pinch), None);
-    ///     Ui::hslider_at( "scaling3", &mut scaling3, 0.0, 1.0, None,
-    ///                     [0.0, 0.0, 0.0], [0.08, 0.02],
-    ///                     None, Some(UiNotify::Finalize));
-    ///     if let Some(new_value) = Ui::hslider_at(
-    ///                     "scaling4", &mut scaling4, 0.0, 1.0, None,
-    ///                     [0.07, -0.085, 0.0], [0.15, 0.036],
-    ///                     Some(UiConfirm::VariablePinch), None) {
+    ///     Ui::hslider("scaling1", &mut scaling1, 0.0, 1.0).step(0.05).space(0.10)
+    ///                 .interact();
+    ///     Ui::hslider("scaling2", &mut scaling2, 0.0, 1.0).space(0.12)
+    ///                 .confirm_method(UiConfirm::Pinch).interact();
+    ///     Ui::hslider("scaling3", &mut scaling3, 0.0, 1.0)
+    ///                 .at([0.0, 0.0, 0.0], [0.08, 0.02])
+    ///                 .notify_on(UiNotify::Finalize).interact();
+    ///     if let Some(new_value) = Ui::hslider("scaling4", &mut scaling4, 0.0, 1.0)
+    ///                 .at([0.07, -0.085, 0.0], [0.15, 0.036])
+    ///                 .confirm_method(UiConfirm::VariablePinch).interact() {
     ///         if new_value == 1.0 {
     ///             Log::info("scaling4 is at max");
     ///         }
@@ -1772,77 +1775,8 @@ impl Ui {
     /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_hslider.jpeg" alt="screenshot" width="200">
-    #[allow(clippy::too_many_arguments)]
-    pub fn hslider(
-        id: impl AsRef<str>,
-        out_value: &mut f32,
-        min: f32,
-        max: f32,
-        step: Option<f32>,
-        width: Option<f32>,
-        confirm_method: Option<UiConfirm>,
-        notify_on: Option<UiNotify>,
-    ) -> Option<f32> {
-        let cstr = CString::new(id.as_ref()).unwrap_or_default();
-        let step = step.unwrap_or(0.0);
-        let width = width.unwrap_or(0.0);
-        let confirm_method = confirm_method.unwrap_or(UiConfirm::Push);
-        let notify_on = notify_on.unwrap_or(UiNotify::Change);
-        match unsafe { ui_hslider(cstr.as_ptr(), out_value, min, max, step, width, confirm_method, notify_on) != 0 } {
-            true => Some(*out_value),
-            false => None,
-        }
-    }
-
-    /// A vertical slider element! You can stick your finger in it, and slide the value up and down.
-    /// <https://stereokit.net/Pages/StereoKit/UI/HSliderAt.html>
-    /// * `id` - An id for tracking element state. MUST be unique within current hierarchy.
-    /// * `out_value` - The value that the slider will store slider state in.
-    /// * `min` - The minimum value the slider can set, left side of the slider.
-    /// * `max` - The maximum value the slider can set, right side of the slider.
-    /// * `step` - Locks the value to increments of step. Starts at min, and increments by step. None is default 0
-    ///   and means "don't lock to increments".
-    /// * `top_left_corner` - This is the top left corner of the UI element relative to the current Hierarchy.
-    /// * `size` - The layout size for this element in Hierarchy space.
-    /// * `confirm_method` - How should the slider be activated? None is default Push will be a push-button the user
-    ///   must press first, and pinch will be a tab that the user must pinch and drag around.
-    /// * `notify_on` - Allows you to modify the behavior of the return value. None is default UiNotify::Change.
-    ///
-    /// Returns new value of the slider if it has changed during this step.
-    /// see also [`ui_hslider_at`] [`Ui::hslider`]
-    /// see example in [`Ui::hslider`]
-    #[allow(clippy::too_many_arguments)]
-    pub fn hslider_at(
-        id: impl AsRef<str>,
-        out_value: &mut f32,
-        min: f32,
-        max: f32,
-        step: Option<f32>,
-        top_left_corner: impl Into<Vec3>,
-        size: impl Into<Vec2>,
-        confirm_method: Option<UiConfirm>,
-        notify_on: Option<UiNotify>,
-    ) -> Option<f32> {
-        let cstr = CString::new(id.as_ref()).unwrap_or_default();
-        let step = step.unwrap_or(0.0);
-        let confirm_method = confirm_method.unwrap_or(UiConfirm::Push);
-        let notify_on = notify_on.unwrap_or(UiNotify::Change);
-        match unsafe {
-            ui_hslider_at(
-                cstr.as_ptr(),
-                out_value,
-                min,
-                max,
-                step,
-                top_left_corner.into(),
-                size.into(),
-                confirm_method,
-                notify_on,
-            ) != 0
-        } {
-            true => Some(*out_value),
-            false => None,
-        }
+    pub fn hslider(id: impl AsRef<str>, out_value: &mut f32, min: f32, max: f32) -> UiSliderBuilder<'_> {
+        UiSliderBuilder::new_h(id, out_value, min, max)
     }
 
     /// Adds an image to the UI!
@@ -2619,7 +2553,7 @@ impl Ui {
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Play sound off", &mut window_pose, None, None, None);
-    ///     Ui::hslider("Slider1", &mut value, 0.0, 1.0,  None, None, None, None);
+    ///     Ui::hslider("Slider1", &mut value, 0.0, 1.0).interact();
     ///     Ui::play_sound_off(element_visual, window_pose.position);
     ///     Ui::label("This will play the 'off' sound\nassociated with the given UIVisual\nat the local position.").use_padding(false).draw();
     ///     Ui::window_end();
@@ -2945,7 +2879,7 @@ impl Ui {
     ///     Ui::push_preserve_keyboard(true);
     ///     Ui::input("Title", &mut title, Some([0.15, 0.03].into()), None);
     ///     Ui::input("Author", &mut author, Some([0.15, 0.03].into()), None);
-    ///     Ui::hslider("volume", &mut volume, 0.0, 1.0, Some(0.05), None, None, None);
+    ///     Ui::hslider("volume", &mut volume, 0.0, 1.0).step(0.05).interact();
     ///     Ui::toggle("mute", &mut mute).interact();
     ///     Ui::pop_preserve_keyboard();
     ///     Ui::window_end();
@@ -3110,7 +3044,7 @@ impl Ui {
     ///     Ui::input("Title", &mut title, Some([0.15, 0.03].into()), None);
     ///     Ui::pop_tint();
     ///     Ui::push_tint(red.to_gamma());
-    ///     Ui::hslider("volume", &mut volume, 0.0, 1.0, Some(0.05), None, None, None);
+    ///     Ui::hslider("volume", &mut volume, 0.0, 1.0).step(0.05).interact();
     ///     Ui::pop_tint();
     ///     Ui::push_tint(green.to_gamma());
     ///     Ui::toggle("mute", &mut mute).interact();
@@ -3958,7 +3892,7 @@ impl Ui {
     /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_toggle.jpeg" alt="screenshot" width="200">
-    pub fn toggle<'a>(text: impl AsRef<str>, out_value: &'a mut bool) -> UiToggleBuilder<'a> {
+    pub fn toggle(text: impl AsRef<str>, out_value: &mut bool) -> UiToggleBuilder<'_> {
         UiToggleBuilder::new(text, out_value)
     }
 
@@ -4020,16 +3954,20 @@ impl Ui {
     /// * `out_value` - The value that the slider will store slider state in.
     /// * `min` - The minimum value the slider can set, left side of the slider.
     /// * `max` - The maximum value the slider can set, right side of the slider.
-    /// * `step` - Locks the value to increments of step. Starts at min, and increments by step. None is default 0
-    ///   and means "don't lock to increments".
-    /// * `height` - Physical height of the slider on the window. None is default 0 will fill the remaining amount of
-    ///   window space.
-    /// * `confirm_method` - How should the slider be activated? None is default Push will be a push-button the user
-    ///   must press first, and pinch will be a tab that the user must pinch and drag around.
-    /// * `notify_on` - Allows you to modify the behavior of the return value. None is default UiNotify::Change.
+    /// * [`UiSliderBuilder::step`] - Locks the value to increments of step. Starts at min, and increments by step.
+    ///   Default 0 and means "don't lock to increments".
+    /// * Either [`UiSliderBuilder::at`]  or [`UiSliderBuilder::space`] :
+    ///   - `at` - This is the top left corner of the UI element relative to the current Hierarchy, and the layout size
+    ///     for this element in Hierarchy space.
+    ///   - `space` - Physical height of the slider on the window. Default is 0 will fill the remaining amount of window
+    ///     space.
+    /// * [`UiSliderBuilder::confirm_method`] - How should the slider be activated? None is default Push will be a
+    ///   push-button the user must press first, and pinch will be a tab that the user must pinch and drag around.
+    /// * [`UiSliderBuilder::notify_on`] - Allows you to modify the behavior of the return value. None is default
+    ///   UiNotify::Change.
     ///
-    /// Returns new value of the slider if it has changed during this step.
-    /// see also [`ui_vslider`] [`Ui::vslider_at`]
+    /// Must be evaluated using [`UiSliderBuilder::interact`]
+    /// see also [`ui_vslider`] [`ui_vslider_at`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -4046,19 +3984,17 @@ impl Ui {
     /// filename_scr = "screenshots/ui_vslider.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("VSlider", &mut window_pose, Some([0.18, 0.14].into()), None, None);
-    ///     Ui::vslider(    "scaling1", &mut scaling1, 0.0, 1.0, Some(0.05), Some(0.10),
-    ///                     None, None);
+    ///     Ui::vslider("scaling1", &mut scaling1, 0.0, 1.0).step(0.05).space(0.10).interact();
     ///     Ui::same_line();
-    ///     Ui::vslider(    "scaling2", &mut scaling2, 0.0, 1.0, None, Some(0.12),
-    ///                     Some(UiConfirm::Pinch), None);
+    ///     Ui::vslider("scaling2", &mut scaling2, 0.0, 1.0).space(0.12)
+    ///                 .confirm_method(UiConfirm::Pinch).interact();
     ///
-    ///     Ui::vslider_at( "scaling3", &mut scaling3, 0.0, 1.0, None,
-    ///                     [-0.01, -0.01, 0.0], [0.02, 0.08],
-    ///                     None, Some(UiNotify::Finalize));
-    ///     if let Some(new_value) = Ui::vslider_at(
-    ///                     "scaling4", &mut scaling4, 0.0, 1.0, None,
-    ///                     [-0.05, -0.01, 0.0], [0.036, 0.15],
-    ///                     Some(UiConfirm::VariablePinch), None) {
+    ///     Ui::vslider("scaling3", &mut scaling3, 0.0, 1.0)
+    ///                 .at([-0.01, -0.01, 0.0], [0.02, 0.08])
+    ///                 .notify_on(UiNotify::Finalize).interact();
+    ///     if let Some(new_value) = Ui::vslider("scaling4", &mut scaling4, 0.0, 1.0)
+    ///                 .at([-0.05, -0.01, 0.0], [0.036, 0.15])
+    ///                 .confirm_method(UiConfirm::VariablePinch).interact() {
     ///         if new_value == 1.0 {
     ///             Log::info("scaling4 is at max");
     ///         }
@@ -4068,77 +4004,8 @@ impl Ui {
     /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_vslider.jpeg" alt="screenshot" width="200">
-    #[allow(clippy::too_many_arguments)]
-    pub fn vslider(
-        id: impl AsRef<str>,
-        value: &mut f32,
-        min: f32,
-        max: f32,
-        step: Option<f32>,
-        height: Option<f32>,
-        confirm_method: Option<UiConfirm>,
-        notify_on: Option<UiNotify>,
-    ) -> Option<f32> {
-        let cstr = CString::new(id.as_ref()).unwrap_or_default();
-        let step = step.unwrap_or(0.0);
-        let height = height.unwrap_or(0.0);
-        let confirm_method = confirm_method.unwrap_or(UiConfirm::Push);
-        let notify_on = notify_on.unwrap_or(UiNotify::Change);
-        match unsafe { ui_vslider(cstr.as_ptr(), value, min, max, step, height, confirm_method, notify_on) != 0 } {
-            true => Some(*value),
-            false => None,
-        }
-    }
-
-    /// A vertical slider element! You can stick your finger in it, and slide the value up and down.
-    /// <https://stereokit.net/Pages/StereoKit/UI/VSliderAt.html>
-    /// * `id` - An id for tracking element state. MUST be unique within current hierarchy.
-    /// * `out_value` - The value that the slider will store slider state in.
-    /// * `min` - The minimum value the slider can set, left side of the slider.
-    /// * `max` - The maximum value the slider can set, right side of the slider.
-    /// * `step` - Locks the value to increments of step. Starts at min, and increments by step. None is default 0
-    ///   and means "don't lock to increments".
-    /// * `top_left_corner` - This is the top left corner of the UI element relative to the current Hierarchy.
-    /// * `size` - The layout size for this element in Hierarchy space.
-    /// * `confirm_method` - How should the slider be activated? None is default Push will be a push-button the user
-    ///   must press first, and pinch will be a tab that the user must pinch and drag around.
-    /// * `notify_on` - Allows you to modify the behavior of the return value. None is default UiNotify::Change.
-    ///
-    /// Returns new value of the slider if it has changed during this step.
-    /// see also [`ui_vslider_at`] [`Ui::vslider`]
-    /// see example in [`Ui::vslider`]
-    #[allow(clippy::too_many_arguments)]
-    pub fn vslider_at(
-        id: impl AsRef<str>,
-        value: &mut f32,
-        min: f32,
-        max: f32,
-        step: Option<f32>,
-        top_left_corner: impl Into<Vec3>,
-        size: impl Into<Vec2>,
-        confirm_method: Option<UiConfirm>,
-        notify_on: Option<UiNotify>,
-    ) -> Option<f32> {
-        let cstr = CString::new(id.as_ref()).unwrap_or_default();
-        let step = step.unwrap_or(0.0);
-        let confirm_method = confirm_method.unwrap_or(UiConfirm::Push);
-        let notify_on = notify_on.unwrap_or(UiNotify::Change);
-        match unsafe {
-            ui_vslider_at(
-                cstr.as_ptr(),
-                value,
-                min,
-                max,
-                step,
-                top_left_corner.into(),
-                size.into(),
-                confirm_method,
-                notify_on,
-            ) != 0
-        } {
-            true => Some(*value),
-            false => None,
-        }
+    pub fn vslider(id: impl AsRef<str>, out_value: &mut f32, min: f32, max: f32) -> UiSliderBuilder<'_> {
+        UiSliderBuilder::new_v(id, out_value, min, max)
     }
 
     /// Begins a new window! This will push a pose onto the transform stack, and all UI elements will be relative to
