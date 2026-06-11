@@ -14,12 +14,9 @@ use openxr_sys::{
 };
 
 use crate::{
+    framework::StepperAction,
     sk::SkInfo,
     system::{Backend, BackendOpenXR, BackendXRType, Log},
-};
-
-use crate::{
-    framework::StepperAction,
     tools::xr_meta_detached_controllers::{
         META_DETACHED_CTRLRS_ID, XrMetaDetachedControllersStepper, is_meta_detached_controllers_available,
     },

@@ -424,14 +424,10 @@ impl Screen {
             factor_size * 0.01,
             factor_size * 0.01,
         );
-        if Ui::handle(
-            &self.repo.id_handle,
-            &mut self.screen_pose,
-            Bounds::new(grab_position, grab_dimension),
-            true,
-            Some(UiMove::Exact),
-            None,
-        ) {
+        if Ui::handle(&self.repo.id_handle, &mut self.screen_pose, Bounds::new(grab_position, grab_dimension))
+            .draw_handle(true)
+            .grab()
+        {
             let head = Input::get_head();
             self.update_pose_cache(head.position);
         }
