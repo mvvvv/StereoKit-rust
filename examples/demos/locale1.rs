@@ -285,12 +285,10 @@ impl Locale1 {
 
         // ── Text input to test the active keyboard ────────────────────────────
         Ui::push_text_style(self.text_style_test);
-        Ui::input(
-            "locale_text_sample",
-            &mut self.text_sample,
-            Some(Vec2::new(self.demo_win_width - 0.02, 0.12)),
-            Some(self.text_context),
-        );
+        Ui::input("locale_text_sample", &mut self.text_sample)
+            .size(Vec2::new(self.demo_win_width - 0.02, 0.12))
+            .type_text(self.text_context)
+            .edit();
         Ui::pop_text_style();
 
         Ui::window_end();

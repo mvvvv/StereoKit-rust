@@ -1,19 +1,18 @@
-use std::ffi::CString;
+use std::ffi::{CStr, CString, c_char};
 
 use crate::{
     maths::{Bool32T, Bounds, Pose, Vec2, Vec3},
     sprite::{Sprite, SpriteT},
-    system::Align,
+    system::{Align, TextContext},
     ui::{
         UiBtnLayout, UiConfirm, UiGesture, UiMove, UiNotify, ui_button, ui_button_at, ui_button_img, ui_button_img_at,
-        ui_button_round, ui_button_round_at, ui_handle_begin, ui_handle_end, ui_hslider, ui_hslider_at, ui_label,
-        ui_toggle, ui_toggle_at, ui_toggle_img, ui_toggle_img_at, ui_vslider, ui_vslider_at,
+        ui_button_round, ui_button_round_at, ui_handle_begin, ui_handle_end, ui_hslider, ui_hslider_at, ui_input,
+        ui_input_at, ui_label, ui_toggle, ui_toggle_at, ui_toggle_img, ui_toggle_img_at, ui_vslider, ui_vslider_at,
     },
     util::Color128,
 };
 
 /// see [`Ui::button`](crate::ui::Ui::button)
-///
 /// StereoKit original docs :
 /// [Button](https://stereokit.net/Pages/StereoKit/UI/Button.html)
 /// [ButtonAt](https://stereokit.net/Pages/StereoKit/UI/ButtonAt.html)
@@ -260,6 +259,95 @@ impl<'a> UiHandleBuilder<'a> {
     }
 }
 
+/// see [`Ui::input`](crate::ui::Ui::input)
+/// StereoKit original docs :
+/// [Input](https://stereokit.net/Pages/StereoKit/UI/Input.html)
+/// [InputAt](https://stereokit.net/Pages/StereoKit/UI/InputAt.html)
+#[must_use = "UiInputBuilder does nothing until you call .edit() on it"]
+pub struct UiInputBuilder<'a> {
+    id: CString,
+    out_value: &'a mut String,
+    size: Vec2,
+    top_left_corner: Option<Vec3>,
+    type_text: TextContext,
+}
+
+impl<'a> UiInputBuilder<'a> {
+    /// Creates a new input builder.
+    pub fn new(id: impl AsRef<str>, out_value: &'a mut String) -> Self {
+        Self {
+            id: CString::new(id.as_ref()).unwrap_or_default(),
+            out_value,
+            top_left_corner: None,
+            size: Vec2::ZERO,
+            type_text: TextContext::Text,
+        }
+    }
+
+    /// Switches this input to absolute-position mode.
+    ///
+    /// `top_left_corner` is relative to the current hierarchy.
+    pub fn at(mut self, top_left_corner: impl Into<Vec3>, size: impl Into<Vec2>) -> Self {
+        self.top_left_corner = Some(top_left_corner.into());
+        self.size = size.into();
+        self
+    }
+
+    /// The layout size for this element in Hierarchy space. Zero axes will auto-size. None is full auto-size.
+    pub fn size(mut self, size: impl Into<Vec2>) -> Self {
+        self.size = size.into();
+        self
+    }
+
+    /// What category of text this Input represents. This may affect what kind of soft keyboard will be displayed, if
+    /// one is shown to the user. None has default value of TextContext::Text.
+    pub fn type_text(mut self, type_text: TextContext) -> Self {
+        self.type_text = type_text;
+        self
+    }
+
+    /// Executes input interaction.
+    ///
+    /// Returns the updated text in the input field if it has changed, otherwise `None`.
+    pub fn edit(self) -> Option<String> {
+        let c_value = CString::new(self.out_value.as_str()).unwrap_or_default();
+        let result = match self.top_left_corner {
+            Some(top_left_corner) => unsafe {
+                ui_input_at(
+                    self.id.as_ptr(),
+                    c_value.as_ptr() as *mut c_char,
+                    self.out_value.capacity() as i32 + 16,
+                    top_left_corner,
+                    self.size,
+                    self.type_text,
+                ) != 0
+            },
+            None => unsafe {
+                ui_input(
+                    self.id.as_ptr(),
+                    c_value.as_ptr() as *mut c_char,
+                    self.out_value.capacity() as i32 + 16,
+                    self.size,
+                    self.type_text,
+                ) != 0
+            },
+        };
+
+        if result {
+            match unsafe { CStr::from_ptr(c_value.as_ptr()).to_str() } {
+                Ok(result) => {
+                    self.out_value.clear();
+                    self.out_value.push_str(result);
+                    Some(result.to_owned())
+                }
+                Err(_) => None,
+            }
+        } else {
+            None
+        }
+    }
+}
+
 /// see [`Ui::label`](crate::ui::Ui::label)
 /// StereoKit original docs :
 /// [Label](https://stereokit.net/Pages/StereoKit/UI/Label.html)
@@ -278,7 +366,7 @@ impl UiLabelBuilder {
             text: CString::new(text.as_ref()).unwrap_or_default(),
             size: Vec2::ZERO,
             use_padding: true,
-            text_align: Align::empty(),
+            text_align: Align::None,
         }
     }
 
@@ -298,13 +386,13 @@ impl UiLabelBuilder {
 
     /// Should padding be included for positioning this text?
     ///
-    /// Sometimes you just want un-padded text.
+    /// Sometimes you just want un-padded text. Default is true.
     pub fn use_padding(mut self, use_padding: bool) -> Self {
         self.use_padding = use_padding;
         self
     }
 
-    /// Where should the text position itself within its bounds?
+    /// Where should the text position itself within its bounds? Default is Align::None.
     pub fn text_align(mut self, text_align: Align) -> Self {
         self.text_align = text_align;
         self

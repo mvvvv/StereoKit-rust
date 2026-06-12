@@ -13,7 +13,7 @@ use crate::{
     util::{Color32, Color128},
 };
 use std::{
-    ffi::{CStr, CString, c_char, c_ushort},
+    ffi::{CString, c_char, c_ushort},
     ptr::{NonNull, null_mut},
 };
 
@@ -1197,16 +1197,18 @@ impl Ui {
     /// [ButtonImg](https://stereokit.net/Pages/StereoKit/UI/ButtonImg.html)
     /// * `text` - Text to display on the button and id for tracking element state. MUST be unique within current
     ///   hierarchy.
-    /// * [`UiButtonBuilder::at`] - A variant of button that doesn’t use the layout system, and instead goes exactly
-    ///   where you put it. Set the top left corner of the UI element relative to the current Hierarchy and it's size.
+    /// * Either [`UiButtonBuilder::at`] or [`UiButtonBuilder::size`] or default will use remaining layout space:
+    ///   - `at` - A variant of button that doesn’t use the layout system, and instead goes exactly where you put it.
+    ///     Set the top left corner of the UI element relative to the current Hierarchy and it's size.
+    ///   - `size` - The layout size for this element in Hierarchy space. If an axis is left as zero, it will be
+    ///     auto-calculated. For X this is the remaining width of the current layout, and for Y this is
+    ///     [`Ui::get_line_height`].
     /// * [`UiButtonBuilder::image`] - This is the image that will be drawn along with the text. See image_layout for
     ///   where the image gets.
     /// * [`UiButtonBuilder::image_layout`] - This enum specifies how the text and image should be laid out on the
     ///   button.
-    /// * [`UiButtonBuilder::size`] - The layout size for this element in Hierarchy space. If an axis is left as zero,
-    ///   it will be auto-calculated. For X this is the remaining width of the current layout, and for Y this is
-    ///   [`Ui::get_line_height`].
-    ///   Important: Do not use this to nullify the size of an `At` button as it needs one.
+    /// * [`UiButtonBuilder::image_tint`] - This is the color that will be multiplied with the image when drawn. Default
+    ///   value is White.
     /// * [`UiButtonBuilder::text_align`] - Where should the text position itself within its bounds?
     ///
     /// Use this builder for layout buttons, then evaluate [`UiButtonBuilder::press`].
@@ -1259,21 +1261,19 @@ impl Ui {
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Choose a pretty image", &mut window_pose, None, None, None);
     ///     if Ui::button("Log").image(&log_sprite)
+    ///         .size([0.07, 0.07])
     ///         .image_layout(UiBtnLayout::Center)
     ///         .image_tint(named_colors::GOLD)
-    ///         .size([0.07, 0.07])
     ///         .press() {
     ///         choice = "A";
     ///     }
-    ///     if Ui::button("screenshot").image(&scr_sprite)
+    ///     if Ui::button("screenshot").image(&scr_sprite).size([0.07, 0.07])
     ///         .image_layout(UiBtnLayout::CenterNoText)
-    ///         .size([0.07, 0.07])
     ///         .press(){
     ///         choice = "B";
     ///     }
-    ///     if Ui::button("Applications").image(&app_sprite)
+    ///     if Ui::button("Applications").image(&app_sprite).size([0.17, 0.04])
     ///         .image_layout(UiBtnLayout::Right)
-    ///         .size([0.17, 0.04])
     ///         .press() {
     ///         choice = "C";
     ///     }
@@ -1309,7 +1309,7 @@ impl Ui {
     /// * [`UiButtonRoundBuilder::at`] - A variant of button that doesn’t use the layout system, and instead goes
     ///   exactly where you put it. Set the top left corner of the UI element relative to the current Hierarchy.
     ///
-    /// Use this builder for layout round buttons, then evaluate [`UiButtonRoundBuilder::press`].
+    /// Must be evaluated using [`UiButtonRoundBuilder::press`].
     /// see also [`ui_button_round`] [`ui_button_round_at`]
     /// ### Examples
     /// ```
@@ -1728,7 +1728,8 @@ impl Ui {
     /// * `max` - The maximum value the slider can set, right side of the slider.
     /// * [`UiSliderBuilder::step`] - Locks the value to increments of step. Starts at min, and increments by step.
     ///   Default 0 and means "don't lock to increments".
-    /// * Either [`UiSliderBuilder::at`]  or [`UiSliderBuilder::space`] :
+    /// * Either [`UiSliderBuilder::at`]  or [`UiSliderBuilder::space`] or default will fill the remaining space of
+    ///   window space:
     ///   - `at` - This is the top left corner of the UI element relative to the current Hierarchy, and the layout size
     ///     for this element in Hierarchy space.
     ///   - `space` - Physical width of the slider on the window. Default is 0 will fill the remaining amount of window
@@ -1823,12 +1824,15 @@ impl Ui {
     /// <https://stereokit.net/Pages/StereoKit/UI/Input.html>
     /// * `id` - An id for tracking element state. MUST be unique within current hierarchy.
     /// * `out_value` - The string that will store the Input’s content in.
-    /// * `size` - The layout size for this element in Hierarchy space.  Zero axes will auto-size. None is full auto-size.
-    /// * `type_text` - What category of text this Input represents. This may affect what kind of soft keyboard will
-    ///   be displayed, if one is shown to the user. None has default value of TextContext::Text.
+    /// * Either [`UiBuilder::at`] or [`UiBuilder::size`] or default will fill the remaining space of window space:
+    ///   - `at` - This is the top left corner of the UI element relative to the current Hierarchy.
+    ///   - `size` - The layout size for this element in Hierarchy space.  Zero axes will auto-size. None is full
+    ///     auto-size.
+    /// * [`UiInputBuilder::type_text`] - What category of text this Input represents. This may affect what kind of
+    ///   soft keyboard will be displayed, if one is shown to the user. None has default value of [`TextContext::Text`].
     ///
-    /// Returns the current text in the input field if it has changed, otherwise `None`.
-    /// see also [`ui_input`] [`Ui::input_at`]
+    /// Must be evaluated using [`UiInputBuilder::edit`]
+    /// see also [`ui_input`] [`ui_input_at`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -1845,14 +1849,14 @@ impl Ui {
     /// filename_scr = "screenshots/ui_input.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Input fields", &mut window_pose, None, None, None);
-    ///     Ui::input("username1", &mut username, Some([0.15, 0.03].into()), None);
-    ///     Ui::input("password1", &mut password, None, Some(TextContext::Password));
-    ///     Ui::input_at("zip code1", &mut zip_code, [0.08, -0.09, 0.0], [0.06, 0.03],
-    ///                  Some(TextContext::Number));
+    ///     Ui::input("username1", &mut username).size([0.15, 0.03]).edit();
+    ///     Ui::input("password1", &mut password).type_text(TextContext::Password).edit();
+    ///     Ui::input("zip code1", &mut zip_code).at([0.08, -0.09, 0.0],[0.06, 0.03])
+    ///               .type_text(TextContext::Number).edit();
     ///
-    ///     if let Some(new_value) =
-    ///         Ui::input_at("pin_code1", &mut pin_code, [0.0, -0.09, 0.0], [0.05, 0.03],
-    ///                      Some(TextContext::Number)) {
+    ///     if let Some(new_value) = Ui::input("pin_code1", &mut pin_code)
+    ///                                        .at([0.0, -0.09, 0.0],[0.05, 0.03])
+    ///                                        .type_text(TextContext::Number).edit() {
     ///         if new_value.is_empty() {
     ///             Log::warn("pin_code should not be empty");
     ///         }
@@ -1862,78 +1866,8 @@ impl Ui {
     /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_input.jpeg" alt="screenshot" width="200">
-    pub fn input(
-        id: impl AsRef<str>,
-        out_value: &mut String,
-        size: Option<Vec2>,
-        type_text: Option<TextContext>,
-    ) -> Option<String> {
-        let cstr = CString::new(id.as_ref()).unwrap_or_default();
-        let c_value = CString::new(out_value.as_str()).unwrap_or_default();
-        let size = size.unwrap_or(Vec2::ZERO);
-        let type_text = type_text.unwrap_or(TextContext::Text);
-        if unsafe {
-            ui_input(cstr.as_ptr(), c_value.as_ptr() as *mut c_char, out_value.capacity() as i32 + 16, size, type_text)
-                != 0
-        } {
-            match unsafe { CStr::from_ptr(c_value.as_ptr()).to_str() } {
-                Ok(result) => {
-                    out_value.clear();
-                    out_value.push_str(result);
-                    Some(result.to_owned())
-                }
-                Err(_) => None,
-            }
-        } else {
-            None
-        }
-    }
-
-    /// This is an input field where users can input text to the app! Selecting it will spawn a virtual keyboard, or act
-    ///  as the keyboard focus. Hitting escape or enter, or focusing another UI element will remove focus from this Input.
-    /// <https://stereokit.net/Pages/StereoKit/UI/InputAt.html>
-    /// * `id` - An id for tracking element state. MUST be unique within current hierarchy.
-    /// * `out_value` - The string that will store the Input's content in.
-    /// * `top_left_corner` - This is the top left corner of the UI element relative to the current Hierarchy.
-    /// * `size` - The layout size for this element in Hierarchy space.
-    /// * `type_text` - What category of text this Input represents. This may affect what kind of soft keyboard will
-    ///   be displayed, if one is shown to the user. None has default value of TextContext::Text.
-    ///
-    /// Returns the current text in the input field if it has changed during this step, otherwise `None`.
-    /// see also [`ui_input_at`]
-    /// see example in [`Ui::input`]
-    pub fn input_at(
-        id: impl AsRef<str>,
-        out_value: &mut String,
-        top_left_corner: impl Into<Vec3>,
-        size: impl Into<Vec2>,
-        type_text: Option<TextContext>,
-    ) -> Option<String> {
-        let cstr = CString::new(id.as_ref()).unwrap_or_default();
-        let c_value = CString::new(out_value.as_str()).unwrap_or_default();
-        let size = size.into();
-        let type_text = type_text.unwrap_or(TextContext::Text);
-        if unsafe {
-            ui_input_at(
-                cstr.as_ptr(),
-                c_value.as_ptr() as *mut c_char,
-                out_value.capacity() as i32 + 16,
-                top_left_corner.into(),
-                size,
-                type_text,
-            ) != 0
-        } {
-            match unsafe { CStr::from_ptr(c_value.as_ptr()).to_str() } {
-                Ok(result) => {
-                    out_value.clear();
-                    out_value.push_str(result);
-                    Some(result.to_owned())
-                }
-                Err(_) => None,
-            }
-        } else {
-            None
-        }
+    pub fn input(id: impl AsRef<str>, out_value: &mut String) -> UiInputBuilder<'_> {
+        UiInputBuilder::new(id, out_value)
     }
 
     /// Maps the legacy Handed concept onto interactor sources: a side covers its hand and controller, and the right
@@ -1979,11 +1913,13 @@ impl Ui {
     /// Ui::push/pop_text_style. Can contain newlines!
     /// <https://stereokit.net/Pages/StereoKit/UI/Label.html>
     /// * `text` - Label text to display. Can contain newlines! Doesn't use text as id, so it can be non-unique.
-    /// * [`UiLabelBuilder::size`] - The layout size for this element in Hierarchy space. If an axis is left as zero, it will be
-    ///   auto-calculated. For X this is the remaining width of the current layout, and for Y this is
+    /// * [`UiLabelBuilder::size`] - The layout size for this element in Hierarchy space. If an axis is left as zero,
+    ///   it will be auto-calculated. For X this is the remaining width of the current layout, and for Y this is
     ///   [`Ui::get_line_height`].
-    /// * [`UiLabelBuilder::use_padding`] - Should padding be included for positioning this text? Sometimes you just want un-padded text!
-    /// * [`UiLabelBuilder::text_align`] - Where should the text position itself within its bounds?
+    /// * [`UiLabelBuilder::use_padding`] - Should padding be included for positioning this text? Sometimes you just
+    ///   want un-padded text! Default is true.
+    /// * [`UiLabelBuilder::text_align`] - Where should the text position itself within its bounds? Default is
+    ///   Align::None.
     ///
     /// Use this builder to configure size/padding/alignment and call [`UiLabelBuilder::draw`].
     ///
@@ -2877,8 +2813,8 @@ impl Ui {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Sound track", &mut window_pose, None, None, None);
     ///     Ui::push_preserve_keyboard(true);
-    ///     Ui::input("Title", &mut title, Some([0.15, 0.03].into()), None);
-    ///     Ui::input("Author", &mut author, Some([0.15, 0.03].into()), None);
+    ///     Ui::input("Title", &mut title).size([0.15, 0.03]).edit();
+    ///     Ui::input("Author", &mut author).size([0.15, 0.03]).edit();
     ///     Ui::hslider("volume", &mut volume, 0.0, 1.0).step(0.05).interact();
     ///     Ui::toggle("mute", &mut mute).interact();
     ///     Ui::pop_preserve_keyboard();
@@ -2912,7 +2848,7 @@ impl Ui {
     ///     assert_eq!(Ui::grab_aura_enabled(), false);
     ///     Ui::window_begin("Write a title", &mut window_pose, None, None, None);
     ///     Ui::label("Title:").use_padding(false).draw();
-    ///     Ui::input("Title", &mut title, Some([0.15, 0.03].into()), None);
+    ///     Ui::input("Title", &mut title).size([0.15, 0.03]).edit();
     ///     Ui::window_end();
     ///     Ui::pop_grab_aura();
     ///     assert_eq!(Ui::grab_aura_enabled(), true);
@@ -2953,7 +2889,7 @@ impl Ui {
     ///     Ui::pop_text_style();
     ///     Ui::panel_begin(Some(UiPad::Inside));
     ///     Ui::label("Give a title:").use_padding(false).draw();
-    ///     Ui::input("Title", &mut title, Some([0.15, 0.03].into()), None);
+    ///     Ui::input("Title", &mut title).size([0.15, 0.03]).edit();
     ///     Ui::panel_end();
     ///     Ui::pop_surface();
     /// );
@@ -3041,7 +2977,7 @@ impl Ui {
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Push Tint", &mut window_pose, None, None, None);
     ///     Ui::push_tint(blue.to_gamma());
-    ///     Ui::input("Title", &mut title, Some([0.15, 0.03].into()), None);
+    ///     Ui::input("Title", &mut title).size([0.15, 0.03]).edit();
     ///     Ui::pop_tint();
     ///     Ui::push_tint(red.to_gamma());
     ///     Ui::hslider("volume", &mut volume, 0.0, 1.0).step(0.05).interact();
@@ -3188,7 +3124,7 @@ impl Ui {
     /// filename_scr = "screenshots/ui_gen_quadrant_mesh.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("gen_quadrant_mesh", &mut window_pose, None, None, None);
-    ///     Ui::input("input", &mut text, None, None );
+    ///     Ui::input("input", &mut text).edit();
     ///     if Ui::button("Exit").press() {sk.quit(None);}
     ///     Ui::window_end();
     /// );
@@ -3224,14 +3160,15 @@ impl Ui {
     /// * `text` - Text to display on the Radio and id for tracking element state. MUST be unique within current
     ///   hierarchy.
     /// * `active` - Does this button look like it's pressed?
-    /// * [`UiRadioBuilder::images`] - Images to use when the radio value is false/true.
-    /// * [`UiRadioBuilder::at`] - A variant of radio that doesn’t use the layout system, and instead goes
-    ///   exactly where you put it. Set the top left corner of the UI element relative to the current Hierarchy.
-    /// * [`UiRadioBuilder::image_layout`] - This enum specifies how the text and image should be laid out on the radio.
     ///   For example, UiBtnLayout::Left will have the image on the left, and text on the right.
-    /// * [`UiRadioBuilder::size`] - The layout size for this element in Hierarchy space. If an axis is left as zero,
-    ///   it will be auto-calculated. For X this is the remaining width of the current layout, and for Y this is
-    ///   [`Ui::get_line_height`].
+    /// * Either [`UiRadioBuilder::at`] or [`UiRadioBuilder::size`] or default will use remaining layout space:
+    ///   - `at` - A variant of radio that doesn’t use the layout system, and instead goes exactly where you put it.
+    ///     Set the top left corner of the UI element relative to the current Hierarchy.
+    ///   - `size` - The layout size for this element in Hierarchy space. If an axis is left as zero, it will be
+    ///     auto-calculated. For X this is the remaining width of the current layout, and for Y this is
+    ///     [`Ui::get_line_height`].
+    /// * [`UiRadioBuilder::images`] - Images to use when the radio value is false/true.
+    /// * [`UiRadioBuilder::image_layout`] - This enum specifies how the text and image should be laid out on the radio.
     /// * [`UiRadioBuilder::image_tint`] - The Sprite's color will be multiplied by this tint. If not set, default
     ///   value is white.
     /// * [`UiRadioBuilder::text_align`] - Where should the text position itself within its bounds?
@@ -3253,16 +3190,14 @@ impl Ui {
     /// filename_scr = "screenshots/ui_radio.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Radio", &mut window_pose, None, None, None);
-    ///     if Ui::radio("A", choice == "A")
+    ///     if Ui::radio("A", choice == "A").size([0.06, 0.05])
     ///         .images(&off, &on)
     ///         .image_layout(UiBtnLayout::Right)
-    ///         .size([0.06, 0.05])
     ///         .press() { choice = "A";}
     ///     Ui::same_line();
-    ///     if Ui::radio("B", choice == "B")
+    ///     if Ui::radio("B", choice == "B").size([0.03, 0.05])
     ///         .images(&off, &on).image_tint(named_colors::RED)
     ///         .image_layout(UiBtnLayout::Center)
-    ///         .size([0.03, 0.05])
     ///         .press(){choice = "B";}
     ///     Ui::same_line();
     ///     if Ui::radio("C", choice == "C")
@@ -3831,18 +3766,19 @@ impl Ui {
     ///   hierarchy.
     /// * `out_value` - The current state of the toggle button! True means it's toggled on, and false means it's
     ///   toggled off.
-    /// * [`UiToggleBuilder::at`] - A variant of toggle that doesn’t use the layout system, and instead goes
-    ///   exactly where you put it. Set the top left corner of the UI element relative to the current Hierarchy.
+    /// * Either [`UiToggleBuilder::at`] or [`UiToggleBuilder::size`] or default will use remaining layout space:
+    ///   - `at` - A variant of toggle that doesn’t use the layout system, and instead goes exactly where you put it.
+    ///     Set the top left corner of the UI element relative to the current Hierarchy.
+    ///   - `size`  - The layout size for this element in Hierarchy space. If an axis is left as zero, it will be
+    ///     auto-calculated. For X this is the remaining width of the current layout, and for Y this is
+    ///     [`Ui::get_line_height`].
     /// * [`UiToggleBuilder::images`] - Images to use when the toggle value is false or true. If not set, default
     ///   values are [Sprite::toggle_off()] and [Sprite::toggle_on()].
-    /// * [`UiToggleBuilder::size`] - The layout size for this element in Hierarchy space. If an axis is left as zero,
-    ///   it will be auto-calculated. For X this is the remaining width of the current layout, and for Y this is
-    ///   [`Ui::get_line_height`].
-    /// * [`UiToggleBuilder::text_align`] - Where should the text position itself within its bounds?
     /// * [`UiToggleBuilder::image_layout`] - This enum specifies how the text and image should be laid out on the
     ///   button. If not set, default [`UiBtnLayout::Left`] will have the image on the left, and text on the right.
     /// * [`UiToggleBuilder::image_tint`] - The Sprite's color will be multiplied by this tint. If not set, default
     ///   value is white.
+    /// * [`UiToggleBuilder::text_align`] - Where should the text position itself within its bounds?
     ///
     /// Use this builder for text toggles, then evaluate [`UiToggleBuilder::interact`].
     /// see also [`ui_toggle`] [`ui_toggle_img`] [`ui_toggle_at`] [`ui_toggle_img_at`]
@@ -3863,14 +3799,12 @@ impl Ui {
     /// filename_scr = "screenshots/ui_toggle.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Toggle button", &mut window_pose, None, None, None);
-    ///     Ui::toggle("A", &mut choiceA).images(&off, &on)
+    ///     Ui::toggle("A", &mut choiceA).images(&off, &on).size([0.06, 0.05])
     ///         .image_layout(UiBtnLayout::Right)
-    ///         .size([0.06, 0.05])
     ///         .interact();
     ///     Ui::same_line();
     ///     if let Some(bool) = Ui::toggle("B", &mut choiceB).images(&off, &on)
-    ///         .image_layout(UiBtnLayout::Center)
-    ///         .size([0.06, 0.05])
+    ///         .image_layout(UiBtnLayout::Center).size([0.06, 0.05])
     ///         .interact() {
     ///         assert_eq!(bool, choiceB);
     ///     }
@@ -3883,7 +3817,8 @@ impl Ui {
     ///         .images(&off, &off)
     ///         .image_layout(UiBtnLayout::Right)
     ///         .interact();
-    ///     if let Some(bool) = Ui::toggle("F", &mut choiceF).at([-0.01, -0.12, 0.0], [0.06, 0.03])
+    ///     if let Some(bool) = Ui::toggle("F", &mut choiceF)
+    ///         .at([-0.01, -0.12, 0.0], [0.06, 0.03])
     ///         .interact() {
     ///         assert_eq!(bool, choiceB);
     ///     }
@@ -3956,7 +3891,7 @@ impl Ui {
     /// * `max` - The maximum value the slider can set, right side of the slider.
     /// * [`UiSliderBuilder::step`] - Locks the value to increments of step. Starts at min, and increments by step.
     ///   Default 0 and means "don't lock to increments".
-    /// * Either [`UiSliderBuilder::at`]  or [`UiSliderBuilder::space`] :
+    /// * Either [`UiSliderBuilder::at`]  or [`UiSliderBuilder::space`] or default will use the remaining layout space:
     ///   - `at` - This is the top left corner of the UI element relative to the current Hierarchy, and the layout size
     ///     for this element in Hierarchy space.
     ///   - `space` - Physical height of the slider on the window. Default is 0 will fill the remaining amount of window

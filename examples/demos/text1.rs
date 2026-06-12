@@ -236,7 +236,10 @@ impl Text1 {
         Ui::hseparator();
         Ui::push_text_style(self.text_style_test);
         //Ui::push_preserve_keyboard(true);
-        Ui::input("Text_Sample", &mut self.text_sample, Some(Vec2::new(0.77, 0.8)), Some(self.text_context));
+        Ui::input("Text_Sample", &mut self.text_sample)
+            .size(Vec2::new(0.77, 0.8))
+            .type_text(self.text_context)
+            .edit();
         // Ui::next_line();
         // Ui::push_preserve_keyboard(true);
         // Ui::text(&self.text_sample, None, None, None);

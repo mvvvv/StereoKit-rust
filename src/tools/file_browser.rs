@@ -208,7 +208,7 @@ impl FileBrowser {
             Ui::push_tint(self.input_tint);
             Ui::label("File name: ").draw();
             Ui::same_line();
-            Ui::input("filename_to_save", &mut self.file_name_to_save, None, None);
+            Ui::input("filename_to_save", &mut self.file_name_to_save).edit();
             let file = self.dir.join(&self.file_name_to_save);
 
             let mut ok_to_save = false;
