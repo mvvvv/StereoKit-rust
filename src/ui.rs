@@ -1085,6 +1085,59 @@ impl Ui {
         unsafe { ui_set_color(color.into()) };
     }
 
+    /// This will draw a visual element from StereoKit's theming system, while paying attention to certain factors
+    /// such as enabled/disabled, tinting and more.
+    /// <https://stereokit.net/Pages/StereoKit/UI/DrawElement.html>
+    /// * `element_visual` - The element type to draw. Use UiVisual::ExtraSlotXX to use extra UiVisual
+    ///   slots for your own custom UI elements. If these slots are empty, SK will fall back to UiVisual::Default
+    /// * `element_color` - If you wish to use the coloring from a different element, you can use this to override the
+    ///   theme color used when drawing. Use UiVisual::ExtraSlotXX to use extra UiVisual slots for your
+    ///   own custom UI elements. If these slots are empty, SK will fall back to UiVisual::Default.
+    /// * `start` - This is the top left corner of the UI element relative to the current Hierarchy.
+    /// * `size` - The layout size for this element in Hierarchy space.
+    /// * `focus` - The amount of visual focus this element currently has, where 0 is unfocused, and 1 is active. You
+    ///   can acquire a good focus value from `Ui::get_anim_focus`.
+    ///
+    /// see also [`ui_draw_element`] [`ui_draw_element_color`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{ui::{Ui, UiVisual}, maths::Pose};
+    ///
+    /// let mut window_pose = Pose::new(
+    ///     [0.01, 0.075, 0.9], Some([0.0, 185.0, 0.0].into()));
+    ///
+    /// filename_scr = "screenshots/ui_draw_element.jpeg";
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     Ui::window_begin("Draw Element", &mut window_pose, Some([0.22, 0.18].into()), None, None);
+    ///     Ui::draw_element(UiVisual::Button, None, [0.1, -0.01, 0.0], [0.1, 0.025, 0.005], 1.0);
+    ///     Ui::draw_element(UiVisual::Input, None, [0.0, -0.01, 0.0], [0.1, 0.025, 0.005], 1.0);
+    ///     Ui::draw_element(UiVisual::Handle, None, [0.1, -0.05, 0.0], [0.1, 0.025, 0.005], 1.0);
+    ///     Ui::draw_element(UiVisual::Toggle, None, [0.0, -0.05, 0.0], [0.1, 0.025, 0.005], 1.0);
+    ///     Ui::draw_element(UiVisual::Separator, None, [0.1, -0.08, 0.0], [0.2, 0.005, 0.005], 1.0);
+    ///     Ui::draw_element(UiVisual::Aura, None, [0.1, -0.1, 0.0], [0.08, 0.08, 0.005], 0.5);
+    ///     Ui::draw_element(UiVisual::Default, None, [0.0, -0.1, 0.0], [0.1, 0.025, 0.005], 0.0);
+    ///     Ui::draw_element(UiVisual::Caret, None, [0.0, -0.14, 0.0], [0.025, 0.025, 0.005], 1.0);
+    ///     Ui::window_end();
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_draw_element.jpeg" alt="screenshot" width="200">
+    pub fn draw_element(
+        element_visual: UiVisual,
+        element_color: Option<UiVisual>,
+        start: impl Into<Vec3>,
+        size: impl Into<Vec3>,
+        focus: f32,
+    ) {
+        match element_color {
+            Some(element_color) => unsafe {
+                ui_draw_element_color(element_visual, element_color, start.into(), size.into(), focus)
+            },
+            None => unsafe { ui_draw_element(element_visual, start.into(), size.into(), focus) },
+        }
+    }
+
     /// Enables or disables the far ray grab interaction for Handle elements like the Windows. It can be enabled and
     /// disabled for individual UI elements, and if this remains disabled at the start of the next frame, then the
     /// hand ray indicators will not be visible. This is enabled by default.
@@ -1104,89 +1157,6 @@ impl Ui {
     /// ```
     pub fn enable_far_interact(enable: bool) {
         unsafe { ui_enable_far_interact(enable as Bool32T) };
-    }
-
-    /// UI sizing and layout settings.
-    /// <https://stereokit.net/Pages/StereoKit/UI/Settings.html>
-    ///
-    /// see also [`ui_settings`] [`Ui::get_settings`]
-    /// ### Examples
-    /// ```
-    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::ui::{Ui, UiSettings};
-    ///
-    /// let settings = Ui::get_settings();
-    /// assert_eq!(settings.margin, 0.010000001);
-    /// assert_eq!(settings.padding, 0.010000001);
-    /// assert_eq!(settings.gutter, 0.010000001);
-    /// assert_eq!(settings.depth, 0.010000001);
-    /// assert_eq!(settings.rounding, 0.0075000003);
-    /// assert_eq!(settings.backplate_depth, 0.4);
-    /// assert_eq!(settings.backplate_border, 0.0005);
-    /// assert_eq!(settings.separator_scale, 0.4);
-    ///
-    /// let new_settings = UiSettings {
-    ///     margin: 0.005,
-    ///     padding: 0.005,
-    ///     gutter: 0.005,
-    ///     depth: 0.015,
-    ///     rounding: 0.004,
-    ///     backplate_depth: 0.6,
-    ///     backplate_border: 0.002,
-    ///     separator_scale: 0.6,
-    /// };
-    /// Ui::settings(new_settings);
-    /// let settings = Ui::get_settings();
-    /// assert_eq!(settings.margin, 0.005);
-    /// assert_eq!(settings.padding, 0.005);
-    /// assert_eq!(settings.gutter, 0.005);
-    /// assert_eq!(settings.depth, 0.015);
-    /// assert_eq!(settings.rounding, 0.004);
-    /// assert_eq!(settings.backplate_depth, 0.6);
-    /// assert_eq!(settings.backplate_border, 0.002);
-    /// assert_eq!(settings.separator_scale, 0.6);
-    /// # sk::Sk::shutdown();
-    /// ```
-    pub fn settings(settings: UiSettings) {
-        unsafe { ui_settings(settings) }
-    }
-
-    /// Shows or hides the collision volumes of the UI! This is for debug purposes, and can help identify visible and
-    /// invisible collision issues.
-    /// <https://stereokit.net/Pages/StereoKit/UI/ui_show_volumes.html>
-    ///
-    /// see also [`ui_show_volumes`]
-    /// ### Examples
-    /// ```
-    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::ui::Ui;
-    ///
-    /// Ui::show_volumes(true);
-    /// # sk::Sk::shutdown();
-    /// ```
-    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_show_volumes.jpeg" alt="screenshot" width="200">
-    pub fn show_volumes(show: bool) {
-        unsafe { ui_show_volumes(show as Bool32T) };
-    }
-
-    /// This is the UiMove that is provided to UI windows that StereoKit itself manages, such as the fallback
-    /// filepicker and soft keyboard.
-    /// <https://stereokit.net/Pages/StereoKit/UI/SystemMoveType.html>
-    ///
-    /// see also [`ui_system_set_move_type`] [`Ui::get_system_move_type`]
-    /// ### Examples
-    /// ```
-    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::ui::{Ui, UiMove};
-    ///
-    /// assert_eq!(Ui::get_system_move_type(), UiMove::FaceUser);
-    ///
-    /// Ui::system_move_type(UiMove::Exact);
-    /// assert_eq!(Ui::get_system_move_type(), UiMove::Exact);
-    /// # sk::Sk::shutdown();
-    /// ```
-    pub fn system_move_type(move_type: UiMove) {
-        unsafe { ui_system_set_move_type(move_type) };
     }
 
     /// A pressable button! A button will expand to fit the text provided to it, vertically and horizontally.
@@ -1480,97 +1450,6 @@ impl Ui {
         }
     }
 
-    /// This is the core functionality of StereoKit's slider elements, without any of the rendering parts! If you're
-    /// trying to create your own sliding UI elements, or do more extreme customization of the look and feel of slider
-    /// UI elements, then this function will provide a lot of complex pressing functionality for you
-    /// <https://stereokit.net/Pages/StereoKit/UI/SliderBehavior.html>
-    /// * `window_relative_pos` - The layout position of the pressable area.
-    /// * `size` - The size of the pressable area.
-    /// * `id` - The id for this pressable element to track its state with.
-    /// * `value` - The value that the slider will store slider state in.
-    /// * `min` - The minimum value the slider can set, left side of the slider.
-    /// * `max` - The maximum value the slider can set, right side of the slider.
-    /// * `button_size_visual` - This is the visual size of the element representing the touchable area of the slider.
-    ///   This is used to calculate the center of the button's placement without going outside the provided bounds.
-    /// * `button_size_interact` - The size of the interactive touch element of the slider. Set this to zero to use the
-    ///   entire area as a touchable surface.
-    /// * `confirm_method` - How should the slider be activated? Default Push will be a push-button the user must press
-    ///   first, and pinch will be a tab that the user must pinch and drag around.
-    /// * `data` - This is data about the slider interaction, you can use this for visualizing the slider behavior, or
-    ///   reacting to its events.
-    ///
-    /// see also [`ui_slider_behavior`]
-    /// ### Examples
-    /// ```
-    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::{Ui, UiSliderData, UiVisual}, maths::{Vec2, Vec3, Pose}};
-    ///
-    /// let mut window_pose = Pose::new(
-    ///     [0.01, 0.07, 0.90], Some([0.0, 185.0, 0.0].into()));
-    ///
-    /// let depth = Ui::get_settings().depth;
-    /// let size = Vec2::new(0.18, 0.11);
-    /// let btn_height = Ui::get_line_height() * 0.5;
-    /// let btn_size = Vec3::new(btn_height, btn_height, depth);
-    ///
-    /// let mut slider_pt = Vec2::new(0.25, 0.65);
-    /// let id_slider = "touch panel";
-    /// let id_slider_hash = Ui::stack_hash(&id_slider);
-    ///
-    /// filename_scr = "screenshots/ui_slider_behavior.jpeg";
-    /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     let mut slider = UiSliderData::default();
-    ///
-    ///     Ui::window_begin("I'm a slider", &mut window_pose, None, None, None);
-    ///     let bounds = Ui::layout_reserve(size, false, depth);
-    ///     let tlb = bounds.tlb();
-    ///     Ui::slider_behavior(tlb , bounds.dimensions.xy(), id_slider_hash, &mut slider_pt,
-    ///                         Vec2::ZERO, Vec2::ONE, Vec2::ZERO, btn_size.xy(), None, &mut slider);
-    ///     let focus = Ui::get_anim_focus(id_slider_hash, slider.focus_state, slider.active_state);
-    ///     Ui::draw_element(UiVisual::SliderLine, None,tlb,
-    ///                      Vec3::new(bounds.dimensions.x, bounds.dimensions.y, depth * 0.1),
-    ///                      if slider.focus_state.is_active() { 0.5 } else { 0.0 });
-    ///     Ui::draw_element(UiVisual::SliderPush, None,
-    ///                      slider.button_center.xy0() + btn_size.xy0() / 2.0, btn_size, focus);
-    ///     if slider.active_state.is_just_inactive() {
-    ///        println!("Slider1 moved");
-    ///     }
-    ///     Ui::label(format!("x: {:.2}          y: {:.2}", slider_pt.x, slider_pt.y)).use_padding(true).draw();
-    ///     Ui::window_end();
-    /// );
-    /// # sk::Sk::shutdown();
-    /// ```
-    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_slider_behavior.jpeg" alt="screenshot" width="200">
-    #[allow(clippy::too_many_arguments)]
-    pub fn slider_behavior(
-        window_relative_pos: impl Into<Vec3>,
-        size: impl Into<Vec2>,
-        id: IdHashT,
-        value: &mut Vec2,
-        min: impl Into<Vec2>,
-        max: impl Into<Vec2>,
-        button_size_visual: impl Into<Vec2>,
-        button_size_interact: impl Into<Vec2>,
-        confirm_method: Option<UiConfirm>,
-        data: &mut UiSliderData,
-    ) {
-        let confirm_method = confirm_method.unwrap_or(UiConfirm::Push);
-        unsafe {
-            ui_slider_behavior(
-                window_relative_pos.into(),
-                size.into(),
-                id,
-                value,
-                min.into(),
-                max.into(),
-                button_size_visual.into(),
-                button_size_interact.into(),
-                confirm_method,
-                data,
-            );
-        }
-    }
-
     /// This begins and ends a handle so you can just use its grabbable/moveable functionality! Behaves much like a
     /// window, except with a more flexible handle, and no header. You can draw the handle, but it will have no text on
     /// it. Returns true for every frame the user is grabbing the handle.
@@ -1824,7 +1703,7 @@ impl Ui {
     /// <https://stereokit.net/Pages/StereoKit/UI/Input.html>
     /// * `id` - An id for tracking element state. MUST be unique within current hierarchy.
     /// * `out_value` - The string that will store the Input’s content in.
-    /// * Either [`UiBuilder::at`] or [`UiBuilder::size`] or default will fill the remaining space of window space:
+    /// * Either [`UiInputBuilder::at`] or [`UiInputBuilder::size`] or default will use remaining space of window space:
     ///   - `at` - This is the top left corner of the UI element relative to the current Hierarchy.
     ///   - `size` - The layout size for this element in Hierarchy space.  Zero axes will auto-size. None is full
     ///     auto-size.
@@ -1919,7 +1798,7 @@ impl Ui {
     /// * [`UiLabelBuilder::use_padding`] - Should padding be included for positioning this text? Sometimes you just
     ///   want un-padded text! Default is true.
     /// * [`UiLabelBuilder::text_align`] - Where should the text position itself within its bounds? Default is
-    ///   Align::None.
+    ///   [`Align::None`].
     ///
     /// Use this builder to configure size/padding/alignment and call [`UiLabelBuilder::draw`].
     ///
@@ -1937,7 +1816,7 @@ impl Ui {
     ///     Ui::label("Label 1").use_padding(false).draw();
     ///     Ui::same_line();
     ///     Ui::label("Label 2").size([0.025, 0.0]).use_padding(false).draw();
-    ///     Ui::label("Label 3").size([0.1,   0.01]).use_padding(true).draw();
+    ///     Ui::label("Label 3").size([0.1,   0.01]).draw();
     ///     Ui::label("Label 4").size([0.0,   0.0045]).use_padding(false).draw();
     ///     Ui::window_end();
     /// );
@@ -2129,7 +2008,7 @@ impl Ui {
     ///     Ui::window_begin("Layout Area", &mut window_pose, Some([0.15, 0.13].into()), None, None);
     ///     Ui::layout_area([0.1, -0.04, 0.0], [0.01, 0.01], true);
     ///     Ui::image(&sprite, [0.07, 0.07]);
-    ///     Ui::layout_area([0.00, -0.01, 0.0], [0.01, 0.01], true);
+    ///     Ui::layout_area([0.0, -0.01, 0.0], [0.01, 0.01], true);
     ///     Ui::label("Text and more").use_padding(false).draw();
     ///     Ui::window_end();
     /// );
@@ -2151,7 +2030,7 @@ impl Ui {
     /// * `add_margin` - Adds a spacing margin to the interior of the layout. Most of the time you won’t need this,
     ///   but may be useful when working without a Window.
     ///
-    /// see also [`ui_layout_push`]
+    /// see also [`ui_layout_push`] [`Ui::layout_push_cut`] [`Ui::layout_pop`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -2195,17 +2074,17 @@ impl Ui {
     /// * `add_margin` - Adds a spacing margin to the interior of the layout. Most of the time you won’t need this,
     ///   but may be useful when working without a Window.
     ///
-    /// see also [`ui_layout_push_cut`]
+    /// see also [`ui_layout_push_cut`] [`Ui::layout_pop`]
     /// see example in [`Ui::layout_push`]
     pub fn layout_push_cut(cut_to: UiCut, size_meters: f32, add_margin: bool) {
         unsafe { ui_layout_push_cut(cut_to, size_meters, add_margin as Bool32T) };
     }
 
-    /// This removes a layout from the layout stack that was previously added using Ui::layout_push, or
-    /// Ui::layout_push_cut.
+    /// This removes a layout from the layout stack that was previously added using [`Ui::layout_push`], or
+    /// [`Ui::layout_push_cut`].
     /// <https://stereokit.net/Pages/StereoKit/UI/LayoutPop.html>
     ///
-    /// see also [`ui_layout_pop`]
+    /// see also [`ui_layout_pop`] [`Ui::layout_push_cut`]
     /// see example in [`Ui::layout_push`]
     pub fn layout_pop() {
         unsafe { ui_layout_pop() };
@@ -2502,82 +2381,6 @@ impl Ui {
         }
     }
 
-    /// Removes an ‘enabled’ state from the stack, and whatever was below will then be used as the primary enabled
-    /// state.
-    /// <https://stereokit.net/Pages/StereoKit/UI/PopEnabled.html>
-    ///
-    /// see also [`ui_pop_enabled`]
-    /// see example in [`Ui::push_enabled`]
-    pub fn pop_enabled() {
-        unsafe { ui_pop_enabled() };
-    }
-
-    /// Removes the last root id from the stack, and moves up to the one before it!
-    /// <https://stereokit.net/Pages/StereoKit/UI/PopId.html>
-    ///
-    /// see also [`ui_pop_id`]
-    /// see example in [`Ui::push_id`]
-    pub fn pop_id() {
-        unsafe { ui_pop_id() };
-    }
-
-    /// This pops the keyboard presentation state to what it was previously.
-    /// <https://stereokit.net/Pages/StereoKit/UI/PopPreserveKeyboard.html>
-    ///
-    /// see also [`ui_pop_preserve_keyboard`]
-    /// see example in [`Ui::push_preserve_keyboard`]
-    pub fn pop_preserve_keyboard() {
-        unsafe { ui_pop_preserve_keyboard() };
-    }
-
-    /// This removes an enabled status for grab auras from the stack, returning it to the state before the previous
-    /// push_grab_aura call. Grab auras are an extra space and visual element that goes around Window elements to make
-    /// them easier to grab.
-    /// <https://stereokit.net/Pages/StereoKit/UI/PopGrabAurahtml>
-    ///
-    /// see also [`ui_pop_grab_aura`]
-    /// see example in [`Ui::push_grab_aura`]
-    pub fn pop_grab_aura() {
-        unsafe { ui_pop_grab_aura() };
-    }
-
-    /// This retreives the top of the grab aura enablement stack, in case you need to know if the current window will
-    /// have an aura.
-    /// <https://stereokit.net/Pages/StereoKit/UI/GrabAuraEnabled>
-    ///
-    /// see also [`ui_grab_aura_enabled`]
-    /// see example in [`Ui::push_grab_aura`]
-    pub fn grab_aura_enabled() -> bool {
-        unsafe { ui_grab_aura_enabled() != 0 }
-    }
-
-    /// This will return to the previous UI layout on the stack. This must be called after a PushSurface call.
-    /// <https://stereokit.net/Pages/StereoKit/UI/PopSurface.html>
-    ///
-    /// see also [`ui_pop_surface`]
-    /// see example in [`Ui::push_surface`]
-    pub fn pop_surface() {
-        unsafe { ui_pop_surface() };
-    }
-
-    /// Removes a TextStyle from the stack, and whatever was below will then be used as the GUI’s primary font.
-    /// <https://stereokit.net/Pages/StereoKit/UI/PopTextStyle.html>
-    ///
-    /// see also [`ui_pop_text_style`]
-    /// see example in [`Ui::push_text_style`]
-    pub fn pop_text_style() {
-        unsafe { ui_pop_text_style() };
-    }
-
-    /// Removes a Tint from the stack, and whatever was below will then be used as the primary tint.
-    /// <https://stereokit.net/Pages/StereoKit/UI/PopTint.html>
-    ///
-    /// see also [`ui_pop_tint`]
-    /// see example in [`Ui::push_tint`]
-    pub fn pop_tint() {
-        unsafe { ui_pop_tint() };
-    }
-
     /// This creates a Pose that is friendly towards UI popup windows, or windows that are created due to some type of
     /// user interaction. The fallback file picker and soft keyboard both use this function to position themselves!
     /// <https://stereokit.net/Pages/StereoKit/UI/PopupPose.html>
@@ -2725,6 +2528,16 @@ impl Ui {
         unsafe { ui_push_enabled(enabled as Bool32T, parent_behavior) }
     }
 
+    /// Removes an ‘enabled’ state from the stack, and whatever was below will then be used as the primary enabled
+    /// state.
+    /// <https://stereokit.net/Pages/StereoKit/UI/PopEnabled.html>
+    ///
+    /// see also [`ui_pop_enabled`]
+    /// see example in [`Ui::push_enabled`]
+    pub fn pop_enabled() {
+        unsafe { ui_pop_enabled() };
+    }
+
     /// Adds a root id to the stack for the following UI elements! This id is combined when hashing any following ids,
     /// to prevent id collisions in separate groups.
     /// <https://stereokit.net/Pages/StereoKit/UI/PushId.html>
@@ -2790,6 +2603,15 @@ impl Ui {
         unsafe { ui_push_idi(root_id) }
     }
 
+    /// Removes the last root id from the stack, and moves up to the one before it!
+    /// <https://stereokit.net/Pages/StereoKit/UI/PopId.html>
+    ///
+    /// see also [`ui_pop_id`]
+    /// see example in [`Ui::push_id`]
+    pub fn pop_id() {
+        unsafe { ui_pop_id() };
+    }
+
     /// When a soft keyboard is visible, interacting with UI elements will cause the keyboard to close. This function
     /// allows you to change this behavior for certain UI elements, allowing the user to interact and still preserve the
     /// keyboard’s presence. Remember to Pop when you’re finished!
@@ -2826,6 +2648,15 @@ impl Ui {
         unsafe { ui_push_preserve_keyboard(preserve_keyboard as Bool32T) }
     }
 
+    /// This pops the keyboard presentation state to what it was previously.
+    /// <https://stereokit.net/Pages/StereoKit/UI/PopPreserveKeyboard.html>
+    ///
+    /// see also [`ui_pop_preserve_keyboard`]
+    /// see example in [`Ui::push_preserve_keyboard`]
+    pub fn pop_preserve_keyboard() {
+        unsafe { ui_pop_preserve_keyboard() };
+    }
+
     /// This pushes an enabled status for grab auras onto the stack. Grab auras are an extra space and visual element
     /// that goes around Window elements to make them easier to grab. MUST be matched by a pop_grab_aura call.
     /// <https://stereokit.net/Pages/StereoKit/UI/PushGrabAura.html>
@@ -2857,6 +2688,26 @@ impl Ui {
     /// ```
     pub fn push_grab_aura(enabled: bool) {
         unsafe { ui_push_grab_aura(enabled as Bool32T) }
+    }
+    /// This removes an enabled status for grab auras from the stack, returning it to the state before the previous
+    /// push_grab_aura call. Grab auras are an extra space and visual element that goes around Window elements to make
+    /// them easier to grab.
+    /// <https://stereokit.net/Pages/StereoKit/UI/PopGrabAurahtml>
+    ///
+    /// see also [`ui_pop_grab_aura`]
+    /// see example in [`Ui::push_grab_aura`]
+    pub fn pop_grab_aura() {
+        unsafe { ui_pop_grab_aura() };
+    }
+
+    /// This retreives the top of the grab aura enablement stack, in case you need to know if the current window will
+    /// have an aura.
+    /// <https://stereokit.net/Pages/StereoKit/UI/GrabAuraEnabled>
+    ///
+    /// see also [`ui_grab_aura_enabled`]
+    /// see example in [`Ui::push_grab_aura`]
+    pub fn grab_aura_enabled() -> bool {
+        unsafe { ui_grab_aura_enabled() != 0 }
     }
 
     /// This will push a surface into SK’s UI layout system. The surface becomes part of the transform hierarchy, and SK
@@ -2898,6 +2749,15 @@ impl Ui {
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_push_surface.jpeg" alt="screenshot" width="200">
     pub fn push_surface(pose: impl Into<Pose>, layout_start: impl Into<Vec3>, layout_dimension: impl Into<Vec2>) {
         unsafe { ui_push_surface(pose.into(), layout_start.into(), layout_dimension.into()) }
+    }
+
+    /// This will return to the previous UI layout on the stack. This must be called after a PushSurface call.
+    /// <https://stereokit.net/Pages/StereoKit/UI/PopSurface.html>
+    ///
+    /// see also [`ui_pop_surface`]
+    /// see example in [`Ui::push_surface`]
+    pub fn pop_surface() {
+        unsafe { ui_pop_surface() };
     }
 
     /// This pushes a Text Style onto the style stack! All text elements rendered by the GUI system will now use this
@@ -2951,6 +2811,15 @@ impl Ui {
         unsafe { ui_push_text_style(style) }
     }
 
+    /// Removes a TextStyle from the stack, and whatever was below will then be used as the GUI’s primary font.
+    /// <https://stereokit.net/Pages/StereoKit/UI/PopTextStyle.html>
+    ///
+    /// see also [`ui_pop_text_style`]
+    /// see example in [`Ui::push_text_style`]
+    pub fn pop_text_style() {
+        unsafe { ui_pop_text_style() };
+    }
+
     /// All UI between push_tint and its matching pop_tint will be tinted with this color. This is implemented by
     /// multiplying this color with the current color of the UI element. The default is a White (1,1,1,1) identity tint.
     /// <https://stereokit.net/Pages/StereoKit/UI/PushTint.html>
@@ -2992,6 +2861,15 @@ impl Ui {
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_push_tint.jpeg" alt="screenshot" width="200">
     pub fn push_tint(color_gamma: impl Into<Color128>) {
         unsafe { ui_push_tint(color_gamma.into()) }
+    }
+
+    /// Removes a Tint from the stack, and whatever was below will then be used as the primary tint.
+    /// <https://stereokit.net/Pages/StereoKit/UI/PopTint.html>
+    ///
+    /// see also [`ui_pop_tint`]
+    /// see example in [`Ui::push_tint`]
+    pub fn pop_tint() {
+        unsafe { ui_pop_tint() };
     }
 
     /// This will reposition the Mesh’s vertices to work well with quadrant resizing shaders. The mesh should generally
@@ -3369,110 +3247,6 @@ impl Ui {
         unsafe { ui_set_element_sound(visual, activate, deactivate) };
     }
 
-    /// This will draw a visual element from StereoKit's theming system, while paying attention to certain factors
-    /// such as enabled/disabled, tinting and more.
-    /// <https://stereokit.net/Pages/StereoKit/UI/DrawElement.html>
-    /// * `element_visual` - The element type to draw. Use UiVisual::ExtraSlotXX to use extra UiVisual
-    ///   slots for your own custom UI elements. If these slots are empty, SK will fall back to UiVisual::Default
-    /// * `element_color` - If you wish to use the coloring from a different element, you can use this to override the
-    ///   theme color used when drawing. Use UiVisual::ExtraSlotXX to use extra UiVisual slots for your
-    ///   own custom UI elements. If these slots are empty, SK will fall back to UiVisual::Default.
-    /// * `start` - This is the top left corner of the UI element relative to the current Hierarchy.
-    /// * `size` - The layout size for this element in Hierarchy space.
-    /// * `focus` - The amount of visual focus this element currently has, where 0 is unfocused, and 1 is active. You
-    ///   can acquire a good focus value from `Ui::get_anim_focus`.
-    ///
-    /// see also [`ui_draw_element`] [`ui_draw_element_color`]
-    /// ### Examples
-    /// ```
-    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::{Ui, UiVisual}, maths::Pose};
-    ///
-    /// let mut window_pose = Pose::new(
-    ///     [0.01, 0.075, 0.9], Some([0.0, 185.0, 0.0].into()));
-    ///
-    /// filename_scr = "screenshots/ui_draw_element.jpeg";
-    /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Draw Element", &mut window_pose, Some([0.22, 0.18].into()), None, None);
-    ///     Ui::draw_element(UiVisual::Button, None, [0.1, -0.01, 0.0], [0.1, 0.025, 0.005], 1.0);
-    ///     Ui::draw_element(UiVisual::Input, None, [0.0, -0.01, 0.0], [0.1, 0.025, 0.005], 1.0);
-    ///     Ui::draw_element(UiVisual::Handle, None, [0.1, -0.05, 0.0], [0.1, 0.025, 0.005], 1.0);
-    ///     Ui::draw_element(UiVisual::Toggle, None, [0.0, -0.05, 0.0], [0.1, 0.025, 0.005], 1.0);
-    ///     Ui::draw_element(UiVisual::Separator, None, [0.1, -0.08, 0.0], [0.2, 0.005, 0.005], 1.0);
-    ///     Ui::draw_element(UiVisual::Aura, None, [0.1, -0.1, 0.0], [0.08, 0.08, 0.005], 0.5);
-    ///     Ui::draw_element(UiVisual::Default, None, [0.0, -0.1, 0.0], [0.1, 0.025, 0.005], 0.0);
-    ///     Ui::draw_element(UiVisual::Caret, None, [0.0, -0.14, 0.0], [0.025, 0.025, 0.005], 1.0);
-    ///     Ui::window_end();
-    /// );
-    /// # sk::Sk::shutdown();
-    /// ```
-    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_draw_element.jpeg" alt="screenshot" width="200">
-    pub fn draw_element(
-        element_visual: UiVisual,
-        element_color: Option<UiVisual>,
-        start: impl Into<Vec3>,
-        size: impl Into<Vec3>,
-        focus: f32,
-    ) {
-        match element_color {
-            Some(element_color) => unsafe {
-                ui_draw_element_color(element_visual, element_color, start.into(), size.into(), focus)
-            },
-            None => unsafe { ui_draw_element(element_visual, start.into(), size.into(), focus) },
-        }
-    }
-
-    /// This will get a final linear draw color for a particular UI element type with a particular focus value. This
-    /// obeys the current hierarchy of tinting and enabled states.
-    /// <https://stereokit.net/Pages/StereoKit/UI/GetElementColor.html>
-    /// * `element_visual` - Get the color from this element type.  Use UiVisual::ExtraSlotXX to use extra
-    ///   UiVisual slots for your own custom UI elements. If these slots are empty, SK will fall back to
-    ///   UiVisual::Default.
-    /// * `focus` - The amount of visual focus this element currently has, where 0 is unfocused, and 1 is active. You
-    ///   can acquire a good focus value from `Ui::get_anim_focus`
-    ///
-    /// Returns a linear color good for tinting UI meshes.
-    /// see also [`ui_get_element_color`]
-    /// see example in [`Ui::set_element_color`]
-    pub fn get_element_color(element_visual: UiVisual, focus: f32) -> Color128 {
-        unsafe { ui_get_element_color(element_visual, focus) }
-    }
-
-    /// This resolves a UI element with an ID and its current states into a nicely animated focus value.
-    /// <https://stereokit.net/Pages/StereoKit/UI/GetAnimFocus.html>
-    /// * `id` - The hierarchical id of the UI element we're checking the focus of, this can be created with
-    ///   `Ui::stack_hash`.
-    /// * `focus_state` - The current focus state of the UI element.
-    /// * `activationState` - The current activation status of the/ UI element.
-    ///
-    /// Returns a focus value in the realm of 0-1, where 0 is unfocused, and 1 is active.
-    /// see also [`ui_get_anim_focus`]
-    /// ### Examples
-    /// ```
-    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::Ui, system::BtnState, maths::Pose};
-    ///
-    /// let mut window_pose = Pose::new(
-    ///     [0.01, 0.075, 0.9], Some([0.0, 185.0, 0.0].into()));
-    ///
-    /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Get Anim Focus", &mut window_pose, None, None, None);
-    ///     if Ui::button("button1").press() {todo!()}
-    ///     let id = Ui::stack_hash("button1");
-    ///     let focus = Ui::get_anim_focus(id, BtnState::Inactive, BtnState::Inactive);
-    ///     assert_eq!(focus, 0.0);
-    ///     let focus = Ui::get_anim_focus(id, BtnState::Active, BtnState::Inactive);
-    ///     assert_eq!(focus, 0.5);
-    ///     let focus = Ui::get_anim_focus(id, BtnState::Active, BtnState::Active);
-    ///     assert_eq!(focus, 1.0);
-    ///     Ui::window_end();
-    /// );
-    /// # sk::Sk::shutdown();
-    /// ```
-    pub fn get_anim_focus(id: IdHashT, focus_state: BtnState, activation_state: BtnState) -> f32 {
-        unsafe { ui_get_anim_focus(id, focus_state, activation_state) }
-    }
-
     /// This allows you to explicitly set a theme color, for finer grained control over the UI appearance. Each theme
     /// type is still used by many different UI elements. This will automatically generate colors for different UI
     /// element states.
@@ -3539,21 +3313,157 @@ impl Ui {
         }
     }
 
-    /// This allows you to inspect the current color of the theme color category in a specific state! If you set the
-    /// color with Ui::color_scheme, or without specifying a state, this may be a generated color, and not necessarily
-    /// the color that was provided there.
-    /// <https://stereokit.net/Pages/StereoKit/UI/GetThemeColor.html>
-    /// * `color_category` - The category of UI elements that are affected by this theme color. Use UiColor::ExtraSlotXX
-    ///   if you need extra UiColor slots for your own custom UI elements.
-    ///   If the theme slot is empty, the color will be pulled from UiColor::None
-    /// * `color_state` : The state of the UI element this color applies to. If None has the value UiColorState::Normal
+    /// UI sizing and layout settings.
+    /// <https://stereokit.net/Pages/StereoKit/UI/Settings.html>
     ///
-    /// Returns the gamma space color for the theme color category in the indicated state.
-    /// see also [`ui_get_theme_color`] [`ui_get_theme_color_state`]
-    pub fn get_theme_color(color_category: UiColor, color_state: Option<UiColorState>) -> Color128 {
-        match color_state {
-            Some(color_state) => unsafe { ui_get_theme_color_state(color_category, color_state) },
-            None => unsafe { ui_get_theme_color(color_category) },
+    /// see also [`ui_settings`] [`Ui::get_settings`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::ui::{Ui, UiSettings};
+    ///
+    /// let settings = Ui::get_settings();
+    /// assert_eq!(settings.margin, 0.010000001);
+    /// assert_eq!(settings.padding, 0.010000001);
+    /// assert_eq!(settings.gutter, 0.010000001);
+    /// assert_eq!(settings.depth, 0.010000001);
+    /// assert_eq!(settings.rounding, 0.0075000003);
+    /// assert_eq!(settings.backplate_depth, 0.4);
+    /// assert_eq!(settings.backplate_border, 0.0005);
+    /// assert_eq!(settings.separator_scale, 0.4);
+    ///
+    /// let new_settings = UiSettings {
+    ///     margin: 0.005,
+    ///     padding: 0.005,
+    ///     gutter: 0.005,
+    ///     depth: 0.015,
+    ///     rounding: 0.004,
+    ///     backplate_depth: 0.6,
+    ///     backplate_border: 0.002,
+    ///     separator_scale: 0.6,
+    /// };
+    /// Ui::settings(new_settings);
+    /// let settings = Ui::get_settings();
+    /// assert_eq!(settings.margin, 0.005);
+    /// assert_eq!(settings.padding, 0.005);
+    /// assert_eq!(settings.gutter, 0.005);
+    /// assert_eq!(settings.depth, 0.015);
+    /// assert_eq!(settings.rounding, 0.004);
+    /// assert_eq!(settings.backplate_depth, 0.6);
+    /// assert_eq!(settings.backplate_border, 0.002);
+    /// assert_eq!(settings.separator_scale, 0.6);
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn settings(settings: UiSettings) {
+        unsafe { ui_settings(settings) }
+    }
+
+    /// Shows or hides the collision volumes of the UI! This is for debug purposes, and can help identify visible and
+    /// invisible collision issues.
+    /// <https://stereokit.net/Pages/StereoKit/UI/ui_show_volumes.html>
+    ///
+    /// see also [`ui_show_volumes`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::ui::Ui;
+    ///
+    /// Ui::show_volumes(true);
+    /// # sk::Sk::shutdown();
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_show_volumes.jpeg" alt="screenshot" width="200">
+    pub fn show_volumes(show: bool) {
+        unsafe { ui_show_volumes(show as Bool32T) };
+    }
+
+    /// This is the core functionality of StereoKit's slider elements, without any of the rendering parts! If you're
+    /// trying to create your own sliding UI elements, or do more extreme customization of the look and feel of slider
+    /// UI elements, then this function will provide a lot of complex pressing functionality for you
+    /// <https://stereokit.net/Pages/StereoKit/UI/SliderBehavior.html>
+    /// * `window_relative_pos` - The layout position of the pressable area.
+    /// * `size` - The size of the pressable area.
+    /// * `id` - The id for this pressable element to track its state with.
+    /// * `value` - The value that the slider will store slider state in.
+    /// * `min` - The minimum value the slider can set, left side of the slider.
+    /// * `max` - The maximum value the slider can set, right side of the slider.
+    /// * `button_size_visual` - This is the visual size of the element representing the touchable area of the slider.
+    ///   This is used to calculate the center of the button's placement without going outside the provided bounds.
+    /// * `button_size_interact` - The size of the interactive touch element of the slider. Set this to zero to use the
+    ///   entire area as a touchable surface.
+    /// * `confirm_method` - How should the slider be activated? Default Push will be a push-button the user must press
+    ///   first, and pinch will be a tab that the user must pinch and drag around.
+    /// * `data` - This is data about the slider interaction, you can use this for visualizing the slider behavior, or
+    ///   reacting to its events.
+    ///
+    /// see also [`ui_slider_behavior`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{ui::{Ui, UiSliderData, UiVisual}, maths::{Vec2, Vec3, Pose}};
+    ///
+    /// let mut window_pose = Pose::new(
+    ///     [0.01, 0.07, 0.90], Some([0.0, 185.0, 0.0].into()));
+    ///
+    /// let depth = Ui::get_settings().depth;
+    /// let size = Vec2::new(0.18, 0.11);
+    /// let btn_height = Ui::get_line_height() * 0.5;
+    /// let btn_size = Vec3::new(btn_height, btn_height, depth);
+    ///
+    /// let mut slider_pt = Vec2::new(0.25, 0.65);
+    /// let id_slider = "touch panel";
+    /// let id_slider_hash = Ui::stack_hash(&id_slider);
+    ///
+    /// filename_scr = "screenshots/ui_slider_behavior.jpeg";
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     let mut slider = UiSliderData::default();
+    ///
+    ///     Ui::window_begin("I'm a slider", &mut window_pose, None, None, None);
+    ///     let bounds = Ui::layout_reserve(size, false, depth);
+    ///     let tlb = bounds.tlb();
+    ///     Ui::slider_behavior(tlb , bounds.dimensions.xy(), id_slider_hash, &mut slider_pt,
+    ///                         Vec2::ZERO, Vec2::ONE, Vec2::ZERO, btn_size.xy(), None, &mut slider);
+    ///     let focus = Ui::get_anim_focus(id_slider_hash, slider.focus_state, slider.active_state);
+    ///     Ui::draw_element(UiVisual::SliderLine, None,tlb,
+    ///                      Vec3::new(bounds.dimensions.x, bounds.dimensions.y, depth * 0.1),
+    ///                      if slider.focus_state.is_active() { 0.5 } else { 0.0 });
+    ///     Ui::draw_element(UiVisual::SliderPush, None,
+    ///                      slider.button_center.xy0() + btn_size.xy0() / 2.0, btn_size, focus);
+    ///     if slider.active_state.is_just_inactive() {
+    ///        println!("Slider1 moved");
+    ///     }
+    ///     Ui::label(format!("x: {:.2}          y: {:.2}", slider_pt.x, slider_pt.y)).use_padding(true).draw();
+    ///     Ui::window_end();
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_slider_behavior.jpeg" alt="screenshot" width="200">
+    #[allow(clippy::too_many_arguments)]
+    pub fn slider_behavior(
+        window_relative_pos: impl Into<Vec3>,
+        size: impl Into<Vec2>,
+        id: IdHashT,
+        value: &mut Vec2,
+        min: impl Into<Vec2>,
+        max: impl Into<Vec2>,
+        button_size_visual: impl Into<Vec2>,
+        button_size_interact: impl Into<Vec2>,
+        confirm_method: Option<UiConfirm>,
+        data: &mut UiSliderData,
+    ) {
+        let confirm_method = confirm_method.unwrap_or(UiConfirm::Push);
+        unsafe {
+            ui_slider_behavior(
+                window_relative_pos.into(),
+                size.into(),
+                id,
+                value,
+                min.into(),
+                max.into(),
+                button_size_visual.into(),
+                button_size_interact.into(),
+                confirm_method,
+                data,
+            );
         }
     }
 
@@ -3632,6 +3542,26 @@ impl Ui {
     pub fn stack_hash(id: impl AsRef<str>) -> IdHashT {
         let cstr = CString::new(id.as_ref()).unwrap_or_default();
         unsafe { ui_stack_hash(cstr.as_ptr()) }
+    }
+
+    /// This is the UiMove that is provided to UI windows that StereoKit itself manages, such as the fallback
+    /// filepicker and soft keyboard.
+    /// <https://stereokit.net/Pages/StereoKit/UI/SystemMoveType.html>
+    ///
+    /// see also [`ui_system_set_move_type`] [`Ui::get_system_move_type`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::ui::{Ui, UiMove};
+    ///
+    /// assert_eq!(Ui::get_system_move_type(), UiMove::FaceUser);
+    ///
+    /// Ui::system_move_type(UiMove::Exact);
+    /// assert_eq!(Ui::get_system_move_type(), UiMove::Exact);
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn system_move_type(move_type: UiMove) {
+        unsafe { ui_system_set_move_type(move_type) };
     }
 
     /// A scrolling text element! This is for reading large chunks of text that may be too long to fit in the available
@@ -4053,6 +3983,65 @@ impl Ui {
         unsafe { ui_window_end() }
     }
 
+    /// This resolves a UI element with an ID and its current states into a nicely animated focus value.
+    /// <https://stereokit.net/Pages/StereoKit/UI/GetAnimFocus.html>
+    /// * `id` - The hierarchical id of the UI element we're checking the focus of, this can be created with
+    ///   `Ui::stack_hash`.
+    /// * `focus_state` - The current focus state of the UI element.
+    /// * `activationState` - The current activation status of the/ UI element.
+    ///
+    /// Returns a focus value in the realm of 0-1, where 0 is unfocused, and 1 is active.
+    /// see also [`ui_get_anim_focus`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{ui::Ui, system::BtnState, maths::Pose};
+    ///
+    /// let mut window_pose = Pose::new(
+    ///     [0.01, 0.075, 0.9], Some([0.0, 185.0, 0.0].into()));
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     Ui::window_begin("Get Anim Focus", &mut window_pose, None, None, None);
+    ///     if Ui::button("button1").press() {todo!()}
+    ///     let id = Ui::stack_hash("button1");
+    ///     let focus = Ui::get_anim_focus(id, BtnState::Inactive, BtnState::Inactive);
+    ///     assert_eq!(focus, 0.0);
+    ///     let focus = Ui::get_anim_focus(id, BtnState::Active, BtnState::Inactive);
+    ///     assert_eq!(focus, 0.5);
+    ///     let focus = Ui::get_anim_focus(id, BtnState::Active, BtnState::Active);
+    ///     assert_eq!(focus, 1.0);
+    ///     Ui::window_end();
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn get_anim_focus(id: IdHashT, focus_state: BtnState, activation_state: BtnState) -> f32 {
+        unsafe { ui_get_anim_focus(id, focus_state, activation_state) }
+    }
+    /// This will get a final linear draw color for a particular UI element type with a particular focus value. This
+    /// obeys the current hierarchy of tinting and enabled states.
+    /// <https://stereokit.net/Pages/StereoKit/UI/GetElementColor.html>
+    /// * `element_visual` - Get the color from this element type.  Use UiVisual::ExtraSlotXX to use extra
+    ///   UiVisual slots for your own custom UI elements. If these slots are empty, SK will fall back to
+    ///   UiVisual::Default.
+    /// * `focus` - The amount of visual focus this element currently has, where 0 is unfocused, and 1 is active. You
+    ///   can acquire a good focus value from `Ui::get_anim_focus`
+    ///
+    /// Returns a linear color good for tinting UI meshes.
+    /// see also [`ui_get_element_color`]
+    /// see example in [`Ui::set_element_color`]
+    pub fn get_element_color(element_visual: UiVisual, focus: f32) -> Color128 {
+        unsafe { ui_get_element_color(element_visual, focus) }
+    }
+
+    /// This returns the current state of the UI's enabled status stack, set by `Ui::(push/pop)_enabled`.
+    /// <https://stereokit.net/Pages/StereoKit/UI/Enabled.html>
+    ///
+    /// see also [`ui_is_enabled`]
+    /// see example in [`Ui::push_enabled`]
+    pub fn get_enabled() -> bool {
+        unsafe { ui_is_enabled() != 0 }
+    }
+
     /// get the flag about the far ray grab interaction for Handle elements like the Windows. It can be enabled and
     /// disabled for individual UI elements, and if this remains disabled at the start of the next frame, then the
     /// hand ray indicators will not be visible. This is enabled by default.
@@ -4201,12 +4190,21 @@ impl Ui {
         unsafe { ui_get_text_style() }
     }
 
-    /// This returns the current state of the UI's enabled status stack, set by `Ui::(push/pop)_enabled`.
-    /// <https://stereokit.net/Pages/StereoKit/UI/Enabled.html>
+    /// This allows you to inspect the current color of the theme color category in a specific state! If you set the
+    /// color with Ui::color_scheme, or without specifying a state, this may be a generated color, and not necessarily
+    /// the color that was provided there.
+    /// <https://stereokit.net/Pages/StereoKit/UI/GetThemeColor.html>
+    /// * `color_category` - The category of UI elements that are affected by this theme color. Use UiColor::ExtraSlotXX
+    ///   if you need extra UiColor slots for your own custom UI elements.
+    ///   If the theme slot is empty, the color will be pulled from UiColor::None
+    /// * `color_state` : The state of the UI element this color applies to. If None has the value UiColorState::Normal
     ///
-    /// see also [`ui_is_enabled`]
-    /// see example in [`Ui::push_enabled`]
-    pub fn get_enabled() -> bool {
-        unsafe { ui_is_enabled() != 0 }
+    /// Returns the gamma space color for the theme color category in the indicated state.
+    /// see also [`ui_get_theme_color`] [`ui_get_theme_color_state`]
+    pub fn get_theme_color(color_category: UiColor, color_state: Option<UiColorState>) -> Color128 {
+        match color_state {
+            Some(color_state) => unsafe { ui_get_theme_color_state(color_category, color_state) },
+            None => unsafe { ui_get_theme_color(color_category) },
+        }
     }
 }
