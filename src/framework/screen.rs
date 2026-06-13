@@ -329,8 +329,8 @@ impl Screen {
         self
     }
 
-    /// Set text to display inside the control window on every frame via [`Ui::text_at`].
-    /// Inspired by the FPS overlay in `video1.rs`. Pass an empty string to clear.
+    /// Set text to display inside the control window on every frame via [`Ui::text`].
+    /// Pass an empty string to clear.
     ///
     /// # Example
     /// ```ignore
@@ -531,15 +531,11 @@ impl Screen {
             let overlay_pos = Vec3::new(-0.05, overlay_y, bounds.center.z);
             let overlay_pose = Pose::new(overlay_pos, None) * screen_transform;
             Ui::push_surface(overlay_pose, Vec3::X * -0.01 * d, Vec2::ZERO);
-            Ui::text(
-                &self.overlay_text,
-                None,
-                None,
-                Some(0.04 * self.screen_distance),
-                Some(0.15 * self.screen_distance),
-                Some(Align::Center),
-                Some(TextFit::Exact),
-            );
+            Ui::text(&self.overlay_text)
+                .size(Vec2::new(0.15, 0.04) * self.screen_distance)
+                .text_align(Align::Center)
+                .fit(TextFit::Exact)
+                .draw();
             Ui::pop_surface();
         }
 

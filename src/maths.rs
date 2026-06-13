@@ -5564,7 +5564,7 @@ impl Display for Plane {
 ///     Ui::handle_end();
 ///
 ///     Ui::window_begin("My Window", &mut window_pose, None, None, None);
-///     Ui::text("My Text", None, None, None, Some(0.14), None, None);
+///     Ui::text("My Text").size([0.14, 0.0]).draw();
 ///     Ui::window_end();
 /// );
 /// # sk::Sk::shutdown();

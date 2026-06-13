@@ -3,11 +3,12 @@ use std::ffi::{CStr, CString, c_char};
 use crate::{
     maths::{Bool32T, Bounds, Pose, Vec2, Vec3},
     sprite::{Sprite, SpriteT},
-    system::{Align, TextContext},
+    system::{Align, TextContext, TextFit},
     ui::{
-        UiBtnLayout, UiConfirm, UiGesture, UiMove, UiNotify, ui_button, ui_button_at, ui_button_img, ui_button_img_at,
-        ui_button_round, ui_button_round_at, ui_handle_begin, ui_handle_end, ui_hslider, ui_hslider_at, ui_input,
-        ui_input_at, ui_label, ui_toggle, ui_toggle_at, ui_toggle_img, ui_toggle_img_at, ui_vslider, ui_vslider_at,
+        UiBtnLayout, UiConfirm, UiGesture, UiMove, UiNotify, UiScroll, ui_button, ui_button_at, ui_button_img,
+        ui_button_img_at, ui_button_round, ui_button_round_at, ui_handle_begin, ui_handle_end, ui_hslider,
+        ui_hslider_at, ui_input, ui_input_at, ui_label, ui_text, ui_text_at, ui_toggle, ui_toggle_at, ui_toggle_img,
+        ui_toggle_img_at, ui_vslider, ui_vslider_at,
     },
     util::Color128,
 };
@@ -687,6 +688,109 @@ impl<'a> UiSliderBuilder<'a> {
         };
 
         if changed { Some(*self.value) } else { None }
+    }
+}
+
+/// see [`Ui::text`](crate::ui::Ui::text)
+/// StereoKit original docs :
+/// [Text](https://stereokit.net/Pages/StereoKit/UI/Text.html)
+/// [TextAt](https://stereokit.net/Pages/StereoKit/UI/TextAt.html)
+#[must_use = "UiTextBuilder does nothing until you call .draw() on it"]
+pub struct UiTextBuilder<'a> {
+    text: CString,
+    scroll: Option<&'a mut Vec2>,
+    scroll_direction: UiScroll,
+    top_left_corner: Option<Vec3>,
+    size: Vec2,
+    text_align: Align,
+    fit: TextFit,
+}
+
+impl<'a> UiTextBuilder<'a> {
+    /// Creates a new text builder.
+    pub fn new(text: impl AsRef<str>) -> Self {
+        Self {
+            text: CString::new(text.as_ref()).unwrap_or_default(),
+            scroll: None,
+            scroll_direction: UiScroll::None,
+            top_left_corner: None,
+            size: Vec2::ZERO,
+            text_align: Align::TopLeft,
+            fit: TextFit::Wrap,
+        }
+    }
+
+    /// Switches this text to absolute-position mode. Don't use with [`UiTextBuilder::size`] as it will override this
+    /// size value.
+    ///
+    /// `top_left_corner` is relative to the current hierarchy.
+    pub fn at(mut self, top_left_corner: impl Into<Vec3>, size: impl Into<Vec2>) -> Self {
+        self.top_left_corner = Some(top_left_corner.into());
+        self.size = size.into();
+        self
+    }
+
+    /// What scroll bars are allowed to show on this text?
+    ///
+    /// Default is [`UiScroll::None`].
+    pub fn scroll(mut self, scroll: &'a mut Vec2, scroll_direction: UiScroll) -> Self {
+        self.scroll = Some(scroll);
+        self.scroll_direction = scroll_direction;
+        self
+    }
+
+    /// The layout size for this element in Hierarchy space. Don't use with [`UiTextBuilder::at`] as it will override
+    /// this value.
+    ///
+    /// If x is 0.0, it will automatically take the remainder of the current layout. if y is 0.0, it will automatically
+    /// size to fit the text.
+    pub fn size(mut self, size: impl Into<Vec2>) -> Self {
+        self.size = size.into();
+        self
+    }
+
+    /// Where should the text position itself within its bounds?
+    ///
+    /// Default is Align::TopLeft.
+    pub fn text_align(mut self, text_align: Align) -> Self {
+        self.text_align = text_align;
+        self
+    }
+
+    /// Describes how the text should behave when one of its size dimensions conflicts with the provided
+    /// ['UiTextBuilder::size'] parameter.
+    ///
+    /// Default is [`TextFit::Wrap`] and this scrolling overload will always add [`TextFit::Clip`] internally.
+    pub fn fit(mut self, fit: TextFit) -> Self {
+        self.fit = fit;
+        self
+    }
+
+    /// Draws the text.
+    pub fn draw(self) -> bool {
+        match self.top_left_corner {
+            Some(top_left_corner) => unsafe {
+                ui_text_at(
+                    self.text.as_ptr(),
+                    self.scroll.map_or(std::ptr::null_mut(), |s| s as *mut Vec2),
+                    self.scroll_direction,
+                    self.text_align,
+                    self.fit,
+                    top_left_corner,
+                    self.size,
+                ) != 0
+            },
+            None => unsafe {
+                ui_text(
+                    self.text.as_ptr(),
+                    self.scroll.map_or(std::ptr::null_mut(), |s| s as *mut Vec2),
+                    self.scroll_direction,
+                    self.size,
+                    self.text_align,
+                    self.fit,
+                ) != 0
+            },
+        }
     }
 }
 

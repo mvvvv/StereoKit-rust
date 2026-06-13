@@ -72,15 +72,8 @@ impl Ui2 {
         // Push the constrained pose back to hierarchy
         Hierarchy::push(token, Matrix::from(constrained_pose), None);
 
-        Ui::text(
-            "We're quashing rotation of this Window's pose on the X and Z axes after doing regular handle logic.",
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-        );
+        Ui::text("We're quashing rotation of this Window's pose on the X and Z axes after doing regular handle logic.")
+            .draw();
 
         Ui::window_end();
 
@@ -104,15 +97,7 @@ impl Ui2 {
         let rendering_pose = Pose::new(Vec3::new(-0.1, 1.3, -0.5), Some(Quat::look_dir(Vec3::new(0.0, 0.0, 1.0))));
         Hierarchy::push(token, Matrix::from(rendering_pose), None);
 
-        Ui::text(
-            "We're completely overriding this Window's pose to prove that even extreme modifications to the Window's pose will still properly apply.",
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-        );
+        Ui::text("We're completely overriding this Window's pose to prove that even extreme modifications to the Window's pose will still properly apply.").draw();
 
         Ui::window_end();
 
@@ -120,7 +105,7 @@ impl Ui2 {
         // this will push an automatically determined pose onto the transform stack
         // and keep its position if you relaunch the demo
         Ui::window_begin_auto("Pose Zero", None, None, None);
-        Ui::text("We memorize position", None, None, None, None, None, None);
+        Ui::text("We memorize position").draw();
         Ui::window_end();
 
         // Display the demo title text

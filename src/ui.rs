@@ -576,7 +576,7 @@ pub struct UiSliderData {
 /// filename_scr = "screenshots/ui.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
 ///     Ui::window_begin("Question", &mut window_pose, None, None, None);
-///     Ui::text("Are you a robot ?", None, None, None, Some(0.13), None, None);
+///     Ui::text("Are you a robot ?").size([0.13, 0.0]).draw();
 ///     Ui::hseparator();
 ///     Ui::label("Respond wisely").size([0.08, 0.03]).use_padding(false).draw();
 ///     if Ui::radio("yes", choice == "A").images(&off, &on).image_layout(UiBtnLayout::Left).press() {
@@ -1579,15 +1579,15 @@ impl Ui {
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Separators", &mut window_pose, Some([0.18, 0.0].into()), None, None);
     ///     Ui::push_text_style(style_big);
-    ///     Ui::text("The first part", None, None, None, None, None, None);
+    ///     Ui::text("The first part").draw();
     ///     Ui::hseparator();
     ///     Ui::pop_text_style();
     ///     Ui::push_text_style(style_medium);
-    ///     Ui::text("The second part", None, None, None, None, None, None);
+    ///     Ui::text("The second part").draw();
     ///     Ui::hseparator();
     ///     Ui::pop_text_style();
     ///     Ui::push_text_style(style_small);
-    ///     Ui::text("The third part", None, None, None, None, None, None);
+    ///     Ui::text("The third part").draw();
     ///     Ui::hseparator();
     ///     Ui::pop_text_style();
     ///     Ui::window_end();
@@ -2785,21 +2785,21 @@ impl Ui {
     ///     Ui::window_begin("Push TextStyle", &mut window_pose, Some([0.16, 0.0].into()), None, None);
     ///
     ///     Ui::push_text_style(style_big);
-    ///     Ui::text("The first part", None, None, None, None, None, None);
+    ///     Ui::text("The first part").draw();
     ///     assert_eq!(Ui::get_text_style(), style_big);
     ///     Ui::pop_text_style();
     ///
     ///     Ui::push_text_style(style_medium);
-    ///     Ui::text("The second part", None, None, None, None, None, None);
+    ///     Ui::text("The second part").draw();
     ///     Ui::pop_text_style();
     ///
     ///     Ui::push_text_style(style_small);
-    ///     Ui::text("The third part", None, None, None, None, None, None);
+    ///     Ui::text("The third part").draw();
     ///     Ui::push_text_style(style_mini);
-    ///     Ui::text("The Inside part", None, None, None, None, None, None);
+    ///     Ui::text("The Inside part").draw();
     ///     assert_eq!(Ui::get_text_style(), style_mini);
     ///     Ui::pop_text_style();
-    ///     Ui::text("----////", None, None, None, None, None, None);
+    ///     Ui::text("----////").draw();
     ///     Ui::pop_text_style();
     ///
     ///     Ui::window_end();
@@ -3568,21 +3568,25 @@ impl Ui {
     /// space when scroll is Some(size). It requires a height, as well as a place to store the current scroll value.
     /// Text uses the UI's current font settings, which can be changed with UI.Push/PopTextStyle.
     /// <https://stereokit.net/Pages/StereoKit/UI/Text.html>
-    /// * `text` - The text you wish to display, there's no additional parsing done to this text, so put it in as you want
-    ///   to see it!
-    /// * `scroll` - This is the current scroll value of the text, in meters, _not_ percent.
-    /// * `scrollDirection` - What scroll bars are allowed to show on this text? Vertical, horizontal, both? None is
-    ///   UiScroll::None.
-    /// * `height` - The vertical height of this Text element. None is 0.0.
-    /// * `width` - if None it will automatically take the remainder of the current layout.
-    /// * `text_align` - Where should the text position itself within its bounds? None is Align::TopLeft is how most
-    ///   european language are aligned.
-    /// * `fit` - Describe how the text should behave when one of its size dimensions conflicts with the provided ‘size’
-    ///   parameter. None will use TextFit::Wrap by default and this scrolling overload will always add `TextFit.Clip`
-    ///   internally.
+    /// <https://stereokit.net/Pages/StereoKit/UI/TextAt.html>
+    /// * `text` - The text you wish to display, there's no additional parsing done to this text, so put it in as you
+    ///   want to see it!
+    /// * [`UiTextBuilder::scroll`] - This is the current scroll value of the text, in meters, _not_ percent. With
+    ///   `scrollDirection` indicating what scroll bars are allowed to show on this text? Vertical, horizontal, both?
+    /// * Either [`UiTextBuilder::at`] or [`UiTextBuilder::size`] or default will use remaining layout space:
+    ///   - `at` - A variant of text that doesn’t use the layout system, and instead goes exactly where you put it. Set
+    ///     the top left corner of the UI element relative to the current Hierarchy and it’s size.
+    ///   - `size` - The layout size for this element in Hierarchy space with `size.x` as the width (value 0.0 will
+    ///     automatically take the remainder of the current layout) and `size.y` as the vertical height of this Text
+    ///     element.
+    /// * [`UiTextBuilder::text_align`] - Where should the text position itself within its bounds? Default is
+    ///   [`Align::TopLeft`] is how most european language are aligned.
+    /// * [`UiTextBuilder::fit`] - Describe how the text should behave when one of its size dimensions conflicts with
+    ///   the provided ‘size’ parameter. Default will use [`TextFit::Wrap`] by default and this scrolling overload will
+    ///   always add [`TextFit::Clip`] internally.
     ///
     /// Returns true if any of the scroll bars have changed this frame.
-    /// see also [`ui_text`]
+    /// see also [`ui_text`] [`ui_text_at`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -3602,92 +3606,19 @@ impl Ui {
     /// filename_scr = "screenshots/ui_text.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     Ui::window_begin("Text", &mut window_pose, Some([0.22, 0.14].into()), None, None);
-    ///     Ui::text(text, Some(&mut scroll_value), Some(UiScroll::Both), Some(0.07), Some(0.21),
-    ///              Some(Align::TopCenter), Some(TextFit::Clip));
-    ///     Ui::text(text, None, None, Some(0.04), Some(1.8),
-    ///              None, Some(TextFit::Exact));
-    ///     Ui::text_at(text, Some(&mut scroll_value_at), Some(UiScroll::Both), Align::TopRight,
-    ///                 TextFit::Wrap, [0.10, -0.14, 0.0], [0.21, 0.04]);
+    ///     Ui::text(text).scroll(&mut scroll_value,UiScroll::Both).size([0.21,0.07])
+    ///              .text_align(Align::TopCenter).fit(TextFit::Clip).draw();
+    ///     Ui::text(text).size([1.8, 0.04]).fit(TextFit::Exact).draw();
+    ///     Ui::text(text).at( [0.10, -0.14, 0.0], [0.21, 0.04])
+    ///                   .scroll(&mut scroll_value_at, UiScroll::Both)
+    ///                   .text_align(Align::TopRight).fit(TextFit::Wrap).draw();
     ///     Ui::window_end();
     /// );
     /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_text.jpeg" alt="screenshot" width="200">
-    pub fn text(
-        text: impl AsRef<str>,
-        scroll: Option<&mut Vec2>,
-        scroll_direction: Option<UiScroll>,
-        height: Option<f32>,
-        width: Option<f32>,
-        text_align: Option<Align>,
-        fit: Option<TextFit>,
-    ) -> bool {
-        let cstr = CString::new(text.as_ref()).unwrap_or_default();
-        let scroll_direction = scroll_direction.unwrap_or(UiScroll::None);
-        let height = height.unwrap_or(0.0);
-        let text_align = text_align.unwrap_or(Align::TopLeft);
-        let fit = fit.unwrap_or(TextFit::Wrap);
-        let size = match width {
-            Some(width) => Vec2::new(width, height),
-            None => Vec2::new(0.0, height),
-        };
-        match scroll {
-            Some(scroll) => unsafe { ui_text(cstr.as_ptr(), scroll, scroll_direction, size, text_align, fit) != 0 },
-            None => unsafe { ui_text(cstr.as_ptr(), null_mut(), UiScroll::None, size, text_align, fit) != 0 },
-        }
-    }
-
-    /// Displays a large chunk of text on the current layout. This can include new lines and spaces, and will properly
-    /// wrap once it fills the entire layout! Text uses the UI’s current font settings, which can be changed with
-    /// Ui::push/pop_text_style.
-    /// <https://stereokit.net/Pages/StereoKit/UI/TextAt.html>
-    /// * `text` - The text you wish to display, there's no additional parsing done to this text, so put it in as you want
-    ///   to see it!
-    /// * `scroll` - This is the current scroll value of the text, in meters, _not_ percent.
-    /// * `scrollDirection` - What scroll bars are allowed to show on this text? Vertical, horizontal, both?
-    /// * `text_align` - Where should the text position itself within its bounds?
-    /// * `fit` - Describe how the text should behave when one of its size dimensions conflicts with the provided ‘size’
-    ///   parameter.
-    /// * `size` - The layout size for this element in Hierarchy space.
-    ///
-    /// Returns true if any of the scroll bars have changed this frame.
-    /// see also [`ui_text_at`]
-    /// see example in [`Ui::text`]
-    pub fn text_at(
-        text: impl AsRef<str>,
-        scroll: Option<&mut Vec2>,
-        scroll_direction: Option<UiScroll>,
-        text_align: Align,
-        fit: TextFit,
-        top_left_corner: impl Into<Vec3>,
-        size: impl Into<Vec2>,
-    ) -> bool {
-        let scroll_direction = scroll_direction.unwrap_or(UiScroll::None);
-        let cstr = CString::new(text.as_ref()).unwrap_or_default();
-        match scroll {
-            Some(scroll) => unsafe {
-                ui_text_at(
-                    cstr.as_ptr(),
-                    scroll,
-                    scroll_direction,
-                    text_align,
-                    fit,
-                    top_left_corner.into(),
-                    size.into(),
-                ) != 0
-            },
-            None => unsafe {
-                ui_text_at(
-                    cstr.as_ptr(),
-                    null_mut(),
-                    UiScroll::None,
-                    text_align,
-                    fit,
-                    top_left_corner.into(),
-                    size.into(),
-                ) != 0
-            },
-        }
+    pub fn text(text: impl AsRef<str>) -> UiTextBuilder<'static> {
+        UiTextBuilder::new(text)
     }
 
     /// A toggleable button.

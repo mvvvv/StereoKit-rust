@@ -119,58 +119,43 @@ impl Text2 {
         Ui::next_line();
         Ui::hseparator();
         Ui::push_id("A");
-        Ui::text(TEXTY, None, None, None, None, None, None);
+        Ui::text(TEXTY).draw();
         Ui::pop_id();
         Ui::next_line();
         Ui::hseparator();
         Ui::push_id("B");
-        Ui::text(
-            TEXTY,
-            Some(&mut self.scroll1),
-            Some(UiScroll::Horizontal),
-            Some(0.08),
-            Some(0.36),
-            None,
-            Some(TextFit::Overflow),
-        );
+        Ui::text(TEXTY)
+            .scroll(&mut self.scroll1, UiScroll::Horizontal)
+            .size([0.36, 0.08])
+            .fit(TextFit::Overflow)
+            .draw();
         Ui::pop_id();
         Ui::next_line();
         Ui::hseparator();
         Ui::push_id("C");
-        Ui::text(
-            TEXTY,
-            Some(&mut self.scroll2),
-            Some(UiScroll::Horizontal),
-            Some(0.08),
-            Some(0.36),
-            None,
-            Some(TextFit::Squeeze),
-        );
+        Ui::text(TEXTY)
+            .scroll(&mut self.scroll2, UiScroll::Horizontal)
+            .size([0.36, 0.08])
+            .fit(TextFit::Squeeze)
+            .draw();
         Ui::pop_id();
         Ui::next_line();
         Ui::hseparator();
         Ui::push_id("D");
-        Ui::text(
-            TEXTO,
-            Some(&mut self.scroll3),
-            Some(UiScroll::Both),
-            Some(0.1),
-            Some(0.15),
-            None,
-            Some(TextFit::Overflow),
-        );
+        Ui::text(TEXTO)
+            .scroll(&mut self.scroll3, UiScroll::Both)
+            .size([0.15, 0.1])
+            .fit(TextFit::Overflow)
+            .draw();
         Ui::pop_id();
         Ui::same_line();
         Ui::push_id("E");
-        Ui::text_at(
-            TEXTO,
-            Some(&mut self.scroll4),
-            Some(UiScroll::Both),
-            Align::TopLeft,
-            TextFit::Overflow,
-            Vec3::new(0.016, -0.40, -0.03),
-            Vec2::new(0.18, 0.1),
-        );
+        Ui::text(TEXTO)
+            .at(Vec3::new(0.016, -0.40, -0.03), Vec2::new(0.18, 0.1))
+            .scroll(&mut self.scroll4, UiScroll::Both)
+            .text_align(Align::TopLeft)
+            .fit(TextFit::Overflow)
+            .draw();
         Ui::pop_id();
         Ui::pop_text_style();
 

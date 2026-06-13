@@ -170,7 +170,7 @@ impl Interactor1 {
         );
 
         // Interactor Configuration Section
-        Ui::text("Interactor Configuration:", None, None, None, None, None, None);
+        Ui::text("Interactor Configuration:").draw();
 
         let mut changed = false;
 
@@ -181,7 +181,7 @@ impl Interactor1 {
         // Create horizontal layout with three columns
         Ui::layout_push(Vec3::new(0.20, -0.04, 0.0), Vec2::new(0.45, 0.4), false);
         // Column 1: Shape Type selection
-        Ui::text("Shape Type:", None, None, None, None, None, None);
+        Ui::text("Shape Type:").draw();
         Ui::panel_begin(Some(UiPad::Outside));
         if Ui::radio("Point", self.shape_type == InteractorType::Point)
             .images(&radio_off, &radio_on)
@@ -206,7 +206,7 @@ impl Interactor1 {
 
         // Column 2: Events selection
         Ui::layout_push(Vec3::new(0.05, -0.04, 0.0), Vec2::new(0.45, 0.4), false);
-        Ui::text("Events:", None, None, None, None, None, None);
+        Ui::text("Events:").draw();
         Ui::panel_begin(None);
 
         let mut poke_enabled = (self.events & InteractorEvent::Poke) != InteractorEvent::empty();
@@ -244,7 +244,7 @@ impl Interactor1 {
 
         // Column 3: Activation Type selection
         Ui::layout_push(Vec3::new(-0.1, -0.04, 0.0), Vec2::new(0.45, 0.4), false);
-        Ui::text("Activation:", None, None, None, None, None, None);
+        Ui::text("Activation:").draw();
         Ui::panel_begin(Some(UiPad::Outside));
         if Ui::radio("Position", self.activation_type == InteractorActivation::Position)
             .images(&radio_off, &radio_on)
@@ -272,7 +272,7 @@ impl Interactor1 {
         Ui::panel_begin(Some(UiPad::Outside));
 
         // Input Source slider (convert to f32 for slider)
-        Ui::text("Min Distance::", None, None, None, None, None, None);
+        Ui::text("Min Distance::").draw();
         if Ui::hslider("min_distance", &mut self.min_distance, -1.0, 3.0).space(0.2).interact().is_some()
             && let Some(interactor) = &self.test_interactor
         {
@@ -280,7 +280,7 @@ impl Interactor1 {
         }
 
         // Capsule Radius slider
-        Ui::text("Capsule Radius:", None, None, None, None, None, None);
+        Ui::text("Capsule Radius:").draw();
         if Ui::hslider("radius", &mut self.capsule_radius, 0.001, 0.1)
             .step(0.001)
             .space(0.2)
@@ -291,7 +291,7 @@ impl Interactor1 {
         }
 
         // Secondary Motion Dimensions slider (convert to f32 for slider)
-        Ui::text("Secondary Motion Dims:", None, None, None, None, None, None);
+        Ui::text("Secondary Motion Dims:").draw();
         let mut sec_motion_f32 = self.secondary_motion_dimensions as f32;
         if Ui::hslider("dims", &mut sec_motion_f32, 0.0, 3.0).step(1.0).space(0.2).interact().is_some() {
             self.secondary_motion_dimensions = sec_motion_f32 as i32;
@@ -309,22 +309,14 @@ impl Interactor1 {
 
         // Show current interactor info
         if let Some(interactor) = &self.test_interactor {
-            Ui::text("Current Interactor:", None, None, None, None, None, None);
-            Ui::text(format!("    Type: {:?}", interactor.get_type()), None, None, None, None, None, None);
-            Ui::text(format!("    Events: {:?}", interactor.get_events()), None, None, None, None, None, None);
-            Ui::text(format!("    Activation: {:?}", interactor.get_activation()), None, None, None, None, None, None);
-            Ui::text(format!("    Source: {:?}", interactor.get_source()), None, None, None, None, None, None);
-            Ui::text(format!("    Min distance: {}", self.min_distance), None, None, None, None, None, None);
-            Ui::text(format!("    Radius: {:.3}", interactor.get_radius()), None, None, None, None, None, None);
-            Ui::text(
-                format!("    Sec. Motion: {}", interactor.get_secondary_dims()),
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
-            );
+            Ui::text("Current Interactor:").draw();
+            Ui::text(format!("    Type: {:?}", interactor.get_type())).draw();
+            Ui::text(format!("    Events: {:?}", interactor.get_events())).draw();
+            Ui::text(format!("    Activation: {:?}", interactor.get_activation())).draw();
+            Ui::text(format!("    Source: {:?}", interactor.get_source())).draw();
+            Ui::text(format!("    Min distance: {}", self.min_distance)).draw();
+            Ui::text(format!("    Radius: {:.3}", interactor.get_radius())).draw();
+            Ui::text(format!("    Sec. Motion: {}", interactor.get_secondary_dims())).draw();
         }
         Ui::vspace(0.03);
         Ui::hseparator();

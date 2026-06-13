@@ -84,16 +84,16 @@ impl Permission1 {
 
             Ui::panel_begin(Some(UiPad::Inside));
             // Column 1: Permission name with fixed width
-            Ui::text(format!("{}:", permission), None, None, Some(0.03), Some(0.1), Some(Align::CenterLeft), None);
+            Ui::text(format!("{}:", permission)).size([0.1, 0.03]).text_align(Align::CenterLeft).draw();
 
             // Column 2: State with fixed width on same line
             Ui::same_line();
-            Ui::text(format!("{}", state), None, None, Some(0.03), Some(0.08), Some(Align::CenterLeft), None);
+            Ui::text(format!("{}", state)).size([0.08, 0.03]).text_align(Align::CenterLeft).draw();
 
             // Column 3: Interactive indicator with fixed width
             if Permission::is_interactive(permission) {
                 Ui::same_line();
-                Ui::text("(interactive)", None, None, Some(0.03), Some(0.1), Some(Align::CenterLeft), None);
+                Ui::text("(interactive)").size([0.1, 0.03]).text_align(Align::CenterLeft).draw();
             }
 
             // Column 4: Request button with fixed size
