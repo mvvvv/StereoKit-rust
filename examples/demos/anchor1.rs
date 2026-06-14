@@ -63,7 +63,7 @@ impl Anchor1 {
         Lines::add(token, ray.position, ray.position + ray.direction * 0.5, WHITE, None, 0.01);
 
         // window for working with the anchors
-        Ui::window_begin("Anchors", &mut self.window_pose, None, None, None);
+        Ui::window("Anchors").pose(&mut self.window_pose).begin();
         // checking if we support anchors
         Ui::layout_push_cut(UiCut::Left, 0.1, true);
         Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);

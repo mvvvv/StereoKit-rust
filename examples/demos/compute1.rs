@@ -197,7 +197,7 @@ impl ComputeReaction {
             }
         }
 
-        Ui::window_begin("Compute Shader", &mut self.window_pose, Some(Vec2::new(0.28, 0.0)), None, None);
+        Ui::window("Compute Shader").pose(&mut self.window_pose).size(Vec2::new(0.28, 0.0)).begin();
         Ui::toggle("Run the test", &mut self.active).interact();
         Ui::image(&self.output_sprite, Vec2::ONE * 0.26);
         Ui::label(format!("Step: {}", self.step)).use_padding(true).draw();
@@ -351,7 +351,7 @@ impl ComputeTest {
             }
         }
 
-        Ui::window_begin("Compute Test", &mut self.window_pose, Some(Vec2::new(0.28, 0.0)), None, None);
+        Ui::window("Compute Test").pose(&mut self.window_pose).size(Vec2::new(0.28, 0.0)).begin();
         Ui::toggle("Run the test", &mut self.active).interact();
         Ui::image(&self.output_sprite, Vec2::ONE * 0.26);
         Ui::label(format!("Step: {}", self.step)).use_padding(true).draw();

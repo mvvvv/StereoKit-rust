@@ -21,7 +21,7 @@ bitflags::bitflags! {
 /// A description of what type of window to draw! This is a bit flag, so it can contain multiple elements.
 /// <https://stereokit.net/Pages/StereoKit/UIWin.html>
 ///
-/// see [`Ui::window_begin`]
+/// see [`Ui::window`]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(C)]
 pub struct UiWin : u32
@@ -41,7 +41,7 @@ pub struct UiWin : u32
 /// This describes how a UI element moves when being dragged around by a user!
 /// <https://stereokit.net/Pages/StereoKit/UIMove.html>
 ///
-/// see [`Ui::window_begin`] [`Ui::handle`] [`Ui::system_move_type`]
+/// see [`Ui::window`] [`Ui::handle`] [`Ui::system_move_type`]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u32)]
 pub enum UiMove {
@@ -242,15 +242,14 @@ pub enum UiVisual {
     Input = 4,
     /// Refers to Ui::handle/handle_begin elements.
     Handle = 5,
-    /// Refers to UI::window/window_begin body panel element, this element is used when a Window head is also present.
+    /// Refers to UI::window body panel element, this element is used when a Window head is also present.
     WindowBody = 6,
-    /// Refers to Ui::window/window_begin body element, this element is used when a Window only has the body panel,
+    /// Refers to Ui::window body element, this element is used when a Window only has the body panel,
     /// without a head.
     WindowBodyOnly = 7,
-    /// Refers to Ui::window/window_begin head panel element, this element is used when a Window body is also present.
+    /// Refers to Ui::window head panel element, this element is used when a Window body is also present.
     WindowHead = 8,
-    /// Refers to Ui::window/window_begin head element, this element is used when a Window only has the head panel,
-    /// without a body.
+    /// Refers to Ui::window head element, this element is used when a Window only has the head panel, without a body.
     WindowHeadOnly = 9,
     /// Refers to Ui::hseparator element.
     Separator = 10,
@@ -575,7 +574,7 @@ pub struct UiSliderData {
 ///
 /// filename_scr = "screenshots/ui.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
-///     Ui::window_begin("Question", &mut window_pose, None, None, None);
+///     Ui::window("Question").pose(&mut window_pose).begin();
 ///     Ui::text("Are you a robot ?").size([0.13, 0.0]).draw();
 ///     Ui::hseparator();
 ///     Ui::label("Respond wisely").size([0.08, 0.03]).use_padding(false).draw();
@@ -1067,7 +1066,7 @@ impl Ui {
     /// let mut scaling = 0.75;
     /// filename_scr = "screenshots/ui_color_scheme.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Give a value", &mut window_pose, None, None, None);
+    ///     Ui::window("Give a value").pose(&mut window_pose).begin();
     ///     Ui::panel_begin(None);
     ///     Ui::hslider("scaling", &mut scaling, 0.0, 1.0).step(0.05).space(0.14).interact();
     ///     Ui::panel_end();
@@ -1109,7 +1108,7 @@ impl Ui {
     ///
     /// filename_scr = "screenshots/ui_draw_element.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Draw Element", &mut window_pose, Some([0.22, 0.18].into()), None, None);
+    ///     Ui::window("Draw Element").pose(&mut window_pose).size([0.22, 0.18]).begin();
     ///     Ui::draw_element(UiVisual::Button, None, [0.1, -0.01, 0.0], [0.1, 0.025, 0.005], 1.0);
     ///     Ui::draw_element(UiVisual::Input, None, [0.0, -0.01, 0.0], [0.1, 0.025, 0.005], 1.0);
     ///     Ui::draw_element(UiVisual::Handle, None, [0.1, -0.05, 0.0], [0.1, 0.025, 0.005], 1.0);
@@ -1194,7 +1193,7 @@ impl Ui {
     /// let mut button = 0;
     /// filename_scr = "screenshots/ui_button.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Press a button", &mut window_pose, None, None, None);
+    ///     Ui::window("Press a button").pose(&mut window_pose).begin();
     ///     if Ui::button("1").press() {button = 1}
     ///     Ui::same_line();
     ///     if Ui::button("2").size([0.025, 0.025]).press() {button = 2}
@@ -1229,7 +1228,7 @@ impl Ui {
     ///
     /// filename_scr = "screenshots/ui_button_img.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Choose a pretty image", &mut window_pose, None, None, None);
+    ///     Ui::window("Choose a pretty image").pose(&mut window_pose).begin();
     ///     if Ui::button("Log").image(&log_sprite)
     ///         .size([0.07, 0.07])
     ///         .image_layout(UiBtnLayout::Center)
@@ -1297,7 +1296,7 @@ impl Ui {
     ///
     /// filename_scr = "screenshots/ui_button_round.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Press a round button", &mut window_pose, None, None, None);
+    ///     Ui::window("Press a round button").pose(&mut window_pose).begin();
     ///     if Ui::button_round("1", &close_sprite, 0.07).press() {button = 1}
     ///     Ui::same_line();
     ///     if Ui::button_round("2", &shift_sprite, 0.05).press() {button = 2}
@@ -1339,7 +1338,7 @@ impl Ui {
     /// let mut out_focus_state = BtnState::empty();
     /// let mut out_finger_offset = 0.0;
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("I'm a button", &mut window_pose, None, None, None);
+    ///     Ui::window("I'm a button").pose(&mut window_pose).begin();
     ///     Ui::button_behavior([0.0, 0.0, 0.005],[0.05, 0.05], "Button1",
     ///                         &mut out_finger_offset, &mut out_button_state,
     ///                         &mut out_focus_state, None);
@@ -1408,7 +1407,7 @@ impl Ui {
     /// let mut out_focus_state = BtnState::empty();
     /// let mut out_finger_offset = 0.0;
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("I'm a button", &mut window_pose, None, None, None);
+    ///     Ui::window("I'm a button").pose(&mut window_pose).begin();
     ///     Ui::button_behavior_depth([0.0, 0.0, 0.005],[0.05, 0.05], "Button1", 0.01, 0.005,
     ///                         &mut out_finger_offset, &mut out_button_state,
     ///                         &mut out_focus_state, None);
@@ -1577,7 +1576,7 @@ impl Ui {
     ///
     /// filename_scr = "screenshots/ui_hseparator.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Separators", &mut window_pose, Some([0.18, 0.0].into()), None, None);
+    ///     Ui::window("Separators").pose(&mut window_pose).size([0.18, 0.0]).begin();
     ///     Ui::push_text_style(style_big);
     ///     Ui::text("The first part").draw();
     ///     Ui::hseparator();
@@ -1635,7 +1634,7 @@ impl Ui {
     ///
     /// filename_scr = "screenshots/ui_hslider.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("HSlider", &mut window_pose, None, None, None);
+    ///     Ui::window("HSlider").pose(&mut window_pose).begin();
     ///     Ui::hslider("scaling1", &mut scaling1, 0.0, 1.0).step(0.05).space(0.10)
     ///                 .interact();
     ///     Ui::hslider("scaling2", &mut scaling2, 0.0, 1.0).space(0.12)
@@ -1682,7 +1681,7 @@ impl Ui {
     ///
     /// filename_scr = "screenshots/ui_image.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Images", &mut window_pose, None, None, None);
+    ///     Ui::window("Images").pose(&mut window_pose).begin();
     ///     Ui::image(&log_sprite, [0.03, 0.03]);
     ///     Ui::same_line();
     ///     Ui::image(&app_sprite, [0.06, 0.06]);
@@ -1727,7 +1726,7 @@ impl Ui {
     /// let mut pin_code = String::from("123456");
     /// filename_scr = "screenshots/ui_input.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Input fields", &mut window_pose, None, None, None);
+    ///     Ui::window("Input fields").pose(&mut window_pose).begin();
     ///     Ui::input("username1", &mut username).size([0.15, 0.03]).edit();
     ///     Ui::input("password1", &mut password).type_text(TextContext::Password).edit();
     ///     Ui::input("zip code1", &mut zip_code).at([0.08, -0.09, 0.0],[0.06, 0.03])
@@ -1812,7 +1811,7 @@ impl Ui {
     ///
     /// filename_scr = "screenshots/ui_label.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Labels", &mut window_pose, None, None, None);
+    ///     Ui::window("Labels").pose(&mut window_pose).begin();
     ///     Ui::label("Label 1").use_padding(false).draw();
     ///     Ui::same_line();
     ///     Ui::label("Label 2").size([0.025, 0.0]).use_padding(false).draw();
@@ -1845,7 +1844,7 @@ impl Ui {
     ///     [0.01, 0.035, 0.92], Some([0.0, 185.0, 0.0].into()));
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Last Element Hand Active", &mut window_pose, None, None, None);
+    ///     Ui::window("Last Element Hand Active").pose(&mut window_pose).begin();
     ///     Ui::button("Button1").press();
     ///     let state_hand = Ui::last_element_hand_active(Handed::Right);
     ///     let state_element = Ui::get_last_element_active();
@@ -1886,7 +1885,7 @@ impl Ui {
     ///     [0.01, 0.035, 0.92], Some([0.0, 185.0, 0.0].into()));
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Last Element Hand Focuse", &mut window_pose, None, None, None);
+    ///     Ui::window("Last Element Hand Focuse").pose(&mut window_pose).begin();
     ///     Ui::button("Button1").press();
     ///     let state_hand = Ui::last_element_hand_focused(Handed::Right);
     ///     let state_element = Ui::get_last_element_focused();
@@ -1927,7 +1926,7 @@ impl Ui {
     ///     [0.01, 0.035, 0.92], Some([0.0, 185.0, 0.0].into()));
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Last Element Source Active", &mut window_pose, None, None, None);
+    ///     Ui::window("Last Element Source Active").pose(&mut window_pose).begin();
     ///     Ui::button("Button1").press();
     ///     let left_active = Ui::last_element_source_active(
     ///         InteractorSource::HandLeft | InteractorSource::ControllerLeft
@@ -1965,7 +1964,7 @@ impl Ui {
     ///     [0.01, 0.035, 0.92], Some([0.0, 185.0, 0.0].into()));
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Last Element Source Focused", &mut window_pose, None, None, None);
+    ///     Ui::window("Last Element Source Focused").pose(&mut window_pose).begin();
     ///     Ui::button("Button1").press();
     ///     let left_focused = Ui::last_element_source_focused(
     ///         InteractorSource::HandLeft | InteractorSource::ControllerLeft
@@ -2005,7 +2004,7 @@ impl Ui {
     ///
     /// filename_scr = "screenshots/ui_layout_area.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Layout Area", &mut window_pose, Some([0.15, 0.13].into()), None, None);
+    ///     Ui::window("Layout Area").pose(&mut window_pose).size([0.15, 0.13]).begin();
     ///     Ui::layout_area([0.1, -0.04, 0.0], [0.01, 0.01], true);
     ///     Ui::image(&sprite, [0.07, 0.07]);
     ///     Ui::layout_area([0.0, -0.01, 0.0], [0.01, 0.01], true);
@@ -2044,7 +2043,7 @@ impl Ui {
     ///
     /// filename_scr = "screenshots/ui_layout_push.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Layout Push", &mut window_pose, Some([0.15, 0.13].into()), None, None);
+    ///     Ui::window("Layout Push").pose(&mut window_pose).size([0.15, 0.13]).begin();
     ///     Ui::layout_push([0.1, -0.04, 0.0], [0.01, 0.01], true);
     ///     Ui::image(&sprite, [0.07, 0.07]);
     ///     Ui::layout_pop();
@@ -2112,7 +2111,7 @@ impl Ui {
     ///     [0.01, 0.055, 0.92], Some([0.0, 185.0, 0.0].into()));
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Layout Reserve", &mut window_pose, Some([0.2, 0.2].into()), None, None);
+    ///     Ui::window("Layout Reserve").pose(&mut window_pose).size([0.2, 0.2]).begin();
     ///
     ///     let bounds = Ui::layout_reserve([0.05, 0.05], true, 0.005);
     ///
@@ -2149,7 +2148,7 @@ impl Ui {
     ///
     /// filename_scr = "screenshots/ui_model.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Model", &mut window_pose, None, None, None);
+    ///     Ui::window("Model").pose(&mut window_pose).begin();
     ///     Ui::model(&model, Some([0.03, 0.03].into()), None);
     ///     Ui::model(&model, Some([0.04, 0.04].into()), Some(0.05));
     ///     Ui::window_end();
@@ -2177,7 +2176,7 @@ impl Ui {
     ///     [0.01, 0.035, 0.93], Some([0.0, 185.0, 0.0].into()));
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Next line", &mut window_pose, None, None, None);
+    ///     Ui::window("Next line").pose(&mut window_pose).begin();
     ///     Ui::label("Line 1").use_padding(false).draw();
     ///     Ui::next_line();
     ///     Ui::next_line();
@@ -2208,7 +2207,7 @@ impl Ui {
     ///
     /// filename_scr = "screenshots/ui_panel_at.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Panel at", &mut window_pose, Some([0.2, 0.15].into()), None, None);
+    ///     Ui::window("Panel at").pose(&mut window_pose).size([0.2, 0.15]).begin();
     ///     Ui::panel_at([0.11, -0.01, 0.0], [0.08, 0.03], Some(UiPad::None));
     ///     Ui::label("panel 1").use_padding(false).draw();
     ///
@@ -2250,7 +2249,7 @@ impl Ui {
     ///
     /// filename_scr = "screenshots/ui_panel_begin.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Panel begin", &mut window_pose, Some([0.2, 0.15].into()), None, None);
+    ///     Ui::window("Panel begin").pose(&mut window_pose).size([0.2, 0.15]).begin();
     ///     Ui::panel_begin(Some(UiPad::None));
     ///     Ui::label("panel 1").use_padding(false).draw();
     ///     Ui::panel_end();
@@ -2307,7 +2306,7 @@ impl Ui {
     /// let id_hash = Ui::stack_hash(&id);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin(id, &mut window_pose, None, None, None);
+    ///     Ui::window(id).pose(&mut window_pose).begin();
     ///     Ui::play_sound_on_off(element_visual, id_hash, window_pose.position);
     ///     Ui::label("This will play the 'on' sound\nfor the given (id / UiVisual)\nat the local position.").use_padding(false).draw();           
     ///     Ui::window_end();
@@ -2337,7 +2336,7 @@ impl Ui {
     /// let element_visual = UiVisual::WindowBody;
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Play sound on", &mut window_pose, None, None, None);
+    ///     Ui::window("Play sound on").pose(&mut window_pose).begin();
     ///     Ui::play_sound_on(element_visual, window_pose.position);
     ///     Ui::label("This will play the 'on' sound\nassociated with the given UIVisual\nat the local position.").use_padding(false).draw();           
     ///     Ui::window_end();
@@ -2367,7 +2366,7 @@ impl Ui {
     /// let mut value = 0.5;
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Play sound off", &mut window_pose, None, None, None);
+    ///     Ui::window("Play sound off").pose(&mut window_pose).begin();
     ///     Ui::hslider("Slider1", &mut value, 0.0, 1.0).interact();
     ///     Ui::play_sound_off(element_visual, window_pose.position);
     ///     Ui::label("This will play the 'off' sound\nassociated with the given UIVisual\nat the local position.").use_padding(false).draw();
@@ -2449,7 +2448,7 @@ impl Ui {
     ///
     /// filename_scr = "screenshots/ui_progress_bar_at.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Progress Bar", &mut window_pose, None, None, None);
+    ///     Ui::window("Progress Bar").pose(&mut window_pose).begin();
     ///
     ///     Ui::vprogress_bar(0.20, 0.08, false);
     ///     Ui::progress_bar_at(0.55, [ 0.02,  -0.01, 0.0], [0.01, 0.08], UiDir::Vertical, false);
@@ -2501,7 +2500,7 @@ impl Ui {
     /// let mut toggle_value = false;
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Push Enabled", &mut window_pose, None, None, None);
+    ///     Ui::window("Push Enabled").pose(&mut window_pose).begin();
     ///     assert_eq!(Ui::get_enabled(), true);
     ///     Ui::toggle("Enabled", &mut enabled_value).interact();
     ///     Ui::push_enabled(enabled_value, None);
@@ -2555,7 +2554,7 @@ impl Ui {
     /// let mut toggle_value1b = true;
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Push Id", &mut window_pose, None, None, None);
+    ///     Ui::window("Push Id").pose(&mut window_pose).begin();
     ///     Ui::push_id("group1");
     ///     Ui::toggle("Choice 1",&mut toggle_value1).interact();
     ///     Ui::pop_id();
@@ -2588,7 +2587,7 @@ impl Ui {
     /// let mut toggle_value1b = true;
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Push Id", &mut window_pose, None, None, None);
+    ///     Ui::window("Push Id").pose(&mut window_pose).begin();
     ///     Ui::push_id_int(1);
     ///     Ui::toggle("Choice 1",&mut toggle_value1).interact();
     ///     Ui::pop_id();
@@ -2633,7 +2632,7 @@ impl Ui {
     /// let mut mute = false;
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Sound track", &mut window_pose, None, None, None);
+    ///     Ui::window("Sound track").pose(&mut window_pose).begin();
     ///     Ui::push_preserve_keyboard(true);
     ///     Ui::input("Title", &mut title).size([0.15, 0.03]).edit();
     ///     Ui::input("Author", &mut author).size([0.15, 0.03]).edit();
@@ -2677,7 +2676,7 @@ impl Ui {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::push_grab_aura(false);
     ///     assert_eq!(Ui::grab_aura_enabled(), false);
-    ///     Ui::window_begin("Write a title", &mut window_pose, None, None, None);
+    ///     Ui::window("Write a title").pose(&mut window_pose).begin();
     ///     Ui::label("Title:").use_padding(false).draw();
     ///     Ui::input("Title", &mut title).size([0.15, 0.03]).edit();
     ///     Ui::window_end();
@@ -2782,7 +2781,7 @@ impl Ui {
     ///
     /// filename_scr = "screenshots/ui_push_text_style.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Push TextStyle", &mut window_pose, Some([0.16, 0.0].into()), None, None);
+    ///     Ui::window("Push TextStyle").pose(&mut window_pose).size([0.16, 0.0]).begin();
     ///
     ///     Ui::push_text_style(style_big);
     ///     Ui::text("The first part").draw();
@@ -2844,7 +2843,7 @@ impl Ui {
     ///
     /// filename_scr = "screenshots/ui_push_tint.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Push Tint", &mut window_pose, None, None, None);
+    ///     Ui::window("Push Tint").pose(&mut window_pose).begin();
     ///     Ui::push_tint(blue.to_gamma());
     ///     Ui::input("Title", &mut title).size([0.15, 0.03]).edit();
     ///     Ui::pop_tint();
@@ -2903,7 +2902,7 @@ impl Ui {
     /// Ui::set_element_visual(UiVisual::Separator, mesh, None, None);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Push Tint", &mut window_pose, None, None, None);
+    ///     Ui::window("Push Tint").pose(&mut window_pose).begin();
     ///     Ui::hseparator();
     ///     if Ui::button("Exit").press() {sk.quit(None);}
     ///     Ui::hseparator();
@@ -2948,7 +2947,7 @@ impl Ui {
     /// Ui::set_element_visual(UiVisual::Separator, mesh, None, None);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Push Tint", &mut window_pose, None, None, None);
+    ///     Ui::window("Push Tint").pose(&mut window_pose).begin();
     ///     Ui::hseparator();
     ///     if Ui::button("Exit").press() {sk.quit(None);}
     ///     Ui::hseparator();
@@ -3001,7 +3000,7 @@ impl Ui {
     ///
     /// filename_scr = "screenshots/ui_gen_quadrant_mesh.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("gen_quadrant_mesh", &mut window_pose, None, None, None);
+    ///     Ui::window("gen_quadrant_mesh").pose(&mut window_pose).begin();
     ///     Ui::input("input", &mut text).edit();
     ///     if Ui::button("Exit").press() {sk.quit(None);}
     ///     Ui::window_end();
@@ -3067,7 +3066,7 @@ impl Ui {
     ///
     /// filename_scr = "screenshots/ui_radio.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Radio", &mut window_pose, None, None, None);
+    ///     Ui::window("Radio").pose(&mut window_pose).begin();
     ///     if Ui::radio("A", choice == "A").size([0.06, 0.05])
     ///         .images(&off, &on)
     ///         .image_layout(UiBtnLayout::Right)
@@ -3141,7 +3140,7 @@ impl Ui {
     /// Ui::set_element_visual(UiVisual::Separator, mesh, None, None);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("set element visual", &mut window_pose, None, None, None);
+    ///     Ui::window("set element visual").pose(&mut window_pose).begin();
     ///     Ui::hseparator();
     ///     if Ui::button("Exit").press() {sk.quit(None);}
     ///     Ui::hseparator();
@@ -3193,7 +3192,7 @@ impl Ui {
     ///            Color128 { r: 0.091664724, g: 0.08037374, b: 0.072700225, a: 0.0 });
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("set_element_color", &mut window_pose, None, None, None);
+    ///     Ui::window("set_element_color").pose(&mut window_pose).begin();
     ///     Ui::hseparator();
     ///     if Ui::button("Exit").press() {sk.quit(None);}
     ///     Ui::hseparator();
@@ -3228,7 +3227,7 @@ impl Ui {
     /// Ui::set_element_sound(UiVisual::Button, Some(sound_activate), Some(sound_deactivate));
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Set Element Sound", &mut window_pose, None, None, None);
+    ///     Ui::window("Set Element Sound").pose(&mut window_pose).begin();
     ///     if Ui::button("Button1").press() {todo!();}
     ///     if Ui::button("Button2").press() {todo!();}
     ///     Ui::window_end();
@@ -3288,7 +3287,7 @@ impl Ui {
     ///
     /// filename_scr = "screenshots/ui_set_theme_color.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("set_theme_color", &mut window_pose, None, None, None);
+    ///     Ui::window("set_theme_color").pose(&mut window_pose).begin();
     ///     Ui::push_enabled(false, None);
     ///     if Ui::button("Button").press() { todo!() };
     ///     Ui::pop_enabled();
@@ -3417,7 +3416,7 @@ impl Ui {
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     let mut slider = UiSliderData::default();
     ///
-    ///     Ui::window_begin("I'm a slider", &mut window_pose, None, None, None);
+    ///     Ui::window("I'm a slider").pose(&mut window_pose).begin();
     ///     let bounds = Ui::layout_reserve(size, false, depth);
     ///     let tlb = bounds.tlb();
     ///     Ui::slider_behavior(tlb , bounds.dimensions.xy(), id_slider_hash, &mut slider_pt,
@@ -3481,7 +3480,7 @@ impl Ui {
     ///     [0.01, 0.075, 0.88], Some([0.0, 185.0, 0.0].into()));
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("VSpace", &mut window_pose, None, None, None);
+    ///     Ui::window("VSpace").pose(&mut window_pose).begin();
     ///     Ui::label("Line 1").use_padding(false).draw();
     ///     Ui::vspace(0.02);
     ///     Ui::label("Line 2").use_padding(false).draw();
@@ -3509,7 +3508,7 @@ impl Ui {
     ///     [0.01, 0.075, 0.88], Some([0.0, 185.0, 0.0].into()));
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("HSpace", &mut window_pose, None, None, None);
+    ///     Ui::window("HSpace").pose(&mut window_pose).begin();
     ///     Ui::label("Bla bla ...").use_padding(false).draw();
     ///     Ui::same_line();
     ///     Ui::hspace(0.08);
@@ -3605,7 +3604,7 @@ impl Ui {
     ///
     /// filename_scr = "screenshots/ui_text.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Text", &mut window_pose, Some([0.22, 0.14].into()), None, None);
+    ///     Ui::window("Text").pose(&mut window_pose).size([0.22, 0.14]).begin();
     ///     Ui::text(text).scroll(&mut scroll_value,UiScroll::Both).size([0.21,0.07])
     ///              .text_align(Align::TopCenter).fit(TextFit::Clip).draw();
     ///     Ui::text(text).size([1.8, 0.04]).fit(TextFit::Exact).draw();
@@ -3659,7 +3658,7 @@ impl Ui {
     ///
     /// filename_scr = "screenshots/ui_toggle.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Toggle button", &mut window_pose, None, None, None);
+    ///     Ui::window("Toggle button").pose(&mut window_pose).begin();
     ///     Ui::toggle("A", &mut choiceA).images(&off, &on).size([0.06, 0.05])
     ///         .image_layout(UiBtnLayout::Right)
     ///         .interact();
@@ -3692,16 +3691,19 @@ impl Ui {
         UiToggleBuilder::new(text, out_value)
     }
 
-    /// A volume for helping to build one handed interactions. This checks for the presence of a hand inside the bounds,
-    /// and if found, return that hand along with activation and focus information defined by the interactType.
+    /// A volume for helping to build one interactor interactions. This checks for the presence of an interactor inside
+    /// the bounds, and if found, return that interactor along with activation and focus information defined by the
+    /// interact_type.
     /// <https://stereokit.net/Pages/StereoKit/UI/VolumeAt.html>
     /// * `id` - An id for tracking element state. MUST be unique within current hierarchy.
     /// * `bounds` - Size and position of the volume, relative to the current Hierarchy.
-    /// * `interact_type` - `UiConfirm::Pinch` will activate when the hand performs a ‘pinch’ gesture. `UiConfirm::Push`
-    ///   will activate when the hand enters the volume, and behave the same as element’s focusState.
-    /// * `out_hand` - This will be the last unpreoccupied hand found inside the volume, and is the hand controlling the
-    ///   interaction.
-    /// * `out_focusState` - The focus state tells if the element has a hand inside of the volume that qualifies for focus.
+    /// * `interact_type` - [`UiConfirm::Pinch`] will activate when the interactor performs a ‘pinch’ gesture.
+    ///   [`UiConfirm::Push`] will activate when the interactor enters the volume, and behave the same as element’s
+    ///   focusState.
+    /// * `out_interactor` - This will be the last unpreoccupied interactor found inside the volume, and is the
+    ///   interactor controlling the interaction.
+    /// * `out_focusState` - The focus state tells if the element has an interactor inside of the volume that qualifies
+    ///   for focus.
     ///
     /// see also [`ui_volume_at`]
     /// ### Examples
@@ -3719,7 +3721,7 @@ impl Ui {
     /// let mut focus_state = BtnState::Inactive;
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Volume At", &mut window_pose, None, None, None);
+    ///     Ui::window("Volume At").pose(&mut window_pose).begin();
     ///     let is_active = Ui::volume_at("volume", bounds, UiConfirm::Push,
     ///                                   Some(&mut interactor), Some(&mut focus_state));
     ///     assert_eq!(is_active, BtnState::Inactive);
@@ -3779,7 +3781,7 @@ impl Ui {
     ///
     /// filename_scr = "screenshots/ui_vslider.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("VSlider", &mut window_pose, Some([0.18, 0.14].into()), None, None);
+    ///     Ui::window("VSlider").pose(&mut window_pose).size([0.18, 0.14]).begin();
     ///     Ui::vslider("scaling1", &mut scaling1, 0.0, 1.0).step(0.05).space(0.10).interact();
     ///     Ui::same_line();
     ///     Ui::vslider("scaling2", &mut scaling2, 0.0, 1.0).space(0.12)
@@ -3811,15 +3813,21 @@ impl Ui {
     /// <https://stereokit.net/Pages/StereoKit/UI/WindowBegin.html>
     /// * `text` - Text to display on the window title and id for tracking element state. MUST be unique within current
     ///   hierarchy.
-    /// * `pose` - The pose state for the window! If showHeader is true, the user will be able to grab this header and
-    ///   move it around.
-    /// * `size` - Physical size of the window! If either dimension is 0, then the size on that axis will be auto-
-    ///   calculated based on the content provided during the previous frame. None fills both dimensions automatically.
-    /// * `windowType` - Describes how the window should be drawn, use a header, a body, neither, or both? None is
-    ///   UiWin::Normal
-    /// * `moveType` - Describes how the window will move when dragged around. None is UiMove::FaceUser
+    /// * [`UiWindowBuilder::pose`] - The pose state for the window! With a Window-Head the user will be able to
+    ///   grab this header and move it around. Default will push an automatically determined pose onto the transform
+    ///   stack.
+    /// * [`UiWindowBuilder::size`] - Physical size of the window! If either dimension is 0, then the size on that axis
+    ///   will be auto-calculated based on the content provided during the previous frame. Default fills both dimensions
+    ///   automatically.
+    /// * [`UiWindowBuilder::window_type`] - Describes how the window should be drawn, use a header, a body, neither,
+    ///   or both? None is [`UiWin::Normal`]
+    /// * [`UiWindowBuilder::move_type`] - Describes how the window will move when dragged around. None is
+    ///   [`UiMove::FaceUser`]
+    /// * [`UiWindowBuilder::update_text`] - Updates the text of this window in case you want to keep the Builder alive
+    ///   (ie: as a IStepper property)
     ///
-    /// see also [`ui_window_begin`] [`Ui::window_end`] [`Ui::window_begin_auto`]
+    /// Use this builder to configure pose/size/windowType/moveType, then call [`UiWindowBuilder::begin`].
+    /// see also [`ui_window_begin`] [`Ui::window_end`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -3834,49 +3842,30 @@ impl Ui {
     ///
     /// filename_scr = "screenshots/ui_window.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Window A", &mut window_pose1, None, Some(UiWin::Body), None);
+    ///     Ui::window("Window A").pose(&mut window_pose1).window_type(UiWin::Body).begin();
     ///     Ui::label("Hello").use_padding(true).draw();
     ///     Ui::window_end();
     ///
-    ///     Ui::window_begin("Window B", &mut window_pose2, Some([0.19, 0.05].into()), None, None);
+    ///     Ui::window("Window B").pose(&mut window_pose2).size([0.19, 0.05]).begin();
     ///     Ui::label("World").use_padding(true).draw();
     ///     Ui::window_end();
     ///
-    ///     Ui::window_begin("Window C", &mut window_pose3, None, None, Some(UiMove::Exact));
+    ///     Ui::window("Window C").pose(&mut window_pose3).move_type(UiMove::Exact).begin();
     ///     Ui::label("!!").use_padding(true).draw();
     ///     Ui::window_end();
     /// );
     /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_window.jpeg" alt="screenshot" width="200">
-    pub fn window_begin(
-        text: impl AsRef<str>,
-        opt_pose: &mut Pose,
-        size: Option<Vec2>,
-        window_type: Option<UiWin>,
-        move_type: Option<UiMove>,
-    ) {
-        let cstr = CString::new(text.as_ref()).unwrap_or_default();
-        let window_type = window_type.unwrap_or(UiWin::Normal);
-        let move_type = move_type.unwrap_or(UiMove::FaceUser);
-        let size = size.unwrap_or(Vec2::ZERO);
-        unsafe { ui_window_begin(cstr.as_ptr(), opt_pose, size, window_type, move_type) }
+    pub fn window(text: impl AsRef<str>) -> UiWindowBuilder<'static> {
+        UiWindowBuilder::new(text)
     }
 
-    /// Begins a new window! This will push an automatically determined pose onto the transform stack, and all UI
-    /// elements will be relative to that new pose. The pose is actually the top-center of the window. Must be finished
-    /// with a call to Ui::window_end().
-    /// If size is None the size will be auto-calculated based on the content provided during the previous frame.
-    /// <https://stereokit.net/Pages/StereoKit/UI/WindowBegin.html>
-    /// * `text` - Text to display on the window title and id for tracking element state. MUST be unique within current
-    ///   hierarchy.
-    /// * `size` - Physical size of the window! If either dimension is 0, then the size on that axis will be auto-
-    ///   calculated based on the content provided during the previous frame. None fills both dimensions automatically.
-    /// * `windowType` - Describes how the window should be drawn, use a header, a body, neither, or both? None is
-    ///   UiWin::Normal
-    /// * `moveType` - Describes how the window will move when dragged around. None is UiMove::FaceUser
+    /// Finishes a window! Must be called after Ui::window_begin() and all elements have been drawn.
+    /// <https://stereokit.net/Pages/StereoKit/UI/WindowEnd.html>
     ///
-    /// see also [`ui_window_begin`] [`Ui::window_end`] [`Ui::window_begin`]
+    /// see also [`ui_window_end`]
+    /// see example in [`Ui::window`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -3885,31 +3874,13 @@ impl Ui {
     /// fov_scr = 10.0;
     /// filename_scr = "screenshots/ui_window_auto.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin_auto("Window very very large", None, None, None);
+    ///     Ui::window("Window very very large").begin();
     ///     Ui::label("Hello").use_padding(true).draw();
     ///     Ui::window_end();
     /// );
     /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_window_auto.jpeg" alt="screenshot" width="200">
-    pub fn window_begin_auto(
-        text: impl AsRef<str>,
-        size: Option<Vec2>,
-        window_type: Option<UiWin>,
-        move_type: Option<UiMove>,
-    ) {
-        let cstr = CString::new(text.as_ref()).unwrap_or_default();
-        let window_type = window_type.unwrap_or(UiWin::Normal);
-        let move_type = move_type.unwrap_or(UiMove::FaceUser);
-        let size = size.unwrap_or(Vec2::ZERO);
-        unsafe { ui_window_begin(cstr.as_ptr(), null_mut(), size, window_type, move_type) }
-    }
-
-    /// Finishes a window! Must be called after Ui::window_begin() and all elements have been drawn.
-    /// <https://stereokit.net/Pages/StereoKit/UI/WindowEnd.html>
-    ///
-    /// see also [`ui_window_end`]
-    /// see example in [`Ui::window_begin`] [`Ui::window_begin_auto`]
     pub fn window_end() {
         unsafe { ui_window_end() }
     }
@@ -3932,7 +3903,7 @@ impl Ui {
     ///     [0.01, 0.075, 0.9], Some([0.0, 185.0, 0.0].into()));
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Get Anim Focus", &mut window_pose, None, None, None);
+    ///     Ui::window("Get Anim Focus").pose(&mut window_pose).begin();
     ///     if Ui::button("button1").press() {todo!()}
     ///     let id = Ui::stack_hash("button1");
     ///     let focus = Ui::get_anim_focus(id, BtnState::Inactive, BtnState::Inactive);
@@ -4029,7 +4000,7 @@ impl Ui {
     ///     [0.01, 0.055, 0.90], Some([0.0, 185.0, 0.0].into()));
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     Ui::window_begin("Panel at", &mut window_pose, Some([0.2, 0.15].into()), None, None);
+    ///     Ui::window("Panel at").pose(&mut window_pose).size([0.2, 0.15]).begin();
     ///     Ui::panel_at([0.11, -0.01, 0.0], [0.08, 0.03], Some(UiPad::None));
     ///     Ui::label("panel 1").use_padding(false).draw();
     ///

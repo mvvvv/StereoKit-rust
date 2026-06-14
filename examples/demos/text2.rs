@@ -76,13 +76,10 @@ impl Text2 {
 
     /// Called from IStepper::draw, here you can draw the UI and the scene
     fn draw(&mut self, token: &MainThreadToken) {
-        Ui::window_begin(
-            "Text options",
-            &mut self.window_demo_pose,
-            Some(Vec2::new(self.demo_win_width, 0.0)),
-            None,
-            None,
-        );
+        Ui::window("Text options")
+            .pose(&mut self.window_demo_pose)
+            .size(Vec2::new(self.demo_win_width, 0.0))
+            .begin();
         //Bug #1020 to solve
         Ui::push_enabled(cfg!(windows), None);
         if Ui::radio("Default Font", self.font_selected == 1)

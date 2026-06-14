@@ -104,7 +104,7 @@ impl Ui1 {
             Ui::set_element_visual(UiVisual::ExtraSlot03, mesh, None, None);
         }
 
-        Ui::window_begin_auto("Ui elements", Some(Vec2::new(self.demo_win_width, 0.0)), None, None);
+        Ui::window("Ui elements").size([self.demo_win_width, 0.0]).begin();
 
         self.custom_button_mesh(token, "Custom Button Mesh", UiVisual::ExtraSlot02);
         self.custom_button_element(token, "Custom Button Element");

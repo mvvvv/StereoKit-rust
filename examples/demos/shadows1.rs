@@ -266,7 +266,7 @@ impl Shadows1 {
     /// Draw the shadow settings UI window
     fn draw_shadow_settings_window(&mut self, _token: &MainThreadToken) {
         const WINDOW_SIZE: Vec2 = Vec2::new(0.34, 0.32);
-        Ui::window_begin("Shadow Settings", &mut self.window_pose, Some(WINDOW_SIZE), None, None);
+        Ui::window("Shadow Settings").pose(&mut self.window_pose).size(WINDOW_SIZE).begin();
 
         Ui::label("Shadow Mode:").use_padding(false).draw();
 

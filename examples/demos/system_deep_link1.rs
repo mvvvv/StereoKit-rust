@@ -45,13 +45,10 @@ impl SystemDeepLink1 {
 
     /// Called from IStepper::step after check_event, here you can draw your UI and scene
     fn draw(&mut self, token: &MainThreadToken) {
-        Ui::window_begin(
-            "System Deep Link Demo",
-            &mut self.window_pose,
-            Some(Vec2::new(self.window_width, 0.0)),
-            None,
-            None,
-        );
+        Ui::window("System Deep Link Demo")
+            .pose(&mut self.window_pose)
+            .size(Vec2::new(self.window_width, 0.0))
+            .begin();
 
         // Browser Actions Row
         Ui::label("Open Browser:").use_padding(true).draw();

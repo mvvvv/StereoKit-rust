@@ -438,13 +438,12 @@ impl Screen {
         if self.repo.show_param {
             let info_position = Vec3::new(bounds.center.x, bounds.center.y, GRAB_X_MARGIN * 1.5);
             let mut window_pose = Pose::new(info_position, None) * screen_transform;
-            Ui::window_begin(
-                &self.repo.id_window_param,
-                &mut window_pose,
-                Some(Vec2::new(0.4, 0.2)),
-                Some(UiWin::Body),
-                Some(UiMove::None),
-            );
+            Ui::window(&self.repo.id_window_param)
+                .pose(&mut window_pose)
+                .size(Vec2::new(0.4, 0.2))
+                .window_type(UiWin::Body)
+                .move_type(UiMove::None)
+                .begin();
 
             if Ui::button(&self.repo.id_btn_show_hide_param)
                 .image(&self.repo.sprite_hide_param)

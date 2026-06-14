@@ -78,7 +78,7 @@ impl Ui3 {
 
     fn draw(&mut self, token: &MainThreadToken) {
         // 50 cm wide window: right ~23 cm for vsliders, left remainder for hsliders
-        Ui::window_begin("Sliders", &mut self.window_pose, Some(Vec2::new(50.0, 0.0) * CM), None, None);
+        Ui::window("Sliders").pose(&mut self.window_pose).size(Vec2::new(50.0, 0.0) * CM).begin();
 
         // ── Right panel: vertical sliders ────────────────────────────────
         Ui::layout_push_cut(UiCut::Right, 23.3 * CM, false);

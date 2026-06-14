@@ -273,7 +273,7 @@ impl Screen1 {
         Ui::pop_surface();
 
         // Control window
-        Ui::window_begin("Screen1", &mut self.window_pose, Some(Vec2::new(0.24, 0.0)), None, None);
+        Ui::window("Screen1").pose(&mut self.window_pose).size(Vec2::new(0.24, 0.0)).begin();
 
         // Sound buttons — write a 1-second beep into Screen's spatial audio streams.
         if Ui::button("Sound Left").press() {

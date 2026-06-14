@@ -159,13 +159,12 @@ impl Shaders1 {
             .set_float("time", total_scale);
         self.plane.draw(token, &self.material_green, self.transform_plane, None, None);
 
-        Ui::window_begin(
-            "progress",
-            &mut self.pose_progress,
-            Some(Vec2::new(0.41, 0.1)),
-            Some(UiWin::Empty),
-            Some(UiMove::None),
-        );
+        Ui::window("progress")
+            .pose(&mut self.pose_progress)
+            .size(Vec2::new(0.41, 0.1))
+            .window_type(UiWin::Empty)
+            .move_type(UiMove::None)
+            .begin();
         //Ui::progress_bar_at(total_scale / 2.0, Vec3::new(0.0, 0.0, 0.0), Vec2::new(0.4, 0.1), UiDir::Horizontal, false);
         Ui::hprogress_bar(total_scale / 2.0, 0.54, false);
         Ui::vprogress_bar(total_scale / 2.0, 0.50, false);

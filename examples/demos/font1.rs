@@ -82,7 +82,7 @@ impl Font1 {
             None,
         );
 
-        Ui::window_begin("Default Font", &mut self.window_pose, None, None, None);
+        Ui::window("Default Font").pose(&mut self.window_pose).begin();
         Ui::push_text_style(self.text_style);
         Ui::text("text font").size([0.14, 0.0]).draw();
         Ui::pop_text_style();

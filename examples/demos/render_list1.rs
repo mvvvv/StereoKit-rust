@@ -116,7 +116,7 @@ impl RenderList1 {
             None,
         );
 
-        Ui::window_begin("Render Lists", &mut self.window_pose, Some(Vec2::new(0.23, 0.35)), None, None);
+        Ui::window("Render Lists").pose(&mut self.window_pose).size(Vec2::new(0.23, 0.35)).begin();
         Ui::label(format!("Render items: {}/{}", self.primary.get_count(), self.primary.get_prev_count()))
             .use_padding(true)
             .draw();

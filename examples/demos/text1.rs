@@ -104,13 +104,10 @@ impl Text1 {
 
     /// Called from IStepper::step after check_event, here you can draw your UI and the scene
     fn draw(&mut self, token: &MainThreadToken) {
-        Ui::window_begin(
-            "Text options",
-            &mut self.window_demo_pose,
-            Some(Vec2::new(self.demo_win_width, 0.0)),
-            None,
-            None,
-        );
+        Ui::window("Text options")
+            .pose(&mut self.window_demo_pose)
+            .size(Vec2::new(self.demo_win_width, 0.0))
+            .begin();
         if Ui::radio("Default Font", self.font_selected == 1)
             .images(&self.radio_off, &self.radio_on)
             .image_layout(UiBtnLayout::Left)

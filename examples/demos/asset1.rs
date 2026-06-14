@@ -112,7 +112,7 @@ impl Asset1 {
         } else {
             format!("Assets/{:?} with type {:?}", self.asset_sub_dir, self.exts)
         };
-        Ui::window_begin(window_text, &mut self.window_pose, Some(Vec2::new(0.5, 0.0)), None, None);
+        Ui::window(window_text).pose(&mut self.window_pose).size(Vec2::new(0.5, 0.0)).begin();
 
         let mut i = 0;
         for file_name in &self.asset_files {

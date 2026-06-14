@@ -123,7 +123,7 @@ pub fn launch(mut sk: Sk, _is_testing: bool) {
     SkClosures::run_app(
         sk,
         |sk, _token| {
-            Ui::window_begin("Template", &mut window_demo_pose, Some(Vec2::new(demo_win_width, 0.0)), None, None);
+            Ui::window("Template").pose(&mut window_demo_pose).size(Vec2::new(demo_win_width, 0.0)).begin();
             if Ui::radio("Blue light", sky == 1)
                 .images(&radio_off, &radio_on)
                 .image_layout(UiBtnLayout::Left)

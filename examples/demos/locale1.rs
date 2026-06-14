@@ -219,13 +219,10 @@ impl Locale1 {
 
     /// Called from `IStepper::step` after `check_event`.  Draws the UI.
     fn draw(&mut self, token: &MainThreadToken) {
-        Ui::window_begin(
-            "Locale Keyboard Tester",
-            &mut self.window_demo_pose,
-            Some(Vec2::new(self.demo_win_width, 0.0)),
-            None,
-            None,
-        );
+        Ui::window("Locale Keyboard Tester")
+            .pose(&mut self.window_demo_pose)
+            .size(Vec2::new(self.demo_win_width, 0.0))
+            .begin();
 
         // ── Layout selection buttons with auto-wrapping ───────────────────────
         let ui_settings = Ui::get_settings();

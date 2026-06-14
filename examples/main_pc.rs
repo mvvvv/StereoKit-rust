@@ -154,7 +154,7 @@ fn main() {
     });
     let mut window_pose = Pose::new(Vec3::new(0.0, 1.5, -0.5), Some(Quat::from_angles(0.0, 180.0, 0.0)));
     while let Some(_token) = sk.step() {
-        Ui::window_begin("test window", &mut window_pose, None, None, None);
+        Ui::window("test window").pose(&mut window_pose).begin();
         if Ui::button("quit lel").press() {
             break;
         }

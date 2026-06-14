@@ -55,7 +55,7 @@ impl Ui2 {
         // or floor oriented Handle/Window, like some sort of house plant
         // hologram. We do this by quashing out the X and Z rotation of the
         // Pose's orientation, and renormalizing it to make it a valid rotation.
-        Ui::window_begin("Modified Pose", &mut self.modifiable_pose, None, None, None);
+        Ui::window("Modified Pose").pose(&mut self.modifiable_pose).begin();
 
         // Pop the hierarchy to apply custom transformations
         Hierarchy::pop(token);
@@ -88,7 +88,7 @@ impl Ui2 {
         // next frame.
         let mut override_pose = Pose::new(Vec3::new(-0.1, 1.0, -0.5), Some(Quat::look_dir(Vec3::new(1.0, 0.0, 0.0))));
 
-        Ui::window_begin("Override Pose", &mut override_pose, None, None, None);
+        Ui::window("Override Pose").pose(&mut override_pose).begin();
 
         // Pop the hierarchy to completely override the pose
         Hierarchy::pop(token);
@@ -104,7 +104,7 @@ impl Ui2 {
         // Window 3: Pose zero
         // this will push an automatically determined pose onto the transform stack
         // and keep its position if you relaunch the demo
-        Ui::window_begin_auto("Pose Zero", None, None, None);
+        Ui::window("Pose Zero").begin();
         Ui::text("We memorize position").draw();
         Ui::window_end();
 

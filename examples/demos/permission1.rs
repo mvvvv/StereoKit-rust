@@ -68,7 +68,7 @@ impl Permission1 {
 
     /// Called by derive macro during IStepper::step
     fn draw(&mut self, token: &MainThreadToken) {
-        Ui::window_begin_auto(&self.title, Some([0.4, 0.0].into()), None, None);
+        Ui::window(&self.title).size([0.4, 0.0]).begin();
 
         Ui::push_text_style(self.style_description);
         Ui::label(&self.description).size([0.395, 0.12]).use_padding(false).draw();

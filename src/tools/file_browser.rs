@@ -195,7 +195,11 @@ impl FileBrowser {
         };
         window_text2.push_str(&window_text);
 
-        Ui::window_begin(&window_text, &mut self.window_pose, Some(self.window_size), Some(UiWin::Normal), None);
+        Ui::window(&window_text)
+            .pose(&mut self.window_pose)
+            .size(self.window_size)
+            .window_type(UiWin::Normal)
+            .begin();
         if Ui::button("a")
             .image(&self.close)
             .at(Vec3::new(self.window_size.x / 2.0 + 0.04, 0.03, 0.01), Vec2::new(0.03, 0.03))

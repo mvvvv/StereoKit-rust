@@ -160,14 +160,10 @@ impl Interactor1 {
     }
 
     fn draw_control_panel(&mut self) {
-        let window_size = Some(Vec2::new(0.5, 0.7));
-        Ui::window_begin(
-            "Interactor Demo using the little finger of the right hand",
-            &mut self.window_pose,
-            window_size,
-            None,
-            None,
-        );
+        Ui::window("Interactor Demo using the little finger of the right hand")
+            .pose(&mut self.window_pose)
+            .size(Vec2::new(0.5, 0.7))
+            .begin();
 
         // Interactor Configuration Section
         Ui::text("Interactor Configuration:").draw();

@@ -89,7 +89,10 @@ impl Input1 {
     /// including stick positions, button states, trigger values, and grip values.
     fn draw(&mut self, token: &MainThreadToken) {
         //--------New Window using Input::button, Input::float, and Input::xy--------
-        Ui::window_begin("Input", &mut self.window_demo_pose, Some(Vec2::new(self.demo_win_width, 0.4)), None, None);
+        Ui::window("Input")
+            .pose(&mut self.window_demo_pose)
+            .size(Vec2::new(self.demo_win_width, 0.4))
+            .begin();
 
         // Left
         Ui::layout_push_cut(UiCut::Left, 0.14, true);
@@ -196,13 +199,10 @@ impl Input1 {
         Ui::window_end();
 
         //--------Old Window for comparison--------
-        Ui::window_begin(
-            "Input::controller (Old)",
-            &mut self.window_demo_pose_old,
-            Some(Vec2::new(self.demo_win_width, 0.4)),
-            None,
-            None,
-        );
+        Ui::window("Input::controller (Old)")
+            .pose(&mut self.window_demo_pose_old)
+            .size(Vec2::new(self.demo_win_width, 0.4))
+            .begin();
 
         // Left
         Ui::layout_push_cut(UiCut::Left, 0.14, true);

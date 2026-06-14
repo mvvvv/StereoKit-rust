@@ -527,7 +527,7 @@ pub mod tools;
 /// [![Ui draw_element](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_draw_element.jpeg)](ui::Ui::draw_element)
 /// [![Ui set_theme_color](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_set_theme_color.jpeg)](ui::Ui::set_theme_color)
 /// [![Ui text](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_text.jpeg)](ui::Ui::text)
-/// [![Ui window](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_window.jpeg)](ui::Ui::window_begin)
+/// [![Ui window](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_window.jpeg)](ui::Ui::window)
 pub mod ui;
 pub mod ui_builders;
 

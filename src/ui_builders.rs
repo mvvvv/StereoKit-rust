@@ -5,10 +5,10 @@ use crate::{
     sprite::{Sprite, SpriteT},
     system::{Align, TextContext, TextFit},
     ui::{
-        UiBtnLayout, UiConfirm, UiGesture, UiMove, UiNotify, UiScroll, ui_button, ui_button_at, ui_button_img,
+        UiBtnLayout, UiConfirm, UiGesture, UiMove, UiNotify, UiScroll, UiWin, ui_button, ui_button_at, ui_button_img,
         ui_button_img_at, ui_button_round, ui_button_round_at, ui_handle_begin, ui_handle_end, ui_hslider,
         ui_hslider_at, ui_input, ui_input_at, ui_label, ui_text, ui_text_at, ui_toggle, ui_toggle_at, ui_toggle_img,
-        ui_toggle_img_at, ui_vslider, ui_vslider_at,
+        ui_toggle_img_at, ui_vslider, ui_vslider_at, ui_window_begin,
     },
     util::Color128,
 };
@@ -65,7 +65,7 @@ impl UiButtonBuilder {
     }
 
     /// Change the text of this button in case you want to keep the Builder alive (ie: as a IStepper property)
-    pub fn update_text(mut self, text: impl AsRef<str>) -> Self {
+    pub fn update_text(&mut self, text: impl AsRef<str>) -> &mut Self {
         self.text = CString::new(text.as_ref()).unwrap_or_default();
         self
     }
@@ -103,7 +103,7 @@ impl UiButtonBuilder {
     /// Executes the button interaction.
     ///
     /// Returns `true` only on the first frame it is pressed.
-    pub fn press(self) -> bool {
+    pub fn press(&mut self) -> bool {
         match (self.image, self.top_left_corner) {
             (None, None) => unsafe { ui_button(self.text.as_ptr(), self.size, self.text_align) != 0 },
             (None, Some(top_left_corner)) => unsafe {
@@ -164,7 +164,7 @@ impl UiButtonRoundBuilder {
     /// Executes the button interaction.
     ///
     /// Returns `true` only on the first frame it is pressed.
-    pub fn press(self) -> bool {
+    pub fn press(&mut self) -> bool {
         match self.top_left_corner {
             None => unsafe { ui_button_round(self.id.as_ptr(), self.image, self.diameter) != 0 },
             Some(top_left_corner) => unsafe {
@@ -226,7 +226,7 @@ impl<'a> UiHandleBuilder<'a> {
     /// handle pose.
     ///
     /// Returns true for every frame the user is grabbing the handle and the pose has been changed.
-    pub fn begin_grab(self) -> bool {
+    pub fn begin_grab(&mut self) -> bool {
         unsafe {
             ui_handle_begin(
                 self.id.as_ptr(),
@@ -242,7 +242,7 @@ impl<'a> UiHandleBuilder<'a> {
     /// Executes the handle interaction.
     ///
     /// Returns true for every frame the user is grabbing the handle and the pose has been changed.
-    pub fn grab(self) -> bool {
+    pub fn grab(&mut self) -> bool {
         let change = unsafe {
             ui_handle_begin(
                 self.id.as_ptr(),
@@ -310,7 +310,7 @@ impl<'a> UiInputBuilder<'a> {
     /// Executes input interaction.
     ///
     /// Returns the updated text in the input field if it has changed, otherwise `None`.
-    pub fn edit(self) -> Option<String> {
+    pub fn edit(&mut self) -> Option<String> {
         let c_value = CString::new(self.out_value.as_str()).unwrap_or_default();
         let result = match self.top_left_corner {
             Some(top_left_corner) => unsafe {
@@ -372,7 +372,7 @@ impl UiLabelBuilder {
     }
 
     /// Changes the text of this label.
-    pub fn update_text(mut self, text: impl AsRef<str>) -> Self {
+    pub fn update_text(&mut self, text: impl AsRef<str>) -> &mut Self {
         self.text = CString::new(text.as_ref()).unwrap_or_default();
         self
     }
@@ -400,7 +400,7 @@ impl UiLabelBuilder {
     }
 
     /// Draws the label.
-    pub fn draw(self) {
+    pub fn draw(&mut self) {
         unsafe { ui_label(self.text.as_ptr(), self.size, self.use_padding as Bool32T, self.text_align) }
     }
 }
@@ -457,7 +457,7 @@ impl UiRadioBuilder {
     }
 
     /// Change the text of this radio in case you want to keep the Builder alive (ie: as a IStepper property)
-    pub fn update_text(mut self, text: impl AsRef<str>) -> Self {
+    pub fn update_text(&mut self, text: impl AsRef<str>) -> &mut Self {
         self.text = CString::new(text.as_ref()).unwrap_or_default();
         self
     }
@@ -495,7 +495,7 @@ impl UiRadioBuilder {
     /// Executes radio interaction.
     ///
     /// Returns `true` only when pressed and previously inactive.
-    pub fn press(self) -> bool {
+    pub fn press(&mut self) -> bool {
         let mut active: Bool32T = self.active as Bool32T;
         let active_ptr: *mut Bool32T = &mut active;
         let pressed = match self.top_left_corner {
@@ -628,7 +628,7 @@ impl<'a> UiSliderBuilder<'a> {
     /// Executes slider interaction.
     ///
     /// Returns the updated value when it changes, otherwise `None`.
-    pub fn interact(self) -> Option<f32> {
+    pub fn interact(&mut self) -> Option<f32> {
         let changed = if self.horizontal {
             match self.top_left_corner {
                 Some(top_left_corner) => unsafe {
@@ -767,12 +767,16 @@ impl<'a> UiTextBuilder<'a> {
     }
 
     /// Draws the text.
-    pub fn draw(self) -> bool {
+    pub fn draw(&mut self) -> bool {
+        let scroll = match &self.scroll {
+            Some(scroll) => *scroll as *const Vec2 as *mut Vec2,
+            None => std::ptr::null_mut(),
+        };
         match self.top_left_corner {
             Some(top_left_corner) => unsafe {
                 ui_text_at(
                     self.text.as_ptr(),
-                    self.scroll.map_or(std::ptr::null_mut(), |s| s as *mut Vec2),
+                    scroll,
                     self.scroll_direction,
                     self.text_align,
                     self.fit,
@@ -781,14 +785,7 @@ impl<'a> UiTextBuilder<'a> {
                 ) != 0
             },
             None => unsafe {
-                ui_text(
-                    self.text.as_ptr(),
-                    self.scroll.map_or(std::ptr::null_mut(), |s| s as *mut Vec2),
-                    self.scroll_direction,
-                    self.size,
-                    self.text_align,
-                    self.fit,
-                ) != 0
+                ui_text(self.text.as_ptr(), scroll, self.scroll_direction, self.size, self.text_align, self.fit) != 0
             },
         }
     }
@@ -884,7 +881,7 @@ impl<'a> UiToggleBuilder<'a> {
     /// Executes toggle interaction.
     ///
     /// Returns the updated value when it changes, otherwise `None`.
-    pub fn interact(self) -> Option<bool> {
+    pub fn interact(&mut self) -> Option<bool> {
         let mut active: Bool32T = *self.out_value as Bool32T;
         let active_ptr: *mut Bool32T = &mut active;
         let change = match (self.toggle_images, self.top_left_corner) {
@@ -924,6 +921,84 @@ impl<'a> UiToggleBuilder<'a> {
                 Some(*self.out_value)
             }
             false => None,
+        }
+    }
+}
+
+/// see [`Ui::window`](crate::ui::Ui::window) and [`Ui::window_end`](crate::ui::Ui::window_end)
+/// StereoKit original docs :
+/// [WindowBegin](https://stereokit.net/Pages/StereoKit/UI/WindowBegin.html)
+#[must_use = "UiWindowBuilder does nothing until you call .begin() on it"]
+pub struct UiWindowBuilder<'a> {
+    text: CString,
+    pose: Option<&'a mut Pose>,
+    size: Vec2,
+    window_type: UiWin,
+    move_type: UiMove,
+}
+
+impl<'a> UiWindowBuilder<'a> {
+    /// Creates a new window builder.
+    /// If `pose` is None, it will use an automatically determined pose.
+    pub fn new(text: impl AsRef<str>) -> Self {
+        Self {
+            text: CString::new(text.as_ref()).unwrap_or_default(),
+            pose: None,
+            size: Vec2::ZERO,
+            window_type: UiWin::Normal,
+            move_type: UiMove::FaceUser,
+        }
+    }
+
+    /// Updates the text of this window in case you want to keep the Builder alive (ie: as a IStepper property)
+    pub fn update_text(&mut self, text: impl AsRef<str>) -> &mut Self {
+        self.text = CString::new(text.as_ref()).unwrap_or_default();
+        self
+    }
+
+    /// The pose state for the window! With a Window-Head the user will be able to grab this header and move it around.
+    ///
+    /// Default will push an automatically determined pose onto the transform stack.
+    pub fn pose(mut self, pose: &'a mut Pose) -> Self {
+        self.pose = Some(pose);
+        self
+    }
+
+    /// The physical size of the window!
+    /// If either dimension is 0, then the size on that axis will be auto-calculated.
+    ///
+    /// Default is `Vec2::ZERO` to fill both dimensions automatically.
+    pub fn size(mut self, size: impl Into<Vec2>) -> Self {
+        self.size = size.into();
+        self
+    }
+
+    /// Describes how the window should be drawn (header, body, neither, or both).
+    ///
+    /// Default is [`UiWin::Normal`].
+    pub fn window_type(mut self, window_type: UiWin) -> Self {
+        self.window_type = window_type;
+        self
+    }
+
+    /// Describes how the window will move when dragged around.
+    ///
+    /// Default is [`UiMove::FaceUser`].
+    pub fn move_type(mut self, move_type: UiMove) -> Self {
+        self.move_type = move_type;
+        self
+    }
+
+    /// Begins a new window! This will push a pose onto the transform stack.
+    /// If `pose` is None, it will use an automatically determined pose.
+    pub fn begin(&mut self) {
+        let pose_ptr = match &self.pose {
+            Some(pose) => *pose as *const _ as *mut _,
+            None => std::ptr::null_mut(),
+        };
+
+        unsafe {
+            ui_window_begin(self.text.as_ptr(), pose_ptr, self.size, self.window_type, self.move_type);
         }
     }
 }

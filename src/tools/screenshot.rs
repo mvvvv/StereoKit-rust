@@ -158,7 +158,7 @@ impl ScreenshotViewer {
             return;
         };
 
-        Ui::window_begin("Screenshot", &mut self.window_pose, Some(self.window_size), None, None);
+        Ui::window("Screenshot").pose(&mut self.window_pose).size(self.window_size).begin();
         if let Some(sprite) = &self.screen {
             Ui::image(sprite, Vec2::new(0.4, 0.3));
         } else {

@@ -276,7 +276,7 @@ impl Layers1 {
         }
 
         // UI window
-        Ui::window_begin("Composition Layers", &mut self.window_pose, Some(Vec2::new(0.2, 0.0)), None, None);
+        Ui::window("Composition Layers").pose(&mut self.window_pose).size(Vec2::new(0.2, 0.0)).begin();
         Ui::label(format!("Sort Order {}", self.quad_sort_order as i32)).size(Vec2::new(0.1, 0.0)).draw();
         Ui::same_line();
         Ui::hslider("Sort Order", &mut self.quad_sort_order, -1.0, 1.0).step(1.0).interact();

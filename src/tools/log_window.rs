@@ -121,7 +121,7 @@ impl<'a> LogWindow<'a> {
     }
     /// Called from IStepper::step, after check_event here you can draw your UI
     fn draw(&mut self, token: &MainThreadToken) {
-        Ui::window_begin("Log viewer", &mut self.window_pose, Some(Vec2::new(self.x_len, 0.0) * CM), None, None);
+        Ui::window("Log viewer").pose(&mut self.window_pose).size(Vec2::new(self.x_len, 0.0) * CM).begin();
         self.draw_logs(token);
         Ui::hseparator();
         Ui::window_end();

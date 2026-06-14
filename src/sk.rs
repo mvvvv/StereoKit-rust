@@ -761,7 +761,7 @@ pub enum QuitReason {
 ///                               "SCR_ID1", SHOW_SCREENSHOT_WINDOW);
 ///     let mut window_pose = Pose::IDENTITY;
 ///     test_steps!(// !!!! Get a proper main loop !!!!
-///         Ui::window_begin("Default Font", &mut window_pose, None, None, None);
+///         Ui::window("Default Font").pose(&mut window_pose).begin();
 ///         if Ui::button("Show screenshot").press() {
 ///             show_screenshot("true".into())
 ///         }

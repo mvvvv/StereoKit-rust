@@ -74,7 +74,7 @@ impl Haptic1 {
 
     /// Called from IStepper::step, after check_event here you can draw your UI and scene
     fn draw(&mut self, token: &MainThreadToken) {
-        Ui::window_begin("Haptic Demos", &mut self.window_demo_pose, Some(Vec2::new(0.40, 0.25)), None, None);
+        Ui::window("Haptic Demos").pose(&mut self.window_demo_pose).size(Vec2::new(0.40, 0.25)).begin();
 
         let controllers = [
             (UiCut::Left, "Left Controller", "Left", InputHaptic::LController),

@@ -46,13 +46,10 @@ impl Browser1 {
 
     /// Called from IStepper::step after check_event, here you can draw your UI and scene
     fn draw(&mut self, token: &MainThreadToken) {
-        Ui::window_begin(
-            "Browser Test Demo",
-            &mut self.window_pose,
-            Some(Vec2::new(self.window_width, 0.0)),
-            None,
-            None,
-        );
+        Ui::window("Browser Test Demo")
+            .pose(&mut self.window_pose)
+            .size(Vec2::new(self.window_width, 0.0))
+            .begin();
 
         // Buttons to test different URLs
         if Ui::button("Open StereoKit").press() {
