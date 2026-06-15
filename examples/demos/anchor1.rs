@@ -5,7 +5,7 @@ use stereokit_rust::{
     maths::{Matrix, Pose, Quat, Ray, Vec3},
     mesh::Mesh,
     prelude::*,
-    system::{Handed, Input, Lines, Text, TextStyle},
+    system::{Handed, Input, Lines, Text, TextBuilder, TextStyle},
     ui::{Ui, UiCut},
     util::named_colors::{RED, WHITE},
 };
@@ -124,6 +124,6 @@ impl Anchor1 {
         for anchor in Anchor::new_anchors() {
             Log::info(format!("New anchor : {}", anchor.get_name()));
         }
-        Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
+        TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
     }
 }

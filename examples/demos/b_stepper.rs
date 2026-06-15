@@ -5,7 +5,7 @@ use stereokit_rust::{
     maths::{Matrix, Quat, Vec3},
     mesh::Mesh,
     prelude::*,
-    system::{Renderer, Text},
+    system::{Renderer, Text, TextBuilder},
     util::{Time, named_colors::RED},
 };
 /// The basic Stepper. This stepper is used for Thread1 demo, we must ensure the StereoKit code stay in the main thread
@@ -40,14 +40,14 @@ impl IStepper for BStepper {
         let mut transform = Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, Quat::from_angles(0.0, 180.0, 0.0));
         let mut round_cube = Mesh::generate_rounded_cube(Vec3::ONE / 5.0, 0.005, Some(16));
         round_cube.id("round_cube BStepper");
-        let text_style = Some(Text::make_style(Font::default(), 0.3, RED));
+        let text_style = Text::make_style(Font::default(), 0.3, RED);
         let text = self.text.clone();
 
         self.closures.set(
             move |token| {
                 transform *= Matrix::t(Vec3::NEG_Z * 0.2 * Time::get_stepf());
                 Renderer::add_mesh(token, &round_cube, Material::pbr(), transform, Some(RED.into()), None);
-                Text::add_at(token, &text, transform, text_style, None, None, None, None, None, None);
+                TextBuilder::new(&text).transform(transform).style(text_style).add();
                 // (1) You can't do that here: self.text = "youpi".into();
             },
             || Log::diag("Closing Stepper B !!!"),

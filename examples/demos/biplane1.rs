@@ -6,7 +6,7 @@ use stereokit_rust::{
     model::Model,
     prelude::*,
     sound::{Sound, SoundInst},
-    system::{Renderer, Text, TextStyle},
+    system::{Renderer, Text, TextBuilder, TextStyle},
     util::{Time, named_colors::RED},
 };
 
@@ -29,7 +29,7 @@ pub struct Biplane1 {
     material: Material,
     pub transform: Matrix,
     pub text: String,
-    text_style: Option<TextStyle>,
+    text_style: TextStyle,
 }
 
 unsafe impl Send for Biplane1 {}
@@ -68,7 +68,7 @@ impl Default for Biplane1 {
             material: Material::pbr(),
             transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, Quat::from_angles(0.0, 180.0, 0.0)),
             text: "Biplane1".to_owned(),
-            text_style: None,
+            text_style: TextStyle::default(),
         }
     }
 }
@@ -77,7 +77,7 @@ impl Default for Biplane1 {
 impl Biplane1 {
     /// Initializes the Biplane1 instance.
     fn start(&mut self) -> bool {
-        self.text_style = Some(Text::make_style(Font::default(), 0.3, RED));
+        self.text_style = Text::make_style(Font::default(), 0.3, RED);
 
         self.plane_sound_inst = Some(self.plane_sound.play(self.plane_pose.position, Some(1.0)));
 
@@ -91,7 +91,7 @@ impl Biplane1 {
     fn draw(&mut self, token: &MainThreadToken) {
         self.animate_plane(token);
 
-        Text::add_at(token, &self.text, self.transform, self.text_style, None, None, None, None, None, None);
+        TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
     }
 
     /// Animates the plane by moving it towards the next target.

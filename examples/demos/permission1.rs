@@ -7,7 +7,7 @@ use stereokit_rust::{
     maths::{Matrix, Quat, Vec3},
     permission::{Permission, PermissionState, PermissionType},
     prelude::*,
-    system::{Align, Text, TextStyle},
+    system::{Align, Text, TextBuilder, TextStyle},
     tools::os_api::{SystemAction, system_deep_link},
     ui::{Ui, UiPad},
     util::named_colors::{CYAN, RED},
@@ -67,7 +67,7 @@ impl Permission1 {
     }
 
     /// Called by derive macro during IStepper::step
-    fn draw(&mut self, token: &MainThreadToken) {
+    fn draw(&mut self, _token: &MainThreadToken) {
         Ui::window(&self.title).size([0.4, 0.0]).begin();
 
         Ui::push_text_style(self.style_description);
@@ -116,7 +116,7 @@ impl Permission1 {
         }
         Ui::window_end();
 
-        Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
+        TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
     }
 
     /// Called by derive macro for event handling

@@ -2,7 +2,7 @@ use stereokit_rust::{
     font::Font,
     maths::{Matrix, Pose, Quat, Vec2, Vec3, units::CM},
     prelude::*,
-    system::{Handed, Input, InputButton, InputFloat, InputXY, Text, TextStyle},
+    system::{Handed, Input, InputButton, InputFloat, InputXY, Text, TextBuilder, TextStyle},
     ui::{IdHashT, Ui, UiCut, UiSliderData, UiVisual},
     util::{
         Color128,
@@ -87,7 +87,7 @@ impl Input1 {
     ///
     /// This function creates a window with labels and visual representations of controller inputs,
     /// including stick positions, button states, trigger values, and grip values.
-    fn draw(&mut self, token: &MainThreadToken) {
+    fn draw(&mut self, _token: &MainThreadToken) {
         //--------New Window using Input::button, Input::float, and Input::xy--------
         Ui::window("Input")
             .pose(&mut self.window_demo_pose)
@@ -306,7 +306,7 @@ impl Input1 {
 
         Ui::window_end();
 
-        Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
+        TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
     }
 }
 

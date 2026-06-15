@@ -3,7 +3,7 @@ use stereokit_rust::{
     maths::{Matrix, Pose, Quat, Vec2, Vec3, units::CM},
     prelude::*,
     sprite::Sprite,
-    system::{Align, Text, TextFit, TextStyle},
+    system::{Align, Text, TextBuilder, TextFit, TextStyle},
     ui::{Ui, UiBtnLayout, UiScroll},
     util::named_colors::{RED, WHITE},
 };
@@ -75,7 +75,7 @@ impl Text2 {
     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
     /// Called from IStepper::draw, here you can draw the UI and the scene
-    fn draw(&mut self, token: &MainThreadToken) {
+    fn draw(&mut self, _token: &MainThreadToken) {
         Ui::window("Text options")
             .pose(&mut self.window_demo_pose)
             .size(Vec2::new(self.demo_win_width, 0.0))
@@ -158,6 +158,6 @@ impl Text2 {
 
         Ui::window_end();
 
-        Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
+        TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
     }
 }

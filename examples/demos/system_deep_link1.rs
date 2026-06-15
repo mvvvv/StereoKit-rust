@@ -2,7 +2,7 @@ use stereokit_rust::{
     font::Font,
     maths::{Matrix, Pose, Quat, Vec2, Vec3, units::CM},
     prelude::*,
-    system::{Log, Text, TextStyle},
+    system::{Log, Text, TextBuilder, TextStyle},
     tools::os_api::{SystemAction, system_deep_link},
     ui::Ui,
     util::named_colors::GREEN,
@@ -15,8 +15,10 @@ pub struct SystemDeepLink1 {
     sk_info: Option<Rc<RefCell<SkInfo>>>,
     pub window_pose: Pose,
     pub window_width: f32,
-    pub text_style: TextStyle,
+
     pub transform: Matrix,
+    pub text: String,
+    text_style: TextStyle,
 }
 
 unsafe impl Send for SystemDeepLink1 {}
@@ -26,9 +28,12 @@ impl Default for SystemDeepLink1 {
         Self {
             id: "SystemDeepLinkDemo".to_string(),
             sk_info: None,
-            transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, Quat::from_angles(0.0, 180.0, 0.0)),
+
             window_pose: Pose::new(Vec3::new(0.0, 1.5, -1.3), Some(Quat::look_dir(Vec3::Z))),
             window_width: 50.0 * CM,
+
+            transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, Quat::Y_180),
+            text: "SystemDeepLink1".to_string(),
             text_style: Text::make_style(Font::default(), 0.3, GREEN),
         }
     }
@@ -44,7 +49,7 @@ impl SystemDeepLink1 {
     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
     /// Called from IStepper::step after check_event, here you can draw your UI and scene
-    fn draw(&mut self, token: &MainThreadToken) {
+    fn draw(&mut self, _token: &MainThreadToken) {
         Ui::window("System Deep Link Demo")
             .pose(&mut self.window_pose)
             .size(Vec2::new(self.window_width, 0.0))
@@ -180,18 +185,7 @@ impl SystemDeepLink1 {
 
         Ui::window_end();
 
-        // Affichage du titre principal
-        Text::add_at(
-            token,
-            "SystemDeepLink1",
-            self.transform,
-            Some(self.text_style),
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-        );
+        // Title of this demo:
+        TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
     }
 }

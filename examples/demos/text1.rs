@@ -5,7 +5,7 @@ use stereokit_rust::{
     prelude::*,
     sound::{Sound, SoundInst},
     sprite::Sprite,
-    system::{Input, Key, Log, Text, TextContext, TextStyle},
+    system::{Input, Key, Log, Text, TextBuilder, TextContext, TextStyle},
     ui::{Ui, UiBtnLayout},
     util::{
         Platform,
@@ -103,7 +103,7 @@ impl Text1 {
     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
     /// Called from IStepper::step after check_event, here you can draw your UI and the scene
-    fn draw(&mut self, token: &MainThreadToken) {
+    fn draw(&mut self, _token: &MainThreadToken) {
         Ui::window("Text options")
             .pose(&mut self.window_demo_pose)
             .size(Vec2::new(self.demo_win_width, 0.0))
@@ -244,7 +244,7 @@ impl Text1 {
 
         Ui::window_end();
 
-        Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
+        TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
     }
 
     fn close(&mut self, _shutting_down: bool) -> bool {

@@ -5,7 +5,7 @@ use stereokit_rust::{
     mesh::Mesh,
     model::Model,
     prelude::*,
-    system::{Handed, Input, Lines, Text, TextStyle},
+    system::{Handed, Input, Lines, Text, TextBuilder, TextStyle},
     ui::Ui,
     util::{
         Time,
@@ -166,6 +166,6 @@ impl Math1 {
 
         self.model.draw(token, transform, Some(color.into()), None);
         self.ico_sphere.draw(token, &self.material, transform_ico, Some(YELLOW_GREEN.into()), None);
-        Text::add_at(token, &self.text, self.transform_text, Some(self.text_style), None, None, None, None, None, None);
+        TextBuilder::new(&self.text).transform(self.transform_text).style(self.text_style).add();
     }
 }

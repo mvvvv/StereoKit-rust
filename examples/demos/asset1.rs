@@ -9,7 +9,7 @@ use stereokit_rust::{
     prelude::*,
     sound::{Sound, SoundInst},
     sprite::Sprite,
-    system::{Assets, Handed, Input, Renderer, Text, TextStyle},
+    system::{Assets, Handed, Input, Renderer, Text, TextBuilder, TextStyle},
     tex::Tex,
     tools::os_api::{PathEntry, get_assets},
     ui::{Ui, UiBtnLayout},
@@ -193,7 +193,7 @@ impl Asset1 {
             self.asset_selected = 0;
         }
 
-        Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
+        TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
     }
 
     /// Open asset regarding its extension

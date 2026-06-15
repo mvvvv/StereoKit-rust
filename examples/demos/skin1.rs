@@ -4,7 +4,7 @@ use stereokit_rust::{
     maths::{Matrix, Quat, Vec2, Vec4},
     mesh::{Mesh, Vertex},
     prelude::*,
-    system::{Text, TextStyle},
+    system::{Text, TextBuilder, TextStyle},
     util::{
         self, Time,
         named_colors::{CYAN, ORANGE, WHITE, YELLOW},
@@ -175,6 +175,7 @@ pub struct Skin1 {
 
     /// Three independent deforming copies, each with its own vertex buffer.
     copies: [Mesh; 3],
+    text_copies: [TextBuilder; 3],
     material: Material,
 
     pub transform: Matrix,
@@ -200,6 +201,7 @@ impl Default for Skin1 {
             sk_info: None,
 
             copies,
+            text_copies: [TextBuilder::new("Copy A"), TextBuilder::new("Copy B"), TextBuilder::new("Copy C")],
             material,
 
             transform: Matrix::t_r([0.0, 0.0, -0.5], Quat::Y_180),
@@ -211,6 +213,10 @@ impl Default for Skin1 {
 
 impl Skin1 {
     fn start(&mut self) -> bool {
+        for (i, color) in [CYAN, YELLOW, ORANGE].iter().enumerate() {
+            let style = Text::make_style(Font::default(), 0.025, *color);
+            self.text_copies[i].update_style(style);
+        }
         true
     }
 
@@ -223,8 +229,6 @@ impl Skin1 {
         let offsets_x = [-0.22_f32, 0.0, 0.22];
         let phases = [0.0_f32, std::f32::consts::FRAC_PI_3 * 2.0, std::f32::consts::FRAC_PI_3 * 4.0];
         let speed = 1.8_f32;
-        let label_colors = [CYAN, YELLOW, ORANGE];
-        let label_names = ["copy A", "copy B", "copy C"];
 
         for (i, mesh) in self.copies.iter_mut().enumerate() {
             let angle = MAX_ANGLE * (t * speed + phases[i]).sin();
@@ -240,21 +244,12 @@ impl Skin1 {
             mesh.draw(token, &self.material, world, None, None);
 
             // Small label under each ribbon
-            Text::add_at(
-                token,
-                label_names[i],
-                Matrix::t_r([offsets_x[i], 1.5 - MESH_H * 0.15, -0.55], Quat::Y_180),
-                Some(Text::make_style(Font::default(), 0.025, label_colors[i])),
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
-            );
+            self.text_copies[i]
+                .update_transform(Matrix::t_r([offsets_x[i], 1.5 - MESH_H * 0.15, -0.55], Quat::Y_180))
+                .add();
         }
 
         // Title
-        Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
+        TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
     }
 }

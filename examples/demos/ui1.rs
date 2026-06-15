@@ -4,7 +4,7 @@ use stereokit_rust::{
     maths::{Matrix, Quat, Vec2, Vec3, units::CM},
     mesh::Mesh,
     prelude::*,
-    system::{BtnState, Interactor, Pivot, Text, TextStyle},
+    system::{BtnState, Interactor, Pivot, Text, TextBuilder, TextStyle},
     ui::{IdHashT, Ui, UiColor, UiCorner, UiLathePt, UiSliderData, UiVisual},
     util::{
         Color32, Color128, Time,
@@ -132,7 +132,7 @@ impl Ui1 {
 
         Ui::window_end();
 
-        Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
+        TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
     }
 
     pub fn custom_button_mesh(&mut self, token: &MainThreadToken, text: &str, slot: UiVisual) -> bool {
@@ -163,25 +163,18 @@ impl Ui1 {
             Some(Ui::get_element_color(slot, Ui::get_anim_focus(id, out_focus_state, out_button_state))),
             None,
         );
-        Text::add_at(
-            token,
-            text,
-            Matrix::t(Vec3::new(layout.center.x, layout.center.y, -(out_finger_offset + 0.002))),
-            Some(Ui::get_text_style()),
-            None,
-            Some(Pivot::Center),
-            None,
-            None,
-            None,
-            None,
-        );
+        TextBuilder::new(text)
+            .transform(Matrix::t(Vec3::new(layout.center.x, layout.center.y, -(out_finger_offset + 0.002))))
+            .style(Ui::get_text_style())
+            .position(Pivot::Center)
+            .add();
         if out_button_state.is_just_active() {
             Ui::play_sound_on_off(UiVisual::Button, id, layout.center);
         }
         out_button_state.is_just_inactive()
     }
 
-    pub fn custom_button_element(&mut self, token: &MainThreadToken, text: &str) -> bool {
+    pub fn custom_button_element(&mut self, _token: &MainThreadToken, text: &str) -> bool {
         let id = Ui::stack_hash(text);
         let size = Text::size_layout(text, Some(Ui::get_text_style()), None) * 1.7;
         let mut layout = Ui::layout_reserve(size, false, 0.0);
@@ -207,18 +200,11 @@ impl Ui1 {
             layout.dimensions,
             Ui::get_anim_focus(id, out_focus_state, out_button_state),
         );
-        Text::add_at(
-            token,
-            text,
-            Matrix::t(Vec3::new(layout.center.x, layout.center.y, -(out_finger_offset + 0.002))),
-            Some(Ui::get_text_style()),
-            None,
-            Some(Pivot::Center),
-            None,
-            None,
-            None,
-            None,
-        );
+        TextBuilder::new(text)
+            .transform(Matrix::t(Vec3::new(layout.center.x, layout.center.y, -(out_finger_offset + 0.002))))
+            .style(Ui::get_text_style())
+            .position(Pivot::Center)
+            .add();
 
         if out_button_state.is_just_active() {
             Ui::play_sound_on_off(UiVisual::Button, id, layout.center);

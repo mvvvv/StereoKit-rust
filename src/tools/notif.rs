@@ -2,7 +2,7 @@ use crate::{
     font::Font,
     maths::{Matrix, Quat, Vec3},
     prelude::*,
-    system::{Input, Text, TextStyle},
+    system::{Input, Text, TextBuilder, TextStyle},
     util::{Time, named_colors::BLACK},
 };
 
@@ -79,7 +79,7 @@ impl HudNotification {
     ///
     /// If you set the duration field to None, you can directly call this method without adding the stepper to the event
     /// system.
-    pub fn draw(&mut self, token: &MainThreadToken) {
+    pub fn draw(&mut self, _token: &MainThreadToken) {
         // Calculate position in front of head
         let head_pose = Input::get_head();
         let head_forward = head_pose.get_forward();
@@ -97,7 +97,7 @@ impl HudNotification {
         let notif_orientation = Quat::look_at(notif_position, head_pose.position, None);
         self.transform_text = Matrix::t_r(notif_position, notif_orientation);
 
-        Text::add_at(token, &self.text, self.transform_text, Some(self.text_style), None, None, None, None, None, None);
+        TextBuilder::new(&self.text).transform(self.transform_text).style(self.text_style).add();
 
         if let Some(ref mut duration) = self.duration {
             *duration -= Time::get_stepf();

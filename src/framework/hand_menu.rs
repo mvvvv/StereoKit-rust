@@ -5,7 +5,8 @@ use crate::{
     prelude::*,
     sound::Sound,
     system::{
-        Align, Backend, BackendXRType, FingerId, Hand, Handed, Hierarchy, Input, JointId, Key, Lines, Text, TextStyle,
+        Align, Backend, BackendXRType, FingerId, Hand, Handed, Hierarchy, Input, JointId, Key, Lines, TextBuilder,
+        TextStyle,
     },
     tex::Tex,
     ui::{Ui, UiColor},
@@ -54,23 +55,12 @@ impl HandMenuItem {
     /// * `token` - The main thread token.
     /// * `at` - Center of the radial slice.
     /// * `focused` - If the current menu slice has focus.
-    pub fn draw_basic(&self, token: &MainThreadToken, at: Vec3, focused: bool) {
+    pub fn draw_basic(&self, _token: &MainThreadToken, at: Vec3, focused: bool) {
         let scale = match focused {
             true => Vec3::ONE * 0.6,
             false => Vec3::ONE * 0.5,
         };
-        Text::add_at(
-            token,
-            &self.name,
-            Matrix::t_s(at, scale),
-            None,
-            None,
-            None,
-            Some(Align::BottomCenter),
-            None,
-            None,
-            None,
-        );
+        TextBuilder::new(&self.name).transform(Matrix::t_s(at, scale)).align(Align::BottomCenter).add();
     }
 }
 

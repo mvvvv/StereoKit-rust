@@ -6886,7 +6886,7 @@ impl SensorDepth {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{system::{TextStyle, Pivot, Align, Text, Lines, Hierarchy},
+/// use stereokit_rust::{system::{TextBuilder, Text, TextStyle, Pivot, Align, Lines, Hierarchy},
 ///                      font::Font, maths::{Vec3, Matrix},
 ///                      util::named_colors::{WHITE, GOLD, GREEN, BLUE, RED, BLACK}};
 ///
@@ -6908,8 +6908,8 @@ impl SensorDepth {
 /// filename_scr = "screenshots/text_style.jpeg"; fov_scr=110.0;
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
 ///    Hierarchy::push(token, recenter, None);
-///    Text::add_at(token, text, Matrix::Y_180, Some(style), Some(GOLD.into()),
-///             Some(Pivot::TopCenter), Some(Align::TopLeft), None, None, None);
+///    TextBuilder::new(text).transform(Matrix::Y_180).style(style).tint(GOLD)
+///             .position(Pivot::TopCenter).align(Align::TopLeft).add();
 ///    
 ///    Lines::add(token, [sizex, ascender_at, 0.0],    [-sizex, ascender_at, 0.0],    GREEN, None, 0.03  );
 ///    Lines::add(token, [sizex, base_line_at, 0.0],   [-sizex, base_line_at, 0.0],   WHITE, None, 0.03  );
@@ -7420,7 +7420,7 @@ bitflags::bitflags! {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{system::{ Pivot, Align, TextFit, Text,}, font::Font,
+/// use stereokit_rust::{system::{ Pivot, Align, TextFit, Text, TextBuilder}, font::Font,
 ///                      maths::Matrix, util::named_colors::{WHITE, GOLD, GREEN}};
 ///
 /// let font = Font::default();
@@ -7431,16 +7431,15 @@ bitflags::bitflags! {
 ///
 /// filename_scr = "screenshots/text.jpeg"; fov_scr=110.0;
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
-///    Text::add_at(token, "Many", transform1, Some(style), Some(GOLD.into()),
-///             Some(Pivot::TopCenter), Some(Align::TopLeft), None, None, None);
+///    TextBuilder::new("Many").transform(transform1).style(style).tint(GOLD)
+///             .position(Pivot::TopCenter).align(Align::TopLeft).add();
 ///    
-///    let size = Text::add_in(token, "Texts!", transform2, [0.6, 0.6], TextFit::Squeeze,
-///             Some(style), Some(GREEN.into()), Some(Pivot::Center), Some(Align::TopLeft),
-///             None, Some(-0.3), Some(-0.3));
+///    let size = TextBuilder::new("Texts!").transform(transform2).style(style).tint(GREEN)
+///             .position(Pivot::Center).align(Align::TopLeft).fit(TextFit::Squeeze).size([0.6, 0.6])
+///             .offset(0.0, -0.3, -0.3).add();
 ///    assert_ne!(size , 0.0);
 ///
-///    Text::add_at(token, "----/****", transform3, Some(style), None,
-///             None, None, None, None, None);
+///    TextBuilder::new("----/****").transform(transform3).style(style).add();
 /// );
 /// # sk::Sk::shutdown();
 /// ```
@@ -7655,10 +7654,10 @@ impl Text {
         }
     }
 
-    /// Renders text at the given location! Must be called every frame you want this text to be visible.
+    /// Use [`TextBuilder`] instead ! Renders text at the given location! Must be called every frame you want this text to be visible.
     /// <https://stereokit.net/Pages/StereoKit/Text/Add.html>
     /// * `text` - What text should be drawn?
-    /// * `transform` - A Matrix representing the transform of the text mesh! Try Matrix::t_r_s().
+    /// * `transform` - A Matrix representing the transform of the text mesh! Try [`Matrix::t_r_s()`].
     /// * `text_style` - Style information for rendering, see Text.MakeStyle or the TextStyle object. If None will use
     ///   the TextStyle::default()
     /// * `vertex_tint_linear` - The vertex color of the text gets multiplied by this color. This is a linear color
@@ -7673,7 +7672,7 @@ impl Text {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{system::{Pivot, Align, Text},
+    /// use stereokit_rust::{system::{Pivot, Align, Text, TextBuilder},
     ///                      font::Font, maths::Matrix,
     ///                      util::named_colors::{WHITE, GOLD, GREEN}};
     ///
@@ -7684,17 +7683,17 @@ impl Text {
     /// let transform3 = Matrix::t([-0.1,-0.5, 0.0]) * Matrix::Y_180;
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///    Text::add_at(token, "Many", transform1, Some(style), Some(GOLD.into()),
-    ///             Some(Pivot::TopCenter), Some(Align::TopLeft), None, None, None);
+    ///    TextBuilder::new("Many").transform(transform1).style(style).tint(GOLD)
+    ///             .position(Pivot::TopCenter).align(Align::TopLeft).add();
     ///    
-    ///    Text::add_at(token, "Texts!", transform2, Some(style), Some(GREEN.into()),
-    ///             Some(Pivot::Center), Some(Align::TopLeft), None, None, Some(-0.3));
+    ///    TextBuilder::new("Texts!").transform(transform2).style(style).tint(GREEN)
+    ///             .position(Pivot::Center).align(Align::TopLeft).offset(0.0, 0.0, -0.3).add();
     ///
-    ///    Text::add_at(token, "----/****", transform3, Some(style), None,
-    ///             None, None, None, None, None);
+    ///    TextBuilder::new("----/****").transform(transform3).style(style).add();
     /// );
     /// # sk::Sk::shutdown();
     /// ```
+    #[deprecated(since = "0.40.0", note = "please use TextBuilder instead")]
     #[allow(clippy::too_many_arguments)]
     pub fn add_at(
         _token: &MainThreadToken,
@@ -7731,10 +7730,11 @@ impl Text {
         }
     }
 
-    /// Renders text at the given location! Must be called every frame you want this text to be visible.
+    /// Use [`TextBuilder`] instead ! Renders text at the given location! Must be called every frame you want this text
+    /// to be visible.
     /// <https://stereokit.net/Pages/StereoKit/Text/Add.html>
     /// * `text` - What text should be drawn?
-    /// * `transform` - A Matrix representing the transform of the text mesh! Try Matrix::t_r_s().
+    /// * `transform` - A Matrix representing the transform of the text mesh! Try [`Matrix::t_r_s()`].
     /// * `size` - This is the Hierarchy space rectangle that the text should try to fit inside of. This allows for text
     ///   wrapping or scaling based on the value provided to the ‘fit’ parameter.
     /// * `text_fit` - Describe how the text should behave when one of its size dimensions conflicts with the provided
@@ -7755,7 +7755,7 @@ impl Text {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{system::{ Align, Pivot, TextFit, Text},
+    /// use stereokit_rust::{system::{ Align, Pivot, TextFit, Text, TextBuilder},
     ///                      font::Font, maths::Matrix,
     ///                      util::named_colors::{WHITE, GOLD, GREEN}};
     ///
@@ -7764,20 +7764,20 @@ impl Text {
     /// let transform1 = Matrix::Y_180;
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///    let size = Text::add_in(token, "Many", transform1, [1.1, 1.0], TextFit::Wrap,
-    ///             Some(style), Some(GOLD.into()), Some(Pivot::BottomRight),
-    ///             Some(Align::TopLeft), None, None, None);
+    ///    let size = TextBuilder::new("Many").transform(transform1).size([1.1, 1.0]).fit(TextFit::Wrap)
+    ///             .style(style).tint(GOLD).position(Pivot::BottomRight)
+    ///             .align(Align::TopLeft).add();
     ///    
-    ///    let size = Text::add_in(token, "Texts!", transform1, [1.0, 1.0-size], TextFit::Clip,
-    ///             Some(style),None, None,
-    ///             None, None, None, None);
+    ///    let size = TextBuilder::new("Texts!").transform(transform1).size([1.0, 1.0-size]).fit(TextFit::Clip)
+    ///             .style(style).add();
     ///
-    ///    Text::add_in(token, "----/****", transform1, [0.3, 1.0-size], TextFit::Squeeze,
-    ///             Some(style), Some(GREEN.into()), Some(Pivot::YTop),
-    ///             Some(Align::Center),None, None, Some(-0.7));
+    ///    TextBuilder::new("----/****").transform(transform1).size([0.3, 1.0-size]).fit(TextFit::Squeeze)
+    ///             .style(style).tint(GREEN).position(Pivot::YTop)
+    ///             .align(Align::Center).offset(0.0,0.0,-0.7).add();
     /// );
     /// # sk::Sk::shutdown();
     /// ```
+    #[deprecated(since = "0.40.0", note = "please use TextBuilder instead")]
     #[allow(clippy::too_many_arguments)]
     pub fn add_in(
         _token: &MainThreadToken,
@@ -7818,26 +7818,6 @@ impl Text {
         }
     }
 
-    /// Sometimes you just need to know how much room some text takes up! This finds the size of the text in meters when
-    /// using the indicated style!
-    /// <https://stereokit.net/Pages/StereoKit/Text/Size.html>
-    /// * text_style - if None will use the TextStyle::default()
-    /// * max_width - Width of the available space in meters.
-    ///
-    /// Returns size of the text in meters
-    ///
-    /// see also [`text_size_layout`] [`text_size_layout_constrained`]
-    #[deprecated(since = "0.40.0", note = "please Text::use size_layout")]
-    pub fn size(text: impl AsRef<str>, text_style: Option<TextStyle>, max_width: Option<f32>) -> Vec2 {
-        let c_str = CString::new(text.as_ref()).unwrap_or_default();
-        let style = text_style.unwrap_or_default();
-        if let Some(max_width) = max_width {
-            unsafe { text_size_layout_constrained(c_str.as_ptr(), style, max_width) }
-        } else {
-            unsafe { text_size_layout(c_str.as_ptr(), style) }
-        }
-    }
-
     /// Sometimes you just need to know how much room some text takes up! This finds the layout size of the text in
     /// meters when using the indicated style!  This does not include ascender and descender size, so rendering using
     /// this as a clipping size will result in ascenders and descenders getting clipped.
@@ -7853,7 +7833,7 @@ impl Text {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{system::Text, font::Font,
+    /// use stereokit_rust::{system::{Text, TextBuilder}, font::Font,
     ///                      util::named_colors::{WHITE, GOLD, GREEN},
     ///                      mesh::Mesh, material::{Material, Cull}, maths::Matrix};
     ///
@@ -7868,8 +7848,7 @@ impl Text {
     /// material.face_cull(Cull::Front);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///    Text::add_at(token, text, transform1, Some(style), Some(GOLD.into()),
-    ///             None, None, None, None, None);
+    ///    TextBuilder::new(&text).transform(transform1).style(style).tint(GOLD).add();
     ///    
     ///    cube.draw(token, &material, transform1, Some(GREEN.into()), None);
     /// );
@@ -7899,7 +7878,7 @@ impl Text {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{system::Text, font::Font,
+    /// use stereokit_rust::{system::{Text, TextBuilder}, font::Font,
     ///                      util::named_colors::{WHITE, GOLD, GREEN},
     ///                      mesh::Mesh, material::{Material, Cull}, maths::Matrix};
     ///
@@ -7917,8 +7896,7 @@ impl Text {
     /// material.face_cull(Cull::Front);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///    Text::add_at(token, text, transform_text, Some(style), Some(GOLD.into()),
-    ///             None, None, None, None, None);
+    ///    TextBuilder::new(&text).transform(transform_text).style(style).tint(GOLD).add();
     ///    
     ///    cube.draw(token, &material, transform_cube, Some(GREEN.into()), None);
     /// );
@@ -7927,6 +7905,196 @@ impl Text {
     pub fn size_render(size_layout: impl Into<Vec2>, text_style: Option<TextStyle>, y_offset: &mut f32) -> Vec2 {
         let style = text_style.unwrap_or_default();
         unsafe { text_size_render(size_layout.into(), style, y_offset) }
+    }
+}
+
+/// A builder to create text with a fluent interface. This is a lower level access to text rendering than the UI text
+/// functions, and is completely unaware of the UI code.
+/// see [`Text`] [`text_add_at`] [`text_add_in`]
+/// StereoKit original docs :
+/// [`Text Add`](https://stereokit.net/Pages/StereoKit/Text/Add.html)
+///
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{system::{Pivot, Align, Text, TextBuilder, TextFit},
+///                      font::Font, maths::Matrix,
+///                      util::named_colors::{WHITE, BLUE, RED}};
+/// let font = Font::default();
+/// let style = Text::make_style(font, 0.28, WHITE);
+/// let transform1 = Matrix::t([0.7, 0.7, 0.0]) * Matrix::Y_180;
+/// let transform2 = Matrix::t([0.3, 0.1, 0.0]) * Matrix::Y_180;
+/// let transform3 = Matrix::t([-0.1,-0.5, 0.0]) * Matrix::Y_180;
+/// filename_scr = "screenshots/text_builder.jpeg"; fov_scr=110.0;
+/// let mut text1 =TextBuilder::new("Many")
+///     .transform(transform1)
+///     .style(style)
+///     .tint(BLUE)
+///     .position(Pivot::TopCenter)
+///     .align(Align::TopLeft);
+/// let mut text2 = TextBuilder::new("Texts!")
+///     .transform(transform2)
+///     .size([0.6, 0.6])
+///     .fit(TextFit::Squeeze)
+///     .style(style)
+///     .position(Pivot::Center)
+///     .align(Align::TopLeft)
+///     .offset(0.0, -0.3, -0.3);
+/// let mut text3 = TextBuilder::new("----/****")
+///     .transform(transform3)
+///     .style(style)
+///     .tint(RED);
+///
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+///     text1.add();
+///     text2.add();
+///     text3.add();
+/// );
+pub struct TextBuilder {
+    text: CString,
+    transform: Matrix,
+    style: TextStyle,
+    vertex_tint_linear: Color128,
+    position: Pivot,
+    align: Align,
+    off_x: f32,
+    off_y: f32,
+    off_z: f32,
+    size: Option<Vec2>,
+    fit: TextFit,
+}
+
+impl TextBuilder {
+    /// create a new TextBuilder with the given text.
+    pub fn new(text: impl AsRef<str>) -> Self {
+        Self {
+            text: CString::new(text.as_ref()).unwrap_or_default(),
+            transform: Matrix::IDENTITY,
+            style: TextStyle::default(),         // Valeur par défaut de Stereokit
+            vertex_tint_linear: Color128::WHITE, // Valeur par défaut de Stereokit
+            position: Pivot::Center,             // Valeur par défaut de Stereokit
+            align: Align::Center,                // Valeur par défaut de Stereokit
+            off_x: 0.0,
+            off_y: 0.0,
+            off_z: 0.0,
+            size: None,
+            fit: TextFit::Wrap, // Valeur par défaut pour add_in
+        }
+    }
+
+    /// A Matrix representing the transform of the text mesh! Try [`Matrix::t_r_s()`].
+    pub fn transform(mut self, transform: impl Into<Matrix>) -> Self {
+        self.transform = transform.into();
+        self
+    }
+
+    /// A way to update the transform when the builder is kept alive (i.e. as a property of a IStepper)
+    pub fn update_transform(&mut self, transform: impl Into<Matrix>) -> &mut Self {
+        self.transform = transform.into();
+        self
+    }
+
+    /// A way to update the text when the builder is kept alive (i.e. as a property of a IStepper)
+    pub fn update_text(&mut self, text: impl AsRef<str>) -> &mut Self {
+        self.text = CString::new(text.as_ref()).unwrap_or_default();
+        self
+    }
+
+    /// Style information for rendering, see Text.MakeStyle or the TextStyle object. Default will use the
+    /// [`TextStyle::default()`]
+    pub fn style(mut self, style: TextStyle) -> Self {
+        self.style = style;
+        self
+    }
+
+    /// A way to update the style when the builder is kept alive (i.e. as a property of a IStepper)
+    pub fn update_style(&mut self, style: TextStyle) -> &mut Self {
+        self.style = style;
+        self
+    }
+
+    /// The vertex color of the text gets multiplied by this color. This is a linear color value, not a gamma corrected
+    /// color value. Default will use [`Color128::WHITE`]
+    pub fn tint(mut self, tint: impl Into<Color128>) -> Self {
+        self.vertex_tint_linear = tint.into();
+        self
+    }
+
+    /// A way to update the tint when the builder is kept alive (i.e. as a property of a IStepper)
+    pub fn update_tint(&mut self, tint: impl Into<Color128>) -> &mut Self {
+        self.vertex_tint_linear = tint.into();
+        self
+    }
+
+    /// How should the text’s bounding rectangle be positioned relative to the transform? Default will use
+    /// [`Pivot::Center`].
+    pub fn position(mut self, pivot: Pivot) -> Self {
+        self.position = pivot;
+        self
+    }
+
+    /// How should the text be aligned within the text’s bounding rectangle? Default will use [`Align::Center`].
+    pub fn align(mut self, align: Align) -> Self {
+        self.align = align;
+        self
+    }
+
+    /// Additional offset on the given axis. Default will use 0.0.
+    pub fn offset(mut self, x: f32, y: f32, z: f32) -> Self {
+        self.off_x = x;
+        self.off_y = y;
+        self.off_z = z;
+        self
+    }
+
+    /// Size of the text in meters. This is the Hierarchy space rectangle that the text should try to fit inside of.
+    /// This allows for text wrapping or scaling based on the value provided to the ‘fit’ parameter.
+    pub fn size(mut self, size: impl Into<Vec2>) -> Self {
+        self.size = Some(size.into());
+        self
+    }
+
+    /// How should the text be scaled to fit within the given size? Default will use [`TextFit::None`].
+    pub fn fit(mut self, fit: TextFit) -> Self {
+        self.fit = fit;
+        self
+    }
+
+    /// Renders text at the given location! Must be called every frame you want this text to be visible.
+    ///
+    /// Returns the vertical space used by this text if size is set, otherwise returns 0.0.
+    pub fn add(&mut self) -> f32 {
+        match self.size {
+            None => unsafe {
+                text_add_at(
+                    self.text.as_ptr(),
+                    &self.transform,
+                    self.style,
+                    self.position,
+                    self.align,
+                    self.off_x,
+                    self.off_y,
+                    self.off_z,
+                    self.vertex_tint_linear,
+                );
+                0.0
+            },
+            Some(size) => unsafe {
+                text_add_in(
+                    self.text.as_ptr(),
+                    &self.transform,
+                    size,
+                    self.fit,
+                    self.style,
+                    self.position,
+                    self.align,
+                    self.off_x,
+                    self.off_y,
+                    self.off_z,
+                    self.vertex_tint_linear,
+                )
+            },
+        }
     }
 }
 

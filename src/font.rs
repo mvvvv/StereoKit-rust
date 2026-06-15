@@ -15,7 +15,7 @@ use std::{
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{ui::Ui, maths::{Pose, Matrix},font::Font,
-///                      system::{Assets, Text}, util::named_colors};
+///                      system::{Assets, Text, TextBuilder}, util::named_colors};
 ///
 /// // Load font assets
 /// let emoji_font = if cfg!(windows) {
@@ -35,15 +35,14 @@ use std::{
 ///     Font::from_file("fonts/Inter/Inter-VariableFont_opsz_wght.ttf").unwrap_or_default()
 /// };
 /// Assets::block_for_priority(i32::MAX);
-/// let emoji_style = Some(Text::make_style(emoji_font, 0.35, named_colors::RED));
+/// let emoji_style = Text::make_style(emoji_font, 0.35, named_colors::RED);
 /// let text_style = Text::make_style(text_font, 0.025, named_colors::GREEN);
 /// let mut window_pose = Pose::new(
 ///     [0.0, 0.0, 0.90], Some([0.0, 160.0, 0.0].into()));
 ///
 /// filename_scr = "screenshots/font.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
-///     Text::add_at(token, "😋 Emojis🤪\n\n  🧐", Matrix::IDENTITY, emoji_style,
-///                  None, None, None, None, None, None);
+///     TextBuilder::new("😋 Emojis🤪\n\n  🧐").transform(Matrix::IDENTITY).style(emoji_style).add();
 ///
 ///     Ui::window("Default Font").pose(&mut window_pose).begin();
 ///     Ui::push_text_style(text_style);
@@ -124,7 +123,8 @@ impl Font {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths:: Matrix, font::Font, system::Text, util::named_colors};
+    /// use stereokit_rust::{maths:: Matrix, font::Font, system::{TextBuilder, Text},
+    ///                      util::named_colors};
     ///
     /// let text_font = if cfg!(windows) {
     ///     Font::from_file("C:\\Windows\\Fonts\\Arial.ttf").unwrap_or_default()
@@ -133,11 +133,10 @@ impl Font {
     /// } else {
     ///     Font::from_file("fonts/Inter/Inter-VariableFont_opsz_wght.ttf").unwrap_or_default()
     /// };
-    /// let text_style = Some(Text::make_style(&text_font, 0.025, named_colors::GREEN));
+    /// let text_style = Text::make_style(&text_font, 0.025, named_colors::GREEN);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     Text::add_at(token, "My Green Text", Matrix::IDENTITY, text_style,
-    ///                  None, None, None, None, None, None);
+    ///     TextBuilder::new("My Green Text").transform(Matrix::IDENTITY).style(text_style).add();
     ///     assert_ne!(text_font.get_id(), "default/font");
     ///     assert   !(text_font.get_id().starts_with("sk/font/"));
     /// );
@@ -167,7 +166,8 @@ impl Font {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths:: Matrix, font::Font, system::Text, util::named_colors};
+    /// use stereokit_rust::{maths:: Matrix, font::Font, system::{TextBuilder, Text},
+    ///                      util::named_colors};
     ///
     /// let font_files: [&str; 2] = if cfg!(windows) {
     ///     ["C:\\Windows\\Fonts\\Arial.ttf",
@@ -181,11 +181,10 @@ impl Font {
     /// };
     ///
     /// let text_font = Font::from_files(&font_files).unwrap_or_default();
-    /// let text_style = Some(Text::make_style(&text_font, 0.025, named_colors::GREEN));
+    /// let text_style = Text::make_style(&text_font, 0.025, named_colors::GREEN);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     Text::add_at(token, "My Green Text", Matrix::IDENTITY, text_style,
-    ///                  None, None, None, None, None, None);
+    ///     TextBuilder::new("My Green Text").transform(Matrix::IDENTITY).style(text_style).add();
     ///     assert_ne!(text_font.get_id(), "default/font");
     ///     assert!   (text_font.get_id().starts_with("sk/font/"));
     /// );
@@ -223,7 +222,7 @@ impl Font {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths:: Matrix, font::Font, system::Text, util::named_colors};
+    /// use stereokit_rust::{maths:: Matrix, font::Font, system::{TextBuilder, Text}, util::named_colors};
     ///
     /// let font_family = if cfg!(windows) {
     ///     "Arial, \"Helvetica Neue\", Helvetica, sans-serif"
@@ -234,12 +233,11 @@ impl Font {
     /// };
     ///
     /// let text_font = Font::from_family(&font_family).unwrap_or_default();
-    /// let text_style = Some(Text::make_style(&text_font, 0.025, named_colors::GREEN));
+    /// let text_style = Text::make_style(&text_font, 0.025, named_colors::GREEN);
     /// # system::Assets::block_for_priority(i32::MAX);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     Text::add_at(token, "My Green Text", Matrix::IDENTITY, text_style,
-    ///                  None, None, None, None, None, None);
+    ///     TextBuilder::new("My Green Text").transform(Matrix::IDENTITY).style(text_style).add();
     ///     assert_ne!(text_font.get_id(), "default/font");
     ///     assert!   (text_font.get_id().starts_with("sk/font/"));
     /// );

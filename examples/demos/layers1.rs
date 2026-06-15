@@ -5,7 +5,7 @@ use stereokit_rust::font::Font;
 use stereokit_rust::maths::{Bounds, Rect};
 use stereokit_rust::render_list::RenderList;
 use stereokit_rust::sprite::Sprite;
-use stereokit_rust::system::{Pivot, RenderClear, TextFit, TextStyle};
+use stereokit_rust::system::{Pivot, RenderClear, TextBuilder, TextFit, TextStyle};
 use stereokit_rust::tex::TexFormat;
 use stereokit_rust::tools::xr_comp_layers::{SwapchainSk, XrCompLayers};
 use stereokit_rust::util::named_colors::{self, RED};
@@ -49,7 +49,7 @@ pub struct Layers1 {
 
     pub transform: Matrix,
     pub text: String,
-    text_style: Option<TextStyle>,
+    text_style: TextStyle,
 }
 
 unsafe impl Send for Layers1 {}
@@ -84,15 +84,13 @@ impl Default for Layers1 {
 
             transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, [0.0, 180.0, 0.0]),
             text: "Layers1\n\n\n".to_owned(),
-            text_style: None,
+            text_style: Text::make_style(Font::default(), 0.3, RED),
         }
     }
 }
 
 impl Layers1 {
     fn start(&mut self) -> bool {
-        self.text_style = Some(Text::make_style(Font::default(), 0.3, RED));
-
         // Wrap the swapchain
         if Backend::xr_type() == BackendXRType::OpenXR {
             if let Some(comp_layer) = XrCompLayers::new() {
@@ -216,20 +214,11 @@ impl Layers1 {
                 );
             }
         } else {
-            Text::add_in(
-                token,
-                "Requires an OpenXR runtime!",
-                self.quad_pose,
-                Vec2::new(SIZE, SIZE),
-                TextFit::Wrap,
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
-            );
+            TextBuilder::new("Requires an OpenXR runtime!")
+                .transform(self.quad_pose)
+                .size(Vec2::new(SIZE, SIZE))
+                .fit(TextFit::Wrap)
+                .add();
         }
 
         // --- Cylinder layer ---
@@ -318,6 +307,6 @@ impl Layers1 {
         }
         Ui::window_end();
 
-        Text::add_at(token, &self.text, self.transform, self.text_style, None, None, None, None, None, None);
+        TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
     }
 }

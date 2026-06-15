@@ -6,7 +6,7 @@ use stereokit_rust::{
     model::Model,
     prelude::*,
     render_list::{RenderList, RenderListRefs},
-    system::{Assets, RenderClear, Renderer, Text, TextStyle},
+    system::{Assets, RenderClear, Renderer, Text, TextBuilder, TextStyle},
     tex::{Tex, TexFormat, TexType},
     ui::Ui,
     util::{
@@ -138,7 +138,7 @@ impl RenderList1 {
         );
         Ui::window_end();
 
-        Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
+        TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
     }
 
     /// Called from IStepper::shutdown(triggering) then IStepper::shutdown_done(waiting for true response),

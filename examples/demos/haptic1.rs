@@ -3,7 +3,7 @@ use stereokit_rust::{
     maths::{Matrix, Pose, Quat, Vec2, Vec3},
     prelude::*,
     sprite::Sprite,
-    system::{Input, InputHaptic, InputHapticCaps, Text, TextStyle},
+    system::{Input, InputHaptic, InputHapticCaps, Text, TextBuilder, TextStyle},
     ui::{Ui, UiBtnLayout, UiCut},
     util::{
         Color128,
@@ -73,7 +73,7 @@ impl Haptic1 {
     }
 
     /// Called from IStepper::step, after check_event here you can draw your UI and scene
-    fn draw(&mut self, token: &MainThreadToken) {
+    fn draw(&mut self, _token: &MainThreadToken) {
         Ui::window("Haptic Demos").pose(&mut self.window_demo_pose).size(Vec2::new(0.40, 0.25)).begin();
 
         let controllers = [
@@ -135,6 +135,6 @@ impl Haptic1 {
 
         Ui::window_end();
 
-        Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
+        TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
     }
 }

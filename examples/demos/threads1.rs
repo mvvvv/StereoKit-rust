@@ -11,7 +11,7 @@ use stereokit_rust::{
     font::Font,
     maths::{Matrix, Quat, Vec3},
     prelude::*,
-    system::{Text, TextStyle},
+    system::{Text, TextBuilder, TextStyle},
     util::{Time, named_colors::GREEN_YELLOW},
 };
 
@@ -94,8 +94,8 @@ impl Threads1 {
     /// Called from IStepper::step, here you can check the event report
     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
-    fn draw(&mut self, token: &MainThreadToken) {
-        Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
+    fn draw(&mut self, _token: &MainThreadToken) {
+        TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
     }
 
     /// Called from IStepper::shutdown(triggering) then IStepper::shutdown_done(waiting for true response),

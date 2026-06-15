@@ -244,7 +244,7 @@ pub mod font;
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{ font::Font, maths::Matrix,
-///                       system::{Text, TextStyle}, util::named_colors};
+///                       system::{Text, TextBuilder, TextStyle}, util::named_colors};
 ///
 /// #[derive(IStepper)]
 /// pub struct MyStepper {
@@ -253,7 +253,7 @@ pub mod font;
 ///
 ///     transform: Matrix,
 ///     pub text: String,
-///     text_style: Option<TextStyle>,
+///     text_style: TextStyle,
 /// }
 /// unsafe impl Send for MyStepper {}
 /// impl Default for MyStepper {
@@ -264,20 +264,19 @@ pub mod font;
 ///
 ///             transform: Matrix::IDENTITY,
 ///             text: "IStepper\nderive\nmacro".to_owned(),
-///             text_style: None,
+///             text_style: TextStyle::default(),
 ///         }
 ///     }
 /// }
 /// impl MyStepper {
 ///     fn start(&mut self) -> bool {
 ///         self.transform = Matrix::t_r([0.05, 0.0, -0.2], [0.0, 200.0, 0.0]);
-///         self.text_style = Some(Text::make_style(Font::default(), 0.3, named_colors::RED));
+///         self.text_style = Text::make_style(Font::default(), 0.3, named_colors::RED);
 ///         true
 ///     }
 ///     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
-///     fn draw(&mut self, token: &MainThreadToken) {
-///         Text::add_at(token, &self.text, self.transform, self.text_style,
-///                      None, None, None, None, None, None);
+///     fn draw(&mut self, _token: &MainThreadToken) {
+///         TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
 ///     }
 /// }
 ///
@@ -466,6 +465,7 @@ pub mod interactor;
 /// [![Render to](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_to.jpeg)](system::Renderer::render_to)
 /// [![Render to multiview](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_to_multiview.jpeg)](system::Renderer::render_to_multiview)
 /// [![TextStyle](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/text_style.jpeg)](system::TextStyle)
+/// [![TextBuilder](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/text_builder.jpeg)](system::TextBuilder)
 /// [![Text](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/text.jpeg)](system::Text)
 pub mod system;
 

@@ -3,7 +3,7 @@ use crate::{
     material::Cull,
     maths::{Matrix, Pose, Vec2, Vec3, units::CM},
     prelude::*,
-    system::{Align, LogItem, LogLevel, Pivot, Text, TextFit, TextStyle},
+    system::{Align, LogItem, LogLevel, Pivot, TextBuilder, TextFit, TextStyle},
     ui::{Ui, UiCut},
     util::Color128,
 };
@@ -127,7 +127,7 @@ impl<'a> LogWindow<'a> {
         Ui::window_end();
     }
 
-    fn draw_logs(&mut self, token: &MainThreadToken) {
+    fn draw_logs(&mut self, _token: &MainThreadToken) {
         let text_size = Vec2::new(Ui::get_layout_remaining().x, 0.024);
         let items = self.log_log.lock().expect("Failed to lock log_log");
 
@@ -168,37 +168,25 @@ impl<'a> LogWindow<'a> {
                 };
 
                 let y = (i - index) as f32 * -text_size.y;
-                Text::add_in(
-                    token,
-                    item.text.trim(),
-                    Matrix::t(start + Vec3::new(0.0, y, -0.004)),
-                    text_size,
-                    TextFit::Clip | TextFit::Wrap,
-                    Some(ts),
-                    None,
-                    Some(Pivot::TopLeft),
-                    Some(Align::CenterLeft),
-                    None,
-                    None,
-                    None,
-                );
+                TextBuilder::new(item.text.trim())
+                    .transform(Matrix::t(start + Vec3::new(0.0, y, -0.004)))
+                    .size(text_size)
+                    .fit(TextFit::Clip | TextFit::Wrap)
+                    .style(ts)
+                    .position(Pivot::TopLeft)
+                    .align(Align::CenterLeft)
+                    .add();
 
                 if item.count > 1 {
                     let at = Vec3::new(start.x - text_size.x, start.y + y, start.z - 0.014);
-                    Text::add_in(
-                        token,
-                        item.count.to_string(),
-                        Matrix::t(at),
-                        Vec2::new(text_size.x + 0.22, text_size.y),
-                        TextFit::Clip,
-                        Some(self.style_info),
-                        None,
-                        Some(Pivot::TopLeft),
-                        Some(Align::CenterLeft),
-                        None,
-                        None,
-                        None,
-                    );
+                    TextBuilder::new(item.count.to_string())
+                        .transform(Matrix::t(at))
+                        .size(Vec2::new(text_size.x + 0.22, text_size.y))
+                        .fit(TextFit::Clip)
+                        .style(self.style_info)
+                        .position(Pivot::TopLeft)
+                        .align(Align::CenterLeft)
+                        .add();
                 }
             }
         }

@@ -11,7 +11,7 @@ use stereokit_rust::{
     maths::{Matrix, Pose, Quat, Vec2, Vec3, Vec4},
     prelude::*,
     sprite::{Sprite, SpriteType},
-    system::{Text, TextStyle},
+    system::{Text, TextBuilder, TextStyle},
     tex::{Tex, TexFormat, TexType},
     ui::Ui,
     util::named_colors::RED,
@@ -189,7 +189,7 @@ impl ComputeReaction {
     }
 
     /// Advance the simulation and render the UI panel (image + controls).
-    fn draw(&mut self, token: &MainThreadToken) {
+    fn draw(&mut self, _token: &MainThreadToken) {
         const STEPS_PER_FRAME: u32 = 10;
         if self.active {
             for _ in 0..STEPS_PER_FRAME {
@@ -227,7 +227,7 @@ impl ComputeReaction {
         }
         Ui::window_end();
 
-        Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
+        TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
     }
 }
 

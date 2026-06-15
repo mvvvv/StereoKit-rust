@@ -3,7 +3,7 @@ use stereokit_rust::{
     locale::*,
     maths::{Matrix, Pose, Quat, Vec2, Vec3, units::CM},
     prelude::*,
-    system::{Log, Text, TextContext, TextStyle},
+    system::{Log, Text, TextBuilder, TextContext, TextStyle},
     ui::Ui,
     util::{
         Color128, Platform,
@@ -218,7 +218,7 @@ impl Locale1 {
     }
 
     /// Called from `IStepper::step` after `check_event`.  Draws the UI.
-    fn draw(&mut self, token: &MainThreadToken) {
+    fn draw(&mut self, _token: &MainThreadToken) {
         Ui::window("Locale Keyboard Tester")
             .pose(&mut self.window_demo_pose)
             .size(Vec2::new(self.demo_win_width, 0.0))
@@ -290,6 +290,6 @@ impl Locale1 {
 
         Ui::window_end();
 
-        Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
+        TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
     }
 }

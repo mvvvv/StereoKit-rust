@@ -9,7 +9,7 @@ use stereokit_rust::{
     model::Model,
     prelude::*,
     sprite::Sprite,
-    system::{Input, Log, RenderLayer, Renderer, Text, TextStyle},
+    system::{Input, Log, RenderLayer, Renderer, Text, TextBuilder, TextStyle},
     tex::{Tex, TexAddress, TexFormat, TexSample, TexSampleComp, TexType},
     ui::{Ui, UiBtnLayout},
     util::named_colors,
@@ -171,19 +171,11 @@ impl Shadows1 {
         self.model.draw(token, self.model_pose.to_matrix(None), None, None);
 
         // Display title and description text like in math1 demo
-        Text::add_at(token, &self.text, self.transform_text, Some(self.text_style), None, None, None, None, None, None);
-        Text::add_at(
-            token,
-            &self.description,
-            self.transform_description,
-            Some(self.description_style),
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-        );
+        TextBuilder::new(&self.text).transform(self.transform_text).style(self.text_style).add();
+        TextBuilder::new(&self.description)
+            .transform(self.transform_description)
+            .style(self.description_style)
+            .add();
     }
 
     fn setup_shadow_map(&mut self, token: &MainThreadToken, light_dir: Vec3) {

@@ -11,7 +11,7 @@ use stereokit_rust::{
     sk::{MainThreadToken, SkInfo},
     sound::Sound,
     sprite::Sprite,
-    system::{Assets, Backend, BackendXRType, Text, TextStyle},
+    system::{Assets, Backend, BackendXRType, Text, TextBuilder, TextStyle},
     tex::{Tex, TexFormat},
     tools::xr_comp_layers::{SwapchainSk, XrCompLayers},
     ui::{Ui, UiBtnLayout},
@@ -49,7 +49,7 @@ pub struct Screen1 {
 
     window_pose: Pose,
     pub text: String,
-    pub text_style: Option<TextStyle>,
+    pub text_style: TextStyle,
     pub transform: Matrix,
 }
 
@@ -107,7 +107,7 @@ impl Default for Screen1 {
 
             window_pose: Pose::new(Vec3::new(0.35, 1.5, -0.6), Some(Quat::Y_180)),
             text: "Screen1".to_owned(),
-            text_style: None,
+            text_style: Text::make_style(Font::default(), 0.3, RED),
             transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, Quat::Y_180),
         }
     }
@@ -115,8 +115,6 @@ impl Default for Screen1 {
 
 impl Screen1 {
     fn start(&mut self) -> bool {
-        self.text_style = Some(Text::make_style(Font::default(), 0.3, RED));
-
         // Read texture dimensions from the first texture for swapchain creation.
         Assets::block_for_priority(i32::MAX);
         if let Some(tex) = self.textures.first()
@@ -325,7 +323,7 @@ impl Screen1 {
 
         Ui::window_end();
 
-        Text::add_at(token, &self.text, self.transform, self.text_style, None, None, None, None, None, None);
+        TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
     }
 
     fn close(&mut self, triggering: bool) -> bool {

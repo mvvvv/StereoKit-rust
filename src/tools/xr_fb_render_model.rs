@@ -3,6 +3,12 @@
 //! This module provides access to the OpenXR XR_FB_render_model extension,
 //! which allows applications to retrieve render models for controllers and other devices.
 //! <https://registry.khronos.org/OpenXR/specs/1.1/html/xrspec.html#XR_FB_render_model>
+use crate::{
+    maths::{Matrix, Quat, Vec3, units::CM},
+    model::{Model, AnimMode},
+    prelude::*,
+    system::{TextBuilder, Backend, BackendOpenXR, BackendXRType, Handed, Input, Log},
+};
 
 use std::ffi::{CString, c_char};
 use std::ptr;
@@ -14,14 +20,6 @@ use openxr_sys::{
     pfn::{EnumerateRenderModelPathsFB, GetRenderModelPropertiesFB, LoadRenderModelFB, PathToString, StringToPath},
 };
 
-use crate::maths::units::CM;
-use crate::maths::{Matrix, Quat, Vec3};
-use crate::model::AnimMode;
-use crate::{
-    model::Model,
-    prelude::*,
-    system::{Backend, BackendOpenXR, BackendXRType, Handed, Input, Log},
-};
 
 /// Extension name for XR_FB_render_model
 pub const XR_FB_RENDER_MODEL_EXTENSION_NAME: &str = "XR_FB_render_model";
@@ -778,14 +776,13 @@ impl XrFbRenderModelStepper {
 
         // Display current animation time code in 3D space
         use crate::maths::{Matrix, Quat, Vec3};
-        use crate::system::Text;
 
         let text_content = format!("Animation Time: {:.2}s\nPress joystick to advance", self.animation_time_code);
         let position = Vec3::new(0.0, 1.5, -0.8);
         let rotation = Quat::from_angles(0.0, 180.0, 0.0); // Rotated toward Z-axis
         let transform = Matrix::t_r(position, rotation);
 
-        Text::add_at(_token, &text_content, transform, None, None, None, None, None, None, None);
+        TextBuilder::new(&text_content).transform(transform).add();
 
         // Apply current time code to both controllers for analysis
         if let Some(ref mut xr_render_model) = self.xr_render_model {

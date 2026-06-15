@@ -2,7 +2,7 @@ use stereokit_rust::{
     font::Font,
     maths::{Matrix, Pose, Quat, Vec2, Vec3, units::CM},
     prelude::*,
-    system::{Text, TextStyle},
+    system::{Text, TextBuilder, TextStyle},
     ui::{Ui, UiConfirm, UiCut, UiNotify},
     util::named_colors::RED,
 };
@@ -76,7 +76,7 @@ impl Ui3 {
 
     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
-    fn draw(&mut self, token: &MainThreadToken) {
+    fn draw(&mut self, _token: &MainThreadToken) {
         // 50 cm wide window: right ~23 cm for vsliders, left remainder for hsliders
         Ui::window("Sliders").pose(&mut self.window_pose).size(Vec2::new(50.0, 0.0) * CM).begin();
 
@@ -142,6 +142,6 @@ impl Ui3 {
 
         Ui::window_end();
 
-        Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
+        TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
     }
 }

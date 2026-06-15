@@ -485,7 +485,7 @@ impl<'a> SkClosures<'a> {
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{ font::Font, material::Material, maths::{Matrix, Vec3},
-///                       mesh::Mesh, system::{Text, TextStyle}, util::named_colors};
+///                       mesh::Mesh, system::{Text, TextBuilder, TextStyle}, util::named_colors};
 ///
 /// /// The basic Stepper.
 /// pub struct AStepper {
@@ -494,7 +494,7 @@ impl<'a> SkClosures<'a> {
 ///     pub transform: Matrix,
 ///     round_cube: Option<Mesh>,
 ///     pub text: String,
-///     text_style: Option<TextStyle>,
+///     text_style: TextStyle,
 /// }
 ///
 /// unsafe impl Send for AStepper {}
@@ -509,7 +509,7 @@ impl<'a> SkClosures<'a> {
 ///             transform: Matrix::r([0.0, 180.0, 0.0]),
 ///             round_cube: None,
 ///             text: "IStepper\ntrait".to_owned(),
-///             text_style: None,
+///             text_style: TextStyle::default(),
 ///         }
 ///     }
 /// }
@@ -520,7 +520,7 @@ impl<'a> SkClosures<'a> {
 ///         self.id = id;
 ///         self.sk_info = Some(sk_info);
 ///         self.round_cube = Some(Mesh::generate_rounded_cube(Vec3::ONE / 5.0, 0.02, None));
-///         self.text_style = Some(Text::make_style(Font::default(), 0.3, named_colors::BLACK));
+///         self.text_style = Text::make_style(Font::default(), 0.3, named_colors::BLACK);
 ///
 ///         true
 ///     }
@@ -530,8 +530,7 @@ impl<'a> SkClosures<'a> {
 ///             round_cube.draw(token, Material::pbr(),
 ///                             self.transform, Some(named_colors::RED.into()), None);
 ///         }
-///         Text::add_at(token, &self.text, self.transform, self.text_style,
-///                      None, None, None, None, None, None);
+///         TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
 ///     }
 /// }
 ///
@@ -1280,8 +1279,8 @@ impl Steppers {
 /// ```
 /// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{font::Font, framework::StepperClosures, material::Material,
-///                      maths::{Matrix, Vec3},mesh::Mesh, system::{Renderer, Text},
-///                      util::named_colors,};
+///                      maths::{Matrix, Vec3},mesh::Mesh, util::named_colors,
+///                      system::{Renderer, Text, TextBuilder} };
 ///
 /// pub struct BStepper {
 ///     id: StepperId,
@@ -1313,15 +1312,14 @@ impl Steppers {
 ///         let transform = Matrix::t_r([0.0, 1.0, -0.5], [0.0, 180.0, 0.0]);
 ///         let mut round_cube = Mesh::generate_rounded_cube(Vec3::ONE / 5.0, 0.005, Some(16));
 ///         round_cube.id("round_cube BStepper");
-///         let text_style = Some(Text::make_style(Font::default(), 0.3, named_colors::GOLD));
+///         let text_style = Text::make_style(Font::default(), 0.3, named_colors::GOLD);
 ///         let text = self.text.clone();
 ///
 ///         self.closures.set(
 ///             move |token| {
 ///                 Renderer::add_mesh(token, &round_cube, Material::pbr(),
 ///                                    transform, Some(named_colors::RED.into()), None);
-///                 Text::add_at(token, &text, transform, text_style,
-///                              None, None, None, None, None, None);
+///                 TextBuilder::new(&text).transform(transform).style(text_style).add();
 ///                 // (1) You cannot do that here: self.text = "youpi".into();
 ///             },
 ///             || Log::diag("Closing Stepper B !!!"),

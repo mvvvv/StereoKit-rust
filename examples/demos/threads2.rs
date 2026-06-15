@@ -13,7 +13,7 @@ use stereokit_rust::{
     model::Model,
     prelude::*,
     shader::Shader,
-    system::{Text, TextStyle},
+    system::{Text, TextBuilder, TextStyle},
     util::{Color128, named_colors::GREEN_YELLOW},
 };
 
@@ -133,7 +133,7 @@ impl Threads2 {
     /// Called from IStepper::step after check_event, here you can draw your UI and scene
     fn draw(&mut self, token: &MainThreadToken) {
         self.model.draw(token, self.transform_model, None, None);
-        Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
+        TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
     }
 
     /// Called from IStepper::shutdown(triggering) then IStepper::shutdown_done(waiting for true response),

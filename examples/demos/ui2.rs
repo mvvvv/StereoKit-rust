@@ -2,7 +2,7 @@ use stereokit_rust::{
     font::Font,
     maths::{Matrix, Pose, Quat, Vec3},
     prelude::*,
-    system::{Hierarchy, Text, TextStyle},
+    system::{Hierarchy, Text, TextBuilder, TextStyle},
     ui::Ui,
     util::named_colors::RED,
 };
@@ -109,6 +109,6 @@ impl Ui2 {
         Ui::window_end();
 
         // Display the demo title text
-        Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
+        TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
     }
 }

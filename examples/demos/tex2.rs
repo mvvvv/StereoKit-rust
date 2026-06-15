@@ -4,7 +4,7 @@ use stereokit_rust::{
     maths::{Matrix, Quat, Vec3},
     mesh::Mesh,
     prelude::*,
-    system::{Text, TextStyle},
+    system::{Text, TextBuilder, TextStyle},
     tex::{Tex, TexAddress, TexFormat, TexType},
     util::{Color32, named_colors::RED},
 };
@@ -83,7 +83,7 @@ impl Tex2 {
     fn draw(&mut self, token: &MainThreadToken) {
         Mesh::cube().draw(token, &self.material, self.world, None, None);
 
-        Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
+        TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
     }
 }
 

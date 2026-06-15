@@ -2,7 +2,7 @@ use stereokit_rust::{
     font::Font,
     maths::{Matrix, Pose, Quat, Vec2, Vec3, units::CM},
     prelude::*,
-    system::{Log, Text, TextStyle},
+    system::{Log, Text, TextBuilder, TextStyle},
     tools::os_api::launch_browser_android,
     ui::Ui,
     util::named_colors::GREEN,
@@ -45,7 +45,7 @@ impl Browser1 {
     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
     /// Called from IStepper::step after check_event, here you can draw your UI and scene
-    fn draw(&mut self, token: &MainThreadToken) {
+    fn draw(&mut self, _token: &MainThreadToken) {
         Ui::window("Browser Test Demo")
             .pose(&mut self.window_pose)
             .size(Vec2::new(self.window_width, 0.0))
@@ -91,6 +91,6 @@ impl Browser1 {
         Ui::window_end();
 
         // Affichage du titre principal
-        Text::add_at(token, "Browser1", self.transform, Some(self.text_style), None, None, None, None, None, None);
+        TextBuilder::new("Browser1").transform(self.transform).style(self.text_style).add();
     }
 }

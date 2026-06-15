@@ -7,7 +7,7 @@ use stereokit_rust::{
     sprite::Sprite,
     system::{
         DefaultInteractors, Interaction, Interactor, InteractorActivation, InteractorEvent, InteractorSource,
-        InteractorType, Lines, Log, Text, TextStyle,
+        InteractorType, Lines, Log, Text, TextBuilder, TextStyle,
     },
     ui::{Ui, UiBtnLayout, UiPad},
     util::{Color128, named_colors},
@@ -376,18 +376,7 @@ impl Interactor1 {
         Mesh::sphere().draw(token, Material::default(), transform, Some(*color), None);
 
         // Draw the text using cached style and updated transform
-        Text::add_at(
-            token,
-            &self.text_content, // Use cached text content
-            self.text_transform,
-            Some(self.text_style),
-            None,
-            None, // position
-            None, // align
-            None, // off_x
-            None, // off_y
-            None, // off_z
-        );
+        TextBuilder::new(&self.text_content).transform(self.text_transform).style(self.text_style).add();
 
         // Check if either controller is touching the text
         let controller_touching = self.check_controller_touching_text();
