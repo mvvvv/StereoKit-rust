@@ -1,8 +1,9 @@
 use crate::{
     maths::{Matrix, Quat, Vec2, Vec3},
     prelude::*,
+    render::Renderer,
     sk::{AppMode, OriginMode},
-    system::{Handed, Input, Key, Renderer, World},
+    system::{Handed, Input, Key, World},
     util::Time,
 };
 

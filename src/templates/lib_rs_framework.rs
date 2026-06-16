@@ -5,9 +5,10 @@ use c_stepper::CStepper;
 use stereokit_rust::{
     framework::{SkClosures, StepperAction},
     maths::{Pose, Quat, Vec2, Vec3, units::*},
+    render::Renderer,
     sk::{DisplayBlend, Sk, SkInfo},
     sprite::Sprite,
-    system::{Log, LogItem, LogLevel, Renderer},
+    system::{Log, LogItem, LogLevel},
     tex::SHCubemap,
     tools::log_window::{LogWindow, SHOW_LOG_WINDOW, basic_log_fmt},
     ui::{Ui, UiBtnLayout},

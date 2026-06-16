@@ -2,8 +2,9 @@ use crate::{
     StereoKitError,
     material::{Cull, Material, MaterialT},
     maths::{Bool32T, Bounds, Matrix, Ray, Vec2, Vec3, Vec4},
+    render::RenderLayer,
     sk::MainThreadToken,
-    system::{AssetState, IAsset, RenderLayer},
+    system::{AssetState, IAsset},
     util::{Color32, Color128},
 };
 use std::{
@@ -1369,7 +1370,7 @@ impl Mesh {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::{Vec3, Matrix}, mesh::Mesh,
-    ///                      material::Material, util::named_colors, system::RenderLayer};
+    ///                      material::Material, util::named_colors, render::RenderLayer};
     ///
     /// let material = Material::pbr();
     /// let cylinder1 = Mesh::generate_cylinder(0.25, 1.5, Vec3::ONE,        None);

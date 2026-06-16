@@ -6,13 +6,14 @@ use stereokit_rust::{
     maths::{Pose, Quat, Vec2, Vec3, units::*},
     model::Model,
     prelude::*,
+    render::{Projection, Renderer},
     shader::Shader,
     sk::{AppFocus, DisplayBlend},
     sound::{Sound, SoundInst},
     sprite::Sprite,
     system::{
         Backend, BackendOpenXR, BackendXRType, DefaultInteractors, Input, Interaction, Interactor, Key, Lines, LogItem,
-        LogLevel, Projection, Renderer, Text,
+        LogLevel, Text,
     },
     tex::Tex,
     tools::{

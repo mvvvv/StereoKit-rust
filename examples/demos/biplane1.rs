@@ -5,8 +5,9 @@ use stereokit_rust::{
     mesh::Mesh,
     model::Model,
     prelude::*,
+    render::Renderer,
     sound::{Sound, SoundInst},
-    system::{Renderer, Text, TextBuilder, TextStyle},
+    system::{Text, TextBuilder, TextStyle},
     util::{Time, named_colors::RED},
 };
 

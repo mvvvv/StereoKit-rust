@@ -272,8 +272,8 @@ impl Compute {
     }
 
     /// Queue this compute dispatch into the render pipeline. It will run during the next frame's render setup phase, in
-    /// source order with other queued render actions ([`crate::system::Renderer::render_to`],
-    /// [`crate::system::Renderer::set_global_buffer`], [`crate::system::Renderer::set_global_texture`]). This is the
+    /// source order with other queued render actions ([`crate::render::Renderer::render_to`],
+    /// [`crate::render::Renderer::set_global_buffer`], [`crate::render::Renderer::set_global_texture`]). This is the
     /// recommended path for compute work that participates in the frame's rendering pipeline (e.g. populating a texture
     /// that a later RenderTo or the main pass will sample), since sk_renderer can manage the necessary GPU barriers
     /// between queued items.

@@ -1,23 +1,22 @@
 // filepath: examples/demos/layers1.rs
 use openxr_sys::SwapchainUsageFlags;
 use std::rc::Rc;
-use stereokit_rust::font::Font;
-use stereokit_rust::maths::{Bounds, Rect};
-use stereokit_rust::render_list::RenderList;
-use stereokit_rust::sprite::Sprite;
-use stereokit_rust::system::{Pivot, RenderClear, TextBuilder, TextFit, TextStyle};
-use stereokit_rust::tex::TexFormat;
-use stereokit_rust::tools::xr_comp_layers::{SwapchainSk, XrCompLayers};
-use stereokit_rust::util::named_colors::{self, RED};
-use stereokit_rust::util::{Color128, Time};
 use stereokit_rust::{
+    font::Font,
     material::Material,
-    maths::{Matrix, Pose, Vec2, Vec3},
+    maths::{Bounds, Matrix, Pose, Rect, Vec2, Vec3},
     mesh::Mesh,
     prelude::*,
-    system::{Backend, BackendXRType, Renderer, Text},
-    tex::Tex,
+    render::{RenderClear, RenderList, Renderer},
+    sprite::Sprite,
+    system::{Backend, BackendXRType, Pivot, Text, TextBuilder, TextFit, TextStyle},
+    tex::{Tex, TexFormat},
+    tools::xr_comp_layers::{SwapchainSk, XrCompLayers},
     ui::Ui,
+    util::{
+        Color128, Time,
+        named_colors::{self, RED},
+    },
 };
 
 /// Composition Layers demo

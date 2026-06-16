@@ -18,7 +18,8 @@ use stereokit_macros::IStepper;
 
 use crate::{
     prelude::*,
-    system::{Backend, BackendOpenXR, BackendXRType, Renderer},
+    render::Renderer,
+    system::{Backend, BackendOpenXR, BackendXRType},
     util::Color128,
 };
 use std::ptr::null_mut;

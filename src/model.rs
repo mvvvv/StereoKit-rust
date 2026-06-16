@@ -5,8 +5,9 @@ use crate::{
     material::{Cull, Material, MaterialT},
     maths::{Bounds, Ray, Vec3},
     mesh::{Mesh, MeshT},
+    render::RenderLayer,
     shader::{Shader, ShaderT},
-    system::{AssetState, IAsset, Log, RenderLayer},
+    system::{AssetState, IAsset, Log},
     util::Color128,
 };
 use std::{
@@ -580,7 +581,7 @@ impl Model {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model, util::named_colors,
-    ///                      system::RenderLayer};
+    ///                      render::RenderLayer};
     ///
     /// let model = Model::from_file("center.glb", None, None)
     ///                        .expect("Could not load model").copy();
@@ -628,7 +629,7 @@ impl Model {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model, util::named_colors,
-    ///                      material::Material, system::RenderLayer};
+    ///                      material::Material, render::RenderLayer};
     ///
     /// let model = Model::from_file("cuve.glb", None, None)
     ///                        .expect("Could not load model").copy();

@@ -142,7 +142,7 @@ enum SleepPhase {
 ///                 
 ///     if iter == number_of_steps {
 ///         // render screenshot
-///         system::Renderer::screenshot(token, filename_scr, 90,
+///         render::Renderer::screenshot(token, filename_scr, 90,
 ///             maths::Pose::look_at(from_scr, at_scr),
 ///             width_scr, height_scr, Some(fov_scr) );
 ///     }
@@ -1280,7 +1280,7 @@ impl Steppers {
 /// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{font::Font, framework::StepperClosures, material::Material,
 ///                      maths::{Matrix, Vec3},mesh::Mesh, util::named_colors,
-///                      system::{Renderer, Text, TextBuilder} };
+///                      render::Renderer, system::{Text, TextBuilder} };
 ///
 /// pub struct BStepper {
 ///     id: StepperId,

@@ -1,7 +1,8 @@
 use crate::{
     StereoKitError,
     maths::{Bool32T, Vec3},
-    system::{AssetState, IAsset, Log, render_get_skylight, render_get_skytex, render_set_skylight, render_set_skytex},
+    render::{render_get_skylight, render_get_skytex, render_set_skylight, render_set_skytex},
+    system::{AssetState, IAsset, Log},
     util::{Color32, Color128, Gradient, GradientKey, GradientT, SphericalHarmonics},
 };
 use std::{
@@ -81,7 +82,7 @@ impl TexType {
 /// sample-only; you can't render to them.
 /// <https://stereokit.net/Pages/StereoKit/TexFormat.html>
 ///
-/// see also [`Tex`] [`crate::system::Renderer`]
+/// see also [`Tex`] [`crate::render::Renderer`]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u32)]
 pub enum TexFormat {
@@ -1020,7 +1021,7 @@ impl Tex {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{system::Renderer, tex::{Tex, TexFormat}, material::Material};
+    /// use stereokit_rust::{render::Renderer, tex::{Tex, TexFormat}, material::Material};
     ///
     /// let tex = Tex::render_target(128, 128, Some(2), Some(TexFormat::Rgba32Srgb), None)
     ///                            .expect("Tex should be created");
@@ -1352,7 +1353,7 @@ impl Tex {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{system::Renderer, tex::{Tex, TexFormat}, material::Material};
+    /// use stereokit_rust::{render::Renderer, tex::{Tex, TexFormat}, material::Material};
     ///
     ///
     /// let mut tex = Tex::render_target(128, 128, Some(2), Some(TexFormat::Rgba32Srgb),
@@ -3394,7 +3395,7 @@ impl SHCubemap {
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyLight.html>
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyTex.html>
     ///
-    /// see also [`crate::system::Renderer`]
+    /// see also [`crate::render::Renderer`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -3456,11 +3457,11 @@ impl SHCubemap {
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyLight.html>
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyTex.html>
     ///
-    /// see also see also [`crate::system::Renderer`]
+    /// see also see also [`crate::render::Renderer`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{tex::SHCubemap, system::Renderer};
+    /// use stereokit_rust::{tex::SHCubemap, render::Renderer};
     ///
     /// let sh_cubemap = SHCubemap::from_cubemap("hdri/sky_dawn.hdr", true, 9999)
     ///                                .expect("Cubemap should be created");

@@ -4,7 +4,8 @@ use stereokit_rust::{
     maths::{Matrix, Quat, Vec3},
     mesh::Mesh,
     prelude::*,
-    system::{Renderer, Text, TextBuilder, TextStyle},
+    render::Renderer,
+    system::{Text, TextBuilder, TextStyle},
     util::{Time, named_colors::RED},
 };
 /// The basic Stepper. we must ensure the StereoKit code stay in the main thread

@@ -5,8 +5,8 @@ use stereokit_rust::{
     mesh::Mesh,
     model::Model,
     prelude::*,
-    render_list::{RenderList, RenderListRefs},
-    system::{Assets, RenderClear, Renderer, Text, TextBuilder, TextStyle},
+    render::{RenderClear, RenderList, RenderListRefs, Renderer},
+    system::{Assets, Text, TextBuilder, TextStyle},
     tex::{Tex, TexFormat, TexType},
     ui::Ui,
     util::{

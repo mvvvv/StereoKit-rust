@@ -34,9 +34,9 @@ use std::ptr::null_mut;
 /// ## Basic Usage with SwapchainSk
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{ maths::{Vec3, Matrix, Pose, Vec2, Rect},  render_list::RenderList,
+/// use stereokit_rust::{ maths::{Vec3, Matrix, Pose, Vec2, Rect},  render::RenderList,
 ///     util::{named_colors, Color128, Time}, tex::TexFormat, material::Material, mesh::Mesh,
-///     system::{Backend, BackendXRType, RenderClear}, tools::xr_comp_layers::* };
+///     system::{Backend, BackendXRType}, render::RenderClear, tools::xr_comp_layers::* };
 ///
 /// // Check if OpenXR is available
 /// if Backend::xr_type() == BackendXRType::OpenXR {
@@ -446,9 +446,9 @@ impl XrCompLayers {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{ maths::{Vec3, Matrix, Rect},  render_list::RenderList,
+/// use stereokit_rust::{ maths::{Vec3, Matrix, Rect},  render::RenderList,
 ///     util::{named_colors, Time}, tex::TexFormat, material::Material, mesh::Mesh,
-///     system::RenderClear, tools::xr_comp_layers::* };
+///     render::RenderClear, tools::xr_comp_layers::* };
 ///
 /// // Create a swapchain
 /// if let Some(mut swapchain) = SwapchainSk::new(TexFormat::Rgba32Srgb, 512, 512, None) {

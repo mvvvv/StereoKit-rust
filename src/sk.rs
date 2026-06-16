@@ -649,7 +649,7 @@ impl SkSettings {
     /// #[cfg(not(feature = "no-event-loop"))]
     /// {
     ///     use stereokit_rust::{framework::SkClosures, tools::title::Title};
-    ///     use stereokit_rust::{prelude::*, system::Renderer,
+    ///     use stereokit_rust::{prelude::*, render::Renderer,
     ///                          maths::{Vec3, Matrix, Pose}, util::named_colors};
     ///     let mut title = Title::new("Sk basic example", Some(named_colors::BLUE), None, None);
     ///     title.transform = Matrix::t_r([0.5, 0.5, -1.9], [0.0, 200.0, 0.0]);

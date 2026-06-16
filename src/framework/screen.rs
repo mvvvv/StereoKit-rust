@@ -5,10 +5,11 @@ use crate::{
     material::Material,
     maths::{Bounds, Matrix, Pose, Quat, Ray, Vec2, Vec3},
     mesh::{Inds, Mesh, Vertex},
+    render::Renderer,
     sk::MainThreadToken,
     sound::{Sound, SoundInst},
     sprite::Sprite,
-    system::{Align, Input, Lines, Renderer, TextFit},
+    system::{Align, Input, Lines, TextFit},
     tex::Tex,
     ui::{Ui, UiBtnLayout, UiMove, UiWin},
 };

@@ -10,7 +10,7 @@ use stereokit_macros::IStepper;
 use crate::{
     maths::{Pose, Quat, Vec2, Vec3, units::CM},
     prelude::*,
-    system::Renderer,
+    render::Renderer,
     tex::{Tex, TexFormat},
     ui::Ui,
     util::{PickerMode, Platform},
