@@ -1869,6 +1869,7 @@ bitflags::bitflags! {
     /// assert!(state.contains(BtnState::Active));
     /// assert!(state.contains(BtnState::JustActive));
     /// assert!(!state.contains(BtnState::JustInactive));
+    /// assert!(!state.contains(BtnState::JustCanceled));
     /// assert!(!state.contains(BtnState::Changed));
     /// ```
     #[derive(Default, Debug, Copy, Clone, PartialEq, Eq, PartialOrd)]
@@ -1882,8 +1883,11 @@ bitflags::bitflags! {
         const JustInactive = 1 << 1;
         /// Has the button just been pressed? Only true for a single frame.
         const JustActive = 1 << 2;
-        /// Has the button just changed state this frame?
-        const Changed = Self::JustInactive.bits() | Self::JustActive.bits();
+        /// Was a button activation just canceled this frame, ending without firing because the interactor moved too far
+        /// away? Only true for a single frame.
+        const JustCanceled = 1 << 3;
+        /// Has the button just changed state this frame? Includes presses, releases, and canceled activations.
+        const Changed = Self::JustInactive.bits() | Self::JustActive.bits() | Self::JustCanceled.bits();
         /// Matches with all states!
         const Any = 0x7FFFFFFF;
     }
@@ -1950,6 +1954,13 @@ impl BtnState {
     /// <https://stereokit.net/Pages/StereoKit/BtnStateExtensions/IsJustInactive.html>
     pub fn is_just_inactive(&self) -> bool {
         (*self & BtnState::JustInactive) > BtnState::Inactive
+    }
+
+    /// Was a button activation just canceled this frame, ending without firing because the interactor moved too far
+    /// away?
+    /// <https://stereokit.net/Pages/StereoKit/BtnStateExtensions/IsJustCanceled.html>
+    pub fn is_just_canceled(&self) -> bool {
+        (*self & BtnState::JustCanceled) > BtnState::Inactive
     }
 
     /// Was the button either presses or released this frame?

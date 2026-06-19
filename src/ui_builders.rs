@@ -1,4 +1,7 @@
-use std::ffi::{CStr, CString, c_char};
+use std::{
+    ffi::{CStr, CString, c_char},
+    ptr::null_mut,
+};
 
 use crate::{
     maths::{Bool32T, Bounds, Pose, Vec2, Vec3},
@@ -183,6 +186,7 @@ pub struct UiHandleBuilder<'a> {
     id: CString,
     pose: &'a mut Pose,
     handle: Bounds,
+    scale: Option<&'a mut f32>,
     draw_handle: bool,
     move_type: UiMove,
     allower_gesture: UiGesture,
@@ -195,10 +199,27 @@ impl<'a> UiHandleBuilder<'a> {
             id: CString::new(id.as_ref()).unwrap_or_default(),
             pose,
             handle,
+            scale: None,
             draw_handle: false,
             move_type: UiMove::Exact,
             allower_gesture: UiGesture::Pinch,
         }
+    }
+
+    /// This additionally supports uniform scaling when two or more interactors grab the handle at the same time. With
+    /// a single interactor the handle behaves exactly like the normal handle. With multiple interactors, their motion
+    /// is combined into a translation, rotation, and a uniform scale. Interactors may freely join or leave the
+    /// interaction without the handle jumping.
+    /// Providing a scale here enables scaling; pass [`UIMove::ExactNoscale`] as the moveType if you want multi-
+    /// interactor translate/rotate but no scaling.
+    ///
+    /// * `scale` - A uniform scale multiplier that gets accumulated as the user scales the handle with multiple
+    ///   interactors. Seed this with 1 (or your starting scale). Since the Pose has no scale of its own, apply this
+    ///   value to your content - the `handle` Bounds are scaled by it for you, so the grab volume and drawn handle stay
+    ///   matched.
+    pub fn scale(mut self, scale: &'a mut f32) -> Self {
+        self.scale = Some(scale);
+        self
     }
 
     /// Should the handle's bounds be drawn? Default is false.
@@ -227,10 +248,12 @@ impl<'a> UiHandleBuilder<'a> {
     ///
     /// Returns true for every frame the user is grabbing the handle and the pose has been changed.
     pub fn begin_grab(&mut self) -> bool {
+        let scale = self.scale.as_deref_mut().map_or(null_mut(), |scale| scale as *mut f32);
         unsafe {
             ui_handle_begin(
                 self.id.as_ptr(),
                 self.pose,
+                scale,
                 self.handle,
                 self.draw_handle as Bool32T,
                 self.move_type,
@@ -243,10 +266,12 @@ impl<'a> UiHandleBuilder<'a> {
     ///
     /// Returns true for every frame the user is grabbing the handle and the pose has been changed.
     pub fn grab(&mut self) -> bool {
+        let scale = self.scale.as_deref_mut().map_or(null_mut(), |scale| scale as *mut f32);
         let change = unsafe {
             ui_handle_begin(
                 self.id.as_ptr(),
                 self.pose,
+                scale,
                 self.handle,
                 self.draw_handle as Bool32T,
                 self.move_type,

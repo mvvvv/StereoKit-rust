@@ -54,6 +54,9 @@ pub enum UiMove {
     PosOnly = 2,
     /// Do not allow user input to change the element’s pose at all! You may also be interested in Ui::(push/pop)_surface.
     None = 3,
+    /// Behaves just like ui_move_exact, but opts out of uniform scaling. Use this when a Handle is provided a scale
+    /// value, but should only ever be translated and rotated by multiple interactors, never scaled.
+    ExactNoscale = 4,
 }
 
 /// This describes how a layout should be cut up! Used with Ui::layout_push_cut.
@@ -1018,6 +1021,7 @@ unsafe extern "C" {
     pub fn ui_handle_begin(
         text: *const c_char,
         movement: *mut Pose,
+        opt_ref_scale: *mut f32,
         handle: Bounds,
         draw: Bool32T,
         move_type: UiMove,
@@ -1026,6 +1030,7 @@ unsafe extern "C" {
     pub fn ui_handle_begin_16(
         text: *const c_ushort,
         movement: *mut Pose,
+        opt_ref_scale: *mut f32,
         handle: Bounds,
         draw: Bool32T,
         move_type: UiMove,
@@ -1457,6 +1462,10 @@ impl Ui {
     /// * `pose` - The pose state for the handle! The user will be able to grab this handle and move it around.
     ///   The pose is relative to the current hierarchy stack.
     /// * `handle` - Size and location of the handle, relative to the pose.
+    /// * [`UiHandleBuilder::scale`] - A uniform scale multiplier that gets accumulated as the user scales the handle
+    ///   with multiple interactors. Seed this with 1 (or your starting scale). Since the Pose has no scale of its own,
+    ///   apply this value to your content - the `handle` Bounds are scaled by it for you, so the grab volume and drawn
+    ///   handle stay matched.    
     /// * [`UiHandleBuilder::draw_handle`] - Should this function draw the handle for you, or will you draw that
     ///   yourself?
     /// * [`UiHandleBuilder::move_type`] - Describes how the handle will move when dragged around. Default value is

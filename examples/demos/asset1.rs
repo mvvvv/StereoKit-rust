@@ -29,6 +29,7 @@ pub struct Asset1 {
     pub transform: Matrix,
     pub asset_pose: Pose,
     pub asset_scale: Vec3,
+    pub model_scale: f32,
     model_to_show: Option<Model>,
     sound_to_play: Option<SoundInst>,
     asset_files: Vec<PathEntry>,
@@ -56,6 +57,7 @@ impl Default for Asset1 {
             transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, Quat::from_angles(0.0, 180.0, 0.0)),
             asset_pose: Pose::new(Vec3::new(0.0, 1.3, -0.3), None),
             asset_scale: Vec3::ONE * 0.02,
+            model_scale: 1.0,
             model_to_show: None,
             sound_to_play: None,
             asset_files: vec![],
@@ -181,14 +183,21 @@ impl Asset1 {
         }
         Ui::window_end();
 
-        // If a model has been selected, we draw it
+        // If a model has been selected, we draw it.
+        // The handle gets the base bounds (model bounds * fixed asset_scale); StereoKit's
+        // ui_handle_begin multiplies them internally by `model_scale`, keeping the grab
+        // volume matched to the drawn size. Passing `model_scale` enables two-handed
+        // translate/rotate AND uniform scaling.
         if let Some(model) = &self.model_to_show {
-            if Ui::handle("Model1", &mut self.asset_pose, model.get_bounds() * self.asset_scale).grab()
+            if Ui::handle("Model1", &mut self.asset_pose, model.get_bounds() * self.asset_scale)
+                .scale(&mut self.model_scale)
+                .grab()
                 && let Some(mut sound) = self.sound_to_play
             {
                 sound.position(self.asset_pose.position);
             }
-            let model_transform = self.asset_pose.to_matrix(Some(self.asset_scale));
+            // Combine the fixed per-axis base scale with the user-driven uniform scale.
+            let model_transform = self.asset_pose.to_matrix(Some(self.asset_scale * self.model_scale));
             Renderer::add_model(token, model, model_transform, None, None);
         } else {
             self.asset_selected = 0;
