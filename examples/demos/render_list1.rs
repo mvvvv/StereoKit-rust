@@ -5,7 +5,7 @@ use stereokit_rust::{
     mesh::Mesh,
     model::Model,
     prelude::*,
-    render::{RenderClear, RenderList, RenderListRefs, Renderer},
+    render::{RenderBuilder, RenderClear, RenderList, RenderListRefs, Renderer},
     system::{Assets, Text, TextBuilder, TextStyle},
     tex::{Tex, TexFormat, TexType},
     ui::Ui,
@@ -105,16 +105,12 @@ impl RenderList1 {
             self.primary.clear();
         }
 
-        self.list.draw_now(
-            &self.render_tex,
-            Matrix::look_at(self.camera_pos, Vec3::ZERO, Some(Vec3::new(1.0, Time::get_totalf().sin(), 1.0))),
-            self.perspective,
-            Some(Color128::new(0.4, 0.3, 0.2, 0.5)),
-            Some(RenderClear::Color),
-            Rect::new(0.0, 0.0, 1.0, 1.0),
-            None,
-            None,
-        );
+        let render = RenderBuilder::new()
+            .camera(Matrix::look_at(self.camera_pos, Vec3::ZERO, Some(Vec3::new(1.0, Time::get_totalf().sin(), 1.0))))
+            .projection(self.perspective)
+            .clear(RenderClear::Color)
+            .viewport(Rect::new(0.0, 0.0, 1.0, 1.0));
+        render.draw_now(&self.list, &self.render_tex, Color128::new(0.4, 0.3, 0.2, 0.5));
 
         Ui::window("Render Lists").pose(&mut self.window_pose).size(Vec2::new(0.23, 0.35)).begin();
         Ui::label(format!("Render items: {}/{}", self.primary.get_count(), self.primary.get_prev_count()))

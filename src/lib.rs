@@ -383,12 +383,12 @@ pub mod prelude;
 /// [![Renderer](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/renderer.jpeg)](render::Renderer)
 /// [![Screenshots capture](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/screenshot_capture.jpeg)](render::Renderer::screenshot_capture)
 /// [![Render to](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_to.jpeg)](render::Renderer::render_to)
-/// [![Render to multiview](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_to_multiview.jpeg)](render::Renderer::render_to_multiview)
+/// [![Render to multiview](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_to_multiview.jpeg)](render::RenderBuilder::render_to)
 /// [![RenderList](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_list.jpeg)](render::RenderList)
 /// [![RenderList add mesh](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_list_add_mesh.jpeg)](render::RenderList::add_mesh)
 /// [![RenderList add model](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_list_add_model.jpeg)](render::RenderList::add_model)
 /// [![RenderList draw now](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_list_draw_now.jpeg)](render::RenderList::draw_now)
-/// [![RenderList draw now multi-view](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_list_draw_now_multi_view.jpeg)](render::RenderList::draw_now_multi_view)
+/// [![RenderList draw now multi-view](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_list_draw_now_multi_view.jpeg)](render::RenderBuilder::draw_now)
 /// [![RenderList push](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_list_push.jpeg)](render::RenderList::push)
 pub mod render;
 

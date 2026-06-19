@@ -5,7 +5,7 @@ use stereokit_rust::{
     mesh::Mesh,
     model::Model,
     prelude::*,
-    render::Renderer,
+    render::{RenderBuilder, Renderer},
     tex::{SHCubemap, Tex, TexFormat, TexSample},
     tools::{fly_over::ENABLE_FLY_OVER, log_window::SHOW_LOG_WINDOW, screenshot::SHOW_SCREENSHOT_WINDOW},
     util::{
@@ -485,17 +485,9 @@ impl HandMenuRadial1 {
                 //     None,
                 // );
 
-                Renderer::render_to(
-                    token,
-                    &self.shadow_depth,
-                    None,
-                    camera,
-                    Matrix::perspective(90.0, 1.0, 10.01, 1010.0),
-                    None,
-                    None,
-                    None,
-                    None,
-                );
+                let shadow_render =
+                    RenderBuilder::new().camera(camera).projection(Matrix::perspective(90.0, 1.0, 10.01, 1010.0));
+                shadow_render.render_to(&self.shadow_depth, 0);
             }
             match self.floor {
                 0 => self.floor_model.draw_with_material(token, &self.clean_tile, self.floor_transform, None, None),

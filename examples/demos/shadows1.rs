@@ -8,7 +8,7 @@ use stereokit_rust::{
     mesh::Mesh,
     model::Model,
     prelude::*,
-    render::{RenderLayer, Renderer},
+    render::{RenderBuilder, RenderLayer, Renderer},
     sprite::Sprite,
     system::{Input, Log, Text, TextBuilder, TextStyle},
     tex::{Tex, TexAddress, TexFormat, TexSample, TexSampleComp, TexType},
@@ -242,17 +242,12 @@ impl Shadows1 {
         self.shadow_buffer.set(&mut shadow_buffer_last);
 
         Renderer::set_global_texture(token, 13, None);
-        Renderer::render_to(
-            token,
-            &self.shadow_map,
-            None,
-            view,
-            proj,
-            Some(RenderLayer::All & !RenderLayer::VFX),
-            Some(SHADOW_MAP_VARIANT),
-            None,
-            None,
-        );
+        let shadow_render = RenderBuilder::new()
+            .camera(view)
+            .projection(proj)
+            .layer_filter(RenderLayer::All & !RenderLayer::VFX)
+            .material_variant(SHADOW_MAP_VARIANT);
+        shadow_render.render_to(&self.shadow_map, 0);
         Renderer::set_global_texture(token, 13, Some(&self.shadow_map));
     }
 

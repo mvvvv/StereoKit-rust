@@ -34,9 +34,9 @@ use std::ptr::null_mut;
 /// ## Basic Usage with SwapchainSk
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{ maths::{Vec3, Matrix, Pose, Vec2, Rect},  render::RenderList,
+/// use stereokit_rust::{ maths::{Vec3, Matrix, Pose, Vec2, Rect}, tools::xr_comp_layers::*,
 ///     util::{named_colors, Color128, Time}, tex::TexFormat, material::Material, mesh::Mesh,
-///     system::{Backend, BackendXRType}, render::RenderClear, tools::xr_comp_layers::* };
+///     system::{Backend, BackendXRType}, render::{RenderClear, RenderList, RenderBuilder}};
 ///
 /// // Check if OpenXR is available
 /// if Backend::xr_type() == BackendXRType::OpenXR {
@@ -60,15 +60,12 @@ use std::ptr::null_mut;
 ///                 // Get the render target texture
 ///                 if let Some(render_tex) = swapchain.get_render_target() {
 ///                     // Render to the swapchain texture
-///                     render_list.draw_now(
-///                         render_tex,
-///                         Matrix::look_at(Vec3::angle_xy(Time::get_totalf() * 90.0, 0.0), Vec3::ZERO, None),
-///                         projection,
-///                         Some(Color128::new(0.4, 0.3, 0.2, 1.0)),
-///                         Some(RenderClear::Color),
-///                         Rect::new(0.0, 0.0, 1.0, 1.0),
-///                         None, None,
-///                     );
+///                     let render = RenderBuilder::new()
+///                         .camera(Matrix::look_at(Vec3::angle_xy(Time::get_totalf() * 90.0, 0.0), Vec3::ZERO, None))
+///                         .projection(projection)
+///                         .clear(RenderClear::Color)
+///                         .viewport(Rect::new(0.0, 0.0, 1.0, 1.0));
+///                     render_list.draw_now(render_tex, &render, Color128::new(0.4, 0.3, 0.2, 1.0));
 ///                 }
 ///                 
 ///                 // Release the image back to the swapchain
@@ -446,9 +443,9 @@ impl XrCompLayers {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{ maths::{Vec3, Matrix, Rect},  render::RenderList,
-///     util::{named_colors, Time}, tex::TexFormat, material::Material, mesh::Mesh,
-///     render::RenderClear, tools::xr_comp_layers::* };
+/// use stereokit_rust::{ maths::{Vec3, Matrix, Rect},
+///     util::{named_colors, Color128, Time}, tex::TexFormat, material::Material, mesh::Mesh,
+///     render::{RenderClear, RenderList, RenderBuilder}, tools::xr_comp_layers::* };
 ///
 /// // Create a swapchain
 /// if let Some(mut swapchain) = SwapchainSk::new(TexFormat::Rgba32Srgb, 512, 512, None) {
@@ -468,15 +465,12 @@ impl XrCompLayers {
 ///         // Render to swapchain
 ///         if let Ok(_) = swapchain.acquire_image(None) {
 ///             if let Some(render_target) = swapchain.get_render_target() {
-///                 render_list.draw_now(
-///                     render_target,
-///                     Matrix::look_at(Vec3::angle_xy(Time::get_totalf() * 90.0, 0.0), Vec3::ZERO, None),
-///                     Matrix::orthographic(1.0, 1.0, 0.1, 10.0),
-///                     None,
-///                     Some(RenderClear::All),
-///                     Rect::new(0.0, 0.0, 1.0, 1.0),
-///                     None, None,
-///                 );
+///                 let render = RenderBuilder::new()
+///                     .camera(Matrix::look_at(Vec3::angle_xy(Time::get_totalf() * 90.0, 0.0), Vec3::ZERO, None))
+///                     .projection(Matrix::orthographic(1.0, 1.0, 0.1, 10.0))
+///                     .clear(RenderClear::All)
+///                     .viewport(Rect::new(0.0, 0.0, 1.0, 1.0));
+///                 render_list.draw_now(render_target, &render, Color128::BLACK_TRANSPARENT);
 ///             }
 ///             swapchain.release_image().expect("Failed to release image");
 ///         }

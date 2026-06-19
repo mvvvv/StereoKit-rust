@@ -210,8 +210,8 @@ impl<'a> UiHandleBuilder<'a> {
     /// a single interactor the handle behaves exactly like the normal handle. With multiple interactors, their motion
     /// is combined into a translation, rotation, and a uniform scale. Interactors may freely join or leave the
     /// interaction without the handle jumping.
-    /// Providing a scale here enables scaling; pass [`UIMove::ExactNoscale`] as the moveType if you want multi-
-    /// interactor translate/rotate but no scaling.
+    /// Providing a scale here enables scaling; pass [`UiMove::ExactNoscale`] as the
+    /// moveType if you want multi-interactor translate/rotate but no scaling.
     ///
     /// * `scale` - A uniform scale multiplier that gets accumulated as the user scales the handle with multiple
     ///   interactors. Seed this with 1 (or your starting scale). Since the Pose has no scale of its own, apply this

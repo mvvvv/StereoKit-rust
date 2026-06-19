@@ -761,30 +761,17 @@ impl Renderer {
     /// <https://stereokit.net/Pages/StereoKit/Renderer/RenderTo.html>
     /// * `to_render_target` - The texture to which the scene will be rendered to. This must be a Rendertarget type
     ///   texture.
-    /// * `to_target_index` - (Optional) Index of the render target's array slice we want to draw to. If None, defaults
-    ///   to 0. This is only relevant for array/render target textures with multiple slices.
-    /// * `camera` - A TRS matrix representing the location and orientation of the camera. This matrix gets inverted
-    ///   later on, so no need to do it yourself.
-    /// * `projection` - The projection matrix describes how the geometry is flattened onto the draw surface. Normally,
-    ///   you’d use Matrix::perspective, and occasionally Matrix::orthographic might be helpful as well.
-    /// * `layer_filter` - This is a bit flag that allows you to change which layers StereoKit renders for this particular
-    ///   render viewpoint. To change what layers a visual is on, use a Draw method that includes a RenderLayer as a
-    ///   parameter. If None has default value of RenderLayer::ALL
-    /// * `material_variant` - Specifies which Material variant should be used for rendering. 0 will be the normal
-    ///   default material, any others will generally be application-defined by setting up each Material's Variant with
-    ///   specific shaders. If a Material has no corresponding variant, it will not be drawn.
-    /// * `clear` - Describes if and how the rendertarget should be cleared before rendering. Note that clearing the
-    ///   target is unaffected by the viewport, so this will clean the entire surface! If None has default value of
-    ///   RenderClear::All
-    /// * `vieport` - Allows you to specify a region of the rendertarget to draw to! This is in normalized coordinates,
-    ///   0-1. If the width of this value is zero, then this will render to the entire texture. If None has default value
-    ///   of (0, 0, 0, 0)
+    /// * `to_target_index` - Index of the render target's array slice we want to draw to. 0 for single view. This is
+    ///   only relevant for array/render target textures with multiple slices.
+    /// * `render` - A [`RenderBuilder`] describing the camera(s), projection(s), layer filter, clear behavior and
+    ///   viewport to use for this render. Passing a builder with a single camera is equivalent to the old single-view
+    ///   overload, while passing one with N cameras performs the multi-view render.
     ///
-    /// see also [`render_to`]
+    /// see also [`render_to`] [`RenderBuilder::render_to`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{render::Renderer, maths::{Vec3, Quat, Matrix}, tex::Tex,
+    /// use stereokit_rust::{render::{Renderer, RenderBuilder}, maths::{Vec3, Quat, Matrix}, tex::Tex,
     ///                      mesh::Mesh, material::Material, util::named_colors};
     ///
     /// let sun = Mesh::generate_sphere(2.0, None);
@@ -801,6 +788,8 @@ impl Renderer {
     /// let camera = Matrix::t_r(Vec3::Z * 1.0, Quat::look_at(Vec3::Z, Vec3::ZERO, None));
     /// let projection = Matrix::perspective(90.0, 1.0, 0.1, 50.0);
     ///
+    /// let render = RenderBuilder::new().camera(camera).projection(projection);
+    ///
     /// filename_scr = "screenshots/render_to.jpeg";
     /// number_of_steps = 30;
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
@@ -808,8 +797,7 @@ impl Renderer {
     ///     Renderer::add_mesh(token, &sun, &material_sun, transform_sun,
     ///         Some(named_colors::RED.into()), None);
     ///
-    ///     Renderer::render_to(token, &tex, None, camera, projection,
-    ///                         None, None, None, None);
+    ///     Renderer::render_to(token, &tex, 0, &render);
     ///
     ///     Renderer::add_mesh(token, &plane, &material, transform_plane,
     ///         None, None);
@@ -817,134 +805,13 @@ impl Renderer {
     /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_to.jpeg" alt="screenshot" width="200">
-    #[allow(clippy::too_many_arguments)]
-    pub fn render_to<M: Into<Matrix>>(
+    pub fn render_to(
         _token: &MainThreadToken,
         to_render_target: impl AsRef<Tex>,
-        to_target_index: Option<i32>,
-        camera: M,
-        projection: M,
-        layer_filter: Option<RenderLayer>,
-        material_variant: Option<i32>,
-        clear: Option<RenderClear>,
-        viewport: Option<Rect>,
+        to_target_index: i32,
+        render: &RenderBuilder,
     ) {
-        let to_target_index = to_target_index.unwrap_or(0);
-        let layer_filter = layer_filter.unwrap_or(RenderLayer::All);
-        let material_variant = material_variant.unwrap_or(0);
-        let clear = clear.unwrap_or(RenderClear::All);
-        let viewport = viewport.unwrap_or_default();
-
-        unsafe {
-            render_to(
-                to_render_target.as_ref().0.as_ptr(),
-                to_target_index,
-                &camera.into(),
-                &projection.into(),
-                1,
-                layer_filter,
-                material_variant,
-                clear,
-                viewport,
-            )
-        }
-    }
-
-    /// Multi-view variant of [`Renderer::render_to`]. Queues a single render pass that draws the
-    /// active list into N views at once, with one camera + projection per view, writing into N
-    /// consecutive layers of an array rendertarget. The number of views is capped at 6. Like the
-    /// single-view RenderTo, this is queued for the next pipeline frame.
-    /// <https://stereokit.net/Pages/StereoKit/Renderer/RenderTo.html>
-    /// * `to_render_target` - An array or cubemap rendertarget with at least `cameras.len()`
-    ///   layers.
-    /// * `cameras` - One TRS matrix per view. Each matrix gets inverted internally. The length
-    ///   must equal `projections.len()` and is capped at 6.
-    /// * `projections` - One projection matrix per view. The length must equal `cameras.len()`.
-    /// * `layer_filter` - This is a bit flag that allows you to change which layers StereoKit
-    ///   renders for this particular render viewpoint. If None has default value of RenderLayer::All
-    /// * `material_variant` - Specifies which Material variant should be used for rendering. If
-    ///   None has default value of 0
-    /// * `clear` - Describes if and how the rendertarget should be cleared before rendering. If
-    ///   None has default value of RenderClear::All
-    /// * `viewport` - Allows you to specify a region of the rendertarget to draw to! This is in
-    ///   normalized coordinates, 0-1. If None has default value of (0, 0, 0, 0)
-    ///
-    /// see also [`render_to`] [`Renderer::render_to`]
-    /// TODO: This example hangs on Momado simulator if render_to_multiview is called once (-3 is never reached).
-    /// ### Examples
-    /// ```
-    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{render::Renderer, maths::{Vec3, Quat, Matrix}, tex::Tex,
-    ///                      mesh::Mesh, material::Material, util::named_colors};
-    ///
-    /// let sphere = Mesh::generate_sphere(1.0, None);
-    /// let mut material = Material::pbr().copy();
-    /// material.color_tint(named_colors::CYAN);
-    /// let transform_sphere = Matrix::t([0.0, -0.55, -0.30]);
-    ///
-    /// let camera1 = Matrix::t_r(Vec3::Z * 2.0, Quat::look_at(Vec3::Z, Vec3::ZERO, None));
-    /// let camera2 = Matrix::t_r(Vec3::Z * -2.0, Quat::look_at(Vec3::Z, Vec3::ZERO, None));
-    /// let projection = Matrix::perspective(90.0, 1.0, 0.1, 20.0);
-    ///
-    /// // Two materials to display the two array layers (slice 0 and slice 1) of the render target
-    /// let tex = Tex::render_target(200,200, None, None, None)
-    ///                    .expect("RenderTarget should be created");
-    /// let quad = Mesh::screen_quad();
-    /// let mut mat0 = Material::unlit().copy();
-    /// let mut mat1 = Material::unlit().copy();
-    /// mat0.diffuse_tex(&tex);
-    /// mat1.diffuse_tex(&tex);
-    /// // Transforms to place the two quads side by side in the scene
-    /// let transform_q0 = Matrix::t_s([-0.50, 0.45, 0.12], [0.45, 0.45, 0.45]);
-    /// let transform_q1 = Matrix::t_s([ 0.50, 0.45, 0.12], [0.45, 0.45, 0.45]);
-    ///
-    /// filename_scr = "screenshots/render_to_multiview.jpeg";
-    /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Renderer::add_mesh(token, &sphere, &material, transform_sphere,
-    ///         None, None);
-    ///     if iter < number_of_steps - 3 {
-    ///         Renderer::render_to_multiview(token, &tex, &[camera1, camera2],
-    ///                                       &[projection, projection],
-    ///                                       None, None, None, None);
-    ///     }
-    ///
-    ///     // Display array slice 0 and slice 1 of the render target as screen quads
-    ///     quad.draw(token, &mat0, transform_q0, None, None);
-    ///     quad.draw(token, &mat1, transform_q1, None, None);
-    /// );
-    /// # sk::Sk::shutdown();
-    /// ```
-    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_to_multiview.jpeg" alt="screenshot" width="200">
-    #[allow(clippy::too_many_arguments)]
-    pub fn render_to_multiview(
-        _token: &MainThreadToken,
-        to_render_target: impl AsRef<Tex>,
-        cameras: &[Matrix],
-        projections: &[Matrix],
-        layer_filter: Option<RenderLayer>,
-        material_variant: Option<i32>,
-        clear: Option<RenderClear>,
-        viewport: Option<Rect>,
-    ) {
-        assert_eq!(cameras.len(), projections.len(), "cameras and projections must have the same length");
-        let layer_filter = layer_filter.unwrap_or(RenderLayer::All);
-        let material_variant = material_variant.unwrap_or(0);
-        let clear = clear.unwrap_or(RenderClear::All);
-        let viewport = viewport.unwrap_or_default();
-
-        unsafe {
-            render_to(
-                to_render_target.as_ref().0.as_ptr(),
-                0,
-                cameras.as_ptr(),
-                projections.as_ptr(),
-                cameras.len() as i32,
-                layer_filter,
-                material_variant,
-                clear,
-                viewport,
-            )
-        }
+        render.render_to(to_render_target, to_target_index);
     }
 
     /// This attaches a texture resource globally across all shaders. StereoKit uses this to attach the sky cubemap for
@@ -1164,28 +1031,18 @@ impl Renderer {
     /// callback, or you can keep the data alive for as long as it is referenced.
     ///  <https://stereokit.net/Pages/StereoKit/Renderer/Screenshot.html>
     /// * `on_screenshot` : closure |&[Color32], width:usize, height:usize|
-    /// * `camera` - A TRS matrix representing the location and orientation of the camera. This matrix gets inverted
-    ///   later on, so no need to do it yourself.
-    /// * `projection` - The projection matrix describes how the geometry is flattened onto the draw surface. Normally,
-    ///   you’d use [`Matrix::perspective`], and occasionally [`Matrix::orthographic`] might be helpful as well.
+    /// * `render` - A [`RenderBuilder`] describing the camera, projection, layer filter, clear behavior and viewport to
+    ///   use for this screenshot. The screenshot is taken from the camera at index `camera_index`.
+    /// * `camera_index` - Index of the camera/projection pair in `render` to take the screenshot from. 0 in most cases.
     /// * `width` - Size of the screenshot horizontally, in pixels.
     /// * `height`- Size of the screenshot vertically, in pixels
-    /// * `render_layer` - This is a bit flag that allows you to change which layers StereoKit renders for this
-    ///   particular render viewpoint. To change what layers a visual is on, use a Draw method that includes a
-    ///   RenderLayer as a parameter. If None will use default value of All
-    /// * `clear` - Describes if and how the rendertarget should be cleared before rendering. Note that clearing the
-    ///   target is unaffected by the viewport, so this will clean the entire surface! If None wille use default value
-    ///   of All
-    /// * `viewport` - Allows you to specify a region of the rendertarget to draw to! This is in normalized coordinates,
-    ///   0-1. If the width of this value is zero, then this will render to the entire texture. If None has default value
-    ///   of (0, 0, 0, 0)
     /// * `tex_format` - The pixel format of the color data. If None will use default value of TexFormat::Rgba32Srgb
     ///
-    /// see also [`render_screenshot_viewpoint`]
+    /// see also [`RenderBuilder::screenshot`] [`Renderer::screenshot_capture`] [`Renderer::screenshot`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{render::Renderer, system::Assets, maths::{Vec3, Quat, Matrix},
+    /// use stereokit_rust::{render::{Renderer, RenderBuilder}, system::Assets, maths::{Vec3, Quat, Matrix},
     ///                      tex::{Tex, TexType, TexFormat},
     ///                      mesh::Mesh, material::Material, util::named_colors};
     ///
@@ -1203,6 +1060,7 @@ impl Renderer {
     ///
     /// let camera = Matrix::t_r(Vec3::Z * 2.0, Quat::look_at(Vec3::Z, Vec3::ZERO, None));
     /// let projection = Matrix::perspective(90.0, 1.0, 0.1, 20.0);
+    /// let render = RenderBuilder::new().camera(camera).projection(projection);
     /// Assets::block_for_priority(i32::MAX);
     ///
     /// number_of_steps = 200;
@@ -1223,45 +1081,23 @@ impl Renderer {
     ///                 None => panic!("CAPTURE_TEXTURE_ID not found!"),
     ///             };
     ///         },
-    ///         camera, projection, 200, 200, None, None, None, None
+    ///         &render, 0, 200, 200, None
     ///     );
     /// );
     /// # system::Assets::block_for_priority(i32::MAX);
     /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/screenshot_viewpoint.jpeg" alt="screenshot" width="200">
-    #[allow(clippy::too_many_arguments)]
-    pub fn screenshot_viewpoint<M: Into<Matrix>, F: FnMut(&[Color32], usize, usize)>(
+    pub fn screenshot_viewpoint<F: FnMut(&[Color32], usize, usize)>(
         _token: &MainThreadToken,
-        mut on_screenshot: F,
-        camera: M,
-        projection: M,
+        on_screenshot: F,
+        render: &RenderBuilder,
+        camera_index: usize,
         width: i32,
         height: i32,
-        render_layer: Option<RenderLayer>,
-        clear: Option<RenderClear>,
-        viewport: Option<Rect>,
         tex_format: Option<TexFormat>,
     ) {
-        let tex_format = tex_format.unwrap_or(TexFormat::Rgba32Srgb);
-        let render_layer = render_layer.unwrap_or(RenderLayer::all());
-        let clear = clear.unwrap_or(RenderClear::All);
-        let viewport = viewport.unwrap_or_default();
-        let mut closure = &mut on_screenshot;
-        unsafe {
-            render_screenshot_viewpoint(
-                Some(sc_capture_trampoline::<F>),
-                camera.into(),
-                projection.into(),
-                width,
-                height,
-                render_layer,
-                clear,
-                viewport,
-                tex_format,
-                &mut closure as *mut _ as *mut c_void,
-            )
-        }
+        render.screenshot(on_screenshot, camera_index, width, height, tex_format.unwrap_or(TexFormat::Rgba32Srgb));
     }
 
     /// Set the near and far clipping planes of the camera! These are important to z-buffer quality, especially when
@@ -1585,7 +1421,7 @@ impl Renderer {
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{maths::{Vec3, Matrix, Rect}, model::Model, util::Color128,
 ///                      tex::{Tex, TexType, TexFormat}, material::Material,
-///                      mesh::Mesh, render::RenderList, render::RenderClear};
+///                      mesh::Mesh, render::{RenderList, RenderClear, RenderBuilder}};
 ///
 /// let model = Model::from_file("plane.glb", None, None).unwrap_or_default().copy();
 ///
@@ -1604,17 +1440,17 @@ impl Renderer {
 ///
 /// let screen = Mesh::screen_quad();
 ///
+/// let render = RenderBuilder::new()
+///     .camera(transform_cam)
+///     .projection(perspective)
+///     .clear(RenderClear::Color)
+///     .viewport(Rect::new(0.0, 0.0, 1.0, 1.0));
+///
 /// filename_scr = "screenshots/render_list.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
 ///     // The color will change so we redraw every frame
-///     render_list.draw_now( &render_tex,
-///            transform_cam,
-///            perspective,
-///            Some(Color128::new((iter % 100) as f32 * 0.01, 0.3, 0.2, 0.5)),
-///            Some(RenderClear::Color),
-///            Rect::new(0.0, 0.0, 1.0, 1.0),
-///            None, None,
-///        );
+///     render_list.draw_now(&render_tex, &render,
+///         Color128::new((iter % 100) as f32 * 0.01, 0.3, 0.2, 0.5));
 ///     screen.draw(token, &render_mat, Matrix::IDENTITY, None, None);
 /// );
 /// # sk::Sk::shutdown();
@@ -1910,7 +1746,7 @@ impl RenderList {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::{Vec3, Matrix, Rect},  util::{named_colors, Color128},
     ///                      tex::{Tex, TexType, TexFormat}, material::Material,
-    ///                      mesh::Mesh, render::RenderList, render::{RenderClear, RenderLayer}};
+    ///                      mesh::Mesh, render::{RenderBuilder, RenderList, RenderClear, RenderLayer}};
     ///
     /// let cylinder1 = Mesh::generate_cylinder(0.3, 1.5, [ 0.5, 0.5, 0.0],None);
     /// let cylinder2 = Mesh::generate_cylinder(0.3, 1.5, [-0.5, 0.5, 0.0],None);
@@ -1934,14 +1770,13 @@ impl RenderList {
     /// filename_scr = "screenshots/render_list_add_mesh.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     if iter == 0 {
-    ///         render_list.draw_now( &render_tex,
-    ///             transform_cam,
-    ///             perspective,
-    ///             Some(Color128::new(0.99, 0.3, 0.2, 0.5)),
-    ///             Some(RenderClear::Color),
-    ///             Rect::new(0.0, 0.0, 1.0, 1.0),
-    ///             Some(RenderLayer::AllThirdPerson), None,
-    ///         );
+    ///         let render = RenderBuilder::new()
+    ///             .camera(transform_cam)
+    ///             .projection(perspective)
+    ///             .layer_filter(RenderLayer::AllThirdPerson)
+    ///             .clear(RenderClear::Color)
+    ///             .viewport(Rect::new(0.0, 0.0, 1.0, 1.0));
+    ///         render_list.draw_now(&render_tex, &render, Color128::new(0.99, 0.3, 0.2, 0.5));
     ///     }
     ///     screen.draw(token, &render_mat, Matrix::IDENTITY, None, None);
     /// );
@@ -1988,7 +1823,7 @@ impl RenderList {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::{Vec3, Matrix, Rect}, model::Model, util::{named_colors,Color128},
     ///                      tex::{Tex, TexType, TexFormat}, material::Material,
-    ///                      mesh::Mesh, render::RenderList, render::{RenderClear, RenderLayer}};
+    ///                      mesh::Mesh, render::{RenderBuilder, RenderList,RenderClear, RenderLayer}};
     ///
     /// let model = Model::from_file("plane.glb", None, None).unwrap_or_default().copy();
     ///
@@ -2013,14 +1848,13 @@ impl RenderList {
     /// filename_scr = "screenshots/render_list_add_model.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     if iter == 0 {
-    ///         render_list.draw_now( &render_tex,
-    ///             transform_cam,
-    ///             perspective,
-    ///             Some(Color128::new(0.0, 0.3, 0.2, 0.5)),
-    ///             Some(RenderClear::Color),
-    ///             Rect::new(0.0, 0.0, 1.0, 1.0),
-    ///             Some(RenderLayer::AllFirstPerson), None,
-    ///         );    
+    ///         let render = RenderBuilder::new()
+    ///             .camera(transform_cam)
+    ///             .projection(perspective)
+    ///             .layer_filter(RenderLayer::AllFirstPerson)
+    ///             .clear(RenderClear::Color)
+    ///             .viewport(Rect::new(0.0, 0.0, 1.0, 1.0));
+    ///         render_list.draw_now(&render_tex, &render, Color128::new(0.0, 0.3, 0.2, 0.5));
     ///     }
     ///     screen.draw(token, &render_mat, Matrix::IDENTITY, None, None);
     /// );
@@ -2060,33 +1894,24 @@ impl RenderList {
         self
     }
 
-    /// Draws the RenderList to a rendertarget texture immediately. It does _not_ clear the list
+    /// Draws the RenderList to a rendertarget texture immediately. It does _not_ clear the list.
+    /// The camera(s), projection(s), layer filter, clear behavior and viewport are all provided by a [`RenderBuilder`].
+    /// Passing a builder with a single camera is equivalent to the old single-view `draw_now`, while passing one with
+    /// N cameras performs the multi-view render (see [`RenderList::draw_now`]-style usage).
     /// <https://stereokit.net/Pages/StereoKit/RenderList/DrawNow.html>
     /// * `to_render_target` - The rendertarget texture to draw to.
-    /// * `camera` - A TRS matrix representing the location and orientation of the camera. This matrix gets inverted
-    ///   later on, so no need to do it yourself.
-    /// * `projection` - The projection matrix describes how the geometry is flattened onto the draw surface. Normally,
-    ///   you'd use Matrix.Perspective, and occasionally Matrix.Orthographic might be helpful as well.
-    /// * `clear_color` * If the `clear` parameter is set to clear the color of `to_render_target`, then this is the color
-    ///   it will clear to. `default` would be a transparent black.
-    /// * `clear` - Describes if and how the render_target should be cleared before rendering. Note that clearing the
-    ///   target is unaffected by the viewport, so this will clean the entire surface! None is All.
-    /// * `viewport_pct` - Allows you to specify a region of the rendertarget to draw to! This is in normalized
-    ///   coordinates, 0-1. If the width of this value is zero, then this will render to the entire texture.
-    /// * `layerFilter` - This is a bit flag that allows you to change which layers StereoKit renders for this
-    ///   particular render viewpoint. To change what layers a visual is on, use a Draw method that includes a
-    ///   RenderLayer as a parameter.
-    /// * `material_variant` - Specifies which Material variant should be used for rendering. 0 will be the normal
-    ///   default material, any others will generally be application defined by setting up each Material's Variant
-    ///   with specific shaders. If a Material has no corresponding variant, it will not be drawn.
+    /// * `render` - A [`RenderBuilder`] describing the camera(s), projection(s), layer filter, clear behavior and
+    ///   viewport to use for this draw.
+    /// * `clear_color` - If `clear` (set on `render`) clears the color of `to_render_target`, then this is the color
+    ///   it will clear to.
     ///
-    /// see also [`render_list_draw_now`] [`RenderList::draw_now_multi_view`]
+    /// see also [`render_list_draw_now`] [`RenderBuilder::draw_now`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::{Vec3, Matrix, Rect},  util::{named_colors, Color128},
     ///                      tex::{Tex, TexType, TexFormat}, material::Material,
-    ///                      mesh::Mesh, render::RenderList, render::RenderClear};
+    ///                      mesh::Mesh, render::{RenderList, RenderBuilder, RenderClear}};
     ///
     /// let cylinder1 = Mesh::generate_cylinder(0.3, 1.5, [ 0.5, 0.5, 0.0],None);
     /// let cylinder2 = Mesh::generate_cylinder(0.3, 1.5, [-0.5, 0.5, 0.0],None);
@@ -2109,152 +1934,22 @@ impl RenderList {
     ///     .add_mesh(&cylinder2, &cylinder_mat, Matrix::IDENTITY, named_colors::FUCHSIA,None)
     ///     .add_mesh(&screen,    &render_mat,   transform_screen, named_colors::GRAY, None);
     ///
+    /// let render = RenderBuilder::new()
+    ///     .camera(transform_cam)
+    ///     .projection(orthographic)
+    ///     .clear(RenderClear::None)
+    ///     .viewport(Rect::new(0.0, 0.0, 1.0, 1.0));
+    ///
     /// filename_scr = "screenshots/render_list_draw_now.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     screen.draw(token, &render_mat, Matrix::IDENTITY, None, None);
-    ///     render_list.draw_now( &render_tex,
-    ///         transform_cam,
-    ///         orthographic,
-    ///         None,
-    ///         Some(RenderClear::None),
-    ///         Rect::new(0.0, 0.0, 1.0, 1.0),
-    ///         None,
-    ///         None,
-    ///     );
+    ///     render_list.draw_now(&render_tex, &render, Color128::BLACK_TRANSPARENT);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_list_draw_now.jpeg" alt="screenshot" width="200">
-    #[allow(clippy::too_many_arguments)]
-    pub fn draw_now(
-        &mut self,
-        to_rendertarget: impl AsRef<Tex>,
-        camera: impl Into<Matrix>,
-        projection: impl Into<Matrix>,
-        clear_color: Option<Color128>,
-        clear: Option<RenderClear>,
-        viewport_pct: Rect,
-        layer_filter: Option<RenderLayer>,
-        material_variant: Option<i32>,
-    ) {
-        let layer_filter = layer_filter.unwrap_or(RenderLayer::all());
-        let clear = clear.unwrap_or(RenderClear::All);
-        let clear_color = clear_color.unwrap_or_default();
-        let material_variant = material_variant.unwrap_or(0);
-        let camera = camera.into();
-        let projection = projection.into();
-        unsafe {
-            render_list_draw_now(
-                self.0.as_ptr(),
-                to_rendertarget.as_ref().0.as_ptr(),
-                &camera,
-                &projection,
-                1,
-                clear_color,
-                clear,
-                viewport_pct,
-                layer_filter,
-                material_variant,
-            )
-        }
-    }
-
-    /// Multi-view variant of draw_now. Renders the list once across multiple views in a single pass, with one camera +
-    /// projection per view. Each view writes to its corresponding layer of the (array) render target. The number of
-    /// views is capped at 6.
-    /// <https://stereokit.net/Pages/StereoKit/RenderList/DrawNow.html>
-    ///
-    /// * `to_render_target` - An array or cubemap rendertarget with at least `cameras.len()` layers.
-    /// * `cameras` - View transforms, one per view. Length must equal `projections.len()` and cannot exceed
-    ///   Renderer::MaxViews.
-    /// * `projections` - Projection matrices, one per view. Same length as `cameras`.
-    /// * `clear_color` - If `clear` clears color, this is the color used. Default is transparent black.
-    /// * `clear` - Whether and how to clear the rendertarget before rendering.
-    /// * `viewport_pct` - Subregion of the rendertarget to draw to, in normalized coordinates 0-1. Width of zero
-    ///   draws to the entire target.
-    /// * `layer_filter` - Bit flag controlling which render layers are drawn this pass.
-    /// * `material_variant` - Which material variant to use. 0 is the default; non-zero indexes into
-    ///   Material.Variants.
-    ///
-    /// see also [`render_list_draw_now`] [`RenderList::draw_now`]
-    /// ### Examples
-    /// ```
-    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix, Rect},  util::{named_colors, Color128},
-    ///                      tex::{Tex, TexType, TexFormat}, material::Material,
-    ///                      mesh::Mesh, render::RenderList, render::RenderClear};
-    ///
-    /// let cylinder1 = Mesh::generate_cylinder(0.3, 1.5, [ 0.5, 0.5, 0.0],None);
-    /// let cylinder2 = Mesh::generate_cylinder(0.3, 1.5, [-0.5, 0.5, 0.0],None);
-    /// let cylinder_mat = Material::pbr().copy();
-    ///
-    /// let render_tex = Tex::gen_color(Color128::WHITE, 128, 128,
-    ///                       TexType::Rendertarget, TexFormat::Rgba32Srgb);
-    /// let mut render_mat = Material::unlit().copy();
-    /// render_mat.diffuse_tex(&render_tex);
-    /// let screen = Mesh::generate_cube([1.0, 1.0, 1.0], None);
-    /// let transform_screen = Matrix::t([0.0, 0.0, -1.0]);
-    ///
-    /// let at = Vec3::new(-1.0, 0.0, 1.0);
-    /// let orthographic = Matrix::orthographic(1.5, 1.5, 0.01, 120.0);
-    /// let transform_cam1  = Matrix::look_at(at, [0.0, 0.0, 0.0], None);
-    /// let transform_cam2  = Matrix::look_at(at, [0.1, 0.0, 0.0], None);
-    /// let cameras = [transform_cam1, transform_cam2];
-    /// let projections = [orthographic; 2];
-    ///
-    /// let mut render_list = RenderList::new();
-    /// render_list
-    ///     .add_mesh(&cylinder1, &cylinder_mat, Matrix::IDENTITY, named_colors::RED, None)
-    ///     .add_mesh(&cylinder2, &cylinder_mat, Matrix::IDENTITY, named_colors::GREEN,None)
-    ///     .add_mesh(&screen,    &render_mat,   transform_screen, named_colors::GRAY, None);
-    ///
-    /// filename_scr = "screenshots/render_list_draw_now_multi_view.jpeg";
-    /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     screen.draw(token, &render_mat, Matrix::IDENTITY, None, None);
-    ///     render_list.draw_now_multi_view( &render_tex,
-    ///         &cameras,
-    ///         &projections,
-    ///         None,
-    ///         Some(RenderClear::None),
-    ///         Rect::new(0.0, 0.0, 1.0, 1.0),
-    ///         None,
-    ///         None,
-    ///     );
-    /// );
-    /// # sk::Sk::shutdown();
-    /// ```
-    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_list_draw_now_multi_view.jpeg" alt="screenshot" width="200">
-    #[allow(clippy::too_many_arguments)]
-    pub fn draw_now_multi_view(
-        &mut self,
-        to_rendertarget: impl AsRef<Tex>,
-        cameras: &[Matrix],
-        projections: &[Matrix],
-        clear_color: Option<Color128>,
-        clear: Option<RenderClear>,
-        viewport_pct: Rect,
-        layer_filter: Option<RenderLayer>,
-        material_variant: Option<i32>,
-    ) {
-        assert_eq!(cameras.len(), projections.len(), "cameras and projections must have the same length");
-        let layer_filter = layer_filter.unwrap_or(RenderLayer::all());
-        let clear = clear.unwrap_or(RenderClear::All);
-        let clear_color = clear_color.unwrap_or_default();
-        let material_variant = material_variant.unwrap_or(0);
-        unsafe {
-            render_list_draw_now(
-                self.0.as_ptr(),
-                to_rendertarget.as_ref().0.as_ptr(),
-                cameras.as_ptr(),
-                projections.as_ptr(),
-                cameras.len() as i32,
-                clear_color,
-                clear,
-                viewport_pct,
-                layer_filter,
-                material_variant,
-            )
-        }
+    pub fn draw_now(&mut self, to_rendertarget: impl AsRef<Tex>, render: &RenderBuilder, clear_color: Color128) {
+        render.draw_now(self, to_rendertarget, clear_color);
     }
 
     /// The default RenderList used by the Renderer for the primary display surface.
@@ -2377,5 +2072,362 @@ impl RenderList {
     /// ```
     pub fn get_prev_count(&self) -> i32 {
         unsafe { render_list_prev_count(self.0.as_ptr()) }
+    }
+}
+
+// ... existing code ...
+
+/// Stateful builder for render calls.
+///
+/// Configure properties with setters, then execute a specific operation with one of the render methods:
+/// [`RenderBuilder::render_to`] [`RenderBuilder::draw_now`] [`RenderBuilder::screenshot`]
+/// /// StereoKit original docs:
+/// <https://stereokit.net/Pages/StereoKit/Renderer/RenderTo.html>
+/// <https://stereokit.net/Pages/StereoKit/Renderer/Screenshot.html>
+/// <https://stereokit.net/Pages/StereoKit/RenderList/DrawNow.html>
+///
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{render::{RenderBuilder, Renderer, RenderClear, RenderLayer, RenderList},
+///                      maths::{Vec3, Quat, Matrix}, tex::{Tex, TexFormat}, sprite::Sprite, system::Pivot,
+///                      mesh::Mesh, material::Material, util::{named_colors, Color128, Color32}};
+///
+/// let sun = Mesh::generate_sphere(2.0, None);
+/// let material_sun = Material::pbr();
+/// let transform_sun = Matrix::t([-0.0, 1.0, -4.0]);
+///
+/// let tex1 = Tex::render_target(200, 200, None, None, None)
+///                    .expect("RenderTarget should be created");
+/// let sprite1 = Sprite::from_tex(&tex1, None, None).unwrap_or_default();
+/// let tex2 = Tex::render_target(200, 200, None, None, None)
+///                    .expect("RenderTarget should be created");
+/// let sprite2 = Sprite::from_tex(&tex2, None, None).unwrap_or_default();
+///
+/// let transform_sprite1 = Matrix::t_r([-0.9, -0.15, 0.0], Quat::Y_180);
+/// let transform_sprite2 = Matrix::t_r([0.9, 0.7, -0.30], Quat::Y_180);
+///
+/// let camera = Matrix::t_r(Vec3::Z * 1.0, Quat::look_at(Vec3::Z, Vec3::ZERO, None));
+/// let projection = Matrix::perspective(90.0, 1.0, 0.1, 50.0);
+///
+/// // A RenderList for draw_now.
+/// let mut render_list = RenderList::new();
+///
+/// // Configure the builder once, before the main loop.
+/// let render = RenderBuilder::new()
+///     .camera(camera)
+///     .projection(projection)
+///     .layer_filter(RenderLayer::All)
+///     .clear(RenderClear::All);
+///
+/// filename_scr = "screenshots/render_builder.jpeg";
+/// number_of_steps = 30;
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+///     Renderer::add_mesh(token, &sun, &material_sun, transform_sun,
+///         Some(named_colors::RED.into()), None);
+///
+///     // 1 - render_to:
+///     render.render_to(&tex1, 0);
+///
+///     // 2 - screenshot
+///     render.screenshot(move |_pixels: &[Color32], _w: usize, _h: usize| {},
+///                       0, 200, 200, TexFormat::Rgba32Srgb);
+///
+///     // 3 - draw_now
+///     //render_list.clear();
+///     render_list.add_mesh(&sun, &material_sun, transform_sun, named_colors::GOLD, None);
+///     render.draw_now(&mut render_list, &tex2, Color128::WHITE);
+///
+///     //Renderer::add_mesh(token, &plane, &material, transform_plane, None, None);
+///     sprite1.draw(token, transform_sprite1, Pivot::TopLeft, None);
+///     sprite2.draw(token, transform_sprite2, Pivot::Center, None);
+/// );
+/// # sk::Sk::shutdown();
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_builder.jpeg" alt="screenshot" width="200">
+#[derive(Debug, Clone)]
+#[must_use = "RenderBuilder does nothing until you call .render_to() .draw_now() or .screenshot() on it"]
+pub struct RenderBuilder {
+    cameras: Vec<Matrix>,
+    projections: Vec<Matrix>,
+    layer_filter: RenderLayer,
+    material_variant: i32,
+    clear: RenderClear,
+    viewport_pct: Rect,
+}
+
+impl Default for RenderBuilder {
+    fn default() -> Self {
+        Self {
+            cameras: vec![Matrix::IDENTITY],
+            projections: vec![Matrix::IDENTITY],
+            layer_filter: RenderLayer::All,
+            material_variant: 0,
+            clear: RenderClear::All,
+            viewport_pct: Rect::default(),
+        }
+    }
+}
+
+impl RenderBuilder {
+    /// Creates a new render builder with defaults matching renderer defaults.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Sets a single camera matrix which is a A TRS matrix representing the location and orientation of the camera.
+    /// This matrix gets inverted later on, so no need to do it yourself.
+    pub fn camera(mut self, camera: impl Into<Matrix>) -> Self {
+        self.cameras = vec![camera.into()];
+        self
+    }
+
+    /// Sets multiple camera matrices for multi-view rendering. One TRS matrix per view. Each matrix gets inverted
+    /// internally. The length must equal projections.len() and is capped at 6.
+    pub fn cameras(mut self, cameras: Vec<Matrix>) -> Self {
+        self.cameras = cameras;
+        self
+    }
+
+    /// Change the cameras of this builder in case you want to keep the Builder alive(ie: as a IStepper propery)
+    pub fn update_cameras(&mut self, cameras: Vec<Matrix>) -> &mut Self {
+        self.cameras = cameras;
+        self
+    }
+
+    /// Sets a single projection matrix.
+    pub fn projection(mut self, projection: impl Into<Matrix>) -> Self {
+        self.projections = vec![projection.into()];
+        self
+    }
+
+    /// Sets multiple projection matrices for multi-view rendering. The length must equal cameras.len()
+    pub fn projections(mut self, projections: &[Matrix]) -> Self {
+        self.projections = projections.to_vec();
+        self
+    }
+
+    /// This is a bit flag that allows you to change which layers StereoKit renders for this particular render
+    /// viewpoint. To change what layers a visual is on, use a Draw method that includes a RenderLayer as a parameter.
+    /// If None has default value of [`RenderLayer::All`]
+    pub fn layer_filter(mut self, layer_filter: RenderLayer) -> Self {
+        self.layer_filter = layer_filter;
+        self
+    }
+
+    /// Specifies which Material variant should be used for rendering. 0 will be the normal default material, any
+    /// others will generally be application-defined by setting up each Material’s Variant with specific shaders. If a
+    /// [`Material`] has no corresponding variant, it will not be drawn.
+    pub fn material_variant(mut self, material_variant: i32) -> Self {
+        self.material_variant = material_variant;
+        self
+    }
+
+    /// Describes if and how the rendertarget should be cleared before rendering. Note that clearing the target is
+    /// unaffected by the viewport, so this will clean the entire surface! Default value is [`RenderClear::All`]
+    pub fn clear(mut self, clear: RenderClear) -> Self {
+        self.clear = clear;
+        self
+    }
+
+    /// Allows you to specify a region of the rendertarget to draw to! This is in normalized coordinates, 0-1. If the
+    /// width of this value is zero, then this will render to the entire texture same as default value which is
+    /// [0.0, 0.0, 1.0, 1.0].
+    pub fn viewport(mut self, viewport: Rect) -> Self {
+        self.viewport_pct = viewport;
+        self
+    }
+
+    /// Queues a single render pass that draws the active list into 1 or N views at once, with one camera + projection
+    /// per view, writing into N consecutive layers of an array rendertarget. The number of views is capped at 6.
+    /// This is queued for the next pipeline frame.
+    /// <https://stereokit.net/Pages/StereoKit/Renderer/RenderTo.html>
+    /// * `to_render_target` - An array or cubemap rendertarget with at least `cameras.len()` layers.
+    /// * `to_target_index` - Index of the render target's array texture we want to draw to. 0 for single view.
+    ///
+    /// see also [`render_to`] [`Renderer::render_to`]
+    /// ### Examples for multi-view rendering, simply build a [`RenderBuilder`] with N cameras and N projections:
+    /// TODO: This multi-view example hangs on Momado simulator and do not screenshot on simultor if render_to is
+    /// called once (-3 is never reached).
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{render::{Renderer, RenderBuilder}, maths::{Vec3, Quat, Matrix}, tex::Tex,
+    ///                      mesh::Mesh, material::Material, util::named_colors};
+    ///
+    /// let sphere = Mesh::generate_sphere(1.0, None);
+    /// let mut material = Material::pbr().copy();
+    /// material.color_tint(named_colors::CYAN);
+    /// let transform_sphere = Matrix::t([0.0, -0.55, -0.30]);
+    ///
+    /// let camera1 = Matrix::t_r(Vec3::Z * 2.0, Quat::look_at(Vec3::Z, Vec3::ZERO, None));
+    /// let camera2 = Matrix::t_r(Vec3::Z * -2.0, Quat::look_at(Vec3::Z, Vec3::ZERO, None));
+    /// let projection = Matrix::perspective(90.0, 1.0, 0.1, 20.0);
+    ///
+    /// // Two materials to display the two array layers (slice 0 and slice 1) of the render target
+    /// let tex = Tex::render_target(200,200, None, None, None)
+    ///                    .expect("RenderTarget should be created");
+    /// let quad = Mesh::screen_quad();
+    /// let mut mat0 = Material::unlit().copy();
+    /// let mut mat1 = Material::unlit().copy();
+    /// mat0.diffuse_tex(&tex);
+    /// mat1.diffuse_tex(&tex);
+    /// // Transforms to place the two quads side by side in the scene
+    /// let transform_q0 = Matrix::t_s([-0.50, 0.45, 0.12], [0.45, 0.45, 0.45]);
+    /// let transform_q1 = Matrix::t_s([ 0.50, 0.45, 0.12], [0.45, 0.45, 0.45]);
+    ///
+    /// let render = RenderBuilder::new()
+    ///     .cameras(vec![camera1, camera2])
+    ///     .projections(&[projection, projection]);
+    ///
+    /// filename_scr = "screenshots/render_to_multiview.jpeg";
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     Renderer::add_mesh(token, &sphere, &material, transform_sphere,
+    ///         None, None);
+    ///     if iter < number_of_steps - 3 {
+    ///         if iter % 2 == 0 { // 2 syntaxes for the same job:
+    ///             Renderer::render_to(token, &tex, 1, &render);
+    ///         } else {
+    ///             render.render_to(&tex, 1)
+    ///         }
+    ///     }
+    ///
+    ///     // Display array slice 0 and slice 1 of the render target as screen quads
+    ///     quad.draw(token, &mat0, transform_q0, None, None);
+    ///     quad.draw(token, &mat1, transform_q1, None, None);
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_to_multiview.jpeg" alt="screenshot" width="200">
+    pub fn render_to(&self, to_render_target: impl AsRef<Tex>, to_target_index: i32) {
+        unsafe {
+            render_to(
+                to_render_target.as_ref().0.as_ptr(),
+                to_target_index,
+                self.cameras.as_ptr(),
+                self.projections.as_ptr(),
+                self.cameras.len() as i32,
+                self.layer_filter,
+                self.material_variant,
+                self.clear,
+                self.viewport_pct,
+            )
+        }
+    }
+
+    /// Schedules a screenshot for the end of the frame! The view will be rendered from the given position at the given
+    /// point, with a resolution the same size as the screen’s surface. This overload allows for retrieval of the color
+    /// data directly from the render thread! You can use the color data directly by saving/processing it inside your
+    /// callback, or you can keep the data alive for as long as it is referenced.
+    /// [`RenderBuilder::material_variant`] is not used here as we want a screenshot.
+    /// <https://stereokit.net/Pages/StereoKit/Renderer/Screenshot.html>
+    /// * `on_screenshot` - closure |&[Color32], width:usize, height:usize|
+    /// * `camera_index` - Index of the camera/projection pair to render from. 0 in most of the case.
+    /// * `width` - Size of the screenshot horizontally, in pixels.
+    /// * `height`- Size of the screenshot vertically, in pixels
+    /// * `render_layer` - This is a bit flag that allows you to change which layers StereoKit renders for this
+    ///   particular render viewpoint. To change what layers a visual is on, use a Draw method that includes a
+    ///   RenderLayer as a parameter. If None will use default value of All
+    /// * `tex_format` - The pixel format of the color data. If None will use default value of TexFormat::Rgba32Srgb
+    ///
+    /// see also [`render_screenshot_viewpoint`] [`Renderer::screenshot_capture`] [`Renderer::screenshot`]
+    pub fn screenshot<F: FnMut(&[Color32], usize, usize)>(
+        &self,
+        mut on_screenshot: F,
+        camera_index: usize,
+        width: i32,
+        height: i32,
+        tex_format: TexFormat,
+    ) {
+        let mut closure = &mut on_screenshot;
+        unsafe {
+            render_screenshot_viewpoint(
+                Some(sc_capture_trampoline::<F>),
+                self.cameras[camera_index],
+                self.projections[camera_index],
+                width,
+                height,
+                self.layer_filter,
+                self.clear,
+                self.viewport_pct,
+                tex_format,
+                &mut closure as *mut _ as *mut c_void,
+            )
+        }
+    }
+
+    /// Renders the list once across single or multiple views in a single pass, with one camera +
+    /// projection per view. Each view writes to its corresponding layer of the (array) render target. The number of
+    /// views is capped at 6.
+    /// <https://stereokit.net/Pages/StereoKit/RenderList/DrawNow.html>
+    /// * `render_list` - The list of stuff to draw.
+    /// * `to_render_target` - An array or cubemap rendertarget with at least `cameras.len()` layers.
+    /// * `clear_color` - If `clear` clears color, this is the color used. Default is transparent black.
+    ///
+    /// see also [`RenderList::draw_now`] [`render_list_draw_now`]
+    /// ### Examples for multi-view rendering, simply build a [`RenderBuilder`] with N cameras and N projections:
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix, Rect},  util::{named_colors, Color128},
+    ///                      tex::{Tex, TexType, TexFormat}, material::Material,
+    ///                      mesh::Mesh, render::{RenderList, RenderBuilder, RenderClear}};
+    ///
+    /// let cylinder1 = Mesh::generate_cylinder(0.3, 1.5, [ 0.5, 0.5, 0.0],None);
+    /// let cylinder2 = Mesh::generate_cylinder(0.3, 1.5, [-0.5, 0.5, 0.0],None);
+    /// let cylinder_mat = Material::pbr().copy();
+    ///
+    /// let render_tex = Tex::gen_color(Color128::WHITE, 128, 128,
+    ///                       TexType::Rendertarget, TexFormat::Rgba32Srgb);
+    /// let mut render_mat = Material::unlit().copy();
+    /// render_mat.diffuse_tex(&render_tex);
+    /// let screen = Mesh::generate_cube([1.0, 1.0, 1.0], None);
+    /// let transform_screen = Matrix::t([0.0, 0.0, -1.0]);
+    ///
+    /// let at = Vec3::new(-1.0, 0.0, 1.0);
+    /// let orthographic = Matrix::orthographic(1.5, 1.5, 0.01, 120.0);
+    /// let transform_cam1  = Matrix::look_at(at, [0.0, 0.0, 0.0], None);
+    /// let transform_cam2  = Matrix::look_at(at, [0.1, 0.0, 0.0], None);
+    /// let cameras = [transform_cam1, transform_cam2];
+    /// let projections = [orthographic; 2];
+    ///
+    /// let mut render_list = RenderList::new();
+    /// render_list
+    ///     .add_mesh(&cylinder1, &cylinder_mat, Matrix::IDENTITY, named_colors::RED, None)
+    ///     .add_mesh(&cylinder2, &cylinder_mat, Matrix::IDENTITY, named_colors::GREEN,None)
+    ///     .add_mesh(&screen,    &render_mat,   transform_screen, named_colors::GRAY, None);
+    ///
+    /// let render = RenderBuilder::new()
+    ///     .cameras(cameras.to_vec())
+    ///     .projections(&projections)
+    ///     .clear(RenderClear::None)
+    ///     .viewport(Rect::new(0.0, 0.0, 1.0, 1.0));
+    ///
+    /// filename_scr = "screenshots/render_list_draw_now_multi_view.jpeg";
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     screen.draw(token, &render_mat, Matrix::IDENTITY, None, None);
+    ///     if iter % 2 == 0 { // 2 syntaxes for the same job:
+    ///         render_list.draw_now(&render_tex, &render, Color128::BLACK_TRANSPARENT);
+    ///     } else {
+    ///         render.draw_now(&render_list, &render_tex, Color128::WHITE)
+    ///     }
+    ///     
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_list_draw_now_multi_view.jpeg" alt="screenshot" width="200">
+    pub fn draw_now(&self, render_list: &RenderList, to_rendertarget: impl AsRef<Tex>, clear_color: Color128) {
+        unsafe {
+            render_list_draw_now(
+                render_list.0.as_ptr(),
+                to_rendertarget.as_ref().0.as_ptr(),
+                self.cameras.as_ptr(),
+                self.projections.as_ptr(),
+                self.cameras.len() as i32,
+                clear_color,
+                self.clear,
+                self.viewport_pct,
+                self.layer_filter,
+                self.material_variant,
+            )
+        }
     }
 }

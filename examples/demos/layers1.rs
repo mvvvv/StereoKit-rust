@@ -7,7 +7,7 @@ use stereokit_rust::{
     maths::{Bounds, Matrix, Pose, Rect, Vec2, Vec3},
     mesh::Mesh,
     prelude::*,
-    render::{RenderClear, RenderList, Renderer},
+    render::{RenderBuilder, RenderClear, RenderList, Renderer},
     sprite::Sprite,
     system::{Backend, BackendXRType, Pivot, Text, TextBuilder, TextFit, TextStyle},
     tex::{Tex, TexFormat},
@@ -176,16 +176,12 @@ impl Layers1 {
                 self.quad_swapchain_sk = None;
             } else {
                 let render_tex = sc.get_render_target().expect("SwapchainSk should have a render target");
-                self.quad_render_list.draw_now(
-                    render_tex,
-                    Matrix::look_at(Vec3::angle_xz(Time::get_totalf() * 90.0, 0.0), Vec3::ZERO, None),
-                    self.projection,
-                    Some(Color128::new(0.4, 0.3, 0.2, 1.0)),
-                    Some(RenderClear::Color),
-                    Rect::new(0.0, 0.0, 1.0, 1.0),
-                    None,
-                    None,
-                );
+                let quad_render = RenderBuilder::new()
+                    .camera(Matrix::look_at(Vec3::angle_xz(Time::get_totalf() * 90.0, 0.0), Vec3::ZERO, None))
+                    .projection(self.projection)
+                    .clear(RenderClear::Color)
+                    .viewport(Rect::new(0.0, 0.0, 1.0, 1.0));
+                quad_render.draw_now(&self.quad_render_list, render_tex, Color128::new(0.4, 0.3, 0.2, 1.0));
 
                 let sprite = Sprite::from_tex(render_tex, None, None).unwrap();
 
@@ -233,16 +229,12 @@ impl Layers1 {
                 self.cylinder_swapchain_sk = None;
             } else {
                 let render_tex = cyl_sc.get_render_target().expect("cylinder swapchain should have a render target");
-                self.cylinder_render_list.draw_now(
-                    render_tex,
-                    Matrix::look_at(Vec3::angle_xz(Time::get_totalf() * -60.0, 1.0) * 30.15, Vec3::ZERO, None),
-                    self.projection,
-                    Some(Color128::new(0.1, 0.2, 0.4, 1.0)),
-                    Some(RenderClear::Color),
-                    Rect::new(0.0, 0.0, 1.0, 1.0),
-                    None,
-                    None,
-                );
+                let cyl_render = RenderBuilder::new()
+                    .camera(Matrix::look_at(Vec3::angle_xz(Time::get_totalf() * -60.0, 1.0) * 30.15, Vec3::ZERO, None))
+                    .projection(self.projection)
+                    .clear(RenderClear::Color)
+                    .viewport(Rect::new(0.0, 0.0, 1.0, 1.0));
+                cyl_render.draw_now(&self.cylinder_render_list, render_tex, Color128::new(0.1, 0.2, 0.4, 1.0));
                 if let Err(e) = cyl_sc.release_image() {
                     Log::warn(format!("Failed to release cylinder image: {e}"));
                     self.cylinder_swapchain_sk = None;
