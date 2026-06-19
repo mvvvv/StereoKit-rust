@@ -93,6 +93,10 @@ impl Test {
                 sk.send_event(StepperAction::add_default::<Text1>("Text1"));
                 "Text1".to_string()
             }),
+            Test::new("Text2", |sk| {
+                sk.send_event(StepperAction::add_default::<Text2>("Text2"));
+                "Text2".to_string()
+            }),
             Test::new("Locale1", |sk| {
                 sk.send_event(StepperAction::add_default::<Locale1>("Locale1"));
                 "Locale1".to_string()
@@ -100,10 +104,6 @@ impl Test {
             Test::new("Font1", |sk| {
                 sk.send_event(StepperAction::add_default::<Font1>("Font1"));
                 "Font1".to_string()
-            }),
-            Test::new("Text2", |sk| {
-                sk.send_event(StepperAction::add_default::<Text2>("Text2"));
-                "Text2".to_string()
             }),
             Test::new("Sprite1", |sk| {
                 sk.send_event(StepperAction::add_default::<Sprite1>("Sprite1"));

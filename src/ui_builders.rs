@@ -106,7 +106,7 @@ impl UiButtonBuilder {
     /// Executes the button interaction.
     ///
     /// Returns `true` only on the first frame it is pressed.
-    pub fn press(&mut self) -> bool {
+    pub fn press(&self) -> bool {
         match (self.image, self.top_left_corner) {
             (None, None) => unsafe { ui_button(self.text.as_ptr(), self.size, self.text_align) != 0 },
             (None, Some(top_left_corner)) => unsafe {
@@ -167,7 +167,7 @@ impl UiButtonRoundBuilder {
     /// Executes the button interaction.
     ///
     /// Returns `true` only on the first frame it is pressed.
-    pub fn press(&mut self) -> bool {
+    pub fn press(&self) -> bool {
         match self.top_left_corner {
             None => unsafe { ui_button_round(self.id.as_ptr(), self.image, self.diameter) != 0 },
             Some(top_left_corner) => unsafe {
@@ -425,7 +425,7 @@ impl UiLabelBuilder {
     }
 
     /// Draws the label.
-    pub fn draw(&mut self) {
+    pub fn draw(&self) {
         unsafe { ui_label(self.text.as_ptr(), self.size, self.use_padding as Bool32T, self.text_align) }
     }
 }
@@ -520,7 +520,7 @@ impl UiRadioBuilder {
     /// Executes radio interaction.
     ///
     /// Returns `true` only when pressed and previously inactive.
-    pub fn press(&mut self) -> bool {
+    pub fn press(&self) -> bool {
         let mut active: Bool32T = self.active as Bool32T;
         let active_ptr: *mut Bool32T = &mut active;
         let pressed = match self.top_left_corner {
@@ -792,7 +792,7 @@ impl<'a> UiTextBuilder<'a> {
     }
 
     /// Draws the text.
-    pub fn draw(&mut self) -> bool {
+    pub fn draw(&self) -> bool {
         let scroll = match &self.scroll {
             Some(scroll) => *scroll as *const Vec2 as *mut Vec2,
             None => std::ptr::null_mut(),
@@ -1016,7 +1016,7 @@ impl<'a> UiWindowBuilder<'a> {
 
     /// Begins a new window! This will push a pose onto the transform stack.
     /// If `pose` is None, it will use an automatically determined pose.
-    pub fn begin(&mut self) {
+    pub fn begin(&self) {
         let pose_ptr = match &self.pose {
             Some(pose) => *pose as *const _ as *mut _,
             None => std::ptr::null_mut(),
