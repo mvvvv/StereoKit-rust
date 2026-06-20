@@ -91,7 +91,7 @@ impl Ui1 {
     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
     /// Called from IStepper::step after check_event, here you can draw your UI and scene
-    fn draw(&mut self, token: &MainThreadToken) {
+    fn draw(&mut self, _token: &MainThreadToken) {
         let corner_radius = 0.005 * Time::get_totalf().sin().abs();
         if let Ok(mesh) = Ui::gen_quadrant_mesh(
             UiCorner::TopLeft & UiCorner::BottomRight,
@@ -106,16 +106,16 @@ impl Ui1 {
 
         Ui::window("Ui elements").size([self.demo_win_width, 0.0]).begin();
 
-        self.custom_button_mesh(token, "Custom Button Mesh", UiVisual::ExtraSlot02);
-        self.custom_button_element(token, "Custom Button Element");
+        self.custom_button_mesh("Custom Button Mesh", UiVisual::ExtraSlot02);
+        self.custom_button_element("Custom Button Element");
         Ui::button("Standard Button").press();
 
         Ui::push_enabled(false, None);
-        self.custom_button_mesh(token, "Custom Button Mesh Disabled", UiVisual::ExtraSlot01);
+        self.custom_button_mesh("Custom Button Mesh Disabled", UiVisual::ExtraSlot01);
         Ui::pop_enabled();
 
         Ui::push_tint(Color128::hsv(0.0, 0.2, 0.7, 1.0));
-        self.custom_button_element(token, "Custom Button Element Tinted");
+        self.custom_button_element("Custom Button Element Tinted");
         Ui::pop_tint();
 
         Ui::hseparator();
@@ -135,7 +135,7 @@ impl Ui1 {
         TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
     }
 
-    pub fn custom_button_mesh(&mut self, token: &MainThreadToken, text: &str, slot: UiVisual) -> bool {
+    pub fn custom_button_mesh(&mut self, text: &str, slot: UiVisual) -> bool {
         let id = Ui::stack_hash(text);
         let size = Text::size_layout(text, Some(Ui::get_text_style()), None) * 1.7;
         let mut layout = Ui::layout_reserve(size, false, 0.0);
@@ -157,7 +157,6 @@ impl Ui1 {
         layout.center.z -= out_finger_offset / 2.0;
         layout.dimensions.z = out_finger_offset;
         Mesh::cube().draw(
-            token,
             &self.ui_material,
             Matrix::t_s(layout.center, layout.dimensions),
             Some(Ui::get_element_color(slot, Ui::get_anim_focus(id, out_focus_state, out_button_state))),
@@ -174,7 +173,7 @@ impl Ui1 {
         out_button_state.is_just_inactive()
     }
 
-    pub fn custom_button_element(&mut self, _token: &MainThreadToken, text: &str) -> bool {
+    pub fn custom_button_element(&mut self, text: &str) -> bool {
         let id = Ui::stack_hash(text);
         let size = Text::size_layout(text, Some(Ui::get_text_style()), None) * 1.7;
         let mut layout = Ui::layout_reserve(size, false, 0.0);

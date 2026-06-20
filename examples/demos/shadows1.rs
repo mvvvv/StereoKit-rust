@@ -163,13 +163,13 @@ impl Shadows1 {
     fn draw(&mut self, token: &MainThreadToken) {
         self.frame_count += 1;
         // Use cached light_dir instead of recalculating every frame
-        self.setup_shadow_map(token, self.light_dir);
+        self.setup_shadow_map(self.light_dir);
 
         // Show shadow settings window
         self.draw_shadow_settings_window(token);
 
         Ui::handle("ModelShadow", &mut self.model_pose, self.model.get_bounds()).grab();
-        self.model.draw(token, self.model_pose.to_matrix(None), None, None);
+        self.model.draw(self.model_pose.to_matrix(None), None, None);
 
         // Display title and description text like in math1 demo
         TextBuilder::new(&self.text).transform(self.transform_text).style(self.text_style).add();
@@ -179,7 +179,7 @@ impl Shadows1 {
             .add();
     }
 
-    fn setup_shadow_map(&mut self, token: &MainThreadToken, light_dir: Vec3) {
+    fn setup_shadow_map(&mut self, light_dir: Vec3) {
         let head = Input::get_head();
         let light_orientation = Quat::look_at(Vec3::ZERO, light_dir, None);
 
@@ -241,14 +241,14 @@ impl Shadows1 {
         };
         self.shadow_buffer.set(&mut shadow_buffer_last);
 
-        Renderer::set_global_texture(token, 13, None);
+        Renderer::set_global_texture(13, None);
         let shadow_render = RenderBuilder::new()
             .camera(view)
             .projection(proj)
             .layer_filter(RenderLayer::All & !RenderLayer::VFX)
             .material_variant(SHADOW_MAP_VARIANT);
         shadow_render.render_to(&self.shadow_map, 0);
-        Renderer::set_global_texture(token, 13, Some(&self.shadow_map));
+        Renderer::set_global_texture(13, Some(&self.shadow_map));
     }
 
     /// Draw the shadow settings UI window

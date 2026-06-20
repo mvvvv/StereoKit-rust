@@ -62,7 +62,7 @@ use std::{
 /// filename_scr = "screenshots/compute.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
 ///     compute.dispatch(GROUPS, GROUPS, 1);
-///     cube.draw(token, &mat, Matrix::IDENTITY, None, None);
+///     cube.draw(&mat, Matrix::IDENTITY, None, None);
 /// );
 /// # } sk::Sk::shutdown();
 /// ```

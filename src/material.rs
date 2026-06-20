@@ -110,7 +110,7 @@ pub enum Cull {
 ///
 /// filename_scr = "screenshots/materials.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
-///     cube.draw(token, &material_cube, Matrix::IDENTITY, None, None);
+///     cube.draw(&material_cube, Matrix::IDENTITY, None, None);
 /// );
 /// # sk::Sk::shutdown();
 /// ```
@@ -220,7 +220,7 @@ impl Material {
     /// let material_plane = Material::new(Shader::unlit(), Some("my_material_plane"));
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     plane.draw(token, &material_plane,  Matrix::IDENTITY, None, None);
+    ///     plane.draw(&material_plane,  Matrix::IDENTITY, None, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -254,7 +254,7 @@ impl Material {
     ///                 .expect("blinker shader should load and create a material!");
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     circle.draw(token, &material_circle,  Matrix::IDENTITY, None, None);
+    ///     circle.draw(&material_circle,  Matrix::IDENTITY, None, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -770,7 +770,7 @@ impl Material {
     ///     // We ensure the packed Tex is loaded for the screenshot.
     ///     if metal_tex.get_asset_state() != AssetState::Loaded { iter -= 1; }
     ///
-    ///     plane_mesh.draw(token, &material, transform, None, None);
+    ///     plane_mesh.draw(&material, transform, None, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -1008,8 +1008,8 @@ impl Material {
     /// assert_eq!(material_cube.get_transparency(), Transparency::None);
     /// filename_scr = "screenshots/material_transparency.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     cube.draw(token, &material_cube, cube_transform, None, None);
-    ///     sphere.draw(token, &material_sphere, Matrix::IDENTITY, None, None);
+    ///     cube.draw(&material_cube, cube_transform, None, None);
+    ///     sphere.draw(&material_sphere, Matrix::IDENTITY, None, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -1045,8 +1045,8 @@ impl Material {
     ///
     /// filename_scr = "screenshots/material_face_cull.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     cube1.draw(token, &material_cube1,  Matrix::IDENTITY, None, None);
-    ///     cube2.draw(token, &material_cube2,  Matrix::IDENTITY, None, None);
+    ///     cube1.draw(&material_cube1,  Matrix::IDENTITY, None, None);
+    ///     cube2.draw(&material_cube2,  Matrix::IDENTITY, None, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -1083,8 +1083,8 @@ impl Material {
     ///
     /// filename_scr = "screenshots/wireframe.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     cube.draw(token, &material_cube, cube_transform, None, None);
-    ///     sphere.draw(token, &material_sphere, Matrix::IDENTITY, None, None);
+    ///     cube.draw(&material_cube, cube_transform, None, None);
+    ///     sphere.draw(&material_sphere, Matrix::IDENTITY, None, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -1616,7 +1616,7 @@ impl Material {
 ///
 /// filename_scr = "screenshots/param_infos.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
-///     cube.draw(token, &material_cube, Matrix::IDENTITY, None, None);
+///     cube.draw(&material_cube, Matrix::IDENTITY, None, None);
 /// );
 /// # sk::Sk::shutdown();
 /// ```
@@ -1911,7 +1911,7 @@ impl<'a> ParamInfos<'a> {
     ///         param_infos.set_data_with_id(hash_color, MaterialParam::Color128,
     ///                          new_color.as_ptr() as *mut std::ffi::c_void);
     ///     }
-    ///     cube.draw(token, &material_cube, Matrix::IDENTITY, None, None);
+    ///     cube.draw(&material_cube, Matrix::IDENTITY, None, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```

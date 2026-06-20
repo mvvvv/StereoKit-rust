@@ -131,24 +131,23 @@ impl Sprite1 {
     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
     /// Called from IStepper::step after check_event, here you can draw your UI
-    fn draw(&mut self, token: &MainThreadToken) {
-        self.sprite1.draw(token, Matrix::t(Vec3::new(-2.5, 1.5, -2.5)), Pivot::Center, None);
+    fn draw(&mut self, _token: &MainThreadToken) {
+        self.sprite1.draw(Matrix::t(Vec3::new(-2.5, 1.5, -2.5)), Pivot::Center, None);
 
         self.sprite_ico.draw(
-            token,
             Matrix::t_r(Vec3::new(0.0, 1.5, -2.5), Quat::from_angles(0.0, 180.0, 0.0)),
             Pivot::BottomCenter,
             None,
         );
 
-        self.sprite3.draw(token, Matrix::t(Vec3::new(2.5, 1.5, -2.5)), Pivot::YTop, None);
+        self.sprite3.draw(Matrix::t(Vec3::new(2.5, 1.5, -2.5)), Pivot::YTop, None);
 
-        self.sprite4.draw(token, Matrix::t(Vec3::new(0.0, 3.5, -2.5)), Pivot::YTop, None);
+        self.sprite4.draw(Matrix::t(Vec3::new(0.0, 3.5, -2.5)), Pivot::YTop, None);
 
         TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
 
-        Lines::add(token, Vec3::Z, Vec3::X, WHITE, None, 0.03);
+        Lines::add(Vec3::Z, Vec3::X, WHITE, None, 0.03);
 
-        Lines::add_axis(token, Matrix::t(Vec3::ONE * 2.0).get_pose(), None, None);
+        Lines::add_axis(Matrix::t(Vec3::ONE * 2.0).get_pose(), None, None);
     }
 }

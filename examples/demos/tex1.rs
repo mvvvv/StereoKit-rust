@@ -298,9 +298,8 @@ impl Tex1 {
     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
     /// Called from IStepper::step after check_event, here you can draw your UI and your scene
-    fn draw(&mut self, token: &MainThreadToken) {
+    fn draw(&mut self, _token: &MainThreadToken) {
         self.panels.draw(
-            token,
             Matrix::t_r_s(Vec3::new(-0.5, 2.0, -2.0), Quat::IDENTITY, Vec3::ONE * 0.25),
             None::<Color128>,
             None,

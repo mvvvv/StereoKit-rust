@@ -131,8 +131,8 @@ impl Threads2 {
     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
     /// Called from IStepper::step after check_event, here you can draw your UI and scene
-    fn draw(&mut self, token: &MainThreadToken) {
-        self.model.draw(token, self.transform_model, None, None);
+    fn draw(&mut self, _token: &MainThreadToken) {
+        self.model.draw(self.transform_model, None, None);
         TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
     }
 

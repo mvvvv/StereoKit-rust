@@ -758,7 +758,7 @@ impl XrFbRenderModelStepper {
     /// Useful for discovering and documenting animation time codes for different poses.
     ///
     /// # Arguments
-    /// * `_token` - Main thread token for safe UI operations
+    /// * `_token` - Main thread token
     fn animation_analyser(&mut self, _token: &MainThreadToken) {
         // Advance animation time on joystick button press
         if Input::controller(Handed::Right).stick_click.is_just_active()

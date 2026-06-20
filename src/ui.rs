@@ -1503,7 +1503,7 @@ impl Ui {
     ///     Ui::handle("Handle2", &mut handle_pose2, handle_bounds)
     ///               .move_type(UiMove::PosOnly)
     ///               .allower_gesture(UiGesture::PinchGrip).grab();
-    ///     cube_bounds.draw(token, &material_bound,
+    ///     cube_bounds.draw(&material_bound,
     ///                      handle_pose2.to_matrix(Some(handle_bounds.dimensions)), None, None);
     /// );
     /// # sk::Sk::shutdown();
@@ -1545,14 +1545,14 @@ impl Ui {
     ///     // Handles aren't drawn so we draw som cube_bounds to show where they are.
     ///     Ui::handle("Handle1", &mut handle_pose1, handle_bounds).move_type(UiMove::FaceUser)
     ///               .allower_gesture(UiGesture::Pinch).begin_grab();
-    ///     sphere.draw(token, &material_sphere, Matrix::IDENTITY, None, None);
-    ///     cube_bounds.draw(token, &material_bound, Matrix::s(handle_bounds.dimensions), None, None);
+    ///     sphere.draw(&material_sphere, Matrix::IDENTITY, None, None);
+    ///     cube_bounds.draw(&material_bound, Matrix::s(handle_bounds.dimensions), None, None);
     ///     Ui::handle_end();
     ///
     ///     Ui::handle("Handle2", &mut handle_pose2, handle_bounds).move_type(UiMove::PosOnly)
     ///               .allower_gesture(UiGesture::PinchGrip).begin_grab();
-    ///     sphere.draw(token, &material_sphere, Matrix::IDENTITY, None, None);
-    ///     cube_bounds.draw(token, &material_bound, Matrix::s(handle_bounds.dimensions), None, None);
+    ///     sphere.draw(&material_sphere, Matrix::IDENTITY, None, None);
+    ///     cube_bounds.draw(&material_bound, Matrix::s(handle_bounds.dimensions), None, None);
     ///     Ui::handle_end();
     /// );
     /// # sk::Sk::shutdown();

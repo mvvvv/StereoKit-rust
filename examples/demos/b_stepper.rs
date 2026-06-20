@@ -45,9 +45,9 @@ impl IStepper for BStepper {
         let text = self.text.clone();
 
         self.closures.set(
-            move |token| {
+            move |_token| {
                 transform *= Matrix::t(Vec3::NEG_Z * 0.2 * Time::get_stepf());
-                Renderer::add_mesh(token, &round_cube, Material::pbr(), transform, Some(RED.into()), None);
+                Renderer::add_mesh(&round_cube, Material::pbr(), transform, Some(RED.into()), None);
                 TextBuilder::new(&text).transform(transform).style(text_style).add();
                 // (1) You can't do that here: self.text = "youpi".into();
             },

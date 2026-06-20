@@ -155,17 +155,11 @@ impl Layers1 {
         // no events
     }
 
-    fn draw(&mut self, token: &MainThreadToken) {
+    fn draw(&mut self, _token: &MainThreadToken) {
         const SIZE: f32 = 0.3;
         // interactive handle
         Ui::handle("QuadLayer", &mut self.quad_pose, Bounds::new([0.0, 0.0, 0.0], [SIZE, SIZE, 0.04])).grab();
-        Mesh::cube().draw(
-            token,
-            &self.material,
-            self.quad_pose.to_matrix(Some(Vec3::new(SIZE, SIZE, 0.04))),
-            None,
-            None,
-        );
+        Mesh::cube().draw(&self.material, self.quad_pose.to_matrix(Some(Vec3::new(SIZE, SIZE, 0.04))), None, None);
 
         if let Some(sc) = &mut self.quad_swapchain_sk {
             let old_color = Renderer::get_clear_color();
@@ -185,7 +179,7 @@ impl Layers1 {
 
                 let sprite = Sprite::from_tex(render_tex, None, None).unwrap();
 
-                sprite.draw(token, self.transform, Pivot::Center, None);
+                sprite.draw(self.transform, Pivot::Center, None);
 
                 assert_eq!(render_tex.get_width(), Some(512));
 

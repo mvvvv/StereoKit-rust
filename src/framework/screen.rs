@@ -127,7 +127,7 @@ impl ScreenRepo {
 ///
 /// filename_scr = "screenshots/screen.jpeg"; fov_scr = 20.0;
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
-///     screen.draw(token);
+///     screen.draw(&token);
 /// );
 /// # sk::Sk::shutdown();
 /// ```
@@ -397,13 +397,13 @@ impl Screen {
     }
 
     /// Called from IStepper::step, after check_event here you can draw your UI and scene
-    pub fn draw(&mut self, token: &MainThreadToken) {
+    pub fn draw(&mut self, _token: &MainThreadToken) {
         let screen_transform = self.screen_param();
 
         // When the param menu is open, always render the mesh so the user can see shape changes.
         // Otherwise, prefer the swapchain quad/cylinder layer when one is set.
         if self.repo.show_param || !self.draw_swapchain() {
-            Renderer::add_mesh(token, &self.screen, &self.screen_material, screen_transform, None, None);
+            Renderer::add_mesh(&self.screen, &self.screen_material, screen_transform, None, None);
         }
     }
 
@@ -779,7 +779,7 @@ impl Screen {
     /// Check if the screen has been touched and return the position (x,y) in screen coordinates
     /// Returns Some((x, y)) if touched, None otherwise
     /// Coordinates are normalized between 0.0 and 1.0
-    pub fn touched(&self, token: &MainThreadToken, index: i32) -> Option<(f32, f32)> {
+    pub fn touched(&self, _token: &MainThreadToken, index: i32) -> Option<(f32, f32)> {
         // no ray when adjusting params
         if self.repo.show_param {
             return None;
@@ -804,8 +804,8 @@ impl Screen {
         }
 
         // we draw the ray
-        //self.draw_ray(token, p.ray);
-        Lines::add_ray(token, p.ray, self.screen_distance, named_colors::WHITE, None, self.ray_thickness);
+        //self.draw_ray( p.ray);
+        Lines::add_ray(p.ray, self.screen_distance, named_colors::WHITE, None, self.ray_thickness);
 
         if !p.state.is_just_inactive() {
             return None;

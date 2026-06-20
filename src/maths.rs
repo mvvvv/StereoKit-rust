@@ -3186,7 +3186,7 @@ impl Sub<Quat> for Quat {
 ///
 /// filename_scr = "screenshots/matrix.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
-///     model.draw(token, transform, None, None);
+///     model.draw(transform, None, None);
 /// );
 /// # sk::Sk::shutdown();
 /// ```
@@ -3553,7 +3553,7 @@ impl Matrix {
     ///
     ///     transform.update_r(&rotation);
     ///
-    ///     mesh.draw(token, &material, transform, None, None);
+    ///     mesh.draw(&material, transform, None, None);
     ///     assert_eq!(transform, Matrix::r(rotation));
     /// );
     /// # sk::Sk::shutdown();
@@ -3607,7 +3607,7 @@ impl Matrix {
     ///
     ///     transform.update_s(&scale);
     ///
-    ///     mesh.draw(token, &material, transform, None, None);
+    ///     mesh.draw(&material, transform, None, None);
     ///     assert_eq!(transform, Matrix::s(scale));
     /// );
     /// # sk::Sk::shutdown();
@@ -3660,7 +3660,7 @@ impl Matrix {
     ///
     ///     transform.update_t(&position);
     ///
-    ///     mesh.draw(token, &material, transform, None, None);
+    ///     mesh.draw(&material, transform, None, None);
     ///     assert_eq!(transform, Matrix::t(position));
     /// );
     /// # sk::Sk::shutdown();
@@ -3731,7 +3731,7 @@ impl Matrix {
     ///
     ///     transform.update_t_r(&position, &rotation);
     ///
-    ///     mesh.draw(token, &material, transform, None, None);
+    ///     mesh.draw(&material, transform, None, None);
     ///     assert_eq!(transform, Matrix::t_r(position, rotation));
     /// );
     /// # sk::Sk::shutdown();
@@ -3803,7 +3803,7 @@ impl Matrix {
     ///
     ///     transform.update_t_s(&position, &scale);
     ///
-    ///     mesh.draw(token, &material, transform, None, None);
+    ///     mesh.draw(&material, transform, None, None);
     ///     assert_eq!(transform, Matrix::t_s(position, scale));
     /// );
     /// # sk::Sk::shutdown();
@@ -3880,7 +3880,7 @@ impl Matrix {
     ///
     ///     transform.update_t_r_s(&position, &rotation, &scale);
     ///
-    ///     mesh.draw(token, &material, transform, None, None);
+    ///     mesh.draw(&material, transform, None, None);
     ///     assert_eq!(transform, Matrix::t_r_s(position, rotation, scale));
     /// );
     /// # sk::Sk::shutdown();
@@ -4760,8 +4760,8 @@ impl MulAssign<Matrix> for Matrix {
 /// filename_scr = "screenshots/bounds.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
 ///     Ui::handle( "Model Handle", &mut handle_pose, bounds).begin_grab();
-///     model.draw(token, transform, None, None);
-///     cube.draw(token, &material_cube, transform_cube, None, None);
+///     model.draw(transform, None, None);
+///     cube.draw(&material_cube, transform_cube, None, None);
 ///     Ui::handle_end();
 /// );
 /// # sk::Sk::shutdown();
@@ -5359,8 +5359,8 @@ impl MulAssign<Vec3> for Bounds {
 ///
 /// filename_scr = "screenshots/plane.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
-///     plane_mesh.draw(token, &material_plane, transform_wall, Some(named_colors::CYAN.into()), None);
-///     plane_mesh.draw(token, &material_plane, transform_floor, Some(named_colors::BLACK.into()), None);
+///     plane_mesh.draw(&material_plane, transform_wall, Some(named_colors::CYAN.into()), None);
+///     plane_mesh.draw(&material_plane, transform_floor, Some(named_colors::BLACK.into()), None);
 /// );
 /// # sk::Sk::shutdown();
 /// ```
@@ -5560,7 +5560,7 @@ impl Display for Plane {
 /// filename_scr = "screenshots/pose.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
 ///     Ui::handle( "Model Handle", &mut handle_pose, bounds).begin_grab();
-///     plane.draw(token, Matrix::IDENTITY, None, None);
+///     plane.draw(Matrix::IDENTITY, None, None);
 ///     Ui::handle_end();
 ///
 ///     Ui::window("My Window").pose(&mut window_pose).begin();
@@ -5853,9 +5853,9 @@ impl Display for Pose {
 ///
 /// filename_scr = "screenshots/sphere.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
-///     sphere_mesh.draw(token, &material_sphere, transform, None, None);
-///     Lines::add_ray(token, ray_x, 0.30, named_colors::RED, None, 0.04);
-///     Lines::add_ray(token, ray_y, 0.30, named_colors::GREEN, None, 0.04);
+///     sphere_mesh.draw(&material_sphere, transform, None, None);
+///     Lines::add_ray( ray_x, 0.30, named_colors::RED, None, 0.04);
+///     Lines::add_ray( ray_y, 0.30, named_colors::GREEN, None, 0.04);
 /// );
 /// # sk::Sk::shutdown();
 /// ```
@@ -6029,10 +6029,10 @@ impl Rect {
 ///
 /// filename_scr = "screenshots/ray.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
-///     model.draw(token, transform, None, None);
-///     cube.draw(token, &material_cube, transform_cube, None, None);
-///     Lines::add_ray(token, ray_x, 1.5, named_colors::WHITE, None, 0.2);
-///     point.draw(token, &material_point, transform_point_x, Some(named_colors::RED.into()), None );
+///     model.draw(transform, None, None);
+///     cube.draw(&material_cube, transform_cube, None, None);
+///     Lines::add_ray( ray_x, 1.5, named_colors::WHITE, None, 0.2);
+///     point.draw(&material_point, transform_point_x, Some(named_colors::RED.into()), None );
 /// );
 /// # sk::Sk::shutdown();
 /// ```
@@ -6264,9 +6264,9 @@ impl Ray {
     /// let ray = Ray::new([-3.0, 2.0, 0.5 ], [3.0, -2.0, -0.25]);
     /// let inv_ray = inv.transform_ray(ray);
     ///
-    /// let (contact_sphere, ind_sphere) = inv_ray.intersect_mesh( &sphere, Some(Cull::Front))
+    /// let (contact_sphere, ind_sphere) = inv_ray.intersect_mesh(&sphere, Some(Cull::Front))
     ///     .expect("Ray should touch sphere");
-    /// let (contact_cube, ind_cube) = inv_ray.intersect_mesh( &cube, Some(Cull::Back))
+    /// let (contact_cube, ind_cube) = inv_ray.intersect_mesh(&cube, Some(Cull::Back))
     ///     .expect("Ray should touch cube");
     /// assert_eq!(ind_sphere, 672);
     /// assert_eq!(ind_cube, 9);
@@ -6278,12 +6278,12 @@ impl Ray {
     ///
     /// filename_scr = "screenshots/intersect_meshes.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     cube.draw(token, &material, transform, Some(named_colors::CYAN.into()), None);
-    ///     sphere.draw(token, &material, transform, Some(named_colors::BLUE.into()), None);
-    ///     Lines::add_ray(token, ray, 2.2, named_colors::WHITE, None, 0.02);
-    ///     sphere.draw(token, &material, transform_contact_cube,
+    ///     cube.draw(&material, transform, Some(named_colors::CYAN.into()), None);
+    ///     sphere.draw(&material, transform, Some(named_colors::BLUE.into()), None);
+    ///     Lines::add_ray( ray, 2.2, named_colors::WHITE, None, 0.02);
+    ///     sphere.draw(&material, transform_contact_cube,
     ///                 Some(named_colors::YELLOW.into()), None );
-    ///     sphere.draw(token, &material, transform_contact_sphere,
+    ///     sphere.draw(&material, transform_contact_sphere,
     ///                 Some(named_colors::RED.into()), None );
     /// );
     /// # sk::Sk::shutdown();
@@ -6391,7 +6391,7 @@ impl Ray {
     ///
     /// model.recalculate_bounds();
     ///
-    /// let contact_model = inv_ray.intersect_model( &model, Some(Cull::Back))
+    /// let contact_model = inv_ray.intersect_model(&model, Some(Cull::Back))
     ///     .expect("Ray should touch model");
     ///
     /// let ray = transform.transform_ray(inv_ray);
@@ -6401,9 +6401,9 @@ impl Ray {
     ///
     /// filename_scr = "screenshots/intersect_model.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     model.draw(token, transform, None, None);
-    ///     Lines::add_ray(token, ray, 1.2, named_colors::WHITE, None, 0.02);
-    ///     point.draw(token, &material, transform_contact_model,
+    ///     model.draw(transform, None, None);
+    ///     Lines::add_ray( ray, 1.2, named_colors::WHITE, None, 0.02);
+    ///     point.draw(&material, transform_contact_model,
     ///                Some(named_colors::RED.into()), None );
     /// );
     /// # sk::Sk::shutdown();
@@ -6445,7 +6445,7 @@ impl Ray {
     /// model.recalculate_bounds();
     ///
     /// let mut inv_contact_model_ray = Ray::default();
-    /// assert!(inv_ray.intersect_model_to_ptr( &model, Some(Cull::Back), &mut inv_contact_model_ray)
+    /// assert!(inv_ray.intersect_model_to_ptr(&model, Some(Cull::Back), &mut inv_contact_model_ray)
     ///     ,"Ray should touch model");
     ///
     /// let contact_model_ray = transform.transform_ray(inv_contact_model_ray);

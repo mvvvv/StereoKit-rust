@@ -485,10 +485,10 @@ pub enum TexAddress {
 ///
 /// filename_scr = "screenshots/tex.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
-///     plane_mesh.draw(token, &material_left,  transform_left,  None, None);
-///     plane_mesh.draw(token, &material_right, transform_right, None, None);
-///     plane_mesh.draw(token, &material_back,  transform_back,  None, None);
-///     plane_mesh.draw(token, &material_floor, transform_floor, None, None);
+///     plane_mesh.draw(&material_left,  transform_left,  None, None);
+///     plane_mesh.draw(&material_right, transform_right, None, None);
+///     plane_mesh.draw(&material_back,  transform_back,  None, None);
+///     plane_mesh.draw(&material_floor, transform_floor, None, None);
 /// );
 /// # sk::Sk::shutdown();
 /// ```
@@ -696,8 +696,8 @@ impl Tex {
     /// let transform_right = Matrix::t_r([ 0.5, 0.0, 0.0], [0.0, 45.0,-90.0]);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     plane_mesh.draw(token, &material_left,  transform_left,  None, None);
-    ///     plane_mesh.draw(token, &material_right, transform_right, None, None);
+    ///     plane_mesh.draw(&material_left,  transform_left,  None, None);
+    ///     plane_mesh.draw(&material_right, transform_right, None, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -745,8 +745,8 @@ impl Tex {
     /// let transform_right = Matrix::t_r([ 0.5, 0.0, 0.0], [0.0, 45.0,-90.0]);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     plane_mesh.draw(token, &material_left,  transform_left,  None, None);
-    ///     plane_mesh.draw(token, &material_right, transform_right, None, None);
+    ///     plane_mesh.draw(&material_left,  transform_left,  None, None);
+    ///     plane_mesh.draw(&material_right, transform_right, None, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -800,9 +800,9 @@ impl Tex {
     ///     if    tex_left.get_asset_state()  != AssetState::Loaded
     ///        || tex_right.get_asset_state() != AssetState::Loaded { iter -= 1; }
     ///
-    ///     plane_mesh.draw(token, &material_left,  transform_left,  None, None);
-    ///     plane_mesh.draw(token, &material_right, transform_right, None, None);
-    ///     plane_mesh.draw(token, &material_floor, transform_floor, None, None);
+    ///     plane_mesh.draw(&material_left,  transform_left,  None, None);
+    ///     plane_mesh.draw(&material_right, transform_right, None, None);
+    ///     plane_mesh.draw(&material_floor, transform_floor, None, None);
     /// );
     /// assert_eq!(tex_left.get_asset_state(),  AssetState::Loaded);
     /// assert_eq!(tex_right.get_asset_state(), AssetState::Loaded);
@@ -858,7 +858,7 @@ impl Tex {
     /// let transform  = Matrix::t_r([-0.5, 0.0, 0.0], [0.0, -45.0, 90.0]);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     plane_mesh.draw(token, &material,  transform,  None, None);
+    ///     plane_mesh.draw(&material,  transform,  None, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -920,7 +920,7 @@ impl Tex {
     /// let transform  = Matrix::t_r([-0.5, 0.0, 0.0], [0.0, -45.0, 90.0]);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     plane_mesh.draw(token, &material,  transform,  None, None);
+    ///     plane_mesh.draw(&material,  transform,  None, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -977,7 +977,7 @@ impl Tex {
     /// let transform  = Matrix::t_r([-0.5, 0.0, 0.0], [0.0, -45.0, 90.0]);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     plane_mesh.draw(token, &material,  transform,  None, None);
+    ///     plane_mesh.draw(&material, transform,  None, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -1082,7 +1082,7 @@ impl Tex {
     /// let transform  = Matrix::t_r([-0.5, 0.0, 0.0], [0.0, -45.0, 90.0]);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     plane_mesh.draw(token, &material,  transform,  None, None);
+    ///     plane_mesh.draw(&material, transform,  None, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -1140,10 +1140,10 @@ impl Tex {
     ///
     /// filename_scr = "screenshots/tex_gen_particle.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     plane_mesh.draw(token, &material_left,  transform_left,  None, None);
-    ///     plane_mesh.draw(token, &material_right, transform_right, None, None);
-    ///     plane_mesh.draw(token, &material_back,  transform_back,  None, None);
-    ///     plane_mesh.draw(token, &material_floor, transform_floor, None, None);
+    ///     plane_mesh.draw(&material_left,  transform_left,  None, None);
+    ///     plane_mesh.draw(&material_right, transform_right, None, None);
+    ///     plane_mesh.draw(&material_back,  transform_back,  None, None);
+    ///     plane_mesh.draw(&material_floor, transform_floor, None, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -1183,7 +1183,7 @@ impl Tex {
     /// let transform_floor = Matrix::t(  [0.0, -0.5, 0.0]);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     plane_mesh.draw(token, &material,  transform_floor,  None, None);
+    ///     plane_mesh.draw(&material,  transform_floor,  None, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -1212,7 +1212,7 @@ impl Tex {
     /// let transform_floor = Matrix::t(  [0.0, -0.5, 0.0]);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     plane_mesh.draw(token, &material,  transform_floor,  None, None);
+    ///     plane_mesh.draw(&material,  transform_floor,  None, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -1405,7 +1405,7 @@ impl Tex {
     /// let transform_floor = Matrix::t([0.0, -0.5, 0.0]);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     plane_mesh.draw(token, &material, transform_floor, None, None);
+    ///     plane_mesh.draw(&material, transform_floor, None, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -2364,7 +2364,7 @@ impl Tex {
     /// let transform_floor = Matrix::t(  [0.0, -0.5, 0.0]);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     plane_mesh.draw(token, &material,  transform_floor,  None, None);
+    ///     plane_mesh.draw(&material,  transform_floor,  None, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```

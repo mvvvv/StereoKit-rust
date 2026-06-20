@@ -188,7 +188,7 @@ pub fn launch(mut sk: Sk, _is_testing: bool) {
 /// let cube_transform = Matrix::r([40.0, 50.0, 20.0]);
 ///
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
-///     cube.draw(token, &material_cube, cube_transform, None, None);
+///     cube.draw(&material_cube, cube_transform, None, None);
 /// );
 /// ```
 fn dummy_function() {}

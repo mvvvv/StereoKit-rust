@@ -9,7 +9,7 @@ use crate::{
     model::{_ModelT, Model, ModelT},
     render::{_RenderListT, RenderList},
     shader::{_ShaderT, Shader, ShaderT},
-    sk::{MainThreadToken, OriginMode},
+    sk::OriginMode,
     sound::{_SoundT, Sound, SoundT},
     sprite::{_SpriteT, Sprite},
     tex::{_TexT, Tex, TexFormat, TexT},
@@ -133,7 +133,7 @@ pub enum AssetType {
 ///
 /// filename_scr = "screenshots/assets.jpeg"; fov_scr= 55.0;
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
-///     my_sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
+///     my_sprite.draw(Matrix::Y_180, Pivot::Center, None);
 /// );
 /// # sk::Sk::shutdown();
 /// ```
@@ -518,7 +518,7 @@ impl Assets {
     ///
     /// filename_scr = "screenshots/assets_block_for_priority.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     model.draw(token, transform, Some(named_colors::MISTY_ROSE.into()), None);
+    ///     model.draw(transform, Some(named_colors::MISTY_ROSE.into()), None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -559,7 +559,7 @@ impl Assets {
     /// Assets::block_until(&mesh_sync, AssetState::Loaded);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     mesh_sync.draw(token, &material, transform, Some(named_colors::MISTY_ROSE.into()), None);
+    ///     mesh_sync.draw(&material, transform, Some(named_colors::MISTY_ROSE.into()), None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -1491,26 +1491,26 @@ pub enum HierarchyParent {
 ///
 /// filename_scr = "screenshots/hierarchy.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
-///     sphere.draw(token, &material, transform, None, None);
+///     sphere.draw(&material, transform, None, None);
 ///
-///     assert!(Hierarchy::is_enabled(&token));
+///     assert!(Hierarchy::is_enabled());
 ///
-///     Hierarchy::push(token, Matrix::t([0.0, -0.5, -0.5]), None);
-///     sphere.draw(token, &material, transform, Some(named_colors::RED.into()), None);
-///     assert_eq!(Hierarchy::to_local_point(&token, [0.4, 0.4, 0.4]), [0.4, 0.9, 0.9].into());
-///     assert_eq!(Hierarchy::to_world_point(&token, [0.4, 0.9, 0.9]), [0.4, 0.4, 0.4].into());
-///     Hierarchy::pop(token);
+///     Hierarchy::push(Matrix::t([0.0, -0.5, -0.5]), None);
+///     sphere.draw(&material, transform, Some(named_colors::RED.into()), None);
+///     assert_eq!(Hierarchy::to_local_point([0.4, 0.4, 0.4]), [0.4, 0.9, 0.9].into());
+///     assert_eq!(Hierarchy::to_world_point([0.4, 0.9, 0.9]), [0.4, 0.4, 0.4].into());
+///     Hierarchy::pop();
 ///
-///     Hierarchy::push(token, Matrix::t([-0.5, -0.5, 0.25]), Some(HierarchyParent::Ignore));
-///     sphere.draw(token, &material, transform, Some(named_colors::GREEN.into()), None);
-///     assert_eq!(Hierarchy::to_local_point(&token, [0.4, 0.4, 0.4]), [0.9, 0.9, 0.15].into());
-///     assert_eq!(Hierarchy::to_world_point(&token, [0.9, 0.9, 0.15]), [0.4, 0.4, 0.4].into());
+///     Hierarchy::push(Matrix::t([-0.5, -0.5, 0.25]), Some(HierarchyParent::Ignore));
+///     sphere.draw(&material, transform, Some(named_colors::GREEN.into()), None);
+///     assert_eq!(Hierarchy::to_local_point([0.4, 0.4, 0.4]), [0.9, 0.9, 0.15].into());
+///     assert_eq!(Hierarchy::to_world_point([0.9, 0.9, 0.15]), [0.4, 0.4, 0.4].into());
 ///
-///     Hierarchy::enabled(token, false);
-///     sphere.draw(token, &material, Matrix::IDENTITY, Some(named_colors::BLUE.into()), None);
-///     assert_eq!(Hierarchy::to_local_point(&token, [0.4, 0.4, 0.4]), [0.4, 0.4, 0.4].into());
-///     Hierarchy::enabled(token, true);
-///     Hierarchy::pop(&token);
+///     Hierarchy::enabled(false);
+///     sphere.draw(&material, Matrix::IDENTITY, Some(named_colors::BLUE.into()), None);
+///     assert_eq!(Hierarchy::to_local_point([0.4, 0.4, 0.4]), [0.4, 0.4, 0.4].into());
+///     Hierarchy::enabled( true);
+///     Hierarchy::pop();
 /// );
 /// # sk::Sk::shutdown();
 /// ```
@@ -1543,7 +1543,7 @@ impl Hierarchy {
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/Enabled.html>
     ///
     /// see also [`hierarchy_set_enabled`] [`Hierarchy::is_enabled`]
-    pub fn enabled(_token: &MainThreadToken, enable: bool) {
+    pub fn enabled(enable: bool) {
         unsafe { hierarchy_set_enabled(enable as Bool32T) }
     }
 
@@ -1552,7 +1552,7 @@ impl Hierarchy {
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/Enabled.html>
     ///
     /// see also [hierarchy_is_enabled] [`Hierarchy::enabled`]
-    pub fn is_enabled(_token: &MainThreadToken) -> bool {
+    pub fn is_enabled() -> bool {
         unsafe { hierarchy_is_enabled() != 0 }
     }
 
@@ -1560,7 +1560,7 @@ impl Hierarchy {
     /// <https://stereokit.net/Pages/StereoKit/Hierarchy/Pop.html>
     ///
     /// see also [`hierarchy_pop`] [`Hierarchy::push`]
-    pub fn pop(_token: &MainThreadToken) {
+    pub fn pop() {
         unsafe { hierarchy_pop() }
     }
 
@@ -1580,14 +1580,14 @@ impl Hierarchy {
     /// use stereokit_rust::{maths::Matrix, system::Hierarchy};
     ///
     /// test_steps! { // !!!! Get a proper main loop !!!!
-    ///     Hierarchy::push(token, Matrix::t([0.0, -0.5, -0.5]), None);
-    ///     assert_eq!(Hierarchy::to_local_point(token, [0.4, 0.4, 0.4]), [0.4, 0.9, 0.9].into());
-    ///     assert_eq!(Hierarchy::to_world_point(token, [0.4, 0.9, 0.9]), [0.4, 0.4, 0.4].into());
-    ///     Hierarchy::pop(token);
+    ///     Hierarchy::push( Matrix::t([0.0, -0.5, -0.5]), None);
+    ///     assert_eq!(Hierarchy::to_local_point( [0.4, 0.4, 0.4]), [0.4, 0.9, 0.9].into());
+    ///     assert_eq!(Hierarchy::to_world_point( [0.4, 0.9, 0.9]), [0.4, 0.4, 0.4].into());
+    ///     Hierarchy::pop();
     /// }
     /// # sk::Sk::shutdown();
     /// ```
-    pub fn push<M: Into<Matrix>>(_token: &MainThreadToken, transform: M, parent_behavior: Option<HierarchyParent>) {
+    pub fn push<M: Into<Matrix>>(transform: M, parent_behavior: Option<HierarchyParent>) {
         let parent_behavior = parent_behavior.unwrap_or(HierarchyParent::Inherit);
         unsafe { hierarchy_push(&transform.into(), parent_behavior) }
     }
@@ -1604,14 +1604,14 @@ impl Hierarchy {
     /// use stereokit_rust::{maths::Pose, system::Hierarchy};
     ///
     /// test_steps! { // !!!! Get a proper main loop !!!!
-    ///     Hierarchy::push(token, Pose::new([0.0, -0.5, -0.5], None), None);
-    ///     assert_eq!(Hierarchy::to_local_point(token, [0.4, 0.4, 0.4]), [0.4, 0.9, 0.9].into());
-    ///     assert_eq!(Hierarchy::to_world_point(token, [0.4, 0.9, 0.9]), [0.4, 0.4, 0.4].into());
-    ///     Hierarchy::pop(token);
+    ///     Hierarchy::push( Pose::new([0.0, -0.5, -0.5], None), None);
+    ///     assert_eq!(Hierarchy::to_local_point( [0.4, 0.4, 0.4]), [0.4, 0.9, 0.9].into());
+    ///     assert_eq!(Hierarchy::to_world_point( [0.4, 0.9, 0.9]), [0.4, 0.4, 0.4].into());
+    ///     Hierarchy::pop();
     /// }
     /// # sk::Sk::shutdown();
     /// ```
-    pub fn to_local_point<V: Into<Vec3>>(_token: &MainThreadToken, world_point: V) -> Vec3 {
+    pub fn to_local_point<V: Into<Vec3>>(world_point: V) -> Vec3 {
         unsafe { hierarchy_to_local_point(&world_point.into()) }
     }
 
@@ -1627,19 +1627,19 @@ impl Hierarchy {
     /// use stereokit_rust::{maths::{Matrix, Vec3}, system::Hierarchy};
     ///
     /// test_steps! { // !!!! Get a proper main loop !!!!
-    ///     Hierarchy::push(token, Matrix::r([0.0, 0.0, 180.0]), None);
-    ///     let local: Vec3 = Hierarchy::to_local_rotation(token, [90.0, 180.0, 0.0])
+    ///     Hierarchy::push( Matrix::r([0.0, 0.0, 180.0]), None);
+    ///     let local: Vec3 = Hierarchy::to_local_rotation( [90.0, 180.0, 0.0])
     ///                           .to_angles_degrees().into();
     ///     assert_eq!(local, [-90.0, 0.0, 0.0].into());
     ///
-    ///     let world: Vec3 = Hierarchy::to_world_rotation(token, [90.0, 180.0, 0.0])
+    ///     let world: Vec3 = Hierarchy::to_world_rotation( [90.0, 180.0, 0.0])
     ///                           .to_angles_degrees().into();
     ///     assert_eq!(world, [-90.0, 0.0, 0.0].into());
-    ///     Hierarchy::pop(token);
+    ///     Hierarchy::pop();
     /// }
     /// # sk::Sk::shutdown();
     /// ```
-    pub fn to_local_rotation<Q: Into<Quat>>(_token: &MainThreadToken, world_orientation: Q) -> Quat {
+    pub fn to_local_rotation<Q: Into<Quat>>(world_orientation: Q) -> Quat {
         unsafe { hierarchy_to_local_rotation(&world_orientation.into()) }
     }
 
@@ -1655,15 +1655,15 @@ impl Hierarchy {
     /// use stereokit_rust::{maths::{Matrix, Pose}, system::Hierarchy};
     ///
     /// test_steps! { // !!!! Get a proper main loop !!!!
-    ///     Hierarchy::push(token, Matrix::t([0.0, -0.5, -0.5]), None);
+    ///     Hierarchy::push( Matrix::t([0.0, -0.5, -0.5]), None);
     ///     let pose = Pose::new([10.0, 20.0, 30.0], None);
-    ///     assert_eq!(Hierarchy::to_local_pose(token, pose), Pose::new([10.0, 20.5, 30.5], None));
-    ///     assert_eq!(Hierarchy::to_world_pose(token, Pose::new([10.0, 20.5, 30.5], None)), pose);
-    ///     Hierarchy::pop(token);
+    ///     assert_eq!(Hierarchy::to_local_pose( pose), Pose::new([10.0, 20.5, 30.5], None));
+    ///     assert_eq!(Hierarchy::to_world_pose( Pose::new([10.0, 20.5, 30.5], None)), pose);
+    ///     Hierarchy::pop();
     /// }
     /// # sk::Sk::shutdown();
     /// ```
-    pub fn to_local_pose<P: Into<Pose>>(_token: &MainThreadToken, world_pose: P) -> Pose {
+    pub fn to_local_pose<P: Into<Pose>>(world_pose: P) -> Pose {
         unsafe { hierarchy_to_local_pose(&world_pose.into()) }
     }
 
@@ -1692,14 +1692,14 @@ impl Hierarchy {
     ///
     /// filename_scr = "screenshots/hierarchy_ray.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     let world_space_ray = Hierarchy::to_world_ray(token, ray);
+    ///     let world_space_ray = Hierarchy::to_world_ray( ray);
     ///     assert_eq!(world_space_ray, ray);
-    ///     Lines::add_ray(token, world_space_ray, 2.2, named_colors::WHITE, None, 0.02);
+    ///     Lines::add_ray( world_space_ray, 2.2, named_colors::WHITE, None, 0.02);
     ///
-    ///     Hierarchy::push(token, transform, None);
-    ///     cube.draw(token, &material, local_transform, Some(named_colors::MAGENTA.into()), None);
+    ///     Hierarchy::push( transform, None);
+    ///     cube.draw(&material, local_transform, Some(named_colors::MAGENTA.into()), None);
     ///
-    ///     let local_space_ray = Hierarchy::to_local_ray(token, world_space_ray);
+    ///     let local_space_ray = Hierarchy::to_local_ray( world_space_ray);
     ///     let mesh_space_ray = local_transform.get_inverse().transform_ray(local_space_ray);
     ///     let (contact_cube, ind_cube) = cube.intersect( mesh_space_ray, Some(Cull::Back))
     ///                                        .expect("Ray should touch cube");
@@ -1707,13 +1707,13 @@ impl Hierarchy {
     ///
     ///     let local_contact_cube = local_transform.transform_point(contact_cube);
     ///     let transform_contact = Matrix::t_s(local_contact_cube, Vec3::ONE * 0.1);
-    ///     sphere.draw(token, &material, transform_contact, Some(named_colors::YELLOW.into()), None );
-    ///     Hierarchy::pop(token);
+    ///     sphere.draw(&material, transform_contact, Some(named_colors::YELLOW.into()), None );
+    ///     Hierarchy::pop();
     /// );
     /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/hierarchy_ray.jpeg" alt="screenshot" width="200">
-    pub fn to_local_ray<R: Into<Ray>>(_token: &MainThreadToken, world_ray: R) -> Ray {
+    pub fn to_local_ray<R: Into<Ray>>(world_ray: R) -> Ray {
         unsafe { hierarchy_to_local_ray(world_ray.into()) }
     }
 
@@ -1730,14 +1730,14 @@ impl Hierarchy {
     /// use stereokit_rust::{maths::Matrix, system::Hierarchy};
     ///
     /// test_steps! { // !!!! Get a proper main loop !!!!
-    ///     Hierarchy::push(token, Matrix::r([0.0, 0.0, 180.0]), None);
-    ///     assert_eq!(Hierarchy::to_local_direction(token, [1.0, 0.0, 0.0]), [-1.0, 0.0, 0.0].into());
-    ///     assert_eq!(Hierarchy::to_world_direction(token, [-1.0, 0.0, 0.0]), [1.0, 0.0, 0.0].into());
-    ///     Hierarchy::pop(token);
+    ///     Hierarchy::push(Matrix::r([0.0, 0.0, 180.0]), None);
+    ///     assert_eq!(Hierarchy::to_local_direction( [1.0, 0.0, 0.0]), [-1.0, 0.0, 0.0].into());
+    ///     assert_eq!(Hierarchy::to_world_direction( [-1.0, 0.0, 0.0]), [1.0, 0.0, 0.0].into());
+    ///     Hierarchy::pop();
     /// }
     /// # sk::Sk::shutdown();
     /// ```
-    pub fn to_local_direction<V: Into<Vec3>>(_token: &MainThreadToken, world_direction: V) -> Vec3 {
+    pub fn to_local_direction<V: Into<Vec3>>(world_direction: V) -> Vec3 {
         unsafe { hierarchy_to_local_direction(&world_direction.into()) }
     }
 
@@ -1749,7 +1749,7 @@ impl Hierarchy {
     ///
     /// see also [`hierarchy_to_world_point`]
     /// see example in [`Hierarchy::to_local_point`]
-    pub fn to_world_point<V: Into<Vec3>>(_token: &MainThreadToken, local_point: V) -> Vec3 {
+    pub fn to_world_point<V: Into<Vec3>>(local_point: V) -> Vec3 {
         unsafe { hierarchy_to_world_point(&local_point.into()) }
     }
 
@@ -1761,7 +1761,7 @@ impl Hierarchy {
     ///
     /// see also [`hierarchy_to_world_rotation`]
     /// see example in [`Hierarchy::to_local_rotation`]
-    pub fn to_world_rotation<Q: Into<Quat>>(_token: &MainThreadToken, local_orientation: Q) -> Quat {
+    pub fn to_world_rotation<Q: Into<Quat>>(local_orientation: Q) -> Quat {
         unsafe { hierarchy_to_world_rotation(&local_orientation.into()) }
     }
 
@@ -1773,7 +1773,7 @@ impl Hierarchy {
     ///
     /// see also [`hierarchy_to_world_pose`]
     /// see example in [`Hierarchy::to_local_pose`]
-    pub fn to_world_pose<P: Into<Pose>>(_token: &MainThreadToken, local_pose: P) -> Pose {
+    pub fn to_world_pose<P: Into<Pose>>(local_pose: P) -> Pose {
         unsafe { hierarchy_to_world_pose(&local_pose.into()) }
     }
 
@@ -1785,7 +1785,7 @@ impl Hierarchy {
     ///
     /// see also [`hierarchy_to_world_ray`]
     /// see example in [`Hierarchy::to_local_ray`]
-    pub fn to_world_ray<P: Into<Ray>>(_token: &MainThreadToken, local_ray: P) -> Ray {
+    pub fn to_world_ray<P: Into<Ray>>(local_ray: P) -> Ray {
         unsafe { hierarchy_to_world_ray(local_ray.into()) }
     }
 
@@ -1798,7 +1798,7 @@ impl Hierarchy {
     ///
     /// see also [`hierarchy_to_world_direction`]
     /// see example in [`Hierarchy::to_local_direction`]
-    pub fn to_world_direction<V: Into<Vec3>>(_token: &MainThreadToken, local_direction: V) -> Vec3 {
+    pub fn to_world_direction<V: Into<Vec3>>(local_direction: V) -> Vec3 {
         unsafe { hierarchy_to_world_direction(&local_direction.into()) }
     }
 }
@@ -2193,9 +2193,9 @@ pub type HandSimId = i32;
 ///         for joint in 0..5 {
 ///             let joint_pose = hand.get_u(finger, joint);
 ///             let transform = Matrix::t_s(joint_pose.position, Vec3::ONE * joint_pose.radius);
-///             Hierarchy::push(token, main_transform, None);
-///                 sphere.draw(token, &material_sphere, transform, Some(named_colors::BLACK.into()), None);
-///             Hierarchy::pop(token);
+///             Hierarchy::push(main_transform, None);
+///                 sphere.draw(&material_sphere, transform, Some(named_colors::BLACK.into()), None);
+///             Hierarchy::pop();
 ///         }
 ///     }
 /// );
@@ -2667,8 +2667,8 @@ pub enum ControllerKey {
 ///
 /// filename_scr = "screenshots/controller.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
-///     model_left.draw(token, transform_left, None, None);
-///     model_right.draw(token, transform_right, None, None);
+///     model_left.draw(transform_left, None, None);
+///     model_right.draw(transform_right, None, None);
 /// );
 /// # sk::Sk::shutdown();
 /// ```
@@ -4400,18 +4400,18 @@ impl LinePoint {
 ///
 /// filename_scr = "screenshots/lines.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
-///     Lines::add(token, [0.7, 0.7, 0.2], [ 0.7,-0.7, 0.2], named_colors::LIME, None, 0.06);
-///     Lines::add(token, [0.7, 0.7, 0.2], [-0.7, 0.7, 0.2], named_colors::RED, None, 0.03);
+///     Lines::add([0.7, 0.7, 0.2], [ 0.7,-0.7, 0.2], named_colors::LIME, None, 0.06);
+///     Lines::add([0.7, 0.7, 0.2], [-0.7, 0.7, 0.2], named_colors::RED, None, 0.03);
 ///
-///     Lines::add_list(token, &[
+///     Lines::add_list(&[
 ///        LinePoint {pt: [-0.7,-0.7, 0.2].into(), thickness: 0.08, color: named_colors::FUCHSIA},
 ///        LinePoint::new([-0.5,-0.1, 0.2], 0.08, named_colors::BLACK),
 ///        LinePoint::new([-0.7, 0.7, 0.2], 0.01, named_colors::YELLOW),
 ///     ]);
 ///
-///     Lines::add_ray(token, ray, 0.6, named_colors::RED, None, 0.08 );
+///     Lines::add_ray(ray, 0.6, named_colors::RED, None, 0.08 );
 ///
-///     Lines::add_axis(token, axis_pose, Some(0.7), Some(0.04));
+///     Lines::add_axis( axis_pose, Some(0.7), Some(0.04));
 /// );
 /// # sk::Sk::shutdown();
 /// ```
@@ -4443,20 +4443,13 @@ impl Lines {
     /// use stereokit_rust::{system::Lines, util::{named_colors}};
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     Lines::add(token, [0.7, 0.7, 0.2], [ 0.7,-0.7, 0.2], named_colors::LIME, None, 0.06);
+    ///     Lines::add([0.7, 0.7, 0.2], [ 0.7,-0.7, 0.2], named_colors::LIME, None, 0.06);
     ///
-    ///     Lines::add(token, [0.7, 0.7, 0.2], [-0.7, 0.7, 0.2], named_colors::RED, None, 0.03);
+    ///     Lines::add([0.7, 0.7, 0.2], [-0.7, 0.7, 0.2], named_colors::RED, None, 0.03);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
-    pub fn add<V: Into<Vec3>>(
-        _token: &MainThreadToken,
-        start: V,
-        end: V,
-        color_start: Color32,
-        color_end: Option<Color32>,
-        thickness: f32,
-    ) {
+    pub fn add<V: Into<Vec3>>(start: V, end: V, color_start: Color32, color_end: Option<Color32>, thickness: f32) {
         let color_end = color_end.unwrap_or(color_start);
         unsafe { line_add(start.into(), end.into(), color_start, color_end, thickness) }
     }
@@ -4483,14 +4476,13 @@ impl Lines {
     ///
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     Lines::add_ray(token, ray1, 1.0, named_colors::WHITE, Some(named_colors::RED), 0.03 );
-    ///     Lines::add_ray(token, ray2, 1.0, named_colors::WHITE, Some(named_colors::GREEN), 0.03 );
-    ///     Lines::add_ray(token, ray3, 1.0, named_colors::WHITE, Some(named_colors::BLUE), 0.03 );
+    ///     Lines::add_ray( ray1, 1.0, named_colors::WHITE, Some(named_colors::RED), 0.03 );
+    ///     Lines::add_ray( ray2, 1.0, named_colors::WHITE, Some(named_colors::GREEN), 0.03 );
+    ///     Lines::add_ray( ray3, 1.0, named_colors::WHITE, Some(named_colors::BLUE), 0.03 );
     /// );
     /// # sk::Sk::shutdown();
     /// ```
     pub fn add_ray<R: Into<Ray>>(
-        _token: &MainThreadToken,
         ray: R,
         length: f32,
         color_start: Color32,
@@ -4515,7 +4507,7 @@ impl Lines {
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///
-    ///     Lines::add_list(token, &[
+    ///     Lines::add_list(&[
     ///        LinePoint {pt: [-0.7,-0.7, 0.2].into(), thickness: 0.08, color: named_colors::FUCHSIA},
     ///        LinePoint::new([-0.5,-0.1, 0.2], 0.08, named_colors::BLACK),
     ///        LinePoint::new([-0.7, 0.7, 0.2], 0.01, named_colors::YELLOW),
@@ -4524,7 +4516,7 @@ impl Lines {
     /// );
     /// # sk::Sk::shutdown();
     /// ```
-    pub fn add_list(_token: &MainThreadToken, points: &[LinePoint]) {
+    pub fn add_list(points: &[LinePoint]) {
         unsafe { line_add_listv(points.as_ptr(), points.len() as i32) }
     }
 
@@ -4548,18 +4540,17 @@ impl Lines {
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///
-    ///     Lines::add_axis(token, axis_pose, Some(0.7), Some(0.02));
+    ///     Lines::add_axis(axis_pose, Some(0.7), Some(0.02));
     ///
     /// );
     /// # sk::Sk::shutdown();
     /// ```
-    pub fn add_axis<P: Into<Pose>>(token: &MainThreadToken, at_pose: P, size: Option<f32>, thickness: Option<f32>) {
+    pub fn add_axis<P: Into<Pose>>(at_pose: P, size: Option<f32>, thickness: Option<f32>) {
         let at_pose: Pose = at_pose.into();
         let size = size.unwrap_or(0.01);
         match thickness {
             Some(thickness) => {
                 Self::add(
-                    token,
                     at_pose.position,
                     at_pose.orientation.mul_vec3(at_pose.position + Vec3::X) * size,
                     Color32::new(255, 0, 0, 255),
@@ -4567,7 +4558,6 @@ impl Lines {
                     thickness,
                 );
                 Self::add(
-                    token,
                     at_pose.position,
                     at_pose.orientation.mul_vec3(at_pose.position + Vec3::Y) * size,
                     Color32::new(0, 255, 0, 255),
@@ -4575,7 +4565,6 @@ impl Lines {
                     thickness,
                 );
                 Self::add(
-                    token,
                     at_pose.position,
                     at_pose.orientation.mul_vec3(at_pose.position + Vec3::Z) * size,
                     Color32::new(0, 0, 255, 255),
@@ -4583,7 +4572,6 @@ impl Lines {
                     thickness,
                 );
                 Self::add(
-                    token,
                     at_pose.position,
                     at_pose.orientation.mul_vec3(at_pose.position + Vec3::FORWARD) * size * 0.5,
                     Color32::new(255, 255, 255, 255),
@@ -4926,7 +4914,7 @@ impl Log {
 ///
 /// filename_scr = "screenshots/microphone.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
-///     sphere.draw(token, &material, transform, Some(named_colors::LIGHT_BLUE.into()), None  );
+///     sphere.draw(&material, transform, Some(named_colors::LIGHT_BLUE.into()), None  );
 ///     if iter == 1990 && Microphone::is_recording() {
 ///         let micro_sound = Microphone::sound().expect("Microphone should be recording");
 ///         let mut read_samples: Vec<f32> = vec![0.0; 48000];
@@ -5360,16 +5348,16 @@ impl SensorDepth {
 ///
 /// filename_scr = "screenshots/text_style.jpeg"; fov_scr=110.0;
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
-///    Hierarchy::push(token, recenter, None);
+///    Hierarchy::push(recenter, None);
 ///    TextBuilder::new(text).transform(Matrix::Y_180).style(style).tint(GOLD)
 ///             .position(Pivot::TopCenter).align(Align::TopLeft).add();
 ///    
-///    Lines::add(token, [sizex, ascender_at, 0.0],    [-sizex, ascender_at, 0.0],    GREEN, None, 0.03  );
-///    Lines::add(token, [sizex, base_line_at, 0.0],   [-sizex, base_line_at, 0.0],   WHITE, None, 0.03  );
-///    Lines::add(token, [sizex, cap_height_at, 0.0],  [-sizex, cap_height_at, 0.0],  BLACK, None, 0.03  );
-///    Lines::add(token, [sizex, descender_at, 0.0],   [-sizex, descender_at, 0.0],   BLUE, None, 0.03  );
-///    Lines::add(token, [sizex, line_height_at, 0.0], [-sizex, line_height_at, 0.0], RED, None, 0.03  );
-///    Hierarchy::pop(token);
+///    Lines::add([sizex, ascender_at, 0.0],    [-sizex, ascender_at, 0.0],    GREEN, None, 0.03  );
+///    Lines::add([sizex, base_line_at, 0.0],   [-sizex, base_line_at, 0.0],   WHITE, None, 0.03  );
+///    Lines::add([sizex, cap_height_at, 0.0],  [-sizex, cap_height_at, 0.0],  BLACK, None, 0.03  );
+///    Lines::add([sizex, descender_at, 0.0],   [-sizex, descender_at, 0.0],   BLUE, None, 0.03  );
+///    Lines::add([sizex, line_height_at, 0.0], [-sizex, line_height_at, 0.0], RED, None, 0.03  );
+///    Hierarchy::pop();
 /// );
 /// # sk::Sk::shutdown();
 /// ```
@@ -6149,7 +6137,6 @@ impl Text {
     #[deprecated(since = "0.40.0", note = "please use TextBuilder instead")]
     #[allow(clippy::too_many_arguments)]
     pub fn add_at(
-        _token: &MainThreadToken,
         text: impl AsRef<str>,
         transform: impl Into<Matrix>,
         text_style: Option<TextStyle>,
@@ -6233,7 +6220,6 @@ impl Text {
     #[deprecated(since = "0.40.0", note = "please use TextBuilder instead")]
     #[allow(clippy::too_many_arguments)]
     pub fn add_in(
-        _token: &MainThreadToken,
         text: impl AsRef<str>,
         transform: impl Into<Matrix>,
         size: impl Into<Vec2>,
@@ -6303,7 +6289,7 @@ impl Text {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///    TextBuilder::new(&text).transform(transform1).style(style).tint(GOLD).add();
     ///    
-    ///    cube.draw(token, &material, transform1, Some(GREEN.into()), None);
+    ///    cube.draw(&material, transform1, Some(GREEN.into()), None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -6351,7 +6337,7 @@ impl Text {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///    TextBuilder::new(&text).transform(transform_text).style(style).tint(GOLD).add();
     ///    
-    ///    cube.draw(token, &material, transform_cube, Some(GREEN.into()), None);
+    ///    cube.draw(&material, transform_cube, Some(GREEN.into()), None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```

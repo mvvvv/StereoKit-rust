@@ -4,7 +4,6 @@ use crate::{
     maths::{Bool32T, Matrix, Pose, Rect},
     mesh::{Mesh, MeshT},
     model::{Model, ModelT},
-    sk::MainThreadToken,
     system::{IAsset, Log, assets_releaseref_threadsafe},
     tex::{Tex, TexFormat, TexT},
     util::{Color32, Color128, SphericalHarmonics},
@@ -140,17 +139,17 @@ pub enum Projection {
 ///     
 ///     primary.clear();
 ///
-///     Renderer::add_mesh(token, &sun, &material, transform_sun,
+///     Renderer::add_mesh(&sun, &material, transform_sun,
 ///         Some(named_colors::RED.into()), None);
 ///
-///     Renderer::add_model(token, &plane, transform_plane,
+///     Renderer::add_model(&plane, transform_plane,
 ///         Some(named_colors::PINK.into()), Some(RenderLayer::FirstPerson));
 ///
 ///     Renderer::layer_filter(RenderLayer::All);
 ///  
 ///     if iter == number_of_steps {
 ///         // This is the way test_screenshot!() works:
-///         Renderer::screenshot(token, filename_scr, 90, Pose::look_at(from_scr, at_scr),
+///         Renderer::screenshot( filename_scr, 90, Pose::look_at(from_scr, at_scr),
 ///             width_scr, height_scr, Some(fov_scr) );
 ///     }
 /// );
@@ -620,15 +619,14 @@ impl Renderer {
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///
-    ///     Renderer::add_mesh(token, &sphere, &material, transform1,
+    ///     Renderer::add_mesh(&sphere, &material, transform1,
     ///         Some(named_colors::RED.into()), Some(RenderLayer::Layer0));
     ///
-    ///     Renderer::add_mesh(token, &sphere, &material, transform2, None, None);
+    ///     Renderer::add_mesh(&sphere, &material, transform2, None, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
     pub fn add_mesh(
-        _token: &MainThreadToken,
         mesh: impl AsRef<Mesh>,
         material: impl AsRef<Material>,
         transform: impl Into<Matrix>,
@@ -668,15 +666,14 @@ impl Renderer {
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///
-    ///     Renderer::add_model(token, &model, transform1,
+    ///     Renderer::add_model(&model, transform1,
     ///         Some(named_colors::RED.into()), Some(RenderLayer::Layer0));
     ///
-    ///     Renderer::add_model(token, &model, transform2, None, None);
+    ///     Renderer::add_model(&model, transform2, None, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
     pub fn add_model(
-        _token: &MainThreadToken,
         model: impl AsRef<Model>,
         transform: impl Into<Matrix>,
         color: Option<Color128>,
@@ -745,7 +742,7 @@ impl Renderer {
     ///
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     sphere.draw(token, &material, Matrix::IDENTITY, None, Some(RenderLayer::Layer1));
+    ///     sphere.draw(&material, Matrix::IDENTITY, None, Some(RenderLayer::Layer1));
     /// );
     ///
     /// Renderer::override_capture_filter(false, RenderLayer::Layer0);
@@ -794,23 +791,18 @@ impl Renderer {
     /// number_of_steps = 30;
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     
-    ///     Renderer::add_mesh(token, &sun, &material_sun, transform_sun,
+    ///     Renderer::add_mesh(&sun, &material_sun, transform_sun,
     ///         Some(named_colors::RED.into()), None);
     ///
-    ///     Renderer::render_to(token, &tex, 0, &render);
+    ///     Renderer::render_to(&tex, 0, &render);
     ///
-    ///     Renderer::add_mesh(token, &plane, &material, transform_plane,
+    ///     Renderer::add_mesh(&plane, &material, transform_plane,
     ///         None, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_to.jpeg" alt="screenshot" width="200">
-    pub fn render_to(
-        _token: &MainThreadToken,
-        to_render_target: impl AsRef<Tex>,
-        to_target_index: i32,
-        render: &RenderBuilder,
-    ) {
+    pub fn render_to(to_render_target: impl AsRef<Tex>, to_target_index: i32, render: &RenderBuilder) {
         render.render_to(to_render_target, to_target_index);
     }
 
@@ -833,14 +825,14 @@ impl Renderer {
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     if iter < 2 {
-    ///         Renderer::set_global_texture(token, 12, Some(&tex));
+    ///         Renderer::set_global_texture(12, Some(&tex));
     ///     } else {
-    ///         Renderer::set_global_texture(token, 12, None);
+    ///         Renderer::set_global_texture( 12, None);
     ///     }
     /// );
     /// # sk::Sk::shutdown();
     /// ```
-    pub fn set_global_texture(_token: &MainThreadToken, texture_register: i32, tex: Option<&Tex>) {
+    pub fn set_global_texture(texture_register: i32, tex: Option<&Tex>) {
         if let Some(tex) = tex {
             unsafe { render_global_texture(texture_register, tex.0.as_ptr()) }
         } else {
@@ -928,7 +920,6 @@ impl Renderer {
     /// see also [`render_screenshot`]
     /// see example in [`Renderer`]
     pub fn screenshot(
-        _token: &MainThreadToken,
         filename: impl AsRef<Path>,
         file_quality: i32,
         viewpoint: Pose,
@@ -980,14 +971,13 @@ impl Renderer {
     /// filename_scr = "screenshots/screenshot_capture.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     
-    ///     Renderer::add_mesh(token, &sun, &material_sun, transform_sun,
+    ///     Renderer::add_mesh(&sun, &material_sun, transform_sun,
     ///         Some(named_colors::RED.into()), None);
     ///
-    ///     Renderer::add_mesh(token, &plane, &material, transform_plane,
+    ///     Renderer::add_mesh(&plane, &material, transform_plane,
     ///         None, None);
     ///     
-    ///     Renderer::screenshot_capture( token,
-    ///         move |dots, width, height| {
+    ///     Renderer::screenshot_capture(move |dots, width, height| {
     ///             let tex = Tex::find("CAPTURE_TEXTURE_ID").ok();
     ///             match tex {
     ///                 Some(mut tex) => tex.set_colors32(width, height, dots),
@@ -1001,7 +991,6 @@ impl Renderer {
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/screenshot_capture.jpeg" alt="screenshot" width="200">
     pub fn screenshot_capture<F: FnMut(&[Color32], usize, usize)>(
-        _token: &MainThreadToken,
         mut on_screenshot: F,
         viewpoint: Pose,
         width: i32,
@@ -1067,14 +1056,13 @@ impl Renderer {
     /// filename_scr = "screenshots/screenshot_viewpoint.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     
-    ///     Renderer::add_mesh(token, &sun, &material_sun, transform_sun,
+    ///     Renderer::add_mesh(&sun, &material_sun, transform_sun,
     ///         Some(named_colors::RED.into()), None);
     ///
-    ///     Renderer::add_mesh(token, &plane, &material, transform_plane,
+    ///     Renderer::add_mesh(&plane, &material, transform_plane,
     ///         None, None);
     ///
-    ///     Renderer::screenshot_viewpoint( token,
-    ///         move |dots, width, height| {
+    ///     Renderer::screenshot_viewpoint(move |dots, width, height| {
     ///             let tex = Tex::find("CAPTURE_TEXTURE_ID").ok();
     ///             match tex {
     ///                 Some(mut tex) => tex.set_colors32(width, height, dots),
@@ -1089,7 +1077,6 @@ impl Renderer {
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/screenshot_viewpoint.jpeg" alt="screenshot" width="200">
     pub fn screenshot_viewpoint<F: FnMut(&[Color32], usize, usize)>(
-        _token: &MainThreadToken,
         on_screenshot: F,
         render: &RenderBuilder,
         camera_index: usize,
@@ -1451,7 +1438,7 @@ impl Renderer {
 ///     // The color will change so we redraw every frame
 ///     render_list.draw_now(&render_tex, &render,
 ///         Color128::new((iter % 100) as f32 * 0.01, 0.3, 0.2, 0.5));
-///     screen.draw(token, &render_mat, Matrix::IDENTITY, None, None);
+///     screen.draw(&render_mat, Matrix::IDENTITY, None, None);
 /// );
 /// # sk::Sk::shutdown();
 /// ```
@@ -1778,7 +1765,7 @@ impl RenderList {
     ///             .viewport(Rect::new(0.0, 0.0, 1.0, 1.0));
     ///         render_list.draw_now(&render_tex, &render, Color128::new(0.99, 0.3, 0.2, 0.5));
     ///     }
-    ///     screen.draw(token, &render_mat, Matrix::IDENTITY, None, None);
+    ///     screen.draw(&render_mat, Matrix::IDENTITY, None, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -1856,7 +1843,7 @@ impl RenderList {
     ///             .viewport(Rect::new(0.0, 0.0, 1.0, 1.0));
     ///         render_list.draw_now(&render_tex, &render, Color128::new(0.0, 0.3, 0.2, 0.5));
     ///     }
-    ///     screen.draw(token, &render_mat, Matrix::IDENTITY, None, None);
+    ///     screen.draw(&render_mat, Matrix::IDENTITY, None, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -1942,7 +1929,7 @@ impl RenderList {
     ///
     /// filename_scr = "screenshots/render_list_draw_now.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     screen.draw(token, &render_mat, Matrix::IDENTITY, None, None);
+    ///     screen.draw(&render_mat, Matrix::IDENTITY, None, None);
     ///     render_list.draw_now(&render_tex, &render, Color128::BLACK_TRANSPARENT);
     /// );
     /// # sk::Sk::shutdown();
@@ -1994,9 +1981,9 @@ impl RenderList {
     /// filename_scr = "screenshots/render_list_push.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     render_list.push();
-    ///     cylinder1.draw(token, &cylinder_mat, Matrix::IDENTITY, Some(named_colors::GOLD.into()), None);
+    ///     cylinder1.draw(&cylinder_mat, Matrix::IDENTITY, Some(named_colors::GOLD.into()), None);
     ///     RenderList::pop();
-    ///     cylinder2.draw(token, &cylinder_mat, Matrix::IDENTITY, Some(named_colors::RED.into()), None);
+    ///     cylinder2.draw(&cylinder_mat, Matrix::IDENTITY, Some(named_colors::RED.into()), None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -2123,7 +2110,7 @@ impl RenderList {
 /// filename_scr = "screenshots/render_builder.jpeg";
 /// number_of_steps = 30;
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
-///     Renderer::add_mesh(token, &sun, &material_sun, transform_sun,
+///     Renderer::add_mesh(&sun, &material_sun, transform_sun,
 ///         Some(named_colors::RED.into()), None);
 ///
 ///     // 1 - render_to:
@@ -2138,9 +2125,9 @@ impl RenderList {
 ///     render_list.add_mesh(&sun, &material_sun, transform_sun, named_colors::GOLD, None);
 ///     render.draw_now(&mut render_list, &tex2, Color128::WHITE);
 ///
-///     //Renderer::add_mesh(token, &plane, &material, transform_plane, None, None);
-///     sprite1.draw(token, transform_sprite1, Pivot::TopLeft, None);
-///     sprite2.draw(token, transform_sprite2, Pivot::Center, None);
+///     //Renderer::add_mesh(e, &material, transform_plane, None, None);
+///     sprite1.draw(transform_sprite1, Pivot::TopLeft, None);
+///     sprite2.draw(transform_sprite2, Pivot::Center, None);
 /// );
 /// # sk::Sk::shutdown();
 /// ```
@@ -2281,19 +2268,19 @@ impl RenderBuilder {
     ///
     /// filename_scr = "screenshots/render_to_multiview.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Renderer::add_mesh(token, &sphere, &material, transform_sphere,
+    ///     Renderer::add_mesh(&sphere, &material, transform_sphere,
     ///         None, None);
     ///     if iter < number_of_steps - 3 {
     ///         if iter % 2 == 0 { // 2 syntaxes for the same job:
-    ///             Renderer::render_to(token, &tex, 1, &render);
+    ///             Renderer::render_to(&tex, 1, &render);
     ///         } else {
     ///             render.render_to(&tex, 1)
     ///         }
     ///     }
     ///
     ///     // Display array slice 0 and slice 1 of the render target as screen quads
-    ///     quad.draw(token, &mat0, transform_q0, None, None);
-    ///     quad.draw(token, &mat1, transform_q1, None, None);
+    ///     quad.draw(&mat0, transform_q0, None, None);
+    ///     quad.draw(&mat1, transform_q1, None, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -2403,7 +2390,7 @@ impl RenderBuilder {
     ///
     /// filename_scr = "screenshots/render_list_draw_now_multi_view.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     screen.draw(token, &render_mat, Matrix::IDENTITY, None, None);
+    ///     screen.draw(&render_mat, Matrix::IDENTITY, None, None);
     ///     if iter % 2 == 0 { // 2 syntaxes for the same job:
     ///         render_list.draw_now(&render_tex, &render, Color128::BLACK_TRANSPARENT);
     ///     } else {

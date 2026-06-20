@@ -48,7 +48,7 @@ impl Ui2 {
     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
     /// Called from IStepper::step after check_event, here you can draw your UI and scene
-    fn draw(&mut self, token: &MainThreadToken) {
+    fn draw(&mut self, _token: &MainThreadToken) {
         // Window 1: Modified Pose
         // With this window, we're adding a constraint to a normal stateful
         // pose. This is a common scenario, where the developer wants a gravity
@@ -58,7 +58,7 @@ impl Ui2 {
         Ui::window("Modified Pose").pose(&mut self.modifiable_pose).begin();
 
         // Pop the hierarchy to apply custom transformations
-        Hierarchy::pop(token);
+        Hierarchy::pop();
 
         // Quash X and Z rotation to constrain the pose
         let mut constrained_orientation = self.modifiable_pose.orientation;
@@ -70,7 +70,7 @@ impl Ui2 {
         let constrained_pose = Pose::new(self.modifiable_pose.position, Some(constrained_orientation));
 
         // Push the constrained pose back to hierarchy
-        Hierarchy::push(token, Matrix::from(constrained_pose), None);
+        Hierarchy::push(Matrix::from(constrained_pose), None);
 
         Ui::text("We're quashing rotation of this Window's pose on the X and Z axes after doing regular handle logic.")
             .draw();
@@ -91,11 +91,11 @@ impl Ui2 {
         Ui::window("Override Pose").pose(&mut override_pose).begin();
 
         // Pop the hierarchy to completely override the pose
-        Hierarchy::pop(token);
+        Hierarchy::pop();
 
         // Push a completely different pose for rendering
         let rendering_pose = Pose::new(Vec3::new(-0.1, 1.3, -0.5), Some(Quat::look_dir(Vec3::new(0.0, 0.0, 1.0))));
-        Hierarchy::push(token, Matrix::from(rendering_pose), None);
+        Hierarchy::push(Matrix::from(rendering_pose), None);
 
         Ui::text("We're completely overriding this Window's pose to prove that even extreme modifications to the Window's pose will still properly apply.").draw();
 

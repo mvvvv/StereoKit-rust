@@ -106,7 +106,7 @@ impl Asset1 {
     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
     /// Draws the asset model and handles user interactions.
-    fn draw(&mut self, token: &MainThreadToken) {
+    fn draw(&mut self, _token: &MainThreadToken) {
         let mut new_asset_files = None;
 
         // The window to select existing model in this crate
@@ -198,7 +198,7 @@ impl Asset1 {
             }
             // Combine the fixed per-axis base scale with the user-driven uniform scale.
             let model_transform = self.asset_pose.to_matrix(Some(self.asset_scale * self.model_scale));
-            Renderer::add_model(token, model, model_transform, None, None);
+            Renderer::add_model(model, model_transform, None, None);
         } else {
             self.asset_selected = 0;
         }

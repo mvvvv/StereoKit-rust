@@ -153,7 +153,7 @@ impl ScreenshotViewer {
     }
 
     /// Called from IStepper::step after check_event, here you can draw your UI and scene
-    fn draw(&mut self, token: &MainThreadToken) {
+    fn draw(&mut self, _token: &MainThreadToken) {
         if !self.enabled {
             return;
         };
@@ -249,7 +249,6 @@ impl ScreenshotViewer {
             let height_i = self.picture_size.y as i32;
 
             Renderer::screenshot_capture(
-                token,
                 move |dots, width, height| {
                     Log::info(format!("data length {} -> size {}/{}", dots.len(), width, height));
                     let tex = Tex::find(CAPTURE_TEXTURE_ID).ok();

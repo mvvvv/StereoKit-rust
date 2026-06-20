@@ -222,7 +222,7 @@ impl Skin1 {
 
     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
-    fn draw(&mut self, token: &MainThreadToken) {
+    fn draw(&mut self, _token: &MainThreadToken) {
         let t = Time::get_totalf();
 
         // Three copies side by side, each with a phase-shifted oscillation.
@@ -241,7 +241,7 @@ impl Skin1 {
 
             // Position each ribbon in a row
             let world = Matrix::t([offsets_x[i], 1.5, -0.55]);
-            mesh.draw(token, &self.material, world, None, None);
+            mesh.draw(&self.material, world, None, None);
 
             // Small label under each ribbon
             self.text_copies[i]

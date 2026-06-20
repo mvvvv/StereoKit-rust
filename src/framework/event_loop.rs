@@ -132,17 +132,17 @@ enum SleepPhase {
 /// let mut iter = 0;
 /// let mut hidden_time = std::time::SystemTime::now();
 /// filename_scr = "screenshots/sk_closures.jpeg";
-/// SkClosures::new(sk, |sk, token|  {
+/// SkClosures::new(sk, |sk, _token|  {
 ///     // Main loop where we draw stuff and do things!!
 ///     if iter > number_of_steps {sk.quit(None)}
 ///
-///     model.draw_with_material(token, &material, transform ,  None, None);
+///     model.draw_with_material(&material, transform ,  None, None);
 ///
 ///     iter+=1;
 ///                 
 ///     if iter == number_of_steps {
 ///         // render screenshot
-///         render::Renderer::screenshot(token, filename_scr, 90,
+///         render::Renderer::screenshot(filename_scr, 90,
 ///             maths::Pose::look_at(from_scr, at_scr),
 ///             width_scr, height_scr, Some(fov_scr) );
 ///     }
@@ -291,11 +291,11 @@ impl<'a> SkClosures<'a> {
     /// let transform = Matrix::IDENTITY;
     ///
     /// let mut iter = 0;
-    /// SkClosures::run_app(sk, |sk: &mut Sk, token: &MainThreadToken|  {
+    /// SkClosures::run_app(sk, |sk: &mut Sk, _token: &MainThreadToken|  {
     ///     // Main loop where we draw stuff and do things!!
     ///     if iter > number_of_steps {sk.quit(None)}
     ///
-    ///     model.draw(token,  transform ,  None, None);
+    ///     model.draw(transform, None, None);
     ///
     ///     iter += 1;
     /// },|sk: &mut Sk| {
@@ -341,11 +341,11 @@ impl<'a> SkClosures<'a> {
     ///
     /// let mut iter = 0;
     /// let mut hidden_time = std::time::SystemTime::now();
-    /// SkClosures::new(sk, |sk, token|  {
+    /// SkClosures::new(sk, |sk, _token|  {
     ///     // Main loop where we draw stuff and do things!!
     ///     if iter > number_of_steps {sk.quit(None)}
     ///
-    ///     model.draw(token,  transform ,  None, None);
+    ///     model.draw(transform, None, None);
     ///
     ///     iter+=1;
     /// })
@@ -525,9 +525,9 @@ impl<'a> SkClosures<'a> {
 ///         true
 ///     }
 ///
-///     fn step(&mut self, token: &MainThreadToken) {
+///     fn step(&mut self, _token: &MainThreadToken) {
 ///         if let Some(round_cube) = &self.round_cube {
-///             round_cube.draw(token, Material::pbr(),
+///             round_cube.draw(Material::pbr(),
 ///                             self.transform, Some(named_colors::RED.into()), None);
 ///         }
 ///         TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
@@ -1316,8 +1316,8 @@ impl Steppers {
 ///         let text = self.text.clone();
 ///
 ///         self.closures.set(
-///             move |token| {
-///                 Renderer::add_mesh(token, &round_cube, Material::pbr(),
+///             move |_token| {
+///                 Renderer::add_mesh(&round_cube, Material::pbr(),
 ///                                    transform, Some(named_colors::RED.into()), None);
 ///                 TextBuilder::new(&text).transform(transform).style(text_style).add();
 ///                 // (1) You cannot do that here: self.text = "youpi".into();

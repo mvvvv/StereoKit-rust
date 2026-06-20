@@ -100,7 +100,7 @@ impl RenderList1 {
     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
     /// Called from IStepper::step after check_event, here you can draw your UI
-    fn draw(&mut self, token: &MainThreadToken) {
+    fn draw(&mut self, _token: &MainThreadToken) {
         if self.clear_primary {
             self.primary.clear();
         }
@@ -126,7 +126,6 @@ impl RenderList1 {
         Ui::label("Offscreen List:").use_padding(true).draw();
         let b = Ui::layout_reserve(Vec2::new(0.1, 0.1), false, 0.0);
         self.quad.draw(
-            token,
             &self.render_mat,
             Matrix::t_s(b.center + Vec3::new(-0.05, -0.05, -0.004), b.dimensions.xy1()),
             None,

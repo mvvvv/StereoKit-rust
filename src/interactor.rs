@@ -689,7 +689,7 @@ impl Interaction {
 ///
 /// test_steps!( // !!!! Get a proper main loop !!!!
 ///     ctrl_interactor.step();
-///     ctrl_interactor.draw_ray(token);
+///     ctrl_interactor.draw_ray();
 /// );
 ///
 /// let interactor = ctrl_interactor.interactor();
@@ -769,9 +769,7 @@ impl InteractorController {
     ///
     /// Draws a smooth curved line from the interactor's aim origin outward. The ray animates
     /// its visibility and thickness based on whether the interactor has a focused or active element.
-    ///
-    /// * `token` - The main thread token for drawing.
-    pub fn draw_ray(&mut self, token: &crate::sk::MainThreadToken) {
+    pub fn draw_ray(&mut self) {
         use crate::{
             maths::lerp,
             system::{LinePoint, Lines},
@@ -836,7 +834,7 @@ impl InteractorController {
             let a = (curve * alpha * 255.0) as u8;
             *pt = LinePoint { pt: pos, thickness: width, color: Color32::rgba(255, 255, 255, a) };
         }
-        Lines::add_list(token, &pts);
+        Lines::add_list(&pts);
     }
 
     /// Returns a reference to the underlying [`Interactor`].
@@ -873,7 +871,7 @@ impl InteractorController {
 ///
 /// test_steps!( // !!!! Get a proper main loop !!!!
 ///     hand_interactor.step();
-///     hand_interactor.draw_ray(token);
+///     hand_interactor.draw_ray();
 /// );
 ///
 /// let poke  = hand_interactor.poke();
@@ -1013,9 +1011,7 @@ impl InteractorHand {
     ///
     /// The ray is only drawn when the far interactor has a focused element, and animates its
     /// visibility and thickness accordingly.
-    ///
-    /// * `token` - The main thread token for drawing.
-    pub fn draw_ray(&mut self, token: &crate::sk::MainThreadToken) {
+    pub fn draw_ray(&mut self) {
         use crate::{
             maths::lerp,
             system::{LinePoint, Lines},
@@ -1080,7 +1076,7 @@ impl InteractorHand {
             let a = (curve * alpha * 255.0) as u8;
             *pt = LinePoint { pt: pos, thickness: width, color: Color32::rgba(255, 255, 255, a) };
         }
-        Lines::add_list(token, &pts);
+        Lines::add_list(&pts);
     }
 
     /// Returns a reference to the poke [`Interactor`].

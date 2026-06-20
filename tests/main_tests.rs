@@ -27,7 +27,7 @@ fn main() {
             }
 
             // testing material1
-            circle.draw(token, &material_circle,  Matrix::IDENTITY, None, None);
+            circle.draw(&material_circle,  Matrix::IDENTITY, None, None);
         );
     }
     Sk::shutdown();
@@ -45,7 +45,7 @@ fn main() {
         test_steps!( // !!!! Get a proper main loop !!!!
 
             // testing material1
-            circle.draw(token, &material_circle,  Matrix::IDENTITY, None, None);
+            circle.draw(&material_circle,  Matrix::IDENTITY, None, None);
         );
     }
     Sk::shutdown();

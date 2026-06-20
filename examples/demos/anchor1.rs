@@ -49,7 +49,7 @@ impl Anchor1 {
 
     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
-    fn draw(&mut self, token: &MainThreadToken) {
+    fn draw(&mut self, _token: &MainThreadToken) {
         // we need a pointer
         let right_hand = Input::hand(Handed::Right);
         let mut hand_pose = right_hand.palm;
@@ -60,7 +60,7 @@ impl Anchor1 {
         if right_hand.is_just_pinched() {
             Log::diag(format!("{ray:?}"));
         }
-        Lines::add(token, ray.position, ray.position + ray.direction * 0.5, WHITE, None, 0.01);
+        Lines::add(ray.position, ray.position + ray.direction * 0.5, WHITE, None, 0.01);
 
         // window for working with the anchors
         Ui::window("Anchors").pose(&mut self.window_pose).begin();
@@ -103,7 +103,7 @@ impl Anchor1 {
         let mut selected: Option<&Anchor> = None;
         for anchor in self.anchors.iter() {
             let a_pose = anchor.get_pose();
-            Lines::add_axis(token, a_pose, Some(0.1), None);
+            Lines::add_axis(a_pose, Some(0.1), None);
             if a_pose.position.in_radius(pose_tip.position, 0.05) {
                 selected = Some(anchor);
             }
@@ -112,7 +112,6 @@ impl Anchor1 {
         // outline the one pointed
         if let Some(anchor_selected) = selected {
             Mesh::cube().draw(
-                token,
                 &self.ui_box_material,
                 anchor_selected.get_pose().to_matrix(Some(Vec3::ONE * 0.1)),
                 None,

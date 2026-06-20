@@ -675,7 +675,7 @@ impl XrMetaVirtualKeyboardStepper {
     }
 
     /// Method called by derive(IStepper) for rendering/drawing
-    fn draw(&mut self, token: &MainThreadToken) {
+    fn draw(&mut self, _token: &MainThreadToken) {
         // Render the keyboard model if available
         if let Some(ref model) = self.keyboard_model {
             // The keyboard space position is managed by OpenXR
@@ -684,7 +684,7 @@ impl XrMetaVirtualKeyboardStepper {
             // For now, render at a fixed position for testing
             use crate::maths::{Matrix, Quat, Vec3};
             let pose = Matrix::t_r(Vec3::new(0.0, 1.0, -1.5), Quat::Y_180);
-            model.draw(token, pose, None, None);
+            model.draw(pose, None, None);
         }
         // Future implementation: handle keyboard input events, update textures, animations, etc.
     }

@@ -73,7 +73,7 @@ fn has_field(field_name: &str, input: &DeriveInput) -> bool {
 ///     }
 ///     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 ///     fn draw(&mut self, token: &MainThreadToken) {
-///         self.round_cube.draw(token, &self.material, self.transform, None, None);
+///         self.round_cube.draw(&self.material, self.transform, None, None);
 ///     }
 /// }
 ///  ```
@@ -354,7 +354,7 @@ pub fn test_screenshot_event_loop(input: TokenStream) -> TokenStream {
                 iter+=1;
                 if iter == number_of_steps {
                     // render screenshot
-                    render::Renderer::screenshot(token, filename_scr, 90, maths::Pose::look_at(from_scr, at_scr), width_scr, height_scr, Some(fov_scr) );
+                    render::Renderer::screenshot( filename_scr, 90, maths::Pose::look_at(from_scr, at_scr), width_scr, height_scr, Some(fov_scr) );
                 }
             }).run();
         }
@@ -382,7 +382,7 @@ pub fn test_screenshot_no_event_loop(input: TokenStream) -> TokenStream {
                 iter+=1;
                 if iter == number_of_steps {
                     // render screenshot
-                    render::Renderer::screenshot(token, filename_scr, 90, maths::Pose::look_at(from_scr, at_scr), width_scr, height_scr, Some(fov_scr) );
+                    render::Renderer::screenshot( filename_scr, 90, maths::Pose::look_at(from_scr, at_scr), width_scr, height_scr, Some(fov_scr) );
                 }
             }
         }

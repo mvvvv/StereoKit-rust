@@ -52,9 +52,9 @@ impl IStepper for AStepper {
 }
 
 impl AStepper {
-    fn draw(&mut self, token: &MainThreadToken) {
+    fn draw(&mut self, _token: &MainThreadToken) {
         if let Some(round_cube) = &self.round_cube {
-            Renderer::add_mesh(token, round_cube, Material::pbr(), self.transform, Some(RED.into()), None);
+            Renderer::add_mesh(round_cube, Material::pbr(), self.transform, Some(RED.into()), None);
         }
         TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
     }

@@ -658,13 +658,13 @@ impl SkSettings {
     ///     let mut iter = 0;
     ///     let number_of_steps = 3;
     ///     let filename_scr = "screenshots/sk_basic_example.jpeg";
-    ///     SkClosures::new(sk, |sk, token|  {
+    ///     SkClosures::new(sk, |sk, _token|  {
     ///         // Main loop where we draw stuff and do things!!
     ///         if iter > number_of_steps {sk.quit(None)}
     ///
     ///         if iter == number_of_steps {
     ///             // render screenshot
-    ///             Renderer::screenshot(token, filename_scr, 90, Pose::look_at(Vec3::Z, Vec3::ZERO),
+    ///             Renderer::screenshot( filename_scr, 90, Pose::look_at(Vec3::Z, Vec3::ZERO),
     ///                 200, 200, Some(99.0) );
     ///         }
     ///
@@ -869,9 +869,9 @@ impl SkInfo {
     ///
     /// let mesh = Mesh::generate_cube(Vec3::ONE, None);
     /// let material = Material::pbr();
-    /// SkClosures::new(sk, |_sk, token|  {
+    /// SkClosures::new(sk, |_sk, _token|  {
     ///     // Only the thread can stop this test
-    ///     mesh.draw(token, &material, Matrix::IDENTITY, None, None);
+    ///     mesh.draw(&material, Matrix::IDENTITY, None, None);
     /// })
     /// .shutdown(|sk| {
     ///     assert_eq!(sk.get_quit_reason(), QuitReason::User);
@@ -926,7 +926,7 @@ impl SkInfo {
     }
 }
 
-/// A token you only find on the main thread. It is required to call rendering functions
+/// A token you only find on the main thread. You can spread it if needed
 ///
 /// see also [`Sk::step`]
 pub struct MainThreadToken {
@@ -1171,11 +1171,11 @@ impl Sk {
     ///
     /// let mut iter = 0;
     /// let number_of_steps = 3;
-    /// while let Some(token) = sk.step() {
+    /// while let Some(_token) = sk.step() {
     ///     // Main loop where we draw stuff and do things!!
     ///     if iter > number_of_steps {sk.quit(None)}
     ///
-    ///     mesh.draw(token, &material, Matrix::IDENTITY, None, None);
+    ///     mesh.draw(&material, Matrix::IDENTITY, None, None);
     ///
     ///     iter+=1;
     /// }
@@ -1189,7 +1189,7 @@ impl Sk {
         Some(&self.token)
     }
 
-    /// Returns the MainThreadToken that is used to draw stuff.
+    /// Returns the MainThreadToken.
     pub fn main_thread_token(&mut self) -> &MainThreadToken {
         &self.token
     }
@@ -1358,7 +1358,7 @@ impl Sk {
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     // Here we can draw some stuff.
-    ///     //model.draw(token, Matrix::IDENTITY, None, None);
+    ///     //model.draw(Matrix::IDENTITY, None, None);
     ///
     ///     // Quit the app at first step
     ///     sk.quit(Some(QuitReason::Error));
@@ -1405,7 +1405,7 @@ impl Sk {
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     // Here we can draw some stuff.
-    ///     //model.draw(token, Matrix::IDENTITY, None, None);
+    ///     //model.draw(Matrix::IDENTITY, None, None);
     ///
     ///     // Quit the app at first step
     ///     sk.quit(Some(QuitReason::Error));
@@ -1615,9 +1615,9 @@ impl Sk {
     /// let material = Material::pbr();
     /// Assets::block_for_priority(i32::MAX);
     ///
-    /// SkClosures::new(sk, |_sk, token|  {
+    /// SkClosures::new(sk, |_sk, _token|  {
     ///     // Only the thread can stop this test
-    ///     mesh.draw(token, &material, Matrix::IDENTITY, None, None);
+    ///     mesh.draw(&material, Matrix::IDENTITY, None, None);
     /// })
     /// .shutdown(|sk| {
     ///     assert_eq!(sk.get_quit_reason(), QuitReason::User);

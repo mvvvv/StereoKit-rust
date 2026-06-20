@@ -32,7 +32,7 @@ pub const ENABLE_FLY_OVER: &str = "Tool_EnableFlyOver";
 ///
 /// filename_scr = "screenshots/fly_over.jpeg"; fov_scr = 45.0;
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
-///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
+///     sprite.draw(Matrix::Y_180, Pivot::Center, None);
 ///     Input::key_inject_press(Key::Left);
 ///     if iter == number_of_steps  {
 ///        sk.send_event(StepperAction::event( "main", ENABLE_FLY_OVER, "false",));

@@ -148,7 +148,7 @@ impl Shaders1 {
 
     /// Called from IStepper::step after check_event, here you can draw your UI
     fn draw(&mut self, token: &MainThreadToken) {
-        self.mesh.draw(token, &self.material_red, self.transform_mesh, None, None);
+        self.mesh.draw(&self.material_red, self.transform_mesh, None, None);
 
         let total_scale = (Time::get_totalf() % 360.0).to_radians().sin().abs() * 2.0;
         let tex_transform = Vec4::new(0.0, 0.0, total_scale, total_scale);
@@ -157,7 +157,7 @@ impl Shaders1 {
             .set_vector4("tex_trans", tex_transform)
             //.set_int("do_not_exist", &[1, 3, 5, 6])
             .set_float("time", total_scale);
-        self.plane.draw(token, &self.material_green, self.transform_plane, None, None);
+        self.plane.draw(&self.material_green, self.transform_plane, None, None);
 
         Ui::window("progress")
             .pose(&mut self.pose_progress)
@@ -169,8 +169,8 @@ impl Shaders1 {
         Ui::hprogress_bar(total_scale / 2.0, 0.54, false);
         Ui::vprogress_bar(total_scale / 2.0, 0.50, false);
         Ui::window_end();
-        self.mesh.draw(token, &self.water2, self.transform_water2, None, None);
-        self.plane.draw(token, &self.brick, self.transform_brick, None, None);
+        self.mesh.draw(&self.water2, self.transform_water2, None, None);
+        self.plane.draw(&self.brick, self.transform_brick, None, None);
 
         self.fps = ((1.0 / Time::get_step()) + self.fps) / 2.0;
 

@@ -41,7 +41,7 @@ use std::{
 /// filename_scr = "screenshots/sound.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
 ///     transform.update_t_r(&position, &rotation);
-///     mesh.draw(token, &material, transform, Some(named_colors::CYAN.into()), None);
+///     mesh.draw(&material, transform, Some(named_colors::CYAN.into()), None);
 ///     if iter == 0 {
 ///         assert!(plane_sound_inst.is_playing());
 ///         position = Vec3::new(0.0, 0.0, -1.0);
@@ -805,8 +805,8 @@ impl Sound {
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
 ///     let transform1 = Matrix::t(position1);
 ///     let transform2 = Matrix::t(position2);
-///     sphere.draw(token, &material, transform1, Some(named_colors::PINK.into()), None  );
-///     sphere.draw(token, &material, transform2, Some(named_colors::LIGHT_GREEN.into()), None  );
+///     sphere.draw(&material, transform1, Some(named_colors::PINK.into()), None  );
+///     sphere.draw(&material, transform2, Some(named_colors::LIGHT_GREEN.into()), None  );
 ///
 ///     if iter == 0 {
 ///         assert!(plane_sound_inst1.is_playing());

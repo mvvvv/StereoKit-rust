@@ -148,7 +148,7 @@ impl Interactor1 {
                 } else {
                     named_colors::RED // Red when not pinching (inactive)
                 };
-                Lines::add(token, capsule_start, capsule_end, line_color, None, self.capsule_radius);
+                Lines::add(capsule_start, capsule_end, line_color, None, self.capsule_radius);
             }
         }
 
@@ -351,7 +351,7 @@ impl Interactor1 {
         false
     }
 
-    fn draw_3d_scene(&mut self, token: &MainThreadToken) {
+    fn draw_3d_scene(&mut self, _token: &MainThreadToken) {
         // Draw target sphere with interactive handle
         let (pos, radius, color) = &mut self.target_sphere;
 
@@ -373,7 +373,7 @@ impl Interactor1 {
         // Draw the sphere mesh with the updated transform
         let scale = Vec3::new(*radius * 2.0, *radius * 2.0, *radius * 2.0);
         let transform = Matrix::t_s(*pos, scale);
-        Mesh::sphere().draw(token, Material::default(), transform, Some(*color), None);
+        Mesh::sphere().draw(Material::default(), transform, Some(*color), None);
 
         // Draw the text using cached style and updated transform
         TextBuilder::new(&self.text_content).transform(self.text_transform).style(self.text_style).add();

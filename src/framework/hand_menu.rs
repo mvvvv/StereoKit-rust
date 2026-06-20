@@ -52,10 +52,9 @@ impl HandMenuItem {
 
     /// This draws the menu item on the radial menu!
     /// <https://stereokit.net/Pages/StereoKit.Framework/HandMenuItem/Draw.html>
-    /// * `token` - The main thread token.
     /// * `at` - Center of the radial slice.
     /// * `focused` - If the current menu slice has focus.
-    pub fn draw_basic(&self, _token: &MainThreadToken, at: Vec3, focused: bool) {
+    pub fn draw_basic(&self, at: Vec3, focused: bool) {
         let scale = match focused {
             true => Vec3::ONE * 0.6,
             false => Vec3::ONE * 0.5,
@@ -487,13 +486,13 @@ impl HandMenuRadial {
 
     /// Part of IStepper, you shouldn’t be calling this yourself.
     /// <https://stereokit.net/Pages/StereoKit.Framework/HandMenuRadial/Step.html>
-    fn draw(&mut self, token: &MainThreadToken) {
+    fn draw(&mut self, _token: &MainThreadToken) {
         if self.active_hand == Handed::Max {
             for hand in [Handed::Left, Handed::Right] {
-                self.step_menu_indicator(token, hand);
+                self.step_menu_indicator(hand);
             }
         } else {
-            self.step_menu(token, Input::hand(self.active_hand));
+            self.step_menu(Input::hand(self.active_hand));
         }
     }
 
@@ -605,7 +604,7 @@ impl HandMenuRadial {
         }
     }
 
-    fn step_menu_indicator(&mut self, token: &MainThreadToken, handed: Handed) {
+    fn step_menu_indicator(&mut self, handed: Handed) {
         let hand = Input::hand(handed);
         if !hand.is_tracked() {
             return;
@@ -659,7 +658,6 @@ impl HandMenuRadial {
 
         self.menu_pose.position += (1.0 - hand.grip_activation) * palm_direction * CM * 4.5;
         self.activation_button.draw(
-            token,
             Material::ui(),
             self.menu_pose.to_matrix(None),
             Some(Color128::lerp(
@@ -670,10 +668,9 @@ impl HandMenuRadial {
             None,
         );
         self.activation_hamburger
-            .draw(token, Material::ui(), self.menu_pose.to_matrix(None), Some(color_text), None);
+            .draw(Material::ui(), self.menu_pose.to_matrix(None), Some(color_text), None);
         self.menu_pose.position += (1.0 - hand.grip_activation) * palm_direction * CM * 2.0;
-        self.activation_ring
-            .draw(token, Material::ui(), self.menu_pose.to_matrix(None), Some(color_primary), None);
+        self.activation_ring.draw(Material::ui(), self.menu_pose.to_matrix(None), Some(color_primary), None);
 
         if facing < Self::ACTIVATION_ANGLE {
             return;
@@ -688,7 +685,7 @@ impl HandMenuRadial {
         }
     }
 
-    fn step_menu(&mut self, token: &MainThreadToken, hand: Hand) {
+    fn step_menu(&mut self, hand: Hand) {
         // Regenerate background meshes if the active layer changed in the previous frame.
         // This must happen before any draw calls to avoid a Vulkan race condition where the
         // old (larger) static index buffer is destroyed and replaced with a smaller dynamic
@@ -720,7 +717,7 @@ impl HandMenuRadial {
 
         // Push the Menu's pose onto the stack, so we can draw, and work
         // in local space.
-        Hierarchy::push(token, self.menu_pose.to_matrix(Some(self.menu_scale * Vec3::ONE)), None);
+        Hierarchy::push(self.menu_pose.to_matrix(Some(self.menu_scale * Vec3::ONE)), None);
 
         // Calculate the status of the menu!
         let mut tip_world = hand.get(FingerId::Index, JointId::Tip).position;
@@ -742,7 +739,7 @@ impl HandMenuRadial {
             finger_angle += 360.0;
         }
         let angle_id = (finger_angle / step).trunc() as usize;
-        Lines::add(token, Vec3::new(0.0, 0.0, -0.008), Vec3::new(tip_local.x, tip_local.y, -0.008), WHITE, None, 0.006);
+        Lines::add(Vec3::new(0.0, 0.0, -0.008), Vec3::new(tip_local.x, tip_local.y, -0.008), WHITE, None, 0.006);
 
         // Now draw each of the menu items !
         let color_primary = Ui::get_theme_color(UiColor::Primary, None).to_linear();
@@ -755,15 +752,9 @@ impl HandMenuRadial {
             at.z = depth;
 
             let r = Matrix::t_r(Vec3::new(0.0, 0.0, depth), Quat::from_angles(0.0, 0.0, curr_angle));
-            self.background.draw(
-                token,
-                Material::ui(),
-                r,
-                Some(color_common * (if highlight { 2.0 } else { 1.0 })),
-                None,
-            );
+            self.background
+                .draw(Material::ui(), r, Some(color_common * (if highlight { 2.0 } else { 1.0 })), None);
             self.background_edge.draw(
-                token,
                 Material::ui(),
                 r,
                 Some(color_primary * (if highlight { 2.0 } else { 1.0 })),
@@ -777,7 +768,6 @@ impl HandMenuRadial {
                     item_to_draw = item;
                     match *item.action.borrow() {
                         HandMenuAction::Back => self.child_indicator.draw(
-                            token,
                             Material::ui(),
                             Matrix::t_r(
                                 Vec3::new(0.0, 0.0, depth),
@@ -795,7 +785,6 @@ impl HandMenuRadial {
                                 &self.on_checked_material
                             };
                             self.img_frame.draw(
-                                token,
                                 checked_material,
                                 Matrix::t_r(
                                     Vec3::new(0.0, 0.0, depth - 0.01),
@@ -812,7 +801,6 @@ impl HandMenuRadial {
                 HandRadial::Layer(layer) => {
                     item_to_draw = &layer.layer_item;
                     self.child_indicator.draw(
-                        token,
                         Material::ui(),
                         Matrix::t_r(Vec3::new(0.0, 0.0, depth), Quat::from_angles(0.0, 0.0, curr_angle + half_step)),
                         None,
@@ -822,7 +810,6 @@ impl HandMenuRadial {
             };
             if let Some(image_material) = &item_to_draw.image {
                 self.img_frame.draw(
-                    token,
                     image_material,
                     Matrix::t_r(Vec3::new(0.0, 0.0, depth), Quat::from_angles(0.0, 0.0, curr_angle + half_step)),
                     None,
@@ -832,11 +819,11 @@ impl HandMenuRadial {
             }
 
             Ui::push_text_style(self.text_style);
-            item_to_draw.draw_basic(token, at * add_offset, highlight);
+            item_to_draw.draw_basic(at * add_offset, highlight);
             Ui::pop_text_style();
         }
         // Done with local work
-        Hierarchy::pop(token);
+        Hierarchy::pop();
 
         if self.activation < 0.99 {
             return;

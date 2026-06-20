@@ -3,7 +3,6 @@ use crate::{
     material::{Cull, Material, MaterialT},
     maths::{Bool32T, Bounds, Matrix, Ray, Vec2, Vec3, Vec4},
     render::RenderLayer,
-    sk::MainThreadToken,
     system::{AssetState, IAsset},
     util::{Color32, Color128},
 };
@@ -36,7 +35,7 @@ use std::{
 ///
 /// filename_scr = "screenshots/basic_mesh.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
-///     mesh.draw(token, &material, Matrix::IDENTITY, None, None);
+///     mesh.draw(&material, Matrix::IDENTITY, None, None);
 /// );
 /// # sk::Sk::shutdown();
 /// ```
@@ -157,8 +156,8 @@ bitflags::bitflags! {
 ///
 /// filename_scr = "screenshots/meshes.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
-///     cube.draw(token, &material_cube, cube_transform, None, None);
-///     sphere.draw(token, &material_sphere, Matrix::IDENTITY, None, None);
+///     cube.draw(&material_cube, cube_transform, None, None);
+///     sphere.draw(&material_sphere, Matrix::IDENTITY, None, None);
 /// );
 /// # sk::Sk::shutdown();
 /// ```
@@ -875,9 +874,9 @@ impl Mesh {
     ///
     /// filename_scr = "screenshots/mesh_bounds.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     sphere.draw(token, &material_sphere, transform, None, None);
-    ///     cube.draw(  token, &material_before, transform_before, None, None);
-    ///     cube.draw(  token, &material_after,  transform_after,  None, None);
+    ///     sphere.draw(&material_sphere, transform, None, None);
+    ///     cube.draw( &material_before, transform_before, None, None);
+    ///     cube.draw( &material_after,  transform_after,  None, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -949,7 +948,7 @@ impl Mesh {
     ///
     /// filename_scr = "screenshots/mesh_set_data.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     square.draw(token, &material, Matrix::IDENTITY, None, None);
+    ///     square.draw(&material, Matrix::IDENTITY, None, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -1052,7 +1051,7 @@ impl Mesh {
     ///
     /// filename_scr = "screenshots/mesh_set_inds.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     sphere.draw(token, &material , Matrix::IDENTITY,  Some(named_colors::PINK.into()), None);
+    ///     sphere.draw(&material , Matrix::IDENTITY,  Some(named_colors::PINK.into()), None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -1095,7 +1094,7 @@ impl Mesh {
     /// deformed.update_skin(&[Matrix::t([0.0, 0.1, 0.0]), Matrix::r([0.0, 0.0, -90.0])]);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     deformed.draw(token, &material, Matrix::IDENTITY, None, None);
+    ///     deformed.draw(&material, Matrix::IDENTITY, None, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -1144,8 +1143,8 @@ impl Mesh {
     ///
     /// filename_scr = "screenshots/mesh_copy.jpeg"; fov_scr = 12.0;
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     a.draw(token, &material, Matrix::t([-0.05, 0.0, 0.0]), None, None);
-    ///     b.draw(token, &material, Matrix::t([ 0.05, 0.0, 0.0]), None, None);
+    ///     a.draw(&material, Matrix::t([-0.05, 0.0, 0.0]), None, None);
+    ///     b.draw(&material, Matrix::t([ 0.05, 0.0, 0.0]), None, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -1202,7 +1201,7 @@ impl Mesh {
     ///
     /// filename_scr = "screenshots/mesh_set_skin.jpeg"; fov_scr = 12.0;
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     deformed.draw(token, &material, Matrix::IDENTITY, None, None);
+    ///     deformed.draw(&material, Matrix::IDENTITY, None, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -1278,7 +1277,7 @@ impl Mesh {
     ///
     /// filename_scr = "screenshots/mesh_update_skin.jpeg"; fov_scr = 25.0;
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     mesh.draw(token, &material, Matrix::IDENTITY, None, None);
+    ///     mesh.draw(&material, Matrix::IDENTITY, None, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -1379,10 +1378,10 @@ impl Mesh {
     ///
     /// filename_scr = "screenshots/mesh_draw.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     cylinder1.draw(token, &material , Matrix::IDENTITY, None, None);
-    ///     cylinder2.draw(token, &material , Matrix::IDENTITY, Some(named_colors::RED.into()),
+    ///     cylinder1.draw(&material , Matrix::IDENTITY, None, None);
+    ///     cylinder2.draw(&material , Matrix::IDENTITY, Some(named_colors::RED.into()),
     ///         Some(RenderLayer::Layer1));
-    ///     cylinder3.draw(token, &material , Matrix::IDENTITY, Some(named_colors::GREEN.into()),
+    ///     cylinder3.draw(&material , Matrix::IDENTITY, Some(named_colors::GREEN.into()),
     ///         Some(RenderLayer::ThirdPerson));
     /// );
     /// # sk::Sk::shutdown();
@@ -1390,7 +1389,6 @@ impl Mesh {
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_draw.jpeg" alt="screenshot" width="200">
     pub fn draw(
         &self,
-        _token: &MainThreadToken,
         material: impl AsRef<Material>,
         transform: impl Into<Matrix>,
         color_linear: Option<Color128>,
@@ -1634,9 +1632,9 @@ impl Mesh {
     ///
     /// filename_scr = "screenshots/mesh_intersect.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     cube.draw(token, &material, transform, Some(named_colors::CYAN.into()), None);
-    ///     Lines::add_ray(token, ray, 2.2, named_colors::WHITE, None, 0.02);
-    ///     sphere.draw(token, &material, transform_contact_cube, Some(named_colors::YELLOW.into()), None );
+    ///     cube.draw(&material, transform, Some(named_colors::CYAN.into()), None);
+    ///     Lines::add_ray( ray, 2.2, named_colors::WHITE, None, 0.02);
+    ///     sphere.draw(&material, transform_contact_cube, Some(named_colors::YELLOW.into()), None );
     /// );
     /// # sk::Sk::shutdown();
     /// ```

@@ -1,5 +1,4 @@
 use crate::maths::{Bool32T, Matrix};
-use crate::sk::MainThreadToken;
 use crate::{
     StereoKitError,
     material::{Cull, Material, MaterialT},
@@ -52,7 +51,7 @@ use std::{
 ///
 /// filename_scr = "screenshots/model.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
-///     model.draw(token, Matrix::IDENTITY, None, None);
+///     model.draw(Matrix::IDENTITY, None, None);
 /// );
 /// # sk::Sk::shutdown();
 /// ```
@@ -230,7 +229,7 @@ impl Model {
     /// assert_eq!(nodes.get_count(), 2);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     model.draw(token, transform_model, None, None);
+    ///     model.draw(transform_model, None, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -270,7 +269,7 @@ impl Model {
     ///
     /// filename_scr = "screenshots/model_from_mesh.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     model.draw(token, transform_model, None, None);
+    ///     model.draw(transform_model, None, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -309,7 +308,7 @@ impl Model {
     ///
     /// filename_scr = "screenshots/model_from_memory.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     model.draw(token, transform, Some(named_colors::GREEN.into()), None);
+    ///     model.draw(transform, Some(named_colors::GREEN.into()), None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -356,7 +355,7 @@ impl Model {
     ///
     /// filename_scr = "screenshots/model_from_file.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     model.draw(token, transform, None, None);
+    ///     model.draw(transform, None, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -525,9 +524,9 @@ impl Model {
     ///
     /// filename_scr = "screenshots/model_bounds.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     model.draw(token, Matrix::IDENTITY, None, None);
-    ///     cube_bounds.draw(  token, &material_before, transform_before, None, None);
-    ///     cube_bounds.draw(  token, &material_after,  transform_after,  None, None);
+    ///     model.draw(Matrix::IDENTITY, None, None);
+    ///     cube_bounds.draw(&material_before, transform_before, None, None);
+    ///     cube_bounds.draw(&material_after,  transform_after,  None, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -566,7 +565,6 @@ impl Model {
     /// Adds this Model to the render queue for this frame! If the Hierarchy has a transform on it, that transform is
     /// combined with the Matrix provided here.
     /// <https://stereokit.net/Pages/StereoKit/Model/Draw.html>
-    /// * `token` - To be sure we are in the right thread, once per frame.
     /// * `transform` - A Matrix that will transform the Model from Model Space into the current Hierarchy Space.
     /// * `color_linear` - A per-instance linear space color value to pass into the shader! Normally this gets used like
     ///   a material tint. If you’re adventurous and don’t need per-instance colors, this is a great spot to pack in
@@ -591,21 +589,15 @@ impl Model {
     ///
     /// filename_scr = "screenshots/model_draw.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     model.draw(token, transform1, None, None);
-    ///     model.draw(token, transform2, Some(named_colors::YELLOW.into()), None);
-    ///     model.draw(token, transform3, Some(named_colors::BLACK.into()),
+    ///     model.draw(transform1, None, None);
+    ///     model.draw(transform2, Some(named_colors::YELLOW.into()), None);
+    ///     model.draw(transform3, Some(named_colors::BLACK.into()),
     ///                Some(RenderLayer::FirstPerson));
     /// );
     /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_draw.jpeg" alt="screenshot" width="200">
-    pub fn draw(
-        &self,
-        _token: &MainThreadToken,
-        transform: impl Into<Matrix>,
-        color_linear: Option<Color128>,
-        layer: Option<RenderLayer>,
-    ) {
+    pub fn draw(&self, transform: impl Into<Matrix>, color_linear: Option<Color128>, layer: Option<RenderLayer>) {
         let color_linear = color_linear.unwrap_or(Color128::WHITE);
         let layer = layer.unwrap_or(RenderLayer::Layer0);
         unsafe { model_draw(self.0.as_ptr(), transform.into(), color_linear, layer) };
@@ -613,7 +605,6 @@ impl Model {
 
     /// Adds the model to the render queue of this frame overrided with the given material
     /// <https://stereokit.net/Pages/StereoKit/Model/Draw.html>
-    /// * `token` - To be sure we are in the right thread, once per frame.
     /// * `material_override` - the material that will override all materials of this model
     /// * `transform` - A Matrix that will transform the Model from Model Space into the current Hierarchy Space.
     /// * `color_linear` - A per-instance linear space color value to pass into the shader! Normally this gets used like
@@ -646,9 +637,9 @@ impl Model {
     ///
     /// filename_scr = "screenshots/model_draw_with_material.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     model.draw_with_material(token, &material_ui,    transform1, None, None);
-    ///     model.draw_with_material(token, &material_brick, transform2, None, None);
-    ///     model.draw_with_material(token, &material_ui,    transform3, Some(named_colors::RED.into()),
+    ///     model.draw_with_material(&material_ui,    transform1, None, None);
+    ///     model.draw_with_material(&material_brick, transform2, None, None);
+    ///     model.draw_with_material(&material_ui,    transform3, Some(named_colors::RED.into()),
     ///                Some(RenderLayer::FirstPerson));
     /// );
     /// # sk::Sk::shutdown();
@@ -656,7 +647,6 @@ impl Model {
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/model_draw_with_material.jpeg" alt="screenshot" width="200">
     pub fn draw_with_material<M: AsRef<Material>>(
         &self,
-        _token: &MainThreadToken,
         material_override: M,
         transform: impl Into<Matrix>,
         color_linear: Option<Color128>,
@@ -931,10 +921,10 @@ impl Model {
     ///
     /// filename_scr = "screenshots/model_intersect.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     model.draw(token, transform_model, None, None);
-    ///     cube_bounds.draw( token, &material_bounds, transform_before, None, None);
-    ///     Lines::add_ray(token, ray, 7.2, named_colors::BLUE, Some(named_colors::RED.into()), 0.02);
-    ///     point.draw(token, &material, transform_contact_model,
+    ///     model.draw(transform_model, None, None);
+    ///     cube_bounds.draw(&material_bounds, transform_before, None, None);
+    ///     Lines::add_ray( ray, 7.2, named_colors::BLUE, Some(named_colors::RED.into()), 0.02);
+    ///     point.draw(&material, transform_contact_model,
     ///                Some(named_colors::RED.into()), None );
     /// );
     /// # sk::Sk::shutdown();
@@ -1025,7 +1015,7 @@ impl Model {
 ///
 /// filename_scr = "screenshots/anims.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
-///     model.draw(token, transform, None, None);
+///     model.draw(transform, None, None);
 /// );
 /// # sk::Sk::shutdown();
 /// ```
@@ -1168,7 +1158,7 @@ impl<'a> Anims<'a> {
     /// number_of_steps = 20;
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     if iter % 10 < 5 {
-    ///         model.draw(token, Matrix::IDENTITY, None, None);
+    ///         model.draw(Matrix::IDENTITY, None, None);
     ///     } else {
     ///         anims.step_anim();
     ///     }
@@ -1511,7 +1501,7 @@ impl<'a> Anims<'a> {
 ///
 /// filename_scr = "screenshots/model_nodes.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
-///     model.draw(token, transform, None, None);
+///     model.draw(transform, None, None);
 /// );
 /// # sk::Sk::shutdown();
 /// ```
@@ -2012,7 +2002,7 @@ impl<'a> Nodes<'a> {
 ///
 /// filename_scr = "screenshots/model_node.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
-///     model.draw(token, Matrix::IDENTITY, None, None);
+///     model.draw(Matrix::IDENTITY, None, None);
 /// );
 /// # sk::Sk::shutdown();
 /// ```

@@ -121,8 +121,8 @@ impl Anim1 {
 
     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
-    fn draw(&mut self, token: &MainThreadToken) {
-        self.mobile.draw(token, self.transform, None, None);
+    fn draw(&mut self, _token: &MainThreadToken) {
+        self.mobile.draw(self.transform, None, None);
 
         if self.render_now {
             match self.stage % 3 {

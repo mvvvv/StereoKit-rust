@@ -1,7 +1,6 @@
 use crate::{
     StereoKitError,
     maths::{Matrix, Vec2},
-    sk::MainThreadToken,
     system::{IAsset, Pivot},
     tex::{Tex, TexT},
     util::Color32,
@@ -66,10 +65,10 @@ pub enum SpriteType {
 ///
 /// filename_scr = "screenshots/sprite.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
-///     sprite1.draw(token, transform1, Pivot::Center, None);
-///     sprite2.draw(token, transform2, Pivot::XLeft, Some(named_colors::AZURE.into()));
-///     sprite3.draw(token, transform3, Pivot::TopRight, Some(named_colors::LIME.into()));
-///     sprite4.draw(token, transform4, Pivot::YCenter, None);
+///     sprite1.draw(transform1, Pivot::Center,   None);
+///     sprite2.draw(transform2, Pivot::XLeft,    Some(named_colors::AZURE.into()));
+///     sprite3.draw(transform3, Pivot::TopRight, Some(named_colors::LIME.into()));
+///     sprite4.draw(transform4, Pivot::YCenter,   None);
 /// );
 /// # sk::Sk::shutdown();
 /// ```
@@ -176,10 +175,10 @@ impl Sprite {
     ///
     /// filename_scr = "screenshots/sprite_from_tex.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     sprite.draw(token, Matrix::Y_180, Pivot::XRight,  None);
-    ///     sprite.draw(token, Matrix::Y_180, Pivot::XLeft,   Some(named_colors::BLUE.into()));
-    ///     sprite.draw(token, Matrix::Y_180, Pivot::YTop,    Some(named_colors::RED.into()));
-    ///     sprite.draw(token, Matrix::Y_180, Pivot::YBottom, Some(named_colors::GREEN.into()));
+    ///     sprite.draw(Matrix::Y_180, Pivot::XRight,  None);
+    ///     sprite.draw(Matrix::Y_180, Pivot::XLeft,   Some(named_colors::BLUE.into()));
+    ///     sprite.draw(Matrix::Y_180, Pivot::YTop,    Some(named_colors::RED.into()));
+    ///     sprite.draw(Matrix::Y_180, Pivot::YBottom, Some(named_colors::GREEN.into()));
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -230,10 +229,10 @@ impl Sprite {
     ///
     /// filename_scr = "screenshots/sprite_from_file.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     sprite.draw(token, Matrix::Y_180, Pivot::XRight,  None);
-    ///     sprite.draw(token, Matrix::Y_180, Pivot::XLeft,   Some(named_colors::BLUE.into()));
-    ///     sprite.draw(token, Matrix::Y_180, Pivot::YTop,    Some(named_colors::RED.into()));
-    ///     sprite.draw(token, Matrix::Y_180, Pivot::YBottom, Some(named_colors::GREEN.into()));
+    ///     sprite.draw(Matrix::Y_180, Pivot::XRight,  None);
+    ///     sprite.draw(Matrix::Y_180, Pivot::XLeft,   Some(named_colors::BLUE.into()));
+    ///     sprite.draw(Matrix::Y_180, Pivot::YTop,    Some(named_colors::RED.into()));
+    ///     sprite.draw(Matrix::Y_180, Pivot::YBottom, Some(named_colors::GREEN.into()));
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -357,7 +356,6 @@ impl Sprite {
     /// meters on the x and y axes respectively, so scale appropriately. The ‘position’ attribute describes what corner of the sprite
     ///  you’re specifying the transform of.
     /// <https://stereokit.net/Pages/StereoKit/Sprite/Draw.html>
-    /// * `token` - The token to ensure the sprite is drawn in the correct frame.
     /// * `transform` - A Matrix describing a transform from model space to world space. A sprite is always sized in
     ///   model space as 1 x Aspect meters on the x and y axes respectively, so scale appropriately and remember that
     ///   your anchor position may affect the transform as well.
@@ -377,21 +375,15 @@ impl Sprite {
     ///
     /// filename_scr = "screenshots/sprite_draw.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     sprite.draw(token, Matrix::Y_180, Pivot::TopLeft,     None);
-    ///     sprite.draw(token, Matrix::Y_180, Pivot::TopRight,    Some(named_colors::BLUE.into()));
-    ///     sprite.draw(token, Matrix::Y_180, Pivot::BottomLeft,  Some(named_colors::RED.into()));
-    ///     sprite.draw(token, Matrix::Y_180, Pivot::BottomRight, Some(named_colors::GREEN.into()));
+    ///     sprite.draw(Matrix::Y_180, Pivot::TopLeft,     None);
+    ///     sprite.draw(Matrix::Y_180, Pivot::TopRight,    Some(named_colors::BLUE.into()));
+    ///     sprite.draw(Matrix::Y_180, Pivot::BottomLeft,  Some(named_colors::RED.into()));
+    ///     sprite.draw(Matrix::Y_180, Pivot::BottomRight, Some(named_colors::GREEN.into()));
     /// );
     /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sprite_draw.jpeg" alt="screenshot" width="200">
-    pub fn draw(
-        &self,
-        _token: &MainThreadToken,
-        transform: impl Into<Matrix>,
-        pivot_position: Pivot,
-        linear_color: Option<Color32>,
-    ) {
+    pub fn draw(&self, transform: impl Into<Matrix>, pivot_position: Pivot, linear_color: Option<Color32>) {
         let color_linear = linear_color.unwrap_or(Color32::WHITE);
         unsafe { sprite_draw(self.0.as_ptr(), transform.into(), pivot_position, color_linear) };
     }
@@ -514,7 +506,7 @@ impl Sprite {
     /// filename_scr = "screenshots/sprite_radio_on.jpeg";
     /// # system::Assets::block_for_priority(i32::MAX);
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
+    ///     sprite.draw(Matrix::Y_180, Pivot::Center, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -540,7 +532,7 @@ impl Sprite {
     /// filename_scr = "screenshots/sprite_radio_off.jpeg";
     /// # system::Assets::block_for_priority(i32::MAX);
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
+    ///     sprite.draw(Matrix::Y_180, Pivot::Center, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -567,7 +559,7 @@ impl Sprite {
     /// filename_scr = "screenshots/sprite_toggle_on.jpeg";
     /// # system::Assets::block_for_priority(i32::MAX);
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
+    ///     sprite.draw(Matrix::Y_180, Pivot::Center, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -594,7 +586,7 @@ impl Sprite {
     /// filename_scr = "screenshots/sprite_toggle_off.jpeg";
     /// # system::Assets::block_for_priority(i32::MAX);
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
+    ///     sprite.draw(Matrix::Y_180, Pivot::Center, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -619,7 +611,7 @@ impl Sprite {
     /// filename_scr = "screenshots/sprite_arrow_left.jpeg";
     /// # system::Assets::block_for_priority(i32::MAX);
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
+    ///     sprite.draw(Matrix::Y_180, Pivot::Center, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -644,7 +636,7 @@ impl Sprite {
     /// filename_scr = "screenshots/sprite_arrow_right.jpeg";
     /// # system::Assets::block_for_priority(i32::MAX);
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
+    ///     sprite.draw(Matrix::Y_180, Pivot::Center, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -669,7 +661,7 @@ impl Sprite {
     /// filename_scr = "screenshots/sprite_arrow_up.jpeg";
     /// # system::Assets::block_for_priority(i32::MAX);
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
+    ///     sprite.draw(Matrix::Y_180, Pivot::Center, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -694,7 +686,7 @@ impl Sprite {
     /// filename_scr = "screenshots/sprite_arrow_down.jpeg";
     /// # system::Assets::block_for_priority(i32::MAX);
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
+    ///     sprite.draw(Matrix::Y_180, Pivot::Center, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -720,7 +712,7 @@ impl Sprite {
     /// filename_scr = "screenshots/sprite_backspace.jpeg";
     /// # system::Assets::block_for_priority(i32::MAX);
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
+    ///     sprite.draw(Matrix::Y_180, Pivot::Center, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -746,7 +738,7 @@ impl Sprite {
     /// filename_scr = "screenshots/sprite_shift.jpeg";
     /// # system::Assets::block_for_priority(i32::MAX);
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
+    ///     sprite.draw(Matrix::Y_180, Pivot::Center, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -771,7 +763,7 @@ impl Sprite {
     /// filename_scr = "screenshots/sprite_close.jpeg";
     /// # system::Assets::block_for_priority(i32::MAX);
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
+    ///     sprite.draw(Matrix::Y_180, Pivot::Center, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -795,7 +787,7 @@ impl Sprite {
     /// filename_scr = "screenshots/sprite_list.jpeg";
     /// # system::Assets::block_for_priority(i32::MAX);
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
+    ///     sprite.draw(Matrix::Y_180, Pivot::Center, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -819,7 +811,7 @@ impl Sprite {
     /// filename_scr = "screenshots/sprite_grid.jpeg";
     /// # system::Assets::block_for_priority(i32::MAX);
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
+    ///     sprite.draw(Matrix::Y_180, Pivot::Center, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```

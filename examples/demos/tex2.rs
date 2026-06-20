@@ -80,8 +80,8 @@ impl Tex2 {
 
     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
-    fn draw(&mut self, token: &MainThreadToken) {
-        Mesh::cube().draw(token, &self.material, self.world, None, None);
+    fn draw(&mut self, _token: &MainThreadToken) {
+        Mesh::cube().draw(&self.material, self.world, None, None);
 
         TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
     }

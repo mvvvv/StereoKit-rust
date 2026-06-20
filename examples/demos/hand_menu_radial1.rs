@@ -467,7 +467,7 @@ impl HandMenuRadial1 {
 
     /// Called from IStepper::step after check_event, here you can draw your UI and the scene
     /// Here we draw or not draw the floor
-    fn draw(&mut self, token: &MainThreadToken) {
+    fn draw(&mut self, _token: &MainThreadToken) {
         // draw a floor if needed
         if self.show_floor {
             if self.show_shadows && self.floor == 5 {
@@ -490,12 +490,12 @@ impl HandMenuRadial1 {
                 shadow_render.render_to(&self.shadow_depth, 0);
             }
             match self.floor {
-                0 => self.floor_model.draw_with_material(token, &self.clean_tile, self.floor_transform, None, None),
-                1 => self.floor_model.draw_with_material(token, &self.parquet, self.floor_transform, None, None),
-                2 => self.floor_model.draw_with_material(token, &self.water, self.floor_transform, None, None),
-                3 => self.floor_model.draw_with_material(token, &self.water2, self.floor_transform, None, None),
+                0 => self.floor_model.draw_with_material(&self.clean_tile, self.floor_transform, None, None),
+                1 => self.floor_model.draw_with_material(&self.parquet, self.floor_transform, None, None),
+                2 => self.floor_model.draw_with_material(&self.water, self.floor_transform, None, None),
+                3 => self.floor_model.draw_with_material(&self.water2, self.floor_transform, None, None),
                 4 => (),
-                5 => self.floor_model.draw_with_material(token, &self.test_material, self.floor_transform, None, None),
+                5 => self.floor_model.draw_with_material(&self.test_material, self.floor_transform, None, None),
                 _ => (),
             }
         }

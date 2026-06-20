@@ -286,7 +286,7 @@ pub fn launch(mut sk: Sk, _is_testing: bool, start_test: String) {
             }
         }
 
-        Lines::add_axis(token, Pose::IDENTITY, Some(0.5), None);
+        Lines::add_axis(Pose::IDENTITY, Some(0.5), None);
 
         Ui::window("Demos").pose(&mut window_demo_pose).size(Vec2::new(demo_win_width, 0.0)).begin();
         Ui::push_enabled(deleting_scene.is_none(), None);

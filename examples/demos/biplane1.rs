@@ -96,7 +96,7 @@ impl Biplane1 {
     }
 
     /// Animates the plane by moving it towards the next target.
-    fn animate_plane(&mut self, token: &MainThreadToken) {
+    fn animate_plane(&mut self, _token: &MainThreadToken) {
         let forward = self.plane_pose.get_forward();
         let stepf = Time::get_stepf();
         let next_position = self.plane_pose.position + forward * stepf * self.speed_factor;
@@ -134,7 +134,6 @@ impl Biplane1 {
         }
         self.plane_pose = Pose::new(next_position, Some(next_rotation.get_normalized()));
         Renderer::add_mesh(
-            token,
             &self.plane,
             &self.material,
             self.plane_pose.to_matrix(Some(Vec3::ONE * 0.02)),
@@ -150,13 +149,7 @@ impl Biplane1 {
             sound_inst.position(self.plane_pose.position);
         }
 
-        Mesh::sphere().draw(
-            token,
-            &self.material,
-            self.previous_target.to_matrix(Some(Vec3::ONE * 0.1 * M)),
-            None,
-            None,
-        );
+        Mesh::sphere().draw(&self.material, self.previous_target.to_matrix(Some(Vec3::ONE * 0.1 * M)), None, None);
     }
 
     /// Closes the biplane and performs cleanup operations.

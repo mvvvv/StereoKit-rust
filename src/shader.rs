@@ -26,7 +26,7 @@ use std::{
 ///
 /// filename_scr = "screenshots/shaders.jpeg";
 /// test_screenshot!(
-///     plane.draw(token, &material, Matrix::IDENTITY, None, None);
+///     plane.draw(&material, Matrix::IDENTITY, None, None);
 /// );
 ///
 /// # sk::Sk::shutdown();

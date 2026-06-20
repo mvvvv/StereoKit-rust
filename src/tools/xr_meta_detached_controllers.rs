@@ -168,14 +168,14 @@ impl XrMetaDetachedControllersStepper {
     /// Draw a controller model for the given hand at the given pose.
     ///
     /// Uses the controller model assigned by the user or SK's default model.
-    fn draw_controller_at_pose(token: &MainThreadToken, hand: Handed, pose: Pose) {
+    fn draw_controller_at_pose(hand: Handed, pose: Pose) {
         let model = Input::get_controller_model(hand);
-        model.draw(token, pose, None, None);
+        model.draw(pose, None, None);
     }
 
     /// Draw controllers for a single hand based on current tracking state.
     ///
-    fn draw_hand_controller(&mut self, token: &MainThreadToken, handed: Handed, haptic_type: InputHaptic) {
+    fn draw_hand_controller(&mut self, handed: Handed, haptic_type: InputHaptic) {
         let controller = Input::controller(handed);
         let hand_idx = handed as usize;
 
@@ -186,34 +186,34 @@ impl XrMetaDetachedControllersStepper {
             // not the physical controller. Draw at the last pose from when it
             // was still held.
             let pose = Input::get_controller_detached(handed);
-            Self::draw_controller_at_pose(token, handed, pose);
+            Self::draw_controller_at_pose(handed, pose);
             if let Some(ref mut hand_interactor) = self.hand_interactors[hand_idx] {
                 hand_interactor.step();
-                hand_interactor.draw_ray(token);
+                hand_interactor.draw_ray();
             }
         } else {
             // Controller is held in hand — update saved pose and draw.
             if controller.is_tracked() {
-                Self::draw_controller_at_pose(token, handed, controller.pose);
+                Self::draw_controller_at_pose(handed, controller.pose);
                 // Controller-based hand simulation — step the controller interactor
                 // so it drives UI interaction via its aim ray, then draw the model.
                 if let Some(ref mut ctrl_interactor) = self.controller_interactors[hand_idx] {
                     ctrl_interactor.step();
-                    ctrl_interactor.draw_ray(token);
+                    ctrl_interactor.draw_ray();
                 }
             } else {
                 if let Some(ref mut hand_interactor) = self.hand_interactors[hand_idx] {
                     hand_interactor.step();
-                    hand_interactor.draw_ray(token);
+                    hand_interactor.draw_ray();
                 }
             }
         }
     }
 
     /// Called from IStepper::step — queries profiles and draws controllers each frame.
-    fn draw(&mut self, token: &MainThreadToken) {
-        self.draw_hand_controller(token, Handed::Left, InputHaptic::LController);
-        self.draw_hand_controller(token, Handed::Right, InputHaptic::RController);
+    fn draw(&mut self, _token: &MainThreadToken) {
+        self.draw_hand_controller(Handed::Left, InputHaptic::LController);
+        self.draw_hand_controller(Handed::Right, InputHaptic::RController);
     }
 
     /// Clean up controller interactors on shutdown.
