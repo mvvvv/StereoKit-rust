@@ -28,6 +28,8 @@ use stereokit_rust::{
 pub struct Layers1 {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
+    priority: i32,
+    shutdown_completed: bool,
 
     material: Material,
     window_pose: Pose,
@@ -57,23 +59,26 @@ impl Default for Layers1 {
     fn default() -> Self {
         let content_pose = Pose::new(Vec3::ZERO, None);
         let window_pose = content_pose * Matrix::t_r([0.5, 1.0, -0.6], [0.0, 180.0, 0.0]);
-        let preview_pose = content_pose * Matrix::t([0.2, 1.5, -1.0]);
-        let cylinder_pose = content_pose * Matrix::t([0.0, 1.5, 0.0]);
+        let quad_pose = content_pose * Matrix::t([-0.2, 1.5, -1.0]);
+        let cylinder_pose = content_pose * Matrix::t([-0.3, 1.5, 0.0]);
         let mut material = Material::ui_box().copy();
         material.color_tint(named_colors::GOLD).border_size(0.005);
+        Renderer::enable_sky(false);
         Self {
             id: "Layers1".into(),
             sk_info: None,
+            priority: 0,
+            shutdown_completed: false,
 
             material,
             window_pose,
-            quad_pose: preview_pose,
+            quad_sort_order: 0.0,
+            quad_pose,
             quad_swapchain_sk: None,
             quad_render_list: RenderList::new(),
             projection: Matrix::orthographic(0.2, 0.2, 0.01, 50.0),
-            quad_sort_order: 1.0,
-            cylinder_sort_order: 0.0,
 
+            cylinder_sort_order: -1.0,
             cylinder_pose,
             cylinder_swapchain_sk: None,
             cylinder_render_list: RenderList::new(),
@@ -212,12 +217,6 @@ impl Layers1 {
 
         // --- Cylinder layer ---
         if let Some(cyl_sc) = &mut self.cylinder_swapchain_sk {
-            let cyl_radius = self.cylinder_radius;
-            let cyl_angle = self.cylinder_angle;
-            let cyl_aspect = self.cylinder_aspect;
-            let cyl_pose = self.cylinder_pose;
-            let sort = self.cylinder_sort_order as i32;
-
             if let Err(e) = cyl_sc.acquire_image(None) {
                 Log::warn(format!("Failed to acquire cylinder image: {e}"));
                 self.cylinder_swapchain_sk = None;
@@ -234,14 +233,14 @@ impl Layers1 {
                     self.cylinder_swapchain_sk = None;
                 } else {
                     XrCompLayers::submit_cylinder_layer(
-                        cyl_pose,
-                        cyl_radius,
-                        cyl_angle,
-                        cyl_aspect,
+                        self.cylinder_pose,
+                        self.cylinder_radius,
+                        self.cylinder_angle,
+                        self.cylinder_aspect,
                         cyl_sc.handle,
                         Rect::new(0.0, 0.0, cyl_sc.width as f32, cyl_sc.height as f32),
                         0,
-                        sort,
+                        self.cylinder_sort_order as i32,
                         None,
                         None,
                     );
@@ -293,5 +292,14 @@ impl Layers1 {
         Ui::window_end();
 
         TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
+    }
+
+    // we have to activate the sky rendering.
+    fn close(&mut self, triggering: bool) -> bool {
+        if triggering {
+            Renderer::enable_sky(true);
+            self.shutdown_completed = true;
+        }
+        self.shutdown_completed
     }
 }

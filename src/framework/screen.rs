@@ -561,7 +561,7 @@ impl Screen {
                     *swapchain,
                     cache.rect,
                     0,
-                    1,
+                    -1,
                     None,
                     None,
                 );
@@ -573,7 +573,7 @@ impl Screen {
                     *swapchain,
                     cache.rect,
                     0,
-                    1,
+                    -1,
                     None,
                     None,
                 );
