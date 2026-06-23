@@ -108,7 +108,7 @@ impl Default for Screen1 {
             window_pose: Pose::new(Vec3::new(0.35, 1.5, -0.6), Some(Quat::Y_180)),
             text: "Screen1".to_owned(),
             text_style: Text::make_style(Font::default(), 0.3, RED),
-            transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, Quat::Y_180),
+            transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y * 0.2, Quat::Y_180),
         }
     }
 }

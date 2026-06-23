@@ -1,6 +1,6 @@
 use std::f32::consts::PI;
 
-use crate::util::named_colors;
+use crate::util::{Color128, named_colors};
 use crate::{
     material::Material,
     maths::{Bounds, Matrix, Pose, Quat, Ray, Vec2, Vec3},
@@ -400,9 +400,19 @@ impl Screen {
     pub fn draw(&mut self, _token: &MainThreadToken) {
         let screen_transform = self.screen_param();
 
-        // When the param menu is open, always render the mesh so the user can see shape changes.
-        // Otherwise, prefer the swapchain quad/cylinder layer when one is set.
-        if self.repo.show_param || !self.draw_swapchain() {
+        if self.draw_swapchain() {
+            // The swapchain quad/cylinder layer is submitted at sort order -1 (behind the main scene).
+            // Draw the screen mesh with BLACK_TRANSPARENT so those pixels are punched out and the
+            // compositor layer shows through from behind.
+            Renderer::add_mesh(
+                &self.screen,
+                &self.screen_material,
+                screen_transform,
+                Some(Color128::BLACK_TRANSPARENT),
+                None,
+            );
+        } else {
+            // No swapchain set — render the mesh normally with the current texture.
             Renderer::add_mesh(&self.screen, &self.screen_material, screen_transform, None, None);
         }
     }
@@ -593,19 +603,21 @@ impl Screen {
 
     fn adapt_screen(&mut self) {
         let radius = if self.curvature <= 0.0 { f32::MAX } else { self.screen_distance / self.curvature };
+        let central_angle = self.screen_size.x / radius;
         if self.curvature <= 0.0 {
             self.adapt_screen_spherical();
         } else {
             self.adapt_screen_cylinder(radius);
         }
 
+        let factor_size = 1.0 - (central_angle.powi(2) * 0.06);
         let bounds = self.screen.get_bounds();
         self.layer_cache = SwapchainLayerCache {
             rect: Rect::new(0.0, 0.0, self.width as f32, self.height as f32),
             bounds_center_z: bounds.center.z,
             use_cylinder: self.curvature > 0.0,
-            radius,
-            central_angle: self.screen_size.x / radius,
+            radius: radius * factor_size,
+            central_angle,
             aspect_ratio: self.screen_size.x / self.screen_size.y,
             // pose fields computed from current orientation below
             local_offset: Vec3::ZERO,

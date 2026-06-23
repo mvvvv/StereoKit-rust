@@ -4,7 +4,7 @@ use std::rc::Rc;
 use stereokit_rust::{
     font::Font,
     material::Material,
-    maths::{Bounds, Matrix, Pose, Rect, Vec2, Vec3},
+    maths::{Bounds, Matrix, Pose, Quat, Rect, Vec2, Vec3},
     mesh::Mesh,
     prelude::*,
     render::{RenderBuilder, RenderClear, RenderList, Renderer},
@@ -48,6 +48,9 @@ pub struct Layers1 {
     cylinder_angle: f32,
     cylinder_aspect: f32,
 
+    pub transparent_screen: Mesh,
+    pub transparent_material: Material,
+    pub transparent_transform: Matrix,
     pub transform: Matrix,
     pub text: String,
     text_style: TextStyle,
@@ -63,7 +66,10 @@ impl Default for Layers1 {
         let cylinder_pose = content_pose * Matrix::t([-0.3, 1.5, 0.0]);
         let mut material = Material::ui_box().copy();
         material.color_tint(named_colors::GOLD).border_size(0.005);
-        Renderer::enable_sky(false);
+
+        let transparent_material = Material::unlit();
+        let transparent_transform =
+            Matrix::t_r_s((Vec3::NEG_Z * 2.5) + Vec3::Y * 1.7, [90.0, 0.0, 90.0], Vec3::ONE * 1.5);
         Self {
             id: "Layers1".into(),
             sk_info: None,
@@ -86,7 +92,11 @@ impl Default for Layers1 {
             cylinder_angle: std::f32::consts::FRAC_PI_2 / 2.0,
             cylinder_aspect: 1.7777,
 
-            transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, [0.0, 180.0, 0.0]),
+            transparent_screen: Mesh::sphere(),
+            transparent_material,
+            transparent_transform,
+
+            transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, Quat::Y_180),
             text: "Layers1\n\n\n".to_owned(),
             text_style: Text::make_style(Font::default(), 0.3, RED),
         }
@@ -149,6 +159,9 @@ impl Layers1 {
                     Log::warn("Failed to create cylinder XR swapchain");
                 }
             }
+            // Ready to go we can change the sky.
+            Renderer::enable_sky(false);
+            Renderer::clear_color(Color128::rgba(0.1, 0.4, 0.9, 0.0));
             true
         } else {
             Log::warn("OpenXR backend is not available, cannot start Layers1 demo");
@@ -242,6 +255,12 @@ impl Layers1 {
                         0,
                         self.cylinder_sort_order as i32,
                         None,
+                        None,
+                    );
+                    self.transparent_screen.draw(
+                        &self.transparent_material,
+                        self.transparent_transform,
+                        Some(Color128::BLACK_TRANSPARENT),
                         None,
                     );
                 }
