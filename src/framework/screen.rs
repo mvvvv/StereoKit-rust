@@ -922,6 +922,16 @@ impl Screen {
         self.screen_pose.orientation
     }
 
+    /// Get the current screen position (world-space)
+    pub fn get_screen_position(&self) -> Vec3 {
+        self.screen_pose.position
+    }
+
+    /// Get the full screen pose (position + orientation)
+    pub fn get_screen_pose(&self) -> Pose {
+        self.screen_pose
+    }
+
     /// Get the current sound spacing factor
     pub fn get_sound_spacing_factor(&self) -> f32 {
         self.sound_spacing_factor
