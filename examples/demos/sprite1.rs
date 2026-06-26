@@ -132,17 +132,18 @@ impl Sprite1 {
 
     /// Called from IStepper::step after check_event, here you can draw your UI
     fn draw(&mut self, _token: &MainThreadToken) {
-        self.sprite1.draw(Matrix::t(Vec3::new(-2.5, 1.5, -2.5)), Pivot::Center, None);
+        self.sprite1.draw(Matrix::t(Vec3::new(-2.5, 1.5, -2.5)), Pivot::Center, None, None);
 
         self.sprite_ico.draw(
             Matrix::t_r(Vec3::new(0.0, 1.5, -2.5), Quat::from_angles(0.0, 180.0, 0.0)),
             Pivot::BottomCenter,
             None,
+            None,
         );
 
-        self.sprite3.draw(Matrix::t(Vec3::new(2.5, 1.5, -2.5)), Pivot::YTop, None);
+        self.sprite3.draw(Matrix::t(Vec3::new(2.5, 1.5, -2.5)), Pivot::YTop, None, None);
 
-        self.sprite4.draw(Matrix::t(Vec3::new(0.0, 3.5, -2.5)), Pivot::YTop, None);
+        self.sprite4.draw(Matrix::t(Vec3::new(0.0, 3.5, -2.5)), Pivot::YTop, None, None);
 
         TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
 

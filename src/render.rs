@@ -39,6 +39,9 @@ bitflags::bitflags! {
     /// you to draw items that are visible in one render, but not another. For example, you may wish to draw a player’s
     /// avatar in a ‘mirror’ rendertarget, but not in the primary display. See Renderer.LayerFilter for configuring
     /// what the primary display renders.
+    /// Render layers can also be mixed and matched like bit-flags! Note that while this enum is 32 bits wide, render
+    /// layers are stored internally in 16 bits when items are queued for drawing. Only the low 16 bits are usable as
+    /// layers, so any custom flags above bit 15 will be silently truncated.
     /// <https://stereokit.net/Pages/StereoKit/RenderLayer.html>
     ///
     /// see also [`Renderer`] [`Mesh::draw`] [`Model::draw`] [`Model::draw_mat`] [`RenderList`]
@@ -66,13 +69,16 @@ bitflags::bitflags! {
         /// Render layer 9.
         const Layer9 = 1 << 9;
         /// The default VFX layer, StereoKit draws some non-standard mesh content using this flag, such as lines.
-        const VFX = 10;
+        const Vfx    = 1 << 10;
         /// For items that should only be drawn from the first person perspective. By default, this is enabled for
         /// renders that are from a 1st person viewpoint.
-        const FirstPerson    = 1 << 11;
+        const FirstPerson = 1 << 11;
         /// For items that should only be drawn from the third person perspective. By default, this is enabled for
         /// renders that are from a 3rd person viewpoint.
-        const ThirdPerson    = 1 << 12;
+        const ThirdPerson = 1 << 12;
+        /// The default layer for StereoKit's UI. Mesh and model content drawn by the UI system uses this layer, see
+        /// [`UI::RenderLayer`] to change it.
+        const UI          = 1 << 13;
         /// This is a flag that specifies all possible layers. If you want to render all layers, then this is the layer
         ///  filter you would use. This is the default for render filtering.
         const All = 0xFFFF;
@@ -2126,8 +2132,8 @@ impl RenderList {
 ///     render.draw_now(&mut render_list, &tex2, Color128::WHITE);
 ///
 ///     //Renderer::add_mesh(e, &material, transform_plane, None, None);
-///     sprite1.draw(transform_sprite1, Pivot::TopLeft, None);
-///     sprite2.draw(transform_sprite2, Pivot::Center, None);
+///     sprite1.draw(transform_sprite1, Pivot::TopLeft, None, None);
+///     sprite2.draw(transform_sprite2, Pivot::Center, None, None);
 /// );
 /// # sk::Sk::shutdown();
 /// ```

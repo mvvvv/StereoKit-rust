@@ -5,7 +5,7 @@ use stereokit_rust::{
     mesh::Mesh,
     prelude::*,
     system::{BtnState, Interactor, Pivot, Text, TextBuilder, TextStyle},
-    ui::{IdHashT, Ui, UiColor, UiCorner, UiLathePt, UiSliderData, UiVisual},
+    ui::{IdHashT, Ui, UiBtnFlag, UiColor, UiCorner, UiLathePt, UiSliderData, UiVisual},
     util::{
         Color32, Color128, Time,
         named_colors::{CYAN, DARK_BLUE, MAGENTA, ORCHID, RED},
@@ -181,10 +181,13 @@ impl Ui1 {
         let mut out_button_state: BtnState = BtnState::empty();
         let mut out_focus_state = BtnState::empty();
         let mut out_opt_interactor = Interactor::NONE;
-        Ui::button_behavior(
+        Ui::button_behavior_depth(
             layout.tlc(),
             size,
             text,
+            0.05,
+            0.03,
+            UiBtnFlag::NoCancel,
             &mut out_finger_offset,
             &mut out_button_state,
             &mut out_focus_state,

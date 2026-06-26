@@ -245,7 +245,7 @@ impl Shadows1 {
         let shadow_render = RenderBuilder::new()
             .camera(view)
             .projection(proj)
-            .layer_filter(RenderLayer::All & !RenderLayer::VFX)
+            .layer_filter(RenderLayer::All & !RenderLayer::Vfx)
             .material_variant(SHADOW_MAP_VARIANT);
         shadow_render.render_to(&self.shadow_map, 0);
         Renderer::set_global_texture(13, Some(&self.shadow_map));

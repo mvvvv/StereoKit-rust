@@ -197,7 +197,7 @@ impl Layers1 {
 
                 let sprite = Sprite::from_tex(render_tex, None, None).unwrap();
 
-                sprite.draw(self.transform, Pivot::Center, None);
+                sprite.draw(self.transform, Pivot::Center, None, None);
 
                 assert_eq!(render_tex.get_width(), Some(512));
 

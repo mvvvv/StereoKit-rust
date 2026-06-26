@@ -7,7 +7,7 @@ use crate::{
     maths::{Bool32T, Matrix, Pose, Quat, Ray, Vec2, Vec3, ray_from_mouse},
     mesh::{_MeshT, Mesh},
     model::{_ModelT, Model, ModelT},
-    render::{_RenderListT, RenderList},
+    render::{_RenderListT, RenderLayer, RenderList},
     shader::{_ShaderT, Shader, ShaderT},
     sk::OriginMode,
     sound::{_SoundT, Sound, SoundT},
@@ -133,7 +133,7 @@ pub enum AssetType {
 ///
 /// filename_scr = "screenshots/assets.jpeg"; fov_scr= 55.0;
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
-///     my_sprite.draw(Matrix::Y_180, Pivot::Center, None);
+///     my_sprite.draw(Matrix::Y_180, Pivot::Center, None, None);
 /// );
 /// # sk::Sk::shutdown();
 /// ```
@@ -372,7 +372,7 @@ impl Assets {
     ///     assert_eq!(material_count,  38 + 1 );
     ///     assert_eq!(shader_count,    17);
     ///     assert_eq!(font_count,      1);
-    ///     assert_eq!(mesh_count,  26);
+    ///     assert_eq!(mesh_count,  27);
     ///     assert_eq!(render_list_count, 1);
     ///     assert_eq!(material_buffer_count, 1);
     ///     assert_eq!(compute_buffer_count, 0);
@@ -5385,6 +5385,8 @@ unsafe extern "C" {
     pub fn text_style_get_total_height(style: TextStyle) -> f32;
     pub fn text_style_set_total_height(style: TextStyle, height_meters: f32);
     pub fn text_style_get_material(style: TextStyle) -> MaterialT;
+    pub fn text_style_get_render_layer(style: TextStyle) -> RenderLayer;
+    pub fn text_style_set_render_layer(style: TextStyle, layer: RenderLayer);
     pub fn text_style_get_ascender(style: TextStyle) -> f32;
     pub fn text_style_get_descender(style: TextStyle) -> f32;
     pub fn text_style_get_cap_height(style: TextStyle) -> f32;
@@ -5520,6 +5522,29 @@ impl TextStyle {
             )
         }
     }
+    /// The RenderLayer that text drawn with this style is rendered on. This defaults to [`RenderLayer::Vfx`]. Note
+    /// that text styles are batched per layer, so changing this will re-point the style at a different internal text
+    /// buffer.
+    /// <https://stereokit.net/Pages/StereoKit/TextStyle/RenderLayer.html>
+    ///
+    /// see also [`text_style_set_render_layer`] [`TextStyle::get_render_layer`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{font::Font, util::named_colors, system::TextStyle, render::RenderLayer};
+    ///
+    /// let font = Font::default();
+    /// let mut text_style = TextStyle::from_font(font, 0.02, named_colors::WHITE);
+    /// assert_eq!(text_style.get_render_layer(), RenderLayer::Vfx);
+    ///
+    /// text_style.render_layer(RenderLayer::UI);
+    ///
+    /// assert_eq!(text_style.get_render_layer(), RenderLayer::UI);
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn render_layer(&mut self, layer: RenderLayer) {
+        unsafe { text_style_set_render_layer(*self, layer) }
+    }
 
     /// Height of a text glyph in meters. StereoKit currently bases this on the letter ‘T’.
     /// <https://stereokit.net/Pages/StereoKit/TextStyle/CharHeight.html>
@@ -5610,6 +5635,17 @@ impl TextStyle {
         Material(
             NonNull::new(unsafe { text_style_get_material(*self) }).expect("TextStyle material should not be null!"),
         )
+    }
+
+    /// The RenderLayer that text drawn with this style is rendered on. This defaults to [`RenderLayer::Vfx`]. Note
+    /// that text styles are batched per layer, so changing this will re-point the style at a different internal text
+    /// buffer.
+    /// <https://stereokit.net/Pages/StereoKit/TextStyle/RenderLayer.html>
+    ///
+    /// see also [`text_style_get_render_layer`]
+    /// see example in [`TextStyle::render_layer`]
+    pub fn get_render_layer(&self) -> RenderLayer {
+        unsafe { text_style_get_render_layer(*self) }
     }
 
     /// Returns the maximum height of a text character using this style, in meters.

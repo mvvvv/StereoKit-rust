@@ -4,6 +4,7 @@ use crate::{
     maths::{Bool32T, Bounds, Pose, Vec2, Vec3},
     mesh::{Mesh, MeshT, Vertex},
     model::{Model, ModelT},
+    render::RenderLayer,
     sound::{Sound, SoundT},
     sprite::{Sprite, SpriteT},
     system::{
@@ -156,6 +157,20 @@ pub enum UiConfirm {
     /// HSlider specific. Same as Pinch, but pulling out from the slider creates a scaled slider that lets you adjust
     /// the slider at a more granular resolution.
     VariablePinch = 2,
+}
+
+/// A bit-flag for modifying the behavior of a button, used with the lower-level [`Ui::button_behavior`].
+/// <https://stereokit.net/Pages/StereoKit/UIConfirm.html>
+///
+/// see also [`ui_button_behavior`]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u32)]
+pub enum UiBtnFlag {
+    /// Default button behavior
+    None = 0,
+    /// Prevents the activation from being canceled when the interactor moves too far from the button. Used for
+    /// elements like sliders that legitimately track an interactor well outside the button's bounds.
+    NoCancel = 1 << 0,
 }
 
 /// Describes the layout of a button with image/text contents! You can think of the naming here as being the location of
@@ -629,6 +644,8 @@ unsafe extern "C" {
     pub fn ui_far_interact_enabled() -> Bool32T;
     pub fn ui_system_get_move_type() -> UiMove;
     pub fn ui_system_set_move_type(move_type: UiMove);
+    pub fn ui_get_render_layer() -> RenderLayer;
+    pub fn ui_set_render_layer(layer: RenderLayer);
     pub fn ui_settings(settings: UiSettings);
     pub fn ui_get_settings() -> UiSettings;
     pub fn ui_get_margin() -> f32;
@@ -702,17 +719,9 @@ unsafe extern "C" {
         window_relative_pos: Vec3,
         size: Vec2,
         id: IdHashT,
-        out_finger_offset: *mut f32,
-        out_button_state: *mut BtnState,
-        out_focus_state: *mut BtnState,
-        out_opt_interactor: *mut Interactor,
-    );
-    pub fn ui_button_behavior_depth(
-        window_relative_pos: Vec3,
-        size: Vec2,
-        id: IdHashT,
         button_depth: f32,
         button_activation_depth: f32,
+        flag: UiBtnFlag,
         out_finger_offset: *mut f32,
         out_button_state: *mut BtnState,
         out_focus_state: *mut BtnState,
@@ -1372,6 +1381,9 @@ impl Ui {
                 window_relative_pos.into(),
                 size.into(),
                 id_hash,
+                0.0,
+                0.0,
+                UiBtnFlag::None,
                 out_finger_offset,
                 out_button_state,
                 out_focus_state,
@@ -1383,27 +1395,25 @@ impl Ui {
     /// This is the core functionality of StereoKit’s buttons, without any of the rendering parts! If you’re trying to
     /// create your own pressable UI elements, or do more extreme customization of the look and feel of UI elements,
     /// then this function will provide a lot of complex pressing functionality for you! This overload allows for
-    /// customizing the depth of the button, which otherwise would use UiSettings.depth for its values.
+    /// customizing the depth of the button, which otherwise would use [`UiSettings::depth`] for its values.
     /// <https://stereokit.net/Pages/StereoKit/UI/ButtonBehavior.html>
-    /// * hand - Id of the hand that interacted with the button. This will be -1 if no interaction has occurred.
-    ///
-    /// see also [`ui_button_behavior_depth`]
     /// * `window_relative_pos` - The layout position of the pressable area.
     /// * `size` - The size of the pressable area.
     /// * `id` - The id for this pressable element to track its state with.
     /// * `button_depth` - This is the z axis depth of the pressable area.
     /// * `button_activation_depth` - This is the current distance of the finger, within the pressable volume, from the
     ///   bottom of the button.
+    /// * `flags` - Flags for modifying the button's behavior, such as opting out of pull-away cancellation.
     /// * `out_finger_offset` - This is the current distance of the finger, within the pressable volume, from the
     ///   bottom of the button.
     /// * `out_button_state` - This is the current frame’s “active” state for the button.
     /// * `out_focus_state` - This is the current frame’s “focus” state for the button.
     ///
-    /// see also [`ui_button_behavior_depth`] [`Ui::button_behavior`]
+    /// see also [`ui_button_behavior`] [`Ui::button_behavior`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{ui::Ui, maths::Pose, system::BtnState};
+    /// use stereokit_rust::{ui::{Ui, UiBtnFlag}, maths::Pose, system::BtnState};
     ///
     /// let mut window_pose = Pose::new(
     ///     [0.01, 0.035, 0.92], Some([0.0, 185.0, 0.0].into()));
@@ -1413,7 +1423,8 @@ impl Ui {
     /// let mut out_finger_offset = 0.0;
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     Ui::window("I'm a button").pose(&mut window_pose).begin();
-    ///     Ui::button_behavior_depth([0.0, 0.0, 0.005],[0.05, 0.05], "Button1", 0.01, 0.005,
+    ///     Ui::button_behavior_depth([0.0, 0.0, 0.005],[0.05, 0.05], "Button1",
+    ///                         0.01, 0.005, UiBtnFlag::NoCancel,
     ///                         &mut out_finger_offset, &mut out_button_state,
     ///                         &mut out_focus_state, None);
     ///     if out_button_state.is_just_inactive() {
@@ -1425,11 +1436,12 @@ impl Ui {
     /// ```
     #[allow(clippy::too_many_arguments)]
     pub fn button_behavior_depth(
-        top_left_corner: impl Into<Vec3>,
+        window_relative_pos: impl Into<Vec3>,
         size: impl Into<Vec2>,
         id: impl AsRef<str>,
         button_depth: f32,
         button_activation_depth: f32,
+        flags: UiBtnFlag,
         out_finger_offset: &mut f32,
         out_button_state: &mut BtnState,
         out_focus_state: &mut BtnState,
@@ -1440,12 +1452,13 @@ impl Ui {
         let out_opt_interactor = out_opt_interactor.unwrap_or(&mut nevermind);
 
         unsafe {
-            ui_button_behavior_depth(
-                top_left_corner.into(),
+            ui_button_behavior(
+                window_relative_pos.into(),
                 size.into(),
                 id_hash,
                 button_depth,
                 button_activation_depth,
+                flags,
                 out_finger_offset,
                 out_button_state,
                 out_focus_state,
@@ -3552,6 +3565,26 @@ impl Ui {
         unsafe { ui_stack_hash(cstr.as_ptr()) }
     }
 
+    /// This is the RenderLayer that the UI system draws on. It applies to the UI's mesh and model geometry, as well as
+    /// the text and single sprites that StereoKit's UI manages. This is RenderLayer.UI by default.
+    /// <https://stereokit.net/Pages/StereoKit/UI/RenderLayer.html>
+    ///
+    /// see also [`ui_set_render_layer`] [`Ui::get_render_layer`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{ui::Ui, render::RenderLayer};
+    ///
+    /// assert_eq!(Ui::get_render_layer(), RenderLayer::UI);
+    ///
+    /// Ui::render_layer(RenderLayer::Vfx);
+    /// assert_eq!(Ui::get_render_layer(), RenderLayer::Vfx);
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn render_layer(layer: RenderLayer) {
+        unsafe { ui_set_render_layer(layer) }
+    }
+
     /// This is the UiMove that is provided to UI windows that StereoKit itself manages, such as the fallback
     /// filepicker and soft keyboard.
     /// <https://stereokit.net/Pages/StereoKit/UI/SystemMoveType.html>
@@ -4090,6 +4123,16 @@ impl Ui {
     /// see example in [`Ui::system_move_type`]
     pub fn get_system_move_type() -> UiMove {
         unsafe { ui_system_get_move_type() }
+    }
+
+    /// This is the RenderLayer that the UI system draws on. It applies to the UI's mesh and model geometry, as well as
+    /// the text and single sprites that StereoKit's UI manages. This is RenderLayer.UI by default.
+    /// <https://stereokit.net/Pages/StereoKit/UI/RenderLayer.html>
+    ///
+    /// see also [`ui_get_render_layer`]
+    /// see example in [`Ui::render_layer`]
+    pub fn get_render_layer() -> RenderLayer {
+        unsafe { ui_get_render_layer() }
     }
 
     /// This returns the TextStyle that’s on top of the UI’s stack, according to Ui::(push/pop)_text_style.
