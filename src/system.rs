@@ -359,7 +359,7 @@ impl Assets {
     ///     assert_eq!(material_count,  38 + 1 );
     ///     assert_eq!(shader_count,    17);
     ///     assert_eq!(font_count,      1);
-    ///     assert_eq!(mesh_count,  26);
+    ///     assert_eq!(mesh_count,  28);
     ///     assert_eq!(render_list_count, 1);
     ///     assert_eq!(material_buffer_count, 1);
     ///     assert_eq!(compute_buffer_count, 0);
@@ -372,7 +372,7 @@ impl Assets {
     ///     assert_eq!(material_count,  38 + 1 );
     ///     assert_eq!(shader_count,    17);
     ///     assert_eq!(font_count,      1);
-    ///     assert_eq!(mesh_count,  27);
+    ///     assert_eq!(mesh_count,  28);
     ///     assert_eq!(render_list_count, 1);
     ///     assert_eq!(material_buffer_count, 1);
     ///     assert_eq!(compute_buffer_count, 0);
@@ -2424,23 +2424,41 @@ pub enum InputPose {
     /// The left hand/controller grip pose, centered in the hand where you'd hold something like a sword hilt or a tool
     /// handle.
     LGrip,
-    /// The left hand/controller palm pose, located at the surface of the palm facing outward. This uses the palm pose
+    /// The left hand/controller palm pose, located at the surface of the palm. Forward points along the fingers and Up
+    /// toward the thumb, with X+ into the palm on the right hand, and out of the palm on the left. This is the
+    /// controller's palm orientation, which faces along the fingers rather than out from the palm. Uses the palm pose
     /// OpenXR extension when available, and falls back to an approximation when it's not.
     LPalm,
     /// The left hand/controller aim pose. This points forward from the hand like a laser pointer, useful for UI
     /// interaction at a distance.
     LAim,
+    /// The left poke pose, located at the tip of the index finger. This is provided by hand interaction systems such
+    /// as the OpenXR hand interaction extension, and may be present even when full articulated hand tracking is not.
+    LPoke,
+    /// The left pinch pose, located between the tips of the thumb and index finger. This is provided by hand
+    /// interaction systems such as the OpenXR hand interaction extension, and may be present even when full articulated
+    /// hand tracking is not.
+    LPinch,
     /// The left pose of a "detached controller", when the user has both hands and controllers active in the scene.
     LDetached,
     /// The right hand/controller grip pose, centered in the hand where you'd hold something like a sword hilt or a tool
     /// handle.
     RGrip,
-    /// The right hand/controller palm pose, located at the surface of the palm facing outward. This uses the palm pose
+    /// The right hand/controller palm pose, located at the surface of the palm. Forward points along the fingers and Up
+    /// toward the thumb, with X+ into the palm on the right hand, and out of the palm on the left. This is the
+    /// controller's palm orientation, which faces along the fingers rather than out from the palm. Uses the palm pose
     /// OpenXR extension when available, and falls back to an approximation when it's not.
     RPalm,
     /// The right hand/controller aim pose. This points forward from the hand like a laser pointer, useful for UI
     /// interaction at a distance.
     RAim,
+    /// The right poke pose, located at the tip of the index finger. This is provided by hand interaction systems such
+    /// as the OpenXR hand interaction extension, and may be present even when full articulated hand tracking is not.
+    RPoke,
+    /// The right pinch pose, located between the tips of the thumb and index finger. This is provided by hand
+    /// interaction systems such as the OpenXR hand interaction extension, and may be present even when full articulated
+    /// hand tracking is not.
+    RPinch,
     /// The right pose of a "detached controller", when the user has both hands and controllers active in the scene.
     RDetached,
     /// Total number of input pose types.
@@ -4008,7 +4026,7 @@ impl Input {
     /// let rdetached_pose = Input::pose(InputPose::RDetached);
     /// # assert_eq!(rdetached_pose, Pose::IDENTITY);
     ///
-    /// assert_eq!(InputPose::Max as i32, 9);
+    /// assert_eq!(InputPose::Max as i32, 13);
     /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
