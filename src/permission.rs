@@ -85,7 +85,7 @@ impl fmt::Display for PermissionState {
 unsafe extern "C" {
     pub fn permission_state(permission: PermissionType) -> PermissionState;
     pub fn permission_is_interactive(permission: PermissionType) -> Bool32T;
-    pub fn permission_request(permission: PermissionType);
+    pub fn permission_request(in_arr_permissions: *const PermissionType, permission_count: i32);
 }
 
 /// Certain features in XR require explicit permissions from the operating system and user! This is typically for
@@ -154,13 +154,18 @@ impl Permission {
         unsafe { permission_is_interactive(permission) != 0 }
     }
 
-    /// This sends off a request to the OS for a particular permission! If the permission IsInteractive, then this will
+    /// This sends off a request to the OS for one or more permissions! If a permission IsInteractive, then this will
     /// bring up a popup that the user may need to interact with. Otherwise, this will silently approve the permission.
     /// This means that the permission may take an arbitrary amount of time before it's approved, or declined.
     ///
-    /// If your app is an Android Service, this function will do nothing.
+    /// Requesting multiple permissions in a single call is preferable to chaining individual requests yourself, since
+    /// the OS gets to present them together and you avoid the risk of a follow-up request getting dropped while an
+    /// earlier popup is still up.
+    ///
+    /// Any permissions that aren't known on the current platform are skipped with a warning. If your app is an Android
+    /// Service, this function will do nothing.
     /// <https://stereokit.net/Pages/StereoKit/Permission/Request.html>
-    /// * `permission` - The permission to request.
+    /// * `permissions` - The permission(s) to request.
     ///
     /// ### Examples
     /// ```
@@ -174,7 +179,7 @@ impl Permission {
     ///         println!("Microphone permission requires user approval. We can't request it in an unit test");
     ///     } else {
     ///         println!("Requesting microphone permission...");
-    ///         Permission::request(PermissionType::Microphone);
+    ///         Permission::request(&[PermissionType::Microphone]);
     ///     }
     /// }
     ///
@@ -184,13 +189,13 @@ impl Permission {
     ///         println!("Eye Input permission requires user approval. We can't request it in an unit test");
     ///     } else {
     ///         println!("Requesting Eye Input permission...");
-    ///         Permission::request(PermissionType::EyeInput);
+    ///         Permission::request(&[PermissionType::EyeInput]);
     ///     }
     /// }
     /// # sk::Sk::shutdown();
     /// ```
-    pub fn request(permission: PermissionType) {
-        unsafe { permission_request(permission) }
+    pub fn request(permissions: &[PermissionType]) {
+        unsafe { permission_request(permissions.as_ptr(), permissions.len() as i32) }
     }
 }
 

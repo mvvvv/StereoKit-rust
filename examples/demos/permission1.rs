@@ -100,12 +100,25 @@ impl Permission1 {
             if state == PermissionState::Capable {
                 Ui::same_line();
                 if Ui::button("Request").size([0.05, 0.0]).press() {
-                    Permission::request(permission);
+                    Permission::request(&[permission]);
                 }
             }
 
             Ui::panel_end();
             Ui::pop_id();
+        }
+
+        // Requesting several at once chains them into a single OS prompt.
+        Ui::hseparator();
+        if Ui::button("Request All Capable").press() {
+            let mut capable = Vec::new();
+            for i in 0..(PermissionType::Max as u32) {
+                let permission = unsafe { std::mem::transmute::<u32, PermissionType>(i) };
+                if Permission::get_state(permission) == PermissionState::Capable {
+                    capable.push(permission);
+                }
+            }
+            Permission::request(&capable);
         }
         if cfg!(target_os = "android") && Ui::button("App Settings").press() {
             Ui::hseparator();
