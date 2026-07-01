@@ -2407,7 +2407,12 @@ impl RenderBuilder {
     /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_list_draw_now_multi_view.jpeg" alt="screenshot" width="200">
-    pub fn draw_now(&self, render_list: &RenderList, to_rendertarget: impl AsRef<Tex>, clear_color: Color128) {
+    pub fn draw_now(
+        &self,
+        render_list: &RenderList,
+        to_rendertarget: impl AsRef<Tex>,
+        clear_color: impl Into<Color128>,
+    ) {
         unsafe {
             render_list_draw_now(
                 render_list.0.as_ptr(),
@@ -2415,7 +2420,7 @@ impl RenderBuilder {
                 self.cameras.as_ptr(),
                 self.projections.as_ptr(),
                 self.cameras.len() as i32,
-                clear_color,
+                clear_color.into(),
                 self.clear,
                 self.viewport_pct,
                 self.layer_filter,

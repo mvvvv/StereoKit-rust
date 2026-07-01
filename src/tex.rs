@@ -2077,7 +2077,7 @@ impl Tex {
     /// * `array_count` - How many surfaces (array layers) are in this texture? A normal texture only has 1, but
     ///   additional layers can be useful for certain rendering techniques or effects.
     /// * `msaa` - Multisample anti-aliasing level, only important for render target type textures. This is the number
-    ///   of fragments drawn per pixel to reduce aliasing artifacts. Typical values: 1,2,4,8.
+    ///   of fragments drawn per pixel to reduce aliasing artifacts. Typical values: 1,2,4,8. None is 1.
     ///
     /// Internally this invokes the native `tex_set_color_arr` with a null data pointer, establishing only the
     /// dimensions/array layout.
