@@ -114,7 +114,7 @@ impl Default for Shaders1 {
         plane.id("plane1");
 
         Self {
-            id: "Shader1".to_string(),
+            id: "Shaders1".to_string(),
             sk_info: None,
             shutdown_completed: false,
 

@@ -96,6 +96,145 @@ impl Vertex {
 /// <https://stereokit.net/Pages/StereoKit/Mesh.html>
 pub type Inds = u32;
 
+/// The data format of a single element of a vertex component. Normalized formats map their integer range onto 0-1
+/// (unsigned) or -1-1 (signed) when read by the GPU, other integer formats arrive as integers.
+/// <https://stereokit.net/Pages/StereoKit/VertFmt.html>
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(u8)]
+pub enum VertFmt {
+    /// Invalid format, this is not a valid value for a component.
+    None = 0,
+    /// 32 bit float.
+    F32,
+    /// 16 bit half float.
+    F16,
+    /// 32 bit signed integer.
+    I32,
+    /// 16 bit signed integer.
+    I16,
+    /// 8 bit signed integer.
+    I8,
+    /// 16 bit signed integer, normalized to -1-1 on the GPU.
+    I16Normalized,
+    /// 8 bit signed integer, normalized to -1-1 on the GPU.
+    I8Normalized,
+    /// 32 bit unsigned integer.
+    U32,
+    /// 16 bit unsigned integer.
+    U16,
+    /// 8 bit unsigned integer.
+    U8,
+    /// 16 bit unsigned integer, normalized to 0-1 on the GPU.
+    U16Normalized,
+    /// 8 bit unsigned integer, normalized to 0-1 on the GPU. A color32 is 4 of these.
+    U8Normalized,
+}
+
+impl VertFmt {
+    /// Returns the size in bytes of a single element of this format.
+    pub const fn size(self) -> usize {
+        match self {
+            VertFmt::F32 | VertFmt::I32 | VertFmt::U32 => 4,
+            VertFmt::F16 | VertFmt::I16 | VertFmt::U16 | VertFmt::I16Normalized | VertFmt::U16Normalized => 2,
+            VertFmt::I8 | VertFmt::U8 | VertFmt::I8Normalized | VertFmt::U8Normalized => 1,
+            VertFmt::None => 0,
+        }
+    }
+}
+
+/// What a vertex component means! This is matched against the semantics the shader's vertex inputs declare, so
+/// component order in a format doesn't need to match the shader's input order.
+/// <https://stereokit.net/Pages/StereoKit/VertSemantic.html>
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(u8)]
+pub enum VertSemantic {
+    /// Invalid semantic, this is not a valid value for a component.
+    None = 0,
+    /// Vertex position, in model space coordinates.
+    Position,
+    /// Direction the vertex is facing.
+    Normal,
+    /// Texture coordinates.
+    Texcoord,
+    /// Vertex color.
+    Color,
+    /// Tangent direction for normal mapping.
+    Tangent,
+    /// Binormal/bitangent direction for normal mapping.
+    Binormal,
+    /// Bone weights for skinning.
+    Blendweight,
+    /// Bone indices for skinning.
+    Blendindices,
+    /// Point size for point rendering.
+    Psize,
+}
+
+/// A single component of a custom vertex layout, such as a position or a UV coordinate. A vertex format is described
+/// by an array of these, in the same order the components appear in the vertex data. Data is always tightly packed,
+/// aligned to nothing, so the format fully describes the vertex layout.
+///
+/// This maps to a compact 4 byte native representation, the properties here disguise that byte packing.
+/// <https://stereokit.net/Pages/StereoKit/VertComponent.html>
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(C)]
+pub struct VertComponent {
+    pub format: VertFmt,
+    /// How many format elements this component has, 1-4. A float3 position would be 3.
+    pub count: u8,
+    /// What this component means, this is matched with the shader's vertex input semantics.
+    pub semantic: VertSemantic,
+    /// The data format of a single element of this component.
+    /// Distinguishes multiple components with the same semantic, like TEXCOORD0 vs TEXCOORD1. Usually 0.
+    pub semantic_slot: u8,
+}
+
+impl VertComponent {
+    /// Describes a single vertex component.
+    /// <https://stereokit.net/Pages/StereoKit/VertComponent/VertComponent.html>
+    /// * `semantic` - What this component means, this is matched with the shader's vertex input semantics.
+    /// * `format` - The data format of a single element of this component.
+    /// * `count` - How many format elements this component has, 1-4. A float3 position would be 3.
+    /// * `semantic_slot` - Distinguishes multiple components with the same semantic, like TEXCOORD0 vs TEXCOORD1.
+    ///   Usually 0.
+    pub const fn new(semantic: VertSemantic, format: VertFmt, count: u8, semantic_slot: u8) -> Self {
+        Self { semantic, format, count, semantic_slot }
+    }
+
+    /// The size in bytes of this component, that is, the format size multiplied by the element count.
+    pub const fn size(&self) -> usize {
+        self.format.size() * self.count as usize
+    }
+
+    /// Calculates the stride (size in bytes) of a single vertex described by the given component array. This sums the
+    /// size of each component, that is, the format size multiplied by the element count.
+    ///
+    /// see also [`mesh_fmt_stride`] [`VertComponent::size`] [`VertFmt::size`]
+    pub fn fmt_stride(components: &[VertComponent]) -> i32 {
+        unsafe { mesh_fmt_stride(components.as_ptr(), components.len() as i32) }
+    }
+}
+
+/// Derives the vertex format of a vertex struct, in the same order the fields appear in memory. This is the Rust
+/// equivalent of C#'s `[VertComponent]` attribute and `VertLayout<T>` reflection: implement this trait for a custom
+/// `#[repr(C, packed)]` vertex struct, returning one [`VertComponent`] per field in declaration order.
+///
+/// The components must fully describe the struct's memory layout with no padding, and the total size they describe
+/// must exactly equal `size_of::<Self>()`.
+pub trait VertexLayout: Copy {
+    /// The components that describe this vertex struct, in the order the fields appear in memory.
+    const COMPONENTS: &'static [VertComponent];
+}
+
+impl VertexLayout for Vertex {
+    const COMPONENTS: &'static [VertComponent] = &[
+        VertComponent::new(VertSemantic::Position, VertFmt::F32, 3, 1),
+        VertComponent::new(VertSemantic::Normal, VertFmt::F32, 3, 0),
+        VertComponent::new(VertSemantic::Texcoord, VertFmt::F32, 2, 0),
+        VertComponent::new(VertSemantic::Color, VertFmt::U8Normalized, 4, 0),
+    ];
+}
+
 /// For performance sensitive areas, or places dealing with large chunks of memory, it can be faster to get a reference
 /// to that memory rather than copying it! However, if this isn’t explicitly stated, it isn’t necessarily clear what’s
 /// happening. So this enum allows us to visibly specify what type of memory reference is occurring.
@@ -208,6 +347,17 @@ unsafe extern "C" {
         flags: MeshData,
         priority: i32,
     );
+    pub fn mesh_set_data_fmt(
+        mesh: MeshT,
+        in_arr_format: *const VertComponent,
+        component_count: i32,
+        vertex_data: *const c_void,
+        vertex_count: i32,
+        in_arr_indices: *const VindT,
+        index_count: i32,
+        flags: MeshData,
+        priority: i32,
+    );
     pub fn mesh_set_verts(mesh: MeshT, in_arr_vertices: *const Vertex, vertex_count: i32, calculate_bounds: Bool32T);
     pub fn mesh_get_verts(
         mesh: MeshT,
@@ -215,6 +365,23 @@ unsafe extern "C" {
         out_vertex_count: *mut i32,
         reference_mode: Memory,
     );
+    pub fn mesh_set_verts_fmt(
+        mesh: MeshT,
+        in_arr_format: *const VertComponent,
+        component_count: i32,
+        vertex_data: *const c_void,
+        vertex_count: i32,
+        calculate_bounds: Bool32T,
+    );
+    pub fn mesh_get_verts_fmt(
+        mesh: MeshT,
+        out_arr_format: *mut *mut VertComponent,
+        out_component_count: *mut i32,
+        out_vertex_data: *mut *mut c_void,
+        out_vertex_count: *mut i32,
+        reference_mode: Memory,
+    );
+    pub fn mesh_fmt_stride(in_arr_format: *const VertComponent, component_count: i32) -> i32;
     pub fn mesh_get_vert_count(mesh: MeshT) -> i32;
     pub fn mesh_set_inds(mesh: MeshT, in_arr_indices: *const VindT, index_count: i32);
     pub fn mesh_get_inds(
@@ -976,6 +1143,80 @@ impl Mesh {
         self
     }
 
+    /// Assigns vertices with a custom vertex format along with face indices for this Mesh in a single call, with
+    /// control over upload behavior via flags! Upload is synchronous by default — pass [`MeshData::Async`] for
+    /// background upload. The format is derived from T's [`VertexLayout`] implementation, see [`Mesh::set_verts_fmt`]
+    /// for details.
+    ///
+    /// Calling SetData is slightly more efficient than calling SetVerts and SetInds separately.
+    /// <https://stereokit.net/Pages/StereoKit/Mesh/SetData.html>
+    /// * `vertices` - An array of vertices to add to the mesh. An empty slice is okay here, but may require a special
+    ///   shader.
+    /// * `indices` - A list of face indices, must be a multiple of 3. Each index represents a vertex from the provided
+    ///   vertex array.
+    /// * `flags` - Flags controlling upload behavior. See [`MeshData`] for options. None has default value of
+    ///   [`MeshData::CalcBounds`].
+    /// * `priority` - Loading priority for async upload. Lower values load sooner. None has default value of 0.
+    ///
+    /// see also [`mesh_set_data_fmt`] [`Mesh::set_verts_fmt`] [`VertexLayout`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Vec3, util::{named_colors, Color32},
+    ///                      mesh::{Mesh, VertFmt, VertSemantic, VertComponent, VertexLayout}};
+    ///
+    /// #[derive(Default, Debug, Copy, Clone, PartialEq)]
+    /// #[repr(C)]
+    /// struct CustomVertex {
+    ///     pos: Vec3,
+    ///     col: Color32,
+    /// }
+    /// impl VertexLayout for CustomVertex {
+    ///     const COMPONENTS: &'static [VertComponent] = &[
+    ///         VertComponent::new(VertSemantic::Position, VertFmt::F32, 3, 0),
+    ///         VertComponent::new(VertSemantic::Color, VertFmt::U8Normalized, 4, 0),
+    ///     ];
+    /// }
+    ///
+    /// let mut square = Mesh::new();
+    /// square.set_data_fmt(&[
+    ///     CustomVertex{ pos: [-1.0, -1.0, 0.0].into(), col: named_colors::BLUE  },
+    ///     CustomVertex{ pos: [ 1.0, -1.0, 0.0].into(), col: named_colors::WHITE },
+    ///     CustomVertex{ pos: [-1.0,  1.0, 0.0].into(), col: named_colors::WHITE },    
+    ///     CustomVertex{ pos: [ 1.0,  1.0, 0.0].into(), col: named_colors::YELLOW},
+    ///     ], &[0, 1, 2, 2, 1, 3], None, None);
+    ///
+    /// assert_eq!(square.get_vert_count(), 4);
+    /// let verts = square.get_verts_fmt::<CustomVertex>().expect("4 vertices should be returned");
+    /// assert_eq!(verts.len(), 4);
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn set_data_fmt<T: VertexLayout>(
+        &mut self,
+        vertices: &[T],
+        indices: &[u32],
+        flags: Option<MeshData>,
+        priority: Option<i32>,
+    ) -> &mut Self {
+        let format = T::COMPONENTS;
+        let flags = flags.unwrap_or(MeshData::CalcBounds);
+        let priority = priority.unwrap_or(0);
+        unsafe {
+            mesh_set_data_fmt(
+                self.0.as_ptr(),
+                format.as_ptr(),
+                format.len() as i32,
+                vertices.as_ptr() as *const c_void,
+                vertices.len() as i32,
+                indices.as_ptr(),
+                indices.len() as i32,
+                flags,
+                priority,
+            )
+        };
+        self
+    }
+
     /// Use [`Mesh::set_data`] or [`Mesh::from_data`] instead!
     /// Assigns the vertices for this Mesh! This will create a vertex buffer object on the graphics card. If you're
     /// calling this a second time, the buffer will be marked as dynamic and re-allocated. If you're calling this a
@@ -1006,12 +1247,77 @@ impl Mesh {
     ///     Vertex::new([ 1.0,  1.0, 0.0].into(), Vec3::UP, Some(Vec2::ONE), Some(named_colors::YELLOW)),
     ///     ], true)
     ///    .set_inds(&[0, 1, 2, 2, 1, 3]);
+    ///
     /// assert_eq!(square.get_vert_count(), 4);
+    /// let verts = square.get_verts();
+    /// assert_eq!(verts.len(), 4);
     /// # sk::Sk::shutdown();
     /// ```
     pub fn set_verts(&mut self, vertices: &[Vertex], calculate_bounds: bool) -> &mut Self {
         unsafe {
             mesh_set_verts(self.0.as_ptr(), vertices.as_ptr(), vertices.len() as i32, calculate_bounds as Bool32T)
+        };
+        self
+    }
+
+    /// Assigns vertices with a custom vertex format to this Mesh! The format is derived from T's fields via its
+    /// [`VertexLayout`] implementation, each component describing what it is. The shader this Mesh is drawn with must be
+    /// one that works with the components this format provides, StereoKit's built-in shaders all expect position,
+    /// normal, texcoord and color.
+    ///
+    /// A T that doesn't exactly describe its own memory layout will produce incorrect results, see [`VertexLayout`]
+    /// docs for the rules.
+    /// <https://stereokit.net/Pages/StereoKit/Mesh/SetVerts.html>
+    /// * `vertices` - An array of vertices to add to the mesh. An empty slice is okay here, but may require a special
+    ///   shader.
+    /// * `calculate_bounds` - If true, this will also update the Mesh's bounds based on the vertices provided. This
+    ///   requires the format to contain a float3 position component.
+    ///
+    /// see also [`mesh_set_verts_fmt`] [`VertexLayout`] [`Mesh::set_data_fmt`] [`Mesh::get_verts_fmt`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Vec3, util::{named_colors, Color32},
+    ///                      mesh::{Mesh, VertFmt, VertSemantic, VertComponent, VertexLayout}};
+    ///
+    /// #[derive(Default, Debug, Copy, Clone, PartialEq)]
+    /// #[repr(C)]
+    /// struct CustomVertex {
+    ///     pos: Vec3,
+    ///     col: Color32,
+    /// }
+    /// impl VertexLayout for CustomVertex {
+    ///     const COMPONENTS: &'static [VertComponent] = &[
+    ///         VertComponent::new(VertSemantic::Position, VertFmt::F32, 3, 0),
+    ///         VertComponent::new(VertSemantic::Color, VertFmt::U8Normalized, 4, 0),
+    ///     ];
+    /// }
+    ///
+    /// let mut square = Mesh::new();
+    /// square.set_verts_fmt(&[
+    ///     CustomVertex{ pos: [-1.0, -1.0, 0.0].into(), col: named_colors::BLUE  },
+    ///     CustomVertex{ pos: [ 1.0, -1.0, 0.0].into(), col: named_colors::WHITE },
+    ///     CustomVertex{ pos: [-1.0,  1.0, 0.0].into(), col: named_colors::WHITE },    
+    ///     CustomVertex{ pos: [ 1.0,  1.0, 0.0].into(), col: named_colors::YELLOW},
+    ///     ], true)
+    ///    .set_inds(&[0, 1, 2, 2, 1, 3]);
+    ///
+    /// assert_eq!(square.get_vert_count(), 4);
+    /// let verts = square.get_verts_fmt::<CustomVertex>().expect("4 vertices should be returned");
+    /// assert_eq!(verts.len(), 4);
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn set_verts_fmt<T: VertexLayout>(&mut self, vertices: &[T], calculate_bounds: bool) -> &mut Self {
+        let format = T::COMPONENTS;
+        unsafe {
+            mesh_set_verts_fmt(
+                self.0.as_ptr(),
+                format.as_ptr(),
+                format.len() as i32,
+                vertices.as_ptr() as *const c_void,
+                vertices.len() as i32,
+                calculate_bounds as Bool32T,
+            )
         };
         self
     }
@@ -1539,6 +1845,51 @@ impl Mesh {
     /// see also [Mesh::get_verts] [`mesh_get_verts`]
     pub fn get_verts_copy(&self) -> Vec<Vertex> {
         self.get_verts().to_vec()
+    }
+
+    /// This marshalls the vertex data of a custom format Mesh into an array of T. T's [`VertexLayout`] derived format
+    /// must exactly match the format the Mesh was created with, and keep_data must be true for vertex data to be
+    /// available.
+    ///
+    /// Due to the way marshalling works, this is **not** a cheap function!
+    /// <https://stereokit.net/Pages/StereoKit/Mesh/GetVerts.html>
+    /// * `reference_mode` - Reference mode to use, see [`Memory`]. [`Memory::Reference`] is the fastest.
+    ///
+    /// Returns - A reference to the vertex data if available and matching, else None.
+    ///
+    /// see also [`mesh_get_verts_fmt`] [`VertexLayout`] [`Mesh::get_verts`]
+    /// see example in [`Mesh::set_verts_fmt`]
+    pub fn get_verts_fmt<T: VertexLayout>(&self) -> Option<&[T]> {
+        let mut fmt_ptr: *mut VertComponent = std::ptr::null_mut();
+        let mut fmt_count = 0i32;
+        let mut data_ptr: *mut c_void = std::ptr::null_mut();
+        let mut data_count = 0i32;
+        unsafe {
+            mesh_get_verts_fmt(
+                self.0.as_ptr(),
+                &mut fmt_ptr,
+                &mut fmt_count,
+                &mut data_ptr,
+                &mut data_count,
+                Memory::Reference,
+            );
+        }
+        if data_ptr.is_null() {
+            return None;
+        }
+        let expected = T::COMPONENTS;
+        if fmt_count as usize != expected.len() {
+            return None;
+        }
+        for (i, expected_comp) in expected.iter().enumerate() {
+            let comp = unsafe { &*fmt_ptr.add(i) };
+            if comp != expected_comp {
+                return None;
+            }
+        }
+        let slice = unsafe { std::slice::from_raw_parts(data_ptr as *const T, data_count as usize) };
+        // Extend the lifetime to the borrow of self; reference_mode::Reference data is alive while the Mesh is.
+        Some(unsafe { &*(slice as *const [T]) })
     }
 
     /// Retrieves the vertices associated with a particular triangle on the Mesh.
