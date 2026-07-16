@@ -94,8 +94,8 @@ fn main() {
     settings
         .app_name("rust Demos")
         .origin(OriginMode::Floor)
-        .render_multisample(4)
-        //.render_scaling(2.0) // Create distortion on WiVRn linux
+        .render_multisample(4) // aka the default aka 0
+        .render_scaling(1.5)
         .depth_mode(DepthMode::D32)
         .omit_empty_frames(true)
         .log_filter(LogLevel::Diagnostic)

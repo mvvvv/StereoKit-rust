@@ -541,10 +541,9 @@ impl SwapchainSk {
     ///                      render_target.get_height().unwrap_or(0));
     ///         
     ///             // ... perform rendering to render_target ...
-    ///             todo!("");
     ///         }
+    ///         swapchain.release_image().expect("Failed to release");
     ///     }
-    ///     swapchain.release_image().expect("Failed to release");
     /// }
     /// # sk::Sk::shutdown();
     /// ```

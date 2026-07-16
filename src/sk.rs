@@ -573,7 +573,8 @@ impl SkSettings {
     }
 
     /// If you know in advance that you need this feature, this setting allows you to set Renderer::multisample before
-    /// initialization. This avoids creating and discarding a large and unnecessary swapchain object. Default value is 1.
+    /// initialization. This avoids creating and discarding a large and unnecessary swapchain object. Leave this at 0
+    /// to use the default, which is 4.
     /// <https://stereokit.net/Pages/StereoKit/SKSettings/renderMultisample.html>
     pub fn render_multisample(&mut self, render_multisample: i32) -> &mut Self {
         self.render_multisample = render_multisample;

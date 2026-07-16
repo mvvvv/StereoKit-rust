@@ -249,11 +249,11 @@ impl ScreenshotViewer {
             let height_i = self.picture_size.y as i32;
 
             Renderer::screenshot_capture(
-                move |dots, width, height| {
-                    Log::info(format!("data length {} -> size {}/{}", dots.len(), width, height));
+                move |dots, format, width, height| {
+                    Log::info(format!("Format {:?} data length {} -> size {}/{}", format, dots.len(), width, height));
                     let tex = Tex::find(CAPTURE_TEXTURE_ID).ok();
                     match tex {
-                        Some(mut tex) => tex.set_colors32(width, height, dots),
+                        Some(mut tex) => tex.set_colors_u8(width, height, dots, format.bytes_per_pixel()),
                         None => todo!(),
                     };
                 },

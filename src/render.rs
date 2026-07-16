@@ -6,7 +6,7 @@ use crate::{
     model::{Model, ModelT},
     system::{IAsset, Log, assets_releaseref_threadsafe},
     tex::{Tex, TexFormat, TexT},
-    util::{Color32, Color128, SphericalHarmonics},
+    util::{Color128, SphericalHarmonics},
 };
 use std::{
     self,
@@ -227,7 +227,7 @@ unsafe extern "C" {
     );
     pub fn render_screenshot_capture(
         render_on_screenshot_callback: ::std::option::Option<
-            unsafe extern "C" fn(color_buffer: *mut Color32, width: i32, height: i32, context: *mut c_void),
+            unsafe extern "C" fn(data: *mut c_void, format: TexFormat, width: i32, height: i32, context: *mut c_void),
         >,
         viewpoint: Pose,
         width: i32,
@@ -238,7 +238,7 @@ unsafe extern "C" {
     );
     pub fn render_screenshot_viewpoint(
         render_on_screenshot_callback: ::std::option::Option<
-            unsafe extern "C" fn(color_buffer: *mut Color32, width: i32, height: i32, context: *mut c_void),
+            unsafe extern "C" fn(data: *mut c_void, format: TexFormat, width: i32, height: i32, context: *mut c_void),
         >,
         camera: Matrix,
         projection: Matrix,
@@ -278,15 +278,22 @@ unsafe extern "C" {
 /// screenshot_capture trampoline
 ///
 /// see also [`Renderer::screenshot_capture`]
-unsafe extern "C" fn sc_capture_trampoline<F: FnMut(&[Color32], usize, usize)>(
-    color_buffer: *mut Color32,
+unsafe extern "C" fn sc_capture_trampoline<F: FnMut(&[u8], TexFormat, usize, usize)>(
+    data: *mut c_void,
+    format: TexFormat,
     width: i32,
     height: i32,
     context: *mut c_void,
 ) {
     let closure = unsafe { &mut *(context as *mut &mut F) };
+    let pixel_count = (width * height) as usize;
+    // Compute the byte length from the format's bytes-per-pixel, falling back to width*height
+    // (one byte per pixel) for formats without a known per-pixel size.
+    let bytes_per_pixel = format.bytes_per_pixel().max(1);
+    let byte_len = pixel_count * bytes_per_pixel;
     closure(
-        unsafe { std::slice::from_raw_parts(color_buffer, (width * height) as usize) },
+        unsafe { std::slice::from_raw_parts(data as *const u8, byte_len) },
+        format,
         width as usize,
         height as usize,
     )
@@ -401,10 +408,13 @@ impl Renderer {
         unsafe { render_set_filter(filter) }
     }
 
-    /// Allows you to set the multisample (MSAA) level of the render surface. Valid values are 1, 2, 4, 8, 16, though
-    /// some OpenXR runtimes may clamp this to lower values. Note that while this can greatly smooth out edges, it also
-    /// greatly increases RAM usage and fill rate, so use it sparingly. Only works in XR mode. If known in advance, set
-    /// this via [`crate::sk::SkSettings`] in initialization. This is a very costly change to make.
+    /// Allows you to set the multisample (MSAA) level of the render surface. Valid values are 1, 2, 4, and 8, though
+    /// this is clamped to what the GPU actually supports. Note that while this can greatly smooth out edges, it also
+    /// increases RAM usage and fill rate. How much it costs depends a lot on the GPU! Tiled renderers, like the mobile
+    /// chips in most standalone XR headsets, resolve MSAA in tile memory, which makes it nearly free. Desktop GPUs
+    /// instead pay memory bandwidth for the multisampled surface and for resolving it, so MSAA is far more expensive
+    /// there, especially at high resolutions. A value of 1 skips the multisampled surface entirely. If known in
+    /// advance, set this via SKSettings in initialization. This is a _very_ costly change to make. Defaults to 4.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/Multisample.html>
     ///
     /// see also [`render_set_multisample`]
@@ -944,7 +954,7 @@ impl Renderer {
     /// data directly from the render thread! You can use the color data directly by saving/processing it inside your
     /// callback, or you can keep the data alive for as long as it is referenced.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/Screenshot.html>
-    /// * `on_screenshot` : closure |&[Color32], width:usize, height:usize|
+    /// * `on_screenshot` : closure |&[u8], TexFormat, width:usize, height:usize|
     /// * `viewpoint` - is Pose::look_at(from_point, looking_at_point)
     /// * `width` - Size of the screenshot horizontally, in pixels.
     /// * `height`- Size of the screenshot vertically, in pixels
@@ -983,10 +993,10 @@ impl Renderer {
     ///     Renderer::add_mesh(&plane, &material, transform_plane,
     ///         None, None);
     ///     
-    ///     Renderer::screenshot_capture(move |dots, width, height| {
+    ///     Renderer::screenshot_capture(move |dots, format, width, height| {
     ///             let tex = Tex::find("CAPTURE_TEXTURE_ID").ok();
     ///             match tex {
-    ///                 Some(mut tex) => tex.set_colors32(width, height, dots),
+    ///                 Some(mut tex) => tex.set_colors_u8(width, height, dots, format.bytes_per_pixel()),
     ///                 None => panic!("CAPTURE_TEXTURE_ID not found!"),
     ///             };
     ///         },
@@ -996,7 +1006,7 @@ impl Renderer {
     /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/screenshot_capture.jpeg" alt="screenshot" width="200">
-    pub fn screenshot_capture<F: FnMut(&[Color32], usize, usize)>(
+    pub fn screenshot_capture<F: FnMut(&[u8], TexFormat, usize, usize)>(
         mut on_screenshot: F,
         viewpoint: Pose,
         width: i32,
@@ -1025,7 +1035,7 @@ impl Renderer {
     /// data directly from the render thread! You can use the color data directly by saving/processing it inside your
     /// callback, or you can keep the data alive for as long as it is referenced.
     ///  <https://stereokit.net/Pages/StereoKit/Renderer/Screenshot.html>
-    /// * `on_screenshot` : closure |&[Color32], width:usize, height:usize|
+    /// * `on_screenshot` : closure |&[u8], TexFormat, width:usize, height:usize|
     /// * `render` - A [`RenderBuilder`] describing the camera, projection, layer filter, clear behavior and viewport to
     ///   use for this screenshot. The screenshot is taken from the camera at index `camera_index`.
     /// * `camera_index` - Index of the camera/projection pair in `render` to take the screenshot from. 0 in most cases.
@@ -1068,10 +1078,10 @@ impl Renderer {
     ///     Renderer::add_mesh(&plane, &material, transform_plane,
     ///         None, None);
     ///
-    ///     Renderer::screenshot_viewpoint(move |dots, width, height| {
+    ///     Renderer::screenshot_viewpoint(move |dots, format, width, height| {
     ///             let tex = Tex::find("CAPTURE_TEXTURE_ID").ok();
     ///             match tex {
-    ///                 Some(mut tex) => tex.set_colors32(width, height, dots),
+    ///                 Some(mut tex) => tex.set_colors_u8(width, height, dots, format.bytes_per_pixel()),
     ///                 None => panic!("CAPTURE_TEXTURE_ID not found!"),
     ///             };
     ///         },
@@ -1082,7 +1092,7 @@ impl Renderer {
     /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/screenshot_viewpoint.jpeg" alt="screenshot" width="200">
-    pub fn screenshot_viewpoint<F: FnMut(&[Color32], usize, usize)>(
+    pub fn screenshot_viewpoint<F: FnMut(&[u8], TexFormat, usize, usize)>(
         on_screenshot: F,
         render: &RenderBuilder,
         camera_index: usize,
@@ -2084,7 +2094,7 @@ impl RenderList {
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{render::{RenderBuilder, Renderer, RenderClear, RenderLayer, RenderList},
 ///                      maths::{Vec3, Quat, Matrix}, tex::{Tex, TexFormat}, sprite::Sprite, system::Pivot,
-///                      mesh::Mesh, material::Material, util::{named_colors, Color128, Color32}};
+///                      mesh::Mesh, material::Material, util::{named_colors, Color128}};
 ///
 /// let sun = Mesh::generate_sphere(2.0, None);
 /// let material_sun = Material::pbr();
@@ -2123,7 +2133,7 @@ impl RenderList {
 ///     render.render_to(&tex1, 0);
 ///
 ///     // 2 - screenshot
-///     render.screenshot(move |_pixels: &[Color32], _w: usize, _h: usize| {},
+///     render.screenshot(move |_pixels: &[u8], _format: TexFormat, _w: usize, _h: usize| {},
 ///                       0, 200, 200, TexFormat::Rgba32Srgb);
 ///
 ///     // 3 - draw_now
@@ -2313,7 +2323,7 @@ impl RenderBuilder {
     /// callback, or you can keep the data alive for as long as it is referenced.
     /// [`RenderBuilder::material_variant`] is not used here as we want a screenshot.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/Screenshot.html>
-    /// * `on_screenshot` - closure |&[Color32], width:usize, height:usize|
+    /// * `on_screenshot` - closure |&[u8], TexFormat, width:usize, height:usize|
     /// * `camera_index` - Index of the camera/projection pair to render from. 0 in most of the case.
     /// * `width` - Size of the screenshot horizontally, in pixels.
     /// * `height`- Size of the screenshot vertically, in pixels
@@ -2323,7 +2333,7 @@ impl RenderBuilder {
     /// * `tex_format` - The pixel format of the color data. If None will use default value of TexFormat::Rgba32Srgb
     ///
     /// see also [`render_screenshot_viewpoint`] [`Renderer::screenshot_capture`] [`Renderer::screenshot`]
-    pub fn screenshot<F: FnMut(&[Color32], usize, usize)>(
+    pub fn screenshot<F: FnMut(&[u8], TexFormat, usize, usize)>(
         &self,
         mut on_screenshot: F,
         camera_index: usize,

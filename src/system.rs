@@ -636,6 +636,25 @@ pub enum BackendGraphics {
     Vulkan = 6,
 }
 
+/// Identifies a Vulkan queue family that StereoKit's Vulkan backend interacts with. Use this with the queue accessors
+/// on [`BackendVulkan`].
+/// <https://stereokit.net/Pages/StereoKit/BackendVulkanQueue.html>
+///
+/// see also [`BackendVulkan`]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(u32)]
+pub enum BackendVulkanQueue {
+    /// The primary graphics queue. This is the queue StereoKit submits all of its rendering work to, and the only queue
+    /// with a handle currently available via [`BackendVulkan::queue`].
+    Graphics = 0,
+    /// A queue family suitable for transfer operations. StereoKit does not yet use a dedicated transfer queue, so no
+    /// queue handle is available here yet, but the family index is provided for advanced interop.
+    Transfer = 1,
+    /// A queue family suitable for Vulkan video decode. Not present on all devices, in which case the family index will
+    /// be `u32::MAX`.
+    VideoDecode = 2,
+}
+
 /// XrInstance type
 pub type OpenXRHandleT = u64;
 
@@ -710,19 +729,14 @@ unsafe extern "C" {
     pub fn backend_android_get_activity() -> *mut c_void;
     pub fn backend_android_get_jni_env() -> *mut c_void;
     pub fn backend_graphics_get() -> BackendGraphics;
-    pub fn backend_d3d11_get_d3d_device() -> *mut c_void;
-    pub fn backend_d3d11_get_d3d_context() -> *mut c_void;
-    pub fn backend_d3d11_get_deferred_d3d_context() -> *mut c_void;
-    pub fn backend_d3d11_get_deferred_mtx() -> *mut c_void;
-    pub fn backend_d3d11_get_main_thread_id() -> u32;
-    pub fn backend_opengl_wgl_get_hdc() -> *mut c_void;
-    pub fn backend_opengl_wgl_get_hglrc() -> *mut c_void;
-    pub fn backend_opengl_glx_get_context() -> *mut c_void;
-    pub fn backend_opengl_glx_get_display() -> *mut c_void;
-    pub fn backend_opengl_glx_get_drawable() -> *mut c_void;
-    pub fn backend_opengl_egl_get_context() -> *mut c_void;
-    pub fn backend_opengl_egl_get_config() -> *mut c_void;
-    pub fn backend_opengl_egl_get_display() -> *mut c_void;
+    pub fn backend_vulkan_get_frame_fence_fd() -> i32;
+    pub fn backend_vulkan_get_instance() -> *mut c_void;
+    pub fn backend_vulkan_get_physical_device() -> *mut c_void;
+    pub fn backend_vulkan_get_device() -> *mut c_void;
+    pub fn backend_vulkan_get_queue(queue: BackendVulkanQueue) -> *mut c_void;
+    pub fn backend_vulkan_get_queue_family_index(queue: BackendVulkanQueue) -> u32;
+    pub fn backend_vulkan_queue_lock(queue: BackendVulkanQueue);
+    pub fn backend_vulkan_queue_unlock(queue: BackendVulkanQueue);
 }
 
 impl Backend {
@@ -1355,20 +1369,16 @@ impl BackendAndroid {
 pub struct BackendD3D11;
 
 impl BackendD3D11 {
-    /// This is the main ID3D11DeviceContext* StereoKit uses for rendering.
+    /// This is the main ID3D11DeviceContext* StereoKit uses for rendering. (No longer supported, always returns null)
     /// <https://stereokit.net/Pages/StereoKit/Backend.D3D11/D3DContext.html>
-    ///
-    /// see also [`backend_d3d11_get_d3d_context`]
     pub fn d3d_context() -> *mut c_void {
-        unsafe { backend_d3d11_get_d3d_context() }
+        null_mut()
     }
 
-    /// This is the main ID3D11Device* StereoKit uses for rendering.
+    /// This is the main ID3D11Device* StereoKit uses for rendering. (No longer supported, always returns null)
     /// <https://stereokit.net/Pages/StereoKit/Backend.D3D11/D3DDevice.html>
-    ///
-    /// see also [`backend_d3d11_get_d3d_device`]
     pub fn d3d_device() -> *mut c_void {
-        unsafe { backend_d3d11_get_d3d_device() }
+        null_mut()
     }
 }
 
@@ -1392,20 +1402,18 @@ impl BackendD3D11 {
 pub struct BackendOpenGLWGL;
 
 impl BackendOpenGLWGL {
-    /// This is the Handle to Device Context HDC StereoKit uses with wglMakeCurrent.
+    /// This is the Handle to Device Context HDC StereoKit uses with `wglMakeCurrent`. (No longer supported, always
+    /// returns null)
     /// <https://stereokit.net/Pages/StereoKit/Backend.OpenGL_WGL/HDC.html>
-    ///
-    /// see also [`backend_opengl_wgl_get_hdc`]
     pub fn hdc() -> *mut c_void {
-        unsafe { backend_opengl_wgl_get_hdc() }
+        null_mut()
     }
 
-    /// This is the Handle to an OpenGL Rendering Context HGLRC StereoKit uses with wglMakeCurrent.
+    /// This is the Handle to an OpenGL Rendering Context HGLRC StereoKit uses with `wglMakeCurrent`. (No longer
+    /// supported, always returns null)
     /// <https://stereokit.net/Pages/StereoKit/Backend.OpenGL_WGL/HGLRC.html>
-    ///
-    /// see also [`backend_opengl_wgl_get_hglrc`]
     pub fn hglrc() -> *mut c_void {
-        unsafe { backend_opengl_wgl_get_hglrc() }
+        null_mut()
     }
 }
 
@@ -1434,20 +1442,140 @@ impl BackendOpenGLWGL {
 pub struct BackendOpenGLESEGL;
 
 impl BackendOpenGLESEGL {
-    /// This is the EGLContext StereoKit receives from eglCreateContext.
+    /// This is the EGLContext StereoKit receives from `eglCreateContext`. (No longer supported, always returns null)
     /// <https://stereokit.net/Pages/StereoKit/Backend.OpenGLES_EGL/Context.html>
-    ///
-    /// see also [`backend_opengl_egl_get_context`]
     pub fn context() -> *mut c_void {
-        unsafe { backend_opengl_egl_get_context() }
+        null_mut()
     }
 
-    /// This is the EGLDisplay StereoKit receives from eglGetDisplay
+    /// This is the EGLDisplay StereoKit receives from `eglGetDisplay`. (No longer supported, always returns null)
     /// <https://stereokit.net/Pages/StereoKit/Backend.OpenGLES_EGL/Display.html>
-    ///
-    /// see also [`backend_opengl_egl_get_display`]
     pub fn display() -> *mut c_void {
-        unsafe { backend_opengl_egl_get_display() }
+        null_mut()
+    }
+}
+
+/// When using Vulkan for rendering, this contains a number of variables that may be useful for doing advanced rendering
+/// tasks. Vulkan is StereoKit's only rendering backend, so these are valid on all supported platforms after
+/// [`crate::sk::Sk::init`].
+/// <https://stereokit.net/Pages/StereoKit/Backend.Vulkan.html>
+///
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::system::{BackendVulkan, BackendVulkanQueue};
+///
+/// let instance         = BackendVulkan::instance();
+/// let physical_device  = BackendVulkan::physical_device();
+/// let device           = BackendVulkan::device();
+///
+/// let graphics_queue       = BackendVulkan::queue(BackendVulkanQueue::Graphics);
+/// let graphics_queue_index = BackendVulkan::queue_family_index(BackendVulkanQueue::Graphics);
+/// let transfer_queue_index = BackendVulkan::queue_family_index(BackendVulkanQueue::Transfer);
+/// let video_decode_index   = BackendVulkan::queue_family_index(BackendVulkanQueue::VideoDecode);
+///
+/// BackendVulkan::queue_lock(BackendVulkanQueue::Graphics);
+/// // …submit work to graphics_queue here…
+/// BackendVulkan::queue_unlock(BackendVulkanQueue::Graphics);
+///
+/// let fence_fd = BackendVulkan::get_frame_fence_fd();
+/// # assert_ne!(instance, std::ptr::null_mut());
+/// # assert_ne!(physical_device, std::ptr::null_mut());
+/// # assert_ne!(device, std::ptr::null_mut());
+/// # assert_ne!(graphics_queue, std::ptr::null_mut());
+/// # assert_eq!(graphics_queue_index, 0);
+/// # assert_eq!(transfer_queue_index, 1);
+/// # assert_ne!(video_decode_index, 2);
+/// # assert_ne!(fence_fd, 0);
+/// # sk::Sk::shutdown();
+/// ```
+pub struct BackendVulkan;
+
+impl BackendVulkan {
+    /// The `VkInstance` StereoKit created (or was given, when running under OpenXR) for rendering. Valid after
+    /// [`crate::sk::Sk::init`].
+    /// <https://stereokit.net/Pages/StereoKit/Backend.Vulkan/Instance.html>
+    ///
+    /// see also [`backend_vulkan_get_instance`]
+    pub fn instance() -> *mut c_void {
+        unsafe { backend_vulkan_get_instance() }
+    }
+
+    /// The `VkPhysicalDevice` StereoKit is rendering with. Valid after [`crate::sk::Sk::init`].
+    /// <https://stereokit.net/Pages/StereoKit/Backend.Vulkan/PhysicalDevice.html>
+    ///
+    /// see also [`backend_vulkan_get_physical_device`]
+    pub fn physical_device() -> *mut c_void {
+        unsafe { backend_vulkan_get_physical_device() }
+    }
+
+    /// The `VkDevice` StereoKit created (or was given, when running under OpenXR) for rendering. Valid after
+    /// [`crate::sk::Sk::init`].
+    /// <https://stereokit.net/Pages/StereoKit/Backend.Vulkan/Device.html>
+    ///
+    /// see also [`backend_vulkan_get_device`]
+    pub fn device() -> *mut c_void {
+        unsafe { backend_vulkan_get_device() }
+    }
+
+    /// Gets the `VkQueue` StereoKit uses for the given queue family. Currently only [`BackendVulkanQueue::Graphics`]
+    /// has a handle available; the others return null until StereoKit makes real use of them. If you submit work to
+    /// this queue, you MUST guard it with [`BackendVulkan::queue_lock`] / [`BackendVulkan::queue_unlock`], since
+    /// StereoKit shares it across threads.
+    /// <https://stereokit.net/Pages/StereoKit/Backend.Vulkan/Queue.html>
+    /// * `queue` - Which queue family to retrieve the queue for.
+    ///
+    /// Returns a `VkQueue` handle, or null if no queue handle is available for that family.
+    ///
+    /// see also [`backend_vulkan_get_queue`]
+    pub fn queue(queue: BackendVulkanQueue) -> *mut c_void {
+        unsafe { backend_vulkan_get_queue(queue) }
+    }
+
+    /// Gets the queue family index StereoKit uses for the given queue family. This is the value you'd use when creating
+    /// command pools or performing queue family ownership transfers.
+    /// <https://stereokit.net/Pages/StereoKit/Backend.Vulkan/QueueFamilyIndex.html>
+    /// * `queue` - Which queue family to look up.
+    ///
+    /// Returns the Vulkan queue family index, or `u32::MAX` if that family is not available on this device (for example,
+    /// video decode).
+    ///
+    /// see also [`backend_vulkan_get_queue_family_index`]
+    pub fn queue_family_index(queue: BackendVulkanQueue) -> u32 {
+        unsafe { backend_vulkan_get_queue_family_index(queue) }
+    }
+
+    /// Locks the mutex StereoKit uses to guard the given queue family, so you can safely submit work to a queue
+    /// StereoKit also uses. Always pair this with [`BackendVulkan::queue_unlock`]. Note that queue families that
+    /// resolve to the same index share a single lock, so don't nest locks across two families that may alias.
+    /// <https://stereokit.net/Pages/StereoKit/Backend.Vulkan/QueueLock.html>
+    /// * `queue` - Which queue family's lock to acquire.
+    ///
+    /// see also [`backend_vulkan_queue_lock`] [`BackendVulkan::queue_unlock`]
+    pub fn queue_lock(queue: BackendVulkanQueue) {
+        unsafe { backend_vulkan_queue_lock(queue) }
+    }
+
+    /// Releases the queue family lock acquired via [`BackendVulkan::queue_lock`].
+    /// <https://stereokit.net/Pages/StereoKit/Backend.Vulkan/QueueUnlock.html>
+    /// * `queue` - Which queue family's lock to release.
+    ///
+    /// see also [`backend_vulkan_queue_unlock`] [`BackendVulkan::queue_lock`]
+    pub fn queue_unlock(queue: BackendVulkanQueue) {
+        unsafe { backend_vulkan_queue_unlock(queue) }
+    }
+
+    /// Returns a sync file descriptor for the most recently submitted frame's GPU work! Waiting on it (e.g. via
+    /// `EGL_ANDROID_native_fence_sync`) guarantees all rendering submitted up to the last frame end has completed. Call
+    /// from StereoKit's main thread. The caller owns the descriptor and must close it. Only functional on platforms and
+    /// devices supporting external fence export.
+    /// <https://stereokit.net/Pages/StereoKit/Backend.Vulkan/GetFrameFenceFd.html>
+    ///
+    /// Returns a sync file descriptor, or -1 when unsupported or no frame has been submitted yet.
+    ///
+    /// see also [`backend_vulkan_get_frame_fence_fd`]
+    pub fn get_frame_fence_fd() -> i32 {
+        unsafe { backend_vulkan_get_frame_fence_fd() }
     }
 }
 

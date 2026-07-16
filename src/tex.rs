@@ -295,6 +295,34 @@ pub enum TexFormat {
 }
 
 impl TexFormat {
+    /// Returns the number of bytes per pixel for uncompressed formats, or `0` for block-compressed,
+    /// depth/stencil, and multi-plane video formats where a simple per-pixel byte count doesn't apply.
+    ///
+    /// This is useful for interpreting raw pixel buffers, such as those returned by screenshot callbacks.
+    /// For `0`-returning formats, the buffer layout is format-specific (block-based or multi-plane) and must be
+    /// handled with knowledge of the individual format.
+    pub const fn bytes_per_pixel(self) -> usize {
+        match self {
+            // 32-bit RGBA/BGRA (4 bytes)
+            Self::Rgba32Srgb | Self::Rgba32Linear | Self::Bgra32Srgb | Self::Bgra32Linear => 4,
+            // 64-bit RGBA (8 bytes)
+            Self::Rgba64un | Self::Rgba64sn | Self::Rgba64ui | Self::Rgba64si | Self::Rgba64f => 8,
+            // 128-bit RGBA (16 bytes)
+            Self::Rgba128 => 16,
+            // Packed 32-bit (4 bytes)
+            Self::Rg11b10 | Self::Rgb10a2 | Self::Rgb9e5 => 4,
+            // 8-bit single/dual channel (1-2 bytes)
+            Self::R8 | Self::R8sn | Self::R8ui | Self::R8si | Self::R8Srgb => 1,
+            Self::R8g8 => 2,
+            // 16-bit single channel (2 bytes)
+            Self::R16un | Self::R16sn | Self::R16ui | Self::R16si | Self::R16f => 2,
+            // 32-bit single channel (4 bytes)
+            Self::R32ui | Self::R32si | Self::R32f => 4,
+            // Depth/stencil, compressed, and video formats: no simple per-pixel byte count
+            _ => 0,
+        }
+    }
+
     /// 16-bit unsigned-normalized R/G/B/A (64 bpp). Alias for Rgba64un.
     #[allow(non_upper_case_globals)]
     pub const Rgba64: Self = Self::Rgba64un;
@@ -565,6 +593,8 @@ unsafe extern "C" {
         owned: Bool32T,
     );
     pub fn tex_get_surface(texture: TexT) -> *mut c_void;
+    pub fn tex_create_from_hardware_buffer(hardware_buffer: *mut c_void, owns_buffer: Bool32T) -> TexT;
+    pub fn tex_get_hardware_buffer(texture: TexT) -> *mut c_void;
     pub fn tex_addref(texture: TexT);
     pub fn tex_release(texture: TexT);
     pub fn tex_asset_state(texture: TexT) -> AssetState;
@@ -1662,7 +1692,7 @@ impl Tex {
     /// let color_dots = [127u8; 16 * 16 * 4];
     /// let mut tex = Tex::new(TexType::Image, TexFormat::Rgba32Srgb, None);
     ///
-    /// tex.set_colors_u8(16, 16, &color_dots, 4);
+    /// tex.set_colors_u8(16, 16, &color_dots, TexFormat::Rgba32Srgb.bytes_per_pixel());
     ///
     /// let check_dots = [Color32::BLACK; 16 * 16];
     /// assert!(tex.get_color_data::<Color32>(&check_dots, 0));
@@ -1672,7 +1702,7 @@ impl Tex {
     pub fn set_colors_u8(&mut self, width: usize, height: usize, data: &[u8], color_size: usize) -> &mut Self {
         if width * height * color_size != data.len() {
             Log::err(format!(
-                "{}x{}x{} differ from {} for Tex::set_color_u8 for texture {}",
+                "{}x{}x{} differ from {} for Tex::set_colors_u8 for texture {}",
                 height,
                 width,
                 color_size,
@@ -2066,6 +2096,34 @@ impl Tex {
             )
         };
         self
+    }
+
+    /// Imports an Android AHardwareBuffer as an external texture, YCbCr camera or decoder buffers come in via sampler
+    /// conversion. This allows zero-copy access to hardware decoder or camera output. This is only functional on
+    /// Android, and requires device support for hardware buffer import.
+    /// <https://stereokit.net/Pages/StereoKit/Tex/FromHardwareBuffer.html>
+    /// * `hardware_buffer` - An `AHardwareBuffer*` coerced into a `*mut c_void`.
+    /// * `owns_buffer` - Should ownership of the hardware buffer be passed on to StereoKit? If so, StereoKit will release
+    ///   it when the texture is destroyed.
+    ///
+    /// Returns a `Tex` asset wrapping the hardware buffer, or `None` if the buffer is null, the device doesn't support
+    /// importing hardware buffers, or the import failed.
+    ///
+    /// # Safety
+    /// `hardware_buffer` must be a valid `AHardwareBuffer*` pointer, or null. Passing an invalid pointer is undefined
+    /// behavior.
+    ///
+    /// see also [`tex_create_from_hardware_buffer`] [`Tex::get_hardware_buffer`]
+    pub unsafe fn from_hardware_buffer(hardware_buffer: *mut c_void, owns_buffer: bool) -> Option<Tex> {
+        let inst = unsafe { tex_create_from_hardware_buffer(hardware_buffer, owns_buffer as Bool32T) };
+        let nn = NonNull::new(inst)?;
+        // Match the C# behavior: if the asset state indicates a failed/error texture, release the ref and return None.
+        let state = unsafe { tex_asset_state(inst) };
+        if (state as i32) < (AssetState::None as i32) {
+            unsafe { crate::system::assets_releaseref_threadsafe(inst as *mut c_void) };
+            return None;
+        }
+        Some(Tex(nn))
     }
 
     /// Set the texture’s size without providing any color data. In most cases, you should probably just call SetColors
@@ -2578,6 +2636,18 @@ impl Tex {
     /// see example in [`Tex::set_native_surface`]
     pub fn get_native_surface(&self) -> *mut c_void {
         unsafe { tex_get_surface(self.0.as_ptr()) }
+    }
+
+    /// This will return the `AHardwareBuffer*` backing this texture, if it was created from one. This call will block
+    /// execution until the texture is loaded, if it is not already.
+    /// <https://stereokit.net/Pages/StereoKit/Tex/GetHardwareBuffer.html>
+    ///
+    /// Returns an `AHardwareBuffer*` coerced into a `*mut c_void`, or null if the texture is not backed by a hardware
+    /// buffer, or when not on Android.
+    ///
+    /// see also [`tex_get_hardware_buffer`] [`Tex::from_hardware_buffer`]
+    pub fn get_hardware_buffer(&self) -> *mut c_void {
+        unsafe { tex_get_hardware_buffer(self.0.as_ptr()) }
     }
 
     /// The width of the texture, in pixels. This will be a blocking call if AssetState is less than LoadedMeta so None
