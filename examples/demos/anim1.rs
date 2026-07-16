@@ -99,7 +99,7 @@ impl Anim1 {
             None,
             true,
         );
-        Log::info(format!("model <~GRN>node count<~clr> : <~RED>{}<~clr> !!!", &mobile.get_nodes().get_count()));
+        Log::info(format!("model <~GRN>node count<~clr> : <~RED>{}<~clr> !!!", mobile.get_nodes().get_count()));
         for n in nodes.all() {
             Log::info(format!("---- : {:?} id: {:?} ", n.get_name(), n.get_id()));
             if let Some(mesh) = n.get_mesh() {

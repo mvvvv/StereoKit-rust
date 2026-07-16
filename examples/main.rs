@@ -45,7 +45,9 @@ pub fn android_main(app: AndroidApp) {
     BackendOpenXR::request_ext("XR_META_virtual_keyboard");
     BackendOpenXR::request_ext("XR_META_simultaneous_hands_and_controllers");
     //BackendOpenXR::request_ext("XR_META_detached_controllers");
+    // Required by the Layers1 demo for cylinder composition layers.
     BackendOpenXR::request_ext("XR_KHR_android_surface_swapchain");
+    BackendOpenXR::request_ext("XR_KHR_composition_layer_cylinder");
 
     let sk = settings.init(app).unwrap();
 

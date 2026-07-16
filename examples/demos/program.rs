@@ -202,7 +202,7 @@ pub fn launch(mut sk: Sk, _is_testing: bool, start_test: String) {
     if !start_test.is_empty() {
         for test in tests.iter() {
             if test.name.eq(&start_test) {
-                Log::info(format!("Starting first scene: {}", &test.name.to_string()));
+                Log::info(format!("Starting first scene: {}", test.name));
                 next_scene = Some(test);
             }
         }
@@ -307,7 +307,7 @@ pub fn launch(mut sk: Sk, _is_testing: bool, start_test: String) {
                         + ui_settings.padding * 2.0
                         + inflate;
                     if Ui::button(&test_in_line.name).size(Vec2::new(curr_width, 0.0)).press() {
-                        Log::info(format!("Starting scene: {}", &test_in_line.name.to_string()));
+                        Log::info(format!("Starting scene: {}", test_in_line.name));
                         next_scene = Some(test_in_line);
                     }
                     Ui::same_line();
@@ -324,7 +324,7 @@ pub fn launch(mut sk: Sk, _is_testing: bool, start_test: String) {
             let curr_width = Text::size_layout(&test.name, Some(style), None).x + ui_settings.padding * 2.0;
 
             if Ui::button(&test.name).size(Vec2::new(curr_width, 0.0)).press() {
-                Log::info(format!("Starting scene: {}", &test.name.to_string()));
+                Log::info(format!("Starting scene: {}", test.name));
                 next_scene = Some(test);
             }
             Ui::same_line();

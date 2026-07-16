@@ -95,7 +95,7 @@ fn main() {
         .app_name("rust Demos")
         .origin(OriginMode::Floor)
         .render_multisample(4) // aka the default aka 0
-        .render_scaling(1.5)
+        //.render_scaling(1.5) create distortion on SteamVR for Quest
         .depth_mode(DepthMode::D32)
         .omit_empty_frames(true)
         .log_filter(LogLevel::Diagnostic)
@@ -116,6 +116,8 @@ fn main() {
     BackendOpenXR::request_ext("XR_FB_display_refresh_rate");
     BackendOpenXR::request_ext("XR_META_virtual_keyboard");
     BackendOpenXR::request_ext("XR_FB_render_model");
+    // Required by the Layers1 demo for cylinder composition layers.
+    BackendOpenXR::request_ext("XR_KHR_composition_layer_cylinder");
 
     let sk = settings.init().unwrap();
     launch(sk, is_testing, start_test);

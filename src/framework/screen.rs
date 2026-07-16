@@ -161,6 +161,9 @@ pub struct Screen {
     openxr_swapchain: Option<Swapchain>,
     layer_cache: SwapchainLayerCache,
 
+    /// Cached availability of the `XR_KHR_composition_layer_cylinder` extension.
+    cylinder_layer_available: bool,
+
     /// Text displayed via [`Ui::text_at`] inside the control window on every frame.
     /// Set with [`Screen::set_overlay_text`]. Empty string disables the display.
     overlay_text: String,
@@ -215,6 +218,7 @@ impl Screen {
 
             openxr_swapchain: None,
             layer_cache: SwapchainLayerCache::default(),
+            cylinder_layer_available: XrCompLayers::cylinder_layer_available(),
 
             overlay_text: String::new(),
             extra_param_ui: None,
@@ -560,7 +564,7 @@ impl Screen {
             // Only per-frame computation: translate cached local_offset by current position.
             let at = self.screen_pose.position + cache.local_offset;
 
-            if cache.use_cylinder {
+            if cache.use_cylinder && self.cylinder_layer_available {
                 let cylinder_position = at + cache.layer_orientation * Vec3::new(0.0, 0.0, cache.radius);
                 let cylinder_pose = Pose::new(cylinder_position, Some(cache.layer_orientation));
                 XrCompLayers::submit_cylinder_layer(

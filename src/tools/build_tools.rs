@@ -143,9 +143,9 @@ pub fn compile_hlsl(
     shaders_include.push("tools");
     shaders_include.push("include");
 
-    println!("skshaderc executable used :  {:?}", &skshaderc);
-    println!("Shaders sources are here : {:?}", &shaders_source_path);
-    println!("Shaders compiled there : {:?}", &shaders_path);
+    println!("skshaderc executable used :  {:?}", skshaderc);
+    println!("Shaders sources are here : {:?}", shaders_source_path);
+    println!("Shaders compiled there : {:?}", shaders_path);
 
     let excluded_extensions = [OsStr::new("hlsli"), OsStr::new("sks"), OsStr::new("txt"), OsStr::new("md")];
     let mut failed_shaders: Vec<PathBuf> = vec![];
@@ -182,7 +182,7 @@ pub fn compile_hlsl(
     }
 
     for (file, out_path) in &to_compile {
-        println!("Compiling file : {:?}", &file);
+        println!("Compiling file : {:?}", file);
         let mut cmd = if with_wine {
             let mut c = Command::new("wine");
             c.arg(skshaderc.clone());

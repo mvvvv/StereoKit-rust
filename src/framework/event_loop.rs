@@ -1063,7 +1063,7 @@ impl Steppers {
             match stepper_h.state {
                 StepperState::Initializing => {
                     if stepper_h.stepper.initialize_done() {
-                        Log::info(format!("Stepper {} is initialized.", &stepper_h.id));
+                        Log::info(format!("Stepper {} is initialized.", stepper_h.id));
                         stepper_h.state = StepperState::Running;
                         token.event_report.push(StepperAction::event(stepper_h.id.as_str(), ISTEPPER_RUNNING, "true"));
                     }
@@ -1079,7 +1079,7 @@ impl Steppers {
         }
         self.running_steppers.retain(|stepper_h| {
             if removed_steppers.contains(&stepper_h.id) {
-                Log::info(format!("Stepper {} is removed.", &stepper_h.id));
+                Log::info(format!("Stepper {} is removed.", stepper_h.id));
                 false
             } else {
                 true
@@ -1217,7 +1217,7 @@ impl Steppers {
             }
             self.running_steppers.retain(|stepper_h| {
                 if removed_steppers.contains(&stepper_h.id) {
-                    Log::info(format!("Stepper {} is removed.", &stepper_h.id));
+                    Log::info(format!("Stepper {} is removed.", stepper_h.id));
                     false
                 } else {
                     true

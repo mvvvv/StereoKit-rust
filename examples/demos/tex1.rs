@@ -8,8 +8,8 @@ use stereokit_rust::{
     tex::{Tex, TexFormat, TexType},
     tools::notif::HudNotification,
     util::{
-        Color32, Color128, Gradient,
         named_colors::{BLACK, BLUE, LIGHT_BLUE, RED, YELLOW},
+        Color128, Color32, Gradient,
     },
 };
 
@@ -274,7 +274,7 @@ impl Tex1 {
             Some(&mat_wireframe),
             true,
         );
-        Log::info(format!("model <~GRN>node count<~clr> : <~RED>{}<~clr> !!!", &nodes.get_count()));
+        Log::info(format!("model <~GRN>node count<~clr> : <~RED>{}<~clr> !!!", nodes.get_count()));
         for n in nodes.all() {
             Log::info(format!("---- : {:?} id: {:?} ", n.get_name(), n.get_id()));
             if let Some(mesh) = n.get_mesh() {

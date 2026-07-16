@@ -177,7 +177,7 @@ impl ScreenshotViewer {
                             let width = u32::from_be_bytes(four_u8) as usize;
                             four_u8.copy_from_slice(&buf[8..12]);
                             let height = u32::from_be_bytes(four_u8) as usize;
-                            Log::diag(format!("RGBA file {} with size is {}x{}", &file_name, width, height));
+                            Log::diag(format!("RGBA file {} with size is {}x{}", file_name, width, height));
                             if rgba_tag != "RGBA" {
                                 let mut data = vec![];
                                 match file.read_to_end(&mut data) {
@@ -194,13 +194,13 @@ impl ScreenshotViewer {
                                 Log::warn(format!("File is not an RGBA {file_name}"));
                             }
                         } else {
-                            Log::warn(format!("Screenshoot Error unable to read rgba file infos {}", &file_name));
+                            Log::warn(format!("Screenshoot Error unable to read rgba file infos {}", file_name));
                         }
                     } else {
-                        Log::warn(format!("Screenshoot Error unable to get texture ScreenshotTex {}", &file_name));
+                        Log::warn(format!("Screenshoot Error unable to get texture ScreenshotTex {}", file_name));
                     }
                 } else {
-                    Log::err(format!("ScreenshotViewer : file {} is not valid", &file_name))
+                    Log::err(format!("ScreenshotViewer : file {} is not valid", file_name))
                 }
                 file_name_lock.clear();
             }
@@ -338,16 +338,16 @@ fn save_screenshot(file_name: &str) {
                     // Vive le format RGBA !!! https://github.com/bzotto/rgba_bitmap
                     Ok(mut file) => {
                         if let Err(err) = file.write_fmt(format_args!("RGBA")) {
-                            Log::warn(format!("Screenshoot Error when writing RGBA {} : {:?}", &name, err));
+                            Log::warn(format!("Screenshoot Error when writing RGBA {} : {:?}", name, err));
                         }
                         if let Err(err) = file.write(&width.to_be_bytes()[4..]) {
-                            Log::warn(format!("Screenshoot Error when writing width {} : {:?}", &name, err));
+                            Log::warn(format!("Screenshoot Error when writing width {} : {:?}", name, err));
                         }
                         if let Err(err) = file.write(&height.to_be_bytes()[4..]) {
-                            Log::warn(format!("Screenshoot Error when writing height {} : {:?}", &name, err));
+                            Log::warn(format!("Screenshoot Error when writing height {} : {:?}", name, err));
                         }
                         if let Err(err) = file.write_all(data_slice) {
-                            Log::warn(format!("Screenshoot Error when writing raw image {} : {:?}", &name, err));
+                            Log::warn(format!("Screenshoot Error when writing raw image {} : {:?}", name, err));
                         }
                     }
                     Err(err) => Log::warn(format!("Screenshoot Error when creating file {name} : {err:?}")),

@@ -165,6 +165,23 @@ impl XrCompLayers {
             && self.xr_release_swapchain_image.is_some()
     }
 
+    /// Returns `true` if the `XR_KHR_composition_layer_cylinder` extension is enabled.
+    ///
+    /// Use this to decide whether cylinder layer submission is available before
+    /// attempting it, or to fall back to a quad layer.
+    ///
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::tools::xr_comp_layers::XrCompLayers;
+    /// if XrCompLayers::cylinder_layer_available() {
+    ///     println!("Cylinder layers are supported!");
+    /// }
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn cylinder_layer_available() -> bool {
+        crate::system::BackendOpenXR::ext_enabled("XR_KHR_composition_layer_cylinder")
+    }
+
     /// Convert a StereoKit `TexFormat` into the corresponding native OpenXR format value.
     pub fn to_native_format(format: TexFormat) -> i64 {
         match Backend::graphics() {
@@ -238,6 +255,14 @@ impl XrCompLayers {
     /// Displays a texture mapped onto a cylinder section in 3D space.
     /// Defined by [`XR_KHR_composition_layer_cylinder`](https://registry.khronos.org/OpenXR/specs/1.1/html/xrspec.html#XR_KHR_composition_layer_cylinder).
     ///
+    /// > **⚠️ Extension requirement:** This requires the `XR_KHR_composition_layer_cylinder`
+    /// > extension to be enabled. You MUST request it before `Sk::initialize()`:
+    /// > ```no_run
+    /// # use stereokit_rust::system::BackendOpenXR;
+    /// BackendOpenXR::request_ext("XR_KHR_composition_layer_cylinder");
+    /// ```
+    /// If the extension is not enabled, this method logs a warning and returns without submitting.
+    ///
     /// # Parameters
     /// - `world_pose`: Pose (position and orientation) of the cylinder's axis center.
     /// - `radius`: Radius of the cylinder in meters.
@@ -262,6 +287,14 @@ impl XrCompLayers {
         visibility: Option<EyeVisibility>,
         xr_space: Option<u64>,
     ) {
+        if !BackendOpenXR::ext_enabled("XR_KHR_composition_layer_cylinder") {
+            Log::warn(
+                "XrCompLayers: Cannot submit cylinder layer - XR_KHR_composition_layer_cylinder extension is not \
+                 enabled. Request it with BackendOpenXR::request_ext(\"XR_KHR_composition_layer_cylinder\") BEFORE \
+                 sk::Sk::initialize().",
+            );
+            return;
+        }
         let orientation = world_pose.orientation;
         let xr_space = xr_space.unwrap_or_else(BackendOpenXR::space);
         let mut cylinder_layer = CompositionLayerCylinderKHR {

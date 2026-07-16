@@ -134,30 +134,39 @@ impl Layers1 {
             self.quad_render_list
                 .add_mesh(Mesh::sphere(), mat, Matrix::s(0.1 * Vec3::ONE), named_colors::WHITE, None);
 
-            // Create a second swapchain for the cylinder layer
-            if let Some(comp_layer) = XrCompLayers::new() {
-                if let Some(handle) = comp_layer.try_make_swapchain(
-                    512,
-                    256,
-                    TexFormat::Rgba32Srgb,
-                    SwapchainUsageFlags::COLOR_ATTACHMENT,
-                    false,
-                ) {
-                    self.cylinder_swapchain_sk =
-                        SwapchainSk::wrap(handle, TexFormat::Rgba32Srgb, 512, 256, Some(comp_layer));
-                    // prepare the cylinder scene: rotating cube
-                    let mut cyl_mat = Material::default().copy();
-                    cyl_mat.id("cylmat");
-                    self.cylinder_render_list.add_mesh(
-                        Mesh::cube(),
-                        cyl_mat,
-                        Matrix::s(0.1 * Vec3::ONE),
-                        named_colors::ORANGE,
-                        None,
-                    );
-                } else {
-                    Log::warn("Failed to create cylinder XR swapchain");
+            // Create a second swapchain for the cylinder layer.
+            // The cylinder layer requires XR_KHR_composition_layer_cylinder to be enabled,
+            // so we skip it entirely if the extension is not available.
+            if stereokit_rust::system::BackendOpenXR::ext_enabled("XR_KHR_composition_layer_cylinder") {
+                if let Some(comp_layer) = XrCompLayers::new() {
+                    if let Some(handle) = comp_layer.try_make_swapchain(
+                        512,
+                        256,
+                        TexFormat::Rgba32Srgb,
+                        SwapchainUsageFlags::COLOR_ATTACHMENT,
+                        false,
+                    ) {
+                        self.cylinder_swapchain_sk =
+                            SwapchainSk::wrap(handle, TexFormat::Rgba32Srgb, 512, 256, Some(comp_layer));
+                        // prepare the cylinder scene: rotating cube
+                        let mut cyl_mat = Material::default().copy();
+                        cyl_mat.id("cylmat");
+                        self.cylinder_render_list.add_mesh(
+                            Mesh::cube(),
+                            cyl_mat,
+                            Matrix::s(0.1 * Vec3::ONE),
+                            named_colors::ORANGE,
+                            None,
+                        );
+                    } else {
+                        Log::warn("Failed to create cylinder XR swapchain");
+                    }
                 }
+            } else {
+                Log::warn(
+                    "XR_KHR_composition_layer_cylinder extension is not enabled. \
+                     Cylinder layer will not be available. Request it before sk::init.",
+                );
             }
             // Ready to go we can change the sky.
             Renderer::enable_sky(false);
