@@ -204,9 +204,8 @@ impl Layers1 {
                     .viewport(Rect::new(0.0, 0.0, 1.0, 1.0));
                 quad_render.draw_now(&self.quad_render_list, render_tex, Color128::new(0.4, 0.3, 0.2, 1.0));
 
-                let sprite = Sprite::from_tex(render_tex, None, None).unwrap();
-
-                sprite.draw(self.transform, Pivot::Center, None, None);
+                // let sprite = Sprite::from_tex(render_tex, None, None).unwrap();
+                // sprite.draw(self.transform, Pivot::Center, None, None);
 
                 assert_eq!(render_tex.get_width(), Some(512));
 
