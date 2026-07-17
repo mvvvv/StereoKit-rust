@@ -678,6 +678,11 @@ impl SwapchainSk {
                 );
                 Log::diag(format!("SwapchainSk::wrap: Setting native surface for image {}...", idx));
                 unsafe {
+                    // `owned: false` because the VkImage is owned by the OpenXR swapchain.
+                    // The runtime destroys it when `xrDestroySwapchain` is called.
+                    // Passing `owned: true` would cause a double-free: `Drop for SwapchainSk`
+                    // destroys the swapchain first, then each `Tex::drop` would try to
+                    // destroy the already-freed VkImage, producing Vulkan validation errors.
                     image_sk.set_native_surface(
                         img.image as *mut std::ffi::c_void,
                         TexType::Rendertarget,
@@ -685,7 +690,7 @@ impl SwapchainSk {
                         width as i32,
                         height as i32,
                         1,
-                        true,
+                        false,
                     );
                 }
                 Log::diag(format!("SwapchainSk::wrap: Image {} wrapped successfully", idx));

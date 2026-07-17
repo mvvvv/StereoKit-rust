@@ -8,14 +8,13 @@ use stereokit_rust::{
     mesh::Mesh,
     prelude::*,
     render::{RenderBuilder, RenderClear, RenderList, Renderer},
-    sprite::Sprite,
-    system::{Backend, BackendXRType, Pivot, Text, TextBuilder, TextFit, TextStyle},
+    system::{Backend, BackendXRType, Text, TextBuilder, TextFit, TextStyle},
     tex::{Tex, TexFormat},
     tools::xr_comp_layers::{SwapchainSk, XrCompLayers},
     ui::Ui,
     util::{
-        Color128, Time,
         named_colors::{self, RED},
+        Color128, Time,
     },
 };
 
@@ -324,6 +323,8 @@ impl Layers1 {
     // we have to activate the sky rendering.
     fn close(&mut self, triggering: bool) -> bool {
         if triggering {
+            self.quad_swapchain_sk = None;
+            self.cylinder_swapchain_sk = None;
             Renderer::enable_sky(true);
             self.shutdown_completed = true;
         }
