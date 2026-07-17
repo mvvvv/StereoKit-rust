@@ -2323,10 +2323,10 @@ impl<'a> ParamInfos<'a> {
 
     /// Get the name and type of the info at given index
     fn material_get_param_info(&self, index: i32) -> Option<(&str, MaterialParam)> {
-        let name_info = CString::new("H").unwrap_or_default().into_raw() as *mut *mut c_char;
+        let mut name_info: *mut c_char = std::ptr::null_mut();
         let mut type_info = MaterialParam::Unknown;
-        unsafe { material_get_param_info(self.material.0.as_ptr(), index, name_info, &mut type_info) }
-        let name_info = unsafe { CStr::from_ptr(*name_info).to_str().unwrap_or_default() };
+        unsafe { material_get_param_info(self.material.0.as_ptr(), index, &mut name_info, &mut type_info) }
+        let name_info = unsafe { CStr::from_ptr(name_info).to_str().unwrap_or_default() };
         Some((name_info, type_info))
     }
 

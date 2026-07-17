@@ -2055,11 +2055,11 @@ impl Platform {
                 .to_str() //
                 .ok_or(StereoKitError::ReadFileError(path_buf.clone(), "Failed to convert path to string".into()))?,
         )?;
-        let out_data = CString::new("H")?.into_raw() as *mut *mut c_void;
+        let mut out_data: *mut c_void = std::ptr::null_mut();
         let mut len = 0usize;
         let len_ptr: *mut usize = &mut len;
-        if unsafe { platform_read_file(c_str.as_ptr(), out_data, len_ptr) != 0 } {
-            unsafe { CStr::from_ptr(*out_data as *const c_char) }
+        if unsafe { platform_read_file(c_str.as_ptr(), &mut out_data, len_ptr) != 0 } {
+            unsafe { CStr::from_ptr(out_data as *const c_char) }
                 .to_str()
                 .map_err(|e| StereoKitError::ReadFileError(path_buf.clone(), e.to_string()))
         } else {
@@ -2097,11 +2097,11 @@ impl Platform {
                 .to_str() //
                 .ok_or(StereoKitError::ReadFileError(path_buf.clone(), "Failed to convert path to string".into()))?,
         )?;
-        let out_data = CString::new("H")?.into_raw() as *mut *mut c_void;
+        let mut out_data: *mut c_void = std::ptr::null_mut();
         let mut len = 0usize;
         let len_ptr: *mut usize = &mut len;
-        if unsafe { platform_read_file(c_str.as_ptr(), out_data, len_ptr) != 0 } {
-            Ok(unsafe { std::slice::from_raw_parts(*out_data as *const u8, len) })
+        if unsafe { platform_read_file(c_str.as_ptr(), &mut out_data, len_ptr) != 0 } {
+            Ok(unsafe { std::slice::from_raw_parts(out_data as *const u8, len) })
         } else {
             Err(StereoKitError::ReadFileError(path_buf, "Failed to read file".into()))
         }

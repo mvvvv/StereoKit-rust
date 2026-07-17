@@ -1796,11 +1796,11 @@ impl Mesh {
     /// see also [Mesh::get_inds_copy] [`mesh_get_inds`]
     /// see example in [`Mesh::set_inds`]
     pub fn get_inds(&self) -> &[u32] {
-        let inds_ptr = CString::new("H").unwrap_or_default().into_raw() as *mut *mut u32;
+        let mut inds_ptr: *mut u32 = std::ptr::null_mut();
         let mut inds_len = 0;
         unsafe {
-            mesh_get_inds(self.0.as_ptr(), inds_ptr, &mut inds_len, Memory::Reference);
-            &mut *slice_from_raw_parts_mut(*inds_ptr, inds_len as usize)
+            mesh_get_inds(self.0.as_ptr(), &mut inds_ptr, &mut inds_len, Memory::Reference);
+            &mut *slice_from_raw_parts_mut(inds_ptr, inds_len as usize)
         }
     }
 
@@ -1826,11 +1826,11 @@ impl Mesh {
     /// see also [Mesh::get_verts_copy] [`mesh_get_verts`]
     /// see example in [`Mesh::set_verts`]
     pub fn get_verts(&self) -> &[Vertex] {
-        let verts_pointer = CString::new("H").unwrap_or_default().into_raw() as *mut *mut Vertex;
+        let mut verts_pointer: *mut Vertex = std::ptr::null_mut();
         let mut verts_len = 0;
         unsafe {
-            mesh_get_verts(self.0.as_ptr(), verts_pointer, &mut verts_len, Memory::Reference);
-            &mut *slice_from_raw_parts_mut(*verts_pointer, verts_len as usize)
+            mesh_get_verts(self.0.as_ptr(), &mut verts_pointer, &mut verts_len, Memory::Reference);
+            &mut *slice_from_raw_parts_mut(verts_pointer, verts_len as usize)
         }
     }
 

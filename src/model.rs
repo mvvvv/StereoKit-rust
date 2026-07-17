@@ -2659,16 +2659,17 @@ impl<'a> Infos<'a> {
 
     /// iterator of the node infos
     fn info_iterate(model: &Model, mut iterator: i32, node: ModelNodeId) -> Option<(&str, &str, i32)> {
-        let out_key_utf8 = CString::new("H").unwrap_or_default().into_raw() as *mut *const c_char;
-        let out_value_utf8 = CString::new("H").unwrap_or_default().into_raw() as *mut *const c_char;
+        let mut out_key_utf8: *const c_char = std::ptr::null();
+        let mut out_value_utf8: *const c_char = std::ptr::null();
 
         let ref_iterator = &mut iterator as *mut i32;
 
         unsafe {
-            let res = model_node_info_iterate(model.0.as_ptr(), node, ref_iterator, out_key_utf8, out_value_utf8);
+            let res =
+                model_node_info_iterate(model.0.as_ptr(), node, ref_iterator, &mut out_key_utf8, &mut out_value_utf8);
             if res != 0 {
-                let key = CStr::from_ptr(*out_key_utf8);
-                let value = CStr::from_ptr(*out_value_utf8);
+                let key = CStr::from_ptr(out_key_utf8);
+                let value = CStr::from_ptr(out_value_utf8);
                 Some((key.to_str().unwrap_or_default(), value.to_str().unwrap_or_default(), *ref_iterator))
             } else {
                 None

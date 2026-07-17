@@ -211,13 +211,13 @@ impl Font {
         )?))
     }
 
-    /// Doesn't work on Linux
     /// Loads font from a specified list of font family names.
-    /// Returns a font from the given font family names, Most of the OS provide fallback fonts, hence there will always
-    /// be a set of fonts.
     /// <https://stereokit.net/Pages/StereoKit/Font/FromFamily.html>
     /// * `font_family` - List of font family names separated by comma(,) similar to a list of names css allows.
     ///
+    /// Returns A font from the given font family names. If none of them match a usable font, this falls back to
+    /// StereoKit's builtin font,
+    /// so this will always be a valid asset.
     /// see also [`font_create_family`]
     /// ### Examples
     /// ```

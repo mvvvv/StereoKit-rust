@@ -257,7 +257,7 @@ impl XrCompLayers {
     ///
     /// > **⚠️ Extension requirement:** This requires the `XR_KHR_composition_layer_cylinder`
     /// > extension to be enabled. You MUST request it before `Sk::initialize()`:
-    /// > ```no_run
+    /// ```no_run
     /// # use stereokit_rust::system::BackendOpenXR;
     /// BackendOpenXR::request_ext("XR_KHR_composition_layer_cylinder");
     /// ```
