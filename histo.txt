@@ -14,7 +14,7 @@ VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.json
 #---- building for pc
 cargo run --example main_pc  
 cargo run --example main_pc -- --test
-cargo build_sk_rs --example main_pc  ../sk_builds/SK_demo_linux/ && steam steam://rungameid/13868818448177430528
+cargo build_sk_rs --example main_pc  ../sk_builds/SK_demo_linux/ && steam steam://rungameid/18159045590636298240
 FORCE_LOCAL_DEPS=ON DEP_SK_RENDERER_SOURCE="/opt/sk_renderer" cargo build_sk_rs --example main_pc -F force-local-deps ../sk_builds/SK_demo_linux/
 
 #---- cross building for pc
