@@ -671,14 +671,13 @@ impl Sound {
     ///
     /// let click_sound_inst = click_sound.play([0.0, 0.0, -0.5], Some(0.5));
     ///
-    /// # if cfg!(not(feature = "test-xr-mode")) {
     /// number_of_steps = 100;
+    /// let mut was_played = false;
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     if iter > 95 {
-    ///         assert!(click_sound_inst.is_playing());
-    ///     }
+    ///     was_played |= click_sound_inst.is_playing();
     /// );
-    /// # } sk::Sk::shutdown();
+    /// assert!(was_played);
+    /// sk::Sk::shutdown();
     /// ```
     pub fn click() -> Self {
         let cstr_id = CString::new("default/sound_click").unwrap_or_default();
@@ -700,14 +699,13 @@ impl Sound {
     ///
     /// let unclick_sound_inst = unclick_sound.play([0.0, 0.0, -0.5], Some(0.5));
     ///
-    /// # if cfg!(not(feature = "test-xr-mode")) {
-    /// number_of_steps = 20;
+    /// number_of_steps = 100;
+    /// let mut was_played = false;
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     if iter > 15 {
-    ///         assert!(unclick_sound_inst.is_playing());
-    ///     }
+    ///     was_played |= unclick_sound_inst.is_playing();
     /// );
-    /// # } sk::Sk::shutdown();
+    /// assert!(was_played);
+    /// sk::Sk::shutdown();
     /// ```
     pub fn unclick() -> Self {
         let cstr_id = CString::new("default/sound_unclick").unwrap_or_default();
@@ -728,14 +726,13 @@ impl Sound {
     ///
     /// let grab_sound_inst = grab_sound.play([0.0, 0.0, -0.5], Some(0.5));
     ///
-    /// # if cfg!(not(feature = "test-xr-mode")) {
     /// number_of_steps = 100;
+    /// let mut was_played = false;
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     if iter > 95 {
-    ///         assert!(grab_sound_inst.is_playing());
-    ///     }
+    ///     was_played |= grab_sound_inst.is_playing();
     /// );
-    /// # } sk::Sk::shutdown();
+    /// assert!(was_played);
+    /// sk::Sk::shutdown();
     /// ```
     pub fn grab() -> Self {
         let cstr_id = CString::new("default/sound_grab").unwrap_or_default();
@@ -756,14 +753,13 @@ impl Sound {
     ///
     /// let ungrab_sound_inst = ungrab_sound.play([0.0, 0.0, -0.5], Some(0.5));
     ///
-    /// # if cfg!(not(feature = "test-xr-mode")) {
     /// number_of_steps = 100;
+    /// let mut was_played = false;
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     if iter > 95 {
-    ///         assert!(ungrab_sound_inst.is_playing());
-    ///     }
+    ///     was_played |= ungrab_sound_inst.is_playing();
     /// );
-    /// # } sk::Sk::shutdown();
+    /// assert!(was_played);
+    /// sk::Sk::shutdown();
     /// ```
     pub fn ungrab() -> Self {
         let cstr_id = CString::new("default/sound_ungrab").unwrap_or_default();

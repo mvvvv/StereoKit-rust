@@ -782,6 +782,7 @@ impl Renderer {
     ///
     /// see also [`render_to`] [`RenderBuilder::render_to`]
     /// ### Examples
+    /// TODO: The plane tex is not rendered
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{render::{Renderer, RenderBuilder}, maths::{Vec3, Quat, Matrix}, tex::Tex,
@@ -795,7 +796,7 @@ impl Renderer {
     /// let mut material = Material::pbr().copy();
     /// let tex = Tex::render_target(200,200, None, None, None)
     ///                    .expect("RenderTarget should be created");
-    /// material.diffuse_tex(&tex).color_tint(named_colors::CYAN);
+    /// material.diffuse_tex(&tex);
     /// let transform_plane = Matrix::t([0.0, -0.55, 0.0]);
     ///
     /// let camera = Matrix::t_r(Vec3::Z * 1.0, Quat::look_at(Vec3::Z, Vec3::ZERO, None));
@@ -804,16 +805,21 @@ impl Renderer {
     /// let render = RenderBuilder::new().camera(camera).projection(projection);
     ///
     /// filename_scr = "screenshots/render_to.jpeg";
-    /// number_of_steps = 30;
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     
     ///     Renderer::add_mesh(&sun, &material_sun, transform_sun,
     ///         Some(named_colors::RED.into()), None);
     ///
-    ///     Renderer::render_to(&tex, 0, &render);
-    ///
     ///     Renderer::add_mesh(&plane, &material, transform_plane,
     ///         None, None);
+    ///
+    ///     if iter % 2 == 0 { // 2 syntaxes for the same job:
+    ///         Renderer::render_to(&tex, 0, &render);
+    ///     } else {
+    ///         render.render_to(&tex, 0)
+    ///     }
+    ///
+
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -2250,53 +2256,51 @@ impl RenderBuilder {
     ///
     /// see also [`render_to`] [`Renderer::render_to`]
     /// ### Examples for multi-view rendering, simply build a [`RenderBuilder`] with N cameras and N projections:
-    /// TODO: This multi-view example hangs on Momado simulator and do not screenshot on simultor if render_to is
-    /// called once (-3 is never reached).
+    /// TODO: This multi-view do not render neither the sphere nor the quad (only the skydome).
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{render::{Renderer, RenderBuilder}, maths::{Vec3, Quat, Matrix}, tex::Tex,
-    ///                      mesh::Mesh, material::Material, util::named_colors};
+    /// use stereokit_rust::{render::{Renderer, RenderBuilder, RenderLayer, RenderClear},
+    ///                      tex::{Tex, TexType, TexFormat}, material::{Material, Cull},
+    ///                      mesh::Mesh, util::named_colors, maths::{Vec3, Quat, Matrix}};
     ///
     /// let sphere = Mesh::generate_sphere(1.0, None);
     /// let mut material = Material::pbr().copy();
-    /// material.color_tint(named_colors::CYAN);
-    /// let transform_sphere = Matrix::t([0.0, -0.55, -0.30]);
+    /// material.color_tint(named_colors::CYAN).face_cull(Cull::None);
+    /// let transform_sphere = Matrix::t_s([0.0, -0.55, -0.30], [1.0, 1.0, 1.0]);
     ///
-    /// let camera1 = Matrix::t_r(Vec3::Z * 2.0, Quat::look_at(Vec3::Z, Vec3::ZERO, None));
-    /// let camera2 = Matrix::t_r(Vec3::Z * -2.0, Quat::look_at(Vec3::Z, Vec3::ZERO, None));
-    /// let projection = Matrix::perspective(90.0, 1.0, 0.1, 20.0);
+    /// let camera1 = Matrix::t_r(Vec3::Z * 3.0, Quat::look_at(Vec3::NEG_Z , Vec3::ZERO, None));
+    /// let camera2 = Matrix::t_r(Vec3::Z * 3.0 , Quat::look_at(Vec3::NEG_Z, Vec3::ZERO, None));
+    /// let projection = Matrix::perspective(150.0, 1.0, 0.1, 50.0);
     ///
-    /// // Two materials to display the two array layers (slice 0 and slice 1) of the render target
-    /// let tex = Tex::render_target(200,200, None, None, None)
-    ///                    .expect("RenderTarget should be created");
+    /// // Create a render target texture with array support
+    /// let tex_type = TexType::ImageNomips | TexType::Rendertarget;
+    /// let mut tex = Tex::new(tex_type, TexFormat::Rgba32Srgb, Some("render_tex_array"));
+    /// tex.set_size(800, 800, Some(2), None);
+    ///
     /// let quad = Mesh::screen_quad();
-    /// let mut mat0 = Material::unlit().copy();
-    /// let mut mat1 = Material::unlit().copy();
-    /// mat0.diffuse_tex(&tex);
-    /// mat1.diffuse_tex(&tex);
+    /// let mut material_quad = Material::from_file("shaders/stereo_array.hlsl.sks", None)
+    ///                             .expect("stereo_array.hlsl.sks should be present");
+    /// material_quad.diffuse_tex(&tex);
     /// // Transforms to place the two quads side by side in the scene
-    /// let transform_q0 = Matrix::t_s([-0.50, 0.45, 0.12], [0.45, 0.45, 0.45]);
-    /// let transform_q1 = Matrix::t_s([ 0.50, 0.45, 0.12], [0.45, 0.45, 0.45]);
+    /// let transform_quad = Matrix::t_s([-0.0, 0.45, 0.12], [0.45, 0.45, 0.45]);
     ///
     /// let render = RenderBuilder::new()
     ///     .cameras(vec![camera1, camera2])
-    ///     .projections(&[projection, projection]);
+    ///     .projections(&[projection, projection])
+    ///     .layer_filter(RenderLayer::All)
+    ///     .clear(RenderClear::Color);
     ///
+    /// # system::Assets::block_for_priority(i32::MAX);
     /// filename_scr = "screenshots/render_to_multiview.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     Renderer::add_mesh(&sphere, &material, transform_sphere,
-    ///         None, None);
-    ///     if iter < number_of_steps - 3 {
-    ///         if iter % 2 == 0 { // 2 syntaxes for the same job:
-    ///             Renderer::render_to(&tex, 1, &render);
-    ///         } else {
-    ///             render.render_to(&tex, 1)
-    ///         }
+    ///     Renderer::add_mesh(&sphere, &material, transform_sphere, None, None);
+    ///     if iter % 2 == 0 { // 2 syntaxes for the same job:
+    ///         Renderer::render_to(&tex, 0, &render);
+    ///     } else {
+    ///         render.render_to(&tex, 0)
     ///     }
-    ///
     ///     // Display array slice 0 and slice 1 of the render target as screen quads
-    ///     quad.draw(&mat0, transform_q0, None, None);
-    ///     quad.draw(&mat1, transform_q1, None, None);
+    ///     quad.draw(&material_quad, transform_quad, None, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
