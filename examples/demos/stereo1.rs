@@ -6,7 +6,7 @@ use stereokit_rust::{
     prelude::*,
     render::{RenderBuilder, RenderClear, RenderList, RenderListRefs},
     system::{Assets, Text, TextBuilder},
-    tex::Tex,
+    tex::{Tex, TexFormat},
     util::{Time, named_colors},
 };
 
@@ -67,7 +67,7 @@ impl Default for Stereo1 {
         //-----------------------------------------------------
         // 1-A A rendertarget that will receive both eyes side-by-side. We use a 2:1 aspect texture and render each eye
         // into its own half through a viewport rect.
-        let render_tex_stereo = Tex::render_target(eye_res * 2, eye_res, None, None, None)
+        let render_tex_stereo = Tex::render_target(eye_res * 2, eye_res, None, TexFormat::Rgba32Srgb, TexFormat::None)
             .expect("Stereo1 render target should be created");
         // Left eye into the left half of the texture.
         let render_left = RenderBuilder::new()

@@ -7,7 +7,7 @@ use stereokit_rust::{
     prelude::*,
     render::{RenderBuilder, RenderClear, RenderList, RenderListRefs, Renderer},
     system::{Assets, Text, TextBuilder, TextStyle},
-    tex::{Tex, TexFormat, TexType},
+    tex::{Tex, TexFormat},
     ui::Ui,
     util::{
         Color128, Time,
@@ -26,10 +26,12 @@ pub struct RenderList1 {
     primary: RenderList,
     list: RenderList,
     render_mat: Material,
-    render_tex: Tex,
+    render_tex_a: Tex,
+    render_tex_b: Tex,
+    flip: u8,
+    quad: Mesh,
     old_clear_color: Color128,
     camera_pos: Vec3,
-    quad: Mesh,
     perspective: Matrix,
     clear_primary: bool,
 
@@ -41,28 +43,30 @@ pub struct RenderList1 {
 impl Default for RenderList1 {
     fn default() -> Self {
         let quad = Mesh::screen_quad();
-        let mut list = RenderList::new_with(RenderListRefs::None);
+        let mut list = RenderList::new_with(RenderListRefs::Tracked);
         list.id("PlaneList");
-        let render_tex = Tex::gen_color(BLUE_VIOLET, 128, 128, TexType::Rendertarget, TexFormat::Rgba32Srgb);
-        //let render_tex = Tex::render_target(128, 128, None, None, None).unwrap_or_default();
+
+        //let render_tex = Tex::gen_color(BLUE_VIOLET, 128, 128, TexType::Rendertarget, TexFormat::Rgba32Srgb);
+        let render_tex_a =
+            Tex::render_target(128, 128, None, TexFormat::Rgba32Srgb, TexFormat::None).unwrap_or_default();
+        let render_tex_b =
+            Tex::render_target(128, 128, None, TexFormat::Rgba32Srgb, TexFormat::None).unwrap_or_default();
         let mut render_mat = Material::pbr().copy();
         let model = Model::from_file("plane.glb", None, None).unwrap_or_default();
-        list.add_model(
-            model,
-            Some(&render_mat),
-            Matrix::r(Quat::from_angles(90.0, 90.0, 145.0)),
-            Color128::WHITE,
-            None,
-        );
-        list.add_mesh(&quad, &render_mat, Matrix::IDENTITY, BLUE_VIOLET, None);
+
+        let transform_model = Matrix::r(Quat::from_angles(90.0, 90.0, 45.0));
+        let material_quad = Material::pbr();
 
         Assets::block_for_priority(i32::MAX);
-        let camera_pos = Vec3::new(-2.0, 1.0, 5.9);
+        list.add_model(&model.copy(), transform_model, Color128::WHITE, None);
+        list.add_mesh(&quad, &material_quad, Matrix::IDENTITY, BLUE_VIOLET, None);
 
-        render_mat.diffuse_tex(&render_tex);
+        Assets::block_for_priority(i32::MAX);
+        let camera_pos = Vec3::new(-2.0, 1.0, -10.9);
+
         render_mat.face_cull(stereokit_rust::material::Cull::None);
 
-        let perspective = Matrix::perspective(90.0, 1.0, 0.01, 1010.0);
+        let perspective = Matrix::perspective(90.0, 1.0, 0.1, 50.0);
         Self {
             id: "RenderList1".to_string(),
             sk_info: None,
@@ -73,10 +77,12 @@ impl Default for RenderList1 {
             list,
             clear_primary: false,
             render_mat,
-            render_tex,
+            render_tex_a,
+            render_tex_b,
+            flip: 0,
+            quad,
             old_clear_color: Color128::BLACK_TRANSPARENT,
             camera_pos,
-            quad,
             perspective,
 
             transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, Quat::from_angles(0.0, 180.0, 0.0)),
@@ -108,9 +114,24 @@ impl RenderList1 {
         let render = RenderBuilder::new()
             .camera(Matrix::look_at(self.camera_pos, Vec3::ZERO, Some(Vec3::new(1.0, Time::get_totalf().sin(), 1.0))))
             .projection(self.perspective)
-            .clear(RenderClear::Color)
+            .clear(RenderClear::All)
             .viewport(Rect::new(0.0, 0.0, 1.0, 1.0));
-        render.draw_now(&self.list, &self.render_tex, Color128::new(0.4, 0.3, 0.2, 0.5));
+
+        let (read_tex, write_tex) = if self.flip == 1 {
+            self.flip = 2;
+            (&self.render_tex_a, &self.render_tex_b)
+        } else if self.flip == 2 {
+            self.flip = 1;
+            (&self.render_tex_b, &self.render_tex_a)
+        } else {
+            // We are here for the first step only to render render_tex_a for next step.
+            self.flip = 1;
+            render.draw_now(&self.list, &self.render_tex_a, Color128::WHITE);
+            return;
+        };
+
+        self.render_mat.diffuse_tex(&read_tex);
+        render.draw_now(&self.list, &write_tex, Color128::new(0.4, 0.3, 0.2, 0.5));
 
         Ui::window("Render Lists").pose(&mut self.window_pose).size(Vec2::new(0.23, 0.35)).begin();
         Ui::label(format!("Render items: {}/{}", self.primary.get_count(), self.primary.get_prev_count()))

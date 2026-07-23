@@ -1040,10 +1040,8 @@ impl Tex {
     /// * `multisample` - Multisample level, or MSAA. This should be 1, 2, 4, 8, or 16. The results will have moother
     ///   edges with higher values, but will cost more RAM and time to render. Note that GL platforms cannot trivially
     ///   draw a multisample > 1 texture in a shader. If this is None, the default is 1.
-    /// * `color_format` - The format of the color surface. If this is None, the default is RGBA32.
-    /// * `depth_format` - The format of the depth buffer. If this is TexFormat::None, no depth buffer will be attached
-    ///   to this. If this is None, the default is Depth16.
-    ///   rendertarget.
+    /// * `color_format` - The format of the color surface. Should not be None.
+    /// * `depth_format` - The format of the depth buffer. If this is None, no depth buffer will be attached to this.
     ///
     /// see also [`tex_create_rendertarget`]
     ///
@@ -1053,7 +1051,7 @@ impl Tex {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{render::Renderer, tex::{Tex, TexFormat}, material::Material};
     ///
-    /// let tex = Tex::render_target(128, 128, Some(2), Some(TexFormat::Rgba32Srgb), None)
+    /// let tex = Tex::render_target(128, 128, Some(2), TexFormat::Rgba32Srgb, TexFormat::None)
     ///                            .expect("Tex should be created");
     ///
     /// let material  = Material::from_file("shaders/brick_pbr.hlsl.sks", None)
@@ -1067,12 +1065,10 @@ impl Tex {
         width: usize,
         height: usize,
         multisample: Option<i32>,
-        color_format: Option<TexFormat>,
-        depth_format: Option<TexFormat>,
+        color_format: TexFormat,
+        depth_format: TexFormat,
     ) -> Result<Tex, StereoKitError> {
         let multisample = multisample.unwrap_or(1);
-        let color_format = color_format.unwrap_or(TexFormat::Rgba32Srgb);
-        let depth_format = depth_format.unwrap_or(TexFormat::Depth16);
         Ok(Tex(NonNull::new(unsafe {
             tex_create_rendertarget(width as i32, height as i32, multisample, color_format, depth_format)
         })
@@ -1386,8 +1382,8 @@ impl Tex {
     /// use stereokit_rust::{render::Renderer, tex::{Tex, TexFormat}, material::Material};
     ///
     ///
-    /// let mut tex = Tex::render_target(128, 128, Some(2), Some(TexFormat::Rgba32Srgb),
-    ///                                  Some(TexFormat::None))
+    /// let mut tex = Tex::render_target(128, 128, Some(2), TexFormat::Rgba32Srgb,
+    ///                                  TexFormat::None)
     ///                            .expect("Tex should be created");
     /// assert_eq!(tex.get_zbuffer(), None);
     ///
@@ -2001,7 +1997,7 @@ impl Tex {
     /// rendertarget to set this, and the zbuffer texture _must_ be a depth format (or null). For no-rendertarget
     /// textures, this will always be None.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetZBuffer.html>
-    /// * `tex` - TODO: None may crash the program
+    /// * `tex` - None may remove the z/depth buffer
     ///
     /// see also [`tex_set_zbuffer`] [`Tex::add_zbuffer`]
     /// ### Examples
@@ -2010,20 +2006,18 @@ impl Tex {
     /// use stereokit_rust::tex::{Tex, TexFormat};
     ///
     ///
-    /// let tex = Tex::render_target(128, 128, Some(2), Some(TexFormat::Rgba32Srgb),
-    ///                                  Some(TexFormat::Depth16))
+    /// let tex = Tex::render_target(128, 128, None, TexFormat::Rgba32Srgb, TexFormat::Depth16)
     ///                            .expect("Tex should be created");
     ///
     /// let zbuffer = tex.get_zbuffer().expect("Tex should have a zbuffer");
     ///
-    /// let mut tex2 = Tex::render_target(128, 128, Some(2), Some(TexFormat::Rgba32Srgb),
-    ///                                  Some(TexFormat::None))
+    /// let mut tex2 = Tex::render_target(128, 128, None, TexFormat::Rgba32Srgb, TexFormat::None)
     ///                            .expect("Tex2 should be created");
     /// tex2.set_zbuffer(Some(zbuffer));
     /// assert_ne!(tex2.get_zbuffer(), None);
     ///
-    /// //tex2.set_zbuffer(None);
-    /// //assert_eq!(tex2.get_zbuffer(), None);
+    /// tex2.set_zbuffer(None);
+    /// assert_eq!(tex2.get_zbuffer(), None);
     /// # sk::Sk::shutdown();
     /// ```
     pub fn set_zbuffer(&mut self, tex: Option<Tex>) -> &mut Self {

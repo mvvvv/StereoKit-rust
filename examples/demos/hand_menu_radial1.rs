@@ -128,7 +128,7 @@ impl Default for HandMenuRadial1 {
             .time(5.0);
 
         let shadow_depth =
-            Tex::render_target(1024, 1024, Some(1), Some(TexFormat::R8), Some(TexFormat::Depth32)).unwrap_or_default();
+            Tex::render_target(1024, 1024, Some(1), TexFormat::R8, TexFormat::Depth32).unwrap_or_default();
         let mut test_material = Material::unlit().copy();
         //test_material.diffuse_tex(shadow_depth.get_zbuffer().unwrap_or_default());
         test_material.diffuse_tex(&shadow_depth);

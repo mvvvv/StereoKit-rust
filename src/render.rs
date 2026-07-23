@@ -711,13 +711,12 @@ impl Renderer {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{render::Renderer, system::Assets, material::Material, tex::Tex};
+    /// use stereokit_rust::{render::Renderer, material::Material, tex::{Tex, TexFormat}};
     ///
-    /// let material = Material::pbr();
-    /// let tex = Tex::render_target(200,200, None, None, None)
+    /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None)
+    ///                            .expect("Brick shader should load and create material!");
+    /// let tex = Tex::render_target(200,200, None, TexFormat::Rgba32Srgb, TexFormat::None)
     ///                    .expect("RenderTarget should be created");
-    ///
-    /// Assets::block_for_priority(i32::MAX);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     if iter == number_of_steps {Renderer::blit(&tex, &material);}
@@ -785,8 +784,9 @@ impl Renderer {
     /// TODO: The plane tex is not rendered
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{render::{Renderer, RenderBuilder}, maths::{Vec3, Quat, Matrix}, tex::Tex,
-    ///                      mesh::Mesh, material::Material, util::named_colors};
+    /// use stereokit_rust::{render::{Renderer, RenderBuilder}, maths::{Vec3, Quat, Matrix},
+    ///                      mesh::Mesh, material::Material, util::named_colors,
+    ///                      tex::{Tex, TexFormat}};
     ///
     /// let sun = Mesh::generate_sphere(2.0, None);
     /// let material_sun = Material::pbr();
@@ -794,9 +794,10 @@ impl Renderer {
     ///
     /// let plane = Mesh::generate_plane_up([1.0,1.0], None, true);
     /// let mut material = Material::pbr().copy();
-    /// let tex = Tex::render_target(200,200, None, None, None)
-    ///                    .expect("RenderTarget should be created");
-    /// material.diffuse_tex(&tex);
+    /// let tex_a = Tex::render_target(200,200, None, TexFormat::Rgba32Srgb, TexFormat::Depth16)
+    ///                      .expect("RenderTarget should be created");
+    /// let tex_b = Tex::render_target(200,200, None, TexFormat::Rgba32Srgb, TexFormat::Depth16)
+    ///                      .expect("RenderTarget should be created");
     /// let transform_plane = Matrix::t([0.0, -0.55, 0.0]);
     ///
     /// let camera = Matrix::t_r(Vec3::Z * 1.0, Quat::look_at(Vec3::Z, Vec3::ZERO, None));
@@ -810,16 +811,24 @@ impl Renderer {
     ///     Renderer::add_mesh(&sun, &material_sun, transform_sun,
     ///         Some(named_colors::RED.into()), None);
     ///
-    ///     Renderer::add_mesh(&plane, &material, transform_plane,
-    ///         None, None);
-    ///
-    ///     if iter % 2 == 0 { // 2 syntaxes for the same job:
-    ///         Renderer::render_to(&tex, 0, &render);
-    ///     } else {
-    ///         render.render_to(&tex, 0)
+    ///     if iter != 0 {  // the read_tex must have been the write_tex first.
+    ///         Renderer::add_mesh(&plane, &material, transform_plane,
+    ///                            None, None);
     ///     }
     ///
-
+    ///     let (read_tex, write_tex) = if iter % 2 == 0 {
+    ///         (&tex_a, &tex_b)
+    ///     } else {
+    ///         (&tex_b, &tex_a)
+    ///     };
+    ///
+    ///     material.diffuse_tex(&read_tex);
+    ///
+    ///     if iter % 2 == 0 { // 2 syntaxes for the same job:
+    ///         Renderer::render_to(&write_tex, 0, &render);
+    ///     } else {
+    ///         render.render_to(&write_tex, 0)
+    ///     }
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -971,7 +980,8 @@ impl Renderer {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{render::Renderer, system::Assets, maths::{Pose, Matrix}, tex::Tex,
+    /// use stereokit_rust::{render::Renderer, system::Assets, maths::{Pose, Matrix},
+    ///                      tex::{Tex, TexFormat, TexType},
     ///                      mesh::Mesh, material::Material, util::named_colors};
     ///
     /// let sun = Mesh::generate_sphere(7.0, None);
@@ -980,8 +990,8 @@ impl Renderer {
     ///
     /// let plane = Mesh::generate_plane_up([1.0,1.0], None, true);
     /// let mut material = Material::unlit().copy();
-    /// let mut tex = Tex::render_target(200,200, None, None, None)
-    ///                    .expect("RenderTarget should be created");
+    /// let mut tex = Tex::gen_color(named_colors::WHITE, 200, 200,
+    ///                          TexType::Rendertarget, TexFormat::Rgba32Srgb);
     /// tex.id("CAPTURE_TEXTURE_ID");
     /// material.diffuse_tex(&tex);
     /// let transform_plane = Matrix::t([0.0, -0.55, 0.0]);
@@ -1445,7 +1455,7 @@ impl Renderer {
 /// let transform_cam  = Matrix::look_at(from, Vec3::ZERO, Some(Vec3::new(1.0, 1.0, 1.0)));
 ///
 /// let mut render_list = RenderList::new();
-/// render_list.add_model(&model, None::<Material>, transform_plane, Color128::WHITE, None);
+/// render_list.add_model(&model, transform_plane, Color128::WHITE, None);
 ///
 /// let screen = Mesh::screen_quad();
 ///
@@ -1826,7 +1836,7 @@ impl RenderList {
     ///   useful for filtering out objects for different rendering purposes! For example: rendering a mesh over the user's
     ///   head from a 3rd person perspective, but filtering it out from the 1st person perspective.
     ///
-    /// see also [`render_list_add_model`] [`render_list_add_model_mat`]
+    /// see also [`render_list_add_model`] [`RenderList::add_model_with_material`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -1844,8 +1854,8 @@ impl RenderList {
     ///
     /// let mut render_list = RenderList::new();
     /// render_list
-    ///     .add_model(&model, None::<Material>, transform_plane1, named_colors::RED, None)
-    ///     .add_model(&model, None::<Material>, transform_plane2, named_colors::BLUE,
+    ///     .add_model(&model, transform_plane1, named_colors::RED, None)
+    ///     .add_model(&model, transform_plane2, named_colors::BLUE,
     ///                Some(RenderLayer::Layer1));
     ///
     /// let render_tex = Tex::gen_color(Color128::WHITE, 128, 128,
@@ -1873,32 +1883,97 @@ impl RenderList {
     pub fn add_model(
         &mut self,
         model: impl AsRef<Model>,
-        material_override: Option<impl AsRef<Material>>,
         transform: impl Into<Matrix>,
         color_linear: impl Into<Color128>,
         layer: Option<RenderLayer>,
     ) -> &mut Self {
         let layer = layer.unwrap_or(RenderLayer::Layer0);
-        match material_override {
-            Some(material) => unsafe {
-                render_list_add_model_mat(
-                    self.0.as_ptr(),
-                    model.as_ref().0.as_ptr(),
-                    material.as_ref().0.as_ptr(),
-                    transform.into(),
-                    color_linear.into(),
-                    layer,
-                )
-            },
-            None => unsafe {
-                render_list_add_model(
-                    self.0.as_ptr(),
-                    model.as_ref().0.as_ptr(),
-                    transform.into(),
-                    color_linear.into(),
-                    layer,
-                )
-            },
+        unsafe {
+            render_list_add_model(
+                self.0.as_ptr(),
+                model.as_ref().0.as_ptr(),
+                transform.into(),
+                color_linear.into(),
+                layer,
+            )
+        }
+        self
+    }
+
+    /// Add a Model to the RenderList, overriding all its materials with the given one. The RenderList will hold a
+    /// reference to these Assets until the list is cleared.
+    /// <https://stereokit.net/Pages/StereoKit/RenderList/Add.html>
+    /// * `model` - A valid Model you wish to draw.
+    /// * `material_override` - The material that will override all materials of this model.
+    /// * `transform` - A transformation Matrix relative to the current Hierarchy.
+    /// * `colorLinear` - A per-instance linear space color value to pass into the shader! Normally this gets used like a
+    ///   material tint. If you're  adventurous and don't need per-instance colors, this is a great spot to pack in extra
+    ///   per-instance data for the shader!
+    /// * `layer` - All visuals are rendered using a layer bit-flag. By default, all layers are rendered, but this can be
+    ///   useful for filtering out objects for different rendering purposes! For example: rendering a mesh over the user's
+    ///   head from a 3rd person perspective, but filtering it out from the 1st person perspective.
+    ///
+    /// see also [`render_list_add_model_mat`] [`RenderList::add_model`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::{Vec3, Matrix, Rect}, model::Model, util::{named_colors,Color128},
+    ///                      tex::{Tex, TexType, TexFormat}, material::Material,
+    ///                      mesh::Mesh, render::{RenderBuilder, RenderList,RenderClear, RenderLayer}};
+    ///
+    /// let model = Model::from_file("plane.glb", None, None).unwrap_or_default().copy();
+    /// let material_override = Material::pbr().copy();
+    ///
+    /// let at = Vec3::new(-2.0, 8.0, 20.9);
+    /// let perspective = Matrix::perspective(45.0, 1.0, 0.01, 1550.0);
+    /// let transform_plane1 = Matrix::t([ 5.0, 2.0, 0.0]);
+    /// let transform_plane2 = Matrix::t([2.0, -6.0, -10.0]);
+    /// let transform_cam  = Matrix::look_at(at, Vec3::ZERO, Some(Vec3::new(0.0, -1.0, 0.0)));
+    ///
+    /// let mut render_list = RenderList::new();
+    /// render_list
+    ///     .add_model_with_material(&model, &material_override, transform_plane1, named_colors::RED, None)
+    ///     .add_model_with_material(&model, &material_override, transform_plane2, named_colors::BLUE,
+    ///                Some(RenderLayer::Layer1));
+    ///
+    /// let render_tex = Tex::gen_color(Color128::WHITE, 128, 128,
+    ///                       TexType::Rendertarget, TexFormat::Rgba32Srgb);
+    /// let mut render_mat = Material::unlit().copy();
+    /// render_mat.diffuse_tex(&render_tex);
+    /// let screen = Mesh::screen_quad();
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter == 0 {
+    ///         let render = RenderBuilder::new()
+    ///             .camera(transform_cam)
+    ///             .projection(perspective)
+    ///             .layer_filter(RenderLayer::AllFirstPerson)
+    ///             .clear(RenderClear::Color)
+    ///             .viewport(Rect::new(0.0, 0.0, 1.0, 1.0));
+    ///         render_list.draw_now(&render_tex, &render, Color128::new(0.0, 0.3, 0.2, 0.5));
+    ///     }
+    ///     screen.draw(&render_mat, Matrix::IDENTITY, None, None);
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn add_model_with_material(
+        &mut self,
+        model: impl AsRef<Model>,
+        material_override: impl AsRef<Material>,
+        transform: impl Into<Matrix>,
+        color_linear: impl Into<Color128>,
+        layer: Option<RenderLayer>,
+    ) -> &mut Self {
+        let layer = layer.unwrap_or(RenderLayer::Layer0);
+        unsafe {
+            render_list_add_model_mat(
+                self.0.as_ptr(),
+                model.as_ref().0.as_ptr(),
+                material_override.as_ref().0.as_ptr(),
+                transform.into(),
+                color_linear.into(),
+                layer,
+            )
         }
         self
     }
@@ -2106,10 +2181,10 @@ impl RenderList {
 /// let material_sun = Material::pbr();
 /// let transform_sun = Matrix::t([-0.0, 1.0, -4.0]);
 ///
-/// let tex1 = Tex::render_target(200, 200, None, None, None)
+/// let tex1 = Tex::render_target(200, 200, None, TexFormat::Rgba32Srgb, TexFormat::Depth16)
 ///                    .expect("RenderTarget should be created");
 /// let sprite1 = Sprite::from_tex(&tex1, None, None).unwrap_or_default();
-/// let tex2 = Tex::render_target(200, 200, None, None, None)
+/// let tex2 = Tex::render_target(200, 200, None, TexFormat::Rgba32Srgb, TexFormat::Depth16)
 ///                    .expect("RenderTarget should be created");
 /// let sprite2 = Sprite::from_tex(&tex2, None, None).unwrap_or_default();
 ///
@@ -2135,21 +2210,23 @@ impl RenderList {
 ///     Renderer::add_mesh(&sun, &material_sun, transform_sun,
 ///         Some(named_colors::RED.into()), None);
 ///
-///     // 1 - render_to:
-///     render.render_to(&tex1, 0);
+///     // To not have to flip read_tex/write_tex we render at different steps
+///     if iter < number_of_steps - 2 {
+///         // 1 - screenshot
+///         render.screenshot(move |_pixels: &[u8], _format: TexFormat, _w: usize, _h: usize| {},
+///                           0, 200, 200, TexFormat::Rgba32Srgb);
 ///
-///     // 2 - screenshot
-///     render.screenshot(move |_pixels: &[u8], _format: TexFormat, _w: usize, _h: usize| {},
-///                       0, 200, 200, TexFormat::Rgba32Srgb);
-///
-///     // 3 - draw_now
-///     //render_list.clear();
-///     render_list.add_mesh(&sun, &material_sun, transform_sun, named_colors::GOLD, None);
-///     render.draw_now(&mut render_list, &tex2, Color128::WHITE);
-///
-///     //Renderer::add_mesh(e, &material, transform_plane, None, None);
-///     sprite1.draw(transform_sprite1, Pivot::TopLeft, None, None);
-///     sprite2.draw(transform_sprite2, Pivot::Center, None, None);
+///         // 2 - draw_now
+///         render_list.add_mesh(&sun, &material_sun, transform_sun, named_colors::GOLD, None);
+///         render.draw_now(&mut render_list, &tex2, Color128::WHITE);
+///     } else if iter == number_of_steps -2 {
+///         sprite2.draw(transform_sprite2, Pivot::Center, None, None);
+///         // 2 - render_to:
+///         render.render_to(&tex1, 0);
+///     } else { // Say 'cheese'!
+///         sprite1.draw(transform_sprite1, Pivot::TopLeft, None, None);
+///         sprite2.draw(transform_sprite2, Pivot::Center, None, None);
+///     }
 /// );
 /// # sk::Sk::shutdown();
 /// ```
@@ -2274,13 +2351,14 @@ impl RenderBuilder {
     ///
     /// // Create a render target texture with array support
     /// let tex_type = TexType::ImageNomips | TexType::Rendertarget;
-    /// let mut tex = Tex::new(tex_type, TexFormat::Rgba32Srgb, Some("render_tex_array"));
-    /// tex.set_size(800, 800, Some(2), None);
+    /// let mut tex_a = Tex::new(tex_type, TexFormat::Rgba32Srgb, Some("render_tex_array_a"));
+    /// tex_a.set_size(800, 800, Some(2), None);
+    /// let mut tex_b = Tex::new(tex_type, TexFormat::Rgba32Srgb, Some("render_tex_array_b"));
+    /// tex_b.set_size(800, 800, Some(2), None);
     ///
     /// let quad = Mesh::screen_quad();
     /// let mut material_quad = Material::from_file("shaders/stereo_array.hlsl.sks", None)
     ///                             .expect("stereo_array.hlsl.sks should be present");
-    /// material_quad.diffuse_tex(&tex);
     /// // Transforms to place the two quads side by side in the scene
     /// let transform_quad = Matrix::t_s([-0.0, 0.45, 0.12], [0.45, 0.45, 0.45]);
     ///
@@ -2288,19 +2366,26 @@ impl RenderBuilder {
     ///     .cameras(vec![camera1, camera2])
     ///     .projections(&[projection, projection])
     ///     .layer_filter(RenderLayer::All)
-    ///     .clear(RenderClear::Color);
+    ///     .clear(RenderClear::All);
     ///
-    /// # system::Assets::block_for_priority(i32::MAX);
     /// filename_scr = "screenshots/render_to_multiview.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
     ///     Renderer::add_mesh(&sphere, &material, transform_sphere, None, None);
-    ///     if iter % 2 == 0 { // 2 syntaxes for the same job:
-    ///         Renderer::render_to(&tex, 0, &render);
+    ///
+    ///     let (read_tex, write_tex) = if iter % 2 == 0 {
+    ///         (&tex_a, &tex_b)
     ///     } else {
-    ///         render.render_to(&tex, 0)
+    ///         (&tex_b, &tex_a)
+    ///     };
+    ///     material_quad.diffuse_tex(&read_tex);
+    ///
+    ///     if iter % 2 == 0 { // 2 syntaxes for the same job:
+    ///         Renderer::render_to(&write_tex, 0, &render);
+    ///     } else {
+    ///         render.render_to(&write_tex, 0)
     ///     }
     ///     // Display array slice 0 and slice 1 of the render target as screen quads
-    ///     quad.draw(&material_quad, transform_quad, None, None);
+    ///     if iter != 0 {quad.draw(&material_quad, transform_quad, None, None);}
     /// );
     /// # sk::Sk::shutdown();
     /// ```
