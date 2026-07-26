@@ -1559,7 +1559,8 @@ pub struct BackendVulkanRequestT {
 /// # assert_ne!(device, std::ptr::null_mut());
 /// # assert_ne!(graphics_queue, std::ptr::null_mut());
 /// # assert_eq!(graphics_queue_index, 0);
-/// # assert_eq!(transfer_queue_index, 1);
+/// # // TODO: 1 with Nvidia and 0 with llvmpipe: assert_eq!(transfer_queue_index, 1);
+/// # assert_ne!(transfer_queue_index, 2);
 /// # assert_ne!(video_decode_index, 2);
 /// # assert_ne!(fence_fd, 0);
 /// # sk::Sk::shutdown();
@@ -4974,8 +4975,8 @@ impl Lines {
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
 pub enum LogColors {
-    /// Use console coloring annotations, when the console supports them! StereoKit checks the terminal for ANSI 
-    /// support, whether output has been redirected to a file or pipe, and the NO_COLOR environment variable. If any of 
+    /// Use console coloring annotations, when the console supports them! StereoKit checks the terminal for ANSI
+    /// support, whether output has been redirected to a file or pipe, and the NO_COLOR environment variable. If any of
     /// those say no, colors are scraped out and logs fall back to plain text.
     Ansi = 0,
     ///Scrape out any color annotations, so logs are all completely plain text.

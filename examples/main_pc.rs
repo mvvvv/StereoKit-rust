@@ -32,7 +32,7 @@ pub const USAGE: &str = r#"Usage : program [OPTION]
 /// This is written to **stderr** so it shows up before StereoKit's log is
 /// initialized and is unaffected by `log_filter` settings.
 #[cfg(not(feature = "no-event-loop"))]
-#[cfg(not(target_os = "android"))]
+#[cfg(target_os = "linux")]
 fn log_launch_environment() {
     use std::env;
     use std::process::Command;
@@ -293,6 +293,7 @@ fn main() {
         }
     }
 
+    #[cfg(target_os = "linux")]
     if log_env {
         log_launch_environment();
     }
@@ -327,7 +328,6 @@ fn main() {
     BackendOpenXR::request_ext("XR_KHR_composition_layer_cylinder");
 
     BackendVulkan::request(&BackendVulkanRequest::new(Some("sk_test_request")));
-
 
     let sk = settings.init().unwrap();
     launch(sk, is_testing, start_test);
