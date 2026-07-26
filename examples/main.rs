@@ -8,16 +8,14 @@ use demos::program::launch;
 use stereokit_rust::{
     sk::Sk,
     sk::{OriginMode, SkSettings},
-    system::BackendOpenXR,
-    system::Log,
-    system::LogLevel,
+    system::{BackendOpenXR, Log, LogLevel}
 };
 
 #[unsafe(no_mangle)]
 #[cfg(target_os = "android")]
 pub fn android_main(app: AndroidApp) {
     use std::sync::OnceLock;
-    use stereokit_rust::sk::DepthMode;
+    use stereokit_rust::{sk::DepthMode, system::{BackendVulkan, BackendVulkanRequest}};
 
     let mut settings = SkSettings::default();
     settings
@@ -48,6 +46,8 @@ pub fn android_main(app: AndroidApp) {
     // Required by the Layers1 demo for cylinder composition layers.
     BackendOpenXR::request_ext("XR_KHR_android_surface_swapchain");
     BackendOpenXR::request_ext("XR_KHR_composition_layer_cylinder");
+
+    BackendVulkan::request(&BackendVulkanRequest::new(Some("sk_test_request")));
 
     let sk = settings.init(app).unwrap();
 

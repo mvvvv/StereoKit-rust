@@ -34,6 +34,9 @@ pub struct RenderList1 {
     camera_pos: Vec3,
     perspective: Matrix,
     clear_primary: bool,
+    enable_fx: bool,
+    fx1: Material,
+    fx2: Material,
 
     pub transform: Matrix,
     text: String,
@@ -48,9 +51,9 @@ impl Default for RenderList1 {
 
         //let render_tex = Tex::gen_color(BLUE_VIOLET, 128, 128, TexType::Rendertarget, TexFormat::Rgba32Srgb);
         let render_tex_a =
-            Tex::render_target(128, 128, None, TexFormat::Rgba32Srgb, TexFormat::None).unwrap_or_default();
+            Tex::render_target(128, 128, None, TexFormat::Rgba32Srgb, TexFormat::Depth16).unwrap_or_default();
         let render_tex_b =
-            Tex::render_target(128, 128, None, TexFormat::Rgba32Srgb, TexFormat::None).unwrap_or_default();
+            Tex::render_target(128, 128, None, TexFormat::Rgba32Srgb, TexFormat::Depth16).unwrap_or_default();
         let mut render_mat = Material::pbr().copy();
         let model = Model::from_file("plane.glb", None, None).unwrap_or_default();
 
@@ -67,6 +70,9 @@ impl Default for RenderList1 {
         render_mat.face_cull(stereokit_rust::material::Cull::None);
 
         let perspective = Matrix::perspective(90.0, 1.0, 0.1, 50.0);
+
+        let fx1 = Material::from_file("shaders/subpass/night_vision.hlsl.sks", None).unwrap_or_default();
+        let fx2 = Material::from_file("shaders/subpass/dynamic_cloud.hlsl.sks", None).unwrap_or_default();
         Self {
             id: "RenderList1".to_string(),
             sk_info: None,
@@ -76,6 +82,7 @@ impl Default for RenderList1 {
             primary: RenderList::primary(),
             list,
             clear_primary: false,
+            enable_fx: true,
             render_mat,
             render_tex_a,
             render_tex_b,
@@ -84,6 +91,8 @@ impl Default for RenderList1 {
             old_clear_color: Color128::BLACK_TRANSPARENT,
             camera_pos,
             perspective,
+            fx1,
+            fx2,
 
             transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, Quat::from_angles(0.0, 180.0, 0.0)),
             text: "RenderList1".to_owned(),
@@ -111,11 +120,13 @@ impl RenderList1 {
             self.primary.clear();
         }
 
+        let fx = if self.enable_fx { vec![&self.fx1, &self.fx2] } else { vec![] };
         let render = RenderBuilder::new()
             .camera(Matrix::look_at(self.camera_pos, Vec3::ZERO, Some(Vec3::new(1.0, Time::get_totalf().sin(), 1.0))))
             .projection(self.perspective)
             .clear(RenderClear::All)
-            .viewport(Rect::new(0.0, 0.0, 1.0, 1.0));
+            .viewport(Rect::new(0.0, 0.0, 1.0, 1.0))
+            .post_process(fx);
 
         let (read_tex, write_tex) = if self.flip == 1 {
             self.flip = 2;
@@ -144,6 +155,8 @@ impl RenderList1 {
                 self.perspective = Matrix::perspective(90.0, 1.0, 0.01, 1010.0)
             }
         };
+        Ui::same_line();
+        Ui::toggle("Fx", &mut self.enable_fx).interact();
         Ui::label("Offscreen List:").use_padding(true).draw();
         let b = Ui::layout_reserve(Vec2::new(0.1, 0.1), false, 0.0);
         self.quad.draw(

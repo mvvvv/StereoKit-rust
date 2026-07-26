@@ -1,22 +1,9 @@
 use openxr_sys::EnvironmentBlendMode;
 use std::{process, sync::Mutex, thread};
 use stereokit_rust::{
-    framework::{ISTEPPER_REMOVED, SkClosures},
-    material::Cull,
-    maths::{Pose, Quat, Vec2, Vec3, units::*},
-    model::Model,
-    prelude::*,
-    render::{Projection, Renderer},
-    shader::Shader,
-    sk::{AppFocus, DisplayBlend},
-    sound::{Sound, SoundInst},
-    sprite::Sprite,
-    system::{
-        Backend, BackendOpenXR, BackendXRType, DefaultInteractors, Input, Interaction, Interactor, Key, Lines, LogItem,
-        LogLevel, Text,
-    },
-    tex::Tex,
-    tools::{
+    framework::{ISTEPPER_REMOVED, SkClosures}, material::Cull, maths::{Pose, Quat, Vec2, Vec3, units::*}, model::Model, prelude::*, render::{Projection, Renderer}, shader::Shader, sk::{AppFocus, DisplayBlend}, sound::{Sound, SoundInst}, sprite::Sprite, system::{
+        Backend, BackendOpenXR, BackendVulkan, BackendXRType, DefaultInteractors, Input, Interaction, Interactor, Key, Lines, LogItem, LogLevel, Text,
+    }, tex::Tex, tools::{
         fly_over::{FLY_OVER_ID, FlyOver},
         log_window::{LogWindow, basic_log_fmt},
         notif::HudNotification,
@@ -33,9 +20,7 @@ use stereokit_rust::{
             XR_META_VIRTUAL_KEYBOARD_EXTENSION_NAME, XrMetaVirtualKeyboardStepper,
             is_meta_virtual_keyboard_extension_available,
         },
-    },
-    ui::{Ui, UiBtnLayout},
-    util::{Device, Time},
+    }, ui::{Ui, UiBtnLayout}, util::{Device, Time},
 };
 
 /// Somewhere to copy the log
@@ -222,6 +207,11 @@ pub fn launch(mut sk: Sk, _is_testing: bool, start_test: String) {
     ui_text_style.get_material().face_cull(Cull::Back);
 
     let mut inst_play: Option<SoundInst> = None;
+
+    // Checking BackendVulkan
+    assert! (BackendVulkan::request_enabled("sk_test_request"));
+    assert! (BackendVulkan::get_function_ptr("vkCreateBuffer") != std::ptr::null_mut());
+    assert! (BackendVulkan::get_function_ptr("vkNotARealVkFunc") == std::ptr::null_mut());
 
     Log::diag(
         "===================================================================================================================== !!",

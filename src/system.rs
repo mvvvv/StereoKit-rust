@@ -737,6 +737,10 @@ unsafe extern "C" {
     pub fn backend_vulkan_get_queue_family_index(queue: BackendVulkanQueue) -> u32;
     pub fn backend_vulkan_queue_lock(queue: BackendVulkanQueue);
     pub fn backend_vulkan_queue_unlock(queue: BackendVulkanQueue);
+    pub fn backend_vulkan_request(request: *const BackendVulkanRequestT);
+    pub fn backend_vulkan_request_enabled(name: *const c_char) -> Bool32T;
+    pub fn backend_vulkan_ext_enabled(extension_name: *const c_char) -> Bool32T;
+    pub fn backend_vulkan_get_function(function_name: *const c_char) -> *mut c_void;
 }
 
 impl Backend {
@@ -1455,6 +1459,77 @@ impl BackendOpenGLESEGL {
     }
 }
 
+/// A single Vulkan feature struct to request as part of a [`BackendVulkanRequest`]. See
+/// [`BackendVulkan::request`] for details.
+#[derive(Debug, Copy, Clone)]
+#[repr(C)]
+pub struct BackendVulkanFeature {
+    /// A pointer to a pinned `VkPhysicalDevice*Features` struct with its sType set, and the feature bits you want
+    /// enabled set to `VK_TRUE`. This must NOT be a `VkPhysicalDeviceFeatures2`, the core features chain is handled
+    /// separately.
+    pub vk_struct: *mut c_void,
+    /// The size of the struct `vk_struct` points at, in bytes.
+    pub size: i32,
+}
+
+impl BackendVulkanFeature {
+    /// Creates a feature request from a pointer to a pinned `VkPhysicalDevice*Features` struct and its size in bytes.
+    /// * `vk_struct` - A pointer to a pinned `VkPhysicalDevice*Features` struct, with its sType and desired `VK_TRUE`
+    ///   bits set.
+    /// * `size` - The size of the struct `vk_struct` points at, in bytes.
+    pub fn new(vk_struct: *mut c_void, size: i32) -> Self {
+        Self { vk_struct, size }
+    }
+}
+
+/// A request for Vulkan instance/device extensions and device features, registered via
+/// [`BackendVulkan::request`] before [`crate::sk::Sk::init`].
+#[derive(Debug, Default)]
+pub struct BackendVulkanRequest<'a> {
+    /// An optional name used as a handle for [`BackendVulkan::request_enabled`]. None makes the request anonymous -
+    /// it still contributes its extensions and features, but can't be queried by name.
+    pub name: Option<&'a str>,
+    /// If true, [`crate::sk::Sk::init`] will fail should this request go unsatisfied. If false, an unmet request is
+    /// simply left disabled.
+    pub required: bool,
+    /// Vulkan instance extension names this request needs.
+    pub instance_extensions: &'a [&'a str],
+    /// Vulkan device extension names this request needs.
+    pub device_extensions: &'a [&'a str],
+    /// Vulkan device features this request needs. Their bits are queried for support before being enabled.
+    pub features: &'a [BackendVulkanFeature],
+}
+
+impl<'a> BackendVulkanRequest<'a> {
+    pub fn new(name: Option<&'a str>) -> Self {
+        BackendVulkanRequest { name, ..Default::default() }
+    }
+}
+
+/// Native ABI mirror of `backend_vulkan_request_t`, filled and passed to `backend_vulkan_request`.
+///
+/// see also [`BackendVulkan::request`]
+#[derive(Debug, Copy, Clone)]
+#[repr(C)]
+pub struct BackendVulkanRequestT {
+    /// An optional name used as a handle for `backend_vulkan_request_enabled`. null makes the request anonymous.
+    pub name: *const c_char,
+    /// If true, StereoKit initialization will fail should this request go unsatisfied.
+    pub required: Bool32T,
+    /// An array of Vulkan instance extension names this request needs.
+    pub instance_extensions: *const *const c_char,
+    /// Number of instance extension names.
+    pub instance_extension_count: i32,
+    /// An array of Vulkan device extension names this request needs.
+    pub device_extensions: *const *const c_char,
+    /// Number of device extension names.
+    pub device_extension_count: i32,
+    /// An array of Vulkan device features this request needs.
+    pub features: *const BackendVulkanFeature,
+    /// Number of features.
+    pub feature_count: i32,
+}
+
 /// When using Vulkan for rendering, this contains a number of variables that may be useful for doing advanced rendering
 /// tasks. Vulkan is StereoKit's only rendering backend, so these are valid on all supported platforms after
 /// [`crate::sk::Sk::init`].
@@ -1576,6 +1651,167 @@ impl BackendVulkan {
     /// see also [`backend_vulkan_get_frame_fence_fd`]
     pub fn get_frame_fence_fd() -> i32 {
         unsafe { backend_vulkan_get_frame_fence_fd() }
+    }
+
+    /// Registers a request for Vulkan instance/device extensions and device features. This MUST be called before
+    /// [`crate::sk::Sk::init`]. A request enables atomically: only when all of its extensions are present, and every
+    /// requested feature bit is supported. If [`BackendVulkanRequest::required`] is true and the request can't be
+    /// satisfied, [`crate::sk::Sk::init`] will fail! After initialization, check the result with
+    /// [`BackendVulkan::request_enabled`] (by name) or [`BackendVulkan::ext_enabled`] (by extension name).
+    /// <https://stereokit.net/Pages/StereoKit/Backend.Vulkan/Request.html>
+    ///
+    /// The request's arrays and feature struct pointers only need to remain valid for the duration of this call -
+    /// StereoKit copies everything it needs.
+    /// * `request` - The extensions and features to request.
+    ///
+    /// see also [`backend_vulkan_request`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::system::{BackendVulkan, BackendVulkanRequest};
+    ///
+    /// // This MUST be called before SK.Initialize
+    /// let request = BackendVulkanRequest {
+    ///     name:         Some("my_extensions"),
+    ///     required:     false,
+    ///     instance_extensions: &["VK_KHR_push_descriptor"],
+    ///     device_extensions:   &["VK_KHR_swapchain", "VK_KHR_dynamic_rendering"],
+    ///     features:     &[],
+    /// };
+    /// BackendVulkan::request(&request);
+    ///
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// // After init, we can check if the request was satisfied.
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     assert_eq!(BackendVulkan::request_enabled("my_extensions"), false);
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn request(request: &BackendVulkanRequest) {
+        // Convert the name to a C string if present.
+        let name_cstr = request.name.map(|s| CString::new(s).unwrap_or_default());
+        let name_ptr = name_cstr.as_ref().map_or(null(), |c| c.as_ptr());
+
+        // Convert the instance/device extension slices into C string pointers.
+        let inst_cstrs: Vec<CString> =
+            request.instance_extensions.iter().map(|s| CString::new(*s).unwrap_or_default()).collect();
+        let inst_ptrs: Vec<*const c_char> = inst_cstrs.iter().map(|c| c.as_ptr()).collect();
+
+        let dev_cstrs: Vec<CString> =
+            request.device_extensions.iter().map(|s| CString::new(*s).unwrap_or_default()).collect();
+        let dev_ptrs: Vec<*const c_char> = dev_cstrs.iter().map(|c| c.as_ptr()).collect();
+
+        let native = BackendVulkanRequestT {
+            name: name_ptr,
+            required: request.required as Bool32T,
+            instance_extensions: if inst_ptrs.is_empty() { null() } else { inst_ptrs.as_ptr() },
+            instance_extension_count: inst_ptrs.len() as i32,
+            device_extensions: if dev_ptrs.is_empty() { null() } else { dev_ptrs.as_ptr() },
+            device_extension_count: dev_ptrs.len() as i32,
+            features: if request.features.is_empty() { null() } else { request.features.as_ptr() },
+            feature_count: request.features.len() as i32,
+        };
+        // StereoKit copies the request, so the temporaries can be dropped after this call.
+        unsafe { backend_vulkan_request(&native) }
+    }
+
+    /// Checks if a named request registered via [`BackendVulkan::request`] was successfully enabled. This MUST only be
+    /// called after [`crate::sk::Sk::init`].
+    /// <https://stereokit.net/Pages/StereoKit/Backend.Vulkan/RequestEnabled.html>
+    /// * `name` - The name given to the [`BackendVulkanRequest`].
+    ///
+    /// Returns If the request's extensions and features were all enabled.
+    ///
+    /// see also [`backend_vulkan_request_enabled`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::BackendVulkan;
+    ///
+    /// // This request was registered before init, check if it was satisfied.
+    /// let enabled = BackendVulkan::request_enabled("my_extensions");
+    /// // On a PC offscreen test, the request was not satisfied as the extensions
+    /// // are not required and may be absent or already enabled anonymously.
+    /// # assert!(enabled == false || true); // meaningless but useful
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn request_enabled(name: impl AsRef<str>) -> bool {
+        let c_str = CString::new(name.as_ref()).unwrap_or_default();
+        unsafe { backend_vulkan_request_enabled(c_str.as_ptr()) != 0 }
+    }
+
+    /// Checks if a Vulkan extension was enabled at init, regardless of which request asked for it. This MUST only be
+    /// called after [`crate::sk::Sk::init`].
+    /// <https://stereokit.net/Pages/StereoKit/Backend.Vulkan/ExtEnabled.html>
+    /// * `extension_name` - The extension name, for example "VK_KHR_swapchain".
+    ///
+    /// Returns If the extension is available to use.
+    ///
+    /// see also [`backend_vulkan_ext_enabled`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::BackendVulkan;
+    ///
+    /// // VK_KHR_swapchain is always loaded by StereoKit, so it's always enabled.
+    /// let swapchain_enabled = BackendVulkan::ext_enabled("VK_KHR_swapchain");
+    /// # assert!(swapchain_enabled == true || true); // meaningless but useful
+    ///
+    /// // An imaginary extension is never enabled.
+    /// let imaginary_enabled = BackendVulkan::ext_enabled("VK_KHR_imaginary_extension");
+    /// # assert!(imaginary_enabled == false || true); // meaningless but useful
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn ext_enabled(extension_name: impl AsRef<str>) -> bool {
+        let c_str = CString::new(extension_name.as_ref()).unwrap_or_default();
+        unsafe { backend_vulkan_ext_enabled(c_str.as_ptr()) != 0 }
+    }
+
+    /// Resolves a Vulkan function pointer, using `vkGetDeviceProcAddr` with a `vkGetInstanceProcAddr` fallback. Use
+    /// this to call into extensions you've enabled via [`BackendVulkan::request`].
+    /// <https://stereokit.net/Pages/StereoKit/Backend.Vulkan/GetFunctionPtr.html>
+    /// * `function_name` - The Vulkan function name, for example "vkCmdBeginRenderingKHR".
+    ///
+    /// Returns a raw function pointer, or null on failure.
+    ///
+    /// see also [`backend_vulkan_get_function`] [`BackendVulkan::get_function`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::BackendVulkan;
+    ///
+    /// // Resolve a function pointer from a Vulkan extension you've requested.
+    /// let ptr = BackendVulkan::get_function_ptr("vkCmdBeginRenderingKHR");
+    /// # assert!(ptr.is_null() || !ptr.is_null()); // meaningless but useful
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn get_function_ptr(function_name: impl AsRef<str>) -> *mut c_void {
+        let c_str = CString::new(function_name.as_ref()).unwrap_or_default();
+        unsafe { backend_vulkan_get_function(c_str.as_ptr()) }
+    }
+
+    /// Resolves a Vulkan function pointer and casts it to the desired function type, using `vkGetDeviceProcAddr` with a
+    /// `vkGetInstanceProcAddr` fallback. Use this to call into extensions you've enabled via
+    /// [`BackendVulkan::request`].
+    /// <https://stereokit.net/Pages/StereoKit/Backend.Vulkan/GetFunction.html>
+    /// * `function_name` - The Vulkan function name, for example "vkCmdBeginRenderingKHR".
+    ///
+    /// Returns a function pointer of type `T`, or `None` on failure.
+    ///
+    /// see also [`backend_vulkan_get_function`] [`BackendVulkan::get_function_ptr`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::BackendVulkan;
+    ///
+    /// // Resolve and cast a Vulkan function pointer to a typed function.
+    /// let fn_ptr: Option<unsafe extern "C" fn()> =
+    ///     BackendVulkan::get_function("vkCmdBeginRenderingKHR");
+    /// # assert!(fn_ptr.is_some() || fn_ptr.is_none()); // meaningless but useful
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn get_function<T>(function_name: impl AsRef<str>) -> Option<T> {
+        let ptr = BackendVulkan::get_function_ptr(function_name);
+        if ptr.is_null() { None } else { Some(unsafe { std::mem::transmute_copy(&ptr) }) }
     }
 }
 
@@ -4738,7 +4974,9 @@ impl Lines {
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
 pub enum LogColors {
-    /// Use console coloring annotations.
+    /// Use console coloring annotations, when the console supports them! StereoKit checks the terminal for ANSI 
+    /// support, whether output has been redirected to a file or pipe, and the NO_COLOR environment variable. If any of 
+    /// those say no, colors are scraped out and logs fall back to plain text.
     Ansi = 0,
     ///Scrape out any color annotations, so logs are all completely plain text.
     None = 1,

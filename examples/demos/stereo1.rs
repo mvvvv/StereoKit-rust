@@ -79,7 +79,7 @@ impl Default for Stereo1 {
         let render_right = RenderBuilder::new()
             .camera(cam_right)
             .projection(proj)
-            .clear(RenderClear::None)
+            .clear(RenderClear::Keep)
             .viewport(Rect::new(0.5, 0.0, 0.5, 1.0));
         // Custom stereo shader material.
         let mut stereo_mat =

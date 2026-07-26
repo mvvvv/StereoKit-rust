@@ -227,7 +227,7 @@ fn main() {
     use demos::program::launch;
     use std::env;
     use stereokit_rust::sk::{DepthMode, Sk, StandbyMode};
-    use stereokit_rust::system::BackendOpenXR;
+    use stereokit_rust::system::{BackendOpenXR, BackendVulkan, BackendVulkanRequest};
     use stereokit_rust::{
         sk::{AppMode, OriginMode, SkSettings},
         system::LogLevel,
@@ -325,6 +325,9 @@ fn main() {
     BackendOpenXR::request_ext("XR_FB_render_model");
     // Required by the Layers1 demo for cylinder composition layers.
     BackendOpenXR::request_ext("XR_KHR_composition_layer_cylinder");
+
+    BackendVulkan::request(&BackendVulkanRequest::new(Some("sk_test_request")));
+
 
     let sk = settings.init().unwrap();
     launch(sk, is_testing, start_test);

@@ -15,23 +15,69 @@ use std::{
     ptr::{NonNull, null_mut},
 };
 
-/// When rendering to a rendertarget, this tells if and what of the rendertarget gets cleared before rendering. For
-/// example, if you are assembling a sheet of images, you may want to clear everything on the first image draw, but not
-/// clear on subsequent draws.
-/// <https://stereokit.net/Pages/StereoKit/RenderClear.html>
+bitflags::bitflags! {
+    /// When rendering to a rendertarget, this tells if and what of the rendertarget gets cleared before rendering. For
+    /// example, if you are assembling a sheet of images, you may want to clear everything on the first image draw, but not
+    /// clear on subsequent draws.
+    /// <https://stereokit.net/Pages/StereoKit/RenderClear.html>
+    ///
+    /// see also [`Renderer`]
+    #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+    #[repr(C)]
+    pub struct RenderClear: u32 {
+        /// Clear the rendertarget's color data.
+        const Color = 1 << 0;
+        /// Clear the rendertarget's depth data, if present.
+        const Depth = 1 << 1;
+        /// Don't clear anything, draw on top of what's already there.
+        const Keep  = 1 << 3;
+        #[deprecated(since = "0.4.0", note ="Use [`RenderClear::Keep`] instead.")]
+        const None  = Self::Keep.bits();
+        /// Clear both color and depth data. A zero value also means this - it's the default, so zero-initialized
+        /// settings clear everything.
+        const All   = Self::Color.bits() | Self::Depth.bits();
+    }
+}
+
+/// [`RenderBuilder`] is all you need to fill this internal C struct.
+/// Optional settings for rendering a camera viewpoint to a rendertarget, used by [`render_to`] and
+/// [`render_list_draw_now`]. This is a plain struct where zero means 'default' - a zero-initialized struct gives you:
+/// all layers, the default material variant, clear everything to transparent black, a full-target viewport, and no
+/// post-processing.
 ///
-/// see also [`Renderer`]
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-#[repr(u32)]
-pub enum RenderClear {
-    /// Don’t clear anything, leave it as it is.
-    None = 0,
-    /// Clear the rendertarget’s color data.
-    Color = 1,
-    /// Clear the rendertarget’s depth data, if present.
-    Depth = 2,
-    /// Clear both color and depth data.
-    All = 3,
+#[repr(C)]
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct RenderSettingsT {
+    /// Layer filter for what to draw, 0 defaults to [`RenderLayer::All`].
+    pub layer_filter: RenderLayer,
+    /// Material variant index, 0 is the default variant.
+    pub material_variant: i32,
+    /// What to clear before drawing, 0 defaults to [`RenderClear::All`]. Use [`RenderClear::Keep`] to draw on top of
+    /// the target's existing content.
+    pub clear: RenderClear,
+    /// Color to clear the target with, in linear space. Defaults to transparent black.
+    pub clear_color: Color128,
+    /// Percentage-based viewport rect, a zero-sized rect defaults to the full target.
+    pub viewport: Rect,
+    /// Optional array of post-process materials for this pass, applied in array order. These are tile-friendly subpass
+    /// effects, see [`Renderer::set_post_process`] for the shader requirements.
+    pub post_process: *const MaterialT,
+    /// Number of materials in `post_process`.
+    pub post_process_count: i32,
+}
+
+impl Default for RenderSettingsT {
+    fn default() -> Self {
+        Self {
+            layer_filter: RenderLayer::All,
+            material_variant: 0,
+            clear: RenderClear::All,
+            clear_color: Color128::BLACK_TRANSPARENT,
+            viewport: Rect::default(),
+            post_process: std::ptr::null(),
+            post_process_count: 0,
+        }
+    }
 }
 
 bitflags::bitflags! {
@@ -256,11 +302,9 @@ unsafe extern "C" {
         arr_camera: *const Matrix,
         arr_projection: *const Matrix,
         view_count: i32,
-        layer_filter: RenderLayer,
-        material_variant: i32,
-        clear: RenderClear,
-        viewport: Rect,
+        opt_settings: *const RenderSettingsT,
     );
+    pub fn render_set_post_process(in_arr_materials: *const MaterialT, material_count: i32);
 
     pub fn render_MaterialTo(
         to_rendertarget: TexT,
@@ -725,6 +769,47 @@ impl Renderer {
     /// ```
     pub fn blit(to_render_target: impl AsRef<Tex>, material: impl AsRef<Material>) {
         unsafe { render_blit(to_render_target.as_ref().0.as_ptr(), material.as_ref().0.as_ptr()) }
+    }
+
+    /// Sets the main display's post-process chain! The Materials apply in array order, at most 2 per pass, and calling
+    /// this with no arguments clears the chain. Post-processing here is tile-renderer friendly: effects run as subpasses
+    /// that stay in tile memory on mobile GPUs, and they apply to the main display and to screenshots - what you see is
+    /// what you shoot.
+    ///
+    /// A post-process Material's shader reads the scene through a pixel-local input attachment named 'color' (in HLSL,
+    /// `[[vk::input_attachment_index(0)]] SubpassInput<float4> color;` read with `color.SubpassLoad()`), draws as a
+    /// bufferless fullscreen triangle from SV_VertexID, and so cannot have vertex inputs. It may also read depth
+    /// through an input attachment named 'depth' at index 1. Materials that don't qualify are rejected with an error
+    /// log. Regular textures and Material parameters work normally, and can be animated per-frame.
+    /// <https://stereokit.net/Pages/StereoKit/Renderer/SetPostProcess.html>
+    /// * `post_process_chain` - Materials whose shaders qualify as post-process effects, applied in order. Empty
+    /// clears the chain.
+    ///
+    /// see also [`render_set_post_process`] [`RenderBuilder::post_process`]
+    /// ### Examples
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{render::Renderer, material::Material};
+    ///
+    /// let night_vision = Material::from_file("shaders/subpass/night_vision.hlsl.sks", None)
+    ///                       .expect("night_vision shader should load");
+    /// let depth_wave = Material::from_file("shaders/subpass/depth_wave.hlsl.sks", None)
+    ///                       .expect("depth_wave shader should load");
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter == 0 {
+    ///         Renderer::set_post_process(vec![&night_vision, &depth_wave]);
+    ///     }
+    ///     if iter == number_of_steps - 1 {
+    ///         // Clear the post-process chain
+    ///         Renderer::set_post_process(vec![]);
+    ///     }
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn set_post_process(post_process_chain: Vec<&Material>) {
+        let ppct: Vec<_> = post_process_chain.iter().map(|m| m.as_ref().0.as_ptr()).collect();
+        unsafe { render_set_post_process(ppct.as_ptr(), ppct.len() as i32) }
     }
 
     /// The capture_filter is a layer mask for Mixed Reality Capture, or 2nd person observer rendering. On HoloLens and
@@ -1555,11 +1640,7 @@ unsafe extern "C" {
         in_arr_cameras: *const Matrix,
         in_arr_projections: *const Matrix,
         view_count: i32,
-        clear_color: Color128,
-        clear: RenderClear,
-        viewport_pct: Rect,
-        layer_filter: RenderLayer,
-        material_variant: i32,
+        opt_settings: *const RenderSettingsT,
     );
     pub fn render_list_push(list: RenderListT);
     pub fn render_list_pop();
@@ -2021,7 +2102,7 @@ impl RenderList {
     /// let render = RenderBuilder::new()
     ///     .camera(transform_cam)
     ///     .projection(orthographic)
-    ///     .clear(RenderClear::None)
+    ///     .clear(RenderClear::Keep)
     ///     .viewport(Rect::new(0.0, 0.0, 1.0, 1.0));
     ///
     /// filename_scr = "screenshots/render_list_draw_now.jpeg";
@@ -2231,15 +2312,15 @@ impl RenderList {
 /// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_builder.jpeg" alt="screenshot" width="200">
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 #[must_use = "RenderBuilder does nothing until you call .render_to() .draw_now() or .screenshot() on it"]
 pub struct RenderBuilder {
     cameras: Vec<Matrix>,
     projections: Vec<Matrix>,
-    layer_filter: RenderLayer,
-    material_variant: i32,
-    clear: RenderClear,
-    viewport_pct: Rect,
+    /// Native settings struct, modified directly by setters. The `post_process` pointer inside is
+    /// kept in sync with `post_process_materials`.
+    settings: RenderSettingsT,
+    ppct: Vec<MaterialT>,
 }
 
 impl Default for RenderBuilder {
@@ -2247,10 +2328,8 @@ impl Default for RenderBuilder {
         Self {
             cameras: vec![Matrix::IDENTITY],
             projections: vec![Matrix::IDENTITY],
-            layer_filter: RenderLayer::All,
-            material_variant: 0,
-            clear: RenderClear::All,
-            viewport_pct: Rect::default(),
+            settings: RenderSettingsT::default(),
+            ppct: vec![],
         }
     }
 }
@@ -2297,22 +2376,37 @@ impl RenderBuilder {
     /// viewpoint. To change what layers a visual is on, use a Draw method that includes a RenderLayer as a parameter.
     /// If None has default value of [`RenderLayer::All`]
     pub fn layer_filter(mut self, layer_filter: RenderLayer) -> Self {
-        self.layer_filter = layer_filter;
+        self.settings.layer_filter = layer_filter;
         self
     }
 
     /// Specifies which Material variant should be used for rendering. 0 will be the normal default material, any
-    /// others will generally be application-defined by setting up each Material’s Variant with specific shaders. If a
+    /// others will generally be application-defined by setting up each Material's Variant with specific shaders. If a
     /// [`Material`] has no corresponding variant, it will not be drawn.
     pub fn material_variant(mut self, material_variant: i32) -> Self {
-        self.material_variant = material_variant;
+        self.settings.material_variant = material_variant;
         self
     }
 
     /// Describes if and how the rendertarget should be cleared before rendering. Note that clearing the target is
     /// unaffected by the viewport, so this will clean the entire surface! Default value is [`RenderClear::All`]
     pub fn clear(mut self, clear: RenderClear) -> Self {
-        self.clear = clear;
+        self.settings.clear = clear;
+        self
+    }
+
+    /// If `clear` clears color, this is the color used. Default is [`Color128::BLACK_TRANSPARENT`].
+    pub fn clear_color(mut self, clear_color: impl Into<Color128>) -> Self {
+        self.settings.clear_color = clear_color.into();
+        self
+    }
+
+    /// Sets the post-process chain for this render pass. The Materials apply in array order. These are tile-friendly
+    /// subpass effects, see [`Renderer::set_post_process`] for the shader requirements.
+    pub fn post_process(mut self, post_process_chain: Vec<&Material>) -> Self {
+        self.ppct = post_process_chain.iter().map(|m| m.as_ref().0.as_ptr()).collect();
+        self.settings.post_process = if post_process_chain.is_empty() { std::ptr::null() } else { self.ppct.as_ptr() };
+        self.settings.post_process_count = post_process_chain.len() as i32;
         self
     }
 
@@ -2320,7 +2414,7 @@ impl RenderBuilder {
     /// width of this value is zero, then this will render to the entire texture same as default value which is
     /// [0.0, 0.0, 1.0, 1.0].
     pub fn viewport(mut self, viewport: Rect) -> Self {
-        self.viewport_pct = viewport;
+        self.settings.viewport = viewport;
         self
     }
 
@@ -2398,10 +2492,7 @@ impl RenderBuilder {
                 self.cameras.as_ptr(),
                 self.projections.as_ptr(),
                 self.cameras.len() as i32,
-                self.layer_filter,
-                self.material_variant,
-                self.clear,
-                self.viewport_pct,
+                &self.settings,
             )
         }
     }
@@ -2410,7 +2501,8 @@ impl RenderBuilder {
     /// point, with a resolution the same size as the screen’s surface. This overload allows for retrieval of the color
     /// data directly from the render thread! You can use the color data directly by saving/processing it inside your
     /// callback, or you can keep the data alive for as long as it is referenced.
-    /// [`RenderBuilder::material_variant`] is not used here as we want a screenshot.
+    /// [`RenderBuilder::material_variant`] [`RenderBuilder::post_process`] [`RenderBuilder::clear_color`] are not used
+    /// here as we want a screenshot.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/Screenshot.html>
     /// * `on_screenshot` - closure |&[u8], TexFormat, width:usize, height:usize|
     /// * `camera_index` - Index of the camera/projection pair to render from. 0 in most of the case.
@@ -2438,9 +2530,9 @@ impl RenderBuilder {
                 self.projections[camera_index],
                 width,
                 height,
-                self.layer_filter,
-                self.clear,
-                self.viewport_pct,
+                self.settings.layer_filter,
+                self.settings.clear,
+                self.settings.viewport,
                 tex_format,
                 &mut closure as *mut _ as *mut c_void,
             )
@@ -2490,7 +2582,7 @@ impl RenderBuilder {
     /// let render = RenderBuilder::new()
     ///     .cameras(cameras.to_vec())
     ///     .projections(&projections)
-    ///     .clear(RenderClear::None)
+    ///     .clear(RenderClear::Keep)
     ///     .viewport(Rect::new(0.0, 0.0, 1.0, 1.0));
     ///
     /// filename_scr = "screenshots/render_list_draw_now_multi_view.jpeg";
@@ -2512,6 +2604,8 @@ impl RenderBuilder {
         to_rendertarget: impl AsRef<Tex>,
         clear_color: impl Into<Color128>,
     ) {
+        let mut settings = self.settings;
+        settings.clear_color = clear_color.into();
         unsafe {
             render_list_draw_now(
                 render_list.0.as_ptr(),
@@ -2519,11 +2613,7 @@ impl RenderBuilder {
                 self.cameras.as_ptr(),
                 self.projections.as_ptr(),
                 self.cameras.len() as i32,
-                clear_color.into(),
-                self.clear,
-                self.viewport_pct,
-                self.layer_filter,
-                self.material_variant,
+                &settings,
             )
         }
     }
