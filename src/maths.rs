@@ -944,12 +944,14 @@ impl PartialEq for Vec3 {
     /// assert_eq!(
     ///              Vec3 { x: 0.045863353, y: 0.030000005, z: 0.0 } ,
     ///              Vec3 { x: 0.045863353, y: 0.030000005, z: 0.0 } );
-    /// ```
-    /// ```
-    /// use stereokit_rust::maths::Vec3;
+    ///
     /// assert_ne!(
     ///              Vec3 { x: 10.045863353, y: 0.030000005, z: 0.0 } ,
     ///              Vec3 { x: 0.045863353, y: 0.030000005, z: 0.0 } );
+    ///
+    /// assert_ne!(
+    ///              Vec3 {  x: -0.0015813109, y: -0.0003951068, z: -0.00032964576 } / 10.0,
+    ///              Vec3::ZERO );
     /// ```
     fn eq(&self, other: &Self) -> bool {
         ((self.x - other.x).abs() < 0.0001)

@@ -2276,6 +2276,7 @@ impl RenderList {
 /// let projection = Matrix::perspective(90.0, 1.0, 0.1, 50.0);
 ///
 /// // A RenderList for draw_now.
+/// # {
 /// let mut render_list = RenderList::new();
 ///
 /// // Configure the builder once, before the main loop.
@@ -2309,7 +2310,7 @@ impl RenderList {
 ///         sprite2.draw(transform_sprite2, Pivot::Center, None, None);
 ///     }
 /// );
-/// # sk::Sk::shutdown();
+/// # } sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_builder.jpeg" alt="screenshot" width="200">
 #[derive(Debug)]
@@ -2572,7 +2573,7 @@ impl RenderBuilder {
     /// let transform_cam2  = Matrix::look_at(at, [0.1, 0.0, 0.0], None);
     /// let cameras = [transform_cam1, transform_cam2];
     /// let projections = [orthographic; 2];
-    ///
+    /// # {
     /// let mut render_list = RenderList::new();
     /// render_list
     ///     .add_mesh(&cylinder1, &cylinder_mat, Matrix::IDENTITY, named_colors::RED, None)
@@ -2595,7 +2596,7 @@ impl RenderBuilder {
     ///     }
     ///     
     /// );
-    /// # sk::Sk::shutdown();
+    /// # }sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_list_draw_now_multi_view.jpeg" alt="screenshot" width="200">
     pub fn draw_now(

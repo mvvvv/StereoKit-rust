@@ -297,6 +297,10 @@ fn main() {
     if log_env {
         log_launch_environment();
     }
+    #[cfg(not(target_os = "linux"))]
+    if log_env {
+        println!("log-env only implemented for linux");
+    }
 
     let mut settings = SkSettings::default();
     settings
