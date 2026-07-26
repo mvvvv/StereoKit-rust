@@ -1667,12 +1667,9 @@ impl IAsset for RenderList {
 }
 
 impl RenderList {
-    /// Creates a new empty RenderList.
+    /// Creates a new empty RenderList. Tracks asset references for the Meshes and Materials added to it. This is safe
+    /// across frames.
     /// <https://stereokit.net/Pages/StereoKit/RenderList/RenderList.html>
-    ///
-    /// * `refs` - Controls whether the list tracks asset references for the Meshes and Materials added to it. The
-    ///   default, `Tracked`, is safe across frames. `None` skips the addref/release pair on each add and clear, but
-    ///   the caller must ensure the list is cleared before any referenced asset could be released.
     ///
     /// see also [`render_list_create`] [`RenderList::new_with`]
     /// ### Examples
@@ -2582,7 +2579,7 @@ impl RenderBuilder {
     /// let render = RenderBuilder::new()
     ///     .cameras(cameras.to_vec())
     ///     .projections(&projections)
-    ///     .clear(RenderClear::Keep)
+    ///     .clear(RenderClear::Depth)
     ///     .viewport(Rect::new(0.0, 0.0, 1.0, 1.0));
     ///
     /// filename_scr = "screenshots/render_list_draw_now_multi_view.jpeg";
@@ -2595,6 +2592,7 @@ impl RenderBuilder {
     ///     }
     ///     
     /// );
+    /// render_list.clear();
     /// # }sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_list_draw_now_multi_view.jpeg" alt="screenshot" width="200">

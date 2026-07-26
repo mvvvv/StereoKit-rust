@@ -1305,9 +1305,10 @@ impl Tex {
     /// let tex_copy = tex_blue.copy(Some(TexType::Image), Some(TexFormat::Rgba128))
     ///                             .expect("copy should be done");
     /// let mut color_data = [Color128::WHITE; 25];
-    ///
-    /// assert!(tex_copy.get_color_data::<Color128>(&mut color_data, 0));
-    /// assert_eq!(color_data[24], Color128 { r: 0.0, g: 0.0, b: 0.0, a: 0.0 });
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     assert!(tex_copy.get_color_data::<Color128>(&mut color_data, 0));
+    ///     assert_eq!(color_data[24], Color128 { r: 0.0, g: 0.0, b: 0.0, a: 0.0 });
+    /// );
     /// # sk::Sk::shutdown();
     /// ```
     pub fn copy(&self, tex_type: Option<TexType>, tex_format: Option<TexFormat>) -> Result<Tex, StereoKitError> {
@@ -2959,10 +2960,11 @@ impl Tex {
     ///
     /// let tex_not_icon = Tex::from_file("Not an icon file", true, None)
     ///                             .expect("Tex_not_icon should be created");
-    /// assert_eq!(tex_not_icon.get_mips(), None);
     ///
     /// Assets::block_for_priority(99);
     /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     assert_eq!(tex_not_icon.get_mips(), None);
+    ///
     ///     // We ensure to have the Tex loaded.
     ///     if    tex_icon.get_asset_state()     != AssetState::Loaded
     ///        || tex_not_icon.get_asset_state() == AssetState::Loading { iter -= 1; }

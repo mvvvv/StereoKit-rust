@@ -2,7 +2,6 @@ use openxr_sys::EnvironmentBlendMode;
 use std::{process, sync::Mutex, thread};
 use stereokit_rust::{
     framework::{ISTEPPER_REMOVED, SkClosures},
-    material::Cull,
     maths::{Pose, Quat, Vec2, Vec3, units::*},
     model::Model,
     prelude::*,
@@ -217,9 +216,6 @@ pub fn launch(mut sk: Sk, _is_testing: bool, start_test: String) {
     } else {
         Log::diag("XR_META_virtual_keyboard extension not available");
     }
-
-    let ui_text_style = Ui::get_text_style();
-    ui_text_style.get_material().face_cull(Cull::Back);
 
     let mut inst_play: Option<SoundInst> = None;
 
