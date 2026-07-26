@@ -181,39 +181,39 @@ fn log_launch_environment() {
     {
         // Best-effort: try `ps` to name the parent. This won't be available on
         // all setups but is very informative when it is.
-        if let Ok(output) = Command::new("ps").args(["-o", "pid=,ppid=,comm=", "-p"]).arg(ppid.to_string()).output() {
-            if output.status.success() {
-                let line = String::from_utf8_lossy(&output.stdout);
-                let trimmed = line.trim();
-                if !trimmed.is_empty() {
-                    out.push_str(&format!("parent (ps)  : {trimmed}\n"));
-                }
+        if let Ok(output) = Command::new("ps").args(["-o", "pid=,ppid=,comm=", "-p"]).arg(ppid.to_string()).output()
+            && output.status.success()
+        {
+            let line = String::from_utf8_lossy(&output.stdout);
+            let trimmed = line.trim();
+            if !trimmed.is_empty() {
+                out.push_str(&format!("parent (ps)  : {trimmed}\n"));
             }
         }
         // Full parent chain via ps for deeper inspection.
-        if let Ok(output) = Command::new("ps").args(["-o", "pid=,ppid=,comm=", "-g"]).arg(ppid.to_string()).output() {
-            if output.status.success() {
-                let body = String::from_utf8_lossy(&output.stdout);
-                let mut lines: Vec<&str> = body.lines().collect();
-                if !lines.is_empty() {
-                    out.push_str("parent tree  :\n");
-                    for l in &lines {
-                        out.push_str(&format!("    {l}\n"));
-                    }
-                    lines.clear();
+        if let Ok(output) = Command::new("ps").args(["-o", "pid=,ppid=,comm=", "-g"]).arg(ppid.to_string()).output()
+            && output.status.success()
+        {
+            let body = String::from_utf8_lossy(&output.stdout);
+            let mut lines: Vec<&str> = body.lines().collect();
+            if !lines.is_empty() {
+                out.push_str("parent tree  :\n");
+                for l in &lines {
+                    out.push_str(&format!("    {l}\n"));
                 }
+                lines.clear();
             }
         }
     }
 
     // Process resource limits can differ (Steam Runtime caps some of them),
     // which affects e.g. how many file descriptors / OpenXR layers are usable.
-    if let Ok(output) = Command::new("sh").arg("-c").arg("ulimit -a 2>/dev/null").output() {
-        if output.status.success() {
-            let body = String::from_utf8_lossy(&output.stdout);
-            out.push_str("\n--- ulimit -a ---\n");
-            out.push_str(&body);
-        }
+    if let Ok(output) = Command::new("sh").arg("-c").arg("ulimit -a 2>/dev/null").output()
+        && output.status.success()
+    {
+        let body = String::from_utf8_lossy(&output.stdout);
+        out.push_str("\n--- ulimit -a ---\n");
+        out.push_str(&body);
     }
 
     out.push_str("================ END LAUNCH ENVIRONMENT ================\n");

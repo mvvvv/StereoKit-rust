@@ -783,10 +783,9 @@ impl Renderer {
     /// log. Regular textures and Material parameters work normally, and can be animated per-frame.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SetPostProcess.html>
     /// * `post_process_chain` - Materials whose shaders qualify as post-process effects, applied in order. Empty
-    /// clears the chain.
+    ///   clears the chain.
     ///
     /// see also [`render_set_post_process`] [`RenderBuilder::post_process`]
-    /// ### Examples
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -808,7 +807,7 @@ impl Renderer {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn set_post_process(post_process_chain: Vec<&Material>) {
-        let ppct: Vec<_> = post_process_chain.iter().map(|m| m.as_ref().0.as_ptr()).collect();
+        let ppct: Vec<_> = post_process_chain.iter().map(|m| m.0.as_ptr()).collect();
         unsafe { render_set_post_process(ppct.as_ptr(), ppct.len() as i32) }
     }
 
@@ -2405,7 +2404,7 @@ impl RenderBuilder {
     /// Sets the post-process chain for this render pass. The Materials apply in array order. These are tile-friendly
     /// subpass effects, see [`Renderer::set_post_process`] for the shader requirements.
     pub fn post_process(mut self, post_process_chain: Vec<&Material>) -> Self {
-        self.ppct = post_process_chain.iter().map(|m| m.as_ref().0.as_ptr()).collect();
+        self.ppct = post_process_chain.iter().map(|m| m.0.as_ptr()).collect();
         self.settings.post_process = if post_process_chain.is_empty() { std::ptr::null() } else { self.ppct.as_ptr() };
         self.settings.post_process_count = post_process_chain.len() as i32;
         self
@@ -2553,8 +2552,8 @@ impl RenderBuilder {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::{Vec3, Matrix, Rect},  util::{named_colors, Color128},
-    ///                      tex::{Tex, TexType, TexFormat}, material::Material,
-    ///                      mesh::Mesh, render::{RenderList, RenderBuilder, RenderClear}};
+    ///                      tex::{Tex, TexType, TexFormat}, material::Material, mesh::Mesh,
+    ///                      render::{RenderList, RenderListRefs, RenderBuilder, RenderClear}};
     ///
     /// let cylinder1 = Mesh::generate_cylinder(0.3, 1.5, [ 0.5, 0.5, 0.0],None);
     /// let cylinder2 = Mesh::generate_cylinder(0.3, 1.5, [-0.5, 0.5, 0.0],None);
@@ -2574,7 +2573,7 @@ impl RenderBuilder {
     /// let cameras = [transform_cam1, transform_cam2];
     /// let projections = [orthographic; 2];
     /// # {
-    /// let mut render_list = RenderList::new();
+    /// let mut render_list = RenderList::new_with(RenderListRefs::None);
     /// render_list
     ///     .add_mesh(&cylinder1, &cylinder_mat, Matrix::IDENTITY, named_colors::RED, None)
     ///     .add_mesh(&cylinder2, &cylinder_mat, Matrix::IDENTITY, named_colors::GREEN,None)

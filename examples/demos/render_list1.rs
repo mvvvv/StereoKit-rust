@@ -61,7 +61,7 @@ impl Default for RenderList1 {
         let material_quad = Material::pbr();
 
         Assets::block_for_priority(i32::MAX);
-        list.add_model(&model.copy(), transform_model, Color128::WHITE, None);
+        list.add_model(model.copy(), transform_model, Color128::WHITE, None);
         list.add_mesh(&quad, &material_quad, Matrix::IDENTITY, BLUE_VIOLET, None);
 
         Assets::block_for_priority(i32::MAX);
@@ -141,8 +141,8 @@ impl RenderList1 {
             return;
         };
 
-        self.render_mat.diffuse_tex(&read_tex);
-        render.draw_now(&self.list, &write_tex, Color128::new(0.4, 0.3, 0.2, 0.5));
+        self.render_mat.diffuse_tex(read_tex);
+        render.draw_now(&self.list, write_tex, Color128::new(0.4, 0.3, 0.2, 0.5));
 
         Ui::window("Render Lists").pose(&mut self.window_pose).size(Vec2::new(0.23, 0.35)).begin();
         Ui::label(format!("Render items: {}/{}", self.primary.get_count(), self.primary.get_prev_count()))
