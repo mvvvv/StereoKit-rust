@@ -1145,6 +1145,7 @@ impl Renderer {
     ///
     /// see also [`RenderBuilder::screenshot`] [`Renderer::screenshot_capture`] [`Renderer::screenshot`]
     /// ### Examples
+    /// TODO: Unable to get the tex
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{render::{Renderer, RenderBuilder}, system::Assets, maths::{Vec3, Quat, Matrix},
@@ -1188,7 +1189,6 @@ impl Renderer {
     ///         &render, 0, 200, 200, None
     ///     );
     /// );
-    /// # system::Assets::block_for_priority(i32::MAX);
     /// # sk::Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/screenshot_viewpoint.jpeg" alt="screenshot" width="200">
@@ -2068,22 +2068,24 @@ impl RenderList {
     ///
     /// see also [`render_list_draw_now`] [`RenderBuilder::draw_now`]
     /// ### Examples
+    /// TODO: When cylinder_mat is pbr() we have this error [sk_renderer] [Vulkan:ERROR:-836363996] vkCmdDrawIndexed(): the combined image sampler descriptor [Set 0, Binding 111, Index 0, variable "sk_cubemap"] VkImageViewType is VK_IMAGE_VIEW_TYPE_2D but the OpTypeImage has (Dim = Cube) and (Arrayed = 0).
+    ///       Either fix in shader or update the VkImageViewType to VK_IMAGE_VIEW_TYPE_CUBE.
+    ///       The Vulkan spec states: If a VkImageView is accessed as a result of this command, then the image view's viewType must match the Dim operand of the OpTypeImage as described in Compatibility Between SPIR-V Image Dimensions and Vulkan ImageView Types (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDrawIndexed-viewType-07752)
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::{Vec3, Matrix, Rect},  util::{named_colors, Color128},
     ///                      tex::{Tex, TexType, TexFormat}, material::Material,
-    ///                      mesh::Mesh, render::{RenderList, RenderBuilder, RenderClear}};
+    ///                      mesh::Mesh, render::{RenderList, RenderBuilder}};
     ///
     /// let cylinder1 = Mesh::generate_cylinder(0.3, 1.5, [ 0.5, 0.5, 0.0],None);
     /// let cylinder2 = Mesh::generate_cylinder(0.3, 1.5, [-0.5, 0.5, 0.0],None);
-    /// let cylinder_mat = Material::pbr().copy();
+    /// let cylinder_mat = Material::unlit().copy();
     ///
     /// let render_tex = Tex::gen_color(Color128::WHITE, 128, 128,
     ///                       TexType::Rendertarget, TexFormat::Rgba32Srgb);
     /// let mut render_mat = Material::unlit().copy();
     /// render_mat.diffuse_tex(&render_tex);
     /// let screen = Mesh::generate_cube([1.0, 1.0, 1.0], None);
-    /// let transform_screen = Matrix::t([0.0, 0.0, -1.0]);
     ///
     /// let at = Vec3::new(-1.0, 0.0, 1.0);
     /// let orthographic = Matrix::orthographic(1.5, 1.5, 0.01, 120.0);
@@ -2092,19 +2094,24 @@ impl RenderList {
     /// let mut render_list = RenderList::new();
     /// render_list
     ///     .add_mesh(&cylinder1, &cylinder_mat, Matrix::IDENTITY, named_colors::CYAN, None)
-    ///     .add_mesh(&cylinder2, &cylinder_mat, Matrix::IDENTITY, named_colors::FUCHSIA,None)
-    ///     .add_mesh(&screen,    &render_mat,   transform_screen, named_colors::GRAY, None);
+    ///     .add_mesh(&cylinder2, &cylinder_mat, Matrix::IDENTITY, named_colors::FUCHSIA,None);
     ///
     /// let render = RenderBuilder::new()
     ///     .camera(transform_cam)
     ///     .projection(orthographic)
-    ///     .clear(RenderClear::Keep)
     ///     .viewport(Rect::new(0.0, 0.0, 1.0, 1.0));
     ///
     /// filename_scr = "screenshots/render_list_draw_now.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     screen.draw(&render_mat, Matrix::IDENTITY, None, None);
-    ///     render_list.draw_now(&render_tex, &render, Color128::BLACK_TRANSPARENT);
+    ///     if iter == number_of_steps -1 {
+    ///         screen.draw(&render_mat, Matrix::IDENTITY, None, None);
+    ///     } else {
+    ///         if iter % 2 == 0 { // 2 syntaxes for the same job:
+    ///             render_list.draw_now(&render_tex, &render, Color128::new(0.2, 0.4, 0.2, 0.5));
+    ///         } else {
+    ///             render.draw_now(&render_list, &render_tex, Color128::new(0.2, 0.4, 0.2, 0.5))
+    ///         }
+    ///     }
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -2544,24 +2551,29 @@ impl RenderBuilder {
     /// * `to_render_target` - An array or cubemap rendertarget with at least `cameras.len()` layers.
     /// * `clear_color` - If `clear` clears color, this is the color used. Default is transparent black.
     ///
-    /// see also [`RenderList::draw_now`] [`render_list_draw_now`]
+    /// see also [`render_list_draw_now`] [`RenderList::draw_now`]
     /// ### Examples for multi-view rendering, simply build a [`RenderBuilder`] with N cameras and N projections:
+    /// TODO: see [`RenderList::draw_now`] example problem
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::{Vec3, Matrix, Rect},  util::{named_colors, Color128},
     ///                      tex::{Tex, TexType, TexFormat}, material::Material, mesh::Mesh,
-    ///                      render::{RenderList, RenderListRefs, RenderBuilder, RenderClear}};
+    ///                      render::{RenderList, RenderListRefs, RenderBuilder}};
     ///
     /// let cylinder1 = Mesh::generate_cylinder(0.3, 1.5, [ 0.5, 0.5, 0.0],None);
     /// let cylinder2 = Mesh::generate_cylinder(0.3, 1.5, [-0.5, 0.5, 0.0],None);
-    /// let cylinder_mat = Material::pbr().copy();
+    /// let cylinder_mat = Material::unlit().copy();
     ///
-    /// let render_tex = Tex::gen_color(Color128::WHITE, 128, 128,
-    ///                       TexType::Rendertarget, TexFormat::Rgba32Srgb);
-    /// let mut render_mat = Material::unlit().copy();
-    /// render_mat.diffuse_tex(&render_tex);
+    /// // Create a render target texture with array support
+    /// let tex_type = TexType::ImageNomips | TexType::Rendertarget;
+    /// let mut render_tex = Tex::new(tex_type, TexFormat::Rgba32Srgb, Some("render_tex_array"));
+    /// render_tex.set_size(128, 128, Some(2), None);
+    ///
+    /// let mut render_mat = Material::from_file("shaders/stereo_array.hlsl.sks", None)
+    ///     .unwrap_or_else(|_| Material::unlit().copy());
+    /// render_mat.diffuse_tex(&render_tex).color_tint(named_colors::WHITE);
+    ///
     /// let screen = Mesh::generate_cube([1.0, 1.0, 1.0], None);
-    /// let transform_screen = Matrix::t([0.0, 0.0, -1.0]);
     ///
     /// let at = Vec3::new(-1.0, 0.0, 1.0);
     /// let orthographic = Matrix::orthographic(1.5, 1.5, 0.01, 120.0);
@@ -2573,24 +2585,24 @@ impl RenderBuilder {
     /// let mut render_list = RenderList::new_with(RenderListRefs::None);
     /// render_list
     ///     .add_mesh(&cylinder1, &cylinder_mat, Matrix::IDENTITY, named_colors::RED, None)
-    ///     .add_mesh(&cylinder2, &cylinder_mat, Matrix::IDENTITY, named_colors::GREEN,None)
-    ///     .add_mesh(&screen,    &render_mat,   transform_screen, named_colors::GRAY, None);
+    ///     .add_mesh(&cylinder2, &cylinder_mat, Matrix::IDENTITY, named_colors::GREEN,None);
     ///
     /// let render = RenderBuilder::new()
     ///     .cameras(cameras.to_vec())
     ///     .projections(&projections)
-    ///     .clear(RenderClear::Depth)
     ///     .viewport(Rect::new(0.0, 0.0, 1.0, 1.0));
     ///
     /// filename_scr = "screenshots/render_list_draw_now_multi_view.jpeg";
     /// test_screenshot!( // !!!! Get a proper main loop !!!!
-    ///     screen.draw(&render_mat, Matrix::IDENTITY, None, None);
-    ///     if iter % 2 == 0 { // 2 syntaxes for the same job:
-    ///         render_list.draw_now(&render_tex, &render, Color128::BLACK_TRANSPARENT);
+    ///     if iter == number_of_steps - 1 {
+    ///         screen.draw(&render_mat, Matrix::IDENTITY, None, None);
     ///     } else {
-    ///         render.draw_now(&render_list, &render_tex, Color128::WHITE)
+    ///         if iter % 2 == 0 { // 2 syntaxes for the same job:
+    ///             render_list.draw_now(&render_tex, &render, Color128::new(0.4, 0.3, 0.2, 0.5));
+    ///         } else {
+    ///             render.draw_now(&render_list, &render_tex, Color128::new(0.4, 0.3, 0.2, 0.5))
+    ///         }
     ///     }
-    ///     
     /// );
     /// render_list.clear();
     /// # }sk::Sk::shutdown();

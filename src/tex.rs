@@ -1290,25 +1290,26 @@ impl Tex {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{util::{Color32, Color128}, tex::{Tex, TexFormat, TexType}};
+    /// use stereokit_rust::{util::Color32, tex::{Tex, TexFormat, TexType}};
     ///
     ///
     /// let tex_blue = Tex::gen_color(Color32::new(64, 32, 255, 255), 5, 5,
-    ///                               TexType::Image, TexFormat::Rgba32Linear);
+    ///                               TexType::ImageNomips, TexFormat::Rgba32Linear);
     ///
     /// let tex_copy = tex_blue.copy(None, Some(TexFormat::Rgba32Srgb))
     ///                             .expect("copy should be done");
     /// let mut color_data = [Color32::WHITE; 25];
     /// assert!(tex_copy.get_color_data::<Color32>(&mut color_data, 0));
     /// assert_eq!(color_data[0], Color32 { r: 64, g: 32, b: 255, a: 255 });
+    /// assert_eq!(tex_blue.get_mips(), Some(1));
+    /// assert_eq!(tex_copy.get_mips(), Some(3));
     ///
-    /// let tex_copy = tex_blue.copy(Some(TexType::Image), Some(TexFormat::Rgba128))
+    /// let tex_copy = tex_blue.copy(Some(TexType::ImageNomips), None)
     ///                             .expect("copy should be done");
-    /// let mut color_data = [Color128::WHITE; 25];
-    /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     assert!(tex_copy.get_color_data::<Color128>(&mut color_data, 0));
-    ///     assert_eq!(color_data[24], Color128 { r: 0.0, g: 0.0, b: 0.0, a: 0.0 });
-    /// );
+    /// let mut color_data = [Color32::WHITE; 25];
+    /// assert!(tex_copy.get_color_data::<Color32>(&mut color_data, 0));
+    /// assert_eq!(color_data[24], Color32 { r: 64, g: 32, b: 255, a: 255 });
+    /// assert_eq!(tex_copy.get_mips(), Some(1));
     /// # sk::Sk::shutdown();
     /// ```
     pub fn copy(&self, tex_type: Option<TexType>, tex_format: Option<TexFormat>) -> Result<Tex, StereoKitError> {
