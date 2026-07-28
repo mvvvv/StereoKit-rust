@@ -607,11 +607,6 @@ impl SkSettings {
         self
     }
 
-    // fn to_string(&self) -> String {
-    //     unsafe { CStr::from_ptr(self.app_name) }.to_str().unwrap_or_default().to_string()
-    // }
-}
-impl SkSettings {
     /// Initialize StereoKit with the given settings (here for Android platform).
     /// <https://stereokit.net/Pages/StereoKit/SK/Initialize.html>
     /// * `app` - The AndroidApp instance to use for initialization given by android_main() from <https://github.com/rust-mobile>
@@ -626,8 +621,9 @@ impl SkSettings {
     /// see also [`Sk::init`]
     /// ### Examples
     /// ```
-    /// use stereokit_rust::{ system::LogLevel, sk::{Sk, SkSettings, AppMode, DepthMode,
-    ///                                              OriginMode, QuitReason,}};
+    /// use stereokit_rust::{system::{Assets, LogLevel},
+    ///                      sk::{Sk, SkSettings, AppMode, DepthMode,
+    ///                                        OriginMode, QuitReason,}};
     ///
     /// let mut settings = SkSettings::default();
     /// settings
@@ -647,6 +643,7 @@ impl SkSettings {
     /// #[cfg(not(feature = "no-event-loop"))]
     /// let mut sk = settings.init().expect("StereoKit should initialize");
     ///
+    /// Assets::block_for_priority(i32::MAX);
     /// #[cfg(not(feature = "no-event-loop"))]
     /// {
     ///     use stereokit_rust::{framework::SkClosures, tools::title::Title};
