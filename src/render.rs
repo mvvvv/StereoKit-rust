@@ -2068,9 +2068,9 @@ impl RenderList {
     ///
     /// see also [`render_list_draw_now`] [`RenderBuilder::draw_now`]
     /// ### Examples
-    /// TODO: When cylinder_mat is pbr() we have this error [sk_renderer] [Vulkan:ERROR:-836363996] vkCmdDrawIndexed(): the combined image sampler descriptor [Set 0, Binding 111, Index 0, variable "sk_cubemap"] VkImageViewType is VK_IMAGE_VIEW_TYPE_2D but the OpTypeImage has (Dim = Cube) and (Arrayed = 0).
+    /// TODO: `When cylinder_mat is pbr() we have this error [sk_renderer] [Vulkan:ERROR:-836363996] vkCmdDrawIndexed(): the combined image sampler descriptor [Set 0, Binding 111, Index 0, variable "sk_cubemap"] VkImageViewType is VK_IMAGE_VIEW_TYPE_2D but the OpTypeImage has (Dim = Cube) and (Arrayed = 0).
     ///       Either fix in shader or update the VkImageViewType to VK_IMAGE_VIEW_TYPE_CUBE.
-    ///       The Vulkan spec states: If a VkImageView is accessed as a result of this command, then the image view's viewType must match the Dim operand of the OpTypeImage as described in Compatibility Between SPIR-V Image Dimensions and Vulkan ImageView Types (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDrawIndexed-viewType-07752)
+    ///       The Vulkan spec states: If a VkImageView is accessed as a result of this command, then the image view's viewType must match the Dim operand of the OpTypeImage as described in Compatibility Between SPIR-V Image Dimensions and Vulkan ImageView Types (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDrawIndexed-viewType-07752)`
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::{Vec3, Matrix, Rect},  util::{named_colors, Color128},

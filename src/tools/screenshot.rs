@@ -113,22 +113,14 @@ impl Default for ScreenshotViewer {
 impl ScreenshotViewer {
     /// Called from IStepper::initialize here you can abort the initialization by returning false
     fn start(&mut self) -> bool {
-        self.tex = Tex::gen_color(
-            crate::util::Color128::WHITE,
-            self.picture_size.x as i32,
-            self.picture_size.y as i32,
-            crate::tex::TexType::Rendertarget,
+        self.tex = Tex::render_target(
+            self.picture_size.x as usize,
+            self.picture_size.y as usize,
+            None,
             TexFormat::Rgba32Srgb,
-        );
-        // TODO: This create an error: [SK error] Zbuffer can only be attached to a rendertarget!
-        // self.tex = Tex::render_target(
-        //     self.picture_size.x as usize,
-        //     self.picture_size.y as usize,
-        //     None,
-        //     Some(TexFormat::Rgba32Srgb),
-        //     Some(TexFormat::Depth32),
-        // )
-        // .unwrap_or_default();
+            TexFormat::None,
+        )
+        .unwrap_or_default();
         self.tex.id(CAPTURE_TEXTURE_ID);
         true
     }

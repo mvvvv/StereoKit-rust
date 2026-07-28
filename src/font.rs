@@ -19,8 +19,6 @@ use std::{
 ///
 /// // Load font assets
 /// let emoji_font = if cfg!(windows) {
-///     // TODO: Doesn't work on Windows Github Actions.
-///     // return;
 ///     Font::from_file("C:\\Windows\\Fonts\\seguiemj.ttf").unwrap_or_default()
 /// } else if cfg!(target_os = "macos") {
 ///     Font::from_file("/System/Library/Fonts/Apple Color Emoji.ttc").unwrap_or_default()
