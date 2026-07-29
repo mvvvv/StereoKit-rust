@@ -44,7 +44,7 @@ use super::{
     Test,
     hand_menu_radial1::{HAND_MENU_RADIAL1_ID, HandMenuRadial1, SHOW_FLOOR},
 };
-pub fn launch(mut sk: Sk, _is_testing: bool, start_test: String) {
+pub fn launch(mut sk: Sk, is_testing: bool, start_test: String) {
     Log::diag(
         "======================================================================================================================== !!",
     );
@@ -62,6 +62,10 @@ pub fn launch(mut sk: Sk, _is_testing: bool, start_test: String) {
     let mut next_scene: Option<&Test> = None;
     let mut scene_frame = 0;
     let mut scene_time = 0.0f32;
+
+    // When in testing mode, run for a limited number of steps then screenshot.
+    const TEST_NUMBER_OF_STEPS: u32 = 1000;
+    let mut test_step = 0u32;
 
     let mut passthrough = false;
     let mut passthough_blend_enabled = false;
@@ -231,6 +235,26 @@ pub fn launch(mut sk: Sk, _is_testing: bool, start_test: String) {
     Log::diag(format!("Process id : {:?} / {:?} ", thread::current().name(), process::id()));
 
     SkClosures::new(sk, |sk, token| {
+        // In testing mode, take a screenshot at the last step then quit on the
+        // next frame (see the early check at the top of the closure).
+        if is_testing {
+            test_step += 1;
+            if test_step == TEST_NUMBER_OF_STEPS {
+                let screenshot_path = format!("screenshots/Demos{start_test}.jpeg");
+                Renderer::screenshot(
+                    &screenshot_path,
+                    90,
+                    Pose::look_at(Vec3::new(2.0, 1.5, 1.5), Vec3::new(0.0, 1.0, 0.0)),
+                    800,
+                    600,
+                    Some(80.0),
+                );
+                Log::info(format!("Test mode: screenshot saved to {screenshot_path}"));
+            } else if test_step > TEST_NUMBER_OF_STEPS {
+                sk.send_event(StepperAction::Quit("test".into(), "Test mode reached step limit".into()));
+            }
+        }
+
         if last_focus != sk.get_app_focus() {
             last_focus = sk.get_app_focus();
             Log::info(format!("App focus changed to : {last_focus:?}"));

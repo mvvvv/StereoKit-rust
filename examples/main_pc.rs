@@ -1,26 +1,151 @@
 pub mod demos;
 
-pub const _USAGE: &str = r#"Usage : program [OPTION] 
-launch Stereokit tests and demos
-
-    --test              : test mode
-    --headless          : no display at all for --test
-    --noscreens         : no screenshots
-    --screenfolder [DIR]: path where the screenshots will be saved
-    --gltf              : path where the gltf files are stored
-    --start [TEST NAME] : name of the only test demo to launch
-    --log-env           : dump launch environment (env vars, cwd, parent process) to stderr
-    --help              : help"#;
-
 pub const USAGE: &str = r#"Usage : program [OPTION] 
     launch Stereokit tests and demos
     
-        --test              : test mode
-        --headless          : no display at all for --test
-        --xr                : force XR mode in testing mode
+        --test              : test mode (simulator or --headless or --xr)
+        --headless          : for --test run for a 1000 steps then screenshot
+        --xr                : force XR mode in testing mode (--test) run for 
+                              a 1000 steps then screenshot
         --start [TEST NAME] : name of the only test demo to launch
-        --log-env           : dump launch environment (env vars, cwd, parent process) to stderr
+        --log-env           : dump launch environment (env vars, cwd, parent 
+                              process) to stderr for Linux
         --help              : help"#;
+
+#[allow(dead_code)]
+#[cfg(not(feature = "no-event-loop"))]
+#[cfg(not(target_os = "android"))]
+fn main() {
+    use demos::program::launch;
+    use std::env;
+    use stereokit_rust::sk::{DepthMode, Sk, StandbyMode};
+    use stereokit_rust::system::{BackendOpenXR, BackendVulkan, BackendVulkanRequest};
+    use stereokit_rust::{
+        sk::{AppMode, OriginMode, SkSettings},
+        system::LogLevel,
+    };
+
+    let mut headless = false;
+    let mut xr = false;
+    let mut is_testing = false;
+    let mut log_env = false;
+    let mut start_test = "".to_string();
+    let mut args = env::args().skip(1);
+    while let Some(arg) = args.next() {
+        match &arg[..] {
+            "--headless" => headless = true,
+            "--xr" => xr = true,
+            "--test" => is_testing = true,
+            "--log-env" => log_env = true,
+            "--start" => {
+                if let Some(arg_config) = args.next() {
+                    if !arg_config.starts_with('-') {
+                        start_test = arg_config;
+                    } else {
+                        panic!("Value specified for --start must be the name of a test.");
+                    }
+                } else {
+                    panic!("No value specified for parameter --start.");
+                }
+            }
+            "--help" => println!("{USAGE}"),
+            _ => {
+                if arg.starts_with('-') {
+                    println!("Unkown argument {arg}");
+                } else {
+                    println!("Unkown positional argument {arg}");
+                }
+                println!("{USAGE}");
+            }
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    if log_env {
+        log_launch_environment();
+    }
+    #[cfg(not(target_os = "linux"))]
+    if log_env {
+        println!("log-env only implemented for linux");
+    }
+
+    let mut settings = SkSettings::default();
+    settings
+        .app_name("rust Demos")
+        .origin(OriginMode::Floor)
+        .render_multisample(4) // aka the default aka 0
+        //.render_scaling(1.5) create distortion on SteamVR for Quest
+        .depth_mode(DepthMode::D32)
+        .omit_empty_frames(true)
+        .log_filter(LogLevel::Diagnostic)
+        .no_flatscreen_fallback(true);
+
+    if is_testing {
+        if headless {
+            settings.mode(AppMode::Offscreen);
+        } else if xr {
+            settings.mode(AppMode::XR);
+        } else {
+            settings.mode(AppMode::Simulator);
+            is_testing = false; // We don't stop after 1000 frames.
+        }
+    }
+    settings.standby_mode(StandbyMode::Slow);
+
+    //sterokit_rust::tools::load_all_extensions();
+    BackendOpenXR::request_ext("XR_FB_display_refresh_rate");
+    BackendOpenXR::request_ext("XR_META_virtual_keyboard");
+    BackendOpenXR::request_ext("XR_FB_render_model");
+    // Required by the Layers1 demo for cylinder composition layers.
+    BackendOpenXR::request_ext("XR_KHR_composition_layer_cylinder");
+
+    BackendVulkan::request(&BackendVulkanRequest::new(Some("sk_test_request")));
+
+    let sk = settings.init().unwrap();
+    launch(sk, is_testing, start_test);
+    Sk::shutdown();
+}
+
+/// Fake main for android
+#[allow(dead_code)]
+#[cfg(target_os = "android")]
+fn main() {}
+
+#[allow(dead_code)]
+#[cfg(feature = "no-event-loop")]
+fn main() {
+    use std::sync::OnceLock;
+    use stereokit_rust::{
+        maths::{Pose, Quat, Vec3},
+        sk::{OriginMode, Sk, SkSettings},
+        system::LogLevel,
+        ui::Ui,
+    };
+
+    let sk = SkSettings::default()
+        .app_name("stereokit-rust (manual)")
+        .origin(OriginMode::Floor)
+        .log_filter(LogLevel::Diagnostic)
+        .init()
+        .unwrap();
+
+    static APP_ONCE: OnceLock<()> = OnceLock::new();
+    APP_ONCE.get_or_init(|| {
+        #[cfg(target_os = "android")]
+        android_logger::init_once(
+            android_logger::Config::default().with_max_level(log::LevelFilter::Debug).with_tag("STKit-rs"),
+        );
+    });
+    let mut window_pose = Pose::new(Vec3::new(0.0, 1.5, -0.5), Some(Quat::from_angles(0.0, 180.0, 0.0)));
+    while let Some(_token) = sk.step() {
+        Ui::window("test window").pose(&mut window_pose).begin();
+        if Ui::button("quit lel").press() {
+            break;
+        }
+        Ui::window_end();
+    }
+    Sk::shutdown();
+}
 
 /// Logs launch-time information that can explain behavioural differences
 /// between launching the program from Steam and launching it directly from
@@ -218,163 +343,4 @@ fn log_launch_environment() {
 
     out.push_str("================ END LAUNCH ENVIRONMENT ================\n");
     eprintln!("{out}");
-}
-
-#[allow(dead_code)]
-#[cfg(not(feature = "no-event-loop"))]
-#[cfg(not(target_os = "android"))]
-fn main() {
-    use demos::program::launch;
-    use std::env;
-    use stereokit_rust::sk::{DepthMode, Sk, StandbyMode};
-    use stereokit_rust::system::{BackendOpenXR, BackendVulkan, BackendVulkanRequest};
-    use stereokit_rust::{
-        sk::{AppMode, OriginMode, SkSettings},
-        system::LogLevel,
-    };
-
-    let mut headless = false;
-    let mut xr = false;
-    let mut is_testing = false;
-    let mut log_env = false;
-    let mut start_test = "".to_string();
-    let mut args = env::args().skip(1);
-    while let Some(arg) = args.next() {
-        match &arg[..] {
-            "--headless" => headless = true,
-            "--xr" => xr = true,
-            "--test" => is_testing = true,
-            "--log-env" => log_env = true,
-
-            // "--noscreens" => make_screenshots = false,
-
-            // "--screenfolder" => {
-            //     if let Some(arg_config) = args.next() {
-            //         if Path::new(&arg_config).is_dir() {
-            //             screenshot_root = arg_config;
-            //         } else {
-            //             panic!("Value specified for --Screenfolder is not a valid Path to a directory.");
-            //         }
-            //     } else {
-            //         panic!("No value specified for parameter --Screenfolder.");
-            //     }
-            // }
-            // "--gltf" => {
-            //     if let Some(arg_config) = args.next() {
-            //         if Path::new(&arg_config).is_dir() {
-            //             gltf_folders = arg_config;
-            //         } else {
-            //             panic!("Value specified for --gltf is not a valid Path to a directory.");
-            //         }
-            //     } else {
-            //         panic!("No value specified for parameter --gltf.");
-            //     }
-            // }
-            "--start" => {
-                if let Some(arg_config) = args.next() {
-                    if !arg_config.starts_with('-') {
-                        start_test = arg_config;
-                    } else {
-                        panic!("Value specified for --start must be the name of a test.");
-                    }
-                } else {
-                    panic!("No value specified for parameter --start.");
-                }
-            }
-            "--help" => println!("{USAGE}"),
-            _ => {
-                if arg.starts_with('-') {
-                    println!("Unkown argument {arg}");
-                } else {
-                    println!("Unkown positional argument {arg}");
-                }
-                println!("{USAGE}");
-            }
-        }
-    }
-
-    #[cfg(target_os = "linux")]
-    if log_env {
-        log_launch_environment();
-    }
-    #[cfg(not(target_os = "linux"))]
-    if log_env {
-        println!("log-env only implemented for linux");
-    }
-
-    let mut settings = SkSettings::default();
-    settings
-        .app_name("rust Demos")
-        .origin(OriginMode::Floor)
-        .render_multisample(4) // aka the default aka 0
-        //.render_scaling(1.5) create distortion on SteamVR for Quest
-        .depth_mode(DepthMode::D32)
-        .omit_empty_frames(true)
-        .log_filter(LogLevel::Diagnostic)
-        .no_flatscreen_fallback(true);
-
-    if is_testing {
-        if headless {
-            settings.mode(AppMode::Offscreen);
-        } else if xr {
-            settings.mode(AppMode::XR);
-        } else {
-            settings.mode(AppMode::Simulator);
-        }
-    }
-    settings.standby_mode(StandbyMode::Slow);
-
-    //sterokit_rust::tools::load_all_extensions();
-    BackendOpenXR::request_ext("XR_FB_display_refresh_rate");
-    BackendOpenXR::request_ext("XR_META_virtual_keyboard");
-    BackendOpenXR::request_ext("XR_FB_render_model");
-    // Required by the Layers1 demo for cylinder composition layers.
-    BackendOpenXR::request_ext("XR_KHR_composition_layer_cylinder");
-
-    BackendVulkan::request(&BackendVulkanRequest::new(Some("sk_test_request")));
-
-    let sk = settings.init().unwrap();
-    launch(sk, is_testing, start_test);
-    Sk::shutdown();
-}
-
-/// Fake main for android
-#[allow(dead_code)]
-#[cfg(target_os = "android")]
-fn main() {}
-
-#[allow(dead_code)]
-#[cfg(feature = "no-event-loop")]
-fn main() {
-    use std::sync::OnceLock;
-    use stereokit_rust::{
-        maths::{Pose, Quat, Vec3},
-        sk::{OriginMode, Sk, SkSettings},
-        system::LogLevel,
-        ui::Ui,
-    };
-
-    let sk = SkSettings::default()
-        .app_name("stereokit-rust (manual)")
-        .origin(OriginMode::Floor)
-        .log_filter(LogLevel::Diagnostic)
-        .init()
-        .unwrap();
-
-    static APP_ONCE: OnceLock<()> = OnceLock::new();
-    APP_ONCE.get_or_init(|| {
-        #[cfg(target_os = "android")]
-        android_logger::init_once(
-            android_logger::Config::default().with_max_level(log::LevelFilter::Debug).with_tag("STKit-rs"),
-        );
-    });
-    let mut window_pose = Pose::new(Vec3::new(0.0, 1.5, -0.5), Some(Quat::from_angles(0.0, 180.0, 0.0)));
-    while let Some(_token) = sk.step() {
-        Ui::window("test window").pose(&mut window_pose).begin();
-        if Ui::button("quit lel").press() {
-            break;
-        }
-        Ui::window_end();
-    }
-    Sk::shutdown();
 }

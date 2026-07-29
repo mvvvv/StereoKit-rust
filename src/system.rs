@@ -3251,7 +3251,9 @@ pub struct Mouse {
     /// Position of the mouse relative to the window it’s in! This is the number of pixels from the top left corner of
     /// the screen.
     pub pos: Vec2,
-    /// How much has the mouse’s position changed in the current frame? Measured in pixels.
+    /// How much has the mouse moved during this frame? Measured in pixels. This is all motion since the last frame,
+    /// which is not always the same as the difference between this frame's position and the last frame's! In relative
+    /// mouse mode, the position doesn't move at all, and this is the only place mouse motion shows up.
     pub pos_change: Vec2,
     /// What’s the current scroll value for the mouse’s scroll wheel?
     pub scroll: f32,
@@ -3275,6 +3277,25 @@ impl Mouse {
     pub fn is_available(&self) -> bool {
         self.available != 0
     }
+}
+
+/// How should the mouse cursor behave? This is only relevant on backends with a real cursor to control, the Simulator
+/// and Window backends. Elsewhere, the mode is remembered, but has nothing to act on.
+/// <https://stereokit.net/Pages/StereoKit/MouseMode.html>
+///
+/// see also [`Input::mouse_mode`] [`Input::get_mouse_mode`]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(u32)]
+pub enum MouseMode {
+    /// The cursor is visible, and free to move anywhere, including outside the window. This is the default.
+    Normal = 0,
+    /// The cursor is invisible, but behaves exactly as it does in normal mode. The mouse's position is still valid,
+    /// and it can still leave the window.
+    Hidden = 1,
+    /// The cursor is invisible and locked in place, which is what you want for mouse-look style camera control. The
+    /// mouse's position stops moving, and its position change becomes the only source of motion - reported in
+    /// pixel-equivalent units, free of pointer acceleration, and never running out of room at the edge of the screen.
+    Relative = 2,
 }
 
 /// A collection of system key codes, representing keyboard characters and mouse buttons. Based on VK codes.
@@ -3428,6 +3449,8 @@ unsafe extern "C" {
     pub fn input_eyes() -> Pose;
     pub fn input_eyes_tracked() -> BtnState;
     pub fn input_mouse() -> *const Mouse;
+    pub fn input_mouse_mode_set(mode: MouseMode);
+    pub fn input_mouse_mode_get() -> MouseMode;
     pub fn input_key_inject_press(key: Key);
     pub fn input_key_inject_release(key: Key);
     pub fn input_text_consume() -> u32;
@@ -4343,6 +4366,47 @@ impl Input {
     /// ```
     pub fn get_mouse() -> Mouse {
         unsafe { *input_mouse() }
+    }
+
+    /// How should the mouse cursor behave? Use this to hide the cursor, or to capture it for mouse-look style camera
+    /// control. Only the Simulator and Window backends have a cursor to act on, but the mode is remembered everywhere.
+    /// StereoKit restores the cursor whenever the app loses focus, and this keeps reporting the mode you asked for
+    /// while that happens.
+    /// <https://stereokit.net/Pages/StereoKit/Input/MouseMode.html>
+    ///
+    /// see also [`input_mouse_mode_set`] [`Input::get_mouse_mode`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::{Input, MouseMode};
+    ///
+    /// assert_eq!(Input::get_mouse_mode(), MouseMode::Normal);
+    ///
+    /// Input::mouse_mode(MouseMode::Hidden);
+    /// assert_eq!(Input::get_mouse_mode(), MouseMode::Hidden);
+    ///
+    /// Input::mouse_mode(MouseMode::Relative);
+    /// assert_eq!(Input::get_mouse_mode(), MouseMode::Relative);
+    ///
+    /// Input::mouse_mode(MouseMode::Normal);
+    /// assert_eq!(Input::get_mouse_mode(), MouseMode::Normal);
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn mouse_mode(mode: MouseMode) {
+        unsafe { input_mouse_mode_set(mode) }
+    }
+
+    /// How should the mouse cursor behave? Use this to hide the cursor, or to capture it for mouse-look style camera
+    /// control. Only the Simulator and Window backends have a cursor to act on, but the mode is remembered everywhere.
+    /// StereoKit restores the cursor whenever the app loses focus, and this keeps reporting the mode you asked for
+    /// while that happens.
+    /// <https://stereokit.net/Pages/StereoKit/Input/MouseMode.html>
+    ///
+    /// Returns the current mouse cursor mode.
+    /// see also [`input_mouse_mode_get`] [`Input::mouse_mode`]
+    /// see example in [`Input::mouse_mode`]
+    pub fn get_mouse_mode() -> MouseMode {
+        unsafe { input_mouse_mode_get() }
     }
 
     /// This controls the visibility of StereoKit's finger glow effect on the UI. When true, SK will fill out global
