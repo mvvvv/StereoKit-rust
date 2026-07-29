@@ -157,7 +157,7 @@ pub fn launch(mut sk: Sk, _is_testing: bool) {
             }
             Ui::next_line();
             Ui::hspace(0.11);
-            if let Some(new_value) = Ui::toggle("Show Log", &mut show_log, None) {
+            if let Some(new_value) = Ui::toggle("Show Log", &mut show_log).interact() {
                 send_event_show_log(new_value.to_string());
             }
             Ui::next_line();

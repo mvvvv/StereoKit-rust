@@ -6,7 +6,7 @@ use stereokit_rust::{
     mesh::Mesh,
     prelude::*,
     render::Renderer,
-    system::{Text, TextStyle},
+    system::{Text, TextStyle, TextBuilder},
     util::{Time, named_colors::RED},
 };
 /// The basic Stepper. we must ensure the StereoKit code stay in the main thread
