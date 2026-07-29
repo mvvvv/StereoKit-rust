@@ -37,6 +37,10 @@ clear;XR_RUNTIME_JSON=/usr/share/openxr/1/openxr_monado.json cargo test --featur
 #- launch tests with llvmpipe:
 clear;VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.json cargo test
 
+#---- launch Demo tests + screenshot
+clear;cargo run --example main_pc -- --test --headless --start Assets1
+clear;XR_RUNTIME_JSON=/usr/share/openxr/1/openxr_monado.json cargo run --example main_pc -- --test --xr --start Subpass1
+
 #---- build docs
 cargo clean --doc && cargo doc
 
