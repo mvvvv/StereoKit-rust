@@ -2,7 +2,7 @@ use stereokit_rust::{
     font::Font,
     maths::{Matrix, Pose, Quat, Vec3},
     prelude::*,
-    system::{Text, TextStyle},
+    system::{Text, TextBuilder, TextStyle},
     ui::Ui,
     util::named_colors::{BLUE, GREEN, RED},
 };
@@ -13,12 +13,13 @@ pub struct Font1 {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
 
-    emoji_style: Option<TextStyle>,
+    emoji_style: TextStyle,
     text_style: TextStyle,
     window_pose: Pose,
+
     pub transform: Matrix,
     pub text: String,
-    title_style: Option<TextStyle>,
+    title_style: TextStyle,
 }
 
 unsafe impl Send for Font1 {}
@@ -39,19 +40,18 @@ impl Default for Font1 {
             Font::from_file("fonts/Inter/Inter-VariableFont_opsz_wght.ttf").unwrap_or_default()
         };
 
-        let emoji_style = Some(Text::make_style(emoji_font, 0.35, BLUE));
+        let emoji_style = Text::make_style(emoji_font, 0.35, BLUE);
         let text_style = Text::make_style(text_font, 0.025, GREEN);
         let window_pose = Pose::new(Vec3::new(-0.05, 1.5, -0.45), Some(Quat::from_angles(0.0, 160.0, 0.0)));
         Self {
             id: "Font1".to_string(),
             sk_info: None,
-
             emoji_style,
             text_style,
             window_pose,
             transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, Quat::from_angles(0.0, 180.0, 0.0)),
             text: "Font1".to_owned(),
-            title_style: None,
+            title_style: TextStyle::default(),
         }
     }
 }
@@ -60,7 +60,7 @@ impl Default for Font1 {
 impl Font1 {
     /// Called from IStepper::initialize here you can abort the initialization by returning false
     fn start(&mut self) -> bool {
-        self.title_style = Some(Text::make_style(Font::default(), 0.3, RED));
+        self.title_style = Text::make_style(Font::default(), 0.3, RED);
         true
     }
 
@@ -68,26 +68,15 @@ impl Font1 {
     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
     /// Called from IStepper::step, after check_event here you can draw your UI and scene
-    fn draw(&mut self, token: &MainThreadToken) {
-        Text::add_at(
-            token,
-            "😋 Emojis🤪\n\n  🧐",
-            self.transform,
-            self.emoji_style,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-        );
+    fn draw(&mut self, _token: &MainThreadToken) {
+        TextBuilder::new("😋 Emojis🤪\n\n  🧐").transform(self.transform).style(self.emoji_style).add();
 
-        Ui::window_begin("Default Font", &mut self.window_pose, None, None, None);
+        Ui::window("Default Font").pose(&mut self.window_pose).begin();
         Ui::push_text_style(self.text_style);
-        Ui::text("text font", None, None, None, Some(0.14), None, None);
+        Ui::text("text font").size([0.14, 0.0]).draw();
         Ui::pop_text_style();
         Ui::window_end();
 
-        Text::add_at(token, &self.text, self.transform, self.title_style, None, None, None, None, None, None);
+        TextBuilder::new(&self.text).transform(self.transform).style(self.title_style).add();
     }
 }

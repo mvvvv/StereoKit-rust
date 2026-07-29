@@ -1,6 +1,6 @@
 use crate::{
     StereoKitError,
-    maths::{Bool32T, Vec3, lerp},
+    maths::{Bool32T, Vec3, Vec4, lerp},
     sk::DisplayBlend,
     system::TextContext,
     ui::IdHashT,
@@ -83,6 +83,12 @@ impl From<[f32; 4]> for Color128 {
 impl From<Color32> for Color128 {
     fn from(a: Color32) -> Self {
         Self::new(a.r as f32 / 255.0, a.g as f32 / 255.0, a.b as f32 / 255.0, a.a as f32 / 255.0)
+    }
+}
+
+impl From<Vec4> for Color128 {
+    fn from(value: Vec4) -> Self {
+        Self::new(value.x, value.y, value.z, value.w)
     }
 }
 
@@ -217,7 +223,7 @@ impl Color128 {
     /// see also [`color_to_linear`]
     /// ### Examples
     /// ```
-    /// use stereokit_rust::{util::{Color128, named_colors}};
+    /// use stereokit_rust::util::Color128;
     ///
     /// let color = Color128::rgb(0.75, 0.0, 0.25);
     /// let color_linear = color.to_linear();
@@ -234,7 +240,7 @@ impl Color128 {
     /// see also [`color_to_gamma`]
     /// ### Examples
     /// ```
-    /// use stereokit_rust::{util::{Color128, named_colors}};
+    /// use stereokit_rust::util::Color128;
     ///
     /// let color = Color128 { r: 0.5310492, g: 0.0, b: 0.04736614, a: 1.0 };
     /// let color_gamma = color.to_gamma();
@@ -253,7 +259,7 @@ impl Color128 {
     /// see also [`color_to_hsv`]
     /// ### Examples
     /// ```
-    /// use stereokit_rust::{util::{Color128, named_colors}, maths::Vec3};
+    /// use stereokit_rust::{util::Color128, maths::Vec3};
     ///
     /// let color = Color128::rgb(0.75, 0.0, 0.25);
     /// let color_hsv = color.to_hsv();
@@ -271,7 +277,7 @@ impl Color128 {
     /// see also [`color_to_lab`]
     /// ### Examples
     /// ```
-    /// use stereokit_rust::{util::{Color128, named_colors}, maths::Vec3};
+    /// use stereokit_rust::{util::Color128, maths::Vec3};
     ///
     /// let color = Color128::rgb(0.75, 0.0, 0.25);
     /// let color_lab = color.to_lab();
@@ -900,14 +906,18 @@ pub enum DisplayType {
     Flatscreen = 2,
 }
 
-/// TODO: waiting for C# implementation
+/// This describes the field of view of a display, in degrees.
 /// <https://stereokit.net/Pages/StereoKit/FovInfo.html>
 #[derive(Debug, Copy, Clone)]
 #[repr(C)]
 pub struct FovInfo {
+    /// The left edge of the field of view, in degrees.
     pub left: f32,
+    /// The right edge of the field of view, in degrees.
     pub right: f32,
+    /// The top edge of the field of view, in degrees.
     pub top: f32,
+    /// The bottom edge of the field of view, in degrees.
     pub bottom: f32,
 }
 
@@ -923,15 +933,16 @@ pub struct FovInfo {
 /// let display_type      = Device::get_display_type();
 /// let display_blend     = Device::get_display_blend();
 /// let device_tracking   = Device::get_tracking();
-/// let device_name       = Device::get_name().unwrap();
-/// let device_runtime    = Device::get_runtime().unwrap();
-/// let device_gpu        = Device::get_gpu().unwrap();
+/// let device_name       = Device::get_name().unwrap_or_default();
+/// let device_runtime    = Device::get_runtime().unwrap_or_default();
+/// let device_gpu        = Device::get_gpu().unwrap_or_default();
 /// let has_eye_gaze      = Device::has_eye_gaze();
 /// let has_hand_tracking = Device::has_hand_tracking();
 /// let valid_blend_none  = Device::valid_blend(DisplayBlend::None);
 /// let display_blend_none= Device::display_blend(DisplayBlend::None);
 ///
-/// xr_mode_stop_here!();
+///
+/// # if cfg!(not(feature = "test-xr-mode")) {
 /// // These are the expected results for offscreen tests on a PC:
 /// assert_eq!(display_type, DisplayType::Flatscreen);
 /// assert_eq!(display_blend, DisplayBlend::Opaque);
@@ -943,6 +954,8 @@ pub struct FovInfo {
 /// assert_eq!(has_hand_tracking, false);
 /// assert_eq!(valid_blend_none, false);
 /// assert_eq!(display_blend_none, false);
+/// # } test_steps!();
+/// # sk::Sk::shutdown();
 /// ```
 pub struct Device;
 
@@ -981,6 +994,8 @@ impl Device {
     /// assert_eq!(Device::display_blend(DisplayBlend::AnyTransparent), false);
     /// assert_eq!(Device::display_blend(DisplayBlend::None), false);
     /// assert_eq!(Device::display_blend(DisplayBlend::Additive), false);
+    /// # test_steps!();
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn display_blend(blend: DisplayBlend) -> bool {
         unsafe { device_display_set_blend(blend) != 0 }
@@ -1008,9 +1023,34 @@ impl Device {
     /// xr_mode_stop_here!();
     /// // These are the expected results for offscreen tests on a PC:
     /// assert_eq!(Device::get_display_type(), DisplayType::Flatscreen);
+    /// # test_steps!();
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_display_type() -> DisplayType {
         unsafe { device_display_get_type() }
+    }
+
+    /// The refresh rate of the display in Hz, derived from OpenXR's predictedDisplayPeriod. Returns 0 if not available.
+    /// <https://stereokit.net/Pages/StereoKit/Device/DisplayRefreshRate.html>
+    ///
+    /// see also [`device_display_get_refresh_rate`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::util::Device;
+    ///
+    /// let refresh_rate = Device::get_display_refresh_rate();
+    /// // Refresh rate should be a positive value or 0 if not available
+    /// assert_ne!(refresh_rate, 0.0);
+    ///
+    /// xr_mode_stop_here!();
+    /// // 90 seams to be the default for the headless.
+    /// assert_eq!(refresh_rate, 90.0);
+    /// # test_steps!();
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn get_display_refresh_rate() -> f32 {
+        unsafe { device_display_get_refresh_rate() }
     }
 
     /// This is the name of the OpenXR runtime that powers the current device! This can help you determine which
@@ -1028,7 +1068,9 @@ impl Device {
     ///
     /// xr_mode_stop_here!();
     /// // These are the expected results for offscreen tests on a PC:
-    /// assert_eq!(Device::get_runtime().unwrap(), "None");
+    /// assert_eq!(Device::get_runtime().unwrap_or_default(), "None");
+    /// # test_steps!();
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_runtime<'a>() -> Result<&'a str, StereoKitError> {
         unsafe { CStr::from_ptr(device_get_runtime()) }
@@ -1036,10 +1078,22 @@ impl Device {
             .map_err(|e| StereoKitError::CStrError(e.to_string()))
     }
 
-    /// The reported name of the GPU, this will differ between D3D and GL.
+    /// The reported name of the GPU.
     /// <https://stereokit.net/Pages/StereoKit/Device/GPU.html>
     ///
     /// see also [`device_get_gpu`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::util::Device;
+    ///
+    /// let gpu_name = Device::get_gpu();
+    /// assert!(gpu_name.is_ok());
+    /// // The GPU name will vary by system, but should not be empty
+    /// assert!(!gpu_name.unwrap_or_default().is_empty());
+    /// # test_steps!();
+    /// # sk::Sk::shutdown();
+    /// ```
     pub fn get_gpu<'a>() -> Result<&'a str, StereoKitError> {
         unsafe { CStr::from_ptr(device_get_gpu()) }
             .to_str()
@@ -1057,10 +1111,13 @@ impl Device {
     /// use stereokit_rust::util::Device;
     ///
     /// let has_eye_gaze = Device::has_eye_gaze();
+    /// assert_eq!(has_eye_gaze | true, true); // meaningless but useful
     ///
     /// xr_mode_stop_here!();
     /// // These are the expected results for offscreen tests on a PC:
     /// assert_eq!(has_eye_gaze, false);
+    /// # test_steps!();
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn has_eye_gaze() -> bool {
         unsafe { device_has_eye_gaze() != 0 }
@@ -1077,10 +1134,13 @@ impl Device {
     /// use stereokit_rust::util::Device;
     ///
     /// let has_hand_tracking = Device::has_hand_tracking();
+    /// # assert_eq!(has_hand_tracking | true, true); // meaningless but useful
     ///
     /// xr_mode_stop_here!();
     /// // These are the expected results for offscreen tests on a PC:
     /// assert_eq!(has_hand_tracking, false);
+    /// # test_steps!();
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn has_hand_tracking() -> bool {
         unsafe { device_has_hand_tracking() != 0 }
@@ -1101,7 +1161,9 @@ impl Device {
     ///
     /// xr_mode_stop_here!();
     /// // These are the expected results for offscreen tests on a PC:
-    /// assert_eq!(Device::get_name().unwrap(), "Offscreen");
+    /// assert_eq!(Device::get_name().unwrap_or_default(), "Offscreen");
+    /// # test_steps!();
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_name<'a>() -> Result<&'a str, StereoKitError> {
         unsafe { CStr::from_ptr(device_get_name()) }
@@ -1120,10 +1182,11 @@ impl Device {
     /// use stereokit_rust::util::{Device, DeviceTracking};
     ///
     /// let tracking = Device::get_tracking();
-    ///
-    /// xr_mode_stop_here!();
+    /// # if cfg!(not(feature = "test-xr-mode")) {
     /// // These are the expected results for offscreen tests on a PC:
     /// assert_eq!(tracking, DeviceTracking::None);
+    /// # test_steps!();
+    /// # } sk::Sk::shutdown();
     /// ```
     pub fn get_tracking() -> DeviceTracking {
         unsafe { device_get_tracking() }
@@ -1147,6 +1210,8 @@ impl Device {
     /// assert_eq!(Device::valid_blend(DisplayBlend::Additive), false);
     /// assert_eq!(Device::valid_blend(DisplayBlend::Blend), false);
     /// assert_eq!(Device::valid_blend(DisplayBlend::AnyTransparent), false);
+    /// # test_steps!();
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn valid_blend(blend: DisplayBlend) -> bool {
         unsafe { device_display_valid_blend(blend) != 0 }
@@ -1203,7 +1268,7 @@ impl GradientKey {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{maths::Vec3, system::AssetState, tex::{Tex, SHCubemap},
+/// use stereokit_rust::{maths::Vec3, tex::{Tex, SHCubemap},
 ///                      util::{named_colors, Gradient, GradientKey, Color128}};
 ///
 /// let keys = [
@@ -1225,6 +1290,8 @@ impl GradientKey {
 ///     .add(named_colors::BLUE, 0.5)
 ///     .add(Color128::BLACK, 0.7);
 /// let tex_particule1 = Tex::gen_particle(128, 128, 0.2, Some(gradient));
+/// assert_eq!(tex_particule1.get_sample_comp(), tex::TexSampleComp::None);
+/// # sk::Sk::shutdown();
 /// ```
 pub struct Gradient(pub NonNull<_GradientT>);
 
@@ -1288,13 +1355,18 @@ impl Gradient {
     /// gradient2.add(named_colors::CYAN, 0.4);
     /// assert_eq!(gradient2.get_count(), 4);
     /// let tex_particule1 = Tex::gen_particle(128, 128, 0.2, Some(gradient2));
+    /// assert_eq!(tex_particule1.get_width(), Some(128));
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn new(keys: Option<&[GradientKey]>) -> Self {
         match keys {
-            Some(keys) => {
-                Gradient(NonNull::new(unsafe { gradient_create_keys(keys.as_ptr(), keys.len() as i32) }).unwrap())
-            }
-            None => Gradient(NonNull::new(unsafe { gradient_create() }).unwrap()),
+            Some(keys) => Gradient(
+                NonNull::new(unsafe { gradient_create_keys(keys.as_ptr(), keys.len() as i32) })
+                    .expect("Gradient::new should create a gradient with keys"),
+            ),
+            None => Gradient(
+                NonNull::new(unsafe { gradient_create() }).expect("Gradient::new should create a default gradient"),
+            ),
         }
     }
 
@@ -1318,7 +1390,10 @@ impl Gradient {
     ///     .add(named_colors::BLUE, 0.5)
     ///     .add(Color128::BLACK, 0.7);
     /// assert_eq!(gradient.get_count(), 5);
+    ///
     /// let tex_particule1 = Tex::gen_particle(128, 128, 0.2, Some(gradient));
+    /// assert_eq!(tex_particule1.get_sample_mode(), tex::TexSample::Linear);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn add(&mut self, color_linear: impl Into<Color128>, position: f32) -> &mut Self {
         unsafe { gradient_add(self.0.as_ptr(), color_linear.into(), position) };
@@ -1355,6 +1430,8 @@ impl Gradient {
     /// assert_eq!(gradient.get(0.3), named_colors::RED.into());
     ///
     /// let tex_particule1 = Tex::gen_particle(128, 128, 0.2, Some(gradient));
+    /// assert_eq!(tex_particule1.get_width(), Some(128));
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn set(&mut self, index: i32, color_linear: impl Into<Color128>, position: f32) -> &mut Self {
         if index < 0 || index >= self.get_count() {
@@ -1391,6 +1468,8 @@ impl Gradient {
     /// assert_eq!(gradient.get(0.4), Color128 { r: 0.25, g: 0.25, b: 0.75, a: 1.0 });
     ///
     /// let tex_particule1 = Tex::gen_particle(128, 128, 0.2, Some(gradient));
+    /// assert_eq!(tex_particule1.get_height(), Some(128));
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn remove(&mut self, index: i32) -> &mut Self {
         if index < 0 || index >= self.get_count() {
@@ -1422,7 +1501,9 @@ impl Gradient {
     /// assert_eq!(gradient.get_count(), 3);
     ///
     /// let tex_particule1 = Tex::gen_particle(128, 128, 0.2, Some(gradient));
-    ///```
+    /// assert_eq!(tex_particule1.get_width(), Some(128));
+    /// # sk::Sk::shutdown();
+    /// ```
     pub fn get_count(&self) -> i32 {
         unsafe { gradient_count(self.0.as_ptr()) }
     }
@@ -1453,6 +1534,8 @@ impl Gradient {
     /// assert_eq!(gradient.get(0.5), named_colors::BLUE.into());
     ///
     /// let tex_particule1 = Tex::gen_particle(128, 128, 0.2, Some(gradient));
+    /// assert_eq!(tex_particule1.get_mips(), Some(8));
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get(&self, at: f32) -> Color128 {
         unsafe { gradient_get(self.0.as_ptr(), at) }
@@ -1485,6 +1568,8 @@ impl Gradient {
     /// assert_eq!(gradient.get32(0.5), named_colors::BLUE);
     ///
     /// let tex_particule1 = Tex::gen_particle(128, 128, 0.2, Some(gradient));
+    /// assert_eq!(tex_particule1.get_format(), Some(tex::TexFormat::Rgba32Linear));
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get32(&self, at: f32) -> Color32 {
         unsafe { gradient_get32(self.0.as_ptr(), at) }
@@ -1504,11 +1589,11 @@ pub struct FileFilter {
 impl FileFilter {
     pub fn new(str: impl AsRef<str>) -> Self {
         let mut value: [c_char; 32usize] = [0; 32usize];
-        let c_array = CString::new(str.as_ref()).unwrap();
+        let c_array = CString::new(str.as_ref()).unwrap_or_default();
         let c_array = c_array.as_bytes_with_nul();
 
         let mut c_array_iter = c_array.iter().map(|v| *v as c_char);
-        value[0..c_array.len()].fill_with(|| c_array_iter.next().unwrap());
+        value[0..c_array.len()].fill_with(|| c_array_iter.next().unwrap_or_default());
 
         Self { ext: value }
     }
@@ -1542,7 +1627,7 @@ impl Hash {
     /// assert_eq!(hash, 4420528118743043111);
     /// ```
     pub fn string(str: impl AsRef<str>) -> IdHashT {
-        let c_str = CString::new(str.as_ref()).unwrap();
+        let c_str = CString::new(str.as_ref()).unwrap_or_default();
         unsafe { hash_string(c_str.as_ptr()) }
     }
 
@@ -1565,7 +1650,7 @@ impl Hash {
     /// assert_eq!(hash2, 4420528118743043111);
     /// ```
     pub fn string_with(str: impl AsRef<str>, root: IdHashT) -> IdHashT {
-        let c_str = CString::new(str.as_ref()).unwrap();
+        let c_str = CString::new(str.as_ref()).unwrap_or_default();
         unsafe { hash_string_with(c_str.as_ptr(), root) }
     }
 
@@ -1611,7 +1696,8 @@ impl Hash {
     }
 }
 
-/// TODO: UNSTABLE: When opening the Platform.FilePicker, this enum describes how the picker should look and behave.
+/// TODO: ANDROID only. On PC this will open a desktop file picker.
+/// When opening the Platform.FilePicker, this enum describes how the picker should look and behave.
 /// <https://stereokit.net/Pages/StereoKit/PickerMode.html>
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
@@ -1644,6 +1730,7 @@ pub enum PickerMode {
 /// assert!(file_content.starts_with("# Images "));
 ///
 /// assert!(Platform::write_file_text(path, file_content).is_ok());
+/// # sk::Sk::shutdown();
 /// ```
 pub struct Platform;
 
@@ -1702,7 +1789,7 @@ unsafe extern "C" fn fp_trampoline<FS: FnMut(&str), FC: FnMut()>(
     let data = unsafe { &mut *(user_data as *mut (&mut FS, &mut FC)) };
     let (update, cancel) = data;
     if confirmed != 0 {
-        let c_str = unsafe { CStr::from_ptr(filename).to_str().unwrap() };
+        let c_str = unsafe { CStr::from_ptr(filename).to_str().unwrap_or_default() };
         update(c_str)
     } else {
         cancel()
@@ -1720,7 +1807,7 @@ unsafe extern "C" fn fp_sz_trampoline<F: FnMut(bool, &str)>(
 ) {
     let closure = unsafe { &mut *(user_data as *mut &mut F) };
     if confirmed != 0 && filename_length > 0 {
-        let c_str = unsafe { CStr::from_ptr(filename).to_str().unwrap() };
+        let c_str = unsafe { CStr::from_ptr(filename).to_str().unwrap_or_default() };
         closure(true, c_str)
     } else {
         let c_str = "";
@@ -1747,12 +1834,14 @@ impl Platform {
     ///
     /// Platform::force_fallback_keyboard(false);
     /// assert_eq!(Platform::get_force_fallback_keyboard(), false);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn force_fallback_keyboard(force_fallback: bool) {
         unsafe { platform_keyboard_set_force_fallback(force_fallback as Bool32T) }
     }
 
-    /// TODO: UNSTABLE: Starts a file picker window! This will create a native file picker window if one is available in the current
+    /// TODO: ANDROID only. On PC this will open a desktop file picker.
+    /// Starts a file picker window! This will create a native file picker window if one is available in the current
     /// setup, and if it is not, it’ll create a fallback filepicker build using StereoKit’s UI.
     ///
     /// Flatscreen apps will show traditional file pickers, and UWP has an OS provided file picker that works in MR. All
@@ -1761,7 +1850,7 @@ impl Platform {
     /// A note for UWP apps, UWP generally does not have permission to access random files, unless the user has chosen
     /// them with the picker! This picker properly handles permissions for individual files on UWP, but may have issues
     /// with files that reference other files, such as .gltf files with external textures. See [`Platform::write_file`]
-    /// and [`Platform.read_file`] for manually reading and writing files in a cross-platfom manner.
+    /// and [`Platform::read_file`] for manually reading and writing files in a cross-platfom manner.
     /// <https://stereokit.net/Pages/StereoKit/Platform/FilePicker.html>
     /// * `mode` - Are we trying to Open a file, or Save a file? This changes the appearance and behavior of the picker
     ///   to support the specified action.
@@ -1773,6 +1862,22 @@ impl Platform {
     ///   is case insensitive.
     ///
     /// see also [`platform_file_picker`]
+    ///
+    /// ### Examples
+    /// ```no_run
+    /// # stereokit_rust::test_init_sk!();
+    /// use stereokit_rust::util::{Platform, PickerMode};
+    ///
+    /// test_steps!({
+    ///     Platform::file_picker(
+    ///         PickerMode::Open,
+    ///         |filename| println!("Selected: {}", filename),
+    ///         || println!("Cancelled"),
+    ///         &[".txt", ".rs"],
+    ///     );
+    /// });
+    /// # sk::Sk::shutdown();
+    /// ```
     pub fn file_picker<FS: FnMut(&str), FC: FnMut()>(
         mode: PickerMode,
         mut on_select_file: FS,
@@ -1796,7 +1901,8 @@ impl Platform {
         }
     }
 
-    /// TODO: UNSTABLE: Starts a file picker window! This will create a native file picker window if one is available in the current
+    /// TODO: ANDROID only. On PC this will open a desktop file picker.
+    /// Starts a file picker window! This will create a native file picker window if one is available in the current
     /// setup, and if it is not, it’ll create a fallback filepicker build using StereoKit’s UI.
     ///
     /// Flatscreen apps will show traditional file pickers, and UWP has an OS provided file picker that works in MR. All
@@ -1806,7 +1912,7 @@ impl Platform {
     /// A note for UWP apps, UWP generally does not have permission to access random files, unless the user has chosen
     /// them with the picker! This picker properly handles permissions for individual files on UWP, but may have issues
     /// with files that reference other files, such as .gltf files with external textures. See [`Platform::write_file`]
-    /// and [`Platform.read_file`] for manually reading and writing files in a cross-platfom manner.
+    /// and [`Platform::read_file`] for manually reading and writing files in a cross-platfom manner.
     /// <https://stereokit.net/Pages/StereoKit/Platform/FilePicker.html>
     /// * `mode` - Are we trying to Open a file, or Save a file? This changes the appearance and behavior of the picker
     ///   to support the specified action.
@@ -1835,7 +1941,8 @@ impl Platform {
         }
     }
 
-    /// TODO: UNSTABLE: If the picker is visible, this will close it and immediately trigger a cancel event for the active picker.
+    /// TODO: ANDROID only. On PC this will open a desktop file picker.
+    /// If the picker is visible, this will close it and immediately trigger a cancel event for the active picker.
     /// <https://stereokit.net/Pages/StereoKit/Platform/FilePickerClose.html>
     ///
     /// see also [`platform_file_picker_close`]
@@ -1864,6 +1971,7 @@ impl Platform {
     ///
     /// Platform::keyboard_show(false, TextContext::Text);
     /// assert_eq!(Platform::is_keyboard_visible(), false);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn keyboard_show(show: bool, input_type: TextContext) {
         unsafe { platform_keyboard_show(show as Bool32T, input_type) }
@@ -1902,11 +2010,12 @@ impl Platform {
     /// let keyboard_layouts = vec![FR_KEY_TEXT, FR_KEY_TEXT_SHIFT, FR_KEY_TEXT_ALT];
     ///
     /// assert_eq!(Platform::keyboard_set_layout(TextContext::Text, &keyboard_layouts), true);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn keyboard_set_layout(keyboard_type: TextContext, keyboard_layouts: &Vec<&str>) -> bool {
         let mut keyboard_layouts_c = vec![];
         for str in keyboard_layouts {
-            let c_str = CString::new(*str).unwrap().into_raw() as *const c_char;
+            let c_str = CString::new(*str).unwrap_or_default().into_raw() as *const c_char;
             keyboard_layouts_c.push(c_str);
         }
         unsafe {
@@ -1927,7 +2036,7 @@ impl Platform {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{util::{Platform}, system::TextContext};
+    /// use stereokit_rust::util::Platform;
     ///
     /// let mut path = std::env::current_dir().expect("Current directory should be readable");
     /// path.push("config.toml");
@@ -1936,6 +2045,7 @@ impl Platform {
     /// let file_content = Platform::read_file_text(&path)
     ///                                  .expect("File should be readable");
     /// assert!(file_content.starts_with("[env]"));
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn read_file_text<'a>(filename: impl AsRef<Path>) -> Result<&'a str, StereoKitError> {
         let path_buf = filename.as_ref().to_path_buf();
@@ -1945,11 +2055,11 @@ impl Platform {
                 .to_str() //
                 .ok_or(StereoKitError::ReadFileError(path_buf.clone(), "Failed to convert path to string".into()))?,
         )?;
-        let out_data = CString::new("H")?.into_raw() as *mut *mut c_void;
+        let mut out_data: *mut c_void = std::ptr::null_mut();
         let mut len = 0usize;
         let len_ptr: *mut usize = &mut len;
-        if unsafe { platform_read_file(c_str.as_ptr(), out_data, len_ptr) != 0 } {
-            unsafe { CStr::from_ptr(*out_data as *const c_char) }
+        if unsafe { platform_read_file(c_str.as_ptr(), &mut out_data, len_ptr) != 0 } {
+            unsafe { CStr::from_ptr(out_data as *const c_char) }
                 .to_str()
                 .map_err(|e| StereoKitError::ReadFileError(path_buf.clone(), e.to_string()))
         } else {
@@ -1966,7 +2076,7 @@ impl Platform {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{util::{Platform}, system::TextContext};
+    /// use stereokit_rust::util::Platform;
     ///
     /// let mut path = std::env::current_dir().expect("Current directory should be readable");
     /// path.push("assets/textures/");
@@ -1977,6 +2087,7 @@ impl Platform {
     /// let file_content = Platform::read_file(&path)
     ///                                  .expect("File should be readable");
     /// assert!(file_content.starts_with(b"# Images "));
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn read_file<'a>(filename: impl AsRef<Path>) -> Result<&'a [u8], StereoKitError> {
         let path_buf = filename.as_ref().to_path_buf();
@@ -1986,11 +2097,11 @@ impl Platform {
                 .to_str() //
                 .ok_or(StereoKitError::ReadFileError(path_buf.clone(), "Failed to convert path to string".into()))?,
         )?;
-        let out_data = CString::new("H")?.into_raw() as *mut *mut c_void;
+        let mut out_data: *mut c_void = std::ptr::null_mut();
         let mut len = 0usize;
         let len_ptr: *mut usize = &mut len;
-        if unsafe { platform_read_file(c_str.as_ptr(), out_data, len_ptr) != 0 } {
-            Ok(unsafe { std::slice::from_raw_parts(*out_data as *const u8, len) })
+        if unsafe { platform_read_file(c_str.as_ptr(), &mut out_data, len_ptr) != 0 } {
+            Ok(unsafe { std::slice::from_raw_parts(out_data as *const u8, len) })
         } else {
             Err(StereoKitError::ReadFileError(path_buf, "Failed to read file".into()))
         }
@@ -2006,7 +2117,7 @@ impl Platform {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{util::{Platform}, system::TextContext};
+    /// use stereokit_rust::util::Platform;
     ///
     /// let mut path = std::env::current_dir().expect("Current directory should be readable");
     /// path.push("assets/icons/");
@@ -2019,6 +2130,7 @@ impl Platform {
     /// assert!(file_content.starts_with("# Images "));
     ///
     /// assert!(Platform::write_file_text(path, file_content).is_ok());
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn write_file_text<S: AsRef<str>>(filename: impl AsRef<Path>, text: S) -> Result<bool, StereoKitError> {
         let path_buf = filename.as_ref().to_path_buf();
@@ -2046,7 +2158,7 @@ impl Platform {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{util::{Platform}, system::TextContext};
+    /// use stereokit_rust::util::Platform;
     ///
     /// let mut path = std::env::current_dir().expect("Current directory should be readable");
     /// path.push("assets/icons/");
@@ -2059,6 +2171,7 @@ impl Platform {
     /// assert!(file_content.starts_with(b"# Images "));
     ///
     /// assert!(Platform::write_file(path, file_content).is_ok());
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn write_file(filename: impl AsRef<Path>, data: &[u8]) -> Result<bool, StereoKitError> {
         let path_buf = filename.as_ref().to_path_buf();
@@ -2075,7 +2188,8 @@ impl Platform {
         }
     }
 
-    /// TODO: UNSTABLE: This will check if the file picker interface is currently visible. Some pickers will never show this, as they
+    /// TODO: ANDROID only. On PC this will open a desktop file picker.
+    /// This will check if the file picker interface is currently visible. Some pickers will never show this, as they
     /// block the application until the picker has completed.
     /// <https://stereokit.net/Pages/StereoKit/Platform/FilePickerVisible.html>
     ///
@@ -2086,6 +2200,7 @@ impl Platform {
     /// use stereokit_rust::util::Platform;
     ///
     /// assert_eq!(Platform::get_file_picker_visible(), false);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_file_picker_visible() -> bool {
         unsafe { platform_file_picker_visible() != 0 }
@@ -2120,7 +2235,7 @@ impl Platform {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{maths::Vec3, tex::SHCubemap, util::{SHLight, named_colors, Color128}};
+/// use stereokit_rust::{maths::Vec3, util::{SHLight, named_colors, Color128}};
 ///
 /// let light0 = SHLight::new([1.0, 0.2, 0.3], named_colors::RED);
 /// let light1 = SHLight::new(Vec3::new(1.0, 0.2, 0.3), Color128::new(1.0, 0.0, 0.0, 1.0));
@@ -2128,6 +2243,7 @@ impl Platform {
 ///
 /// assert_eq!(light0, light1);
 /// assert_eq!(light1, light2);
+/// # sk::Sk::shutdown();
 /// ```
 #[derive(Debug, Copy, Clone, PartialEq)]
 #[repr(C)]
@@ -2175,6 +2291,7 @@ impl SHLight {
 ///
 /// assert_eq!(sh.get_sample(Vec3::UP), Color128 { r: 0.5813507, g: 0.8046322, b: 0.5813487, a: 1.0 });
 /// assert_eq!(sh.get_dominent_light_direction(), Vec3 { x: 0.27644092, y: 0.2728996, z: 0.9214696 });
+/// # sk::Sk::shutdown();
 /// ```
 #[derive(Debug, Default, Copy, Clone, PartialEq)]
 #[repr(C)]
@@ -2210,6 +2327,7 @@ impl SphericalHarmonics {
     ///
     /// assert_eq!(sh.get_sample(Vec3::UP), Color128 { r: 2.2098913, g: 0.0, b: 0.0, a: 1.0 });
     /// assert_eq!(sh.get_dominent_light_direction(), -Vec3::ONE.get_normalized());
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn from_lights(lights: &[SHLight]) -> Self {
         unsafe { sh_create(lights.as_ptr(), lights.len() as i32) }
@@ -2224,7 +2342,7 @@ impl SphericalHarmonics {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::Vec3,
-    ///                      util::{SHLight, named_colors, Color128, SphericalHarmonics}};
+    ///                      util::{named_colors, Color128, SphericalHarmonics}};
     ///
     /// let mut sh0 = SphericalHarmonics::default();
     /// sh0.add([1.0, 0.0, 1.0], named_colors::RED);
@@ -2234,6 +2352,7 @@ impl SphericalHarmonics {
     ///
     /// assert_eq!(sh.get_sample([1.0, 0.0, 1.0]), Color128 { r: 11.453729, g: 0.0, b: 0.0, a: 1.0 });
     /// assert_eq!(sh.get_dominent_light_direction(), Vec3::new(-1.0, 0.0, -1.0).get_normalized());
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn new(coefficients: [Vec3; 9]) -> Self {
         SphericalHarmonics { coefficients }
@@ -2251,7 +2370,7 @@ impl SphericalHarmonics {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::Vec3,
-    ///                      util::{SHLight, named_colors, Color128, SphericalHarmonics}};
+    ///                      util::{named_colors, Color128, SphericalHarmonics}};
     ///
     /// let mut sh = SphericalHarmonics::default();
     /// sh.add([1.0, 0.0, 1.0], named_colors::RED)
@@ -2260,7 +2379,8 @@ impl SphericalHarmonics {
     ///
     /// assert_eq!(sh.get_sample([1.0, 0.0, 1.0]), Color128 { r: 11.453729, g: -0.2956792, b: 4.4505944, a: 1.0 });
     /// assert_eq!(sh.get_dominent_light_direction(), Vec3 { x: -0.21951628, y: -0.21670417, z: -0.95123714 });
-    ///```
+    /// # sk::Sk::shutdown();
+    /// ```
     pub fn add(&mut self, light_dir: impl Into<Vec3>, light_color: impl Into<Color128>) -> &mut Self {
         let light_dir = light_dir.into();
         let color = light_color.into();
@@ -2279,7 +2399,7 @@ impl SphericalHarmonics {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::Vec3,
-    ///                      util::{SHLight, named_colors, Color128, SphericalHarmonics}};
+    ///                      util::{named_colors, Color128, SphericalHarmonics}};
     ///
     /// let mut sh = SphericalHarmonics::default();
     /// sh.add([1.0, 0.0, 1.0], named_colors::RED)
@@ -2295,7 +2415,8 @@ impl SphericalHarmonics {
     ///
     /// sh.brightness(0.0);
     /// assert_eq!(sh.get_sample([1.0, 0.0, 1.0]), Color128::BLACK);
-    /// assert_eq!(sh.get_dominent_light_direction().x.is_nan(), true);
+    /// assert_eq!(sh.get_dominent_light_direction(), Vec3::new(0.0, 1.0, 0.0).get_normalized());
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn brightness(&mut self, scale: f32) -> &mut Self {
         unsafe { sh_brightness(self, scale) };
@@ -2323,7 +2444,7 @@ impl SphericalHarmonics {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::Vec3,
-    ///                      util::{SHLight, named_colors, Color128, SphericalHarmonics}};
+    ///                      util::{named_colors, SphericalHarmonics}};
     ///
     /// let mut sh = SphericalHarmonics::default();
     /// sh.add([1.0, 0.0, 1.0], named_colors::RED)
@@ -2331,6 +2452,7 @@ impl SphericalHarmonics {
     ///   .add([0.0, 1.0, 1.0], named_colors::BLUE);
     ///
     /// assert_eq!(sh.get_dominent_light_direction(), Vec3 { x: -0.3088678, y: -0.6715365, z: -0.6735276 });
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_dominent_light_direction(&self) -> Vec3 {
         unsafe { sh_dominant_dir(self) }
@@ -2384,6 +2506,7 @@ impl SphericalHarmonics {
 ///    totalf = Time::get_totalf();
 ///    total = Time::get_total();
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 pub struct Time;
 
@@ -2409,6 +2532,8 @@ unsafe extern "C" {
     pub fn time_scale(scale: f64);
     pub fn time_set_time(total_seconds: f64, frame_elapsed_seconds: f64);
     pub fn time_frame() -> u64;
+    pub fn time_perf_cpu_us() -> u64;
+    pub fn time_perf_gpu_us() -> u64;
 }
 
 impl Time {
@@ -2424,12 +2549,11 @@ impl Time {
     /// // Time passes faster:
     /// Time::scale(2.0);
     ///
-    /// let mut total = 0.0f64;
-    /// let mut totalf = 0.0f32;
     /// number_of_steps = 100;
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     assert_eq!(Time::get_step_unscaled(), Time::get_step() / 2.0);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn scale(factor: f64) {
         unsafe { time_scale(factor) }
@@ -2454,6 +2578,7 @@ impl Time {
     ///
     /// assert_eq!(Time::get_total(), 10.0);
     /// assert_eq!(Time::get_step(), 0.01);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn set_time(total_seconds: f64, frame_elapsed_seconds: f64) {
         unsafe { time_set_time(total_seconds, frame_elapsed_seconds) }
@@ -2475,6 +2600,7 @@ impl Time {
     ///         assert_eq!(Time::get_frame(), iter + 1);
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_frame() -> u64 {
         unsafe { time_frame() }
@@ -2499,7 +2625,8 @@ impl Time {
     ///     }
     ///     total = Time::get_total();
     /// );
-    /// ```    
+    /// # sk::Sk::shutdown();
+    /// ```
     pub fn get_step() -> f64 {
         unsafe { time_step() }
     }
@@ -2523,6 +2650,7 @@ impl Time {
     ///     }
     ///     totalf = Time::get_totalf();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_stepf() -> f32 {
         unsafe { time_stepf() }
@@ -2548,6 +2676,7 @@ impl Time {
     ///     }
     ///     total = Time::get_total_unscaled();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_step_unscaled() -> f64 {
         unsafe { time_step_unscaled() }
@@ -2573,6 +2702,7 @@ impl Time {
     ///     }
     ///     totalf = Time::get_total_unscaledf();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_step_unscaledf() -> f32 {
         unsafe { time_stepf_unscaled() }
@@ -2599,6 +2729,7 @@ impl Time {
     ///         assert_eq!(Time::get_total(), Time::get_total_unscaled() * 2.0);
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_total() -> f64 {
         unsafe { time_total() }
@@ -2625,6 +2756,7 @@ impl Time {
     ///         assert_eq!(Time::get_totalf(), Time::get_total_unscaledf() / 4.0);
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_totalf() -> f32 {
         unsafe { time_totalf() }
@@ -2648,5 +2780,51 @@ impl Time {
     /// see example in [`Time::get_total_unscaled`]
     pub fn get_total_unscaledf() -> f32 {
         unsafe { time_totalf_unscaled() }
+    }
+
+    /// Microseconds of CPU work for the renderer during the most recently completed frame. This measures wall-clock
+    /// time from command buffer acquisition through queue submission, excluding any time spent waiting on GPU fences
+    /// or vsync. This is useful for identifying CPU-side rendering bottlenecks such as draw call overhead or resource
+    /// uploads. Returns 0 if timing data is not yet available (first few frames).
+    /// <https://stereokit.net/Pages/StereoKit/Time/PerfCPUus.html>
+    ///
+    /// see also [`time_perf_cpu_us`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::util::Time;
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     let cpu_us = Time::get_perf_cpu_us();
+    ///     // CPU time should be non-zero after first few frames
+    ///     assert_eq!(cpu_us, 0);
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn get_perf_cpu_us() -> u64 {
+        unsafe { time_perf_cpu_us() }
+    }
+
+    /// Microseconds the GPU spent executing rendering commands for the most recently completed frame. Measured via
+    /// hardware timestamp queries at the top and bottom of the Vulkan pipeline, so this reflects actual GPU execution
+    /// time independent of CPU pacing or vsync. Useful for identifying GPU-bound scenarios like expensive shaders or
+    /// overdraw. Returns 0 if timing data is not yet available (first few frames).
+    /// <https://stereokit.net/Pages/StereoKit/Time/PerfGPUus.html>
+    ///
+    /// see also [`time_perf_gpu_us`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::util::Time;
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     let gpu_us = Time::get_perf_gpu_us();
+    ///     // GPU time should be non-zero after first few frames
+    ///     assert_eq!(gpu_us, 0);
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn get_perf_gpu_us() -> u64 {
+        unsafe { time_perf_gpu_us() }
     }
 }

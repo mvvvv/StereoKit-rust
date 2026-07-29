@@ -1,3 +1,4 @@
+#![doc(test(attr(deny(warnings), allow(unreachable_code))))]
 //! StereoKit-rust is a binding for the [StereoKit](https://StereoKit.net) C API.
 //! If the name of this crate contains "_rust" (not great for a Rust crate, we agree) it is to emphasize the fact that
 //! StereoKit is first and foremost a C, C++, C# project.
@@ -30,34 +31,41 @@
 //! ### On `Linux`:
 //!   - Considering that you have already installed `Rust` with `stable-?????-unknown-linux-gnu` toolchain and the linux package
 //!     `build-essential`.
-//!   - Get the following tools and dev libraries : `git` `clang` `cmake` `lld` `ninja-build` `libx11-dev`
-//!     `libxfixes-dev` `libegl-dev` `libgbm-dev` `libfontconfig-dev` `libxkbcommon-x11-dev`.
+//!   - Get the following tools and dev libraries : `git` `clang` `cmake` `lld` `llvm` `ninja-build` `libx11-dev`
+//!     `libxfixes-dev` `libvulkan-dev` `libfontconfig-dev` `libxkbcommon-x11-dev` `libxrandr-dev` `libxcursor-dev`.
+//!   - For headless/CI environments or software rendering: `mesa-vulkan-drivers` (provides lavapipe software renderer).
 //!
-//! Installing the stereokit_rust tools with `cargo install -F no-event-loop stereokit-rust` should help you to check
+//! ### On `macOS`:
+//!   - Considering that you have already installed `Rust` with `stable-?????-apple-darwin` toolchain.
+//!   - Get the following tools and dev libraries : `brew install cmake ninja molten-vk vulkan-headers`.
+//!   - To run or test, set `DYLD_LIBRARY_PATH` so the dynamic linker finds MoltenVK:
+//!     * `export DYLD_LIBRARY_PATH=$(brew --prefix molten-vk)/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}`
+//!     * `export VK_ICD_FILENAMES=$(brew --prefix molten-vk)/share/vulkan/icd.d/MoltenVK_icd.json`
+//!
+//!
+//! Installing the stereokit_rust tools with `cargo install stereokit-rust` should help you to check
 //! the missing dependencies.
 //!
 //! # Usage
-//! You have to chose between `event-loop` and `no-event-loop` features. The feature `no-event-loop` is the
-//! lighter but you can't use the [`framework`].
+//! By default, the [`framework`] (event loop, steppers, tools) is enabled. Use the `no-event-loop` feature
+//! for a lighter setup without the framework.
 //!
 //! ## Features
-//! - **`event-loop`**: Enables the framework with Winit integration for window management and event handling.
-//! - **`no-event-loop`**: Lighter weight option without framework support.
+//! - **`no-event-loop`**: Disables the framework (event loop, steppers, tools) for a lighter weight setup.
 //! - **`test-xr-mode`**: For testing - replaces `AppMode::Offscreen` with `AppMode::XR` in test macros to test with real XR devices.
 //! - **`dynamic-openxr`**: Includes OpenXR loader dynamically for Android builds (APK).
 //! - **`build-dynamic-openxr`**: Builds OpenXR loader from Khronos OpenXR project for Android builds (APK).
 //!
-//! Using `event-loop` your `Cargo.toml` should contain the following lines:
+//! Your `Cargo.toml` should contain the following lines:
 //! ```toml
 //! [lib]
 //! crate-type = ["lib", "cdylib"]
 //!
 //! [dependencies]
-//! stereokit-rust = { version = "0.4.0", features= ["event-loop"] }
-//! winit = { version = "0.30", features = [ "android-native-activity" ] }
+//! stereokit-rust = "0.4.0"
 //!
 //! [target.'cfg(target_os = "android")'.dependencies]
-//! stereokit-rust = { version = "0.4.0" , features = ["event-loop", "build-dynamic-openxr"] }
+//! stereokit-rust = { version = "0.4.0" , features = ["build-dynamic-openxr"] }
 //! log = "0.4"
 //! android_logger = "0.15"
 //! ndk-context = "0.1.1"
@@ -67,94 +75,37 @@
 //! # Examples
 //! Here is a simple "Hello World" StereoKit-rust app for all platforms:
 //! ```bash
-//! cargo new --lib vr_app
+//! cargo new_sk_rs_project org.my_org.vr_app --with-gradle --basic
 //! cd vr_app
 //! ```
 //!
 //! In `src/bin/main_vr_app.rs`, if you intend to build a PC VR/MR app:
 //! ```ignore
-//! #[allow(dead_code)]
-//! #[cfg(not(target_os = "android"))]
-//! fn main() {
-//!     use stereokit_rust::sk::{SkSettings, Sk};
-//!     use vr_app::the_main;
-//!     // Initialize StereoKit with default settings
-//!     let mut settings = SkSettings::default();
-//!     settings.app_name("Test");
-//!     # settings.mode(stereokit_rust::sk::AppMode::Offscreen);
-//!     let (sk, event_loop) = settings.init_with_event_loop()
-//!         .expect("Should initialize StereoKit");
-//!     the_main(sk, event_loop);
-//!     Sk::shutdown();
-//! }
-//!
-//! #[allow(dead_code)]
-//! #[cfg(target_os = "android")]
-//! //fake main fn for android as entry is lib.rs/android_main(...)
-//! fn main() {}
-//!
-//! # use stereokit_rust::prelude::*;
-//! # use winit::event_loop::EventLoop;
-//! # pub fn the_main(sk: Sk, event_loop: EventLoop<StepperAction>) {}
+#![doc = include_str!("templates/main_bin.rs")]
 //! ```
 //!
 //! In `src/lib.rs` where you can remove the `target_os = "android" code` if you don't want to build for Android:
 //! ```ignore
-//! use stereokit_rust::{framework::SkClosures, prelude::*, sk::Sk, ui::Ui};
-//! use winit::event_loop::EventLoop;
-//!
-//! #[cfg(target_os = "android")]
-//! use winit::platform::android::activity::AndroidApp;
-//!
-//! #[unsafe(no_mangle)]
-//! #[cfg(target_os = "android")]
-//! pub fn android_main(app: AndroidApp) {
-//!     use stereokit_rust::sk::SkSettings;
-//!     // Initialize StereoKit with default settings
-//!     let mut settings = SkSettings::default();
-//!     settings.app_name("Test");
-//!     android_logger::init_once(
-//!         android_logger::Config::default()
-//!               .with_max_level(log::LevelFilter::Debug)
-//!               .with_tag("STKit-rs"),
-//!     );
-//!     let (sk, event_loop) = settings.init_with_event_loop(app).unwrap();
-//!     the_main(sk, event_loop);
-//! }
-//!
-//! /// Main function for All!
-//! pub fn the_main(sk: Sk, event_loop: EventLoop<StepperAction>) {
-//!     // Create a grabbable window with a button to exit the application
-//!     let mut window_pose = Ui::popup_pose([0.0, -0.4, 0.0]);
-//!     // Main loop
-//!     SkClosures::new(sk, |sk, _token| {
-//!         // Exit button
-//!         Ui::window_begin("Hello world!", &mut window_pose, None, None, None);
-//!         if Ui::button("Exit", None) {
-//!             sk.quit(None)
-//!         }
-//!         Ui::window_end();
-//!     })
-//!     .run(event_loop);
-//! }
+#![doc = include_str!("templates/lib_rs.rs")]
 //! ```
 //!
 //! Hundreds of examples (which are also unit tests) are available in this documentation. If you like to learn by
 //! examples, check out  the modules in the following order: [`sk`], [`mesh`], [`model`], [`maths`], [`ui`], [`framework`],
-//! [`tools`], [`sound`], [`interactor`], [`system`], [`permission`] [`material`], [`shader`], [`tex`], [`sprite`], [`font`], [`render_list`].
+//! [`tools`], [`sound`], [`interactor`], [`system`], [`permission`] [`material`], [`shader`], [`tex`], [`sprite`], [`font`],
+//! [`render`] [`anchor`] [`compute`] [`util`].
 //!
 //! # How to build and test your application:
 //!
-//! * [Building your PC VR/MR app](#building-your-pc-vrmr-app).
+//! * [Building your PC/Mac VR/MR app](#building-your-pcmac-vrmr-app).
 //! * [Building your Android VR/MR app](#building-your-android-vrmr-app).
 //! * [Building your Windows GNU PC VR/MR app](#building-your-windows-gnu-pc-vrmr-app).
-//! * [Building your Linux AARCH64 PC VR/MR app](#building-your-linux-aarch64-pc-vrmr-app).
-//! * [Building your Linux X86_64 PC VR/MR app](#building-your-linux-x86_64-pc-vrmr-app).
+//! * [Cross-building your Linux AARCH64 PC VR/MR app](#cross-building-your-linux-aarch64-pc-vrmr-app).
+//! * [Cross-building your Linux X86_64 PC VR/MR app](#cross-building-your-linux-x86_64-pc-vrmr-app).
 //!
-//! ## Building your PC VR/MR app:
+//! ## Building your PC/Mac VR/MR app:
 //! * Launch `cargo run --bin main_vr_app` to compile and run your app in debug mode on your PC with or without a headset.
-//!   (using Wayland on Linux may require to unset temporarily the DISPLAY variable: `DISPLAY= cargo run`)
-//! * Launch `cargo build_sk_rs --bin main_vr_app <build_directory>` to compile your app and assets in release mode for your PC.
+//! * Launch `cargo build_sk_rs --bin main_vr_app <build_directory>` to compile your app and assets in release mode for your PC/Mac.
+//!   On Linux, you may have to set `RUSTFLAGS="-Clinker-plugin-lto"` if you encounter any "undefined reference".
 //!
 //! To test with your headset, make sure you have [OpenXR installed](https://www.khronos.org/openxr/) with an active
 //! runtine (SteamVR, Monado, WiVRn, ALVR ...).
@@ -170,41 +121,26 @@
 //! * Check that `adb` ($ANDROID_HOME/platform_tools/adb) is connecting to your headset.
 //! * Download the target: `rustup target add aarch64-linux-android` for most existing android headsets.
 //! * Create a keystore for signing your app (using keytool or Android Studio).
-//! ##### If you don't need some java/kotlin code, you can use cargo-apk  (cargo-xbuild is an alternative but lacks some documentation):
-//!   - Install: `cargo install cargo-apk`.
-//!   - The manifest file will be generated from the `Cargo.toml` (see the `package.metadata.android` section). Here are
-//!     some examples:
-//!     - [StereoKit-template](https://github.com/mvvvv/stereokit-template/blob/main/Cargo.toml#L27)
-//!     - [StereoKit-rust](https://github.com/mvvvv/StereoKit-rust/blob/master/Cargo.toml#L77)
-//!   - Create a res directory with the icons of your app (i.e. with <https://icon.kitchen>)
-//!   - Set the path and password to your keystore in the `Cargo.toml` [package.metadata.android.signing.release] or
-//!     in the `CARGO_APK_RELEASE_KEYSTORE` and  `CARGO_APK_RELEASE_KEYSTORE_PASSWORD` environment variables.
-//!   - Launch the debug on your headset: `cargo apk run --lib`
-//!   - Generate the release apk: `cargo apk build --lib --release`. The apk will be in `target/release/apk/`.
-//! ##### Otherwise, you have to use Gradle with cargo-ndk:
-//!   - Install: `cargo install cargo-ndk`.
-//!   - Clone or extract a ZIP of [gradle template](https://github.com/mvvvv/stereokit-template/tree/gradle).
-//!   - Name your project in the `package.name` entry in `Cargo.toml`.
-//!   - Set `cargo.libName` (same as `package.name` from `Cargo.toml`), `android.applicationId` and `android.main` in
-//!     `gradle.properties`.
-//!   - In `app/src/main/AndroidManifest.xml` delete or modify the path and package name of `MainActivity.java` (your
-//!     choice impacts android.main ↑ and android:hasCode attribute).
-//!   - Replace the content of the res directory with the icons of your app (i.e. with <https://icon.kitchen>)
-//!   - Store your keystore values in one of the hidden gradle properties files (ie. `~/.gradle/gradle.properties`)
+//  * Install: `cargo install cargo-ndk`.
+//! * Create your project:
+//! ```bash
+//! cargo new_sk_rs_project com.my_com.my_vr_app --with-gradle
+//! cd vr_app
+//! ```
+//! * Replace the content of the res directory with the icons of your app (i.e. with <https://icon.kitchen>)
+//! * Store your keystore values in one of the hidden gradle properties files (ie. `~/.gradle/gradle.properties`)
 //!     to store and forget the confidential values:
 //!     - RELEASE_STORE_FILE=/home/**/**/my_release_key.keystore
 //!     - RELEASE_STORE_PASSWORD=******
 //!     - RELEASE_KEY_ALIAS=*****
 //!     - RELEASE_KEY_PASSWORD=******
-//!   - If any, remove the .git folder.
-//!   - Launch the debug on your connected headset:
+//! * Launch the debug on your connected headset:
 //!     - On Windows, launch: `./gradlew.bat run && cmd /c logcat.cmd` or `(./gradlew.bat run) -and (cmd /c logcat.cmd)`
-//!     - On others, launch: `./gradlew run && ./logcat.cmd`
-//!   - Generate the release apk: `./gradlew buildRelease`. The apk will be in `app/build/outputs/apk/release`
+//!     - On others, launch: `./gradlew run && sh ./logcat.cmd`
+//! * Generate the release apk: `./gradlew buildRelease`. The apk will be in `app/build/outputs/apk/release`
 //!
 //! ## Building your Windows GNU PC VR/MR app:
-//! Thanks to Steam Proton, you can run your Windows exe on Linux. It's even better than native build thanks to D3D11
-//! to Vulkan translation. Knowing that, we work to build Windows .exe files on Linux using GNU toolchain.
+//! Thanks to Steam Proton, you can test and run your Windows exe on Linux. Knowing that, we can also build Windows .exe files on Linux using GNU toolchain.
 //!
 //! Build your app for Windows_x64 using GNU toolchain from Linux and Windows (and probably Mac):
 //! * Install mingw-w64 (MSYS2 on windows).
@@ -226,11 +162,11 @@
 //!   - Add a non-steam game to your library then launch it when WiVRn or SteamVR are started.
 //!   - If you only need the simulator: `wine your_app.exe`.
 //!
-//! ## Building your Linux aarch64 PC VR/MR app:
-//! If you are on aarch64 Linux, you just have to follow the instructions in [`Building your PC VR/MR app`](#building-your-pc-vrmr-app).
+//! ## Cross building your Linux aarch64 PC VR/MR app:
+//! If you are on aarch64 Linux, you just have to follow the instructions in [`Building your PC/Mac VR/MR app`](#building-your-pcmac-vrmr-app).
 //! If you are on a x86_64 architecture you are able to cross-compile your app for aarch64:
 //! * Install g++-aarch64-linux-gnu
-//! * Get the libraries `libx11-dev:arm64` `libxfixes-dev:arm64` `libegl-dev:arm64` `libgbm-dev:arm64` `libfontconfig-dev:arm64`.
+//! * Get the libraries `libx11-dev:arm64` `libxfixes-dev:arm64` `libegl-dev:arm64` `libgbm-dev:arm64` `libfontconfig-dev:arm64` `libxrandr-dev:arm64` `libxcursor-dev:arm64`.
 //!   On Ubuntu 24:XX this can be done by adding a foreign architecture `dpkg --add-architecture arm64` with depot
 //!   `http://ports.ubuntu.com/ubuntu-ports`. To avoid errors during `apt update` you'll have to specify the architectures
 //!   of all depots in `/etc/apt/sources.list.d/ubuntu.sources`
@@ -238,12 +174,12 @@
 //! * Add a section `[target.aarch64-unknown-linux-gnu]` in your config.toml for setting `linker = "aarch64-linux-gnu-gcc"`
 //! * Launch `cargo build_sk_rs --bin main_vr_app --aarch64-linux <the path of your exportable repository>`
 //!
-//! ## Building your Linux x86_64 PC VR/MR app:
-//! If you are on x86_64 Linux, you just have to follow the instructions in [`Building your PC VR/MR app`](#building-your-pc-vrmr-app).
+//! ## Cross building your Linux x86_64 PC VR/MR app:
+//! If you are on x86_64 Linux, you just have to follow the instructions in [`Building your PC/Mac VR/MR app`](#building-your-pcmac-vrmr-app).
 //! If you are on aarch64 architecture you should be able to cross-compile for x86_64:
 //! (This hasn't been tested yet, if you are interested in testing it, please let us now)
 //! * Install g++-x86-64-linux-gnu
-//! * Get the libraries `libx11-dev:amd64` `libxfixes-dev:amd64` `libegl-dev:amd64` `libgbm-dev:amd64` `libfontconfig-dev:amd64`.
+//! * Get the libraries `libx11-dev:amd64` `libxfixes-dev:amd64` `libegl-dev:amd64` `libgbm-dev:amd64` `libfontconfig-dev:amd64` `libxrandr-dev:amd64` `libxcursor-dev:amd64`.
 //!   On Ubuntu 24:XX this can be done by adding a foreign architecture `dpkg --add-architecture amd64` with depot
 //!   `http://ports.ubuntu.com/ubuntu-ports`. To avoid errors during `apt update` you'll have to specify the architectures
 //!   of all depots in `/etc/apt/sources.list.d/ubuntu.sources`
@@ -253,25 +189,22 @@
 
 use std::{ffi::NulError, path::PathBuf};
 
-#[cfg(feature = "event-loop")]
+#[cfg(not(feature = "no-event-loop"))]
 pub use stereokit_macros::IStepper;
 
 pub use stereokit_macros::include_asset_tree;
 
-#[cfg(feature = "event-loop")]
-pub use stereokit_macros::test_init_sk_event_loop as test_init_sk;
-#[cfg(feature = "no-event-loop")]
-pub use stereokit_macros::test_init_sk_no_event_loop as test_init_sk;
+pub use stereokit_macros::test_init_sk;
 
 pub use stereokit_macros::offscreen_mode_stop_here;
 pub use stereokit_macros::xr_mode_stop_here;
 
-#[cfg(feature = "event-loop")]
+#[cfg(not(feature = "no-event-loop"))]
 pub use stereokit_macros::test_screenshot_event_loop as test_screenshot;
 #[cfg(feature = "no-event-loop")]
 pub use stereokit_macros::test_screenshot_no_event_loop as test_screenshot;
 
-#[cfg(feature = "event-loop")]
+#[cfg(not(feature = "no-event-loop"))]
 pub use stereokit_macros::test_steps_event_loop as test_steps;
 #[cfg(feature = "no-event-loop")]
 pub use stereokit_macros::test_steps_no_event_loop as test_steps;
@@ -280,9 +213,13 @@ pub use stereokit_macros::test_steps_no_event_loop as test_steps;
 use thiserror::Error;
 
 /// Anchor related structs and functions.
+pub mod anchor;
+
+/// Compute shader related structs, enums and functions.
 ///
 /// With examples which are also unit tests.
-pub mod anchor;
+/// [![Compute](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/compute.jpeg)](compute::Compute)
+pub mod compute;
 
 /// Font related structs and functions.
 ///
@@ -297,7 +234,7 @@ pub mod font;
 /// These are higher level pieces of functionality that do not necessarily adhere to the same goals and restrictions as
 /// StereoKit’s core functionality does. This corresponds to the C# namespace:
 /// <https://stereokit.net/Pages/StereoKit.Framework.html>
-/// - An event loop manager based on Winit.
+/// - An event loop manager.
 /// - HandMenuRadial related structs, enums and functions.
 ///
 /// At the core of this framework is the [`crate::IStepper`] derive macro, which allows you to create a stepper that can
@@ -306,8 +243,8 @@ pub mod font;
 /// which are also unit tests:
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{ font::Font, maths::{Matrix, Quat, Vec3},
-///                       system::{Text, TextStyle}, util::named_colors};
+/// use stereokit_rust::{ font::Font, maths::Matrix,
+///                       system::{Text, TextBuilder, TextStyle}, util::named_colors};
 ///
 /// #[derive(IStepper)]
 /// pub struct MyStepper {
@@ -316,7 +253,7 @@ pub mod font;
 ///
 ///     transform: Matrix,
 ///     pub text: String,
-///     text_style: Option<TextStyle>,
+///     text_style: TextStyle,
 /// }
 /// unsafe impl Send for MyStepper {}
 /// impl Default for MyStepper {
@@ -327,20 +264,19 @@ pub mod font;
 ///
 ///             transform: Matrix::IDENTITY,
 ///             text: "IStepper\nderive\nmacro".to_owned(),
-///             text_style: None,
+///             text_style: TextStyle::default(),
 ///         }
 ///     }
 /// }
 /// impl MyStepper {
 ///     fn start(&mut self) -> bool {
 ///         self.transform = Matrix::t_r([0.05, 0.0, -0.2], [0.0, 200.0, 0.0]);
-///         self.text_style = Some(Text::make_style(Font::default(), 0.3, named_colors::RED));
+///         self.text_style = Text::make_style(Font::default(), 0.3, named_colors::RED);
 ///         true
 ///     }
 ///     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
-///     fn draw(&mut self, token: &MainThreadToken) {
-///         Text::add_at(token, &self.text, self.transform, self.text_style,
-///                      None, None, None, None, None, None);
+///     fn draw(&mut self, _token: &MainThreadToken) {
+///         TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
 ///     }
 /// }
 ///
@@ -358,7 +294,16 @@ pub mod font;
 /// [![StepperAction](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/stepper_actions.jpeg)](framework::StepperAction)
 /// [![Steppers](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/steppers.jpeg)](framework::Steppers)
 /// [![StepperClosures](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/stepper_closures.jpeg)](framework::StepperClosures)
+/// [![Screen](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/screen.jpeg)](framework::Screen)
 pub mod framework;
+
+/// International keyboard layout constants for use with
+/// [`util::Platform::keyboard_set_layout`].
+///
+/// Contains pre-built layouts for French AZERTY, German QWERTZ, Spanish,
+/// Portuguese (Brazil), Italian, Swedish/Nordic, Polish, Czech, Turkish,
+/// Russian, Ukrainian, Greek, Arabic, Hebrew and Japanese.
+pub mod locale;
 
 /// Material specific structs, enums and functions.
 ///
@@ -368,6 +313,8 @@ pub mod framework;
 /// [![Material](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/materials.jpeg)](material::Material)
 /// [![Material Transparency](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/material_transparency.jpeg)](material::Material::transparency)
 /// [![Material Face Cull](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/material_face_cull.jpeg)](material::Material::face_cull)
+/// [![Material Metal Texture](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/material_tex_metal.jpeg)](material::Material::metal_tex)
+/// [![Material Wireframe](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/wireframe.jpeg)](material::Material::wireframe)
 /// [![Material Parameter Info](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/param_infos.jpeg)](material::ParamInfos)
 /// [![Material Parameter Info with id](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/param_infos_with_id.jpeg)](material::ParamInfos::set_data_with_id)
 pub mod material;
@@ -395,8 +342,11 @@ pub mod maths;
 /// [![Mesh](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/meshes.jpeg)](mesh::Mesh)
 /// [![Vertex](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/basic_mesh.jpeg)](mesh::Vertex)
 /// [![Mesh bounds](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_bounds.jpeg)](mesh::Mesh::bounds)
-/// [![Mesh set_verts](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_set_verts.jpeg)](mesh::Mesh::set_verts)
+/// [![Mesh set_data](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_set_data.jpeg)](mesh::Mesh::set_data)
 /// [![Mesh set_inds](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_set_inds.jpeg)](mesh::Mesh::set_inds)
+/// [![Mesh set_skin](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_set_skin.jpeg)](mesh::Mesh::set_skin)
+/// [![Mesh copy](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_copy.jpeg)](mesh::Mesh::copy)
+/// [![Mesh update_skin](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_update_skin.jpeg)](mesh::Mesh::update_skin)
 /// [![Mesh draw](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_draw.jpeg)](mesh::Mesh::draw)
 /// [![Mesh intersect](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_intersect.jpeg)](mesh::Mesh::intersect)
 pub mod mesh;
@@ -430,12 +380,17 @@ pub mod prelude;
 /// ## Examples
 /// which are also unit tests:
 ///
-/// [![RenderList](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_list.jpeg)](render_list::RenderList)
-/// [![RenderList add mesh](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_list_add_mesh.jpeg)](render_list::RenderList::add_mesh)
-/// [![RenderList add model](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_list_add_model.jpeg)](render_list::RenderList::add_model)
-/// [![RenderList draw now](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_list_draw_now.jpeg)](render_list::RenderList::draw_now)
-/// [![RenderList push](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_list_push.jpeg)](render_list::RenderList::push)
-pub mod render_list;
+/// [![Renderer](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/renderer.jpeg)](render::Renderer)
+/// [![Screenshots capture](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/screenshot_capture.jpeg)](render::Renderer::screenshot_capture)
+/// [![Render to](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_to.jpeg)](render::Renderer::render_to)
+/// [![Render to multiview](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_to_multiview.jpeg)](render::RenderBuilder::render_to)
+/// [![RenderList](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_list.jpeg)](render::RenderList)
+/// [![RenderList add mesh](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_list_add_mesh.jpeg)](render::RenderList::add_mesh)
+/// [![RenderList add model](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_list_add_model.jpeg)](render::RenderList::add_model)
+/// [![RenderList draw now](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_list_draw_now.jpeg)](render::RenderList::draw_now)
+/// [![RenderList draw now multi-view](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_list_draw_now_multi_view.jpeg)](render::RenderBuilder::draw_now)
+/// [![RenderList push](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/render_list_push.jpeg)](render::RenderList::push)
+pub mod render;
 
 /// Shader specific structs, enums and functions.
 ///
@@ -450,8 +405,8 @@ pub mod shader;
 /// ## Examples
 /// which are also unit tests:
 ///
-/// [![Sk basic example](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sk_basic_example.jpeg)](sk::SkSettings::init_with_event_loop)
-#[cfg(feature = "event-loop")]
+/// [![Sk basic example](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sk_basic_example.jpeg)](sk::SkSettings::init)
+#[cfg(not(feature = "no-event-loop"))]
 pub mod sk;
 
 /// StereoKit-rust specific structs, enums and functions.
@@ -509,9 +464,8 @@ pub mod interactor;
 /// [![Controller](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/controller.jpeg)](system::Controller)
 /// [![Lines](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/lines.jpeg)](system::Lines)
 /// [![Microphone](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/microphone.jpeg)](system::Microphone)
-/// [![Renderer](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/renderer.jpeg)](system::Renderer)
-/// [![Screenshots capture](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/screenshot_capture.jpeg)](system::Renderer::screenshot_capture)
 /// [![TextStyle](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/text_style.jpeg)](system::TextStyle)
+/// [![TextBuilder](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/text_builder.jpeg)](system::TextBuilder)
 /// [![Text](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/text.jpeg)](system::Text)
 pub mod system;
 
@@ -547,10 +501,10 @@ pub mod tools;
 /// [![Ui](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui.jpeg)](ui::Ui)
 /// [![Ui color_scheme](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_color_scheme.jpeg)](ui::Ui::color_scheme)
 /// [![Ui button](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_button.jpeg)](ui::Ui::button)
-/// [![Ui button_img](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_button_img.jpeg)](ui::Ui::button_img)
+/// [![Ui button_img](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_button_img.jpeg)](ui::Ui::button)
 /// [![Ui button_round](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_button_round.jpeg)](ui::Ui::button_round)
 /// [![Ui handle](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_handle.jpeg)](ui::Ui::handle)
-/// [![Ui handle_begin](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_handle_begin.jpeg)](ui::Ui::handle_begin)
+/// [![Ui handle begin/end](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_handle_begin.jpeg)](ui::Ui::handle_end)
 /// [![Ui hseparator](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_hseparator.jpeg)](ui::Ui::hseparator)
 /// [![Ui hslider](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_hslider.jpeg)](ui::Ui::hslider)
 /// [![Ui vslider](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_vslider.jpeg)](ui::Ui::vslider)
@@ -568,13 +522,14 @@ pub mod tools;
 /// [![Ui push_text_style](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_push_text_style.jpeg)](ui::Ui::push_text_style)
 /// [![Ui push_tint](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_push_tint.jpeg)](ui::Ui::push_tint)
 /// [![Ui gen_quadrant_mesh](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_gen_quadrant_mesh.jpeg)](ui::Ui::gen_quadrant_mesh)
-/// [![Ui radio button](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_radio.jpeg)](ui::Ui::radio_img)
+/// [![Ui radio button](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_radio.jpeg)](ui::Ui::radio)
 /// [![Ui toggle](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_toggle.jpeg)](ui::Ui::toggle)
 /// [![Ui draw_element](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_draw_element.jpeg)](ui::Ui::draw_element)
 /// [![Ui set_theme_color](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_set_theme_color.jpeg)](ui::Ui::set_theme_color)
 /// [![Ui text](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_text.jpeg)](ui::Ui::text)
-/// [![Ui window](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_window.jpeg)](ui::Ui::window_begin)
+/// [![Ui window](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_window.jpeg)](ui::Ui::window)
 pub mod ui;
+pub mod ui_builders;
 
 /// Many utility structs, enums and functions.
 pub mod util;
@@ -646,11 +601,19 @@ pub enum StereoKitError {
     AnchorCreate(String),
     #[error("failed to find anchor {0} for reason {1}")]
     AnchorFind(String, String),
+    #[error("failed to create compute {0}")]
+    ComputeCreate(String),
+    #[error("failed to find compute {0} for reason {1}")]
+    ComputeFind(String, String),
+    #[error("failed to create compute buffer {0}")]
+    ComputeBufferCreate(String),
+    #[error("failed to find compute buffer {0} for reason {1}")]
+    ComputeBufferFind(String, String),
     #[error("failed to init stereokit with settings {0}")]
     SkInit(String),
-    #[cfg(feature = "event-loop")]
+    #[cfg(not(feature = "no-event-loop"))]
     #[error("failed to init stereokit event_loop")]
-    SkInitEventLoop(#[from] winit::error::EventLoopError),
+    SkInitEventLoop(#[from] crate::framework::EventLoopError),
     #[error("failed to get a string from native C {0}")]
     CStrError(String),
     #[error("failed to read a file {0}: {1}")]

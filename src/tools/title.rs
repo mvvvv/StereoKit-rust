@@ -2,7 +2,7 @@ use crate::{
     font::Font,
     maths::{Matrix, Quat, Vec3},
     prelude::*,
-    system::{Text, TextStyle},
+    system::{Text, TextBuilder, TextStyle},
     util::{Color32, named_colors},
 };
 
@@ -27,6 +27,7 @@ use crate::{
 /// filename_scr = "screenshots/title.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/title.jpeg" alt="screenshot" width="200">
 #[derive(IStepper, Clone)]
@@ -36,7 +37,7 @@ pub struct Title {
 
     pub transform: Matrix,
     pub text: String,
-    pub text_style: Option<TextStyle>,
+    pub text_style: TextStyle,
 }
 
 unsafe impl Send for Title {}
@@ -51,7 +52,7 @@ impl Default for Title {
 
             transform: Matrix::t_r((Vec3::NEG_Z * 0.5) + Vec3::Y, Quat::from_angles(0.0, 180.0, 0.0)),
             text: "Title".to_owned(),
-            text_style: None,
+            text_style: TextStyle::default(),
         }
     }
 }
@@ -68,7 +69,7 @@ impl Title {
         let font = font.unwrap_or_default();
         let font_size = font_size.unwrap_or(0.5);
         let color = color.unwrap_or(named_colors::WHITE);
-        title.text_style = Some(Text::make_style(font, font_size, color));
+        title.text_style = Text::make_style(font, font_size, color);
         title
     }
 
@@ -85,7 +86,7 @@ impl Title {
     }
 
     /// Called from IStepper::step, after check_event here you can draw your UI and scene
-    fn draw(&mut self, token: &MainThreadToken) {
-        Text::add_at(token, &self.text, self.transform, self.text_style, None, None, None, None, None, None);
+    fn draw(&mut self, _token: &MainThreadToken) {
+        TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
     }
 }

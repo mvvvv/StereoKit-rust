@@ -7,9 +7,10 @@ use stereokit_rust::{
     mesh::Mesh,
     model::{AnimMode, Model},
     prelude::*,
+    render::Renderer,
     sound::{Sound, SoundInst},
     sprite::Sprite,
-    system::{Assets, Handed, Input, Renderer, Text, TextStyle},
+    system::{Assets, Handed, Input, Text, TextBuilder, TextStyle},
     tex::Tex,
     tools::os_api::{PathEntry, get_assets},
     ui::{Ui, UiBtnLayout},
@@ -28,6 +29,7 @@ pub struct Asset1 {
     pub transform: Matrix,
     pub asset_pose: Pose,
     pub asset_scale: Vec3,
+    pub model_scale: f32,
     model_to_show: Option<Model>,
     sound_to_play: Option<SoundInst>,
     asset_files: Vec<PathEntry>,
@@ -55,6 +57,7 @@ impl Default for Asset1 {
             transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, Quat::from_angles(0.0, 180.0, 0.0)),
             asset_pose: Pose::new(Vec3::new(0.0, 1.3, -0.3), None),
             asset_scale: Vec3::ONE * 0.02,
+            model_scale: 1.0,
             model_to_show: None,
             sound_to_play: None,
             asset_files: vec![],
@@ -103,20 +106,7 @@ impl Asset1 {
     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
     /// Draws the asset model and handles user interactions.
-    fn draw(&mut self, token: &MainThreadToken) {
-        // If a model has been selected, we draw it
-        if let Some(model) = &self.model_to_show {
-            if Ui::handle("Model1", &mut self.asset_pose, model.get_bounds() * self.asset_scale, false, None, None)
-                && let Some(mut sound) = self.sound_to_play
-            {
-                sound.position(self.asset_pose.position);
-            }
-            let model_transform = self.asset_pose.to_matrix(Some(self.asset_scale));
-            Renderer::add_model(token, model, model_transform, None, None);
-        } else {
-            self.asset_selected = 0;
-        }
-
+    fn draw(&mut self, _token: &MainThreadToken) {
         let mut new_asset_files = None;
 
         // The window to select existing model in this crate
@@ -125,7 +115,7 @@ impl Asset1 {
         } else {
             format!("Assets/{:?} with type {:?}", self.asset_sub_dir, self.exts)
         };
-        Ui::window_begin(window_text, &mut self.window_pose, Some(Vec2::new(0.5, 0.0)), None, None);
+        Ui::window(window_text).pose(&mut self.window_pose).size(Vec2::new(0.5, 0.0)).begin();
 
         let mut i = 0;
         for file_name in &self.asset_files {
@@ -134,14 +124,11 @@ impl Asset1 {
             if let PathEntry::File(name) = file_name {
                 let file_name_str = name.to_str().unwrap_or("OsString error!!");
                 Ui::same_line();
-                if Ui::radio_img(
-                    file_name_str,
-                    self.asset_selected == i,
-                    &self.radio_off,
-                    &self.radio_on,
-                    UiBtnLayout::Left,
-                    None,
-                ) {
+                if Ui::radio(file_name_str, self.asset_selected == i)
+                    .images(&self.radio_off, &self.radio_on)
+                    .image_layout(UiBtnLayout::Left)
+                    .press()
+                {
                     if let Some(sound_inst) = self.sound_to_play {
                         sound_inst.stop();
                     }
@@ -162,7 +149,7 @@ impl Asset1 {
             && !sub_dir_name.is_empty()
         {
             //---back button
-            if Ui::button("..", None) {
+            if Ui::button("..").press() {
                 self.asset_sub_dir.pop();
                 new_asset_files = Some(get_assets(&self.sk_info, self.asset_sub_dir.clone(), &self.exts));
             }
@@ -181,7 +168,7 @@ impl Asset1 {
                 let name = &dir_name_str[split_pos..];
                 if !name.contains('/') {
                     Ui::same_line();
-                    if Ui::button(name, None) {
+                    if Ui::button(name).press() {
                         self.asset_sub_dir.push(name);
                         new_asset_files = Some(get_assets(&self.sk_info, self.asset_sub_dir.clone(), &self.exts));
                     }
@@ -196,7 +183,27 @@ impl Asset1 {
         }
         Ui::window_end();
 
-        Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
+        // If a model has been selected, we draw it.
+        // The handle gets the base bounds (model bounds * fixed asset_scale); StereoKit's
+        // ui_handle_begin multiplies them internally by `model_scale`, keeping the grab
+        // volume matched to the drawn size. Passing `model_scale` enables two-handed
+        // translate/rotate AND uniform scaling.
+        if let Some(model) = &self.model_to_show {
+            if Ui::handle("Model1", &mut self.asset_pose, model.get_bounds() * self.asset_scale)
+                .scale(&mut self.model_scale)
+                .grab()
+                && let Some(mut sound) = self.sound_to_play
+            {
+                sound.position(self.asset_pose.position);
+            }
+            // Combine the fixed per-axis base scale with the user-driven uniform scale.
+            let model_transform = self.asset_pose.to_matrix(Some(self.asset_scale * self.model_scale));
+            Renderer::add_model(model, model_transform, None, None);
+        } else {
+            self.asset_selected = 0;
+        }
+
+        TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
     }
 
     /// Open asset regarding its extension
@@ -205,7 +212,7 @@ impl Asset1 {
         if let Some(ext) = file_path.extension() {
             let ext = ".".to_string() + ext.to_str().unwrap_or("!!ERROR!!");
             if Assets::MODEL_FORMATS.contains(&ext.as_str()) {
-                if let Ok(model) = Model::from_file(name, None) {
+                if let Ok(model) = Model::from_file(name, None, None) {
                     let mut anims = model.get_anims();
                     if anims.get_count() > 0 {
                         anims.play_anim_idx(0, AnimMode::Loop);

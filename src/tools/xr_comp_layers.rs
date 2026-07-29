@@ -5,7 +5,7 @@
 //! <https://registry.khronos.org/OpenXR/specs/1.1/html/xrspec.html#XR_KHR_android_surface_swapchain>
 
 use crate::{
-    maths::{Pose, Quat, Rect, Vec2},
+    maths::{Pose, Rect, Vec2},
     prelude::*,
     system::{Backend, BackendGraphics, BackendOpenXR, BackendXRType},
     tex::{Tex, TexFormat, TexType},
@@ -14,23 +14,19 @@ use crate::{
 use openxr_sys::{pfn::CreateSwapchainAndroidSurfaceKHR, platform::jobject};
 
 use openxr_sys::{
-    Duration, Handle, Session, Space, Swapchain, SwapchainImageWaitInfo,
+    CompositionLayerCylinderKHR, CompositionLayerFlags, CompositionLayerQuad, Duration, Extent2Df, Extent2Di,
+    EyeVisibility, Handle, Offset2Di, Posef, Quaternionf, Rect2Di, Result as XrResult, Session, Space, StructureType,
+    Swapchain, SwapchainCreateFlags, SwapchainCreateInfo, SwapchainImageWaitInfo, SwapchainSubImage,
+    SwapchainUsageFlags, Vector3f,
     pfn::{
         AcquireSwapchainImage, CreateSwapchain, DestroySwapchain, EnumerateSwapchainImages, ReleaseSwapchainImage,
         WaitSwapchainImage,
     },
 };
 
-use openxr_sys::{
-    CompositionLayerFlags, CompositionLayerQuad, Extent2Df, Extent2Di, EyeVisibility, Offset2Di, Posef, Quaternionf,
-    Rect2Di, Result as XrResult, StructureType, SwapchainCreateFlags, SwapchainCreateInfo, SwapchainSubImage,
-    SwapchainUsageFlags, Vector3f,
-};
-
 use std::ptr::null_mut;
 
 #[derive(Debug)]
-
 /// `XrCompLayers` provides low-level OpenXR composition layer functionality, while `SwapchainSk`
 /// offers a high-level wrapper for creating and managing OpenXR swapchains with StereoKit integration.
 ///
@@ -38,21 +34,19 @@ use std::ptr::null_mut;
 /// ## Basic Usage with SwapchainSk
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{ maths::{Vec3, Matrix, Pose, Vec2, Rect},  render_list::RenderList,
+/// use stereokit_rust::{ maths::{Vec3, Matrix, Pose, Vec2, Rect}, tools::xr_comp_layers::*,
 ///     util::{named_colors, Color128, Time}, tex::TexFormat, material::Material, mesh::Mesh,
-///     system::{Backend, BackendXRType, RenderClear}, tools::xr_comp_layers::* };
-///
-/// use openxr_sys::SwapchainUsageFlags;
+///     system::{Backend, BackendXRType}, render::{RenderClear, RenderList, RenderBuilder}};
 ///
 /// // Check if OpenXR is available
 /// if Backend::xr_type() == BackendXRType::OpenXR {
 ///     // Create XrCompLayers instance
 ///     if let Some(mut swapchain) = SwapchainSk::new(
-///             TexFormat::RGBA32, 512, 512, None ){
+///             TexFormat::Rgba32Srgb, 512, 512, None ){
 ///         
 ///         // Set up rendering components
 ///         let mut render_list = RenderList::new();
-///         let mut material = Material::default().copy();
+///         let material = Material::default().copy();
 ///         let projection = Matrix::orthographic(0.2, 0.2, 0.01, 10.0);
 ///         
 ///         // Add a sphere to the scene
@@ -66,15 +60,12 @@ use std::ptr::null_mut;
 ///                 // Get the render target texture
 ///                 if let Some(render_tex) = swapchain.get_render_target() {
 ///                     // Render to the swapchain texture
-///                     render_list.draw_now(
-///                         render_tex,
-///                         Matrix::look_at(Vec3::angle_xy(Time::get_totalf() * 90.0, 0.0), Vec3::ZERO, None),
-///                         projection,
-///                         Some(Color128::new(0.4, 0.3, 0.2, 1.0)),
-///                         Some(RenderClear::Color),
-///                         Rect::new(0.0, 0.0, 1.0, 1.0),
-///                         None, None,
-///                     );
+///                     let render = RenderBuilder::new()
+///                         .camera(Matrix::look_at(Vec3::angle_xy(Time::get_totalf() * 90.0, 0.0), Vec3::ZERO, None))
+///                         .projection(projection)
+///                         .clear(RenderClear::Color)
+///                         .viewport(Rect::new(0.0, 0.0, 1.0, 1.0));
+///                     render_list.draw_now(render_tex, &render, Color128::new(0.4, 0.3, 0.2, 1.0));
 ///                 }
 ///                 
 ///                 // Release the image back to the swapchain
@@ -95,21 +86,20 @@ use std::ptr::null_mut;
 ///         );
 ///         
 ///         // Clean up
-///         swapchain.destroy();
 ///     }
 /// }
+/// # sk::Sk::shutdown();
 /// ```
-///
 pub struct XrCompLayers {
     // OpenXR function pointers
     #[cfg(target_os = "android")]
     xr_create_swapchain_android: Option<CreateSwapchainAndroidSurfaceKHR>,
     xr_create_swapchain: Option<CreateSwapchain>,
     xr_destroy_swapchain: Option<DestroySwapchain>,
-    xr_enumerate_swaptchain_images: Option<EnumerateSwapchainImages>,
+    xr_enumerate_swapchain_images: Option<EnumerateSwapchainImages>,
     xr_acquire_swapchain_image: Option<AcquireSwapchainImage>,
-    xr_wait_swaptchain_image: Option<WaitSwapchainImage>,
-    xr_release_swaptchain_image: Option<ReleaseSwapchainImage>,
+    xr_wait_swapchain_image: Option<WaitSwapchainImage>,
+    xr_release_swapchain_image: Option<ReleaseSwapchainImage>,
 }
 
 impl Default for XrCompLayers {
@@ -123,14 +113,12 @@ impl Default for XrCompLayers {
             xr_create_swapchain: BackendOpenXR::get_function::<CreateSwapchain>("xrCreateSwapchain"),
 
             xr_destroy_swapchain: BackendOpenXR::get_function::<DestroySwapchain>("xrDestroySwapchain"),
-            xr_enumerate_swaptchain_images: BackendOpenXR::get_function::<EnumerateSwapchainImages>(
+            xr_enumerate_swapchain_images: BackendOpenXR::get_function::<EnumerateSwapchainImages>(
                 "xrEnumerateSwapchainImages",
             ),
             xr_acquire_swapchain_image: BackendOpenXR::get_function::<AcquireSwapchainImage>("xrAcquireSwapchainImage"),
-            xr_wait_swaptchain_image: BackendOpenXR::get_function::<WaitSwapchainImage>("xrWaitSwapchainImage"),
-            xr_release_swaptchain_image: BackendOpenXR::get_function::<ReleaseSwapchainImage>(
-                "xrReleaseSwapchainImage",
-            ),
+            xr_wait_swapchain_image: BackendOpenXR::get_function::<WaitSwapchainImage>("xrWaitSwapchainImage"),
+            xr_release_swapchain_image: BackendOpenXR::get_function::<ReleaseSwapchainImage>("xrReleaseSwapchainImage"),
         }
     }
 }
@@ -171,29 +159,39 @@ impl XrCompLayers {
 
         swapchain_func_present
             && self.xr_destroy_swapchain.is_some()
-            && self.xr_enumerate_swaptchain_images.is_some()
+            && self.xr_enumerate_swapchain_images.is_some()
             && self.xr_acquire_swapchain_image.is_some()
-            && self.xr_wait_swaptchain_image.is_some()
-            && self.xr_release_swaptchain_image.is_some()
+            && self.xr_wait_swapchain_image.is_some()
+            && self.xr_release_swapchain_image.is_some()
+    }
+
+    /// Returns `true` if the `XR_KHR_composition_layer_cylinder` extension is enabled.
+    ///
+    /// Use this to decide whether cylinder layer submission is available before
+    /// attempting it, or to fall back to a quad layer.
+    ///
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::tools::xr_comp_layers::XrCompLayers;
+    /// if XrCompLayers::cylinder_layer_available() {
+    ///     println!("Cylinder layers are supported!");
+    /// }
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn cylinder_layer_available() -> bool {
+        crate::system::BackendOpenXR::ext_enabled("XR_KHR_composition_layer_cylinder")
     }
 
     /// Convert a StereoKit `TexFormat` into the corresponding native OpenXR format value.
     pub fn to_native_format(format: TexFormat) -> i64 {
         match Backend::graphics() {
-            BackendGraphics::D3D11 => match format {
-                TexFormat::RGBA32 => 29,
-                TexFormat::RGBA32Linear => 28,
-                TexFormat::BGRA32 => 91,
-                TexFormat::BGRA32Linear => 87,
-                TexFormat::RGB10A2 => 24,
-                TexFormat::RG11B10 => 26,
-                _ => panic!("Unsupported texture format"),
-            },
-            BackendGraphics::OpenGLESEGL => match format {
-                TexFormat::RGBA32 => 0x8C43,
-                TexFormat::RGBA32Linear => 0x8058,
-                TexFormat::RGB10A2 => 0x8059,
-                TexFormat::RG11B10 => 0x8C3A,
+            BackendGraphics::Vulkan => match format {
+                TexFormat::Rgba32Srgb => 43,   // VK_FORMAT_R8G8B8A8_SRGB
+                TexFormat::Rgba32Linear => 37, // VK_FORMAT_R8G8B8A8_UNORM
+                TexFormat::Bgra32Srgb => 50,   // VK_FORMAT_B8G8R8A8_SRGB
+                TexFormat::Bgra32Linear => 44, // VK_FORMAT_B8G8R8A8_UNORM
+                TexFormat::Rgb10a2 => 64,      // VK_FORMAT_A2B10G10R10_UNORM_PACK32
+                TexFormat::Rg11b10 => 122,     // VK_FORMAT_B10G11R11_UFLOAT_PACK32
                 _ => panic!("Unsupported texture format"),
             },
             _ => panic!("Unsupported graphics backend"),
@@ -226,7 +224,7 @@ impl XrCompLayers {
         visibility: Option<EyeVisibility>,
         xr_space: Option<u64>,
     ) {
-        let orientation = (world_pose.orientation * Quat::from_angles(180.0, 0.0, 0.0)).conjugate();
+        let orientation = world_pose.orientation;
         let xr_space = xr_space.unwrap_or_else(BackendOpenXR::space);
         let mut quad_layer = CompositionLayerQuad {
             ty: StructureType::COMPOSITION_LAYER_QUAD,
@@ -250,6 +248,79 @@ impl XrCompLayers {
         };
 
         BackendOpenXR::add_composition_layer(&mut quad_layer, composition_sort_order);
+    }
+
+    /// Submit a cylinder layer to the OpenXR composition.
+    ///
+    /// Displays a texture mapped onto a cylinder section in 3D space.
+    /// Defined by [`XR_KHR_composition_layer_cylinder`](https://registry.khronos.org/OpenXR/specs/1.1/html/xrspec.html#XR_KHR_composition_layer_cylinder).
+    ///
+    /// > **⚠️ Extension requirement:** This requires the `XR_KHR_composition_layer_cylinder`
+    /// > extension to be enabled. You MUST request it before `Sk::initialize()`:
+    /// ```no_run
+    /// # use stereokit_rust::system::BackendOpenXR;
+    /// BackendOpenXR::request_ext("XR_KHR_composition_layer_cylinder");
+    /// ```
+    /// If the extension is not enabled, this method logs a warning and returns without submitting.
+    ///
+    /// # Parameters
+    /// - `world_pose`: Pose (position and orientation) of the cylinder's axis center.
+    /// - `radius`: Radius of the cylinder in meters.
+    /// - `central_angle`: Angular width of the visible arc in radians (must be in `(0, 2π]`).
+    /// - `aspect_ratio`: Width-to-height ratio of the mapped texture surface (`width / height`).
+    /// - `swapchain`: Swapchain handle to sample the texture from.
+    /// - `swapchain_rect`: Texture rectangle within the swapchain image (in pixel coordinates).
+    /// - `swapchain_array_index`: Array slice index for texture arrays (usually 0).
+    /// - `composition_sort_order`: Ordering for layer submission (higher values render on top).
+    /// - `visibility`: Optional eye visibility mask (None means both eyes).
+    /// - `xr_space`: Optional XR space handle (None uses default space).
+    #[allow(clippy::too_many_arguments)]
+    pub fn submit_cylinder_layer(
+        world_pose: Pose,
+        radius: f32,
+        central_angle: f32,
+        aspect_ratio: f32,
+        swapchain: Swapchain,
+        swapchain_rect: Rect,
+        swapchain_array_index: u32,
+        composition_sort_order: i32,
+        visibility: Option<EyeVisibility>,
+        xr_space: Option<u64>,
+    ) {
+        if !BackendOpenXR::ext_enabled("XR_KHR_composition_layer_cylinder") {
+            Log::warn(
+                "XrCompLayers: Cannot submit cylinder layer - XR_KHR_composition_layer_cylinder extension is not \
+                 enabled. Request it with BackendOpenXR::request_ext(\"XR_KHR_composition_layer_cylinder\") BEFORE \
+                 sk::Sk::initialize().",
+            );
+            return;
+        }
+        let orientation = world_pose.orientation;
+        let xr_space = xr_space.unwrap_or_else(BackendOpenXR::space);
+        let mut cylinder_layer = CompositionLayerCylinderKHR {
+            ty: StructureType::COMPOSITION_LAYER_CYLINDER_KHR,
+            next: null_mut(),
+            layer_flags: CompositionLayerFlags::BLEND_TEXTURE_SOURCE_ALPHA,
+            space: Space::from_raw(xr_space),
+            eye_visibility: visibility.unwrap_or(EyeVisibility::BOTH),
+            sub_image: SwapchainSubImage {
+                swapchain,
+                image_rect: Rect2Di {
+                    offset: Offset2Di { x: swapchain_rect.x as i32, y: swapchain_rect.y as i32 },
+                    extent: Extent2Di { width: swapchain_rect.width as i32, height: swapchain_rect.height as i32 },
+                },
+                image_array_index: swapchain_array_index,
+            },
+            pose: Posef {
+                orientation: Quaternionf { x: orientation.x, y: orientation.y, z: orientation.z, w: orientation.w },
+                position: Vector3f { x: world_pose.position.x, y: world_pose.position.y, z: world_pose.position.z },
+            },
+            radius,
+            central_angle,
+            aspect_ratio,
+        };
+
+        BackendOpenXR::add_composition_layer(&mut cylinder_layer, composition_sort_order);
     }
 
     /// Create an Android surface swapchain via `XR_KHR_android_surface_swapchain`.
@@ -332,7 +403,7 @@ impl XrCompLayers {
     /// Destroy the given Android swapchain handle.
     #[cfg(target_os = "android")]
     pub fn destroy_android_swapchain(&self, handle: Swapchain) {
-        match unsafe { self.xr_destroy_swapchain.unwrap()(handle) } {
+        match unsafe { self.xr_destroy_swapchain.expect("Failed to get xrDestroySwapchain function")(handle) } {
             XrResult::SUCCESS => {}
             otherwise => {
                 Log::err(format!("❌ xrDestroySwapchain failed: {otherwise}"));
@@ -367,7 +438,11 @@ impl XrCompLayers {
         };
 
         match unsafe {
-            self.xr_create_swapchain.unwrap()(Session::from_raw(BackendOpenXR::session()), &info, &mut swapchain)
+            self.xr_create_swapchain.expect("XrCompLayers: Failed to get xrCreateSwapchain function")(
+                Session::from_raw(BackendOpenXR::session()),
+                &info,
+                &mut swapchain,
+            )
         } {
             XrResult::SUCCESS => {}
             otherwise => {
@@ -401,12 +476,12 @@ impl XrCompLayers {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{ maths::{Vec3, Matrix, Pose, Vec2, Rect},  render_list::RenderList,
+/// use stereokit_rust::{ maths::{Vec3, Matrix, Rect},
 ///     util::{named_colors, Color128, Time}, tex::TexFormat, material::Material, mesh::Mesh,
-///     system::{Backend, BackendXRType, RenderClear}, tools::xr_comp_layers::* };
+///     render::{RenderClear, RenderList, RenderBuilder}, tools::xr_comp_layers::* };
 ///
 /// // Create a swapchain
-/// if let Some(mut swapchain) = SwapchainSk::new(TexFormat::RGBA32, 512, 512, None) {
+/// if let Some(mut swapchain) = SwapchainSk::new(TexFormat::Rgba32Srgb, 512, 512, None) {
 ///    
 ///     // Set up rendering
 ///     let mut render_list = RenderList::new();
@@ -419,25 +494,24 @@ impl XrCompLayers {
 ///         None
 ///     );
 ///    
-///     // Render to swapchain
-///     if let Ok(_) = swapchain.acquire_image(None) {
-///         if let Some(render_target) = swapchain.get_render_target() {
-///             render_list.draw_now(
-///                 render_target,
-///                 Matrix::look_at(Vec3::angle_xy(Time::get_totalf() * 90.0, 0.0), Vec3::ZERO, None),
-///                 Matrix::orthographic(1.0, 1.0, 0.1, 10.0),
-///                 None,
-///                 Some(RenderClear::All),
-///                 Rect::new(0.0, 0.0, 1.0, 1.0),
-///                 None, None,
-///             );
+///     test_steps!( // !!!! Get a proper main loop !!!!
+///         // Render to swapchain
+///         if let Ok(_) = swapchain.acquire_image(None) {
+///             if let Some(render_target) = swapchain.get_render_target() {
+///                 let render = RenderBuilder::new()
+///                     .camera(Matrix::look_at(Vec3::angle_xy(Time::get_totalf() * 90.0, 0.0), Vec3::ZERO, None))
+///                     .projection(Matrix::orthographic(1.0, 1.0, 0.1, 10.0))
+///                     .clear(RenderClear::All)
+///                     .viewport(Rect::new(0.0, 0.0, 1.0, 1.0));
+///                 render_list.draw_now(render_target, &render, Color128::BLACK_TRANSPARENT);
+///             }
+///             swapchain.release_image().expect("Failed to release image");
 ///         }
-///         swapchain.release_image().expect("Failed to release image");
-///     }
+///     );
 ///    
 ///     // Clean up
-///     swapchain.destroy();
 /// }
+/// # sk::Sk::shutdown();
 /// ```
 pub struct SwapchainSk {
     pub xr_comp_layers: XrCompLayers,
@@ -446,10 +520,14 @@ pub struct SwapchainSk {
     pub height: u32,
     pub acquired: u32,
     images: Vec<Tex>,
-    #[cfg(unix)]
-    gles_images: Vec<openxr_sys::SwapchainImageOpenGLESKHR>,
-    #[cfg(windows)]
-    d3d_images: Vec<openxr_sys::SwapchainImageD3D11KHR>,
+    vk_images: Vec<openxr_sys::SwapchainImageVulkanKHR>,
+}
+
+impl Drop for SwapchainSk {
+    fn drop(&mut self) {
+        XrCompLayers::destroy_swapchain(self.handle);
+        self.handle = Swapchain::default();
+    }
 }
 
 impl SwapchainSk {
@@ -483,20 +561,24 @@ impl SwapchainSk {
     /// - `None`: No image is currently acquired or swapchain is empty.
     ///
     /// # Example
-    /// ```no_run
-    /// # use stereokit_rust::tools::xr_comp_layers::SwapchainSk;
-    /// # let mut swapchain: SwapchainSk = todo!();
-    /// if let Ok(_) = swapchain.acquire_image(None) {
-    ///     if let Some(render_target) = swapchain.get_render_target() {
-    ///         // Use render_target for drawing operations
-    ///         println!("Render target size: {}x{}",
-    ///                  render_target.get_width().unwrap_or(0),
-    ///                  render_target.get_height().unwrap_or(0));
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{tools::xr_comp_layers::SwapchainSk, tex::TexFormat};
+    ///
+    /// if let Some(mut swapchain) = SwapchainSk::new(TexFormat::Rgba32Srgb, 512, 512, None) {
+    ///     if let Ok(_) = swapchain.acquire_image(None) {
+    ///         if let Some(render_target) = swapchain.get_render_target() {
+    ///             // Use render_target for drawing operations
+    ///             println!("Render target size: {}x{}",
+    ///                      render_target.get_width().unwrap_or(0),
+    ///                      render_target.get_height().unwrap_or(0));
     ///         
-    ///         // ... perform rendering to render_target ...
+    ///             // ... perform rendering to render_target ...
+    ///         }
+    ///         swapchain.release_image().expect("Failed to release");
     ///     }
-    ///     swapchain.release_image().expect("Failed to release");
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_render_target(&self) -> Option<&Tex> {
         if self.images.is_empty() {
@@ -505,93 +587,15 @@ impl SwapchainSk {
         Some(&self.images[self.acquired as usize])
     }
 
-    /// Wrap OpenGL ES swapchain images into `Tex` objects for `unix` platforms.
-    #[cfg(unix)]
-    pub fn wrap(
-        handle: Swapchain,
-        format: TexFormat,
-        width: u32,
-        height: u32,
-        xr_comp_layers: Option<XrCompLayers>,
-    ) -> Option<Self> {
-        use openxr_sys::SwapchainImageOpenGLESKHR;
-
-        let xr_comp_layers = get_xr_comp_layers(xr_comp_layers)?;
-
-        let mut image_count = 0;
-        match unsafe { xr_comp_layers.xr_enumerate_swaptchain_images.unwrap()(handle, 0, &mut image_count, null_mut()) }
-        {
-            XrResult::SUCCESS => {}
-            otherwise => {
-                Log::err(format!("❌ xrEnumerateSwapchainImages failed: {otherwise}"));
-                return None;
-            }
+    /// Return a mutable reference to the currently acquired render-target texture, if any.
+    pub fn get_render_target_mut(&mut self) -> Option<&mut Tex> {
+        if self.images.is_empty() {
+            return None;
         }
-
-        if Backend::graphics() == BackendGraphics::OpenGLESEGL {
-            let mut gles_images: Vec<SwapchainImageOpenGLESKHR> = {
-                let images: Vec<SwapchainImageOpenGLESKHR> = vec![
-                    SwapchainImageOpenGLESKHR {
-                        image: 0,
-                        ty: StructureType::SWAPCHAIN_IMAGE_OPENGL_ES_KHR,
-                        next: null_mut()
-                    };
-                    image_count as usize
-                ];
-                images
-            };
-
-            let mut final_count = 0;
-            match unsafe {
-                xr_comp_layers.xr_enumerate_swaptchain_images.unwrap()(
-                    handle,
-                    image_count,
-                    &mut final_count,
-                    gles_images.as_mut_ptr() as *mut _,
-                )
-            } {
-                XrResult::SUCCESS => {}
-                otherwise => {
-                    Log::err(format!("❌ xrEnumerateSwapchainImages failed: {otherwise}"));
-                    return None;
-                }
-            }
-
-            assert_eq!(gles_images.len(), image_count as usize);
-            //assert_eq!(gles_images.len(), 3);
-
-            let mut this =
-                Self { xr_comp_layers, handle, width, height, acquired: 0, gles_images, images: Vec::with_capacity(0) };
-
-            for image in &this.gles_images {
-                Log::diag(format!("SwapchainSk: image: {image:#?}"));
-                // let mut image_sk =
-                //     Tex::gen_color(named_colors::BLUE_VIOLET, width, height, TexType::Rendertarget, format);
-                //let mut image_sk = Tex::new(TexType::Rendertarget, format, None);
-                let mut image_sk =
-                    Tex::render_target(width as usize, height as usize, Some(2), Some(format), None).unwrap();
-                unsafe {
-                    image_sk.set_native_surface(
-                        image.image as *mut std::ffi::c_void,
-                        TexType::Rendertarget,
-                        XrCompLayers::to_native_format(format),
-                        width as i32,
-                        height as i32,
-                        1,
-                        true,
-                    )
-                };
-                this.images.push(image_sk);
-            }
-            Some(this)
-        } else {
-            Log::warn("❌ SwapchainSk: OpenGL ES backend is not available");
-            None
-        }
+        Some(&mut self.images[self.acquired as usize])
     }
 
-    /// Wrap D3D11 swapchain images into `Tex` objects for `windows` platforms.
-    #[cfg(windows)]
+    /// Wrap Vulkan swapchain images into `Tex` objects.
     pub fn wrap(
         handle: Swapchain,
         format: TexFormat,
@@ -599,15 +603,23 @@ impl SwapchainSk {
         height: u32,
         xr_comp_layers: Option<XrCompLayers>,
     ) -> Option<Self> {
-        use openxr_sys::SwapchainImageD3D11KHR;
+        use openxr_sys::SwapchainImageVulkanKHR;
         use std::ptr::null_mut;
 
         let xr_comp_layers = get_xr_comp_layers(xr_comp_layers)?;
 
-        // First, get the image count
+        // Get the image count
         let mut image_count = 0;
-        match unsafe { xr_comp_layers.xr_enumerate_swaptchain_images.unwrap()(handle, 0, &mut image_count, null_mut()) }
-        {
+        match unsafe {
+            xr_comp_layers
+                .xr_enumerate_swapchain_images
+                .expect("XrCompLayers: Failed to get xrEnumerateSwapchainImages function")(
+                handle,
+                0,
+                &mut image_count,
+                null_mut(),
+            )
+        } {
             XrResult::SUCCESS => {}
             err => {
                 Log::err(format!("❌ xrEnumerateSwapchainImages failed: {err}"));
@@ -615,60 +627,78 @@ impl SwapchainSk {
             }
         }
 
-        // Only proceed for D3D11 backend
-        if Backend::graphics() == BackendGraphics::D3D11 {
-            // Prepare D3D11 image array
-            let mut d3d_images: Vec<SwapchainImageD3D11KHR> = vec![
-                SwapchainImageD3D11KHR {
-                    texture: null_mut(),
-                    ty: StructureType::SWAPCHAIN_IMAGE_D3D11_KHR,
+        // Only proceed for Vulkan backend
+        if Backend::graphics() == BackendGraphics::Vulkan {
+            Log::diag(format!("SwapchainSk::wrap: Enumerating {} images for Vulkan backend", image_count));
+            // Prepare Vulkan image array
+            let mut vk_images: Vec<SwapchainImageVulkanKHR> = vec![
+                SwapchainImageVulkanKHR {
+                    image: 0,
+                    ty: StructureType::SWAPCHAIN_IMAGE_VULKAN_KHR,
                     next: null_mut(),
                 };
                 image_count as usize
             ];
             let mut final_count = 0;
+            Log::diag("SwapchainSk::wrap: Calling xrEnumerateSwapchainImages...");
             match unsafe {
-                xr_comp_layers.xr_enumerate_swaptchain_images.unwrap()(
+                xr_comp_layers
+                    .xr_enumerate_swapchain_images
+                    .expect("XrCompLayers: Failed to get xrEnumerateSwapchainImages function")(
                     handle,
                     image_count,
                     &mut final_count,
-                    d3d_images.as_mut_ptr() as *mut _,
+                    vk_images.as_mut_ptr() as *mut _,
                 )
             } {
-                XrResult::SUCCESS => {}
+                XrResult::SUCCESS => {
+                    Log::diag(format!(
+                        "SwapchainSk::wrap: xrEnumerateSwapchainImages SUCCESS, got {} images",
+                        final_count
+                    ));
+                }
                 err => {
                     Log::err(format!("❌ xrEnumerateSwapchainImages failed: {err}"));
                     return None;
                 }
             }
             let mut this =
-                Self { xr_comp_layers, handle, width, height, acquired: 0, d3d_images, images: Vec::with_capacity(0) };
+                Self { xr_comp_layers, handle, width, height, acquired: 0, vk_images, images: Vec::with_capacity(0) };
 
-            // Wrap each D3D11 texture into a Tex object
-            for img in &this.d3d_images {
-                Log::diag(format!("SwapchainSk: image: {:#?}", img));
-                // let mut image_sk =
-                //     Tex::gen_color(named_colors::BLUE_VIOLET, width, height, TexType::Rendertarget, format);
-                // let mut image_sk = Tex::new(TexType::Rendertarget, format, None);
-                let mut image_sk =
-                    Tex::render_target(width as usize, height as usize, Some(1), Some(format), None).unwrap();
-
+            Log::diag(format!("SwapchainSk::wrap: Wrapping {} Vulkan images into Tex objects", this.vk_images.len()));
+            // Wrap each Vulkan image into a Tex object
+            for (idx, img) in this.vk_images.iter().enumerate() {
+                Log::diag(format!("SwapchainSk::wrap: Processing image {}: {:#?}", idx, img));
+                let mut image_sk = Tex::gen_color(
+                    crate::util::Color128::WHITE,
+                    width as i32,
+                    height as i32,
+                    crate::tex::TexType::Rendertarget,
+                    format,
+                );
+                Log::diag(format!("SwapchainSk::wrap: Setting native surface for image {}...", idx));
                 unsafe {
+                    // `owned: false` because the VkImage is owned by the OpenXR swapchain.
+                    // The runtime destroys it when `xrDestroySwapchain` is called.
+                    // Passing `owned: true` would cause a double-free: `Drop for SwapchainSk`
+                    // destroys the swapchain first, then each `Tex::drop` would try to
+                    // destroy the already-freed VkImage, producing Vulkan validation errors.
                     image_sk.set_native_surface(
-                        img.texture,
+                        img.image as *mut std::ffi::c_void,
                         TexType::Rendertarget,
                         XrCompLayers::to_native_format(format),
                         width as i32,
                         height as i32,
                         1,
-                        true,
+                        false,
                     );
                 }
+                Log::diag(format!("SwapchainSk::wrap: Image {} wrapped successfully", idx));
                 this.images.push(image_sk);
             }
             Some(this)
         } else {
-            Log::warn("❌ SwapchainSk: D3D11 backend is not available");
+            Log::warn("❌ SwapchainSk: Vulkan backend is not available");
             None
         }
     }
@@ -686,25 +716,35 @@ impl SwapchainSk {
     /// - `Err(XrResult)`: OpenXR error code if acquisition fails.
     ///
     /// # Example
-    /// ```no_run
-    /// # use stereokit_rust::tools::xr_comp_layers::SwapchainSk;
-    /// # let mut swapchain: SwapchainSk = todo!();
-    /// // Acquire with default timeout
-    /// match swapchain.acquire_image(None) {
-    ///     Ok(image_index) => {
-    ///         println!("Acquired image {}", image_index);
-    ///         // Render to swapchain.get_render_target()
-    ///         // ... rendering code ...
-    ///         swapchain.release_image().expect("Failed to release");
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{ tools::xr_comp_layers::SwapchainSk, tex::TexFormat };
+    ///
+    /// if let Some(mut swapchain) = SwapchainSk::new(TexFormat::Rgba32Srgb, 512, 512, None) {
+    ///     // Acquire with default timeout
+    ///     match swapchain.acquire_image(None) {
+    ///         Ok(image_index) => {
+    ///             println!("Acquired image {}", image_index);
+    ///             // Render to swapchain.get_render_target()
+    ///             // ... rendering code ...
+    ///             swapchain.release_image().expect("Failed to release");
+    ///         }
+    ///         Err(e) => eprintln!("Failed to acquire image: {:?}", e),
     ///     }
-    ///     Err(e) => eprintln!("Failed to acquire image: {:?}", e),
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn acquire_image(&mut self, timeout_ns: Option<i64>) -> std::result::Result<u32, XrResult> {
         let timeout_ns = timeout_ns.unwrap_or(0x7fffffffffffffff);
         let timeout = Duration::from_nanos(timeout_ns);
         match unsafe {
-            self.xr_comp_layers.xr_acquire_swapchain_image.unwrap()(self.handle, null_mut(), &mut self.acquired)
+            self.xr_comp_layers
+                .xr_acquire_swapchain_image
+                .expect("XrCompLayers: Failed to get xrAcquireSwapchainImage function")(
+                self.handle,
+                null_mut(),
+                &mut self.acquired,
+            )
         } {
             XrResult::SUCCESS => {}
             otherwise => return Err(otherwise),
@@ -713,8 +753,14 @@ impl SwapchainSk {
         let swapchain_image_wait_info =
             SwapchainImageWaitInfo { ty: StructureType::SWAPCHAIN_IMAGE_WAIT_INFO, next: null_mut(), timeout };
 
-        match unsafe { self.xr_comp_layers.xr_wait_swaptchain_image.unwrap()(self.handle, &swapchain_image_wait_info) }
-        {
+        match unsafe {
+            self.xr_comp_layers
+                .xr_wait_swapchain_image
+                .expect("XrCompLayers: Failed to get xrWaitSwapchainImage function")(
+                self.handle,
+                &swapchain_image_wait_info,
+            )
+        } {
             XrResult::SUCCESS => Ok(self.acquired),
             otherwise => Err(otherwise),
         }
@@ -731,28 +777,31 @@ impl SwapchainSk {
     /// - `Err(XrResult)`: OpenXR error code if release fails.
     ///
     /// # Example
-    /// ```no_run
-    /// # use stereokit_rust::tools::xr_comp_layers::SwapchainSk;
-    /// # let mut swapchain: SwapchainSk = todo!();
-    /// // After acquiring and rendering to the image
-    /// if let Ok(_) = swapchain.acquire_image(None) {
-    ///     // ... render to swapchain.get_render_target() ...
-    ///     
-    ///     // Must release the image when done
-    ///     swapchain.release_image().expect("Failed to release image");
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{ tools::xr_comp_layers::SwapchainSk, tex::TexFormat };
+    /// if let Some(mut swapchain) = SwapchainSk::new(TexFormat::Rgba32Srgb, 512, 512, None) {
+    ///     // After acquiring and rendering to the image
+    ///     if let Ok(_) = swapchain.acquire_image(None) {
+    ///         // ... render to swapchain.get_render_target() ...
+    ///         
+    ///         // Must release the image when done
+    ///         swapchain.release_image().expect("Failed to release image");
+    ///     }
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn release_image(&mut self) -> std::result::Result<(), XrResult> {
-        match unsafe { self.xr_comp_layers.xr_release_swaptchain_image.unwrap()(self.handle, null_mut()) } {
+        match unsafe {
+            self.xr_comp_layers
+                .xr_release_swapchain_image
+                .expect("XrCompLayers: Failed to get xrReleaseSwapchainImage function")(
+                self.handle, null_mut()
+            )
+        } {
             XrResult::SUCCESS => Ok(()),
             otherwise => Err(otherwise),
         }
-    }
-
-    /// Destroy the swapchain and all associated resources.
-    pub fn destroy(&mut self) {
-        XrCompLayers::destroy_swapchain(self.handle);
-        self.handle = Swapchain::default();
     }
 }
 

@@ -37,6 +37,9 @@ use std::{
 ///     let anchor = Anchor::from_pose(Pose::default()).expect("What?!!!?");
 ///     anchor.try_set_persistent(true);
 /// }
+/// # Anchor::clear_store(); // !!!! Clear the store to avoid side effects for other tests !!!!
+/// # test_steps!();
+/// # sk::Sk::shutdown();
 /// ```
 #[repr(C)]
 #[derive(Debug, PartialEq)]
@@ -95,7 +98,7 @@ unsafe extern "C" {
     pub fn anchor_get_index(index: i32) -> AnchorT;
     pub fn anchor_get_new_count() -> i32;
     pub fn anchor_get_new_index(index: i32) -> AnchorT;
-    pub fn anchor_get_perception_anchor(anchor: AnchorT, perception_spatial_anchor: *mut *mut c_void) -> Bool32T; //TODO: Check this
+    pub fn anchor_get_perception_anchor(anchor: AnchorT, out_perception_spatial_anchor: *mut *mut c_void) -> Bool32T; //TODO: Check this
 
 }
 
@@ -106,6 +109,10 @@ impl IAsset for Anchor {
 
     fn get_id(&self) -> &str {
         self.get_id()
+    }
+
+    fn as_asset(&self) -> crate::system::AssetT {
+        self.0.as_ptr() as crate::system::AssetT
     }
 }
 
@@ -122,6 +129,8 @@ impl Anchor {
     ///
     /// let my_anchor = Anchor::find("the_anchor that doesn't exist");
     /// assert!(my_anchor.is_err());
+    /// # test_steps!();
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn find<S: AsRef<str>>(id: S) -> Result<Anchor, StereoKitError> {
         let c_str = CString::new(id.as_ref())
@@ -143,10 +152,13 @@ impl Anchor {
     /// use stereokit_rust::{anchor::Anchor, maths::Pose};
     ///
     /// // create an anchor in center of the world
-    /// if let Ok(anchor) = Anchor::from_pose(Pose::default()){;
+    /// if let Ok(anchor) = Anchor::from_pose(Pose::default()){
     ///     let same = anchor.clone_ref();
     ///     assert_eq!(same.get_id(), anchor.get_id());
     /// }
+    /// # Anchor::clear_store(); // !!!! Clear the store to avoid side effects for other tests !!!!
+    /// # test_steps!();
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn clone_ref(&self) -> Anchor {
         Anchor(
@@ -165,9 +177,12 @@ impl Anchor {
     /// use stereokit_rust::{anchor::Anchor, maths::Pose};
     ///
     /// // create an anchor in center of the world
-    /// if let Ok(anchor) = Anchor::from_pose(Pose::default()){;
+    /// if let Ok(anchor) = Anchor::from_pose(Pose::default()){
     ///     anchor.try_set_persistent(true);
     /// }
+    /// # Anchor::clear_store(); // !!!! Clear the store to avoid side effects for other tests !!!!
+    /// # test_steps!();
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn from_pose(pose: impl Into<Pose>) -> Result<Anchor, StereoKitError> {
         Ok(Anchor(
@@ -189,13 +204,16 @@ impl Anchor {
     /// use stereokit_rust::{anchor::Anchor, maths::Pose};
     ///
     /// // create an anchor in center of the world
-    /// if let Ok(mut anchor) = Anchor::from_pose(Pose::default()){;
+    /// if let Ok(mut anchor) = Anchor::from_pose(Pose::default()){
     ///     anchor.id("my_anchor");
     ///     assert_eq!(anchor.get_id(), "my_anchor");
     /// }
+    /// # Anchor::clear_store(); // !!!! Clear the store to avoid side effects for other tests !!!!
+    /// # test_steps!();
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
-        let c_str = CString::new(id.as_ref()).unwrap();
+        let c_str = CString::new(id.as_ref()).unwrap_or_default();
         unsafe { anchor_set_id(self.0.as_ptr(), c_str.as_ptr()) };
         self
     }
@@ -207,11 +225,13 @@ impl Anchor {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{anchor::Anchor, maths::Pose};
+    /// use stereokit_rust::anchor::Anchor;
     ///
     /// Anchor::clear_store();
     /// assert_eq!(Anchor::anchors().get_count(), 0);
     /// assert_eq!(Anchor::new_anchors().get_count(), 0);
+    /// # test_steps!();
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn clear_store() {
         unsafe { anchor_clear_stored() };
@@ -224,9 +244,11 @@ impl Anchor {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{anchor::Anchor, maths::Pose};
+    /// use stereokit_rust::anchor::Anchor;
     ///
     /// assert_eq!(Anchor::anchors().get_count(), 0);
+    /// # test_steps!();
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn anchors() -> AnchorIter {
         AnchorIter::anchors()
@@ -239,9 +261,11 @@ impl Anchor {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{anchor::Anchor, maths::Pose};
+    /// use stereokit_rust::anchor::Anchor;
     ///
     /// assert_eq!(Anchor::new_anchors().get_count(), 0);
+    /// # test_steps!();
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn new_anchors() -> AnchorIter {
         AnchorIter::new_anchors()
@@ -259,11 +283,13 @@ impl Anchor {
     /// use stereokit_rust::{anchor::Anchor, maths::Pose};
     ///
     /// // create an anchor in center of the world
-    /// if let Ok(mut anchor) = Anchor::from_pose(Pose::default()){;
+    /// if let Ok(anchor) = Anchor::from_pose(Pose::default()){
     ///     assert_eq!(anchor.get_persistent(), false);
     ///     anchor.try_set_persistent(true);
     ///     assert_eq!(anchor.get_persistent(), true);
     /// }
+    /// # test_steps!();
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn try_set_persistent(&self, persistent: bool) -> bool {
         unsafe { anchor_try_set_persistent(self.0.as_ptr(), persistent as Bool32T) != 0 }
@@ -287,6 +313,8 @@ impl Anchor {
     ///     let anchor = Anchor::from_pose(Pose::default()).expect("What?!!!?");
     ///     anchor.try_set_persistent(true);
     /// }
+    /// # test_steps!();
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_capabilities() -> AnchorCaps {
         unsafe { anchor_get_capabilities() }
@@ -298,7 +326,7 @@ impl Anchor {
     /// see also [`anchor_get_id`]
     /// see example in [`Anchor::id`]
     pub fn get_id(&self) -> &str {
-        unsafe { CStr::from_ptr(anchor_get_id(self.0.as_ptr())) }.to_str().unwrap()
+        unsafe { CStr::from_ptr(anchor_get_id(self.0.as_ptr())) }.to_str().unwrap_or_default()
     }
 
     /// The most recently identified Pose of the Anchor. While an Anchor will generally be in the same position once
@@ -313,9 +341,11 @@ impl Anchor {
     /// use stereokit_rust::{anchor::Anchor, maths::Pose};
     ///
     /// // create an anchor in center of the world
-    /// if let Ok(mut anchor) = Anchor::from_pose(Pose::default()){;
+    /// if let Ok(anchor) = Anchor::from_pose(Pose::default()){
     ///     assert_eq!(anchor.get_pose(), Pose::default());
     /// }
+    /// # test_steps!();
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_pose(&self) -> Pose {
         unsafe { anchor_get_pose(self.0.as_ptr()) }
@@ -332,9 +362,11 @@ impl Anchor {
     /// use stereokit_rust::{anchor::Anchor, maths::Pose, system::BtnState};
     ///
     /// // create an anchor in center of the world
-    /// if let Ok(mut anchor) = Anchor::from_pose(Pose::default()){;
+    /// if let Ok(anchor) = Anchor::from_pose(Pose::default()){
     ///     assert_eq!(anchor.get_tracked(), BtnState::Active);
     /// }
+    /// # test_steps!();
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_tracked(&self) -> BtnState {
         unsafe { anchor_get_tracked(self.0.as_ptr()) }
@@ -357,15 +389,17 @@ impl Anchor {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{anchor::Anchor, maths::Pose, system::BtnState};
+    /// use stereokit_rust::{anchor::Anchor, maths::Pose};
     ///
     /// // create an anchor in center of the world
-    /// if let Ok(mut anchor) = Anchor::from_pose(Pose::default()){;
+    /// if let Ok(anchor) = Anchor::from_pose(Pose::default()){
     ///     assert_eq!(anchor.get_name().is_empty(), false);
     /// }
+    /// # test_steps!();
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_name(&self) -> &str {
-        unsafe { CStr::from_ptr(anchor_get_name(self.0.as_ptr())).to_str().unwrap() }
+        unsafe { CStr::from_ptr(anchor_get_name(self.0.as_ptr())).to_str().unwrap_or_default() }
     }
 
     /// Tries to get the underlying perception spatial anchor for platforms using Microsoft spatial anchors.
@@ -409,6 +443,8 @@ impl Anchor {
 /// for anchor in  AnchorIter::new_anchors() {
 ///     println!("New Anchor: {:?}", anchor);
 /// }
+/// # test_steps!();
+/// # sk::Sk::shutdown();
 /// ```
 pub struct AnchorIter {
     index: i32,
@@ -469,6 +505,8 @@ impl AnchorIter {
     ///
     /// let new_anchors = Anchor::new_anchors();
     /// assert_eq!(new_anchors.get_count(), new_anchors.count() as i32);
+    /// # test_steps!();
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_count(&self) -> i32 {
         if self.only_new { unsafe { anchor_get_new_count() } } else { unsafe { anchor_get_count() } }
@@ -487,6 +525,8 @@ impl AnchorIter {
     /// for anchor in  AnchorIter::anchors() {
     ///     println!("Anchor: {:?}", anchor);
     /// }
+    /// # test_steps!();
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn anchors() -> AnchorIter {
         AnchorIter { index: -1, only_new: false }
@@ -505,6 +545,8 @@ impl AnchorIter {
     /// for anchor in  AnchorIter::new_anchors() {
     ///     println!("New Anchor: {:?}", anchor);
     /// }
+    /// # test_steps!();
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn new_anchors() -> AnchorIter {
         AnchorIter { index: -1, only_new: true }

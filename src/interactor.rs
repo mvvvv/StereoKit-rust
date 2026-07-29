@@ -2,6 +2,7 @@ use crate::{
     maths::{Bool32T, Bounds, Pose, Vec3},
     system::BtnState,
     ui::IdHashT,
+    util::Color32,
 };
 
 /// Should this interactor behave like a single point in space interacting with elements? Or should it behave more like
@@ -23,8 +24,10 @@ pub enum InteractorType {
     Line = 1,
 }
 
-/// TODO: is this redundant with interactor_type_? This describes how an interactor activates elements. Does it use the
-/// physical position of the interactor, or the activation state?
+/// This describes how an interactor commits an interaction with an element - does it activate from the physical
+/// position of the interactor (like a finger poking through a button), or from its activation/button state (like a
+/// pinch or a trigger click)? This is independent of `InteractorType`, which describes the interactor's shape rather
+/// than what triggers it.
 /// <https://stereokit.net/Pages/StereoKit/InteractorActivation.html>
 ///
 /// see also [`Interactor`]
@@ -61,19 +64,78 @@ bitflags::bitflags! {
     }
 }
 
+bitflags::bitflags! {
+    /// A bit-flag describing the physical source an interactor's input comes from, such as a specific hand, controller,
+    /// or the mouse. Interactors that share a source are mutually exclusive: while one is actively interacting, the
+    /// others won't begin a new interaction. This is how the poke, pinch, and aim interactors of a single hand avoid
+    /// fighting over the same element. The bits at and above `InteractorSource::Max` are free for your own custom
+    /// sources.
+    /// <https://stereokit.net/Pages/StereoKit/InteractorSource.html>
+    ///
+    /// see also [`Interactor`]
+    #[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]
+    #[repr(C)]
+    pub struct InteractorSource: u32 {
+        /// A unique, independent source. Interactors with this source never group with any other interactor, and are
+        /// invisible to source queries like `Interactor::is_interacting`. This is the default 'shares nothing' source.
+        const Unique = 0;
+        /// The left hand.
+        const HandLeft = 1 << 0;
+        /// The right hand.
+        const HandRight = 1 << 1;
+        /// The left motion controller.
+        const ControllerLeft = 1 << 2;
+        /// The right motion controller.
+        const ControllerRight = 1 << 3;
+        /// Gaze or eye tracking based input.
+        const Gaze = 1 << 4;
+        /// The mouse (or other pointing device).
+        const Mouse = 1 << 5;
+        /// All interactor sources combined.
+        const Any = Self::HandLeft.bits() | Self::HandRight.bits() | Self::ControllerLeft.bits() | Self::ControllerRight.bits() | Self::Gaze.bits() | Self::Mouse.bits();
+        /// The first bit available for custom user-defined sources.
+        const Max = 1 << 6;
+        const ExtraInteractor01 = 1 << 7;
+        const ExtraInteractor02 = 1 << 8;
+        const ExtraInteractor03 = 1 << 9;
+        const ExtraInteractor04 = 1 << 10;
+        const ExtraInteractor05 = 1 << 11;
+        const ExtraInteractor06 = 1 << 12;
+        const ExtraInteractor07 = 1 << 13;
+        const ExtraInteractor08 = 1 << 14;
+        const ExtraInteractor09 = 1 << 15;
+        const ExtraInteractor10 = 1 << 16;
+        const ExtraInteractor11 = 1 << 17;
+        const ExtraInteractor12 = 1 << 18;
+        const ExtraInteractor13 = 1 << 19;
+        const ExtraInteractor14 = 1 << 20;
+        const ExtraInteractor15 = 1 << 21;
+        const ExtraInteractor16 = 1 << 22;
+    }
+}
+
 /// Options for what type of interactors StereoKit provides by default.
 /// <https://stereokit.net/Pages/StereoKit/DefaultInteractors.html>
 ///
-/// see also [`Interactor`]
+/// see also [`Interactor`] [`Interaction`]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
 pub enum DefaultInteractors {
-    /// StereoKit's default interactors, this provides an aim ray for a mouse, aim rays for controllers, and aim, pinch,
-    /// and poke interactors for hands.
+    /// Use the XR backend's default interactor mode. This is 'all' for XR, 'mouse' for simulator and window, and
+    /// 'none' for offscreen.
     Default = 0,
     /// Don't provide any interactors at all. This means you either don't want interaction, or are providing your own
     /// custom interactors.
     None = 1,
+    /// Auto-switch between hands and controllers based on the current input source. This provides aim, pinch, and poke
+    /// interactors for hands, and aim rays for controllers.
+    All = 2,
+    /// Always use the hand interactors, using simulated hands when articulated hand tracking is not available.
+    Hands = 3,
+    /// Always use the controller interactors.
+    Controllers = 4,
+    /// Always use the mouse interactor.
+    Mouse = 5,
 }
 
 unsafe extern "C" {
@@ -82,7 +144,7 @@ unsafe extern "C" {
         shape_type: InteractorType,
         events: InteractorEvent,
         activation_type: InteractorActivation,
-        input_source_id: i32,
+        source: InteractorSource,
         capsule_radius: f32,
         secondary_motion_dimensions: i32,
     ) -> i32;
@@ -113,8 +175,14 @@ unsafe extern "C" {
         out_at_local: *mut Vec3,
     ) -> Bool32T;
     pub fn interactor_get_motion(interactor: i32) -> Pose;
+    pub fn interactor_get_type(interactor: i32) -> InteractorType;
+    pub fn interactor_get_events(interactor: i32) -> InteractorEvent;
+    pub fn interactor_get_activation(interactor: i32) -> InteractorActivation;
+    pub fn interactor_get_source(interactor: i32) -> InteractorSource;
+    pub fn interactor_get_secondary_dims(interactor: i32) -> i32;
     pub fn interactor_count() -> i32;
     pub fn interactor_get(index: i32) -> i32;
+    pub fn interactor_is_interacting(source: InteractorSource) -> Bool32T;
 
     // Interaction system functions
     pub fn interaction_set_default_interactors(default_interactors: DefaultInteractors);
@@ -132,21 +200,21 @@ unsafe extern "C" {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{system::{Interactor, InteractorType, InteractorEvent, InteractorActivation, BtnState},
+/// use stereokit_rust::{system::{Interactor, InteractorType, InteractorEvent, InteractorActivation, InteractorSource, BtnState},
 ///                      maths::{Vec3, Pose}};
 ///
 /// let interactor = Interactor::create(
 ///     InteractorType::Point,
 ///     InteractorEvent::Poke,
 ///     InteractorActivation::State,
-///     0,
+///     InteractorSource::Unique,
 ///     0.01,
 ///     0
 /// );
 ///
 /// interactor.update(
-///     Vec3::new(0.0, 0.0, 0.0),
-///     Vec3::new(0.0, 0.0, 0.1),
+///     Vec3::new(1.0, 2.0, 3.0),
+///     Vec3::new(4.0, 5.0, 6.0),
 ///     Pose::IDENTITY,
 ///     Vec3::ZERO,
 ///     Vec3::ZERO,
@@ -161,15 +229,42 @@ unsafe extern "C" {
 /// let focused = interactor.get_focused();
 /// let active = interactor.get_active();
 /// let motion = interactor.get_motion();
+/// let shape_type = interactor.get_type();
+/// let events = interactor.get_events();
+/// let activation = interactor.get_activation();
+/// let source = interactor.get_source();
+/// let secondary_dims = interactor.get_secondary_dims();
 ///
-/// interactor.destroy();
+///
+/// assert_eq!(radius,  0.01);
+/// assert_eq!(start,   Vec3::new(1.0, 2.0, 3.0));
+/// assert_eq!(end,     Vec3::new(4.0, 5.0, 6.0));
+/// assert_eq!(tracked, BtnState::Active);
+/// assert_eq!(active,  0u64);
+/// assert_eq!(focused, 0u64);
+/// assert_eq!(motion,  Pose::IDENTITY);
+/// assert_eq!(shape_type, InteractorType::Point);
+/// assert_eq!(events, InteractorEvent::Poke);
+/// assert_eq!(activation, InteractorActivation::State);
+/// assert_eq!(source, InteractorSource::Unique);
+/// assert_eq!(secondary_dims, 0);
+///
+/// # sk::Sk::shutdown();
 /// ```
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[repr(transparent)]
 pub struct Interactor {
     inst: i32,
 }
 
 impl Interactor {
+    /// An empty Interactor that represents "no interactor". UI
+    /// building blocks like `UI::button_behavior` and `UI::volume_at` report
+    /// this when nothing is interacting with them, so you can test their
+    /// result against `Interactor::None`.
+    /// <https://stereokit.net/Pages/StereoKit/Interactor/None.html>
+    pub const NONE: Self = Self { inst: -1 };
+
     /// Create a new custom Interactor.
     /// <https://stereokit.net/Pages/StereoKit/Interactor/Create.html>
     /// * `shape_type` - A line, or a point? These interactors behave slightly differently with respect to distance
@@ -177,12 +272,15 @@ impl Interactor {
     /// * `events` - What type of interaction events should this interactor fire? Interaction elements use this bitflag
     ///   as a filter to avoid interacting with certain interactors.
     /// * `activation_type` - How does this interactor activate elements?
-    /// * `input_source_id` - An identifier that uniquely indicates a shared source for inputs. This will deactivate
-    ///   other interactors with a shared source if one is already active. For example, 3 interactors for poke, pinch,
-    ///   and aim on a hand would all come from a single hand, and if one is actively interacting, then the whole hand
-    ///   source is considered busy.
+    /// * `source` - The physical source this interactor's input comes from. Interactors that share a source will
+    ///   deactivate each other if one is already active. For example, the poke, pinch, and aim interactors of a single
+    ///   hand all share that hand's source, so if one is actively interacting the whole hand is considered busy. Use
+    ///   `InteractorSource::Unique` for a source that never groups with others, or a custom value at or above
+    ///   `InteractorSource::Max` for your own sources.
     /// * `capsule_radius` - The radius of the interactor's capsule, in meters.
-    /// * `secondary_motion_dimensions` - How many axes of secondary motion can this interactor provide? This should be 0-3.
+    /// * `secondary_motion_dimensions` - How many axes of secondary motion can this interactor provide? Secondary
+    ///   motion is input from a source other than the interactor's own movement, such as a mouse's scroll wheel
+    ///   (1 axis) or a controller's analog thumbstick (2 axes, X/Y). This should be 0-3.
     ///
     /// Returns the Interactor that was just created.
     /// see also [`interactor_create`]
@@ -190,19 +288,12 @@ impl Interactor {
         shape_type: InteractorType,
         events: InteractorEvent,
         activation_type: InteractorActivation,
-        input_source_id: i32,
+        source: InteractorSource,
         capsule_radius: f32,
         secondary_motion_dimensions: i32,
     ) -> Self {
         let inst = unsafe {
-            interactor_create(
-                shape_type,
-                events,
-                activation_type,
-                input_source_id,
-                capsule_radius,
-                secondary_motion_dimensions,
-            )
+            interactor_create(shape_type, events, activation_type, source, capsule_radius, secondary_motion_dimensions)
         };
         Self { inst }
     }
@@ -251,11 +342,12 @@ impl Interactor {
         }
     }
 
-    /// Destroy this interactor and free its resources.
+    /// Interactors, unlike Assets, don't destroy themselves! You must explicitly Destroy an Interactor if you're
+    /// finished with it, otherwise it will continue to interact with StereoKit's interactors. This function immediately
+    /// removes the interactor from the interactor list.
     /// <https://stereokit.net/Pages/StereoKit/Interactor/Destroy.html>
     ///
-    /// see also [`interactor_destroy`]
-    pub fn destroy(&self) {
+    pub fn destroy(&mut self) {
         unsafe {
             interactor_destroy(self.inst);
         }
@@ -351,6 +443,50 @@ impl Interactor {
         unsafe { interactor_get_motion(self.inst) }
     }
 
+    /// A line, or a point? These interactors behave slightly differently with respect to distance checks and
+    /// directionality. See `InteractorType` for more details. This is set at creation time and does not change.
+    ///
+    /// see also [`interactor_get_type`] [`Interactor::create`]
+    pub fn get_type(&self) -> InteractorType {
+        unsafe { interactor_get_type(self.inst) }
+    }
+
+    /// What type of interaction events does this interactor fire? Interaction elements use this bitflag as a filter to
+    /// avoid interacting with certain interactors. This is set at creation time and does not change.
+    ///
+    /// see also [`interactor_get_events`] [`Interactor::create`]
+    pub fn get_events(&self) -> InteractorEvent {
+        unsafe { interactor_get_events(self.inst) }
+    }
+
+    /// How does this interactor activate elements? Does it use the physical position of the interactor, or its
+    /// activation state? This is set at creation time and does not change.
+    ///
+    /// see also [`interactor_get_activation`] [`Interactor::create`]
+    pub fn get_activation(&self) -> InteractorActivation {
+        unsafe { interactor_get_activation(self.inst) }
+    }
+
+    /// The physical source this interactor's input comes from. Interactors that share a source won't interact at the
+    /// same time, this is how the poke, pinch, and aim interactors of a single hand avoid fighting over an element.
+    /// `InteractorSource::Unique` opts out, indicating a source that does not need to check against other interactors.
+    /// This is set at creation time and does not change.
+    /// <https://stereokit.net/Pages/StereoKit/Interactor/Source.html>
+    ///
+    /// see also [`interactor_get_source`] [`Interactor::create`]
+    pub fn get_source(&self) -> InteractorSource {
+        unsafe { interactor_get_source(self.inst) }
+    }
+
+    /// How many axes of secondary motion can this interactor provide? Secondary motion is input that comes from
+    /// somewhere other than the interactor's own movement through space. For example, a mouse's scroll wheel is 1 axis,
+    /// and a controller's analog thumbstick is 2 axes (X/Y). This should be 0-3.
+    ///
+    /// see also [`interactor_get_secondary_dims`] [`Interactor::create`]
+    pub fn get_secondary_dims(&self) -> i32 {
+        unsafe { interactor_get_secondary_dims(self.inst) }
+    }
+
     /// If this interactor has an element focused, this will output information about the location of that element, as
     /// well as the interactor's intersection point with that element.
     /// <https://stereokit.net/Pages/StereoKit/Interactor/TryGetFocusBounds.html>
@@ -374,23 +510,102 @@ impl Interactor {
         if result != 0 { Some((pose_world, bounds_local, at_local)) } else { None }
     }
 
+    /// Is any interactor from the given source currently interacting with an element, that is, actively pressing or
+    /// focusing it? Sources can be combined as a bit-flag to ask about several at once, e.g.
+    /// `InteractorSource::HandLeft | InteractorSource::HandRight`.
+    /// <https://stereokit.net/Pages/StereoKit/Interactor/IsInteracting.html>
+    /// * `source` - The source, or combination of sources, to check
+    ///
+    /// Returns `true` if a matching interactor has an active element.
+    ///
+    /// see also [`interactor_is_interacting`] [`InteractorSource`]
+    pub fn is_interacting(source: InteractorSource) -> bool {
+        unsafe { interactor_is_interacting(source) != 0 }
+    }
+
+    /// Returns an allocation-free iterator over all active interactors in the system.
+    /// This replaces the older pattern of using `Interactor::count()` and `Interactor::get(index)`.
+    /// <https://stereokit.net/Pages/StereoKit/Interactor/All.html>
+    ///
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!();
+    /// use stereokit_rust::system::Interactor;
+    ///
+    /// let mut i = 0;
+    /// for interactor in Interactor::all() {
+    ///     let _source = interactor.get_source();
+    ///     let _tracked = interactor.get_tracked();
+    ///     i+=1;
+    ///     // Process each interactor...
+    /// }
+    /// assert_eq!(i, 0); // No interactors should be active in this test
+    /// # sk::Sk::shutdown();
+    /// ```
+    ///
+    /// see also [`InteractorIter`]
+    pub fn all() -> InteractorIter {
+        InteractorIter { index: 0, count: Self::count() }
+    }
+
     /// The number of interactors currently in the system. Can be used with `get`.
+    /// Note: Consider using `Interactor::all()` instead for a more ergonomic iterator-based approach.
     /// <https://stereokit.net/Pages/StereoKit/Interactor/Count.html>
     ///
-    /// see also [`interactor_count`] [`Interactor::get`]
+    /// see also [`interactor_count`] [`Interactor::get`] [`Interactor::all`]
     pub fn count() -> i32 {
         unsafe { interactor_count() }
     }
 
     /// Returns the `Interactor` at the given index. Should be used with `count`.
+    /// Note: Consider using `Interactor::all()` instead for a more ergonomic iterator-based approach.
     /// <https://stereokit.net/Pages/StereoKit/Interactor/Get.html>
     /// * `index` - The index.
     ///
     /// Returns an Interactor.
-    /// see also [`interactor_get`] [`Interactor::count`]
-    pub fn get(index: i32) -> Self {
-        let inst = unsafe { interactor_get(index) };
-        Self { inst }
+    /// see also [`interactor_get`] [`Interactor::count`] [`Interactor::all`]
+    pub fn get(index: i32) -> Option<Self> {
+        if index < 0 || index >= Self::count() {
+            None
+        } else {
+            let inst = unsafe { interactor_get(index) };
+            Some(Self { inst })
+        }
+    }
+}
+
+/// An allocation-free iterator over all active interactors.
+/// Created by [`Interactor::all`].
+///
+/// see also [`Interactor`]
+#[derive(Debug, Clone)]
+pub struct InteractorIter {
+    index: i32,
+    count: i32,
+}
+
+impl Iterator for InteractorIter {
+    type Item = Interactor;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index < self.count {
+            let inst = unsafe { interactor_get(self.index) };
+            self.index += 1;
+            Some(Interactor { inst })
+        } else {
+            None
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let remaining = (self.count - self.index).max(0) as usize;
+        (remaining, Some(remaining))
+    }
+}
+
+impl ExactSizeIterator for InteractorIter {
+    fn len(&self) -> usize {
+        (self.count - self.index).max(0) as usize
     }
 }
 
@@ -408,12 +623,14 @@ impl Interactor {
 ///
 /// // Check what interactors are currently set
 /// let current_interactors = Interaction::get_default_interactors();
+/// assert_eq!(current_interactors, DefaultInteractors::Default);
 ///
 /// // Disable the default drawing of interactor indicators
 /// Interaction::set_default_draw(false);
 ///
 /// // Check if default drawing is enabled
-/// let draw_enabled = Interaction::get_default_draw();
+/// assert_eq!(Interaction::get_default_draw(), false);
+/// # sk::Sk::shutdown();
 /// ```
 pub struct Interaction;
 
@@ -451,5 +668,434 @@ impl Interaction {
     /// see also [`interaction_set_default_draw`] [`Interaction::get_default_draw`]
     pub fn set_default_draw(draw_interactors: bool) {
         unsafe { interaction_set_default_draw(if draw_interactors { 1 } else { 0 }) }
+    }
+}
+
+/// A controller-based interactor that mirrors `interact_mode_controllers*()` from the C++ StereoKit code.
+///
+/// This creates a `Line` interactor with `Poke | Pinch` events and `State`-based activation,
+/// driven by a controller's aim pose and trigger. It is intended for a single hand.
+///
+/// see also [`Interactor`] [`crate::system::Controller`] [`crate::system::Input::controller`]
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::interactor::InteractorController;
+/// use stereokit_rust::system::Handed;
+///
+/// let mut ctrl_interactor = InteractorController::new(Handed::Right);
+///
+/// assert_eq!(ctrl_interactor.hand(), Handed::Right);
+///
+/// test_steps!( // !!!! Get a proper main loop !!!!
+///     ctrl_interactor.step();
+///     ctrl_interactor.draw_ray();
+/// );
+///
+/// let interactor = ctrl_interactor.interactor();
+/// assert_eq!(interactor.get_radius(), 0.005);
+///
+/// # sk::Sk::shutdown();
+/// ```
+pub struct InteractorController {
+    interactor: Interactor,
+    hand: crate::system::Handed,
+    trigger_last: f32,
+    ray_visible: f32,
+    ray_active: f32,
+}
+
+/// We have to implement `Drop` to ensure the interactor is properly destroyed when the `InteractorController`
+/// is dropped
+impl Drop for InteractorController {
+    fn drop(&mut self) {
+        self.interactor.destroy();
+    }
+}
+
+impl InteractorController {
+    /// Create a new controller interactor for the given hand.
+    ///
+    /// Mirrors `interact_mode_controllers_start()`:
+    /// creates a `Line` interactor with `Poke | Pinch` events, `State` activation,
+    /// capsule radius 0.005 m, and 2 secondary motion dimensions (stick X/Y).
+    pub fn new(hand: crate::system::Handed) -> Self {
+        let source = if hand == crate::system::Handed::Right {
+            InteractorSource::ControllerRight
+        } else {
+            InteractorSource::ControllerLeft
+        };
+        let interactor = Interactor::create(
+            InteractorType::Line,
+            InteractorEvent::Poke | InteractorEvent::Pinch,
+            InteractorActivation::State,
+            source,
+            0.005,
+            2,
+        );
+        Self { interactor, hand, trigger_last: 0.0, ray_visible: 0.0, ray_active: 0.0 }
+    }
+
+    /// Update the interactor with the current frame's controller data.
+    ///
+    /// Mirrors `interact_mode_controllers_step()`:
+    /// - capsule start/end: aim ray extending 100 m forward
+    /// - motion: aim pose
+    /// - motion anchor: head position offset by -0.12 m on Y
+    /// - secondary motion: stick * 0.02
+    /// - active: trigger > 0.5 transitions
+    /// - tracked: controller tracked state
+    pub fn step(&mut self) {
+        let ctrl = crate::system::Input::controller(self.hand);
+        let head = crate::system::Input::get_head();
+
+        // aim ray: start at aim position, end 100 m in the aim direction
+        let capsule_start = ctrl.aim.position;
+        let capsule_end = ctrl.aim.position + ctrl.aim.orientation * Vec3::FORWARD * 100.0;
+
+        let motion = ctrl.aim;
+        let motion_anchor = head.position + Vec3::new(0.0, -0.12, 0.0);
+        let secondary_motion = Vec3::new(ctrl.stick.x, ctrl.stick.y, 0.0) * 0.02;
+
+        let active = BtnState::make(self.trigger_last > 0.5, ctrl.trigger > 0.5);
+        let tracked = ctrl.tracked;
+
+        self.interactor
+            .update(capsule_start, capsule_end, motion, motion_anchor, secondary_motion, active, tracked);
+        self.trigger_last = ctrl.trigger;
+    }
+
+    /// Draw the controller aim ray indicator, mirroring `interactor_show_ray()` from the C++ code.
+    ///
+    /// Draws a smooth curved line from the interactor's aim origin outward. The ray animates
+    /// its visibility and thickness based on whether the interactor has a focused or active element.
+    pub fn draw_ray(&mut self) {
+        use crate::{
+            maths::lerp,
+            system::{LinePoint, Lines},
+            util::Time,
+        };
+
+        let interactor = &self.interactor;
+        if !interactor.get_tracked().is_active() {
+            return;
+        }
+
+        let _focused = interactor.get_focused() != 0;
+        let active_elem = interactor.get_active() != 0;
+        let dt = 16.0 * Time::get_step_unscaledf();
+
+        // Animate visibility: visible when focused (or always for controllers — hide_inactive=false)
+        self.ray_visible = lerp(self.ray_visible, 1.0_f32, dt);
+        let visibility = self.ray_visible;
+        if visibility < 0.001 {
+            return;
+        }
+
+        // Animate active state
+        self.ray_active = lerp(self.ray_active, if active_elem { 1.0 } else { 0.0 }, dt);
+        let active_amt = self.ray_active;
+
+        let motion_pos = interactor.get_motion().position;
+        let capsule_end = interactor.get_end();
+        let uncentered_dir = (capsule_end - motion_pos).get_normalized();
+
+        // If focused, adjust ray toward the focused element
+        let (mut length, centered_dir) =
+            if let Some((pose_world, bounds_local, at_local)) = interactor.try_get_focus_bounds() {
+                let pt = pose_world.to_matrix(None).transform_point(bounds_local.center + at_local);
+                let l = (pt - motion_pos).magnitude();
+                let d = (pt - motion_pos).get_normalized();
+                (l, d)
+            } else {
+                (0.35_f32, uncentered_dir)
+            };
+        length = lerp(0.35, length, visibility);
+        length = length.max(0.0);
+
+        let alpha = 0.35 + active_amt * 0.65;
+
+        const CT: usize = 20;
+        const RAY_SNAP: f32 = 1.0;
+        let mut pts = [LinePoint { pt: Vec3::ZERO, thickness: 0.0, color: Color32::WHITE }; CT];
+        for (i, pt) in pts.iter_mut().enumerate() {
+            let pct = i as f32 / (CT - 1) as f32;
+            let blend = pct * pct * pct * RAY_SNAP;
+            let d = pct * length;
+
+            let pct_i = 1.0 - pct;
+            let curve = lerp(
+                (pct_i * pct_i * std::f32::consts::PI).sin(),
+                ((pct * pct * std::f32::consts::PI).sin() * 1.5).min(1.0),
+                active_amt,
+            );
+            let width = (0.002 + curve * 0.003) * visibility;
+            let pos = motion_pos + Vec3::lerp(uncentered_dir * d, centered_dir * d, blend);
+            let a = (curve * alpha * 255.0) as u8;
+            *pt = LinePoint { pt: pos, thickness: width, color: Color32::rgba(255, 255, 255, a) };
+        }
+        Lines::add_list(&pts);
+    }
+
+    /// Returns a reference to the underlying [`Interactor`].
+    pub fn interactor(&self) -> &Interactor {
+        &self.interactor
+    }
+
+    /// Returns the hand this controller interactor is bound to.
+    pub fn hand(&self) -> crate::system::Handed {
+        self.hand
+    }
+}
+
+/// A hand-based interactor that mirrors `interact_mode_hands*()` from the C++ StereoKit code.
+///
+/// This creates three interactors per hand:
+/// - **poke**: a `Point` interactor with `Poke` event and `Position` activation, driven by the
+///   index fingertip.
+/// - **pinch**: a `Point` interactor with `Pinch` event and `State` activation, driven by the
+///   thumb/index pinch point.
+/// - **far**: a `Line` interactor with `Poke | Pinch` events and `State` activation, driven by
+///   the hand's aim ray. Only active when far interaction is enabled.
+///
+/// see also [`Interactor`] [`crate::system::Hand`] [`crate::system::Input::hand`]
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::interactor::InteractorHand;
+/// use stereokit_rust::system::Handed;
+///
+/// let mut hand_interactor = InteractorHand::new(Handed::Right);
+///
+/// assert_eq!(hand_interactor.hand(), Handed::Right);
+///
+/// test_steps!( // !!!! Get a proper main loop !!!!
+///     hand_interactor.step();
+///     hand_interactor.draw_ray();
+/// );
+///
+/// let poke  = hand_interactor.poke();
+/// assert_eq!(poke.get_radius(), 0.007);
+/// let pinch = hand_interactor.pinch();
+/// assert_eq!(pinch.get_radius(), 0.007);
+/// let far   = hand_interactor.far();
+/// assert_eq!(far.get_radius(), 0.01);
+///
+/// # sk::Sk::shutdown();
+/// ```
+pub struct InteractorHand {
+    poke: Interactor,
+    pinch: Interactor,
+    far: Interactor,
+    hand: crate::system::Handed,
+    ray_visible: f32,
+    ray_active: f32,
+    prev_active: bool,
+}
+
+/// We have to destroy explicitly the interactors we created, so we implement Drop to make sure that happens.
+impl Drop for InteractorHand {
+    fn drop(&mut self) {
+        self.poke.destroy();
+        self.pinch.destroy();
+        self.far.destroy();
+    }
+}
+
+impl InteractorHand {
+    /// Create a new hand interactor for the given hand.
+    ///
+    /// Mirrors `interact_mode_hands_start()`:
+    /// - poke: `Point`, `Poke`, `Position`, source = HandLeft/Right, radius 0, 0 secondary dims.
+    /// - pinch: `Point`, `Pinch`, `State`, source = HandLeft/Right, radius 0, 0 secondary dims.
+    /// - far: `Line`, `Poke | Pinch`, `State`, source = HandLeft/Right, radius 0.01 m, 2 secondary dims.
+    pub fn new(hand: crate::system::Handed) -> Self {
+        let source = if hand == crate::system::Handed::Right {
+            InteractorSource::HandRight
+        } else {
+            InteractorSource::HandLeft
+        };
+        let poke = Interactor::create(
+            InteractorType::Point,
+            InteractorEvent::Poke,
+            InteractorActivation::Position,
+            source,
+            0.0,
+            0,
+        );
+        let pinch = Interactor::create(
+            InteractorType::Point,
+            InteractorEvent::Pinch,
+            InteractorActivation::State,
+            source,
+            0.0,
+            0,
+        );
+        let far = Interactor::create(
+            InteractorType::Line,
+            InteractorEvent::Poke | InteractorEvent::Pinch,
+            InteractorActivation::State,
+            source,
+            0.01,
+            2,
+        );
+        Self { poke, pinch, far, hand, ray_visible: 0.0, ray_active: 0.0, prev_active: false }
+    }
+
+    /// Update the hand interactors with the current frame's hand data.
+    ///
+    /// Mirrors `interact_mode_hands_step()`:
+    /// - poke: index fingertip position, with `Position`-based activation.
+    /// - pinch: thumb/index pinch with `State`-based activation.
+    /// - far: hand aim ray, gated by `aim_ready` and UI far-interact setting.
+    pub fn step(&mut self) {
+        use crate::{
+            maths::lerp,
+            system::{FingerId, Input, JointId},
+        };
+        let hand = Input::hand(self.hand);
+        let head = Input::get_head();
+        let index_tip = hand.get(FingerId::Index, JointId::Tip);
+        let thumb_tip = hand.get(FingerId::Thumb, JointId::Tip);
+
+        // --- Poke ---
+        self.poke.radius(index_tip.radius);
+        let poke_start = if hand.tracked.is_just_active() { index_tip.position } else { self.poke.get_end() };
+        self.poke.update(
+            poke_start,
+            index_tip.position,
+            Pose { position: index_tip.position, orientation: hand.palm.orientation },
+            index_tip.position,
+            Vec3::ZERO,
+            BtnState::Inactive,
+            hand.tracked,
+        );
+
+        // --- Pinch ---
+        self.pinch.radius(index_tip.radius);
+        self.pinch.update(
+            thumb_tip.position,
+            index_tip.position,
+            Pose { position: hand.pinch_pt, orientation: hand.palm.orientation },
+            hand.pinch_pt,
+            Vec3::ZERO,
+            hand.pinch,
+            hand.tracked,
+        );
+
+        // --- Far (always, even when far interaction is disabled) ---
+        let head_anchor = head.position + Vec3::new(0.0, -0.12, 0.0);
+        let hand_dist = (hand.palm.position - head_anchor).magnitude();
+        let is_pinched = hand.pinch.is_active();
+        let just_pinched = hand.pinch.is_just_active();
+        let aim_ready = hand.aim_ready.is_active();
+        let is_active = (self.prev_active && is_pinched) || (aim_ready && just_pinched);
+        let far_pinch_state = BtnState::make(self.prev_active, is_active);
+        self.prev_active = is_active;
+
+        let min_dist = lerp(0.25, 0.1, ((hand_dist - 0.1) / 0.4).clamp(0.0, 1.0));
+        self.far.min_distance(min_dist);
+        self.far.update(
+            hand.aim.position,
+            hand.aim.position + hand.aim.orientation * Vec3::FORWARD * 100.0,
+            hand.aim,
+            head_anchor,
+            Vec3::ZERO,
+            far_pinch_state,
+            hand.aim_ready,
+        );
+    }
+
+    /// Draw the hand aim ray indicator, mirroring `interactor_show_ray()` with `skip=0.07` and
+    /// `hide_inactive=true`.
+    ///
+    /// The ray is only drawn when the far interactor has a focused element, and animates its
+    /// visibility and thickness accordingly.
+    pub fn draw_ray(&mut self) {
+        use crate::{
+            maths::lerp,
+            system::{LinePoint, Lines},
+            util::Time,
+        };
+
+        let interactor = &self.far;
+        if !interactor.get_tracked().is_active() {
+            return;
+        }
+
+        let focused = interactor.get_focused() != 0;
+        let active_elem = interactor.get_active() != 0;
+        let dt = 16.0 * Time::get_step_unscaledf();
+
+        // hide_inactive=true: visible only when focused
+        self.ray_visible = lerp(self.ray_visible, if focused { 1.0_f32 } else { 0.0_f32 }, dt);
+        let visibility = self.ray_visible;
+        if visibility < 0.001 {
+            return;
+        }
+
+        self.ray_active = lerp(self.ray_active, if active_elem { 1.0 } else { 0.0 }, dt);
+        let active_amt = self.ray_active;
+
+        const SKIP: f32 = 0.07;
+        let motion_pos = interactor.get_motion().position;
+        let capsule_end = interactor.get_end();
+        let uncentered_dir = (capsule_end - motion_pos).get_normalized();
+
+        let (mut length, centered_dir) =
+            if let Some((pose_world, bounds_local, at_local)) = interactor.try_get_focus_bounds() {
+                let pt = pose_world.to_matrix(None).transform_point(bounds_local.center + at_local);
+                let l = (pt - motion_pos).magnitude();
+                let d = (pt - motion_pos).get_normalized();
+                (l, d)
+            } else {
+                (0.35_f32, uncentered_dir)
+            };
+        length = lerp(0.35, length, visibility);
+        length = (length - SKIP).max(0.0);
+
+        // hide_inactive=true: alpha is multiplied by visibility
+        let alpha = (0.35 + active_amt * 0.65) * visibility;
+
+        const CT: usize = 20;
+        const RAY_SNAP: f32 = 1.0;
+        let mut pts = [LinePoint { pt: Vec3::ZERO, thickness: 0.0, color: Color32::WHITE }; CT];
+        for (i, pt) in pts.iter_mut().enumerate() {
+            let pct = i as f32 / (CT - 1) as f32;
+            let blend = pct * pct * pct * RAY_SNAP;
+            let d = SKIP + pct * length;
+
+            let pct_i = 1.0 - pct;
+            let curve = lerp(
+                (pct_i * pct_i * std::f32::consts::PI).sin(),
+                ((pct * pct * std::f32::consts::PI).sin() * 1.5).min(1.0),
+                active_amt,
+            );
+            let width = (0.002 + curve * 0.003) * visibility;
+            let pos = motion_pos + Vec3::lerp(uncentered_dir * d, centered_dir * d, blend);
+            let a = (curve * alpha * 255.0) as u8;
+            *pt = LinePoint { pt: pos, thickness: width, color: Color32::rgba(255, 255, 255, a) };
+        }
+        Lines::add_list(&pts);
+    }
+
+    /// Returns a reference to the poke [`Interactor`].
+    pub fn poke(&self) -> &Interactor {
+        &self.poke
+    }
+
+    /// Returns a reference to the pinch [`Interactor`].
+    pub fn pinch(&self) -> &Interactor {
+        &self.pinch
+    }
+
+    /// Returns a reference to the far [`Interactor`].
+    pub fn far(&self) -> &Interactor {
+        &self.far
+    }
+
+    /// Returns the hand this interactor is bound to.
+    pub fn hand(&self) -> crate::system::Handed {
+        self.hand
     }
 }

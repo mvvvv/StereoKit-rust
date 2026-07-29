@@ -1,0 +1,1 @@
+../StereoKit/Examples/Assets/Shaders/compute_reaction.hlsl

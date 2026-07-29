@@ -4,7 +4,7 @@ use stereokit_rust::{
     material::Material,
     maths::{Matrix, Quat, Vec3},
     prelude::*,
-    system::{Text, TextStyle},
+    system::{Text, TextBuilder, TextStyle},
     util::named_colors::RED,
 };
 
@@ -24,7 +24,7 @@ pub struct HandMenuRadial0 {
 
     pub transform: Matrix,
     pub text: String,
-    text_style: Option<TextStyle>,
+    text_style: TextStyle,
 }
 
 unsafe impl Send for HandMenuRadial0 {}
@@ -43,7 +43,7 @@ impl Default for HandMenuRadial0 {
 
             transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, Quat::from_angles(0.0, 180.0, 0.0)),
             text: "HandMenuRadial0".to_owned(),
-            text_style: None,
+            text_style: TextStyle::default(),
         }
     }
 }
@@ -52,7 +52,7 @@ impl Default for HandMenuRadial0 {
 impl HandMenuRadial0 {
     /// Called from IStepper::initialize here you can abort the initialization by returning false
     fn start(&mut self) -> bool {
-        self.text_style = Some(Text::make_style(Font::default(), 0.3, RED));
+        self.text_style = Text::make_style(Font::default(), 0.3, RED);
 
         let show_value = self.show_value.clone();
         let value_selected1 = self.value_selected.clone();
@@ -143,13 +143,13 @@ impl HandMenuRadial0 {
     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
     /// Called from IStepper::step, after check_event here you can draw your UI and scene
-    fn draw(&mut self, token: &MainThreadToken) {
+    fn draw(&mut self, _token: &MainThreadToken) {
         let text = if *self.show_value.borrow() {
             &format!("{}\nValue is {}", self.text, *self.value_selected.borrow())
         } else {
             &self.text
         };
-        Text::add_at(token, text, self.transform, self.text_style, None, None, None, None, None, None);
+        TextBuilder::new(text).transform(self.transform).style(self.text_style).add();
     }
 
     /// Called from IStepper::shutdown(triggering) then IStepper::shutdown_done(waiting for true response),

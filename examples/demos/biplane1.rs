@@ -5,8 +5,9 @@ use stereokit_rust::{
     mesh::Mesh,
     model::Model,
     prelude::*,
+    render::Renderer,
     sound::{Sound, SoundInst},
-    system::{Renderer, Text, TextStyle},
+    system::{Text, TextBuilder, TextStyle},
     util::{Time, named_colors::RED},
 };
 
@@ -29,7 +30,7 @@ pub struct Biplane1 {
     material: Material,
     pub transform: Matrix,
     pub text: String,
-    text_style: Option<TextStyle>,
+    text_style: TextStyle,
 }
 
 unsafe impl Send for Biplane1 {}
@@ -38,7 +39,7 @@ unsafe impl Send for Biplane1 {}
 impl Default for Biplane1 {
     /// Creates a new instance of Biplane1 with default values.
     fn default() -> Self {
-        let model = Model::from_file("plane.glb", None).unwrap_or_default();
+        let model = Model::from_file("plane.glb", None, None).unwrap_or_default();
         let nodes = model.get_nodes();
         let plane = match nodes.find("Plane") {
             Some(plane) => match plane.get_mesh() {
@@ -68,7 +69,7 @@ impl Default for Biplane1 {
             material: Material::pbr(),
             transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, Quat::from_angles(0.0, 180.0, 0.0)),
             text: "Biplane1".to_owned(),
-            text_style: None,
+            text_style: TextStyle::default(),
         }
     }
 }
@@ -77,7 +78,7 @@ impl Default for Biplane1 {
 impl Biplane1 {
     /// Initializes the Biplane1 instance.
     fn start(&mut self) -> bool {
-        self.text_style = Some(Text::make_style(Font::default(), 0.3, RED));
+        self.text_style = Text::make_style(Font::default(), 0.3, RED);
 
         self.plane_sound_inst = Some(self.plane_sound.play(self.plane_pose.position, Some(1.0)));
 
@@ -91,11 +92,11 @@ impl Biplane1 {
     fn draw(&mut self, token: &MainThreadToken) {
         self.animate_plane(token);
 
-        Text::add_at(token, &self.text, self.transform, self.text_style, None, None, None, None, None, None);
+        TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
     }
 
     /// Animates the plane by moving it towards the next target.
-    fn animate_plane(&mut self, token: &MainThreadToken) {
+    fn animate_plane(&mut self, _token: &MainThreadToken) {
         let forward = self.plane_pose.get_forward();
         let stepf = Time::get_stepf();
         let next_position = self.plane_pose.position + forward * stepf * self.speed_factor;
@@ -133,7 +134,6 @@ impl Biplane1 {
         }
         self.plane_pose = Pose::new(next_position, Some(next_rotation.get_normalized()));
         Renderer::add_mesh(
-            token,
             &self.plane,
             &self.material,
             self.plane_pose.to_matrix(Some(Vec3::ONE * 0.02)),
@@ -149,13 +149,7 @@ impl Biplane1 {
             sound_inst.position(self.plane_pose.position);
         }
 
-        Mesh::sphere().draw(
-            token,
-            &self.material,
-            self.previous_target.to_matrix(Some(Vec3::ONE * 0.1 * M)),
-            None,
-            None,
-        );
+        Mesh::sphere().draw(&self.material, self.previous_target.to_matrix(Some(Vec3::ONE * 0.1 * M)), None, None);
     }
 
     /// Closes the biplane and performs cleanup operations.

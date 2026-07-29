@@ -1,5 +1,5 @@
 use cmake::Config;
-use std::{env, fs, path::Path};
+use std::{env, fs, path::Path, path::PathBuf};
 
 macro_rules! cargo_link {
     ($feature:expr) => {
@@ -14,7 +14,6 @@ fn main() {
     let target_env = env::var("CARGO_CFG_TARGET_ENV").unwrap();
 
     let win_gnu_libs = env::var("SK_RUST_WIN_GNU_LIBS").unwrap_or_default();
-    let win_gl = !env::var("SK_RUST_WINDOWS_GL").unwrap_or_default().is_empty();
     let skc_in_dll = cfg!(feature = "skc-in-dll");
 
     let mut abi = env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_default();
@@ -22,18 +21,7 @@ fn main() {
         abi = "arm64-v8a".to_string();
     }
 
-    if win_gl {
-        println!("cargo:info=Compiling with {target_env} for {target_os}/opengl with profile {profile}");
-    } else {
-        println!("cargo:info=Compiling with {target_env} for {target_os} with profile {profile}");
-    }
-
-    if target_os == "macos" {
-        println!(
-            "cargo:warning=You seem to be building for MacOS! We still enable builds so that rust-analyzer works, but this won't actually build StereoKit so it'll be pretty non-functional."
-        );
-        return;
-    }
+    println!("cargo:info=Compiling with {target_env} for {target_os} with profile {profile}");
 
     if env::var("DOCS_RS").is_ok() {
         println!("cargo:warning=Skipping build on docs.rs");
@@ -43,6 +31,7 @@ fn main() {
     // Build StereoKit, and tell rustc to link it.
     let mut cmake_config = Config::new("StereoKit");
     cmake_config.define("SK_DISTRIBUTE", "OFF");
+    cmake_config.define("SK_LOCAL_SK_RENDERER", "OFF");
 
     let profile_upper = if profile == "debug" {
         cmake_config.define("CMAKE_BUILD_TYPE", "Debug");
@@ -53,14 +42,9 @@ fn main() {
 
     if !win_gnu_libs.is_empty() {
         cmake_config.define("CMAKE_SYSTEM_NAME", "Windows");
-        if win_gl {
-            cmake_config.cxxflag("-Wl,-allow-multiple-definition");
-            cmake_config.define("__MINGW32__", "ON");
-            cmake_config.define("WINDOWS_LIBS", "comdlg32;opengl32;");
-        } else {
-            cmake_config.define("__MINGW32__", "ON");
-            cmake_config.define("WINDOWS_LIBS", "comdlg32;dxgi;d3d11;");
-        }
+
+        cmake_config.define("__MINGW32__", "ON");
+        cmake_config.define("WINDOWS_LIBS", "comdlg32;dxgi;");
         //PR #1260
         cmake_config.cflag("-mf16c -mavx");
         cmake_config.cxxflag("-mf16c -mavx");
@@ -70,11 +54,7 @@ fn main() {
         cmake_config.cxxflag("-mf16c -mavx");
     }
 
-    if win_gl {
-        cmake_config.define("SK_WINDOWS_GL", "ON");
-    }
-
-    let mut dep_sk_gpu_src = None;
+    let mut dep_sk_renderer_src = None;
     if cfg!(feature = "force-local-deps") && env::var("FORCE_LOCAL_DEPS").is_ok() {
         println!("cargo:info=Force local deps !!");
         // Helper function to define optional dependencies
@@ -87,9 +67,10 @@ fn main() {
         define_if_exists("DEP_OPENXR_LOADER_SOURCE", "CPM_openxr_loader_SOURCE", &mut cmake_config);
         define_if_exists("DEP_MESHOPTIMIZER_SOURCE", "CPM_meshoptimizer_SOURCE", &mut cmake_config);
         define_if_exists("DEP_BASIS_UNIVERSAL_SOURCE", "CPM_basis_universal_SOURCE", &mut cmake_config);
-        define_if_exists("DEP_SK_GPU_SOURCE", "CPM_sk_gpu_SOURCE", &mut cmake_config);
+        define_if_exists("DEP_SK_RENDERER_SOURCE", "CPM_sk_renderer_SOURCE", &mut cmake_config);
+        define_if_exists("DEP_SK_APP_SOURCE", "CPM_sk_app_SOURCE", &mut cmake_config);
         // we need this path for retrieving skshaderc*
-        dep_sk_gpu_src = env::var("DEP_SK_GPU_SOURCE").ok();
+        dep_sk_renderer_src = env::var("DEP_SK_RENDERER_SOURCE").ok();
     }
 
     if target_family.as_str() == "windows" {
@@ -101,12 +82,24 @@ fn main() {
     } else {
         cmake_config.define("SK_BUILD_SHARED_LIBS", "OFF");
     }
-    cmake_config.define("SK_BUILD_TESTS", "OFF").define("SK_PHYSICS", "OFF");
+    cmake_config.define("SK_BUILD_TESTS", "OFF");
     if target_os == "android" {
+        let android_ndk_root = env::var("ANDROID_NDK_ROOT")
+            .or_else(|_| env::var("ANDROID_NDK_HOME"))
+            .expect("ANDROID_NDK_ROOT or ANDROID_NDK_HOME not set");
+        let android_toolchain_file: PathBuf =
+            Path::new(&android_ndk_root).join("build").join("cmake").join("android.toolchain.cmake");
+
+        cmake_config.define("CMAKE_TOOLCHAIN_FILE", android_toolchain_file.to_str().unwrap());
+        cmake_config.define("CMAKE_ANDROID_NDK", &android_ndk_root);
+        cmake_config.define("ANDROID_ABI", &abi);
+        cmake_config.define("CMAKE_ANDROID_ARCH_ABI", &abi);
         cmake_config.define("CMAKE_ANDROID_API", "32");
+        cmake_config.define("ANDROID_PLATFORM", "android-32");
         cmake_config.define("CMAKE_INSTALL_INCLUDEDIR", "install");
         cmake_config.define("CMAKE_INSTALL_LIBDIR", "install");
         cmake_config.define("CMAKE_GENERATOR", "Ninja");
+        cmake_config.env("JAVA_TOOL_OPTIONS", "-Dfile.encoding=UTF-8");
     }
     if cfg!(feature = "build-dynamic-openxr") {
         // When you need to build and use Khronos openxr loader use this feature:
@@ -129,19 +122,35 @@ fn main() {
             println!("cargo:rustc-link-search=native={}/lib", dst.display());
             println!("cargo:rustc-link-search=native={}/build/{}", dst.display(), profile_upper);
 
-            cargo_link!("StereoKitC");
+            // MinGW creates StereoKitC.a without the "lib" prefix, but Rust expects libStereoKitC.a
+            // So we create a symlink/copy with the correct name
+            if target_env == "gnu" && !skc_in_dll {
+                let build_dir = dst.join("build");
+                let skc_file = build_dir.join("StereoKitC.a");
+                let lib_skc_file = build_dir.join("libStereoKitC.a");
 
-            if cfg!(debug_assertions) {
-                // openxr-sys/linked wants libopenxr_loader so it asks for -Wl -lopenxr_loader in final ld
-                cargo_link!("openxr_loaderd");
-            } else {
-                cargo_link!("openxr_loader");
+                if skc_file.exists() && !lib_skc_file.exists() {
+                    // Try to create a symlink, fall back to copy if it fails
+                    #[cfg(unix)]
+                    {
+                        if std::os::unix::fs::symlink(&skc_file, &lib_skc_file).is_err() {
+                            let _ = fs::copy(&skc_file, &lib_skc_file);
+                        }
+                    }
+                    #[cfg(not(unix))]
+                    {
+                        let _ = fs::copy(&skc_file, &lib_skc_file);
+                    }
+                    println!("cargo:info=Created libStereoKitC.a link/copy for MinGW compatibility");
+                }
             }
 
-            cargo_link!("meshoptimizer");
             cargo_link!("windowsapp");
             cargo_link!("user32");
             cargo_link!("shell32");
+            cargo_link!("gdi32");
+            cargo_link!("advapi32");
+            cargo_link!("ole32");
             if cfg!(feature = "profile") {
                 cargo_link!("TracyClient");
             }
@@ -156,16 +165,49 @@ fn main() {
                 if !skc_in_dll {
                     println!("cargo:rustc-link-search=native={}/build", dst.display());
                     println!("cargo:rustc-link-search=native={}/lib", dst.display());
+                    println!("cargo:rustc-link-search=native={}/build/_deps/sk_renderer-build", dst.display());
+                    println!(
+                        "cargo:rustc-link-search=native={}/build/_deps/openxr_loader-build/src/loader",
+                        dst.display()
+                    );
                     println!("cargo:rustc-link-search=native={win_gnu_libs}");
-                    cargo_link!("gcc_eh");
-                    cargo_link!("stdc++");
+                    // Order matters: libs that depend on others should be listed first
+                    cargo_link!("static=StereoKitC");
+                    cargo_link!("static=sk_renderer");
+                    cargo_link!("static=sk_app");
+                    if cfg!(debug_assertions) {
+                        // openxr-sys/linked wants libopenxr_loader so it asks for -Wl -lopenxr_loader in final ld
+                        cargo_link!("openxr_loaderd");
+                    } else {
+                        cargo_link!("openxr_loader");
+                    }
                     cargo_link!("meshoptimizer");
+                    // C++ runtime libraries must come last
+                    cargo_link!("stdc++");
+                    cargo_link!("gcc_eh");
+                    // GNU ld processes libs left-to-right: system import libs must appear AFTER
+                    // the static libs that reference them, so repeat them here as link-arg
+                    // (which is placed at the end of the linker command).
+                    println!("cargo:rustc-link-arg=-ladvapi32");
+                    println!("cargo:rustc-link-arg=-lole32");
+                    println!("cargo:rustc-link-arg=-lshell32");
+                    println!("cargo:rustc-link-arg=-lgdi32");
+                    println!("cargo:rustc-link-arg=-lcomdlg32");
                 } else {
                     //---- We have to extract the DLL i.e. ".\target\x86_64-pc-windows-gnu\debug\build\stereokit-rust-be362d37871b9048\out\build\StereoKitC.dll"
                     //---- and copy it to ".\target\x86_64-pc-windows-gnu\debug\deps\
                     //println!("cargo:rustc-link-search=native={}/build", dst.display());
+                    cargo_link!("StereoKitC");
+                    if cfg!(debug_assertions) {
+                        // openxr-sys/linked wants libopenxr_loader so it asks for -Wl -lopenxr_loader in final ld
+                        cargo_link!("openxr_loaderd");
+                    } else {
+                        cargo_link!("openxr_loader");
+                    }
+
+                    cargo_link!("meshoptimizer");
                     println!("cargo:rustc-link-search=native={win_gnu_libs}");
-                    let deuleuleu = "libStereoKitC.dll";
+                    let deuleuleu = "StereoKitC.dll";
                     let target_dir = Path::new(&out_dir).parent().unwrap().parent().unwrap().parent().unwrap();
                     let deps_libs = target_dir.join("deps");
                     println!("cargo:rustc-link-search=native={}", deps_libs.to_str().unwrap());
@@ -177,8 +219,43 @@ fn main() {
                     let _lib_dll = fs::copy(file_dll, dest_file_dll).unwrap();
                 }
             } else {
+                //-- For MSVC
                 //---- We have to extract the DLL i.e. ".\target\debug\build\stereokit-rust-be362d37871b9048\out\build\Debug\StereoKitC.dll"
                 //---- and copy it to ".\target\debug\deps\
+
+                cargo_link!("StereoKitC");
+                if cfg!(debug_assertions) {
+                    // openxr-sys/linked wants libopenxr_loader so it asks for -Wl -lopenxr_loader in final ld
+                    cargo_link!("openxr_loaderd");
+                } else {
+                    cargo_link!("openxr_loader");
+                }
+
+                cargo_link!("meshoptimizer");
+                // Add search paths for sk_renderer and sk_app libraries
+                println!(
+                    "cargo:rustc-link-search=native={}/build/_deps/sk_renderer-build/{}",
+                    dst.display(),
+                    profile_upper
+                );
+                println!("cargo:rustc-link-search=native={}/build/_deps/sk_app-build/{}", dst.display(), profile_upper);
+                println!("cargo:rustc-link-search=native={}/lib", dst.display());
+
+                // Link sk_renderer and sk_app libraries
+                if !skc_in_dll {
+                    cargo_link!("sk_renderer");
+                    cargo_link!("sk_app");
+                }
+
+                // Fix CRT linkage for Windows MSVC: CMake builds C++ libraries with debug CRT
+                // in debug builds (/MDd), but Rust defaults to release CRT. We need to match
+                // the CRT version to avoid symbol conflicts like __imp__CrtDbgReport, etc.
+                if cfg!(debug_assertions) {
+                    // Use debug CRT in debug builds to match openxr_loaderd.lib and StereoKitC.lib
+                    println!("cargo:rustc-link-arg=/NODEFAULTLIB:msvcrt");
+                    println!("cargo:rustc-link-arg=/DEFAULTLIB:msvcrtd");
+                }
+
                 let lib: String = "StereoKitC".into();
                 let deuleuleu = lib.clone() + ".dll";
                 let lib_lib = lib.clone() + ".lib";
@@ -216,22 +293,27 @@ fn main() {
             unimplemented!("sorry wasm isn't implemented yet");
         }
         "unix" => {
+            println!("cargo:rustc-link-search=native={}/build", dst.display());
             println!("cargo:rustc-link-search=native={}/lib", dst.display());
             println!("cargo:rustc-link-search=native={}/lib64", dst.display());
-            println!("cargo:rustc-link-search=native={}/build", dst.display());
             println!("cargo:rustc-link-search=native={}/install", dst.display());
+            println!("cargo:rustc-link-search=native={}/build/_deps/sk_renderer-build", dst.display());
+            println!("cargo:rustc-link-search=native={}/build/_deps/sk_app-build", dst.display());
 
             cargo_link!("StereoKitC");
+            cargo_link!("sk_app");
+            cargo_link!("sk_renderer");
 
-            cargo_link!("stdc++");
             cargo_link!("openxr_loader");
             cargo_link!("meshoptimizer");
+
             if cfg!(feature = "profile") {
                 cargo_link!("TracyClient");
             }
+
             if target_os == "android" {
+                cargo_link!("vulkan");
                 cargo_link!("android");
-                cargo_link!("EGL");
 
                 //---- A directory whose content is only used during the production of the APK (no need for DEBUG/RELEASE sub directory)
                 //---- Copying from ./target/aarch64-linux-android/debug/build/stereokit-rust-1d044aba61d6313d/out/lib/libopenxr_loader.so
@@ -261,6 +343,13 @@ fn main() {
                 } else if let Err(_e) = fs::remove_file(dest_file_so) {
                 }
 
+                // Copy sk_app.jar for Android APK builds (needed by SkAppActivity)
+                let sk_app_jar = dst.join("build/_deps/sk_app-build/sk_app.jar");
+                if sk_app_jar.exists() {
+                    let dest_jar = target_dir.join("runtime_libs/sk_app.jar");
+                    fs::copy(&sk_app_jar, &dest_jar).expect("Unable to copy sk_app.jar");
+                }
+
                 // // On Android, we must ensure that we're dynamically linking against the C++ standard library.
                 // // For more details, see https://github.com/rust-windowing/android-ndk-rs/issues/167
                 // // build tools do not add libc++_shared.so to the APK so we must do it ourselves
@@ -277,12 +366,25 @@ fn main() {
                 // fs::copy(libcxx, dest_file_so).expect("Unable to copy libc++_shared.so");
 
                 cargo_link!("dylib=c++");
+            } else if target_os == "macos" {
+                // macOS uses MoltenVK for Vulkan support
+                println!("cargo:info=Building for macOS - using native frameworks");
+                cargo_link!("framework=Metal");
+                cargo_link!("framework=QuartzCore");
+                cargo_link!("framework=AppKit");
+                cargo_link!("framework=Foundation");
+                // MoltenVK is typically provided via brew or vulkan-sdk
+                println!("cargo:rustc-link-search=native=/usr/local/lib");
+                println!("cargo:rustc-link-search=native=/opt/homebrew/lib");
+                cargo_link!("MoltenVK");
+                // macOS uses libc++ (LLVM), not libstdc++ (GCC)
+                cargo_link!("c++");
             } else {
+                // Linux
+                cargo_link!("stdc++");
+                cargo_link!("vulkan");
                 cargo_link!("X11");
                 cargo_link!("Xfixes");
-                cargo_link!("GL");
-                cargo_link!("EGL");
-                cargo_link!("gbm");
                 cargo_link!("fontconfig");
             }
         }
@@ -292,26 +394,55 @@ fn main() {
     }
 
     // copy the tools (skshaderc) under target/tools
-    let target_dir_name = env::var("CARGO_TARGET_DIR").unwrap_or("target".into());
-    let mut target_dir = Path::new(&out_dir).parent().unwrap().parent().unwrap().parent().unwrap().parent().unwrap();
-    if !target_dir.ends_with(&target_dir_name) {
-        //cross compilation, we need to go up one more level
-        target_dir = target_dir.parent().unwrap();
-    }
-    println!("cargo:info=Can we copy skshaderc* to {target_dir:?}/tools ?");
-    if target_dir.ends_with(&target_dir_name) && target_dir.exists() {
-        let distrib = target_dir.join("tools");
-        let tools_dir = if let Some(sk_gpu_src) = dep_sk_gpu_src {
-            println!("cargo:info=--yes! we copy skshaderc from {sk_gpu_src:?}");
-            let path = Path::new(&sk_gpu_src);
-            path.join("tools")
+    // Only copy if the target CPU architecture matches the host CPU architecture
+    // (OS can differ: we can run Windows .exe on Linux with wine, and both can coexist thanks to .exe suffix)
+    let target_arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_default();
+    let host_arch = env::consts::ARCH;
+
+    println!("cargo:info=Host CPU architecture: {host_arch}, Target CPU architecture: {target_arch}");
+
+    if host_arch == target_arch && target_os != "android" {
+        let target_dir_name = env::var("CARGO_TARGET_DIR").unwrap_or("target".into());
+        let mut target_dir =
+            Path::new(&out_dir).parent().unwrap().parent().unwrap().parent().unwrap().parent().unwrap();
+        if !target_dir.ends_with(&target_dir_name) {
+            //cross compilation, we need to go up one more level
+            target_dir = target_dir.parent().unwrap();
+        }
+        println!("cargo:info=Can we copy skshaderc* to {target_dir:?}/tools ?");
+        if target_dir.ends_with(&target_dir_name) && target_dir.exists() {
+            let distrib = target_dir.join("tools");
+            let tools_dir = if let Some(sk_renderer_src) = dep_sk_renderer_src {
+                println!("cargo:info=--yes! we copy skshaderc from {sk_renderer_src:?}");
+                let path = Path::new(&sk_renderer_src);
+                path.join("tools")
+            } else {
+                // Try sk_renderer path first (new architecture)
+                let mut sk_renderer_path = dst.join("build").join("_deps").join("sk_renderer-build").join("skshaderc");
+                // For MSVC, add the profile directory (Debug/Release) after skshaderc
+                if target_env == "msvc" {
+                    sk_renderer_path = sk_renderer_path.join(profile_upper);
+                }
+                if sk_renderer_path.exists() {
+                    println!("cargo:info=--yes! we copy skshaderc from {sk_renderer_path:?}");
+                    sk_renderer_path
+                } else {
+                    println!("cargo:info=--no sk_renderer path not found");
+                    "no path found for skshaderc".into()
+                }
+            };
+            if tools_dir.exists() {
+                copy_tree(tools_dir, distrib).expect("Unable to copy tools");
+            } else {
+                println!("cargo:warning=Tools directory not found at {tools_dir:?}");
+            }
         } else {
-            println!("cargo:info=--yes! we copy skshaderc from {dst:?}/build/_deps/sk_gpu-src/tools");
-            dst.join("build").join("_deps").join("sk_gpu-src").join("tools")
-        };
-        copy_tree(tools_dir, distrib).expect("Unable to copy tools");
+            println!("cargo:warning={target_dir_name} directory {target_dir:?} does not exist");
+        }
     } else {
-        println!("cargo:warning={target_dir_name} directory {target_dir:?} does not exist");
+        println!(
+            "cargo:info=Skipping skshaderc copy: Android build or target CPU architecture ({target_arch}) differs from host CPU architecture ({host_arch})"
+        );
     }
 
     // Tell cargo to invalidate the built crate whenever the wrapper changes

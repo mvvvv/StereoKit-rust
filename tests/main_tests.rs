@@ -1,10 +1,10 @@
 #![cfg(test)]
 use stereokit_rust::{material::Material, mesh::Mesh};
 
-#[cfg(feature = "event-loop")]
+#[cfg(not(feature = "no-event-loop"))]
 use stereokit_rust::prelude::*;
 
-#[cfg(feature = "event-loop")]
+#[cfg(not(feature = "no-event-loop"))]
 fn main() {
     stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     use stereokit_rust::{framework::HAND_MENU_RADIAL_FOCUS, maths::Matrix};
@@ -27,10 +27,10 @@ fn main() {
             }
 
             // testing material1
-            circle.draw(token, &material_circle,  Matrix::IDENTITY, None, None);
+            circle.draw(&material_circle,  Matrix::IDENTITY, None, None);
         );
     }
-    //Sk::shutdown();
+    Sk::shutdown();
 }
 
 #[cfg(feature = "no-event-loop")]
@@ -45,10 +45,10 @@ fn main() {
         test_steps!( // !!!! Get a proper main loop !!!!
 
             // testing material1
-            circle.draw(token, &material_circle,  Matrix::IDENTITY, None, None);
+            circle.draw(&material_circle,  Matrix::IDENTITY, None, None);
         );
     }
-    //Sk::shutdown();
+    Sk::shutdown();
 }
 
 pub fn material1() -> (Mesh, Material) {
@@ -61,7 +61,7 @@ pub fn material1() -> (Mesh, Material) {
     (circle, material_circle)
 }
 
-#[cfg(feature = "event-loop")]
+#[cfg(not(feature = "no-event-loop"))]
 fn hand_menu_radial0(sk_info: Option<Rc<RefCell<SkInfo>>>) -> String {
     // Open or close the log window (done by IStepper LogWindow waiting for SHOW_LOG_WINDOW event)
 

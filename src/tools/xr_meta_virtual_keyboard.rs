@@ -121,6 +121,7 @@ impl XrMetaVirtualKeyboard {
     ///         }
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn new() -> Option<Self> {
         if !is_meta_virtual_keyboard_extension_available() {
@@ -449,7 +450,7 @@ pub fn is_meta_virtual_keyboard_extension_available() -> bool {
 ///     if iter == 10 {
 ///         // Create and test virtual keyboard functionality
 ///         if is_meta_virtual_keyboard_extension_available() {
-///             let mut keyboard_stepper = XrMetaVirtualKeyboardStepper::new(true);
+///             let keyboard_stepper = XrMetaVirtualKeyboardStepper::new(true);
 ///             sk.send_event(StepperAction::add("keyboard_test", keyboard_stepper));
 ///             
 ///             // Show the keyboard
@@ -464,6 +465,7 @@ pub fn is_meta_virtual_keyboard_extension_available() -> bool {
 ///         Log::info("✅ Virtual keyboard hidden");
 ///     }
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 #[derive(IStepper)]
 pub struct XrMetaVirtualKeyboardStepper {
@@ -526,6 +528,7 @@ impl XrMetaVirtualKeyboardStepper {
     ///         sk.send_event(StepperAction::remove("keyboard_test1"));
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn new(enable_on_init: bool) -> Self {
         Self { enabled: enable_on_init, ..Default::default() }
@@ -580,7 +583,7 @@ impl XrMetaVirtualKeyboardStepper {
         };
 
         // Check system support
-        let _sys_prop = match meta_kdb.check_system_support(false) {
+        let _sys_prop = match meta_kdb.check_system_support(true) {
             Ok(val) => val,
             Err(e) => {
                 Log::err(format!("❌ Failed to check system support: {:?}", e));
@@ -636,7 +639,7 @@ impl XrMetaVirtualKeyboardStepper {
                         Ok(model_data) => {
                             Log::info(format!("   Loaded {} bytes of keyboard model data", model_data.len()));
 
-                            match Model::from_memory("virtual_keyboard.gltf", &model_data, None) {
+                            match Model::from_memory("virtual_keyboard.gltf", &model_data, None, None) {
                                 Ok(model) => {
                                     self.keyboard_model = Some(model);
                                     Log::info("   Keyboard 3D model created successfully");
@@ -672,7 +675,7 @@ impl XrMetaVirtualKeyboardStepper {
     }
 
     /// Method called by derive(IStepper) for rendering/drawing
-    fn draw(&mut self, token: &MainThreadToken) {
+    fn draw(&mut self, _token: &MainThreadToken) {
         // Render the keyboard model if available
         if let Some(ref model) = self.keyboard_model {
             // The keyboard space position is managed by OpenXR
@@ -681,7 +684,7 @@ impl XrMetaVirtualKeyboardStepper {
             // For now, render at a fixed position for testing
             use crate::maths::{Matrix, Quat, Vec3};
             let pose = Matrix::t_r(Vec3::new(0.0, 1.0, -1.5), Quat::Y_180);
-            model.draw(token, pose, None, None);
+            model.draw(pose, None, None);
         }
         // Future implementation: handle keyboard input events, update textures, animations, etc.
     }

@@ -3,7 +3,7 @@ use crate::{
     material::Cull,
     maths::{Matrix, Pose, Vec2, Vec3, units::CM},
     prelude::*,
-    system::{Align, LogItem, LogLevel, Pivot, Text, TextFit, TextStyle},
+    system::{Align, LogItem, LogLevel, Pivot, TextBuilder, TextFit, TextStyle},
     ui::{Ui, UiCut},
     util::Color128,
 };
@@ -25,15 +25,14 @@ pub const SHOW_LOG_WINDOW: &str = "Tool_ShowLogWindow";
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{maths::Vec3, ui::Ui,
-///                      tools::log_window::{LogWindow, basic_log_fmt, SHOW_LOG_WINDOW},
-///                      system::{LogLevel, LogItem,  Log}};
+/// use stereokit_rust::{ui::Ui, system::{LogLevel, LogItem,  Log},
+///                      tools::log_window::{LogWindow, basic_log_fmt, SHOW_LOG_WINDOW}};
 /// use std::sync::Mutex;
 ///
 /// // Somewhere to copy the log
 /// static LOG_LOG: Mutex<Vec<LogItem>> = Mutex::new(vec![]);
 /// let fn_mut = |level: LogLevel, log_text: &str| {
-///    let items = LOG_LOG.lock().unwrap();
+///    let items = LOG_LOG.lock().expect("Failed to lock log mutex");
 ///    basic_log_fmt(level, log_text, 20, items);
 /// };
 /// Log::subscribe(fn_mut);
@@ -54,6 +53,7 @@ pub const SHOW_LOG_WINDOW: &str = "Tool_ShowLogWindow";
 ///        sk.send_event(StepperAction::event( "main", SHOW_LOG_WINDOW, "false",));
 ///     }
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/log_window.jpeg" alt="screenshot" width="200">
 #[derive(IStepper)]
@@ -121,15 +121,15 @@ impl<'a> LogWindow<'a> {
     }
     /// Called from IStepper::step, after check_event here you can draw your UI
     fn draw(&mut self, token: &MainThreadToken) {
-        Ui::window_begin("Log", &mut self.window_pose, Some(Vec2::new(self.x_len, 0.0) * CM), None, None);
+        Ui::window("Log viewer").pose(&mut self.window_pose).size(Vec2::new(self.x_len, 0.0) * CM).begin();
         self.draw_logs(token);
         Ui::hseparator();
         Ui::window_end();
     }
 
-    fn draw_logs(&mut self, token: &MainThreadToken) {
+    fn draw_logs(&mut self, _token: &MainThreadToken) {
         let text_size = Vec2::new(Ui::get_layout_remaining().x, 0.024);
-        let items = self.log_log.lock().unwrap();
+        let items = self.log_log.lock().expect("Failed to lock log_log");
 
         Ui::layout_push_cut(UiCut::Top, text_size.y * self.y_len, false);
         Ui::layout_push_cut(UiCut::Right, Ui::get_line_height() * 0.6, false);
@@ -142,9 +142,7 @@ impl<'a> LogWindow<'a> {
             //     self.log_index = 0.0;
             // }
         }
-        if let Some(pos) =
-            Ui::vslider("scroll", &mut self.log_index, 0.0, items.len() as f32, Some(1.0), None, None, None)
-        {
+        if let Some(pos) = Ui::vslider("scroll", &mut self.log_index, 0.0, items.len() as f32).step(1.0).interact() {
             self.log_index = f32::max(f32::min(pos, items.len() as f32 - 1.0), 0.0);
         }
 
@@ -170,37 +168,25 @@ impl<'a> LogWindow<'a> {
                 };
 
                 let y = (i - index) as f32 * -text_size.y;
-                Text::add_in(
-                    token,
-                    item.text.trim(),
-                    Matrix::t(start + Vec3::new(0.0, y, -0.004)),
-                    text_size,
-                    TextFit::Clip | TextFit::Wrap,
-                    Some(ts),
-                    None,
-                    Some(Pivot::TopLeft),
-                    Some(Align::CenterLeft),
-                    None,
-                    None,
-                    None,
-                );
+                TextBuilder::new(item.text.trim())
+                    .transform(Matrix::t(start + Vec3::new(0.0, y, -0.004)))
+                    .size(text_size)
+                    .fit(TextFit::Clip | TextFit::Wrap)
+                    .style(ts)
+                    .position(Pivot::TopLeft)
+                    .align(Align::CenterLeft)
+                    .add();
 
                 if item.count > 1 {
                     let at = Vec3::new(start.x - text_size.x, start.y + y, start.z - 0.014);
-                    Text::add_in(
-                        token,
-                        item.count.to_string(),
-                        Matrix::t(at),
-                        Vec2::new(text_size.x + 0.22, text_size.y),
-                        TextFit::Clip,
-                        Some(self.style_info),
-                        None,
-                        Some(Pivot::TopLeft),
-                        Some(Align::CenterLeft),
-                        None,
-                        None,
-                        None,
-                    );
+                    TextBuilder::new(item.count.to_string())
+                        .transform(Matrix::t(at))
+                        .size(Vec2::new(text_size.x + 0.22, text_size.y))
+                        .fit(TextFit::Clip)
+                        .style(self.style_info)
+                        .position(Pivot::TopLeft)
+                        .align(Align::CenterLeft)
+                        .add();
                 }
             }
         }

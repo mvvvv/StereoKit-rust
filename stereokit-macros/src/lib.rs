@@ -27,6 +27,7 @@ fn has_field(field_name: &str, input: &DeriveInput) -> bool {
 ///   - **sk_info**: `Option<Rc<RefCell<SkInfo>>>`,
 ///   - *Optional* when the stepper should initialize on more than one step : **initialize_completed**: bool
 ///   - *Optional* when you want to implement an active/inactive flag: **enabled**: bool
+///   - *Optional* to define pre/post app ordering: **priority**: i32
 ///   - *Optional* when the stepper should shutdown some stuffs : **shutdown_completed**: bool
 /// * Functions:
 ///   - IStepper::initialize calls **fn start(&mut self) -> bool** where you can abort the initialization by returning false:
@@ -34,6 +35,7 @@ fn has_field(field_name: &str, input: &DeriveInput) -> bool {
 ///     **fn start_completed(&mut self) -> bool** where you can tell the initialization is done:
 ///   - IStepper::step calls  **fn check_event(&mut self, _key: &str, _value: &str)** where you can check the event report:
 ///   - IStepper::step calls **fn draw(&mut self, token: &MainThreadToken)** after check_event where you can draw your UI:
+///   - *Optional* if field **priority** is present IStepper::step_priority returns `self.priority`.
 ///   - *Optional* if field **shutdown_completed** is present IStepper::shutdown and IStepper::shutdown_done call
 ///     **fn close(&mut self, triggering:bool) -> bool**
 ///     where you can close your resources.
@@ -71,7 +73,7 @@ fn has_field(field_name: &str, input: &DeriveInput) -> bool {
 ///     }
 ///     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 ///     fn draw(&mut self, token: &MainThreadToken) {
-///         self.round_cube.draw(token, &self.material, self.transform, None, None);
+///         self.round_cube.draw(&self.material, self.transform, None, None);
 ///     }
 /// }
 ///  ```
@@ -103,6 +105,16 @@ pub fn derive_istepper(input: TokenStream) -> TokenStream {
         quote! {}
     };
 
+    let priority_fn = if has_field("priority", &input) {
+        quote! {
+            fn step_priority(&self) -> i32 {
+                self.priority
+            }
+        }
+    } else {
+        quote! {}
+    };
+
     let close_fn = if has_field("shutdown_completed", &input) {
         quote! {
 
@@ -124,6 +136,8 @@ pub fn derive_istepper(input: TokenStream) -> TokenStream {
             #init_completed
 
             #enabled_fn
+
+            #priority_fn
 
             fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
                 self.id = id;
@@ -160,7 +174,7 @@ pub fn derive_istepper(input: TokenStream) -> TokenStream {
 /// * `body` - the path of the assets sub-directory.
 ///
 /// ### Example
-/// ``` ignore
+/// ```ignore
 /// use stereokit_macros::include_asset_tree;
 /// const ASSET_DIR: &[&str] = include_asset_tree!("assets");
 ///
@@ -217,7 +231,6 @@ fn get_sub_dirs(path_assets: PathBuf, sub_path: &Path) -> Vec<String> {
     vec_path
 }
 
-/// StereoKit-rust renames this macro to `test_init_sk!`.
 /// Initialize sk (and eventually event_loop) for a test.
 ///
 /// If you intend to run a main loop, with `test_screenshot!(...)` or `test_steps!(...)` here some variables you may use:
@@ -235,51 +248,18 @@ fn get_sub_dirs(path_assets: PathBuf, sub_path: &Path) -> Vec<String> {
 ///
 /// most of the examples of this doc use this macro.
 #[proc_macro]
-pub fn test_init_sk_event_loop(_input: TokenStream) -> TokenStream {
+pub fn test_init_sk(_input: TokenStream) -> TokenStream {
     let expanded = quote! {
         use stereokit_rust::{*, prelude::*, test_screenshot, test_steps, xr_mode_stop_here, offscreen_mode_stop_here};
         let mut sk_settings = sk::SkSettings::default();
         #[cfg(feature = "test-xr-mode")]
-        sk_settings.mode(sk::AppMode::XR).app_name("cargo test");
+        {
+            sk_settings.mode(sk::AppMode::XR).app_name("cargo test");
+            sk_settings.no_flatscreen_fallback(true);
+        }
         #[cfg(not(feature = "test-xr-mode"))]
         sk_settings.mode(sk::AppMode::Offscreen).app_name("cargo test");
-        let (mut sk, mut event_loop) = sk_settings.init_with_event_loop().unwrap();
-
-        let mut filename_scr = "screenshots/default_screenshoot.png";
-        let mut number_of_steps = 3;
-        let (mut width_scr, mut height_scr, mut fov_scr, mut from_scr, mut at_scr)  = (200, 200, 99.0, maths::Vec3::Z, maths::Vec3::ZERO);
-        system::Assets::block_for_priority(i32::MAX);
-    };
-
-    TokenStream::from(expanded)
-}
-
-/// StereoKit-rust renames this macro to `test_init_sk!`.
-/// Initialize sk (and eventually event_loop) for a test.
-///
-/// If you intend to run a main loop, with `test_screenshot!(...)` or `test_steps!(...)` here some variables you may use:
-/// * `number_of_steps` - Default is 3, you can change this value before the main loop.
-/// * `token` - the MainThreadToken you need to draw in the main_loop.
-/// * `iter` - The step number in the main_loop. [0..number_of_steps + 2].
-///
-/// If you intend to take a screenshot with `test_screenshot!(...)` there is also those variables to change before the
-/// main loop:
-/// * `width_scr` - width of the screenshot (default is 200)
-/// * `height_scr` - height of the screenshot (default is 200)
-/// * `fov_scr` - fov of the screenshot (default is 99.0)
-/// * `from_scr` - Position of the camera (default is Vec3::Z)
-/// * `at_scr` - Point looked at by the camera (default is Vec3::ZERO)
-///
-/// most of the examples of this doc use this macro.
-#[proc_macro]
-pub fn test_init_sk_no_event_loop(_input: TokenStream) -> TokenStream {
-    let expanded = quote! {
-        use stereokit_rust::{*, prelude::*, test_screenshot, test_steps, xr_mode_stop_here, offscreen_mode_stop_here};
-        let mut sk_settings = sk::SkSettings::default();
-        #[cfg(feature = "test-xr-mode")]
-        sk_settings.mode(sk::AppMode::XR).app_name("cargo test");
-        #[cfg(not(feature = "test-xr-mode"))]
-        sk_settings.mode(sk::AppMode::Offscreen).app_name("cargo test");
+        sk_settings.standby_mode(sk::StandbyMode::None).disable_desktop_input_window(true);
         let mut sk = sk_settings.init().unwrap();
 
         let mut filename_scr = "screenshots/default_screenshoot.png";
@@ -314,7 +294,10 @@ pub fn test_init_sk_no_event_loop(_input: TokenStream) -> TokenStream {
 pub fn xr_mode_stop_here(_input: TokenStream) -> TokenStream {
     let expanded = quote! {
         #[cfg(feature = "test-xr-mode")]
-        return;
+        {
+            sk::Sk::shutdown();
+            return;
+        }
     };
 
     TokenStream::from(expanded)
@@ -343,33 +326,9 @@ pub fn xr_mode_stop_here(_input: TokenStream) -> TokenStream {
 pub fn offscreen_mode_stop_here(_input: TokenStream) -> TokenStream {
     let expanded = quote! {
         #[cfg(not(feature = "test-xr-mode"))]
-        return;
-    };
-
-    TokenStream::from(expanded)
-}
-
-#[proc_macro]
-/// StereoKit-rust renames this macro to `test_screenshot!`.
-/// Run a main_loop then take a screenshot when `iter` equal the `number_of_steps`.
-/// see [`crate::test_init_sk!`](crate::test_init_sk_event_loop!) for the details.
-pub fn test_screenshot_event_loop(input: TokenStream) -> TokenStream {
-    let input: proc_macro2::TokenStream = input.into();
-    let expanded = quote! {
-        stereokit_rust::system::Assets::block_for_priority(i32::MAX);
-        let mut iter = 0;
         {
-            framework::SkClosures::new(sk, |sk, token| {
-                if iter > number_of_steps {sk.quit(None)}
-
-                #input
-
-                iter+=1;
-                if iter == number_of_steps {
-                    // render screenshot
-                    system::Renderer::screenshot(token, filename_scr, 90, maths::Pose::look_at(from_scr, at_scr), width_scr, height_scr, Some(fov_scr) );
-                }
-            }).run(event_loop);
+            sk::Sk::shutdown();
+            return;
         }
     };
 
@@ -379,13 +338,42 @@ pub fn test_screenshot_event_loop(input: TokenStream) -> TokenStream {
 #[proc_macro]
 /// StereoKit-rust renames this macro to `test_screenshot!`.
 /// Run a main_loop then take a screenshot when `iter` equal the `number_of_steps`.
-/// see [`crate::test_init_sk!`](crate::test_init_sk_no_event_loop!) for the details.
+/// see [`crate::test_init_sk!`](crate::test_init_sk!) for the details.
+pub fn test_screenshot_event_loop(input: TokenStream) -> TokenStream {
+    let input: proc_macro2::TokenStream = input.into();
+    let expanded = quote! {
+        stereokit_rust::system::Assets::block_for_priority(i32::MAX);
+        let mut iter = 0;
+        {
+            system::Assets::block_for_priority(i32::MAX);
+            framework::SkClosures::new(sk, |sk, token| {
+                if iter > number_of_steps {sk.quit(None)}
+
+                #input
+
+                iter+=1;
+                if iter == number_of_steps {
+                    // render screenshot
+                    render::Renderer::screenshot( filename_scr, 90, maths::Pose::look_at(from_scr, at_scr), width_scr, height_scr, Some(fov_scr) );
+                }
+            }).run();
+        }
+    };
+
+    TokenStream::from(expanded)
+}
+
+#[proc_macro]
+/// StereoKit-rust renames this macro to `test_screenshot!`.
+/// Run a main_loop then take a screenshot when `iter` equal the `number_of_steps`.
+/// see [`crate::test_init_sk!`](crate::test_init_sk!) for the details.
 pub fn test_screenshot_no_event_loop(input: TokenStream) -> TokenStream {
     let input: proc_macro2::TokenStream = input.into();
     let expanded = quote! {
         stereokit_rust::system::Assets::block_for_priority(i32::MAX);
         let mut iter = 0;
         {
+            system::Assets::block_for_priority(i32::MAX);
             while let Some(token) = sk.step() {
                 if iter > number_of_steps {break}
 
@@ -394,7 +382,7 @@ pub fn test_screenshot_no_event_loop(input: TokenStream) -> TokenStream {
                 iter+=1;
                 if iter == number_of_steps {
                     // render screenshot
-                    system::Renderer::screenshot(token, filename_scr, 90, maths::Pose::look_at(from_scr, at_scr), width_scr, height_scr, Some(fov_scr) );
+                    render::Renderer::screenshot( filename_scr, 90, maths::Pose::look_at(from_scr, at_scr), width_scr, height_scr, Some(fov_scr) );
                 }
             }
         }
@@ -406,19 +394,20 @@ pub fn test_screenshot_no_event_loop(input: TokenStream) -> TokenStream {
 #[proc_macro]
 /// StereoKit-rust renames this macro to `test_steps!`.
 /// Run a main_loop until `iter` equal the `number_of_steps`.
-/// see [`crate::test_init_sk!`](crate::test_init_sk_event_loop!) for the details.
+/// see [`crate::test_init_sk!`](crate::test_init_sk!) for the details.
 pub fn test_steps_event_loop(input: TokenStream) -> TokenStream {
     let input: proc_macro2::TokenStream = input.into();
     let expanded = quote! {
         let mut iter = 0;
         {
+            system::Assets::block_for_priority(i32::MAX);
             framework::SkClosures::new(sk, |sk, token| {
                 if iter > number_of_steps {sk.quit(None)}
 
                 #input
 
                 iter+=1;
-            }).run(event_loop);
+            }).run();
         }
     };
 
@@ -428,12 +417,13 @@ pub fn test_steps_event_loop(input: TokenStream) -> TokenStream {
 #[proc_macro]
 /// StereoKit-rust renames this macro to `test_steps!`.
 /// Run a main_loop until `iter` equal the `number_of_steps`.
-/// see [`crate::test_init_sk!`](crate::test_init_sk_no_event_loop!) for the details.
+/// see [`crate::test_init_sk!`](crate::test_init_sk!) for the details.
 pub fn test_steps_no_event_loop(input: TokenStream) -> TokenStream {
     let input: proc_macro2::TokenStream = input.into();
     let expanded = quote! {
         let mut iter = 0;
         {
+            system::Assets::block_for_priority(i32::MAX);
             while let Some(token) = sk.step() {
                 if iter > number_of_steps {break}
 

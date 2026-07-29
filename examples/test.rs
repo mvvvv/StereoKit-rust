@@ -1,6 +1,6 @@
 #[allow(dead_code)]
 #[cfg(not(target_os = "android"))]
-#[cfg(feature = "event-loop")]
+#[cfg(not(feature = "no-event-loop"))]
 fn main() {
     use stereokit_rust::{
         maths::{Pose, Quat, Vec3},
@@ -11,11 +11,11 @@ fn main() {
     };
 
     {
-        let (sk, _event_loop) = SkSettings::default()
+        let sk = SkSettings::default()
             .app_name("stereokit-rust (manual)")
             .origin(OriginMode::Floor)
             .log_filter(LogLevel::Diagnostic)
-            .init_with_event_loop()
+            .init()
             .unwrap();
 
         let position = Vec3::new(-0.5, 0.0, 0.5);
@@ -26,8 +26,8 @@ fn main() {
 
         let mut window_pose = Pose::new(Vec3::new(0.0, 1.5, -0.5), Some(Quat::from_angles(0.0, 180.0, 0.0)));
         while let Some(_token) = sk.step() {
-            Ui::window_begin("test window", &mut window_pose, None, None, None);
-            if Ui::button("quit lel", None) {
+            Ui::window("test window").pose(&mut window_pose).begin();
+            if Ui::button("quit lel").press() {
                 break;
             }
             Ui::window_end();

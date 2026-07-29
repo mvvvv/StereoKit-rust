@@ -1,23 +1,21 @@
 // filepath: examples/demos/layers1.rs
 use openxr_sys::SwapchainUsageFlags;
 use std::rc::Rc;
-use stereokit_rust::font::Font;
-use stereokit_rust::maths::{Bounds, Rect};
-use stereokit_rust::render_list::RenderList;
-use stereokit_rust::sprite::Sprite;
-use stereokit_rust::system::{Pivot, RenderClear, TextFit, TextStyle};
-use stereokit_rust::tex::TexFormat;
-use stereokit_rust::tools::xr_comp_layers::{SwapchainSk, XrCompLayers};
-use stereokit_rust::util::named_colors::{self, RED};
-use stereokit_rust::util::{Color128, Time};
 use stereokit_rust::{
+    font::Font,
     material::Material,
-    maths::{Matrix, Pose, Vec2, Vec3},
+    maths::{Bounds, Matrix, Pose, Quat, Rect, Vec2, Vec3},
     mesh::Mesh,
     prelude::*,
-    system::{Backend, BackendXRType, Renderer, Text},
-    tex::Tex,
+    render::{RenderBuilder, RenderClear, RenderList, Renderer},
+    system::{Backend, BackendXRType, Text, TextBuilder, TextFit, TextStyle},
+    tex::{Tex, TexFormat},
+    tools::xr_comp_layers::{SwapchainSk, XrCompLayers},
     ui::Ui,
+    util::{
+        named_colors::{self, RED},
+        Color128, Time,
+    },
 };
 
 /// Composition Layers demo
@@ -29,19 +27,32 @@ use stereokit_rust::{
 pub struct Layers1 {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
+    priority: i32,
     shutdown_completed: bool,
 
     material: Material,
     window_pose: Pose,
-    preview_pose: Pose,
-    swapchain_sk: Option<SwapchainSk>,
-    render_list: RenderList,
     projection: Matrix,
-    sort_order: f32,
 
+    quad_sort_order: f32,
+    quad_pose: Pose,
+    quad_swapchain_sk: Option<SwapchainSk>,
+    quad_render_list: RenderList,
+
+    cylinder_sort_order: f32,
+    cylinder_pose: Pose,
+    cylinder_swapchain_sk: Option<SwapchainSk>,
+    cylinder_render_list: RenderList,
+    cylinder_radius: f32,
+    cylinder_angle: f32,
+    cylinder_aspect: f32,
+
+    pub transparent_screen: Mesh,
+    pub transparent_material: Material,
+    pub transparent_transform: Matrix,
     pub transform: Matrix,
     pub text: String,
-    text_style: Option<TextStyle>,
+    text_style: TextStyle,
 }
 
 unsafe impl Send for Layers1 {}
@@ -49,43 +60,62 @@ unsafe impl Send for Layers1 {}
 impl Default for Layers1 {
     fn default() -> Self {
         let content_pose = Pose::new(Vec3::ZERO, None);
-        let window_pose = content_pose * Matrix::t_r([-0.2, 1.5, -1.0], [0.0, 180.0, 0.0]);
-        let preview_pose = content_pose * Matrix::t_r([0.2, 1.5, -1.0], [0.0, 180.0, 0.0]);
+        let window_pose = content_pose * Matrix::t_r([0.5, 1.0, -0.6], [0.0, 180.0, 0.0]);
+        let quad_pose = content_pose * Matrix::t([-0.2, 1.5, -1.0]);
+        let cylinder_pose = content_pose * Matrix::t([-0.3, 1.5, 0.0]);
+        let mut material = Material::ui_box().copy();
+        material.color_tint(named_colors::GOLD).border_size(0.005);
+
+        let transparent_material = Material::unlit();
+        let transparent_transform =
+            Matrix::t_r_s((Vec3::NEG_Z * 2.5) + Vec3::Y * 1.7, [90.0, 0.0, 90.0], Vec3::ONE * 1.5);
         Self {
             id: "Layers1".into(),
             sk_info: None,
+            priority: 0,
             shutdown_completed: false,
 
-            material: Material::pbr().copy(),
+            material,
             window_pose,
-            preview_pose,
-            swapchain_sk: None,
-            render_list: RenderList::new(),
-            projection: Matrix::orthographic(0.2, 0.2, 0.01, 10.0),
-            sort_order: 1.0,
+            quad_sort_order: 0.0,
+            quad_pose,
+            quad_swapchain_sk: None,
+            quad_render_list: RenderList::new(),
+            projection: Matrix::orthographic(0.2, 0.2, 0.01, 50.0),
 
-            transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, [0.0, 180.0, 0.0]),
+            cylinder_sort_order: -1.0,
+            cylinder_pose,
+            cylinder_swapchain_sk: None,
+            cylinder_render_list: RenderList::new(),
+            cylinder_radius: 2.0,
+            cylinder_angle: std::f32::consts::FRAC_PI_2 / 2.0,
+            cylinder_aspect: 1.7777,
+
+            transparent_screen: Mesh::sphere(),
+            transparent_material,
+            transparent_transform,
+
+            transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, Quat::Y_180),
             text: "Layers1\n\n\n".to_owned(),
-            text_style: None,
+            text_style: Text::make_style(Font::default(), 0.3, RED),
         }
     }
 }
 
 impl Layers1 {
     fn start(&mut self) -> bool {
-        self.text_style = Some(Text::make_style(Font::default(), 0.3, RED));
-
         // Wrap the swapchain
         if Backend::xr_type() == BackendXRType::OpenXR {
             if let Some(comp_layer) = XrCompLayers::new() {
                 if let Some(handle) = comp_layer.try_make_swapchain(
                     512,
                     512,
-                    TexFormat::RGBA32,
+                    TexFormat::Rgba32Srgb,
                     SwapchainUsageFlags::COLOR_ATTACHMENT,
                     false,
                 ) {
-                    self.swapchain_sk = SwapchainSk::wrap(handle, TexFormat::RGBA32, 512, 512, Some(comp_layer));
+                    self.quad_swapchain_sk =
+                        SwapchainSk::wrap(handle, TexFormat::Rgba32Srgb, 512, 512, Some(comp_layer));
                 } else {
                     Log::warn("Failed to create XR swapchain");
                     return false;
@@ -94,14 +124,52 @@ impl Layers1 {
                 Log::warn("XrCompLayers is not available, cannot start Layers1 demo");
                 return false;
             }
-            // prepare a simple scene
+            // prepare the quad scene: spinning sphere
             let mut mat = Material::default().copy();
             mat.id("quadmat");
             if let Ok(floor) = Tex::from_file("textures/parquet2/parquet2.ktx2", true, None) {
                 mat.diffuse_tex(&floor);
             }
-            self.render_list
-                .add_mesh(Mesh::sphere(), mat, Matrix::s(0.05 * Vec3::ONE), named_colors::WHITE, None);
+            self.quad_render_list
+                .add_mesh(Mesh::sphere(), mat, Matrix::s(0.1 * Vec3::ONE), named_colors::WHITE, None);
+
+            // Create a second swapchain for the cylinder layer.
+            // The cylinder layer requires XR_KHR_composition_layer_cylinder to be enabled,
+            // so we skip it entirely if the extension is not available.
+            if stereokit_rust::system::BackendOpenXR::ext_enabled("XR_KHR_composition_layer_cylinder") {
+                if let Some(comp_layer) = XrCompLayers::new() {
+                    if let Some(handle) = comp_layer.try_make_swapchain(
+                        512,
+                        256,
+                        TexFormat::Rgba32Srgb,
+                        SwapchainUsageFlags::COLOR_ATTACHMENT,
+                        false,
+                    ) {
+                        self.cylinder_swapchain_sk =
+                            SwapchainSk::wrap(handle, TexFormat::Rgba32Srgb, 512, 256, Some(comp_layer));
+                        // prepare the cylinder scene: rotating cube
+                        let mut cyl_mat = Material::default().copy();
+                        cyl_mat.id("cylmat");
+                        self.cylinder_render_list.add_mesh(
+                            Mesh::cube(),
+                            cyl_mat,
+                            Matrix::s(0.1 * Vec3::ONE),
+                            named_colors::ORANGE,
+                            None,
+                        );
+                    } else {
+                        Log::warn("Failed to create cylinder XR swapchain");
+                    }
+                }
+            } else {
+                Log::warn(
+                    "XR_KHR_composition_layer_cylinder extension is not enabled. \
+                     Cylinder layer will not be available. Request it before sk::init.",
+                );
+            }
+            // Ready to go we can change the sky.
+            Renderer::enable_sky(false);
+            Renderer::clear_color(Color128::rgba(0.1, 0.4, 0.9, 0.0));
             true
         } else {
             Log::warn("OpenXR backend is not available, cannot start Layers1 demo");
@@ -113,97 +181,126 @@ impl Layers1 {
         // no events
     }
 
-    fn draw(&mut self, token: &MainThreadToken) {
+    fn draw(&mut self, _token: &MainThreadToken) {
         const SIZE: f32 = 0.3;
         // interactive handle
-        Ui::handle(
-            "QuadLayer",
-            &mut self.preview_pose,
-            Bounds::new([0.0, 0.0, 0.0], [SIZE, SIZE, SIZE]),
-            false,
-            None,
-            None,
-        );
-        Mesh::cube().draw(
-            token,
-            &self.material,
-            Matrix::t_s(self.preview_pose.position, Vec3::new(SIZE, SIZE, 0.04)),
-            None,
-            None,
-        );
+        Ui::handle("QuadLayer", &mut self.quad_pose, Bounds::new([0.0, 0.0, 0.0], [SIZE, SIZE, 0.04])).grab();
+        Mesh::cube().draw(&self.material, self.quad_pose.to_matrix(Some(Vec3::new(SIZE, SIZE, 0.04))), None, None);
 
-        if let Some(sc) = &mut self.swapchain_sk {
+        if let Some(sc) = &mut self.quad_swapchain_sk {
             let old_color = Renderer::get_clear_color();
             Renderer::clear_color(named_colors::SKY_BLUE);
             if let Err(e) = sc.acquire_image(None) {
                 Log::warn(format!("Failed to acquire image from swapchain: {e}"));
                 Log::warn("Skipping rendering for now...");
-                self.swapchain_sk = None;
-                return;
+                self.quad_swapchain_sk = None;
+            } else {
+                let render_tex = sc.get_render_target().expect("SwapchainSk should have a render target");
+                let quad_render = RenderBuilder::new()
+                    .camera(Matrix::look_at(Vec3::angle_xz(Time::get_totalf() * 90.0, 0.0), Vec3::ZERO, None))
+                    .projection(self.projection)
+                    .clear(RenderClear::Color)
+                    .viewport(Rect::new(0.0, 0.0, 1.0, 1.0));
+                quad_render.draw_now(&self.quad_render_list, render_tex, Color128::new(0.4, 0.3, 0.2, 1.0));
+
+                // let sprite = Sprite::from_tex(render_tex, None, None).unwrap();
+                // sprite.draw(self.transform, Pivot::Center, None, None);
+
+                assert_eq!(render_tex.get_width(), Some(512));
+
+                if let Err(e) = sc.release_image() {
+                    Log::warn(format!("Failed to release image from swapchain: {e}"));
+                    Log::warn("Skipping rendering for now...");
+                    self.quad_swapchain_sk = None;
+                    return;
+                }
+
+                Renderer::clear_color(old_color);
+                XrCompLayers::submit_quad_layer(
+                    self.quad_pose,
+                    Vec2::new(SIZE, SIZE),
+                    sc.handle,
+                    Rect::new(0.0, 0.0, sc.width as f32, sc.height as f32),
+                    0,
+                    self.quad_sort_order as i32,
+                    None,
+                    None,
+                );
             }
-            let render_tex = sc.get_render_target().expect("SwapchainSk should have a render target");
-            self.render_list.draw_now(
-                render_tex,
-                Matrix::look_at(Vec3::angle_xy(Time::get_totalf() * 90.0, 0.0), Vec3::ZERO, None),
-                self.projection,
-                Some(Color128::new(0.4, 0.3, 0.2, 1.0)),
-                Some(RenderClear::Color),
-                Rect::new(0.0, 0.0, 1.0, 1.0),
-                None,
-                None,
-            );
-
-            let sprite = Sprite::from_tex(render_tex, None, None).unwrap();
-
-            sprite.draw(token, self.transform, Pivot::Center, None);
-
-            assert_eq!(render_tex.get_width(), Some(512));
-
-            if let Err(e) = sc.release_image() {
-                Log::warn(format!("Failed to release image from swapchain: {e}"));
-                Log::warn("Skipping rendering for now...");
-                self.swapchain_sk = None;
-                return;
-            }
-
-            Renderer::clear_color(old_color);
-            XrCompLayers::submit_quad_layer(
-                self.preview_pose,
-                Vec2::new(SIZE, SIZE),
-                sc.handle,
-                Rect::new(0.0, 0.0, sc.width as f32, sc.height as f32),
-                0,
-                self.sort_order as i32,
-                None,
-                None,
-            );
         } else {
-            Text::add_in(
-                token,
-                "Requires an OpenXR runtime!",
-                self.preview_pose,
-                Vec2::new(SIZE, SIZE),
-                TextFit::Wrap,
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
-            );
+            TextBuilder::new("Requires an OpenXR runtime!")
+                .transform(self.quad_pose)
+                .size(Vec2::new(SIZE, SIZE))
+                .fit(TextFit::Wrap)
+                .add();
+        }
+
+        // --- Cylinder layer ---
+        if let Some(cyl_sc) = &mut self.cylinder_swapchain_sk {
+            if let Err(e) = cyl_sc.acquire_image(None) {
+                Log::warn(format!("Failed to acquire cylinder image: {e}"));
+                self.cylinder_swapchain_sk = None;
+            } else {
+                let render_tex = cyl_sc.get_render_target().expect("cylinder swapchain should have a render target");
+                let cyl_render = RenderBuilder::new()
+                    .camera(Matrix::look_at(Vec3::angle_xz(Time::get_totalf() * -60.0, 1.0) * 30.15, Vec3::ZERO, None))
+                    .projection(self.projection)
+                    .clear(RenderClear::Color)
+                    .viewport(Rect::new(0.0, 0.0, 1.0, 1.0));
+                cyl_render.draw_now(&self.cylinder_render_list, render_tex, Color128::new(0.1, 0.2, 0.4, 1.0));
+                if let Err(e) = cyl_sc.release_image() {
+                    Log::warn(format!("Failed to release cylinder image: {e}"));
+                    self.cylinder_swapchain_sk = None;
+                } else {
+                    XrCompLayers::submit_cylinder_layer(
+                        self.cylinder_pose,
+                        self.cylinder_radius,
+                        self.cylinder_angle,
+                        self.cylinder_aspect,
+                        cyl_sc.handle,
+                        Rect::new(0.0, 0.0, cyl_sc.width as f32, cyl_sc.height as f32),
+                        0,
+                        self.cylinder_sort_order as i32,
+                        None,
+                        None,
+                    );
+                    self.transparent_screen.draw(
+                        &self.transparent_material,
+                        self.transparent_transform,
+                        Some(Color128::BLACK_TRANSPARENT),
+                        None,
+                    );
+                }
+            }
         }
 
         // UI window
-        Ui::window_begin("Composition Layers", &mut self.window_pose, Some(Vec2::new(0.2, 0.0)), None, None);
-        Ui::label(format!("Sort Order {}", self.sort_order as i32), Some(Vec2::new(0.1, 0.0)), false);
+        Ui::window("Composition Layers").pose(&mut self.window_pose).size(Vec2::new(0.2, 0.0)).begin();
+        Ui::label(format!("Sort Order {}", self.quad_sort_order as i32)).size(Vec2::new(0.1, 0.0)).draw();
         Ui::same_line();
-        Ui::hslider("Sort Order", &mut self.sort_order, -1.0, 1.0, Some(1.0), None, None, None);
+        Ui::hslider("Sort Order", &mut self.quad_sort_order, -1.0, 1.0).step(1.0).interact();
+
+        Ui::hseparator();
+        Ui::label("Cylinder Layer").draw();
+        Ui::label(format!("Sort Order {}", self.cylinder_sort_order as i32))
+            .size(Vec2::new(0.1, 0.0))
+            .draw();
+        Ui::same_line();
+        Ui::hslider("Cyl Sort Order", &mut self.cylinder_sort_order, -1.0, 1.0).step(1.0).interact();
+        Ui::label(format!("Radius {:.2}m", self.cylinder_radius)).size(Vec2::new(0.1, 0.0)).draw();
+        Ui::same_line();
+        Ui::hslider("Cyl Radius", &mut self.cylinder_radius, 0.2, 3.0).interact();
+        Ui::label(format!("Arc {:.0}°", self.cylinder_angle.to_degrees())).size(Vec2::new(0.1, 0.0)).draw();
+        Ui::same_line();
+        Ui::hslider("Cyl Angle", &mut self.cylinder_angle, 0.1, std::f32::consts::TAU).interact();
+        Ui::label(format!("Aspect {:.2}", self.cylinder_aspect)).size(Vec2::new(0.1, 0.0)).draw();
+        Ui::same_line();
+        Ui::hslider("Cyl Aspect", &mut self.cylinder_aspect, 0.5, 2.0).interact();
 
         #[cfg(target_os = "android")]
         {
             Ui::hseparator();
-            if Ui::button("Get android surface", None) {
+            if Ui::button("Get android surface").press() {
                 if let Some(comp_layer) = XrCompLayers::new() {
                     if let Some((handle, jobject)) =
                         comp_layer.try_make_android_swapchain(512, 512, SwapchainUsageFlags::COLOR_ATTACHMENT, false)
@@ -220,15 +317,17 @@ impl Layers1 {
         }
         Ui::window_end();
 
-        Text::add_at(token, &self.text, self.transform, self.text_style, None, None, None, None, None, None);
+        TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
     }
 
-    fn close(&mut self, _triggering: bool) -> bool {
-        if let Some(sc) = &mut self.swapchain_sk {
-            sc.destroy();
+    // we have to activate the sky rendering.
+    fn close(&mut self, triggering: bool) -> bool {
+        if triggering {
+            self.quad_swapchain_sk = None;
+            self.cylinder_swapchain_sk = None;
+            Renderer::enable_sky(true);
+            self.shutdown_completed = true;
         }
-        self.swapchain_sk = None;
-        self.shutdown_completed = true;
         self.shutdown_completed
     }
 }

@@ -14,39 +14,41 @@ use std::{
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{ui::Ui, maths::{Vec3, Quat, Pose, Matrix},
-///                      font::Font, system::{Assets, Text}, util::named_colors};
+/// use stereokit_rust::{ui::Ui, maths::{Pose, Matrix},font::Font,
+///                      system::{Assets, Text, TextBuilder}, util::named_colors};
 ///
 /// // Load font assets
 /// let emoji_font = if cfg!(windows) {
-///     // TODO: Doesn't work on Windows Github Actions.
-///     // return;
 ///     Font::from_file("C:\\Windows\\Fonts\\seguiemj.ttf").unwrap_or_default()
+/// } else if cfg!(target_os = "macos") {
+///     Font::from_file("/System/Library/Fonts/Apple Color Emoji.ttc").unwrap_or_default()
 /// } else {
 ///     Font::from_file("fonts/Noto_Emoji/NotoEmoji-VariableFont_wght.ttf").unwrap_or_default()
 /// };
 /// let text_font = if cfg!(windows) {
 ///     Font::from_file("C:\\Windows\\Fonts\\Arial.ttf").unwrap_or_default()
+/// } else if cfg!(target_os = "macos") {
+///     Font::from_file("/System/Library/Fonts/Helvetica.ttc").unwrap_or_default()
 /// } else {
 ///     Font::from_file("fonts/Inter/Inter-VariableFont_opsz_wght.ttf").unwrap_or_default()
 /// };
 /// Assets::block_for_priority(i32::MAX);
-/// let emoji_style = Some(Text::make_style(emoji_font, 0.35, named_colors::RED));
+/// let emoji_style = Text::make_style(emoji_font, 0.35, named_colors::RED);
 /// let text_style = Text::make_style(text_font, 0.025, named_colors::GREEN);
 /// let mut window_pose = Pose::new(
 ///     [0.0, 0.0, 0.90], Some([0.0, 160.0, 0.0].into()));
 ///
 /// filename_scr = "screenshots/font.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
-///     Text::add_at(token, "😋 Emojis🤪\n\n  🧐", Matrix::IDENTITY, emoji_style,
-///                  None, None, None, None, None, None);
+///     TextBuilder::new("😋 Emojis🤪\n\n  🧐").transform(Matrix::IDENTITY).style(emoji_style).add();
 ///
-///     Ui::window_begin("Default Font", &mut window_pose, None, None, None);
+///     Ui::window("Default Font").pose(&mut window_pose).begin();
 ///     Ui::push_text_style(text_style);
-///     Ui::text("text font", None, None, None, Some(0.14), None, None);
+///     Ui::text("text font").size([0.14, 0.0]).draw();
 ///     Ui::pop_text_style();
 ///     Ui::window_end();
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/font.jpeg" alt="screenshot" width="200">
 #[repr(C)]
@@ -91,6 +93,10 @@ impl IAsset for Font {
     fn get_id(&self) -> &str {
         self.get_id()
     }
+
+    fn as_asset(&self) -> crate::system::AssetT {
+        self.0.as_ptr() as crate::system::AssetT
+    }
 }
 
 impl Default for Font {
@@ -100,8 +106,8 @@ impl Default for Font {
     ///
     /// see also [`font_find`]
     fn default() -> Self {
-        let c_str = CString::new("default/font").unwrap();
-        Font(NonNull::new(unsafe { font_find(c_str.as_ptr()) }).unwrap())
+        let c_str = CString::new("default/font").unwrap_or_default();
+        Font(NonNull::new(unsafe { font_find(c_str.as_ptr()) }).expect("Default font should exist"))
     }
 }
 
@@ -115,21 +121,24 @@ impl Font {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths:: Matrix, font::Font, system::Text, util::named_colors};
+    /// use stereokit_rust::{maths:: Matrix, font::Font, system::{TextBuilder, Text},
+    ///                      util::named_colors};
     ///
     /// let text_font = if cfg!(windows) {
     ///     Font::from_file("C:\\Windows\\Fonts\\Arial.ttf").unwrap_or_default()
+    /// } else if cfg!(target_os = "macos") {
+    ///     Font::from_file("/System/Library/Fonts/Helvetica.ttc").unwrap_or_default()
     /// } else {
     ///     Font::from_file("fonts/Inter/Inter-VariableFont_opsz_wght.ttf").unwrap_or_default()
     /// };
-    /// let text_style = Some(Text::make_style(&text_font, 0.025, named_colors::GREEN));
+    /// let text_style = Text::make_style(&text_font, 0.025, named_colors::GREEN);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     Text::add_at(token, "My Green Text", Matrix::IDENTITY, text_style,
-    ///                  None, None, None, None, None, None);
+    ///     TextBuilder::new("My Green Text").transform(Matrix::IDENTITY).style(text_style).add();
     ///     assert_ne!(text_font.get_id(), "default/font");
     ///     assert   !(text_font.get_id().starts_with("sk/font/"));
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn from_file(file_utf8: impl AsRef<Path>) -> Result<Font, StereoKitError> {
         let path_buf = file_utf8.as_ref().to_path_buf();
@@ -155,32 +164,36 @@ impl Font {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths:: Matrix, font::Font, system::Text, util::named_colors};
+    /// use stereokit_rust::{maths:: Matrix, font::Font, system::{TextBuilder, Text},
+    ///                      util::named_colors};
     ///
-    /// let font_files = if cfg!(windows) {
+    /// let font_files: [&str; 2] = if cfg!(windows) {
     ///     ["C:\\Windows\\Fonts\\Arial.ttf",
     ///      "C:\\Windows\\Fonts\\Calibri.ttf"]
+    /// } else if cfg!(target_os = "macos") {
+    ///     ["/System/Library/Fonts/Helvetica.ttc",
+    ///      "/System/Library/Fonts/Geneva.ttf"]
     /// } else {
     ///     ["/usr/share/fonts/truetype/freefont/FreeSans.ttf",
     ///      "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"]
     /// };
     ///
     /// let text_font = Font::from_files(&font_files).unwrap_or_default();
-    /// let text_style = Some(Text::make_style(&text_font, 0.025, named_colors::GREEN));
+    /// let text_style = Text::make_style(&text_font, 0.025, named_colors::GREEN);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     Text::add_at(token, "My Green Text", Matrix::IDENTITY, text_style,
-    ///                  None, None, None, None, None, None);
+    ///     TextBuilder::new("My Green Text").transform(Matrix::IDENTITY).style(text_style).add();
     ///     assert_ne!(text_font.get_id(), "default/font");
     ///     assert!   (text_font.get_id().starts_with("sk/font/"));
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn from_files<P: AsRef<Path>>(files_utf8: &[P]) -> Result<Font, StereoKitError> {
         let mut c_files = Vec::new();
         for path in files_utf8 {
             let path = path.as_ref();
             let c_str = CString::new(path.to_str().ok_or(StereoKitError::FontFiles(
-                path.to_str().unwrap().to_string(),
+                path.to_str().unwrap_or_default().to_string(),
                 "CString conversion".to_string(),
             ))?)?;
             c_files.push(c_str);
@@ -196,36 +209,37 @@ impl Font {
         )?))
     }
 
-    /// Doesn't work on Linux
     /// Loads font from a specified list of font family names.
-    /// Returns a font from the given font family names, Most of the OS provide fallback fonts, hence there will always
-    /// be a set of fonts.
     /// <https://stereokit.net/Pages/StereoKit/Font/FromFamily.html>
     /// * `font_family` - List of font family names separated by comma(,) similar to a list of names css allows.
     ///
+    /// Returns A font from the given font family names. If none of them match a usable font, this falls back to
+    /// StereoKit's builtin font,
+    /// so this will always be a valid asset.
     /// see also [`font_create_family`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths:: Matrix, font::Font, system::Text, util::named_colors};
+    /// use stereokit_rust::{maths:: Matrix, font::Font, system::{TextBuilder, Text}, util::named_colors};
     ///
     /// let font_family = if cfg!(windows) {
-    ///     "Arial, Helvetica, Verdana, Geneva, Tahoma, sans-serif;"
+    ///     "Arial, \"Helvetica Neue\", Helvetica, sans-serif"
+    /// } else if cfg!(target_os = "macos") {
+    ///     "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif"
     /// } else {
-    ///     // TODO: Doesn't work on Linux
-    ///     return;
-    ///     "FreeSans, Liberation Sans, Nimbus Sans L, DejaVu Sans, Bitstream Vera Sans, sans-serif;"
+    ///     "FreeSans, \"Liberation Sans\", \"Nimbus Sans L\", \"DejaVu Sans\", sans-serif"
     /// };
     ///
     /// let text_font = Font::from_family(&font_family).unwrap_or_default();
-    /// let text_style = Some(Text::make_style(&text_font, 0.025, named_colors::GREEN));
+    /// let text_style = Text::make_style(&text_font, 0.025, named_colors::GREEN);
+    /// # system::Assets::block_for_priority(i32::MAX);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     Text::add_at(token, "My Green Text", Matrix::IDENTITY, text_style,
-    ///                  None, None, None, None, None, None);
+    ///     TextBuilder::new("My Green Text").transform(Matrix::IDENTITY).style(text_style).add();
     ///     assert_ne!(text_font.get_id(), "default/font");
     ///     assert!   (text_font.get_id().starts_with("sk/font/"));
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn from_family(font_family: impl AsRef<str>) -> Result<Font, StereoKitError> {
         let c_str = CString::new(font_family.as_ref()).map_err(|_| {
@@ -244,11 +258,14 @@ impl Font {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths:: Matrix, font::Font, system::Text, util::named_colors};
+    /// use stereokit_rust::font::Font;
     ///
-    /// let font_files = if cfg!(windows) {
+    /// let font_files: [&str; 2] = if cfg!(windows) {
     ///     ["C:\\Windows\\Fonts\\Arial.ttf",
     ///      "C:\\Windows\\Fonts\\Calibri.ttf"]
+    /// } else if cfg!(target_os = "macos") {
+    ///     ["/System/Library/Fonts/Helvetica.ttc",
+    ///      "/System/Library/Fonts/Geneva.ttf"]
     /// } else {
     ///     ["/usr/share/fonts/truetype/freefont/FreeSans.ttf",
     ///      "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"]
@@ -260,7 +277,9 @@ impl Font {
     /// let id = text_font.get_id();
     /// let same_font = Font::find(id).unwrap_or_default();
     ///
-    /// assert_eq!(text_font.get_id(), same_font.get_id())
+    /// assert_eq!(text_font.get_id(), same_font.get_id());
+    /// # test_steps!();
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn find<S: AsRef<str>>(id: S) -> Result<Font, StereoKitError> {
         let c_str = CString::new(id.as_ref())
@@ -279,11 +298,14 @@ impl Font {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths:: Matrix, font::Font, system::Text, util::named_colors};
+    /// use stereokit_rust::font::Font;
     ///
-    /// let font_files = if cfg!(windows) {
+    /// let font_files: [&str; 2] = if cfg!(windows) {
     ///     ["C:\\Windows\\Fonts\\Arial.ttf",
     ///      "C:\\Windows\\Fonts\\Calibri.ttf"]
+    /// } else if cfg!(target_os = "macos") {
+    ///     ["/System/Library/Fonts/Helvetica.ttc",
+    ///      "/System/Library/Fonts/Geneva.ttf"]
     /// } else {
     ///     ["/usr/share/fonts/truetype/freefont/FreeSans.ttf",
     ///      "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"]
@@ -294,7 +316,9 @@ impl Font {
     ///
     /// let same_font = text_font.clone_ref();
     ///
-    /// assert_eq!(text_font.get_id(), same_font.get_id())
+    /// assert_eq!(text_font.get_id(), same_font.get_id());
+    /// # test_steps!();
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn clone_ref(&self) -> Font {
         Font(NonNull::new(unsafe { font_find(font_get_id(self.0.as_ptr())) }).expect("<asset>::clone_ref failed!"))
@@ -309,11 +333,14 @@ impl Font {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths:: Matrix, font::Font, system::Text, util::named_colors};
+    /// use stereokit_rust::font::Font;
     ///
-    /// let font_files = if cfg!(windows) {
+    /// let font_files: [&str; 2] = if cfg!(windows) {
     ///     ["C:\\Windows\\Fonts\\Arial.ttf",
     ///      "C:\\Windows\\Fonts\\Calibri.ttf"]
+    /// } else if cfg!(target_os = "macos") {
+    ///     ["/System/Library/Fonts/Helvetica.ttc",
+    ///      "/System/Library/Fonts/Geneva.ttf"]
     /// } else {
     ///     ["/usr/share/fonts/truetype/freefont/FreeSans.ttf",
     ///      "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"]
@@ -325,10 +352,12 @@ impl Font {
     ///
     /// let same_font = Font::find("my_font").unwrap_or_default();
     ///
-    /// assert_eq!(text_font.get_id(), same_font.get_id())
+    /// assert_eq!(text_font.get_id(), same_font.get_id());
+    /// # test_steps!();
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
-        let c_str = CString::new(id.as_ref()).unwrap();
+        let c_str = CString::new(id.as_ref()).unwrap_or_default();
         unsafe { font_set_id(self.0.as_ptr(), c_str.as_ptr()) };
         self
     }
@@ -339,6 +368,6 @@ impl Font {
     /// see also [`font_get_id`]
     /// see example [`Font::id`]
     pub fn get_id(&self) -> &str {
-        unsafe { CStr::from_ptr(font_get_id(self.0.as_ptr())) }.to_str().unwrap()
+        unsafe { CStr::from_ptr(font_get_id(self.0.as_ptr())) }.to_str().unwrap_or_default()
     }
 }

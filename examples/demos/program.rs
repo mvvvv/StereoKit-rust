@@ -2,18 +2,21 @@ use openxr_sys::EnvironmentBlendMode;
 use std::{process, sync::Mutex, thread};
 use stereokit_rust::{
     framework::{ISTEPPER_REMOVED, SkClosures},
-    material::Cull,
     maths::{Pose, Quat, Vec2, Vec3, units::*},
     model::Model,
     prelude::*,
+    render::{Projection, Renderer},
     shader::Shader,
     sk::{AppFocus, DisplayBlend},
     sound::{Sound, SoundInst},
     sprite::Sprite,
-    system::{Backend, BackendOpenXR, BackendXRType, Input, Key, Lines, LogItem, LogLevel, Projection, Renderer, Text},
+    system::{
+        Backend, BackendOpenXR, BackendVulkan, BackendXRType, DefaultInteractors, Input, Interaction, Interactor, Key,
+        Lines, LogItem, LogLevel, Text,
+    },
     tex::Tex,
     tools::{
-        fly_over::FlyOver,
+        fly_over::{FLY_OVER_ID, FlyOver},
         log_window::{LogWindow, basic_log_fmt},
         notif::HudNotification,
         os_api::get_env_blend_modes,
@@ -21,7 +24,6 @@ use stereokit_rust::{
         xr_fb_display_refresh_rate::{
             get_all_display_refresh_rates, get_display_refresh_rate, set_display_refresh_rate,
         },
-        xr_fb_render_model::{DRAW_CONTROLLER, XrFbRenderModelStepper, is_fb_render_model_extension_available},
         xr_meta_simultaneous_hands_controllers::{
             is_simultaneous_hands_and_controllers_supported, pause_simultaneous_hands_and_controllers,
             resume_simultaneous_hands_and_controllers,
@@ -34,16 +36,15 @@ use stereokit_rust::{
     ui::{Ui, UiBtnLayout},
     util::{Device, Time},
 };
-use winit::event_loop::EventLoop;
 
 /// Somewhere to copy the log
 static LOG_LOG: Mutex<Vec<LogItem>> = Mutex::new(vec![]);
 
 use super::{
     Test,
-    hand_menu_radial1::{HandMenuRadial1, SHOW_FLOOR},
+    hand_menu_radial1::{HAND_MENU_RADIAL1_ID, HandMenuRadial1, SHOW_FLOOR},
 };
-pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: bool, start_test: String) {
+pub fn launch(mut sk: Sk, is_testing: bool, start_test: String) {
     Log::diag(
         "======================================================================================================================== !!",
     );
@@ -62,13 +63,57 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
     let mut scene_frame = 0;
     let mut scene_time = 0.0f32;
 
+    // When in testing mode, run for a limited number of steps then screenshot.
+    const TEST_NUMBER_OF_STEPS: u32 = 1000;
+    let mut test_step = 0u32;
+
     let mut passthrough = false;
     let mut passthough_blend_enabled = false;
-    let mut nice_controllers = true;
-    let nice_controllers_available = is_fb_render_model_extension_available();
-    let mut simultaneous_hands_controllers = false;
     let simultaneous_hands_controllers_available = is_simultaneous_hands_and_controllers_supported(false);
     //--------------------------------------------------------------------
+
+    // First set the default interactors based on the backend, then try to activate simultaneous hand & controller if available
+    // Build the list of DefaultInteractors choices based on the backend type
+    let interactor_choices: Vec<(DefaultInteractors, bool, &str)> = {
+        let xr_tp = Backend::xr_type();
+        if xr_tp == BackendXRType::OpenXR {
+            let mut choices: Vec<(DefaultInteractors, bool, &str)> = vec![
+                (DefaultInteractors::Default, false, "Interaction: Default"),
+                (DefaultInteractors::All, false, "Interaction: All"),
+            ];
+            if simultaneous_hands_controllers_available {
+                choices.insert(0, (DefaultInteractors::All, true, "Interaction: Hands & Controllers"));
+            }
+            choices.push((DefaultInteractors::Hands, false, "Interaction: Hands"));
+            choices.push((DefaultInteractors::Controllers, false, "Interaction: Controllers"));
+            choices
+        } else {
+            // Simulator only Mouse
+            vec![
+                (DefaultInteractors::Default, false, "Interaction: Default"),
+                (DefaultInteractors::Mouse, false, "Interaction: Mouse"),
+            ]
+        }
+    };
+    let mut current_interactor_idx = 0usize;
+    Interaction::set_default_interactors(interactor_choices[current_interactor_idx].0);
+
+    // Activate simultaneous hand & controller
+    if simultaneous_hands_controllers_available {
+        Log::info("✅ Simultaneous hands and controllers tracking available");
+        if interactor_choices[current_interactor_idx].1 {
+            if resume_simultaneous_hands_and_controllers(sk.get_sk_info_clone(), true) {
+                Log::info("Simultaneous hands and controllers tracking enabled at start");
+            } else {
+                Log::err("❌ Failed to enable simultaneous hands and controllers tracking at start");
+                current_interactor_idx =
+                    (current_interactor_idx + interactor_choices.len() - 1) % interactor_choices.len();
+                Interaction::set_default_interactors(interactor_choices[current_interactor_idx].0);
+            }
+        }
+    } else {
+        Log::diag("Simultaneous hands and controllers tracking not available");
+    }
 
     // Sending formated log to our mutex for the log window.
     let fn_mut = |level: LogLevel, log_text: &str| {
@@ -94,6 +139,8 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
         Device::get_name().unwrap_or("???")
     ));
     let mut notif = HudNotification::default();
+    notif.duration = Some(10.0);
+    notif.position = Vec3::new(0.0, 0.0, -0.6);
     if Backend::xr_type() == BackendXRType::Simulator {
         notif.text = "Press [F1] key to open the hand menu".into();
     } else if cfg!(target_os = "android") || Device::get_runtime().unwrap_or_default().starts_with(" 'v") {
@@ -103,16 +150,16 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
     }
     sk.send_event(StepperAction::add("HudNotif1", notif));
 
-    let mobile = Model::from_file("mobiles.gltf", Some(Shader::pbr())).unwrap();
+    let mobile = Model::from_file("mobiles.gltf", Some(Shader::pbr()), None).unwrap_or_default();
     Log::diag(format!("{:?}", mobile.get_id()));
     for iter in mobile.get_nodes().visuals() {
         Log::diag(format!("{:?}", iter.get_mesh().unwrap().get_id()));
     }
 
-    sk.send_event(StepperAction::add_default::<HandMenuRadial1>("HandMenuRadial1"));
-    sk.send_event(StepperAction::add("LogWindow", log_window));
-    sk.send_event(StepperAction::add_default::<ScreenshotViewer>("Screenshoot"));
-    sk.send_event(StepperAction::add_default::<FlyOver>("FlyOver"));
+    sk.send_event(StepperAction::add_default::<HandMenuRadial1>(HAND_MENU_RADIAL1_ID));
+    sk.send_event(StepperAction::add("Tool_LogWindow", log_window));
+    sk.send_event(StepperAction::add_default::<ScreenshotViewer>("Tool_Screenshoot"));
+    sk.send_event(StepperAction::add_default::<FlyOver>(FLY_OVER_ID));
 
     let blend_modes = get_env_blend_modes(true);
     if blend_modes.contains(&EnvironmentBlendMode::ADDITIVE) || blend_modes.contains(&EnvironmentBlendMode::ALPHA_BLEND)
@@ -143,6 +190,8 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
         Log::diag("No editable refresh rate !");
     }
 
+    let next_interactor_image = Sprite::arrow_right();
+
     let mut viewport_scaling = Renderer::get_viewport_scaling();
 
     //---Above this value, there is distortion
@@ -156,7 +205,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
     if !start_test.is_empty() {
         for test in tests.iter() {
             if test.name.eq(&start_test) {
-                Log::info(format!("Starting first scene: {}", &test.name.to_string()));
+                Log::info(format!("Starting first scene: {}", test.name));
                 next_scene = Some(test);
             }
         }
@@ -172,45 +221,12 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
         Log::diag("XR_META_virtual_keyboard extension not available");
     }
 
-    // Add the XR FB render model stepper only if extension is available
-    if nice_controllers_available {
-        sk.send_event(StepperAction::add_default::<XrFbRenderModelStepper>("XrFbRenderModelStepper"));
-        Log::info("✅ XR_FB_render_model extension available");
-
-        // Set initial controller state
-        if nice_controllers {
-            sk.send_event(StepperAction::event("XrFbRenderModelStepper", DRAW_CONTROLLER, "true"));
-            Log::info("Controller models will be drawn via stepper");
-        } else {
-            sk.send_event(StepperAction::event("XrFbRenderModelStepper", DRAW_CONTROLLER, "false"));
-            Log::info("Controller models won't be drawn at start");
-        }
-    } else {
-        Log::diag("XR_FB_render_model extension not available");
-    }
-
-    // Activate simultaneous hand & controller
-    if simultaneous_hands_controllers_available {
-        Log::info("✅ Simultaneous hands and controllers tracking available");
-
-        if simultaneous_hands_controllers {
-            if resume_simultaneous_hands_and_controllers(true) {
-                Log::info("Simultaneous hands and controllers tracking enabled at start");
-            } else {
-                Log::err("❌ Failed to enable simultaneous hands and controllers tracking");
-                simultaneous_hands_controllers = false;
-            }
-        } else {
-            Log::info("Simultaneous hands and controllers tracking disabled at start");
-        }
-    } else {
-        Log::diag("Simultaneous hands and controllers tracking not available");
-    }
-
-    let ui_text_style = Ui::get_text_style();
-    ui_text_style.get_material().face_cull(Cull::Back);
-
     let mut inst_play: Option<SoundInst> = None;
+
+    // Checking BackendVulkan
+    assert!(BackendVulkan::request_enabled("sk_test_request"));
+    assert!(!BackendVulkan::get_function_ptr("vkCreateBuffer").is_null());
+    assert!(BackendVulkan::get_function_ptr("vkNotARealVkFunc").is_null());
 
     Log::diag(
         "===================================================================================================================== !!",
@@ -219,12 +235,37 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
     Log::diag(format!("Process id : {:?} / {:?} ", thread::current().name(), process::id()));
 
     SkClosures::new(sk, |sk, token| {
+        // In testing mode, take a screenshot at the last step then quit on the
+        // next frame (see the early check at the top of the closure).
+        if is_testing {
+            test_step += 1;
+            if test_step == TEST_NUMBER_OF_STEPS {
+                let screenshot_path = format!("screenshots/Demos{start_test}.jpeg");
+                Renderer::screenshot(
+                    &screenshot_path,
+                    90,
+                    Pose::look_at(Vec3::new(2.0, 1.5, 1.5), Vec3::new(0.0, 1.0, 0.0)),
+                    800,
+                    600,
+                    Some(80.0),
+                );
+                Log::info(format!("Test mode: screenshot saved to {screenshot_path}"));
+            } else if test_step > TEST_NUMBER_OF_STEPS {
+                sk.send_event(StepperAction::Quit("test".into(), "Test mode reached step limit".into()));
+            }
+        }
+
         if last_focus != sk.get_app_focus() {
             last_focus = sk.get_app_focus();
             Log::info(format!("App focus changed to : {last_focus:?}"));
 
             if !set_display_refresh_rate(current_refresh_rate, true) {
                 current_refresh_rate = 0.0;
+            }
+
+            Log::diag("Current Interactors after focus change:");
+            for interactor in Interactor::all() {
+                Log::diag(format!("----Type: {:?} / {:?}", interactor.get_type(), interactor.get_source()));
             }
         }
 
@@ -270,9 +311,9 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
             }
         }
 
-        Lines::add_axis(token, Pose::IDENTITY, Some(0.5), None);
+        Lines::add_axis(Pose::IDENTITY, Some(0.5), None);
 
-        Ui::window_begin("Demos", &mut window_demo_pose, Some(Vec2::new(demo_win_width, 0.0)), None, None);
+        Ui::window("Demos").pose(&mut window_demo_pose).size(Vec2::new(demo_win_width, 0.0)).begin();
         Ui::push_enabled(deleting_scene.is_none(), None);
         let mut start = 0usize;
         let mut curr_width_total = 0.0;
@@ -290,8 +331,8 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
                     let curr_width = Text::size_layout(&test_in_line.name, Some(style), None).x
                         + ui_settings.padding * 2.0
                         + inflate;
-                    if Ui::button(&test_in_line.name, Some(Vec2::new(curr_width, 0.0))) {
-                        Log::info(format!("Starting scene: {}", &test_in_line.name.to_string()));
+                    if Ui::button(&test_in_line.name).size(Vec2::new(curr_width, 0.0)).press() {
+                        Log::info(format!("Starting scene: {}", test_in_line.name));
                         next_scene = Some(test_in_line);
                     }
                     Ui::same_line();
@@ -307,8 +348,8 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
             let test = tests.get(t).unwrap();
             let curr_width = Text::size_layout(&test.name, Some(style), None).x + ui_settings.padding * 2.0;
 
-            if Ui::button(&test.name, Some(Vec2::new(curr_width, 0.0))) {
-                Log::info(format!("Starting scene: {}", &test.name.to_string()));
+            if Ui::button(&test.name).size(Vec2::new(curr_width, 0.0)).press() {
+                Log::info(format!("Starting scene: {}", test.name));
                 next_scene = Some(test);
             }
             Ui::same_line();
@@ -316,7 +357,12 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
         Ui::pop_enabled();
         Ui::next_line();
         Ui::hseparator();
-        if Ui::button_img("Exit", &exit_button, Some(UiBtnLayout::CenterNoText), Some(Vec2::new(0.10, 0.10)), None) {
+        if Ui::button("Exit")
+            .image(&exit_button)
+            .image_layout(UiBtnLayout::CenterNoText)
+            .size(Vec2::new(0.10, 0.10))
+            .press()
+        {
             Log::diag(format!("Closure Thread id : {:?} / {:?} ", thread::current().name(), thread::current().id()));
             Log::diag(format!("Closure Process id : {:?} / {:?} ", thread::current().name(), process::id()));
             // sk.quit(None); // is too harsh we want to shutdown our steppers
@@ -328,7 +374,7 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
         }
         Ui::same_line();
         Ui::panel_begin(None);
-        if passthough_blend_enabled && let Some(new_value) = Ui::toggle("Passthrough MR", &mut passthrough, None) {
+        if passthough_blend_enabled && let Some(new_value) = Ui::toggle("Passthrough MR", &mut passthrough).interact() {
             if new_value {
                 Log::info("Activate passthrough");
                 sk.send_event(StepperAction::event("main", SHOW_FLOOR, "false"));
@@ -340,53 +386,40 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
             }
         }
 
-        // Controller toggle via stepper events - only if extension is available
-        if nice_controllers_available {
-            Ui::same_line();
-            if let Some(new_value) = Ui::toggle("Draw controllers", &mut nice_controllers, None) {
-                if new_value {
-                    Log::info("Draw Controllers");
-                    sk.send_event(StepperAction::event("XrFbRenderModelStepper", DRAW_CONTROLLER, "true"));
-                } else {
-                    Log::info("Stop drawing Controllers");
-                    sk.send_event(StepperAction::event("XrFbRenderModelStepper", DRAW_CONTROLLER, "false"));
-                }
-            }
-        }
-
-        // Simultaneous hands and controllers toggle - only if extension is available
-        if simultaneous_hands_controllers_available {
-            Ui::same_line();
-            if let Some(new_value) = Ui::toggle("Hands+Controllers", &mut simultaneous_hands_controllers, None) {
-                if new_value {
-                    Log::info("Enabling simultaneous hands and controllers tracking");
-                    if !resume_simultaneous_hands_and_controllers(true) {
-                        Log::err("Failed to enable simultaneous hands and controllers tracking");
-                        simultaneous_hands_controllers = false;
-                    }
-                } else {
-                    Log::info("Disabling simultaneous hands and controllers tracking");
-                    if !pause_simultaneous_hands_and_controllers(true) {
-                        Log::err("Failed to disable simultaneous hands and controllers tracking");
-                        simultaneous_hands_controllers = true;
-                    }
-                }
-            }
-        }
-
+        Ui::same_line();
         fps = ((1.0 / Time::get_step()) + fps) / 2.0;
-        Ui::label(format!("FPS: {fps:3.0}"), Some(Vec2::new(0.1, 0.0)), true);
+        Ui::label(format!("FPS: {fps:3.0}")).size(Vec2::new(0.1, 0.0)).use_padding(true).draw();
+
+        // DefaultInteractors choice - cycling button
+        if interactor_choices.len() > 1 {
+            if Ui::button(interactor_choices[current_interactor_idx].2).image(&next_interactor_image).press() {
+                // Deactivate simultaneous if currently active
+                if interactor_choices[current_interactor_idx].1 {
+                    pause_simultaneous_hands_and_controllers(sk.get_sk_info_clone(), true);
+                }
+                // Cycle to next
+                current_interactor_idx = (current_interactor_idx + 1) % interactor_choices.len();
+                let (new_interactor, new_simultaneous, new_label) = interactor_choices[current_interactor_idx];
+                Interaction::set_default_interactors(new_interactor);
+                if new_simultaneous && !resume_simultaneous_hands_and_controllers(sk.get_sk_info_clone(), true) {
+                    Log::err("Failed to enable simultaneous hands and controllers tracking");
+                    // Fall back to previous choice
+                    current_interactor_idx =
+                        (current_interactor_idx + interactor_choices.len() - 1) % interactor_choices.len();
+                    Interaction::set_default_interactors(interactor_choices[current_interactor_idx].0);
+                }
+                Log::info(format!("Interactors set to: {new_label}"));
+            }
+        } else {
+            Ui::label(interactor_choices[0].2).use_padding(true).draw();
+        }
 
         Ui::same_line();
 
         if refresh_rate_editable
-            && Ui::button_img(
-                format!("Up to {:?} FPS", current_refresh_rate as u32),
-                &next_refresh_rate_image,
-                None,
-                None,
-                None,
-            )
+            && Ui::button(format!("Up to {:?} FPS", current_refresh_rate as u32))
+                .image(&next_refresh_rate_image)
+                .press()
         {
             let mut restart = true;
             for i in &refresh_rates {
@@ -405,11 +438,11 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
         }
 
         Ui::next_line();
-        Ui::label("Viewport scaling:", None, true);
+        Ui::label("Viewport scaling:").use_padding(true).draw();
         Ui::same_line();
-        Ui::label(format!("{viewport_scaling:.2}"), None, true);
+        Ui::label(format!("{viewport_scaling:.2}")).use_padding(true).draw();
         Ui::same_line();
-        if let Some(new_value) = Ui::hslider("scaling", &mut viewport_scaling, 0.1, 1.0, Some(0.05), None, None, None) {
+        if let Some(new_value) = Ui::hslider("scaling", &mut viewport_scaling, 0.1, 1.0).step(0.05).interact() {
             Renderer::viewport_scaling(new_value);
             viewport_scaling = new_value;
         }
@@ -422,9 +455,9 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
             reduce_to = 1.0
         }
 
-        // Ui::label("MSAA:", None, true);
+        // Ui::label("MSAA:").use_padding(true).draw();
         // Ui::same_line();
-        // Ui::label(format!("{:.0}", multisample), None, true);
+        // Ui::label(format!("{:.0}", multisample)).use_padding(true).draw();
         // Ui::same_line();
         // if let Some(new_value) = Ui::hslider("msaa", &mut multisample, 0.1, 8.0, Some(1.0), None, None, None) {
         //     Renderer::multisample(new_value as i32);
@@ -435,10 +468,10 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
 
         Ui::window_end();
     })
-    .on_window_event(|_sk, event| {
-        // we hope to flood the log with external controllers soon ...
-        Log::diag(format!("{event:?}"));
-    })
+    // .on_window_event(|_sk| {
+    //     // we hope to flood the log with external controllers soon ...
+    //     Log::diag(format!("{event:?}"));
+    // })
     .on_sleeping_step(|_sk, _token| {
         now = std::time::SystemTime::now();
         if let Ok(duration) = now.duration_since(hidden_time)
@@ -449,5 +482,5 @@ pub fn launch(mut sk: Sk, event_loop: EventLoop<StepperAction>, _is_testing: boo
         }
     })
     .shutdown(|sk| Log::info(format!("QuitReason is {:?}", sk.get_quit_reason())))
-    .run(event_loop);
+    .run();
 }

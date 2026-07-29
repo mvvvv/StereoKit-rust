@@ -6,8 +6,8 @@ use stereokit_rust::{
     prelude::*,
     sprite::Sprite,
     system::{
-        DefaultInteractors, Interaction, Interactor, InteractorActivation, InteractorEvent, InteractorType, Lines, Log,
-        Text, TextStyle,
+        DefaultInteractors, Interaction, Interactor, InteractorActivation, InteractorEvent, InteractorSource,
+        InteractorType, Lines, Log, Text, TextBuilder, TextStyle,
     },
     ui::{Ui, UiBtnLayout, UiPad},
     util::{Color128, named_colors},
@@ -93,17 +93,12 @@ impl Interactor1 {
     }
 
     fn recreate_interactor(&mut self) {
-        // Destroy existing interactor if it exists
-        if let Some(interactor) = self.test_interactor.take() {
-            interactor.destroy();
-        }
-
         // Create new interactor with current configuration
         let interactor = Interactor::create(
             self.shape_type,
             self.events,
             self.activation_type,
-            -1,
+            InteractorSource::Unique,
             self.capsule_radius,
             self.secondary_motion_dimensions,
         );
@@ -153,7 +148,7 @@ impl Interactor1 {
                 } else {
                     named_colors::RED // Red when not pinching (inactive)
                 };
-                Lines::add(token, capsule_start, capsule_end, line_color, None, self.capsule_radius);
+                Lines::add(capsule_start, capsule_end, line_color, None, self.capsule_radius);
             }
         }
 
@@ -165,17 +160,13 @@ impl Interactor1 {
     }
 
     fn draw_control_panel(&mut self) {
-        let window_size = Some(Vec2::new(0.5, 0.7));
-        Ui::window_begin(
-            "Interactor Demo using the little finger of the right hand",
-            &mut self.window_pose,
-            window_size,
-            None,
-            None,
-        );
+        Ui::window("Interactor Demo using the little finger of the right hand")
+            .pose(&mut self.window_pose)
+            .size(Vec2::new(0.5, 0.7))
+            .begin();
 
         // Interactor Configuration Section
-        Ui::text("Interactor Configuration:", None, None, None, None, None, None);
+        Ui::text("Interactor Configuration:").draw();
 
         let mut changed = false;
 
@@ -186,28 +177,22 @@ impl Interactor1 {
         // Create horizontal layout with three columns
         Ui::layout_push(Vec3::new(0.20, -0.04, 0.0), Vec2::new(0.45, 0.4), false);
         // Column 1: Shape Type selection
-        Ui::text("Shape Type:", None, None, None, None, None, None);
+        Ui::text("Shape Type:").draw();
         Ui::panel_begin(Some(UiPad::Outside));
-        if Ui::radio_img(
-            "Point",
-            self.shape_type == InteractorType::Point,
-            &radio_off,
-            &radio_on,
-            UiBtnLayout::Left,
-            None,
-        ) && self.shape_type != InteractorType::Point
+        if Ui::radio("Point", self.shape_type == InteractorType::Point)
+            .images(&radio_off, &radio_on)
+            .image_layout(UiBtnLayout::Left)
+            .press()
+            && self.shape_type != InteractorType::Point
         {
             self.shape_type = InteractorType::Point;
             changed = true;
         }
-        if Ui::radio_img(
-            "Line",
-            self.shape_type == InteractorType::Line,
-            &radio_off,
-            &radio_on,
-            UiBtnLayout::Left,
-            None,
-        ) && self.shape_type != InteractorType::Line
+        if Ui::radio("Line", self.shape_type == InteractorType::Line)
+            .images(&radio_off, &radio_on)
+            .image_layout(UiBtnLayout::Left)
+            .press()
+            && self.shape_type != InteractorType::Line
         {
             self.shape_type = InteractorType::Line;
             changed = true;
@@ -217,11 +202,11 @@ impl Interactor1 {
 
         // Column 2: Events selection
         Ui::layout_push(Vec3::new(0.05, -0.04, 0.0), Vec2::new(0.45, 0.4), false);
-        Ui::text("Events:", None, None, None, None, None, None);
+        Ui::text("Events:").draw();
         Ui::panel_begin(None);
 
         let mut poke_enabled = (self.events & InteractorEvent::Poke) != InteractorEvent::empty();
-        if Ui::toggle("Poke", &mut poke_enabled, None).is_some() {
+        if Ui::toggle("Poke", &mut poke_enabled).interact().is_some() {
             if poke_enabled {
                 self.events |= InteractorEvent::Poke;
             } else {
@@ -231,7 +216,7 @@ impl Interactor1 {
         }
 
         let mut pinch_enabled = (self.events & InteractorEvent::Pinch) != InteractorEvent::empty();
-        if Ui::toggle("Pinch", &mut pinch_enabled, None).is_some() {
+        if Ui::toggle("Pinch", &mut pinch_enabled).interact().is_some() {
             if pinch_enabled {
                 self.events |= InteractorEvent::Pinch;
             } else {
@@ -241,7 +226,7 @@ impl Interactor1 {
         }
 
         let mut grip_enabled = (self.events & InteractorEvent::Grip) != InteractorEvent::empty();
-        if Ui::toggle("Grip", &mut grip_enabled, None).is_some() {
+        if Ui::toggle("Grip", &mut grip_enabled).interact().is_some() {
             if grip_enabled {
                 self.events |= InteractorEvent::Grip;
             } else {
@@ -255,28 +240,22 @@ impl Interactor1 {
 
         // Column 3: Activation Type selection
         Ui::layout_push(Vec3::new(-0.1, -0.04, 0.0), Vec2::new(0.45, 0.4), false);
-        Ui::text("Activation:", None, None, None, None, None, None);
+        Ui::text("Activation:").draw();
         Ui::panel_begin(Some(UiPad::Outside));
-        if Ui::radio_img(
-            "Position",
-            self.activation_type == InteractorActivation::Position,
-            &radio_off,
-            &radio_on,
-            UiBtnLayout::Left,
-            None,
-        ) && self.activation_type != InteractorActivation::Position
+        if Ui::radio("Position", self.activation_type == InteractorActivation::Position)
+            .images(&radio_off, &radio_on)
+            .image_layout(UiBtnLayout::Left)
+            .press()
+            && self.activation_type != InteractorActivation::Position
         {
             self.activation_type = InteractorActivation::Position;
             changed = true;
         }
-        if Ui::radio_img(
-            "State",
-            self.activation_type == InteractorActivation::State,
-            &radio_off,
-            &radio_on,
-            UiBtnLayout::Left,
-            None,
-        ) && self.activation_type != InteractorActivation::State
+        if Ui::radio("State", self.activation_type == InteractorActivation::State)
+            .images(&radio_off, &radio_on)
+            .image_layout(UiBtnLayout::Left)
+            .press()
+            && self.activation_type != InteractorActivation::State
         {
             self.activation_type = InteractorActivation::State;
             changed = true;
@@ -289,23 +268,28 @@ impl Interactor1 {
         Ui::panel_begin(Some(UiPad::Outside));
 
         // Input Source slider (convert to f32 for slider)
-        Ui::text("Min Distance::", None, None, None, None, None, None);
-        if Ui::hslider("min_distance", &mut self.min_distance, -1.0, 3.0, None, Some(0.2), None, None).is_some()
+        Ui::text("Min Distance::").draw();
+        if Ui::hslider("min_distance", &mut self.min_distance, -1.0, 3.0).space(0.2).interact().is_some()
             && let Some(interactor) = &self.test_interactor
         {
             interactor.min_distance(self.min_distance);
         }
 
         // Capsule Radius slider
-        Ui::text("Capsule Radius:", None, None, None, None, None, None);
-        if Ui::hslider("radius", &mut self.capsule_radius, 0.001, 0.1, Some(0.001), Some(0.2), None, None).is_some() {
+        Ui::text("Capsule Radius:").draw();
+        if Ui::hslider("radius", &mut self.capsule_radius, 0.001, 0.1)
+            .step(0.001)
+            .space(0.2)
+            .interact()
+            .is_some()
+        {
             changed = true;
         }
 
         // Secondary Motion Dimensions slider (convert to f32 for slider)
-        Ui::text("Secondary Motion Dims:", None, None, None, None, None, None);
+        Ui::text("Secondary Motion Dims:").draw();
         let mut sec_motion_f32 = self.secondary_motion_dimensions as f32;
-        if Ui::hslider("dims", &mut sec_motion_f32, 0.0, 3.0, Some(1.0), Some(0.2), None, None).is_some() {
+        if Ui::hslider("dims", &mut sec_motion_f32, 0.0, 3.0).step(1.0).space(0.2).interact().is_some() {
             self.secondary_motion_dimensions = sec_motion_f32 as i32;
             changed = true;
         }
@@ -320,14 +304,15 @@ impl Interactor1 {
         Ui::vspace(0.03);
 
         // Show current interactor info
-        if self.test_interactor.is_some() {
-            Ui::text("Current Interactor:", None, None, None, None, None, None);
-            Ui::text(format!("Type: {:?}", self.shape_type), None, None, None, None, None, None);
-            Ui::text(format!("Events: {:?}", self.events), None, None, None, None, None, None);
-            Ui::text(format!("Activation: {:?}", self.activation_type), None, None, None, None, None, None);
-            Ui::text(format!("Min distance: {}", self.min_distance), None, None, None, None, None, None);
-            Ui::text(format!("Radius: {:.3}", self.capsule_radius), None, None, None, None, None, None);
-            Ui::text(format!("Sec. Motion: {}", self.secondary_motion_dimensions), None, None, None, None, None, None);
+        if let Some(interactor) = &self.test_interactor {
+            Ui::text("Current Interactor:").draw();
+            Ui::text(format!("    Type: {:?}", interactor.get_type())).draw();
+            Ui::text(format!("    Events: {:?}", interactor.get_events())).draw();
+            Ui::text(format!("    Activation: {:?}", interactor.get_activation())).draw();
+            Ui::text(format!("    Source: {:?}", interactor.get_source())).draw();
+            Ui::text(format!("    Min distance: {}", self.min_distance)).draw();
+            Ui::text(format!("    Radius: {:.3}", interactor.get_radius())).draw();
+            Ui::text(format!("    Sec. Motion: {}", interactor.get_secondary_dims())).draw();
         }
         Ui::vspace(0.03);
         Ui::hseparator();
@@ -366,7 +351,7 @@ impl Interactor1 {
         false
     }
 
-    fn draw_3d_scene(&mut self, token: &MainThreadToken) {
+    fn draw_3d_scene(&mut self, _token: &MainThreadToken) {
         // Draw target sphere with interactive handle
         let (pos, radius, color) = &mut self.target_sphere;
 
@@ -380,7 +365,7 @@ impl Interactor1 {
         let bounds = Bounds::new(Vec3::ZERO, Vec3::new(*radius * 2.0, *radius * 2.0, *radius * 2.0));
 
         // Create an interactive handle for the sphere
-        if Ui::handle(handle_id, &mut sphere_pose, bounds, false, None, None) {
+        if Ui::handle(handle_id, &mut sphere_pose, bounds).grab() {
             // Update sphere position when handle is moved
             *pos = sphere_pose.position;
         }
@@ -388,21 +373,10 @@ impl Interactor1 {
         // Draw the sphere mesh with the updated transform
         let scale = Vec3::new(*radius * 2.0, *radius * 2.0, *radius * 2.0);
         let transform = Matrix::t_s(*pos, scale);
-        Mesh::sphere().draw(token, Material::default(), transform, Some(*color), None);
+        Mesh::sphere().draw(Material::default(), transform, Some(*color), None);
 
         // Draw the text using cached style and updated transform
-        Text::add_at(
-            token,
-            &self.text_content, // Use cached text content
-            self.text_transform,
-            Some(self.text_style),
-            None,
-            None, // position
-            None, // align
-            None, // off_x
-            None, // off_y
-            None, // off_z
-        );
+        TextBuilder::new(&self.text_content).transform(self.text_transform).style(self.text_style).add();
 
         // Check if either controller is touching the text
         let controller_touching = self.check_controller_touching_text();
@@ -426,10 +400,8 @@ impl Interactor1 {
         }
         // Restore default interactors
         Interaction::set_default_interactors(DefaultInteractors::Default);
-
-        // Clean up interactor
-        if let Some(interactor) = self.test_interactor.take() {
-            interactor.destroy();
+        if let Some(mut interactor_to_delete) = self.test_interactor.take() {
+            interactor_to_delete.destroy();
         }
 
         Log::info("Interactor Demo: Cleaned up and restored default interactors");

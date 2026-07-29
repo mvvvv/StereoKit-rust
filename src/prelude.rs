@@ -5,7 +5,7 @@ pub use crate::{
 
 pub use std::{cell::RefCell, rc::Rc};
 
-#[cfg(feature = "event-loop")]
+#[cfg(not(feature = "no-event-loop"))]
 pub use crate::{
     IStepper,
     framework::{IStepper, StepperAction, StepperId},

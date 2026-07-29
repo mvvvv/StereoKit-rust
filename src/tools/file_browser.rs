@@ -30,7 +30,7 @@ pub const FILE_BROWSER_SAVE: &str = "File_Browser_save";
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{maths::{Vec2, Vec3}, sk::SkInfo, ui::Ui, tools::os_api::get_external_path,
+/// use stereokit_rust::{maths::Vec2, sk::SkInfo, ui::Ui, tools::os_api::get_external_path,
 ///                      tools::file_browser::{FileBrowser, FILE_BROWSER_OPEN}, };
 ///
 /// let id = "main".to_string();
@@ -61,12 +61,13 @@ pub const FILE_BROWSER_SAVE: &str = "File_Browser_save";
 ///         }
 ///     }
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/file_browser.jpeg" alt="screenshot" width="200">
 ///
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{maths::{Vec2, Vec3}, sk::SkInfo, ui::Ui, tools::os_api::get_external_path,
+/// use stereokit_rust::{maths::Vec2, sk::SkInfo, ui::Ui, tools::os_api::get_external_path,
 ///                      tools::file_browser::{FileBrowser, FILE_BROWSER_SAVE}, util::PickerMode, };
 ///
 /// let id = "main_tests".to_string();
@@ -99,6 +100,7 @@ pub const FILE_BROWSER_SAVE: &str = "File_Browser_save";
 ///         }
 ///     }
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/file_save.jpeg" alt="screenshot" width="200">
 #[derive(IStepper)]
@@ -193,23 +195,24 @@ impl FileBrowser {
         };
         window_text2.push_str(&window_text);
 
-        Ui::window_begin(&window_text, &mut self.window_pose, Some(self.window_size), Some(UiWin::Normal), None);
-        if Ui::button_img_at(
-            "a",
-            &self.close,
-            None,
-            Vec3::new(self.window_size.x / 2.0 + 0.04, 0.03, 0.01),
-            Vec2::new(0.03, 0.03),
-            None,
-        ) {
+        Ui::window(&window_text)
+            .pose(&mut self.window_pose)
+            .size(self.window_size)
+            .window_type(UiWin::Normal)
+            .begin();
+        if Ui::button("a")
+            .image(&self.close)
+            .at(Vec3::new(self.window_size.x / 2.0 + 0.04, 0.03, 0.01), Vec2::new(0.03, 0.03))
+            .press()
+        {
             self.close_me();
         }
 
         if self.picker_mode == PickerMode::Save {
             Ui::push_tint(self.input_tint);
-            Ui::label("File name: ", None, false);
+            Ui::label("File name: ").draw();
             Ui::same_line();
-            Ui::input("filename_to_save", &mut self.file_name_to_save, None, None);
+            Ui::input("filename_to_save", &mut self.file_name_to_save).edit();
             let file = self.dir.join(&self.file_name_to_save);
 
             let mut ok_to_save = false;
@@ -221,14 +224,14 @@ impl FileBrowser {
             }
 
             if file.exists() && !self.file_name_to_save.is_empty() {
-                Ui::toggle("Replace existing file", &mut self.replace_existing_file, None);
+                Ui::toggle("Replace existing file", &mut self.replace_existing_file).interact();
             } else {
                 self.replace_existing_file = false;
             }
             ok_to_save = ok_to_save && (!file.exists() || file.exists() && self.replace_existing_file);
             Ui::push_enabled(ok_to_save, None);
             Ui::same_line();
-            if Ui::button("Save", None) {
+            if Ui::button("Save").press() {
                 // Be sure we can save the file
                 SkInfo::send_event(
                     &self.sk_info,
@@ -252,14 +255,11 @@ impl FileBrowser {
             if let PathEntry::File(name) = file_name {
                 let file_name_str = name.to_str().unwrap_or("OsString error!!");
                 Ui::same_line();
-                if Ui::radio_img(
-                    file_name_str,
-                    self.file_selected == i,
-                    &self.radio_off,
-                    &self.radio_on,
-                    UiBtnLayout::Left,
-                    None,
-                ) {
+                if Ui::radio(file_name_str, self.file_selected == i)
+                    .images(&self.radio_off, &self.radio_on)
+                    .image_layout(UiBtnLayout::Left)
+                    .press()
+                {
                     self.file_selected = i;
 
                     if self.picker_mode == PickerMode::Save {
@@ -289,7 +289,7 @@ impl FileBrowser {
         {
             Ui::push_enabled(self.dir != self.start_dir, None);
             //---back button
-            if Ui::button("..", None) {
+            if Ui::button("..").press() {
                 self.dir.pop();
                 dir_selected = Some(get_files(&self.sk_info, self.dir.clone(), &self.exts, true));
             }
@@ -306,7 +306,7 @@ impl FileBrowser {
             if let PathEntry::Dir(name) = file_name {
                 let dir_name = name.to_str().unwrap_or("OsString error!!");
                 Ui::same_line();
-                if Ui::button(dir_name, None) {
+                if Ui::button(dir_name).press() {
                     self.dir.push(dir_name);
                     dir_selected = Some(get_files(&self.sk_info, self.dir.clone(), &self.exts, true));
                 }

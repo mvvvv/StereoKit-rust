@@ -1,0 +1,8 @@
+[target.x86_64-unknown-linux-gnu]
+# StereoKitC is built with GCC's slim LTO (-flto), which produces objects
+# containing only GIMPLE IR (no x86-64 machine code). rust-lld cannot process
+# GCC GIMPLE IR. Using gcc as the linker driver causes it to automatically pass
+# liblto_plugin.so to ld.bfd, which can then compile the IR at link time.
+linker = "gcc"
+[target.aarch64-unknown-linux-gnu]
+linker = "aarch64-linux-gnu-gcc"

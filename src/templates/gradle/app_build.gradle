@@ -1,0 +1,134 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+
+plugins {
+    id 'com.android.application'
+    id 'org.mozilla.rust-android-gradle.rust-android'
+}
+
+dependencies {
+    // Use local libs
+    implementation fileTree(dir: '../target/runtime_libs', include: ['sk_app.jar'])
+}
+
+// Host OS detection
+def hostTag = Os.isFamily(Os.FAMILY_WINDOWS) ? "windows-x86_64" : 
+              (Os.isFamily(Os.FAMILY_MAC) ? "darwin-x86_64" : "linux-x86_64")
+
+def openxrOption = findProperty("cargo.openxr")
+def libDirs = []
+if (openxrOption != null && openxrOption != "use-that-of-the-device") {
+    if (openxrOption == "build-dynamic-openxr") {
+        libDirs.add("../target/runtime_libs")
+    } else {
+        libDirs.add(openxrOption)
+    }
+}
+
+def ndkRoot = System.getenv("ANDROID_NDK_ROOT")
+if (ndkRoot == null || ndkRoot.isEmpty()) {
+    throw new GradleException("ANDROID_NDK_ROOT environment variable is not set.")
+}
+
+android {
+    namespace findProperty("android.applicationId")
+    compileSdk findProperty("android.compileSdkVersion") as Integer
+    ndkVersion = new File(ndkRoot).name
+
+    defaultConfig {
+        applicationId findProperty("android.applicationId")
+        minSdkVersion findProperty("android.minSdkVersion") as Integer
+        targetSdkVersion findProperty("android.targetSdkVersion") as Integer
+        versionCode findProperty("android.versionCode") as Integer
+        versionName findProperty("android.versionName")
+
+        manifestPlaceholders = [
+            appName:   findProperty("android.appname"),
+            libName:   findProperty("cargo.libname"),
+            mainEntry: findProperty("android.main")
+        ]
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    sourceSets {
+        main {
+            // Paths relative to the app module
+            assets.srcDirs = ['../assets']
+            res.srcDirs = ['../res']
+            java.srcDirs = ['src/main/java'] // Explicit default value
+            
+            jniLibs {
+                srcDirs += libDirs
+                // Use the buildDirectory configured in the root project
+                srcDirs += layout.buildDirectory.dir("ndkLibs").get().asFile
+            }
+        }
+    }
+
+    signingConfigs {
+        release {
+            storeFile file(findProperty("RELEASE_STORE_FILE") ?: "/dev/null")
+            storePassword findProperty("RELEASE_STORE_PASSWORD") ?: ""
+            keyAlias findProperty("RELEASE_KEY_ALIAS") ?: ""
+            keyPassword findProperty("RELEASE_KEY_PASSWORD") ?: ""
+            v1SigningEnabled true
+            v2SigningEnabled true
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            signingConfig signingConfigs.release
+        }
+        debug {
+            minifyEnabled false
+            debuggable true
+        }
+    }
+}
+
+// Cargo (Rust) configuration
+cargo {
+    module = ".."
+    libname = findProperty("cargo.libname")
+    targets = findProperty("cargo.targets").split(",")
+    prebuiltToolchains = true
+    // Proper profile detection
+    profile = project.gradle.startParameter.taskNames.any { it.toLowerCase().contains('release') } ? "release" : "debug"
+}
+
+// Replace whenTaskAdded with configureEach (Gradle 9 compatible)
+tasks.configureEach { task ->
+    if (task.name.startsWith('merge') && task.name.endsWith('JniLibFolders')) {
+        task.dependsOn 'cargoBuild'
+        cargo.targets.each { target ->
+            task.dependsOn "copy_libc++_shared${target.capitalize()}"
+        }
+    }
+    if (task.name.startsWith('compile') && task.name.endsWith('JavaWithJavac')) {
+        task.dependsOn 'cargoBuild'
+    }
+}
+
+// Register NDK lib copy tasks
+cargo.targets.each { target ->
+    tasks.register("copy_libc++_shared${target.capitalize()}", Copy) {
+        def abiMap = [
+            arm:    ['armeabi-v7a', 'arm-linux-androideabi'],
+            arm64:  ['arm64-v8a',   'aarch64-linux-android'],
+            x86:    ['x86',         'i686-linux-android'],
+            x86_64: ['x86_64',      'x86_64-linux-android']
+        ]
+        
+        def (abi, archTriple) = abiMap[target]
+
+        // Use modern API to locate the NDK
+        def ndkDir = android.ndkDirectory.absolutePath
+        from "${ndkDir}/toolchains/llvm/prebuilt/$hostTag/sysroot/usr/lib/$archTriple/libc++_shared.so"
+        into layout.buildDirectory.dir("ndkLibs/$abi")
+    }
+}

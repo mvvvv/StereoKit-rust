@@ -10,7 +10,7 @@ use stereokit_macros::IStepper;
 use crate::{
     maths::{Pose, Quat, Vec2, Vec3, units::CM},
     prelude::*,
-    system::Renderer,
+    render::Renderer,
     tex::{Tex, TexFormat},
     ui::Ui,
     util::{PickerMode, Platform},
@@ -47,17 +47,14 @@ const BROWSER_SUFFIX: &str = "_file_browser";
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{maths::Vec3, sk::SkInfo, ui::Ui,
-///                      tools::{file_browser::FILE_BROWSER_OPEN,
-///                              screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW}}};
-///
-/// let sk_info  = Some(sk.get_sk_info_clone());
+/// use stereokit_rust::{ui::Ui, tools::{file_browser::FILE_BROWSER_OPEN,
+///                                      screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW}}};
 ///
 /// let mut screenshot_viewer = ScreenshotViewer::default();
 /// screenshot_viewer.window_pose = Ui::popup_pose([0.0, 0.15, 1.3]);
 /// sk.send_event(StepperAction::add("ScrViewer", screenshot_viewer));
 ///
-/// let screenshot_path = std::env::current_dir().unwrap().join("assets/textures/screenshot.raw");
+/// let screenshot_path = std::env::current_dir().unwrap_or_default().join("assets/textures/screenshot.raw");
 /// assert!(screenshot_path.exists());
 /// let scr_file = screenshot_path.to_str().expect("String should be valid");
 ///
@@ -72,6 +69,7 @@ const BROWSER_SUFFIX: &str = "_file_browser";
 ///        sk.send_event(StepperAction::event( "ScrViewer", FILE_BROWSER_OPEN, scr_file));
 ///     }
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/screenshot_viewer.jpeg" alt="screenshot" width="200">
 #[derive(IStepper)]
@@ -115,19 +113,12 @@ impl Default for ScreenshotViewer {
 impl ScreenshotViewer {
     /// Called from IStepper::initialize here you can abort the initialization by returning false
     fn start(&mut self) -> bool {
-        // self.tex = Tex::gen_color(
-        //     Color128::WHITE,
-        //     self.picture_size.x as i32,
-        //     self.picture_size.y as i32,
-        //     TexType::Rendertarget,
-        //     TexFormat::RGBA32,
-        // );
         self.tex = Tex::render_target(
             self.picture_size.x as usize,
             self.picture_size.y as usize,
             None,
-            Some(TexFormat::RGBA32),
-            Some(TexFormat::Depth32),
+            TexFormat::Rgba32Srgb,
+            TexFormat::None,
         )
         .unwrap_or_default();
         self.tex.id(CAPTURE_TEXTURE_ID);
@@ -143,7 +134,7 @@ impl ScreenshotViewer {
             }
         } else if id == &self.id {
             if key.eq(FILE_BROWSER_OPEN) {
-                let mut file_name = FILE_NAME.lock().unwrap();
+                let mut file_name = FILE_NAME.lock().expect("ScreenshotViewer: Failed to lock FILE_NAME mutex");
                 file_name.clear();
                 file_name.push_str(value);
                 self.screen = None;
@@ -154,17 +145,17 @@ impl ScreenshotViewer {
     }
 
     /// Called from IStepper::step after check_event, here you can draw your UI and scene
-    fn draw(&mut self, token: &MainThreadToken) {
+    fn draw(&mut self, _token: &MainThreadToken) {
         if !self.enabled {
             return;
         };
 
-        Ui::window_begin("Screenshot", &mut self.window_pose, Some(self.window_size), None, None);
+        Ui::window("Screenshot").pose(&mut self.window_pose).size(self.window_size).begin();
         if let Some(sprite) = &self.screen {
             Ui::image(sprite, Vec2::new(0.4, 0.3));
         } else {
             Ui::vspace(30.0 * CM);
-            let mut file_name_lock = FILE_NAME.lock().unwrap();
+            let mut file_name_lock = FILE_NAME.lock().expect("ScreenshotViewer: Failed to lock FILE_NAME mutex");
             let file_name = file_name_lock.to_string();
             if !file_name.is_empty() {
                 if let Ok(mut file) = File::open(&file_name) {
@@ -178,7 +169,7 @@ impl ScreenshotViewer {
                             let width = u32::from_be_bytes(four_u8) as usize;
                             four_u8.copy_from_slice(&buf[8..12]);
                             let height = u32::from_be_bytes(four_u8) as usize;
-                            Log::diag(format!("RGBA file {} with size is {}x{}", &file_name, width, height));
+                            Log::diag(format!("RGBA file {} with size is {}x{}", file_name, width, height));
                             if rgba_tag != "RGBA" {
                                 let mut data = vec![];
                                 match file.read_to_end(&mut data) {
@@ -195,19 +186,19 @@ impl ScreenshotViewer {
                                 Log::warn(format!("File is not an RGBA {file_name}"));
                             }
                         } else {
-                            Log::warn(format!("Screenshoot Error unable to read rgba file infos {}", &file_name));
+                            Log::warn(format!("Screenshoot Error unable to read rgba file infos {}", file_name));
                         }
                     } else {
-                        Log::warn(format!("Screenshoot Error unable to get texture ScreenshotTex {}", &file_name));
+                        Log::warn(format!("Screenshoot Error unable to get texture ScreenshotTex {}", file_name));
                     }
                 } else {
-                    Log::err(format!("ScreenshotViewer : file {} is not valid", &file_name))
+                    Log::err(format!("ScreenshotViewer : file {} is not valid", file_name))
                 }
                 file_name_lock.clear();
             }
         }
         Ui::hseparator();
-        if Ui::button("Open", None) {
+        if Ui::button("Open").press() {
             if true {
                 let mut file_browser = FileBrowser::default();
 
@@ -227,7 +218,7 @@ impl ScreenshotViewer {
                 Platform::file_picker_sz(
                     PickerMode::Open,
                     move |ok, file_name| {
-                        let mut name = FILE_NAME.lock().unwrap();
+                        let mut name = FILE_NAME.lock().expect("ScreenshotViewer: Failed to lock FILE_NAME mutex");
                         name.clear();
                         if ok {
                             Log::diag(format!("Open screenshot {file_name}"));
@@ -243,19 +234,18 @@ impl ScreenshotViewer {
             }
         }
         Ui::same_line();
-        if Ui::button("Take Screenshot", None) {
+        if Ui::button("Take Screenshot").press() {
             let mut camera_at = self.window_pose;
             camera_at.orientation = Quat::look_dir(camera_at.get_forward() * -1.0);
             let width_i = self.picture_size.x as i32;
             let height_i = self.picture_size.y as i32;
 
             Renderer::screenshot_capture(
-                token,
-                move |dots, width, height| {
-                    Log::info(format!("data length {} -> size {}/{}", dots.len(), width, height));
+                move |dots, format, width, height| {
+                    Log::info(format!("Format {:?} data length {} -> size {}/{}", format, dots.len(), width, height));
                     let tex = Tex::find(CAPTURE_TEXTURE_ID).ok();
                     match tex {
-                        Some(mut tex) => tex.set_colors32(width, height, dots),
+                        Some(mut tex) => tex.set_colors_u8(width, height, dots, format.bytes_per_pixel()),
                         None => todo!(),
                     };
                 },
@@ -263,14 +253,14 @@ impl ScreenshotViewer {
                 width_i,
                 height_i,
                 Some(self.field_of_view),
-                Some(TexFormat::RGBA32),
+                Some(TexFormat::Rgba32Srgb),
             );
 
             self.screen = Sprite::from_tex(&self.tex, None, None).ok();
         }
         Ui::same_line();
         Ui::push_enabled(self.screen.is_some(), None);
-        if Ui::button("Save", None) && !Platform::get_file_picker_visible() {
+        if Ui::button("Save").press() && !Platform::get_file_picker_visible() {
             if cfg!(target_os = "android")
                 && let Some(img_dir) = get_external_path(&self.sk_info)
                 && let Err(err) = set_current_dir(&img_dir)
@@ -340,16 +330,16 @@ fn save_screenshot(file_name: &str) {
                     // Vive le format RGBA !!! https://github.com/bzotto/rgba_bitmap
                     Ok(mut file) => {
                         if let Err(err) = file.write_fmt(format_args!("RGBA")) {
-                            Log::warn(format!("Screenshoot Error when writing RGBA {} : {:?}", &name, err));
+                            Log::warn(format!("Screenshoot Error when writing RGBA {} : {:?}", name, err));
                         }
                         if let Err(err) = file.write(&width.to_be_bytes()[4..]) {
-                            Log::warn(format!("Screenshoot Error when writing width {} : {:?}", &name, err));
+                            Log::warn(format!("Screenshoot Error when writing width {} : {:?}", name, err));
                         }
                         if let Err(err) = file.write(&height.to_be_bytes()[4..]) {
-                            Log::warn(format!("Screenshoot Error when writing height {} : {:?}", &name, err));
+                            Log::warn(format!("Screenshoot Error when writing height {} : {:?}", name, err));
                         }
                         if let Err(err) = file.write_all(data_slice) {
-                            Log::warn(format!("Screenshoot Error when writing raw image {} : {:?}", &name, err));
+                            Log::warn(format!("Screenshoot Error when writing raw image {} : {:?}", name, err));
                         }
                     }
                     Err(err) => Log::warn(format!("Screenshoot Error when creating file {name} : {err:?}")),

@@ -5,33 +5,24 @@
 // as it is insanely expensive and lack of MSAA
 // adapted from https://www.shadertoy.com/view/wt3Sz4
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-//--name                  = the_name_of_brick_pbr
-//--color:color           = 0.45,0.29,0.23,1
-//--line_color:color      = 0.84,0.84,0.84
-//--edge_pos              = 1.5
-//--metallic              = 0
-//--roughness             = 1
-//--tex_trans             = 0,0,0.1,0.1
-//--use_occlusion         = false
-//--size_factors          = 300,-100,50,25
-//--edge_limit            = 0.1,0.9
-//!!shadertoy
-//!!hlsl
-float4  color;
-float3  line_color;
-float   edge_pos;
-float   metallic;
-float   roughness;
-float4  tex_trans;
-bool    use_occlusion;
-int4    size_factors;
-matrix  useless;
-float2  edge_limit;
+
+//--name = the_name_of_brick_pbr
+float4 color         = {0.45, 0.29, 0.23, 1};
+float3 line_color    = {0.84, 0.84, 0.84};
+float  edge_pos      = 1.5;
+float  metallic      = 0;
+float  roughness     = 1;
+float4 tex_trans     = {0, 0, 0.1, 0.1};
+bool   use_occlusion = false;
+int4   size_factors  = {300, -100, 50, 25};
+uint4   u_size_factors  = {300, 100, 50, 25};
+matrix useless;
+float2 edge_limit    = {0.1, 0.9};
 
 //--metal     = white
-//--occlusion = white
 Texture2D    metal       : register(t0);
 SamplerState metal_s     : register(s0);
+//--occlusion = white
 Texture2D    occlusion   : register(t1);
 SamplerState occlusion_s : register(s1);
 
@@ -112,40 +103,39 @@ struct vsIn {
     float2 uv      : TEXCOORD0;
     float4 color   : COLOR0;
 };
-struct psIn : sk_ps_input_t {
+struct psIn {
     float4 pos     : SV_POSITION;
-    float3 normal  : NORMAL0;
+    half3  normal  : NORMAL0;
     float2 uv      : TEXCOORD0;
-    float3 irradiance: COLOR1;
+    half3  irradiance: COLOR1;
     float3 world   : TEXCOORD2;
     float3 view_dir: TEXCOORD3;
 };
 
-psIn vs(vsIn input, sk_vs_input_t sk_in) {
-	psIn o;
-	uint view_id = sk_view_init(sk_in, o);
-	uint id      = sk_inst_id  (sk_in);
+psIn vs(vsIn input, sk_ids_t ids) {
+        psIn o;
 
-    o.world = mul(float4(input.pos.xyz, 1), sk_inst[id].world).xyz;
-    o.pos   = mul(float4(o.world,  1), sk_viewproj[view_id]);
+        float3x3 world3x3 = (float3x3)sk_inst[ids.inst].world;
+        o.world = mul(input.pos.xyz, world3x3) + sk_inst[ids.inst].world[3].xyz;
+        o.pos   = mul(float4(o.world, 1), sk_viewproj[ids.view]);
 
-    o.normal     = normalize(mul(float4(input.norm, 0), sk_inst[id].world).xyz);
-    o.uv         = (input.uv * tex_trans.zw) + tex_trans.xy;
-    o.irradiance = sk_lighting(o.normal);
-    o.view_dir   = sk_camera_pos[view_id].xyz - o.world;
-    return o;
+        o.normal     = normalize(mul(input.norm, world3x3));
+        o.uv         = (input.uv * tex_trans.zw) + tex_trans.xy;
+        o.irradiance = sk_lighting(o.normal);
+        o.view_dir   = sk_camera_pos[ids.view].xyz - o.world;
+	return o;
 }
 
 float4 ps(psIn input) : SV_TARGET {
     
     float4 albedo = float4(brick_color(input.uv * size_factors[0]), 1.0);
     float3 normal_cal = normal(input.uv * size_factors[0]) * input.normal;
-    float2 metal_rough = metal    .Sample(metal_s,    input.uv).gb; // rough is g, b is metallic
-    float metallic_final = metal_rough.y * metallic;
-    float rough_final    = metal_rough.x * roughness;
-    float  ao  = 1.0;
+    half2 metal_rough = (half2)metal    .Sample(metal_s,    input.uv).gb; // rough is g, b is metallic
+    half metallic_final = metal_rough.y * (half)metallic;
+    half rough_final    = metal_rough.x * (half)roughness;
+    half  ao  = 1.0h;
     if (use_occlusion) {
-        ao  = occlusion.Sample(occlusion_s,input.uv).r;  // occlusion is sometimes part of the metal tex, uses r channel
+        ao  = (half)occlusion.Sample(occlusion_s,input.uv).r;  // occlusion is sometimes part of the metal tex, uses r channel
     }
     
     float4 color = sk_pbr_shade(albedo, input.irradiance, ao, metallic_final, rough_final, input.view_dir, normal_cal);

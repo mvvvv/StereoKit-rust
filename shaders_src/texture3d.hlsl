@@ -1,0 +1,1 @@
+../StereoKit/Examples/Assets/texture3d.hlsl

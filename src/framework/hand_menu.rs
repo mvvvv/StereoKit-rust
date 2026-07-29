@@ -5,7 +5,8 @@ use crate::{
     prelude::*,
     sound::Sound,
     system::{
-        Align, Backend, BackendXRType, FingerId, Hand, Handed, Hierarchy, Input, JointId, Key, Lines, Text, TextStyle,
+        Align, Backend, BackendXRType, FingerId, Hand, Handed, Hierarchy, Input, JointId, Key, Lines, TextBuilder,
+        TextStyle,
     },
     tex::Tex,
     ui::{Ui, UiColor},
@@ -51,26 +52,14 @@ impl HandMenuItem {
 
     /// This draws the menu item on the radial menu!
     /// <https://stereokit.net/Pages/StereoKit.Framework/HandMenuItem/Draw.html>
-    /// * `token` - The main thread token.
     /// * `at` - Center of the radial slice.
     /// * `focused` - If the current menu slice has focus.
-    pub fn draw_basic(&self, token: &MainThreadToken, at: Vec3, focused: bool) {
+    pub fn draw_basic(&self, at: Vec3, focused: bool) {
         let scale = match focused {
             true => Vec3::ONE * 0.6,
             false => Vec3::ONE * 0.5,
         };
-        Text::add_at(
-            token,
-            &self.name,
-            Matrix::t_s(at, scale),
-            None,
-            None,
-            None,
-            Some(Align::BottomCenter),
-            None,
-            None,
-            None,
-        );
+        TextBuilder::new(&self.name).transform(Matrix::t_s(at, scale)).align(Align::BottomCenter).add();
     }
 }
 
@@ -381,7 +370,7 @@ pub const HAND_MENU_RADIAL_FOCUS: &str = "hand_menu_radial_focus";
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{framework::*, material::Material, system::{Input, Key}};
+/// use stereokit_rust::{framework::*, material::Material};
 ///
 /// // swapping a value
 /// let mut swap_value = true;
@@ -392,7 +381,7 @@ pub const HAND_MENU_RADIAL_FOCUS: &str = "hand_menu_radial_focus";
 /// menu_ico.clip_cutoff(0.1);
 ///
 /// //---Create then load hand menu radial
-/// let mut hand_menu_stepper =
+/// let hand_menu_stepper =
 ///     HandMenuRadial::new(HandRadialLayer::new("root", None, Some(100.0),
 ///     vec![
 ///         HandRadial::layer("Todo!", Some(menu_ico), None,
@@ -425,6 +414,7 @@ pub const HAND_MENU_RADIAL_FOCUS: &str = "hand_menu_radial_focus";
 ///             StepperAction::remove(id.clone()));
 ///     }
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 #[derive(IStepper)]
 pub struct HandMenuRadial {
@@ -447,6 +437,7 @@ pub struct HandMenuRadial {
 
     background: Mesh,
     background_edge: Mesh,
+    pending_mesh_update: bool,
     activation_button: Mesh,
     activation_hamburger: Mesh,
     activation_ring: Mesh,
@@ -495,13 +486,13 @@ impl HandMenuRadial {
 
     /// Part of IStepper, you shouldn’t be calling this yourself.
     /// <https://stereokit.net/Pages/StereoKit.Framework/HandMenuRadial/Step.html>
-    fn draw(&mut self, token: &MainThreadToken) {
+    fn draw(&mut self, _token: &MainThreadToken) {
         if self.active_hand == Handed::Max {
             for hand in [Handed::Left, Handed::Right] {
-                self.step_menu_indicator(token, hand);
+                self.step_menu_indicator(hand);
             }
         } else {
-            self.step_menu(token, Input::hand(self.active_hand));
+            self.step_menu(Input::hand(self.active_hand));
         }
     }
 
@@ -558,6 +549,7 @@ impl HandMenuRadial {
             angle_offset: 0.0,
             background: Mesh::new(),
             background_edge: Mesh::new(),
+            pending_mesh_update: false,
             activation_button,
             activation_hamburger,
             activation_ring,
@@ -612,7 +604,7 @@ impl HandMenuRadial {
         }
     }
 
-    fn step_menu_indicator(&mut self, token: &MainThreadToken, handed: Handed) {
+    fn step_menu_indicator(&mut self, handed: Handed) {
         let hand = Input::hand(handed);
         if !hand.is_tracked() {
             return;
@@ -666,7 +658,6 @@ impl HandMenuRadial {
 
         self.menu_pose.position += (1.0 - hand.grip_activation) * palm_direction * CM * 4.5;
         self.activation_button.draw(
-            token,
             Material::ui(),
             self.menu_pose.to_matrix(None),
             Some(Color128::lerp(
@@ -677,10 +668,9 @@ impl HandMenuRadial {
             None,
         );
         self.activation_hamburger
-            .draw(token, Material::ui(), self.menu_pose.to_matrix(None), Some(color_text), None);
+            .draw(Material::ui(), self.menu_pose.to_matrix(None), Some(color_text), None);
         self.menu_pose.position += (1.0 - hand.grip_activation) * palm_direction * CM * 2.0;
-        self.activation_ring
-            .draw(token, Material::ui(), self.menu_pose.to_matrix(None), Some(color_primary), None);
+        self.activation_ring.draw(Material::ui(), self.menu_pose.to_matrix(None), Some(color_primary), None);
 
         if facing < Self::ACTIVATION_ANGLE {
             return;
@@ -695,7 +685,23 @@ impl HandMenuRadial {
         }
     }
 
-    fn step_menu(&mut self, token: &MainThreadToken, hand: Hand) {
+    fn step_menu(&mut self, hand: Hand) {
+        // Regenerate background meshes if the active layer changed in the previous frame.
+        // This must happen before any draw calls to avoid a Vulkan race condition where the
+        // old (larger) static index buffer is destroyed and replaced with a smaller dynamic
+        // one while GPU draw commands from the previous frame still reference the old count.
+        if self.pending_mesh_update {
+            let divisor = self.active_layer.items_count() as f32;
+            generate_slice_mesh(360.0 / divisor, Self::MIN_DIST, Self::MAX_DIST, Self::SLICE_GAP, &mut self.background);
+            generate_slice_mesh(
+                360.0 / divisor,
+                Self::MAX_DIST,
+                Self::MAX_DIST + 0.005,
+                Self::SLICE_GAP,
+                &mut self.background_edge,
+            );
+            self.pending_mesh_update = false;
+        }
         // animate the menu a bit
         let time = f32::min(1.0, Time::get_step_unscaledf() * 24.0);
         self.menu_pose.position = Vec3::lerp(self.menu_pose.position, self.dest_pose.position, time);
@@ -711,7 +717,7 @@ impl HandMenuRadial {
 
         // Push the Menu's pose onto the stack, so we can draw, and work
         // in local space.
-        Hierarchy::push(token, self.menu_pose.to_matrix(Some(self.menu_scale * Vec3::ONE)), None);
+        Hierarchy::push(self.menu_pose.to_matrix(Some(self.menu_scale * Vec3::ONE)), None);
 
         // Calculate the status of the menu!
         let mut tip_world = hand.get(FingerId::Index, JointId::Tip).position;
@@ -733,7 +739,7 @@ impl HandMenuRadial {
             finger_angle += 360.0;
         }
         let angle_id = (finger_angle / step).trunc() as usize;
-        Lines::add(token, Vec3::new(0.0, 0.0, -0.008), Vec3::new(tip_local.x, tip_local.y, -0.008), WHITE, None, 0.006);
+        Lines::add(Vec3::new(0.0, 0.0, -0.008), Vec3::new(tip_local.x, tip_local.y, -0.008), WHITE, None, 0.006);
 
         // Now draw each of the menu items !
         let color_primary = Ui::get_theme_color(UiColor::Primary, None).to_linear();
@@ -746,15 +752,9 @@ impl HandMenuRadial {
             at.z = depth;
 
             let r = Matrix::t_r(Vec3::new(0.0, 0.0, depth), Quat::from_angles(0.0, 0.0, curr_angle));
-            self.background.draw(
-                token,
-                Material::ui(),
-                r,
-                Some(color_common * (if highlight { 2.0 } else { 1.0 })),
-                None,
-            );
+            self.background
+                .draw(Material::ui(), r, Some(color_common * (if highlight { 2.0 } else { 1.0 })), None);
             self.background_edge.draw(
-                token,
                 Material::ui(),
                 r,
                 Some(color_primary * (if highlight { 2.0 } else { 1.0 })),
@@ -768,7 +768,6 @@ impl HandMenuRadial {
                     item_to_draw = item;
                     match *item.action.borrow() {
                         HandMenuAction::Back => self.child_indicator.draw(
-                            token,
                             Material::ui(),
                             Matrix::t_r(
                                 Vec3::new(0.0, 0.0, depth),
@@ -786,7 +785,6 @@ impl HandMenuRadial {
                                 &self.on_checked_material
                             };
                             self.img_frame.draw(
-                                token,
                                 checked_material,
                                 Matrix::t_r(
                                     Vec3::new(0.0, 0.0, depth - 0.01),
@@ -803,7 +801,6 @@ impl HandMenuRadial {
                 HandRadial::Layer(layer) => {
                     item_to_draw = &layer.layer_item;
                     self.child_indicator.draw(
-                        token,
                         Material::ui(),
                         Matrix::t_r(Vec3::new(0.0, 0.0, depth), Quat::from_angles(0.0, 0.0, curr_angle + half_step)),
                         None,
@@ -813,7 +810,6 @@ impl HandMenuRadial {
             };
             if let Some(image_material) = &item_to_draw.image {
                 self.img_frame.draw(
-                    token,
                     image_material,
                     Matrix::t_r(Vec3::new(0.0, 0.0, depth), Quat::from_angles(0.0, 0.0, curr_angle + half_step)),
                     None,
@@ -823,11 +819,11 @@ impl HandMenuRadial {
             }
 
             Ui::push_text_style(self.text_style);
-            item_to_draw.draw_basic(token, at * add_offset, highlight);
+            item_to_draw.draw_basic(at * add_offset, highlight);
             Ui::pop_text_style();
         }
         // Done with local work
-        Hierarchy::pop(token);
+        Hierarchy::pop();
 
         if self.activation < 0.99 {
             return;
@@ -915,15 +911,9 @@ impl HandMenuRadial {
         Sound::click().play(self.menu_pose.position, None);
         self.nav_stack.push_back(self.active_layer.clone());
         self.active_layer = new_layer_rc.clone();
-        let divisor = new_layer.items.len() as f32;
-        generate_slice_mesh(360.0 / divisor, Self::MIN_DIST, Self::MAX_DIST, Self::SLICE_GAP, &mut self.background);
-        generate_slice_mesh(
-            360.0 / divisor,
-            Self::MAX_DIST,
-            Self::MAX_DIST + 0.005,
-            Self::SLICE_GAP,
-            &mut self.background_edge,
-        );
+        // Defer mesh regeneration to the start of the next step_menu call (before draws),
+        // to avoid destroying the static GPU buffer while Frame T's draw commands are still queued.
+        self.pending_mesh_update = true;
         Log::diag(format!("HandRadialMenu : Layer {} opened", new_layer.layer_name));
     }
 
@@ -934,15 +924,8 @@ impl HandMenuRadial {
         } else {
             Log::err("HandMenuRadial : No back layer !!")
         }
-        let divisor = self.active_layer.items_count() as f32;
-        generate_slice_mesh(360.0 / divisor, Self::MIN_DIST, Self::MAX_DIST, Self::SLICE_GAP, &mut self.background);
-        generate_slice_mesh(
-            360.0 / divisor,
-            Self::MAX_DIST,
-            Self::MAX_DIST + 0.005,
-            Self::SLICE_GAP,
-            &mut self.background_edge,
-        );
+        // Defer mesh regeneration to the start of the next step_menu call.
+        self.pending_mesh_update = true;
     }
 
     fn select_item(&mut self, line: Rc<HandRadial>, at: Vec3, from_angle: f32) {
@@ -1021,8 +1004,7 @@ fn generate_slice_mesh(angle: f32, min_dist: f32, max_dist: f32, gap: f32, mesh:
         }
     }
 
-    mesh.set_verts(verts.as_slice(), true);
-    mesh.set_inds(inds.as_slice());
+    mesh.set_data(verts.as_slice(), inds.as_slice(), None, None);
 }
 
 fn generate_activation_button(radius: f32) -> Mesh {
@@ -1053,11 +1035,7 @@ fn generate_activation_button(radius: f32) -> Mesh {
         }
     }
 
-    let mut mesh = Mesh::new();
-
-    mesh.set_inds(inds.as_slice());
-    mesh.set_verts(verts.as_slice(), true);
-    mesh
+    Mesh::from_data(verts.as_slice(), inds.as_slice(), None, None)
 }
 
 fn generate_activation_hamburger(radius: f32) -> Mesh {
@@ -1090,11 +1068,7 @@ fn generate_activation_hamburger(radius: f32) -> Mesh {
         inds.push(a);
     }
 
-    let mut mesh = Mesh::new();
-    mesh.set_inds(inds.as_slice());
-    mesh.set_verts(verts.as_slice(), true);
-
-    mesh
+    Mesh::from_data(verts.as_slice(), inds.as_slice(), None, None)
 }
 
 fn generate_child_indicator(distance: f32, radius: f32) -> Mesh {
@@ -1109,11 +1083,7 @@ fn generate_child_indicator(distance: f32, radius: f32) -> Mesh {
     inds.push(1);
     inds.push(2);
 
-    let mut mesh = Mesh::new();
-    mesh.set_inds(inds.as_slice());
-    mesh.set_verts(verts.as_slice(), true);
-
-    mesh
+    Mesh::from_data(verts.as_slice(), inds.as_slice(), None, None)
 }
 
 fn generate_img_frame(distance: f32, radius: f32) -> Mesh {
@@ -1153,8 +1123,7 @@ fn generate_img_frame(distance: f32, radius: f32) -> Mesh {
     inds.push(3);
 
     let mut mesh = Mesh::new();
-    mesh.set_inds(inds.as_slice());
-    mesh.set_verts(verts.as_slice(), true);
+    mesh.set_data(verts.as_slice(), inds.as_slice(), None, None);
 
     mesh
 }

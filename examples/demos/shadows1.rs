@@ -8,8 +8,9 @@ use stereokit_rust::{
     mesh::Mesh,
     model::Model,
     prelude::*,
+    render::{RenderBuilder, RenderLayer, Renderer},
     sprite::Sprite,
-    system::{Input, Log, RenderLayer, Renderer, Text, TextStyle},
+    system::{Input, Log, Text, TextBuilder, TextStyle},
     tex::{Tex, TexAddress, TexFormat, TexSample, TexSampleComp, TexType},
     ui::{Ui, UiBtnLayout},
     util::named_colors,
@@ -97,7 +98,7 @@ impl Default for Shadows1 {
             .address_mode(TexAddress::Clamp);
 
         let mut caster_mat = Material::from_file("shaders/basic_shadow_caster.hlsl.sks", None).unwrap_or_default();
-        caster_mat.depth_test(stereokit_rust::material::DepthTest::LessOrEq).depth_clip(false);
+        caster_mat.depth_test(stereokit_rust::material::DepthTest::LessOrEq).depth_clamp(false);
         // This can help with shadow acne if biasing isn't working out, but can introduce peter-panning.
         // caster_mat.face_cull(Cull::Front);
 
@@ -145,7 +146,7 @@ impl Default for Shadows1 {
 impl Shadows1 {
     // Called by derive macro during IStepper::initialize
     fn start(&mut self) -> bool {
-        Renderer::set_global_buffer(12, &self.shadow_buffer);
+        Renderer::set_global_buffer(13, &self.shadow_buffer);
         true
     }
 
@@ -162,31 +163,23 @@ impl Shadows1 {
     fn draw(&mut self, token: &MainThreadToken) {
         self.frame_count += 1;
         // Use cached light_dir instead of recalculating every frame
-        self.setup_shadow_map(token, self.light_dir);
+        self.setup_shadow_map(self.light_dir);
 
         // Show shadow settings window
         self.draw_shadow_settings_window(token);
 
-        Ui::handle("ModelShadow", &mut self.model_pose, self.model.get_bounds(), false, None, None);
-        self.model.draw(token, self.model_pose.to_matrix(None), None, None);
+        Ui::handle("ModelShadow", &mut self.model_pose, self.model.get_bounds()).grab();
+        self.model.draw(self.model_pose.to_matrix(None), None, None);
 
         // Display title and description text like in math1 demo
-        Text::add_at(token, &self.text, self.transform_text, Some(self.text_style), None, None, None, None, None, None);
-        Text::add_at(
-            token,
-            &self.description,
-            self.transform_description,
-            Some(self.description_style),
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-        );
+        TextBuilder::new(&self.text).transform(self.transform_text).style(self.text_style).add();
+        TextBuilder::new(&self.description)
+            .transform(self.transform_description)
+            .style(self.description_style)
+            .add();
     }
 
-    fn setup_shadow_map(&mut self, token: &MainThreadToken, light_dir: Vec3) {
+    fn setup_shadow_map(&mut self, light_dir: Vec3) {
         let head = Input::get_head();
         let light_orientation = Quat::look_at(Vec3::ZERO, light_dir, None);
 
@@ -248,73 +241,56 @@ impl Shadows1 {
         };
         self.shadow_buffer.set(&mut shadow_buffer_last);
 
-        Renderer::set_global_texture(token, 12, None);
-        Renderer::render_to(
-            token,
-            &self.shadow_map,
-            None,
-            view,
-            proj,
-            Some(RenderLayer::All & !RenderLayer::VFX),
-            Some(SHADOW_MAP_VARIANT),
-            None,
-            None,
-        );
-        Renderer::set_global_texture(token, 12, Some(&self.shadow_map));
+        Renderer::set_global_texture(13, None);
+        let shadow_render = RenderBuilder::new()
+            .camera(view)
+            .projection(proj)
+            .layer_filter(RenderLayer::All & !RenderLayer::Vfx)
+            .material_variant(SHADOW_MAP_VARIANT);
+        shadow_render.render_to(&self.shadow_map, 0);
+        Renderer::set_global_texture(13, Some(&self.shadow_map));
     }
 
     /// Draw the shadow settings UI window
     fn draw_shadow_settings_window(&mut self, _token: &MainThreadToken) {
         const WINDOW_SIZE: Vec2 = Vec2::new(0.34, 0.32);
-        Ui::window_begin("Shadow Settings", &mut self.window_pose, Some(WINDOW_SIZE), None, None);
+        Ui::window("Shadow Settings").pose(&mut self.window_pose).size(WINDOW_SIZE).begin();
 
-        Ui::label("Shadow Mode:", None, false);
+        Ui::label("Shadow Mode:").use_padding(false).draw();
 
         // Radio buttons for each shadow mode using radio_img
-        if Ui::radio_img(
-            "Quantized",
-            matches!(self.current_shadow_mode, ShadowMode::Quantized),
-            &self.radio_off,
-            &self.radio_on,
-            UiBtnLayout::Left,
-            None,
-        ) {
+        if Ui::radio("Quantized", matches!(self.current_shadow_mode, ShadowMode::Quantized))
+            .images(&self.radio_off, &self.radio_on)
+            .image_layout(UiBtnLayout::Left)
+            .press()
+        {
             self.current_shadow_mode = ShadowMode::Quantized;
             self.previous_light_pos = Vec3::ZERO; // Reset for temporal filtering
         }
 
-        if Ui::radio_img(
-            "Stable",
-            matches!(self.current_shadow_mode, ShadowMode::Stable),
-            &self.radio_off,
-            &self.radio_on,
-            UiBtnLayout::Left,
-            None,
-        ) {
+        if Ui::radio("Stable", matches!(self.current_shadow_mode, ShadowMode::Stable))
+            .images(&self.radio_off, &self.radio_on)
+            .image_layout(UiBtnLayout::Left)
+            .press()
+        {
             self.current_shadow_mode = ShadowMode::Stable;
             self.previous_light_pos = Vec3::ZERO;
         }
 
-        if Ui::radio_img(
-            "Scene Centered",
-            matches!(self.current_shadow_mode, ShadowMode::SceneCentered),
-            &self.radio_off,
-            &self.radio_on,
-            UiBtnLayout::Left,
-            None,
-        ) {
+        if Ui::radio("Scene Centered", matches!(self.current_shadow_mode, ShadowMode::SceneCentered))
+            .images(&self.radio_off, &self.radio_on)
+            .image_layout(UiBtnLayout::Left)
+            .press()
+        {
             self.current_shadow_mode = ShadowMode::SceneCentered;
             self.previous_light_pos = Vec3::ZERO;
         }
 
-        if Ui::radio_img(
-            "Temporal Filtered",
-            matches!(self.current_shadow_mode, ShadowMode::TemporalFiltered),
-            &self.radio_off,
-            &self.radio_on,
-            UiBtnLayout::Left,
-            None,
-        ) {
+        if Ui::radio("Temporal Filtered", matches!(self.current_shadow_mode, ShadowMode::TemporalFiltered))
+            .images(&self.radio_off, &self.radio_on)
+            .image_layout(UiBtnLayout::Left)
+            .press()
+        {
             self.current_shadow_mode = ShadowMode::TemporalFiltered;
             self.previous_light_pos = Vec3::ZERO;
         }
@@ -327,11 +303,11 @@ impl Shadows1 {
             ShadowMode::SceneCentered => "Scene Centered: Fixed relative to scene objects",
             ShadowMode::TemporalFiltered => "Temporal Filtered: Smoothed position changes",
         };
-        Ui::label(mode_description, Some([0.32, 0.0].into()), true);
+        Ui::label(mode_description).size([0.32, 0.0]).use_padding(true).draw();
 
         // Resolution info
         Ui::hseparator();
-        Ui::label(format!("Resolution: {}x{}", SHADOW_MAP_RESOLUTION, SHADOW_MAP_RESOLUTION), None, false);
+        Ui::label(format!("Resolution: {}x{}", SHADOW_MAP_RESOLUTION, SHADOW_MAP_RESOLUTION)).draw();
 
         Ui::window_end();
     }

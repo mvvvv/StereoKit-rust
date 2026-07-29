@@ -5,9 +5,9 @@ use stereokit_rust::{
     mesh::Mesh,
     model::Model,
     prelude::*,
-    render_list::RenderList,
-    system::{Assets, RenderClear, Renderer, Text, TextStyle},
-    tex::{Tex, TexFormat, TexType},
+    render::{RenderBuilder, RenderClear, RenderList, RenderListRefs, Renderer},
+    system::{Assets, Text, TextBuilder, TextStyle},
+    tex::{Tex, TexFormat},
     ui::Ui,
     util::{
         Color128, Time,
@@ -26,12 +26,18 @@ pub struct RenderList1 {
     primary: RenderList,
     list: RenderList,
     render_mat: Material,
-    render_tex: Tex,
-    old_clear_color: Color128,
-    at: Vec3,
+    render_tex_a: Tex,
+    render_tex_b: Tex,
+    flip: u8,
     quad: Mesh,
+    old_clear_color: Color128,
+    camera_pos: Vec3,
     perspective: Matrix,
     clear_primary: bool,
+    enable_fx: bool,
+    fx1: Material,
+    fx2: Material,
+
     pub transform: Matrix,
     text: String,
     text_style: TextStyle,
@@ -40,22 +46,33 @@ pub struct RenderList1 {
 impl Default for RenderList1 {
     fn default() -> Self {
         let quad = Mesh::screen_quad();
-        let mut list = RenderList::new();
+        let mut list = RenderList::new_with(RenderListRefs::Tracked);
         list.id("PlaneList");
-        let render_tex = Tex::gen_color(BLUE_VIOLET, 128, 128, TexType::Rendertarget, TexFormat::RGBA32);
-        //let render_tex = Tex::render_target(128, 128, None, None, None).unwrap_or_default();
+
+        //let render_tex = Tex::gen_color(BLUE_VIOLET, 128, 128, TexType::Rendertarget, TexFormat::Rgba32Srgb);
+        let render_tex_a =
+            Tex::render_target(128, 128, None, TexFormat::Rgba32Srgb, TexFormat::Depth16).unwrap_or_default();
+        let render_tex_b =
+            Tex::render_target(128, 128, None, TexFormat::Rgba32Srgb, TexFormat::Depth16).unwrap_or_default();
         let mut render_mat = Material::pbr().copy();
-        let model = Model::from_file("plane.glb", None).unwrap();
-        list.add_model(model, None, Matrix::r(Quat::from_angles(90.0, 90.0, 145.0)), Color128::WHITE, None);
-        //list.add_mesh(&quad, &render_mat, Matrix::IDENTITY, BLUE_VIOLET, None);
+        let model = Model::from_file("plane.glb", None, None).unwrap_or_default();
+
+        let transform_model = Matrix::r(Quat::from_angles(90.0, 90.0, 45.0));
+        let material_quad = Material::pbr();
 
         Assets::block_for_priority(i32::MAX);
-        let at = Vec3::new(-2.0, 1.0, 1000.9);
+        list.add_model(model.copy(), transform_model, Color128::WHITE, None);
+        list.add_mesh(&quad, &material_quad, Matrix::IDENTITY, BLUE_VIOLET, None);
 
-        render_mat.diffuse_tex(&render_tex);
+        Assets::block_for_priority(i32::MAX);
+        let camera_pos = Vec3::new(-2.0, 1.0, -10.9);
+
         render_mat.face_cull(stereokit_rust::material::Cull::None);
 
-        let perspective = Matrix::perspective(90.0, 1.0, 0.01, 1010.0);
+        let perspective = Matrix::perspective(90.0, 1.0, 0.1, 50.0);
+
+        let fx1 = Material::from_file("shaders/subpass/night_vision.hlsl.sks", None).unwrap_or_default();
+        let fx2 = Material::from_file("shaders/subpass/dynamic_cloud.hlsl.sks", None).unwrap_or_default();
         Self {
             id: "RenderList1".to_string(),
             sk_info: None,
@@ -65,12 +82,18 @@ impl Default for RenderList1 {
             primary: RenderList::primary(),
             list,
             clear_primary: false,
+            enable_fx: true,
             render_mat,
-            render_tex,
-            old_clear_color: Color128::BLACK_TRANSPARENT,
-            at,
+            render_tex_a,
+            render_tex_b,
+            flip: 0,
             quad,
+            old_clear_color: Color128::BLACK_TRANSPARENT,
+            camera_pos,
             perspective,
+            fx1,
+            fx2,
+
             transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, Quat::from_angles(0.0, 180.0, 0.0)),
             text: "RenderList1".to_owned(),
             text_style: Text::make_style(Font::default(), 0.3, RED),
@@ -92,35 +115,51 @@ impl RenderList1 {
     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
     /// Called from IStepper::step after check_event, here you can draw your UI
-    fn draw(&mut self, token: &MainThreadToken) {
+    fn draw(&mut self, _token: &MainThreadToken) {
         if self.clear_primary {
             self.primary.clear();
+        }
+
+        let fx = if self.enable_fx { vec![&self.fx1, &self.fx2] } else { vec![] };
+        let render = RenderBuilder::new()
+            .camera(Matrix::look_at(self.camera_pos, Vec3::ZERO, Some(Vec3::new(1.0, Time::get_totalf().sin(), 1.0))))
+            .projection(self.perspective)
+            .clear(RenderClear::All)
+            .viewport(Rect::new(0.0, 0.0, 1.0, 1.0))
+            .post_process(fx);
+
+        let (read_tex, write_tex) = if self.flip == 1 {
+            self.flip = 2;
+            (&self.render_tex_a, &self.render_tex_b)
+        } else if self.flip == 2 {
+            self.flip = 1;
+            (&self.render_tex_b, &self.render_tex_a)
+        } else {
+            // We are here for the first step only to render render_tex_a for next step.
+            self.flip = 1;
+            render.draw_now(&self.list, &self.render_tex_a, Color128::WHITE);
+            return;
         };
 
-        self.list.draw_now(
-            &self.render_tex,
-            Matrix::look_at(self.at, Vec3::ZERO, Some(Vec3::new(1.0, Time::get_totalf().sin(), 1.0))),
-            self.perspective,
-            Some(Color128::new(0.4, 0.3, 0.2, 0.5)),
-            Some(RenderClear::Color),
-            Rect::new(0.0, 0.0, 1.0, 1.0),
-            None,
-            None,
-        );
+        self.render_mat.diffuse_tex(read_tex);
+        render.draw_now(&self.list, write_tex, Color128::new(0.4, 0.3, 0.2, 0.5));
 
-        Ui::window_begin("Render Lists", &mut self.window_pose, Some(Vec2::new(0.23, 0.35)), None, None);
-        Ui::label(format!("Render items: {}/{}", self.primary.get_count(), self.primary.get_prev_count()), None, true);
-        if let Some(value) = Ui::toggle("Clear", &mut self.clear_primary, None) {
+        Ui::window("Render Lists").pose(&mut self.window_pose).size(Vec2::new(0.23, 0.35)).begin();
+        Ui::label(format!("Render items: {}/{}", self.primary.get_count(), self.primary.get_prev_count()))
+            .use_padding(true)
+            .draw();
+        if let Some(value) = Ui::toggle("Clear", &mut self.clear_primary).interact() {
             if value {
-                self.perspective = Matrix::perspective_focal(Vec2::ONE * 2048.0, 100000.0, 0.01, 1010.0)
+                self.perspective = Matrix::perspective_focal(Vec2::ONE * 2048.0, 1500.0, 0.01, 1010.0)
             } else {
                 self.perspective = Matrix::perspective(90.0, 1.0, 0.01, 1010.0)
             }
         };
-        Ui::label("Offscreen List:", None, true);
+        Ui::same_line();
+        Ui::toggle("Fx", &mut self.enable_fx).interact();
+        Ui::label("Offscreen List:").use_padding(true).draw();
         let b = Ui::layout_reserve(Vec2::new(0.1, 0.1), false, 0.0);
         self.quad.draw(
-            token,
             &self.render_mat,
             Matrix::t_s(b.center + Vec3::new(-0.05, -0.05, -0.004), b.dimensions.xy1()),
             None,
@@ -128,7 +167,7 @@ impl RenderList1 {
         );
         Ui::window_end();
 
-        Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
+        TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
     }
 
     /// Called from IStepper::shutdown(triggering) then IStepper::shutdown_done(waiting for true response),

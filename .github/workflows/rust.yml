@@ -6,7 +6,6 @@ on:
         description: 'Branch to build'
         type: string
         required: false
-        default: 'master'
       onWindows:
         description: 'on windows latest!'
         type: boolean
@@ -14,6 +13,16 @@ on:
         default: true
       onUbuntu:
           description: 'on ubuntu latest!'
+          type: boolean
+          required: false
+          default: true
+      onMacOS:
+          description: 'on macos latest!'
+          type: boolean
+          required: false
+          default: true
+      validateGradleWrapper:
+          description: 'Validate Gradle Wrapper!'
           type: boolean
           required: false
           default: true
@@ -30,89 +39,201 @@ env:
 
 jobs:
 
+  validate-gradle-wrapper:
+    runs-on: ubuntu-latest
+    if: ${{ inputs.validateGradleWrapper }}
+    steps:
+    - uses: actions/checkout@v5
+      with:
+        ref: ${{ inputs.branch || github.ref }}
+        submodules: 'recursive'
+    - uses: gradle/actions/wrapper-validation@v4
+
   build-windows:
     runs-on: windows-latest
     if: ${{ inputs.onWindows }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
+        ref: ${{ inputs.branch || github.ref }}
         submodules: 'recursive'
-        ref: ${{ inputs.branch }}
 
-    - uses: lukka/get-cmake@v3.26.3
+    - uses: lukka/get-cmake@latest
 
     - name: Get Cache
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.cargo/bin/
-          ~/.cargo/registry/index/
-          ~/.cargo/registry/cache/
-          ~/.cargo/git/db/
-          target/
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      uses: swatinem/rust-cache@v2
+
+    - name: Install Mesa lavapipe (software Vulkan)
+      shell: pwsh
+      run: |
+        $version = "26.0.7"
+        $url = "https://github.com/pal1000/mesa-dist-win/releases/download/$version/mesa3d-$version-release-msvc.7z"
+        Invoke-WebRequest -Uri $url -OutFile mesa.7z
+        7z x mesa.7z -omesa -y
+        $icd = (Get-ChildItem -Path mesa -Recurse -Filter "lvp_icd.x86_64.json" | Select-Object -First 1).FullName
+        if (-not $icd) { throw "lavapipe ICD JSON not found in extracted archive" }
+        $icdDir = Split-Path -Parent $icd
+        Write-Host "Using ICD: $icd"
+
+        # The Vulkan loader on GH Actions runs elevated and ignores VK_DRIVER_FILES /
+        # VK_ICD_FILENAMES for security reasons. Register the ICD in the registry
+        # instead — the loader reads HKLM\SOFTWARE\Khronos\Vulkan\Drivers regardless
+        # of elevation. Value name is the absolute ICD JSON path, value data is a
+        # DWORD 0 meaning "enabled".
+        $regKey = "HKLM:\SOFTWARE\Khronos\Vulkan\Drivers"
+        New-Item -Path $regKey -Force | Out-Null
+        New-ItemProperty -Path $regKey -Name $icd -PropertyType DWord -Value 0 -Force | Out-Null
+
+        # Mesa folder on PATH so vulkan_lvp.dll's dependencies resolve.
+        "PATH=$icdDir;$env:PATH" >> $env:GITHUB_ENV
 
     - name: Install StereoKit
-      run: cargo install -F event-loop --force --path . 
+      run: cargo install --force --path . 
 
     - name: compile shaders
-      run: cargo compile_sks --options -f -t x
+      run: cargo compile_sks --options -f -t s
 
-    - name: Build event-loop
-      run: cargo build --verbose --features event-loop --example main_pc
-    - name: Run tests event-loop
-      run: cargo test --verbose --features event-loop
+    - name: Build 
+      run: cargo build --verbose --release --example main_pc
+
+    - name: Run tests 
+      timeout-minutes: 15
+      run: cargo test --verbose -- --nocapture
+      # run: |
+      #   $failed = $false
+      #   cargo test tests;             if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc maths;       if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc ui;          if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc framework;   if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc tools;       if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc sound;       if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc interactor;  if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc system;      if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc permission;  if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc material;    if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc shader;      if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc tex;         if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc sprite;      if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc font;        if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc render_list; if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc anchor;      if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc compute;     if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc util;        if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc sk;          if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc mesh;        if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   cargo test --doc model;       if ($LASTEXITCODE -ne 0) { $failed = $true }
+      #   if ($failed) { exit 1 }
 
     - name: Build no-event-loop
       run: cargo build --verbose --features no-event-loop --example manual
     - name: Run tests no-event-loop
-      run: cargo test --verbose --features no-event-loop
+      timeout-minutes: 25
+      run: cargo test --features no-event-loop -- --nocapture --test-threads=1
 
   build-linux:
     runs-on: ubuntu-latest
     if: ${{ inputs.onUbuntu }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
+        ref: ${{ inputs.branch || github.ref }}
         submodules: 'recursive'
-        ref: ${{ inputs.branch }}
 
     - name: Get Cache
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.cargo/bin/
-          ~/.cargo/registry/index/
-          ~/.cargo/registry/cache/
-          ~/.cargo/git/db/
-          target/
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      uses: swatinem/rust-cache@v2
 
     - name: Install Prerequisites
       run: |
         sudo apt-get update
-        sudo apt-get install xvfb clang cmake lld ninja-build libx11-dev libxfixes-dev libegl-dev libgbm-dev libfontconfig-dev libxkbcommon-x11-0 libxkbcommon0
+        sudo apt-get install xvfb clang cmake lld ninja-build libx11-dev libxfixes-dev libvulkan-dev libfontconfig-dev libxkbcommon-x11-0 libxkbcommon0 libxrandr-dev libxcursor-dev libwayland-dev wayland-protocols libxkbcommon-dev mesa-vulkan-drivers mesa-utils llvm libx11-xcb1 libxcb-dri3-0
 
     - name: Install StereoKit
-      run: cargo install -F event-loop --force --path . 
+      run: cargo install --force --path . 
 
     - name: compile shaders
-      run: cargo compile_sks --options -f -t e
+      run: cargo compile_sks --options -f -t s
 
-    - name: Build event-loop
-      run: cargo build --verbose --features event-loop --example main_pc
-    - name: Run tests event-loop
+    - name: Build 
+      run: cargo build --verbose --release --example main_pc
+
+    - name: Run tests
+      timeout-minutes: 25
       run: |
         export DISPLAY=:99
-        Xvfb -ac :99 -screen 0 1280x1024x16 > /dev/null 2>&1 &
-        cargo test --verbose --features event-loop -- --test-threads=1
+        Xvfb  :99 -screen 0 1280x1024x24 > /dev/null 2>&1 & sleep 5        
+        cargo test --verbose -- --test-threads=1
 
     - name: Build no-event-loop
       run: cargo build --verbose --features no-event-loop --example manual
-    # - name: Run tests no-event-loop
-    #   run: |
-    #     export DISPLAY=:99
-    #     Xvfb -ac :99 -screen 0 1280x1024x16 > /dev/null 2>&1 &
-    #     cargo test --verbose --features no-event-loop -- --test-threads=1
+    - name: Run tests no-event-loop
+      timeout-minutes: 25
+      run: |
+        export DISPLAY=:99
+        Xvfb  :99 -screen 0 1280x1024x24 > /dev/null 2>&1 & sleep 5        
+        cargo test --verbose --features no-event-loop -- --nocapture --test-threads=1
+
+  build-macos:
+    runs-on: macos-latest
+    if: ${{ inputs.onMacOS }}
+    steps:
+    - uses: actions/checkout@v5
+      with:
+        ref: ${{ inputs.branch || github.ref }}
+        submodules: 'recursive'
+
+    - name: Get Cache
+      uses: swatinem/rust-cache@v2
+
+    - name: Install Prerequisites
+      run: |
+        brew install cmake ninja molten-vk vulkan-headers coreutils
+        echo "$(brew --prefix coreutils)/libexec/gnubin" >> $GITHUB_PATH
+
+    - name: Install StereoKit
+      run: cargo install --force --path . 
+
+    - name: compile shaders
+      run: cargo compile_sks --options -f -t s
+
+    - name: Build 
+      run: cargo build --verbose --release --example main_pc
+      
+    - name: Run tests
+      timeout-minutes: 30
+      run: |
+        export DYLD_LIBRARY_PATH=$(brew --prefix molten-vk)/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}
+        export MVK_CONFIG_LOG_LEVEL=0
+        failed=0
+        timeout 1m cargo test tests             -- --test-threads=1 || failed=1
+        timeout 3m cargo test --doc maths       -- --test-threads=1 || failed=1
+        timeout 1m cargo test --doc ui          -- --test-threads=1 || failed=1
+        timeout 1m cargo test --doc framework   -- --test-threads=1 || failed=1
+        timeout 1m cargo test --doc tools       -- --test-threads=1 || failed=1
+        timeout 1m cargo test --doc sound       -- --test-threads=1 || failed=1
+        timeout 1m cargo test --doc interactor  -- --test-threads=1 || failed=1
+        timeout 3m cargo test --doc system      -- --test-threads=1 || failed=1
+        timeout 1m cargo test --doc permission  -- --test-threads=1 || failed=1
+        timeout 1m cargo test --doc material    -- --test-threads=1 || failed=1
+        timeout 1m cargo test --doc shader      -- --test-threads=1 || failed=1
+        timeout 2m cargo test --doc tex         -- --test-threads=1 || failed=1
+        timeout 1m cargo test --doc sprite      -- --test-threads=1 || failed=1
+        timeout 1m cargo test --doc font        -- --test-threads=1 || failed=1
+        timeout 1m cargo test --doc render_list -- --test-threads=1 || failed=1
+        timeout 1m cargo test --doc anchor      -- --test-threads=1 || failed=1
+        timeout 1m cargo test --doc compute     -- --test-threads=1 || failed=1
+        timeout 2m cargo test --doc util        -- --test-threads=1 || failed=1
+        timeout 1m cargo test --doc sk          -- --test-threads=1 || failed=1
+        timeout 1m cargo test --doc mesh        -- --test-threads=1 || failed=1
+        timeout 1m cargo test --doc model       -- --test-threads=1 || failed=1
+        exit $failed
+
+    - name: Build no-event-loop
+      run: cargo build --verbose --features no-event-loop --example manual
+    - name: Run tests no-event-loop
+      timeout-minutes: 25
+      run: |
+        export DYLD_LIBRARY_PATH=$(brew --prefix molten-vk)/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}
+        export MVK_CONFIG_LOG_LEVEL=0
+        cargo test --features no-event-loop -- --nocapture --test-threads=1
 
 

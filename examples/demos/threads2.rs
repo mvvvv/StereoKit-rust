@@ -13,7 +13,7 @@ use stereokit_rust::{
     model::Model,
     prelude::*,
     shader::Shader,
-    system::{Text, TextStyle},
+    system::{Text, TextBuilder, TextStyle},
     util::{Color128, named_colors::GREEN_YELLOW},
 };
 
@@ -77,7 +77,7 @@ impl Threads2 {
                 // let id_str = "Cube ".to_string() + &id.to_string();
                 // let mesh = Mesh::generate_cube(Vec3::ONE * 0.03, None);
 
-                // let tex = Tex::gen_color(color, 16, 16, TexType::ImageNomips, TexFormat::RGBA32);
+                // let tex = Tex::gen_color(color, 16, 16, TexType::ImageNomips, TexFormat::Rgba32Srgb);
                 // let mut material = Material::default_copy();
                 // material.diffuse_tex(tex);
                 // material.color_tint(color);
@@ -131,9 +131,9 @@ impl Threads2 {
     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
     /// Called from IStepper::step after check_event, here you can draw your UI and scene
-    fn draw(&mut self, token: &MainThreadToken) {
-        self.model.draw(token, self.transform_model, None, None);
-        Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
+    fn draw(&mut self, _token: &MainThreadToken) {
+        self.model.draw(self.transform_model, None, None);
+        TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
     }
 
     /// Called from IStepper::shutdown(triggering) then IStepper::shutdown_done(waiting for true response),

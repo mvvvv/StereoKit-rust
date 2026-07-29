@@ -5,17 +5,16 @@ use stereokit_rust::{
     prelude::*,
     sound::{Sound, SoundInst},
     sprite::Sprite,
-    system::{Input, Key, Log, Text, TextContext, TextStyle},
-    tools::{
-        os_api::show_soft_input,
-        xr_meta_virtual_keyboard::{KEYBOARD_SHOW, XR_META_VIRTUAL_KEYBOARD_EXTENSION_NAME},
-    },
+    system::{Input, Key, Log, Text, TextBuilder, TextContext, TextStyle},
     ui::{Ui, UiBtnLayout},
     util::{
         Platform,
         named_colors::{RED, WHITE},
     },
 };
+
+#[cfg(target_os = "android")]
+use stereokit_rust::tools::android_soft_kdb::{ANDROID_SOFT_KBD_ID, AndroidSoftKbd};
 
 pub const FR_KEY_TEXT: &str = r#"²|&|é|"|'|(|\-|è|_|ç|à|)|=|{|}|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
 Tab-\t-9-3|a|z|e|r|t|y|u|i|o|p|^|$|[|]|\|
@@ -39,8 +38,8 @@ Ctrl--17-4-mod|Cmd--91-3|Alt--18-3-go_0| - -32-13|Alt--18-3-go_0|Ctrl--17-3-mod|
 pub struct Text1 {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
+    shutdown_completed: bool,
 
-    pub transform: Matrix,
     pub window_demo_pose: Pose,
     pub demo_win_width: f32,
     pub android_keyboard: bool,
@@ -53,11 +52,13 @@ pub struct Text1 {
     font_selected: u8,
     text_context: TextContext,
     text_style_test: TextStyle,
-    text: String,
-    text_style: TextStyle,
     next_value: Sprite,
     radio_on: Sprite,
     radio_off: Sprite,
+
+    text: String,
+    text_style: TextStyle,
+    pub transform: Matrix,
 }
 
 unsafe impl Send for Text1 {}
@@ -67,8 +68,8 @@ impl Default for Text1 {
         Self {
             id: "Text1".to_string(),
             sk_info: None,
+            shutdown_completed: false,
 
-            transform: Matrix::t_r((Vec3::NEG_Z * -2.5) + Vec3::Y, Quat::from_angles(0.0, 180.0, 0.0)),
             window_demo_pose: Pose::new(Vec3::new(0.0, 1.5, -1.3), Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0)))),
             demo_win_width: 80.0 * CM,
             android_keyboard: false,
@@ -80,12 +81,14 @@ impl Default for Text1 {
             text_sample: String::from("😃‣‣‣‣😃"),
             font_selected: 1,
             text_context: TextContext::Text,
-            text_style_test: Text::make_style(Font::default(), 0.05, WHITE),
-            text: String::with_capacity(2048),
-            text_style: Text::make_style(Font::default(), 0.3, RED),
             next_value: Sprite::arrow_right(),
             radio_on: Sprite::radio_on(),
             radio_off: Sprite::radio_off(),
+            text_style_test: Text::make_style(Font::default(), 0.05, WHITE),
+
+            text: "text1".to_owned(),
+            text_style: Text::make_style(Font::default(), 0.3, RED),
+            transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, Quat::from_angles(0.0, 180.0, 0.0)),
         }
     }
 }
@@ -100,35 +103,26 @@ impl Text1 {
     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
     /// Called from IStepper::step after check_event, here you can draw your UI and the scene
-    fn draw(&mut self, token: &MainThreadToken) {
-        Ui::window_begin(
-            "Text options",
-            &mut self.window_demo_pose,
-            Some(Vec2::new(self.demo_win_width, 0.0)),
-            None,
-            None,
-        );
-        if Ui::radio_img(
-            "Default Font",
-            self.font_selected == 1,
-            &self.radio_off,
-            &self.radio_on,
-            UiBtnLayout::Left,
-            None,
-        ) {
+    fn draw(&mut self, _token: &MainThreadToken) {
+        Ui::window("Text options")
+            .pose(&mut self.window_demo_pose)
+            .size(Vec2::new(self.demo_win_width, 0.0))
+            .begin();
+        if Ui::radio("Default Font", self.font_selected == 1)
+            .images(&self.radio_off, &self.radio_on)
+            .image_layout(UiBtnLayout::Left)
+            .press()
+        {
             let font = Font::default();
             self.text_style_test = Text::make_style(font, 0.05, WHITE);
             self.font_selected = 1;
         }
         Ui::same_line();
-        if Ui::radio_img(
-            "Font Emoji",
-            self.font_selected == 2,
-            &self.radio_off,
-            &self.radio_on,
-            UiBtnLayout::Left,
-            None,
-        ) {
+        if Ui::radio("Font Emoji", self.font_selected == 2)
+            .images(&self.radio_off, &self.radio_on)
+            .image_layout(UiBtnLayout::Left)
+            .press()
+        {
             let font = if cfg!(windows) {
                 Font::from_files(&[
                     "C:\\Windows\\Fonts\\Seguiemj.ttf",
@@ -142,7 +136,10 @@ impl Text1 {
             self.font_selected = 2;
         }
         Ui::same_line();
-        if Ui::radio_img("Font text", self.font_selected == 3, &self.radio_off, &self.radio_on, UiBtnLayout::Left, None)
+        if Ui::radio("Font text", self.font_selected == 3)
+            .images(&self.radio_off, &self.radio_on)
+            .image_layout(UiBtnLayout::Left)
+            .press()
         {
             let font = if cfg!(windows) {
                 Font::from_file("C:\\Windows\\Fonts\\Arial.ttf").unwrap_or_default()
@@ -154,25 +151,28 @@ impl Text1 {
         }
         Ui::next_line();
 
-        if cfg!(target_os = "android") {
-            if let Some(new_value) = Ui::toggle("Android Keyboard", &mut self.android_keyboard, None) {
+        #[cfg(target_os = "android")]
+        {
+            use stereokit_rust::tools::xr_meta_virtual_keyboard::{
+                KEYBOARD_SHOW, XR_META_VIRTUAL_KEYBOARD_EXTENSION_NAME,
+            };
+
+            if let Some(new_value) = Ui::toggle("Android Keyboard", &mut self.android_keyboard).interact() {
                 if new_value {
                     Platform::force_fallback_keyboard(false);
+                    SkInfo::send_event(
+                        &self.sk_info,
+                        StepperAction::add_default::<AndroidSoftKbd>(ANDROID_SOFT_KBD_ID),
+                    );
                 } else {
                     Platform::force_fallback_keyboard(true);
+                    SkInfo::send_event(&self.sk_info, StepperAction::remove(ANDROID_SOFT_KBD_ID));
                 }
             }
 
-            if self.android_keyboard && Platform::is_keyboard_visible() {
-                Platform::keyboard_show(false, TextContext::Text);
-                Input::key_inject_press(Key::Left);
-                Input::key_inject_release(Key::Left);
-
-                show_soft_input(true);
-            }
-
             Ui::same_line();
-            if let Some(new_value) = Ui::toggle("Meta Virtual Keyboard", &mut self.virtual_keyboard_visible, None) {
+            if let Some(new_value) = Ui::toggle("Meta Virtual Keyboard", &mut self.virtual_keyboard_visible).interact()
+            {
                 let event_value = if new_value { "true" } else { "false" };
                 SkInfo::send_event(
                     &self.sk_info,
@@ -181,7 +181,7 @@ impl Text1 {
             }
 
             // Ui::same_line();
-            // if let Some(new_value) = Ui::toggle("Winit IME Keyboard", self.android_keyboard_ime, None) {
+            // if let Some(new_value) = Ui::toggle("Winit IME Keyboard", self.android_keyboard_ime).interact() {
             //     self.android_keyboard_ime = new_value;
             //     if new_value {
             //         Platform::force_fallback_keyboard(false);
@@ -198,7 +198,7 @@ impl Text1 {
             // }
         }
         Ui::same_line();
-        if let Some(new_value) = Ui::toggle("French keyboard", &mut self.keyboard_layout_fr, None) {
+        if let Some(new_value) = Ui::toggle("French keyboard", &mut self.keyboard_layout_fr).interact() {
             self.keyboard_layout_fr = true; // we can't reverse right now ^_^
             let keyboard_layouts = vec![FR_KEY_TEXT, FR_KEY_TEXT_SHIFT, FR_KEY_TEXT_ALT];
             if new_value {
@@ -217,15 +217,15 @@ impl Text1 {
         }
 
         Ui::same_line();
-        if Ui::button_img(format!("{:?}", self.text_context), &self.next_value, None, None, None) {
+        if Ui::button(format!("{:?}", self.text_context)).image(&self.next_value).press() {
             self.text_context =
-                unsafe { transmute::<u32, stereokit_rust::system::TextContext>(((self.text_context as u32) + 1) % 4) };
+                unsafe { transmute::<u32, stereokit_rust::system::TextContext>(((self.text_context.bits()) + 1) % 4) };
         }
-        if Ui::button("Quit Demos", None) {
+        if Ui::button("Quit Demos").press() {
             SkInfo::send_event(&self.sk_info, StepperAction::quit(&self.id, "Quit button test"));
         }
         Ui::same_line();
-        if Ui::button("test inject key F1", None) {
+        if Ui::button("test inject key F1").press() {
             Input::key_inject_press(Key::F1);
             Input::key_inject_release(Key::F1);
         }
@@ -233,7 +233,10 @@ impl Text1 {
         Ui::hseparator();
         Ui::push_text_style(self.text_style_test);
         //Ui::push_preserve_keyboard(true);
-        Ui::input("Text_Sample", &mut self.text_sample, Some(Vec2::new(0.77, 0.8)), Some(self.text_context));
+        Ui::input("Text_Sample", &mut self.text_sample)
+            .size(Vec2::new(0.77, 0.8))
+            .type_text(self.text_context)
+            .edit();
         // Ui::next_line();
         // Ui::push_preserve_keyboard(true);
         // Ui::text(&self.text_sample, None, None, None);
@@ -241,6 +244,16 @@ impl Text1 {
 
         Ui::window_end();
 
-        Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
+        TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
+    }
+
+    fn close(&mut self, _shutting_down: bool) -> bool {
+        #[cfg(target_os = "android")]
+        if self.android_keyboard {
+            SkInfo::send_event(&self.sk_info, StepperAction::remove(ANDROID_SOFT_KBD_ID));
+            self.android_keyboard = false;
+        }
+        self.shutdown_completed = true;
+        self.shutdown_completed
     }
 }

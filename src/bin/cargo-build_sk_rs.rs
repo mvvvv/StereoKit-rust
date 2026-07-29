@@ -16,8 +16,6 @@ Usage : cargo build_sk_rs [Options] <Output_path>
                                           set (libgcc_eh.a).
         --x64-linux                     : On Linux, x86_64-unknown-linux-gnu build
         --aarch64-linux                 : On Linux, aarch64-unknown-linux-gnu build
-        --gl                            : For windows, build will use OPENGL instead of 
-                                          D3D11.
         --features <feat1, feat2 ...>   : Features of the project to turn on.
         --example  <exe_name>           : If the project has an examples directory, 
                                           will execute the program <exe_name>.
@@ -49,7 +47,6 @@ fn main() {
     let mut output_path_already_exists = false;
     let mut build_target = Target::Default;
     let mut win_libs_path_name = "".to_string();
-    let mut with_gl = false;
     let mut features = "".to_string();
     let mut feature_list = vec![];
     let mut example = "".to_string();
@@ -93,9 +90,6 @@ fn main() {
                 build_target = Target::Aarch64Linux;
             }
 
-            "--gl" => {
-                with_gl = true;
-            }
             "--features" => {
                 features = "--features".to_string();
                 for arg_config in args.by_ref() {
@@ -213,10 +207,6 @@ fn main() {
         }
     };
 
-    if with_gl {
-        cmd.env("SK_RUST_WINDOWS_GL", "ON");
-    }
-
     if profile != "--debug" {
         cmd.arg(&profile);
     }
@@ -292,7 +282,7 @@ fn main() {
             let _lib_pdb = fs::copy(pdb_file, dest_file_pdb).unwrap();
         }
         // 1-1 - the dlls created
-        let c_dll = if !win_libs_path_name.is_empty() { "libStereoKitC.dll" } else { "StereoKitC.dll" };
+        let c_dll = "StereoKitC.dll";
         let dll_file = built_files.join("deps").join(c_dll);
         if dll_file.is_file() {
             let dest_file_dll = output_path.join(dll_file.file_name().unwrap_or_default());
@@ -357,14 +347,12 @@ fn main() {
     }
     if shaders_path_name.is_empty() {
         let target = if windows_exe.is_empty() {
-            "e"
-        } else if with_gl {
-            "g"
+            "s"
         } else {
             if !cfg!(windows) && !win_libs_path_name.is_empty() {
                 with_wine = true;
             }
-            "x"
+            "s"
         };
 
         compile_hlsl(real_current_dir, Some(target_shaders_dir), &["-t", target, "-sw"], with_wine).unwrap();

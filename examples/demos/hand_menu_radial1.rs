@@ -5,20 +5,22 @@ use stereokit_rust::{
     mesh::Mesh,
     model::Model,
     prelude::*,
-    system::Renderer,
+    render::{RenderBuilder, Renderer},
     tex::{SHCubemap, Tex, TexFormat, TexSample},
     tools::{fly_over::ENABLE_FLY_OVER, log_window::SHOW_LOG_WINDOW, screenshot::SHOW_SCREENSHOT_WINDOW},
     util::{
         Color128, Gradient, SHLight, SphericalHarmonics,
         named_colors::{
-            BLACK, BLUE, BURLY_WOOD, DARK_GRAY, LIGHT_BLUE, LIGHT_CYAN, RED, SEA_GREEN, STEEL_BLUE, WHITE, YELLOW,
+            BLACK, BLUE, BURLY_WOOD, DARK_BLUE, DARK_GRAY, LIGHT_BLUE, LIGHT_CYAN, RED, SEA_GREEN, STEEL_BLUE, WHITE,
+            YELLOW,
         },
     },
 };
-pub const SHOW_SHADOWS: &str = "ShowShadows";
-pub const SHOW_FLOOR: &str = "ShowFloor";
-pub const CHANGE_FLOOR: &str = "ChangeFlor";
-pub const SKY_DOME_CHANGED: &str = "SkyDomeChanged";
+pub const HAND_MENU_RADIAL1_ID: &str = "Demo_HandMenuRadial1";
+pub const SHOW_SHADOWS: &str = "Demo_ShowShadows";
+pub const SHOW_FLOOR: &str = "Demo_ShowFloor";
+pub const CHANGE_FLOOR: &str = "Demo_ChangeFlor";
+pub const SKY_DOME_CHANGED: &str = "Demo_SkyDomeChanged";
 const ID: &str = "demo_1";
 
 /// The basic Stepper. This stepper is used for Thread1 demo, we must ensure the StereoKit code stay in the main thread
@@ -88,45 +90,45 @@ impl Default for HandMenuRadial1 {
         let mut parquet =
             Material::from_file("shaders/large_tile_pbr.hlsl.sks", "parquet_pbr".into()).unwrap_or_default();
         parquet
+            .face_cull(Cull::Back)
             .diffuse_tex(&parquet_img)
             .color_tint(BURLY_WOOD)
             .occlusion_tex(&parquetao)
             .normal_tex(parquetroughness)
             .metal_tex(parquetmetal)
             .tex_transform(Vec4::new(0.0, 0.0, 12.0, 12.0))
-            .roughness_amount(3.0)
-            .metallic_amount(0.2)
-            .face_cull(Cull::Back);
+            .roughness_amount(0.9)
+            .metallic_amount(0.05);
 
-        // fresh water
+        // see water
         let mut sea = Material::from_file("shaders/water_pbr.hlsl.sks", "water_pbr".into()).unwrap_or_default();
         sea.diffuse_tex(&bump_inverse_tex)
-            .normal_tex(&bump_tex)
+            .face_cull(Cull::Front)
+            .emission_tex(&bump_tex)
             .occlusion_tex(&bump_inverse_tex)
-            .tex_transform(Vec4::new(0.0, 0.0, 6.0, 6.0))
-            .roughness_amount(1.4)
-            .metallic_amount(0.6)
-            .face_cull(Cull::Back)
+            .tex_transform(Vec4::new(0.0, 0.0, 1.5, 2.5))
+            .roughness_amount(0.4)
+            .metallic_amount(0.1)
             .color_tint(SEA_GREEN)
-            .transparency(Transparency::MSAA)
-            .time(5.0);
+            .transparency(Transparency::None)
+            .time(3.0);
 
         // fresh water2
         let mut water2 = Material::from_file("shaders/water_pbr2.hlsl.sks", "water_pbr2".into()).unwrap_or_default();
         water2
+            .face_cull(Cull::Back)
             .diffuse_tex(&bump_tile_tex)
             .occlusion_tex(&bump_inverse_tex)
             .normal_tex(&bump_tex)
-            .tex_transform(Vec4::new(0.0, 0.0, 5.0, 5.0))
+            .tex_transform(Vec4::new(0.0, 0.0, 5.5, 4.5))
             .roughness_amount(0.4)
             .metallic_amount(0.6)
-            .face_cull(Cull::Back)
             .color_tint(STEEL_BLUE)
             .transparency(Transparency::Blend)
             .time(5.0);
 
         let shadow_depth =
-            Tex::render_target(1024, 1024, Some(1), Some(TexFormat::R8), Some(TexFormat::Depth32)).unwrap_or_default();
+            Tex::render_target(1024, 1024, Some(1), TexFormat::R8, TexFormat::Depth32).unwrap_or_default();
         let mut test_material = Material::unlit().copy();
         //test_material.diffuse_tex(shadow_depth.get_zbuffer().unwrap_or_default());
         test_material.diffuse_tex(&shadow_depth);
@@ -163,6 +165,11 @@ impl Default for HandMenuRadial1 {
 impl HandMenuRadial1 {
     /// Called from IStepper::initialize here you can abort the initialization by returning false
     fn start(&mut self) -> bool {
+        if self.id != HAND_MENU_RADIAL1_ID {
+            Log::err(format!("HandMenuRadial1: Wrong Unique ID, expected {}, got {}", HAND_MENU_RADIAL1_ID, self.id));
+            return false;
+        }
+
         self.id = HandMenuRadial::build_id(ID);
         let id: StepperId = self.id.clone();
         let sk_info = self.sk_info.clone();
@@ -217,12 +224,20 @@ impl HandMenuRadial1 {
 
         let mut gradient_sky = Gradient::new(None);
         gradient_sky
-            .add(Color128::BLACK, 0.0)
+            .add(DARK_BLUE, 0.0)
             .add(BLUE, 0.4)
             .add(LIGHT_BLUE, 0.8)
             .add(LIGHT_CYAN, 0.9)
             .add(WHITE, 1.0);
-        let cube0 = SHCubemap::gen_cubemap_gradient(gradient_sky, Vec3::Y, 1024);
+        let mut cube0 = SHCubemap::gen_cubemap_gradient(gradient_sky, Vec3::Y, 1024);
+        cube0
+            .sh
+            //     .add(Vec3::new(0.0, 1.0, 0.0).get_normalized(), Color128::WHITE)
+            //     .add(Vec3::new(1.0, 0.125, 0.0).get_normalized(), DARK_GRAY)
+            //     .add(Vec3::new(-1.0, 0.125, 0.0).get_normalized(), DARK_GRAY)
+            //     .add(Vec3::new(0.0, 0.125, 1.0).get_normalized(), DARK_GRAY)
+            //     .add(Vec3::new(0.0, 0.125, -1.0).get_normalized(), DARK_GRAY)
+            .brightness(1.9);
 
         let mut gradient = Gradient::new(None);
         gradient
@@ -232,7 +247,8 @@ impl HandMenuRadial1 {
             .add(LIGHT_BLUE, 0.4)
             .add(BLUE, 0.5)
             .add(BLACK, 0.7);
-        let cube1 = SHCubemap::gen_cubemap_gradient(&gradient, Vec3::NEG_Z, 1);
+        let mut cube1 = SHCubemap::gen_cubemap_gradient(&gradient, Vec3::NEG_Z, 1);
+        cube1.sh.add(Vec3::new(0.0, 0.0, 1.0), RED).brightness(0.3);
 
         let lights: [SHLight; 1] = [SHLight::new(Vec3::ONE, WHITE); 1];
         let sh = SphericalHarmonics::from_lights(&lights);
@@ -240,7 +256,7 @@ impl HandMenuRadial1 {
 
         let mut cube3 =
             SHCubemap::from_cubemap("hdri/sky_dawn.hdr", true, 0).unwrap_or_else(|_err| cube_default.clone_ref());
-        cube3.sh.add(Vec3::new(-1.0, 0.15, -0.15).get_normalized(), RED).brightness(0.1);
+        cube3.sh.add(Vec3::new(-1.0, 0.15, -0.15).get_normalized(), RED).brightness(0.3);
 
         // let cubemap_files = [
         //     "hdri/giza/right.png",
@@ -250,7 +266,7 @@ impl HandMenuRadial1 {
         //     "hdri/giza/front.png",
         //     "hdri/giza/back.png",
         // ];
-        // let cube4 = SHCubemap::from_cubemap_files(&cubemap_files, true, 0).unwrap_or(SHCubemap::get_rendered_sky());
+        // cube4 = SHCubemap::from_cubemap_files(&cubemap_files, true, 0).unwrap_or(SHCubemap::get_rendered_sky());
 
         // You can also zip the files:
         // ktx create --cubemap --encode uastc  --format R8G8B8A8_UNORM  --assign-oetf linear --assign-primaries bt709
@@ -451,11 +467,11 @@ impl HandMenuRadial1 {
 
     /// Called from IStepper::step after check_event, here you can draw your UI and the scene
     /// Here we draw or not draw the floor
-    fn draw(&mut self, token: &MainThreadToken) {
+    fn draw(&mut self, _token: &MainThreadToken) {
         // draw a floor if needed
         if self.show_floor {
             if self.show_shadows && self.floor == 5 {
-                let light_pos = Renderer::get_sky_light().get_dominent_light_direction() * -500.0;
+                let light_pos = Renderer::get_sky_light().get_dominent_light_direction() * -15.0;
                 let camera = Matrix::t_r(light_pos, Quat::look_at(light_pos, Vec3::ZERO, None));
                 //Log::diag(format!("Camera at {:}", &light_pos));
 
@@ -469,25 +485,17 @@ impl HandMenuRadial1 {
                 //     None,
                 // );
 
-                Renderer::render_to(
-                    token,
-                    &self.shadow_depth,
-                    None,
-                    camera,
-                    Matrix::perspective(90.0, 1.0, 10.01, 1010.0),
-                    None,
-                    None,
-                    None,
-                    None,
-                );
+                let shadow_render =
+                    RenderBuilder::new().camera(camera).projection(Matrix::perspective(90.0, 1.0, 10.01, 1010.0));
+                shadow_render.render_to(&self.shadow_depth, 0);
             }
             match self.floor {
-                0 => self.floor_model.draw_with_material(token, &self.clean_tile, self.floor_transform, None, None),
-                1 => self.floor_model.draw_with_material(token, &self.parquet, self.floor_transform, None, None),
-                2 => self.floor_model.draw_with_material(token, &self.water, self.floor_transform, None, None),
-                3 => self.floor_model.draw_with_material(token, &self.water2, self.floor_transform, None, None),
+                0 => self.floor_model.draw_with_material(&self.clean_tile, self.floor_transform, None, None),
+                1 => self.floor_model.draw_with_material(&self.parquet, self.floor_transform, None, None),
+                2 => self.floor_model.draw_with_material(&self.water, self.floor_transform, None, None),
+                3 => self.floor_model.draw_with_material(&self.water2, self.floor_transform, None, None),
                 4 => (),
-                5 => self.floor_model.draw_with_material(token, &self.test_material, self.floor_transform, None, None),
+                5 => self.floor_model.draw_with_material(&self.test_material, self.floor_transform, None, None),
                 _ => (),
             }
         }

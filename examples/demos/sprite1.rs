@@ -1,12 +1,10 @@
-use glam::Mat4;
-use std::f32::consts::PI;
 use stereokit_rust::{
     font::Font,
     material::Material,
     maths::{Matrix, Quat, Vec3, Vec4},
     prelude::*,
     sprite::{Sprite, SpriteType},
-    system::{AssetType, Assets, Lines, Pivot, Text, TextStyle},
+    system::{AssetType, Assets, Lines, Pivot, Text, TextBuilder, TextStyle},
     tex::Tex,
     util::{
         Color128, Gradient,
@@ -16,10 +14,9 @@ use stereokit_rust::{
 
 #[derive(IStepper)]
 pub struct Sprite1 {
-    pub title: String,
     id: StepperId,
-
     sk_info: Option<Rc<RefCell<SkInfo>>>,
+
     tex_particule1: Tex,
     tex_particule2: Tex,
     color1: Material,
@@ -28,13 +25,16 @@ pub struct Sprite1 {
     sprite_ico: Sprite,
     sprite3: Sprite,
     sprite4: Sprite,
+
+    pub transform: Matrix,
+    pub text: String,
     text_style: TextStyle,
 }
 
 impl Sprite1 {
     /// Change the default title.
-    pub fn new(title: String) -> Self {
-        Self { title, ..Default::default() }
+    pub fn new(text: String) -> Self {
+        Self { text, ..Default::default() }
     }
 }
 
@@ -67,7 +67,6 @@ impl Default for Sprite1 {
         let text_style = Text::make_style(font, 0.50, CYAN);
 
         let mut this = Self {
-            title: "Stereokit Sprites".to_owned(),
             id: "Sprite 1".to_string(),
             sk_info: None,
 
@@ -82,6 +81,9 @@ impl Default for Sprite1 {
             sprite4: Sprite::from_tex(&tex_particule2, None, None).unwrap(),
             tex_particule1,
             tex_particule2,
+
+            text: "Stereokit Sprites".to_owned(),
+            transform: Matrix::t_r(Vec3::new(0.0, 1.0, -4.0), Quat::Y_180),
             text_style,
         };
         this.color1
@@ -129,36 +131,24 @@ impl Sprite1 {
     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
     /// Called from IStepper::step after check_event, here you can draw your UI
-    fn draw(&mut self, token: &MainThreadToken) {
-        self.sprite1
-            .draw(token, Mat4::from_translation(glam::Vec3::new(-2.5, 1.5, -2.5)), Pivot::Center, None);
+    fn draw(&mut self, _token: &MainThreadToken) {
+        self.sprite1.draw(Matrix::t(Vec3::new(-2.5, 1.5, -2.5)), Pivot::Center, None, None);
 
         self.sprite_ico.draw(
-            token,
-            Mat4::from_rotation_translation(glam::Quat::from_rotation_y(PI), glam::Vec3::new(0.0, 1.5, -2.5)),
+            Matrix::t_r(Vec3::new(0.0, 1.5, -2.5), Quat::from_angles(0.0, 180.0, 0.0)),
             Pivot::BottomCenter,
             None,
-        );
-
-        self.sprite3.draw(token, Mat4::from_translation(glam::Vec3::new(2.5, 1.5, -2.5)), Pivot::YTop, None);
-
-        self.sprite4.draw(token, Mat4::from_translation(glam::Vec3::new(0.0, 3.5, -2.5)), Pivot::YTop, None);
-
-        Text::add_at(
-            token,
-            &self.title,
-            Matrix::t_r(Vec3::new(0.0, 1.0, -4.0), Quat::from_angles(0.0, 180.0, 0.0)),
-            Some(self.text_style),
-            None,
-            None,
-            None,
-            None,
-            None,
             None,
         );
 
-        Lines::add(token, Vec3::Z, Vec3::X, WHITE, None, 0.03);
+        self.sprite3.draw(Matrix::t(Vec3::new(2.5, 1.5, -2.5)), Pivot::YTop, None, None);
 
-        Lines::add_axis(token, Matrix::t(Vec3::ONE * 2.0).get_pose(), None, None);
+        self.sprite4.draw(Matrix::t(Vec3::new(0.0, 3.5, -2.5)), Pivot::YTop, None, None);
+
+        TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
+
+        Lines::add(Vec3::Z, Vec3::X, WHITE, None, 0.03);
+
+        Lines::add_axis(Matrix::t(Vec3::ONE * 2.0).get_pose(), None, None);
     }
 }

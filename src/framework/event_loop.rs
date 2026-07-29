@@ -1,6 +1,6 @@
 use crate::{
     sk::{AppFocus, MainThreadToken, QuitReason, Sk, SkInfo, sk_quit, sk_step},
-    system::{Input, Log},
+    system::Log,
 };
 use std::{
     any::{Any, TypeId},
@@ -8,18 +8,100 @@ use std::{
     collections::VecDeque,
     fmt,
     rc::Rc,
+    sync::mpsc,
     thread::sleep,
     time::Duration,
 };
-use winit::{
-    application::ApplicationHandler,
-    event::WindowEvent,
-    event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
-    window::WindowId,
-};
+
+// --- Custom event loop types replacing winit ---
+/// Error type for failed event loop creation (replaces `winit::error::EventLoopError`).
+#[derive(Debug)]
+pub struct EventLoopError(pub String);
+
+impl fmt::Display for EventLoopError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "event loop error: {}", self.0)
+    }
+}
+
+impl std::error::Error for EventLoopError {}
+
+/// Error returned when sending an event to a closed event loop.
+#[derive(Debug)]
+pub struct EventLoopClosedError<T>(pub T);
+
+impl<T> fmt::Display for EventLoopClosedError<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "event loop closed")
+    }
+}
+
+impl<T: fmt::Debug> std::error::Error for EventLoopClosedError<T> {}
+
+/// A thread-safe proxy to send events into the event loop from any thread.
+/// Replaces `winit::event_loop::EventLoopProxy`.
+pub struct EventLoopProxy<T: 'static> {
+    sender: mpsc::Sender<T>,
+}
+
+impl<T> Clone for EventLoopProxy<T> {
+    fn clone(&self) -> Self {
+        Self { sender: self.sender.clone() }
+    }
+}
+
+impl<T: fmt::Debug> fmt::Debug for EventLoopProxy<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("EventLoopProxy").finish()
+    }
+}
+
+impl<T> EventLoopProxy<T> {
+    /// Send an event to the event loop.
+    pub fn send_event(&self, event: T) -> Result<(), EventLoopClosedError<T>> {
+        self.sender.send(event).map_err(|e| EventLoopClosedError(e.0))
+    }
+}
+
+/// A simple event loop that replaces `winit::event_loop::EventLoop`.
+///
+/// Uses an MPSC channel for cross-thread event delivery. The main loop polls
+/// for incoming events each frame.
+pub struct EventLoop<T: 'static> {
+    receiver: mpsc::Receiver<T>,
+    proxy: EventLoopProxy<T>,
+}
+
+impl<T> Default for EventLoop<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<T> EventLoop<T> {
+    /// Create a new event loop with an MPSC channel for user events.
+    pub fn new() -> Self {
+        let (sender, receiver) = mpsc::channel();
+        let proxy = EventLoopProxy { sender };
+        Self { receiver, proxy }
+    }
+
+    /// Create a proxy that can be used to send events from other threads.
+    pub fn create_proxy(&self) -> EventLoopProxy<T> {
+        self.proxy.clone()
+    }
+
+    /// Try to receive a pending event without blocking.
+    pub(crate) fn try_recv(&self) -> Result<T, mpsc::TryRecvError> {
+        self.receiver.try_recv()
+    }
+}
 
 type OnStepClosure<'a> = Box<dyn FnMut(&mut Sk, &MainThreadToken) + 'a>;
-type OnDeviceEventClosure<'a> = Box<dyn FnMut(&mut Sk, WindowEvent) + 'a>;
+#[cfg(target_os = "android")]
+type OnDeviceEventClosure<'a> = Box<dyn FnMut(&mut Sk, &android_activity::AndroidApp) + 'a>;
+#[cfg(not(target_os = "android"))]
+type OnDeviceEventClosure<'a> = Box<dyn FnMut(&mut Sk) + 'a>;
 
 #[derive(PartialEq)]
 enum SleepPhase {
@@ -29,39 +111,38 @@ enum SleepPhase {
     Stopping,
 }
 
-/// Since winit v0.30 we have to implement [winit::application::ApplicationHandler]
-/// and run the app with [SkClosures::run] or [SkClosures::run_app]
+/// Run the app with [SkClosures::run] or [SkClosures::run_app]
 ///
 /// ### Example
 /// ```
 /// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 ///
-/// use stereokit_rust::{maths::{Matrix, Pose},  model::Model, system::Renderer, system::Log,
-///                      material::Material, tools::title::Title, util::named_colors,
+/// use stereokit_rust::{maths::Matrix,  model::Model, system::Log,
+///                      material::Material, tools::title::Title,
 ///                      framework::{SkClosures, StepperAction}, sk::QuitReason};
 ///
-/// let model = Model::from_file("cuve.glb", None).expect("Missing cube.glb").copy();
+/// let model = Model::from_file("cuve.glb", None, None).expect("Missing cube.glb").copy();
 /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None)
 ///     .expect("Missing shader");
 /// let transform = Matrix::t_r([0.0, 0.0, -6.5], [90.0, 0.0, 0.0]);
 ///
-/// let mut title = Title::new("SkClosures", None, None, None);
+/// let title = Title::new("SkClosures", None, None, None);
 /// sk.send_event(StepperAction::add("Title_ID", title));
 ///
 /// let mut iter = 0;
 /// let mut hidden_time = std::time::SystemTime::now();
 /// filename_scr = "screenshots/sk_closures.jpeg";
-/// SkClosures::new(sk, |sk, token|  {
+/// SkClosures::new(sk, |sk, _token|  {
 ///     // Main loop where we draw stuff and do things!!
 ///     if iter > number_of_steps {sk.quit(None)}
 ///
-///     model.draw_with_material(token, &material, transform ,  None, None);
+///     model.draw_with_material(&material, transform ,  None, None);
 ///
 ///     iter+=1;
 ///                 
 ///     if iter == number_of_steps {
 ///         // render screenshot
-///         system::Renderer::screenshot(token, filename_scr, 90,
+///         render::Renderer::screenshot(filename_scr, 90,
 ///             maths::Pose::look_at(from_scr, at_scr),
 ///             width_scr, height_scr, Some(fov_scr) );
 ///     }
@@ -73,7 +154,7 @@ enum SleepPhase {
 ///     if let Ok(duration) = now.duration_since(hidden_time) {
 ///         if duration.as_secs() > 15 {
 ///             Log::info("HIDDEN STEP -------> Dreaming ");
-///             hidden_time = now;hidden_time = now;
+///             hidden_time = now;
 ///         }
 ///     }
 /// })
@@ -82,7 +163,8 @@ enum SleepPhase {
 ///     assert_eq!(sk.get_quit_reason(), QuitReason::User);
 ///     Log::info(format!("QuitReason is {:?}", sk.get_quit_reason()));
 /// })
-/// .run(event_loop);
+/// .run();
+/// Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sk_closures.jpeg" alt="screenshot" width="200">
 pub struct SkClosures<'a> {
@@ -92,144 +174,109 @@ pub struct SkClosures<'a> {
     on_sleeping_step: OnStepClosure<'a>,
     on_window_event: OnDeviceEventClosure<'a>,
     shutdown: Box<dyn FnMut(&mut Sk) + 'a>,
-    window_id: Option<WindowId>,
     sleeping: SleepPhase,
 }
 
-impl ApplicationHandler<StepperAction> for SkClosures<'_> {
-    fn user_event(&mut self, _event_loop: &ActiveEventLoop, user_event: StepperAction) {
-        Log::diag(format!("UserEvent {user_event:?}"));
-        self.sk.send_event(user_event);
-    }
-
-    fn resumed(&mut self, _event_loop: &ActiveEventLoop) {
-        Log::info("Resumed !!");
-    }
-
-    fn window_event(&mut self, event_loop: &ActiveEventLoop, window_id: WindowId, event: WindowEvent) {
-        if event == WindowEvent::Destroyed {
-            Log::info(format!("SkClosure Window {window_id:?} Destroyed !!!"));
-            return;
-        }
-        match event {
-            WindowEvent::RedrawRequested => {
-                Log::diag("RedrawRequested: Time to wake up");
-                self.sleeping = SleepPhase::WakingUp;
-            }
-            WindowEvent::Focused(value) => {
-                Log::diag(format!("!!!Window {window_id:?} focused: {value:?}"));
-                if self.window_id != Some(window_id) {
-                    if self.window_id.is_none() {
-                        self.window_id = Some(window_id);
-                    } else {
-                        Log::warn(format!("There are more than 1 windows: {:?} & {:?}", self.window_id, window_id));
-                    }
-                }
-                if value {
-                    Log::diag("GainedFocus: Time to wake up");
-                    self.sleeping = SleepPhase::WakingUp;
-                }
-            }
-            WindowEvent::CloseRequested => {
-                Log::info("SkClosure LoopExiting !!");
-                // may be the second time we call this
-                self.sk.steppers.shutdown();
-                (self.shutdown)(&mut self.sk);
-                event_loop.exit();
-            }
-            WindowEvent::KeyboardInput { device_id: _, event, is_synthetic: _ } => match &event.state {
-                winit::event::ElementState::Pressed => {}
-                winit::event::ElementState::Released => {
-                    Input::text_inject_chars(event.logical_key.to_text().unwrap_or("?"));
-                }
-            },
-            _ => (self.on_window_event)(&mut self.sk, event),
-        }
-    }
-
-    // commented due to indiscretion on X11
-    // fn device_event(&mut self, _event_loop: &ActiveEventLoop, device_id: DeviceId, event: DeviceEvent) {
-    //     Log::diag(format!("SkClosure DeviceEvent {:?} -> {:?}", device_id, event));
-    // }
-
-    fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
-        if self.sk.get_app_focus() == AppFocus::Hidden && self.sleeping == SleepPhase::WokeUp {
-            self.sleeping = SleepPhase::Sleeping;
-            Log::diag("Time to sleep")
-        }
-        match self.sleeping {
-            SleepPhase::WokeUp => {
-                self.step(event_loop);
-            }
-            SleepPhase::WakingUp => {
-                self.step(event_loop);
-                if self.sk.get_app_focus() != AppFocus::Hidden {
-                    self.sleeping = SleepPhase::WokeUp;
-                    Log::diag("WokeUp");
-                }
-            }
-            SleepPhase::Sleeping => {
-                sleep(Duration::from_millis(200));
-                if cfg!(not(target_os = "android")) {
-                    self.step(event_loop);
-                }
-                (self.on_sleeping_step)(&mut self.sk, &self.token);
-                if self.sk.get_app_focus() == AppFocus::Active {
-                    self.sleeping = SleepPhase::WakingUp;
-                }
-            }
-            SleepPhase::Stopping => {}
-        }
-    }
-
-    // commented because it floods the log
-    // fn new_events(&mut self, _event_loop: &ActiveEventLoop, cause: winit::event::StartCause) {
-    //     Log::diag(format!("New events :{:?}", cause));
-    // }
-
-    fn suspended(&mut self, _event_loop: &ActiveEventLoop) {
-        Log::info("SkClosure Suspended !!");
-    }
-
-    fn exiting(&mut self, _event_loop: &ActiveEventLoop) {
-        Log::info("SkClosure Exiting !!");
-    }
-
-    fn memory_warning(&mut self, _event_loop: &ActiveEventLoop) {
-        Log::warn("SkClosure Memory Warning !!");
-    }
-}
-
 impl<'a> SkClosures<'a> {
+    #[cfg(target_os = "android")]
+    fn default_window_event_handler(_sk: &mut Sk, android_app: &android_activity::AndroidApp) {
+        use android_activity::InputStatus;
+
+        // --- KeyEvent path: intercept Backspace / ForwardDel before sk_app sees them ---
+        // sk_app only feeds key *state* for these, never the SK text queue.
+        if let Ok(mut iter) = android_app.input_events_iter() {
+            while iter.next(|_event| InputStatus::Unhandled) {}
+        }
+    }
+
+    #[cfg(not(target_os = "android"))]
+    fn default_window_event_handler(_sk: &mut Sk) {}
+
     /// This is the main loop call of the application. See [Steppers] for more details.
-    /// * event_loop: the winit event loop
-    fn step(&mut self, event_loop: &ActiveEventLoop) {
+    fn step(&mut self) {
+        // 1 - Run the sk_step to know if we can continue to run the app.
         if unsafe { sk_step(None) } == 0 {
-            self.window_event(event_loop, self.window_id.unwrap_or(WindowId::dummy()), WindowEvent::CloseRequested);
+            // Shutdown sequence
+            self.sk.steppers.shutdown();
+            (self.shutdown)(&mut self.sk);
             self.sleeping = SleepPhase::Stopping;
             Log::diag("sk_step() says stop()!!");
+            return;
         }
+
+        // 2 - Run the StepperAction then the step_pre_app steppers.
         if !self.sk.steppers.step(&mut self.token) {
             self.sk.steppers.shutdown();
             unsafe { sk_quit(QuitReason::User) }
             Log::diag("The app demand to quit()!!");
-            // see WindowEvent::CloseRequested for  (self.shutdown)(&mut self.sk);
         };
+
+        // 2-1 run the actions if any.
         while let Some(mut action) = self.sk.actions.pop_front() {
             action();
         }
+
+        // 2-2 run the main step
         (self.on_step)(&mut self.sk, &self.token);
 
+        // 2-3 run the step_post_app steppers
+        self.sk.steppers.step_post_app(&mut self.token);
+
         self.token.event_report.clear();
+    }
+
+    /// Process pending external events from the event loop channel.
+    fn poll_events(
+        &mut self,
+        event_loop: &EventLoop<StepperAction>,
+        #[cfg(target_os = "android")] android_app: &android_activity::AndroidApp,
+    ) {
+        // Poll Android activity events to prevent ANR (Application Not Responding).
+        // Without this, the system event queue fills up and Android shows the ANR dialog.
+        // Also detect Resume to wake up from sleep when the headset is turned back on.
+        #[cfg(target_os = "android")]
+        {
+            use android_activity::{MainEvent, PollEvent};
+
+            android_app.poll_events(Some(Duration::ZERO), |event| match event {
+                PollEvent::Main(main_event) => match main_event {
+                    MainEvent::Resume { .. } => {
+                        if self.sleeping == SleepPhase::Sleeping {
+                            self.sleeping = SleepPhase::WakingUp;
+                            Log::diag("Android Resume: waking up");
+                        }
+                    }
+                    MainEvent::Destroy => {
+                        Log::info("Android MainEvent::Destroy received");
+                    }
+                    MainEvent::InputAvailable { .. } => {
+                        // We have some Android input events to process, but we don't want to block the main loop,
+                        // so we will drain them in the next frames until there is no more.
+                        (self.on_window_event)(&mut self.sk, android_app);
+                    }
+                    otherwise => {
+                        Log::diag(format!("Android MainEvent {:?} received", otherwise));
+                    }
+                },
+                PollEvent::Timeout => {}
+                otherwise => {
+                    Log::diag(format!("Android PollEvent {:?} received", otherwise));
+                }
+            });
+        }
+
+        while let Ok(action) = event_loop.try_recv() {
+            Log::diag(format!("UserEvent {action:?}"));
+            self.sk.send_event(action);
+        }
     }
 
     /// Common way to run the main loop with only step and shutdown. This will block the thread until the application is
     /// shuting down.
     /// If you need a process when the headset is going to sleep ~~or track window events~~: use [SkClosures::new] instead.
-    /// * sk: the stereokit context.
-    /// * event_loop: the winit event loop.
-    /// * on_step: a callback that will be called every frame.
-    /// * on_shutdown: a callback that will be called when the application is shutting down. After on_step and after the
+    /// * `sk`: the stereokit context.
+    /// * `on_step`: a callback that will be called every frame.
+    /// * `on_shutdown`: a callback that will be called when the application is shutting down. After on_step and after the
     ///   steppers have been shutdown.
     ///
     /// see also [SkClosures::new]
@@ -237,18 +284,18 @@ impl<'a> SkClosures<'a> {
     /// ```
     /// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     ///
-    /// use stereokit_rust::{maths::{Matrix, Pose},  model::Model, system::Renderer, system::Log,
+    /// use stereokit_rust::{maths::Matrix,  model::Model, system::Log,
     ///                      framework::SkClosures , sk::QuitReason};
     ///
-    /// let model = Model::from_file("cuve.glb", None).expect("Missing cube.glb").copy();
+    /// let model = Model::from_file("cuve.glb", None, None).expect("Missing cube.glb").copy();
     /// let transform = Matrix::IDENTITY;
     ///
     /// let mut iter = 0;
-    /// SkClosures::run_app(sk, event_loop, |sk: &mut Sk, token: &MainThreadToken|  {
+    /// SkClosures::run_app(sk, |sk: &mut Sk, _token: &MainThreadToken|  {
     ///     // Main loop where we draw stuff and do things!!
     ///     if iter > number_of_steps {sk.quit(None)}
     ///
-    ///     model.draw(token,  transform ,  None, None);
+    ///     model.draw(transform, None, None);
     ///
     ///     iter += 1;
     /// },|sk: &mut Sk| {
@@ -256,34 +303,28 @@ impl<'a> SkClosures<'a> {
     ///     assert_eq!(sk.get_quit_reason(), QuitReason::User);
     ///     Log::info(format!("QuitReason is {:?}", sk.get_quit_reason()));
     /// });
+    /// Sk::shutdown();
     /// ```
     pub fn run_app<U: FnMut(&mut Sk, &MainThreadToken) + 'a, S: FnMut(&mut Sk) + 'a>(
-        sk: Sk,
-        event_loop: EventLoop<StepperAction>,
+        mut sk: Sk,
         on_step: U,
         on_shutdown: S,
     ) {
+        let event_loop = sk.take_event_loop().expect("EventLoop already consumed");
         let mut this = Self {
             sk,
             on_step: Box::new(on_step),
             on_sleeping_step: Box::new(|_sk, _main_thread| {}),
-            on_window_event: Box::new(|_sk, _window_event| {}),
+            on_window_event: Box::new(Self::default_window_event_handler),
             shutdown: Box::new(on_shutdown),
-            token: MainThreadToken {
-                #[cfg(feature = "event-loop")]
-                event_report: vec![],
-            },
-            window_id: None,
+            token: MainThreadToken { event_report: vec![] },
             sleeping: SleepPhase::WakingUp,
         };
-        event_loop.set_control_flow(ControlFlow::Poll);
-        if let Err(err) = event_loop.run_app(&mut this) {
-            Log::err(format!("event_loop.run_app returned with an error : {err:?}"));
-        }
+        this.run_loop(event_loop);
     }
 
     /// Create a new SkClosures with a step function.
-    /// Add some callbacks with [SkClosures::on_sleeping_step], ~~[SkClosures::on_window_event]~~  and [SkClosures::shutdown]
+    /// Add some callbacks with [SkClosures::on_sleeping_step], [SkClosures::on_window_event] and [SkClosures::shutdown]
     /// * sk : the Sk context.
     /// * on_step : the function to call on each step.
     ///
@@ -292,19 +333,19 @@ impl<'a> SkClosures<'a> {
     /// ```
     /// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     ///
-    /// use stereokit_rust::{maths::{Matrix, Pose},  model::Model, system::Renderer, system::Log,
+    /// use stereokit_rust::{maths::Matrix,  model::Model, system::Log,
     ///                      framework::SkClosures , sk::QuitReason};
     ///
-    /// let model = Model::from_file("cuve.glb", None).expect("Missing cube.glb").copy();
+    /// let model = Model::from_file("cuve.glb", None, None).expect("Missing cube.glb").copy();
     /// let transform = Matrix::IDENTITY;
     ///
     /// let mut iter = 0;
     /// let mut hidden_time = std::time::SystemTime::now();
-    /// SkClosures::new(sk, |sk, token|  {
+    /// SkClosures::new(sk, |sk, _token|  {
     ///     // Main loop where we draw stuff and do things!!
     ///     if iter > number_of_steps {sk.quit(None)}
     ///
-    ///     model.draw(token,  transform ,  None, None);
+    ///     model.draw(transform, None, None);
     ///
     ///     iter+=1;
     /// })
@@ -315,7 +356,7 @@ impl<'a> SkClosures<'a> {
     ///     if let Ok(duration) = now.duration_since(hidden_time) {
     ///         if duration.as_secs() > 15 {
     ///             Log::info("HIDDEN STEP -------> Dreaming ");
-    ///             hidden_time = now;hidden_time = now;
+    ///             hidden_time = now;
     ///         }
     ///     }
     /// })
@@ -324,20 +365,17 @@ impl<'a> SkClosures<'a> {
     ///     assert_eq!(sk.get_quit_reason(), QuitReason::User);
     ///     Log::info(format!("QuitReason is {:?}", sk.get_quit_reason()));
     /// })
-    /// .run(event_loop);
+    /// .run();
+    /// Sk::shutdown();
     /// ```
     pub fn new<U: FnMut(&mut Sk, &MainThreadToken) + 'a>(sk: Sk, on_step: U) -> Self {
         Self {
             sk,
             on_step: Box::new(on_step),
             on_sleeping_step: Box::new(|_sk, _main_thread| {}),
-            on_window_event: Box::new(|_sk, _windows_event| {}),
+            on_window_event: Box::new(Self::default_window_event_handler),
             shutdown: Box::new(|_sk| {}),
-            token: MainThreadToken {
-                #[cfg(feature = "event-loop")]
-                event_report: vec![],
-            },
-            window_id: None,
+            token: MainThreadToken { event_report: vec![] },
             sleeping: SleepPhase::WakingUp,
         }
     }
@@ -353,12 +391,12 @@ impl<'a> SkClosures<'a> {
         self
     }
 
-    /// Not usefull right now, but will be used to handle external controller events in the future.
+    /// Handle host window input events, including Android key events for external devices.
     /// * `on_window_event` - The function to call when a window event is received that as not been handled by the
     ///   Steppers controller.
     ///
     /// May be set after [SkClosures::new]
-    pub fn on_window_event<U: FnMut(&mut Sk, WindowEvent) + 'a>(&mut self, on_window_event: U) -> &mut Self {
+    pub fn on_window_event(&mut self, on_window_event: OnDeviceEventClosure<'a>) -> &mut Self {
         self.on_window_event = Box::new(on_window_event);
         self
     }
@@ -378,12 +416,53 @@ impl<'a> SkClosures<'a> {
     ///
     /// Have to be launched after [SkClosures::new] and eventually [SkClosures::on_sleeping_step] and [SkClosures::shutdown]
     /// see examples [SkClosures]
-    /// * `event_loop` - The event loop to run the app on. Created by [Sk::init_with_event_loop].
-    pub fn run(&mut self, event_loop: EventLoop<StepperAction>) {
-        event_loop.set_control_flow(ControlFlow::Poll);
-        if let Err(err) = event_loop.run_app(self) {
-            Log::err(format!("event_loop.run_app returned with an error : {err:?}"));
+    pub fn run(&mut self) {
+        let event_loop = self.sk.take_event_loop().expect("EventLoop already consumed");
+        self.run_loop(event_loop);
+    }
+
+    /// Internal main loop implementation.
+    fn run_loop(&mut self, event_loop: EventLoop<StepperAction>) {
+        // Clone the AndroidApp once before the loop to avoid borrowing SkInfo each frame.
+        #[cfg(target_os = "android")]
+        let android_app = self.sk.get_sk_info_clone().borrow().get_android_app().clone();
+
+        loop {
+            self.poll_events(
+                &event_loop,
+                #[cfg(target_os = "android")]
+                &android_app,
+            );
+
+            if self.sk.get_app_focus() == AppFocus::Hidden && self.sleeping == SleepPhase::WokeUp {
+                self.sleeping = SleepPhase::Sleeping;
+                Log::diag("Time to sleep")
+            }
+            match self.sleeping {
+                SleepPhase::WokeUp => {
+                    self.step();
+                }
+                SleepPhase::WakingUp => {
+                    self.step();
+                    if self.sk.get_app_focus() != AppFocus::Hidden {
+                        self.sleeping = SleepPhase::WokeUp;
+                        Log::diag("WokeUp");
+                    }
+                }
+                SleepPhase::Sleeping => {
+                    sleep(Duration::from_millis(200));
+                    if cfg!(not(target_os = "android")) {
+                        self.step();
+                    }
+                    (self.on_sleeping_step)(&mut self.sk, &self.token);
+                    if self.sk.get_app_focus() == AppFocus::Active {
+                        self.sleeping = SleepPhase::WakingUp;
+                    }
+                }
+                SleepPhase::Stopping => break,
+            }
         }
+        Log::info("SkClosure Exiting !!");
     }
 }
 
@@ -405,8 +484,8 @@ impl<'a> SkClosures<'a> {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{ font::Font, material::Material, maths::{Matrix, Quat, Vec3},
-///                       mesh::Mesh, system::{Text, TextStyle}, util::named_colors};
+/// use stereokit_rust::{ font::Font, material::Material, maths::{Matrix, Vec3},
+///                       mesh::Mesh, system::{Text, TextBuilder, TextStyle}, util::named_colors};
 ///
 /// /// The basic Stepper.
 /// pub struct AStepper {
@@ -415,7 +494,7 @@ impl<'a> SkClosures<'a> {
 ///     pub transform: Matrix,
 ///     round_cube: Option<Mesh>,
 ///     pub text: String,
-///     text_style: Option<TextStyle>,
+///     text_style: TextStyle,
 /// }
 ///
 /// unsafe impl Send for AStepper {}
@@ -430,7 +509,7 @@ impl<'a> SkClosures<'a> {
 ///             transform: Matrix::r([0.0, 180.0, 0.0]),
 ///             round_cube: None,
 ///             text: "IStepper\ntrait".to_owned(),
-///             text_style: None,
+///             text_style: TextStyle::default(),
 ///         }
 ///     }
 /// }
@@ -441,18 +520,17 @@ impl<'a> SkClosures<'a> {
 ///         self.id = id;
 ///         self.sk_info = Some(sk_info);
 ///         self.round_cube = Some(Mesh::generate_rounded_cube(Vec3::ONE / 5.0, 0.02, None));
-///         self.text_style = Some(Text::make_style(Font::default(), 0.3, named_colors::BLACK));
+///         self.text_style = Text::make_style(Font::default(), 0.3, named_colors::BLACK);
 ///
 ///         true
 ///     }
 ///
-///     fn step(&mut self, token: &MainThreadToken) {
+///     fn step(&mut self, _token: &MainThreadToken) {
 ///         if let Some(round_cube) = &self.round_cube {
-///             round_cube.draw(token, Material::pbr(),
+///             round_cube.draw(Material::pbr(),
 ///                             self.transform, Some(named_colors::RED.into()), None);
 ///         }
-///         Text::add_at(token, &self.text, self.transform, self.text_style,
-///                      None, None, None, None, None, None);
+///         TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
 ///     }
 /// }
 ///
@@ -462,6 +540,7 @@ impl<'a> SkClosures<'a> {
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
 ///     // No code here as we only use AStepper
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/a_stepper.jpeg" alt="screenshot" width="200">
 pub trait IStepper {
@@ -490,10 +569,24 @@ pub trait IStepper {
         true
     }
 
-    /// This Step method will be called every frame of the application, as long as Enabled is true. This happens
-    /// immediately before the main application’s Step callback.
+    /// This Step method will be called every frame of the application, as long as Enabled is true.
+    ///
+    /// By default this happens immediately before the app's main Step callback, but this can be configured with
+    /// [`IStepper::step_priority`]:
+    /// - `priority <= 0`: step before the app callback
+    /// - `priority > 0`: step after the app callback
+    ///
+    /// ISteppers are stepped in ascending order of priority, and ties preserve insertion order.
     /// <https://stereokit.net/Pages/StereoKit.Framework/IStepper/Step.html>
     fn step(&mut self, token: &MainThreadToken);
+
+    /// The priority value for this IStepper.
+    ///
+    /// Negative or zero values step before the app callback, positive values step after it.
+    /// ISteppers are sorted in ascending order by this value.
+    fn step_priority(&self) -> i32 {
+        0
+    }
 
     /// This is called when the IStepper is removed, or the application shuts down. This is always called on the main
     /// thread, and happens at the start of the next frame, before the main application’s Step callback.
@@ -513,7 +606,7 @@ pub trait IStepper {
 /// trigger an action:
 /// - Main thread/program where you can use sk: [Sk::send_event] or [crate::sk::Sk::quit] directly.
 /// - From any IStepper you should use [SkInfo::send_event].
-/// - From any threads you should use [winit::event_loop::EventLoopProxy::send_event]. You can get a proxy clone
+/// - From any threads you should use [EventLoopProxy::send_event]. You can get a proxy clone
 ///   from [SkInfo::get_event_loop_proxy] or [Sk::get_event_loop_proxy].
 ///
 /// <https://stereokit.net/Pages/StereoKit/SK.html>
@@ -521,7 +614,7 @@ pub trait IStepper {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{maths::{Vec3, Matrix}, util::named_colors,
+/// use stereokit_rust::{maths::Matrix, util::named_colors,
 ///     tools::{title::Title, screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW}}, };
 /// use std::any::TypeId; // we need this to remove all the steppers of a given type.
 ///
@@ -550,6 +643,7 @@ pub trait IStepper {
 ///        assert_eq!(sk.get_steppers_count(), 2);
 ///    }
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/stepper_actions.jpeg" alt="screenshot" width="200">
 pub enum StepperAction {
@@ -595,7 +689,7 @@ impl StepperAction {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::tools::screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW};
+    /// use stereokit_rust::tools::screenshot::ScreenshotViewer;
     ///
     /// sk.send_event(StepperAction::add_default::<ScreenshotViewer>("ScreenshotViewer_ID"));
     ///
@@ -603,12 +697,13 @@ impl StepperAction {
     ///     if iter < number_of_steps + 2 {
     ///         assert_eq!(sk.get_steppers_count(), 1);
     ///     } else if iter == number_of_steps + 2 {
-    ///         /// We sk.quit() at 4 and at 5 the stepper has been removed.
+    ///         // We sk.quit() at 4 and at 5 the stepper has been removed.
     ///         assert_eq!(sk.get_steppers_count(), 0);
     ///     } else {
     ///         panic!("there is not iter 6 !!!");
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn add_default<T: IStepper + Send + Default + 'static>(stepper_id: impl AsRef<str>) -> Self {
         let stepper = <T>::default();
@@ -627,9 +722,7 @@ impl StepperAction {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::named_colors,
-    ///                      tools::title::Title, };
-    /// use std::any::TypeId; // we need this to remove all the steppers of a given type.
+    /// use stereokit_rust::{maths::Matrix, util::named_colors, tools::title::Title, };
     ///
     /// let mut title = Title::new("Stepper 1", Some(named_colors::GREEN), None, None);
     /// title.transform = Matrix::t_r([0.0, 0.0, -1.0], [0.0, 135.0, 0.0]);
@@ -639,12 +732,13 @@ impl StepperAction {
     ///     if iter < number_of_steps + 2 {
     ///         assert_eq!(sk.get_steppers_count(), 1);
     ///     } else if iter == number_of_steps + 2 {
-    ///         /// We sk.quit() at 4 and at 5 the stepper has been removed.
+    ///         // We sk.quit() at 4 and at 5 the stepper has been removed.
     ///         assert_eq!(sk.get_steppers_count(), 0);
     ///     } else {
     ///         panic!("there is not iter 6 !!!");
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn add<T: IStepper + Send + 'static>(stepper_id: impl AsRef<str>, stepper: T) -> Self {
         let stepper_type = stepper.type_id();
@@ -673,6 +767,7 @@ impl StepperAction {
     ///         assert_eq!(sk.get_steppers_count(), 1);
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn remove_all(type_id: TypeId) -> Self {
         StepperAction::RemoveAll(type_id)
@@ -700,6 +795,7 @@ impl StepperAction {
     ///         assert_eq!(sk.get_steppers_count(), 2);
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn remove(stepper_id: impl AsRef<str>) -> Self {
         StepperAction::Remove(stepper_id.as_ref().to_string())
@@ -714,7 +810,7 @@ impl StepperAction {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::tools::screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW};
+    /// use stereokit_rust::tools::screenshot::ScreenshotViewer;
     ///
     /// sk.send_event(StepperAction::add_default::<ScreenshotViewer>("ScreenshotViewer_ID"));
     ///
@@ -723,12 +819,13 @@ impl StepperAction {
     ///         // Same as Sk::quit()
     ///         sk.send_event(StepperAction::quit("ScreenshotViewer_ID", "test_quit"));
     ///     } else if iter >= number_of_steps + 1 {
-    ///         /// We sk.quit() at 4 and at 5 the stepper has been removed.
+    ///         // We sk.quit() at 4 and at 5 the stepper has been removed.
     ///         assert_eq!(sk.get_steppers_count(), 0);
     ///     } else {
     ///         assert_eq!(sk.get_steppers_count(), 1);
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn quit(stepper_id: impl AsRef<str>, reason: impl AsRef<str>) -> Self {
         StepperAction::Quit(stepper_id.as_ref().to_string(), reason.as_ref().to_string())
@@ -754,12 +851,13 @@ impl StepperAction {
     ///     if iter < number_of_steps + 2 {
     ///         assert_eq!(sk.get_steppers_count(), 1);
     ///     } else if iter == number_of_steps + 2 {
-    ///         /// We sk.quit() at 4 and at 5 the stepper has been removed.
+    ///         // We sk.quit() at 4 and at 5 the stepper has been removed.
     ///         assert_eq!(sk.get_steppers_count(), 0);
     ///     } else {
     ///         panic!("there is not iter 6 !!!");
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn event<S: AsRef<str>>(stepper_id: S, key: S, value: S) -> Self {
         StepperAction::Event(stepper_id.as_ref().to_string(), key.as_ref().to_owned(), value.as_ref().to_owned())
@@ -814,7 +912,7 @@ pub const ISTEPPER_REMOVED: &str = "IStepper_Removed";
 /// ### Example
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{maths::{Vec3, Matrix}, util::named_colors, framework::Steppers,
+/// use stereokit_rust::{maths::Matrix, util::named_colors, framework::Steppers,
 ///     tools::{title::Title, screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW}}, };
 ///
 /// let mut steppers = Steppers::new(sk.get_sk_info_clone());
@@ -851,21 +949,21 @@ pub const ISTEPPER_REMOVED: &str = "IStepper_Removed";
 ///         assert_eq!(steppers.get_count(), 1);
 ///         steppers.shutdown();
 ///     } else if iter == number_of_steps + 2 {
-///         /// all the steppers should be removed from Sk and steppers
+///         // all the steppers should be removed from Sk and steppers
 ///         assert_eq!(sk.get_steppers_count(), 0);
 ///         assert_eq!(steppers.get_count(), 0);
 ///     }
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/steppers.jpeg" alt="screenshot" width="200">
-#[cfg(feature = "event-loop")]
 pub struct Steppers {
     sk_info: Rc<RefCell<SkInfo>>,
     running_steppers: Vec<StepperHandler>,
     stepper_actions: VecDeque<StepperAction>,
+    steppers_post_app: Vec<usize>,
 }
 
-#[cfg(feature = "event-loop")]
 impl Steppers {
     /// The only way to create a Steppers manager. You don't need it unless you want to swap different steppers.
     /// * `sk_info` - A SkInfo Rc clone of the running Sk instance.
@@ -874,31 +972,32 @@ impl Steppers {
     /// ### Example
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, framework::Steppers};
+    /// use stereokit_rust::framework::Steppers;
     ///
-    /// let mut steppers = Steppers::new(sk.get_sk_info_clone());
+    /// let steppers = Steppers::new(sk.get_sk_info_clone());
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     assert_eq!(steppers.get_count(), 0);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn new(sk_info: Rc<RefCell<SkInfo>>) -> Self {
-        Self { sk_info, running_steppers: vec![], stepper_actions: VecDeque::new() }
+        Self { sk_info, running_steppers: vec![], stepper_actions: VecDeque::new(), steppers_post_app: vec![] }
     }
 
     /// Push an action to consumme befor next frame
     /// * `action` - The action to push.
     ///
-    /// see also [Sk::send_event] [winit::event_loop::EventLoopProxy::send_event]
+    /// see also [Sk::send_event] [EventLoopProxy::send_event]
     /// ### Example
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::named_colors, framework::Steppers,
+    /// use stereokit_rust::{util::named_colors, framework::Steppers,
     ///     tools::{title::Title, screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW}}, };
     ///
     /// let mut steppers = Steppers::new(sk.get_sk_info_clone());
     ///
-    /// let mut title = Title::new("Steppers", Some(named_colors::BLUE), None, None);
+    /// let title = Title::new("Steppers", Some(named_colors::BLUE), None, None);
     /// steppers.send_event(StepperAction::add("Title_blue_ID1", title.clone()));
     /// steppers.send_event(StepperAction::add("Title_blue_ID2", title.clone()));
     /// steppers.send_event(StepperAction::add_default::<ScreenshotViewer>("ScreenshotViewer_ID"));
@@ -912,6 +1011,7 @@ impl Steppers {
     ///         assert_eq!(sk.get_steppers_count(), 2);
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn send_event(&mut self, action: StepperAction) {
         self.stepper_actions.push_back(action);
@@ -963,7 +1063,7 @@ impl Steppers {
             match stepper_h.state {
                 StepperState::Initializing => {
                     if stepper_h.stepper.initialize_done() {
-                        Log::info(format!("Stepper {} is initialized.", &stepper_h.id));
+                        Log::info(format!("Stepper {} is initialized.", stepper_h.id));
                         stepper_h.state = StepperState::Running;
                         token.event_report.push(StepperAction::event(stepper_h.id.as_str(), ISTEPPER_RUNNING, "true"));
                     }
@@ -979,7 +1079,7 @@ impl Steppers {
         }
         self.running_steppers.retain(|stepper_h| {
             if removed_steppers.contains(&stepper_h.id) {
-                Log::info(format!("Stepper {} is removed.", &stepper_h.id));
+                Log::info(format!("Stepper {} is removed.", stepper_h.id));
                 false
             } else {
                 true
@@ -987,13 +1087,31 @@ impl Steppers {
         });
 
         // 2 - Running the Running steppers
-        for stepper_h in
-            &mut self.running_steppers.iter_mut().filter(|stepper_h| stepper_h.state == StepperState::Running)
-        {
-            stepper_h.stepper.step(token)
+        let (mut step_pre_app, mut step_post_app): (Vec<usize>, Vec<usize>) = (0..self.running_steppers.len())
+            .partition(|&index| self.running_steppers[index].stepper.step_priority() <= 0);
+        step_pre_app.sort_by_key(|&index| self.running_steppers[index].stepper.step_priority());
+        step_post_app.sort_by_key(|&index| self.running_steppers[index].stepper.step_priority());
+
+        // 2-1 - Running the pre app steppers
+        for index in step_pre_app {
+            if self.running_steppers[index].state == StepperState::Running {
+                self.running_steppers[index].stepper.step(token);
+            }
         }
 
+        // 2-3 - memorize the post app steppers to let the app run and then run them after.
+        self.steppers_post_app = step_post_app;
         true
+    }
+
+    /// Execute the post app steppers. This must be call from the running [Sk] instance only, and right after the app step.
+    pub(crate) fn step_post_app(&mut self, token: &mut MainThreadToken) {
+        let step_post_app = std::mem::take(&mut self.steppers_post_app);
+        for index in step_post_app {
+            if self.running_steppers[index].state == StepperState::Running {
+                self.running_steppers[index].stepper.step(token);
+            }
+        }
     }
 
     /// An enumerable list of all currently active ISteppers registered with StereoKit. This does not include Steppers
@@ -1004,14 +1122,13 @@ impl Steppers {
     /// ### Example
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::named_colors,
-    ///     framework::{Steppers, StepperState, StepperHandler},
-    ///     tools::{title::Title, screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW}}, };
+    /// use stereokit_rust::{util::named_colors,framework::{Steppers, StepperState},
+    ///     tools::{title::Title, screenshot::ScreenshotViewer}, };
     /// use std::any::TypeId;
     ///
     /// let mut steppers = Steppers::new(sk.get_sk_info_clone());
     ///
-    /// let mut title = Title::new("Steppers", Some(named_colors::BLUE), None, None);
+    /// let title = Title::new("Steppers", Some(named_colors::BLUE), None, None);
     /// steppers.send_event(StepperAction::add("Title_blue_ID1", title.clone()));
     /// steppers.send_event(StepperAction::add_default::<ScreenshotViewer>("ScreenshotViewer_ID"));
     ///
@@ -1038,6 +1155,7 @@ impl Steppers {
     ///         assert_eq!(sk.get_steppers_count(), 0);
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_stepper_handlers(&self) -> &[StepperHandler] {
         self.running_steppers.as_slice()
@@ -1052,14 +1170,12 @@ impl Steppers {
     /// ### Example
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::named_colors,
-    ///     framework::{Steppers, StepperState, StepperHandler},
-    ///     tools::{title::Title, screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW}}, };
-    /// use std::any::TypeId;
+    /// use stereokit_rust::{util::named_colors,framework::Steppers,
+    ///     tools::{title::Title, screenshot::ScreenshotViewer}, };
     ///
     /// let mut steppers = Steppers::new(sk.get_sk_info_clone());
     ///
-    /// let mut title = Title::new("Steppers", Some(named_colors::BLUE), None, None);
+    /// let title = Title::new("Steppers", Some(named_colors::BLUE), None, None);
     /// steppers.send_event(StepperAction::add("Title_blue_ID1", title.clone()));
     /// steppers.send_event(StepperAction::add_default::<ScreenshotViewer>("ScreenshotViewer_ID"));
     ///
@@ -1080,6 +1196,7 @@ impl Steppers {
     ///         assert_eq!(sk.get_steppers_count(), 0);
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn shutdown(&mut self) {
         self.stepper_actions.clear();
@@ -1100,7 +1217,7 @@ impl Steppers {
             }
             self.running_steppers.retain(|stepper_h| {
                 if removed_steppers.contains(&stepper_h.id) {
-                    Log::info(format!("Stepper {} is removed.", &stepper_h.id));
+                    Log::info(format!("Stepper {} is removed.", stepper_h.id));
                     false
                 } else {
                     true
@@ -1122,14 +1239,12 @@ impl Steppers {
     /// ### Example
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::{Vec3, Matrix}, util::named_colors,
-    ///     framework::{Steppers, StepperState, StepperHandler},
-    ///     tools::{title::Title, screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW}}, };
-    /// use std::any::TypeId;
+    /// use stereokit_rust::{util::named_colors,framework::Steppers,
+    ///     tools::{title::Title, screenshot::ScreenshotViewer}, };
     ///
     /// let mut steppers = Steppers::new(sk.get_sk_info_clone());
     ///
-    /// let mut title = Title::new("Steppers", Some(named_colors::BLUE), None, None);
+    /// let title = Title::new("Steppers", Some(named_colors::BLUE), None, None);
     /// steppers.send_event(StepperAction::add("Title_blue_ID1", title.clone()));
     /// steppers.send_event(StepperAction::add_default::<ScreenshotViewer>("ScreenshotViewer_ID"));
     ///
@@ -1145,6 +1260,7 @@ impl Steppers {
     ///         assert_eq!(sk.get_steppers_count(), 0);
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_count(&self) -> usize {
         self.running_steppers.len()
@@ -1163,8 +1279,8 @@ impl Steppers {
 /// ```
 /// stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{font::Font, framework::StepperClosures, material::Material,
-///                      maths::{Matrix, Quat, Vec3},mesh::Mesh, system::{Renderer, Text},
-///                      util::{Time, named_colors},};
+///                      maths::{Matrix, Vec3},mesh::Mesh, util::named_colors,
+///                      render::Renderer, system::{Text, TextBuilder} };
 ///
 /// pub struct BStepper {
 ///     id: StepperId,
@@ -1193,18 +1309,17 @@ impl Steppers {
 ///         self.id = id;
 ///         self.sk_info = Some(sk_info);
 ///
-///         let mut transform = Matrix::t_r([0.0, 1.0, -0.5], [0.0, 180.0, 0.0]);
+///         let transform = Matrix::t_r([0.0, 1.0, -0.5], [0.0, 180.0, 0.0]);
 ///         let mut round_cube = Mesh::generate_rounded_cube(Vec3::ONE / 5.0, 0.005, Some(16));
 ///         round_cube.id("round_cube BStepper");
-///         let text_style = Some(Text::make_style(Font::default(), 0.3, named_colors::GOLD));
+///         let text_style = Text::make_style(Font::default(), 0.3, named_colors::GOLD);
 ///         let text = self.text.clone();
 ///
 ///         self.closures.set(
-///             move |token| {
-///                 Renderer::add_mesh(token, &round_cube, Material::pbr(),
+///             move |_token| {
+///                 Renderer::add_mesh(&round_cube, Material::pbr(),
 ///                                    transform, Some(named_colors::RED.into()), None);
-///                 Text::add_at(token, &text, transform, text_style,
-///                              None, None, None, None, None, None);
+///                 TextBuilder::new(&text).transform(transform).style(text_style).add();
 ///                 // (1) You cannot do that here: self.text = "youpi".into();
 ///             },
 ///             || Log::diag("Closing Stepper B !!!"),
@@ -1233,6 +1348,7 @@ impl Steppers {
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
 ///     // No code here as we only use BStepper
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/stepper_closures.jpeg" alt="screenshot" width="200">
 pub struct StepperClosures<'a> {

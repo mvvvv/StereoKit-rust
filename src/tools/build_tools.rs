@@ -25,20 +25,40 @@ use crate::tools::os_api::{get_assets_dir, get_shaders_sks_dir, get_shaders_sour
 ///
 /// let skshaderc_exe_path = get_skshaderc(bin_dir, true);
 /// assert!(skshaderc_exe_path.is_ok());
-/// assert!(skshaderc_exe_path.unwrap().ends_with("skshaderc.exe"));
+/// assert!(skshaderc_exe_path.unwrap_or_default().ends_with("skshaderc.exe"));
 /// ```
 pub fn get_skshaderc(bin_dir: PathBuf, with_wine: bool) -> Result<PathBuf, io::Error> {
-    let mut skshaderc = bin_dir.clone();
+    let mut target_root = bin_dir.clone();
     let target_dir = env::var("CARGO_TARGET_DIR").unwrap_or("target".into());
-    skshaderc.push(target_dir);
+    target_root.push(target_dir);
 
-    if !skshaderc.exists() {
+    if !target_root.exists() {
         return Err(io::Error::new(
             io::ErrorKind::NotFound,
-            format!("{} not found. Please run 'cargo build' first.", skshaderc.display()),
+            format!("{} not found. Please run 'cargo build' first.", target_root.display()),
         ));
     }
 
+    let mut tools_dir = target_root.clone();
+    tools_dir.push("tools");
+
+    if !with_wine && (cfg!(target_os = "linux") || cfg!(target_os = "macos")) {
+        let mut flat_unix = tools_dir.clone();
+        flat_unix.push("skshaderc");
+        if flat_unix.exists() {
+            return Ok(flat_unix);
+        }
+    }
+
+    if cfg!(windows) || with_wine {
+        let mut flat_win = tools_dir.clone();
+        flat_win.push("skshaderc.exe");
+        if flat_win.exists() {
+            return Ok(flat_win);
+        }
+    }
+
+    // If not found in flat structure, we recall the exe_type structure from sk_gpu to help resolve the problem.
     let target_os = if with_wine {
         "win32"
     } else if cfg!(target_os = "linux") {
@@ -59,14 +79,13 @@ pub fn get_skshaderc(bin_dir: PathBuf, with_wine: bool) -> Result<PathBuf, io::E
     };
     let exe_type = target_os.to_string() + "_" + target_arch;
 
-    skshaderc.push(r"tools");
-    skshaderc.push(exe_type);
+    tools_dir.push(exe_type);
     if cfg!(windows) || with_wine {
-        skshaderc.push("skshaderc.exe");
+        tools_dir.push("skshaderc.exe");
     } else {
-        skshaderc.push("skshaderc");
+        tools_dir.push("skshaderc");
     }
-    Ok(skshaderc)
+    Ok(tools_dir)
 }
 
 /// Compile hsls file to sks. Use variables `SK_RUST_SHADERS_SOURCE_DIR`  `SK_RUST_ASSETS_DIR` and `SK_RUST_SHADERS_SKS_DIR`
@@ -124,41 +143,76 @@ pub fn compile_hlsl(
     shaders_include.push("tools");
     shaders_include.push("include");
 
-    println!("skshaderc executable used :  {:?}", &skshaderc);
-    println!("Shaders sources are here : {:?}", &shaders_source_path);
-    println!("Shaders compiled there : {:?}", &shaders_path);
+    println!("skshaderc executable used :  {:?}", skshaderc);
+    println!("Shaders sources are here : {:?}", shaders_source_path);
+    println!("Shaders compiled there : {:?}", shaders_path);
 
     let excluded_extensions = [OsStr::new("hlsli"), OsStr::new("sks"), OsStr::new("txt"), OsStr::new("md")];
+    let mut failed_shaders: Vec<PathBuf> = vec![];
+    let mut to_compile: Vec<(PathBuf, String)> = vec![];
+
     if let Ok(entries) = shaders_source_path.read_dir() {
         for entry in entries {
-            let file = entry?.path();
-            println!("Compiling file : {:?}", &file);
-            if file.is_file()
-                && let Some(extension) = file.extension()
+            let entry_path = entry?.path();
+            if entry_path.is_dir() {
+                let dir_name = entry_path.file_name().ok_or_else(|| Error::other("subdirectory has no name"))?;
+                let sub_out = PathBuf::from(&shaders_path).join(dir_name);
+                if !sub_out.exists() {
+                    create_dir(&sub_out)?;
+                }
+                let sub_out_str = String::from(sub_out.to_str().expect("sub_shaders_path can't be a &str!")) + "/";
+                if let Ok(sub_entries) = entry_path.read_dir() {
+                    for sub_entry in sub_entries {
+                        let file = sub_entry?.path();
+                        if file.is_file()
+                            && let Some(extension) = file.extension()
+                            && !excluded_extensions.contains(&extension)
+                        {
+                            to_compile.push((file, sub_out_str.clone()));
+                        }
+                    }
+                }
+            } else if entry_path.is_file()
+                && let Some(extension) = entry_path.extension()
                 && !excluded_extensions.contains(&extension)
             {
-                let mut cmd = if with_wine {
-                    let mut c = Command::new("wine");
-                    c.arg(skshaderc.clone());
-                    c
-                } else {
-                    Command::new(OsStr::new(skshaderc.to_str().unwrap_or("NOPE")))
-                };
-                cmd.arg("-f").arg("-e").arg("-i").arg(&shaders_include).arg("-o").arg(&shaders_path);
-                for arg in options {
-                    cmd.arg(arg);
-                }
-                let output = cmd.arg(file).output().expect("failed to run shader compiler");
-                let out = String::from_utf8(output.clone().stdout).unwrap_or(format!("{output:#?}"));
-                if !out.is_empty() {
-                    println!("{out}")
-                }
-                let err = String::from_utf8(output.clone().stderr).unwrap_or(format!("{output:#?}"));
-                if !err.is_empty() {
-                    println!("{err}")
-                }
+                to_compile.push((entry_path, shaders_path.clone()));
             }
         }
+    }
+
+    for (file, out_path) in &to_compile {
+        println!("Compiling file : {:?}", file);
+        let mut cmd = if with_wine {
+            let mut c = Command::new("wine");
+            c.arg(skshaderc.clone());
+            c
+        } else {
+            Command::new(OsStr::new(skshaderc.to_str().unwrap_or("NOPE")))
+        };
+        cmd.arg("-f").arg("-e").arg("-i").arg(&shaders_include).arg("-o").arg(out_path);
+        for arg in options {
+            cmd.arg(arg);
+        }
+        let output = cmd.arg(file).output().expect("failed to run shader compiler");
+        let out = String::from_utf8(output.clone().stdout).unwrap_or(format!("{output:#?}"));
+        if !out.is_empty() {
+            println!("{out}")
+        }
+        let err = String::from_utf8(output.clone().stderr).unwrap_or(format!("{output:#?}"));
+        if !err.is_empty() {
+            println!("{err}")
+        }
+        if !output.status.success() {
+            failed_shaders.push(file.clone());
+        }
+    }
+    if !failed_shaders.is_empty() {
+        println!("\x1b[1;31m---Shader compilation failed for {} file(s):", failed_shaders.len());
+        for shader in &failed_shaders {
+            println!("  - {:?}", shader);
+        }
+        print!("\x1b[0m");
     }
     Ok(true)
 }
@@ -201,7 +255,7 @@ pub fn get_cargo_name() -> Result<String, Error> {
         let line = line.trim();
         if in_package {
             if line.starts_with("name=") || line.starts_with("name") {
-                return Ok(line.split("=").last().unwrap().trim().replace("\"", ""));
+                return Ok(line.split("=").last().unwrap_or_default().trim().replace("\"", ""));
             }
         } else if line.contains("[package]") {
             in_package = true;

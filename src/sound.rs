@@ -41,7 +41,7 @@ use std::{
 /// filename_scr = "screenshots/sound.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
 ///     transform.update_t_r(&position, &rotation);
-///     mesh.draw(token, &material, transform, Some(named_colors::CYAN.into()), None);
+///     mesh.draw(&material, transform, Some(named_colors::CYAN.into()), None);
 ///     if iter == 0 {
 ///         assert!(plane_sound_inst.is_playing());
 ///         position = Vec3::new(0.0, 0.0, -1.0);
@@ -56,6 +56,7 @@ use std::{
 ///         assert!(!plane_sound_inst.is_playing());
 ///    }
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sound.jpeg" alt="screenshot" width="200">
 #[repr(C)]
@@ -118,6 +119,10 @@ impl IAsset for Sound {
     fn get_id(&self) -> &str {
         self.get_id()
     }
+
+    fn as_asset(&self) -> crate::system::AssetT {
+        self.0.as_ptr() as crate::system::AssetT
+    }
 }
 
 // Default is click
@@ -153,9 +158,8 @@ impl Sound {
     /// stream_sound.write_samples(samples.as_slice(), Some(48000));
     /// assert_eq!(stream_sound.get_duration(), 0.5);
     ///
-    /// let mut stream_sound_inst = stream_sound.play([0.0, 0.0, -0.5], Some(0.5));
+    /// let stream_sound_inst = stream_sound.play([0.0, 0.0, -0.5], Some(0.5));
     ///
-    /// filename_scr = "screenshots/sound_stream.jpeg";
     /// number_of_steps = 150;
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     if iter == 0 {
@@ -166,6 +170,7 @@ impl Sound {
     ///         assert!(!stream_sound_inst.is_playing());
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn create_stream(stream_buffer_duration: f32) -> Result<Sound, StereoKitError> {
         Ok(Sound(
@@ -184,19 +189,21 @@ impl Sound {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::Vec3, sound::Sound};
     ///
-    /// let mut position = Vec3::new(-0.5, 0.0, 0.5);
+    /// let position = Vec3::new(-0.5, 0.0, 0.5);
     ///
     /// let mut plane_sound = Sound::from_file("sounds/no.wav")
     ///                           .expect("no.wav should be in the sounds folder");
     /// assert_eq!(plane_sound.get_id(), "sounds/no.wav");
     /// plane_sound.id("sound_plane").decibels(90.0);
     ///
-    /// let mut plane_sound_inst = plane_sound.play(position, Some(1.0));
+    /// let plane_sound_inst = plane_sound.play(position, Some(1.0));
     ///
+    /// # if cfg!(not(feature = "test-xr-mode")) {
     /// number_of_steps = 150;
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     //TODO: assert!(plane_sound_inst.is_playing());
+    ///     assert!(plane_sound_inst.is_playing());
     /// );
+    /// # } sk::Sk::shutdown();
     /// ```
     pub fn from_file(file_utf8: impl AsRef<Path>) -> Result<Sound, StereoKitError> {
         let path_buf = file_utf8.as_ref().to_path_buf();
@@ -227,11 +234,12 @@ impl Sound {
     /// assert!(sound.get_id().starts_with("auto/sound_"));
     /// sound.id("sound_samples");
     ///
-    /// let mut sound_inst = sound.play([0.0, 0.0, -0.5], Some(0.5));
+    /// let sound_inst = sound.play([0.0, 0.0, -0.5], Some(0.5));
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     assert!(sound_inst.is_playing());
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn from_samples(in_arr_samples_at_48000s: &[f32]) -> Result<Sound, StereoKitError> {
         Ok(Sound(
@@ -263,12 +271,14 @@ impl Sound {
     /// assert!(sound.get_id().starts_with("auto/sound_"));
     /// sound.id("sound_generator");
     ///
-    /// let mut sound_inst = sound.play([0.0, 0.0, -0.5], Some(0.5));
+    /// let sound_inst = sound.play([0.0, 0.0, -0.5], Some(0.5));
     ///
+    /// # if cfg!(not(feature = "test-xr-mode")) {
     /// number_of_steps = 150;
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     //assert!(sound_inst.is_playing());
+    ///     assert!(sound_inst.is_playing());
     /// );
+    /// # }sk::Sk::shutdown();
     /// ```
     pub fn generate(generator: unsafe extern "C" fn(f32) -> f32, duration: f32) -> Result<Sound, StereoKitError> {
         Ok(Sound(
@@ -295,6 +305,7 @@ impl Sound {
     ///                             .expect("sound_plane should be found");
     /// assert_eq!(plane_sound.get_id(), same_sound.get_id());
     /// assert_eq!(plane_sound, same_sound);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn find<S: AsRef<str>>(id: S) -> Result<Sound, StereoKitError> {
         let cstr_id = CString::new(id.as_ref())?;
@@ -314,13 +325,14 @@ impl Sound {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::sound::Sound;
     ///
-    /// let mut plane_sound = Sound::from_file("sounds/plane_engine.mp3")
+    /// let plane_sound = Sound::from_file("sounds/plane_engine.mp3")
     ///                           .expect("plane_engine.mp3 should be in the sounds folder");
     ///
     /// let same_sound =  plane_sound.clone_ref();
     ///
     /// assert_eq!(plane_sound.get_id(), same_sound.get_id());
     /// assert_eq!(plane_sound, same_sound);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn clone_ref(&self) -> Sound {
         Sound(NonNull::new(unsafe { sound_find(sound_get_id(self.0.as_ptr())) }).expect("<asset>::clone_ref failed!"))
@@ -348,9 +360,10 @@ impl Sound {
     ///                            expect("A sound stream should be created");
     /// assert!(stream_sound.get_id().starts_with("auto/sound_"));
     /// stream_sound.id("sound_stream");
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn id<S: AsRef<str>>(&mut self, id: S) -> &mut Self {
-        let cstr_id = CString::new(id.as_ref()).unwrap();
+        let cstr_id = CString::new(id.as_ref()).unwrap_or_default();
         unsafe { sound_set_id(self.0.as_ptr(), cstr_id.as_ptr()) };
         self
     }
@@ -370,7 +383,7 @@ impl Sound {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::Vec3, sound::Sound};
     ///
-    /// let mut position = Vec3::new(-0.5, 0.0, 0.5);
+    /// let position = Vec3::new(-0.5, 0.0, 0.5);
     ///
     /// let mut plane_sound = Sound::from_file("sounds/plane_engine.mp3").
     ///                           expect("A sound should be created");
@@ -385,6 +398,7 @@ impl Sound {
     ///        plane_sound_inst.position(Vec3::new(0.5, 0.0, 0.5));
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn play(&self, at: impl Into<Vec3>, volume: Option<f32>) -> SoundInst {
         let volume = volume.unwrap_or(1.0);
@@ -399,13 +413,13 @@ impl Sound {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::Vec3, sound::Sound};
     ///
-    /// let mut position = Vec3::new(-0.5, 0.0, 0.5);
+    /// let position = Vec3::new(-0.5, 0.0, 0.5);
     ///
     /// let mut plane_sound = Sound::from_file("sounds/plane_engine.mp3").
     ///                           expect("A sound should be created");
     /// plane_sound.id("sound_plane").decibels(70.0);
     ///
-    /// let mut plane_sound_inst = plane_sound.play(position, Some(1.0));
+    /// let plane_sound_inst = plane_sound.play(position, Some(1.0));
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     assert!(plane_sound_inst.is_playing());
@@ -417,6 +431,7 @@ impl Sound {
     ///         assert_eq!(plane_sound.get_decibels(), 10.0);
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn decibels(&self, decibels: f32) {
         unsafe { sound_set_decibels(self.0.as_ptr(), decibels) }
@@ -437,7 +452,7 @@ impl Sound {
     /// use stereokit_rust::sound::Sound;
     ///
     /// // Half of the samples won't be kept in the buffer (0.5 instead of 1.0)
-    /// let mut stream_sound = Sound::create_stream(0.5).
+    /// let stream_sound = Sound::create_stream(0.5).
     ///                            expect("A sound stream should be created");
     ///
     /// let mut samples: Vec<f32> = vec![0.0; 48000];
@@ -457,6 +472,7 @@ impl Sound {
     ///
     /// let read_count = stream_sound.read_samples(read_samples.as_mut_slice(), Some(48000));
     /// assert_eq!(read_count, 0);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn read_samples(&self, out_arr_samples: &mut [f32], sample_count: Option<u64>) -> u64 {
         let sample_count = sample_count.unwrap_or(out_arr_samples.len() as u64);
@@ -483,7 +499,7 @@ impl Sound {
     /// use stereokit_rust::sound::Sound;
     ///
     /// // Half of the samples won't be kept in the buffer (0.5 instead of 1.0)
-    /// let mut stream_sound = Sound::create_stream(1.0).
+    /// let stream_sound = Sound::create_stream(1.0).
     ///                            expect("A sound stream should be created");
     ///
     /// let mut samples: Vec<f32> = vec![0.0; 48000];
@@ -493,6 +509,7 @@ impl Sound {
     /// stream_sound.write_samples(samples.as_slice(), Some(48000));
     ///
     /// assert_eq!(stream_sound.get_unread_samples(), 48000);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn write_samples(&self, in_arr_samples: &[f32], sample_count: Option<u64>) {
         let sample_count = sample_count.unwrap_or(in_arr_samples.len() as u64);
@@ -505,7 +522,7 @@ impl Sound {
     /// see also [`sound_get_id`]
     /// see example in [`Sound::id`]
     pub fn get_id(&self) -> &str {
-        unsafe { CStr::from_ptr(sound_get_id(self.0.as_ptr())) }.to_str().unwrap()
+        unsafe { CStr::from_ptr(sound_get_id(self.0.as_ptr())) }.to_str().unwrap_or_default()
     }
 
     /// This is the current position of the playback cursor, measured in samples from the start of the audio data.
@@ -521,12 +538,12 @@ impl Sound {
     /// for i in 0..48000 {
     ///     samples[i] = (i as f32 / 48000.0).sin();
     /// }
-    /// let mut sound = Sound::from_samples(&samples)
+    /// let sound = Sound::from_samples(&samples)
     ///                     .expect("Sound should be created from samples");
     ///
     /// assert_eq!(sound.get_cursor_samples(), 0);
     ///
-    /// let mut sound_inst = sound.play([0.0, 0.0, -0.5], Some(0.5));
+    /// let sound_inst = sound.play([0.0, 0.0, -0.5], Some(0.5));
     /// sound_inst.stop();
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
@@ -556,13 +573,14 @@ impl Sound {
     /// for i in 0..48000 {
     ///     samples[i] = (i as f32 / 48000.0).sin();
     /// }
-    /// let mut sound = Sound::from_samples(&samples)
+    /// let sound = Sound::from_samples(&samples)
     ///                     .expect("Sound should be created from samples");
     /// assert_eq!(sound.get_duration(), 1.0);
     ///
-    /// let mut sound_file = Sound::from_file("sounds/no.wav")
+    /// let sound_file = Sound::from_file("sounds/no.wav")
     ///                          .expect("Sound should be created from file");
     /// assert_eq!(sound_file.get_duration(), 1.4830834);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_duration(&self) -> f32 {
         unsafe { sound_duration(self.0.as_ptr()) }
@@ -590,15 +608,16 @@ impl Sound {
     /// for i in 0..48000 {
     ///     samples[i] = (i as f32 / 48000.0).sin();
     /// }
-    /// let mut sound = Sound::from_samples(&samples)
+    /// let sound = Sound::from_samples(&samples)
     ///                     .expect("Sound should be created from samples");
     /// assert_eq!(sound.get_total_samples(), 48000);
     ///
-    /// let mut sound_file = Sound::from_file("sounds/no.wav")
+    /// let sound_file = Sound::from_file("sounds/no.wav")
     ///                          .expect("Sound should be created from file");
     /// assert_eq!(sound_file.get_duration(), 1.4830834);
     /// // 1.4830834 * 48000 = 71188
     /// assert_eq!(sound_file.get_total_samples(), 71188);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_total_samples(&self) -> u64 {
         unsafe { sound_total_samples(self.0.as_ptr()) }
@@ -616,7 +635,7 @@ impl Sound {
     /// use stereokit_rust::sound::Sound;
     ///
     /// // Half of the samples won't be kept in the buffer (0.5 instead of 1.0)
-    /// let mut stream_sound = Sound::create_stream(1.0).
+    /// let stream_sound = Sound::create_stream(1.0).
     ///                            expect("A sound stream should be created");
     ///
     /// let mut samples: Vec<f32> = vec![0.0; 48000];
@@ -631,6 +650,7 @@ impl Sound {
     /// let read_count = stream_sound.read_samples(read_samples.as_mut_slice(), Some(48000));
     /// assert_eq!(read_count, 48000);
     /// assert_eq!(stream_sound.get_unread_samples(), 0);
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_unread_samples(&self) -> u64 {
         unsafe { sound_unread_samples(self.0.as_ptr()) }
@@ -643,21 +663,25 @@ impl Sound {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::Vec3, sound::Sound};
+    /// use stereokit_rust::sound::Sound;
     ///
-    /// let mut click_sound = Sound::click();
+    /// let click_sound = Sound::click();
     /// assert_eq!(click_sound.get_id(), "default/sound_click");
+    /// # system::Assets::block_for_priority(i32::MAX);
     ///
-    /// let mut click_sound_inst = click_sound.play([0.0, 0.0, -0.5], Some(0.5));
+    /// let click_sound_inst = click_sound.play([0.0, 0.0, -0.5], Some(0.5));
     ///
     /// number_of_steps = 100;
+    /// let mut was_played = false;
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     // TODO: assert!(grab_sound_inst.is_playing());
+    ///     was_played |= click_sound_inst.is_playing();
     /// );
+    /// assert!(was_played);
+    /// sk::Sk::shutdown();
     /// ```
     pub fn click() -> Self {
-        let cstr_id = CString::new("default/sound_click").unwrap();
-        Sound(NonNull::new(unsafe { sound_find(cstr_id.as_ptr()) }).unwrap())
+        let cstr_id = CString::new("default/sound_click").unwrap_or_default();
+        Sound(NonNull::new(unsafe { sound_find(cstr_id.as_ptr()) }).expect("default/sound_click should be found!"))
     }
 
     /// A default unclick sound that lasts for 300ms. It’s a procedurally generated sound based on a mouse press, with
@@ -667,21 +691,25 @@ impl Sound {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::Vec3, sound::Sound};
+    /// use stereokit_rust::sound::Sound;
     ///
-    /// let mut unclick_sound = Sound::unclick();
+    /// let unclick_sound = Sound::unclick();
     /// assert_eq!(unclick_sound.get_id(), "default/sound_unclick");
+    /// # system::Assets::block_for_priority(i32::MAX);
     ///
-    /// let mut unclick_sound_inst = unclick_sound.play([0.0, 0.0, -0.5], Some(0.5));
+    /// let unclick_sound_inst = unclick_sound.play([0.0, 0.0, -0.5], Some(0.5));
     ///
     /// number_of_steps = 100;
+    /// let mut was_played = false;
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     // TODO: assert!(grab_sound_inst.is_playing());
+    ///     was_played |= unclick_sound_inst.is_playing();
     /// );
+    /// assert!(was_played);
+    /// sk::Sk::shutdown();
     /// ```
     pub fn unclick() -> Self {
-        let cstr_id = CString::new("default/sound_unclick").unwrap();
-        Sound(NonNull::new(unsafe { sound_find(cstr_id.as_ptr()) }).unwrap())
+        let cstr_id = CString::new("default/sound_unclick").unwrap_or_default();
+        Sound(NonNull::new(unsafe { sound_find(cstr_id.as_ptr()) }).expect("default/sound_unclick should be found!"))
     }
 
     /// A default grab sound
@@ -690,21 +718,25 @@ impl Sound {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::Vec3, sound::Sound};
+    /// use stereokit_rust::sound::Sound;
     ///
-    /// let mut grab_sound = Sound::grab();
+    /// let grab_sound = Sound::grab();
     /// assert_eq!(grab_sound.get_id(), "default/sound_grab");
+    /// # system::Assets::block_for_priority(i32::MAX);
     ///
-    /// let mut grab_sound_inst = grab_sound.play([0.0, 0.0, -0.5], Some(0.5));
+    /// let grab_sound_inst = grab_sound.play([0.0, 0.0, -0.5], Some(0.5));
     ///
     /// number_of_steps = 100;
+    /// let mut was_played = false;
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     // TODO: assert!(grab_sound_inst.is_playing());
+    ///     was_played |= grab_sound_inst.is_playing();
     /// );
+    /// assert!(was_played);
+    /// sk::Sk::shutdown();
     /// ```
     pub fn grab() -> Self {
-        let cstr_id = CString::new("default/sound_grab").unwrap();
-        Sound(NonNull::new(unsafe { sound_find(cstr_id.as_ptr()) }).unwrap())
+        let cstr_id = CString::new("default/sound_grab").unwrap_or_default();
+        Sound(NonNull::new(unsafe { sound_find(cstr_id.as_ptr()) }).expect("default/sound_grab should be found!"))
     }
 
     /// A default ungrab sound
@@ -713,21 +745,25 @@ impl Sound {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::Vec3, sound::Sound};
+    /// use stereokit_rust::sound::Sound;
     ///
-    /// let mut ungrab_sound = Sound::ungrab();
+    /// let ungrab_sound = Sound::ungrab();
     /// assert_eq!(ungrab_sound.get_id(), "default/sound_ungrab");
+    /// # system::Assets::block_for_priority(i32::MAX);
     ///
-    /// let mut ungrab_sound_inst = ungrab_sound.play([0.0, 0.0, -0.5], Some(0.5));
+    /// let ungrab_sound_inst = ungrab_sound.play([0.0, 0.0, -0.5], Some(0.5));
     ///
     /// number_of_steps = 100;
+    /// let mut was_played = false;
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     // TODO: assert!(ungrab_sound_inst.is_playing());
+    ///     was_played |= ungrab_sound_inst.is_playing();
     /// );
+    /// assert!(was_played);
+    /// sk::Sk::shutdown();
     /// ```
     pub fn ungrab() -> Self {
-        let cstr_id = CString::new("default/sound_ungrab").unwrap();
-        Sound(NonNull::new(unsafe { sound_find(cstr_id.as_ptr()) }).unwrap())
+        let cstr_id = CString::new("default/sound_ungrab").unwrap_or_default();
+        Sound(NonNull::new(unsafe { sound_find(cstr_id.as_ptr()) }).expect("default/sound_ungrab should be found!"))
     }
 }
 
@@ -759,28 +795,30 @@ impl Sound {
 /// let mut plane_sound_inst2 = plane_sound2.play(position2, Some(1.0));
 /// plane_sound_inst2.stop();
 ///
+/// # if cfg!(not(feature = "test-xr-mode")) {
 /// number_of_steps = 150;
 /// filename_scr = "screenshots/sound_inst.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
 ///     let transform1 = Matrix::t(position1);
 ///     let transform2 = Matrix::t(position2);
-///     sphere.draw(token, &material, transform1, Some(named_colors::PINK.into()), None  );
-///     sphere.draw(token, &material, transform2, Some(named_colors::LIGHT_GREEN.into()), None  );
+///     sphere.draw(&material, transform1, Some(named_colors::PINK.into()), None  );
+///     sphere.draw(&material, transform2, Some(named_colors::LIGHT_GREEN.into()), None  );
 ///
 ///     if iter == 0 {
-///         //TODO: assert!(plane_sound_inst1.is_playing());
+///         assert!(plane_sound_inst1.is_playing());
 ///         assert!(!plane_sound_inst2.is_playing());
 ///         position1 = Vec3::new(-0.3, 0.0, 0.3);
 ///         plane_sound_inst1
 ///             .position(position1)
 ///             .volume(0.5);
 ///     } else if iter == 150 - 2 {
-///         //TODO: assert!(plane_sound_inst1.is_playing());
+///         assert!(plane_sound_inst1.is_playing());
 ///         position2 = Vec3::new(0.3, 0.0, 0.3);
 ///         plane_sound_inst2 = plane_sound2.play(position2, Some(1.0));
 ///         assert!(plane_sound_inst2.is_playing());
 ///    }
 /// );
+/// # } sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sound_inst.jpeg" alt="screenshot" width="200">
 #[repr(C)]
@@ -808,11 +846,11 @@ impl SoundInst {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::Vec3, sound::Sound};
+    /// use stereokit_rust::sound::Sound;
     ///
-    /// let mut plane_sound = Sound::from_file("sounds/plane_engine.mp3").
+    /// let plane_sound = Sound::from_file("sounds/plane_engine.mp3").
     ///                           expect("A sound should be created");
-    /// let mut plane_sound_inst = plane_sound.play([0.0, 0.0, 0.0], Some(1.0));
+    /// let plane_sound_inst = plane_sound.play([0.0, 0.0, 0.0], Some(1.0));
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     if iter == 1 {
@@ -820,6 +858,7 @@ impl SoundInst {
     ///         assert!(!plane_sound_inst.is_playing());
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn stop(self) {
         unsafe { sound_inst_stop(self) }
@@ -849,6 +888,7 @@ impl SoundInst {
     ///     position += Vec3::new(0.0001, 0.0, 0.0);
     ///     plane_sound_inst.position(position);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn position(&mut self, at: impl Into<Vec3>) -> &mut Self {
         unsafe { sound_inst_set_pos(*self, at.into()) }
@@ -864,7 +904,7 @@ impl SoundInst {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::Vec3, sound::Sound, system::Assets};
     ///
-    /// let mut position = Vec3::new(0.0, 0.0, 0.5);
+    /// let position = Vec3::new(0.0, 0.0, 0.5);
     /// let mut volume = 0.0;
     ///
     /// let mut plane_sound = Sound::from_file("sounds/plane_engine.mp3").
@@ -880,6 +920,7 @@ impl SoundInst {
     ///     volume += 0.01;
     ///     plane_sound_inst.volume(volume);
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn volume(&mut self, volume: f32) -> &mut Self {
         unsafe { sound_inst_set_volume(*self, volume) }
@@ -913,7 +954,7 @@ impl SoundInst {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::Vec3, sound::Sound};
+    /// use stereokit_rust::sound::Sound;
     ///
     /// let mut plane_sound = Sound::from_file("sounds/plane_engine.mp3").
     ///                           expect("A sound should be created");
@@ -927,6 +968,7 @@ impl SoundInst {
     ///     assert_eq!(plane_sound_inst.get_intensity(), 0.0);
     ///     plane_sound_inst.stop();
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_intensity(&self) -> f32 {
         unsafe { sound_inst_get_intensity(*self) }
@@ -940,11 +982,11 @@ impl SoundInst {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::Vec3, sound::Sound};
+    /// use stereokit_rust::sound::Sound;
     ///
-    /// let mut plane_sound = Sound::from_file("sounds/plane_engine.mp3").
+    /// let plane_sound = Sound::from_file("sounds/plane_engine.mp3").
     ///                           expect("A sound should be created");
-    /// let mut plane_sound_inst = plane_sound.play([0.0, 0.0, 0.0], Some(1.0));
+    /// let plane_sound_inst = plane_sound.play([0.0, 0.0, 0.0], Some(1.0));
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     if iter == 1 {
@@ -954,6 +996,7 @@ impl SoundInst {
     ///         assert!(!plane_sound_inst.is_playing());
     ///     }
     /// );
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn is_playing(&self) -> bool {
         unsafe { sound_inst_is_playing(*self) != 0 }

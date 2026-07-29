@@ -18,7 +18,8 @@ use stereokit_macros::IStepper;
 
 use crate::{
     prelude::*,
-    system::{Backend, BackendOpenXR, BackendXRType, Renderer},
+    render::Renderer,
+    system::{Backend, BackendOpenXR, BackendXRType},
     util::Color128,
 };
 use std::ptr::null_mut;
@@ -50,7 +51,7 @@ pub const PASSTHROUGH_FLIP: &str = "PassthroughFlip";
 /// // Launch the stepper as follow :
 /// use stereokit_rust::tools::xr_fb_passthrough::*;
 /// let mut passthrough = false;
-/// let mut new_passthrough_value = true; // !!!! Get a proper way to decide of this value !!!!
+/// let new_passthrough_value = true; // !!!! Get a proper way to decide of this value !!!!
 /// let passthrough_enabled = system::BackendOpenXR::ext_enabled("XR_FB_passthrough");
 /// if passthrough_enabled {
 ///    sk.send_event(StepperAction::add_default::<FbPassthroughStepper>(
@@ -82,8 +83,8 @@ pub const PASSTHROUGH_FLIP: &str = "PassthroughFlip";
 ///      }
 ///      sk.send_event(StepperAction::event("main".into(), PASSTHROUGH_FLIP, string_value))
 ///  }
+/// # sk::Sk::shutdown();
 /// ```
-
 #[derive(IStepper)]
 pub struct FbPassthroughStepper {
     id: StepperId,
@@ -203,7 +204,7 @@ impl FbPassthroughStepper {
         };
 
         match unsafe {
-            self.xr_create_passthrough_fb.unwrap()(
+            self.xr_create_passthrough_fb.expect("FbPassthroughStepper: xrCreatePassthroughFB not loaded")(
                 Session::from_raw(BackendOpenXR::session()),
                 &PassthroughCreateInfoFB { ty: StructureType::PASSTHROUGH_CREATE_INFO_FB, next: null_mut(), flags },
                 &mut self.active_passtrough,
@@ -217,7 +218,8 @@ impl FbPassthroughStepper {
         }
 
         match unsafe {
-            self.xr_create_passthrough_layer_fb.unwrap()(
+            self.xr_create_passthrough_layer_fb
+                .expect("FbPassthroughStepper: xrCreatePassthroughLayerFB not loaded")(
                 Session::from_raw(BackendOpenXR::session()),
                 &PassthroughLayerCreateInfoFB {
                     ty: StructureType::PASSTHROUGH_LAYER_CREATE_INFO_FB,
@@ -243,7 +245,11 @@ impl FbPassthroughStepper {
     }
 
     fn start_passthrough(&mut self) -> bool {
-        match unsafe { self.xr_passthrough_start_fb.unwrap()(self.active_passtrough) } {
+        match unsafe {
+            self.xr_passthrough_start_fb.expect("FbPassthroughStepper: xrPassthroughStartFB not loaded")(
+                self.active_passtrough,
+            )
+        } {
             Result::SUCCESS => {}
             otherwise => {
                 Log::err(format!("xrPassthroughStartFB failed: {otherwise}"));
@@ -251,7 +257,10 @@ impl FbPassthroughStepper {
             }
         }
 
-        match unsafe { self.xr_passthrough_layer_resume_fb.unwrap()(self.active_layer) } {
+        match unsafe {
+            self.xr_passthrough_layer_resume_fb
+                .expect("FbPassthroughStepper: xrPassthroughLayerResumeFB not loaded")(self.active_layer)
+        } {
             Result::SUCCESS => {}
             otherwise => {
                 Log::err(format!("xrPassthroughLayerResumeFB failed: {otherwise}"));
@@ -271,7 +280,10 @@ impl FbPassthroughStepper {
     }
 
     fn pause_passthrough(&mut self) {
-        match unsafe { self.xr_passthrough_layer_pause_fb.unwrap()(self.active_layer) } {
+        match unsafe {
+            self.xr_passthrough_layer_pause_fb
+                .expect("FbPassthroughStepper: xrPassthroughLayerPauseFB not loaded")(self.active_layer)
+        } {
             Result::SUCCESS => {}
             otherwise => {
                 Log::err(format!("xrPassthroughLayerPauseFB failed: {otherwise}"));
@@ -279,7 +291,11 @@ impl FbPassthroughStepper {
             }
         }
 
-        match unsafe { self.xr_passthrough_pause_fb.unwrap()(self.active_passtrough) } {
+        match unsafe {
+            self.xr_passthrough_pause_fb.expect("FbPassthroughStepper: xrPassthroughPauseFB not loaded")(
+                self.active_passtrough,
+            )
+        } {
             Result::SUCCESS => {}
             otherwise => {
                 Log::err(format!("xrPassthroughPauseFB failed: {otherwise}"));
@@ -310,8 +326,17 @@ impl FbPassthroughStepper {
             if self.enabled {
                 self.enable(false);
                 if self.ext_available {
-                    unsafe { self.xr_destroy_passthrough_layer_fb.unwrap()(self.active_layer) };
-                    unsafe { self.xr_destroy_passthrough_fb.unwrap()(self.active_passtrough) };
+                    unsafe {
+                        self.xr_destroy_passthrough_layer_fb
+                            .expect("FbPassthroughStepper: xrDestroyPassthroughLayerFB not loaded")(
+                            self.active_layer
+                        )
+                    };
+                    unsafe {
+                        self.xr_destroy_passthrough_fb.expect("FbPassthroughStepper: xrDestroyPassthroughFB not loaded")(
+                            self.active_passtrough,
+                        )
+                    };
                 }
             }
             self.shutdown_completed = true;

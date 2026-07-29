@@ -9,10 +9,8 @@
         "args": [
           "test",
           "--no-run",
-          "--features",
-          "event-loop",
           "--lib",
-          "--package=stereokit-rust", 
+          "--package=stereokit-rust",
         ],
         "filter": {
           "name": "stereokit-rust",
@@ -22,7 +20,7 @@
       "args": [],
       "cwd": "${workspaceFolder}",
       "env": {
-        "PATH": "${workspaceFolder}/target/debug/deps;${workspaceFolder}/StereoKit/bin/distribute/bin/Win32/x64/Debug;${env:PATH}"
+        "PATH": "${workspaceFolder}/target/debug/deps;${env:PATH}"
       }
     },
     {
@@ -32,8 +30,6 @@
       "cargo": {
         "args": [
           "build",
-          "--features",
-          "event-loop",
           "--example=main_pc"
         ],
         "filter": {
@@ -56,8 +52,6 @@
       "cargo": {
         "args": [
           "build",
-          "--features",
-          "event-loop",
           "--example=main_pc"
         ],
         "filter": {
@@ -71,10 +65,35 @@
         "PATH": "${workspaceFolder}/target/debug/deps;${env:PATH}"
       }
     },
+    // ... existing code ...
     {
       "type": "lldb",
       "request": "launch",
-      "name": "Debug 'manual' example (without winit)",
+      "name": "Debug Monado XR simulator 'demos'",
+      "cargo": {
+        "args": [
+          "run",
+          "--example=main_pc"
+        ],
+        "filter": {
+          "name": "main_pc",
+          "kind": "example"
+        }
+      },
+      "args": [
+        "--start",
+        "Layers1"
+      ],
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "XR_RUNTIME_JSON": "/usr/share/openxr/1/openxr_monado.json",
+        "PATH": "${workspaceFolder}/target/debug/deps;${env:PATH}"
+      }
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug 'manual' example (without framework, event loop, tools)",
       "cargo": {
         "args": [
           "build",
@@ -100,8 +119,6 @@
       "cargo": {
         "args": [
           "build",
-          "--features",
-          "event-loop",
           "--example=test"
         ],
         "filter": {
@@ -123,16 +140,16 @@
       "program": "${workspaceFolder}/../sk_builds/SK_demo_win_gnu/main_pc.exe",
       "MIMode": "gdb",
       "setupCommands": [
-          {
-              "description": "Enable pretty-printing for gdb",
-              "text": "-enable-pretty-printing",
-              "ignoreFailures": true
-          },
-          {
-              "description": "Set Disassembly Flavor to Intel",
-              "text": "-gdb-set disassembly-flavor intel",
-              "ignoreFailures": true
-          }
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        },
+        {
+          "description": "Set Disassembly Flavor to Intel",
+          "text": "-gdb-set disassembly-flavor intel",
+          "ignoreFailures": true
+        }
       ]
     },
     {
@@ -142,18 +159,20 @@
       "processId": "${input:pickExampleProcess}",
       "program": "${workspaceFolder}/../PartageWinLin/StereoKit-rust-exe/main_pc.exe",
       "MIMode": "gdb",
-      "sourceFileMap": { "c:/Users/mvida/dvlt/StereoKit-rust": "${workspaceFolder}" },
+      "sourceFileMap": {
+        "c:/Users/mvida/dvlt/StereoKit-rust": "${workspaceFolder}"
+      },
       "setupCommands": [
-          {
-              "description": "Enable pretty-printing for gdb",
-              "text": "-enable-pretty-printing",
-              "ignoreFailures": true
-          },
-          {
-              "description": "Set Disassembly Flavor to Intel",
-              "text": "-gdb-set disassembly-flavor intel",
-              "ignoreFailures": true
-          }
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        },
+        {
+          "description": "Set Disassembly Flavor to Intel",
+          "text": "-gdb-set disassembly-flavor intel",
+          "ignoreFailures": true
+        }
       ]
     },
   ],
@@ -163,10 +182,9 @@
       "type": "command",
       "command": "lldb.pickProcess",
       "args": {
-        "initCommands": [ ], // Eg., platform select/connect commands.
+        "initCommands": [], // Eg., platform select/connect commands.
         "filter": "main_pc" // RegExp to filter processes to.
       }
     }
   ]
-
 }

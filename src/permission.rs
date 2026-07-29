@@ -12,22 +12,28 @@ use crate::maths::Bool32T;
 pub enum PermissionType {
     /// For access to microphone data, this is typically an interactive permission that the user will need to explicitly
     /// approve.
+    /// This maps to android.permission.RECORD_AUDIO on Android.
     Microphone = 0,
     /// For access to camera data, this is typically an interactive permission that the user will need to explicitly
     /// approve. SK doesn't use this permission internally yet, but is often a useful permission for XR apps.
+    /// This maps to android.permission.CAMERA on Android.
     Camera = 1,
     /// For access to input quality eye tracking data, this is typically an interactive permission that the user will
     /// need to explicitly approve.
+    /// This maps to android.permission.EYE_TRACKING_FINE on Android XR, but varies per-runtime.
     EyeInput = 2,
     /// For access to per-joint hand tracking data. Some runtimes may have this permission interactive, but many do not.
+    /// This maps to android.permission.HAND_TRACKING on Android XR, but varies per-runtime.
     HandTracking = 3,
     /// For access to facial expression data, this is typically an interactive permission that the user will need to
     /// explicitly approve.
+    /// This maps to android.permission.FACE_TRACKING on Android XR, but varies per-runtime.
     FaceTracking = 4,
     /// For access to data in the user's space, this can be for things like spatial anchors, plane detection, hit
     /// testing, etc. This is typically an interactive permission that the user will need to explicitly approve.
+    /// This maps to android.permission.SCENE_UNDERSTANDING_COARSE on Android XR, but varies per-runtime.
     Scene = 5,
-    /// This enum is for tracking the number of values in this enum.
+    /// This enum is for tracking the number of value in this enum.
     Max = 6,
 }
 
@@ -79,17 +85,20 @@ impl fmt::Display for PermissionState {
 unsafe extern "C" {
     pub fn permission_state(permission: PermissionType) -> PermissionState;
     pub fn permission_is_interactive(permission: PermissionType) -> Bool32T;
-    pub fn permission_request(permission: PermissionType);
+    pub fn permission_request(in_arr_permissions: *const PermissionType, permission_count: i32);
 }
 
 /// Certain features in XR require explicit permissions from the operating system and user! This is typically for
-/// feature that surface sensitive data like eye gaze, or objects in the user's room. This is often complicated by the
+/// features that surface sensitive data like eye gaze, or objects in the user's room. This is often complicated by the
 /// fact that permissions aren't standardized across XR runtimes, making these permissions fragile and a pain to work
 /// with.
 ///
 /// This class attempts to manage feature permissions in a nice cross-platform manner that handles runtime specific
 /// differences. You will still need to add permission strings to your app's metadata file (like AndroidManifest.xml),
 /// but this class will handle figuring out which strings in the metadata to actually use.
+///
+/// On Android, if you use a Service or Context instead of an Activity for your app (unusual), StereoKit will not be
+/// able to manage permissions for you!
 ///
 /// On platforms that don't use permissions, like Win32 or Linux, these functions will behave as though everything is
 /// granted automatically.
@@ -115,6 +124,7 @@ impl Permission {
     /// }
     ///
     /// assert_eq!(microphone_state, PermissionState::Granted); // On desktop, this is typically granted automatically
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn get_state(permission: PermissionType) -> PermissionState {
         unsafe { permission_state(permission) }
@@ -122,6 +132,8 @@ impl Permission {
 
     /// Does this permission need the user to approve it? This typically means a popup window will come up when you
     /// request this permission, and the user has a chance to decline it.
+    ///
+    /// If your app is an Android Service, this only reflects the Dangerous status of the permission.
     /// <https://stereokit.net/Pages/StereoKit/Permission/IsInteractive.html>
     /// * `permission` - The permission you're interested in.
     ///
@@ -136,16 +148,24 @@ impl Permission {
     /// } else {
     ///     println!("Microphone permission is automatic");
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
     pub fn is_interactive(permission: PermissionType) -> bool {
         unsafe { permission_is_interactive(permission) != 0 }
     }
 
-    /// This sends off a request to the OS for a particular permission! If the permission IsInteractive, then this will
+    /// This sends off a request to the OS for one or more permissions! If a permission IsInteractive, then this will
     /// bring up a popup that the user may need to interact with. Otherwise, this will silently approve the permission.
     /// This means that the permission may take an arbitrary amount of time before it's approved, or declined.
+    ///
+    /// Requesting multiple permissions in a single call is preferable to chaining individual requests yourself, since
+    /// the OS gets to present them together and you avoid the risk of a follow-up request getting dropped while an
+    /// earlier popup is still up.
+    ///
+    /// Any permissions that aren't known on the current platform are skipped with a warning. If your app is an Android
+    /// Service, this function will do nothing.
     /// <https://stereokit.net/Pages/StereoKit/Permission/Request.html>
-    /// * `permission` - The permission to request.
+    /// * `permissions` - The permission(s) to request.
     ///
     /// ### Examples
     /// ```
@@ -153,20 +173,29 @@ impl Permission {
     /// use stereokit_rust::permission::{Permission, PermissionType, PermissionState};
     ///
     /// // Check if we need to request microphone permission
+    ///
     /// if Permission::get_state(PermissionType::Microphone) == PermissionState::Capable {
-    ///     println!("Requesting microphone permission...");
-    ///     Permission::request(PermissionType::Microphone);
-    ///     panic!("On desktop, Microphone permission is automatic");
+    ///     if Permission::is_interactive(PermissionType::Microphone) {
+    ///         println!("Microphone permission requires user approval. We can't request it in an unit test");
+    ///     } else {
+    ///         println!("Requesting microphone permission...");
+    ///         Permission::request(&[PermissionType::Microphone]);
+    ///     }
     /// }
     ///
     /// // Check for eye tracking permission
     /// if Permission::get_state(PermissionType::EyeInput) == PermissionState::Capable {
-    ///     Permission::request(PermissionType::EyeInput);
-    ///     panic!("On desktop, EyeInput permission is automatic");
+    ///     if Permission::is_interactive(PermissionType::EyeInput) {
+    ///         println!("Eye Input permission requires user approval. We can't request it in an unit test");
+    ///     } else {
+    ///         println!("Requesting Eye Input permission...");
+    ///         Permission::request(&[PermissionType::EyeInput]);
+    ///     }
     /// }
+    /// # sk::Sk::shutdown();
     /// ```
-    pub fn request(permission: PermissionType) {
-        unsafe { permission_request(permission) }
+    pub fn request(permissions: &[PermissionType]) {
+        unsafe { permission_request(permissions.as_ptr(), permissions.len() as i32) }
     }
 }
 

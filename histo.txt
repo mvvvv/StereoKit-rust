@@ -1,72 +1,105 @@
  #------A bunch of commands you'll use here
  #---- installing
- cargo install -F event-loop --path .  #---or no-event-loop 
+ cargo install --path .  # -F no-event-loop 
  cargo compile_sks
  cargo install cargo-apk
  rustup target add aarch64-linux-android
  rustup target add x86_64-pc-windows-gnu
- 
+ #-MacOS needs this variable to retrieve MoltenVK library:
+ export DYLD_LIBRARY_PATH=$(brew --prefix molten-vk)/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}
+ export VK_ICD_FILENAMES=$(brew --prefix molten-vk)/share/vulkan/icd.d/MoltenVK_icd.json
+#-Linux can use llvmpipe instead of the GPU driver almost for the simulator:
+VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.json
+
 #---- building for pc
-MESA_LOADER_DRIVER_OVERRIDE=nouveau #---(when using nouveau driver)
-cargo run --features event-loop  --example main_pc  #----DISPLAY must be unset on Wayland only
-cargo run --features event-loop  --example main_pc -- --test
-cargo build_sk_rs --example main_pc --features event-loop ../sk_builds/SK_demo_linux/ && steam steam://rungameid/13868818448177430528
-FORCE_LOCAL_DEPS=ON DEP_SK_GPU_SOURCE="/opt/sk_gpu" cargo build_sk_rs --example main_pc --features event-loop,force-local-deps ../sk_builds/SK_demo_linux/
+cargo run --example main_pc  
+cargo run --example main_pc -- --test
+cargo build_sk_rs --example main_pc  ../sk_builds/SK_demo_linux/ && steam steam://rungameid/18159045590636298240
+FORCE_LOCAL_DEPS=ON DEP_SK_RENDERER_SOURCE="/opt/sk_renderer" cargo build_sk_rs --example main_pc -F force-local-deps ../sk_builds/SK_demo_linux/
 
 #---- cross building for pc
-cargo build_sk_rs --example main_pc --features event-loop --x64-linux ../sk_builds/SK_demo_linux_x64/  #same as above on x86_64 linux PC
-cargo build_sk_rs --example main_pc --features event-loop --aarch64-linux ../sk_builds/SK_demo_linux_aarch64/
-cargo build_sk_rs --example main_pc --features event-loop --x64-win-gnu ../x64-mingw-libs/ ../sk_builds/SK_demo_win_gnu/ && steam steam://rungameid/17257947875543875584
-FORCE_LOCAL_DEPS=ON DEP_SK_GPU_SOURCE="/opt/sk_gpu" cargo build_sk_rs --debug --example main_pc --features event-loop,force-local-deps --x64-win-gnu ../x64-mingw-libs/ ../sk_builds/SK_demo_win_gnu/
+RUSTFLAGS="-Clinker-plugin-lto" cargo build_sk_rs --example main_pc --x64-linux ../sk_builds/SK_demo_linux_x64/  #same as above on x86_64 linux PC
+cargo build_sk_rs --example main_pc --aarch64-linux ../sk_builds/SK_demo_linux_aarch64/
+cargo build_sk_rs --example main_pc --x64-win-gnu ../x64-mingw-libs/ ../sk_builds/SK_demo_win_gnu/ && steam steam://rungameid/17257947875543875584
+FORCE_LOCAL_DEPS=ON DEP_SK_RENDERER_SOURCE="/opt/sk_renderer" cargo build_sk_rs --debug --example main_pc --features event-loop,force-local-deps --x64-win-gnu ../x64-mingw-libs/ ../sk_builds/SK_demo_win_gnu/
 
-#---- building for android
-cargo apk run --features event-loop  --example main
-cargo compile_sks --options -f -t e
-cargo apk build --features event-loop  --example main
+#---- building for android (see "Testing demos with gradle" instead)
+~~~~~~cargo apk run --example main
+~~~~~~cargo apk build --example main
 
 #---- build ktx2 compressed texture_compression
 ktx create --cubemap --encode uastc  --format R8G8B8A8_UNORM  --assign-oetf linear --assign-primaries bt709  --generate-mipmap right.png left.png top.png bottom.png front.png back.png cubemap_rgba32.ktx2
 
 #---- launch tests
-clear;cargo test --features event-loop              #----DISPLAY must be unset on Wayland only
-clear;cargo test --features event-loop,test-xr-mode -- --test-threads=1  mesh::Mesh   #----DISPLAY must be unset on Wayland only
-clear;cargo test --doc tools --features event-loop,test-xr-mode -- --test-threads=3
+clear;cargo test -- --nocapture            
+clear;cargo test --doc tools -- mesh::Mesh   
+clear;XR_RUNTIME_JSON=/usr/share/openxr/1/openxr_monado.json cargo test --features test-xr-mode -- --test-threads=1
+#- launch tests with llvmpipe:
+clear;VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.json cargo test
 
 #---- build docs
-cargo clean --doc && cargo doc --features event-loop  #----no-event-loop will fail because of lib //! doc containing `event-loop`
+cargo clean --doc && cargo doc
 
 #---- publish to crates.io
 cd stereokit-macros && cargo publish && cd ..   #---publish macros crate
-cargo publish -F event-loop --dry-run
-cargo publish -F event-loop
+cargo publish --dry-run
+cargo publish
+
+
+
+
+#---- Testing demos with gradle (sk_app compatible)
+cd ~/dvlt
+cargo new_sk_rs_project sk_demos --with-gradle
+cd sk_demos
+#- modify Cargo.toml:
+  1 - for path = "~dvlt/StereoKit-rust"
+  2 - dependencies
+  3 - [lib]
+      crate-type = ["lib", "cdylib"]
+#- replace src/ assets/ res/ by these links
+ln -s ~/dvlt/StereoKit-rust/examples/main.rs src/lib.rs
+ln -s ~/dvlt/StereoKit-rust/examples/main_pc.rs src/main.rs
+ln -s ~/dvlt/StereoKit-rust/examples/demos/ src/demos
+ln -s ~/dvlt/StereoKit-rust/assets/ .
+ln -s ~/dvlt/StereoKit-rust/res/ .
+ln -s ~/dvlt/StereoKit-rust/shaders_src/ .
+ln -s ~/dvlt/StereoKit-rust/src/templates/gradle/AndroidManifest.xml app/src/main/.
+
+clear; ./gradlew run --warning-mode all && sh logcat.cmd
+
+cargo clean && ./gradlew clean
+
+
+
 
 
 
 
 #---- Saving some logs ANDROID
-touch build.rs; clear; cargo apk run --features event-loop  --example main > examples/example_of_quest_log.txt 
+touch build.rs; clear; cargo apk run --example main > examples/example_of_quest_log.txt 
 ansi2html < examples/example_of_quest_log.txt > examples/example_of_quest_log.html 
 cut -c1-5,37- < examples/example_of_quest_log.txt > examples/comp_example_of_quest_log.txt
 
 
 #---- Saving some logs  WiVRn
-cargo run --features event-loop  --example main_pc &> examples/example_of_WiVRn_EGL.txt
+cargo run --example main_pc &> examples/example_of_WiVRn_native.txt
 
 steam steam://rungameid/17868406875997863936  
 # wait the end ...
-grep OutputDebugStringA ~/steam-17868406875997863936.log | cut -c49- | sed -e 's/\\n\"$//' > examples/example_of_WiVRn_D3D11_gnu.txt
+grep OutputDebugStringA ~/steam-17868406875997863936.log | cut -c49- | sed -e 's/\\n\"$//' > examples/example_of_WiVRn_wine_gnu.txt
 
 steam steam://rungameid/14582336022122594304
 # wait the end ...
-grep OutputDebugStringA ~/steam-14582336022122594304.log | cut -c49- | sed -e 's/\\n\"$//' > examples/example_of_WiVRn_D3D11_msvc.txt
+grep OutputDebugStringA ~/steam-14582336022122594304.log | cut -c49- | sed -e 's/\\n\"$//' > examples/example_of_WiVRn_wine_msvc.txt
 
-#---- Saving some logs  ALVR
-cargo run --features event-loop  --example main_pc &> examples/example_of_ALVR_EGL.txt
+#---- Saving some logs  SteamVR
+cargo run --example main_pc &> examples/example_of_ALVR_native.txt
 
 steam steam://rungameid/17868406875997863936  
 # wait the end ...
-grep OutputDebugStringA ~/steam-17868406875997863936.log | cut -c49- | sed -e 's/\\n\"$//' > examples/example_of_ALVR_D3D11_gnu.txt
+grep OutputDebugStringA ~/steam-17868406875997863936.log | cut -c49- | sed -e 's/\\n\"$//' > examples/example_of_SteamVR_wine_gnu.txt
 
 steam steam://rungameid/14582336022122594304
 # wait the end ...
-grep OutputDebugStringA ~/steam-14582336022122594304.log | cut -c49- | sed -e 's/\\n\"$//' > examples/example_of_ALVR_D3D11_msvc.txt
+grep OutputDebugStringA ~/steam-14582336022122594304.log | cut -c49- | sed -e 's/\\n\"$//' > examples/example_of_SteamVR_wine_msvc.txt

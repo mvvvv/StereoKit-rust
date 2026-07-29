@@ -1,12 +1,12 @@
 use stereokit_rust::{
     font::Font,
-    material::{Cull, Material},
+    material::Material,
     maths::{Matrix, Pose, Quat, Vec2, Vec3, Vec4},
     mesh::{Mesh, Vertex},
     prelude::*,
-    shader::Shader,
-    system::{Text, TextStyle, World},
+    system::{OcclusionCaps, Text, World},
     tex::Tex,
+    tools::notif::HudNotification,
     ui::{Ui, UiMove, UiWin},
     util::{
         Time,
@@ -16,7 +16,7 @@ use stereokit_rust::{
 
 /// IStepper implementation for Shader1
 #[derive(IStepper)]
-pub struct Shader1 {
+pub struct Shaders1 {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
     shutdown_completed: bool,
@@ -33,19 +33,20 @@ pub struct Shader1 {
     mesh: Mesh,
     plane: Mesh,
     pub transform_text: Matrix,
-    text: String,
-    text_style: TextStyle,
+    notif: HudNotification,
     fps: f64,
 }
 
-unsafe impl Send for Shader1 {}
+unsafe impl Send for Shaders1 {}
 
-impl Default for Shader1 {
+impl Default for Shaders1 {
     fn default() -> Self {
-        //------ Materials
-        let hud_text_shader = Shader::from_file("shaders/hud_text.hlsl.sks").unwrap_or_default();
-        let text_style = Text::make_style_with_shader(Font::default(), 0.03, hud_text_shader, RED);
+        let mut notif = HudNotification::default();
+        notif.duration = None;
+        notif.position = Vec3::new(-0.03, -0.03, -0.3);
+        notif.text_style = Text::make_style(Font::default(), 0.01, GREEN);
 
+        //------ Materials
         let mut blinker_material =
             Material::from_file("shaders/blinker.hlsl.sks", Some("red_material")).unwrap_or_default();
         blinker_material
@@ -70,7 +71,6 @@ impl Default for Shader1 {
             .tex_transform(Vec4::new(0.0, 0.0, 2.0, 2.0))
             .roughness_amount(0.4)
             .metallic_amount(0.6)
-            .face_cull(Cull::Back)
             .color_tint(LIGHT_BLUE)
             .time(5.0);
 
@@ -108,13 +108,13 @@ impl Default for Shader1 {
         let indices = [0, 1, 2, 2, 1, 0];
 
         let mut mesh = Mesh::new();
-        mesh.id("mesh1").keep_data(true).set_data(&vertices, &indices, true);
+        mesh.id("mesh1").keep_data(true).set_data(&vertices, &indices, None, None);
 
         let mut plane = Mesh::generate_plane_up(Vec2::new(0.5, 0.5), None, true);
         plane.id("plane1");
 
         Self {
-            id: "Shader1".to_string(),
+            id: "Shaders1".to_string(),
             sk_info: None,
             shutdown_completed: false,
 
@@ -130,17 +130,16 @@ impl Default for Shader1 {
             mesh,
             plane,
             transform_text,
-            text: "Shader1".to_owned(),
-            text_style,
+            notif,
             fps: 0.0,
         }
     }
 }
 
-impl Shader1 {
+impl Shaders1 {
     /// Called from IStepper::initialize here you can abort the initialization by returning false
     fn start(&mut self) -> bool {
-        World::occlusion_enabled(true);
+        World::occlusion(stereokit_rust::system::OcclusionCaps::Mesh);
         true
     }
 
@@ -149,50 +148,39 @@ impl Shader1 {
 
     /// Called from IStepper::step after check_event, here you can draw your UI
     fn draw(&mut self, token: &MainThreadToken) {
-        self.mesh.draw(token, &self.material_red, self.transform_mesh, None, None);
+        self.mesh.draw(&self.material_red, self.transform_mesh, None, None);
 
         let total_scale = (Time::get_totalf() % 360.0).to_radians().sin().abs() * 2.0;
         let tex_transform = Vec4::new(0.0, 0.0, total_scale, total_scale);
         let mut param_info = self.material_green.get_all_param_info();
         param_info
             .set_vector4("tex_trans", tex_transform)
-            .set_int("do_not_exist", &[1, 3, 5, 6])
+            //.set_int("do_not_exist", &[1, 3, 5, 6])
             .set_float("time", total_scale);
-        self.plane.draw(token, &self.material_green, self.transform_plane, None, None);
+        self.plane.draw(&self.material_green, self.transform_plane, None, None);
 
-        Ui::window_begin(
-            "progress",
-            &mut self.pose_progress,
-            Some(Vec2::new(0.41, 0.1)),
-            Some(UiWin::Empty),
-            Some(UiMove::None),
-        );
+        Ui::window("progress")
+            .pose(&mut self.pose_progress)
+            .size(Vec2::new(0.41, 0.1))
+            .window_type(UiWin::Empty)
+            .move_type(UiMove::None)
+            .begin();
         //Ui::progress_bar_at(total_scale / 2.0, Vec3::new(0.0, 0.0, 0.0), Vec2::new(0.4, 0.1), UiDir::Horizontal, false);
         Ui::hprogress_bar(total_scale / 2.0, 0.54, false);
         Ui::vprogress_bar(total_scale / 2.0, 0.50, false);
         Ui::window_end();
-        self.mesh.draw(token, &self.water2, self.transform_water2, None, None);
-        self.plane.draw(token, &self.brick, self.transform_brick, None, None);
+        self.mesh.draw(&self.water2, self.transform_water2, None, None);
+        self.plane.draw(&self.brick, self.transform_brick, None, None);
 
         self.fps = ((1.0 / Time::get_step()) + self.fps) / 2.0;
 
-        Text::add_at(
-            token,
-            format!("{}\n{:?} FPS", &self.text, self.fps as i16),
-            self.transform_text,
-            Some(self.text_style),
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-        );
+        self.notif.text = format!("Shader1\nFPS: {:.0}", self.fps);
+        self.notif.draw(token);
     }
 
     fn close(&mut self, triggering: bool) -> bool {
         if triggering {
-            World::occlusion_enabled(false);
+            World::occlusion(OcclusionCaps::None);
             self.shutdown_completed = true;
         }
         self.shutdown_completed

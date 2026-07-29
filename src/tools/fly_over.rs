@@ -1,11 +1,13 @@
 use crate::{
     maths::{Matrix, Quat, Vec2, Vec3},
     prelude::*,
+    render::Renderer,
     sk::{AppMode, OriginMode},
-    system::{Handed, Input, Key, Renderer, World},
+    system::{Handed, Input, Key, World},
     util::Time,
 };
 
+pub const FLY_OVER_ID: &str = "Tool_FlyOverID";
 pub const ENABLE_FLY_OVER: &str = "Tool_EnableFlyOver";
 
 /// FlyOver is a tool that allows you to fly around the scene using the controller sticks.
@@ -20,24 +22,23 @@ pub const ENABLE_FLY_OVER: &str = "Tool_EnableFlyOver";
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{maths::{Vec3, Matrix},
-///                      tools::fly_over::{FlyOver, ENABLE_FLY_OVER},
+/// use stereokit_rust::{maths::Matrix, tools::fly_over::{FlyOver, FLY_OVER_ID, ENABLE_FLY_OVER},
 ///                      system::Input, system::{Key, Pivot}, sprite::Sprite};
 ///
 /// let sprite = Sprite::from_file("icons/fly_over.png", None, Some("MY_ID"))
 ///                          .expect("fly_over.png should be able to create sprite");
 ///
-/// let mut fly_over = FlyOver::default();
-/// sk.send_event(StepperAction::add_default::<FlyOver>("FlyOver"));
+/// sk.send_event(StepperAction::add_default::<FlyOver>(FLY_OVER_ID));
 ///
 /// filename_scr = "screenshots/fly_over.jpeg"; fov_scr = 45.0;
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
-///     sprite.draw(token, Matrix::Y_180, Pivot::Center, None);
+///     sprite.draw(Matrix::Y_180, Pivot::Center, None, None);
 ///     Input::key_inject_press(Key::Left);
 ///     if iter == number_of_steps  {
 ///        sk.send_event(StepperAction::event( "main", ENABLE_FLY_OVER, "false",));
 ///     }
 /// );
+/// # sk::Sk::shutdown();
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/fly_over.jpeg" alt="screenshot" width="200">
 #[derive(IStepper)]
@@ -70,6 +71,10 @@ impl Default for FlyOver {
 impl FlyOver {
     /// Called from IStepper::initialize here you can abort the initialization by returning false
     fn start(&mut self) -> bool {
+        if self.id != FLY_OVER_ID {
+            Log::err(format!("Fly_Over: Wrong Unique ID, expected {}, got {}", FLY_OVER_ID, self.id));
+            return false;
+        }
         let sk_settings = SkInfo::settings_from(&self.sk_info);
         if sk_settings.mode != AppMode::Simulator {
             let origin_mode = World::get_origin_mode();
@@ -103,7 +108,7 @@ impl FlyOver {
         let move_ctrler = Input::controller(Handed::Left);
         let mut move_v = -move_ctrler.stick.x0y();
 
-        if cfg!(debug_assertions) {
+        if cfg!(all(debug_assertions, not(target_os = "android"))) {
             if Input::key(Key::Up).is_just_active() {
                 move_v.z = -1.0;
             }
@@ -117,6 +122,7 @@ impl FlyOver {
                 move_v.x = 1.0;
             }
         }
+
         let mut speed_accelerator = self.move_speed;
         if move_v != Vec3::ZERO {
             move_v *= Vec3 { x: -1.0, y: 1.0, z: 1.0 };

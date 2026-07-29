@@ -1,9 +1,6 @@
-use glam::{Mat4, Quat, Vec3};
-use std::f32::consts::PI;
-use std::ops::Mul;
 use stereokit_rust::{
     material::{Cull, Material},
-    maths::{Matrix, Vec4},
+    maths::{Matrix, Quat, Vec3, Vec4},
     mesh::Mesh,
     model::Model,
     prelude::*,
@@ -11,8 +8,8 @@ use stereokit_rust::{
     tex::{Tex, TexFormat, TexType},
     tools::notif::HudNotification,
     util::{
-        Color32, Color128, Gradient,
         named_colors::{BLACK, BLUE, LIGHT_BLUE, RED, YELLOW},
+        Color128, Color32, Gradient,
     },
 };
 
@@ -122,14 +119,14 @@ impl Default for Tex1 {
         let color_dots = raw_dots.as_slice();
         let color_dots128 = raw_dots128.as_slice();
 
-        let mut tex_color_32a = Tex::new(TexType::Image, TexFormat::RGBA32, Some("tex_color"));
+        let mut tex_color_32a = Tex::new(TexType::Image, TexFormat::Rgba32Srgb, Some("tex_color"));
         unsafe {
             tex_color_32a
                 .id("tex_color32a")
                 .set_colors(width, height, color_dots.as_ptr() as *mut std::os::raw::c_void)
         };
 
-        let mut tex_color_32b = Tex::gen_color(BLUE, 10, 10, TexType::Dynamic, TexFormat::RGBA32);
+        let mut tex_color_32b = Tex::gen_color(BLUE, 10, 10, TexType::Dynamic, TexFormat::Rgba32Srgb);
         unsafe {
             tex_color_32b
                 .id("tex_color32b")
@@ -140,10 +137,10 @@ impl Default for Tex1 {
         tex_color_32c.id("tex_color32c");
         let mut tex_color_32d = Tex::from_color128(color_dots128, width, height, true).unwrap();
         tex_color_32d.id("tex_color32d");
-        let tex_vide = Tex::new(TexType::ImageNomips, TexFormat::RGBA128, Some("tex_vide"));
+        let tex_vide = Tex::new(TexType::ImageNomips, TexFormat::Rgba128, Some("tex_vide"));
         let tex_vide2 = Tex::new(TexType::ImageNomips, TexFormat::R8, Some("tex_vide2"));
-        let tex_vide3 = Tex::new(TexType::ImageNomips, TexFormat::R16u, Some("tex_vide3"));
-        let tex_vide4 = Tex::new(TexType::ImageNomips, TexFormat::R32, Some("tex_vide4"));
+        let tex_vide3 = Tex::new(TexType::ImageNomips, TexFormat::R16un, Some("tex_vide3"));
+        let tex_vide4 = Tex::new(TexType::ImageNomips, TexFormat::R32f, Some("tex_vide4"));
 
         let mut gradient = Gradient::new(None);
         gradient.add(RED, 0.01);
@@ -193,75 +190,18 @@ impl Default for Tex1 {
         let panels = Model::new();
         let mut nodes = panels.get_nodes();
         nodes
-            .add(
-                "p1",
-                Mat4::IDENTITY.mul(Mat4::from_translation(glam::Vec3::new(-2.5, 2.5, 0.0))),
-                Some(&Mesh::screen_quad()),
-                Some(&color2),
-                false,
-            )
-            .add(
-                "p2",
-                Mat4::IDENTITY.mul(Mat4::from_translation(glam::Vec3::new(0.0, 2.5, 0.0))),
-                Some(&Mesh::screen_quad()),
-                Some(&color4),
-                false,
-            )
-            .add(
-                "p3",
-                Mat4::IDENTITY.mul(Mat4::from_translation(glam::Vec3::new(2.5, 2.5, 0.0))),
-                Some(&Mesh::screen_quad()),
-                Some(&particule),
-                false,
-            )
-            .add(
-                "p4",
-                Mat4::IDENTITY.mul(Mat4::from_translation(glam::Vec3::new(-2.5, 0.0, 0.0))),
-                Some(&Mesh::screen_quad()),
-                Some(&color),
-                false,
-            )
-            .add(
-                "p5",
-                Mat4::IDENTITY.mul(Mat4::from_translation(glam::Vec3::new(0.0, 0.0, 0.0))),
-                Some(&Mesh::screen_quad()),
-                Some(&color3),
-                false,
-            )
-            .add(
-                "p6",
-                Mat4::IDENTITY.mul(Mat4::from_translation(glam::Vec3::new(2.5, 0.0, 0.0))),
-                Some(&Mesh::screen_quad()),
-                Some(&vide),
-                false,
-            )
-            .add(
-                "p7",
-                Mat4::IDENTITY.mul(Mat4::from_translation(glam::Vec3::new(-2.5, -2.5, 0.0))),
-                Some(&Mesh::screen_quad()),
-                Some(&vide2),
-                false,
-            )
-            .add(
-                "p8",
-                Mat4::IDENTITY.mul(Mat4::from_translation(glam::Vec3::new(0.0, -2.5, 0.0))),
-                Some(&Mesh::screen_quad()),
-                Some(&vide3),
-                false,
-            )
-            .add(
-                "p9",
-                Mat4::IDENTITY.mul(Mat4::from_translation(glam::Vec3::new(2.5, -2.5, 0.0))),
-                Some(&Mesh::screen_quad()),
-                Some(&vide4),
-                false,
-            )
+            .add("p1", Matrix::t(Vec3::new(-2.5, 2.5, 0.0)), Some(&Mesh::screen_quad()), Some(&color2), false)
+            .add("p2", Matrix::t(Vec3::new(0.0, 2.5, 0.0)), Some(&Mesh::screen_quad()), Some(&color4), false)
+            .add("p3", Matrix::t(Vec3::new(2.5, 2.5, 0.0)), Some(&Mesh::screen_quad()), Some(&particule), false)
+            .add("p4", Matrix::t(Vec3::new(-2.5, 0.0, 0.0)), Some(&Mesh::screen_quad()), Some(&color), false)
+            .add("p5", Matrix::t(Vec3::new(0.0, 0.0, 0.0)), Some(&Mesh::screen_quad()), Some(&color3), false)
+            .add("p6", Matrix::t(Vec3::new(2.5, 0.0, 0.0)), Some(&Mesh::screen_quad()), Some(&vide), false)
+            .add("p7", Matrix::t(Vec3::new(-2.5, -2.5, 0.0)), Some(&Mesh::screen_quad()), Some(&vide2), false)
+            .add("p8", Matrix::t(Vec3::new(0.0, -2.5, 0.0)), Some(&Mesh::screen_quad()), Some(&vide3), false)
+            .add("p9", Matrix::t(Vec3::new(2.5, -2.5, 0.0)), Some(&Mesh::screen_quad()), Some(&vide4), false)
             .add(
                 "pSol",
-                Mat4::IDENTITY.mul(Mat4::from_rotation_translation(
-                    glam::Quat::from_rotation_y(PI / 2.0),
-                    glam::Vec3::new(0.0, -2.5, 1.0),
-                )),
+                Matrix::t_r(Vec3::new(0.0, -2.5, 1.0), Quat::from_angles(0.0, 90.0, 0.0)),
                 Some(&Mesh::screen_quad()),
                 Some(&zarbi),
                 false,
@@ -325,14 +265,16 @@ impl Tex1 {
             None,
             true,
         );
+        let mut mat_wireframe = Material::pbr().copy();
+        mat_wireframe.wireframe(true);
         nodes.get_root_node().expect("A root node should exist!").add_child(
             "titi",
             Matrix::IDENTITY,
             Some(&Mesh::sphere()), //
-            Some(&Material::unlit()),
+            Some(&mat_wireframe),
             true,
         );
-        Log::info(format!("model <~GRN>node count<~clr> : <~RED>{}<~clr> !!!", &nodes.get_count()));
+        Log::info(format!("model <~GRN>node count<~clr> : <~RED>{}<~clr> !!!", nodes.get_count()));
         for n in nodes.all() {
             Log::info(format!("---- : {:?} id: {:?} ", n.get_name(), n.get_id()));
             if let Some(mesh) = n.get_mesh() {
@@ -345,7 +287,7 @@ impl Tex1 {
 
         // We ask for a notification to be displayed
         let mut notif = HudNotification::default();
-        notif.position = Vec3::new(0.0, 0.3, -0.2).into();
+        notif.position = Vec3::new(0.0, 0.0, -0.5);
         notif.text = "Close right hand to change textures".into();
 
         SkInfo::send_event(&self.sk_info, StepperAction::add("HudNotifTex1", notif));
@@ -356,14 +298,9 @@ impl Tex1 {
     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
     /// Called from IStepper::step after check_event, here you can draw your UI and your scene
-    fn draw(&mut self, token: &MainThreadToken) {
+    fn draw(&mut self, _token: &MainThreadToken) {
         self.panels.draw(
-            token,
-            Mat4::IDENTITY.mul(Mat4::from_scale_rotation_translation(
-                Vec3::ONE * 0.25,
-                Quat::from_rotation_y(0.0),
-                Vec3::new(-0.5, 2.0, -2.0),
-            )),
+            Matrix::t_r_s(Vec3::new(-0.5, 2.0, -2.0), Quat::IDENTITY, Vec3::ONE * 0.25),
             None::<Color128>,
             None,
         );
@@ -375,7 +312,6 @@ impl Tex1 {
                 1 => {
                     self.tex_vide.set_colors128(self.width, self.height, self.raw_dots128.as_slice());
                     self.tex_vide2.set_colors_r8(self.width, self.height, self.raw_dots_byte.as_slice());
-                    // see R16 --> R16f [sk_gpu] API/ERROR - 0x1 - GL_INVALID_OPERATION in glTexImage2D(format = GL_RED, type = GL_UNSIGNED_SHORT, internalformat = GL_R16F)
                     self.tex_vide3.set_colors_r16(self.width, self.height, self.raw_dots_u16.as_slice());
                     self.tex_vide4.set_colors_r32(self.width, self.height, self.raw_dots_u32.as_slice());
                     Log::info(format!(

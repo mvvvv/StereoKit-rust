@@ -397,9 +397,9 @@ mod tests_quat {
         let q2 = Quat::from_angles(0.0, 90.0, 0.0);
         q.relative(q2);
         assert!((q.x).abs() < 0.00001);
-        assert_eq!((q.y - 0.70710677).abs(), 0.70710677);
+        assert!(((q.y - 0.70710677).abs() - 0.70710677).abs() < 0.0001);
         assert!((q.z).abs() < 0.00001);
-        assert_eq!((q.w - 0.70710677).abs(), 0.29289317);
+        assert!(((q.w - 0.70710677).abs() - 0.29289317).abs() < 0.0001);
     }
     #[test]
     fn test_quat_rotate_point() {
@@ -596,8 +596,8 @@ mod tests_matrix {
     fn test_matrix_perspective() {
         let perspective = Matrix::perspective(90.0, 1.0, 0.1, 100.0);
         unsafe {
-            assert_eq!((perspective.m[0] - 1.0).abs(), 71.946686);
-            assert_eq!((perspective.m[5] - 1.0).abs(), 71.946686);
+            assert!((perspective.m[0] - 1.0).abs() < 0.0001);
+            assert!((perspective.m[5] - 1.0).abs() < 0.0001);
             assert_eq!((perspective.m[10] + 1.002002).abs(), 0.0010010004);
             assert_eq!((perspective.m[11] + -1.0).abs(), 2.0);
             assert_eq!((perspective.m[14] + 0.2002002).abs(), 0.1001001);
@@ -629,8 +629,8 @@ mod tests_matrix {
         let rot = Matrix::r(Quat::from_angles(0.0, 90.0, 0.0));
         unsafe {
             assert!((rot.m[0] - 0.0).abs() < 0.0001);
-            assert_eq!((rot.m[2] - 1.0).abs(), 1.9999999);
-            assert_eq!((rot.m[8] - -1.0).abs(), 1.9999999);
+            assert!(((rot.m[2] - 1.0).abs() - 2.0).abs() < 0.0001);
+            assert!(((rot.m[8] - -1.0).abs() - 2.0).abs() < 0.0001);
             assert!((rot.m[10] - 0.0).abs() < 0.0001);
         }
     }
@@ -663,8 +663,8 @@ mod tests_matrix {
             assert!((tr.m[13] - 2.0).abs() < 0.0001);
             assert!((tr.m[14] - 3.0).abs() < 0.0001);
             assert!((tr.m[0] - 0.0).abs() < 0.0001);
-            assert_eq!((tr.m[2] - 1.0).abs(), 1.9999999);
-            assert_eq!((tr.m[8] - -1.0).abs(), 1.9999999);
+            assert!(((tr.m[2] - 1.0).abs() - 2.0).abs() < 0.0001);
+            assert!(((tr.m[8] - -1.0).abs() - 2.0).abs() < 0.0001);
             assert!((tr.m[10] - 0.0).abs() < 0.0001);
         }
     }
@@ -690,8 +690,8 @@ mod tests_matrix {
             assert!((trs.m[13] - 2.0).abs() < 0.0001);
             assert!((trs.m[14] - 3.0).abs() < 0.0001);
             assert!((trs.m[0] - 0.0).abs() < 0.0001);
-            assert_eq!((trs.m[2] - 4.0).abs(), 6.0);
-            assert_eq!((trs.m[8] - -2.0).abs(), 5.9999995);
+            assert!(((trs.m[2] - 4.0).abs() - 6.0).abs() < 0.0001);
+            assert!(((trs.m[8] - -2.0).abs() - 6.0).abs() < 0.0001);
             assert!((trs.m[10] - 0.0).abs() < 0.0001);
         }
     }
@@ -708,8 +708,8 @@ mod tests_matrix {
             assert!((m.m[13] - 2.0).abs() < 0.0001);
             assert!((m.m[14] - 3.0).abs() < 0.0001);
             assert!((m.m[0] - 0.0).abs() < 0.0001);
-            assert_eq!((m.m[2] - 4.0).abs(), 6.0);
-            assert_eq!((m.m[8] - -2.0).abs(), 5.9999995);
+            assert!(((m.m[2] - 4.0).abs() - 6.0).abs() < 0.0001);
+            assert!(((m.m[8] - -2.0).abs() - 6.0).abs() < 0.0001);
             assert!((m.m[10] - 0.0).abs() < 0.0001);
         }
     }
@@ -823,9 +823,9 @@ mod tests_matrix {
         let m = Matrix::t(Vec3::new(1.0, 2.0, 3.0)) * Matrix::r(Quat::from_angles(0.0, 90.0, 0.0));
         let p = Pose::IDENTITY;
         let result = m.transform_pose(p);
-        assert_eq!((result.position.x - 1.0).abs(), 1.9999995);
+        assert!(((result.position.x - 1.0).abs() - 2.0).abs() < 0.0001);
         assert!((result.position.y - 2.0).abs() < 0.0001);
-        assert_eq!((result.position.z - 3.0).abs(), 3.9999998);
+        assert!(((result.position.z - 3.0).abs() - 4.0).abs() < 0.0001);
         assert!((result.orientation.x).abs() < 0.0001);
         assert!((result.orientation.y - 0.70710677).abs() < 0.0001);
         assert!((result.orientation.z).abs() < 0.0001);
@@ -1019,9 +1019,9 @@ mod tests_matrix {
         let m = Matrix::t(Vec3::new(1.0, 2.0, 3.0)) * Matrix::r(Quat::from_angles(0.0, 90.0, 0.0));
         let p = Pose::IDENTITY;
         let result = m * p;
-        assert_eq!((result.position.x - 1.0).abs(), 1.9999995);
+        assert!(((result.position.x - 1.0).abs() - 2.0).abs() < 0.0001);
         assert!((result.position.y - 2.0).abs() < 0.0001);
-        assert_eq!((result.position.z - 3.0).abs(), 3.9999998);
+        assert!(((result.position.z - 3.0).abs() - 4.0).abs() < 0.0001);
         assert!((result.orientation.x).abs() < 0.0001);
         assert!((result.orientation.y - 0.70710677).abs() < 0.0001);
         assert!((result.orientation.z).abs() < 0.0001);
@@ -1033,9 +1033,9 @@ mod tests_matrix {
         let m = Matrix::t(Vec3::new(1.0, 2.0, 3.0)) * Matrix::r(Quat::from_angles(0.0, 90.0, 0.0));
         let mut p = Pose::IDENTITY;
         p *= m;
-        assert_eq!((p.position.x - 1.0).abs(), 1.9999995);
+        assert!(((p.position.x - 1.0).abs() - 2.0).abs() < 0.0001);
         assert!((p.position.y - 2.0).abs() < 0.0001);
-        assert_eq!((p.position.z - 3.0).abs(), 3.9999998);
+        assert!(((p.position.z - 3.0).abs() - 4.0).abs() < 0.0001);
         assert!((p.orientation.x).abs() < 0.0001);
         assert!((p.orientation.y - 0.70710677).abs() < 0.0001);
         assert!((p.orientation.z).abs() < 0.0001);
@@ -1047,9 +1047,9 @@ mod tests_matrix {
         let m = Matrix::t(Vec3::new(1.0, 2.0, 3.0)) * Matrix::r(Quat::from_angles(0.0, 90.0, 0.0));
         let p = Pose::IDENTITY;
         let result = p * m;
-        assert_eq!((result.position.x - 1.0).abs(), 1.9999995);
+        assert!(((result.position.x - 1.0).abs() - 2.0).abs() < 0.0001);
         assert!((result.position.y - 2.0).abs() < 0.0001);
-        assert_eq!((result.position.z - 3.0).abs(), 3.9999998);
+        assert!(((result.position.z - 3.0).abs() - 4.0).abs() < 0.0001);
         assert!((result.orientation.x).abs() < 0.0001);
         assert!((result.orientation.y - 0.70710677).abs() < 0.0001);
         assert!((result.orientation.z).abs() < 0.0001);

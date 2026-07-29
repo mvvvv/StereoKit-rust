@@ -5,7 +5,7 @@ use stereokit_rust::{
     maths::{Matrix, Pose, Quat, Ray, Vec3},
     mesh::Mesh,
     prelude::*,
-    system::{Handed, Input, Lines, Text, TextStyle},
+    system::{Handed, Input, Lines, Text, TextBuilder, TextStyle},
     ui::{Ui, UiCut},
     util::named_colors::{RED, WHITE},
 };
@@ -49,7 +49,7 @@ impl Anchor1 {
 
     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
-    fn draw(&mut self, token: &MainThreadToken) {
+    fn draw(&mut self, _token: &MainThreadToken) {
         // we need a pointer
         let right_hand = Input::hand(Handed::Right);
         let mut hand_pose = right_hand.palm;
@@ -60,26 +60,26 @@ impl Anchor1 {
         if right_hand.is_just_pinched() {
             Log::diag(format!("{ray:?}"));
         }
-        Lines::add(token, ray.position, ray.position + ray.direction * 0.5, WHITE, None, 0.01);
+        Lines::add(ray.position, ray.position + ray.direction * 0.5, WHITE, None, 0.01);
 
         // window for working with the anchors
-        Ui::window_begin("Anchors", &mut self.window_pose, None, None, None);
+        Ui::window("Anchors").pose(&mut self.window_pose).begin();
         // checking if we support anchors
         Ui::layout_push_cut(UiCut::Left, 0.1, true);
         Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);
-        Ui::label("Capabilities:", None, false);
+        Ui::label("Capabilities:").draw();
         Ui::hseparator();
 
         let storable = !(Anchor::get_capabilities() & AnchorCaps::Storable).is_empty();
         let stability = !(Anchor::get_capabilities() & AnchorCaps::Stability).is_empty();
         if !storable && !stability {
-            Ui::label("None", None, false)
+            Ui::label("None").draw()
         } else {
             if storable {
-                Ui::label("Storable", None, false)
+                Ui::label("Storable").draw()
             }
             if stability {
-                Ui::label("Stability", None, false)
+                Ui::label("Stability").draw()
             }
         }
         Ui::layout_pop();
@@ -88,7 +88,7 @@ impl Anchor1 {
         let mut pose_tip = hand_pose;
         pose_tip.position += ray.direction * 0.5;
         Ui::push_enabled(storable || stability, None);
-        if Ui::button("Create New", None) {
+        if Ui::button("Create New").press() {
             if let Ok(anchor) = Anchor::from_pose(pose_tip) {
                 anchor.try_set_persistent(true);
                 self.anchors.push(anchor);
@@ -103,7 +103,7 @@ impl Anchor1 {
         let mut selected: Option<&Anchor> = None;
         for anchor in self.anchors.iter() {
             let a_pose = anchor.get_pose();
-            Lines::add_axis(token, a_pose, Some(0.1), None);
+            Lines::add_axis(a_pose, Some(0.1), None);
             if a_pose.position.in_radius(pose_tip.position, 0.05) {
                 selected = Some(anchor);
             }
@@ -112,7 +112,6 @@ impl Anchor1 {
         // outline the one pointed
         if let Some(anchor_selected) = selected {
             Mesh::cube().draw(
-                token,
                 &self.ui_box_material,
                 anchor_selected.get_pose().to_matrix(Some(Vec3::ONE * 0.1)),
                 None,
@@ -124,6 +123,6 @@ impl Anchor1 {
         for anchor in Anchor::new_anchors() {
             Log::info(format!("New anchor : {}", anchor.get_name()));
         }
-        Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
+        TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
     }
 }

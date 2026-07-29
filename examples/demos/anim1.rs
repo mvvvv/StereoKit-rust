@@ -27,17 +27,17 @@ unsafe impl Send for Anim1 {}
 
 impl Default for Anim1 {
     fn default() -> Self {
-        let mobile = Model::from_file("mobiles.gltf", Some(Shader::pbr())).unwrap().copy();
+        let mobile = Model::from_file("mobiles.gltf", Some(Shader::pbr()), None).unwrap_or_default().copy();
 
         let calcaire = Material::find("clean_tile").unwrap_or_default();
         let mut brick_wall_material = calcaire.copy();
         let prefix_id = brick_wall_material.get_id().to_string();
         brick_wall_material
+            .face_cull(Cull::None)
             .roughness_amount(0.7)
             .color_tint(DARK_RED)
             .tex_transform(Vec4::new(0.0, 0.0, 5.0, 5.0))
             .transparency(Transparency::None)
-            .face_cull(Cull::None)
             .id(format!("BRICK_{prefix_id}"));
         Log::diag(format!("Brick material ID is {}", brick_wall_material.get_id()));
         // The nodes stay alive and keep Material alive so, no id .id("brick_wall");
@@ -99,7 +99,7 @@ impl Anim1 {
             None,
             true,
         );
-        Log::info(format!("model <~GRN>node count<~clr> : <~RED>{}<~clr> !!!", &mobile.get_nodes().get_count()));
+        Log::info(format!("model <~GRN>node count<~clr> : <~RED>{}<~clr> !!!", mobile.get_nodes().get_count()));
         for n in nodes.all() {
             Log::info(format!("---- : {:?} id: {:?} ", n.get_name(), n.get_id()));
             if let Some(mesh) = n.get_mesh() {
@@ -112,7 +112,7 @@ impl Anim1 {
 
         // We ask for a notification to be displayed
         let mut notif = HudNotification::default();
-        notif.position = Vec3::new(0.0, 0.3, -0.2);
+        notif.position = Vec3::new(0.0, 0.0, -0.5);
         notif.text = "Close right hand to change animation".into();
 
         SkInfo::send_event(&self.sk_info, StepperAction::add("HudNotifAnim1", notif));
@@ -121,8 +121,8 @@ impl Anim1 {
 
     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
-    fn draw(&mut self, token: &MainThreadToken) {
-        self.mobile.draw(token, self.transform, None, None);
+    fn draw(&mut self, _token: &MainThreadToken) {
+        self.mobile.draw(self.transform, None, None);
 
         if self.render_now {
             match self.stage % 3 {
@@ -150,7 +150,7 @@ impl Anim1 {
             let cube = SHCubemap::get_rendered_sky();
             Log::info(format!(
                 "sample : {:?} / dominent direction {}",
-                cube.sh.get_sample(glam::Vec3::ONE),
+                cube.sh.get_sample(Vec3::ONE),
                 cube.sh.get_dominent_light_direction()
             ))
         }

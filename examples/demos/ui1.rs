@@ -4,8 +4,8 @@ use stereokit_rust::{
     maths::{Matrix, Quat, Vec2, Vec3, units::CM},
     mesh::Mesh,
     prelude::*,
-    system::{BtnState, Pivot, Text, TextStyle},
-    ui::{IdHashT, Ui, UiColor, UiCorner, UiLathePt, UiSliderData, UiVisual},
+    system::{BtnState, Interactor, Pivot, Text, TextBuilder, TextStyle},
+    ui::{IdHashT, Ui, UiBtnFlag, UiColor, UiCorner, UiLathePt, UiSliderData, UiVisual},
     util::{
         Color32, Color128, Time,
         named_colors::{CYAN, DARK_BLUE, MAGENTA, ORCHID, RED},
@@ -45,6 +45,7 @@ pub struct Ui1 {
     pub id_slider: String,
     id_slider_hash: IdHashT,
     slider_pt: Vec2,
+    out_opt_interactor: Interactor,
 
     pub text: String,
     pub text_style: TextStyle,
@@ -59,15 +60,15 @@ impl Default for Ui1 {
         Self {
             id: "Ui1".to_string(),
             sk_info: None,
-            transform: Matrix::t_r(
-                (Vec3::NEG_Z * 2.5) + Vec3::Y, //
-                Quat::from_angles(0.0, 180.0, 0.0),
-            ),
+
             demo_win_width: 36.0 * CM,
             ui_material: Material::ui().copy(),
             id_slider_hash: Ui::stack_hash(&id_slider),
             id_slider,
             slider_pt: Vec2::ONE * 0.5,
+            out_opt_interactor: Interactor::NONE,
+
+            transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, Quat::Y_180),
             text: "Ui1".to_owned(),
             text_style: Text::make_style(Font::default(), 0.3, RED),
         }
@@ -90,7 +91,7 @@ impl Ui1 {
     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
     /// Called from IStepper::step after check_event, here you can draw your UI and scene
-    fn draw(&mut self, token: &MainThreadToken) {
+    fn draw(&mut self, _token: &MainThreadToken) {
         let corner_radius = 0.005 * Time::get_totalf().sin().abs();
         if let Ok(mesh) = Ui::gen_quadrant_mesh(
             UiCorner::TopLeft & UiCorner::BottomRight,
@@ -103,18 +104,18 @@ impl Ui1 {
             Ui::set_element_visual(UiVisual::ExtraSlot03, mesh, None, None);
         }
 
-        Ui::window_begin_auto("Ui elements", Some(Vec2::new(self.demo_win_width, 0.0)), None, None);
+        Ui::window("Ui elements").size([self.demo_win_width, 0.0]).begin();
 
-        self.custom_button_mesh(token, "Custom Button Mesh", UiVisual::ExtraSlot02);
-        self.custom_button_element(token, "Custom Button Element");
-        Ui::button("Standard Button", None);
+        self.custom_button_mesh("Custom Button Mesh", UiVisual::ExtraSlot02);
+        self.custom_button_element("Custom Button Element");
+        Ui::button("Standard Button").press();
 
         Ui::push_enabled(false, None);
-        self.custom_button_mesh(token, "Custom Button Mesh Disabled", UiVisual::ExtraSlot01);
+        self.custom_button_mesh("Custom Button Mesh Disabled", UiVisual::ExtraSlot01);
         Ui::pop_enabled();
 
         Ui::push_tint(Color128::hsv(0.0, 0.2, 0.7, 1.0));
-        self.custom_button_element(token, "Custom Button Element Tinted");
+        self.custom_button_element("Custom Button Element Tinted");
         Ui::pop_tint();
 
         Ui::hseparator();
@@ -123,23 +124,27 @@ impl Ui1 {
 
         let size = Vec2::ONE * Ui::get_layout_remaining().x;
         self.ui_touch_panel(size);
-        Ui::label(format!("{:>6.2} * {:>6.2}", self.slider_pt.x * 100.0, self.slider_pt.y * 100.0), None, true);
+        Ui::label(format!("{:>6.2} * {:>6.2}", self.slider_pt.x * 100.0, self.slider_pt.y * 100.0))
+            .use_padding(true)
+            .draw();
 
         Ui::hseparator();
 
         Ui::window_end();
 
-        Text::add_at(token, &self.text, self.transform, Some(self.text_style), None, None, None, None, None, None);
+        TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
     }
 
-    pub fn custom_button_mesh(&mut self, token: &MainThreadToken, text: &str, slot: UiVisual) -> bool {
+    pub fn custom_button_mesh(&mut self, text: &str, slot: UiVisual) -> bool {
         let id = Ui::stack_hash(text);
         let size = Text::size_layout(text, Some(Ui::get_text_style()), None) * 1.7;
         let mut layout = Ui::layout_reserve(size, false, 0.0);
         let mut out_finger_offset: f32 = 0.0;
         let mut out_button_state: BtnState = BtnState::empty();
         let mut out_focus_state = BtnState::empty();
-        let mut out_opt_hand: i32 = 0;
+
+        self.out_opt_interactor = Interactor::NONE;
+
         Ui::button_behavior(
             layout.tlc(),
             size,
@@ -147,51 +152,46 @@ impl Ui1 {
             &mut out_finger_offset,
             &mut out_button_state,
             &mut out_focus_state,
-            Some(&mut out_opt_hand),
+            Some(&mut self.out_opt_interactor),
         );
         layout.center.z -= out_finger_offset / 2.0;
         layout.dimensions.z = out_finger_offset;
         Mesh::cube().draw(
-            token,
             &self.ui_material,
             Matrix::t_s(layout.center, layout.dimensions),
             Some(Ui::get_element_color(slot, Ui::get_anim_focus(id, out_focus_state, out_button_state))),
             None,
         );
-        Text::add_at(
-            token,
-            text,
-            Matrix::t(Vec3::new(layout.center.x, layout.center.y, -(out_finger_offset + 0.002))),
-            Some(Ui::get_text_style()),
-            None,
-            Some(Pivot::Center),
-            None,
-            None,
-            None,
-            None,
-        );
+        TextBuilder::new(text)
+            .transform(Matrix::t(Vec3::new(layout.center.x, layout.center.y, -(out_finger_offset + 0.002))))
+            .style(Ui::get_text_style())
+            .position(Pivot::Center)
+            .add();
         if out_button_state.is_just_active() {
             Ui::play_sound_on_off(UiVisual::Button, id, layout.center);
         }
         out_button_state.is_just_inactive()
     }
 
-    pub fn custom_button_element(&mut self, token: &MainThreadToken, text: &str) -> bool {
+    pub fn custom_button_element(&mut self, text: &str) -> bool {
         let id = Ui::stack_hash(text);
         let size = Text::size_layout(text, Some(Ui::get_text_style()), None) * 1.7;
         let mut layout = Ui::layout_reserve(size, false, 0.0);
         let mut out_finger_offset: f32 = 0.0;
         let mut out_button_state: BtnState = BtnState::empty();
         let mut out_focus_state = BtnState::empty();
-        let mut out_opt_hand: i32 = 0;
-        Ui::button_behavior(
+        let mut out_opt_interactor = Interactor::NONE;
+        Ui::button_behavior_depth(
             layout.tlc(),
             size,
             text,
+            0.05,
+            0.03,
+            UiBtnFlag::NoCancel,
             &mut out_finger_offset,
             &mut out_button_state,
             &mut out_focus_state,
-            Some(&mut out_opt_hand),
+            Some(&mut out_opt_interactor),
         );
         layout.center.z -= out_finger_offset / 2.0;
         layout.dimensions.z = out_finger_offset;
@@ -202,18 +202,11 @@ impl Ui1 {
             layout.dimensions,
             Ui::get_anim_focus(id, out_focus_state, out_button_state),
         );
-        Text::add_at(
-            token,
-            text,
-            Matrix::t(Vec3::new(layout.center.x, layout.center.y, -(out_finger_offset + 0.002))),
-            Some(Ui::get_text_style()),
-            None,
-            Some(Pivot::Center),
-            None,
-            None,
-            None,
-            None,
-        );
+        TextBuilder::new(text)
+            .transform(Matrix::t(Vec3::new(layout.center.x, layout.center.y, -(out_finger_offset + 0.002))))
+            .style(Ui::get_text_style())
+            .position(Pivot::Center)
+            .add();
 
         if out_button_state.is_just_active() {
             Ui::play_sound_on_off(UiVisual::Button, id, layout.center);
