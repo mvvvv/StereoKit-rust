@@ -811,12 +811,15 @@ impl Sound {
 ///         plane_sound_inst1
 ///             .position(position1)
 ///             .volume(0.5);
-///     } else if iter == 150 - 2 {
+///     } else if iter == number_of_steps - 2 {
 ///         assert!(plane_sound_inst1.is_playing());
 ///         position2 = Vec3::new(0.3, 0.0, 0.3);
 ///         plane_sound_inst2 = plane_sound2.play(position2, Some(1.0));
 ///         assert!(plane_sound_inst2.is_playing());
-///    }
+///     } else if iter == number_of_steps {
+///         plane_sound_inst1.stop();
+///         plane_sound_inst2.stop();
+///     }
 /// );
 /// # } sk::Sk::shutdown();
 /// ```
@@ -888,6 +891,7 @@ impl SoundInst {
     ///     position += Vec3::new(0.0001, 0.0, 0.0);
     ///     plane_sound_inst.position(position);
     /// );
+    /// plane_sound_inst.stop();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn position(&mut self, at: impl Into<Vec3>) -> &mut Self {
@@ -920,6 +924,7 @@ impl SoundInst {
     ///     volume += 0.01;
     ///     plane_sound_inst.volume(volume);
     /// );
+    /// plane_sound_inst.stop();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn volume(&mut self, volume: f32) -> &mut Self {
