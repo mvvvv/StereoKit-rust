@@ -993,11 +993,12 @@ impl SoundInst {
     ///                           expect("A sound should be created");
     /// let plane_sound_inst = plane_sound.play([0.0, 0.0, 0.0], Some(1.0));
     ///
+    /// number_of_steps = 300;
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     if iter == 1 {
+    ///     if iter == number_of_steps {
     ///         assert!(plane_sound_inst.is_playing());
     ///         plane_sound_inst.stop();
-    ///     } else if iter > 1 {
+    ///     } else if iter == number_of_steps + 1 {
     ///         assert!(!plane_sound_inst.is_playing());
     ///     }
     /// );
