@@ -1,0 +1,321 @@
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.04s
+     Running `target/debug/examples/main_pc`
+[SK info] Before init >>>
+[SK diagnostic] Initializing StereoKit v0.4.0 Linux x64...
+[SK diagnostic] Initializing Assets
+[SK diagnostic] Initializing Platform
+[INFO] sk_app initialized
+[SK diagnostic] OpenXR API:     1.0.60
+[SK diagnostic] OpenXR runtime: SteamVR/OpenXR 2.17.6
+[SK diagnostic] OpenXR extensions:
+[SK diagnostic] ___________________________________
+[SK diagnostic] |     Usage | Extension
+[SK diagnostic] |-----------|----------------------
+[SK diagnostic] |   present | XR_EXT_active_action_set_priority
+[SK diagnostic] |   present | XR_EXT_dpad_binding
+[SK diagnostic] |   present | XR_EXT_frame_composition_report
+[SK diagnostic] |   present | XR_EXT_hand_joints_motion_range
+[SK diagnostic] |   present | XR_EXT_interaction_profile_battery_state_display
+[SK diagnostic] |   present | XR_EXT_user_presence
+[SK diagnostic] |   present | XR_HTCX_vive_tracker_interaction
+[SK diagnostic] |   present | XR_HTC_vive_cosmos_controller_interaction
+[SK diagnostic] |   present | XR_HTC_vive_focus3_controller_interaction
+[SK diagnostic] |   present | XR_HTC_vive_wrist_tracker_interaction
+[SK diagnostic] |   present | XR_KHR_binding_modification
+[SK diagnostic] |   present | XR_KHR_generic_controller
+[SK diagnostic] |   present | XR_KHR_locate_spaces
+[SK diagnostic] |   present | XR_KHR_opengl_enable
+[SK diagnostic] |   present | XR_KHR_opengl_es_enable
+[SK diagnostic] |   present | XR_KHR_visibility_mask
+[SK diagnostic] |   present | XR_KHR_vulkan_enable
+[SK diagnostic] |   present | XR_META_performance_metrics
+[SK diagnostic] |   present | XR_META_recommended_layer_resolution
+[SK diagnostic] |   present | XR_MNDX_egl_enable
+[SK diagnostic] |   present | XR_MND_headless
+[SK diagnostic] |   present | XR_VALVE_analog_threshold
+[SK diagnostic] |   present | XR_VALVE_frame_controller_interaction
+[SK diagnostic] |   present | XR_VALVE_timing_utils
+[SK diagnostic] | ACTIVATED | XR_EXT_debug_utils
+[SK diagnostic] | ACTIVATED | XR_EXT_eye_gaze_interaction
+[SK diagnostic] | ACTIVATED | XR_EXT_hand_interaction
+[SK diagnostic] | ACTIVATED | XR_EXT_hand_tracking
+[SK diagnostic] | ACTIVATED | XR_EXT_hand_tracking_data_source
+[SK diagnostic] | ACTIVATED | XR_EXT_hp_mixed_reality_controller
+[SK diagnostic] | ACTIVATED | XR_EXT_interaction_render_model
+[SK diagnostic] | ACTIVATED | XR_EXT_local_floor
+[SK diagnostic] | ACTIVATED | XR_EXT_palm_pose
+[SK diagnostic] | ACTIVATED | XR_EXT_render_model
+[SK diagnostic] | ACTIVATED | XR_EXT_uuid
+[SK diagnostic] | ACTIVATED | XR_EXT_view_configuration_views_change
+[SK diagnostic] | ACTIVATED | XR_FB_display_refresh_rate
+[SK diagnostic] | ACTIVATED | XR_KHR_composition_layer_depth
+[SK diagnostic] | ACTIVATED | XR_KHR_convert_timespec_time
+[SK diagnostic] | ACTIVATED | XR_KHR_vulkan_enable2
+[SK diagnostic] |___________|______________________
+[SK diagnostic] OpenXR requires Vulkan v1.0.0 - v1.2.0
+[SK diagnostic] VkInstance created via xrCreateVulkanInstanceKHR
+[SK diagnostic] [sk_renderer] Using application-specified GPU: NVIDIA GeForce RTX 4070 SUPER
+[SK diagnostic] [sk_renderer] Using GPU: NVIDIA GeForce RTX 4070 SUPER
+[SK diagnostic] [sk_renderer] Vulkan video decode extensions enabled
+[SK diagnostic] VkDevice created via xrCreateVulkanDeviceKHR
+[SK diagnostic] [sk_renderer] [sk_test_request] true
+[SK diagnostic] [sk_renderer] [VK_KHR_swapchain] true
+[SK diagnostic] [sk_renderer] [VK_KHR_external_memory_fd] true
+[SK diagnostic] [sk_renderer] [VK_EXT_external_memory_dma_buf] true
+[SK diagnostic] [sk_renderer] [VK_EXT_image_drm_format_modifier] true
+[SK diagnostic] [sk_renderer] [VK_KHR_image_format_list] true
+[SK diagnostic] [sk_renderer] [VK_QCOM_render_pass_shader_resolve] false (missing VK_QCOM_render_pass_shader_resolve)
+[SK diagnostic] [sk_renderer] [VK_KHR_external_fence_fd] true
+[SK diagnostic] [sk_renderer] [VK_KHR_create_renderpass2] true
+[SK diagnostic] [sk_renderer] [VK_EXT_shader_viewport_index_layer] true
+[SK diagnostic] [sk_renderer] [VK_KHR_push_descriptor] true
+[SK diagnostic] [sk_renderer] [depth_stencil_resolve] true
+[SK diagnostic] [sk_renderer] [multiview] true
+[SK diagnostic] [sk_renderer] [ycbcr_conversion] true
+[SK diagnostic] [sk_renderer] [subgroup_size_control] true
+[SK diagnostic] [sk_renderer] [subpass_merge_feedback] false (missing VK_EXT_subpass_merge_feedback)
+[SK diagnostic] [sk_renderer] [sync2] true
+[SK diagnostic] [sk_renderer] [qcom_sample_weighted] false (missing VK_QCOM_image_processing)
+[SK diagnostic] [sk_renderer] [qcom_box_filter] false (missing VK_QCOM_image_processing)
+[SK diagnostic] [sk_renderer] [qcom_block_match] false (missing VK_QCOM_image_processing)
+[SK diagnostic] [sk_renderer] [qcom_block_match2] false (missing VK_QCOM_image_processing2)
+[SK diagnostic] [sk_renderer] [qcom_tile_shading] false (missing VK_QCOM_tile_shading)
+[SK diagnostic] [sk_renderer] [storage16] true
+[SK diagnostic] [sk_renderer] [storage16_push] true
+[SK diagnostic] [sk_renderer] [float_atomics] false (missing VK_EXT_shader_atomic_float2)
+[SK diagnostic] [sk_renderer] [VK_KHR_multiview] max 32 views
+[SK diagnostic] Starting a XR mode app
+[SK diagnostic] System name: SteamVR/OpenXR : oculus
+[SK diagnostic] ____________________
+[SK diagnostic] | Swapchain Formats 
+[SK diagnostic] |-------------------
+[SK diagnostic] | +rgba32_sRGB
+[SK diagnostic] | +bgra32_sRGB
+[SK diagnostic] |  rgba128
+[SK diagnostic] |  rgba64f
+[SK diagnostic] | +rgb10a2
+[SK diagnostic] | +depth32
+[SK diagnostic] | +depth16
+[SK diagnostic] | +depth24_stencil8
+[SK diagnostic] |  depth32_stencil8
+[SK diagnostic] |___________________
+[SK diagnostic] Creating view: PrimaryStereo color:rgba32_sRGB depth:depth32 blend:Opaque
+[SK diagnostic] OpenXR state: unknown -> idle
+[SK diagnostic] OpenXR state: idle -> ready
+[SK diagnostic] OpenXR session began.
+[SK error] [sk_renderer] [Vulkan:ERROR:1180184443] vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x5a5c4496c350 expects VkImage 0x11c000000011c[BlankEyeBuffer] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.
+The Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)
+[SK diagnostic] OpenXR state: ready -> synchronized
+[SK diagnostic] OpenXR state: synchronized -> visible
+[SK diagnostic] NOT using spatial anchors.
+[SK diagnostic] No depth sensor provider is supported for this runtime.
+[SK diagnostic] Set swapchain to 2244x2352 for PrimaryStereo
+[SK diagnostic] Creating target surface: 2244x2352x2@4msaa
+[SK diagnostic] Created local floor app space at an offset of (0,0,0) (0,0,0,1)
+[SK diagnostic] Bounds updated: 3,6x3,6 at (0,0,0) (0,0,0,1)
+[SK diagnostic] Initializing Audio
+[SK info] Using audio backend: PulseAudio
+[SK diagnostic] Initializing Renderer
+[SK diagnostic] Initializing Defaults
+[SK error] [sk_renderer] [Vulkan:ERROR:1180184443] vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x5a5c4494fe60 expects VkImage 0x11c000000011c[BlankEyeBuffer] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_UNDEFINED.
+The Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)
+[SK diagnostic] Initializing World
+[SK diagnostic] Bounds updated: 3,6x3,6 at (0,0,0) (0,0,0,1)
+[SK diagnostic] Initializing Sprites
+[SK diagnostic] Initializing Lines
+[SK diagnostic] Initializing UI
+[SK diagnostic] Initializing Tools
+[SK diagnostic] Initializing Lighting
+[SK diagnostic] Initializing Input
+[SK diagnostic] Initializing Permission
+[SK info] Initialization successful
+[SK info] <<< After init
+[SK diagnostic] ======================================================================================================================== !!
+[SK diagnostic] Simultaneous hands and controllers tracking not available
+[SK diagnostic] Runtime SteamVR/OpenXR / Device SteamVR/OpenXR : oculus
+[SK diagnostic] "mobiles.gltf"
+[SK diagnostic] "mobiles.gltf/mesh/0_0_Icosphere"
+[SK diagnostic] "mobiles.gltf/mesh/1_0_Plane"
+[SK diagnostic] "mobiles.gltf/mesh/2_0_Icosphere.003"
+[SK diagnostic] "mobiles.gltf/mesh/3_0_Icosphere.004"
+[SK diagnostic] calcaire_blanc params:
+[SK diagnostic]  --- color/Vec4 : [x:1, y:1, z:1, w:1] 
+[SK diagnostic]  --- emission_factor/Vec4 : [x:0, y:0, z:0, w:0] 
+[SK diagnostic]  --- tex_trans/Vec4 : [x:0, y:0, z:1, w:1] 
+[SK diagnostic]  --- metallic/Float : 0 
+[SK diagnostic]  --- roughness/Float : 0.20000008 
+[SK diagnostic]  --- diffuse/Texture : Texture data... 
+[SK diagnostic]  --- emission/Texture : Texture data... 
+[SK diagnostic]  --- metal/Texture : Texture data... 
+[SK diagnostic]  --- sk_cubemap/Texture : Texture data... 
+[SK diagnostic]  --- sk_inst/Texture : Texture data... 
+[SK info] ✅ There are 1 env blend modes:
+[SK info]    OPAQUE 
+[SK diagnostic] No Passthrough !!
+[SK info] ✅ There are 1 display rate:
+[SK info]    120.0048 
+[SK info] Initial display rate is 120.0048
+[SK diagnostic] XR_META_virtual_keyboard extension not available
+[SK diagnostic] ===================================================================================================================== !!
+[SK diagnostic] Thread id : Some("main") / ThreadId(1) 
+[SK diagnostic] Process id : Some("main") / 806835 
+[SK diagnostic] Fly_Over: OriginMode is Floor 
+[SK diagnostic] --
+[SK info] Stepper HudNotif1 is initialized.
+[SK info] Stepper Demo_HandMenuRadial1 is initialized.
+[SK info] Stepper Tool_LogWindow is initialized.
+[SK info] Stepper Tool_Screenshoot is initialized.
+[SK info] Stepper Tool_FlyOverID is initialized.
+[SK diagnostic] WokeUp
+[SK diagnostic] UserEvent StepperAction::Add(..., type_id: ... , stepper_id:"hand_menu_radial_demo_1" )
+[SK diagnostic] UserEvent StepperAction::Event( id:"hand_menu_radial_demo_1" => hand_menu_radial_focus->true )
+[SK error] [sk_renderer] [Vulkan:ERROR:1180184443] vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x5a5c4496c350 expects VkImage 0x2260000000226[CSxrSwapchainVulkanOpenVR] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL.
+The Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)
+[SK info] Stepper hand_menu_radial_demo_1 is initialized.
+[SK error] [sk_renderer] [Vulkan:ERROR:1180184443] vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x5a5c4494fe60 expects VkImage 0x2260000000226[CSxrSwapchainVulkanOpenVR] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 1) to be in layout VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL.
+The Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)
+[SK error] [sk_renderer] [Vulkan:ERROR:1180184443] vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x5a5c4496c350 expects VkImage 0x2290000000229[CSxrSwapchainVulkanOpenVR] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL.
+The Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)
+[SK error] [sk_renderer] [Vulkan:ERROR:1180184443] vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x5a5c4494fe60 expects VkImage 0x2290000000229[CSxrSwapchainVulkanOpenVR] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 1) to be in layout VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL.
+The Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)
+[SK error] [sk_renderer] [Vulkan:ERROR:1180184443] vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x5a5c4494fe60 expects VkImage 0x22c000000022c[CSxrSwapchainVulkanOpenVR] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL.
+The Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)
+[SK error] [sk_renderer] [Vulkan:ERROR:1180184443] vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x5a5c4603e510 expects VkImage 0x22c000000022c[CSxrSwapchainVulkanOpenVR] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 1) to be in layout VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL.
+The Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)
+[SK error] [sk_renderer] [Vulkan:ERROR:1180184443] vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x5a5c448c7fc0 expects VkImage 0x2260000000226[CSxrSwapchainVulkanOpenVR] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL.
+The Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)
+[SK error] [sk_renderer] [Vulkan:ERROR:1180184443] (Warning - This VUID has now been reported 10 times, which is the duplicate_message_limit value, this will be the last time reporting it).
+vkQueueSubmit(): pSubmits[0] command buffer VkCommandBuffer 0x5a5c4603e510 expects VkImage 0x2260000000226[CSxrSwapchainVulkanOpenVR] (subresource: aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0, arrayLayer = 0) to be in layout VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL--instead, current layout is VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL.
+The Vulkan spec states: If a descriptor with type equal to any of VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, or VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT is accessed as a result of this command, all image subresources identified by that descriptor must be in the image layout identified when the descriptor was written (https://docs.vulkan.org/spec/latest/chapters/drawing.html#VUID-vkCmdDraw-None-09600)
+[SK diagnostic] OpenXR state: visible -> focused
+[SK info] App focus changed to : Active
+[SK diagnostic] Current Interactors after focus change:
+[SK diagnostic] ----Type: Point / InteractorSource(HandLeft)
+[SK diagnostic] ----Type: Point / InteractorSource(HandLeft)
+[SK diagnostic] ----Type: Line / InteractorSource(HandLeft)
+[SK diagnostic] ----Type: Point / InteractorSource(HandRight)
+[SK diagnostic] ----Type: Point / InteractorSource(HandRight)
+[SK diagnostic] ----Type: Line / InteractorSource(HandRight)
+[SK diagnostic] Switched /user/hand/left to oculus/touch_controller
+[SK diagnostic] Switched /user/hand/right to oculus/touch_controller
+[SK diagnostic] UserEvent StepperAction::Remove( id:"HudNotif1" )
+[SK info] Stepper HudNotif1 is removed.
+[SK info] Starting scene: Shadows1
+[SK info] Stepper Shadows1 is initialized.
+[SK diagnostic] OpenXR state: focused -> visible
+[SK info] App focus changed to : Background
+[SK diagnostic] Current Interactors after focus change:
+[SK diagnostic] ----Type: Point / InteractorSource(HandLeft)
+[SK diagnostic] ----Type: Point / InteractorSource(HandLeft)
+[SK diagnostic] ----Type: Line / InteractorSource(HandLeft)
+[SK diagnostic] ----Type: Point / InteractorSource(HandRight)
+[SK diagnostic] ----Type: Point / InteractorSource(HandRight)
+[SK diagnostic] ----Type: Line / InteractorSource(HandRight)
+[SK diagnostic] OpenXR state: visible -> synchronized
+[SK info] App focus changed to : Hidden
+[SK diagnostic] Current Interactors after focus change:
+[SK diagnostic] ----Type: Point / InteractorSource(HandLeft)
+[SK diagnostic] ----Type: Point / InteractorSource(HandLeft)
+[SK diagnostic] ----Type: Line / InteractorSource(HandLeft)
+[SK diagnostic] ----Type: Point / InteractorSource(HandRight)
+[SK diagnostic] ----Type: Point / InteractorSource(HandRight)
+[SK diagnostic] ----Type: Line / InteractorSource(HandRight)
+[SK diagnostic] Time to sleep
+[SK info] HIDDEN STEP -------> Dreaming 
+[SK info] HIDDEN STEP -------> Dreaming 
+[SK diagnostic] OpenXR state: synchronized -> visible
+[SK info] App focus changed to : Background
+[SK diagnostic] Current Interactors after focus change:
+[SK diagnostic] ----Type: Point / InteractorSource(HandLeft)
+[SK diagnostic] ----Type: Point / InteractorSource(HandLeft)
+[SK diagnostic] ----Type: Line / InteractorSource(HandLeft)
+[SK diagnostic] ----Type: Point / InteractorSource(HandRight)
+[SK diagnostic] ----Type: Point / InteractorSource(HandRight)
+[SK diagnostic] ----Type: Line / InteractorSource(HandRight)
+[SK diagnostic] Created local floor app space at an offset of (0,0,0) (0,0,0,1)
+[SK diagnostic] Bounds updated: 3,6x3,6 at (0,0,0) (0,0,0,1)
+[SK diagnostic] Created local floor app space at an offset of (0,0,0) (0,0,0,1)
+[SK diagnostic] Bounds updated: 3,6x3,6 at (0,0,0) (0,0,0,1)
+[SK diagnostic] Created local floor app space at an offset of (0,0,0) (0,0,0,1)
+[SK diagnostic] Bounds updated: 3,6x3,6 at (0,0,0) (0,0,0,1)
+[SK diagnostic] Created local floor app space at an offset of (0,0,0) (0,0,0,1)
+[SK diagnostic] Bounds updated: 3,6x3,6 at (0,0,0) (0,0,0,1)
+[SK diagnostic] Created local floor app space at an offset of (0,0,0) (0,0,0,1)
+[SK diagnostic] Bounds updated: 3,6x3,6 at (0,0,0) (0,0,0,1)
+[SK diagnostic] Created local floor app space at an offset of (0,0,0) (0,0,0,1)
+[SK diagnostic] Bounds updated: 3,6x3,6 at (0,0,0) (0,0,0,1)
+[SK diagnostic] OpenXR state: visible -> focused
+[SK info] App focus changed to : Active
+[SK diagnostic] Current Interactors after focus change:
+[SK diagnostic] ----Type: Point / InteractorSource(HandLeft)
+[SK diagnostic] ----Type: Point / InteractorSource(HandLeft)
+[SK diagnostic] ----Type: Line / InteractorSource(HandLeft)
+[SK diagnostic] ----Type: Point / InteractorSource(HandRight)
+[SK diagnostic] ----Type: Point / InteractorSource(HandRight)
+[SK diagnostic] ----Type: Line / InteractorSource(HandRight)
+[SK diagnostic] WokeUp
+[SK diagnostic] Closure Thread id : Some("main") / ThreadId(1) 
+[SK diagnostic] Closure Process id : Some("main") / 806835 
+[SK info] Quit sent by main for reason: Main program call quit
+[SK diagnostic] Closing Demo_HandMenuRadial1
+[SK diagnostic] Closing Tool_LogWindow
+[SK diagnostic] Closing Tool_Screenshoot
+[SK diagnostic] Closing Tool_FlyOverID
+[SK diagnostic] Closing hand_menu_radial_demo_1
+[SK diagnostic] Closing Shadows1
+[SK info] Stepper Demo_HandMenuRadial1 is removed.
+[SK info] Stepper Tool_LogWindow is removed.
+[SK info] Stepper Tool_Screenshoot is removed.
+[SK info] Stepper Tool_FlyOverID is removed.
+[SK info] Stepper hand_menu_radial_demo_1 is removed.
+[SK info] Stepper Shadows1 is removed.
+[SK diagnostic] The app demand to quit()!!
+[SK diagnostic] UserEvent StepperAction::Event( id:"hand_menu_radial_demo_1" => hand_menu_radial_focus->false )
+[SK diagnostic] UserEvent StepperAction::Remove( id:"Tool_Screenshoot_file_browser" )
+[SK diagnostic] UserEvent StepperAction::Remove( id:"hand_menu_radial_demo_1" )
+[SK info] QuitReason is User
+[SK diagnostic] sk_step() says stop()!!
+[SK info] SkClosure Exiting !!
+[INFO] sk_app shutdown
+[SK info] Session Performance Report:
+[SK info] ______________________________________________________
+[SK info] |         System | Initialize |     Step |  Shutdown |
+[SK info] |________________|____________|__________|___________|
+[SK info] |     Permission |     0,00ms |          |    0,00ms |
+[SK info] |       Defaults |    42,20ms |          |    0,04ms |
+[SK info] |     FrameBegin |            |  0,143ms |           |
+[SK info] |          Input |     1,74ms |          |    0,02ms |
+[SK info] |       Renderer |     0,65ms |  0,000ms |    0,01ms |
+[SK info] |       Lighting |     1,12ms |  0,000ms |    0,00ms |
+[SK info] |             UI |    32,93ms |  0,004ms |    0,04ms |
+[SK info] |       Platform |   555,99ms |          |   42,62ms |
+[SK info] |            App |    53,88ms |  7,028ms |           |
+[SK info] |      Animation |            |  0,000ms |    0,00ms |
+[SK info] |          Tools |     0,07ms |  0,000ms |    0,02ms |
+[SK info] |          Lines |     0,13ms |  0,002ms |    0,01ms |
+[SK info] |        Sprites |     1,20ms |  0,000ms |    0,00ms |
+[SK info] |           Text |            |  0,011ms |    0,04ms |
+[SK info] |         UILate |            |  0,000ms |           |
+[SK info] |          World |     0,26ms |  0,000ms |    0,00ms |
+[SK info] |    FrameRender |            |  5,845ms |           |
+[SK info] |         Assets |    29,08ms |  0,000ms |   13,92ms |
+[SK info] |          Audio |    12,17ms |  0,001ms |    5,29ms |
+[SK info] |________________|____________|__________|___________|
+Validation Error: [ VUID-vkDestroyDevice-device-05137 ] | MessageID = 0x4872eaa0
+vkDestroyDevice(): Object Tracking - For VkDevice 0x5a5c43487730, VkImage 0x11c000000011c[BlankEyeBuffer] has not been destroyed.
+The Vulkan spec states: All child objects created on device that can be destroyed or freed must have been destroyed or freed prior to destroying device (https://docs.vulkan.org/spec/latest/chapters/devsandqueues.html#VUID-vkDestroyDevice-device-05137)
+Objects: 1
+    [0] VkImage 0x11c000000011c[BlankEyeBuffer]
+
+Validation Error: [ VUID-vkDestroyDevice-device-05137 ] | MessageID = 0x4872eaa0
+vkDestroyDevice(): Object Tracking - For VkDevice 0x5a5c43487730, VkDeviceMemory 0x11d000000011d[BlankEyeBuffer] has not been destroyed.
+The Vulkan spec states: All child objects created on device that can be destroyed or freed must have been destroyed or freed prior to destroying device (https://docs.vulkan.org/spec/latest/chapters/devsandqueues.html#VUID-vkDestroyDevice-device-05137)
+Objects: 1
+    [0] VkDeviceMemory 0x11d000000011d[BlankEyeBuffer]
+
+Validation Error: [ VUID-vkDestroyDevice-device-05137 ] | MessageID = 0x4872eaa0
+vkDestroyDevice(): Object Tracking - For VkDevice 0x5a5c43487730, VkImageView 0x11e000000011e[BlankEyeBuffer View] has not been destroyed.
+The Vulkan spec states: All child objects created on device that can be destroyed or freed must have been destroyed or freed prior to destroying device (https://docs.vulkan.org/spec/latest/chapters/devsandqueues.html#VUID-vkDestroyDevice-device-05137)
+Objects: 1
+    [0] VkImageView 0x11e000000011e[BlankEyeBuffer View]
+

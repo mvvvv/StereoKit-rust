@@ -81,7 +81,7 @@ cargo clean && ./gradlew clean
 
 
 #---- Saving some logs ANDROID
-touch build.rs; clear; cargo apk run --example main > examples/example_of_quest_log.txt 
+clear; ./gradlew run --warning-mode all && sh logcat.cmd > ~/dvlt/StereoKit-rust/examples/example_of_quest_log.txt 
 ansi2html < examples/example_of_quest_log.txt > examples/example_of_quest_log.html 
 cut -c1-5,37- < examples/example_of_quest_log.txt > examples/comp_example_of_quest_log.txt
 
@@ -98,7 +98,7 @@ steam steam://rungameid/14582336022122594304
 grep OutputDebugStringA ~/steam-14582336022122594304.log | cut -c49- | sed -e 's/\\n\"$//' > examples/example_of_WiVRn_wine_msvc.txt
 
 #---- Saving some logs  SteamVR
-cargo run --example main_pc &> examples/example_of_ALVR_native.txt
+cargo run --example main_pc &> examples/example_of_SteamVR_native.txt
 
 steam steam://rungameid/17868406875997863936  
 # wait the end ...
