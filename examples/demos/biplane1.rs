@@ -6,7 +6,7 @@ use stereokit_rust::{
     model::Model,
     prelude::*,
     render::Renderer,
-    sound::{Sound, SoundInst},
+    sound::{Sound, SoundFlags, SoundInst, SoundPlay},
     system::{Text, TextBuilder, TextStyle},
     util::{Time, named_colors::RED},
 };
@@ -50,7 +50,7 @@ impl Default for Biplane1 {
         };
         let plane_pose = Pose::new(Vec3::NEG_Z + Vec3::Y * 1.5, None);
         let mut plane_sound = Sound::from_file("sounds/plane_engine.mp3").unwrap();
-        plane_sound.id("sound_plane").decibels(70.0);
+        plane_sound.id("sound_plane").decibels(100.0);
 
         Self {
             id: "Plane1".to_string(),
@@ -144,7 +144,8 @@ impl Biplane1 {
         if let Some(mut sound_inst) = self.plane_sound_inst {
             if !sound_inst.is_playing() {
                 Log::diag("Play again!!");
-                self.plane_sound_inst = Some(self.plane_sound.play(self.plane_pose.position, Some(100.0)));
+                let sound_settings = SoundPlay { flags: SoundFlags::Loop, ..Default::default() };
+                self.plane_sound_inst = Some(self.plane_sound.play_with(self.plane_pose.position, &sound_settings));
             }
             sound_inst.position(self.plane_pose.position);
         }

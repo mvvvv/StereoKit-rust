@@ -7,7 +7,7 @@ use stereokit_rust::{
     util::named_colors::RED,
 };
 
-/// Copycat of the example https://github.com/StereoKit/StereoKit/blob/develop/Examples/StereoKitTest/Tests/TestWindowPoseOverride.cs
+/// Copycat of the example <https://github.com/StereoKit/StereoKit/blob/develop/Examples/StereoKitTest/Tests/TestWindowPoseOverride.cs>
 #[derive(IStepper)]
 pub struct Ui2 {
     id: StepperId,

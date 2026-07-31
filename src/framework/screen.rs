@@ -1,5 +1,6 @@
 use std::f32::consts::PI;
 
+use crate::sound::{SoundBus, SoundPlay};
 use crate::util::{Color128, named_colors};
 use crate::{
     material::Material,
@@ -239,8 +240,9 @@ impl Screen {
         this.update_pose_cache(Input::get_head().position);
         this.adapt_screen();
 
-        this.sound_left_inst = Some(this.sound_left.play(this.sound_position(-1), Some(1.0)));
-        this.sound_right_inst = Some(this.sound_right.play(this.sound_position(1), Some(1.0)));
+        let sound_settings = SoundPlay { bus: SoundBus::Music, volume: 5.0, ..Default::default() };
+        this.sound_left_inst = Some(this.sound_left.play_with(this.sound_position(-1), &sound_settings));
+        this.sound_right_inst = Some(this.sound_right.play_with(this.sound_position(1), &sound_settings));
 
         this
     }

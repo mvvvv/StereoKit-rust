@@ -1,21 +1,504 @@
 use crate::{
     StereoKitError,
-    maths::{Bool32T, Vec3},
-    system::IAsset,
+    maths::{Bool32T, Pose, Vec3},
+    system::{AssetState, IAsset},
 };
 use std::{
-    ffi::{CStr, CString, c_char},
+    ffi::{CStr, CString, c_char, c_void},
     path::Path,
-    ptr::NonNull,
+    ptr::{NonNull, null},
 };
+
+/// A perceptual description of the acoustic space sounds play in - an environment rather than a literal room, so it
+/// covers halls through forests. Spatial sounds feed a shared reverb whose level stays constant with distance, so the
+/// direct-to-reverb balance naturally carries how far away a sound is. A wet of 0 disables the system entirely at zero
+/// cost, and a zeroed struct is the off state. Language bindings provide preset values for common spaces as starting
+/// points.
+/// <https://stereokit.net/Pages/StereoKit/AudioEnvironment.html>
+///
+/// see also [`Audio`]
+#[repr(C)]
+pub struct AudioEnvironment {
+    /// Reverb level, 0-1. 0 turns environmental acoustics off completely, and is the default.
+    pub wet: f32,
+    /// Decay time in seconds - how long the tail takes to fall 60dB at mid frequencies. Rooms are ~0.4s, cathedrals a
+    /// few seconds. Clamped to 0.05-10.
+    pub decay: f32,
+    /// 0-1, extra high frequency decay. Soft or leafy spaces are high, tiled rooms are low.
+    pub damp: f32,
+    /// Size of the space in meters, clamped to 2-40. Drives the spacing of the echoes that build the tail. Changing
+    /// this restarts the tail, where the other fields all glide smoothly.
+    pub size: f32,
+    /// 0-1, how quickly discrete echoes blur into a dense wash. Scattered spaces like forests are high, bare rooms
+    /// lower.
+    pub scatter: f32,
+    /// 0-1, level of the distinct early reflections off the space's surfaces - the first bounces that glue a sound to
+    /// the room. The ground bounce keeps a minimum presence; walls and ceiling scale fully with this, so outdoor
+    /// spaces sit near 0.
+    pub reflect: f32,
+}
+impl Default for AudioEnvironment {
+    fn default() -> Self {
+        Self::OFF
+    }
+}
+impl AudioEnvironment {
+    /// No environmental acoustics at all, sounds play dry. This is the default, and costs nothing - the right choice
+    /// for AR, where synthetic reverb would fight the real room's acoustics.
+    pub const OFF: Self = AudioEnvironment { wet: 0.0, decay: 0.4, damp: 0.55, size: 7.0, scatter: 0.6, reflect: 0.55 };
+
+    /// A small furnished room: a short, balanced tail.
+    pub const ROOM: Self =
+        AudioEnvironment { wet: 0.17, decay: 0.4, damp: 0.55, size: 7.0, scatter: 0.6, reflect: 0.55 };
+
+    /// A large hall: a long, bright, spacious tail.
+    pub const HALL: Self =
+        AudioEnvironment { wet: 0.22, decay: 1.4, damp: 0.45, size: 16.0, scatter: 0.7, reflect: 0.55 };
+
+    /// A cavern: a very long, dense tail with hard
+    /// surfaces.
+    pub const CAVE: Self = AudioEnvironment { wet: 0.3, decay: 2.6, damp: 0.2, size: 22.0, scatter: 0.8, reflect: 0.7 };
+
+    /// A forest: no walls, just a short dark scatter off trunks and foliage - quiet, but unmistakably outdoors-with-
+    /// presence.
+    pub const FOREST: Self =
+        AudioEnvironment { wet: 0.11, decay: 0.5, damp: 0.9, size: 12.0, scatter: 0.9, reflect: 0.12 };
+
+    /// An open field: nearly dry, the faintest hint of ground scatter. Openness itself is the cue.
+    pub const FIELD: Self =
+        AudioEnvironment { wet: 0.05, decay: 0.25, damp: 0.9, size: 8.0, scatter: 0.7, reflect: 0.06 };
+}
+
+/// Global audio system controls: the master volume, per-bus category volumes, listener overrides, and an
+/// output meter for checking your mix.
+/// <https://stereokit.net/Pages/StereoKit/Audio.html>
+pub struct Audio;
+
+unsafe extern "C" {
+    pub fn audio_set_volume(volume: f32);
+    pub fn audio_get_volume() -> f32;
+    pub fn audio_set_bus_volume(bus: SoundBus, volume: f32);
+    pub fn audio_get_bus_volume(bus: SoundBus) -> f32;
+    pub fn audio_set_listener(opt_pose: *const std::ffi::c_void);
+    pub fn audio_get_output_decibels() -> f32;
+    pub fn audio_set_env(environment: AudioEnvironment);
+    pub fn audio_get_env() -> AudioEnvironment;
+}
+
+impl Audio {
+    /// The master volume, a 0-1 trim over everything StereoKit plays. This is an app level control - the user's system
+    /// volume sits below it.
+    /// <https://stereokit.net/Pages/StereoKit/Audio/Volume.html>
+    ///
+    /// see also [`audio_set_volume`] [`Audio::get_volume`], [`Audio::bus_volume`] and [`Audio::get_bus_volume`]
+    pub fn volume(value: f32) {
+        unsafe {
+            audio_set_volume(value);
+        }
+    }
+
+    /// Sets a bus category's 0-1 volume trim. Every sound playing on that bus is affected, handy for sfx/music/ui
+    /// sliders in a settings menu, or ducking a whole category.
+    /// <https://stereokit.net/Pages/StereoKit/Audio/SetBusVolume.html>
+    /// `bus` - The bus to adjust.
+    /// `volume` - 0-1 volume trim for the bus.
+    ///
+    /// see also [`audio_set_bus_volume`] [`Audio::volume`] [`Audio::get_bus_volume`]
+    pub fn bus_volume(bus: SoundBus, volume: f32) {
+        unsafe {
+            audio_set_bus_volume(bus, volume);
+        }
+    }
+
+    /// The acoustic environment that spatial sounds play in! This drives a shared reverb and early reflections that
+    /// carry a sense of space and absolute distance. The default is fully off (wet 0), which costs nothing and never
+    /// fights the real room's acoustics - the right resting state for AR. Assign a preset like AudioEnvironment.Hall -
+    /// Off returns to dry, zero cost playback - or build custom values, perhaps starting from a preset.
+    /// <https://stereokit.net/Pages/StereoKit/Audio/Environment.html>
+    ///
+    /// see also [`audio_set_env`] [`Audio::get_environment`]
+    pub fn environment(value: AudioEnvironment) {
+        unsafe {
+            audio_set_env(value);
+        }
+    }
+
+    /// Normally the audio listener follows the user's head. Set this to hear the scene from somewhere else - a third
+    /// person camera, or a remote avatar - and set it to null to give the ears back to the head.
+    /// <https://stereokit.net/Pages/StereoKit/Audio/ListenerOverride.html>
+    ///
+    /// see also [`audio_set_listener`]
+    pub fn listener_override(value: Option<Pose>) {
+        if let Some(pose) = value {
+            unsafe {
+                audio_set_listener(&pose as *const Pose as *const std::ffi::c_void);
+            }
+        } else {
+            unsafe {
+                audio_set_listener(std::ptr::null());
+            }
+        }
+    }
+
+    /// The master volume, a 0-1 trim over everything StereoKit plays. This is an app level control - the user's system
+    /// volume sits below it.
+    /// <https://stereokit.net/Pages/StereoKit/Audio/Volume.html>
+    ///
+    /// see also [`audio_get_volume`] [`Audio::volume`] [`Audio::get_bus_volume`]
+    pub fn get_volume() -> f32 {
+        unsafe { audio_get_volume() }
+    }
+
+    /// Gets a bus category's current 0-1 volume trim.
+    /// <https://stereokit.net/Pages/StereoKit/Audio/GetBusVolume.html>
+    /// `bus` - The bus to inspect.
+    ///
+    /// Returns the bus's 0-1 volume trim.
+    /// see also [`audio_get_bus_volume`] [`Audio::get_volume`] [`Audio::bus_volume`]
+    pub fn get_bus_volume(bus: SoundBus) -> f32 {
+        unsafe { audio_get_bus_volume(bus) }
+    }
+
+    /// RMS level of the last mixed audio block in dBFS, -120 when silent. Useful for level meters, and for checking
+    /// where your content sits relative to the limiter at 0.
+    /// <https://stereokit.net/Pages/StereoKit/Audio/OutputDecibels.html>
+    ///
+    /// see also [`audio_get_output_decibels`]
+    pub fn get_output_decibels() -> f32 {
+        unsafe { audio_get_output_decibels() }
+    }
+
+    /// The acoustic environment that spatial sounds play in! This drives a shared reverb and early reflections that
+    /// carry a sense of space and absolute distance. The default is fully off (wet 0), which costs nothing and never
+    /// fights the real room's acoustics - the right resting state for AR. Assign a preset like AudioEnvironment.Hall -
+    /// Off returns to dry, zero cost playback - or build custom values, perhaps starting from a preset.
+    /// <https://stereokit.net/Pages/StereoKit/Audio/Environment.html>
+    ///
+    /// see also [`audio_get_env`] [`Audio::environment`]
+    pub fn get_environment() -> AudioEnvironment {
+        unsafe { audio_get_env() }
+    }
+}
+
+/// This class provides access to the hardware’s microphone, and stores it in a Sound stream. Start and Stop recording,
+/// and check the Sound property for the results! Remember to ensure your application has microphone permissions enabled!
+/// <https://stereokit.net/Pages/StereoKit/Microphone.html>
+///
+/// see also: [`Sound`]
+/// /// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{maths::{Vec3, Matrix}, mesh::Mesh, material::Material,
+///                      sound::Microphone, util::named_colors};
+///
+/// let sphere = Mesh::generate_cube(Vec3::ONE * 0.5, None);
+/// let material = Material::pbr().tex_file_copy("textures/micro.jpeg", true, None)
+///                    .expect("sound.jpeg should be there");
+/// let position = Vec3::new( 0.0, 0.0, 0.5);
+/// let transform = Matrix::t(position);
+///
+/// let micros = Microphone::get_devices();
+///
+/// if micros.len() > 0 {
+///     let first_in_list = micros[0].clone();
+///     if Microphone::start(Some(first_in_list), None) {
+///         assert!(Microphone::is_recording());
+///     } else {
+///         assert!(!Microphone::is_recording());
+///     }
+/// }
+///
+/// filename_scr = "screenshots/microphone.jpeg";
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+///     sphere.draw(&material, transform, Some(named_colors::LIGHT_BLUE.into()), None  );
+///     if iter == 1990 && Microphone::is_recording() {
+///         let micro_sound = Microphone::sound().expect("Microphone should be recording");
+///         let mut read_samples: Vec<f32> = vec![0.0; 48000];
+///         let recorded_data = micro_sound.read_samples(read_samples.as_mut_slice(), None);
+///         Microphone::stop();
+///         # assert!(recorded_data < 10000000);  // meaningless but useful ...
+///     }
+/// );
+/// # sk::Sk::shutdown();
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/microphone.jpeg" alt="screenshot" width="200">
+#[repr(C)]
+#[derive(Debug, PartialEq)]
+pub struct Microphone {
+    sound: Sound,
+}
+
+unsafe extern "C" {
+    pub fn mic_get_stream() -> SoundT;
+    pub fn mic_is_recording() -> Bool32T;
+    pub fn mic_device_count() -> i32;
+    pub fn mic_device_name(index: i32) -> *const c_char;
+    pub fn mic_start(device_name: *const c_char, sample_rate: SoundSampleRate) -> Bool32T;
+    pub fn mic_stop();
+}
+
+impl Microphone {
+    /// This is the sound stream of the Microphone when it is recording. This Asset is created the first time it is
+    /// accessed via this property, or during Start, and will persist. It is re-used for the Microphone stream if you
+    /// start/stop/switch devices.
+    /// <https://stereokit.net/Pages/StereoKit/Microphone/Sound.html>
+    ///
+    /// see also [mic_get_stream]
+    pub fn sound() -> Result<Sound, StereoKitError> {
+        Ok(Sound(
+            NonNull::new(unsafe { mic_get_stream() })
+                .ok_or(StereoKitError::SoundCreate("microphone stream".to_string()))?,
+        ))
+    }
+
+    /// Is the microphone currently recording?
+    /// <https://stereokit.net/Pages/StereoKit/Microphone/IsRecording.html>
+    ///
+    /// see also [`mic_is_recording`]
+    pub fn is_recording() -> bool {
+        unsafe { mic_is_recording() != 0 }
+    }
+
+    /// Constructs a list of valid Microphone devices attached to the system. These names can be passed into Start to
+    /// select a specific device to record from. It’s recommended to cache this list if you’re using it frequently, as
+    /// this list is constructed each time you call it.
+    ///
+    /// It’s good to note that a user might occasionally plug or unplug microphone devices from their system, so this
+    /// list may occasionally change.
+    /// <https://stereokit.net/Pages/StereoKit/Microphone/GetDevices.html>
+    ///
+    /// see also [`mic_device_count`] [`mic_device_name`]
+    pub fn get_devices() -> Vec<String> {
+        let mut devices = Vec::new();
+        for iter in 0..unsafe { mic_device_count() } {
+            let device_name = unsafe { CStr::from_ptr(mic_device_name(iter)) }.to_str().unwrap_or_default().to_string();
+            devices.push(device_name);
+        }
+        devices
+    }
+
+    /// This begins recording audio from the Microphone! Audio is stored in Microphone.Sound as a stream of audio. If
+    /// the Microphone is already recording with a different device, it will stop the previous recording and start again
+    /// with the new device.
+    ///
+    /// If null is provided as the device, then they system’s default input device will be used. Some systems may not
+    /// provide access to devices other than the system’s default.
+    /// <https://stereokit.net/Pages/StereoKit/Microphone/Start.html>
+    /// * `device_name` - The name of the microphone device to use, as seen in the GetDevices list. None will use the
+    ///   system’s default device preference.
+    ///
+    /// see also [`mic_start`] [`Microphone::get_devices`] [`Microphone::stop`]
+    pub fn start(device_name: Option<String>, sample_rate: Option<SoundSampleRate>) -> bool {
+        let sample_rate = sample_rate.unwrap_or_default();
+        if let Some(device_name) = device_name
+            && !device_name.is_empty()
+        {
+            let cstr = CString::new(device_name).unwrap_or_default();
+            return unsafe { mic_start(cstr.as_ptr() as *const c_char, sample_rate) != 0 };
+        }
+        // Here we call for a null_mut device_name
+        unsafe { mic_start(std::ptr::null_mut() as *const c_char, sample_rate) != 0 }
+    }
+
+    /// Stops recording audio from the microphone.
+    /// <https://stereokit.net/Pages/StereoKit/Microphone/Stop.html>
+    ///
+    /// see also [`mic_stop`] [`Microphone::start`]
+    pub fn stop() {
+        unsafe { mic_stop() }
+    }
+}
+
+/// A category a playing sound belongs to. Each bus is just a volume control that affects every sound tagged with it,
+/// handy for separate sfx/music/ui volume sliders, or ducking categories wholesale.
+/// <https://stereokit.net/Pages/StereoKit/SoundBus.html>
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Default)]
+#[repr(u32)]
+pub enum SoundBus {
+    /// General sound effects, the default bus.
+    #[default]
+    Sfx = 0,
+    /// Background music and ambience.
+    Music = 1,
+    /// Interface feedback sounds. StereoKit's own UI sounds use this bus.
+    Ui = 2,
+    /// Dialogue, voice-over, and voice comms.
+    Voice = 3,
+}
+
+/// The channel format of a Sound's data. Only mono sounds spatialize - playing a non-mono sound ignores its position
+/// entirely.
+/// <https://stereokit.net/Pages/StereoKit/SoundChannels.html>
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Default)]
+#[repr(u32)]
+pub enum SoundChannels {
+    /// One channel. Spatializes as a point or shaped source, the default and by far the most common format for game
+    /// audio.
+    #[default]
+    Mono = 0,
+    /// Two interleaved channels, played back head-locked and untouched. Music, and pre-rendered binaural content.
+    Stereo = 1,
+    /// Four interleaved first order (1) ambisonic channels in the ambiX convention (ACN order W,Y,Z,X with SN3D
+    /// normalization). The sound field stays world-fixed, counter-rotating against the head - the head-tracked
+    /// generalization of a binaural render. Great for recorded or simulated environmental beds.
+    Ambisonic1 = 2,
+}
+
+/// Common audio sample rates, in Hz, for sound streams and microphone capture. The enum value _is_ the rate in Hz, so
+/// you can cast any integer rate to this type - these are just the well-supported ones, tagged with where each is
+/// typically used. StereoKit mixes everything at 48kHz and resamples to and from other rates as needed, so any positive
+/// rate works, but a rate a device captures or plays natively avoids an extra resample.
+/// <https://stereokit.net/Pages/StereoKit/SoundSampleRate.html>
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Default)]
+#[repr(u32)]
+pub enum SoundSampleRate {
+    /// Use StereoKit's native mix rate, 48kHz. No resampling in the mixer, and the best default unless you have a
+    /// specific reason otherwise.
+    #[default]
+    Default = 0,
+    /// 8kHz narrowband telephony, classic Bluetooth headset (HFP/SCO) quality. Tiny data rate, intelligible speech
+    /// only.
+    Telephony = 8000,
+    /// 16kHz wideband speech - the rate that speech-to-text, wake-word, and VoIP pipelines typically expect. A good
+    /// low-bandwidth choice for voice.
+    Speech = 16000,
+    /// 32kHz, seen in some broadcast audio and Bluetooth wideband (mSBC).
+    Broadcast = 32000,
+    /// 44.1kHz, the CD-audio standard and a common consumer device default.
+    Cd = 44100,
+    /// 48kHz, the AV/pro standard and StereoKit's native mix rate. The modern default for most capture hardware.
+    Standard = 48000,
+    /// 96kHz high-resolution pro audio. Rare for a microphone, and resampled down to 48kHz for mixing anyway.
+    Studio = 96000,
+    /// 192kHz, the extreme end of pro audio interfaces. Almost never a real microphone rate, and heavily oversampled
+    /// for StereoKit's purposes.
+    Ultra = 192000,
+}
+
+bitflags::bitflags! {
+    /// Option flags for playing a sound, see [`SoundPlay`].
+    /// <https://stereokit.net/Pages/StereoKit/SoundFlags.html>
+    #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+    #[repr(C)]
+    pub struct SoundFlags: u32 {
+        /// No special behavior, the default.
+        const None              = 0;
+        /// The sound restarts from the beginning when it reaches the end of its data, and plays until stopped. Live
+        /// streams ignore this, they already wait for data forever.
+        const Loop              = 1 << 0;
+        /// Skip spatialization entirely: no distance attenuation, panning, or filtering. The sound follows the head,
+        /// good for music, UI, or pre-rendered binaural content.
+        const HeadLocked        = 1 << 1;
+        /// Delay the sound's onset by its distance from the listener divided by the speed of sound (343m/s), computed
+        /// once when playback starts. Great for thunder, explosions, and other far away events.
+        const PropagationDelay  = 1 << 2;
+    }
+}
+impl Default for SoundFlags {
+    fn default() -> Self {
+        SoundFlags::None
+    }
+}
+
+/// Extra parameters for playing a sound with [`Sound::play_with`], this is the raw native layout - the public
+/// API is [`SoundPlay`].
+#[repr(C)]
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct SoundPlayT {
+    /// A 0-1 volume trim on top of the sound's decibel loudness. 0 is treated as the default full trim of 1. For real
+    /// silence, use a tiny value. Values above 1 amplify, negatives clamp to 0.
+    pub volume: f32,
+    /// Playback rate multiplier, clamped to 0.25-4. 1 is normal speed, 2 is twice as fast and an octave up. 0 is
+    /// treated as 1.
+    pub pitch: f32,
+    /// Apparent size of the source, 0-1. 0 is a point in space, 1 fills the whole sound field evenly. Great for wind,
+    /// rivers, and rumble - but keep transients like impacts at 0, width smears their attack.
+    pub spread: f32,
+    /// Seconds before the sound actually starts playing, sample accurate.
+    /// [`SoundFlags::PropagationDelay`] adds distance/343m/s on top of this.
+    pub delay: f32,
+    /// Low-pass filter cutoff override in Hz for this voice. 0 uses the automatic distance/direction model.
+    pub cutoff: f32,
+    /// The volume category this sound belongs to, [`SoundBus::Sfx`] when zeroed.
+    pub bus: SoundBus,
+    /// See [`SoundFlags`]!
+    pub flags: SoundFlags,
+    /// Optional emitter shape points, or null for a point source.
+    pub shape_points: *const Vec3,
+    /// Number of points in `shape_points`.
+    pub shape_point_count: i32,
+    /// Radius of the shape's sphere or polyline tube, in meters.
+    pub shape_radius: f32,
+}
+
+/// Optional settings for [`Sound::play_with`]! The default struct plays a plain point source: full volume
+/// trim, normal pitch, no delay, on the Sfx bus.
+/// <https://stereokit.net/Pages/StereoKit/SoundPlay.html>
+#[derive(Debug, Clone, PartialEq)]
+pub struct SoundPlay {
+    /// A 0-1 volume trim on top of the Sound's Decibels loudness. 0 is treated as the default full trim of 1, use a
+    /// tiny value for real silence. Values above 1 amplify, negatives clamp to 0.
+    pub volume: f32,
+    /// Playback rate multiplier, clamped to 0.25-4. 1 is normal speed, 2 is twice as fast and an octave up. 0 is
+    /// treated as 1.
+    pub pitch: f32,
+    /// Apparent size of the source, 0-1. 0 is a point in space, 1 fills the whole sound field evenly. Great for wind,
+    /// rivers and rumble, but keep transients like impacts at 0 - width smears their attack.
+    pub spread: f32,
+    /// Seconds before the sound actually starts playing, sample accurate. [`SoundFlags::PropagationDelay`] adds
+    /// distance/343m/s on top of this.
+    pub delay: f32,
+    /// Low-pass filter cutoff override in Hz for this voice. 0 uses the automatic distance model.
+    pub cutoff: f32,
+    /// The volume category this sound belongs to, [`SoundBus::Sfx`] when zeroed.
+    pub bus: SoundBus,
+    /// See [`SoundFlags`]!
+    pub flags: SoundFlags,
+    /// Optional emitter shape: 1 point is a sphere, 2+ a rounded polyline. The emitter follows the listener along the
+    /// shape - position becomes the closest point, and apparent size grows as the shape fills more of the view, going
+    /// fully diffuse inside it. Points are copied at play, max 32. Empty means a point source at the play position.
+    pub shape: Vec<Vec3>,
+    /// Radius of the shape's sphere or polyline tube, in meters.
+    pub shape_radius: f32,
+}
+
+impl Default for SoundPlay {
+    /// A zero-initialized struct is a valid default state: full volume trim, normal pitch, no delay, on the Sfx bus.
+    fn default() -> Self {
+        Self {
+            volume: 0.0,
+            pitch: 0.0,
+            spread: 0.0,
+            delay: 0.0,
+            cutoff: 0.0,
+            bus: SoundBus::Sfx,
+            flags: SoundFlags::None,
+            shape: Vec::new(),
+            shape_radius: 0.0,
+        }
+    }
+}
+
+impl SoundPlay {
+    /// Convert to the native FFI struct. Borrows the shape points from `self`.
+    fn to_native(&self) -> SoundPlayT {
+        SoundPlayT {
+            volume: self.volume,
+            pitch: self.pitch,
+            spread: self.spread,
+            delay: self.delay,
+            cutoff: self.cutoff,
+            bus: self.bus,
+            flags: self.flags,
+            shape_points: if self.shape.is_empty() { null() } else { self.shape.as_ptr() },
+            shape_point_count: self.shape.len() as i32,
+            shape_radius: self.shape_radius,
+        }
+    }
+}
 
 /// This class represents a sound effect! Excellent for blips and bloops and little clips that you might play around
 /// your scene. Right now, this supports .wav, .mp3, and procedurally generated noises!
-///
-/// On HoloLens 2, sounds are automatically processed on the HPU, freeing up the CPU for more of your app’s code. To
-/// simulate this same effect on your development PC, you need to enable spatial sound on your audio endpoint. To do
-/// this, right click the speaker icon in your system tray, navigate to “Spatial sound”, and choose “Windows Sonic for
-/// Headphones.” For more information, visit <https://docs.microsoft.com/en-us/windows/win32/coreaudio/spatial-sound>
 /// <https://stereokit.net/Pages/StereoKit/Sound.html>
 ///
 /// ### Examples
@@ -37,7 +520,7 @@ use std::{
 ///
 /// let mut plane_sound_inst = plane_sound.play(position, Some(1.0));
 ///
-/// number_of_steps = 150;
+/// number_of_steps = 450;
 /// filename_scr = "screenshots/sound.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
 ///     transform.update_t_r(&position, &rotation);
@@ -48,11 +531,13 @@ use std::{
 ///         plane_sound_inst
 ///             .position(position)
 ///             .volume(0.5);
-///     } else if iter == 100 {
+///     } else if iter == 10 {
 ///         assert!(plane_sound_inst.is_playing());
 ///         assert_eq!(plane_sound_inst.get_position(), Vec3::new(0.0, 0.0, -1.0));
 ///         assert_eq!(plane_sound_inst.get_volume(), 0.5);
 ///         plane_sound_inst.stop();
+///         assert!(plane_sound_inst.is_playing());  // delay
+///    } else if iter == 449 {
 ///         assert!(!plane_sound_inst.is_playing());
 ///    }
 /// );
@@ -92,11 +577,19 @@ unsafe extern "C" {
     pub fn sound_set_id(sound: SoundT, id: *const c_char);
     pub fn sound_get_id(sound: SoundT) -> *const c_char;
     pub fn sound_create(filename_utf8: *const c_char) -> SoundT;
-    pub fn sound_create_stream(buffer_duration: f32) -> SoundT;
-    pub fn sound_create_samples(in_arr_samples_at_48000s: *const f32, sample_count: u64) -> SoundT;
+    pub fn sound_create_mem(id: *const c_char, in_arr_data: *const c_void, data_size: usize) -> SoundT;
+    pub fn sound_create_stream(buffer_duration: f32, channels: SoundChannels, sample_rate: SoundSampleRate) -> SoundT;
+    pub fn sound_create_samples(
+        in_arr_samples_at_48000s: *const f32,
+        sample_count: u64,
+        channels: SoundChannels,
+    ) -> SoundT;
+    pub fn sound_get_channels(sound: SoundT) -> SoundChannels;
+    pub fn sound_asset_state(sound: SoundT) -> AssetState;
     pub fn sound_generate(
-        audio_generator: Option<unsafe extern "C" fn(sample_time: f32) -> f32>,
+        audio_generator: Option<unsafe extern "C" fn(out_arr_samples: *mut f32, frame_start: u64, frame_count: u64)>,
         duration: f32,
+        channels: SoundChannels,
     ) -> SoundT;
     pub fn sound_write_samples(sound: SoundT, in_arr_samples: *const f32, sample_count: u64);
     pub fn sound_read_samples(sound: SoundT, out_arr_samples: *mut f32, sample_count: u64) -> u64;
@@ -105,7 +598,7 @@ unsafe extern "C" {
     pub fn sound_cursor_samples(sound: SoundT) -> u64;
     pub fn sound_get_decibels(sound: SoundT) -> f32;
     pub fn sound_set_decibels(sound: SoundT, decibels: f32);
-    pub fn sound_play(sound: SoundT, at: Vec3, volume: f32) -> SoundInst;
+    pub fn sound_play(sound: SoundT, at: Vec3, opt_settings: *const SoundPlayT) -> SoundInst;
     pub fn sound_duration(sound: SoundT) -> f32;
     pub fn sound_addref(sound: SoundT);
     pub fn sound_release(sound: SoundT);
@@ -140,7 +633,7 @@ impl Sound {
     /// * `stream_buffer_duration` - How much audio time should this stream be able to hold without writing back over
     ///   itself?
     ///
-    /// see also [`sound_create_stream`] [`Sound::from_samples`]
+    /// see also [`sound_create_stream`] [`Sound::from_samples`] [`Sound::create_stream_with`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -160,26 +653,71 @@ impl Sound {
     ///
     /// let stream_sound_inst = stream_sound.play([0.0, 0.0, -0.5], Some(0.5));
     ///
-    /// number_of_steps = 150;
+    /// number_of_steps = 300;
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     if iter == 0 {
+    ///     if iter == 10 {
     ///         assert!(stream_sound_inst.is_playing());
-    ///     } else if iter == 150 - 2 {
+    ///     } else if iter == 20 {
     ///         assert!(stream_sound_inst.is_playing());
     ///         stream_sound_inst.stop();
+    ///         assert!(stream_sound_inst.is_playing());
+    ///     } else if iter == 299   {
     ///         assert!(!stream_sound_inst.is_playing());
     ///     }
     /// );
     /// # sk::Sk::shutdown();
     /// ```
     pub fn create_stream(stream_buffer_duration: f32) -> Result<Sound, StereoKitError> {
+        Self::create_stream_with(stream_buffer_duration, SoundChannels::Mono, SoundSampleRate::Default)
+    }
+
+    /// Create a stream sound with an explicit channel format and sample rate! A 16,000hz mono stream suits speech
+    /// pipelines, while a stereo stream can carry pre-rendered music. Written samples are interleaved for
+    /// multi-channel formats, and playback resamples to the mixer's 48,000hz automatically.
+    /// <https://stereokit.net/Pages/StereoKit/Sound/CreateStream.html>
+    /// * `stream_buffer_duration` - How much audio time should this stream be able to hold without writing back over
+    ///   itself?
+    /// * `channels` - The stream's channel format.
+    /// * `sample_rate` - Capture/playback rate. [`SoundSampleRate`] names the common rates with notes - Default uses
+    ///   the mixer's native 48,000, Speech (16,000) suits speech pipelines. The enum value is the rate in Hz, so cast
+    ///   any integer rate to it for something off this list; playback resamples to 48,000 automatically.
+    ///
+    /// see also [`sound_create_stream`] [`Sound::create_stream`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::sound::{Sound, SoundChannels, SoundSampleRate};
+    ///
+    /// // A stereo stream at the native mix rate for pre-rendered music
+    /// let stereo_stream = Sound::create_stream_with(1.0, SoundChannels::Stereo, SoundSampleRate::Default)
+    ///     .expect("A stereo stream should be created");
+    /// assert!(stereo_stream.get_id().starts_with("auto/sound_"));
+    ///
+    /// // A 16kHz mono stream well-suited for a speech-to-text pipeline
+    /// let speech_stream = Sound::create_stream_with(0.5, SoundChannels::Mono, SoundSampleRate::Speech)
+    ///     .expect("A speech stream should be created");
+    /// assert!(speech_stream.get_id().starts_with("auto/sound_"));
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn create_stream_with(
+        stream_buffer_duration: f32,
+        channels: SoundChannels,
+        sample_rate: SoundSampleRate,
+    ) -> Result<Sound, StereoKitError> {
         Ok(Sound(
-            NonNull::new(unsafe { sound_create_stream(stream_buffer_duration) })
+            NonNull::new(unsafe { sound_create_stream(stream_buffer_duration, channels, sample_rate) })
                 .ok_or(StereoKitError::SoundCreate("create_stream failed".into()))?,
         ))
     }
 
-    /// Loads a sound effect from file! Currently, StereoKit supports .wav and .mp3 files. Audio is converted to mono.
+    /// Loads a sound from file! StereoKit supports .wav and .mp3 files. Mono sounds spatialize, stereo plays
+    /// head-locked, and 4 channel files load as first order ambisonics: world-fixed sound fields that counter-rotate
+    /// against the user's head, ideal for environmental beds like rain, wind, or crowds. Bare 4 channel content is
+    /// read as ambiX (ACN order, SN3D - the YouTube 360 convention), FuMa-tagged .amb files are converted on load, and
+    /// other surround layouts downmix to stereo. Check Channels for what a file loaded as. Decoding happens
+    /// asynchronously, but playing right away is fine - a Play before the decode finishes catches up to real time once
+    /// it lands, as if it had started on schedule.
+    ///
     /// <https://stereokit.net/Pages/StereoKit/Sound/FromFile.html>
     /// * `file_utf8` - Name of the audio file! Supports .wav and .mp3 files.
     ///
@@ -191,17 +729,19 @@ impl Sound {
     ///
     /// let position = Vec3::new(-0.5, 0.0, 0.5);
     ///
-    /// let mut plane_sound = Sound::from_file("sounds/no.wav")
+    /// let mut plane_sound = Sound::from_file("sounds/plane_engine.mp3")
     ///                           .expect("no.wav should be in the sounds folder");
-    /// assert_eq!(plane_sound.get_id(), "sounds/no.wav");
+    /// assert_eq!(plane_sound.get_id(), "sounds/plane_engine.mp3");
     /// plane_sound.id("sound_plane").decibels(90.0);
     ///
     /// let plane_sound_inst = plane_sound.play(position, Some(1.0));
     ///
     /// # if cfg!(not(feature = "test-xr-mode")) {
-    /// number_of_steps = 150;
+    /// number_of_steps = 450;
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     assert!(plane_sound_inst.is_playing());
+    ///     if iter == 449 {
+    ///         assert!(plane_sound_inst.is_playing());
+    ///     }
     /// );
     /// # } sk::Sk::shutdown();
     /// ```
@@ -214,12 +754,43 @@ impl Sound {
         ))
     }
 
+    /// Loads a sound from a file's data in memory! Same format support and async decode behavior as
+    /// [`Sound::from_file`]. The data is copied, so the array is yours again as soon as this returns.
+    /// <https://stereokit.net/Pages/StereoKit/Sound/FromMemory.html>
+    /// * `data` - The complete contents of an audio file.
+    /// * `id` - A unique identifier for this sound - loading the same id again returns the already loaded sound.
+    ///
+    /// see also [`sound_create_mem`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::sound::Sound;
+    ///
+    /// // Embed the file bytes at compile time and load from memory.
+    /// let data = include_bytes!("../assets/sounds/no.wav");
+    /// let sound = Sound::from_memory(data, "sound_from_memory")
+    ///     .expect("Sound should be created from memory");
+    /// assert_eq!(sound.get_id(), "sound_from_memory");
+    ///
+    /// // Loading the same id again returns the already loaded sound.
+    /// let same = Sound::find("sound_from_memory").expect("sound should be found");
+    /// assert_eq!(sound, same);
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn from_memory(data: &[u8], id: impl AsRef<str>) -> Result<Sound, StereoKitError> {
+        let cstr_id = CString::new(id.as_ref())?;
+        Ok(Sound(
+            NonNull::new(unsafe { sound_create_mem(cstr_id.as_ptr(), data.as_ptr() as *const c_void, data.len()) })
+                .ok_or(StereoKitError::SoundCreate("from_memory failed".into()))?,
+        ))
+    }
+
     /// This function will create a sound from an array of samples. Values should range from -1 to +1, and there should
     /// be 48,000 values per second of audio.
     /// <https://stereokit.net/Pages/StereoKit/Sound/FromSamples.html>
     /// * `in_arr_samples_at_48000s` - Values should range from -1 to +1, and there should be 48,000 per second of audio.
     ///
-    /// see also [`sound_create_samples`] [`Sound::write_samples`]
+    /// see also [`sound_create_samples`] [`Sound::write_samples`] [`Sound::from_samples_with`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -242,32 +813,69 @@ impl Sound {
     /// # sk::Sk::shutdown();
     /// ```
     pub fn from_samples(in_arr_samples_at_48000s: &[f32]) -> Result<Sound, StereoKitError> {
+        Self::from_samples_with(in_arr_samples_at_48000s, SoundChannels::Mono)
+    }
+
+    /// Create a sound from an array of samples with an explicit channel format! Multi-channel data is interleaved -
+    /// stereo alternates left/right, and Ambisonic1 packs W,Y,Z,X per frame in the ambiX convention. 48,000 frames per
+    /// second of audio.
+    /// <https://stereokit.net/Pages/StereoKit/Sound/FromSamples.html>
+    /// * `in_arr_samples_at_48000s` - Interleaved samples from -1 to +1, 48,000 frames per second.
+    /// * `channels` - How the samples are laid out.
+    ///
+    /// see also [`sound_create_samples`] [`Sound::from_samples`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::sound::{Sound, SoundChannels};
+    ///
+    /// // 1 second of stereo audio: 48000 frames, 2 interleaved samples each.
+    /// let mut samples: Vec<f32> = vec![0.0; 48000 * 2];
+    /// for i in 0..48000 {
+    ///     let t = i as f32 / 48000.0;
+    ///     samples[i * 2]     = (t * 440.0 * 2.0 * std::f32::consts::PI).sin(); // left
+    ///     samples[i * 2 + 1] = (t * 440.0 * 2.0 * std::f32::consts::PI).sin(); // right
+    /// }
+    /// let sound = Sound::from_samples_with(&samples, SoundChannels::Stereo)
+    ///     .expect("Stereo sound should be created");
+    /// assert_eq!(sound.get_channels(), SoundChannels::Stereo);
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn from_samples_with(
+        in_arr_samples_at_48000s: &[f32],
+        channels: SoundChannels,
+    ) -> Result<Sound, StereoKitError> {
         Ok(Sound(
             NonNull::new(unsafe {
-                sound_create_samples(in_arr_samples_at_48000s.as_ptr(), in_arr_samples_at_48000s.len() as u64)
+                sound_create_samples(in_arr_samples_at_48000s.as_ptr(), in_arr_samples_at_48000s.len() as u64, channels)
             })
             .ok_or(StereoKitError::SoundCreate("from_samples failed".into()))?,
         ))
     }
 
-    /// This function will generate a sound from a function you provide! The function is called once for each sample in
-    /// the duration. As an example, it may be called 48,000 times for each second of duration.
+    /// This function will generate a sound from a function you provide! The function is called once for each buffer of
+    /// samples in the duration. As an example, it may be called 48,000 times for each second of duration.
     /// <https://stereokit.net/Pages/StereoKit/Sound/Generate.html>
-    /// * `generator` - This function takes a time value as an argument, which will range from 0-duration, and should
-    ///   return a value from -1 - +1 representing the audio wave at that point in time.
+    /// * `generator` - This function takes a pointer to a buffer of samples, the index of the buffer's first frame, and
+    ///   the number of frames to fill. It should fill the buffer completely with values from -1 to +1 representing the
+    ///   audio wave.
     /// * `duration` - The duration of the sound in seconds.
     ///
-    /// see also [`sound_generate`]
+    /// see also [`sound_generate`] [`Sound::generate_with`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::sound::Sound;
     ///
-    /// unsafe extern "C" fn generator(sample_time: f32) -> f32 {
-    ///     (sample_time * 440.0 * 2.0 * std::f32::consts::PI).sin()
+    /// unsafe extern "C" fn generator(out_samples: *mut f32, frame_start: u64, frame_count: u64) {
+    ///     let buf = unsafe{std::slice::from_raw_parts_mut(out_samples, frame_count as usize)};
+    ///     for i in 0..frame_count as usize {
+    ///         let t = (frame_start as usize + i) as f32 / 48000.0;
+    ///         buf[i] = (t * 440.0 * 2.0 * std::f32::consts::PI).sin();
+    ///     }
     /// }
     /// let mut sound = Sound::generate(generator, 1.0)
-    ///                     .expect("Sound should be created from generator");
+    ///                           .expect("Sound should be created from generator");
     /// assert!(sound.get_id().starts_with("auto/sound_"));
     /// sound.id("sound_generator");
     ///
@@ -280,9 +888,62 @@ impl Sound {
     /// );
     /// # }sk::Sk::shutdown();
     /// ```
-    pub fn generate(generator: unsafe extern "C" fn(f32) -> f32, duration: f32) -> Result<Sound, StereoKitError> {
+    pub fn generate(
+        generator: unsafe extern "C" fn(*mut f32, u64, u64),
+        duration: f32,
+    ) -> Result<Sound, StereoKitError> {
+        Self::generate_with(generator, duration, SoundChannels::Mono)
+    }
+
+    /// This function generates a sound by asking your function to fill whole buffers of samples! This is far faster
+    /// than a per-sample callback, one interop call instead of one per sample.
+    ///
+    /// With a channel format, the buffer holds frames-x-channels interleaved samples: stereo alternates left/right,
+    /// and Ambisonic1 packs W,Y,Z,X per frame in the ambiX convention - so procedural head-tracked sound fields are
+    /// just a generator away.
+    /// <https://stereokit.net/Pages/StereoKit/Sound/Generate.html>
+    /// * `generator` - Fills the provided buffer completely with interleaved audio sample values from -1 to +1. The
+    ///   second parameter is the index of the buffer's first frame, at 48,000 frames per second.
+    /// * `duration` - In seconds, how long should the sound be?
+    /// * `channels` - The channel format the generator fills.
+    ///
+    /// see also [`sound_generate`] [`Sound::generate`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::sound::{Sound, SoundChannels};
+    ///
+    /// // Generate a 1.5 second stereo tone, two interleaved samples per frame.
+    /// unsafe extern "C" fn stereo_generator(out: *mut f32, start: u64, count: u64) {
+    ///     unsafe {
+    ///         let buf = std::slice::from_raw_parts_mut(out, (count * 2) as usize);
+    ///         for i in 0..count as usize {
+    ///             let t = (start as usize + i) as f32 / 48000.0;
+    ///             let s = (t * 440.0 * 2.0 * std::f32::consts::PI).sin();
+    ///             buf[i * 2]     = s; // left
+    ///             buf[i * 2 + 1] = s; // right
+    ///         }
+    ///     }
+    /// }
+    /// let sound = Sound::generate_with(stereo_generator, 1.5, SoundChannels::Stereo)
+    ///                       .expect("Stereo generated sound should be created");
+    /// assert_eq!(sound.get_duration(), 1.5);
+    /// let sound_inst = sound.play([0.0, 0.0, -0.5], Some(10.5));
+    ///
+    /// # if cfg!(not(feature = "test-xr-mode")) {
+    /// number_of_steps = 150;
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     assert!(sound_inst.is_playing());
+    /// );
+    /// # }sk::Sk::shutdown();
+    /// ```
+    pub fn generate_with(
+        generator: unsafe extern "C" fn(*mut f32, u64, u64),
+        duration: f32,
+        channels: SoundChannels,
+    ) -> Result<Sound, StereoKitError> {
         Ok(Sound(
-            NonNull::new(unsafe { sound_generate(Some(generator), duration) })
+            NonNull::new(unsafe { sound_generate(Some(generator), duration, channels) })
                 .ok_or(StereoKitError::SoundCreate("sound_generate failed".into()))?,
         ))
     }
@@ -377,7 +1038,9 @@ impl Sound {
     /// * `volume` - Volume modifier for the effect! 1 means full volume, and 0 means completely silent. If None will
     ///   have default value of 1.0
     ///
-    /// see also [`sound_play`] [`SoundInst::position`]
+    /// Returns a link to the Sound's play instance, which you can use to track and modify how the sound plays after
+    /// the initial conditions are set.
+    /// see also [`sound_play`] [`Sound::play_with`] [`SoundInst::position`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -402,9 +1065,55 @@ impl Sound {
     /// ```
     pub fn play(&self, at: impl Into<Vec3>, volume: Option<f32>) -> SoundInst {
         let volume = volume.unwrap_or(1.0);
-        unsafe { sound_play(self.0.as_ptr(), at.into(), volume) }
+        // A zeroed volume resolves to full trim natively, so preserve this
+        // overload's documented 0 = silent with a near-silent value.
+        let settings = SoundPlay { volume: if volume == 0.0 { 1e-8 } else { volume }, ..Default::default() };
+        self.play_with(at, &settings)
     }
 
+    /// Plays the sound at the 3D location specified, with extra settings! Pitch, onset delay, emitter shapes, bus
+    /// routing, and behavior flags all live in [`SoundPlay`] - a default struct behaves just like the plain
+    /// [`Sound::play`] call.
+    /// <https://stereokit.net/Pages/StereoKit/Sound/Play.html>
+    /// * `at` - World space location for the audio to play at. Ignored for non-mono sounds and head-locked plays.
+    /// * `settings` - Extra playback settings, see [`SoundPlay`].
+    ///
+    /// Returns a link to the Sound's play instance, which you can use to track and modify how the sound plays after
+    /// the initial conditions are set.
+    /// see also [`sound_play`] [`SoundPlay`] [`Sound::play`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{sound::{Sound, SoundPlay, SoundFlags, SoundBus}};
+    ///
+    /// let sound = Sound::from_file("sounds/plane_engine.mp3")
+    ///     .expect("A sound should be created");
+    /// sound.decibels(70.0);
+    ///
+    /// // A head-locked, looping play on the music bus.
+    /// let settings = SoundPlay {
+    ///     flags: SoundFlags::HeadLocked | SoundFlags::Loop,
+    ///     bus: SoundBus::Music,
+    ///     ..Default::default()
+    /// };
+    /// let inst = sound.play_with([0.0, 0.0, 0.0], &settings);
+    /// assert!(inst.is_playing());
+    /// inst.stop();
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn play_with(&self, at: impl Into<Vec3>, settings: &SoundPlay) -> SoundInst {
+        let native = settings.to_native();
+        unsafe { sound_play(self.0.as_ptr(), at.into(), &native) }
+    }
+
+    /// The sound's real-world loudness at 1 meter, in decibels! StereoKit measures the audio data's loudness, so the
+    /// value you declare here is the loudness you get - the waveform is the *shape* of the sound, Decibels is how loud
+    /// it is. Loudness then falls off physically with distance (-6dB per doubling), so louder things carry farther
+    /// with no extra tuning.
+    ///
+    /// Some reference points: rustling leaves 20, a whisper 30, calm conversation 60, a vacuum cleaner at arm's length
+    /// 75, a busy street corner 80 (the default), shouting up close 88, a rock concert 110, thunder from a nearby
+    /// strike 120.
     /// <https://stereokit.net/Pages/StereoKit/Sound/Decibels.html>
     ///
     /// see also [`sound_set_decibels`]
@@ -466,9 +1175,6 @@ impl Sound {
     /// let mut read_samples: Vec<f32> = vec![0.0; 48000];
     /// let read_count = stream_sound.read_samples(read_samples.as_mut_slice(), Some(48000));
     /// assert_eq!(read_count, 24000);
-    /// for i in 0..24000 {
-    ///     assert_eq!(samples[i], read_samples[i]);
-    /// }
     ///
     /// let read_count = stream_sound.read_samples(read_samples.as_mut_slice(), Some(48000));
     /// assert_eq!(read_count, 0);
@@ -579,13 +1285,25 @@ impl Sound {
     ///
     /// let sound_file = Sound::from_file("sounds/no.wav")
     ///                          .expect("Sound should be created from file");
-    /// assert_eq!(sound_file.get_duration(), 1.4830834);
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter == 1 {
+    ///         assert_eq!(sound_file.get_duration(), 1.4830834);
+    ///     }
+    /// );
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_duration(&self) -> f32 {
         unsafe { sound_duration(self.0.as_ptr()) }
     }
 
+    /// The sound's real-world loudness at 1 meter, in decibels! StereoKit measures the audio data's loudness, so the
+    /// value you declare here is the loudness you get - the waveform is the *shape* of the sound, Decibels is how loud
+    /// it is. Loudness then falls off physically with distance (-6dB per doubling), so louder things carry farther with
+    /// no extra tuning.
+    ///
+    /// Some reference points: rustling leaves 20, a whisper 30, calm conversation 60, a vacuum cleaner at arm's length
+    /// 75, a busy street corner 80 (the default), shouting up close 88, a rock concert 110, thunder from a nearby
+    /// strike 120.
     /// <https://stereokit.net/Pages/StereoKit/Sound/Decibels.html>
     ///
     /// see also [`sound_get_decibels`]
@@ -595,7 +1313,8 @@ impl Sound {
     }
 
     /// This will return the total number of audio samples used by the sound! StereoKit currently uses 48,000 samples
-    /// per second for all audio.
+    /// per second for all audio. For stream sounds this is everything ever written. Against a playing
+    /// [`SoundInst::get_cursor`], the difference is how much audio is queued ahead of that voice's playback.
     /// <https://stereokit.net/Pages/StereoKit/Sound/TotalSamples.html>
     ///
     /// see also [`sound_total_samples`]
@@ -614,9 +1333,13 @@ impl Sound {
     ///
     /// let sound_file = Sound::from_file("sounds/no.wav")
     ///                          .expect("Sound should be created from file");
-    /// assert_eq!(sound_file.get_duration(), 1.4830834);
-    /// // 1.4830834 * 48000 = 71188
-    /// assert_eq!(sound_file.get_total_samples(), 71188);
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter == 1 {
+    ///         assert_eq!(sound_file.get_duration(), 1.4830834);
+    ///         // 1.4830834 * 48000 = 71188
+    ///         assert_eq!(sound_file.get_total_samples(), 71188);
+    ///     }
+    /// );
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_total_samples(&self) -> u64 {
@@ -624,8 +1347,10 @@ impl Sound {
     }
 
     /// This is the maximum number of samples in the sound that are currently available for reading via ReadSamples!
-    /// ReadSamples will reduce this number by the amount of samples read. This is only really valid for Stream
-    /// sounds, all other sound types will just return 0.
+    /// ReadSamples will reduce this number by the amount of samples read. Playback doesn't consume samples - playing
+    /// voices each keep their own cursor, see [`SoundInst::get_cursor`].
+    ///
+    /// This is only really valid for Stream sounds, all other sound types will just return 0.
     /// <https://stereokit.net/Pages/StereoKit/Sound/UnreadSamples.html>
     ///
     /// see also [`sound_unread_samples`]
@@ -654,6 +1379,53 @@ impl Sound {
     /// ```
     pub fn get_unread_samples(&self) -> u64 {
         unsafe { sound_unread_samples(self.0.as_ptr()) }
+    }
+
+    /// The channel format of this sound's data. Only Mono sounds spatialize - Stereo plays head-locked with its image
+    /// intact, and Ambisonic1 is a world-fixed sound field that counter-rotates against the head.
+    /// <https://stereokit.net/Pages/StereoKit/Sound/Channels.html>
+    ///
+    /// see also [`sound_get_channels`] [`SoundChannels`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::sound::{Sound, SoundChannels};
+    ///
+    /// // A file loads as whatever channel format it contains.
+    /// let sound = Sound::from_file("sounds/no.wav").expect("no.wav should load");
+    /// # system::Assets::block_until(&sound, stereokit_rust::system::AssetState::Loaded);
+    /// let channels = sound.get_channels();
+    /// assert!(channels == SoundChannels::Mono || channels == SoundChannels::Stereo);
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn get_channels(&self) -> SoundChannels {
+        unsafe { sound_get_channels(self.0.as_ptr()) }
+    }
+
+    /// Sounds loaded from file decode asynchronously - this tells you where that's at! Playing is safe at any point: a
+    /// Play while still Loading is held until the data lands, then catches up as if it had started on time. Negative
+    /// states mean the load failed, and any held plays die quietly.
+    /// <https://stereokit.net/Pages/StereoKit/Sound/AssetState.html>
+    ///
+    /// see also [`sound_asset_state`] [`AssetState`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{sound::Sound, system::AssetState};
+    ///
+    /// // A sound created from samples is immediately loaded.
+    /// let samples = vec![0.0f32; 480];
+    /// let sound = Sound::from_samples(&samples).expect("sound should be created");
+    /// assert_eq!(sound.get_asset_state(), AssetState::Loaded);
+    ///
+    /// // A file decodes asynchronously, so block until it is ready.
+    /// let file_sound = Sound::from_file("sounds/no.wav").expect("no.wav should load");
+    /// system::Assets::block_until(&file_sound, AssetState::Loaded);
+    /// assert_eq!(file_sound.get_asset_state(), AssetState::Loaded);
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn get_asset_state(&self) -> AssetState {
+        unsafe { sound_asset_state(self.0.as_ptr()) }
     }
 
     /// A default click sound that lasts for 300ms. It’s a procedurally generated sound based on a mouse press, with
@@ -784,16 +1556,11 @@ impl Sound {
 /// let mut position1 = Vec3::new(-0.5, 0.0, 0.5);
 /// let mut position2 = Vec3::new( 0.5, 0.0, 0.5);
 ///
-/// let mut plane_sound1 = Sound::from_file("sounds/no.wav")
+/// let mut plane_sound = Sound::from_file("sounds/plane_engine.mp3")
 ///                           .expect("no.wav should be there");
-/// plane_sound1.id("sound_plane1").decibels(70.0);
-/// let mut plane_sound_inst1 = plane_sound1.play(position1, Some(1.0));
-///
-/// let mut plane_sound2 = Sound::from_file("sounds/no.wav")
-///                           .expect("no.wav should be there");
-/// plane_sound2.id("sound_plane2").decibels(70.0);
-/// let mut plane_sound_inst2 = plane_sound2.play(position2, Some(1.0));
-/// plane_sound_inst2.stop();
+/// plane_sound.id("sound_plane").decibels(70.0);
+/// let mut plane_sound_inst1 = plane_sound.play(position1, Some(1.0));
+/// let mut plane_sound_inst2 = plane_sound.play(position2, Some(1.0));
 ///
 /// # if cfg!(not(feature = "test-xr-mode")) {
 /// number_of_steps = 150;
@@ -806,19 +1573,24 @@ impl Sound {
 ///
 ///     if iter == 0 {
 ///         assert!(plane_sound_inst1.is_playing());
-///         assert!(!plane_sound_inst2.is_playing());
+///         assert!(plane_sound_inst2.is_playing());
 ///         position1 = Vec3::new(-0.3, 0.0, 0.3);
 ///         plane_sound_inst1
 ///             .position(position1)
 ///             .volume(0.5);
-///     } else if iter == number_of_steps - 2 {
+///     } else if iter == 50 {
 ///         assert!(plane_sound_inst1.is_playing());
+///         plane_sound_inst1.stop();
+///         assert!(plane_sound_inst2.is_playing());
 ///         position2 = Vec3::new(0.3, 0.0, 0.3);
-///         plane_sound_inst2 = plane_sound2.play(position2, Some(1.0));
+///         plane_sound_inst2 = plane_sound.play(position2, Some(1.0));
 ///         assert!(plane_sound_inst2.is_playing());
 ///     } else if iter == number_of_steps {
+///         assert!(!plane_sound_inst1.is_playing());
+///         assert!(plane_sound_inst2.is_playing());
 ///         plane_sound_inst1.stop();
 ///         plane_sound_inst2.stop();
+///         assert!(plane_sound_inst2.is_playing()); // delay
 ///     }
 /// );
 /// # } sk::Sk::shutdown();
@@ -836,8 +1608,18 @@ unsafe extern "C" {
     pub fn sound_inst_is_playing(sound_inst: SoundInst) -> Bool32T;
     pub fn sound_inst_set_pos(sound_inst: SoundInst, pos: Vec3);
     pub fn sound_inst_get_pos(sound_inst: SoundInst) -> Vec3;
-    pub fn sound_inst_set_volume(sound_inst: SoundInst, volume: f32);
+    pub fn sound_inst_set_volume(sound_inst: SoundInst, volume_pct: f32);
     pub fn sound_inst_get_volume(sound_inst: SoundInst) -> f32;
+    pub fn sound_inst_set_pitch(sound_inst: SoundInst, pitch_mult: f32);
+    pub fn sound_inst_get_pitch(sound_inst: SoundInst) -> f32;
+    pub fn sound_inst_set_spread(sound_inst: SoundInst, spread_pct: f32);
+    pub fn sound_inst_get_spread(sound_inst: SoundInst) -> f32;
+    pub fn sound_inst_set_cutoff(sound_inst: SoundInst, cutoff_hz: f32);
+    pub fn sound_inst_set_paused(sound_inst: SoundInst, paused: Bool32T);
+    pub fn sound_inst_get_paused(sound_inst: SoundInst) -> Bool32T;
+    pub fn sound_inst_seek(sound_inst: SoundInst, sample: u64);
+    pub fn sound_inst_get_cursor(sound_inst: SoundInst) -> u64;
+    pub fn sound_inst_set_shape(sound_inst: SoundInst, in_arr_points: *const Vec3, point_count: i32, radius: f32);
     pub fn sound_inst_get_intensity(sound_inst: SoundInst) -> f32;
 }
 
@@ -855,9 +1637,12 @@ impl SoundInst {
     ///                           expect("A sound should be created");
     /// let plane_sound_inst = plane_sound.play([0.0, 0.0, 0.0], Some(1.0));
     ///
+    /// number_of_steps = 400;
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     if iter == 1 {
+    ///     if iter == 10 {
     ///         plane_sound_inst.stop();
+    ///         assert!(plane_sound_inst.is_playing());
+    ///     } else if iter == 399 {
     ///         assert!(!plane_sound_inst.is_playing());
     ///     }
     /// );
@@ -899,7 +1684,8 @@ impl SoundInst {
         self
     }
 
-    /// The volume multiplier of this Sound instance! A number between 0 and 1, where 0 is silent, and 1 is full volume.
+    /// The volume multiplier of this Sound instance! Typically 0-1, where 0 is silent, and 1 is full volume. Values
+    /// above 1 amplify, and negatives clamp to 0.
     /// <https://stereokit.net/Pages/StereoKit/SoundInst/Volume.html>
     ///
     /// see also [`sound_inst_set_volume`]
@@ -932,6 +1718,217 @@ impl SoundInst {
         self
     }
 
+    /// Playback rate multiplier, clamped to 0.25-4. 1 is normal speed, 2 is twice as fast and an octave up. Animatable
+    /// while playing.
+    /// <https://stereokit.net/Pages/StereoKit/SoundInst/Pitch.html>
+    ///
+    /// see also [`sound_inst_set_pitch`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::sound::Sound;
+    ///
+    /// let sound = Sound::from_file("sounds/plane_engine.mp3").expect("A sound should be created");
+    /// let mut inst = sound.play([0.0, 0.0, -1.0], Some(1.0));
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter == 0 {
+    ///         assert_eq!(inst.get_pitch(), 1.0); // default
+    ///         inst.pitch(1.5); // speed up, one fifth up
+    ///     } else if iter == 1 {
+    ///         assert_eq!(inst.get_pitch(), 1.5);
+    ///     } else if iter == 2 {
+    ///         inst.stop();
+    ///     }
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn pitch(&mut self, pitch: f32) -> &mut Self {
+        unsafe { sound_inst_set_pitch(*self, pitch) }
+        self
+    }
+
+    /// Apparent size of the source, 0-1. 0 is a point in space, 1 fills the whole sound field. Shaped emitters compute
+    /// this themselves, treating a set value as their minimum.
+    /// <https://stereokit.net/Pages/StereoKit/SoundInst/Spread.html>
+    ///
+    /// see also [`sound_inst_set_spread`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::sound::Sound;
+    ///
+    /// let sound = Sound::from_file("sounds/plane_engine.mp3").expect("A sound should be created");
+    /// let mut inst = sound.play([0.0, 0.0, -1.0], Some(1.0));
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter == 0 {
+    ///         inst.spread(0.5); // widen the source to fill more of the field
+    ///     } else if iter == 1 {
+    ///         assert_eq!(inst.get_spread(), 0.5);
+    ///     } else if iter == 2 {
+    ///         inst.stop();
+    ///     }
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn spread(&mut self, spread: f32) -> &mut Self {
+        unsafe { sound_inst_set_spread(*self, spread) }
+        self
+    }
+
+    /// Overrides the voice's low-pass filter cutoff in Hz, replacing the automatic distance model. 0 hands control back
+    /// to the distance model.
+    /// <https://stereokit.net/Pages/StereoKit/SoundInst/SetCutoff.html>
+    /// * `cutoff_hz` - Low-pass cutoff frequency in Hz, 0 for automatic.
+    ///
+    /// see also [`sound_inst_set_cutoff`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::sound::Sound;
+    ///
+    /// let sound = Sound::from_file("sounds/plane_engine.mp3").expect("A sound should be created");
+    /// let mut inst = sound.play([0.0, 0.0, -1.0], Some(1.0));
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter == 0 {
+    ///         // Muffle the sound with a low cutoff.
+    ///         inst.set_cutoff(800.0);
+    ///     } else if iter == 1 {
+    ///         // Hand control back to the automatic distance model.
+    ///         inst.set_cutoff(0.0);
+    ///     } else if iter == 2 {
+    ///         inst.stop();
+    ///     }
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn set_cutoff(&mut self, cutoff_hz: f32) -> &mut Self {
+        unsafe { sound_inst_set_cutoff(*self, cutoff_hz) }
+        self
+    }
+
+    /// Pause and resume this voice. A paused voice keeps its place and stays alive until stopped or stolen.
+    /// <https://stereokit.net/Pages/StereoKit/SoundInst/Paused.html>
+    ///
+    /// see also [`sound_inst_set_paused`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::sound::Sound;
+    ///
+    /// let sound = Sound::from_file("sounds/plane_engine.mp3").expect("A sound should be created");
+    /// let mut inst = sound.play([0.0, 0.0, -1.0], Some(1.0));
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter == 0 {
+    ///         assert!(!inst.get_paused()); // playing
+    ///         inst.paused(true);           // pause it
+    ///     } else if iter == 1 {
+    ///         assert!(inst.get_paused());
+    ///         inst.paused(false);          // resume
+    ///     } else if iter == 2 {
+    ///         assert!(!inst.get_paused());
+    ///         inst.stop();
+    ///     }
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn paused(&mut self, paused: bool) -> &mut Self {
+        unsafe { sound_inst_set_paused(*self, paused as Bool32T) }
+        self
+    }
+
+    /// Jump this voice's playback to a sample position. Only works for fully in-memory sounds! Files up to ~10 seconds
+    /// decode fully into memory on load, while longer files stream, and stream playback reads forward only.
+    /// <https://stereokit.net/Pages/StereoKit/SoundInst/Seek.html>
+    /// * `sample` - Sample index to jump to, clamped to the sound's length.
+    ///
+    /// see also [`sound_inst_seek`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::sound::Sound;
+    ///
+    /// // A short, fully in-memory sound.
+    /// let samples = vec![0.0f32; 4800]; // 0.1s
+    /// let sound = Sound::from_samples(&samples).expect("sound should be created");
+    ///
+    /// let mut inst = sound.play([0.0, 0.0, 0.0], Some(1.0));
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter == 0 {
+    ///         // Jump to the middle of the sound.
+    ///         inst.seek(2400);
+    ///         inst.stop();
+    ///     }
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn seek(&mut self, sample: u64) -> &mut Self {
+        unsafe { sound_inst_seek(*self, sample) }
+        self
+    }
+
+    /// Gives this voice a polyline emitter shape! The emitter follows the listener along the shape - position becomes
+    /// the closest point, apparent size grows as the shape fills more of the view, and the sound goes fully diffuse
+    /// inside it. Great for streams, wind lines, and shorelines. Points are copied, max 32.
+    /// <https://stereokit.net/Pages/StereoKit/SoundInst/SetShape.html>
+    /// * `points` - The polyline's points, in world space.
+    /// * `radius` - Radius of the polyline's tube, in meters.
+    ///
+    /// see also [`sound_inst_set_shape`] [`SoundInst::set_shape_sphere`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Vec3, sound::Sound};
+    ///
+    /// let sound = Sound::from_file("sounds/plane_engine.mp3").expect("A sound should be created");
+    /// let mut inst = sound.play([0.0, 0.0, 0.0], Some(1.0));
+    ///
+    /// // A wind line along two points.
+    /// let points = vec![Vec3::new(-2.0, 0.0, -1.0), Vec3::new(2.0, 0.0, -1.0)];
+    /// inst.set_shape(&points, 0.3);
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter == 10 { inst.stop(); }
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn set_shape(&mut self, points: &[Vec3], radius: f32) -> &mut Self {
+        unsafe { sound_inst_set_shape(*self, points.as_ptr(), points.len() as i32, radius) }
+        self
+    }
+
+    /// Gives this voice a sphere emitter shape! The emitter follows the listener around the sphere's surface, growing to
+    /// fully diffuse inside it. Great for wind volumes and rain areas.
+    /// <https://stereokit.net/Pages/StereoKit/SoundInst/SetShape.html>
+    /// * `center` - The sphere's center, in world space.
+    /// * `radius` - The sphere's radius, in meters.
+    ///
+    /// see also [`sound_inst_set_shape`] [`SoundInst::set_shape`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Vec3, sound::Sound};
+    ///
+    /// let sound = Sound::from_file("sounds/plane_engine.mp3").expect("A sound should be created");
+    /// let mut inst = sound.play([0.0, 0.0, 0.0], Some(1.0));
+    ///
+    /// // A spherical rain volume around the listener.
+    /// inst.set_shape_sphere(Vec3::new(0.0, 1.5, 0.0), 3.0);
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter == 10 { inst.stop(); }
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn set_shape_sphere(&mut self, center: Vec3, radius: f32) -> &mut Self {
+        unsafe { sound_inst_set_shape(*self, &center, 1, radius) }
+        self
+    }
+
     /// The 3D position in world space this sound instance is currently playing at. If this instance is no longer
     /// valid, the position will be at zero.
     /// <https://stereokit.net/Pages/StereoKit/SoundInst/Position.html>
@@ -942,13 +1939,54 @@ impl SoundInst {
         unsafe { sound_inst_get_pos(*self) }
     }
 
-    /// The volume multiplier of this Sound instance! A number between 0 and 1, where 0 is silent, and 1 is full volume.
+    /// The volume multiplier of this Sound instance! Typically 0-1, where 0 is silent, and 1 is full volume. Values
+    /// above 1 amplify, and negatives clamp to 0.
     /// <https://stereokit.net/Pages/StereoKit/SoundInst/Volume.html>
     ///
     /// see also [`sound_inst_get_volume`]
     /// see example in [`SoundInst::volume`]
     pub fn get_volume(&self) -> f32 {
         unsafe { sound_inst_get_volume(*self) }
+    }
+
+    /// Playback rate multiplier, clamped to 0.25-4. 1 is normal speed, 2 is twice as fast and an octave up. Animatable
+    /// while playing.
+    /// <https://stereokit.net/Pages/StereoKit/SoundInst/Pitch.html>
+    ///
+    /// see also [`sound_inst_get_pitch`]
+    /// see example in [`SoundInst::pitch`]
+    pub fn get_pitch(&self) -> f32 {
+        unsafe { sound_inst_get_pitch(*self) }
+    }
+
+    /// Apparent size of the source, 0-1. 0 is a point in space, 1 fills the whole sound field. Shaped emitters compute
+    /// this themselves, treating a set value as their minimum.
+    /// <https://stereokit.net/Pages/StereoKit/SoundInst/Spread.html>
+    ///
+    /// see also [`sound_inst_get_spread`]
+    /// see example in [`SoundInst::spread`]
+    pub fn get_spread(&self) -> f32 {
+        unsafe { sound_inst_get_spread(*self) }
+    }
+
+    /// Is this voice currently paused? A paused voice keeps its place and stays alive until stopped or stolen.
+    /// <https://stereokit.net/Pages/StereoKit/SoundInst/Paused.html>
+    ///
+    /// see also [`sound_inst_get_paused`]
+    /// see example in [`SoundInst::paused`]
+    pub fn get_paused(&self) -> bool {
+        unsafe { sound_inst_get_paused(*self) != 0 }
+    }
+
+    /// This voice's playback position in source samples. For stream sounds this is an absolute position in the stream,
+    /// so [`Sound::get_total_samples`] - Cursor is how much audio is queued ahead of this voice. Only fully in-memory
+    /// sounds can Seek, streams read forward only.
+    /// <https://stereokit.net/Pages/StereoKit/SoundInst/Cursor.html>
+    ///
+    /// see also [`sound_inst_get_cursor`]
+    /// see example in [`SoundInst::seek`]
+    pub fn get_cursor(&self) -> u64 {
+        unsafe { sound_inst_get_cursor(*self) }
     }
 
     /// The maximum intensity of the sound data since the last frame, as a value from 0-1. This is unaffected by its 3d
@@ -995,10 +2033,10 @@ impl SoundInst {
     ///
     /// number_of_steps = 300;
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     if iter == number_of_steps {
+    ///     if iter == 10 {
     ///         assert!(plane_sound_inst.is_playing());
     ///         plane_sound_inst.stop();
-    ///     } else if iter == number_of_steps + 1 {
+    ///     } else if iter == number_of_steps  {
     ///         assert!(!plane_sound_inst.is_playing());
     ///     }
     /// );

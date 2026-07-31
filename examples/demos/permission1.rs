@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-//! This is a copycat of https://github.com/StereoKit/StereoKit/blob/develop/Examples/StereoKitTest/Demos/DemoPermissions.cs
+//! This is a copycat of <https://github.com/StereoKit/StereoKit/blob/develop/Examples/StereoKitTest/Demos/DemoPermissions.cs>
 
 use std::{cell::RefCell, rc::Rc};
 use stereokit_rust::{
@@ -8,7 +8,7 @@ use stereokit_rust::{
     permission::{Permission, PermissionState, PermissionType},
     prelude::*,
     system::{Align, Text, TextBuilder, TextStyle},
-    tools::os_api::{SystemAction, system_deep_link},
+    tools::os_api::{system_deep_link, SystemAction},
     ui::{Ui, UiPad},
     util::named_colors::{CYAN, RED},
 };
