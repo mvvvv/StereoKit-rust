@@ -536,7 +536,7 @@ impl SoundPlay {
 ///         assert_eq!(plane_sound_inst.get_position(), Vec3::new(0.0, 0.0, -1.0));
 ///         assert_eq!(plane_sound_inst.get_volume(), 0.5);
 ///         plane_sound_inst.stop();
-///         assert!(plane_sound_inst.is_playing());  // delay
+///         assert!(!plane_sound_inst.is_playing());
 ///    } else if iter == 449 {
 ///         assert!(!plane_sound_inst.is_playing());
 ///    }
@@ -660,7 +660,7 @@ impl Sound {
     ///     } else if iter == 20 {
     ///         assert!(stream_sound_inst.is_playing());
     ///         stream_sound_inst.stop();
-    ///         assert!(stream_sound_inst.is_playing());
+    ///         assert!(!stream_sound_inst.is_playing());
     ///     } else if iter == 299   {
     ///         assert!(!stream_sound_inst.is_playing());
     ///     }
@@ -1581,7 +1581,7 @@ impl Sound {
 ///     } else if iter == 50 {
 ///         assert!(plane_sound_inst1.is_playing());
 ///         plane_sound_inst1.stop();
-///         assert!(plane_sound_inst2.is_playing());
+///         assert!(!plane_sound_inst1.is_playing());
 ///         position2 = Vec3::new(0.3, 0.0, 0.3);
 ///         plane_sound_inst2 = plane_sound.play(position2, Some(1.0));
 ///         assert!(plane_sound_inst2.is_playing());
@@ -1590,7 +1590,7 @@ impl Sound {
 ///         assert!(plane_sound_inst2.is_playing());
 ///         plane_sound_inst1.stop();
 ///         plane_sound_inst2.stop();
-///         assert!(plane_sound_inst2.is_playing()); // delay
+///         assert!(!plane_sound_inst2.is_playing()); // delay
 ///     }
 /// );
 /// # } sk::Sk::shutdown();
@@ -1641,7 +1641,7 @@ impl SoundInst {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     if iter == 10 {
     ///         plane_sound_inst.stop();
-    ///         assert!(plane_sound_inst.is_playing());
+    ///         assert!(!plane_sound_inst.is_playing());
     ///     } else if iter == 399 {
     ///         assert!(!plane_sound_inst.is_playing());
     ///     }
