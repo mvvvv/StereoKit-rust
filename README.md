@@ -66,9 +66,28 @@ On Linux, you may have to set `RUSTFLAGS="-Clinker-plugin-lto"` if you encounter
 - Set the NDK path (which ends with it's version number) into ANDROID_NDK_ROOT environment variable.
 - Install [Ninja](https://ninja-build.org/)
 - Check that `adb` ($ANDROID_HOME/platform_tools/adb) is connecting to your headset.
-- Install: `cargo install cargo-apk` (cargo-xbuild has not been tested yet).
 - Download the target: `rustup target add aarch64-linux-android` for most of the existing android headsets.
-- Launch: `cargo apk run --example main`
+- Create project sk_demos:
+
+```bash
+cargo new_sk_rs_project sk_demos --with-gradle
+cd sk_demos
+#- modify Cargo.toml:
+  1 - for path = "~dvlt/StereoKit-rust"
+  2 - dependencies
+  3 - [lib]
+      crate-type = ["lib", "cdylib"]
+#- replace src/ assets/ res/ by these links
+ln -s ~/dvlt/StereoKit-rust/examples/main.rs src/lib.rs
+ln -s ~/dvlt/StereoKit-rust/examples/main_pc.rs src/main.rs
+ln -s ~/dvlt/StereoKit-rust/examples/demos/ src/demos
+ln -s ~/dvlt/StereoKit-rust/assets/ .
+ln -s ~/dvlt/StereoKit-rust/res/ .
+ln -s ~/dvlt/StereoKit-rust/shaders_src/ .
+ln -s ~/dvlt/StereoKit-rust/src/templates/gradle/AndroidManifest.xml app/src/main/.
+
+clear; ./gradlew run --warning-mode all && sh logcat.cmd
+```
 
 ### Use your own event manager (PC only)
 

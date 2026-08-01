@@ -2,7 +2,6 @@
  #---- installing
  cargo install --path .  # -F no-event-loop 
  cargo compile_sks
- cargo install cargo-apk
  rustup target add aarch64-linux-android
  rustup target add x86_64-pc-windows-gnu
  #-MacOS needs this variable to retrieve MoltenVK library:
@@ -23,35 +22,7 @@ cargo build_sk_rs --example main_pc --aarch64-linux ../sk_builds/SK_demo_linux_a
 cargo build_sk_rs --example main_pc --x64-win-gnu ../x64-mingw-libs/ ../sk_builds/SK_demo_win_gnu/ && steam steam://rungameid/17257947875543875584
 FORCE_LOCAL_DEPS=ON DEP_SK_RENDERER_SOURCE="/opt/sk_renderer" cargo build_sk_rs --debug --example main_pc --features event-loop,force-local-deps --x64-win-gnu ../x64-mingw-libs/ ../sk_builds/SK_demo_win_gnu/
 
-#---- building for android (see "Testing demos with gradle" instead)
-~~~~~~cargo apk run --example main
-~~~~~~cargo apk build --example main
-
-#---- build ktx2 compressed texture_compression
-ktx create --cubemap --encode uastc  --format R8G8B8A8_UNORM  --assign-oetf linear --assign-primaries bt709  --generate-mipmap right.png left.png top.png bottom.png front.png back.png cubemap_rgba32.ktx2
-
-#---- launch tests
-clear;cargo test -- --nocapture            
-clear;cargo test --doc tools -- mesh::Mesh   
-clear;XR_RUNTIME_JSON=/usr/share/openxr/1/openxr_monado.json cargo test --features test-xr-mode -- --test-threads=1
-#- launch tests with llvmpipe:
-clear;VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.json cargo test
-
-#---- launch Demo tests + screenshot
-clear;cargo run --example main_pc -- --test --headless --start Assets1
-clear;XR_RUNTIME_JSON=/usr/share/openxr/1/openxr_monado.json cargo run --example main_pc -- --test --xr --start Subpass1
-
-#---- build docs
-cargo clean --doc && cargo doc
-
-#---- publish to crates.io
-cd stereokit-macros && cargo publish && cd ..   #---publish macros crate
-cargo publish --dry-run
-cargo publish
-
-
-
-
+#---- building for android :
 #---- Testing demos with gradle (sk_app compatible)
 cd ~/dvlt
 cargo new_sk_rs_project sk_demos --with-gradle
@@ -75,7 +46,27 @@ clear; ./gradlew run --warning-mode all && sh logcat.cmd
 cargo clean && ./gradlew clean
 
 
+#---- build ktx2 compressed texture_compression
+ktx create --cubemap --encode uastc  --format R8G8B8A8_UNORM  --assign-oetf linear --assign-primaries bt709  --generate-mipmap right.png left.png top.png bottom.png front.png back.png cubemap_rgba32.ktx2
 
+#---- launch tests
+clear;cargo test -- --nocapture            
+clear;cargo test --doc tools -- mesh::Mesh   
+clear;XR_RUNTIME_JSON=/usr/share/openxr/1/openxr_monado.json cargo test --features test-xr-mode -- --test-threads=1
+#- launch tests with llvmpipe:
+clear;VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.json cargo test
+
+#---- launch Demo tests + screenshot
+clear;cargo run --example main_pc -- --test --headless --start Assets1
+clear;XR_RUNTIME_JSON=/usr/share/openxr/1/openxr_monado.json cargo run --example main_pc -- --test --xr --start Subpass1
+
+#---- build docs
+cargo clean --doc && cargo doc
+
+#---- publish to crates.io
+cd stereokit-macros && cargo publish && cd ..   #---publish macros crate
+cargo publish --dry-run
+cargo publish
 
 
 
