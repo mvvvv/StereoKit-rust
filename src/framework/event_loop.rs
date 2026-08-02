@@ -108,7 +108,11 @@ enum SleepPhase {
     Sleeping,
     WakingUp,
     WokeUp,
+    /// sk-quit has been called first we can quit serenely
     Stopping,
+    /// Android destroyed the activity, we have to close what we can.
+    #[cfg(target_os = "android")]
+    StoppingNow,
 }
 
 /// Run the app with [SkClosures::run] or [SkClosures::run_app]
@@ -247,7 +251,8 @@ impl<'a> SkClosures<'a> {
                         }
                     }
                     MainEvent::Destroy => {
-                        Log::info("Android MainEvent::Destroy received");
+                        self.sleeping = SleepPhase::StoppingNow;
+                        Log::info("Android MainEvent::Destroy received we have to shutdown what we can!");
                     }
                     MainEvent::InputAvailable { .. } => {
                         // We have some Android input events to process, but we don't want to block the main loop,
@@ -458,6 +463,13 @@ impl<'a> SkClosures<'a> {
                     if self.sk.get_app_focus() == AppFocus::Active {
                         self.sleeping = SleepPhase::WakingUp;
                     }
+                }
+                #[cfg(target_os = "android")]
+                SleepPhase::StoppingNow => {
+                    self.sk.steppers.shutdown();
+                    (self.shutdown)(&mut self.sk);
+                    self.sk.quit(None);
+                    break;
                 }
                 SleepPhase::Stopping => break,
             }
