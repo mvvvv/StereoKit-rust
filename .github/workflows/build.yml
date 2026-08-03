@@ -1,0 +1,483 @@
+name: Build Demo
+
+# This workflow builds an exportable, self-contained demo for each supported
+# platform using `cargo build_sk_rs --example main_pc <dir>` (PC platforms) or
+# Gradle (Android).
+#
+# PC output directory contains:
+#   - the compiled executable (main_pc / main_pc.exe)
+#   - the StereoKitC DLL (Windows only, when built with skc-in-dll)
+#   - the assets/ tree (including compiled shaders)
+#
+# Android output is a sideloadable APK (arm64-v8a).
+#
+# Artifacts are uploaded for every run and, when triggered by a tag push (v*),
+# are also attached to an auto-generated GitHub Release.
+#
+# A required <version> input (e.g. "0.4.0") is appended to every artifact and
+# release archive name.  When triggered by a tag push, the tag name is used
+# instead.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version string appended to all build outputs (e.g. 0.4.0-alpha25)'
+        type: string
+        required: true
+      branch:
+        description: 'Branch / tag to build from'
+        type: string
+        required: false
+      buildWindows:
+        description: 'Build for Windows x86_64 (MSVC)'
+        type: boolean
+        required: false
+        default: true
+      buildLinux:
+        description: 'Build for Linux x86_64'
+        type: boolean
+        required: false
+        default: true
+      buildMacOS:
+        description: 'Build for macOS AArch64'
+        type: boolean
+        required: false
+        default: true
+      buildWindowsAarch64:
+        description: 'Build for Windows AArch64 (ARM64 runner)'
+        type: boolean
+        required: false
+        default: true
+      buildLinuxAarch64:
+        description: 'Build for Linux AArch64 (ARM64 runner)'
+        type: boolean
+        required: false
+        default: true
+      buildAndroid:
+        description: 'Build Android APK for AArch64 (Meta Quest)'
+        type: boolean
+        required: false
+        default: true
+      buildWinGnu:
+        description: 'Cross-compile Windows x86_64 (GNU) from Linux'
+        type: boolean
+        required: false
+        default: false
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  # Version used in artifact / archive names.
+  # - workflow_dispatch → the user-provided input
+  # - push (tag)        → the tag name (e.g. v0.4.0)
+  VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
+
+jobs:
+
+  # ────────────────────────────── Windows x86_64 ──────────────────────────────
+  build-windows:
+    runs-on: windows-latest
+    if: ${{ github.event_name == 'push' || inputs.buildWindows }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch || github.ref }}
+          submodules: 'recursive'
+
+      - uses: lukka/get-cmake@latest
+
+      - name: Cache Cargo build
+        uses: swatinem/rust-cache@v2
+
+      - name: Install StereoKit cargo subcommands
+        run: cargo install --force --path .
+
+      - name: Get some shaders from StereoKit subproject
+        shell: bash
+        run: |
+          cp -f StereoKit/Examples/Assets/Shaders/basic_shadow.hlsl        shaders_src/
+          cp -f StereoKit/Examples/Assets/Shaders/basic_shadow_caster.hlsl shaders_src/
+          cp -f StereoKit/Examples/Assets/Shaders/compute_reaction.hlsl    shaders_src/
+          cp -f StereoKit/Examples/Assets/texture3d.hlsl                   shaders_src/
+
+      - name: Build exportable demo
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path export | Out-Null
+          cargo build_sk_rs --example main_pc export
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-windows-x86_64-${{ env.VERSION }}
+          path: export/
+          if-no-files-found: error
+
+  # ─────────────────────────────── Linux x86_64 ───────────────────────────────
+  build-linux:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' || inputs.buildLinux }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch || github.ref }}
+          submodules: 'recursive'
+
+      - name: Cache Cargo build
+        uses: swatinem/rust-cache@v2
+
+      - name: Install prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            clang cmake lld ninja-build llvm \
+            libx11-dev libxfixes-dev libvulkan-dev libfontconfig-dev \
+            libxrandr-dev libxcursor-dev
+
+      - name: Install StereoKit cargo subcommands
+        run: cargo install --force --path .
+
+      - name: Get some shaders from StereoKit subproject
+        run: |
+          cp -f StereoKit/Examples/Assets/Shaders/basic_shadow.hlsl        shaders_src/
+          cp -f StereoKit/Examples/Assets/Shaders/basic_shadow_caster.hlsl shaders_src/
+          cp -f StereoKit/Examples/Assets/Shaders/compute_reaction.hlsl    shaders_src/
+          cp -f StereoKit/Examples/Assets/texture3d.hlsl                   shaders_src/
+
+      - name: Build exportable demo
+        run: |
+          mkdir -p export
+          cargo build_sk_rs --example main_pc export
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-linux-x86_64-${{ env.VERSION }}
+          path: export/
+          if-no-files-found: error
+
+  # ─────────────────────────────── macOS AArch64 ──────────────────────────────
+  build-macos:
+    runs-on: macos-latest
+    if: ${{ github.event_name == 'push' || inputs.buildMacOS }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch || github.ref }}
+          submodules: 'recursive'
+
+      - name: Cache Cargo build
+        uses: swatinem/rust-cache@v2
+
+      - name: Install prerequisites
+        run: |
+          brew install cmake ninja molten-vk vulkan-headers coreutils
+          echo "$(brew --prefix coreutils)/libexec/gnubin" >> $GITHUB_PATH
+
+      - name: Install StereoKit cargo subcommands
+        run: cargo install --force --path .
+
+      - name: Get some shaders from StereoKit subproject
+        run: |
+          cp -f StereoKit/Examples/Assets/Shaders/basic_shadow.hlsl        shaders_src/
+          cp -f StereoKit/Examples/Assets/Shaders/basic_shadow_caster.hlsl shaders_src/
+          cp -f StereoKit/Examples/Assets/Shaders/compute_reaction.hlsl    shaders_src/
+          cp -f StereoKit/Examples/Assets/texture3d.hlsl                   shaders_src/
+
+      - name: Build exportable demo
+        env:
+          DYLD_LIBRARY_PATH: ${{ format('{0}/lib', '/opt/homebrew') }}
+        run: |
+          mkdir -p export
+          cargo build_sk_rs --example main_pc export
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-macos-aarch64-${{ env.VERSION }}
+          path: export/
+          if-no-files-found: error
+
+  # ────────────────────────────── Windows AArch64 ─────────────────────────────
+  #  Runs on a native ARM64 Windows runner so everything (CMake, MSVC, Rust)
+  #  builds natively for aarch64-pc-windows-msvc.
+  build-windows-aarch64:
+    runs-on: windows-11-arm
+    if: ${{ github.event_name == 'push' || inputs.buildWindowsAarch64 }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch || github.ref }}
+          submodules: 'recursive'
+
+      - uses: lukka/get-cmake@latest
+
+      - name: Cache Cargo build
+        uses: swatinem/rust-cache@v2
+
+      - name: Install StereoKit cargo subcommands
+        run: cargo install --force --path .
+
+      - name: Get some shaders from StereoKit subproject
+        shell: bash
+        run: |
+          cp -f StereoKit/Examples/Assets/Shaders/basic_shadow.hlsl        shaders_src/
+          cp -f StereoKit/Examples/Assets/Shaders/basic_shadow_caster.hlsl shaders_src/
+          cp -f StereoKit/Examples/Assets/Shaders/compute_reaction.hlsl    shaders_src/
+          cp -f StereoKit/Examples/Assets/texture3d.hlsl                   shaders_src/
+
+      - name: Build exportable demo
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path export | Out-Null
+          cargo build_sk_rs --example main_pc export
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-windows-aarch64-${{ env.VERSION }}
+          path: export/
+          if-no-files-found: error
+
+  # ─────────────────────────────── Linux AArch64 ──────────────────────────────
+  #  Runs on a native ARM64 Ubuntu runner so all libraries and tools are arm64.
+  build-linux-aarch64:
+    runs-on: ubuntu-24.04-arm
+    if: ${{ github.event_name == 'push' || inputs.buildLinuxAarch64 }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch || github.ref }}
+          submodules: 'recursive'
+
+      - name: Cache Cargo build
+        uses: swatinem/rust-cache@v2
+
+      - name: Install prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            clang cmake lld ninja-build llvm \
+            libx11-dev libxfixes-dev libvulkan-dev libfontconfig-dev \
+            libxrandr-dev libxcursor-dev
+
+      - name: Install StereoKit cargo subcommands
+        run: cargo install --force --path .
+
+      - name: Get some shaders from StereoKit subproject
+        run: |
+          cp -f StereoKit/Examples/Assets/Shaders/basic_shadow.hlsl        shaders_src/
+          cp -f StereoKit/Examples/Assets/Shaders/basic_shadow_caster.hlsl shaders_src/
+          cp -f StereoKit/Examples/Assets/Shaders/compute_reaction.hlsl    shaders_src/
+          cp -f StereoKit/Examples/Assets/texture3d.hlsl                   shaders_src/
+
+      - name: Build exportable demo
+        run: |
+          mkdir -p export
+          cargo build_sk_rs --example main_pc export
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-linux-aarch64-${{ env.VERSION }}
+          path: export/
+          if-no-files-found: error
+
+  # ───────────────────────── Android AArch64 (Meta Quest) ─────────────────────
+  #  Creates a Gradle project, links the demo sources, and builds a debug APK
+  #  targeting arm64-v8a (the architecture used by Quest 2/3/Pro).
+  #  See README section "Run the project's demo on your Android headset".
+  build-android:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' || inputs.buildAndroid }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch || github.ref }}
+          submodules: 'recursive'
+
+      - name: Cache Cargo build
+        uses: swatinem/rust-cache@v2
+
+      - name: Install prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            clang cmake lld ninja-build llvm \
+            libx11-dev libxfixes-dev libfontconfig-dev
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools build-tools;34.0.0 platforms;android-33'
+
+      - name: Install Android NDK
+        run: |
+          NDK_VERSION=$(~/android/cmdline-tools/latest/bin/sdkmanager --list | grep -oP 'ndk;\K[0-9.]+' | sort -V | tail -1)
+          echo "Installing NDK version: ${NDK_VERSION}"
+          yes | sdkmanager --install "ndk;${NDK_VERSION}"
+          echo "ANDROID_NDK_ROOT=${ANDROID_SDK_ROOT}/ndk/${NDK_VERSION}" >> $GITHUB_ENV
+
+      - name: Add Rust target
+        run: rustup target add aarch64-linux-android
+
+      - name: Install StereoKit cargo subcommands
+        run: cargo install --force --path .
+
+      - name: Get some shaders from StereoKit subproject
+        run: |
+          cp -f StereoKit/Examples/Assets/Shaders/basic_shadow.hlsl        shaders_src/
+          cp -f StereoKit/Examples/Assets/Shaders/basic_shadow_caster.hlsl shaders_src/
+          cp -f StereoKit/Examples/Assets/Shaders/compute_reaction.hlsl    shaders_src/
+          cp -f StereoKit/Examples/Assets/texture3d.hlsl                   shaders_src/
+          cargo compile_sks --options -f -t s
+
+      - name: Create Gradle project
+        run: cargo new_sk_rs_project sk_demos --with-gradle
+
+      - name: Configure project
+        run: |
+          cd sk_demos
+          # Use local path dependency instead of crates.io
+          cp ../src/templates/Cargo.toml_for_AndroidDemo.txt Cargo.toml
+
+          # Replace generated sources with the demo's own
+          rm -f src/lib.rs
+          ln -sf ../examples/main.rs src/lib.rs
+          ln -sf ../examples/demos src/demos
+
+          # Replace assets and resources with the project's
+          rm -rf assets
+          ln -s ../assets .
+          rm -rf res
+          ln -s ../res .
+
+          echo "=== Cargo.toml ==="
+          cat Cargo.toml
+
+      - name: Build debug APK
+        working-directory: sk_demos
+        run: ./gradlew buildDebug --no-daemon --warning-mode all
+
+      - name: Collect APK
+        run: |
+          mkdir -p export
+          APK=$(find sk_demos -name "*debug*.apk" -path "*/outputs/*" -type f | head -1)
+          if [ -z "$APK" ]; then
+            echo "No APK found! Searching more broadly..."
+            find sk_demos -name "*.apk" -type f
+            exit 1
+          fi
+          echo "Found APK: $APK"
+          cp "$APK" "export/sk_demos-debug-aarch64-${{ env.VERSION }}.apk"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-android-aarch64-${{ env.VERSION }}
+          path: export/
+          if-no-files-found: error
+
+  # ─────────────────── Windows GNU cross-compile from Linux ───────────────────
+  #  Optional: cross-compile a Windows x86_64 binary from Linux using mingw-w64.
+  #  See README section "Build the project's demo for Windows_x64 using GNU".
+  build-windows-gnu:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.buildWinGnu }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch || github.ref }}
+          submodules: 'recursive'
+
+      - name: Cache Cargo build
+        uses: swatinem/rust-cache@v2
+
+      - name: Install prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            clang cmake lld ninja-build llvm \
+            mingw-w64 wine
+
+      - name: Add Rust target
+        run: rustup target add x86_64-pc-windows-gnu
+
+      - name: Set cross-linker
+        run: |
+          echo "CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER=x86_64-w64-mingw32-gcc" >> $GITHUB_ENV
+
+      - name: Prepare mingw runtime libraries
+        run: |
+          mkdir -p x64-mingw-libs
+          find /usr/lib/gcc/x86_64-w64-mingw32/13-win32/ -name "libgcc_eh.a"       -exec ln -sf {} x64-mingw-libs/ \; 2>/dev/null || true
+          find /usr/lib/gcc/x86_64-w64-mingw32/13-win32/ -name "libstdc++.a"        -exec ln -sf {} x64-mingw-libs/ \; 2>/dev/null || true
+          echo "--- Contents of x64-mingw-libs ---"
+          ls -la x64-mingw-libs/
+
+      - name: Install StereoKit cargo subcommands
+        run: cargo install --force --path .
+
+      - name: Prepare shader sources
+        run: |
+          cp -f StereoKit/Examples/Assets/Shaders/basic_shadow.hlsl        shaders_src/
+          cp -f StereoKit/Examples/Assets/Shaders/basic_shadow_caster.hlsl shaders_src/
+          cp -f StereoKit/Examples/Assets/Shaders/compute_reaction.hlsl    shaders_src/
+          cp -f StereoKit/Examples/Assets/texture3d.hlsl                   shaders_src/
+
+      - name: Build exportable demo
+        run: |
+          mkdir -p export
+          cargo build_sk_rs --x64-win-gnu x64-mingw-libs/ --example main_pc export
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-windows-gnu-x86_64-${{ env.VERSION }}
+          path: export/
+          if-no-files-found: error
+
+  # ───────────────────────────── GitHub Release ───────────────────────────────
+  #  When triggered by a tag push (v*), collect all artifacts and attach them
+  #  to an auto-generated GitHub Release.
+  release:
+    needs: [build-windows, build-linux, build-macos, build-windows-aarch64, build-linux-aarch64, build-android]
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Package artifacts into archives
+        run: |
+          cd artifacts
+          for dir in */; do
+            name="${dir%/}"
+            if [ -d "$name" ]; then
+              tar czf "../${name}.tar.gz" "$name"
+            fi
+          done
+          cd ..
+          ls -lh *.tar.gz
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: "*.tar.gz"
+          generate_release_notes: true
+          fail_on_unmatched_files: true

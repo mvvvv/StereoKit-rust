@@ -1,0 +1,26 @@
+[package]
+name = "sk_demos"     # Use this Cargo.toml for the Android demo only
+version = "0.1.0"
+edition = "2024"
+
+[features]
+no-event-loop = []    # As we are linking to StereoKit-rust we have to mimic this feature.
+
+[lib]
+crate-type = ["lib", "cdylib"]
+
+[dependencies]
+stereokit-rust = { path = ".."}
+thiserror = "2.0"
+bitflags = "2.11"
+openxr-sys = "0.13"
+stereokit-macros = { path = "../stereokit-macros" }
+
+[target.'cfg(target_os = "android")'.dependencies]
+stereokit-rust = { path = ".." , features = ["build-dynamic-openxr"] }
+log = "0.4"
+android_logger = "0.15"
+android-activity = { version = "0.6", features = ["native-activity"] }
+ndk = "0.9.0"
+ndk-sys = "0.6"
+jni = "0.22"

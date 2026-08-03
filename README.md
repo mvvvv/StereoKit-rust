@@ -39,6 +39,7 @@ Let us know if you have launched the demos on an architecture not tested here.
 - On Windows[^2] get the following tools and dev libraries : "Git", "CMake", "Visual Studio Build Tools 2022(Development Desktop C++)" and "DotNet SDK v8+"
 - Install the project's tools from the project directory `cargo install --path .`
 - If you want to launch the demos then:
+  - If you do not have them as symbolic links under shaders_src, copy from `./StereoKit/Examples/Assets/Shaders/` the following files: `basic_shadow.hlsl` `basic_shadow_caster.hlsl` `compute_reaction.hlsl` and `texture3d.hlsl`
   - compile the shaders. From StereoKit-rust directory launch `cargo compile_sks`
   - for Windows only and if you don't use VSCode launchers, add to the PATH environment variable the directory `./target/debug/deps`
 
@@ -73,18 +74,14 @@ On Linux, you may have to set `RUSTFLAGS="-Clinker-plugin-lto"` if you encounter
 cargo new_sk_rs_project sk_demos --with-gradle
 cd sk_demos
 #- modify Cargo.toml:
-  1 - for path = "~dvlt/StereoKit-rust"
-  2 - dependencies
-  3 - [lib]
-      crate-type = ["lib", "cdylib"]
-#- replace src/ assets/ res/ by these links
+cp ~/dvlt/StereoKit-rust/src/template/Cargo.toml_for_AndroidDemo.txt Cargo.toml
+#- replace src/ assets/ res/ app/ by these links
 ln -s ~/dvlt/StereoKit-rust/examples/main.rs src/lib.rs
 ln -s ~/dvlt/StereoKit-rust/examples/main_pc.rs src/main.rs
 ln -s ~/dvlt/StereoKit-rust/examples/demos/ src/demos
 ln -s ~/dvlt/StereoKit-rust/assets/ .
 ln -s ~/dvlt/StereoKit-rust/res/ .
-ln -s ~/dvlt/StereoKit-rust/shaders_src/ .
-ln -s ~/dvlt/StereoKit-rust/src/templates/gradle/AndroidManifest.xml app/src/main/.
+#--if you want to tweak/PR the project you should link the files to the originals located under `~/dvlt/StereoKit-rust/src/templates/gradle/`.
 
 clear; ./gradlew run --warning-mode all && sh logcat.cmd
 ```
@@ -103,10 +100,7 @@ Use the commande `cargo new_sk_rs_project` to create your project [see the docum
 - Install mingw64-w64 (MSYS2 on windows)
 
 - Add the rust target gnu for windows:`rustup target add x86_64-pc-windows-gnu`
-- On linux we need wine to compile the shaders
-  - Add i386 architecture (i.e. `sudo dpkg --add-architecture i386` on Ubuntu).
-  - Install wine and winetricks.
-  - Install needed tools and libs: `winetricks corefonts d3dx9 d3dcompiler_47`
+- On `non Windows OS` we use and need wine to compile the shaders.
 - Create a directory where necessary libs will be stored (i.e. ../x64-mingw-libs/) then add a link to the DLLs or static libs(*.a) the build will need after or during its creation. Example on Ubuntu 24.XX:
   - `ln -s /usr/lib/gcc/x86_64-w64-mingw32/13-win32/libgcc_s_seh-1.dll ../x64-mingw-libs/ && ln -s /usr/lib/gcc/x86_64-w64-mingw32/13-win32/libstdc++-6.dll ../x64-mingw-libs/`
   - or `ln -s /usr/lib/gcc/x86_64-w64-mingw32/13-win32/libgcc_eh.a ../x64-mingw-libs/ && ln -s /usr/lib/gcc/x86_64-w64-mingw32/13-win32/libstdc++.a ../x64-mingw-libs/`
