@@ -346,10 +346,10 @@ jobs:
         working-directory: ../sk_demos
         run: |
           mkdir -p export
-          APK=$(find sk_demos -name "*debug*.apk" -path "*/outputs/*" -type f | head -1)
+          APK=$(find . -name "*debug*.apk" -path "*/outputs/*" -type f | head -1)
           if [ -z "$APK" ]; then
             echo "No APK found! Searching more broadly..."
-            find sk_demos -name "*.apk" -type f
+            find . -name "*.apk" -type f
             exit 1
           fi
           echo "Found APK: $APK"
