@@ -63,7 +63,7 @@ on:
         description: 'Cross-compile Windows x86_64 (GNU) from Linux'
         type: boolean
         required: false
-        default: false
+        default: true
   push:
     tags:
       - 'v*'
@@ -98,14 +98,6 @@ jobs:
 
       - name: Install StereoKit cargo subcommands
         run: cargo install --force --path .
-
-      - name: Get some shaders from StereoKit subproject
-        shell: bash
-        run: |
-          cp -f StereoKit/Examples/Assets/Shaders/basic_shadow.hlsl        shaders_src/
-          cp -f StereoKit/Examples/Assets/Shaders/basic_shadow_caster.hlsl shaders_src/
-          cp -f StereoKit/Examples/Assets/Shaders/compute_reaction.hlsl    shaders_src/
-          cp -f StereoKit/Examples/Assets/texture3d.hlsl                   shaders_src/
 
       - name: Build exportable demo
         shell: pwsh
@@ -144,13 +136,6 @@ jobs:
       - name: Install StereoKit cargo subcommands
         run: cargo install --force --path .
 
-      - name: Get some shaders from StereoKit subproject
-        run: |
-          cp -f StereoKit/Examples/Assets/Shaders/basic_shadow.hlsl        shaders_src/
-          cp -f StereoKit/Examples/Assets/Shaders/basic_shadow_caster.hlsl shaders_src/
-          cp -f StereoKit/Examples/Assets/Shaders/compute_reaction.hlsl    shaders_src/
-          cp -f StereoKit/Examples/Assets/texture3d.hlsl                   shaders_src/
-
       - name: Build exportable demo
         run: |
           mkdir -p export
@@ -183,13 +168,6 @@ jobs:
 
       - name: Install StereoKit cargo subcommands
         run: cargo install --force --path .
-
-      - name: Get some shaders from StereoKit subproject
-        run: |
-          cp -f StereoKit/Examples/Assets/Shaders/basic_shadow.hlsl        shaders_src/
-          cp -f StereoKit/Examples/Assets/Shaders/basic_shadow_caster.hlsl shaders_src/
-          cp -f StereoKit/Examples/Assets/Shaders/compute_reaction.hlsl    shaders_src/
-          cp -f StereoKit/Examples/Assets/texture3d.hlsl                   shaders_src/
 
       - name: Build exportable demo
         env:
@@ -224,14 +202,6 @@ jobs:
 
       - name: Install StereoKit cargo subcommands
         run: cargo install --force --path .
-
-      - name: Get some shaders from StereoKit subproject
-        shell: bash
-        run: |
-          cp -f StereoKit/Examples/Assets/Shaders/basic_shadow.hlsl        shaders_src/
-          cp -f StereoKit/Examples/Assets/Shaders/basic_shadow_caster.hlsl shaders_src/
-          cp -f StereoKit/Examples/Assets/Shaders/compute_reaction.hlsl    shaders_src/
-          cp -f StereoKit/Examples/Assets/texture3d.hlsl                   shaders_src/
 
       - name: Build exportable demo
         shell: pwsh
@@ -270,13 +240,6 @@ jobs:
 
       - name: Install StereoKit cargo subcommands
         run: cargo install --force --path .
-
-      - name: Get some shaders from StereoKit subproject
-        run: |
-          cp -f StereoKit/Examples/Assets/Shaders/basic_shadow.hlsl        shaders_src/
-          cp -f StereoKit/Examples/Assets/Shaders/basic_shadow_caster.hlsl shaders_src/
-          cp -f StereoKit/Examples/Assets/Shaders/compute_reaction.hlsl    shaders_src/
-          cp -f StereoKit/Examples/Assets/texture3d.hlsl                   shaders_src/
 
       - name: Build exportable demo
         run: |
@@ -339,10 +302,6 @@ jobs:
 
       - name: Get some shaders from StereoKit subproject
         run: |
-          cp -f StereoKit/Examples/Assets/Shaders/basic_shadow.hlsl        shaders_src/
-          cp -f StereoKit/Examples/Assets/Shaders/basic_shadow_caster.hlsl shaders_src/
-          cp -f StereoKit/Examples/Assets/Shaders/compute_reaction.hlsl    shaders_src/
-          cp -f StereoKit/Examples/Assets/texture3d.hlsl                   shaders_src/
           cargo compile_sks --options -f -t s
 
       - name: Create Gradle project
@@ -431,13 +390,6 @@ jobs:
       - name: Install StereoKit cargo subcommands
         run: cargo install --force --path .
 
-      - name: Prepare shader sources
-        run: |
-          cp -f StereoKit/Examples/Assets/Shaders/basic_shadow.hlsl        shaders_src/
-          cp -f StereoKit/Examples/Assets/Shaders/basic_shadow_caster.hlsl shaders_src/
-          cp -f StereoKit/Examples/Assets/Shaders/compute_reaction.hlsl    shaders_src/
-          cp -f StereoKit/Examples/Assets/texture3d.hlsl                   shaders_src/
-
       - name: Build exportable demo
         run: |
           mkdir -p export
@@ -454,7 +406,7 @@ jobs:
   #  When triggered by a tag push (v*), collect all artifacts and attach them
   #  to an auto-generated GitHub Release.
   release:
-    needs: [build-windows, build-linux, build-macos, build-windows-aarch64, build-linux-aarch64, build-android]
+    needs: [build-windows, build-linux, build-macos, build-windows-aarch64, build-linux-aarch64, build-android, build-windows-gnu]
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
