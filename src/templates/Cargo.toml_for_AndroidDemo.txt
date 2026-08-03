@@ -10,14 +10,14 @@ no-event-loop = []    # As we are linking to StereoKit-rust we have to mimic thi
 crate-type = ["lib", "cdylib"]
 
 [dependencies]
-stereokit-rust = { path = ".."}
+stereokit-rust = { path = "../StereoKit-rust"}
 thiserror = "2.0"
 bitflags = "2.11"
 openxr-sys = "0.13"
-stereokit-macros = { path = "../stereokit-macros" }
+stereokit-macros = { path = "../StereoKit-rust/stereokit-macros" }
 
 [target.'cfg(target_os = "android")'.dependencies]
-stereokit-rust = { path = ".." , features = ["build-dynamic-openxr"] }
+stereokit-rust = { path = "../StereoKit-rust", features = ["build-dynamic-openxr"] }
 log = "0.4"
 android_logger = "0.15"
 android-activity = { version = "0.6", features = ["native-activity"] }

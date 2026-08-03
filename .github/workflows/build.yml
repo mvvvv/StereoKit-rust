@@ -316,24 +316,24 @@ jobs:
           cargo compile_sks --options -f -t s
 
       - name: Create Gradle project
-        run: cargo new_sk_rs_project sk_demos --with-gradle
+        run: cd .. && cargo new_sk_rs_project sk_demos --with-gradle
 
       - name: Configure project
         run: |
           cd sk_demos
           # Use local path dependency instead of crates.io
-          cp ../src/templates/Cargo.toml_for_AndroidDemo.txt Cargo.toml
+          cp ../StereoKit-rust/src/templates/Cargo.toml_for_AndroidDemo.txt Cargo.toml
 
           # Replace generated sources with the demo's own
           rm -f src/lib.rs
-          ln -sf ../examples/main.rs src/lib.rs
-          ln -sf ../examples/demos src/demos
+          ln -sf "$(realpath ../StereoKit-rust/examples/main.rs)" src/lib.rs
+          ln -sf "$(realpath ../StereoKit-rust/examples/demos)" src/demos
 
           # Replace assets and resources with the project's
           rm -rf assets
-          ln -s ../assets .
+          ln -s "$(realpath ../StereoKit-rust/assets)" .
           rm -rf res
-          ln -s ../res .
+          ln -s "$(realpath ../StereoKit-rust/res)" .
 
           echo "=== Cargo.toml ==="
           cat Cargo.toml
@@ -387,6 +387,7 @@ jobs:
                                    libxkbcommon-dev mesa-vulkan-drivers \
                                    mesa-utils libx11-xcb1 libxcb-dri3-0 \
                                    mingw-w64 wine
+          sudo dpkg --add-architecture i386 && apt-get update && sudo apt install wine32:i386
 
       - name: Add Rust target
         run: rustup target add x86_64-pc-windows-gnu
