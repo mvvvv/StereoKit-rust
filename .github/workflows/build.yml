@@ -128,7 +128,7 @@ jobs:
       - name: Install prerequisites
         run: |
           sudo apt-get update
-          sudo apt-get install - y xvfb clang cmake lld llvm ninja-build \
+          sudo apt-get install -y xvfb clang cmake lld llvm ninja-build \
                                    libx11-dev libxfixes-dev libvulkan-dev \
                                    libfontconfig-dev libxkbcommon-x11-0 \
                                    libxkbcommon0 libxrandr-dev libxcursor-dev \
@@ -142,7 +142,7 @@ jobs:
       - name: Build exportable demo
         run: |
           mkdir -p export
-          cargo build_sk_rs --example main_pc export
+          cargo build_sk_rs --example main_pc ./export
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -177,7 +177,7 @@ jobs:
           DYLD_LIBRARY_PATH: ${{ format('{0}/lib', '/opt/homebrew') }}
         run: |
           mkdir -p export
-          cargo build_sk_rs --example main_pc export
+          cargo build_sk_rs --example main_pc ./export
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -236,7 +236,7 @@ jobs:
       - name: Install prerequisites
         run: |
           sudo apt-get update
-          sudo apt-get install - y xvfb clang cmake lld llvm ninja-build \
+          sudo apt-get install -y xvfb clang cmake lld llvm ninja-build \
                                    libx11-dev libxfixes-dev libvulkan-dev \
                                    libfontconfig-dev libxkbcommon-x11-0 \
                                    libxkbcommon0 libxrandr-dev libxcursor-dev \
@@ -250,7 +250,7 @@ jobs:
       - name: Build exportable demo
         run: |
           mkdir -p export
-          cargo build_sk_rs --example main_pc export
+          cargo build_sk_rs --example main_pc ./export
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -278,7 +278,7 @@ jobs:
       - name: Install prerequisites
         run: |
           sudo apt-get update
-          sudo apt-get install - y xvfb clang cmake lld llvm ninja-build \
+          sudo apt-get install -y xvfb clang cmake lld llvm ninja-build \
                                    libx11-dev libxfixes-dev libvulkan-dev \
                                    libfontconfig-dev libxkbcommon-x11-0 \
                                    libxkbcommon0 libxrandr-dev libxcursor-dev \
@@ -379,7 +379,7 @@ jobs:
       - name: Install prerequisites
         run: |
           sudo apt-get update
-          sudo apt-get install - y xvfb clang cmake lld llvm ninja-build \
+          sudo apt-get install -y xvfb clang cmake lld llvm ninja-build \
                                    libx11-dev libxfixes-dev libvulkan-dev \
                                    libfontconfig-dev libxkbcommon-x11-0 \
                                    libxkbcommon0 libxrandr-dev libxcursor-dev \
@@ -409,7 +409,7 @@ jobs:
       - name: Build exportable demo
         run: |
           mkdir -p export
-          cargo build_sk_rs --x64-win-gnu x64-mingw-libs/ --example main_pc export
+          cargo build_sk_rs --x64-win-gnu x64-mingw-libs/ --example main_pc ./export
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
