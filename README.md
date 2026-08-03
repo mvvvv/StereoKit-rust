@@ -100,7 +100,9 @@ Use the commande `cargo new_sk_rs_project` to create your project [see the docum
 - Install mingw64-w64 (MSYS2 on windows)
 
 - Add the rust target gnu for windows:`rustup target add x86_64-pc-windows-gnu`
-- On `non Windows OS` we use and need wine to compile the shaders.
+- On `non Windows OS` we use and need wine to compile the shaders
+  - Add i386 architecture (i.e. `sudo dpkg --add-architecture i386` on Ubuntu).
+  - Install wine.
 - Create a directory where necessary libs will be stored (i.e. ../x64-mingw-libs/) then add a link to the DLLs or static libs(*.a) the build will need after or during its creation. Example on Ubuntu 24.XX:
   - `ln -s /usr/lib/gcc/x86_64-w64-mingw32/13-win32/libgcc_s_seh-1.dll ../x64-mingw-libs/ && ln -s /usr/lib/gcc/x86_64-w64-mingw32/13-win32/libstdc++-6.dll ../x64-mingw-libs/`
   - or `ln -s /usr/lib/gcc/x86_64-w64-mingw32/13-win32/libgcc_eh.a ../x64-mingw-libs/ && ln -s /usr/lib/gcc/x86_64-w64-mingw32/13-win32/libstdc++.a ../x64-mingw-libs/`

@@ -145,7 +145,9 @@
 //! Build your app for Windows_x64 using GNU toolchain from Linux and Windows (and probably Mac):
 //! * Install mingw-w64 (MSYS2 on windows).
 //! * Add the `Rust` target gnu for windows:`rustup target add x86_64-pc-windows-gnu`
-//! * On 'Non Windows OS': we use and need wine to compile the shaders.
+//! * On 'Non Windows OS': we need wine to compile the shaders:
+//!   - Add i386 architecture (i.e. `sudo dpkg --add-architecture i386` on Ubuntu).
+//!   - Install wine.
 //! * Create a directory where necessary libs will be stored (i.e. ../x64-mingw-libs/) then add a link to the DLLs or
 //!   static libs (*.a) the build will need after or during its creation. Example on Ubuntu 24.XX:
 //!   - If you want to use DLLs:

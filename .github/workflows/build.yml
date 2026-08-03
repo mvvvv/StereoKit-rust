@@ -320,7 +320,7 @@ jobs:
 
       - name: Configure project
         run: |
-          cd sk_demos
+          cd ../sk_demos
           # Use local path dependency instead of crates.io
           cp ../StereoKit-rust/src/templates/Cargo.toml_for_AndroidDemo.txt Cargo.toml
 
@@ -340,10 +340,11 @@ jobs:
 
       - name: Build debug APK
         working-directory: sk_demos
-        run: ./gradlew buildDebug --no-daemon --warning-mode all
+        run: cd ../sk_demos && ./gradlew buildDebug --no-daemon --warning-mode all
 
       - name: Collect APK
         run: |
+          cd ../sk_demos
           mkdir -p export
           APK=$(find sk_demos -name "*debug*.apk" -path "*/outputs/*" -type f | head -1)
           if [ -z "$APK" ]; then
@@ -358,7 +359,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: demo-android-aarch64-${{ env.VERSION }}
-          path: export/
+          path: ../sk_demos/export/
           if-no-files-found: error
 
   # ─────────────────── Windows GNU cross-compile from Linux ───────────────────
@@ -378,6 +379,7 @@ jobs:
 
       - name: Install prerequisites
         run: |
+          sudo dpkg --add-architecture i386
           sudo apt-get update
           sudo apt-get install -y xvfb clang cmake lld llvm ninja-build \
                                    libx11-dev libxfixes-dev libvulkan-dev \
@@ -387,7 +389,6 @@ jobs:
                                    libxkbcommon-dev mesa-vulkan-drivers \
                                    mesa-utils libx11-xcb1 libxcb-dri3-0 \
                                    mingw-w64 wine
-          sudo dpkg --add-architecture i386 && apt-get update && sudo apt install wine32:i386
 
       - name: Add Rust target
         run: rustup target add x86_64-pc-windows-gnu
