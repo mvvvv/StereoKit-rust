@@ -103,7 +103,7 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path export | Out-Null
-          cargo build_sk_rs --example main_pc export
+          cargo build_sk_rs --example main_pc .\export
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -128,10 +128,13 @@ jobs:
       - name: Install prerequisites
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            clang cmake lld ninja-build llvm \
-            libx11-dev libxfixes-dev libvulkan-dev libfontconfig-dev \
-            libxrandr-dev libxcursor-dev
+          sudo apt-get install - y xvfb clang cmake lld llvm ninja-build \
+                                   libx11-dev libxfixes-dev libvulkan-dev \
+                                   libfontconfig-dev libxkbcommon-x11-0 \
+                                   libxkbcommon0 libxrandr-dev libxcursor-dev \
+                                   libwayland-dev wayland-protocols \
+                                   libxkbcommon-dev mesa-vulkan-drivers \
+                                   mesa-utils libx11-xcb1 libxcb-dri3-0 
 
       - name: Install StereoKit cargo subcommands
         run: cargo install --force --path .
@@ -207,7 +210,7 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path export | Out-Null
-          cargo build_sk_rs --example main_pc export
+          cargo build_sk_rs --example main_pc .\export
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -233,10 +236,13 @@ jobs:
       - name: Install prerequisites
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            clang cmake lld ninja-build llvm \
-            libx11-dev libxfixes-dev libvulkan-dev libfontconfig-dev \
-            libxrandr-dev libxcursor-dev
+          sudo apt-get install - y xvfb clang cmake lld llvm ninja-build \
+                                   libx11-dev libxfixes-dev libvulkan-dev \
+                                   libfontconfig-dev libxkbcommon-x11-0 \
+                                   libxkbcommon0 libxrandr-dev libxcursor-dev \
+                                   libwayland-dev wayland-protocols \
+                                   libxkbcommon-dev mesa-vulkan-drivers \
+                                   mesa-utils libx11-xcb1 libxcb-dri3-0 
 
       - name: Install StereoKit cargo subcommands
         run: cargo install --force --path .
@@ -272,9 +278,14 @@ jobs:
       - name: Install prerequisites
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            clang cmake lld ninja-build llvm \
-            libx11-dev libxfixes-dev libfontconfig-dev
+          sudo apt-get install - y xvfb clang cmake lld llvm ninja-build \
+                                   libx11-dev libxfixes-dev libvulkan-dev \
+                                   libfontconfig-dev libxkbcommon-x11-0 \
+                                   libxkbcommon0 libxrandr-dev libxcursor-dev \
+                                   libwayland-dev wayland-protocols \
+                                   libxkbcommon-dev mesa-vulkan-drivers \
+                                   mesa-utils libx11-xcb1 libxcb-dri3-0 
+
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -368,9 +379,14 @@ jobs:
       - name: Install prerequisites
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            clang cmake lld ninja-build llvm \
-            mingw-w64 wine
+          sudo apt-get install - y xvfb clang cmake lld llvm ninja-build \
+                                   libx11-dev libxfixes-dev libvulkan-dev \
+                                   libfontconfig-dev libxkbcommon-x11-0 \
+                                   libxkbcommon0 libxrandr-dev libxcursor-dev \
+                                   libwayland-dev wayland-protocols \
+                                   libxkbcommon-dev mesa-vulkan-drivers \
+                                   mesa-utils libx11-xcb1 libxcb-dri3-0 \
+                                   mingw-w64 wine
 
       - name: Add Rust target
         run: rustup target add x86_64-pc-windows-gnu
