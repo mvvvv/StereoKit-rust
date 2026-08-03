@@ -296,7 +296,7 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
-          packages: 'platform-tools build-tools;34.0.0 platforms;android-33'
+          packages: 'platform-tools build-tools;34.0.0 platforms;android-32'
 
       - name: Install Android NDK
         run: |
