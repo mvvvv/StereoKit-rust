@@ -359,7 +359,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: demo-android-aarch64-${{ env.VERSION }}
-          path: ../sk_demos/export/
+          path: ${{ github.workspace }}/../sk_demos/export/
           if-no-files-found: error
 
   # ─────────────────── Windows GNU cross-compile from Linux ───────────────────
