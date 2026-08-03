@@ -319,8 +319,8 @@ jobs:
         run: cd .. && cargo new_sk_rs_project sk_demos --with-gradle
 
       - name: Configure project
+        working-directory: ../sk_demos
         run: |
-          cd ../sk_demos
           # Use local path dependency instead of crates.io
           cp ../StereoKit-rust/src/templates/Cargo.toml_for_AndroidDemo.txt Cargo.toml
 
@@ -339,12 +339,12 @@ jobs:
           cat Cargo.toml
 
       - name: Build debug APK
-        working-directory: sk_demos
-        run: cd ../sk_demos && ./gradlew buildDebug --no-daemon --warning-mode all
+        working-directory: ../sk_demos
+        run: ./gradlew buildDebug --no-daemon --warning-mode all
 
       - name: Collect APK
+        working-directory: ../sk_demos
         run: |
-          cd ../sk_demos
           mkdir -p export
           APK=$(find sk_demos -name "*debug*.apk" -path "*/outputs/*" -type f | head -1)
           if [ -z "$APK" ]; then
