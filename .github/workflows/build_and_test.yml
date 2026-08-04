@@ -43,11 +43,11 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ inputs.validateGradleWrapper }}
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         ref: ${{ inputs.branch || github.ref }}
         submodules: 'recursive'
-    - uses: gradle/actions/wrapper-validation@v4
+    - uses: gradle/actions/wrapper-validation@v6
 
   build-windows:
     runs-on: windows-latest

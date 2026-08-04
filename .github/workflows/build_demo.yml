@@ -435,7 +435,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           path: artifacts
 
@@ -452,8 +452,9 @@ jobs:
           ls -lh *.tar.gz
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
+          tag_name: ${{ inputs.version || github.ref_name }}
           files: "*.tar.gz"
           generate_release_notes: true
           fail_on_unmatched_files: true
