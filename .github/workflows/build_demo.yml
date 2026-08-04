@@ -22,7 +22,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version string appended to all build outputs (e.g. 0.4.0-alpha25)'
+        description: 'Version (e.g. 0.4.0-alpha25)'
         type: string
         required: true
       branch:
@@ -30,32 +30,32 @@ on:
         type: string
         required: false
       buildWindows:
-        description: 'Build for Windows x86_64 (MSVC)'
+        description: 'Windows x86_64(MSVC)'
         type: boolean
         required: false
         default: true
       buildLinux:
-        description: 'Build for Linux x86_64'
+        description: 'Linux x86_64'
         type: boolean
         required: false
         default: true
       buildMacOS:
-        description: 'Build for macOS AArch64'
+        description: 'MacOS AArch64(ARM64)'
         type: boolean
         required: false
         default: true
       buildWindowsAarch64:
-        description: 'Build for Windows AArch64 (ARM64 runner)'
+        description: 'Windows AArch64(ARM64)'
         type: boolean
         required: false
         default: true
       buildLinuxAarch64:
-        description: 'Build for Linux AArch64 (ARM64 runner)'
+        description: 'Linux AArch64(ARM64)'
         type: boolean
         required: false
         default: true
       buildAndroid:
-        description: 'Build Android APK for AArch64 (Meta Quest)'
+        description: 'Android APK for AArch64(ARM64)'
         type: boolean
         required: false
         default: true
@@ -63,7 +63,7 @@ on:
         description: 'Cross-compile Windows x86_64 (GNU) from Linux'
         type: boolean
         required: false
-        default: true
+        default: false
   push:
     tags:
       - 'v*'
@@ -86,7 +86,7 @@ jobs:
     runs-on: windows-latest
     if: ${{ github.event_name == 'push' || inputs.buildWindows }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ inputs.branch || github.ref }}
           submodules: 'recursive'
@@ -117,7 +117,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'push' || inputs.buildLinux }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ inputs.branch || github.ref }}
           submodules: 'recursive'
@@ -156,7 +156,7 @@ jobs:
     runs-on: macos-latest
     if: ${{ github.event_name == 'push' || inputs.buildMacOS }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ inputs.branch || github.ref }}
           submodules: 'recursive'
@@ -193,7 +193,7 @@ jobs:
     runs-on: windows-11-arm
     if: ${{ github.event_name == 'push' || inputs.buildWindowsAarch64 }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ inputs.branch || github.ref }}
           submodules: 'recursive'
@@ -225,7 +225,7 @@ jobs:
     runs-on: ubuntu-24.04-arm
     if: ${{ github.event_name == 'push' || inputs.buildLinuxAarch64 }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ inputs.branch || github.ref }}
           submodules: 'recursive'
@@ -267,7 +267,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'push' || inputs.buildAndroid }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ inputs.branch || github.ref }}
           submodules: 'recursive'
@@ -345,7 +345,7 @@ jobs:
       - name: Collect APK
         working-directory: ../sk_demos
         run: |
-          mkdir -p export
+          mkdir -p ${{ github.workspace }}/export
           APK=$(find . -name "*debug*.apk" -path "*/outputs/*" -type f | head -1)
           if [ -z "$APK" ]; then
             echo "No APK found! Searching more broadly..."
@@ -353,13 +353,13 @@ jobs:
             exit 1
           fi
           echo "Found APK: $APK"
-          cp "$APK" "export/sk_demos-debug-aarch64-${{ env.VERSION }}.apk"
+          cp "$APK" "${{ github.workspace }}/export/sk_demos-debug-aarch64-${{ env.VERSION }}.apk"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: demo-android-aarch64-${{ env.VERSION }}
-          path: ${{ github.workspace }}/../sk_demos/export/
+          path: export/
           if-no-files-found: error
 
   # ─────────────────── Windows GNU cross-compile from Linux ───────────────────
@@ -369,7 +369,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.buildWinGnu }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ inputs.branch || github.ref }}
           submodules: 'recursive'
@@ -424,7 +424,7 @@ jobs:
   #  When triggered by a tag push (v*), collect all artifacts and attach them
   #  to an auto-generated GitHub Release.
   release:
-    needs: [build-windows, build-linux, build-macos, build-windows-aarch64, build-linux-aarch64, build-android, build-windows-gnu]
+    needs: [build-windows, build-linux, build-macos, build-windows-aarch64, build-linux-aarch64, build-android]
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
