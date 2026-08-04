@@ -14,7 +14,7 @@ license = "MIT"
 #license-file = "LICENSE"
 links = "StereoKitC"
 repository = "https://github.com/mvvvv/StereoKit-rust"
-categories = ["graphics", "gui", "rendering::engine", "mathematics", "vr", "xr", "api-bindings"]
+categories = ["graphics", "gui", "rendering::engine", "api-bindings"]
 include = [
   "Cargo.toml",
   "build.rs",
