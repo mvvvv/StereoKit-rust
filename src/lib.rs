@@ -216,7 +216,9 @@ pub mod anchor;
 
 /// Compute shader related structs, enums and functions.
 ///
-/// With examples which are also unit tests.
+/// ## Examples
+/// which are also unit tests:
+///
 /// [![Compute](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/compute.jpeg)](compute::Compute)
 pub mod compute;
 
