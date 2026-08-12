@@ -33,7 +33,7 @@ use stereokit_rust::{
             is_meta_virtual_keyboard_extension_available,
         },
     },
-    ui::{Ui, UiBtnLayout},
+    ui::{Ui, UiBtnLayout, UiPad},
     util::{Device, Time},
 };
 
@@ -373,7 +373,7 @@ pub fn launch(mut sk: Sk, is_testing: bool, start_test: String) {
             }
         }
         Ui::same_line();
-        Ui::panel_begin(None);
+        Ui::panel_begin(Some(UiPad::Inside));
         if passthough_blend_enabled && let Some(new_value) = Ui::toggle("Passthrough MR", &mut passthrough).interact() {
             if new_value {
                 Log::info("Activate passthrough");

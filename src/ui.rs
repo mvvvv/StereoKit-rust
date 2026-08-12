@@ -235,8 +235,13 @@ pub struct UiGesture : u32
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u32)]
 pub enum UiPad {
+    /// No padding, this matches the element’s layout bounds exactly!
     None = 0,
+    /// This applies padding inside the element’s layout bounds, and will inflate the layout bounds to fit the extra
+    /// padding.
     Inside = 1,
+    /// This will apply the padding outside of the layout bounds! This will maintain the size and position of the
+    /// layout volume, but the visual padding will go outside of the volume.
     Outside = 2,
 }
 
@@ -2234,12 +2239,12 @@ impl Ui {
     ///     Ui::label("panel 1").use_padding(false).draw();
     ///
     ///     Ui::layout_push_cut( UiCut::Right, 0.1, true);
-    ///     Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);
+    ///     Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), Some(UiPad::Outside));
     ///     Ui::label("panel 2").use_padding(false).draw();
     ///     Ui::layout_pop();
     ///
     ///     Ui::layout_push_cut( UiCut::Bottom, 0.08, false);
-    ///     Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);
+    ///     Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), Some(UiPad::Outside));
     ///     Ui::label("panel 3").use_padding(false).draw();
     ///     Ui::layout_pop();
     ///
@@ -2249,7 +2254,7 @@ impl Ui {
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_panel_at.jpeg" alt="screenshot" width="200">
     pub fn panel_at(start: impl Into<Vec3>, size: impl Into<Vec2>, padding: Option<UiPad>) {
-        let padding = padding.unwrap_or(UiPad::Outside);
+        let padding = padding.unwrap_or(UiPad::None);
         unsafe { ui_panel_at(start.into(), size.into(), padding) };
     }
 
@@ -2258,7 +2263,7 @@ impl Ui {
     /// matching End.
     /// <https://stereokit.net/Pages/StereoKit/UI/PanelBegin.html>
     /// * `padding` - Describes how padding is applied to the visual element of the Panel. If None the default value is
-    ///   UiPad::Outside
+    ///   UiPad::None
     ///
     /// see also [`ui_panel_begin`] [`Ui::panel_at`]
     /// ### Examples
@@ -2294,7 +2299,7 @@ impl Ui {
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_panel_begin.jpeg" alt="screenshot" width="200">
     pub fn panel_begin(padding: Option<UiPad>) {
-        let padding = padding.unwrap_or(UiPad::Outside);
+        let padding = padding.unwrap_or(UiPad::None);
         unsafe { ui_panel_begin(padding) };
     }
 
@@ -2442,7 +2447,7 @@ impl Ui {
     /// the interactive element. Does not include any text or label.
     /// <https://stereokit.net/Pages/StereoKit/UI/VProgressBar.html>
     /// * `percent` - A value between 0 and 1 indicating progress from 0% to 100%.
-    /// * `width` - Physical width of the slider on the window. 0 will fill the remaining amount of window space.
+    /// * `height` - Physical height of the slider on the window. 0 will fill the remaining amount of window space.
     /// * `flip_fill_direction` - By default, this fills from top to bottom. This allows you to flip the fill direction to
     ///   bottom to top.
     ///
@@ -4047,7 +4052,7 @@ impl Ui {
     ///     Ui::label("panel 1").use_padding(false).draw();
     ///
     ///     Ui::layout_push_cut( UiCut::Right, 0.1, true);
-    ///     Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);
+    ///     Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), Some(UiPad::Outside));
     ///     Ui::label("panel 2").use_padding(false).draw();
     ///     Ui::layout_pop();
     ///     let b = Ui::get_layout_last();
@@ -4059,7 +4064,7 @@ impl Ui {
     ///     # assert!((b.dimensions.z - 0.0).abs() < 0.005);
     ///
     ///     Ui::layout_push_cut( UiCut::Bottom, 0.08, false);
-    ///     Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);
+    ///     Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), Some(UiPad::Outside));
     ///     Ui::label("panel 3").use_padding(false).draw();
     ///     Ui::layout_pop();
     ///     let b = Ui::get_layout_last();

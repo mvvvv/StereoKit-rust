@@ -7,7 +7,7 @@ use stereokit_rust::{
     prelude::*,
     render::Renderer,
     system::{Text, World},
-    ui::{Ui, UiMove, UiSettings, UiWin},
+    ui::{Ui, UiMove, UiPad, UiSettings, UiWin},
     util::{Time, named_colors},
 };
 
@@ -219,7 +219,7 @@ impl Subpass1 {
         Ui::label("Toggle effects and tune parameters:").use_padding(true).draw();
 
         Ui::hseparator();
-        Ui::panel_begin(None);
+        Ui::panel_begin(Some(UiPad::Outside));
         // Depth aware
         if Ui::toggle("Depth Vignette", &mut self.effects_enabled[DEPTH_AWARE])
             .size([0.15, 0.0])
@@ -242,7 +242,7 @@ impl Subpass1 {
         Ui::panel_end();
 
         Ui::hseparator();
-        Ui::panel_begin(None);
+        Ui::panel_begin(Some(UiPad::Outside));
         // Depth wave
         if Ui::toggle("Scan Wave", &mut self.effects_enabled[DEPTH_WAVE])
             .size([0.15, 0.0])
@@ -275,7 +275,7 @@ impl Subpass1 {
         Ui::panel_end();
 
         Ui::hseparator();
-        Ui::panel_begin(None);
+        Ui::panel_begin(Some(UiPad::Outside));
         // Night vision
         if Ui::toggle("Night Vision", &mut self.effects_enabled[NIGHT_VISION])
             .size([0.15, 0.0])
@@ -302,7 +302,7 @@ impl Subpass1 {
         Ui::panel_end();
 
         Ui::hseparator();
-        Ui::panel_begin(None);
+        Ui::panel_begin(Some(UiPad::Outside));
         // Dynamic cloud fog
         if Ui::toggle("Dynamic Cloud", &mut self.effects_enabled[DYNAMIC_CLOUD])
             .size([0.15, 0.0])
