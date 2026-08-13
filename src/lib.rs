@@ -477,6 +477,7 @@ pub mod system;
 /// which are also unit tests:
 ///
 /// [![Tex](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/tex.jpeg)](tex::Tex)
+/// [![TexFormat](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/tex_yuv420p.jpeg)](tex::TexFormat)
 /// [![Tex from file](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/tex_from_file.jpeg)](tex::Tex::from_file)
 /// [![Tex gen_particle](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/tex_gen_particle.jpeg)](tex::Tex::gen_particle)
 /// [![SHCubemap](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sh_cubemap.jpeg)](tex::SHCubemap)

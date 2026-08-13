@@ -83,6 +83,29 @@ impl TexType {
 /// <https://stereokit.net/Pages/StereoKit/TexFormat.html>
 ///
 /// see also [`Tex`] [`crate::render::Renderer`]
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{tex::{TexFormat, TexType, Tex}, maths::Matrix, sprite::Sprite,
+///                      system::Pivot, util::named_colors};
+/// assert_eq!(TexFormat::Rgba32Srgb as u32, 1);
+/// assert_eq!(TexFormat::Etc1RgbSrgb as u32, 50);
+/// assert_eq!(TexFormat::Astc8x8RgbaHdr as u32, 65);
+/// assert_eq!(TexFormat::Yuv420p as u32, 70);
+/// 
+/// let mut color_dots = [named_colors::CYAN; 16 * 16];
+/// let mut tex = Tex::new(TexType::ImageNomips, TexFormat::Yuv420p, None);
+/// unsafe { tex.set_colors(16, 16, color_dots.as_mut_ptr() as *mut std::os::raw::c_void); }
+/// let sprite1 = Sprite::from_tex(&tex, None, None)
+///                  .expect("Should be able to create sprite");
+/// 
+/// filename_scr = "screenshots/tex_yuv420p.jpeg";
+/// test_screenshot!(// !!!! Get a proper main loop !!!!
+///     sprite1.draw(Matrix::IDENTITY, Pivot::Center,   None, None);
+/// );
+/// # sk::Sk::shutdown();
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/tex_yuv420p.jpeg" alt="screenshot" width="200">
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u32)]
 pub enum TexFormat {
@@ -240,58 +263,69 @@ pub enum TexFormat {
     Bc7Rgba = 48,
     /// ETC1 RGB, no alpha, 4 bpp. Widely supported on older Android devices and OpenGL ES 2.0+ GPUs. Quality is
     /// acceptable for diffuse color but it's been superseded - prefer Etc2 or Astc on newer hardware!
-    Etc1Rgb = 49,
+    Etc1Rgb,
+    /// ETC1 sRGB RGB, no alpha, 4 bpp. The sRGB counterpart to Etc1Rgb - the GPU converts to linear on sample, so this
+    /// is the correct choice for color textures.
+    Etc1RgbSrgb,
     /// ETC2 sRGB color with full alpha, 8 bpp. The standard compressed RGBA format on OpenGL ES 3.0+ mobile devices,
     /// and mandatory in the spec - so it's widely available. A great default for sRGB color textures on mobile!
-    Etc2RgbaSrgb = 50,
+    Etc2RgbaSrgb,
     /// ETC2 linear color with full alpha, 8 bpp. Standard compressed format for data textures with alpha on OpenGL ES
     /// 3.0+ mobile devices.
-    Etc2Rgba = 51,
+    Etc2Rgba,
     /// ETC2/EAC single 11-bit unsigned-normalized channel, 4 bpp.
     /// The ETC equivalent of Bc4 - great for compressed grayscale
     /// or heightmap data on mobile GPUs!
-    Etc2R11 = 52,
+    Etc2R11,
     /// ETC2/EAC two 11-bit unsigned-normalized channels, 8 bpp. The ETC equivalent of Bc5 - great for compressed
     /// two-channel data like tangent-space normal maps on mobile GPUs!
-    Etc2Rg11 = 53,
+    Etc2Rg11,
     /// PVRTC1 sRGB RGB, 2 bpp. Used on iOS and other PowerVR GPUs. The 2bpp bitrate is super compact but quality is
     /// lower than ETC/BC - acceptable for low-detail or background textures. Requires power-of-two square textures!
-    Pvrtc1RgbSrgb = 54,
+    Pvrtc1RgbSrgb,
     /// PVRTC1 linear RGB, 2 bpp. PowerVR GPUs only, requires power-of-two square textures.
-    Pvrtc1Rgb = 55,
+    Pvrtc1Rgb,
     /// PVRTC1 sRGB with full alpha, 4 bpp. The 4bpp variant is higher quality than the 2bpp variants. PowerVR GPUs
     /// only, requires power-of-two square textures.
-    Pvrtc1RgbaSrgb = 56,
+    Pvrtc1RgbaSrgb,
     /// PVRTC1 linear with full alpha, 4 bpp. PowerVR GPUs only, requires power-of-two square textures.
-    Pvrtc1Rgba = 57,
+    Pvrtc1Rgba,
     /// PVRTC2 sRGB with full alpha, 4 bpp. An update to PVRTC1 with better quality and fewer restrictions - works with
     /// non-power-of-two and non-square textures. Still PowerVR-specific though.
-    Pvrtc2RgbaSrgb = 58,
+    Pvrtc2RgbaSrgb,
     /// PVRTC2 linear with full alpha, 4 bpp. Better quality and more flexible texture sizes than PVRTC1. PowerVR GPUs
     /// only.
-    Pvrtc2Rgba = 59,
+    Pvrtc2Rgba,
     /// ASTC 4x4 sRGB color with full alpha, 8 bpp. ASTC is the modern mobile-standard compressed format - excellent
     /// quality, broadly supported. The 4x4 block size is the highest-quality (and largest-size) ASTC variant.
-    Astc4x4RgbaSrgb = 60,
+    Astc4x4RgbaSrgb,
     /// ASTC 4x4 linear color with full alpha, 8 bpp. High-quality compressed format for data textures on modern mobile
     /// GPUs.
-    Astc4x4Rgba = 61,
+    Astc4x4Rgba,
+    /// ASTC 6x6 sRGB color with full alpha, ~3.56 bpp. Larger blocks than Astc4x4 for less than half the memory, at 
+    /// some cost to quality - a good trade for large or low-frequency textures.
+    Astc6x6RgbaSrgb,
+    /// ASTC 6x6 linear color with full alpha, ~3.56 bpp. The linear counterpart to Astc6x6RgbaSrgb, for data textures.
+    Astc6x6Rgba,
+    /// ASTC 8x8 HDR color with full alpha, 2 bpp. Compressed HDR on mobile GPUs, and much cheaper than an uncompressed 
+    /// float format. Requires the ASTC HDR extension, which is separate from baseline ASTC support!
+    Astc8x8RgbaHdr,
     /// ATC RGB on Qualcomm Adreno GPUs, 4 bpp. Historical Qualcomm-specific format - prefer Astc or Etc2 on newer
     /// Adreno hardware.
-    AtcRgb = 62,
+    AtcRgb,
     /// ATC with alpha on Qualcomm Adreno GPUs, 8 bpp. Historical Qualcomm-specific format - prefer Astc or Etc2 on
     /// newer Adreno hardware.
-    AtcRgba = 63,
+    AtcRgba,
     /// NV12 video format - a 2-plane 4:2:0 YUV layout! Plane 1 is a full-resolution Y (luminance) plane at 8 bpp,
     /// plane 2 is a half-resolution UV (chrominance) plane with U and V interleaved at 8 bits each. The most common
     /// output format from hardware video decoders!
-    Nv12 = 64,
+    Nv12,
     /// P010 video format - like NV12 but with 10-bit channels stored in 16-bit fields. Full-resolution 10-bit Y plane
     /// plus a half-resolution interleaved 10-bit UV plane. Used for 10-bit HDR video!
-    P010 = 65,
+    P010,
     /// A 3-plane 4:2:0 YUV layout - separate Y, U, and V planes each at 8 bpp, with U and V at half resolution. Common
     /// in software video decoders but less common from hardware decoders (which usually output NV12).
-    Yuv420p = 66,
+    Yuv420p = 70,
 }
 
 impl TexFormat {
@@ -3003,8 +3037,8 @@ impl Tex {
     ///
     /// // Cubemap must be created with SHCubemap static methods.
     /// let sh_cubemap = tex.get_cubemap_lighting();
-    /// assert_eq!(sh_cubemap.sh.coefficients[2]/100.0, Vec3::ZERO);
-    /// assert_eq!(sh_cubemap.sh.coefficients[5]/100.0, Vec3::ZERO);
+    /// assert_eq!(sh_cubemap.sh.coefficients[2]/1000.0, Vec3::ZERO);
+    /// assert_eq!(sh_cubemap.sh.coefficients[5]/1000.0, Vec3::ZERO);
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_cubemap_lighting(&self) -> SHCubemap {

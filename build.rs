@@ -66,7 +66,6 @@ fn main() {
 
         define_if_exists("DEP_OPENXR_LOADER_SOURCE", "CPM_openxr_loader_SOURCE", &mut cmake_config);
         define_if_exists("DEP_MESHOPTIMIZER_SOURCE", "CPM_meshoptimizer_SOURCE", &mut cmake_config);
-        define_if_exists("DEP_BASIS_UNIVERSAL_SOURCE", "CPM_basis_universal_SOURCE", &mut cmake_config);
         define_if_exists("DEP_SK_RENDERER_SOURCE", "CPM_sk_renderer_SOURCE", &mut cmake_config);
         define_if_exists("DEP_SK_APP_SOURCE", "CPM_sk_app_SOURCE", &mut cmake_config);
         // we need this path for retrieving skshaderc*
@@ -179,11 +178,14 @@ fn main() {
                         dst.display()
                     );
                     println!("cargo:rustc-link-search=native={win_gnu_libs}");
+                    println!("cargo:rustc-link-search=native={}/build/_deps/sk_renderer-build/sk_ktx2", dst.display());
+
                     // Order matters: libs that depend on others should be listed first
                     cargo_link!("static=StereoKitC");
                     cargo_link!("static=sk_renderer");
                     cargo_link!("static=sk_app");
-                    cargo_link!("static=basisu_transcoder");
+                    cargo_link!("sk_ktx2");
+                    cargo_link!("zstd_decompress");
                     if cfg!(debug_assertions) {
                         // openxr-sys/linked wants libopenxr_loader so it asks for -Wl -lopenxr_loader in final ld
                         cargo_link!("openxr_loaderd");
@@ -249,12 +251,14 @@ fn main() {
                 );
                 println!("cargo:rustc-link-search=native={}/build/_deps/sk_app-build/{}", dst.display(), profile_upper);
                 println!("cargo:rustc-link-search=native={}/lib", dst.display());
+                println!("cargo:rustc-link-search=native={}/build/_deps/sk_renderer-build/sk_ktx2", dst.display());
 
                 // Link sk_renderer and sk_app libraries
                 if !skc_in_dll {
                     cargo_link!("sk_renderer");
                     cargo_link!("sk_app");
-                    cargo_link!("basisu_transcoder");
+                    cargo_link!("sk_ktx2");
+                    cargo_link!("zstd_decompress");
                 }
 
                 // Fix CRT linkage for Windows MSVC: CMake builds C++ libraries with debug CRT
@@ -309,11 +313,13 @@ fn main() {
             println!("cargo:rustc-link-search=native={}/install", dst.display());
             println!("cargo:rustc-link-search=native={}/build/_deps/sk_renderer-build", dst.display());
             println!("cargo:rustc-link-search=native={}/build/_deps/sk_app-build", dst.display());
+            println!("cargo:rustc-link-search=native={}/build/_deps/sk_renderer-build/sk_ktx2", dst.display());
 
             cargo_link!("StereoKitC");
             cargo_link!("sk_app");
             cargo_link!("sk_renderer");
-            cargo_link!("basisu_transcoder");
+            cargo_link!("sk_ktx2");
+            cargo_link!("zstd_decompress");
 
             cargo_link!("openxr_loader");
             cargo_link!("meshoptimizer");
