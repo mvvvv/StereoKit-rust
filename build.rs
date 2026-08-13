@@ -100,6 +100,14 @@ fn main() {
         cmake_config.define("CMAKE_INSTALL_LIBDIR", "install");
         cmake_config.define("CMAKE_GENERATOR", "Ninja");
         cmake_config.env("JAVA_TOOL_OPTIONS", "-Dfile.encoding=UTF-8");
+        // StereoKitC is built as a static lib (SK_BUILD_SHARED_LIBS=OFF), so it's compiled without -fPIC. On Android
+        // that archive is folded into the app's shared cdylib (.so). Without -fPIC clang emits local-exec TLS
+        // relocations (R_AARCH64_TLSLE_*) that lld rejects when linking -shared. Force PIC + dynamic TLS.
+        cmake_config
+            .cflag("-fPIC")
+            .cflag("-ftls-model=global-dynamic")
+            .cxxflag("-fPIC")
+            .cxxflag("-ftls-model=global-dynamic");
     }
     if cfg!(feature = "build-dynamic-openxr") {
         // When you need to build and use Khronos openxr loader use this feature:
@@ -175,6 +183,7 @@ fn main() {
                     cargo_link!("static=StereoKitC");
                     cargo_link!("static=sk_renderer");
                     cargo_link!("static=sk_app");
+                    cargo_link!("static=basisu_transcoder");
                     if cfg!(debug_assertions) {
                         // openxr-sys/linked wants libopenxr_loader so it asks for -Wl -lopenxr_loader in final ld
                         cargo_link!("openxr_loaderd");
@@ -245,6 +254,7 @@ fn main() {
                 if !skc_in_dll {
                     cargo_link!("sk_renderer");
                     cargo_link!("sk_app");
+                    cargo_link!("basisu_transcoder");
                 }
 
                 // Fix CRT linkage for Windows MSVC: CMake builds C++ libraries with debug CRT
@@ -303,6 +313,7 @@ fn main() {
             cargo_link!("StereoKitC");
             cargo_link!("sk_app");
             cargo_link!("sk_renderer");
+            cargo_link!("basisu_transcoder");
 
             cargo_link!("openxr_loader");
             cargo_link!("meshoptimizer");

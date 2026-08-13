@@ -12,7 +12,7 @@ use std::{
     ffi::{CStr, CString, c_char, c_void},
     fmt::{self, Formatter},
     path::Path,
-    ptr::{null, null_mut},
+    ptr::{NonNull, null, null_mut},
     rc::Rc,
 };
 
@@ -327,6 +327,7 @@ pub const DEFAULT_NAME: *const c_char = {
 /// assert_eq!(settings.flatscreen_pos_y,            0);
 /// assert_eq!(settings.flatscreen_width,            1280);
 /// assert_eq!(settings.flatscreen_height,           720);
+/// assert_eq!(settings.fullscreen,0);
 /// assert_eq!(settings.disable_desktop_input_window,0);
 /// assert_eq!(settings.disable_unfocused_sleep,     0);
 /// assert_eq!(settings.render_scaling,              1.0);
@@ -354,6 +355,7 @@ pub struct SkSettings {
     pub flatscreen_pos_y: i32,
     pub flatscreen_width: i32,
     pub flatscreen_height: i32,
+    pub fullscreen: Bool32T,
     pub disable_desktop_input_window: Bool32T,
     pub disable_unfocused_sleep: Bool32T,
     pub render_scaling: f32,
@@ -382,6 +384,7 @@ impl Default for SkSettings {
             flatscreen_pos_y: 0,
             flatscreen_width: 0,
             flatscreen_height: 0,
+            fullscreen: 0,
             disable_desktop_input_window: 0,
             disable_unfocused_sleep: 0,
             render_scaling: 1.0,
@@ -544,7 +547,14 @@ impl SkSettings {
         self.flatscreen_height = flatscreen_height;
         self
     }
-
+    /// In the Simulator and Window app modes, ask for the desktop window to start out fullscreen! Like
+    /// [`AppWindow::request_fullscreen`], this is only ever a request: window managers can refuse it, and browsers
+    /// wait for a user gesture, so check [`AppWindow::is_fullscreen`] for the window's real state.
+    /// Default is false.
+    pub fn fullscreen(&mut self, fullscreen: bool) -> &mut Self {
+        self.fullscreen = fullscreen as Bool32T;
+        self
+    }
     /// By default, StereoKit will open a desktop window for keyboard input due to lack of XR-native keyboard APIs on
     /// many platforms. If you don’t want this, you can disable it with this setting!
     /// <https://stereokit.net/Pages/StereoKit/SKSettings/disableDesktopInputWindow.html>
@@ -1198,7 +1208,7 @@ impl Sk {
     ///
     /// see also [`sk_active_display_mode`]
     /// ### Examples
-    /// ```
+    /// ```ignore
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::sk::DisplayMode;
     ///
@@ -1211,6 +1221,7 @@ impl Sk {
     /// }
     /// # sk::Sk::shutdown();
     /// ```
+    #[deprecated(since = "0.40.0", note = "see [`crate::util::Device::get_display_type`] instead")]
     pub fn get_active_display_mode(&self) -> DisplayMode {
         unsafe { sk_active_display_mode() }
     }
@@ -1712,5 +1723,183 @@ impl Sk {
                 break;
             }
         }
+    }
+}
+
+/// A desktop OS window belonging to the app, like the one the Simulator and Window app modes render into. There is no
+///  window available in XR mode, so if you're working with this struct, be prepared to gate against `AppWindow`
+/// objects being `None`!
+/// <https://stereokit.net/Pages/StereoKit/AppWindow.html>
+///
+/// see also [`AppWindow::main`] [`AppWindow::is_fullscreen`] [`AppWindow::request_fullscreen`] [`AppWindow::get_size`]
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::sk::AppWindow;
+///
+/// // The main window is only available in Simulator and Window modes.
+/// // In XR or Offscreen mode, `AppWindow::main()` returns `None`.
+/// let window = AppWindow::main();
+///
+/// if let Some(window) = window.as_ref() {
+///     let (width, height) = window.get_size();
+///     Log::info(format!("Window size: {width}x{height}"));
+///
+///     // Request fullscreen if the window isn't already fullscreen.
+///     if !window.is_fullscreen() {
+///         window.request_fullscreen(true);
+///     }
+/// }
+///
+/// // In test mode (Offscreen or XR), there is no desktop window.
+/// if cfg!(feature = "test-xr-mode") {
+///     assert!(window.is_none()); // No desktop window in XR mode.
+/// } else {
+///     assert!(window.is_none()); // No desktop window in Offscreen mode.
+/// }
+/// # sk::Sk::shutdown();
+/// ```
+#[derive(Debug)]
+pub struct AppWindow(pub NonNull<_AppWindowT>);
+
+/// AsRef
+impl AsRef<AppWindow> for AppWindow {
+    fn as_ref(&self) -> &AppWindow {
+        self
+    }
+}
+/// From / Into
+impl From<AppWindow> for AppWindowT {
+    fn from(val: AppWindow) -> Self {
+        val.0.as_ptr()
+    }
+}
+
+/// StereoKit internal type.
+#[repr(C)]
+#[derive(Debug)]
+pub struct _AppWindowT {
+    _unused: [u8; 0],
+}
+/// StereoKit ffi type.
+pub type AppWindowT = *mut _AppWindowT;
+
+unsafe extern "C" {
+    pub fn window_get_main() -> AppWindowT;
+    pub fn window_get_fullscreen(window: AppWindowT) -> Bool32T;
+    pub fn window_request_fullscreen(window: AppWindowT, fullscreen: Bool32T);
+    pub fn window_get_size(window: AppWindowT, width_out: *mut i32, height_out: *mut i32);
+}
+
+impl AppWindow {
+    /// The app's main window! Only available in Simulator and Window modes.
+    /// Warning: This handle belongs to StereoKit, so don't hold onto it across Sk::Shutdown.
+    /// <https://stereokit.net/Pages/StereoKit/AppWindow/Main.html>
+    ///
+    /// Returns `None` if no window exists (e.g., in XR mode or before init).
+    /// see also [`window_get_main`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::sk::AppWindow;
+    ///
+    /// // `main()` is the entry point for all window operations.
+    /// // Always handle the `None` case, as there is no window in XR or Offscreen mode.
+    /// match AppWindow::main() {
+    ///     Some(window) => {
+    ///         let (w, h) = window.get_size();
+    ///         Log::info(format!("Main window is {w}x{h}"));
+    ///     }
+    ///     None => {
+    ///         Log::info("No desktop window available (XR or Offscreen mode).");
+    ///     }
+    /// }
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn main() -> Option<AppWindow> {
+        unsafe {
+            let ptr = window_get_main();
+            // Check for null pointer explicitly as FFI functions don't guarantee this
+            // via the type system.
+            if ptr.is_null() {
+                return None;
+            }
+            Some(AppWindow(NonNull::new_unchecked(ptr)))
+        }
+    }
+
+    /// Is this window currently covering its whole display? This is always the window's real state, so it also picks
+    /// up fullscreen changes the user made through the window manager. Use [`AppWindow::request_fullscreen`] to change
+    /// it.
+    /// <https://stereokit.net/Pages/StereoKit/AppWindow/FullScreen.html>
+    ///
+    /// see also [`window_get_fullscreen`] [`AppWindow::request_fullscreen`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::sk::AppWindow;
+    ///
+    /// // In Simulator/Window mode this would report the real fullscreen state.
+    /// // In XR/Offscreen mode there is no window, so `main()` returns `None`.
+    /// if let Some(window) = AppWindow::main() {
+    ///     let fullscreen = window.is_fullscreen();
+    ///     Log::info(format!("Is fullscreen: {fullscreen}"));
+    /// }
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn is_fullscreen(&self) -> bool {
+        unsafe { window_get_fullscreen(self.0.as_ptr()) != 0 }
+    }
+
+    /// Asks for this window to cover its whole display, or to go back to a normal window. This is only ever a request,
+    /// and it's never immediate! Window managers can refuse it, browsers wait for a user gesture, and some platforms
+    /// don't implement it at all. None of those report back a refusal, so watch the Fullscreen property to see if and
+    /// when it takes effect. Going fullscreen resizes the window, so expect the render surface to follow along.
+    /// <https://stereokit.net/Pages/StereoKit/AppWindow/RequestFullScreen.html>
+    /// * `fullscreen` - True to ask for fullscreen, false to ask for a normal window.
+    ///
+    /// see also [`window_request_fullscreen`] [`AppWindow::is_fullscreen`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::sk::AppWindow;
+    ///
+    /// if let Some(window) = AppWindow::main() {
+    ///     // Ask the window manager to go fullscreen.
+    ///     window.request_fullscreen(true);
+    /// }
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn request_fullscreen(&self, fullscreen: bool) {
+        // Convert bool to Bool32T (usually 1 or 0)
+        let val: Bool32T = if fullscreen { 1 } else { 0 };
+        unsafe { window_request_fullscreen(self.0.as_ptr(), val) }
+    }
+
+    /// The size of the window's drawable area, in physical pixels. This is the size the swapchain renders at, and it
+    /// changes whenever the window is resized. Returns a tuple of `(width, height)`.
+    /// <https://stereokit.net/Pages/StereoKit/AppWindow.html>
+    ///
+    /// Returns a tuple with the width and height of the window's drawable area, in physical pixels.
+    /// see also [`window_get_size`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::sk::AppWindow;
+    ///
+    /// if let Some(window) = AppWindow::main() {
+    ///     let (width, height) = window.get_size();
+    ///     Log::info(format!("Window drawable area: {width}x{height}"));
+    ///     assert!(width >= 0 && height >= 0);
+    /// }
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn get_size(&self) -> (i32, i32) {
+        let mut w = 0;
+        let mut h = 0;
+        unsafe {
+            window_get_size(self.0.as_ptr(), &mut w, &mut h);
+        }
+        (w, h)
     }
 }

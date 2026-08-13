@@ -31,7 +31,7 @@ Let us know if you have launched the demos on an architecture not tested here.
 ### Download the source project
 
 - `git clone --recursive https://github.com/mvvvv/StereoKit-rust/`
-- On Linux get the following tools and dev libraries : git cmake ninja-build clang llvm lld libx11-dev libxfixes-dev libvulkan-dev libfontconfig-dev libxrandr-dev libxcursor-dev.
+- On Linux get the following tools and dev libraries : git cmake clang llvm lld ninja-build pkg-config libx11-dev libxfixes-dev libxrandr-dev libxcursor-dev libxi-dev libfontconfig-dev libwayland-dev libxkbcommon-dev libdecor-0-dev libfontconfig1-dev.
 - On macOS get the following tools and dev libraries : brew install cmake ninja molten-vk vulkan-headers.
   To run or test, set `DYLD_LIBRARY_PATH` so the dynamic linker finds MoltenVK:
   - `export DYLD_LIBRARY_PATH=$(brew --prefix molten-vk)/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}`
@@ -115,7 +115,7 @@ Use the commande `cargo new_sk_rs_project` to create your project [see the docum
 
 - Install g++-aarch64-linux-gnu
 
-- Get the libraries libx11-dev:arm64 libxfixes-dev:arm64 libegl-dev:arm64 libgbm-dev:arm64 libfontconfig-dev:arm64 libxrandr-dev:arm64 libxcursor-dev:arm64. On Ubuntu 24:XX this can be done by adding a foreign architecture `dpkg --add-architecture arm64` with depot `http://ports.ubuntu.com/ubuntu-ports`. To avoid errors during `apt update` you'll have to specify the architectures of all depots in `/etc/apt/sources.list.d/ubuntu.sources`
+- Get the libraries gcc-aarch64-linux-gnu g++-aarch64-linux-gnu lld:arm64 libx11-dev:arm64 libxfixes-dev:arm64 libxrandr-dev:arm64 libxcursor-dev:arm64 libxi-dev:arm64 libfontconfig-dev:arm64 libwayland-dev:arm64 libxkbcommon-dev:arm64 libdecor-0-dev:arm64 libfontconfig1-dev:arm64. On Ubuntu 24:XX this can be done by adding a foreign architecture `dpkg --add-architecture arm64` with depot `http://ports.ubuntu.com/ubuntu-ports`. To avoid errors during `apt update` you'll have to specify the architectures of all depots in `/etc/apt/sources.list.d/ubuntu.sources`
 - Add the rust target aarch64 for linux:`rustup target add aarch64-unknown-linux-gnu`
 - Add a section `[target.aarch64-unknown-linux-gnu]` in your config.toml for setting `linker = "aarch64-linux-gnu-gcc"`
 - Launch `cargo build_sk_rs --example main_pc --aarch64-linux <the path of your exportable repository>`

@@ -7,12 +7,12 @@ use stereokit_rust::{
     prelude::*,
     render::{Projection, Renderer},
     shader::Shader,
-    sk::{AppFocus, DisplayBlend},
+    sk::{AppFocus, AppWindow, DisplayBlend},
     sound::{Sound, SoundInst},
     sprite::Sprite,
     system::{
         Backend, BackendOpenXR, BackendVulkan, BackendXRType, DefaultInteractors, Input, Interaction, Interactor, Key,
-        Lines, LogItem, LogLevel, Text,
+        Lines, LogItem, LogLevel, MouseMode, Text,
     },
     tex::Tex,
     tools::{
@@ -70,6 +70,9 @@ pub fn launch(mut sk: Sk, is_testing: bool, start_test: String) {
     let mut passthrough = false;
     let mut passthough_blend_enabled = false;
     let simultaneous_hands_controllers_available = is_simultaneous_hands_and_controllers_supported(false);
+
+    let mut simulator_fullscreen = sk.get_settings().fullscreen != 0;
+    let mut mouse_mode_relative = false;
     //--------------------------------------------------------------------
 
     // First set the default interactors based on the backend, then try to activate simultaneous hand & controller if available
@@ -143,6 +146,9 @@ pub fn launch(mut sk: Sk, is_testing: bool, start_test: String) {
     notif.position = Vec3::new(0.0, 0.0, -0.6);
     if Backend::xr_type() == BackendXRType::Simulator {
         notif.text = "Press [F1] key to open the hand menu".into();
+        if simulator_fullscreen {
+            notif_escape(&mut sk)
+        }
     } else if cfg!(target_os = "android") || Device::get_runtime().unwrap_or_default().starts_with(" 'v") {
         notif.text = "Press menu button to open the hand menu".into();
     } else {
@@ -384,6 +390,41 @@ pub fn launch(mut sk: Sk, is_testing: bool, start_test: String) {
                 sk.send_event(StepperAction::event("main", SHOW_FLOOR, "true"));
                 Device::display_blend(DisplayBlend::Opaque);
             }
+        } else if Backend::xr_type() == BackendXRType::Simulator {
+            if let Some(new_value) = Ui::toggle("fullscreen", &mut simulator_fullscreen).interact() {
+                if let Some(window) = AppWindow::main() {
+                    window.request_fullscreen(new_value);
+                    Log::info(format!("Simulator fullscreen: {simulator_fullscreen}"));
+                    if simulator_fullscreen {
+                        notif_escape(sk)
+                    }
+                } else {
+                    Log::warn("Unable to get AppWindow!");
+                }
+            }
+            Ui::same_line();
+            if let Some(new_value) = Ui::toggle("mouse relative", &mut mouse_mode_relative).interact() {
+                if new_value {
+                    Input::mouse_mode(MouseMode::Relative);
+                    Log::info("Mouse mode <Relative>");
+                    notif_escape(sk)
+                } else {
+                    Input::mouse_mode(MouseMode::Normal);
+                    Log::info("Mouse mode <Normal>");
+                }
+            }
+
+            if Input::key(Key::Esc).is_just_active() {
+                simulator_fullscreen = false;
+                if let Some(window) = AppWindow::main() {
+                    window.request_fullscreen(simulator_fullscreen);
+                    Log::info(format!("Simulator fullscreen: {simulator_fullscreen}"));
+                }
+
+                mouse_mode_relative = false;
+                Input::mouse_mode(MouseMode::Normal);
+                Log::info("Mouse mode <Normal> (ESC key)");
+            }
         }
 
         Ui::same_line();
@@ -483,4 +524,13 @@ pub fn launch(mut sk: Sk, is_testing: bool, start_test: String) {
     })
     .shutdown(|sk| Log::info(format!("QuitReason is {:?}", sk.get_quit_reason())))
     .run();
+}
+
+/// Show the Esc notification
+fn notif_escape(sk: &mut Sk) {
+    let mut notif = HudNotification::default();
+    notif.duration = Some(5.0);
+    notif.position = Vec3::new(0.0, 0.1, -0.6);
+    notif.text = "Press [Esc] key to go back to normal".into();
+    sk.send_event(StepperAction::add("HudNotifESC", notif));
 }

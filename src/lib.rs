@@ -32,7 +32,8 @@
 //!   - Considering that you have already installed `Rust` with `stable-?????-unknown-linux-gnu` toolchain and the linux package
 //!     `build-essential`.
 //!   - Get the following tools and dev libraries : `git` `clang` `cmake` `lld` `llvm` `ninja-build` `libx11-dev`
-//!     `libxfixes-dev` `libvulkan-dev` `libfontconfig-dev` `libxkbcommon-x11-dev` `libxrandr-dev` `libxcursor-dev`.
+//!     `libxfixes-dev` `libvulkan-dev` `libfontconfig-dev` `libxkbcommon-x11-dev` `libxrandr-dev` `libxcursor-dev`
+//!     `libxi-dev` `libwayland-dev` `libxkbcommon-dev` `libdecor-0-dev`.
 //!   - For headless/CI environments or software rendering: `mesa-vulkan-drivers` (provides lavapipe software renderer).
 //!
 //! ### On `macOS`:
