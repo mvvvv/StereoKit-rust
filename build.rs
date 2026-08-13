@@ -251,7 +251,7 @@ fn main() {
                 );
                 println!("cargo:rustc-link-search=native={}/build/_deps/sk_app-build/{}", dst.display(), profile_upper);
                 println!("cargo:rustc-link-search=native={}/lib", dst.display());
-                println!("cargo:rustc-link-search=native={}/build/_deps/sk_renderer-build/sk_ktx2", dst.display());
+                println!("cargo:rustc-link-search=native={}/build/_deps/sk_renderer-build/sk_ktx2/{}", dst.display(), profile_upper);
 
                 // Link sk_renderer and sk_app libraries
                 if !skc_in_dll {
