@@ -223,7 +223,7 @@ jobs:
         timeout 2m cargo test --doc tex         -- --test-threads=1 || failed=1
         timeout 1m cargo test --doc sprite      -- --test-threads=1 || failed=1
         timeout 1m cargo test --doc font        -- --test-threads=1 || failed=1
-        timeout 1m cargo test --doc render_list -- --test-threads=1 || failed=1
+        timeout 1m cargo test --doc render      -- --test-threads=1 || failed=1
         timeout 1m cargo test --doc anchor      -- --test-threads=1 || failed=1
         timeout 1m cargo test --doc compute     -- --test-threads=1 || failed=1
         timeout 2m cargo test --doc util        -- --test-threads=1 || failed=1
