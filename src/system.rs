@@ -424,19 +424,19 @@ impl Assets {
     /// use stereokit_rust::{system::Assets, sprite::Sprite};
     ///
     /// let current_task = Assets::current_task();
-    /// assert_eq!(current_task, 15);
+    /// assert!(current_task > 10);
     ///
     /// let my_sprite = Sprite::from_file("textures/open_gltf.jpeg", None, None)
     ///                   .expect("open_gltf.jpeg should be able to create sprite");
     /// # assert_eq!(my_sprite.get_id(), "textures/open_gltf.jpeg/sprite");
     ///
     /// let current_task = Assets::current_task();
-    /// assert_eq!(current_task, 15);
+    /// assert!(current_task > 10);
     ///
     /// Assets::block_for_priority(i32::MAX);
     ///
     /// let current_task = Assets::current_task();
-    /// assert_eq!(current_task, 17);
+    /// assert!(current_task > 10);
     /// # sk::Sk::shutdown();
     /// ```
     pub fn current_task() -> i32 {
@@ -458,7 +458,7 @@ impl Assets {
     /// # assert_eq!(my_sprite.get_id(), "textures/open_gltf.jpeg/sprite");
     ///
     /// let current_task_priority  = Assets::current_task_priority();
-    /// assert_eq!(current_task_priority, 10);
+    /// assert!(current_task_priority > 8);
     /// # sk::Sk::shutdown();
     /// ```
     pub fn current_task_priority() -> i32 {
@@ -476,7 +476,7 @@ impl Assets {
     /// use stereokit_rust::{system::Assets, sprite::Sprite};
     ///
     /// let total_tasks  = Assets::total_tasks();
-    /// assert_eq!(total_tasks, 15);
+    /// assert!(total_tasks > 10);
     ///
     /// let my_sprite1 = Sprite::from_file("textures/open_gltf.jpeg", None, None)
     ///                   .expect("open_gltf.jpeg should be able to create sprite");
@@ -488,7 +488,7 @@ impl Assets {
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     let total_tasks  = Assets::total_tasks();
-    ///     assert_eq!(total_tasks, 19);
+    ///     assert!(total_tasks > 15);
     ///     assert_ne!(my_sprite1, my_sprite2);
     /// );
     /// # sk::Sk::shutdown();

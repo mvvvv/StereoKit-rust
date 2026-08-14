@@ -18,6 +18,7 @@ use std::{
 ///
 /// see also [`Audio`]
 #[repr(C)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub struct AudioEnvironment {
     /// Reverb level, 0-1. 0 turns environmental acoustics off completely, and is the default.
     pub wet: f32,
