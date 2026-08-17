@@ -335,14 +335,26 @@ impl<'a> UiInputBuilder<'a> {
     /// Executes input interaction.
     ///
     /// Returns the updated text in the input field if it has changed, otherwise `None`.
+    ///
+    /// This mirrors the C# `UI.Input`/`UI.InputAt` behavior: a writable buffer is pre-filled with the current value 
+    /// and sized to `value.len() + 16` bytes of content room (with one extra byte so the native code can keep pushing 
+    /// the NUL terminator as text is inserted). The `buffer_size` handed to native must match the buffer we actually 
+    /// allocate, otherwise typing into a focused field would write past the end of the buffer.
     pub fn edit(&mut self) -> Option<String> {
-        let c_value = CString::new(self.out_value.as_str()).unwrap_or_default();
-        let result = match self.top_left_corner {
+        // Content room is the current text length + 16 bytes, mirroring C#'s
+        // `new StringBuilder(value, value.Length + 16)` -> `builder.Capacity`.
+        let cap = self.out_value.len() + 16;
+        // cap + 1 : one spare byte so the native layer can keep the NUL terminator one slot past the content as it 
+        // grows (utf_insert_char shifts the terminator forward on each insertion).
+        let mut buffer = vec![0u8; cap + 1];
+        buffer[..self.out_value.len()].copy_from_slice(self.out_value.as_bytes());
+
+        let changed = match self.top_left_corner {
             Some(top_left_corner) => unsafe {
                 ui_input_at(
                     self.id.as_ptr(),
-                    c_value.as_ptr() as *mut c_char,
-                    self.out_value.capacity() as i32 + 16,
+                    buffer.as_mut_ptr() as *mut c_char,
+                    cap as i32,
                     top_left_corner,
                     self.size,
                     self.type_text,
@@ -351,20 +363,20 @@ impl<'a> UiInputBuilder<'a> {
             None => unsafe {
                 ui_input(
                     self.id.as_ptr(),
-                    c_value.as_ptr() as *mut c_char,
-                    self.out_value.capacity() as i32 + 16,
+                    buffer.as_mut_ptr() as *mut c_char,
+                    cap as i32,
                     self.size,
                     self.type_text,
                 ) != 0
             },
         };
 
-        if result {
-            match unsafe { CStr::from_ptr(c_value.as_ptr()).to_str() } {
-                Ok(result) => {
+        if changed {
+            match unsafe { CStr::from_ptr(buffer.as_ptr() as *const c_char).to_str() } {
+                Ok(new_value) => {
                     self.out_value.clear();
-                    self.out_value.push_str(result);
-                    Some(result.to_owned())
+                    self.out_value.push_str(new_value);
+                    Some(new_value.to_owned())
                 }
                 Err(_) => None,
             }

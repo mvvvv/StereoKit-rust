@@ -13,6 +13,7 @@ pub mod biplane1;
 pub mod browser1;
 pub mod c_stepper;
 pub mod compute1;
+pub mod documents1;
 pub mod font1;
 pub mod hand_menu_radial0;
 pub mod hand_menu_radial1;
@@ -47,7 +48,7 @@ pub mod ui3;
 
 use self::{
     a_stepper::AStepper, anchor1::Anchor1, anim1::Anim1, asset1::Asset1, b_stepper::BStepper, biplane1::Biplane1,
-    c_stepper::CStepper, compute1::Compute1, font1::Font1, interactor1::Interactor1, layers1::Layers1,
+    c_stepper::CStepper, compute1::Compute1, documents1::Documents1 font1::Font1, interactor1::Interactor1, layers1::Layers1,
     locale1::Locale1, math1::Math1, mixer1::Mixer1, permission1::Permission1, render_list1::RenderList1, screen1::Screen1,
     shaders1::Shaders1, shaders2::Shaders2, shadows1::Shadows1, skin1::Skin1, sprite1::Sprite1, stereo1::Stereo1,
     subpass1::Subpass1, tex1::Tex1, tex2::Tex2, text1::Text1, text2::Text2, threads1::Threads1, threads2::Threads2,
@@ -111,6 +112,7 @@ impl Test {
             Test::from_stepper::<Layers1>("Layers1"),
             Test::from_stepper::<Shadows1>("Shadows1"),
             Test::from_stepper::<Skin1>("Skin1"),
+            Test::from_stepper::<Documents1>("Documents1"),
             #[cfg(target_os = "android")]
             Test::from_stepper::<browser1::Browser1>("Browser1"),
             #[cfg(target_os = "android")]
