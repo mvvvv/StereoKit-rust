@@ -3408,6 +3408,78 @@ pub enum Key {
     Divide = 111,
 }
 
+/// Describes what kind of keyboard input event this is.
+/// <https://stereokit.net/Pages/StereoKit/Input/KeyboardConsume.html>
+///
+/// see also [`KeyboardEvent`]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(u32)]
+pub enum KeyboardEventType {
+    /// Not an event. Consuming returns this once no events remain in this frame's queue, and reading by index returns
+    /// it for an index outside the queue.
+    None = 0,
+    /// A key was pressed. Auto-repeats arrive as additional press events with no release between them, one per repeat.
+    KeyPress,
+    /// A key was released.
+    KeyRelease,
+    /// A single codepoint of insertable text.
+    Text,
+}
+
+bitflags::bitflags! {
+    /// A bit flag describing which of the keyboard's modifier keys are held.
+    /// <https://stereokit.net/Pages/StereoKit/Input/KeyboardEvent.html>
+    ///
+    /// see also [`KeyboardEvent`]
+    #[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]
+    #[repr(transparent)]
+    pub struct KeyMod: u32 {
+        /// No modifier keys are held.
+        const None = 0;
+        /// Either shift key.
+        const Shift = 1 << 0;
+        /// Either ctrl key.
+        const Ctrl = 1 << 1;
+        /// Either alt key.
+        const Alt = 1 << 2;
+        /// Either Windows/Mac Command key.
+        const Cmd = 1 << 3;
+    }
+}
+
+/// A single keyboard input event, either a key press, a key release, or one codepoint of insertable text. Events
+/// preserve the exact order they were produced in, including how text and keys interleave.
+/// <https://stereokit.net/Pages/StereoKit/Input/KeyboardEvent.html>
+///
+/// see also [`Input::keyboard_consume`] [`Input::keyboard_event_at`]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(C)]
+pub struct KeyboardEvent {
+    /// What kind of event this is, and which of the fields below apply.
+    pub typ: KeyboardEventType,
+    /// The key for press and release events, and none for text events. Mouse buttons arrive here too, as the mouse key
+    /// values.
+    pub key: Key,
+    /// The modifier keys held when this event was produced. A modifier's own press event includes itself, its release
+    /// event does not.
+    pub modifiers: KeyMod,
+    /// The UTF-32 codepoint for text events, 0 for key events.
+    pub character: u32,
+}
+
+impl KeyboardEvent {
+    /// This event's text, as a string. Emoji and other codepoints outside the Basic Multilingual Plane don't fit in a
+    /// single char, so this is the safe way to read one. Empty for key events.
+    /// <https://stereokit.net/Pages/StereoKit/Input/KeyboardEvent.html>
+    pub fn text(&self) -> String {
+        if self.typ == KeyboardEventType::Text {
+            char::from_u32(self.character).map(|c| c.to_string()).unwrap_or_default()
+        } else {
+            String::new()
+        }
+    }
+}
+
 /// Input from the system come from this class! Hands, eyes, heads, mice and pointers!
 /// <https://stereokit.net/Pages/StereoKit/Input.html>
 ///
@@ -3455,6 +3527,10 @@ unsafe extern "C" {
     pub fn input_text_consume() -> u32;
     pub fn input_text_reset();
     pub fn input_text_inject_char(character: u32);
+    pub fn input_keyboard_consume() -> KeyboardEvent;
+    pub fn input_keyboard_event_count() -> i32;
+    pub fn input_keyboard_event_at(index: i32) -> KeyboardEvent;
+    pub fn input_text_inject(text_utf8: *const c_char);
     pub fn input_hand_visible(hand: Handed, visible: Bool32T);
     pub fn input_hand_get_visible(hand: Handed) -> Bool32T;
     // Deprecated: pub fn input_hand_solid(hand: Handed, solid: Bool32T);
@@ -3908,8 +3984,9 @@ impl Input {
     /// This will inject a key press event into StereoKit’s input event queue. It will be processed at the start of the
     /// next frame, and will be indistinguishable from a physical key press. Remember to release your key as well!
     ///
-    /// This will not submit text to StereoKit’s text queue, and will not show up in places like UI.Input. For that, you
-    /// must submit a TextInjectChar call.
+    /// This will _not_ submit text to StereoKit's text queue, so to type a character into something like
+    /// [`crate::ui::Ui::input`], you  must submit a TextInject call. Editing keys are the other way around: backspace,
+    /// delete, enter, and escape act on [`crate::ui::Ui::input`] through this call.
     /// <https://stereokit.net/Pages/StereoKit/Input/KeyInjectPress.html>
     /// * `key` - The key to press.
     ///
@@ -3946,8 +4023,9 @@ impl Input {
     /// the next frame, and will be indistinguishable from a physical key release. This should be preceded by a key
     /// press!
     ///
-    /// This will not submit text to StereoKit’s text queue, and will not show up in places like UI.Input. For that, you
-    /// must submit a TextInjectChar call.
+    /// This will _not_ submit text to StereoKit's text queue, so to type a character into something like
+    /// [`crate::ui::Ui::input`], you  must submit a TextInject call. Editing keys are the other way around: backspace,
+    /// delete, enter, and escape act on [`crate::ui::Ui::input`] through this call.
     /// <https://stereokit.net/Pages/StereoKit/Input/KeyInjectRelease.html>
     /// * `key` - The key to release.
     ///
@@ -3955,6 +4033,175 @@ impl Input {
     /// see example [`Input::key_inject_press`]
     pub fn key_inject_release(key: Key) {
         unsafe { input_key_inject_release(key) };
+    }
+
+    /// Reads the next keyboard event from this frame's queue, and advances to the one after it. Key presses, key
+    /// releases, and text all arrive here in the exact order the user produced them, so a text field can apply them
+    /// without guessing at what came first.
+    ///
+    /// Each auto-repeat of a held key is its own press event, which is why this is the right way to drive editing
+    /// keys. [`Input::key`] reports state for the whole frame instead, so it cannot tell one press from several.
+    ///
+    /// Events are consumed as they're read, and a focused [`crate::ui::Ui::input`] reads the whole queue. To observe
+    /// events without consuming them, read by index with [`Input::keyboard_event_count`] and
+    /// [`Input::keyboard_event_at`] instead. Like the rest of the input API, the queue belongs to the main thread, and
+    /// is rebuilt at the start of each frame.
+    /// <https://stereokit.net/Pages/StereoKit/Input/KeyboardConsume.html>
+    ///
+    /// Returns the next event in this frame's queue, or `None` if none remain.
+    /// see also [`input_keyboard_consume`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::{Input, Key, KeyboardEventType};
+    ///
+    /// // Simulate some keyboard input
+    /// Input::key_inject_press(Key::A);
+    /// Input::key_inject_release(Key::A);
+    /// Input::text_inject("Hi!❤");
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter == 0 {
+    ///         let event = Input::keyboard_consume()
+    ///                         .expect("A press keyboard event should be available.");
+    ///         assert_eq!(event.typ, KeyboardEventType::KeyPress);
+    ///         assert_eq!(event.key, Key::A);
+    ///
+    ///         let event = Input::keyboard_consume()
+    ///                         .expect("A release keyboard event should be available.");
+    ///         assert_eq!(event.typ, KeyboardEventType::KeyRelease);
+    ///         assert_eq!(event.key, Key::A);
+    ///
+    ///         let event = Input::keyboard_consume()
+    ///                         .expect("A text keyboard event should be available.");
+    ///         assert_eq!(event.typ, KeyboardEventType::Text);
+    ///         assert_eq!(event.text(), "H");
+    ///     } else {
+    ///         // Events are lost if they are not consumed in the frame they
+    ///         // arrive, so "i!❤" is lost for ever.
+    ///         assert!(Input::keyboard_consume().is_none());
+    ///     }
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn keyboard_consume() -> Option<KeyboardEvent> {
+        let event = unsafe { input_keyboard_consume() };
+        if event.typ == KeyboardEventType::None { None } else { Some(event) }
+    }
+
+    /// The number of keyboard events this frame, for reading by index with [`Input::keyboard_event_at`]. This is the
+    /// whole frame's count, unaffected by what [`Input::keyboard_consume`] has consumed.
+    /// <https://stereokit.net/Pages/StereoKit/Input/KeyboardEventCount.html>
+    ///
+    /// see also [`input_keyboard_event_count`] [`Input::keyboard_event_at`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::{Input, Key};
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter == 0 {
+    ///         // Simulate some keyboard input
+    ///         Input::key_inject_press(Key::A);
+    ///         Input::text_inject("Hi!❤");
+    ///         // Events are published at the start of the following frame.
+    ///         assert!(Input::keyboard_event_count() == 0);
+    ///     } else if iter == 1 {
+    ///         assert!(Input::keyboard_event_count() == 5);
+    ///         Input::keyboard_consume();
+    ///         assert!(Input::keyboard_event_count() == 5);
+    ///     } else if iter == 2 {
+    ///         // Events are lost if they are not consumed in the frame they
+    ///         // arrive, so this frame has no events.
+    ///         assert!(Input::keyboard_event_count() == 0);
+    ///     } else {
+    ///         assert!(Input::keyboard_event_count() == 0);
+    ///     }
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn keyboard_event_count() -> i32 {
+        unsafe { input_keyboard_event_count() }
+    }
+
+    /// Reads a keyboard event by index, without consuming anything. This suits code that wants to observe the frame's
+    /// input even after something else, like a focused [`crate::ui::Ui::input`], has consumed the queue.
+    /// <https://stereokit.net/Pages/StereoKit/Input/KeyboardEventAt.html>
+    /// * `index` - Index of the event, from 0 up to [`Input::keyboard_event_count`].
+    ///
+    /// Returns the event at that index, or an event of type [`KeyboardEventType::None`] if the index is out of range.
+    /// see also [`input_keyboard_event_at`] [`Input::keyboard_event_count`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::{Input, Key, KeyboardEventType};
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter == 0 {
+    ///         // Simulate two keyboard input
+    ///         Input::key_inject_press(Key::Left);
+    ///         Input::key_inject_press(Key::Left);
+    ///     } else  {
+    ///         // Events are published at the start of the following frame.
+    ///         for index in 0..Input::keyboard_event_count() {
+    ///             let event = Input::keyboard_event_at(index);
+    ///             // Reading by index never consumes the queue.
+    ///             assert_eq!(event.typ, KeyboardEventType::KeyPress);
+    ///             assert_eq!(event.key, Key::Left);
+    ///         }
+    ///     }
+    ///
+    ///     // Out-of-range indexes yield an event of type None.
+    ///     assert_eq!(Input::keyboard_event_at(2).typ, KeyboardEventType::None);
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn keyboard_event_at(index: i32) -> KeyboardEvent {
+        unsafe { input_keyboard_event_at(index) }
+    }
+
+    /// Injects text into StereoKit's keyboard event queue, as if the user had typed or pasted it. It will be available
+    /// at the start of the next frame, and is indistinguishable from normal text entry. The whole string arrives as
+    /// one uninterrupted run of events.
+    ///
+    /// This is for text only. Carriage returns arrive as newlines, with CRLF counting as a single one. Other control
+    /// characters are ignored here with a warning, since editing keys belong in [`Input::key_inject_press`].
+    /// <https://stereokit.net/Pages/StereoKit/Input/TextInject.html>
+    /// * `text` - The text to inject, as a normal string.
+    ///
+    /// see also [`input_text_inject`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::{Input, KeyboardEventType};
+    ///
+    /// // Simulate some text input
+    /// Input::text_inject("Hi!❤");
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter == 0 {
+    ///         let event = Input::keyboard_consume()
+    ///                        .expect("A text keyboard event should be available.");
+    ///         assert_eq!(event.typ, KeyboardEventType::Text);
+    ///         assert_eq!(event.text(), "H");
+    ///         Input::text_inject("Yo!❤");
+    ///     } else if iter == 1 {
+    ///         // Events are lost if they are not consumed in the frame they
+    ///         // arrive, so "i!❤" is lost for ever.
+    ///         let event = Input::keyboard_consume()
+    ///                        .expect("A text keyboard event should be available.");
+    ///         assert_eq!(event.typ, KeyboardEventType::Text);
+    ///         assert_eq!(event.text(), "Y");
+    ///     } else {
+    ///         assert!(Input::keyboard_consume().is_none());
+    ///         assert!(Input::keyboard_event_count() == 0);
+    ///     }
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn text_inject(text: impl AsRef<str>) {
+        let c_str = CString::new(text.as_ref()).unwrap_or_default();
+        unsafe { input_text_inject(c_str.as_ptr()) }
     }
 
     /// This gets the pointer by filter based index.
@@ -4005,15 +4252,19 @@ impl Input {
     /// if there are no more characters left in the list. These are from the system’s text entry system, and so can be
     /// unicode, will repeat if their ‘key’ is held down, and could arrive from something like a copy/paste operation.
     ///
+    /// This is insertable text only. Editing keys such as backspace, delete, enter, and escape never arrive here, so a
+    /// text field must read them with [`Input::key`], the same way it reads the arrow keys. Newline and tab are text,
+    /// and can arrive from a paste or an IME.
+    ///
     /// If you wish to reset this function to begin at the start of the read list on the next call, you can call
-    /// Input::text_reset.
+    /// [`Input::text_reset`].
     /// <https://stereokit.net/Pages/StereoKit/Input/TextConsume.html>
     ///
     /// Returns the next character in this frame's list, or '\0' if none remain, or None if the value doesn't
     /// match char.
     /// see also [`input_text_consume`] [`char::from_u32`]
     /// ### Examples
-    /// ```
+    /// ```ignore
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::system::Input;
     ///
@@ -4035,6 +4286,10 @@ impl Input {
     /// );
     /// # sk::Sk::shutdown();
     /// ```
+    #[deprecated(
+        since = "0.4.0",
+        note = "Use Input::keyboard_consume. It keeps text in order with the key events around it, and reports full UTF-32 codepoints instead of truncating to a char."
+    )]
     pub fn text_consume() -> Option<char> {
         char::from_u32(unsafe { input_text_consume() })
     }
@@ -4047,7 +4302,7 @@ impl Input {
     ///
     /// see also [`input_text_reset`]    
     /// ### Examples
-    /// ```
+    /// ```ignore
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::system::Input;
     ///
@@ -4073,6 +4328,10 @@ impl Input {
     /// );
     /// # sk::Sk::shutdown();
     /// ```
+    #[deprecated(
+        since = "0.4.0",
+        note = "Use Input::keyboard_event_count and Input::keyboard_event_at, which read events without consuming them at all."
+    )]
     pub fn text_reset() {
         unsafe { input_text_reset() };
     }
@@ -4081,13 +4340,14 @@ impl Input {
     /// start of the next frame, and will be indistinguishable from normal text entry.
     ///
     /// This will not submit key press/release events to StereoKit’s input queue, use key_inject_press/_release
-    /// for that.
+    /// for that. The text queue carries insertable text only, so carriage returns become newlines, and other control
+    /// characters are ignored here with a warning.
     /// <https://stereokit.net/Pages/StereoKit/Input/TextInjectChar.html>
     /// * `character` - An unsigned integer representing a single UTF32 character.
     ///
     /// see also [`input_text_inject_char`]    
     /// ### Examples
-    /// ```
+    /// ```ignore
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::system::Input;
     ///
@@ -4109,6 +4369,7 @@ impl Input {
     /// );
     /// # sk::Sk::shutdown();
     /// ```
+    #[deprecated(since = "0.4.0", note = "Use Input::text_inject.")]
     pub fn text_inject_char(character: char) {
         unsafe { input_text_inject_char(character as u32) };
     }
@@ -4118,13 +4379,14 @@ impl Input {
     /// text entry.
     ///
     /// This will not submit key press/release events to StereoKit’s input queue, use key_inject_press/_release
-    /// for that.
+    /// for that. The text queue carries insertable text only, so carriage returns become newlines, and other control
+    /// characters are ignored here with a warning.
     /// <https://stereokit.net/Pages/StereoKit/Input/TextInjectChar.html>
     /// * `chars` - A collection of characters to submit as text input.
     ///
     /// see also [`input_text_inject_char`]    
     /// ### Examples
-    /// ```
+    /// ```ignore
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::system::Input;
     ///
@@ -4143,6 +4405,7 @@ impl Input {
     /// );
     /// # sk::Sk::shutdown();
     /// ```
+    #[deprecated(since = "0.4.0", note = "Use Input::text_inject.")]
     pub fn text_inject_chars(str: impl AsRef<str>) {
         for character in str.as_ref().chars() {
             unsafe { input_text_inject_char(character as u32) }

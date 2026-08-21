@@ -4,6 +4,7 @@ use crate::{
     render::Renderer,
     sk::{AppMode, OriginMode},
     system::{Handed, Input, Key, World},
+    ui::Ui,
     util::Time,
 };
 
@@ -108,7 +109,7 @@ impl FlyOver {
         let move_ctrler = Input::controller(Handed::Left);
         let mut move_v = -move_ctrler.stick.x0y();
 
-        if cfg!(all(debug_assertions, not(target_os = "android"))) {
+        if cfg!(all(debug_assertions, not(target_os = "android"))) && !Ui::has_keyboard_focus() {
             if Input::key(Key::Up).is_just_active() {
                 move_v.z = -1.0;
             }

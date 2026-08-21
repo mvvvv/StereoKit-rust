@@ -1,9 +1,11 @@
 use crate::{
-    maths::{Pose, Quat, Vec2, Vec3},
+    maths::{Pose, Vec2, Vec3},
     prelude::*,
     sprite::Sprite,
-    ui::{Ui, UiBtnLayout, UiCut, UiVisual, UiWin},
-    util::{Color128, PickerMode},
+    system::{Align, TextFit},
+    tools::os_api::BrowseLocation,
+    ui::{Ui, UiBtnLayout, UiCut, UiPad, UiWin},
+    util::{Color128, PickerMode, named_colors},
 };
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
@@ -31,8 +33,17 @@ pub struct FileEntry {
     pub name: std::ffi::OsString,
     /// Whether this entry is a directory.
     pub is_dir: bool,
+    /// The resolved target of a symbolic link, if this entry is a symlink and the target can be
+    /// read (`fs::read_link(path).ok()`). `None` for non-symlinks or unreadable links.
+    pub symlink_name: Option<String>,
+    /// Whether the entry's metadata could not be read, i.e. `fs::metadata(entry.path()).is_err()`.
+    /// This is typically true for broken symbolic links or otherwise unreadable entries.
+    pub is_broken: bool,
     /// File size in bytes (0 for directories).
     pub size: u64,
+    /// Number of entries inside this directory (0 for files), computed once at scan time so the
+    /// draw loop doesn't have to re-read every visible subdirectory each frame.
+    pub num_entries: usize,
     /// Last modification time, if available.
     pub modified: Option<SystemTime>,
 }
@@ -50,37 +61,48 @@ impl FileEntry {
 }
 
 /// A full-featured file browser to open existing files or choose a save path on PC and Android.
+/// Should be launched by another stepper set in [`FileBrowserB::caller`].
 ///
 /// Compared to [`crate::tools::file_browser::FileBrowser`], this version adds:
-/// - breadcrumbs navigation (click any path component),
+/// - breadcrumbs navigation (click any path component; a too long path may overflow past the
+///   window edge, which is fine in VR),
 /// - a search/filter text field,
 /// - column sorting (name / size / date / type, ascending or descending),
 /// - a toggle to show/hide hidden files,
 /// - per-entry metadata display (formatted size),
+/// - symlink targets and entry errors drawn as a small multi-line text slightly below the entry
+///   name (grid view lines break after `/` or `\`, `error_tint` for broken entries),
 /// - a scrollable list with vertical slider,
 /// - home / up / refresh toolbar buttons,
 /// - directory creation in `Save` mode,
 /// - a status line summarizing the current view.
 ///
-/// Must be launched by another stepper set in [`FileBrowserB::caller`].
 ///
-/// ### Fields that can be changed before initialization:
+/// ### Fields that should be changed before initialization:
 /// * `picker_mode` - What the file browser is for. Default is [`PickerMode::Open`].
 /// * `caller` - The id of the stepper that launched the browser and is waiting for a
 ///   `FILE_BROWSER_B_OPEN` / `FILE_BROWSER_B_SAVE` message.
-/// * `dir` - The directory to show. You can browse outside of this directory unless `root_dir`
-///   is set, in which case navigation is clamped to it.
+/// * `dir` - The directory to show. If left empty, it is resolved at start from `location`.
+///   You can browse outside of this directory unless `root_dir` is set, in which case navigation is
+///   clamped to it.
+/// ### Fields that can be changed before initialization:
 /// * `root_dir` - When non-empty, the user cannot navigate above this directory. Defaults to the
 ///   value of `dir` at `start`.
+/// * `location` - The storage location used to resolve `dir` when it is left empty, and the target of
+///   the internal/external/documents switcher in the toolbar. On Android: the app `internal_data_path`,
+///   the app `external_data_path` or the shared Documents folder. On PC (juxtaposition): the current dir,
+///   the assets dir or the user's Documents folder. Default is [`BrowseLocation::External`].
 /// * `exts` - The file extensions to filter (e.g. `[".png".into(), ".jpg".into()]`).
 /// * `window_pose` - The pose where to show the browser window.
 /// * `window_size` - The size of the browser window. Default is `Vec2{x: 0.5, y: 0.0}`.
 /// * `max_visible_rows` - Maximum number of file rows shown before scrolling kicks in. 0 means auto
 ///   (computed from the available list height). In grid mode this is a number of grid rows.
-/// * `close_on_select` - If true (Open mode only), the browser closes when a file is selected.
+/// * `close_on_select` - If true (Open mode only), the browser closes when the user confirms opening
+///   a file in the Open panel.
 /// * `file_name_to_save` - Pre-filled name in Save mode.
 /// * `dir_tint` - Tint used for directory buttons.
 /// * `input_tint` - Tint used for the input fields.
+/// * `error_tint` - Tint used to signal error entries in the list (dead symlinks, unreadable metadata).
 /// * `show_hidden` - Whether hidden files (leading dot) are visible at start.
 /// * `grid_view` - Whether to show files in a grid (true) or list (false) at start. Default is false (list).
 ///
@@ -156,6 +178,7 @@ pub struct FileBrowserB {
     pub picker_mode: PickerMode,
     pub dir: PathBuf,
     pub root_dir: PathBuf,
+    pub location: BrowseLocation,
     pub exts: Vec<String>,
     pub window_pose: Pose,
     pub window_size: Vec2,
@@ -163,6 +186,9 @@ pub struct FileBrowserB {
     pub caller: StepperId,
     pub dir_tint: Color128,
     pub input_tint: Color128,
+    /// Tint used to signal error entries in the list: dead symlinks or entries whose metadata
+    /// could not be read.
+    pub error_tint: Color128,
     pub file_name_to_save: String,
     pub show_hidden: bool,
     pub grid_view: bool,
@@ -202,7 +228,6 @@ unsafe impl Send for FileBrowserB {}
 
 impl Default for FileBrowserB {
     fn default() -> Self {
-        let yellow = Color128::new(1.0, 0.0, 0.0, 1.0).to_gamma();
         Self {
             id: "FileBrowserB".to_string(),
             sk_info: None,
@@ -210,13 +235,15 @@ impl Default for FileBrowserB {
             picker_mode: PickerMode::Open,
             dir: PathBuf::new(),
             root_dir: PathBuf::new(),
+            location: BrowseLocation::External,
             exts: vec![],
-            window_pose: Pose::new(Vec3::new(0.5, 1.5, -0.5), Some(Quat::from_angles(0.0, 180.0, 0.0))),
+            window_pose: Ui::popup_pose([0.15, 0.05, 0.10]),
             window_size: Vec2::new(0.6, 0.8),
             close_on_select: true,
             caller: "".into(),
-            dir_tint: Ui::get_element_color(UiVisual::Separator, 0.0),
-            input_tint: yellow,
+            dir_tint: named_colors::DARK_SLATE_GRAY.into(),
+            input_tint: named_colors::SADDLE_BROWN.into(),
+            error_tint: named_colors::RED.into(),
             file_name_to_save: String::with_capacity(255),
             show_hidden: false,
             grid_view: false,
@@ -269,6 +296,14 @@ impl FileBrowserB {
             self.window_size.y = 0.5;
         }
 
+        // If `dir` was left empty, resolve the starting directory from `location`:
+        // Android → internal_data_path / external_data_path / shared Documents,
+        // PC → juxtaposed current dir / assets dir / user Documents.
+        if self.dir.as_os_str().is_empty() {
+            self.dir = self.location_root(self.location);
+            Log::diag(format!("FileBrowserB starting at location {:?}: {:?}", self.location, self.dir));
+        }
+
         // root_dir stays empty by default: the user can navigate the full filesystem
         // and breadcrumbs show the complete path. Set root_dir explicitly to clamp.
         self.history.clear();
@@ -317,21 +352,16 @@ impl FileBrowserB {
 
         self.draw_toolbar(line, btn);
 
-        // In Save mode, the "file name" input row + Save button belong to the main window flow,
-        // ABOVE the sort bar and the scrollable list area. This keeps them out of the list sub-layout
-        // so the vertical slider only spans the file list itself, not the input/button row.
-        if self.picker_mode == PickerMode::Save {
-            Ui::hseparator();
-            self.draw_save_panel();
-            Ui::hseparator();
-        }
-
         self.draw_search_bar();
         self.draw_sort_bar();
 
         // The list area: cut a Top section for the scrollable file list.
         // Reserve the status line height so it stays at the bottom.
-        let status_h = line * 1.5; // status line + separator
+        let status_h = if self.picker_mode == PickerMode::Save {
+            line * 5.5 // save name + status line + separator
+        } else {
+            line * 4.2 // open panel + status line + separator
+        };
         let remaining_after_bars = Ui::get_layout_remaining();
         let list_h = (remaining_after_bars.y - status_h).max(line * 3.0);
 
@@ -348,10 +378,26 @@ impl FileBrowserB {
 
         match self.picker_mode {
             PickerMode::Open => self.draw_open_list(line),
-            PickerMode::Save => self.draw_save_list(),
+            PickerMode::Save => self.draw_save_list(line),
         }
 
         Ui::layout_pop();
+
+        Ui::hseparator();
+
+        // The Open/Save confirmation row (file name + Open/Save button) lives in the main window
+        // flow, OUTSIDE the list sub-layout, so the vertical slider only spans the file list itself
+        // and not the input/button row.
+        match self.picker_mode {
+            PickerMode::Open => {
+                self.draw_open_panel();
+                Ui::hseparator();
+            }
+            PickerMode::Save => {
+                self.draw_save_panel();
+                Ui::hseparator();
+            }
+        }
 
         self.draw_status_line();
         Ui::window_end();
@@ -365,7 +411,10 @@ impl FileBrowserB {
 
     fn draw_toolbar(&mut self, line: f32, btn: Vec2) {
         // Close button.
-        Ui::same_line();
+        let size_meter =
+            if self.show_new_folder && self.picker_mode == PickerMode::Save { line * 6.0 } else { line * 3.0 };
+        Ui::layout_push_cut(UiCut::Top, size_meter, false);
+        Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), Some(UiPad::Outside));
         if Ui::button("fb_close").image(&self.close).image_layout(UiBtnLayout::CenterNoText).size(btn).press() {
             self.close_me();
         }
@@ -427,10 +476,11 @@ impl FileBrowserB {
             self.draw_new_folder_input();
         }
 
-        self.draw_breadcrumbs();
+        self.draw_breadcrumbs(line);
+        Ui::layout_pop();
     }
 
-    fn draw_breadcrumbs(&mut self) {
+    fn draw_breadcrumbs(&mut self, line: f32) {
         // Build path components from filesystem root to current dir.
         let components: Vec<PathBuf> =
             self.dir.ancestors().collect::<Vec<_>>().into_iter().rev().map(PathBuf::from).collect();
@@ -443,30 +493,57 @@ impl FileBrowserB {
             components.iter().position(|c| *c == self.root_dir).unwrap_or(0)
         };
 
+        // (label, target path) pairs to display, from root to current dir.
+        let labels: Vec<(String, PathBuf)> = components
+            .iter()
+            .enumerate()
+            .filter(|(i, _)| *i >= start_idx)
+            .map(|(_, comp)| {
+                let label = comp
+                    .file_name()
+                    .map(|n| n.to_string_lossy().to_string())
+                    .unwrap_or_else(|| comp.to_string_lossy().to_string());
+                (label, comp.clone())
+            })
+            .filter(|(label, _)| !label.is_empty())
+            .collect();
+        if labels.is_empty() {
+            return;
+        }
+
+        // Reserve one full-width row in the flow layout (layout_reserve also ends the line),
+        // then place the buttons with `.at()` (button_at): unlike flow buttons, these can simply
+        // overflow past the window's edge when the path is too long, which is fine in VR — the
+        // window floats in space, the user can lean/move to read it.
+        let gutter = Ui::get_settings().gutter;
+        // Breadcrumb buttons are smaller than regular buttons.
+        let btn_h = line * 1.0;
+        let at = Ui::get_layout_at();
+        let row_w = Ui::get_layout_remaining().x;
+        Ui::layout_reserve(Vec2::new(row_w, btn_h), true, 0.0);
+
+        // Estimated width of a breadcrumb button
+        let btn_w = |label: &str| label.chars().count() as f32 * line * 0.15 + btn_h;
+
+        // Deferred navigation target, applied after the borrow of the labels.
+        let mut navigate: Option<PathBuf> = None;
+
         Ui::push_tint(self.dir_tint);
-        for (i, comp) in components.iter().enumerate() {
-            if i < start_idx {
-                continue;
+        // The UI layout advances leftward: x starts at the row's top-left corner and decreases,
+        // unbounded on the right — the path may overflow the window.
+        let mut x = at.x;
+        for (label, target) in &labels {
+            let w = btn_w(label);
+            if Ui::button(label).at([x, at.y, at.z], [w, btn_h]).press() {
+                navigate = Some(target.clone());
             }
-            if i > start_idx {
-                Ui::same_line();
-                // Ui::label("/").use_padding(false).draw();
-                // Ui::same_line();
-            }
-            let label = comp
-                .file_name()
-                .map(|n| n.to_string_lossy().to_string())
-                .unwrap_or_else(|| comp.to_string_lossy().to_string());
-            if label.is_empty() {
-                continue;
-            }
-            if Ui::button(&label).press() {
-                let target = comp.clone();
-                self.navigate_to(target);
-            }
+            x -= w + gutter / 3.0;
         }
         Ui::pop_tint();
-        Ui::next_line();
+
+        if let Some(target) = navigate {
+            self.navigate_to(target);
+        }
     }
 
     fn draw_new_folder_input(&mut self) {
@@ -512,7 +589,9 @@ impl FileBrowserB {
 
     fn draw_sort_bar(&mut self) {
         // Hidden toggle
-        Ui::toggle("hidden", &mut self.show_hidden).interact();
+        if Ui::toggle("hidden", &mut self.show_hidden).interact().is_some() {
+            self.needs_refresh = true;
+        }
         Ui::same_line();
 
         let sort_btn = |browser: &mut Self, label: &str, mode: SortBy| {
@@ -549,6 +628,25 @@ impl FileBrowserB {
     }
 
     fn draw_open_list(&mut self, line: f32) {
+        self.draw_list(line, PickerMode::Open);
+    }
+
+    fn draw_save_list(&mut self, line: f32) {
+        self.draw_list(line, PickerMode::Save);
+    }
+
+    /// Shared rendering of the scrollable file list (vertical slider + grid/list view), used by both
+    /// Open and Save modes. Only the slider id, the selection target and the click behaviour differ,
+    /// which are all driven by `mode`. Deferred actions are applied here so the draw loop never holds
+    /// a borrow of `self`.
+    ///
+    /// Symlinks show their target path (`-> target`) and entries whose metadata could not be read
+    /// are marked with an error, both drawn as a small multi-line [`Ui::text`] (lines joined with
+    /// `\n`) slightly below the entry name — in grid view, the lines break after `/` or `\`
+    /// separators (too long names are hard-split), so the `TextFit::Exact` adjustment is
+    /// proportional (one uniform scale for the whole note) — and tinted with
+    /// [`FileBrowserB::error_tint`] for broken entries.
+    fn draw_list(&mut self, line: f32, mode: PickerMode) {
         let mut row_clicked: Option<usize> = None;
         let mut dir_clicked: Option<usize> = None;
 
@@ -574,7 +672,7 @@ impl FileBrowserB {
             self.scroll = 0.0;
         }
         if total_rows > visible_rows
-            && let Some(pos) = Ui::vslider("fb_scroll_open", &mut self.scroll, 0.0, max_scroll).step(1.0).interact()
+            && let Some(pos) = Ui::vslider("fb_scroll", &mut self.scroll, 0.0, max_scroll).step(1.0).interact()
         {
             self.scroll = pos.clamp(0.0, max_scroll);
         }
@@ -606,23 +704,54 @@ impl FileBrowserB {
                     let entry_idx = self.filtered_indices[idx];
                     let entry = &self.entries[entry_idx];
                     let name = entry.name_str().to_string();
+                    // Top-left corner of the cell, to anchor the symlink/error note below the name.
+                    let at = Ui::get_layout_at();
+
+                    let entry_annotation = Self::entry_annotation(entry);
 
                     if entry.is_dir {
-                        Ui::push_tint(self.dir_tint);
-                        if Ui::button(&name).size(grid_size).press() {
+                        // Broken directories are tinted with `error_tint` instead of `dir_tint`.
+                        Ui::push_tint(if entry.is_broken { self.error_tint } else { self.dir_tint });
+                        if Ui::button(&name)
+                            .size(grid_size)
+                            .text_align(if entry_annotation.is_some() { Align::TopLeft } else { Align::Center })
+                            .press()
+                        {
                             dir_clicked = Some(entry_idx);
                         }
                         Ui::pop_tint();
                     } else {
-                        let selected = self.file_selected_name == name;
+                        let selected = self.selected_name(mode) == name.as_str();
+                        if entry.is_broken {
+                            Ui::push_tint(self.error_tint);
+                        }
                         if Ui::radio(&name, selected)
+                            .size(grid_size)
                             .images(&self.radio_off, &self.radio_on)
                             .image_layout(UiBtnLayout::Left)
-                            .size(grid_size)
+                            .text_align(if entry_annotation.is_some() { Align::TopLeft } else { Align::Center })
                             .press()
                         {
                             row_clicked = Some(entry_idx);
                         }
+                        if entry.is_broken {
+                            Ui::pop_tint();
+                        }
+                    }
+
+                    // Symlink target / error note, slightly below the name in the cell, as a
+                    // SINGLE text with `\n` separated lines: TextFit::Exact then applies ONE
+                    // uniform scale to the whole block, so the adjustment is proportional.
+                    if let Some(note) = entry_annotation {
+                        let max_chars = 40;
+                        let note = Self::wrap_chars(&note, max_chars);
+
+                        Ui::push_tint(if entry.is_broken { self.error_tint } else { self.dir_tint });
+                        Ui::text(note)
+                            .at([at.x - 0.04, at.y - line * 0.8, at.z - 0.01], [grid_w * 0.7, line * 1.1])
+                            .fit(TextFit::Exact)
+                            .draw();
+                        Ui::pop_tint();
                     }
                 }
                 Ui::next_line();
@@ -643,26 +772,47 @@ impl FileBrowserB {
                 let entry_idx = self.filtered_indices[idx];
                 let entry = &self.entries[entry_idx];
                 let name = entry.name_str().to_string();
-                let (size_text, date_text) = if entry.is_dir {
-                    let count = std::fs::read_dir(self.dir.join(&entry.name)).map(|rd| rd.count()).unwrap_or(0);
-                    (format!("{} item(s)", count), format_date(entry.modified))
+                // Top-left corner of the row, to anchor the symlink/error note below the name.
+                let at = Ui::get_layout_at();
+                let (size_text, date_text) = if entry.is_broken {
+                    // Broken entry (dead symlink / unreadable metadata): signal the error instead of
+                    // size and date, the whole row is tinted with `error_tint` below.
+                    ("error!".to_string(), "-".to_string())
+                } else if entry.is_dir {
+                    (format!("{} item(s)", entry.num_entries), format_date(entry.modified))
                 } else {
                     (format_size(entry.size), format_date(entry.modified))
                 };
 
+                // The whole row of a broken entry is tinted with `error_tint` to signal the error.
+                if entry.is_broken {
+                    Ui::push_tint(self.error_tint);
+                }
+
+                let entry_annotation = Self::entry_annotation(entry);
+
                 // Column 1: name (interactive)
                 if entry.is_dir {
-                    Ui::push_tint(self.dir_tint);
-                    if Ui::button(&name).size(Vec2::new(name_w, 0.0)).press() {
+                    if !entry.is_broken {
+                        Ui::push_tint(self.dir_tint);
+                    }
+                    if Ui::button(&name)
+                        .size(Vec2::new(name_w, 0.0))
+                        .text_align(if entry_annotation.is_some() { Align::TopCenter } else { Align::Center })
+                        .press()
+                    {
                         dir_clicked = Some(entry_idx);
                     }
-                    Ui::pop_tint();
+                    if !entry.is_broken {
+                        Ui::pop_tint();
+                    }
                 } else {
-                    let selected = self.file_selected_name == name;
+                    let selected = self.selected_name(mode) == name.as_str();
                     if Ui::radio(&name, selected)
+                        .size(Vec2::new(name_w, 0.0))
                         .images(&self.radio_off, &self.radio_on)
                         .image_layout(UiBtnLayout::Left)
-                        .size(Vec2::new(name_w, 0.0))
+                        .text_align(if entry_annotation.is_some() { Align::TopCenter } else { Align::Center })
                         .press()
                     {
                         row_clicked = Some(entry_idx);
@@ -676,10 +826,23 @@ impl FileBrowserB {
                 // Column 3: date (non-interactive label)
                 Ui::same_line();
                 Ui::label(date_text).size(Vec2::new(date_w, 0.0)).use_padding(false).draw();
+
+                if entry.is_broken {
+                    Ui::pop_tint();
+                }
+
+                // Symlink target / error note, slightly below the name in the row. The list row
+                // is a single line tall, so the note is drawn as-is (Squeeze only scales down).
+                if let Some(note) = entry_annotation {
+                    Ui::push_tint(if entry.is_broken { self.error_tint } else { self.dir_tint });
+                    Ui::text(note)
+                        .at([at.x - 0.01, at.y - line * 0.8, at.z - 0.01], [name_w, line * 0.2])
+                        .fit(TextFit::Squeeze)
+                        .draw();
+                    Ui::pop_tint();
+                }
             }
         }
-
-        let _ = list_area;
 
         // Handle deferred actions so we don't borrow self during the draw loop.
         if let Some(i) = dir_clicked {
@@ -687,10 +850,104 @@ impl FileBrowserB {
             self.navigate_to(target);
         }
         if let Some(i) = row_clicked {
-            let entry = &self.entries[i];
-            let name = entry.name_str().to_string();
-            self.file_selected_name = name.clone();
-            let file = self.dir.join(&name);
+            let name = self.entries[i].name_str().to_string();
+            match mode {
+                // Open mode only selects the file; confirmation happens in `draw_open_panel`.
+                PickerMode::Open => self.file_selected_name = name,
+                PickerMode::Save => {
+                    self.file_name_to_save = name;
+                    self.replace_existing_file = false;
+                }
+            }
+        }
+    }
+
+    /// Annotation drawn slightly below the entry name in the list and grid views: symlink entries
+    /// show their target path (`-> target`) and entries whose metadata could not be read
+    /// (`is_broken`) get an explicit error marker. Returns `None` for plain entries.
+    ///
+    /// The grid view splits it into several lines of equal length with [`FileBrowserB::wrap_chars`]
+    /// so the `TextFit::Exact` scaling stays proportional (same glyph size) on every line.
+    fn entry_annotation(entry: &FileEntry) -> Option<String> {
+        match (&entry.symlink_name, entry.is_broken) {
+            (Some(target), true) => Some(format!("-> {target} (broken link)")),
+            (Some(target), false) => Some(format!("-> {target}")),
+            (None, true) => Some("[error] unreadable entry".to_string()),
+            (None, false) => None,
+        }
+    }
+
+    /// Wraps `text` into lines of at most `max_chars` columns, preferring to break lines AFTER
+    /// `/` or `\` path separators so paths stay readable. Only a segment without any separator
+    /// that is longer than `max_chars` (a too long file name) gets hard-split. The lines are
+    /// joined with `\n`, so a single [`Ui::text`] call draws the whole note with one uniform
+    /// `TextFit::Exact` scale — the adjustment stays proportional.
+    fn wrap_chars(text: &str, max_chars: usize) -> String {
+        // Split into separator-terminated segments, hard-splitting any segment longer than a
+        // full line (a too long name with no separator to break on).
+        let mut chunks: Vec<String> = Vec::new();
+        for seg in text.split_inclusive(|c: char| ['/', '\\'].contains(&c)) {
+            let mut chars = seg.chars();
+            loop {
+                let chunk: String = chars.by_ref().take(max_chars).collect();
+                if chunk.is_empty() {
+                    break;
+                }
+                chunks.push(chunk);
+            }
+        }
+
+        // Greedily pack the chunks into lines of at most `max_chars`, breaking after separators.
+        let mut lines: Vec<String> = Vec::new();
+        let mut current = String::new();
+        for chunk in chunks {
+            if !current.is_empty() && current.chars().count() + chunk.chars().count() > max_chars {
+                lines.push(std::mem::take(&mut current));
+            }
+            current.push_str(&chunk);
+        }
+        if !current.is_empty() {
+            lines.push(current);
+        }
+        if lines.len() == 1 {
+            lines.push(String::from(" "));
+            lines.push(String::from(" "));
+        } else if lines.len() == 2 {
+            lines.push(String::from(" "));
+        }
+        lines.join("\n")
+    }
+
+    /// Name used to highlight the currently selected file: the file selected for opening in Open
+    /// mode, the pre-filled/typed save name in Save mode.
+    fn selected_name(&self, mode: PickerMode) -> &str {
+        match mode {
+            PickerMode::Open => &self.file_selected_name,
+            PickerMode::Save => &self.file_name_to_save,
+        }
+    }
+
+    /// The Open-mode confirmation row (file name + Open button).
+    /// Drawn in the main window flow, below the scrollable file list, so the list's vertical slider
+    /// does not span this row. Selecting a file in the list only fills the input here; the user
+    /// confirms opening it by pressing "Open".
+    fn draw_open_panel(&mut self) {
+        // Validate the extension and that the file actually exists in the current directory: Open
+        // mode requires an existing file.
+        let mut ext_ok = self.exts.is_empty();
+        for ext in &self.exts {
+            if self.file_selected_name.to_lowercase().ends_with(&ext.to_lowercase()) {
+                ext_ok = true;
+                break;
+            }
+        }
+        let name_ok = !self.file_selected_name.trim().is_empty();
+        let file = self.dir.join(&self.file_selected_name);
+        let ok_to_open = name_ok && ext_ok && file.is_file();
+
+        Ui::push_tint(self.input_tint);
+        Ui::push_enabled(ok_to_open, None);
+        if Ui::button("Open").press() {
             SkInfo::send_event(
                 &self.sk_info,
                 StepperAction::event(self.caller.as_str(), FILE_BROWSER_B_OPEN, file.to_str().unwrap_or("path_error")),
@@ -699,16 +956,19 @@ impl FileBrowserB {
                 self.close_me();
             }
         }
+        Ui::pop_enabled();
+        Ui::same_line();
+        Ui::label(&self.file_selected_name).draw();
+
+        Ui::pop_tint();
+        Ui::next_line();
     }
 
     /// The Save-mode input row (file name + Save button + "replace existing file" toggle).
-    /// Drawn in the main window flow, ABOVE the scrollable file list, so the list's vertical slider
+    /// Drawn in the main window flow, below the scrollable file list, so the list's vertical slider
     /// does not span this row.
     fn draw_save_panel(&mut self) {
         Ui::push_tint(self.input_tint);
-        Ui::label("file name:").draw();
-        Ui::same_line();
-        Ui::input("fb_filename", &mut self.file_name_to_save).size(Vec2::new(0.0, 0.0)).edit();
 
         let file = self.dir.join(&self.file_name_to_save);
 
@@ -722,12 +982,6 @@ impl FileBrowserB {
         }
         let name_ok = !self.file_name_to_save.trim().is_empty();
 
-        if file.exists() && name_ok {
-            Ui::toggle("replace existing file", &mut self.replace_existing_file).interact();
-        } else {
-            self.replace_existing_file = false;
-        }
-
         let ok_to_save = name_ok && ext_ok && (!file.exists() || self.replace_existing_file);
         Ui::push_enabled(ok_to_save, None);
         Ui::same_line();
@@ -739,147 +993,20 @@ impl FileBrowserB {
             self.close_me();
         }
         Ui::pop_enabled();
-        Ui::pop_tint();
-        Ui::next_line();
-    }
+        Ui::same_line();
 
-    fn draw_save_list(&mut self) {
-        let mut clicked: Option<usize> = None;
-        let mut dir_clicked: Option<usize> = None;
+        Ui::label("file name:").draw();
+        Ui::same_line();
+        Ui::input("fb_filename", &mut self.file_name_to_save).size(Vec2::new(0.0, 0.0)).edit();
 
-        let line = Ui::get_line_height();
-        let total = self.filtered_indices.len();
-        let slider_w = line * 0.7;
-
-        // In list mode each row holds 1 entry; in grid mode each row holds `columns` entries.
-        let columns = if self.grid_view { 3usize } else { 1usize };
-        let list_area = Ui::get_layout_remaining();
-        let visible_rows = self.visible_rows_count(list_area.y, line);
-        let total_rows = total.div_ceil(columns);
-
-        // Cut a right portion for the vslider.
-        Ui::layout_push_cut(UiCut::Right, slider_w, false);
-        let max_scroll = (total_rows as f32 - visible_rows as f32).max(0.0);
-        if self.scroll > max_scroll {
-            self.scroll = max_scroll;
-        }
-        if self.scroll < 0.0 {
-            self.scroll = 0.0;
-        }
-        if total_rows > visible_rows
-            && let Some(pos) = Ui::vslider("fb_scroll_save", &mut self.scroll, 0.0, max_scroll).step(1.0).interact()
-        {
-            self.scroll = pos.clamp(0.0, max_scroll);
-        }
-        Ui::layout_pop();
-
-        let content_w = Ui::get_layout_remaining().x;
-
-        if self.grid_view {
-            // ----- GRID MODE (matrix of `columns` x `visible_rows`) -----
-            let gutter = Ui::get_settings().gutter;
-            let grid_w = ((content_w + gutter) / columns as f32 - gutter).max(0.02);
-            let grid_h = line * 2.0;
-            let grid_size = Vec2::new(grid_w, grid_h);
-
-            // Scroll is expressed in grid rows: each skipped row == `columns` entries.
-            let start_row = self.scroll as usize;
-            for row in 0..visible_rows {
-                let mut drew_any = false;
-                for col in 0..columns {
-                    let idx = (start_row + row) * columns + col;
-                    if idx >= total {
-                        break;
-                    }
-                    if drew_any {
-                        Ui::same_line();
-                    }
-                    drew_any = true;
-                    let entry_idx = self.filtered_indices[idx];
-                    let entry = &self.entries[entry_idx];
-                    let name = entry.name_str().to_string();
-
-                    if entry.is_dir {
-                        Ui::push_tint(self.dir_tint);
-                        if Ui::button(&name).size(grid_size).press() {
-                            dir_clicked = Some(entry_idx);
-                        }
-                        Ui::pop_tint();
-                    } else {
-                        let selected = self.file_name_to_save == name;
-                        if Ui::radio(&name, selected)
-                            .images(&self.radio_off, &self.radio_on)
-                            .image_layout(UiBtnLayout::Left)
-                            .size(grid_size)
-                            .press()
-                        {
-                            clicked = Some(entry_idx);
-                        }
-                    }
-                }
-                Ui::next_line();
-            }
+        if file.exists() && name_ok {
+            Ui::toggle("replace existing file", &mut self.replace_existing_file).interact();
         } else {
-            // ----- LIST MODE (3 aligned columns: name | size | date) -----
-            let gutter = Ui::get_settings().gutter;
-            let name_w = (content_w * 0.55).max(0.05);
-            let size_w = (content_w * 0.20).max(0.03);
-            let date_w = (content_w - name_w - size_w - gutter * 2.0).max(0.03);
-
-            let start_row = self.scroll as usize;
-            for visible_i in 0..visible_rows {
-                let idx = start_row + visible_i;
-                if idx >= total {
-                    break;
-                }
-                let entry_idx = self.filtered_indices[idx];
-                let entry = &self.entries[entry_idx];
-                let name = entry.name_str().to_string();
-                let (size_text, date_text) = if entry.is_dir {
-                    let count = std::fs::read_dir(self.dir.join(&entry.name)).map(|rd| rd.count()).unwrap_or(0);
-                    (format!("{} item(s)", count), format_date(entry.modified))
-                } else {
-                    (format_size(entry.size), format_date(entry.modified))
-                };
-
-                // Column 1: name (interactive)
-                if entry.is_dir {
-                    Ui::push_tint(self.dir_tint);
-                    if Ui::button(&name).size(Vec2::new(name_w, 0.0)).press() {
-                        dir_clicked = Some(entry_idx);
-                    }
-                    Ui::pop_tint();
-                } else {
-                    let selected = self.file_name_to_save == name;
-                    if Ui::radio(&name, selected)
-                        .images(&self.radio_off, &self.radio_on)
-                        .image_layout(UiBtnLayout::Left)
-                        .size(Vec2::new(name_w, 0.0))
-                        .press()
-                    {
-                        clicked = Some(entry_idx);
-                    }
-                }
-
-                // Column 2: size (non-interactive label)
-                Ui::same_line();
-                Ui::label(size_text).size(Vec2::new(size_w, 0.0)).use_padding(false).draw();
-
-                // Column 3: date (non-interactive label)
-                Ui::same_line();
-                Ui::label(date_text).size(Vec2::new(date_w, 0.0)).use_padding(false).draw();
-            }
-        }
-
-        if let Some(i) = dir_clicked {
-            let target = self.dir.join(&self.entries[i].name);
-            self.navigate_to(target);
-        }
-        if let Some(i) = clicked {
-            let name = self.entries[i].name_str().to_string();
-            self.file_name_to_save = name;
             self.replace_existing_file = false;
         }
+
+        Ui::pop_tint();
+        Ui::next_line();
     }
 
     fn draw_status_line(&mut self) {
@@ -890,13 +1017,28 @@ impl FileBrowserB {
             "{} folder(s), {} file(s){}  —  {:?}",
             n_dirs,
             n_files,
-            if total_size > 0 { format!(" (≈ {})", format_size(total_size)) } else { String::new() },
+            if total_size > 0 { format!(" ({})", format_size(total_size)) } else { String::new() },
             self.sort_by,
         );
         Ui::label(&self.status).size(Vec2::new(Ui::get_layout_remaining().x, 0.0)).draw();
     }
 
     // ----------------------------------------------------------------------- helpers
+
+    /// Resolve the root directory of a [`BrowseLocation`], creating app data directories when they
+    /// don't exist yet (they may be missing on Android). Never fails: falls back to the current
+    /// dir, then "/".
+    fn location_root(&self, location: BrowseLocation) -> PathBuf {
+        let root = location
+            .get_path(&self.sk_info)
+            .or_else(|| std::env::current_dir().ok())
+            .unwrap_or_else(|| PathBuf::from("/"));
+
+        if !root.is_dir() {
+            Log::warn(format!("FileBrowserB: {root:?} directory does not exist!"));
+        }
+        root
+    }
 
     /// Number of rows that fit in `available_h` according to the current view mode (list or grid),
     /// clamped to [`FileBrowserB::max_visible_rows`] when it is non-zero.
@@ -969,7 +1111,6 @@ impl FileBrowserB {
     fn refresh(&mut self) {
         self.entries = read_directory(&self.dir, &self.exts, self.show_hidden);
         self.recompute_filtered();
-        self.scroll = 0.0;
     }
 
     fn recompute_filtered(&mut self) {
@@ -1042,9 +1183,13 @@ pub fn read_directory(dir: &Path, exts: &[String], show_hidden: bool) -> Vec<Fil
 
         let is_dir = path.is_dir();
         let is_file = path.is_file();
+        // `fs::metadata` follows symlinks; it returns an error for broken links or other entries
+        // whose metadata can't be read. Such entries are marked `is_broken` rather than skipped.
+        let is_broken = std::fs::metadata(&path).is_err();
 
-        if !is_dir && !is_file {
-            // Skip symlinks/special files unless explicitly wanted.
+        if !is_dir && !is_file && !is_broken {
+            // Skip regular special files/symlinks unless they are broken (broken ones are kept
+            // so they can be surfaced and marked in the UI).
             continue;
         }
 
@@ -1055,16 +1200,25 @@ pub fn read_directory(dir: &Path, exts: &[String], show_hidden: bool) -> Vec<Fil
             }
         }
 
-        let (size, modified) = entry
+        let (size, modified, symlink_name) = entry
             .metadata()
             .map(|m| {
                 let size = if is_dir { 0 } else { m.len() };
                 let modified = m.modified().ok();
-                (size, modified)
+                let symlink_name = if m.is_symlink() {
+                    std::fs::read_link(&path).ok().map(|p| p.to_string_lossy().to_string())
+                } else {
+                    None
+                };
+                (size, modified, symlink_name)
             })
-            .unwrap_or((0, None));
+            .unwrap_or((0, None, None));
 
-        entries.push(FileEntry { name: file_name, is_dir, size, modified });
+        // Number of entries inside a subdirectory, computed once at scan time so the draw loop
+        // doesn't have to re-read every visible directory each frame.
+        let num_entries = if is_dir { std::fs::read_dir(&path).map(|rd| rd.count()).unwrap_or(0) } else { 0 };
+
+        entries.push(FileEntry { name: file_name, is_dir, is_broken, symlink_name, size, modified, num_entries });
     }
 
     entries.sort_by(|a, b| match (a.is_dir, b.is_dir) {

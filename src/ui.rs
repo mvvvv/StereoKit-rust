@@ -1725,7 +1725,8 @@ impl Ui {
     }
 
     /// This is an input field where users can input text to the app! Selecting it will spawn a virtual keyboard, or act
-    /// as the keyboard focus. Hitting escape or enter, or focusing another UI element will remove focus from this Input.
+    /// as the keyboard focus. Hitting escape or enter, or focusing another UI element will remove focus from this
+    /// Input. Shift+Enter adds a newline instead, and tab adds a tab.
     /// <https://stereokit.net/Pages/StereoKit/UI/Input.html>
     /// * `id` - An id for tracking element state. MUST be unique within current hierarchy.
     /// * `out_value` - The string that will store the Input’s content in.
@@ -1814,6 +1815,30 @@ impl Ui {
         if let Some(source) = Ui::hand_to_source(hand) { Interactor::is_interacting(source) } else { false }
     }
 
+    /// Is a [`Ui::input`] currently focused and taking keyboard input? A focused Input reads the whole keyboard event
+    /// queue, so this is how you tell whether your own keyboard handling should stand down for the frame.
+    /// <https://stereokit.net/Pages/StereoKit/UI/HasKeyboardFocus.html>
+    ///
+    /// see also [`ui_has_keyboard_focus`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::ui::Ui;
+    /// let mut username = String::from("user");
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     Ui::window("Input fields").begin();
+    ///     Ui::input("username1", &mut username).size([0.15, 0.03]).edit();
+    ///     Ui::window_end();
+    ///
+    ///     // These are unit tests. no way to focus something
+    ///     assert_eq!(Ui::has_keyboard_focus(), false);
+    /// );
+    /// ```
+    pub fn has_keyboard_focus() -> bool {
+        unsafe { ui_has_keyboard_focus() != 0 }
+    }
+
     /// Adds some text to the layout! Text uses the UI’s current font settings, which can be changed with
     /// Ui::push/pop_text_style. Can contain newlines!
     /// <https://stereokit.net/Pages/StereoKit/UI/Label.html>
@@ -1855,7 +1880,6 @@ impl Ui {
 
     /// Tells if the hand was involved in the active state of the most recently called UI element using an id. Active
     /// state is frequently a single frame in the case of Buttons, but could be many in the case of Sliders or Handles.
-    /// TODO: v0.4 These functions use hands instead of interactors, they need replaced!
     /// <https://stereokit.net/Pages/StereoKit/UI/LastElementHandActive.html>
     /// * `hand` - Which hand we’re checking.
     ///
@@ -1881,10 +1905,7 @@ impl Ui {
     ///     Ui::window_end();
     /// );
     /// ```
-    #[deprecated(
-        since = "0.4.0",
-        note = "TODO: These functions use hands instead of interactors, they need replaced!"
-    )]
+    #[deprecated(since = "0.4.0", note = "see [`Ui::last_element_source_active`] instead")]
     pub fn last_element_hand_active(hand: Handed) -> BtnState {
         if let Some(source) = Ui::hand_to_source(hand) {
             Ui::last_element_source_active(source)
@@ -1896,7 +1917,6 @@ impl Ui {
     /// Tells if the hand was involved in the focus state of the most recently called UI element using an id. Focus
     /// occurs when the hand is in or near an element, in such a way that indicates the user may be about to interact
     /// with it.
-    /// TODO: v0.4 These functions use hands instead of interactors, they need replaced!
     /// <https://stereokit.net/Pages/StereoKit/UI/LastElementHandFocused.html>
     /// * `hand` - Which hand we’re checking.
     ///
@@ -1921,10 +1941,7 @@ impl Ui {
     ///     Ui::window_end();
     /// );
     /// ```
-    #[deprecated(
-        since = "0.4.0",
-        note = "TODO: These functions use hands instead of interactors, they need replaced!"
-    )]
+    #[deprecated(since = "0.4.0", note = "see [`Ui::last_element_source_focused`] instead")]
     pub fn last_element_hand_focused(hand: Handed) -> BtnState {
         let source = match hand {
             Handed::Left => InteractorSource::HandLeft,

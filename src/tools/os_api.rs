@@ -215,6 +215,184 @@ pub fn get_external_path(_sk_info: &Option<Rc<RefCell<SkInfo>>>) -> Option<PathB
     Some(path_assets)
 }
 
+/// The storage locations a file browser can browse.
+///
+/// On Android they map to the app storage places, on PC (non Android) they are juxtaposed
+/// with equivalent directories:
+///
+/// | Location                      | Android                          | PC                        |
+/// |-------------------------------|----------------------------------|---------------------------|
+/// | [`BrowseLocation::Internal`]  | `internal_data_path`             | current working directory |
+/// | [`BrowseLocation::External`]  | `external_data_path`             | assets directory          |
+/// | [`BrowseLocation::Documents`] | shared public Documents folder   | user `Documents` folder   |
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum BrowseLocation {
+    /// Android: app internal data path (`/data/data/<package>/files`). PC: current working directory.
+    Internal,
+    /// Android: app external data path (`/storage/emulated/0/Android/data/<package>/files`).
+    /// PC: the assets directory.
+    #[default]
+    External,
+    /// Android: shared public Documents folder (`/storage/emulated/0/Documents`).
+    /// PC: the user's `Documents` folder.
+    Documents,
+    Pictures,
+    Movies,
+    Music,
+    Downloads,
+}
+
+impl BrowseLocation {
+    /// The on-disk directory name, used to build the public directory path
+    /// (e.g. `/storage/emulated/0/<dir>` on Android, `~/<dir>` on PC).
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            BrowseLocation::Internal => "internal",
+            BrowseLocation::External => "external",
+            BrowseLocation::Documents => "Documents",
+            BrowseLocation::Pictures => "Pictures",
+            BrowseLocation::Movies => "Movies",
+            BrowseLocation::Music => "Music",
+            #[cfg(target_os = "android")]
+            BrowseLocation::Downloads => "Download",
+            #[cfg(not(target_os = "android"))]
+            BrowseLocation::Downloads => "Downloads",
+        }
+    }
+
+    /// Resolve the root directory of a [`BrowseLocation`]:
+    /// * Android: `internal_data_path` / `external_data_path` / shared Documents folder.
+    /// * PC: juxtaposed current dir / assets dir / user Documents folder.
+    ///
+    /// * `sk_info` - The SkInfo smart pointer
+    /// * `location` - The location to resolve.
+    pub fn get_path(&self, sk_info: &Option<Rc<RefCell<SkInfo>>>) -> Option<PathBuf> {
+        match self {
+            BrowseLocation::Internal => get_internal_path(sk_info).or_else(|| std::env::current_dir().ok()),
+            BrowseLocation::External => get_external_path(sk_info),
+            otherwise => get_public_dir(*otherwise),
+        }
+    }
+}
+
+// Récupère le chemin d'un dossier public sans méthodes obsolètes (API 30+)
+#[cfg(target_os = "android")]
+pub fn get_public_dir(dir_type: BrowseLocation) -> Option<PathBuf> {
+    use jni::{
+        jni_sig, jni_str,
+        objects::{JObject, JString, JValue},
+    };
+
+    let vm = unsafe { jni::JavaVM::from_raw(BackendAndroid::java_vm() as _) };
+
+    // 2. Appel JNI pour récupérer le chemin racine via StorageManager
+    let path_str = vm
+        .attach_current_thread(|env| -> jni::errors::Result<String> {
+            let context = unsafe { jni::objects::JObject::from_raw(env, BackendAndroid::activity() as _) };
+            // StorageManager storageManager = (StorageManager) context.getSystemService(Context.STORAGE_SERVICE);
+            let service_name = env.new_string("storage")?;
+            let storage_manager = env
+                .call_method(
+                    &context,
+                    jni_str!("getSystemService"),
+                    jni_sig!("(Ljava/lang/String;)Ljava/lang/Object;"),
+                    &[JValue::Object(&JObject::from(service_name))],
+                )?
+                .l()?;
+
+            if storage_manager.is_null() {
+                return Ok(String::new());
+            }
+
+            // StorageVolume primaryVolume = storageManager.getPrimaryStorageVolume();
+            let primary_volume = env
+                .call_method(
+                    &storage_manager,
+                    jni_str!("getPrimaryStorageVolume"),
+                    jni_sig!("()Landroid/os/storage/StorageVolume;"),
+                    &[],
+                )?
+                .l()?;
+
+            if primary_volume.is_null() {
+                return Ok(String::new());
+            }
+
+            // File rootDir = primaryVolume.getDirectory(); (Android 11 / API 30+)
+            let root_file =
+                env.call_method(&primary_volume, jni_str!("getDirectory"), jni_sig!("()Ljava/io/File;"), &[])?.l()?;
+
+            if root_file.is_null() {
+                return Ok(String::new());
+            }
+
+            // String rootPath = rootDir.getAbsolutePath();
+            let root_path_obj = env
+                .call_method(&root_file, jni_str!("getAbsolutePath"), jni_sig!("()Ljava/lang/String;"), &[])?
+                .l()?;
+
+            let java_str = unsafe { JString::from_raw(env, root_path_obj.into_raw() as jni::sys::jstring) };
+            Ok(java_str.to_string())
+        })
+        .ok()?;
+
+    if !path_str.is_empty() {
+        let mut path = PathBuf::from(path_str);
+        path.push(dir_type.as_str());
+        Log::diag(format!("get_public_dir({:?}) resolved to {:?}", dir_type, path));
+        Some(path)
+    } else {
+        // Fallback si le StorageManager ne répond pas
+        Log::diag(format!("get_public_dir({:?}) resolved to uggly default", dir_type));
+        Some(PathBuf::from(format!("/storage/emulated/0/{}", dir_type.as_str())))
+    }
+}
+
+/// Get the path to a shared public folder for non android (user home folders).
+///
+/// Maps the [`BrowseLocation`] to the corresponding user folder on the PC:
+///
+/// * [`BrowseLocation::Documents`] -> user `Documents` folder (`~/Documents`)
+/// * [`BrowseLocation::Pictures`]  -> user `Pictures`  folder (`~/Pictures`)
+/// * [`BrowseLocation::Movies`]    -> user `Videos`    folder (`~/Videos`)
+/// * [`BrowseLocation::Music`]     -> user `Music`     folder (`~/Music`)
+/// * [`BrowseLocation::Downloads`] -> user `Downloads` folder (`~/Downloads`)
+///
+/// On Linux the XDG user dirs are respected (`XDG_*_DIR`), with a fallback to
+/// `$HOME/<folder>`. On Windows/macOS the `$USERPROFILE`/`$HOME` is used.
+#[cfg(not(target_os = "android"))]
+pub fn get_public_dir(dir_type: BrowseLocation) -> Option<PathBuf> {
+    use std::env;
+
+    match dir_type {
+        BrowseLocation::Documents => xdg_or_home_dir("XDG_DOCUMENTS_DIR", "Documents"),
+        BrowseLocation::Pictures => xdg_or_home_dir("XDG_PICTURES_DIR", "Pictures"),
+        BrowseLocation::Movies => xdg_or_home_dir("XDG_VIDEOS_DIR", "Videos"),
+        BrowseLocation::Music => xdg_or_home_dir("XDG_MUSIC_DIR", "Music"),
+        BrowseLocation::Downloads => xdg_or_home_dir("XDG_DOWNLOAD_DIR", "Downloads"),
+        // Internal / External are normally handled by `BrowseLocation::get_path`,
+        // but keep the function behavior coherent if it is called directly.
+        BrowseLocation::Internal => env::current_dir().ok(),
+        BrowseLocation::External => get_external_path(&None),
+    }
+}
+
+/// Try an XDG user dir env var first, else fall back to `$HOME/<folder>`.
+#[cfg(not(target_os = "android"))]
+fn xdg_or_home_dir(env_var: &str, fallback_name: &str) -> Option<PathBuf> {
+    use std::env;
+
+    if let Ok(dir) = env::var(env_var)
+        && !dir.is_empty()
+    {
+        return Some(PathBuf::from(dir));
+    }
+
+    // Unix (HOME) and Windows (USERPROFILE) home directories.
+    let home = env::var("HOME").or_else(|_| env::var("USERPROFILE")).ok()?;
+    Some(PathBuf::from(home).join(fallback_name))
+}
+
 /// Get the current locale of the system. For Android, it uses Java APIs to get the default locale.
 #[cfg(target_os = "android")]
 pub fn get_locale() -> String {

@@ -309,7 +309,10 @@ pub fn launch(mut sk: Sk, is_testing: bool, start_test: String) {
         scene_frame += 1;
 
         // Playing with projection in simulator mode
-        if Backend::xr_type() == BackendXRType::Simulator && Input::key(Key::P).is_just_active() {
+        if Backend::xr_type() == BackendXRType::Simulator
+            && Input::key(Key::P).is_just_active()
+            && !Ui::has_keyboard_focus()
+        {
             if Renderer::get_projection() == Projection::Perspective {
                 Renderer::projection(Projection::Orthographic);
             } else {
