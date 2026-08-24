@@ -5,7 +5,7 @@ use stereokit_rust::{
     sprite::Sprite,
     system::{Log, Text, TextBuilder, TextStyle},
     tools::{
-        file_browser_b::{FILE_BROWSER_B_OPEN, FILE_BROWSER_B_SAVE, FileBrowserB},
+        file_browser_b::{BasicPreviewer, FILE_BROWSER_B_OPEN, FILE_BROWSER_B_SAVE, FileBrowserB},
         os_api::BrowseLocation,
     },
     ui::{Ui, UiBtnLayout, UiWin},
@@ -233,6 +233,11 @@ impl Documents1 {
 
         // Tweak the window so it pops up comfortably next to the demo panel.
         file_browser.window_pose = Ui::popup_pose([(self.browser_counter as f32) / 100.0, 0.05, 0.10]);
+
+        // Set the default previewer: `BasicPreview`, boxed as a `Preview` trait object. The browser
+        // calls it every frame with the focused entry's path, the window pose and the focused
+        // button pose, drawing a small info panel beside the button.
+        file_browser.preview = Some(Box::new(BasicPreviewer::default()));
 
         if mode == PickerMode::Save {
             file_browser.picker_mode = PickerMode::Save;

@@ -187,10 +187,90 @@ pub fn get_internal_path(sk_info: &Option<Rc<RefCell<SkInfo>>>) -> Option<PathBu
     app.internal_data_path()
 }
 
-/// Get the path to external data directory for non android
-#[cfg(not(target_os = "android"))]
-pub fn get_internal_path(_sk_info: &Option<Rc<RefCell<SkInfo>>>) -> Option<PathBuf> {
-    None
+/// Get the path to the application's internal files directory (XDG `data` dir) for Linux.
+///
+/// This is where an application stores its internal files, following the
+/// [XDG Base Directory spec](https://specifications.freedesktop.org/basedir-spec/latest/):
+/// `$XDG_DATA_HOME/<app_name>`, or `~/.local/share/<app_name>` when `XDG_DATA_HOME`
+/// is not set (or not absolute).
+///
+/// * `sk_info` - The SkInfo smart pointer, used to get the application name.
+///
+/// ### Examples
+/// ```
+/// use stereokit_rust::tools::os_api::get_internal_path;
+///
+/// // `~/.local/share/<app_name>` on Linux, `%APPDATA%\<app_name>` on Windows,
+/// // `~/Library/Application Support/<app_name>` on macOS.
+/// if let Some(internal_dir) = get_internal_path(&None) {
+///     println!("App internal files dir: {internal_dir:?}");
+/// }
+/// ```
+#[cfg(target_os = "linux")]
+pub fn get_internal_path(sk_info: &Option<Rc<RefCell<SkInfo>>>) -> Option<PathBuf> {
+    use std::env;
+
+    let base = env::var("XDG_DATA_HOME")
+        .ok()
+        .filter(|dir| Path::new(dir).is_absolute())
+        .map(PathBuf::from)
+        .or_else(|| env::var("HOME").ok().map(|home| PathBuf::from(home).join(".local").join("share")))?;
+
+    Some(base.join(app_dir_name(sk_info)))
+}
+
+/// Get the path to the application's internal files directory for macOS.
+///
+/// This is where an application stores its internal files:
+/// `~/Library/Application Support/<app_name>` (macOS has no XDG equivalent,
+/// settings and data conventionally share the same folder).
+///
+/// * `sk_info` - The SkInfo smart pointer, used to get the application name.
+///
+/// ### Examples
+/// ```
+/// use stereokit_rust::tools::os_api::get_internal_path;
+///
+/// // `~/Library/Application Support/<app_name>` on macOS.
+/// if let Some(internal_dir) = get_internal_path(&None) {
+///     println!("App internal files dir: {internal_dir:?}");
+/// }
+/// ```
+#[cfg(target_os = "macos")]
+pub fn get_internal_path(sk_info: &Option<Rc<RefCell<SkInfo>>>) -> Option<PathBuf> {
+    use std::env;
+
+    let home = env::var("HOME").ok()?;
+    Some(PathBuf::from(home).join("Library").join("Application Support").join(app_dir_name(sk_info)))
+}
+
+/// Get the path to the application's internal files directory for Windows.
+///
+/// This is where an application stores its internal files:
+/// `%APPDATA%\<app_name>` (i.e. `C:\Users\<user>\AppData\Roaming\<app_name>`),
+/// with a `~\AppData\Roaming` fallback if `%APPDATA%` is missing.
+///
+/// * `sk_info` - The SkInfo smart pointer, used to get the application name.
+///
+/// ### Examples
+/// ```
+/// use stereokit_rust::tools::os_api::get_internal_path;
+///
+/// // `%APPDATA%\<app_name>` on Windows.
+/// if let Some(internal_dir) = get_internal_path(&None) {
+///     println!("App internal files dir: {internal_dir:?}");
+/// }
+/// ```
+#[cfg(target_os = "windows")]
+pub fn get_internal_path(sk_info: &Option<Rc<RefCell<SkInfo>>>) -> Option<PathBuf> {
+    use std::env;
+
+    let base = env::var("APPDATA")
+        .ok()
+        .map(PathBuf::from)
+        .or_else(|| env::var("USERPROFILE").ok().map(|home| PathBuf::from(home).join("AppData").join("Roaming")))?;
+
+    Some(base.join(app_dir_name(sk_info)))
 }
 
 /// Get the path to external data directory for Android
@@ -206,31 +286,146 @@ pub fn get_external_path(sk_info: &Option<Rc<RefCell<SkInfo>>>) -> Option<PathBu
     app.external_data_path()
 }
 
-/// Get the path to external data directory for non android (assets)
-#[cfg(not(target_os = "android"))]
-pub fn get_external_path(_sk_info: &Option<Rc<RefCell<SkInfo>>>) -> Option<PathBuf> {
+/// Get the path to the application's settings directory (XDG `config` dir) for Linux.
+///
+/// This is where an application stores its settings, following the
+/// [XDG Base Directory spec](https://specifications.freedesktop.org/basedir-spec/latest/):
+/// `$XDG_CONFIG_HOME/<app_name>`, or `~/.config/<app_name>` when `XDG_CONFIG_HOME`
+/// is not set (or not absolute).
+///
+/// * `sk_info` - The SkInfo smart pointer, used to get the application name.
+///
+/// ### Examples
+/// ```
+/// use stereokit_rust::tools::os_api::get_external_path;
+///
+/// // `~/.config/<app_name>` on Linux, `%APPDATA%\<app_name>` on Windows,
+/// // `~/Library/Application Support/<app_name>` on macOS.
+/// if let Some(settings_dir) = get_external_path(&None) {
+///     println!("App settings dir: {settings_dir:?}");
+/// }
+/// ```
+#[cfg(target_os = "linux")]
+pub fn get_external_path(sk_info: &Option<Rc<RefCell<SkInfo>>>) -> Option<PathBuf> {
     use std::env;
 
-    let path_assets = env::current_dir().unwrap_or_default().join(get_assets_dir());
-    Some(path_assets)
+    let base = env::var("XDG_CONFIG_HOME")
+        .ok()
+        .filter(|dir| Path::new(dir).is_absolute())
+        .map(PathBuf::from)
+        .or_else(|| env::var("HOME").ok().map(|home| PathBuf::from(home).join(".config")))?;
+
+    Some(base.join(app_dir_name(sk_info)))
+}
+
+/// Get the path to the application's settings directory for macOS.
+///
+/// This is where an application stores its settings:
+/// `~/Library/Application Support/<app_name>` (macOS has no XDG equivalent,
+/// settings and data conventionally share the same folder).
+///
+/// * `sk_info` - The SkInfo smart pointer, used to get the application name.
+///
+/// ### Examples
+/// ```
+/// use stereokit_rust::tools::os_api::get_external_path;
+///
+/// // `~/Library/Application Support/<app_name>` on macOS.
+/// if let Some(settings_dir) = get_external_path(&None) {
+///     println!("App settings dir: {settings_dir:?}");
+/// }
+/// ```
+#[cfg(target_os = "macos")]
+pub fn get_external_path(sk_info: &Option<Rc<RefCell<SkInfo>>>) -> Option<PathBuf> {
+    use std::env;
+
+    let home = env::var("HOME").ok()?;
+    Some(PathBuf::from(home).join("Library").join("Application Support").join(app_dir_name(sk_info)))
+}
+
+/// Get the path to the application's settings directory for Windows.
+///
+/// This is where an application stores its settings:
+/// `%APPDATA%\<app_name>` (i.e. `C:\Users\<user>\AppData\Roaming\<app_name>`),
+/// with a `~\AppData\Roaming` fallback if `%APPDATA%` is missing.
+///
+/// * `sk_info` - The SkInfo smart pointer, used to get the application name.
+///
+/// ### Examples
+/// ```
+/// use stereokit_rust::tools::os_api::get_external_path;
+///
+/// // `%APPDATA%\<app_name>` on Windows.
+/// if let Some(settings_dir) = get_external_path(&None) {
+///     println!("App settings dir: {settings_dir:?}");
+/// }
+/// ```
+#[cfg(target_os = "windows")]
+pub fn get_external_path(sk_info: &Option<Rc<RefCell<SkInfo>>>) -> Option<PathBuf> {
+    use std::env;
+
+    let base = env::var("APPDATA")
+        .ok()
+        .map(PathBuf::from)
+        .or_else(|| env::var("USERPROFILE").ok().map(|home| PathBuf::from(home).join("AppData").join("Roaming")))?;
+
+    Some(base.join(app_dir_name(sk_info)))
+}
+
+/// Get the name of the application used to build its per-app settings/data folders.
+///
+/// The name comes, in order, from:
+/// 1. the StereoKit settings ([`crate::sk::SkSettings::app_name`]) when `sk_info` is available,
+/// 2. the current executable file name,
+/// 3. the `"StereoKitApp"` default.
+#[cfg(not(target_os = "android"))]
+fn app_dir_name(sk_info: &Option<Rc<RefCell<SkInfo>>>) -> String {
+    use std::ffi::CStr;
+
+    // 1. The application name from the StereoKit settings.
+    if let Some(sk) = sk_info {
+        let settings = sk.borrow().get_settings();
+        if !settings.app_name.is_null() {
+            let name = unsafe { CStr::from_ptr(settings.app_name) }.to_string_lossy().trim().to_string();
+            if !name.is_empty() {
+                return name;
+            }
+        }
+    }
+
+    // 2. The current executable name.
+    if let Ok(exe) = std::env::current_exe()
+        && let Some(stem) = exe.file_stem()
+    {
+        let name = stem.to_string_lossy().trim().to_string();
+        if !name.is_empty() {
+            return name;
+        }
+    }
+
+    // 3. The StereoKit default app name.
+    "StereoKitApp".to_string()
 }
 
 /// The storage locations a file browser can browse.
 ///
 /// On Android they map to the app storage places, on PC (non Android) they are juxtaposed
-/// with equivalent directories:
+/// with the standard per-OS application and user folders:
 ///
-/// | Location                      | Android                          | PC                        |
-/// |-------------------------------|----------------------------------|---------------------------|
-/// | [`BrowseLocation::Internal`]  | `internal_data_path`             | current working directory |
-/// | [`BrowseLocation::External`]  | `external_data_path`             | assets directory          |
-/// | [`BrowseLocation::Documents`] | shared public Documents folder   | user `Documents` folder   |
+/// | Location                      | Android                          | PC                                                     |
+/// |-------------------------------|----------------------------------|--------------------------------------------------------|
+/// | [`BrowseLocation::Internal`]  | `internal_data_path`             | app internal files dir (`~/.local/share/<app>` on Linux) |
+/// | [`BrowseLocation::External`]  | `external_data_path`             | app settings dir (`~/.config/<app>` on Linux)            |
+/// | [`BrowseLocation::Documents`] | shared public Documents folder   | user `Documents` folder                                  |
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum BrowseLocation {
-    /// Android: app internal data path (`/data/data/<package>/files`). PC: current working directory.
+    /// Android: app internal data path (`/data/data/<package>/files`).
+    /// PC: the app's internal files dir — Linux `~/.local/share/<app>`,
+    /// macOS `~/Library/Application Support/<app>`, Windows `%APPDATA%\<app>`.
     Internal,
     /// Android: app external data path (`/storage/emulated/0/Android/data/<package>/files`).
-    /// PC: the assets directory.
+    /// PC: the app's settings dir — Linux `~/.config/<app>`,
+    /// macOS `~/Library/Application Support/<app>`, Windows `%APPDATA%\<app>`.
     #[default]
     External,
     /// Android: shared public Documents folder (`/storage/emulated/0/Documents`).
@@ -261,8 +456,8 @@ impl BrowseLocation {
     }
 
     /// Resolve the root directory of a [`BrowseLocation`]:
-    /// * Android: `internal_data_path` / `external_data_path` / shared Documents folder.
-    /// * PC: juxtaposed current dir / assets dir / user Documents folder.
+    /// * Android: `internal_data_path` / `external_data_path` / shared public folders.
+    /// * PC: app internal files dir / app settings dir / user public folders.
     ///
     /// * `sk_info` - The SkInfo smart pointer
     /// * `location` - The location to resolve.
@@ -352,14 +547,29 @@ pub fn get_public_dir(dir_type: BrowseLocation) -> Option<PathBuf> {
 ///
 /// Maps the [`BrowseLocation`] to the corresponding user folder on the PC:
 ///
-/// * [`BrowseLocation::Documents`] -> user `Documents` folder (`~/Documents`)
-/// * [`BrowseLocation::Pictures`]  -> user `Pictures`  folder (`~/Pictures`)
-/// * [`BrowseLocation::Movies`]    -> user `Videos`    folder (`~/Videos`)
-/// * [`BrowseLocation::Music`]     -> user `Music`     folder (`~/Music`)
-/// * [`BrowseLocation::Downloads`] -> user `Downloads` folder (`~/Downloads`)
+/// * [`BrowseLocation::Documents`] -> user `Documents` folder
+/// * [`BrowseLocation::Pictures`]  -> user `Pictures`  folder
+/// * [`BrowseLocation::Movies`]    -> user `Videos` folder (`Movies` on macOS)
+/// * [`BrowseLocation::Music`]     -> user `Music`     folder
+/// * [`BrowseLocation::Downloads`] -> user `Downloads` folder
 ///
-/// On Linux the XDG user dirs are respected (`XDG_*_DIR`), with a fallback to
-/// `$HOME/<folder>`. On Windows/macOS the `$USERPROFILE`/`$HOME` is used.
+/// The home folder resolution is OS dependant (first match wins):
+///
+/// | OS      | Resolution order                                                                                 |
+/// |---------|--------------------------------------------------------------------------------------------------|
+/// | Linux   | `XDG_*_DIR` env var, then `${XDG_CONFIG_HOME:-$HOME/.config}/user-dirs.dirs`, then `$HOME/<folder>` |
+/// | macOS   | `$HOME/<folder>` (no XDG, the video folder is named `Movies`)                                     |
+/// | Windows | `%USERPROFILE%\<folder>` (e.g. `C:\Users\<user>\Documents`)                                       |
+///
+/// ### Examples
+/// ```
+/// use stereokit_rust::tools::os_api::{get_public_dir, BrowseLocation};
+///
+/// // Resolved accordingly to the current OS: XDG on Linux, `~/` or `%USERPROFILE%` folders elsewhere.
+/// if let Some(documents) = get_public_dir(BrowseLocation::Documents) {
+///     println!("Documents folder: {documents:?}");
+/// }
+/// ```
 #[cfg(not(target_os = "android"))]
 pub fn get_public_dir(dir_type: BrowseLocation) -> Option<PathBuf> {
     use std::env;
@@ -378,18 +588,93 @@ pub fn get_public_dir(dir_type: BrowseLocation) -> Option<PathBuf> {
 }
 
 /// Try an XDG user dir env var first, else fall back to `$HOME/<folder>`.
-#[cfg(not(target_os = "android"))]
+///
+/// Linux implementation, the resolution order is:
+/// 1. the `XDG_*_DIR` environment variable if set (e.g. `XDG_DOCUMENTS_DIR`),
+/// 2. the `${XDG_CONFIG_HOME:-$HOME/.config}/user-dirs.dirs` file written by
+///    `xdg-user-dirs` (where Linux desktops actually store those paths),
+/// 3. `$HOME/<fallback_name>` as a last resort.
+#[cfg(target_os = "linux")]
 fn xdg_or_home_dir(env_var: &str, fallback_name: &str) -> Option<PathBuf> {
     use std::env;
 
+    // 1. The XDG_*_DIR environment variable.
     if let Ok(dir) = env::var(env_var)
         && !dir.is_empty()
     {
         return Some(PathBuf::from(dir));
     }
 
-    // Unix (HOME) and Windows (USERPROFILE) home directories.
-    let home = env::var("HOME").or_else(|_| env::var("USERPROFILE")).ok()?;
+    let home = env::var("HOME").ok()?;
+    let home_path = PathBuf::from(&home);
+
+    // 2. The user-dirs.dirs config file, e.g. `XDG_DOCUMENTS_DIR="$HOME/Documents"`.
+    //    XDG_CONFIG_HOME must be absolute to be valid, otherwise fall back to ~/.config.
+    let config_dir = env::var("XDG_CONFIG_HOME")
+        .ok()
+        .filter(|dir| Path::new(dir).is_absolute())
+        .map(PathBuf::from)
+        .unwrap_or_else(|| home_path.join(".config"));
+
+    if let Ok(user_dirs) = std::fs::read_to_string(config_dir.join("user-dirs.dirs")) {
+        for line in user_dirs.lines() {
+            if let Some(value) = user_dirs_value(line, env_var) {
+                let path = PathBuf::from(value.replace("$HOME", &home));
+                if path.is_absolute() {
+                    return Some(path);
+                }
+            }
+        }
+    }
+
+    // 3. $HOME/<fallback_name>
+    Some(home_path.join(fallback_name))
+}
+
+/// Extract the value of `env_var` from a `user-dirs.dirs` line.
+///
+/// The expected line format is `<env_var>="$HOME/<folder>"` (or an absolute path),
+/// comment lines (starting with `#`) are ignored.
+///
+/// Returns the unquoted value, with `$HOME` still to expand.
+#[cfg(target_os = "linux")]
+fn user_dirs_value<'a>(line: &'a str, env_var: &str) -> Option<&'a str> {
+    let line = line.trim();
+    if line.starts_with('#') {
+        return None;
+    }
+    let value = line.strip_prefix(env_var)?.trim_start().strip_prefix('=')?.trim();
+    let value = value.trim_matches('"');
+    if value.is_empty() { None } else { Some(value) }
+}
+
+/// macOS implementation: the user folders always live directly under `$HOME`
+/// (macOS doesn't follow the XDG spec), so the `env_var` parameter is ignored.
+///
+/// The XDG video user dir (`Videos`) is named `Movies` on macOS.
+#[cfg(target_os = "macos")]
+fn xdg_or_home_dir(_env_var: &str, fallback_name: &str) -> Option<PathBuf> {
+    use std::env;
+
+    let folder_name = match fallback_name {
+        "Videos" => "Movies",
+        otherwise => otherwise,
+    };
+
+    let home = env::var("HOME").ok()?;
+    Some(PathBuf::from(home).join(folder_name))
+}
+
+/// Windows implementation: the user folders always live directly under
+/// `%USERPROFILE%`, so the `env_var` XDG parameter is ignored.
+///
+/// The resolution is `%USERPROFILE%\<fallback_name>` (e.g. `C:\Users\<user>\Documents`),
+/// `HOME` is kept as a fallback for MSYS/Cygwin like environments.
+#[cfg(target_os = "windows")]
+fn xdg_or_home_dir(_env_var: &str, fallback_name: &str) -> Option<PathBuf> {
+    use std::env;
+
+    let home = env::var("USERPROFILE").or_else(|_| env::var("HOME")).ok()?;
     Some(PathBuf::from(home).join(fallback_name))
 }
 
