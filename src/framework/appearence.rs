@@ -21,7 +21,8 @@ const MAX_UI_SCALE: f32 = 4.0;
 ///   [`Appearence::window_size`] (local X = width, local Y = height) and [`Appearence::ui_scale`] (local Z),
 /// - the four text styles, from the biggest ([`Appearence::title_style`]) to the smallest
 ///   ([`Appearence::small_style`]), give the UI some relief,
-/// - the three tints color directory buttons, input fields and error entries.
+/// - the three tints color directory buttons, input fields and error entries,
+/// - [`Appearence::double_click_delay`] is the maximum delay between the two presses of a "double-click".
 ///
 /// Call [`Appearence::start`] once when the window stepper starts (it captures the base text heights and applies the
 /// current scale), then [`Appearence::scale_handle`] every frame after the window itself has been drawn.
@@ -75,6 +76,9 @@ pub struct Appearence {
     pub button_tint: Color128,
     pub input_tint: Color128,
     pub error_tint: Color128,
+
+    /// Maximum delay in seconds between the two presses (`JustActive`) of a "double-click" on an entry. Default is 0.5.
+    pub double_click_delay: f32,
 }
 
 impl Default for Appearence {
@@ -102,6 +106,7 @@ impl Default for Appearence {
             button_tint: named_colors::DARK_SLATE_GRAY.into(),
             input_tint: named_colors::SADDLE_BROWN.into(),
             error_tint: named_colors::RED.into(),
+            double_click_delay: 0.5,
 
             ui_settings_scaled: Ui::get_settings(),
         }
@@ -122,6 +127,7 @@ impl Appearence {
         self.window_size = Vec2::max(self.window_size, self.min_window_size);
         self.ui_scale = self.ui_scale.clamp(MIN_UI_SCALE, MAX_UI_SCALE);
         self.scale_per_meter = self.scale_per_meter.max(0.01);
+        self.double_click_delay = self.double_click_delay.max(0.0);
 
         self.text_base_heights = [
             self.title_style.get_layout_height(),

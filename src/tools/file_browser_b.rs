@@ -10,7 +10,7 @@ use crate::{
     util::{Color32, Color128, PickerMode, named_colors},
 };
 use std::path::{Path, PathBuf};
-use std::time::SystemTime;
+use std::time::{Instant, SystemTime};
 
 pub const FILE_BROWSER_B_OPEN: &str = "File_Browser_B_open";
 pub const FILE_BROWSER_B_SAVE: &str = "File_Browser_B_save";
@@ -70,11 +70,13 @@ impl FileEntry {
 /// ### Fields that should be changed before initialization:
 /// * `picker_mode` - What the file browser is for, also driving the window title ("Opening a file", "Creating a file",
 ///   "Selecting a directory", "Deleting a file" or "Deleting a directory"):
-///   - [`PickerMode::Open`] (Default) confirms opening an existing file ([`FILE_BROWSER_B_OPEN`] event),
+///   - [`PickerMode::Open`] (Default) confirms opening an existing file ([`FILE_BROWSER_B_OPEN`] event). A
+///     double-click (two presses within [`Appearence::double_click_delay`]) on the selected file of the list opens it
+///     directly,
 ///   - [`PickerMode::Save`] enters or selects the name of the destination file ([`FILE_BROWSER_B_SAVE`] event),
 ///   - [`PickerMode::SelectDirectory`] confirms the browsed directory ([`FILE_BROWSER_B_SELECT_DIR`] event),
-///   - [`PickerMode::DeleteFile`] / [`PickerMode::DeleteDirectory`] notify the file / directory to delete to the caller
-///   ([`FILE_BROWSER_B_DELETE`] event) the browser never deletes anything itself so you have to do it in the caller.
+///   - [`PickerMode::DeleteFile`] selects the file to delete in the list ([`FILE_BROWSER_B_DELETE`] event),
+///   - [`PickerMode::DeleteDirectory`] selects the file to delete in the list ([`FILE_BROWSER_B_DELETE`] event),
 /// * `caller` - The id of the stepper that launched the browser and is waiting for a [`FILE_BROWSER_B_OPEN`],
 ///   [`FILE_BROWSER_B_SAVE`], [`FILE_BROWSER_B_SELECT_DIR`], [`FILE_BROWSER_B_DELETE`] event.
 /// * `dir` - The directory to show. see [`crate::tools::os_api::BrowseLocation`] You can browse outside of this
@@ -93,6 +95,8 @@ impl FileEntry {
 /// * `appearence.button_tint` - Tint used for directory buttons.
 /// * `appearence.input_tint` - Tint used for the input fields.
 /// * `appearence.error_tint` - Tint used to signal error entries in the list (dead symlinks, unreadable metadata).
+/// * `appearence.double_click_delay` - Maximum delay between the two presses of a double-click on a file of the list
+///   (Open mode), 0 disables it. Default is 0.5.
 /// * `show_hidden` - Whether hidden files (leading dot) are visible at start.
 /// * `grid_view` - Whether to show files in a grid (true) or list (false) at start. Default is false (list).
 /// * `appearence.title_style`, `appearence.list_style`, `appearence.label_style`,`appearence.small_style` - The four
@@ -201,8 +205,9 @@ pub struct FileBrowserB {
     replace_existing_file: bool,
     /// Confirmation toggle of the delete modes: the "Delete" button stays disabled until the user checks it.
     confirm_delete: bool,
-    /// Name of the entry selected in the list: the file to open (Open mode), the file/directory to delete
-    /// (DeleteFile/DeleteDirectory modes). Also used to highlight the selected row.
+    /// Name of the entry selected in the list: the file to open (Open mode) or the file to delete (DeleteFile mode).
+    /// Also used to highlight the selected row. Unused in the directory modes, which browse INTO their target instead
+    /// of selecting it in the list.
     file_selected_name: String,
     sort_by: SortBy,
     sort_ascending: bool,
@@ -213,6 +218,9 @@ pub struct FileBrowserB {
     needs_refresh: bool,
     last_auto_refresh: Option<SystemTime>,
     status: String,
+    /// Double-click tracking: the instant of, and the entry name pressed by, the last `JustActive` on a file radio
+    /// of the list, see [`Appearence::double_click_delay`] and [`FileBrowserB::listen_double_click`].
+    last_list_press: Option<(Instant, String)>,
 
     radio_off: Sprite,
     radio_on: Sprite,
@@ -263,6 +271,7 @@ impl Default for FileBrowserB {
             needs_refresh: true,
             last_auto_refresh: None,
             status: String::with_capacity(128),
+            last_list_press: None,
 
             radio_off: Sprite::radio_off(),
             radio_on: Sprite::radio_on(),
@@ -483,7 +492,21 @@ impl FileBrowserB {
         Ui::hspace(0.01);
         Ui::push_enabled(self.can_go_up(), None);
         if Ui::button("fb_up").image(&self.arrow_up).image_layout(UiBtnLayout::CenterNoText).size(btn).press() {
-            self.go_up();
+            if self.can_go_up()
+                && let Some(parent) = self.dir.parent()
+            {
+                let parent = parent.to_path_buf();
+                // Clamp to root if a root is set.
+                let new_dir = if !self.root_dir.as_os_str().is_empty() && !parent.starts_with(&self.root_dir) {
+                    self.root_dir.clone()
+                } else {
+                    parent
+                };
+                if new_dir != self.dir {
+                    self.history.push(self.dir.clone());
+                    self.change_dir(new_dir);
+                }
+            }
         }
         Ui::pop_enabled();
 
@@ -493,10 +516,7 @@ impl FileBrowserB {
         if Ui::button("fb_back").image(&self.back).image_layout(UiBtnLayout::CenterNoText).size(btn).press()
             && let Some(prev) = self.history.pop()
         {
-            self.dir = prev;
-            self.scroll = 0.0;
-            self.file_selected_name.clear();
-            self.needs_refresh = true;
+            self.change_dir(prev);
         }
         Ui::pop_enabled();
 
@@ -694,6 +714,10 @@ impl FileBrowserB {
     /// Shared rendering of the scrollable file list (vertical slider + grid/list view), used by all the picker modes.
     /// Only the selection target and the click behaviour differ, which are all driven by `mode`.
     ///
+    /// In Open mode, the file radios also listen for a double-click (a second press within
+    /// [`Appearence::double_click_delay`], see [`FileBrowserB::listen_double_click`]): on the already selected file,
+    /// it confirms the selection and closes the browser directly.
+    ///
     /// Symlinks show their target path (`-> target`) and entries whose metadata could not be read are marked with an
     /// error, both drawn as a small multi-line [`Ui::text`] (lines joined with `\n`) slightly below the entry name —
     /// in grid view, the lines break after `/` or `\` separators (too long names are hard-split), so the
@@ -808,9 +832,9 @@ impl FileBrowserB {
                     let (dir_tint, error_tint, is_broken) =
                         (self.appearence.button_tint, self.appearence.error_tint, entry.is_broken);
 
-                    // Directories are navigation buttons, except in DeleteDirectory mode where they
-                    // are the deletion targets and become selectable radios.
-                    if entry.is_dir && mode != PickerMode::DeleteDirectory {
+                    // Directories are navigation buttons in every mode: the directory modes browse
+                    // INTO their target, confirmed by their bottom panel.
+                    if entry.is_dir {
                         // Broken directories are tinted with `error_tint` instead of `dir_tint`.
                         Ui::push_tint(self.appearence.button_tint);
                         if Ui::button(&display_name)
@@ -831,6 +855,11 @@ impl FileBrowserB {
                             .press()
                         {
                             row_clicked = Some(entry_idx);
+                        }
+                        // Double-click (Open): a second press on the SAME, already selected file
+                        // opens it directly.
+                        if mode == PickerMode::Open {
+                            self.listen_double_click(&name);
                         }
                     }
 
@@ -902,10 +931,10 @@ impl FileBrowserB {
                 let (dir_tint, error_tint, is_broken) =
                     (self.appearence.button_tint, self.appearence.error_tint, entry.is_broken);
 
-                // Column 1: name (interactive). Directories are navigation buttons, except in
-                // DeleteDirectory mode where they are the deletion targets and become selectable
-                // radios (see the grid branch above for the rationale).
-                if entry.is_dir && mode != PickerMode::DeleteDirectory {
+                // Column 1: name (interactive). Directories are navigation buttons in every mode
+                // (see the grid branch above for the rationale): the directory modes browse INTO
+                // their target, confirmed by their bottom panel.
+                if entry.is_dir {
                     Ui::push_tint(self.appearence.button_tint);
                     if Ui::button(&name)
                         .size(Vec2::new(name_w, 0.0))
@@ -925,6 +954,11 @@ impl FileBrowserB {
                         .press()
                     {
                         row_clicked = Some(entry_idx);
+                    }
+                    // Double-click (Open): a second press on the SAME, already selected file
+                    // opens it directly.
+                    if mode == PickerMode::Open {
+                        self.listen_double_click(&name);
                     }
                 }
 
@@ -976,6 +1010,44 @@ impl FileBrowserB {
                 }
             }
         }
+    }
+
+    /// Double-click confirmation of the file entries, for [`PickerMode::Open`] only.
+    ///
+    /// Must be called right after the `Ui::radio` call of a list entry file, while it is still the "last element":
+    /// [`Ui::get_last_element_active`] then tells whether THAT very radio was just pressed. A second press on the
+    /// same, already selected file within [`Appearence::double_click_delay`] sends the [`FILE_BROWSER_B_OPEN`] event
+    /// carrying the pressed file and closes the browser, exactly like the "Open" button of the bottom panel: the
+    /// first press selected the file on release, the second press confirms it. A `double_click_delay` of 0 disables
+    /// the double-click.
+    fn listen_double_click(&mut self, name: &str) {
+        if !Ui::get_last_element_active().is_just_active() {
+            return;
+        }
+        let now = Instant::now();
+        // The previous press must be recent (`double_click_delay` of 0 disables the double-click) and on that same,
+        // already selected file: its release completed the first click of the double-click.
+        let double = match &self.last_list_press {
+            Some((at, prev)) => {
+                now.duration_since(*at).as_secs_f32() < self.appearence.double_click_delay
+                    && prev.as_str() == name
+                    && self.file_selected_name == name
+            }
+            None => false,
+        };
+        self.last_list_press = Some((now, name.to_string()));
+
+        if !double {
+            return;
+        }
+        self.last_list_press = None;
+        let file = self.dir.join(name);
+        Log::diag(format!("FileBrowserB double-click opening {file:?}"));
+        SkInfo::send_event(
+            &self.sk_info,
+            StepperAction::event(self.caller.as_str(), FILE_BROWSER_B_OPEN, file.to_str().unwrap_or("path_error")),
+        );
+        self.close_me();
     }
 
     /// The vertical scrollbar of the file list. Instead of a plain [`Ui::vslider`],  which allows a custom rendering.
@@ -1111,8 +1183,8 @@ impl FileBrowserB {
         lines
     }
 
-    /// Name used to highlight the currently selected entry: the file selected for opening /
-    /// deletion (Open and delete modes), or the pre-filled/typed save name in Save mode.
+    /// Name used to highlight the currently selected entry: the file selected for opening / file
+    /// deletion (Open / DeleteFile modes), or the pre-filled/typed save name in Save mode.
     fn selected_name(&self, mode: PickerMode) -> &str {
         match mode {
             PickerMode::Save => &self.file_name_to_save,
@@ -1243,7 +1315,7 @@ impl FileBrowserB {
         Ui::same_line();
         Ui::label("directory:").draw();
         Ui::same_line();
-        Ui::label(self.dir.to_string_lossy().to_string()).draw();
+        Ui::label(self.dir.to_string_lossy()).draw();
         Ui::pop_tint();
         Ui::next_line();
     }
@@ -1281,16 +1353,16 @@ impl FileBrowserB {
         Ui::next_line();
     }
 
-    /// The DeleteDirectory-mode confirmation row (selected directory + Delete button + confirm toggle). Same layout as
-    /// [`FileBrowserB::draw_delete_file_panel`], but the selected entry is one of the directories of the list (drawn
-    /// as radios in this mode). The toggle reads "confirm recursive deletion" as a hint that deleting a directory
-    /// generally wipes its whole content; the actual deletion is the caller's business
-    /// (see [`FileBrowserB::send_delete_event`]).
+    /// The DeleteDirectory-mode confirmation row (Delete button + browsed directory + confirm checkbox). The mode
+    /// works like [`FileBrowserB::draw_select_dir_panel`]: the user browses INTO the directory to delete with the
+    /// navigation buttons of the list, and confirms the browsed directory here. The checkbox reads "confirm recursive
+    /// deletion" as a hint that deleting a directory generally wipes its whole content, and the "Delete" button stays
+    /// disabled until it is checked; the checkbox is also reset on every navigation, so the confirmation never
+    /// applies to another directory than the one it was checked for. The actual deletion is the caller's business
+    /// (see [`FileBrowserB::send_delete_event`]): the browser never deletes anything itself.
     fn draw_delete_dir_panel(&mut self, line: f32) {
-        let name_ok = !self.file_selected_name.trim().is_empty();
-        let dir_target = self.dir.join(&self.file_selected_name);
-        let is_target = name_ok && dir_target.is_dir();
-        let ok_to_delete = is_target && self.confirm_delete;
+        let dir_ok = self.dir.is_dir();
+        let ok_to_delete = dir_ok && self.confirm_delete;
 
         Ui::push_tint(self.appearence.input_tint);
         Ui::push_enabled(ok_to_delete, None);
@@ -1301,9 +1373,9 @@ impl FileBrowserB {
         Ui::same_line();
         Ui::label("directory to delete:").draw();
         Ui::same_line();
-        Ui::label(&self.file_selected_name).draw();
+        Ui::label(self.dir.to_string_lossy()).draw();
 
-        if is_target {
+        if dir_ok {
             Ui::toggle("confirm recursive deletion", &mut self.confirm_delete).interact();
         } else {
             Ui::vspace(line * 1.34);
@@ -1314,12 +1386,17 @@ impl FileBrowserB {
         Ui::next_line();
     }
 
-    /// Notifies the caller that the user wants to delete the entry whose name is in `file_selected_name`: a
-    /// [`FILE_BROWSER_B_DELETE`] event carrying the full path of the entry. Like the other modes, the browser never
-    /// touches the filesystem (except to create a directoru) — it only sends the event, and the caller is free to
+    /// Notifies the caller that the user wants to delete its target: a [`FILE_BROWSER_B_DELETE`] event carrying the
+    /// full path of the file selected in the list ([`PickerMode::DeleteFile`]) or of the browsed directory
+    /// ([`PickerMode::DeleteDirectory`], which works like SelectDirectory). Like the other modes, the browser never
+    /// touches the filesystem (except to create a directory) — it only sends the event, and the caller is free to
     /// delete the entry (`fs::remove_file` / `fs::remove_dir_all`) — or not — when it receives it.
     fn send_delete_event(&mut self) {
-        let path = self.dir.join(&self.file_selected_name);
+        let path = match self.picker_mode {
+            PickerMode::DeleteFile => self.dir.join(&self.file_selected_name),
+            // DeleteDirectory browses into its target: it is the current directory itself.
+            _ => self.dir.clone(),
+        };
         Log::diag(format!("FileBrowserB requesting deletion of {path:?}"));
         SkInfo::send_event(
             &self.sk_info,
@@ -1373,6 +1450,16 @@ impl FileBrowserB {
         matches!(self.picker_mode, PickerMode::Save | PickerMode::SelectDirectory)
     }
 
+    /// When changing a dir we reset the pending operation.
+    fn change_dir(&mut self, new_dir: PathBuf) {
+        self.dir = new_dir;
+        self.scroll = 0.0;
+        self.file_selected_name.clear();
+        self.confirm_delete = false;
+        self.needs_refresh = true;
+    }
+
+    /// Can we browse the parent directory ?
     fn can_go_up(&self) -> bool {
         match self.dir.parent() {
             Some(parent) => {
@@ -1386,25 +1473,7 @@ impl FileBrowserB {
         }
     }
 
-    fn go_up(&mut self) {
-        if self.can_go_up()
-            && let Some(parent) = self.dir.parent()
-        {
-            let parent = parent.to_path_buf();
-            // Clamp to root if a root is set.
-            let new_dir = if !self.root_dir.as_os_str().is_empty() && !parent.starts_with(&self.root_dir) {
-                self.root_dir.clone()
-            } else {
-                parent
-            };
-            if new_dir != self.dir {
-                self.history.push(self.dir.clone());
-                self.dir = new_dir;
-                self.needs_refresh = true;
-            }
-        }
-    }
-
+    /// Switching to a parent directory from the breadcrumbs
     fn navigate_to(&mut self, target: PathBuf) {
         // Only navigate within the root if a root is set.
         if !self.root_dir.as_os_str().is_empty() && !target.starts_with(&self.root_dir) {
@@ -1415,21 +1484,20 @@ impl FileBrowserB {
             // Only record history if the target is actually different from the current dir.
             if target != self.dir {
                 self.history.push(self.dir.clone());
-                self.dir = target;
+                self.change_dir(target);
             }
-            self.scroll = 0.0;
-            self.file_selected_name.clear();
-            self.needs_refresh = true;
         } else {
             Log::diag(format!("FileBrowserB: target is not a directory: {:?}", target));
         }
     }
 
+    /// Check for new files/dir every second or when current dir has changed.
     fn refresh(&mut self) {
         self.entries = read_directory(&self.dir, &self.exts, self.show_hidden);
         self.recompute_filtered();
     }
 
+    /// Apply the filter search text and sort.
     fn recompute_filtered(&mut self) {
         // The directory modes (SelectDirectory / DeleteDirectory) only work on directories: hide
         // the files from the list. The extension filter is irrelevant there, which is also why the
