@@ -519,10 +519,9 @@ impl FileBrowserB {
                     self.new_folder_name.clear();
                 }
             }
+            Ui::next_line();
         }
         Ui::pop_text_style();
-
-        Ui::next_line();
 
         if self.show_new_folder && self.new_folder_allowed() {
             Ui::push_text_style(self.appearence.label_style);
@@ -578,7 +577,7 @@ impl FileBrowserB {
         // Breadcrumb buttons are smaller than regular buttons.
         let at = Ui::get_layout_at();
         let row_w = Ui::get_layout_remaining().x;
-        Ui::layout_reserve(Vec2::new(row_w, btn.y), true, 0.0);
+        Ui::layout_reserve(Vec2::new(row_w, btn.y), false, 0.0);
 
         // Estimated width of a breadcrumb button
         let btn_w = |label: &str| label.chars().count() as f32 * btn.x * 0.15 + btn.y;
@@ -635,7 +634,6 @@ impl FileBrowserB {
             self.show_new_folder = false;
         }
         Ui::pop_tint();
-        Ui::next_line();
     }
 
     fn draw_search_bar(&mut self) {
@@ -730,8 +728,11 @@ impl FileBrowserB {
         let slider_w = line * 0.7;
 
         // Effective height of ONE row, so the drawn buttons always fit in the reserved list
-        // height:
-        let row_h = if self.grid_view { line * 2.0 } else { line };
+        // height. The grid cells are explicitly `line * 2.0` tall, but the auto-height list
+        // buttons/radios reserve the line height of the CURRENT (list) text style, which differs
+        // from the caller's `line` (captured with the default window style): using `line` here
+        // under-estimated the row height and made the last row(s) unreachable at max scroll.
+        let row_h = if self.grid_view { line * 2.0 } else { Ui::get_line_height() };
 
         // In list mode each row holds 1 entry. In grid mode, the column count adapts to the window
         // width: fill it with as many columns as possible.
@@ -855,7 +856,13 @@ impl FileBrowserB {
                         Ui::pop_tint();
                     }
                 }
-                Ui::next_line();
+                // NOTE: no explicit `Ui::next_line()` at the end of a grid row: the LAST button of
+                // the row has already ended the line (`ui_layout_reserve` calls `ui_nextline`
+                // internally, undone only by `ui_sameline`), so an explicit one would consume a
+                // SECOND `gutter` per row. The scroll math (`visible_rows_count` / `max_scroll`)
+                // assumes exactly `row_h + gutter` per row, and that extra gutter made the
+                // scrollbar thumb reach the end of its track while the last row(s) of the list
+                // stayed unreachable.
             }
         } else {
             // ----- LIST MODE (3 aligned columns: name | size | date) -----
