@@ -1,4 +1,5 @@
 use crate::{
+    framework::ISTEPPER_REMOVED,
     maths::{Pose, Quat, Vec2, Vec3},
     prelude::*,
     sprite::Sprite,
@@ -180,7 +181,15 @@ impl FileBrowser {
     }
 
     /// Called from IStepper::step, here you can check the event report
-    fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
+    ///
+    /// Listens for the death of the caller: when the stepper that launched the file browser is
+    /// removed, it emits an [`ISTEPPER_REMOVED`] event and nobody is left waiting for the selected
+    /// file anymore, so the browser closes itself.
+    fn check_event(&mut self, id: &StepperId, key: &str, _value: &str) {
+        if id == &self.caller && key.eq(ISTEPPER_REMOVED) {
+            self.close_me();
+        }
+    }
 
     /// Called from IStepper::step after check_event, here you can draw your UI and scene
     fn draw(&mut self, _token: &MainThreadToken) {

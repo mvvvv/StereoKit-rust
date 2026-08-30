@@ -1699,6 +1699,10 @@ impl Hash {
 /// TODO: ANDROID only. On PC this will open a desktop file picker.
 /// When opening the Platform.FilePicker, this enum describes how the picker should look and behave.
 /// <https://stereokit.net/Pages/StereoKit/PickerMode.html>
+///
+/// Only [`PickerMode::Open`] and [`PickerMode::Save`] are understood by the native
+/// [`Platform::file_picker`]. The other variants are extensions for the in-VR
+/// [`crate::tools::file_browser_b::FileBrowserB`], which uses this enum as its own browser mode.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
 pub enum PickerMode {
@@ -1706,6 +1710,21 @@ pub enum PickerMode {
     Open = 0,
     /// Allow the user to enter or select the name of the destination file.
     Save = 1,
+    /// Allow the user to select an existing directory (header "Selecting a directory").
+    /// Only used by [`crate::tools::file_browser_b::FileBrowserB`]: the native
+    /// [`Platform::file_picker`] does not support this mode.
+    SelectDirectory = 2,
+    /// Allow the user to designate an existing file for deletion (header "Deleting a file"): the
+    /// browser only notifies the caller, the deletion itself is the caller's business.
+    /// Only used by [`crate::tools::file_browser_b::FileBrowserB`]: the native
+    /// [`Platform::file_picker`] does not support this mode.
+    DeleteFile = 3,
+    /// Allow the user to designate an existing directory for deletion (header "Deleting a
+    /// directory"): the browser only notifies the caller, the deletion itself is the caller's
+    /// business.
+    /// Only used by [`crate::tools::file_browser_b::FileBrowserB`]: the native
+    /// [`Platform::file_picker`] does not support this mode.
+    DeleteDirectory = 4,
 }
 
 /// This class provides some platform related code that runs cross-platform. You might be able to do many of these

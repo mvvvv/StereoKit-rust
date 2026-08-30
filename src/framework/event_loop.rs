@@ -660,7 +660,7 @@ pub trait IStepper {
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/stepper_actions.jpeg" alt="screenshot" width="200">
 pub enum StepperAction {
     /// Add a new stepper of TypeID,  identified by its StepperID
-    Add(Box<dyn for<'a> IStepper + Send + 'static>, TypeId, StepperId),
+    Add(Box<dyn IStepper + Send + 'static>, TypeId, StepperId),
     /// Remove all steppers of TypeID
     RemoveAll(TypeId),
     /// Remove the stepper identified by its StepperID

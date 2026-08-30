@@ -92,13 +92,13 @@ impl TexType {
 /// assert_eq!(TexFormat::Etc1RgbSrgb as u32, 50);
 /// assert_eq!(TexFormat::Astc8x8RgbaHdr as u32, 65);
 /// assert_eq!(TexFormat::Yuv420p as u32, 70);
-/// 
+///
 /// let mut color_dots = [named_colors::CYAN; 16 * 16];
 /// let mut tex = Tex::new(TexType::ImageNomips, TexFormat::Yuv420p, None);
 /// unsafe { tex.set_colors(16, 16, color_dots.as_mut_ptr() as *mut std::os::raw::c_void); }
 /// let sprite1 = Sprite::from_tex(&tex, None, None)
 ///                  .expect("Should be able to create sprite");
-/// 
+///
 /// filename_scr = "screenshots/tex_yuv420p.jpeg";
 /// test_screenshot!(// !!!! Get a proper main loop !!!!
 ///     sprite1.draw(Matrix::IDENTITY, Pivot::Center,   None, None);
@@ -302,12 +302,12 @@ pub enum TexFormat {
     /// ASTC 4x4 linear color with full alpha, 8 bpp. High-quality compressed format for data textures on modern mobile
     /// GPUs.
     Astc4x4Rgba,
-    /// ASTC 6x6 sRGB color with full alpha, ~3.56 bpp. Larger blocks than Astc4x4 for less than half the memory, at 
+    /// ASTC 6x6 sRGB color with full alpha, ~3.56 bpp. Larger blocks than Astc4x4 for less than half the memory, at
     /// some cost to quality - a good trade for large or low-frequency textures.
     Astc6x6RgbaSrgb,
     /// ASTC 6x6 linear color with full alpha, ~3.56 bpp. The linear counterpart to Astc6x6RgbaSrgb, for data textures.
     Astc6x6Rgba,
-    /// ASTC 8x8 HDR color with full alpha, 2 bpp. Compressed HDR on mobile GPUs, and much cheaper than an uncompressed 
+    /// ASTC 8x8 HDR color with full alpha, 2 bpp. Compressed HDR on mobile GPUs, and much cheaper than an uncompressed
     /// float format. Requires the ASTC HDR extension, which is separate from baseline ASTC support!
     Astc8x8RgbaHdr,
     /// ATC RGB on Qualcomm Adreno GPUs, 4 bpp. Historical Qualcomm-specific format - prefer Astc or Etc2 on newer
@@ -970,21 +970,30 @@ impl Tex {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::Matrix, util::named_colors,
-    ///                      tex::Tex, mesh::Mesh, material::Material};
-    ///
-    /// let plane_mesh = Mesh::generate_plane_up([1.0,1.0], None, true);
+    /// use stereokit_rust::{maths::Matrix, util::named_colors, system::Pivot,
+    ///                      tex::Tex, sprite::Sprite};
     ///
     /// let color_dots = [named_colors::RED; 128 * 128];
     /// let tex = Tex::from_color32(&color_dots, 128, 128, true)
-    ///                            .expect("Tex should be created");
+    ///                        .expect("Tex should be created");    
     ///
-    /// let material  = Material::pbr().tex_copy(tex);
-    ///
+    /// let mut sprite = Sprite::from_tex(&tex, None, None).expect("Sprite should be created");
     /// let transform  = Matrix::t_r([-0.5, 0.0, 0.0], [0.0, -45.0, 90.0]);
-    ///
+    /// let mut tex_id = tex.get_id().to_string();
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     plane_mesh.draw(&material,  transform,  None, None);
+    ///     if iter == 1 {
+    ///         let tex2 = Tex::from_color32(&color_dots, 128, 128, true)
+    ///                            .expect("Tex should be created");
+    ///         assert_ne!(tex_id, tex2.get_id());
+    ///         tex_id = tex2.get_id().to_string();
+    ///         sprite = Sprite::from_tex(&tex2, None, None).expect("Sprite should be created");
+    ///     } else if iter == 2 {
+    ///         let tex3 = Tex::from_color32(&color_dots, 128, 128, true)
+    ///                            .expect("Tex should be created");
+    ///         assert_ne!(tex_id, tex3.get_id());
+    ///         sprite = Sprite::from_tex(&tex3, None, None).expect("Sprite should be created");
+    ///     }
+    ///     sprite.draw(transform, Pivot::TopLeft, None, None);
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -2782,7 +2791,7 @@ impl Tex {
         }
         let mut width = unsafe { tex_get_width(self.0.as_ptr()) } as usize;
         let mut height = unsafe { tex_get_height(self.0.as_ptr()) } as usize;
-        let size_test;
+
         let mut mips_test = unsafe { tex_get_mips(self.0.as_ptr()) } as usize;
 
         if mip >= mips_test as i8 {
@@ -2796,15 +2805,15 @@ impl Tex {
         }
 
         let deux: usize = 2;
-        if mip <= 0 {
-            size_test = width * height;
+        let size_test = if mip <= 0 {
+            width * height
         } else {
             mips_test = deux.pow(mip as u32);
             width /= mips_test;
             height /= mips_test;
 
-            size_test = width * height;
-        }
+            width * height
+        };
         Some((width, height, size_test))
     }
 

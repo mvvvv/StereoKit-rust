@@ -15,6 +15,7 @@ use crate::{
 };
 use std::{
     ffi::{CString, c_char, c_ushort},
+    ops::{Mul, MulAssign},
     ptr::{NonNull, null_mut},
 };
 
@@ -525,12 +526,20 @@ impl UiLathePt {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 #[repr(C)]
 /// Visual properties and spacing of the UI system.
 /// <https://stereokit.net/Pages/StereoKit/UISettings.html>
 ///
 /// see [`Ui::settings`]
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::ui::{Ui, UiSettings};
+///
+/// let settings = Ui::get_settings();
+/// assert_eq! (settings, UiSettings::default());
+/// ```
 pub struct UiSettings {
     /// The margin is the space between a window and its contents. In meters.
     pub margin: f32,
@@ -544,11 +553,62 @@ pub struct UiSettings {
     pub rounding: f32,
     /// How far up does the white back-border go on UI elements? This is a 0-1 percentage of the depth value.
     pub backplate_depth: f32,
-    // How wide is the back-border around the UI elements? In meters.
+    /// How wide is the back-border around the UI elements? In meters.
     pub backplate_border: f32,
     /// Defines the scale factor for the separator's thickness. The thickness is calculated by multiplying the height
     /// of the text by this factor. The default valus is 0.4f.
     pub separator_scale: f32,
+}
+
+/// Default value as defined by StereoKitC
+impl Default for UiSettings {
+    fn default() -> Self {
+        Self {
+            margin: 0.010000001,
+            padding: 0.010000001,
+            gutter: 0.010000001,
+            depth: 0.010000001,
+            rounding: 0.0075000003,
+            backplate_depth: 0.4,
+            backplate_border: 0.0005,
+            separator_scale: 0.4,
+        }
+    }
+}
+
+/// Multiplies every field of the UI settings by a scalar, uniformly scaling all spacing and sizing values.
+/// <https://stereokit.net/Pages/StereoKit/UISettings.html>
+impl Mul<f32> for UiSettings {
+    type Output = Self;
+    #[inline]
+    fn mul(self, rhs: f32) -> Self::Output {
+        Self {
+            margin: self.margin.mul(rhs),
+            padding: self.padding.mul(rhs),
+            gutter: self.gutter.mul(rhs),
+            depth: self.depth.mul(rhs),
+            rounding: self.rounding.mul(rhs),
+            backplate_depth: self.backplate_depth.mul(rhs),
+            backplate_border: self.backplate_border.mul(rhs),
+            separator_scale: self.separator_scale.mul(rhs),
+        }
+    }
+}
+
+/// Multiplies every individual field of the UI by a given scalar in place.
+/// <https://stereokit.net/Pages/StereoKit/UISettings.html>
+impl MulAssign<f32> for UiSettings {
+    #[inline]
+    fn mul_assign(&mut self, rhs: f32) {
+        self.margin.mul_assign(rhs);
+        self.padding.mul_assign(rhs);
+        self.gutter.mul_assign(rhs);
+        self.depth.mul_assign(rhs);
+        self.rounding.mul_assign(rhs);
+        self.backplate_depth.mul_assign(rhs);
+        self.backplate_border.mul_assign(rhs);
+        self.separator_scale.mul_assign(rhs);
+    }
 }
 
 /// StereoKit ffi type.

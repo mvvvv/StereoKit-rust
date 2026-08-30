@@ -1,7 +1,7 @@
 use std::{
-    env::{current_dir, set_current_dir},
     fs::File,
     io::{Read, Write},
+    path::PathBuf,
     sync::Mutex,
 };
 
@@ -12,16 +12,14 @@ use crate::{
     prelude::*,
     render::Renderer,
     tex::{Tex, TexFormat},
+    tools::{file_browser_b::BasicPreviewer, os_api::BrowseLocation},
     ui::Ui,
     util::{PickerMode, Platform},
 };
 
 use crate::sprite::Sprite;
 
-use super::{
-    file_browser::{FILE_BROWSER_OPEN, FILE_BROWSER_SAVE, FileBrowser},
-    os_api::get_external_path,
-};
+use super::file_browser_b::{FILE_BROWSER_B_OPEN, FILE_BROWSER_B_SAVE, FileBrowserB};
 
 /// Somewhere to store the selected filename
 static FILE_NAME: Mutex<String> = Mutex::new(String::new());
@@ -133,12 +131,12 @@ impl ScreenshotViewer {
                 self.close_file_browser()
             }
         } else if id == &self.id {
-            if key.eq(FILE_BROWSER_OPEN) {
+            if key.eq(FILE_BROWSER_B_OPEN) {
                 let mut file_name = FILE_NAME.lock().expect("ScreenshotViewer: Failed to lock FILE_NAME mutex");
                 file_name.clear();
                 file_name.push_str(value);
                 self.screen = None;
-            } else if key.eq(FILE_BROWSER_SAVE) {
+            } else if key.eq(FILE_BROWSER_B_SAVE) {
                 save_screenshot(value);
             }
         }
@@ -200,18 +198,20 @@ impl ScreenshotViewer {
         Ui::hseparator();
         if Ui::button("Open").press() {
             if true {
-                let mut file_browser = FileBrowser::default();
-
-                if cfg!(target_os = "android")
-                    && let Some(img_dir) = get_external_path(&self.sk_info)
-                {
-                    file_browser.dir = img_dir;
-                }
-                if !file_browser.dir.exists() {
-                    file_browser.dir = current_dir().unwrap_or_default();
-                }
+                let mut file_browser = FileBrowserB::default();
                 file_browser.caller = self.id.clone();
                 file_browser.window_pose = Ui::popup_pose(Vec3::ZERO);
+                file_browser.file_name_to_save = "scr_.rgba".into();
+                file_browser.dir = BrowseLocation::Pictures
+                    .get_path(&self.sk_info)
+                    .or_else(|| std::env::current_dir().ok())
+                    .unwrap_or_else(|| PathBuf::from("/"));
+                file_browser.root_dir =
+                    file_browser.dir.parent().map(PathBuf::from).unwrap_or_else(|| file_browser.dir.clone());
+                file_browser.appearence.ui_scale = 0.6;
+                file_browser.appearence.window_size = Vec2 { x: 0.50, y: 0.6 };
+                file_browser.preview = Some(Box::new(BasicPreviewer::default()));
+
                 self.close_file_browser();
                 SkInfo::send_event(&self.sk_info, StepperAction::add(self.id.clone() + BROWSER_SUFFIX, file_browser));
             } else if !Platform::get_file_picker_visible() {
@@ -261,28 +261,23 @@ impl ScreenshotViewer {
         Ui::same_line();
         Ui::push_enabled(self.screen.is_some(), None);
         if Ui::button("Save").press() && !Platform::get_file_picker_visible() {
-            if cfg!(target_os = "android")
-                && let Some(img_dir) = get_external_path(&self.sk_info)
-                && let Err(err) = set_current_dir(&img_dir)
-            {
-                Log::err(format!("Unable to move current_dir to {img_dir:?} : {err:?}"))
-            }
             if true {
-                let mut file_browser = FileBrowser::default();
-
-                if cfg!(target_os = "android")
-                    && let Some(img_dir) = get_external_path(&self.sk_info)
-                {
-                    file_browser.dir = img_dir;
-                }
-                if !file_browser.dir.exists() {
-                    file_browser.dir = current_dir().unwrap_or_default();
-                }
+                let mut file_browser = FileBrowserB::default();
                 file_browser.picker_mode = PickerMode::Save;
                 file_browser.caller = self.id.clone();
                 file_browser.window_pose = Ui::popup_pose(Vec3::ZERO);
                 file_browser.file_name_to_save = "scr_.rgba".into();
                 file_browser.exts = vec![".rgba".into(), ".raw".into()];
+                file_browser.dir = BrowseLocation::Pictures
+                    .get_path(&self.sk_info)
+                    .or_else(|| std::env::current_dir().ok())
+                    .unwrap_or_else(|| PathBuf::from("/"));
+                file_browser.root_dir =
+                    file_browser.dir.parent().map(PathBuf::from).unwrap_or_else(|| file_browser.dir.clone());
+                file_browser.appearence.ui_scale = 0.6;
+                file_browser.appearence.window_size = Vec2 { x: 0.50, y: 0.6 };
+                file_browser.preview = Some(Box::new(BasicPreviewer::default()));
+
                 self.close_file_browser();
                 SkInfo::send_event(&self.sk_info, StepperAction::add(self.id.clone() + BROWSER_SUFFIX, file_browser));
             } else {
