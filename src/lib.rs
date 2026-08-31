@@ -53,9 +53,15 @@
 //!
 //! ## Features
 //! - **`no-event-loop`**: Disables the framework (event loop, steppers, tools) for a lighter weight setup.
-//! - **`test-xr-mode`**: For testing - replaces `AppMode::Offscreen` with `AppMode::XR` in test macros to test with real XR devices.
+//! - **`test-xr-mode`**: For testing - replaces `AppMode::Offscreen` with `AppMode::XR` in test macros to test with real XR devices or simulator.
 //! - **`dynamic-openxr`**: Includes OpenXR loader dynamically for Android builds (APK).
 //! - **`build-dynamic-openxr`**: Builds OpenXR loader from Khronos OpenXR project for Android builds (APK).
+//! - **`force-local-deps`**: Use local dependencies for CPM module (see StereoKit CMake)
+//! - **`with-glam`**: Add Glam to your maths.
+//! - **`skc-in-dll`**: Create and use StereoKitC as a DLL when building for windows (MSVC & GNU)
+//! - **`profile`**: Enable profiling in StereoKitC using tracy
+//! - **`file-browser`**: Let you use the FileBrowserB stepper to browse your file system in your headset.
+//! - **`tools`**: All the extra tools features like `file-browser`
 //!
 //! Your `Cargo.toml` should contain the following lines:
 //! ```toml

@@ -24,19 +24,34 @@ include = [
   "StereoKit/StereoKitC",
   "StereoKit/CMakeLists.txt",
   "README.md",
-  "LICENSE"
+  "LICENSE",
 ]
 readme = "README_short.md"
 
 [features]
-dynamic-openxr = [] # Add openxr_loader.so in Android APK
-build-dynamic-openxr = [ "dynamic-openxr",] # Build openxr_loader from Khronos OpenXR project
-no-event-loop = []    # Disable the framework (event loop, steppers, tools)
+# Add openxr_loader.so in Android APK
+dynamic-openxr = []
+# Build openxr_loader from Khronos OpenXR project
+build-dynamic-openxr = ["dynamic-openxr"]
+# Disable the framework (event loop, steppers, tools)
+no-event-loop = []
+# Use local dependencies for CPM module (see StereoKit CMake)
 force-local-deps = []
+# Add Glam to maths
 with_glam = ["dep:glam"]
-skc-in-dll = [] # Create and use StereoKitC as a DLL when building for windows (MSVC & GNU)
-test-xr-mode = [] # Replace AppMode::Offscreen with AppMode::XR in test macros
-profile = [] # Enable profiling in StereoKitC using tracy
+# Create and use StereoKitC as a DLL when building for windows (MSVC & GNU)
+skc-in-dll = []
+# Replace AppMode::Offscreen with AppMode::XR in test macros. Monado Simulator should be your 
+test-xr-mode = []
+# Enable profiling in StereoKitC using tracy
+profile = []
+# Add the in-VR file browser tool (tools::file_browser_b::FileBrowserB)
+file-browser = []
+# All the extra tools. Usefull for test/doc
+tools = ["file-browser"]
+
+[package.metadata.docs.rs]
+features = ["tools"]
 
 [lib]
 crate-type = ["lib", "cdylib"]
@@ -65,7 +80,7 @@ stereokit-macros = "0.6"
 [target.'cfg(target_os = "android")'.dependencies]
 log = "0.4"
 android_logger = "0.15"
-android-activity = { version = "0.6", features = [ "native-activity" ] }
+android-activity = { version = "0.6", features = ["native-activity"] }
 ndk = { version = "0.9.0", features = ["all"] }
 ndk-sys = "0.6"
 jni = "0.22"
@@ -90,4 +105,3 @@ crate-type = ["cdylib"]
 name = "main_tests"
 path = "tests/main_tests.rs"
 harness = false
-

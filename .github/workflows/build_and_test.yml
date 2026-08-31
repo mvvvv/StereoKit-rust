@@ -98,7 +98,7 @@ jobs:
 
     - name: Run tests 
       timeout-minutes: 15
-      run: cargo test --verbose -- --nocapture
+      run: cargo test --features tools --verbose -- --nocapture
       # run: |
       #   $failed = $false
       #   cargo test tests;             if ($LASTEXITCODE -ne 0) { $failed = $true }
@@ -166,7 +166,7 @@ jobs:
       run: |
         export DISPLAY=:99
         Xvfb  :99 -screen 0 1280x1024x24 > /dev/null 2>&1 & sleep 5        
-        cargo test --verbose -- --test-threads=1
+        cargo test --features tools --verbose -- --test-threads=1
 
     - name: Build no-event-loop
       run: cargo build --verbose --features no-event-loop --example manual

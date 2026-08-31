@@ -1,7 +1,7 @@
 name: Build Demo
 
 # This workflow builds an exportable, self-contained demo for each supported
-# platform using `cargo build_sk_rs --example main_pc <dir>` (PC platforms) or
+# platform using `cargo build_sk_rs --features tools --example main_pc <dir>` (PC platforms) or
 # Gradle (Android).
 #
 # PC output directory contains:
@@ -108,7 +108,7 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path export | Out-Null
-          cargo build_sk_rs --example main_pc .\export
+          cargo build_sk_rs --features tools --example main_pc .\export
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
@@ -146,7 +146,7 @@ jobs:
       - name: Build exportable demo
         run: |
           mkdir -p export
-          cargo build_sk_rs --example main_pc ./export
+          cargo build_sk_rs --features tools --example main_pc ./export
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
@@ -182,7 +182,7 @@ jobs:
           DYLD_LIBRARY_PATH: ${{ format('{0}/lib', '/opt/homebrew') }}
         run: |
           mkdir -p export
-          cargo build_sk_rs --example main_pc ./export
+          cargo build_sk_rs --features tools --example main_pc ./export
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
@@ -215,7 +215,7 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path export | Out-Null
-          cargo build_sk_rs --example main_pc .\export
+          cargo build_sk_rs --features tools --example main_pc .\export
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
@@ -254,7 +254,7 @@ jobs:
       - name: Build exportable demo
         run: |
           mkdir -p export
-          cargo build_sk_rs --example main_pc ./export
+          cargo build_sk_rs --features tools --example main_pc ./export
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
@@ -413,7 +413,7 @@ jobs:
       - name: Build exportable demo
         run: |
           mkdir -p export
-          cargo build_sk_rs --x64-win-gnu x64-mingw-libs/ --example main_pc ./export
+          cargo build_sk_rs --features tools --x64-win-gnu x64-mingw-libs/ --example main_pc ./export
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7

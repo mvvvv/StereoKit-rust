@@ -4,20 +4,24 @@ version = "0.1.0"
 edition = "2024"
 
 [features]
-no-event-loop = []    # As we are linking to StereoKit-rust we have to mimic this feature.
+default = ["file-browser"]
+# As we are linking to StereoKit-rust we have to mimic this feature.
+no-event-loop = []   
+# Mimic and forward to the lib, for the demos using FileBrowserB.
+file-browser = [] 
 
 [lib]
 crate-type = ["lib", "cdylib"]
 
 [dependencies]
-stereokit-rust = { path = "../StereoKit-rust"}
+stereokit-rust = { path = "../StereoKit-rust", features = ["tools"]}
 thiserror = "2.0"
-bitflags = "2.11"
+bitflags = "2.13"
 openxr-sys = "0.13"
 stereokit-macros = { path = "../StereoKit-rust/stereokit-macros" }
 
 [target.'cfg(target_os = "android")'.dependencies]
-stereokit-rust = { path = "../StereoKit-rust", features = ["build-dynamic-openxr"] }
+stereokit-rust = { path = "../StereoKit-rust", features = ["build-dynamic-openxr", "tools"] }
 log = "0.4"
 android_logger = "0.15"
 android-activity = { version = "0.6", features = ["native-activity"] }

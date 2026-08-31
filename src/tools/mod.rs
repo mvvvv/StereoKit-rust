@@ -18,7 +18,7 @@ pub mod xr_meta_detached_controllers;
 #[cfg(not(feature = "no-event-loop"))]
 pub mod file_browser;
 
-#[cfg(not(feature = "no-event-loop"))]
+#[cfg(all(feature = "file-browser", not(feature = "no-event-loop")))]
 pub mod file_browser_b;
 
 #[cfg(not(feature = "no-event-loop"))]

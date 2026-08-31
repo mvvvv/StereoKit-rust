@@ -11,27 +11,24 @@
 VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.json
 
 #---- building for pc
-cargo run --example main_pc  
-cargo run --example main_pc -- --test
+cargo run --example main_pc -F tools 
+cargo run --example main_pc -F tools -- --test
 cargo build_sk_rs --example main_pc  ../sk_builds/SK_demo_linux/ && steam steam://rungameid/18159045590636298240
 FORCE_LOCAL_DEPS=ON DEP_SK_RENDERER_SOURCE="/opt/sk_renderer" cargo build_sk_rs --example main_pc -F force-local-deps ../sk_builds/SK_demo_linux/
 
 #---- cross building for pc
-RUSTFLAGS="-Clinker-plugin-lto" cargo build_sk_rs --example main_pc --x64-linux ../sk_builds/SK_demo_linux_x64/  #same as above on x86_64 linux PC
-cargo build_sk_rs --example main_pc --aarch64-linux ../sk_builds/SK_demo_linux_aarch64/
-cargo build_sk_rs --example main_pc --x64-win-gnu ../x64-mingw-libs/ ../sk_builds/SK_demo_win_gnu/ && steam steam://rungameid/17257947875543875584
-FORCE_LOCAL_DEPS=ON DEP_SK_RENDERER_SOURCE="/opt/sk_renderer" cargo build_sk_rs --debug --example main_pc --features event-loop,force-local-deps --x64-win-gnu ../x64-mingw-libs/ ../sk_builds/SK_demo_win_gnu/
+RUSTFLAGS="-Clinker-plugin-lto" cargo build_sk_rs --features tools --example main_pc --x64-linux ../sk_builds/SK_demo_linux_x64/  #same as above on x86_64 linux PC
+cargo build_sk_rs --features tools --example main_pc --aarch64-linux ../sk_builds/SK_demo_linux_aarch64/
+cargo build_sk_rs --features tools --example main_pc --x64-win-gnu ../x64-mingw-libs/ ../sk_builds/SK_demo_win_gnu/ && steam steam://rungameid/17257947875543875584
+FORCE_LOCAL_DEPS=ON DEP_SK_RENDERER_SOURCE="/opt/sk_renderer" cargo build_sk_rs --debug --features tools --example main_pc --features event-loop,force-local-deps --x64-win-gnu ../x64-mingw-libs/ ../sk_builds/SK_demo_win_gnu/
 
 #---- building for android :
 #---- Testing demos with gradle (sk_app compatible)
 cd ~/dvlt
 cargo new_sk_rs_project sk_demos --with-gradle
 cd sk_demos
-#- modify Cargo.toml:
-  1 - for path = "~dvlt/StereoKit-rust"
-  2 - dependencies
-  3 - [lib]
-      crate-type = ["lib", "cdylib"]
+#- replace Cargo.toml with
+ln -s ../StereoKit-rust/src/templates/Cargo.toml_for_AndroidDemo.txt Cargo.toml
 #- replace src/ assets/ res/ by these links
 ln -s ~/dvlt/StereoKit-rust/examples/main.rs src/lib.rs
 ln -s ~/dvlt/StereoKit-rust/examples/main_pc.rs src/main.rs
@@ -50,18 +47,18 @@ cargo clean && ./gradlew clean
 ktx create --cubemap --encode uastc  --format R8G8B8A8_UNORM  --assign-oetf linear --assign-primaries bt709  --generate-mipmap right.png left.png top.png bottom.png front.png back.png cubemap_rgba32.ktx2
 
 #---- launch tests
-clear;cargo test -- --nocapture            
-clear;cargo test --doc tools -- mesh::Mesh   
-clear;XR_RUNTIME_JSON=/usr/share/openxr/1/openxr_monado.json cargo test --features test-xr-mode -- --test-threads=1
+clear;cargo test --features tools -- --nocapture            
+clear;cargo test --features tools --doc tools -- mesh::Mesh   
+clear;XR_RUNTIME_JSON=/usr/share/openxr/1/openxr_monado.json cargo test --features test-xr-mode,file_browser -- --test-threads=1
 #- launch tests with llvmpipe:
 clear;VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.json cargo test
 
 #---- launch Demo tests + screenshot
-clear;cargo run --example main_pc -- --test --headless --start Assets1
-clear;XR_RUNTIME_JSON=/usr/share/openxr/1/openxr_monado.json cargo run --example main_pc -- --test --xr --start Subpass1
+clear;cargo run --features tools --example main_pc -- --test --headless --start Assets1
+clear;XR_RUNTIME_JSON=/usr/share/openxr/1/openxr_monado.json cargo run --features tools --example main_pc -- --test --xr --start Subpass1
 
 #---- build docs
-cargo clean --doc && cargo doc
+cargo clean --doc && cargo doc --features tools 
 
 #---- publish to crates.io
 cd stereokit-macros && cargo publish && cd ..   #---publish macros crate
@@ -89,7 +86,7 @@ steam steam://rungameid/14582336022122594304
 grep OutputDebugStringA ~/steam-14582336022122594304.log | cut -c49- | sed -e 's/\\n\"$//' > examples/example_of_WiVRn_wine_msvc.txt
 
 #---- Saving some logs  SteamVR
-cargo run --example main_pc &> examples/example_of_SteamVR_native.txt
+cargo run --features tools --example main_pc &> examples/example_of_SteamVR_native.txt
 
 steam steam://rungameid/17868406875997863936  
 # wait the end ...

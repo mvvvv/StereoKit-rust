@@ -74,7 +74,7 @@ On Linux, you may have to set `RUSTFLAGS="-Clinker-plugin-lto"` if you encounter
 cargo new_sk_rs_project sk_demos --with-gradle
 cd sk_demos
 #- modify Cargo.toml:
-cp ~/dvlt/StereoKit-rust/src/template/Cargo.toml_for_AndroidDemo.txt Cargo.toml
+ln -s ~/dvlt/StereoKit-rust/src/template/Cargo.toml_for_AndroidDemo.txt Cargo.toml
 #- replace src/ assets/ res/ app/ by these links
 ln -s ~/dvlt/StereoKit-rust/examples/main.rs src/lib.rs
 ln -s ~/dvlt/StereoKit-rust/examples/main_pc.rs src/main.rs

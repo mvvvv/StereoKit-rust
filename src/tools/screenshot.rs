@@ -1,9 +1,11 @@
 use std::{
     fs::File,
     io::{Read, Write},
-    path::PathBuf,
     sync::Mutex,
 };
+
+#[cfg(feature = "file-browser")]
+use std::path::PathBuf;
 
 use stereokit_macros::IStepper;
 
@@ -12,14 +14,17 @@ use crate::{
     prelude::*,
     render::Renderer,
     tex::{Tex, TexFormat},
-    tools::{file_browser_b::BasicPreviewer, os_api::BrowseLocation},
     ui::Ui,
     util::{PickerMode, Platform},
 };
 
 use crate::sprite::Sprite;
 
-use super::file_browser_b::{FILE_BROWSER_B_OPEN, FILE_BROWSER_B_SAVE, FileBrowserB};
+#[cfg(feature = "file-browser")]
+use crate::tools::os_api::BrowseLocation;
+
+#[cfg(feature = "file-browser")]
+use super::file_browser_b::{BasicPreviewer, FILE_BROWSER_B_OPEN, FILE_BROWSER_B_SAVE, FileBrowserB};
 
 /// Somewhere to store the selected filename
 static FILE_NAME: Mutex<String> = Mutex::new(String::new());
@@ -44,8 +49,9 @@ const BROWSER_SUFFIX: &str = "_file_browser";
 ///
 /// ### Examples
 /// ```
+/// # #[cfg(feature = "file-browser")] {
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{ui::Ui, tools::{file_browser::FILE_BROWSER_OPEN,
+/// use stereokit_rust::{ui::Ui, tools::{file_browser_b::FILE_BROWSER_B_OPEN,
 ///                                      screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW}}};
 ///
 /// let mut screenshot_viewer = ScreenshotViewer::default();
@@ -64,10 +70,10 @@ const BROWSER_SUFFIX: &str = "_file_browser";
 ///     } else if iter == 1 {
 ///        sk.send_event(StepperAction::event( "main", SHOW_SCREENSHOT_WINDOW,"true",));
 ///        // The image is not visible at the next step, but at the step after.
-///        sk.send_event(StepperAction::event( "ScrViewer", FILE_BROWSER_OPEN, scr_file));
+///        sk.send_event(StepperAction::event( "ScrViewer", FILE_BROWSER_B_OPEN, scr_file));
 ///     }
 /// );
-/// # sk::Sk::shutdown();
+/// # sk::Sk::shutdown();}
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/screenshot_viewer.jpeg" alt="screenshot" width="200">
 #[derive(IStepper)]
@@ -131,13 +137,16 @@ impl ScreenshotViewer {
                 self.close_file_browser()
             }
         } else if id == &self.id {
-            if key.eq(FILE_BROWSER_B_OPEN) {
-                let mut file_name = FILE_NAME.lock().expect("ScreenshotViewer: Failed to lock FILE_NAME mutex");
-                file_name.clear();
-                file_name.push_str(value);
-                self.screen = None;
-            } else if key.eq(FILE_BROWSER_B_SAVE) {
-                save_screenshot(value);
+            #[cfg(feature = "file-browser")]
+            {
+                if key.eq(FILE_BROWSER_B_OPEN) {
+                    let mut file_name = FILE_NAME.lock().expect("ScreenshotViewer: Failed to lock FILE_NAME mutex");
+                    file_name.clear();
+                    file_name.push_str(value);
+                    self.screen = None;
+                } else if key.eq(FILE_BROWSER_B_SAVE) {
+                    save_screenshot(value);
+                }
             }
         }
     }
@@ -197,7 +206,8 @@ impl ScreenshotViewer {
         }
         Ui::hseparator();
         if Ui::button("Open").press() {
-            if true {
+            #[cfg(feature = "file-browser")]
+            {
                 let mut file_browser = FileBrowserB::default();
                 file_browser.caller = self.id.clone();
                 file_browser.window_pose = Ui::popup_pose(Vec3::ZERO);
@@ -214,23 +224,27 @@ impl ScreenshotViewer {
 
                 self.close_file_browser();
                 SkInfo::send_event(&self.sk_info, StepperAction::add(self.id.clone() + BROWSER_SUFFIX, file_browser));
-            } else if !Platform::get_file_picker_visible() {
-                Platform::file_picker_sz(
-                    PickerMode::Open,
-                    move |ok, file_name| {
-                        let mut name = FILE_NAME.lock().expect("ScreenshotViewer: Failed to lock FILE_NAME mutex");
-                        name.clear();
-                        if ok {
-                            Log::diag(format!("Open screenshot {file_name}"));
-                            name.push_str(file_name);
-                            Platform::file_picker_close();
-                        } else {
-                            // großen tricherie
-                            name.push_str("aaa.raw");
-                        }
-                    },
-                    &SCREENSHOT_FORMATS,
-                )
+            }
+            #[cfg(not(feature = "file-browser"))]
+            {
+                if !Platform::get_file_picker_visible() {
+                    Platform::file_picker_sz(
+                        PickerMode::Open,
+                        move |ok, file_name| {
+                            let mut name = FILE_NAME.lock().expect("ScreenshotViewer: Failed to lock FILE_NAME mutex");
+                            name.clear();
+                            if ok {
+                                Log::diag(format!("Open screenshot {file_name}"));
+                                name.push_str(file_name);
+                                Platform::file_picker_close();
+                            } else {
+                                // großen tricherie
+                                name.push_str("aaa.raw");
+                            }
+                        },
+                        &SCREENSHOT_FORMATS,
+                    )
+                }
             }
         }
         Ui::same_line();
@@ -261,7 +275,8 @@ impl ScreenshotViewer {
         Ui::same_line();
         Ui::push_enabled(self.screen.is_some(), None);
         if Ui::button("Save").press() && !Platform::get_file_picker_visible() {
-            if true {
+            #[cfg(feature = "file-browser")]
+            {
                 let mut file_browser = FileBrowserB::default();
                 file_browser.picker_mode = PickerMode::Save;
                 file_browser.caller = self.id.clone();
@@ -280,7 +295,9 @@ impl ScreenshotViewer {
 
                 self.close_file_browser();
                 SkInfo::send_event(&self.sk_info, StepperAction::add(self.id.clone() + BROWSER_SUFFIX, file_browser));
-            } else {
+            }
+            #[cfg(not(feature = "file-browser"))]
+            {
                 Platform::file_picker_sz(
                     PickerMode::Save,
                     move |ok, file_name| {

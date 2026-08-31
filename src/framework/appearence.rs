@@ -49,9 +49,9 @@ pub struct Appearence {
     pub scale_per_meter: f32,
     /// Default window-local offset of the scale handle: on release, the handle springs back here, scaled
     /// proportionally to the current drawn window size (`window_size * ui_scale`) relative to
-    /// [`Appearence::reference_window_size`], so it hugs the window edge at its current size,
+    /// `Appearence::reference_window_size`, so it hugs the window edge at its current size,
     /// see [`Appearence::scale_handle`]. Default is `Vec3::new(0.30, 0.035, 0.006)` you can change it as long as it's
-    /// relative to [`Appearence::reference_window_size`] and on the right of the window .
+    /// relative to `Appearence::reference_window_size` and on the right of the window .
     pub scale_handle_default_offset: Vec3,
     /// Current window-local offset of the scale handle, the grab-able knob that drives [`Appearence::ui_scale`]
     /// and [`Appearence::window_size`]: while held, dragging it resizes / scales the window relative to where it
@@ -180,7 +180,7 @@ impl Appearence {
     /// * `id` - The unique StereoKit UI id of the handle element.
     ///
     /// Returns `Some(ui_scale)` on every frame the handle is grabbed, so the caller can propagate the live
-    /// scale to its child windows ([`crate::tools::file_browser_b::FileBrowserB`] forwards it to its preview
+    /// scale to its child windows.
     /// panel), and `None` when the handle is not grabbed.
     pub fn scale_handle(&mut self, window_pose: &Pose, id: &str) -> Option<f32> {
         let (right, up, forward) = (window_pose.get_right(), window_pose.get_up(), window_pose.get_forward());
