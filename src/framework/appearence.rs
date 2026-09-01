@@ -1,7 +1,8 @@
 use crate::{
     font::Font,
     maths::{Bounds, Matrix, Pose, Vec2, Vec3},
-    system::{Text, TextBuilder, TextStyle},
+    sprite::Sprite,
+    system::{Pivot, Text, TextBuilder, TextStyle},
     ui::{Ui, UiSettings},
     util::{Color128, named_colors},
 };
@@ -19,6 +20,7 @@ const MAX_UI_SCALE: f32 = 4.0;
 ///   `layout_height` of the four text styles,
 /// - [`Appearence::scale_handle`] draws the grab-able knob that interactively drives both
 ///   [`Appearence::window_size`] (local X = width, local Y = height) and [`Appearence::ui_scale`] (local Z),
+///   and [`Appearence::handle_sprite`], when set, replaces the built-in knob visual with a custom sprite,
 /// - the four text styles, from the biggest ([`Appearence::title_style`]) to the smallest
 ///   ([`Appearence::small_style`]), give the UI some relief,
 /// - the three tints color directory buttons, input fields and error entries,
@@ -61,6 +63,12 @@ pub struct Appearence {
     /// handle was grabbed, so each drag axis is applied as a delta from them.
     scale_grab: Option<(Vec3, f32, Vec2)>,
 
+    /// Optional custom visual for the scale handle: when `Some`, [`Appearence::scale_handle`] no longer draws
+    /// the built-in knob and draws this sprite instead, centered on the knob and scaled to its footprint
+    /// (`0.035 * ui_scale` meters on its largest axis, aspect ratio preserved). The grab volume and the drag
+    /// behavior are unchanged. Default is `None` (built-in knob).
+    pub handle_sprite: Option<Sprite>,
+
     /// Text style of the header
     pub title_style: TextStyle,
     /// Text style of the list entries
@@ -96,6 +104,7 @@ impl Default for Appearence {
             scale_handle_default_offset: Vec3::new(0.30, 0.035, 0.006),
             scale_handle_offset: Vec3::new(0.30, 0.035, 0.006),
             scale_grab: None,
+            handle_sprite: None,
 
             // Four text styles give the window some relief
             title_style: Text::make_style(&font, 0.012, named_colors::WHITE),
@@ -176,6 +185,9 @@ impl Appearence {
     /// percent in front of the knob (towards the user), the window width below it and the window height
     /// on its right.
     ///
+    /// When [`Appearence::handle_sprite`] is set, its sprite is drawn in place of the built-in knob visual,
+    /// but the grab volume and the drag behavior stay the same.
+    ///
     /// * `window_pose` - The world-space pose of the window the handle is anchored to.
     /// * `id` - The unique StereoKit UI id of the handle element. "h" is ok as long as you stay inside the window
     ///    [`Ui::push_id`]
@@ -190,10 +202,13 @@ impl Appearence {
         let handle_center =
             window_pose.position + right * handle_offset.x + up * handle_offset.y + forward * handle_offset.z;
         let mut handle_pose = Pose::new(handle_center, Some(window_pose.orientation));
-        if Ui::handle(id, &mut handle_pose, Bounds::bounds_centered(Vec3::new(1.0, 1.0, 0.3) * 0.035 * self.ui_scale))
-            .draw_handle(true)
-            .grab()
-        {
+        // A custom handle sprite replaces the built-in knob visual, see the drawing after the grab logic.
+        let draw_default_handle = self.handle_sprite.is_none();
+        let grabbed =
+            Ui::handle(id, &mut handle_pose, Bounds::bounds_centered(Vec3::new(1.0, 1.0, 0.3) * 0.035 * self.ui_scale))
+                .draw_handle(draw_default_handle)
+                .grab();
+        let result = if grabbed {
             let delta = handle_pose.position - window_pose.position;
             let offset = Vec3::new(Vec3::dot(delta, right), Vec3::dot(delta, up), Vec3::dot(delta, forward));
             // Drag session start state: the handle offset, ui_scale and window_size at grab time, so each axis below
@@ -240,6 +255,24 @@ impl Appearence {
                 self.scale_handle_default_offset.z,
             );
             None
+        };
+
+        // Custom handle visual: when set, the sprite is drawn in place of the built-in knob, centered on it
+        // and scaled to its footprint (`0.035 * ui_scale` meters on its largest axis, aspect ratio preserved),
+        // so it follows both the drag position and the window scaling. Drawn after the grab logic so the pose
+        // used is the one updated by the drag of this frame.
+        if let Some(sprite) = &self.handle_sprite {
+            let size = 0.035 * self.ui_scale;
+            let aspect = sprite.get_aspect();
+            let scale = size / aspect.max(1.0);
+            sprite.draw(
+                handle_pose.to_matrix(Some(Vec3::new(scale, scale * aspect, 1.0))),
+                Pivot::Center,
+                None,
+                None,
+            );
         }
+
+        result
     }
 }

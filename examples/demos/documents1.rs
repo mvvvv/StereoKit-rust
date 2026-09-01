@@ -136,6 +136,9 @@ impl Documents1 {
         // size of the window
         self.appearence.window_size = Vec2 { x: 0.80, y: 0.60 };
         self.appearence.min_window_size = Vec2 { x: 0.45, y: 0.60 };
+        // A nice handle
+        self.appearence.handle_sprite = Sprite::from_file("icons/zoom.png", None, None).ok();
+
         self.appearence.start();
         true
     }
@@ -347,6 +350,9 @@ impl Documents1 {
         // The browser mode: Open (default), OpenMulti, Save, SelectDirectory, DeleteFile, DeleteFileMulti or
         // DeleteDirectory.
         file_browser.picker_mode = mode;
+
+        // A nice handle
+        file_browser.appearence.handle_sprite = Sprite::from_file("icons/zoom.png", None, None).ok();
 
         if mode == PickerMode::Save {
             file_browser.file_name_to_save = "demo_output.txt".into();
