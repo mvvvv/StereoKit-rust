@@ -6,24 +6,25 @@ use stereokit_rust::{
     maths::{Matrix, Pose, Quat, Vec2, Vec3},
     prelude::*,
     sprite::Sprite,
-    system::{Log, Text, TextBuilder, TextStyle},
+    system::{Align, Log, Text, TextBuilder, TextFit, TextStyle},
     tools::{
         file_browser_b::{
-            BasicPreviewer, FILE_BROWSER_B_DELETE, FILE_BROWSER_B_OPEN, FILE_BROWSER_B_SAVE, FILE_BROWSER_B_SELECT_DIR,
-            FileBrowserB,
+            BasicPreviewer, FILE_BROWSER_B_DELETE_MULTI, FILE_BROWSER_B_OPEN_MULTI, FILE_BROWSER_B_SAVE,
+            FILE_BROWSER_B_SELECT_DIR, FileBrowserB,
         },
         os_api::BrowseLocation,
     },
-    ui::{Ui, UiBtnLayout, UiSettings, UiWin},
+    ui::{Ui, UiBtnLayout, UiScroll, UiSettings, UiWin},
     util::{PickerMode, named_colors::GREEN},
 };
 
 /// Demo showing how to use [`FileBrowserB`] in all its modes.
 ///
-/// It provides one button per [`PickerMode`]: open a file, save a file, select a directory, delete a file, delete a
-/// directory. The starting storage location is chosen with radio buttons and the extension filter is entered in a text
-/// field (e.g. `.txt, .md, .rs`). The last event received from the browser for each mode is displayed in the window
-/// and logged: the demo never deletes anything itself, it only shows the [`FileBrowserB`] events.
+/// It provides one button per [`PickerMode`]: open a file, open multiple files, save a file, select a directory,
+/// delete a file, delete multiple files, delete a directory. The starting storage location is chosen with radio
+/// buttons and the extension filter is entered in a text field (e.g. `.txt, .md, .rs`). The events received from the
+/// browser are concatenated in a multi-line log, most recent first, displayed in a scrollable text area and logged:
+/// the demo never deletes anything itself, it only shows the [`FileBrowserB`] events.
 ///
 /// The demo panel uses [`Appearence`] to resize/zoom the demo window.
 #[derive(IStepper)]
@@ -46,10 +47,14 @@ pub struct Documents1 {
     /// their own state.
     pub browser_counter: u32,
 
-    opened_file: String,
-    saved_file: String,
-    selected_dir: String,
-    deleted_path: String,
+    /// Log of the events received from the launched browsers, most recent first, one entry per event formatted by
+    /// [`Documents1::remember_event`] from [`FileBrowserB::get_selected_paths`]: `File_Browser_B_save: /path/to/file`
+    /// on one line for the single-path events, the event name on its own line then the paths below it, indented by
+    /// [`Documents1::EVENT_INDENT`], for the multi-file ones. Capped at [`Documents1::MAX_EVENT_LINES`] lines.
+    events_received: String,
+    /// Scroll state (in and out, updated by the scrollbars) of the scrollable [`Ui::text`] showing
+    /// [`Documents1::events_received`].
+    events_scroll: Vec2,
 
     radio_off: Sprite,
     radio_on: Sprite,
@@ -75,10 +80,8 @@ impl Default for Documents1 {
             exts_input: String::new(),
             browser_counter: 0,
 
-            opened_file: String::new(),
-            saved_file: String::new(),
-            selected_dir: String::new(),
-            deleted_path: String::new(),
+            events_received: String::new(),
+            events_scroll: Vec2::ZERO,
 
             radio_off: Sprite::radio_off(),
             radio_on: Sprite::radio_on(),
@@ -90,17 +93,41 @@ impl Default for Documents1 {
     }
 }
 
-/// Stores the value of one browser event and logs it.
-fn remember_event(what: &str, slot: &mut String, value: &str) {
-    *slot = value.to_string();
-    Log::info(format!("Documents1 received {what} event: {value}"));
-}
-
 impl Documents1 {
     const BROWSER_OPEN_SUFFIX: &'static str = "_docs_open";
+    const BROWSER_OPEN_MULTI_SUFFIX: &'static str = "_docs_open_multi";
     const BROWSER_SAVE_SUFFIX: &'static str = "_docs_save";
     const BROWSER_SELECT_DIR_SUFFIX: &'static str = "_docs_select_dir";
     const BROWSER_DELETE_SUFFIX: &'static str = "_docs_delete";
+    /// Indentation of the paths of a multi-file event in [`Documents1::events_received`]: StereoKit's text has no
+    /// tab-stop handling, so the alignment tab is a few spaces that line the paths up below the event name.
+    const EVENT_INDENT: &str = "    ";
+    /// Maximum number of event lines kept in [`Documents1::events_received`], so the log stays bounded and readable.
+    /// The multi-file events span several lines (paths indented under the event name) and the scrollbar handles the
+    /// overflow, so this is only a memory bound, not a display one.
+    const MAX_EVENT_LINES: usize = 50;
+
+    /// Logs the event, then formats its paths (see [`FileBrowserB::get_selected_paths`]) and prepends them to
+    /// [`Documents1::events_received`] (most recent first): `event_name: path` on ONE line for a single path, the
+    /// `event_name` alone on the first line then one path per line below it, indented by [`Documents1::EVENT_INDENT`],
+    /// for the multi-file events. Also scrolls the log back to its newest lines, and trims it to
+    /// [`Documents1::MAX_EVENT_LINES`] lines.
+    fn remember_event(&mut self, event_name: &str, value: &str) {
+        Log::info(format!("Documents1 received {event_name} event: {value}"));
+        let paths = FileBrowserB::get_selected_paths(value);
+        let event_lines: Vec<String> = match paths.as_slice() {
+            [path] => vec![format!("{event_name}: {path}")],
+            _ => std::iter::once(format!("{event_name}:"))
+                .chain(paths.into_iter().map(|path| format!("{}{path}", Self::EVENT_INDENT)))
+                .collect(),
+        };
+        let mut all: Vec<String> =
+            event_lines.into_iter().chain(self.events_received.lines().map(str::to_string)).collect();
+        all.truncate(Self::MAX_EVENT_LINES);
+        self.events_received = all.join("\n");
+        // The newest lines were just added on top of the log: reset the scroll of the events text to show them.
+        self.events_scroll = Vec2::ZERO;
+    }
 
     /// Called from IStepper::initialize here you can abort the initialization by returning false
     fn start(&mut self) -> bool {
@@ -119,10 +146,14 @@ impl Documents1 {
             return;
         }
         match key {
-            FILE_BROWSER_B_OPEN => remember_event("OPEN", &mut self.opened_file, value),
-            FILE_BROWSER_B_SAVE => remember_event("SAVE", &mut self.saved_file, value),
-            FILE_BROWSER_B_SELECT_DIR => remember_event("SELECT_DIR", &mut self.selected_dir, value),
-            FILE_BROWSER_B_DELETE => remember_event("DELETE", &mut self.deleted_path, value),
+            // Every browser event carries path(s) in its value, several separated by `\n` in the multi-file modes:
+            // remember_event formats the paths of FileBrowserB::get_selected_paths for the log.
+            FILE_BROWSER_B_OPEN_MULTI
+            | FILE_BROWSER_B_SAVE
+            | FILE_BROWSER_B_SELECT_DIR
+            | FILE_BROWSER_B_DELETE_MULTI => {
+                self.remember_event(key, value);
+            }
             _ => {}
         }
     }
@@ -155,13 +186,15 @@ impl Documents1 {
         TextBuilder::new(&self.title).transform(self.title_transform).style(self.title_style).add();
     }
 
-    /// One button per [`PickerMode`], laid out two per line.
+    /// One button per [`PickerMode`], laid out four per line.
     fn draw_mode_buttons(&mut self) {
-        const MODES: [(&str, PickerMode); 5] = [
+        const MODES: [(&str, PickerMode); 7] = [
             ("Open a file", PickerMode::Open),
+            ("Open files", PickerMode::OpenMulti),
             ("Save a file", PickerMode::Save),
             ("Select a directory", PickerMode::SelectDirectory),
             ("Delete a file", PickerMode::DeleteFile),
+            ("Delete files", PickerMode::DeleteFileMulti),
             ("Delete a directory", PickerMode::DeleteDirectory),
         ];
 
@@ -170,7 +203,7 @@ impl Documents1 {
         Ui::pop_text_style();
 
         Ui::push_text_style(self.appearence.label_style);
-        for (_i, (label, mode)) in MODES.iter().enumerate() {
+        for (label, mode) in MODES.iter() {
             Ui::same_line();
             if Ui::button(label).press() {
                 self.spawn_browser(*mode);
@@ -205,7 +238,7 @@ impl Documents1 {
         ];
 
         let mut new_location: Option<BrowseLocation> = None;
-        for (_i, location) in LOCATIONS.iter().enumerate() {
+        for location in LOCATIONS.iter() {
             Ui::same_line();
             if Ui::radio(location.as_str(), self.location == *location)
                 .size(Vec2::new(0.09, 0.03) * self.appearence.ui_scale)
@@ -258,17 +291,16 @@ impl Documents1 {
         Ui::label("Last events received:").draw();
         Ui::pop_text_style();
 
-        let results: [(&str, &str); 4] = [
-            ("opened", self.opened_file.as_str()),
-            ("saved", self.saved_file.as_str()),
-            ("selected dir", self.selected_dir.as_str()),
-            ("to delete", self.deleted_path.as_str()),
-        ];
-        Ui::push_text_style(self.appearence.small_style);
-        for (label, value) in results {
-            let line = if value.is_empty() { format!("{label}: -") } else { format!("{label}: {value}") };
-            Ui::label(line).draw();
-        }
+        Ui::push_text_style(self.appearence.list_style);
+        // The log area takes all the remaining space of the window layout, scrollbars included.
+        let remaining = Ui::get_layout_remaining();
+        let text = if self.events_received.is_empty() { "-" } else { &self.events_received };
+        Ui::text(text)
+            .scroll(&mut self.events_scroll, UiScroll::Both)
+            .size(remaining)
+            .text_align(Align::TopLeft)
+            .fit(TextFit::Overflow)
+            .draw();
         Ui::pop_text_style();
     }
 
@@ -280,9 +312,12 @@ impl Documents1 {
         self.browser_counter = (self.browser_counter + 1) % 1000;
         let suffix = match mode {
             PickerMode::Open => Self::BROWSER_OPEN_SUFFIX,
+            PickerMode::OpenMulti => Self::BROWSER_OPEN_MULTI_SUFFIX,
             PickerMode::Save => Self::BROWSER_SAVE_SUFFIX,
             PickerMode::SelectDirectory => Self::BROWSER_SELECT_DIR_SUFFIX,
-            PickerMode::DeleteFile | PickerMode::DeleteDirectory => Self::BROWSER_DELETE_SUFFIX,
+            PickerMode::DeleteFile | PickerMode::DeleteFileMulti | PickerMode::DeleteDirectory => {
+                Self::BROWSER_DELETE_SUFFIX
+            }
         };
         let suffix = format!("{}_{}", suffix, self.browser_counter);
 
@@ -309,7 +344,8 @@ impl Documents1 {
         // button pose, drawing a small info panel beside the button.
         file_browser.preview = Some(Box::new(BasicPreviewer::default()));
 
-        // The browser mode: Open (default), Save, SelectDirectory, DeleteFile or DeleteDirectory.
+        // The browser mode: Open (default), OpenMulti, Save, SelectDirectory, DeleteFile, DeleteFileMulti or
+        // DeleteDirectory.
         file_browser.picker_mode = mode;
 
         if mode == PickerMode::Save {

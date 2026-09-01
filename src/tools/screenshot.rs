@@ -24,7 +24,7 @@ use crate::sprite::Sprite;
 use crate::tools::os_api::BrowseLocation;
 
 #[cfg(feature = "file-browser")]
-use super::file_browser_b::{BasicPreviewer, FILE_BROWSER_B_OPEN, FILE_BROWSER_B_SAVE, FileBrowserB};
+use super::file_browser_b::{BasicPreviewer, FILE_BROWSER_B_OPEN_MULTI, FILE_BROWSER_B_SAVE, FileBrowserB};
 
 /// Somewhere to store the selected filename
 static FILE_NAME: Mutex<String> = Mutex::new(String::new());
@@ -51,7 +51,7 @@ const BROWSER_SUFFIX: &str = "_file_browser";
 /// ```
 /// # #[cfg(feature = "file-browser")] {
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{ui::Ui, tools::{file_browser_b::FILE_BROWSER_B_OPEN,
+/// use stereokit_rust::{ui::Ui, tools::{file_browser_b::FILE_BROWSER_B_OPEN_MULTI,
 ///                                      screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW}}};
 ///
 /// let mut screenshot_viewer = ScreenshotViewer::default();
@@ -70,7 +70,7 @@ const BROWSER_SUFFIX: &str = "_file_browser";
 ///     } else if iter == 1 {
 ///        sk.send_event(StepperAction::event( "main", SHOW_SCREENSHOT_WINDOW,"true",));
 ///        // The image is not visible at the next step, but at the step after.
-///        sk.send_event(StepperAction::event( "ScrViewer", FILE_BROWSER_B_OPEN, scr_file));
+///        sk.send_event(StepperAction::event( "ScrViewer", FILE_BROWSER_B_OPEN_MULTI, scr_file));
 ///     }
 /// );
 /// # sk::Sk::shutdown();}
@@ -139,7 +139,7 @@ impl ScreenshotViewer {
         } else if id == &self.id {
             #[cfg(feature = "file-browser")]
             {
-                if key.eq(FILE_BROWSER_B_OPEN) {
+                if key.eq(FILE_BROWSER_B_OPEN_MULTI) {
                     let mut file_name = FILE_NAME.lock().expect("ScreenshotViewer: Failed to lock FILE_NAME mutex");
                     file_name.clear();
                     file_name.push_str(value);

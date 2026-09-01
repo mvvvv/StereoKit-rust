@@ -1721,6 +1721,14 @@ pub enum PickerMode {
     /// business.
     /// [`Platform::file_picker`] does not support this mode.
     DeleteDirectory = 4,
+    /// Allow opening several existing files at once (header "Opening multiple files"): the browser only
+    /// notifies the caller through a single event carrying all the selected file paths.
+    /// [`Platform::file_picker`] does not support this mode.
+    OpenMulti = 5,
+    /// Allow the user to designate several existing files for deletion (header "Deleting multiple
+    /// files"): the browser only notifies the caller, the deletion itself is the caller's business.
+    /// [`Platform::file_picker`] does not support this mode.
+    DeleteFileMulti = 6,
 }
 
 /// This class provides some platform related code that runs cross-platform. You might be able to do many of these
