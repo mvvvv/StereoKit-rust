@@ -2646,7 +2646,7 @@ impl Ui {
     /// <https://stereokit.net/Pages/StereoKit/UI/PushId.html>
     /// * `root_id` - The root id to use until the following PopId call. MUST be unique within current hierarchy.
     ///
-    /// see also [`ui_push_id`]
+    /// see also [`ui_push_id`] [`Ui::pop_id`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -2679,7 +2679,7 @@ impl Ui {
     /// <https://stereokit.net/Pages/StereoKit/UI/PushId.html>
     /// * `root_id` - The root id to use until the following PopId call. MUST be unique within current hierarchy.
     ///
-    /// see also [`ui_push_idi`]
+    /// see also [`ui_push_idi`] [`Ui::pop_id`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -2710,7 +2710,7 @@ impl Ui {
     /// <https://stereokit.net/Pages/StereoKit/UI/PopId.html>
     ///
     /// see also [`ui_pop_id`]
-    /// see example in [`Ui::push_id`]
+    /// see example in [`Ui::push_id`] [`Ui::push_id_int`]
     pub fn pop_id() {
         unsafe { ui_pop_id() };
     }

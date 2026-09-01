@@ -177,7 +177,8 @@ impl Appearence {
     /// on its right.
     ///
     /// * `window_pose` - The world-space pose of the window the handle is anchored to.
-    /// * `id` - The unique StereoKit UI id of the handle element.
+    /// * `id` - The unique StereoKit UI id of the handle element. "h" is ok as long as you stay inside the window
+    ///    [`Ui::push_id`]
     ///
     /// Returns `Some(ui_scale)` on every frame the handle is grabbed, so the caller can propagate the live
     /// scale to its child windows.

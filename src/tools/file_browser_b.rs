@@ -451,7 +451,6 @@ impl FileBrowserB {
 
         self.draw_status_line();
         Ui::window_end();
-        Ui::pop_id();
 
         // Restore the caller's UiSettings exactly as they were before this window was drawn.
         Ui::settings(prev_settings);
@@ -461,11 +460,12 @@ impl FileBrowserB {
         // X resizes the width, along Y the height, and along Z (towards the user) the whole scale.
         // While grabbed, the live scale is forwarded to the child windows: the preview panel text
         // styles follow the browser scale.
-        if let Some(scale) = self.appearence.scale_handle(&self.window_pose, "fb_scale_handle")
+        if let Some(scale) = self.appearence.scale_handle(&self.window_pose, "h")
             && let Some(preview) = self.preview.as_deref_mut()
         {
             preview.set_ui_scale(scale);
         }
+        Ui::pop_id();
     }
 
     fn close_me(&self) {
@@ -1843,11 +1843,7 @@ impl Previewer for BasicPreviewer {
                 // big-endian u32s, then the RGBA8888 pixels, uploaded into the display texture with its real size.
                 match read_rgba_bitmap(&file_path) {
                     Ok((width, height, pixels)) => {
-                        let mut image_tex = Tex::from_color32(&pixels, width, height, true).unwrap_or_default();
-                        image_tex.id(file_path
-                            .file_name()
-                            .map(|n| n.to_string_lossy().to_string())
-                            .unwrap_or_else(|| "unknown".into()));
+                        let image_tex = Tex::from_color32(&pixels, width, height, true).unwrap_or_default();
                         Log::diag(format!(
                             "BasicPreviewer loaded RGBA bitmap {}: {file_path:?} ({width}x{height})",
                             image_tex.get_id()
