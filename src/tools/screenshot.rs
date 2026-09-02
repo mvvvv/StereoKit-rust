@@ -218,10 +218,10 @@ impl ScreenshotViewer {
                     .unwrap_or_else(|| PathBuf::from("/"));
                 file_browser.root_dir =
                     file_browser.dir.parent().map(PathBuf::from).unwrap_or_else(|| file_browser.dir.clone());
-                file_browser.appearence.ui_scale = 0.6;
                 file_browser.appearence.window_size = Vec2 { x: 0.50, y: 0.6 };
                 file_browser.preview = Some(Box::new(BasicPreviewer::default()));
                 file_browser.appearence.handle_sprite = Sprite::from_file("icons/zoom.png", None, None).ok();
+                file_browser.appearence.set_ui_scale(0.6);
 
                 self.close_file_browser();
                 SkInfo::send_event(&self.sk_info, StepperAction::add(self.id.clone() + BROWSER_SUFFIX, file_browser));
@@ -290,10 +290,10 @@ impl ScreenshotViewer {
                     .unwrap_or_else(|| PathBuf::from("/"));
                 file_browser.root_dir =
                     file_browser.dir.parent().map(PathBuf::from).unwrap_or_else(|| file_browser.dir.clone());
-                file_browser.appearence.ui_scale = 0.6;
                 file_browser.appearence.window_size = Vec2 { x: 0.50, y: 0.6 };
                 file_browser.preview = Some(Box::new(BasicPreviewer::default()));
                 file_browser.appearence.handle_sprite = Sprite::from_file("icons/zoom.png", None, None).ok();
+                file_browser.appearence.set_ui_scale(0.6);
 
                 self.close_file_browser();
                 SkInfo::send_event(&self.sk_info, StepperAction::add(self.id.clone() + BROWSER_SUFFIX, file_browser));

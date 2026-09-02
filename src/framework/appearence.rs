@@ -7,20 +7,14 @@ use crate::{
     util::{Color128, named_colors},
 };
 
-/// Lower bound of [`Appearence::ui_scale`], both for a value set before launch (checked in [`Appearence::start`])
-/// and while dragging the scale handle, see [`Appearence::scale_handle`].
-const MIN_UI_SCALE: f32 = 0.5;
-
-/// Upper bound of [`Appearence::ui_scale`], both for a value set before launch (checked in [`Appearence::start`])
-/// and while dragging the scale handle, see [`Appearence::scale_handle`].
-const MAX_UI_SCALE: f32 = 4.0;
-
 /// The look & feel of a UI window: size, scaling, text styles and extra tints.
-/// - [`Appearence::ui_scale`] uniformly scales the whole window: its size, every [`UiSettings`] value and the
-///   `layout_height` of the four text styles,
+/// - the ui scale (read with [`Appearence::get_ui_scale`], set with [`Appearence::start`] or
+///   [`Appearence::set_ui_scale`]) uniformly scales the whole window: its size, every [`UiSettings`] value and
+///   the `layout_height` of the four text styles,
 /// - [`Appearence::scale_handle`] draws the grab-able knob that interactively drives both
-///   [`Appearence::window_size`] (local X = width, local Y = height) and [`Appearence::ui_scale`] (local Z),
+///   [`Appearence::window_size`] (local X = width, local Y = height) and the ui scale (local Z),
 ///   and [`Appearence::handle_sprite`], when set, replaces the built-in knob visual with a custom sprite,
+/// - [`Appearence::keep_window_ratio`] locks the `window_size` aspect ratio while resizing with the handle,
 /// - the four text styles, from the biggest ([`Appearence::title_style`]) to the smallest
 ///   ([`Appearence::small_style`]), give the UI some relief,
 /// - the three tints color directory buttons, input fields and error entries,
@@ -38,27 +32,32 @@ pub struct Appearence {
     /// Interactive resize floor for [`Appearence::window_size`] (meters) applied while dragging the scale
     /// handle, see [`Appearence::scale_handle`]. Default is `Vec2::new(0.45, 0.45)`.
     pub min_window_size: Vec2,
+    /// When `true`, the interactive resize keeps the `window_size` aspect ratio. Default is `false` (free X / Y resize).
+    pub keep_window_ratio: bool,
 
-    /// The [`UiSettings`] used to draw the window. It is multiplied by [`Appearence::ui_scale`] to give
-    /// [`Appearence::ui_settings_scaled`]
+    /// The [`UiSettings`] used to draw the window. It is multiplied by the current ui scale (see
+    /// [`Appearence::get_ui_scale`]) to give the settings returned by [`Appearence::get_ui_settings_scaled`].
     pub ui_settings: UiSettings,
     ui_settings_scaled: UiSettings,
     /// Scale factor of the whole window UI: the actual window size is `window_size * ui_scale` and every `UiSettings`
     /// value is multiplied by it during the window drawing. Default is 1.0 (no scaling).
-    pub ui_scale: f32,
-    /// How much [`Appearence::ui_scale`] grows per meter of scale-handle drag along the window-local Z axis
-    /// (dragged towards the user = bigger, away from it = smaller). Default is 2.0.
+    ui_scale: f32,
+    /// How much the ui scale (see [`Appearence::get_ui_scale`]) grows per meter of scale-handle drag along the
+    /// window-local Z axis (dragged towards the user = bigger, away from it = smaller). Default is 2.0.
     pub scale_per_meter: f32,
+    /// Zoom bounds for the scale handle, see [`Appearence::scale_handle`]. Default is 0.5 to 2.0.
+    pub scale_bounds: (f32, f32),
     /// Default window-local offset of the scale handle: on release, the handle springs back here, scaled
     /// proportionally to the current drawn window size (`window_size * ui_scale`) relative to
     /// `Appearence::reference_window_size`, so it hugs the window edge at its current size,
     /// see [`Appearence::scale_handle`]. Default is `Vec3::new(0.30, 0.035, 0.006)` you can change it as long as it's
     /// relative to `Appearence::reference_window_size` and on the right of the window .
     pub scale_handle_default_offset: Vec3,
-    /// Current window-local offset of the scale handle, the grab-able knob that drives [`Appearence::ui_scale`]
-    /// and [`Appearence::window_size`]: while held, dragging it resizes / scales the window relative to where it
-    /// was grabbed. Initialized to [`Appearence::scale_handle_default_offset`], recomputed on each release.
-    pub scale_handle_offset: Vec3,
+    /// Current window-local offset of the scale handle, the grab-able knob that drives the ui scale (see
+    /// [`Appearence::get_ui_scale`]) and [`Appearence::window_size`]: while held, dragging it resizes / scales
+    /// the window relative to where it was grabbed. Initialized to [`Appearence::scale_handle_default_offset`],
+    /// recomputed on each release.
+    scale_handle_offset: Vec3,
     /// Current scale-grab session: the handle offset, the `ui_scale` and the `window_size` captured when the
     /// handle was grabbed, so each drag axis is applied as a delta from them.
     scale_grab: Option<(Vec3, f32, Vec2)>,
@@ -96,22 +95,25 @@ impl Default for Appearence {
         Self {
             reference_window_size: Vec2::new(0.6, 0.8),
             min_window_size: Vec2::new(0.45, 0.45),
+            keep_window_ratio: false,
             window_size: Vec2::new(0.6, 0.8),
             ui_settings: Ui::get_settings(),
             ui_scale: 1.0,
             scale_per_meter: 2.0,
             // Scale handle at its default anchor.
             scale_handle_default_offset: Vec3::new(0.30, 0.035, 0.006),
-            scale_handle_offset: Vec3::new(0.30, 0.035, 0.006),
+            scale_handle_offset: Vec3::ZERO,
             scale_grab: None,
             handle_sprite: None,
+            scale_bounds: (0.5, 2.0),
 
             // Four text styles give the window some relief
             title_style: Text::make_style(&font, 0.012, named_colors::WHITE),
             list_style: Text::make_style(&font, 0.010, named_colors::LIGHT_GRAY),
             label_style: Text::make_style(&font, 0.009, named_colors::WHITE),
             small_style: Text::make_style(&font, 0.0075, named_colors::GRAY),
-            text_base_heights: [0.012, 0.010, 0.009, 0.0075],
+            text_base_heights: [0.0; 4],
+
             button_tint: named_colors::DARK_SLATE_GRAY.into(),
             input_tint: named_colors::SADDLE_BROWN.into(),
             error_tint: named_colors::RED.into(),
@@ -123,40 +125,60 @@ impl Default for Appearence {
 }
 
 impl Appearence {
-    /// To be called once when the window stepper starts: first clamp the properties set before launch to sane
-    /// bounds — the interactive resize floor itself is at least 1 cm, `window_size` respect that floor, `ui_scale`
-    /// stays within the range the scale handle can drag it to, and `scale_per_meter` stays positive — then capture the
-    /// current (possibly user-tweaked) font sizes as the base heights the draw loop multiplies by `ui_scale`, so
-    /// scaling never compounds over the frames.
+    /// To be called once when the window stepper starts. Clamp the properties set before launch.
     pub fn start(&mut self) {
         // Bounds checks of the properties settable before launch, so no zero / negative / out-of-range
         // value can break the draw loop or the scale-handle interactions.
         const ABS_MIN_WINDOW: Vec2 = Vec2::new(0.01, 0.01); // hard floor for the resize floor itself
         self.min_window_size = Vec2::max(self.min_window_size, ABS_MIN_WINDOW);
-        self.window_size = Vec2::max(self.window_size, self.min_window_size);
-        self.ui_scale = self.ui_scale.clamp(MIN_UI_SCALE, MAX_UI_SCALE);
+        if self.keep_window_ratio {
+            // Ratio locked: lift `window_size` to the floor with one uniform factor, so the aspect ratio
+            // survives the `min_window_size` clamp as well.
+            let factor = (self.min_window_size.x / self.window_size.x.max(0.001))
+                .max(self.min_window_size.y / self.window_size.y.max(0.001))
+                .max(1.0);
+            self.window_size *= factor;
+        } else {
+            self.window_size = Vec2::max(self.window_size, self.min_window_size);
+        }
+
+        self.scale_handle_offset = self.scale_handle_default_offset;
         self.scale_per_meter = self.scale_per_meter.max(0.01);
         self.double_click_delay = self.double_click_delay.max(0.0);
 
         self.text_base_heights = [
-            self.title_style.get_layout_height(),
-            self.list_style.get_layout_height(),
-            self.label_style.get_layout_height(),
-            self.small_style.get_layout_height(),
+            self.title_style.get_layout_height() / self.ui_scale,
+            self.list_style.get_layout_height() / self.ui_scale,
+            self.label_style.get_layout_height() / self.ui_scale,
+            self.small_style.get_layout_height() / self.ui_scale,
         ];
-        self.scale_all();
+
+        self.set_ui_scale(self.ui_scale);
     }
-    /// Scale the window at start or after. Usefull when you want to have the same look than the calling window or
-    /// to adjust lazily your window.
+
+    /// Scale the window before or at start or after. Useful when you want to have the same look than the calling
+    /// window or to adjust lazily your window. The scale is clamped to the same range the scale handle can drag it to.
+    ///
+    /// Call this when all the TextStyles have been set.
     pub fn set_ui_scale(&mut self, ui_scale: f32) {
-        self.ui_scale = ui_scale;
+        self.ui_scale = ui_scale.clamp(self.scale_bounds.0, self.scale_bounds.1);
+        // Scale the four text styles with the new ui scale.
         self.scale_all();
     }
 
     /// Scale the font sizes with ui_scale as well: `UiSettings` scaling does NOT affect text styles, so each of the
-    /// four styles gets its base `layout_height` (captured at [`Appearence::start`]) multiplied by the current scale.
+    /// four styles gets its base `layout_height` multiplied by the current scale.
     /// The size hierarchy title > list > label > small gives the UI some relief at every scale.
-    pub fn scale_all(&mut self) {
+    fn scale_all(&mut self) {
+        // Before start, the four text styles may have been tweaked by the user, so we capture their base heights here.
+        if self.text_base_heights == [0.0; 4] {
+            self.text_base_heights = [
+                self.title_style.get_layout_height(),
+                self.list_style.get_layout_height(),
+                self.label_style.get_layout_height(),
+                self.small_style.get_layout_height(),
+            ]
+        }
         let [title_h, list_h, label_h, small_h] = self.text_base_heights;
         self.title_style.layout_height(title_h * self.ui_scale);
         self.list_style.layout_height(list_h * self.ui_scale);
@@ -165,19 +187,55 @@ impl Appearence {
         self.ui_settings_scaled = self.ui_settings * self.ui_scale;
     }
 
-    /// The [`UiSettings`] actually used to draw the window: [`Appearence::ui_settings`] already multiplied by
-    /// [`Appearence::ui_scale`] by [`Appearence::scale_all`]. Push them with [`Ui::settings`] before drawing the
-    /// window, and restore the caller's settings afterwards.
-    pub fn ui_settings_scaled(&self) -> UiSettings {
+    /// The [`UiSettings`] actually used to draw the window: [`Appearence::ui_settings`] already multiplied by the
+    /// current ui scale (see [`Appearence::get_ui_scale`]) by the internal `scale_all`. Push them with
+    /// [`Ui::settings`] before drawing the window, and restore the caller's settings afterwards.
+    pub fn get_ui_settings_scaled(&self) -> UiSettings {
         self.ui_settings_scaled
     }
 
+    /// The current ui scale. You should use [`Appearence::scaled_window_size`] [`Appearence::scale`] or [`Appearence::scale_size`] /
+    /// [`Appearence::scale_pos`] to scale your own values, so they follow the window scaling.
+    pub fn get_ui_scale(&self) -> f32 {
+        self.ui_scale
+    }
+
+    /// The current window size scaled.
+    pub fn scaled_window_size(&self) -> Vec2 {
+        self.window_size * self.ui_scale
+    }
+
+    /// Multiplies `value` by the current ui scale ([`Appearence::get_ui_scale`]), so any size or offset of your
+    /// own controls follows the window scaling: `appearence.scale(0.03)`
+    pub fn scale(&self, value: f32) -> f32 {
+        value * self.ui_scale
+    }
+
+    /// Same as [`Appearence::scale`], for `f64` values, handy for the APIs working in double precision.
+    pub fn scale_f64(&self, value: f64) -> f64 {
+        value * self.get_ui_scale() as f64
+    }
+
+    /// Multiplies size by the current ui scale ([`Appearence::get_ui_scale`]), so any size or offset of your
+    /// own controls follows the window scaling: `appearence.scale(Vec2::new(0.03, 0.03))`
+    pub fn scale_size(&self, size: Vec2) -> Vec2 {
+        size * self.ui_scale
+    }
+
+    /// Multiplies position by the current ui scale ([`Appearence::get_ui_scale`]), so any size or offset of your
+    /// own controls follows the window scaling: `appearence.scale(Vec3::new(0.03, 0.03, 0.001))`
+    pub fn scale_pos(&self, position: Vec3) -> Vec3 {
+        position * self.ui_scale
+    }
     /// Scale handle: a small grab-able knob in world space, anchored to `window_pose` in its local space so it
     /// follows the window when it moves. While held, each drag axis drives its own appearance property:
     /// - the local X axis (the window width direction) modifies [`Appearence::window_size`].x,
     /// - the local Y axis (the window height direction) modifies [`Appearence::window_size`].y,
-    /// - the local Z axis (towards / away from the user) modifies [`Appearence::ui_scale`], which uniformly
-    ///   scales the whole window, see [`Appearence::scale_all`].
+    /// - the local Z axis (towards / away from the user) modifies the ui scale (see [`Appearence::get_ui_scale`]),
+    ///   which uniformly scales the whole window, see the internal `scale_all`.
+    ///
+    /// When [`Appearence::keep_window_ratio`] is `true`, the local X and Y drag deltas are merged into a single
+    /// uniform size factor instead, so the window keeps its aspect ratio while resizing.
     ///
     /// On release, the knob springs back to its default anchor, scaled proportionally to the current drawn
     /// window size (`window_size * ui_scale`) so it keeps hugging the window edge. While the handle is
@@ -190,11 +248,10 @@ impl Appearence {
     ///
     /// * `window_pose` - The world-space pose of the window the handle is anchored to.
     /// * `id` - The unique StereoKit UI id of the handle element. "h" is ok as long as you stay inside the window
-    ///    [`Ui::push_id`]
+    ///   [`Ui::push_id`]
     ///
     /// Returns `Some(ui_scale)` on every frame the handle is grabbed, so the caller can propagate the live
-    /// scale to its child windows.
-    /// panel), and `None` when the handle is not grabbed.
+    /// scale to its child windows and `None` when the handle is not grabbed.
     pub fn scale_handle(&mut self, window_pose: &Pose, id: &str) -> Option<f32> {
         let (right, up, forward) = (window_pose.get_right(), window_pose.get_up(), window_pose.get_forward());
 
@@ -216,10 +273,22 @@ impl Appearence {
             let (start_offset, start_scale, start_size) =
                 *self.scale_grab.get_or_insert((handle_offset, self.ui_scale, self.window_size));
 
-            self.window_size.x = (start_size.x + offset.x - start_offset.x).max(self.min_window_size.x);
-            self.window_size.y = (start_size.y + offset.y - start_offset.y).max(self.min_window_size.y);
-            self.ui_scale =
-                (start_scale + (offset.z - start_offset.z) * self.scale_per_meter).clamp(MIN_UI_SCALE, MAX_UI_SCALE);
+            if self.keep_window_ratio {
+                // Ratio locked: the X and Y drag deltas are averaged into one uniform size factor applied to
+                // both dimensions, and the `min_window_size` floor is applied to the factor itself, so the
+                // aspect ratio survives even the clamp.
+                let drag = (offset.x - start_offset.x + offset.y - start_offset.y) * 0.5;
+                let reference = (start_size.x + start_size.y) * 0.5;
+                let factor = ((reference + drag) / reference.max(0.001))
+                    .max(self.min_window_size.x / start_size.x.max(0.001))
+                    .max(self.min_window_size.y / start_size.y.max(0.001));
+                self.window_size = start_size * factor;
+            } else {
+                self.window_size.x = (start_size.x + offset.x - start_offset.x).max(self.min_window_size.x);
+                self.window_size.y = (start_size.y + offset.y - start_offset.y).max(self.min_window_size.y);
+            }
+            self.ui_scale = (start_scale + (offset.z - start_offset.z) * self.scale_per_meter)
+                .clamp(self.scale_bounds.0, self.scale_bounds.1);
             self.scale_all();
             self.scale_handle_offset = offset;
 
@@ -258,19 +327,14 @@ impl Appearence {
         };
 
         // Custom handle visual: when set, the sprite is drawn in place of the built-in knob, centered on it
-        // and scaled to its footprint (`0.035 * ui_scale` meters on its largest axis, aspect ratio preserved),
+        // and scaled to its footprint (`0.055 * ui_scale` meters on its largest axis, aspect ratio preserved),
         // so it follows both the drag position and the window scaling. Drawn after the grab logic so the pose
         // used is the one updated by the drag of this frame.
         if let Some(sprite) = &self.handle_sprite {
-            let size = 0.035 * self.ui_scale;
+            let size = 0.055 * self.ui_scale;
             let aspect = sprite.get_aspect();
             let scale = size / aspect.max(1.0);
-            sprite.draw(
-                handle_pose.to_matrix(Some(Vec3::new(scale, scale * aspect, 1.0))),
-                Pivot::Center,
-                None,
-                None,
-            );
+            sprite.draw(handle_pose.to_matrix(Some(Vec3::new(scale, scale * aspect, 1.0))), Pivot::Center, None, None);
         }
 
         result

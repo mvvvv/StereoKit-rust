@@ -139,6 +139,7 @@ impl Documents1 {
         // A nice handle
         self.appearence.handle_sprite = Sprite::from_file("icons/zoom.png", None, None).ok();
 
+        self.appearence.keep_window_ratio = true;
         self.appearence.start();
         true
     }
@@ -165,11 +166,11 @@ impl Documents1 {
     fn draw(&mut self, _token: &MainThreadToken) {
         // The demo window uses the `Appearence` management
         let prev_settings = Ui::get_settings();
-        Ui::settings(self.appearence.ui_settings_scaled());
+        Ui::settings(self.appearence.get_ui_settings_scaled());
 
         Ui::window("Documents1 - FileBrowserB Demo")
             .pose(&mut self.window_pose)
-            .size(self.appearence.window_size * self.appearence.ui_scale)
+            .size(self.appearence.scaled_window_size())
             .window_type(UiWin::Normal)
             .begin();
 
@@ -244,7 +245,7 @@ impl Documents1 {
         for location in LOCATIONS.iter() {
             Ui::same_line();
             if Ui::radio(location.as_str(), self.location == *location)
-                .size(Vec2::new(0.09, 0.03) * self.appearence.ui_scale)
+                .size(self.appearence.scale_size(Vec2::new(0.09, 0.03)))
                 .images(&self.radio_off, &self.radio_on)
                 .image_layout(UiBtnLayout::Left)
                 .press()
@@ -276,7 +277,7 @@ impl Documents1 {
         Ui::label("File Extensions (ie: .txt, .md, .rs):").draw();
         Ui::same_line();
         Ui::input("documents1_exts", &mut self.exts_input)
-            .size(Vec2::new(0.17, 0.0) * self.appearence.ui_scale)
+            .size(self.appearence.scale_size(Vec2::new(0.17, 0.0)))
             .edit();
         Ui::pop_tint();
 
@@ -359,7 +360,7 @@ impl Documents1 {
         }
 
         SkInfo::send_event(&self.sk_info, StepperAction::add(self.id.clone() + &suffix, file_browser));
-        Ui::settings(self.appearence.ui_settings_scaled());
+        Ui::settings(self.appearence.get_ui_settings_scaled());
     }
 }
 

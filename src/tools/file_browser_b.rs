@@ -108,7 +108,7 @@ impl FileEntry {
 /// * `grid_view` - Whether to show files in a grid (true) or list (false) at start. Default is false (list).
 /// * `appearence.title_style`, `appearence.list_style`, `appearence.label_style`,`appearence.small_style` - The four
 ///   text styles of the browser, from the biggest (header + breadcrumbs) to the smallest (annotations + status line),
-///   giving its UI some relief. Their `layout_height` is multiplied by `appearence.ui_scale` while drawing, so fonts
+///   giving its UI some relief. Their `layout_height` is multiplied by `appearence.ui_scale()` while drawing, so fonts
 ///   follow the scale handle too.
 /// * `preview` - An optional implementor of the [`Previewer`] trait, called every frame while the button of a directory
 ///   or a file of the list is focused see [`Ui::get_last_element_focused`]. Default is `None` (no preview). See
@@ -315,7 +315,7 @@ impl FileBrowserB {
 
         // We ajust the preview appearence if any
         if let Some(preview) = self.preview.as_deref_mut() {
-            preview.set_ui_scale(self.appearence.ui_scale);
+            preview.set_ui_scale(self.appearence.get_ui_scale());
         }
 
         self.refresh();
@@ -377,17 +377,17 @@ impl FileBrowserB {
         };
 
         let prev_settings = Ui::get_settings();
-        Ui::settings(self.appearence.ui_settings_scaled());
+        Ui::settings(self.appearence.get_ui_settings_scaled());
 
         Ui::push_id(&self.id);
         Ui::window(header_text)
             .pose(&mut self.window_pose)
-            .size(self.appearence.window_size * self.appearence.ui_scale)
+            .size(self.appearence.scaled_window_size())
             .window_type(UiWin::Normal)
             .begin();
 
         let line = Ui::get_line_height();
-        let btn = Vec2::new(line * 1.4, line * 1.4) * self.appearence.ui_scale;
+        let btn = self.appearence.scale_size(Vec2::new(line * 1.4, line * 1.4));
 
         self.draw_toolbar(btn);
 
@@ -508,23 +508,23 @@ impl FileBrowserB {
         Ui::same_line();
         Ui::hspace(0.01);
         Ui::push_enabled(self.can_go_up(), None);
-        if Ui::button("fb_up").image(&self.arrow_up).image_layout(UiBtnLayout::CenterNoText).size(btn).press() {
-            if self.can_go_up()
-                && let Some(parent) = self.dir.parent()
-            {
-                let parent = parent.to_path_buf();
-                // Clamp to root if a root is set.
-                let new_dir = if !self.root_dir.as_os_str().is_empty() && !parent.starts_with(&self.root_dir) {
-                    self.root_dir.clone()
-                } else {
-                    parent
-                };
-                if new_dir != self.dir {
-                    self.history.push(self.dir.clone());
-                    self.change_dir(new_dir);
-                }
+        if Ui::button("fb_up").image(&self.arrow_up).image_layout(UiBtnLayout::CenterNoText).size(btn).press()
+            && self.can_go_up()
+            && let Some(parent) = self.dir.parent()
+        {
+            let parent = parent.to_path_buf();
+            // Clamp to root if a root is set.
+            let new_dir = if !self.root_dir.as_os_str().is_empty() && !parent.starts_with(&self.root_dir) {
+                self.root_dir.clone()
+            } else {
+                parent
+            };
+            if new_dir != self.dir {
+                self.history.push(self.dir.clone());
+                self.change_dir(new_dir);
             }
         }
+
         Ui::pop_enabled();
 
         // Back (navigate to previous dir in history)
@@ -610,7 +610,7 @@ impl FileBrowserB {
         // then place the buttons with `.at()` (button_at): unlike flow buttons, these can simply
         // overflow past the window's edge when the path is too long, which is fine in VR — the
         // window floats in space, the user can lean/move to read it.
-        let gutter = self.appearence.ui_settings_scaled().gutter;
+        let gutter = self.appearence.get_ui_settings_scaled().gutter;
         // Breadcrumb buttons are smaller than regular buttons.
         let at = Ui::get_layout_at();
         let row_w = Ui::get_layout_remaining().x;
@@ -647,7 +647,7 @@ impl FileBrowserB {
         Ui::label("New folder:").draw();
         Ui::same_line();
         Ui::input("fb_new_folder_name", &mut self.new_folder_name)
-            .size(Vec2::new(0.2 * self.appearence.ui_scale, 0.0))
+            .size(Vec2::new(self.appearence.scale(0.2), 0.0))
             .edit();
         Ui::same_line();
         Ui::push_enabled(!self.new_folder_name.trim().is_empty(), None);
@@ -667,7 +667,7 @@ impl FileBrowserB {
         }
         Ui::pop_enabled();
         Ui::same_line();
-        if Ui::button_round("cancel", &self.close, 0.03 * self.appearence.ui_scale).press() {
+        if Ui::button_round("cancel", &self.close, self.appearence.scale(0.03)).press() {
             self.show_new_folder = false;
         }
         Ui::pop_tint();
@@ -677,10 +677,10 @@ impl FileBrowserB {
         Ui::push_tint(self.appearence.input_tint);
         Ui::label("search:").draw();
         Ui::same_line();
-        Ui::input("fb_search", &mut self.search).size(Vec2::new(0.2 * self.appearence.ui_scale, 0.0)).edit();
+        Ui::input("fb_search", &mut self.search).size(Vec2::new(self.appearence.scale(0.2), 0.0)).edit();
         if !self.search.is_empty() {
             Ui::same_line();
-            if Ui::button_round("clear", &self.close, 0.03 * self.appearence.ui_scale).press() {
+            if Ui::button_round("clear", &self.close, self.appearence.scale(0.03)).press() {
                 self.search.clear();
             }
         }
@@ -779,7 +779,7 @@ impl FileBrowserB {
         // In list mode each row holds 1 entry. In grid mode, the column count adapts to the window
         // width: fill it with as many columns as possible.
         const GRID_MIN_CELL_CHARS: f32 = 5.0;
-        let settings = self.appearence.ui_settings_scaled();
+        let settings = self.appearence.get_ui_settings_scaled();
         let columns = if self.grid_view {
             (((list_area.x - slider_w).max(0.0) + settings.gutter) / (line * GRID_MIN_CELL_CHARS + settings.padding))
                 .floor()
@@ -916,7 +916,7 @@ impl FileBrowserB {
             }
         } else {
             // ----- LIST MODE (3 aligned columns: name | size | date) -----
-            let gutter = self.appearence.ui_settings_scaled().gutter;
+            let gutter = self.appearence.get_ui_settings_scaled().gutter;
             let name_w = content_w * 0.55;
             let size_w = content_w * 0.20;
             let date_w = content_w - name_w - size_w - gutter * 2.0;
@@ -1111,7 +1111,7 @@ impl FileBrowserB {
     /// The vertical scrollbar of the file list. Instead of a plain [`Ui::vslider`],  which allows a custom rendering.
     fn draw_scrollbar(&mut self, width: f32, height: f32, max_scroll: f32, visible_rows: usize, total_rows: usize) {
         let bar_bounds =
-            Ui::layout_reserve(Vec2::new(width, height), false, self.appearence.ui_settings_scaled().depth);
+            Ui::layout_reserve(Vec2::new(width, height), false, self.appearence.get_ui_settings_scaled().depth);
         let tlb = bar_bounds.tlb();
 
         // Thumb size: same width ratio as StereoKit's vslider push button (`size_min * 0.55` for a
@@ -1133,8 +1133,10 @@ impl FileBrowserB {
             Vec2::new(0.0, max_scroll),
             thumb_size,
             thumb_size
-                + Vec2::new(self.appearence.ui_settings_scaled().padding, self.appearence.ui_settings_scaled().padding)
-                    * 2.0,
+                + Vec2::new(
+                    self.appearence.get_ui_settings_scaled().padding,
+                    self.appearence.get_ui_settings_scaled().padding,
+                ) * 2.0,
             None, // UiConfirm::Push, the vslider default
             &mut slider,
         );
@@ -1152,7 +1154,7 @@ impl FileBrowserB {
             UiVisual::SliderLine,
             None,
             tlb,
-            Vec3::new(width, height, self.appearence.ui_settings_scaled().depth * 0.1),
+            Vec3::new(width, height, self.appearence.get_ui_settings_scaled().depth * 0.1),
             focus,
         );
         // Thumb: SliderLine with a height proportional to the visible part of the directory.
@@ -1160,7 +1162,7 @@ impl FileBrowserB {
             UiVisual::SliderPush,
             None,
             thumb_at,
-            Vec3::new(thumb_w, thumb_h, self.appearence.ui_settings_scaled().depth),
+            Vec3::new(thumb_w, thumb_h, self.appearence.get_ui_settings_scaled().depth),
             focus,
         );
 
@@ -1289,7 +1291,7 @@ impl FileBrowserB {
         match self.files_selected_names.as_slice() {
             [name] => name.clone(),
             _ => {
-                if self.files_selected_names.len() == 0 {
+                if self.files_selected_names.is_empty() {
                     format!("no file {verb}").to_string()
                 } else {
                     format!("{} files {verb}", self.files_selected_names.len())
@@ -1522,9 +1524,7 @@ impl FileBrowserB {
     }
 
     /// Retrieves the paths of the files selected by the user from a [`FILE_BROWSER_B_SAVE`],
-    /// [`FILE_BROWSER_B_SELECT_DIR`], [`FILE_BROWSER_B_OPEN_MULTI`] or [`FILE_BROWSER_B_DELETE_MULTI`] event value:
-    /// the receiving end of [`FileBrowserB::send_multi_event`]. The value carries the full paths separated by `\n`
-    /// (a single one in the single-file modes), so this just splits it, dropping any empty entry.
+    /// [`FILE_BROWSER_B_SELECT_DIR`], [`FILE_BROWSER_B_OPEN_MULTI`] or [`FILE_BROWSER_B_DELETE_MULTI`] event value.
     pub fn get_selected_paths(value: &str) -> Vec<&str> {
         value.split('\n').filter(|path| !path.is_empty()).collect()
     }
@@ -1556,7 +1556,7 @@ impl FileBrowserB {
     /// buttons actually reserve: `line * 2.0` for the explicit grid cells, or the current text
     /// style's line height for the auto-height list buttons (see `draw_list`).
     fn visible_rows_count(&self, available_h: f32, row_h: f32) -> usize {
-        let gutter = self.appearence.ui_settings_scaled().gutter;
+        let gutter = self.appearence.get_ui_settings_scaled().gutter;
         let mut rows =
             if row_h <= 0.0 { 1 } else { ((available_h + gutter) / (row_h + gutter)).floor().max(1.0) as usize };
         if self.max_visible_rows > 0 {
@@ -2057,20 +2057,20 @@ impl Previewer for BasicPreviewer {
         // field below is displayed directly as its own [`Ui::label`], left auto-sized so the multi-line
         // pre-wrapped ones keep their natural height.
         //Ui::push_surface(Pose::new(origin, Some(bouton_pose.orientation)), Vec3::ZERO, Vec2::new(PANEL_W, 0.0));
-        Ui::layout_push(origin, [PANEL_W * 2.0 * self.appearence.ui_scale, 0.0], false);
+        Ui::layout_push(origin, [self.appearence.scale(PANEL_W * 2.0), 0.0], false);
         Ui::panel_begin(Some(UiPad::Inside));
 
         // Right panel: the thumbnail `Tex` of the entry, whose diffuse is generated in a thread
         // (see above). The `Ui::image` sprite tracks the `Tex` contents, so the thumbnail pops in
         // as soon as the main thread has uploaded the worker-thread result.
-        Ui::layout_push_cut(UiCut::Right, PANEL_W * self.appearence.ui_scale, false);
+        Ui::layout_push_cut(UiCut::Right, self.appearence.scale(PANEL_W), false);
         Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), Some(UiPad::Inside));
-        Ui::image(&self.sprite, Vec2::ONE * PANEL_W * self.appearence.ui_scale);
+        Ui::image(&self.sprite, Vec2::ONE * self.appearence.scale(PANEL_W));
         Ui::layout_pop();
 
         // Title line: bigger and brighter than the rest.
         Ui::push_text_style(self.appearence.title_style);
-        Ui::label(&title).size([PANEL_W * self.appearence.ui_scale - 0.03, 0.0]).use_padding(false).draw();
+        Ui::label(&title).size([self.appearence.scale(PANEL_W) - 0.03, 0.0]).use_padding(false).draw();
         Ui::pop_text_style();
 
         Ui::hseparator();
