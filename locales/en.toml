@@ -50,13 +50,24 @@ directory = "directory:"
 directory_to_delete = "directory to delete:"
 confirm_deletion = "confirm deletion"
 confirm_recursive_deletion = "confirm recursive deletion"
+# The empty-selection text. "no file %{verb}" is only ever combined with the marker-free "to delete"
+# verb; the "selected" verbs of several languages carry optional-plural markers ("sélectionné(s)",
+# "seleccionado(s)"...), so the empty "no file selected" phrase gets its own clean key.
 no_file_verb = "no file %{verb}"
 files_verb = "%{count} files %{verb}"
 verb_selected = "selected"
+verb_selected_plural = "selected"
 verb_to_delete = "to delete"
 
 # --- status line ---
-status_line = "%{dirs} folder(s), %{files} file(s)%{size}  —  %{sort}"
+# "%{dirs}" and "%{files}" receive the already translated counted nouns below (singular exactly
+# at 1, plural otherwise), following the verb composition of the bottom panels: no locale needs
+# an optional "(s)" plural marker.
+status_line = "%{dirs}, %{files}%{size}  —  %{sort}"
+status_line_folder = "%{count} folder"
+status_line_folders = "%{count} folders"
+status_line_file = "%{count} file"
+status_line_files = "%{count} files"
 
 # --- sizes / dates (format_size / format_date) ---
 size_bytes = "%{size} B"

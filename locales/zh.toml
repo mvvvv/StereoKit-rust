@@ -51,10 +51,15 @@ confirm_recursive_deletion = "确认递归删除"
 no_file_verb = "没有%{verb}文件"
 files_verb = "%{count} 个%{verb}文件"
 verb_selected = "已选择的"
+verb_selected_plural = "已选择的"
 verb_to_delete = "待删除的"
 
 # --- status line ---
-status_line = "%{dirs} 个文件夹，%{files} 个文件%{size}  —  %{sort}"
+status_line = "%{dirs}，%{files}%{size}  —  %{sort}"
+status_line_folder = "%{count} 个文件夹"
+status_line_folders = "%{count} 个文件夹"
+status_line_file = "%{count} 个文件"
+status_line_files = "%{count} 个文件"
 
 # --- sizes / dates (format_size / format_date) ---
 size_bytes = "%{size} B"

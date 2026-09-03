@@ -51,10 +51,15 @@ confirm_recursive_deletion = "Rekursives Löschen bestätigen"
 no_file_verb = "keine Datei %{verb}"
 files_verb = "%{count} Dateien %{verb}"
 verb_selected = "ausgewählt"
+verb_selected_plural = "ausgewählt"
 verb_to_delete = "zu löschen"
 
 # --- status line ---
-status_line = "%{dirs} Ordner, %{files} Dateien%{size}  —  %{sort}"
+status_line = "%{dirs}, %{files}%{size}  —  %{sort}"
+status_line_folder = "%{count} Ordner"
+status_line_folders = "%{count} Ordner"
+status_line_file = "%{count} Datei"
+status_line_files = "%{count} Dateien"
 
 # --- sizes / dates (format_size / format_date) ---
 size_bytes = "%{size} B"

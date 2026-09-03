@@ -51,10 +51,15 @@ confirm_recursive_deletion = "재귀 삭제 확인"
 no_file_verb = "%{verb} 파일 없음"
 files_verb = "%{verb} 파일 %{count}개"
 verb_selected = "선택된"
+verb_selected_plural = "선택된"
 verb_to_delete = "삭제할"
 
 # --- status line ---
-status_line = "폴더 %{dirs}개, 파일 %{files}개%{size}  —  %{sort}"
+status_line = "%{dirs}, %{files}%{size}  —  %{sort}"
+status_line_folder = "폴더 %{count}개"
+status_line_folders = "폴더 %{count}개"
+status_line_file = "파일 %{count}개"
+status_line_files = "파일 %{count}개"
 
 # --- sizes / dates (format_size / format_date) ---
 size_bytes = "%{size} B"

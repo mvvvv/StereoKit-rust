@@ -1343,14 +1343,15 @@ impl FileBrowserB {
 
     /// The description of the current selection shown in the bottom panels of the file modes: the selected file's
     /// name when exactly one entry is selected, otherwise "N files {verb}" or "no file {verb}".
-    fn selection_description(&self, verb: &str) -> String {
+    fn selection_description(&self, verb: &str, verb_plural: &str) -> String {
         match self.files_selected_names.as_slice() {
             [name] => name.clone(),
             _ => {
                 if self.files_selected_names.is_empty() {
                     t!("file_browser_b.no_file_verb", verb = verb).into_owned()
                 } else {
-                    t!("file_browser_b.files_verb", verb = verb, count = self.files_selected_names.len()).into_owned()
+                    t!("file_browser_b.files_verb", verb = verb_plural, count = self.files_selected_names.len())
+                        .into_owned()
                 }
             }
         }
@@ -1393,7 +1394,10 @@ impl FileBrowserB {
         }
         Ui::pop_enabled();
         Ui::same_line();
-        Ui::label(self.selection_description(&t!("file_browser_b.verb_selected"))).draw();
+        Ui::label(
+            self.selection_description(&t!("file_browser_b.verb_selected"), &t!("file_browser_b.verb_selected_plural")),
+        )
+        .draw();
         Ui::same_line();
         Ui::push_enabled(!self.files_selected_names.is_empty(), None);
         if Ui::button_round(t!("file_browser_b.clear"), &self.close, self.appearence.scale(0.03)).press() {
@@ -1497,7 +1501,10 @@ impl FileBrowserB {
         }
         Ui::pop_enabled();
         Ui::same_line();
-        Ui::label(self.selection_description(&t!("file_browser_b.verb_to_delete"))).draw();
+        Ui::label(
+            self.selection_description(&t!("file_browser_b.verb_to_delete"), &t!("file_browser_b.verb_to_delete")),
+        )
+        .draw();
         Ui::same_line();
         Ui::push_enabled(!self.files_selected_names.is_empty(), None);
         if Ui::button_round(t!("file_browser_b.clear"), &self.close, self.appearence.scale(0.03)).press() {
@@ -1607,15 +1614,29 @@ impl FileBrowserB {
         value.split('\n').filter(|path| !path.is_empty()).collect()
     }
 
-    /// The status line at the bottom of the file list, showing the number of files and folders,
+    /// The status line at the bottom of the file list, showing the number of files and folders, the total size of the
+    /// listed files and the current sort. Like the verbs of [`FileBrowserB::selection_description`], the counted nouns
+    /// carry their own singular/plural keys — `status_line_folder`/`status_line_folders` and
+    /// `status_line_file`/`status_line_files`, singular exactly at 1 — interpolated as the already translated
+    /// `%{dirs}` / `%{files}` phrases of `status_line`, so no locale needs an optional "(s)" plural marker.
     fn draw_status_line(&mut self) {
         let n_files = self.filtered_indices.iter().filter(|i| !self.entries[**i].is_dir).count();
         let n_dirs = self.filtered_indices.len() - n_files;
         let total_size: u64 = self.filtered_indices.iter().map(|i| self.entries[*i].size).sum();
+        let dirs_txt = if n_dirs <= 1 {
+            t!("file_browser_b.status_line_folder", count = n_dirs)
+        } else {
+            t!("file_browser_b.status_line_folders", count = n_dirs)
+        };
+        let files_txt = if n_files <= 1 {
+            t!("file_browser_b.status_line_file", count = n_files)
+        } else {
+            t!("file_browser_b.status_line_files", count = n_files)
+        };
         self.status = t!(
             "file_browser_b.status_line",
-            dirs = n_dirs,
-            files = n_files,
+            dirs = dirs_txt,
+            files = files_txt,
             size = if total_size > 0 { format!(" ({})", format_size(total_size)) } else { String::new() },
             sort = match self.sort_by {
                 SortBy::Name => t!("file_browser_b.sort_name"),

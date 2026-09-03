@@ -51,10 +51,15 @@ confirm_recursive_deletion = "再帰的削除の確認"
 no_file_verb = "%{verb}ファイルはありません"
 files_verb = "%{count} 個の%{verb}ファイル"
 verb_selected = "選択済みの"
+verb_selected_plural = "選択済みの"
 verb_to_delete = "削除対象の"
 
 # --- status line ---
-status_line = "フォルダー %{dirs} 個、ファイル %{files} 個%{size}  —  %{sort}"
+status_line = "%{dirs}、%{files}%{size}  —  %{sort}"
+status_line_folder = "フォルダー %{count} 個"
+status_line_folders = "フォルダー %{count} 個"
+status_line_file = "ファイル %{count} 個"
+status_line_files = "ファイル %{count} 個"
 
 # --- sizes / dates (format_size / format_date) ---
 size_bytes = "%{size} B"

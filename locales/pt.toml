@@ -50,11 +50,16 @@ confirm_deletion = "confirmar exclusão"
 confirm_recursive_deletion = "confirmar exclusão recursiva"
 no_file_verb = "nenhum arquivo %{verb}"
 files_verb = "%{count} arquivos %{verb}"
-verb_selected = "selecionado(s)"
+verb_selected = "selecionado"
+verb_selected_plural = "selecionados"
 verb_to_delete = "a excluir"
 
 # --- status line ---
-status_line = "%{dirs} pasta(s), %{files} arquivo(s)%{size}  —  %{sort}"
+status_line = "%{dirs}, %{files}%{size}  —  %{sort}"
+status_line_folder = "%{count} pasta"
+status_line_folders = "%{count} pastas"
+status_line_file = "%{count} arquivo"
+status_line_files = "%{count} arquivos"
 
 # --- sizes / dates (format_size / format_date) ---
 size_bytes = "%{size} B"

@@ -49,12 +49,20 @@ directory_to_delete = "répertoire à supprimer :"
 confirm_deletion = "confirmer la suppression"
 confirm_recursive_deletion = "confirmer la suppression récursive"
 no_file_verb = "aucun fichier %{verb}"
-files_verb = "%{count} fichier(s) %{verb}"
-verb_selected = "sélectionné(s)"
+files_verb = "%{count} fichiers %{verb}"
+verb_selected = "sélectionné"
+verb_selected_plural = "sélectionnés"
 verb_to_delete = "à supprimer"
 
 # --- status line ---
-status_line = "%{dirs} dossier(s), %{files} fichier(s)%{size}  —  %{sort}"
+# "%{dirs}" et "%{files}" reçoivent les noms comptés ci-dessous déjà traduits (singulier
+# exactement à 1, pluriel sinon), comme les verbes des panneaux du bas : aucune locale n'a
+# besoin de marqueur de pluriel optionnel "(s)".
+status_line = "%{dirs}, %{files}%{size}  —  %{sort}"
+status_line_folder = "%{count} dossier"
+status_line_folders = "%{count} dossiers"
+status_line_file = "%{count} fichier"
+status_line_files = "%{count} fichiers"
 
 # --- sizes / dates (format_size / format_date) ---
 size_bytes = "%{size} o"
