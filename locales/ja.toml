@@ -5,6 +5,8 @@
 # --- window titles (one per PickerMode) ---
 title_open = "ファイルを開く"
 title_open_multi = "複数のファイルを開く"
+title_select = "ファイルを選択"
+title_select_multi = "複数のファイルを選択"
 title_save = "ファイルを作成"
 title_select_dir = "ディレクトリを選択"
 title_delete_file = "ファイルを削除"

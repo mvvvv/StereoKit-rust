@@ -7,6 +7,8 @@
 # --- window titles (one per PickerMode) ---
 title_open = "Opening a file"
 title_open_multi = "Opening multiple files"
+title_select = "Selecting a file"
+title_select_multi = "Selecting multiple files"
 title_save = "Creating a file"
 title_select_dir = "Selecting a directory"
 title_delete_file = "Deleting a file"

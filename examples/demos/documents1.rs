@@ -10,7 +10,8 @@ use stereokit_rust::{
     tools::{
         file_browser_b::{
             BasicPreviewer, FILE_BROWSER_B_DELETE_MULTI, FILE_BROWSER_B_OPEN_MULTI, FILE_BROWSER_B_SAVE,
-            FILE_BROWSER_B_SELECT_DIR, FileBrowserB, available_locales, locale, set_locale,
+            FILE_BROWSER_B_SELECT, FILE_BROWSER_B_SELECT_DIR, FILE_BROWSER_B_SELECT_MULTI, FileBrowserB,
+            available_locales, locale, set_locale,
         },
         os_api::BrowseLocation,
     },
@@ -20,8 +21,9 @@ use stereokit_rust::{
 
 /// Demo showing how to use [`FileBrowserB`] in all its modes.
 ///
-/// It provides one button per [`PickerMode`]: open a file, open multiple files, save a file, select a directory,
-/// delete a file, delete multiple files, delete a directory. The starting storage location is chosen with radio
+/// It provides one button per [`PickerMode`]: open a file, open multiple files, select a file, select multiple
+/// files, save a file, select a directory, delete a file, delete multiple files, delete a directory. The starting
+/// storage location is chosen with radio
 /// buttons, the extension filter is entered in a text field (e.g. `.txt, .md, .rs`) and the language of the browser
 /// texts is cycled through the [`available_locales`] with a right arrow button. The events received from the
 /// browser are concatenated in a multi-line log, most recent first, displayed in a scrollable text area and logged:
@@ -101,6 +103,7 @@ impl Default for Documents1 {
 impl Documents1 {
     const BROWSER_OPEN_SUFFIX: &'static str = "_docs_open";
     const BROWSER_OPEN_MULTI_SUFFIX: &'static str = "_docs_open_multi";
+    const BROWSER_SELECT_SUFFIX: &'static str = "_docs_select";
     const BROWSER_SAVE_SUFFIX: &'static str = "_docs_save";
     const BROWSER_SELECT_DIR_SUFFIX: &'static str = "_docs_select_dir";
     const BROWSER_DELETE_SUFFIX: &'static str = "_docs_delete";
@@ -160,6 +163,8 @@ impl Documents1 {
             FILE_BROWSER_B_OPEN_MULTI
             | FILE_BROWSER_B_SAVE
             | FILE_BROWSER_B_SELECT_DIR
+            | FILE_BROWSER_B_SELECT
+            | FILE_BROWSER_B_SELECT_MULTI
             | FILE_BROWSER_B_DELETE_MULTI => {
                 self.remember_event(key, value);
             }
@@ -197,9 +202,11 @@ impl Documents1 {
 
     /// One button per [`PickerMode`], laid out four per line.
     fn draw_mode_buttons(&mut self) {
-        const MODES: [(&str, PickerMode); 7] = [
+        const MODES: [(&str, PickerMode); 9] = [
             ("Open a file", PickerMode::Open),
             ("Open files", PickerMode::OpenMulti),
+            ("Select a file", PickerMode::Select),
+            ("Select files", PickerMode::SelectMulti),
             ("Save a file", PickerMode::Save),
             ("Select a directory", PickerMode::SelectDirectory),
             ("Delete a file", PickerMode::DeleteFile),
@@ -346,6 +353,7 @@ impl Documents1 {
         let suffix = match mode {
             PickerMode::Open => Self::BROWSER_OPEN_SUFFIX,
             PickerMode::OpenMulti => Self::BROWSER_OPEN_MULTI_SUFFIX,
+            PickerMode::Select | PickerMode::SelectMulti => Self::BROWSER_SELECT_SUFFIX,
             PickerMode::Save => Self::BROWSER_SAVE_SUFFIX,
             PickerMode::SelectDirectory => Self::BROWSER_SELECT_DIR_SUFFIX,
             PickerMode::DeleteFile | PickerMode::DeleteFileMulti | PickerMode::DeleteDirectory => {
@@ -377,8 +385,8 @@ impl Documents1 {
         // button pose, drawing a small info panel beside the button.
         file_browser.preview = Some(Box::new(BasicPreviewer::default()));
 
-        // The browser mode: Open (default), OpenMulti, Save, SelectDirectory, DeleteFile, DeleteFileMulti or
-        // DeleteDirectory.
+        // The browser mode: Open (default), OpenMulti, Select, SelectMulti, Save, SelectDirectory, DeleteFile,
+        // DeleteFileMulti or DeleteDirectory.
         file_browser.picker_mode = mode;
 
         // A nice handle

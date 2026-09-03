@@ -1729,6 +1729,14 @@ pub enum PickerMode {
     /// files"): the browser only notifies the caller, the deletion itself is the caller's business.
     /// [`Platform::file_picker`] does not support this mode.
     DeleteFileMulti = 6,
+    /// Allow the user to designate a single existing file (header "Selecting a file"): behaves like
+    /// [`PickerMode::Open`] (single selection, double-click confirms), just with different labels.
+    /// [`Platform::file_picker`] does not support this mode.
+    Select = 7,
+    /// Allow the user to designate several existing files at once (header "Selecting multiple files"): behaves like
+    /// [`PickerMode::OpenMulti`] (checkboxes, one event carrying all the selected paths), just with different labels.
+    /// [`Platform::file_picker`] does not support this mode.
+    SelectMulti = 8,
 }
 
 /// This class provides some platform related code that runs cross-platform. You might be able to do many of these
