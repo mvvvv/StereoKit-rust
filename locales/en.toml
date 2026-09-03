@@ -1,0 +1,83 @@
+# English (fallback) catalogue of the crate's tools.
+# Looked up at runtime by the `t!` macro of rust-i18n (see `src/tools/file_browser_b.rs`),
+# switchable with `tools::file_browser_b::set_locale`. Add a `<locale>.toml` file with the
+# same keys to add a language.
+
+[file_browser_b]
+# --- window titles (one per PickerMode) ---
+title_open = "Opening a file"
+title_open_multi = "Opening multiple files"
+title_save = "Creating a file"
+title_select_dir = "Selecting a directory"
+title_delete_file = "Deleting a file"
+title_delete_file_multi = "Deleting multiple files"
+title_delete_dir = "Deleting a directory"
+all_file_types = "All file types"
+only_exts = "Only (%{exts})"
+
+# --- toolbar / new folder / search / sort bar ---
+new_folder = "New folder"
+new_folder_prompt = "New folder:"
+create = "create"
+cancel = "cancel"
+cannot_create_folder = "Cannot create folder: %{error}"
+search = "search:"
+clear = "clear"
+hidden = "hidden"
+sort_name = "name"
+sort_size = "size"
+sort_date = "date"
+sort_type = "type"
+
+# --- errors and entry annotations ---
+error_dir_not_found = "Error: directory does not exist!"
+error_cell = "error!"
+symlink_to = "-> %{target}"
+broken_link = "-> %{target} (broken link)"
+unreadable_entry = "[error] unreadable entry"
+items = "%{count} item(s)"
+
+# --- bottom panels ---
+open = "Open"
+save = "Save"
+select = "Select"
+delete = "Delete"
+file_name = "file name:"
+replace_existing_file = "replace existing file"
+directory = "directory:"
+directory_to_delete = "directory to delete:"
+confirm_deletion = "confirm deletion"
+confirm_recursive_deletion = "confirm recursive deletion"
+no_file_verb = "no file %{verb}"
+files_verb = "%{count} files %{verb}"
+verb_selected = "selected"
+verb_to_delete = "to delete"
+
+# --- status line ---
+status_line = "%{dirs} folder(s), %{files} file(s)%{size}  —  %{sort}"
+
+# --- sizes / dates (format_size / format_date) ---
+size_bytes = "%{size} B"
+size_kb = "%{size} KB"
+size_mb = "%{size} MB"
+size_gb = "%{size} GB"
+date_just_now = "just now"
+date_minutes_ago = "%{count}m ago"
+date_hours_ago = "%{count}h ago"
+date_days_ago = "%{count}d ago"
+date_months_ago = "%{count}mo ago"
+date_years_ago = "%{count}y ago"
+date_future = "future"
+
+# --- preview panel (BasicPreviewer) ---
+kind_unreadable = "kind: unreadable entry!"
+kind_symlink = "kind: symlink -> %{target}"
+kind_symlink_dir = "kind: symlink -> %{target} (directory)"
+kind_directory = "kind: directory (%{count} item(s))"
+kind_file = "kind: file (%{ext})"
+size_line = "size: %{size}"
+modified_line = "modified: %{date}"
+access_line = "access: %{access}"
+read_only = "read-only"
+read_write = "read/write"
+path_label = "path:"

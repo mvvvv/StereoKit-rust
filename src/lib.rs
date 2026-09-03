@@ -218,6 +218,10 @@ pub use stereokit_macros::test_steps_no_event_loop as test_steps;
 /// Some of the errors you might encounter when using StereoKit-rust.
 use thiserror::Error;
 
+// Compile-time embedded translations of the tools (see the `file-browser` feature).
+#[cfg(feature = "file-browser")]
+rust_i18n::i18n!("locales", fallback = "en");
+
 /// Anchor related structs and functions.
 pub mod anchor;
 

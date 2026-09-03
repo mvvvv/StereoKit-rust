@@ -1,0 +1,81 @@
+# 本 crate のツールの日本語カタログ（キーの一覧は `locales/en.toml` を参照）。
+# ランタイムで `stereokit_rust::tools::file_browser_b::set_locale("ja")` により選択可能。
+
+[file_browser_b]
+# --- window titles (one per PickerMode) ---
+title_open = "ファイルを開く"
+title_open_multi = "複数のファイルを開く"
+title_save = "ファイルを作成"
+title_select_dir = "ディレクトリを選択"
+title_delete_file = "ファイルを削除"
+title_delete_file_multi = "複数のファイルを削除"
+title_delete_dir = "ディレクトリを削除"
+all_file_types = "すべてのファイル形式"
+only_exts = "（%{exts}）のみ"
+
+# --- toolbar / new folder / search / sort bar ---
+new_folder = "新規フォルダー"
+new_folder_prompt = "新規フォルダー："
+create = "作成"
+cancel = "キャンセル"
+cannot_create_folder = "フォルダーを作成できません：%{error}"
+search = "検索："
+clear = "クリア"
+hidden = "隠しファイル"
+sort_name = "名前"
+sort_size = "サイズ"
+sort_date = "日付"
+sort_type = "種類"
+
+# --- errors and entry annotations ---
+error_dir_not_found = "エラー：ディレクトリが存在しません！"
+error_cell = "エラー！"
+symlink_to = "-> %{target}"
+broken_link = "-> %{target}（壊れたリンク）"
+unreadable_entry = "[エラー] 読み取れないエントリ"
+items = "%{count} 項目"
+
+# --- bottom panels ---
+open = "開く"
+save = "保存"
+select = "選択"
+delete = "削除"
+file_name = "ファイル名："
+replace_existing_file = "既存のファイルを置き換える"
+directory = "ディレクトリ："
+directory_to_delete = "削除するディレクトリ："
+confirm_deletion = "削除の確認"
+confirm_recursive_deletion = "再帰的削除の確認"
+no_file_verb = "%{verb}ファイルはありません"
+files_verb = "%{count} 個の%{verb}ファイル"
+verb_selected = "選択済みの"
+verb_to_delete = "削除対象の"
+
+# --- status line ---
+status_line = "フォルダー %{dirs} 個、ファイル %{files} 個%{size}  —  %{sort}"
+
+# --- sizes / dates (format_size / format_date) ---
+size_bytes = "%{size} B"
+size_kb = "%{size} KB"
+size_mb = "%{size} MB"
+size_gb = "%{size} GB"
+date_just_now = "たった今"
+date_minutes_ago = "%{count}分前"
+date_hours_ago = "%{count}時間前"
+date_days_ago = "%{count}日前"
+date_months_ago = "%{count}か月前"
+date_years_ago = "%{count}年前"
+date_future = "未来"
+
+# --- preview panel (BasicPreviewer) ---
+kind_unreadable = "種類：読み取れないエントリ！"
+kind_symlink = "種類：シンボリックリンク -> %{target}"
+kind_symlink_dir = "種類：シンボリックリンク -> %{target}（ディレクトリ）"
+kind_directory = "種類：ディレクトリ（%{count} 項目）"
+kind_file = "種類：ファイル（%{ext}）"
+size_line = "サイズ：%{size}"
+modified_line = "更新日時：%{date}"
+access_line = "アクセス：%{access}"
+read_only = "読み取り専用"
+read_write = "読み取り/書き込み"
+path_label = "パス："

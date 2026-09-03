@@ -50,7 +50,7 @@ pub struct Appearence {
     /// Default window-local offset of the scale handle: on release, the handle springs back here, scaled
     /// proportionally to the current drawn window size (`window_size * ui_scale`) relative to
     /// `Appearence::reference_window_size`, so it hugs the window edge at its current size,
-    /// see [`Appearence::scale_handle`]. Default is `Vec3::new(0.30, 0.035, 0.006)` you can change it as long as it's
+    /// see [`Appearence::scale_handle`]. Default is `Vec3::new(0.31, 0.04, 0.006)` you can change it as long as it's
     /// relative to `Appearence::reference_window_size` and on the right of the window .
     pub scale_handle_default_offset: Vec3,
     /// Current window-local offset of the scale handle, the grab-able knob that drives the ui scale (see
@@ -101,7 +101,7 @@ impl Default for Appearence {
             ui_scale: 1.0,
             scale_per_meter: 2.0,
             // Scale handle at its default anchor.
-            scale_handle_default_offset: Vec3::new(0.30, 0.035, 0.006),
+            scale_handle_default_offset: Vec3::new(0.31, 0.04, 0.006),
             scale_handle_offset: Vec3::ZERO,
             scale_grab: None,
             handle_sprite: None,

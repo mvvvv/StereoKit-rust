@@ -1,0 +1,81 @@
+# 本 crate 工具的中文（简体）翻译目录（完整键列表见 `locales/en.toml`）。
+# 运行时可使用 `stereokit_rust::tools::file_browser_b::set_locale("zh")` 切换。
+
+[file_browser_b]
+# --- window titles (one per PickerMode) ---
+title_open = "打开文件"
+title_open_multi = "打开多个文件"
+title_save = "创建文件"
+title_select_dir = "选择目录"
+title_delete_file = "删除文件"
+title_delete_file_multi = "删除多个文件"
+title_delete_dir = "删除目录"
+all_file_types = "所有文件类型"
+only_exts = "仅限（%{exts}）"
+
+# --- toolbar / new folder / search / sort bar ---
+new_folder = "新建文件夹"
+new_folder_prompt = "新建文件夹："
+create = "创建"
+cancel = "取消"
+cannot_create_folder = "无法创建文件夹：%{error}"
+search = "搜索："
+clear = "清除"
+hidden = "隐藏"
+sort_name = "名称"
+sort_size = "大小"
+sort_date = "日期"
+sort_type = "类型"
+
+# --- errors and entry annotations ---
+error_dir_not_found = "错误：目录不存在！"
+error_cell = "错误！"
+symlink_to = "-> %{target}"
+broken_link = "-> %{target}（断开的链接）"
+unreadable_entry = "[错误] 无法读取的条目"
+items = "%{count} 个项目"
+
+# --- bottom panels ---
+open = "打开"
+save = "保存"
+select = "选择"
+delete = "删除"
+file_name = "文件名："
+replace_existing_file = "替换现有文件"
+directory = "目录："
+directory_to_delete = "要删除的目录："
+confirm_deletion = "确认删除"
+confirm_recursive_deletion = "确认递归删除"
+no_file_verb = "没有%{verb}文件"
+files_verb = "%{count} 个%{verb}文件"
+verb_selected = "已选择的"
+verb_to_delete = "待删除的"
+
+# --- status line ---
+status_line = "%{dirs} 个文件夹，%{files} 个文件%{size}  —  %{sort}"
+
+# --- sizes / dates (format_size / format_date) ---
+size_bytes = "%{size} B"
+size_kb = "%{size} KB"
+size_mb = "%{size} MB"
+size_gb = "%{size} GB"
+date_just_now = "刚刚"
+date_minutes_ago = "%{count} 分钟前"
+date_hours_ago = "%{count} 小时前"
+date_days_ago = "%{count} 天前"
+date_months_ago = "%{count} 个月前"
+date_years_ago = "%{count} 年前"
+date_future = "未来"
+
+# --- preview panel (BasicPreviewer) ---
+kind_unreadable = "类型：无法读取的条目！"
+kind_symlink = "类型：符号链接 -> %{target}"
+kind_symlink_dir = "类型：符号链接 -> %{target}（目录）"
+kind_directory = "类型：目录（%{count} 个项目）"
+kind_file = "类型：文件（%{ext}）"
+size_line = "大小：%{size}"
+modified_line = "修改时间：%{date}"
+access_line = "访问权限：%{access}"
+read_only = "只读"
+read_write = "读/写"
+path_label = "路径："

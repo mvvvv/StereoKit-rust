@@ -1,0 +1,81 @@
+# Deutscher Katalog der Crate-Tools (siehe `locales/en.toml` für die vollständige Schlüsselliste).
+# Zur Laufzeit wählbar mit `stereokit_rust::tools::file_browser_b::set_locale("de")`.
+
+[file_browser_b]
+# --- window titles (one per PickerMode) ---
+title_open = "Datei öffnen"
+title_open_multi = "Mehrere Dateien öffnen"
+title_save = "Datei erstellen"
+title_select_dir = "Verzeichnis auswählen"
+title_delete_file = "Datei löschen"
+title_delete_file_multi = "Mehrere Dateien löschen"
+title_delete_dir = "Verzeichnis löschen"
+all_file_types = "Alle Dateitypen"
+only_exts = "Nur (%{exts})"
+
+# --- toolbar / new folder / search / sort bar ---
+new_folder = "Neuer Ordner"
+new_folder_prompt = "Neuer Ordner:"
+create = "erstellen"
+cancel = "abbrechen"
+cannot_create_folder = "Ordner kann nicht erstellt werden: %{error}"
+search = "suchen:"
+clear = "leeren"
+hidden = "versteckt"
+sort_name = "Name"
+sort_size = "Größe"
+sort_date = "Datum"
+sort_type = "Typ"
+
+# --- errors and entry annotations ---
+error_dir_not_found = "Fehler: Verzeichnis existiert nicht!"
+error_cell = "Fehler!"
+symlink_to = "-> %{target}"
+broken_link = "-> %{target} (toter Link)"
+unreadable_entry = "[Fehler] Eintrag nicht lesbar"
+items = "%{count} Element(e)"
+
+# --- bottom panels ---
+open = "Öffnen"
+save = "Speichern"
+select = "Auswählen"
+delete = "Löschen"
+file_name = "Dateiname:"
+replace_existing_file = "vorhandene Datei ersetzen"
+directory = "Verzeichnis:"
+directory_to_delete = "Zu löschendes Verzeichnis:"
+confirm_deletion = "Löschen bestätigen"
+confirm_recursive_deletion = "Rekursives Löschen bestätigen"
+no_file_verb = "keine Datei %{verb}"
+files_verb = "%{count} Dateien %{verb}"
+verb_selected = "ausgewählt"
+verb_to_delete = "zu löschen"
+
+# --- status line ---
+status_line = "%{dirs} Ordner, %{files} Dateien%{size}  —  %{sort}"
+
+# --- sizes / dates (format_size / format_date) ---
+size_bytes = "%{size} B"
+size_kb = "%{size} KB"
+size_mb = "%{size} MB"
+size_gb = "%{size} GB"
+date_just_now = "gerade eben"
+date_minutes_ago = "vor %{count} Min."
+date_hours_ago = "vor %{count} Std."
+date_days_ago = "vor %{count} Tagen"
+date_months_ago = "vor %{count} Monaten"
+date_years_ago = "vor %{count} Jahren"
+date_future = "Zukunft"
+
+# --- preview panel (BasicPreviewer) ---
+kind_unreadable = "Art: Eintrag nicht lesbar!"
+kind_symlink = "Art: symbolischer Link -> %{target}"
+kind_symlink_dir = "Art: symbolischer Link -> %{target} (Verzeichnis)"
+kind_directory = "Art: Verzeichnis (%{count} Element(e))"
+kind_file = "Art: Datei (%{ext})"
+size_line = "Größe: %{size}"
+modified_line = "Geändert: %{date}"
+access_line = "Zugriff: %{access}"
+read_only = "schreibgeschützt"
+read_write = "Lesen/Schreiben"
+path_label = "Pfad:"

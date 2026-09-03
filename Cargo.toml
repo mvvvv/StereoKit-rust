@@ -19,6 +19,7 @@ include = [
   "Cargo.toml",
   "build.rs",
   "src/*",
+  "locales/*",
   "StereoKit/cmake",
   "StereoKit/tools/include",
   "StereoKit/StereoKitC",
@@ -45,8 +46,9 @@ skc-in-dll = []
 test-xr-mode = []
 # Enable profiling in StereoKitC using tracy
 profile = []
-# Add the in-VR file browser tool (tools::file_browser_b::FileBrowserB)
-file-browser = []
+# Add the in-VR file browser tool (tools::file_browser_b::FileBrowserB), translated with rust-i18n
+# (compile-time embedded `locales/*` catalogues, runtime switch with tools::file_browser_b::set_locale)
+file-browser = ["dep:rust-i18n"]
 # All the extra tools. Usefull for test/doc
 tools = ["file-browser"]
 
@@ -74,6 +76,8 @@ thiserror = "2.0"
 bitflags = "2.13"
 glam = { version = "0.33", optional = true }
 openxr-sys = "0.13"
+# Compile-time translations for the tools (see the `file-browser` feature), runtime locale switching
+rust-i18n = { version = "4", optional = true }
 #stereokit-macros = { path = "./stereokit-macros", version = "0.6" }
 stereokit-macros = "0.6"
 

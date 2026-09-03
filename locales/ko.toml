@@ -1,0 +1,81 @@
+# 이 crate 도구들의 한국어 카탈로그 (전체 키 목록은 `locales/en.toml` 참조).
+# 런타임에서 `stereokit_rust::tools::file_browser_b::set_locale("ko")`로 선택 가능.
+
+[file_browser_b]
+# --- window titles (one per PickerMode) ---
+title_open = "파일 열기"
+title_open_multi = "여러 파일 열기"
+title_save = "파일 만들기"
+title_select_dir = "디렉터리 선택"
+title_delete_file = "파일 삭제"
+title_delete_file_multi = "여러 파일 삭제"
+title_delete_dir = "디렉터리 삭제"
+all_file_types = "모든 파일 형식"
+only_exts = "(%{exts})만"
+
+# --- toolbar / new folder / search / sort bar ---
+new_folder = "새 폴더"
+new_folder_prompt = "새 폴더:"
+create = "만들기"
+cancel = "취소"
+cannot_create_folder = "폴더를 만들 수 없음: %{error}"
+search = "검색:"
+clear = "지우기"
+hidden = "숨김"
+sort_name = "이름"
+sort_size = "크기"
+sort_date = "날짜"
+sort_type = "유형"
+
+# --- errors and entry annotations ---
+error_dir_not_found = "오류: 디렉터리가 없습니다!"
+error_cell = "오류!"
+symlink_to = "-> %{target}"
+broken_link = "-> %{target} (깨진 링크)"
+unreadable_entry = "[오류] 읽을 수 없는 항목"
+items = "%{count}개 항목"
+
+# --- bottom panels ---
+open = "열기"
+save = "저장"
+select = "선택"
+delete = "삭제"
+file_name = "파일 이름:"
+replace_existing_file = "기존 파일 바꾸기"
+directory = "디렉터리:"
+directory_to_delete = "삭제할 디렉터리:"
+confirm_deletion = "삭제 확인"
+confirm_recursive_deletion = "재귀 삭제 확인"
+no_file_verb = "%{verb} 파일 없음"
+files_verb = "%{verb} 파일 %{count}개"
+verb_selected = "선택된"
+verb_to_delete = "삭제할"
+
+# --- status line ---
+status_line = "폴더 %{dirs}개, 파일 %{files}개%{size}  —  %{sort}"
+
+# --- sizes / dates (format_size / format_date) ---
+size_bytes = "%{size} B"
+size_kb = "%{size} KB"
+size_mb = "%{size} MB"
+size_gb = "%{size} GB"
+date_just_now = "방금"
+date_minutes_ago = "%{count}분 전"
+date_hours_ago = "%{count}시간 전"
+date_days_ago = "%{count}일 전"
+date_months_ago = "%{count}개월 전"
+date_years_ago = "%{count}년 전"
+date_future = "미래"
+
+# --- preview panel (BasicPreviewer) ---
+kind_unreadable = "종류: 읽을 수 없는 항목!"
+kind_symlink = "종류: 심볼릭 링크 -> %{target}"
+kind_symlink_dir = "종류: 심볼릭 링크 -> %{target} (디렉터리)"
+kind_directory = "종류: 디렉터리 (%{count}개 항목)"
+kind_file = "종류: 파일 (%{ext})"
+size_line = "크기: %{size}"
+modified_line = "수정: %{date}"
+access_line = "액세스: %{access}"
+read_only = "읽기 전용"
+read_write = "읽기/쓰기"
+path_label = "경로:"

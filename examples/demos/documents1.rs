@@ -10,7 +10,7 @@ use stereokit_rust::{
     tools::{
         file_browser_b::{
             BasicPreviewer, FILE_BROWSER_B_DELETE_MULTI, FILE_BROWSER_B_OPEN_MULTI, FILE_BROWSER_B_SAVE,
-            FILE_BROWSER_B_SELECT_DIR, FileBrowserB,
+            FILE_BROWSER_B_SELECT_DIR, FileBrowserB, available_locales, locale, set_locale,
         },
         os_api::BrowseLocation,
     },
@@ -22,7 +22,8 @@ use stereokit_rust::{
 ///
 /// It provides one button per [`PickerMode`]: open a file, open multiple files, save a file, select a directory,
 /// delete a file, delete multiple files, delete a directory. The starting storage location is chosen with radio
-/// buttons and the extension filter is entered in a text field (e.g. `.txt, .md, .rs`). The events received from the
+/// buttons, the extension filter is entered in a text field (e.g. `.txt, .md, .rs`) and the language of the browser
+/// texts is cycled through the [`available_locales`] with a right arrow button. The events received from the
 /// browser are concatenated in a multi-line log, most recent first, displayed in a scrollable text area and logged:
 /// the demo never deletes anything itself, it only shows the [`FileBrowserB`] events.
 ///
@@ -35,6 +36,7 @@ pub struct Documents1 {
     pub window_pose: Pose,
     /// Size, scaling, text styles and tints of the demo window, same as [`FileBrowserB`].
     pub appearence: Appearence,
+    locales: Vec<String>,
 
     /// The storage location the next launched browser will start in.
     pub location: BrowseLocation,
@@ -58,6 +60,7 @@ pub struct Documents1 {
 
     radio_off: Sprite,
     radio_on: Sprite,
+    right_arrow: Sprite,
 
     pub title: String,
     pub title_style: TextStyle,
@@ -74,6 +77,7 @@ impl Default for Documents1 {
 
             window_pose: Pose::new(Vec3::new(0.0, 1.5, -1.0), Some(Quat::look_dir(Vec3::Z))),
             appearence: Appearence::default(),
+            locales: available_locales(),
 
             location: BrowseLocation::External,
             location_path: None,
@@ -85,6 +89,7 @@ impl Default for Documents1 {
 
             radio_off: Sprite::radio_off(),
             radio_on: Sprite::radio_on(),
+            right_arrow: Sprite::arrow_right(),
 
             title: "Documents1".into(),
             title_style: Text::make_style(Font::default(), 0.3, GREEN),
@@ -216,7 +221,8 @@ impl Documents1 {
         Ui::pop_text_style();
     }
 
-    /// The settings shared by every launched browser: the starting location and the extension filter.
+    /// The settings shared by every launched browser: the starting location, the extension filter and the language
+    /// of the browser texts.
     fn draw_browser_settings(&mut self) {
         Ui::push_text_style(self.appearence.title_style);
         Ui::label("Browser location:").draw();
@@ -225,6 +231,7 @@ impl Documents1 {
         Ui::push_text_style(self.appearence.label_style);
         self.draw_location_chooser();
         self.draw_exts_input();
+        self.draw_locale_chooser();
         Ui::pop_text_style();
     }
 
@@ -286,6 +293,28 @@ impl Documents1 {
         let filter_text = if exts.is_empty() { "no filter (all files)".to_string() } else { exts.join(" ") };
         Ui::label(format!("filter: {filter_text}")).draw();
         Ui::pop_text_style();
+    }
+
+    /// The language of the [`FileBrowserB`] texts: a `right_arrow` button showing the current [`locale`], cycling
+    /// through the [`available_locales`] on press, with the whole list displayed beside it, the current one
+    /// tinted. The change is global: every already open browser re-translates its texts on the next frame.
+    fn draw_locale_chooser(&mut self) {
+        let current = locale();
+
+        // The right arrow button shows the current locale and cycles to the next available one on press (back
+        // to the first after the last), on the model of the display refresh rate button of the demos program.
+        if Ui::button(format!("language: {current}")).image(&self.right_arrow).press() {
+            let next = self
+                .locales
+                .iter()
+                .position(|l| l == &current)
+                .map(|index| self.locales[(index + 1) % self.locales.len()].clone())
+                .or_else(|| self.locales.first().cloned());
+            if let Some(next) = next {
+                set_locale(&next);
+                Log::diag(format!("Documents1 locale set to {next}"));
+            }
+        }
     }
 
     /// The last event received from the browser for each mode, with the smallest text of the window. The demo does NOT

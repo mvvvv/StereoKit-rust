@@ -1,0 +1,81 @@
+# Catalogo italiano degli strumenti del crate (vedi `locales/en.toml` per la lista completa delle chiavi).
+# Selezionabile a runtime con `stereokit_rust::tools::file_browser_b::set_locale("it")`.
+
+[file_browser_b]
+# --- window titles (one per PickerMode) ---
+title_open = "Apertura di un file"
+title_open_multi = "Apertura di più file"
+title_save = "Creazione di un file"
+title_select_dir = "Selezione di una directory"
+title_delete_file = "Eliminazione di un file"
+title_delete_file_multi = "Eliminazione di più file"
+title_delete_dir = "Eliminazione di una directory"
+all_file_types = "Tutti i tipi di file"
+only_exts = "Solo (%{exts})"
+
+# --- toolbar / new folder / search / sort bar ---
+new_folder = "Nuova cartella"
+new_folder_prompt = "Nuova cartella:"
+create = "crea"
+cancel = "annulla"
+cannot_create_folder = "Impossibile creare la cartella: %{error}"
+search = "cerca:"
+clear = "pulisci"
+hidden = "nascosti"
+sort_name = "nome"
+sort_size = "dimensione"
+sort_date = "data"
+sort_type = "tipo"
+
+# --- errors and entry annotations ---
+error_dir_not_found = "Errore: la directory non esiste!"
+error_cell = "errore!"
+symlink_to = "-> %{target}"
+broken_link = "-> %{target} (link rotto)"
+unreadable_entry = "[errore] voce illeggibile"
+items = "%{count} elemento/i"
+
+# --- bottom panels ---
+open = "Apri"
+save = "Salva"
+select = "Seleziona"
+delete = "Elimina"
+file_name = "nome del file:"
+replace_existing_file = "sostituisci il file esistente"
+directory = "directory:"
+directory_to_delete = "directory da eliminare:"
+confirm_deletion = "conferma eliminazione"
+confirm_recursive_deletion = "conferma eliminazione ricorsiva"
+no_file_verb = "nessun file %{verb}"
+files_verb = "%{count} file %{verb}"
+verb_selected = "selezionato/i"
+verb_to_delete = "da eliminare"
+
+# --- status line ---
+status_line = "%{dirs} cartella/e, %{files} file%{size}  —  %{sort}"
+
+# --- sizes / dates (format_size / format_date) ---
+size_bytes = "%{size} B"
+size_kb = "%{size} KB"
+size_mb = "%{size} MB"
+size_gb = "%{size} GB"
+date_just_now = "proprio adesso"
+date_minutes_ago = "%{count} min fa"
+date_hours_ago = "%{count} h fa"
+date_days_ago = "%{count} g fa"
+date_months_ago = "%{count} mesi fa"
+date_years_ago = "%{count} anni fa"
+date_future = "futuro"
+
+# --- preview panel (BasicPreviewer) ---
+kind_unreadable = "tipo: voce illeggibile!"
+kind_symlink = "tipo: link simbolico -> %{target}"
+kind_symlink_dir = "tipo: link simbolico -> %{target} (directory)"
+kind_directory = "tipo: directory (%{count} elemento/i)"
+kind_file = "tipo: file (%{ext})"
+size_line = "dimensione: %{size}"
+modified_line = "modificato: %{date}"
+access_line = "accesso: %{access}"
+read_only = "sola lettura"
+read_write = "lettura/scrittura"
+path_label = "percorso:"

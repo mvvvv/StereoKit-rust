@@ -9,6 +9,7 @@ use crate::{
     ui::{Ui, UiBtnLayout, UiCut, UiPad, UiSliderData, UiVisual, UiWin},
     util::{Color32, Color128, PickerMode, named_colors},
 };
+use rust_i18n::t;
 use std::path::{Path, PathBuf};
 use std::time::{Instant, SystemTime};
 
@@ -16,6 +17,38 @@ pub const FILE_BROWSER_B_SAVE: &str = "File_Browser_B_save";
 pub const FILE_BROWSER_B_SELECT_DIR: &str = "File_Browser_B_select_dir";
 pub const FILE_BROWSER_B_OPEN_MULTI: &str = "File_Browser_B_open_multi";
 pub const FILE_BROWSER_B_DELETE_MULTI: &str = "File_Browser_B_delete_multi";
+
+/// Sets the locale used by the [`FileBrowserB`] texts (window title, toolbar, panels, entry annotations, preview
+/// panel...), e.g. `set_locale("fr")`. It is a global setting (shared with any other rust-i18n user of the crate)
+/// applied from the next drawn frame — no need to close and reopen the browser.
+///
+/// The available locales are the `locales/*.toml` catalogues compiled into the crate (English fallback, Chinese,
+/// French, German, Italian, Japanese, Korean, Portuguese and Spanish bundled, see [`available_locales`]); a locale
+/// without a catalogue falls back to English, and a key missing from a catalogue falls back to English before
+/// returning the key itself.
+///
+/// ### Example
+/// ```no_run
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::tools::file_browser_b::set_locale;
+///
+/// set_locale("fr"); // the FileBrowserB texts are in French from the next frame
+/// ```
+pub fn set_locale(locale: &str) {
+    rust_i18n::set_locale(locale);
+}
+
+/// The locale currently used by the [`FileBrowserB`] texts, `"en"` until [`set_locale`] is called.
+pub fn locale() -> String {
+    rust_i18n::locale().to_string()
+}
+
+/// The locales available for the [`FileBrowserB`] texts, one per `locales/*.toml` catalogue compiled into the
+/// crate (e.g. `["de", "en", "es", "fr", "it", "ja", "ko", "pt", "zh"]`). Add a catalogue file to this list to
+/// add a language, then select it with [`set_locale`].
+pub fn available_locales() -> Vec<String> {
+    rust_i18n::available_locales!().iter().map(|l| l.to_string()).collect()
+}
 
 /// How to sort file entries in [`FileBrowserB`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -361,19 +394,19 @@ impl FileBrowserB {
 
         // The window title starts with the action the browser was launched for, followed by the
         // extension filter (except for the directory modes, where files are not even listed).
-        let action_text = match self.picker_mode {
-            PickerMode::Open => "Opening a file",
-            PickerMode::Save => "Creating a file",
-            PickerMode::SelectDirectory => "Selecting a directory",
-            PickerMode::DeleteFile => "Deleting a file",
-            PickerMode::DeleteDirectory => "Deleting a directory",
-            PickerMode::OpenMulti => "Opening multiple files",
-            PickerMode::DeleteFileMulti => "Deleting multiple files",
-        };
         let header_text = match self.picker_mode {
-            PickerMode::SelectDirectory | PickerMode::DeleteDirectory => action_text.to_string(),
-            _ if self.exts.is_empty() => format!("{action_text} - All file types"),
-            _ => format!("{action_text} - Only ({})", self.exts.join(",")),
+            PickerMode::Open => t!("file_browser_b.title_open"),
+            PickerMode::Save => t!("file_browser_b.title_save"),
+            PickerMode::SelectDirectory => t!("file_browser_b.title_select_dir"),
+            PickerMode::DeleteFile => t!("file_browser_b.title_delete_file"),
+            PickerMode::DeleteDirectory => t!("file_browser_b.title_delete_dir"),
+            PickerMode::OpenMulti => t!("file_browser_b.title_open_multi"),
+            PickerMode::DeleteFileMulti => t!("file_browser_b.title_delete_file_multi"),
+        };
+        let ext_text = match self.picker_mode {
+            PickerMode::SelectDirectory | PickerMode::DeleteDirectory => "".into(),
+            _ if self.exts.is_empty() => format!("{}", t!("file_browser_b.all_file_types")),
+            _ => format!("{}", t!("file_browser_b.only_exts", exts = self.exts.join(","))),
         };
 
         let prev_settings = Ui::get_settings();
@@ -393,7 +426,7 @@ impl FileBrowserB {
 
         // The search and sort bars use the secondary label style.
         Ui::push_text_style(self.appearence.label_style);
-        self.draw_search_bar();
+        self.draw_search_bar(ext_text);
         self.draw_sort_bar();
         Ui::pop_text_style();
 
@@ -550,7 +583,7 @@ impl FileBrowserB {
         if self.new_folder_allowed() {
             Ui::same_line();
             let at = Ui::get_layout_at();
-            if Ui::button("New folder").at(at, Vec2::new(btn.x * 4.0, btn.y)).press() {
+            if Ui::button(t!("file_browser_b.new_folder")).at(at, Vec2::new(btn.x * 4.0, btn.y)).press() {
                 self.show_new_folder = !self.show_new_folder;
                 if self.show_new_folder {
                     self.new_folder_name.clear();
@@ -644,14 +677,14 @@ impl FileBrowserB {
 
     fn draw_new_folder_input(&mut self) {
         Ui::push_tint(self.appearence.input_tint);
-        Ui::label("New folder:").draw();
+        Ui::label(t!("file_browser_b.new_folder_prompt")).draw();
         Ui::same_line();
         Ui::input("fb_new_folder_name", &mut self.new_folder_name)
             .size(Vec2::new(self.appearence.scale(0.2), 0.0))
             .edit();
         Ui::same_line();
         Ui::push_enabled(!self.new_folder_name.trim().is_empty(), None);
-        if Ui::button("create").press() {
+        if Ui::button(t!("file_browser_b.create")).press() {
             let new_path = self.dir.join(self.new_folder_name.trim());
             match std::fs::create_dir_all(&new_path) {
                 Ok(_) => {
@@ -660,37 +693,40 @@ impl FileBrowserB {
                     Log::diag(format!("Created directory {:?}", new_path));
                 }
                 Err(e) => {
-                    self.status = format!("Cannot create folder: {e}");
+                    self.status = t!("file_browser_b.cannot_create_folder", error = e.to_string()).into_owned();
                     Log::warn(format!("FileBrowserB cannot create folder {new_path:?}: {e}"));
                 }
             }
         }
         Ui::pop_enabled();
         Ui::same_line();
-        if Ui::button_round("cancel", &self.close, self.appearence.scale(0.03)).press() {
+        if Ui::button_round(t!("file_browser_b.cancel"), &self.close, self.appearence.scale(0.03)).press() {
             self.show_new_folder = false;
         }
         Ui::pop_tint();
     }
 
-    fn draw_search_bar(&mut self) {
+    fn draw_search_bar(&mut self, ext_text: impl AsRef<str>) {
         Ui::push_tint(self.appearence.input_tint);
-        Ui::label("search:").draw();
+        Ui::label(t!("file_browser_b.search")).draw();
         Ui::same_line();
         Ui::input("fb_search", &mut self.search).size(Vec2::new(self.appearence.scale(0.2), 0.0)).edit();
         if !self.search.is_empty() {
             Ui::same_line();
-            if Ui::button_round("clear", &self.close, self.appearence.scale(0.03)).press() {
+            if Ui::button_round(t!("file_browser_b.clear"), &self.close, self.appearence.scale(0.03)).press() {
                 self.search.clear();
             }
         }
+        Ui::same_line();
+        let remaining = Ui::get_layout_remaining();
+        Ui::label(ext_text.as_ref()).size([remaining.x, self.appearence.scale(0.03)]).draw();
         Ui::pop_tint();
         Ui::next_line();
     }
 
     fn draw_sort_bar(&mut self) {
         // Hidden toggle
-        if Ui::toggle("hidden", &mut self.show_hidden).interact().is_some() {
+        if Ui::toggle(t!("file_browser_b.hidden"), &mut self.show_hidden).interact().is_some() {
             self.needs_refresh = true;
         }
         Ui::same_line();
@@ -720,10 +756,10 @@ impl FileBrowserB {
             Ui::same_line();
         };
 
-        sort_btn(self, "name", SortBy::Name);
-        sort_btn(self, "size", SortBy::Size);
-        sort_btn(self, "date", SortBy::Modified);
-        sort_btn(self, "type", SortBy::Type);
+        sort_btn(self, &t!("file_browser_b.sort_name"), SortBy::Name);
+        sort_btn(self, &t!("file_browser_b.sort_size"), SortBy::Size);
+        sort_btn(self, &t!("file_browser_b.sort_date"), SortBy::Modified);
+        sort_btn(self, &t!("file_browser_b.sort_type"), SortBy::Type);
 
         Ui::next_line();
     }
@@ -747,7 +783,7 @@ impl FileBrowserB {
             let at = Ui::get_layout_at();
             let size = Ui::get_layout_remaining();
             Ui::push_tint(self.appearence.error_tint);
-            Ui::text(format!("Error: directory does not exist!\n{:?}", self.dir))
+            Ui::text(format!("{}\n{:?}", t!("file_browser_b.error_dir_not_found"), self.dir))
                 .at([at.x, at.y, at.z - 0.01], [size.x, size.y])
                 .text_align(Align::TopLeft)
                 .fit(TextFit::Squeeze)
@@ -939,9 +975,9 @@ impl FileBrowserB {
                 let (size_text, date_text) = if entry.is_broken {
                     // Broken entry (dead symlink / unreadable metadata): signal the error instead of
                     // size and date, the whole row is tinted with `error_tint` below.
-                    ("error!".to_string(), "-".to_string())
+                    (t!("file_browser_b.error_cell").into_owned(), "-".to_string())
                 } else if entry.is_dir {
-                    (format!("{} item(s)", entry.num_entries), format_date(entry.modified))
+                    (t!("file_browser_b.items", count = entry.num_entries).into_owned(), format_date(entry.modified))
                 } else {
                     (format_size(entry.size), format_date(entry.modified))
                 };
@@ -1183,9 +1219,9 @@ impl FileBrowserB {
     /// `TextFit::Exact` scaling stays proportional (same glyph size) on every line.
     fn entry_annotation(entry: &FileEntry) -> Option<String> {
         match (&entry.symlink_name, entry.is_broken) {
-            (Some(target), true) => Some(format!("-> {target} (broken link)")),
-            (Some(target), false) => Some(format!("-> {target}")),
-            (None, true) => Some("[error] unreadable entry".to_string()),
+            (Some(target), true) => Some(t!("file_browser_b.broken_link", target = target).into_owned()),
+            (Some(target), false) => Some(t!("file_browser_b.symlink_to", target = target).into_owned()),
+            (None, true) => Some(t!("file_browser_b.unreadable_entry").into_owned()),
             (None, false) => None,
         }
     }
@@ -1292,9 +1328,9 @@ impl FileBrowserB {
             [name] => name.clone(),
             _ => {
                 if self.files_selected_names.is_empty() {
-                    format!("no file {verb}").to_string()
+                    t!("file_browser_b.no_file_verb", verb = verb).into_owned()
                 } else {
-                    format!("{} files {verb}", self.files_selected_names.len())
+                    t!("file_browser_b.files_verb", verb = verb, count = self.files_selected_names.len()).into_owned()
                 }
             }
         }
@@ -1312,15 +1348,15 @@ impl FileBrowserB {
 
         Ui::push_tint(self.appearence.input_tint);
         Ui::push_enabled(ok_to_open, None);
-        if Ui::button("Open").press() {
+        if Ui::button(t!("file_browser_b.open")).press() {
             self.send_multi_event(FILE_BROWSER_B_OPEN_MULTI);
         }
         Ui::pop_enabled();
         Ui::same_line();
-        Ui::label(self.selection_description("selected")).draw();
+        Ui::label(self.selection_description(&t!("file_browser_b.verb_selected"))).draw();
         Ui::same_line();
         Ui::push_enabled(!self.files_selected_names.is_empty(), None);
-        if Ui::button("Clear").press() {
+        if Ui::button_round(t!("file_browser_b.clear"), &self.close, self.appearence.scale(0.03)).press() {
             self.files_selected_names.clear();
             self.confirm_delete = false;
         }
@@ -1351,7 +1387,7 @@ impl FileBrowserB {
         let ok_to_save = name_ok && ext_ok && (!file.exists() || self.replace_existing_file);
         Ui::push_enabled(ok_to_save, None);
         Ui::same_line();
-        if Ui::button("Save").press() {
+        if Ui::button(t!("file_browser_b.save")).press() {
             SkInfo::send_event(
                 &self.sk_info,
                 StepperAction::event(self.caller.as_str(), FILE_BROWSER_B_SAVE, file.to_str().unwrap_or("path_error")),
@@ -1361,12 +1397,12 @@ impl FileBrowserB {
         Ui::pop_enabled();
         Ui::same_line();
 
-        Ui::label("file name:").draw();
+        Ui::label(t!("file_browser_b.file_name")).draw();
         Ui::same_line();
         Ui::input("fb_filename", &mut self.file_name_to_save).size(Vec2::new(0.0, 0.0)).edit();
 
         if file.exists() && name_ok {
-            Ui::toggle("replace existing file", &mut self.replace_existing_file).interact();
+            Ui::toggle(t!("file_browser_b.replace_existing_file"), &mut self.replace_existing_file).interact();
         } else {
             Ui::vspace(line * 1.34);
             self.replace_existing_file = false;
@@ -1383,7 +1419,7 @@ impl FileBrowserB {
         let dir_ok = self.dir.is_dir();
         Ui::push_tint(self.appearence.input_tint);
         Ui::push_enabled(dir_ok, None);
-        if Ui::button("Select").press() {
+        if Ui::button(t!("file_browser_b.select")).press() {
             SkInfo::send_event(
                 &self.sk_info,
                 StepperAction::event(
@@ -1396,7 +1432,7 @@ impl FileBrowserB {
         }
         Ui::pop_enabled();
         Ui::same_line();
-        Ui::label("directory:").draw();
+        Ui::label(t!("file_browser_b.directory")).draw();
         Ui::same_line();
         Ui::label(self.dir.to_string_lossy()).draw();
         Ui::pop_tint();
@@ -1416,22 +1452,22 @@ impl FileBrowserB {
 
         Ui::push_tint(self.appearence.input_tint);
         Ui::push_enabled(ok_to_delete, None);
-        if Ui::button("Delete").press() {
+        if Ui::button(t!("file_browser_b.delete")).press() {
             self.send_multi_event(FILE_BROWSER_B_DELETE_MULTI);
         }
         Ui::pop_enabled();
         Ui::same_line();
-        Ui::label(self.selection_description("to delete")).draw();
+        Ui::label(self.selection_description(&t!("file_browser_b.verb_to_delete"))).draw();
         Ui::same_line();
         Ui::push_enabled(!self.files_selected_names.is_empty(), None);
-        if Ui::button("Clear").press() {
+        if Ui::button_round(t!("file_browser_b.clear"), &self.close, self.appearence.scale(0.03)).press() {
             self.files_selected_names.clear();
             self.confirm_delete = false;
         }
         Ui::pop_enabled();
 
         if is_target {
-            Ui::toggle("confirm deletion", &mut self.confirm_delete).interact();
+            Ui::toggle(t!("file_browser_b.confirm_deletion"), &mut self.confirm_delete).interact();
         } else {
             Ui::vspace(line * 1.34);
             self.confirm_delete = false;
@@ -1454,17 +1490,17 @@ impl FileBrowserB {
 
         Ui::push_tint(self.appearence.input_tint);
         Ui::push_enabled(ok_to_delete, None);
-        if Ui::button("Delete").press() {
+        if Ui::button(t!("file_browser_b.delete")).press() {
             self.send_delete_dir_event();
         }
         Ui::pop_enabled();
         Ui::same_line();
-        Ui::label("directory to delete:").draw();
+        Ui::label(t!("file_browser_b.directory_to_delete")).draw();
         Ui::same_line();
         Ui::label(self.dir.to_string_lossy()).draw();
 
         if dir_ok {
-            Ui::toggle("confirm recursive deletion", &mut self.confirm_delete).interact();
+            Ui::toggle(t!("file_browser_b.confirm_recursive_deletion"), &mut self.confirm_delete).interact();
         } else {
             Ui::vspace(line * 1.34);
             self.confirm_delete = false;
@@ -1534,13 +1570,19 @@ impl FileBrowserB {
         let n_files = self.filtered_indices.iter().filter(|i| !self.entries[**i].is_dir).count();
         let n_dirs = self.filtered_indices.len() - n_files;
         let total_size: u64 = self.filtered_indices.iter().map(|i| self.entries[*i].size).sum();
-        self.status = format!(
-            "{} folder(s), {} file(s){}  —  {:?}",
-            n_dirs,
-            n_files,
-            if total_size > 0 { format!(" ({})", format_size(total_size)) } else { String::new() },
-            self.sort_by,
-        );
+        self.status = t!(
+            "file_browser_b.status_line",
+            dirs = n_dirs,
+            files = n_files,
+            size = if total_size > 0 { format!(" ({})", format_size(total_size)) } else { String::new() },
+            sort = match self.sort_by {
+                SortBy::Name => t!("file_browser_b.sort_name"),
+                SortBy::Size => t!("file_browser_b.sort_size"),
+                SortBy::Modified => t!("file_browser_b.sort_date"),
+                SortBy::Type => t!("file_browser_b.sort_type"),
+            },
+        )
+        .into_owned();
         // The status line closes the window with the smallest text of the browser.
         Ui::push_text_style(self.appearence.small_style);
         Ui::label(&self.status).size(Vec2::new(Ui::get_layout_remaining().x, 0.0)).draw();
@@ -1749,13 +1791,13 @@ pub fn format_size(bytes: u64) -> String {
     const MB: u64 = 1024 * 1024;
     const GB: u64 = 1024 * 1024 * 1024;
     if bytes < KB {
-        format!("{} B", bytes)
+        t!("file_browser_b.size_bytes", size = bytes).into_owned()
     } else if bytes < MB {
-        format!("{:.1} KB", bytes as f64 / KB as f64)
+        t!("file_browser_b.size_kb", size = format!("{:.1}", bytes as f64 / KB as f64)).into_owned()
     } else if bytes < GB {
-        format!("{:.1} MB", bytes as f64 / MB as f64)
+        t!("file_browser_b.size_mb", size = format!("{:.1}", bytes as f64 / MB as f64)).into_owned()
     } else {
-        format!("{:.1} GB", bytes as f64 / GB as f64)
+        t!("file_browser_b.size_gb", size = format!("{:.1}", bytes as f64 / GB as f64)).into_owned()
     }
 }
 
@@ -1770,20 +1812,20 @@ pub fn format_date(modified: Option<SystemTime>) -> String {
                 Ok(elapsed) => {
                     let secs = elapsed.as_secs();
                     if secs < 60 {
-                        "just now".to_string()
+                        t!("file_browser_b.date_just_now").into_owned()
                     } else if secs < 3600 {
-                        format!("{}m ago", secs / 60)
+                        t!("file_browser_b.date_minutes_ago", count = secs / 60).into_owned()
                     } else if secs < 86400 {
-                        format!("{}h ago", secs / 3600)
+                        t!("file_browser_b.date_hours_ago", count = secs / 3600).into_owned()
                     } else if secs < 86400 * 30 {
-                        format!("{}d ago", secs / 86400)
+                        t!("file_browser_b.date_days_ago", count = secs / 86400).into_owned()
                     } else if secs < 86400 * 365 {
-                        format!("{}mo ago", secs / (86400 * 30))
+                        t!("file_browser_b.date_months_ago", count = secs / (86400 * 30)).into_owned()
                     } else {
-                        format!("{}y ago", secs / (86400 * 365))
+                        t!("file_browser_b.date_years_ago", count = secs / (86400 * 365)).into_owned()
                     }
                 }
-                Err(_) => "future".to_string(),
+                Err(_) => t!("file_browser_b.date_future").into_owned(),
             }
         }
         None => "-".to_string(),
@@ -2001,39 +2043,48 @@ impl Previewer for BasicPreviewer {
         let kind: String;
         let mut size_line: Option<String> = None;
         match (&metadata, is_symlink) {
-            (None, _) => kind = "kind: unreadable entry!".to_string(),
+            (None, _) => kind = t!("file_browser_b.kind_unreadable").into_owned(),
             (Some(m), true) => {
                 let target = symlink_target.unwrap_or_default().to_string_lossy().to_string();
                 kind = if m.is_dir() {
-                    format!("kind: symlink -> {target} (directory)")
+                    t!("file_browser_b.kind_symlink_dir", target = target).into_owned()
                 } else {
-                    format!("kind: symlink -> {target}")
+                    t!("file_browser_b.kind_symlink", target = target).into_owned()
                 };
             }
             (Some(m), false) if m.is_dir() => {
                 let items = std::fs::read_dir(&file_path).map(|rd| rd.count()).unwrap_or(0);
-                kind = format!("kind: directory ({items} item(s))");
+                kind = t!("file_browser_b.kind_directory", count = items).into_owned();
             }
             (Some(m), false) => {
                 let ext =
                     file_path.extension().map(|e| format!(".{}", e.to_string_lossy())).unwrap_or_else(|| "-".into());
-                kind = format!("kind: file ({ext})");
-                size_line = Some(format!("size: {}", format_size(m.len())));
+                kind = t!("file_browser_b.kind_file", ext = ext).into_owned();
+                size_line = Some(t!("file_browser_b.size_line", size = format_size(m.len())).into_owned());
             }
         }
         let (modified_line, access_line) = match &metadata {
-            Some(m) => (
-                Some(format!("modified: {}", format_date(m.modified().ok()))),
-                Some(format!("access: {}", if m.permissions().readonly() { "read-only" } else { "read/write" })),
-            ),
+            Some(m) => {
+                let access = if m.permissions().readonly() {
+                    t!("file_browser_b.read_only")
+                } else {
+                    t!("file_browser_b.read_write")
+                };
+                (
+                    Some(t!("file_browser_b.modified_line", date = format_date(m.modified().ok())).into_owned()),
+                    Some(t!("file_browser_b.access_line", access = access).into_owned()),
+                )
+            }
             None => (None, None),
         };
         // Full path, wrapped on PATH_MAX_CHARS columns so it fits the panel width; the continuation
-        // lines are indented to align under "path: ".
-        const PATH_MAX_CHARS: usize = 30;
+        // lines are indented to align under the translated "path: " label.
+        const PATH_MAX_CHARS: usize = 50;
+        let path_label = t!("file_browser_b.path_label");
         let path_line = format!(
-            "path: {}",
-            FileBrowserB::wrap_chars_lines(&file_path.to_string_lossy(), PATH_MAX_CHARS).join("\n      ")
+            "{}\n{}",
+            path_label,
+            FileBrowserB::wrap_chars_lines(&file_path.to_string_lossy(), PATH_MAX_CHARS).join("\n")
         );
 
         // ------------------------------------------------------------------------ draw the panel
@@ -2068,9 +2119,10 @@ impl Previewer for BasicPreviewer {
         Ui::image(&self.sprite, Vec2::ONE * self.appearence.scale(PANEL_W));
         Ui::layout_pop();
 
+        let label_size = Vec2::new(Ui::get_layout_remaining().x, self.appearence.scale(0.03));
         // Title line: bigger and brighter than the rest.
         Ui::push_text_style(self.appearence.title_style);
-        Ui::label(&title).size([self.appearence.scale(PANEL_W) - 0.03, 0.0]).use_padding(false).draw();
+        Ui::label(&title).size(label_size).use_padding(false).draw();
         Ui::pop_text_style();
 
         Ui::hseparator();
@@ -2079,13 +2131,13 @@ impl Previewer for BasicPreviewer {
         Ui::push_text_style(self.appearence.label_style);
         Ui::label(&kind).use_padding(false).draw();
         if let Some(text) = &size_line {
-            Ui::label(text).use_padding(false).draw();
+            Ui::label(text).size(label_size).use_padding(false).draw();
         }
         if let Some(text) = &modified_line {
-            Ui::label(text).use_padding(false).draw();
+            Ui::label(text).size(label_size).use_padding(false).draw();
         }
         if let Some(text) = &access_line {
-            Ui::label(text).use_padding(false).draw();
+            Ui::label(text).size(label_size).use_padding(false).draw();
         }
         Ui::pop_text_style();
 
