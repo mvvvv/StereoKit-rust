@@ -345,6 +345,8 @@ pub mod maths;
 ///
 /// [![Mesh](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/meshes.jpeg)](mesh::Mesh)
 /// [![Vertex](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/basic_mesh.jpeg)](mesh::Vertex)
+/// [![Mesh from file](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_from_file.jpeg)](mesh::Mesh::from_file)
+/// [![Mesh from memory](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_from_memory.jpeg)](mesh::Mesh::from_memory)
 /// [![Mesh bounds](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_bounds.jpeg)](mesh::Mesh::bounds)
 /// [![Mesh set_data](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_set_data.jpeg)](mesh::Mesh::set_data)
 /// [![Mesh set_inds](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_set_inds.jpeg)](mesh::Mesh::set_inds)
@@ -556,6 +558,10 @@ pub enum StereoKitError {
     MeshFind(String),
     #[error("failed to convert to CString {0} in mesh_find")]
     MeshCString(String),
+    #[error("failed to create mesh {0} from memory for reason {1}")]
+    MeshFromMem(String, String),
+    #[error("failed to create mesh {0} from file for reason {1}")]
+    MeshFromFile(PathBuf, String),
     #[error("failed to convert to CString {0} in tex_find")]
     TexCString(String),
     #[error("failed to find tex {0}")]

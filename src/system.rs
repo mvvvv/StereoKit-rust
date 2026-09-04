@@ -297,10 +297,15 @@ impl AssetIter {
 }
 
 impl Assets {
-    /// A list of supported model format extensions. This pairs pretty well with Platform::file_picker when attempting to
-    /// load a Model!
+    /// A list of supported model format extensions. This pairs pretty well with Platform::file_picker when attempting
+    /// to load a Model!
     /// <https://stereokit.net/Pages/StereoKit/Assets/ModelFormats.html>
-    pub const MODEL_FORMATS: [&'static str; 5] = [".gltf", ".glb", ".obj", ".stl", ".ply"];
+    pub const MODEL_FORMATS: [&'static str; 6] = [".gltf", ".glb", ".obj", ".stl", ".ply", ".svg"];
+
+    /// A list of file format extensions that [`Mesh::from_file`] and [`Mesh::from_memory`] can load, formats that hold
+    /// a single mesh and no materials.
+    /// <https://stereokit.net/Pages/StereoKit/Assets/MeshFormats.html>
+    pub const MESH_FORMATS: [&'static str; 3] = [".stl", ".ply", ".svg"];
 
     /// A list of supported texture format extensions. This pairs pretty well with Platform::file_picker when attempting
     /// to load a Tex!

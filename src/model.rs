@@ -19,9 +19,9 @@ use std::{
 /// group together complex objects that have multiple parts in them, and in fact, most model formats are composed this
 /// way already!
 ///
-/// This class contains a number of methods for creation. If you pass in a .obj, .stl, , .ply (ASCII), .gltf, or .glb,
-/// StereoKit will load that model from file, and assemble materials and transforms from the file information. But you
-/// can also assemble a model from procedurally generated meshes!
+/// This class contains a number of methods for creation. If you pass in a .obj, .stl, , .ply (ASCII), .gltf, .glb, or
+/// .svg StereoKit will load that model from file, and assemble materials and transforms from the file information. But
+/// you can also assemble a model from procedurally generated meshes!
 ///
 /// Because models include an offset transform for each mesh element, this does have the overhead of an extra matrix
 /// multiplication in order to execute a render command. So if you need speed, and only have a single mesh with a
@@ -281,7 +281,8 @@ impl Model {
         )
     }
 
-    /// Loads a list of mesh and material subsets from a .obj, .stl, .ply (ASCII), .gltf, or .glb file stored in memory.
+    /// Loads a list of mesh and material subsets from a .obj, .stl, .ply (ASCII), .gltf, .glb or .svg file stored in
+    /// memory. An .svg becomes a single flat, unlit, vertex colored node.
     /// Note that this function won’t work well on files that reference other files, such as .gltf files with
     /// references in them.
     /// <https://stereokit.net/Pages/StereoKit/Model/FromMemory.html>
@@ -330,7 +331,8 @@ impl Model {
         }
     }
 
-    /// Loads a list of mesh and material subsets from a .obj, .stl, .ply (ASCII), .gltf, or .glb file.
+    /// Loads a list of mesh and material subsets from a .obj, .stl, .ply (ASCII), .gltf, .glb or .svgfile. An .svg
+    /// becomes a single flat, unlit, vertex colored node.
     ///
     /// **Important**: The model is loaded only once. If you open the same file a second time, it will return the model
     /// loaded the first time and all its modifications afterwards. If you want two different instances, remember to
@@ -1077,7 +1079,7 @@ impl<'a> Anims<'a> {
         Anims { model: model.as_ref(), curr: -1 }
     }
 
-    /// Get the name of the animation at given index. This will block until the Model's metadata has finished loading.
+    /// Get the name of the animation at given index. This will block until the Model has finished loading.
     ///
     /// see also [`model_anim_get_name`]
     /// ### Examples
@@ -1108,7 +1110,7 @@ impl<'a> Anims<'a> {
         }
     }
 
-    /// Get the duration of the animation at given index. This will block until the Model's metadata has finished loading.
+    /// Get the duration of the animation at given index. This will block until the Model has finished loading.
     ///
     /// Returns `-0.01` if the index is out of bounds.
     /// see also [`model_anim_get_duration`]
@@ -1828,7 +1830,7 @@ impl<'a> Nodes<'a> {
         }
     }
 
-    /// Get the number of node of the model. This will block until the Model's metadata has finished loading.
+    /// Get the number of node of the model. This will block until the Model has finished loading.
     /// <https://stereokit.net/Pages/StereoKit/ModelNodeCollection.html>
     ///
     /// see also [NodeIter] [`model_node_count`]
@@ -1850,7 +1852,8 @@ impl<'a> Nodes<'a> {
         unsafe { model_node_count(self.model.0.as_ptr()) }
     }
 
-    /// Get the number of visual node of the model. This will block until the Model's metadata has finished loading.
+    /// Get the number of visual node of the model. This will block until the Model has finished loading, since visuals
+    /// arrive with the meshes.
     /// <https://stereokit.net/Pages/StereoKit/ModelVisualCollection.html>
     ///
     /// see also [NodeIter] [`model_node_visual_count`]
@@ -1874,7 +1877,7 @@ impl<'a> Nodes<'a> {
         unsafe { model_node_visual_count(self.model.0.as_ptr()) }
     }
 
-    /// Get the node at index. This will block until the Model's metadata has finished loading.
+    /// Get the node at index. This will block until the Model has finished loading, since visuals arrive with the meshes.
     /// <https://stereokit.net/Pages/StereoKit/ModelNodeCollection.html>
     ///
     /// see also [NodeIter] [`model_node_index`]
@@ -1904,7 +1907,8 @@ impl<'a> Nodes<'a> {
         }
     }
 
-    /// Get the visual node at index. This will block until the Model's metadata has finished loading.
+    /// Get the visual node at index. This will block until the Model has finished loading, since visuals arrive with
+    /// the meshes.
     /// <https://stereokit.net/Pages/StereoKit/ModelVisualCollection.html>
     ///
     /// see also [NodeIter] [`model_node_visual_index`]
@@ -1936,7 +1940,7 @@ impl<'a> Nodes<'a> {
 
     /// Returns the first root node in the Model's hierarchy. There may be additional root nodes, and these will be
     /// Siblings of this ModelNode. If there are no nodes present on the Model, this will be null. This will block
-    /// until the Model's metadata has finished loading.
+    /// until the Model has finished loading, since visuals arrive with the meshes.
     /// <https://stereokit.net/Pages/StereoKit/Model/RootNode.html>
     ///
     /// see also [`model_node_get_root`]
@@ -2152,7 +2156,7 @@ impl ModelNode<'_> {
     ///
     /// let mut node = nodes.find("cube").expect("A node should exist!");
     /// assert_eq!(node.get_material(), Some(Material::pbr()));
-    /// 
+    ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     node.remove_material();
     ///     assert_eq!(node.get_material(), None);
@@ -2208,7 +2212,7 @@ impl ModelNode<'_> {
     ///
     /// let mut node = nodes.find("mesh").expect("A node should exist!");
     /// assert_eq!(node.get_mesh(), Some(Mesh::cube()));
-    /// 
+    ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     node.remove_mesh();
     ///     assert_eq!(node.get_mesh(), None);
@@ -2391,7 +2395,7 @@ impl ModelNode<'_> {
     }
 
     /// The Material associated with this node. May be None, or may also be re-used elsewhere. Getting this will block
-    /// until the Model's metadata has finished loading.
+    /// until the Model has finished loading, since visuals arrive with the meshes.
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/Material.html>
     ///
     /// see also [`model_node_get_material`]

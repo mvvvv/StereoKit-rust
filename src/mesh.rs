@@ -8,6 +8,7 @@ use crate::{
 };
 use std::{
     ffi::{CStr, CString, c_char, c_void},
+    path::Path,
     ptr::{NonNull, slice_from_raw_parts_mut},
 };
 
@@ -445,6 +446,9 @@ unsafe extern "C" {
     pub fn mesh_gen_rounded_cube(dimensions: Vec3, edge_radius: f32, subdivisions: i32) -> MeshT;
     pub fn mesh_gen_cylinder(diameter: f32, depth: f32, direction: Vec3, subdivisions: i32) -> MeshT;
     pub fn mesh_gen_cone(diameter: f32, depth: f32, direction: Vec3, subdivisions: i32) -> MeshT;
+    pub fn mesh_create_file(filename_utf8: *const c_char, priority: i32) -> MeshT;
+    pub fn mesh_create_mem(filename_utf8: *const c_char, data: *const c_void, data_size: usize, priority: i32)
+    -> MeshT;
     pub fn mesh_asset_state(mesh: MeshT) -> AssetState;
     pub fn mesh_on_load(
         mesh: MeshT,
@@ -549,6 +553,121 @@ impl Mesh {
         let mut mesh = Mesh::new();
         mesh.set_data(vertices, indices, flags, priority);
         mesh
+    }
+
+    /// Loads a single Mesh from a .stl, .ply (ASCII), or .svg file. These are formats that hold one
+    /// mesh and no materials, so unlike Model there's no scene to unpack. Anything richer, like
+    /// .obj or .gltf, needs to come in through [`crate::model::Model::from_file`]. Loading happens
+    /// asynchronously, so the Mesh returns right away and draws nothing until it finishes. Check
+    /// [`Mesh::get_asset_state`] or [`Mesh::on_load`] if you need to know when, and note that
+    /// [`Mesh::get_bounds`] stays empty until then.
+    ///
+    /// SVG files become flat, vertex colored geometry, see the "Working with 3D Assets" guide for
+    /// what's supported and how they're sized.
+    /// <https://stereokit.net/Pages/StereoKit/Mesh/FromFile.html>
+    /// * `file` - A mesh file, an absolute filename, or a filename relative to the assets folder.
+    /// * `load_priority` - The priority sort order for this asset in the async loading system.
+    ///   Lower values mean loading sooner. If None will be set to 10
+    ///
+    /// Returns a Mesh asset, or Err if the file type is unrecognized! A file that exists but fails
+    /// to load returns a Mesh in an error [`AssetState`] instead.
+    ///
+    /// see also [`mesh_create_file`] [`Mesh::from_memory`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{mesh::Mesh, system::AssetState, material::Material,
+    ///                      maths::Matrix};
+    ///
+    /// let mesh = Mesh::from_file("meshes/zoom.svg", None)
+    ///                      .expect("meshes/zoom.svg should be loaded");
+    /// let material =  Material::pbr().copy();
+    ///
+    /// // The load is asynchronous, wait for it to finish.
+    /// system::Assets::block_for_priority(i32::MAX);
+    ///
+    /// assert_eq!(mesh.get_asset_state(), AssetState::Loaded);
+    /// assert_eq!(mesh.get_vert_count(),  775);
+    ///
+    /// // The SVG's height normalizes to one meter, and this logo's art
+    /// // fills about two thirds of it.
+    /// assert_eq!(mesh.get_bounds().dimensions.y, 0.94923997);
+    /// assert_eq!(mesh.get_bounds().dimensions.x, 0.9209909);
+    ///
+    /// // OBJ carries materials, which a lone Mesh can't represent.
+    /// assert!(Mesh::from_file("meshes/suzanne.obj", None).is_err());
+    ///
+    /// filename_scr = "screenshots/mesh_from_file.jpeg";
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     mesh.draw(&material, Matrix::Y_180, None, None);
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_from_file.jpeg" alt="screenshot" width="200">
+    pub fn from_file(file: impl AsRef<Path>, load_priority: Option<i32>) -> Result<Mesh, StereoKitError> {
+        let path = file.as_ref();
+        let path_buf = path.to_path_buf();
+        let c_str = CString::new(path.to_str().unwrap_or_default())?;
+        let load_priority = load_priority.unwrap_or(10);
+        match NonNull::new(unsafe { mesh_create_file(c_str.as_ptr(), load_priority) }) {
+            Some(mesh) => Ok(Mesh(mesh)),
+            None => Err(StereoKitError::MeshFromFile(path_buf, "unrecognized file extension!".to_owned())),
+        }
+    }
+
+    /// Loads a single Mesh from the contents of a .stl, .ply (ASCII), or .svg file already in
+    /// memory. This behaves exactly like [`Mesh::from_file`].
+    /// <https://stereokit.net/Pages/StereoKit/Mesh/FromMemory.html>
+    /// * `filename` - A filename or extension used to pick the format, like "logo.svg" or ".stl".
+    /// * `data` - The contents of the mesh file.
+    /// * `load_priority` - The priority sort order for this asset in the async loading system.
+    ///   Lower values mean loading sooner. If None will be set to 10
+    ///
+    /// Returns a Mesh asset, or Err if the file type is unrecognized!
+    ///
+    /// see also [`mesh_create_mem`] [`Mesh::from_file`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{mesh::Mesh, system::AssetState, material::Material,
+    ///                      maths::Matrix};
+    ///
+    /// let my_bytes = std::include_bytes!("../assets/meshes/suzanne.ply");
+    /// let mesh = Mesh::from_memory("suzanne.ply", my_bytes, None).unwrap_or_default();
+    ///
+    /// // The load is asynchronous, wait for it to finish.
+    /// system::Assets::block_for_priority(i32::MAX);
+    ///
+    /// assert_eq!(mesh.get_asset_state(), AssetState::Loaded);
+    /// assert_eq!(mesh.get_vert_count(), 555);  //2904 pour suzanne.stl
+    /// assert_eq!(mesh.get_ind_count(), 2901);  //2904 pour suzanne.stl
+    ///
+    /// let material =  Material::pbr().copy();
+    /// let transform = Matrix::t_r_s([0.0, 0.0, 0.0], [-90.0, 0.0, 0.0], [0.5, 0.5, 0.5]);
+    /// filename_scr = "screenshots/mesh_from_memory.jpeg";
+    /// test_screenshot!( // !!!! Get a proper main loop !!!!
+    ///     mesh.draw(&material, transform, None, None);
+    /// );
+    /// # sk::Sk::shutdown();
+    /// # sk::Sk::shutdown();
+    /// ```
+    /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_from_memory.jpeg" alt="screenshot" width="200">
+    pub fn from_memory<S: AsRef<str>>(
+        filename: S,
+        data: &[u8],
+        load_priority: Option<i32>,
+    ) -> Result<Mesh, StereoKitError> {
+        let c_filename = CString::new(filename.as_ref())?;
+        let load_priority = load_priority.unwrap_or(10);
+        match NonNull::new(unsafe {
+            mesh_create_mem(c_filename.as_ptr(), data.as_ptr() as *const c_void, data.len(), load_priority)
+        }) {
+            Some(mesh) => Ok(Mesh(mesh)),
+            None => Err(StereoKitError::MeshFromMem(
+                filename.as_ref().to_owned(),
+                "unrecognized file extension!".to_owned(),
+            )),
+        }
     }
 
     /// Generates a plane with an arbitrary orientation that is optionally subdivided, pre-sized to the given

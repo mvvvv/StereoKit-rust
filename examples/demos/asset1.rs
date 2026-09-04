@@ -63,14 +63,14 @@ impl Default for Asset1 {
             asset_files: vec![],
             asset_sub_dir: PathBuf::new(),
             exts: vec![
-                ".sks".into(),
-                ".jpeg".into(),
-                ".png".into(),
-                ".ktx2".into(),
-                ".hdr".into(),
-                ".glb".into(),
-                ".gltf".into(),
-                ".mp3".into(),
+                // ".sks".into(),
+                // ".jpeg".into(),
+                // ".png".into(),
+                // ".ktx2".into(),
+                // ".hdr".into(),
+                // ".glb".into(),
+                // ".gltf".into(),
+                // ".mp3".into(),
             ],
             window_pose: Pose::new(Vec3::new(0.5, 1.5, -0.5), Some(Quat::from_angles(0.0, 180.0, 0.0))),
             asset_selected: 0,
@@ -212,7 +212,7 @@ impl Asset1 {
         if let Some(ext) = file_path.extension() {
             let ext = ".".to_string() + ext.to_str().unwrap_or("!!ERROR!!");
             if Assets::MODEL_FORMATS.contains(&ext.as_str()) {
-                if let Ok(model) = Model::from_file(name, None, None) {
+                if let Ok(model) = Model::from_file(file_path, None, None) {
                     let mut anims = model.get_anims();
                     if anims.get_count() > 0 {
                         anims.play_anim_idx(0, AnimMode::Loop);
