@@ -1,5 +1,8 @@
 # Deutscher Katalog der Crate-Tools (siehe `locales/en.toml` für die vollständige Schlüsselliste).
-# Zur Laufzeit wählbar mit `stereokit_rust::tools::file_browser_b::set_locale("de")`.
+# Zur Laufzeit wählbar mit `stereokit_rust::tools::locales::set_locale("de")`.
+[locales]
+language = "Deutsch"
+country = ""
 
 [file_browser_b]
 # --- window titles (one per PickerMode) ---

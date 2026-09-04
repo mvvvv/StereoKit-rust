@@ -8,7 +8,7 @@ use stereokit_rust::{
     permission::{Permission, PermissionState, PermissionType},
     prelude::*,
     system::{Align, Text, TextBuilder, TextStyle},
-    tools::os_api::{system_deep_link, SystemAction},
+    tools::os_api::{SystemAction, system_deep_link},
     ui::{Ui, UiPad},
     util::named_colors::{CYAN, RED},
 };

@@ -20,38 +20,6 @@ pub const FILE_BROWSER_B_DELETE_MULTI: &str = "File_Browser_B_delete_multi";
 pub const FILE_BROWSER_B_SELECT: &str = "File_Browser_B_select";
 pub const FILE_BROWSER_B_SELECT_MULTI: &str = "File_Browser_B_select_multi";
 
-/// Sets the locale used by the [`FileBrowserB`] texts (window title, toolbar, panels, entry annotations, preview
-/// panel...), e.g. `set_locale("fr")`. It is a global setting (shared with any other rust-i18n user of the crate)
-/// applied from the next drawn frame — no need to close and reopen the browser.
-///
-/// The available locales are the `locales/*.toml` catalogues compiled into the crate (English fallback, Chinese,
-/// French, German, Italian, Japanese, Korean, Portuguese and Spanish bundled, see [`available_locales`]); a locale
-/// without a catalogue falls back to English, and a key missing from a catalogue falls back to English before
-/// returning the key itself.
-///
-/// ### Example
-/// ```no_run
-/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::tools::file_browser_b::set_locale;
-///
-/// set_locale("fr"); // the FileBrowserB texts are in French from the next frame
-/// ```
-pub fn set_locale(locale: &str) {
-    rust_i18n::set_locale(locale);
-}
-
-/// The locale currently used by the [`FileBrowserB`] texts, `"en"` until [`set_locale`] is called.
-pub fn locale() -> String {
-    rust_i18n::locale().to_string()
-}
-
-/// The locales available for the [`FileBrowserB`] texts, one per `locales/*.toml` catalogue compiled into the
-/// crate (e.g. `["de", "en", "es", "fr", "it", "ja", "ko", "pt", "zh"]`). Add a catalogue file to this list to
-/// add a language, then select it with [`set_locale`].
-pub fn available_locales() -> Vec<String> {
-    rust_i18n::available_locales!().iter().map(|l| l.to_string()).collect()
-}
-
 /// How to sort file entries in [`FileBrowserB`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SortBy {

@@ -47,8 +47,9 @@ test-xr-mode = []
 # Enable profiling in StereoKitC using tracy
 profile = []
 # Add the in-VR file browser tool (tools::file_browser_b::FileBrowserB), translated with rust-i18n
-# (compile-time embedded `locales/*` catalogues, runtime switch with tools::file_browser_b::set_locale)
-file-browser = ["dep:rust-i18n"]
+# (compile-time embedded `locales/*` catalogues, runtime switch with tools::locales::set_locale)
+file-browser = ["locales"]
+locales = ["dep:rust-i18n"]
 # All the extra tools. Usefull for test/doc
 tools = ["file-browser"]
 

@@ -1,5 +1,8 @@
 # 本 crate のツールの日本語カタログ（キーの一覧は `locales/en.toml` を参照）。
-# ランタイムで `stereokit_rust::tools::file_browser_b::set_locale("ja")` により選択可能。
+# ランタイムで `stereokit_rust::tools::locales::set_locale("ja")` により選択可能。
+[locales]
+language = "日本語"
+country = ""
 
 [file_browser_b]
 # --- window titles (one per PickerMode) ---

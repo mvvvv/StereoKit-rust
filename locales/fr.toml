@@ -1,5 +1,8 @@
 # Catalogue français des outils du crate (voir `locales/en.toml` pour la liste complète des clés).
-# Sélectionnable au runtime avec `stereokit_rust::tools::file_browser_b::set_locale("fr")`.
+# Sélectionnable au runtime avec `stereokit_rust::tools::locales::set_locale("fr")`.
+[locales]
+language = "Français"
+country = ""
 
 [file_browser_b]
 # --- window titles (one per PickerMode) ---

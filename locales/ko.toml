@@ -1,5 +1,8 @@
 # 이 crate 도구들의 한국어 카탈로그 (전체 키 목록은 `locales/en.toml` 참조).
-# 런타임에서 `stereokit_rust::tools::file_browser_b::set_locale("ko")`로 선택 가능.
+# 런타임에서 `stereokit_rust::tools::locales::set_locale("ko")`로 선택 가능.
+[locales]
+language = "한국어"
+country = ""
 
 [file_browser_b]
 # --- window titles (one per PickerMode) ---

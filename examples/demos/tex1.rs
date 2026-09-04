@@ -8,8 +8,8 @@ use stereokit_rust::{
     tex::{Tex, TexFormat, TexType},
     tools::notif::HudNotification,
     util::{
+        Color32, Color128, Gradient,
         named_colors::{BLACK, BLUE, LIGHT_BLUE, RED, YELLOW},
-        Color128, Color32, Gradient,
     },
 };
 

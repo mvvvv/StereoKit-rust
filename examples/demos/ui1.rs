@@ -1,14 +1,14 @@
 use stereokit_rust::{
     font::Font,
     material::Material,
-    maths::{units::CM, Matrix, Quat, Vec2, Vec3},
+    maths::{Matrix, Quat, Vec2, Vec3, units::CM},
     mesh::Mesh,
     prelude::*,
     system::{BtnState, Interactor, Pivot, Text, TextBuilder, TextStyle},
     ui::{IdHashT, Ui, UiBtnFlag, UiColor, UiCorner, UiLathePt, UiSliderData, UiVisual},
     util::{
+        Color32, Color128, Time,
         named_colors::{CYAN, DARK_BLUE, MAGENTA, ORCHID, RED},
-        Color128, Color32, Time,
     },
 };
 

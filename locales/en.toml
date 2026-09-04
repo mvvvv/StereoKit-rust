@@ -1,7 +1,10 @@
 # English (fallback) catalogue of the crate's tools.
 # Looked up at runtime by the `t!` macro of rust-i18n (see `src/tools/file_browser_b.rs`),
-# switchable with `tools::file_browser_b::set_locale`. Add a `<locale>.toml` file with the
+# switchable with `tools::locale::set_locale`. Add a `<locale>.toml` file with the
 # same keys to add a language.
+[locales]
+language = "English"
+country = ""
 
 [file_browser_b]
 # --- window titles (one per PickerMode) ---

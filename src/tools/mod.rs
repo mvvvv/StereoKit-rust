@@ -18,6 +18,9 @@ pub mod xr_meta_detached_controllers;
 #[cfg(not(feature = "no-event-loop"))]
 pub mod file_browser;
 
+#[cfg(all(feature = "locales", not(feature = "no-event-loop")))]
+pub mod locales;
+
 #[cfg(all(feature = "file-browser", not(feature = "no-event-loop")))]
 pub mod file_browser_b;
 

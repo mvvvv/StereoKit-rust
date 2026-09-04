@@ -11,8 +11,8 @@ use stereokit_rust::{
         file_browser_b::{
             BasicPreviewer, FILE_BROWSER_B_DELETE_MULTI, FILE_BROWSER_B_OPEN_MULTI, FILE_BROWSER_B_SAVE,
             FILE_BROWSER_B_SELECT, FILE_BROWSER_B_SELECT_DIR, FILE_BROWSER_B_SELECT_MULTI, FileBrowserB,
-            available_locales, locale, set_locale,
         },
+        locales::{available_locales, locale, set_locale},
         os_api::BrowseLocation,
     },
     ui::{Ui, UiBtnLayout, UiScroll, UiSettings, UiWin},

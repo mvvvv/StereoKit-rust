@@ -1,103 +1,15 @@
 use stereokit_rust::{
     font::Font,
-    locale::*,
     maths::{Matrix, Pose, Quat, Vec2, Vec3, units::CM},
     prelude::*,
     system::{Log, Text, TextBuilder, TextContext, TextStyle},
+    tools::locales::*,
     ui::Ui,
     util::{
-        Color128, Platform,
+        Color128,
         named_colors::{RED, WHITE},
     },
 };
-
-// ─── Locale table ─────────────────────────────────────────────────────────────
-
-/// A single entry in the locale table: a language code, a human-readable label,
-/// and the keyboard layers to pass to [`Platform::keyboard_set_layout`].
-struct LocaleEntry {
-    /// Two-letter (or two+two) BCP-47-like code matched against the `LANG` env var
-    /// (e.g. `"fr"`, `"de"`, `"pt"`, `"ja"`).
-    code: &'static str,
-    /// Label shown in the selection UI.
-    label: &'static str,
-    /// Keyboard layers (normal, shift, optional alt) from [`stereokit_rust::locale`].
-    layers: Vec<&'static str>,
-}
-
-fn make_locale_entries() -> Vec<LocaleEntry> {
-    vec![
-        LocaleEntry {
-            code: "fr",
-            label: "Français (AZERTY)",
-            layers: vec![FR_KEY_TEXT, FR_KEY_TEXT_SHIFT, FR_KEY_TEXT_ALT],
-        },
-        LocaleEntry {
-            code: "de",
-            label: "Deutsch (QWERTZ)",
-            layers: vec![DE_KEY_TEXT, DE_KEY_TEXT_SHIFT, DE_KEY_TEXT_ALT],
-        },
-        LocaleEntry {
-            code: "es",
-            label: "Español (QWERTY)",
-            layers: vec![ES_KEY_TEXT, ES_KEY_TEXT_SHIFT, ES_KEY_TEXT_ALT],
-        },
-        LocaleEntry {
-            code: "pt",
-            label: "Português BR (QWERTY)",
-            layers: vec![PT_BR_KEY_TEXT, PT_BR_KEY_TEXT_SHIFT, PT_BR_KEY_TEXT_ALT],
-        },
-        LocaleEntry {
-            code: "it",
-            label: "Italiano (QWERTY)",
-            layers: vec![IT_KEY_TEXT, IT_KEY_TEXT_SHIFT, IT_KEY_TEXT_ALT],
-        },
-        LocaleEntry {
-            code: "sv",
-            label: "Svenska (QWERTY)",
-            layers: vec![SV_KEY_TEXT, SV_KEY_TEXT_SHIFT, SV_KEY_TEXT_ALT],
-        },
-        LocaleEntry {
-            code: "no",
-            label: "Norsk (QWERTY)",
-            layers: vec![SV_KEY_TEXT, SV_KEY_TEXT_SHIFT, SV_KEY_TEXT_ALT],
-        },
-        LocaleEntry {
-            code: "da",
-            label: "Dansk (QWERTY)",
-            layers: vec![SV_KEY_TEXT, SV_KEY_TEXT_SHIFT, SV_KEY_TEXT_ALT],
-        },
-        LocaleEntry {
-            code: "pl",
-            label: "Polski (QWERTY)",
-            layers: vec![PL_KEY_TEXT, PL_KEY_TEXT_SHIFT, PL_KEY_TEXT_ALT],
-        },
-        LocaleEntry {
-            code: "cs",
-            label: "Čeština (QWERTY)",
-            layers: vec![CS_KEY_TEXT, CS_KEY_TEXT_SHIFT, CS_KEY_TEXT_ALT],
-        },
-        LocaleEntry {
-            code: "tr",
-            label: "Türkçe (QWERTY)",
-            layers: vec![TR_KEY_TEXT, TR_KEY_TEXT_SHIFT, TR_KEY_TEXT_ALT],
-        },
-        LocaleEntry {
-            code: "ru", label: "Русский (ЙЦУКЕН)", layers: vec![RU_KEY_TEXT, RU_KEY_TEXT_SHIFT]
-        },
-        LocaleEntry {
-            code: "uk", label: "Українська (Кирилиця)", layers: vec![UK_KEY_TEXT, UK_KEY_TEXT_SHIFT]
-        },
-        LocaleEntry { code: "el", label: "Ελληνικά (Greek)", layers: vec![GR_KEY_TEXT, GR_KEY_TEXT_SHIFT] },
-        LocaleEntry { code: "ar", label: "العربية (Arabic)", layers: vec![AR_KEY_TEXT, AR_KEY_TEXT_SHIFT] },
-        LocaleEntry { code: "he", label: "עברית (Hebrew)", layers: vec![HE_KEY_TEXT, HE_KEY_TEXT_SHIFT] },
-        LocaleEntry {
-            code: "ja",
-            label: "日本語 (Hiragana)",
-            layers: vec![JA_KEY_TEXT, JA_KEY_TEXT_SHIFT, JA_KEY_TEXT_ALT],
-        },
-    ]
-}
 
 // ─── Locale detection ─────────────────────────────────────────────────────────
 
@@ -122,22 +34,22 @@ fn detect_language_code() -> String {
 
 // ─── IStepper ─────────────────────────────────────────────────────────────────
 
-/// Demonstrates all international keyboard layouts from [`stereokit_rust::locale`].
+/// Demonstrates all international keyboard layouts from [`stereokit_rust::tools::locale`].
 ///
 /// On startup the stepper auto-detects the current system locale (via the `LANG`
 /// environment variable) and pre-selects the matching layout.  The UI shows a
 /// button for every available layout; clicking one applies it immediately.
 /// A text-input field at the bottom lets the user type with the active keyboard.
 #[derive(IStepper)]
-pub struct Locale1 {
+pub struct Locales1 {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
 
     pub window_demo_pose: Pose,
     pub demo_win_width: f32,
 
-    /// All supported locale entries (code + label + keyboard layers).
-    locale_entries: Vec<LocaleEntry>,
+    /// All supported locales as `(code, label)` pairs, from [`Keyboard::locales`].
+    locale_entries: Vec<(&'static str, &'static str)>,
     /// Index of the currently active layout, or `None` when using SK default.
     selected_index: Option<usize>,
     /// The two-letter code detected at startup (for display purposes).
@@ -154,20 +66,20 @@ pub struct Locale1 {
     pub transform: Matrix,
 }
 
-unsafe impl Send for Locale1 {}
+unsafe impl Send for Locales1 {}
 
-impl Default for Locale1 {
+impl Default for Locales1 {
     fn default() -> Self {
-        let locale_entries = make_locale_entries();
+        let locale_entries = Keyboard::locales();
         let detected_code = detect_language_code();
         let selected_index = if detected_code.is_empty() {
             None
         } else {
-            locale_entries.iter().position(|e| e.code == detected_code.as_str())
+            locale_entries.iter().position(|(code, _)| *code == detected_code.as_str())
         };
 
         Self {
-            id: "Locale1".to_string(),
+            id: "Locales1".to_string(),
             sk_info: None,
 
             window_demo_pose: Pose::new(Vec3::new(0.0, 1.5, -1.3), Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0)))),
@@ -188,14 +100,14 @@ impl Default for Locale1 {
     }
 }
 
-impl Locale1 {
+impl Locales1 {
     /// Called from `IStepper::initialize`.  Applies the auto-detected layout (if any).
     fn start(&mut self) -> bool {
         if let Some(idx) = self.selected_index {
             self.apply_layout(idx);
         } else {
             Log::info(format!(
-                "Locale1: no locale match for \"{}\", using StereoKit default keyboard",
+                "Locales1: no locale match for \"{}\", using StereoKit default keyboard",
                 self.detected_code
             ));
         }
@@ -206,15 +118,13 @@ impl Locale1 {
     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
 
     /// Apply the keyboard layout at the given index to both `Text` and `Password` contexts.
+    ///
+    /// [`Keyboard::get_locale`] performs the platform calls and logs the outcome.
     fn apply_layout(&self, idx: usize) {
-        let entry = &self.locale_entries[idx];
-        if !Platform::keyboard_set_layout(TextContext::Text, &entry.layers) {
-            Log::err(format!("Locale1: failed to set Text keyboard for \"{}\"", entry.label));
+        if Keyboard::get_locale(self.locale_entries[idx].0).is_none() {
+            // Cannot happen: `idx` comes straight out of `Keyboard::locales()`.
+            Log::err(format!("Locales1: \"{}\" is no longer a known locale", self.locale_entries[idx].1));
         }
-        if !Platform::keyboard_set_layout(TextContext::Password, &entry.layers) {
-            Log::err(format!("Locale1: failed to set Password keyboard for \"{}\"", entry.label));
-        }
-        Log::info(format!("Locale1: keyboard layout → {}", entry.label));
     }
 
     /// Called from `IStepper::step` after `check_event`.  Draws the UI.
@@ -234,7 +144,7 @@ impl Locale1 {
 
         for i in 0..self.locale_entries.len() {
             let btn_width =
-                Text::size_layout(self.locale_entries[i].label, Some(style), None).x + ui_settings.padding * 2.0;
+                Text::size_layout(self.locale_entries[i].1, Some(style), None).x + ui_settings.padding * 2.0;
 
             // Wrap to next line when the button would overflow
             if i > 0 && curr_width + btn_width + ui_settings.gutter > self.demo_win_width {
@@ -253,7 +163,7 @@ impl Locale1 {
                 Ui::push_tint(Color128::hsv(0.12, 0.85, 1.0, 1.0));
             }
 
-            if Ui::button(self.locale_entries[i].label).size(Vec2::new(btn_width, 0.0)).press() {
+            if Ui::button(self.locale_entries[i].1).size(Vec2::new(btn_width, 0.0)).press() {
                 new_selection = Some(i);
             }
 
@@ -272,7 +182,7 @@ impl Locale1 {
 
         // ── Status line ───────────────────────────────────────────────────────
         let status = if let Some(idx) = self.selected_index {
-            format!("Active: {}  •  detected locale: \"{}\"", self.locale_entries[idx].label, self.detected_code)
+            format!("Active: {}  •  detected locale: \"{}\"", self.locale_entries[idx].1, self.detected_code)
         } else {
             format!("No match for detected locale \"{}\" — using StereoKit default", self.detected_code)
         };

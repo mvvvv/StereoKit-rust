@@ -219,7 +219,7 @@ pub use stereokit_macros::test_steps_no_event_loop as test_steps;
 use thiserror::Error;
 
 // Compile-time embedded translations of the tools (see the `file-browser` feature).
-#[cfg(feature = "file-browser")]
+#[cfg(feature = "locales")]
 rust_i18n::i18n!("locales", fallback = "en");
 
 /// Anchor related structs and functions.
@@ -308,14 +308,6 @@ pub mod font;
 /// [![StepperClosures](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/stepper_closures.jpeg)](framework::StepperClosures)
 /// [![Screen](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/screen.jpeg)](framework::Screen)
 pub mod framework;
-
-/// International keyboard layout constants for use with
-/// [`util::Platform::keyboard_set_layout`].
-///
-/// Contains pre-built layouts for French AZERTY, German QWERTZ, Spanish,
-/// Portuguese (Brazil), Italian, Swedish/Nordic, Polish, Czech, Turkish,
-/// Russian, Ukrainian, Greek, Arabic, Hebrew and Japanese.
-pub mod locale;
 
 /// Material specific structs, enums and functions.
 ///
