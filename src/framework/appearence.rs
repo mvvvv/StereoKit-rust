@@ -125,6 +125,36 @@ impl Default for Appearence {
 }
 
 impl Appearence {
+    /// Builds an [`Appearence`] with the provided `font` and a base `title_layout_height`: the four text styles
+    /// share that font and their sizes are all derived from `title_layout_height` with the same proportions as
+    /// [`Appearence::default`] (list 5/6, label 3/4 and small 5/8 of the title height). Every other property
+    /// matches [`Appearence::default`], so the styles / tints can still be tweaked afterwards, before
+    /// [`Appearence::start`].
+    ///
+    /// * `font` - Font shared by the four text styles of the window.
+    /// * `title_layout_height` - Base `layout_height` (meters) of [`Appearence::title_style`], from which the
+    ///   three other styles are scaled.
+    ///
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// # use stereokit_rust::{font::Font, framework::Appearence};
+    /// let font = Font::default();
+    /// let appearence = Appearence::new(&font, 0.024);
+    /// assert_eq!(appearence.title_style.get_layout_height(), 0.024);
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn new(font: &Font, title_layout_height: f32) -> Self {
+        Self {
+            // Same size hierarchy as `Default` (title > list > label > small), scaled from `title_layout_height`.
+            title_style: Text::make_style(font, title_layout_height, named_colors::WHITE),
+            list_style: Text::make_style(font, title_layout_height * 5.0 / 6.0, named_colors::LIGHT_GRAY),
+            label_style: Text::make_style(font, title_layout_height * 3.0 / 4.0, named_colors::WHITE),
+            small_style: Text::make_style(font, title_layout_height * 5.0 / 8.0, named_colors::GRAY),
+            ..Default::default()
+        }
+    }
+
     /// To be called once when the window stepper starts. Clamp the properties set before launch.
     pub fn start(&mut self) {
         // Bounds checks of the properties settable before launch, so no zero / negative / out-of-range

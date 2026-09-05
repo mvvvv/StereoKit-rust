@@ -4,11 +4,12 @@ version = "0.1.0"
 edition = "2024"
 
 [features]
-default = ["file-browser"]
+default = ["file-browser", "locales"]
 # As we are linking to StereoKit-rust we have to mimic this feature.
 no-event-loop = []   
 # Mimic and forward to the lib, for the demos using FileBrowserB.
 file-browser = [] 
+locales = []
 
 [lib]
 crate-type = ["lib", "cdylib"]

@@ -79,6 +79,7 @@ fn main() {
         .origin(OriginMode::Floor)
         .render_multisample(4) // aka the default aka 0
         //.render_scaling(1.5) create distortion on SteamVR for Quest
+        .default_font_family("Noto Sans, SimSun")
         .depth_mode(DepthMode::D32)
         .omit_empty_frames(true)
         .log_filter(LogLevel::Diagnostic)

@@ -76,7 +76,7 @@ pub fn available_locales() -> Vec<String> {
 /// AZERTY, `Keyboard::PT_BR` for the Brazilian Portuguese, `Keyboard::JA_ALT` for the Japanese extra kana layer...
 /// Languages without special characters have no alt layer. Use
 /// [`Platform::keyboard_set_layout`](crate::util::Platform::keyboard_set_layout) to apply a layout manually, or
-/// [`Keyboard::get_locale`] to apply the layout matching a locale code — [`Keyboard::locales`] lists the available
+/// [`Keyboard::apply_locale`] to apply the layout matching a locale code — [`Keyboard::locales`] lists the available
 /// `(code, label)` pairs.
 ///
 /// ## Key-string format
@@ -538,7 +538,7 @@ Ctrl--17-4-mod|Cmd--91-3|Alt--18-3-go_0| - -32-13|Alt--18-3-go_0|Ctrl--17-3-mod|
     /// order of the layout constants of this struct, and codes sharing a layout (`"sv"`,
     /// `"no"` and `"da"` all use the Nordic one) are listed as separate entries.
     ///
-    /// see also [`Keyboard::get_locale`]
+    /// see also [`Keyboard::apply_locale`]
     /// ### Examples
     /// ```
     /// use stereokit_rust::tools::locales::Keyboard;
@@ -570,11 +570,11 @@ Ctrl--17-4-mod|Cmd--91-3|Alt--18-3-go_0| - -32-13|Alt--18-3-go_0|Ctrl--17-3-mod|
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::tools::locales::Keyboard;
     ///
-    /// assert_eq!(Keyboard::get_locale("fr_FR.UTF-8"), Some("Français (AZERTY)"));
-    /// assert_eq!(Keyboard::get_locale("xx"), None);
+    /// assert_eq!(Keyboard::apply_locale("fr_FR.UTF-8"), Some("Français (AZERTY)"));
+    /// assert_eq!(Keyboard::apply_locale("xx"), None);
     /// # sk::Sk::shutdown();
     /// ```
-    pub fn get_locale(locale: &str) -> Option<&'static str> {
+    pub fn apply_locale(locale: &str) -> Option<&'static str> {
         let entry = Self::find_entry(locale)?;
 
         for context in [TextContext::Text, TextContext::Password] {

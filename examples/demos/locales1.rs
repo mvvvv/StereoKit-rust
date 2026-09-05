@@ -121,7 +121,7 @@ impl Locales1 {
     ///
     /// [`Keyboard::get_locale`] performs the platform calls and logs the outcome.
     fn apply_layout(&self, idx: usize) {
-        if Keyboard::get_locale(self.locale_entries[idx].0).is_none() {
+        if Keyboard::apply_locale(self.locale_entries[idx].0).is_none() {
             // Cannot happen: `idx` comes straight out of `Keyboard::locales()`.
             Log::err(format!("Locales1: \"{}\" is no longer a known locale", self.locale_entries[idx].1));
         }
