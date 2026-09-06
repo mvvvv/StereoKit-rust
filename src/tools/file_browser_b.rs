@@ -1,17 +1,21 @@
 use crate::{
     font::Font,
     framework::{Appearence, ISTEPPER_REMOVED},
-    maths::{Pose, Quat, Vec2, Vec3},
+    maths::{Pose, Vec2, Vec3},
     prelude::*,
     sprite::Sprite,
-    system::{Align, Assets, Hierarchy, Input, InputXY, Text, TextFit},
+    system::{Align, Assets, Text, TextFit},
     tex::{Tex, TexFormat, TexType},
-    ui::{Ui, UiBtnLayout, UiCut, UiPad, UiSliderData, UiVisual, UiWin},
-    util::{Color32, Color128, Device, DisplayType, PickerMode, Time, named_colors},
+    tools::assets2d::read_rgba_bitmap,
+    tools::ui_list::{
+        DoubleClick, ScrollList, is_last_element_focused, last_element_world_pose, wrap_chars, wrap_chars_lines,
+    },
+    ui::{Ui, UiBtnLayout, UiCut, UiPad, UiWin},
+    util::{Color128, PickerMode, named_colors},
 };
 use rust_i18n::t;
 use std::path::{Path, PathBuf};
-use std::time::{Instant, SystemTime};
+use std::time::SystemTime;
 
 pub const FILE_BROWSER_B_SAVE: &str = "File_Browser_B_save";
 pub const FILE_BROWSER_B_SELECT_DIR: &str = "File_Browser_B_select_dir";
@@ -229,24 +233,18 @@ pub struct FileBrowserB {
     files_selected_names: Vec<String>,
     sort_by: SortBy,
     sort_ascending: bool,
-    scroll: f32,
-    /// Fractional remainder of the mouse wheel / thumbstick scrolling of the list, see
-    /// [`FileBrowserB::apply_input_scroll`]: the scroll stays expressed in whole rows, so the fraction of a row
-    /// scrolled by a partial input accumulates here until it makes a full row.
-    scroll_accum: f32,
-    /// Whether the scrollbar thumb of the list was focused on the previous frame: StereoKit's sliders already scroll
-    /// from the controller stick through their "secondary motion" while focused, so
-    ///  [`FileBrowserB::apply_input_scroll`] must not double it with its own window-level stick scrolling.
-    scrollbar_focused: bool,
+    /// The scroll state, custom scrollbar and peripheral-input scrolling (mouse wheel / thumbsticks) of the file
+    /// list, see [`ScrollList`].
+    scroll_list: ScrollList,
     search: String,
     new_folder_name: String,
     show_new_folder: bool,
     needs_refresh: bool,
     last_auto_refresh: Option<SystemTime>,
     status: String,
-    /// Double-click tracking: the instant of, and the entry name pressed by, the last `JustActive` on a file radio
-    /// of the list, see [`Appearence::double_click_delay`] and [`FileBrowserB::double_click_or_uncheck`].
-    last_list_press: Option<(Instant, String)>,
+    /// Double-click tracking of the file entries of the list, see [`DoubleClick`],
+    /// [`Appearence::double_click_delay`] and [`FileBrowserB::double_click_or_uncheck`].
+    double_click: DoubleClick,
 
     radio_off: Sprite,
     radio_on: Sprite,
@@ -292,16 +290,14 @@ impl Default for FileBrowserB {
             files_selected_names: vec![],
             sort_by: SortBy::Type,
             sort_ascending: true,
-            scroll: 0.0,
-            scroll_accum: 0.0,
-            scrollbar_focused: false,
+            scroll_list: ScrollList::default(),
             search: String::with_capacity(255),
             new_folder_name: String::with_capacity(255),
             show_new_folder: false,
             needs_refresh: true,
             last_auto_refresh: None,
             status: String::with_capacity(128),
-            last_list_press: None,
+            double_click: DoubleClick::default(),
 
             radio_off: Sprite::radio_off(),
             radio_on: Sprite::radio_on(),
@@ -775,7 +771,7 @@ impl FileBrowserB {
     ///
     /// When `window_focused` (an interactor points at the browser window, or at one of its entry buttons — see
     /// [`FileBrowserB::run_preview_if_focused`]), the list also scrolls from the mouse wheel in simulation or
-    /// from the controller thumbsticks in XR, see [`FileBrowserB::apply_input_scroll`].
+    /// from the controller thumbsticks in XR, see [`ScrollList::apply_input_scroll`].
     fn draw_list(&mut self, line: f32, list_h: f32, mode: PickerMode, mut window_focused: bool) {
         // If the directory to display doesn't exist
         if !self.dir.is_dir() {
@@ -823,20 +819,23 @@ impl FileBrowserB {
             1usize
         };
         // Dynamic row count based on the available height and the current view mode.
-        let visible_rows = self.visible_rows_count(usable_h, row_h);
+        let visible_rows = self.scroll_list.visible_rows_count(usable_h, row_h, settings.gutter, self.max_visible_rows);
         let total_rows = total.div_ceil(columns);
 
         // Cut a right portion for the scrollbar.
         Ui::layout_push_cut(UiCut::Right, slider_w, false);
         let max_scroll = (total_rows as f32 - visible_rows as f32).max(0.0);
-        if self.scroll > max_scroll {
-            self.scroll = max_scroll;
-        }
-        if self.scroll < 0.0 {
-            self.scroll = 0.0;
-        }
+        self.scroll_list.clamp_scroll(max_scroll);
         if total_rows > visible_rows {
-            self.draw_scrollbar(slider_w, list_area.y, max_scroll, visible_rows, total_rows);
+            self.scroll_list.draw_scrollbar(
+                "fb_scroll",
+                slider_w,
+                list_area.y,
+                max_scroll,
+                visible_rows,
+                total_rows,
+                &settings,
+            );
         }
         Ui::layout_pop();
 
@@ -850,7 +849,7 @@ impl FileBrowserB {
             let grid_size = Vec2::new(grid_w, grid_h);
 
             // Scroll is expressed in grid rows: each skipped row == `columns` entries.
-            let start_row = self.scroll as usize;
+            let start_row = self.scroll_list.scroll as usize;
             for row in 0..visible_rows {
                 // Belt and braces: never draw a row that would not fit the reserved list area.
                 if Ui::get_layout_remaining().y < row_h {
@@ -872,7 +871,7 @@ impl FileBrowserB {
                     // Grid cells are narrow, so wrap long names into multiple lines to avoid horizontal overflow.
                     const NAME_MAX_CHARS: usize = 25;
                     let display_name = if name.chars().count() > NAME_MAX_CHARS {
-                        Self::wrap_chars_lines(&name, NAME_MAX_CHARS).join("\n")
+                        wrap_chars_lines(&name, NAME_MAX_CHARS).join("\n")
                     } else {
                         name.clone()
                     };
@@ -934,7 +933,7 @@ impl FileBrowserB {
                     // uniform scale to the whole block, so the adjustment is proportional.
                     if let Some(note) = entry_annotation {
                         let max_chars = 35;
-                        let note = Self::wrap_chars(&note, max_chars);
+                        let note = wrap_chars(&note, max_chars);
 
                         Ui::push_tint(if is_broken { error_tint } else { dir_tint });
                         Ui::push_text_style(self.appearence.small_style);
@@ -949,7 +948,7 @@ impl FileBrowserB {
                 // NOTE: no explicit `Ui::next_line()` at the end of a grid row: the LAST button of
                 // the row has already ended the line (`ui_layout_reserve` calls `ui_nextline`
                 // internally, undone only by `ui_sameline`), so an explicit one would consume a
-                // SECOND `gutter` per row. The scroll math (`visible_rows_count` / `max_scroll`)
+                // SECOND `gutter` per row. The scroll math (`ScrollList::visible_rows_count` / `max_scroll`)
                 // assumes exactly `row_h + gutter` per row, and that extra gutter made the
                 // scrollbar thumb reach the end of its track while the last row(s) of the list
                 // stayed unreachable.
@@ -961,7 +960,7 @@ impl FileBrowserB {
             let size_w = content_w * 0.20;
             let date_w = content_w - name_w - size_w - gutter * 2.0;
 
-            let start_row = self.scroll as usize;
+            let start_row = self.scroll_list.scroll as usize;
             for visible_i in 0..visible_rows {
                 // Belt and braces: never draw a row that would not fit the reserved list area.
                 if Ui::get_layout_remaining().y < row_h {
@@ -1060,7 +1059,7 @@ impl FileBrowserB {
         }
 
         // Mouse wheel (simulation) / thumbstick (XR) scrolling.
-        self.apply_input_scroll(max_scroll, window_focused);
+        self.scroll_list.apply_input_scroll(max_scroll, window_focused);
 
         // Handle deferred actions so we don't borrow self during the draw loop.
         if let Some(i) = dir_clicked {
@@ -1114,22 +1113,11 @@ impl FileBrowserB {
         if !Ui::get_last_element_active().is_just_inactive() {
             return;
         }
-        let now = Instant::now();
         // The previous press must be recent (`double_click_delay` of 0 disables the double-click) and on that same,
         // already selected file — the ONLY one of the selection set: its release completed the first click of the
-        // double-click.
-        let double = match &self.last_list_press {
-            Some((at, prev)) => {
-                now.duration_since(*at).as_secs_f32() < self.appearence.double_click_delay
-                    && prev.as_str() == name
-                    && self.files_selected_names.as_slice() == [name]
-            }
-            None => false,
-        };
-        self.last_list_press = Some((now, name.to_string()));
-
-        if double {
-            self.last_list_press = None;
+        // double-click. `DoubleClick::press` consumes the timing and resets itself on a completed double-click.
+        let only_selected = self.files_selected_names.as_slice() == [name];
+        if self.double_click.press(name, self.appearence.double_click_delay, only_selected) {
             //Log::diag(format!("FileBrowserB double-click confirming {:?}", self.dir.join(name)));
             self.send_multi_event(self.confirm_event_key());
             return;
@@ -1156,143 +1144,11 @@ impl FileBrowserB {
         }
     }
 
-    /// The vertical scrollbar of the file list. Instead of a plain [`Ui::vslider`],  which allows a custom rendering.
-    fn draw_scrollbar(&mut self, width: f32, height: f32, max_scroll: f32, visible_rows: usize, total_rows: usize) {
-        let bar_bounds =
-            Ui::layout_reserve(Vec2::new(width, height), false, self.appearence.get_ui_settings_scaled().depth);
-        let tlb = bar_bounds.tlb();
-
-        // Thumb size: same width ratio as StereoKit's vslider push button (`size_min * 0.55` for a
-        // vertical slider), height proportional to the visible fraction of the list, with a floor
-        // so it never gets too small to grab on very large directories.
-        let thumb_w = width * 0.55;
-        let thumb_h = (height * visible_rows as f32 / total_rows as f32).max(thumb_w);
-        let thumb_size = Vec2::new(thumb_w, thumb_h);
-
-        let mut value = Vec2::new(0.0, self.scroll);
-        let mut slider = UiSliderData::default();
-        let id = Ui::stack_hash("fb_scroll");
-        Ui::slider_behavior(
-            tlb,
-            Vec2::new(width, height),
-            id,
-            &mut value,
-            Vec2::new(0.0, 0.0),
-            Vec2::new(0.0, max_scroll),
-            thumb_size,
-            thumb_size
-                + Vec2::new(
-                    self.appearence.get_ui_settings_scaled().padding,
-                    self.appearence.get_ui_settings_scaled().padding,
-                ) * 2.0,
-            None, // UiConfirm::Push, the vslider default
-            &mut slider,
-        );
-
-        // Keep the scroll expressed in whole rows, like the previous `.step(1.0)` vslider.
-        let prev_row = self.scroll.round();
-        self.scroll = value.y.round().clamp(0.0, max_scroll);
-
-        let focus = Ui::get_anim_focus(id, slider.focus_state, slider.active_state);
-        // Remember the thumb focus for the next frame's `apply_input_scroll`: StereoKit's sliders
-        // already scroll from the controller stick ("secondary motion") while focused.
-        self.scrollbar_focused = slider.focus_state.is_active();
-        // `button_center` is the center of the thumb, `draw_element` expects its top-left corner.
-        let thumb_at = Vec3::new(slider.button_center.x + thumb_w / 2.0, slider.button_center.y + thumb_h / 2.0, tlb.z);
-
-        // Track: full-height thin inactive line behind the thumb.
-        Ui::draw_element(
-            UiVisual::SliderLine,
-            None,
-            tlb,
-            Vec3::new(width, height, self.appearence.get_ui_settings_scaled().depth * 0.1),
-            focus,
-        );
-        // Thumb: SliderLine with a height proportional to the visible part of the directory.
-        Ui::draw_element(
-            UiVisual::SliderPush,
-            None,
-            thumb_at,
-            Vec3::new(thumb_w, thumb_h, self.appearence.get_ui_settings_scaled().depth),
-            focus,
-        );
-
-        // Same sound feedback as StereoKit's sliders: activation on/off, then a tick per row.
-        if slider.active_state.is_just_active() {
-            Ui::play_sound_on_off(UiVisual::SliderPush, id, thumb_at);
-        }
-        if slider.active_state.is_active() && prev_row != self.scroll {
-            Ui::play_sound_on(UiVisual::SliderPush, thumb_at);
-        }
-    }
-
-    /// Moves the file list scroll from the peripheral inputs, only when the browser window has the focus:
-    /// - in simulation ([`DisplayType::Flatscreen`]), the mouse wheel: [`Input::get_mouse()`]`.scroll_change`,
-    ///   `MOUSE_WHEEL_ROWS` rows per wheel notch, a notch towards the screen scrolling up the list. The
-    ///   `sk_app` backends report the wheel in Win32 `WHEEL_DELTA` units (±120 per notch, like StereoKit C's
-    ///   own mouse interactor tilt that divides `scroll_change` by thousands), but some others already
-    ///   normalize it to ±1 notches — both are handled below.
-    /// - in XR, the controller thumbsticks [`Input::xy`]: the stick with the largest Y deflection scrolls
-    ///   `STICK_ROWS_PER_SECOND` rows per second at full deflection, up = up the list. When the scrollbar thumb
-    ///   itself is focused, StereoKit's native slider "secondary motion" already scrolls it from the stick, so
-    ///   this window-level scrolling steps aside to avoid doubling it.
-    ///
-    /// The scroll stays expressed in whole rows (like the scrollbar, which rounds it): only the whole rows of the
-    /// accumulated input delta are applied to `self.scroll`, the fractional remainder carrying over in
-    /// [`FileBrowserB::scroll_accum`] until it makes a full row.
-    fn apply_input_scroll(&mut self, max_scroll: f32, window_focused: bool) {
-        if max_scroll <= 0.0 || !window_focused {
-            // Nothing to scroll, or nobody points at the window: drop the pending fraction so the
-            // next scroll session starts from a clean slate instead of jumping a row.
-            self.scroll_accum = 0.0;
-            return;
-        }
-
-        // Rows to scroll this frame: positive = further down the list.
-        const MOUSE_WHEEL_ROWS: f32 = 3.0;
-        const STICK_ROWS_PER_SECOND: f32 = 8.0;
-        const STICK_DEADZONE: f32 = 0.15;
-        const WHEEL_DELTA: f32 = 120.0;
-        const WHEEL_DELTA_THRESHOLD: f32 = 20.0;
-
-        let delta = if Device::get_display_type() == DisplayType::Flatscreen {
-            // Simulation: the mouse wheel.
-            let wheel = Input::get_mouse().scroll_change;
-            if wheel == 0.0 {
-                return;
-            }
-            // Deltas of at least a fraction of `WHEEL_DELTA` are Win32 wheel units, smaller ones are
-            // already normalized notches. Wheel forward (positive) scrolls up the list.
-            let notches = if wheel.abs() >= WHEEL_DELTA_THRESHOLD { wheel / WHEEL_DELTA } else { wheel };
-            -notches * MOUSE_WHEEL_ROWS
-        } else {
-            // XR: the controller thumbsticks, the one with the largest vertical deflection wins.
-            // Skip when the scrollbar thumb is focused: StereoKit's sliders already bind the stick.
-            if self.scrollbar_focused {
-                return;
-            }
-            let left = Input::xy(InputXY::LStick).y;
-            let right = Input::xy(InputXY::RStick).y;
-            let stick = if left.abs() >= right.abs() { left } else { right };
-            if stick.abs() < STICK_DEADZONE {
-                return;
-            }
-            // Stick forward (positive Y) scrolls up the list, like the wheel.
-            -stick * STICK_ROWS_PER_SECOND * Time::get_stepf()
-        };
-
-        self.scroll_accum += delta;
-        // Apply whole rows only, and keep the fraction for the next frame.
-        let rows = self.scroll_accum.trunc();
-        self.scroll_accum -= rows;
-        self.scroll = (self.scroll + rows).clamp(0.0, max_scroll);
-    }
-
     /// Annotation drawn slightly below the entry name in the list and grid views: symlink entries show their target
     /// path (`-> target`) and entries whose metadata could not be read (`is_broken`) get an explicit error marker.
     /// Returns `None` for plain entries.
     ///
-    /// The grid view splits it into several lines of equal length with [`FileBrowserB::wrap_chars`] so the
+    /// The grid view splits it into several lines of equal length with [`wrap_chars`] so the
     /// `TextFit::Exact` scaling stays proportional (same glyph size) on every line.
     fn entry_annotation(entry: &FileEntry) -> Option<String> {
         match (&entry.symlink_name, entry.is_broken) {
@@ -1301,59 +1157,6 @@ impl FileBrowserB {
             (None, true) => Some(t!("file_browser_b.unreadable_entry").into_owned()),
             (None, false) => None,
         }
-    }
-
-    /// Wraps `text` into lines of at most `max_chars` columns, preferring to break lines AFTER `/` or `\` path
-    /// separators so paths stay readable. Only a segment without any separator that is longer than `max_chars` (a too
-    /// long file name) gets hard-split. The lines are joined with `\n`, so a single [`Ui::text`] call draws the whole
-    /// note with one uniform `TextFit::Exact` scale — the adjustment stays proportional.
-    ///
-    /// The result is also padded with blank lines up to a minimum of 3 lines, so the scale of a short annotation note
-    /// matches the one of a longer note. Use [`FileBrowserB::wrap_chars_lines`] for the raw wrapped lines WITHOUT that
-    /// padding (e.g. for button texts, where a trailing blank line would shift the text upward).
-    fn wrap_chars(text: &str, max_chars: usize) -> String {
-        let mut lines = Self::wrap_chars_lines(text, max_chars);
-        if lines.len() == 1 {
-            lines.push(String::from(" "));
-            lines.push(String::from(" "));
-        } else if lines.len() == 2 {
-            lines.push(String::from(" "));
-        }
-        lines.join("\n")
-    }
-
-    /// The core of [`FileBrowserB::wrap_chars`]: wraps `text` into lines of at most `max_chars` columns, preferring to
-    /// break lines AFTER `/` or `\` path separators so paths stay readable, and hard-splitting only a separator-less
-    /// segment longer than a full line (a too long file name). Returns the raw lines, WITHOUT the vertical padding
-    /// `wrap_chars` adds for the annotation notes.
-    fn wrap_chars_lines(text: &str, max_chars: usize) -> Vec<String> {
-        // Split into separator-terminated segments, hard-splitting any segment longer than a
-        // full line (a too long name with no separator to break on).
-        let mut chunks: Vec<String> = Vec::new();
-        for seg in text.split_inclusive(|c: char| ['/', '\\', '_', ' '].contains(&c)) {
-            let mut chars = seg.chars();
-            loop {
-                let chunk: String = chars.by_ref().take(max_chars).collect();
-                if chunk.is_empty() {
-                    break;
-                }
-                chunks.push(chunk);
-            }
-        }
-
-        // Greedily pack the chunks into lines of at most `max_chars`, breaking after separators.
-        let mut lines: Vec<String> = Vec::new();
-        let mut current = String::new();
-        for chunk in chunks {
-            if !current.is_empty() && current.chars().count() + chunk.chars().count() > max_chars {
-                lines.push(std::mem::take(&mut current));
-            }
-            current.push_str(&chunk);
-        }
-        if !current.is_empty() {
-            lines.push(current);
-        }
-        lines
     }
 
     /// Whether the entry `name` is part of the current selection, for row highlighting: the one file selected for
@@ -1380,25 +1183,18 @@ impl FileBrowserB {
     /// Runs [`FileBrowserB::preview`] when the directory or file button just drawn is focused.
     ///
     /// Must be called right after the `Ui::button`/`Ui::radio` call of a list entry, while it is still the
-    /// "last element": [`Ui::get_last_element_focused`] then gives the focus state of that very button, and
-    /// [`Ui::get_layout_last`] its layout bounds. The bounds center (window-local layout coordinates) is converted
-    /// into a world-space `bouton_pose` through the current UI hierarchy, exactly like StereoKit's `ui_popup_pose`
-    /// does when it attaches a popup to the focused element.
+    /// "last element": [`is_last_element_focused`] then tells whether that very button is focused, and
+    /// [`last_element_world_pose`] gives its world-space pose (bounds center converted through the current UI
+    /// hierarchy, exactly like StereoKit's `ui_popup_pose` does when it attaches a popup to the focused element).
     ///
     /// Returns `true` when that button is focused, whether or not a previewer is configured. This is useful to know if
     /// the window as a whole is focused.
     fn run_preview_if_focused(&mut self, name: &str) -> bool {
-        if !Ui::get_last_element_focused().is_active() {
+        if !is_last_element_focused() {
             return false;
         }
         if let Some(previewer) = &mut self.preview {
-            let file_path = self.dir.join(name);
-            let bounds = Ui::get_layout_last();
-            let button_pose = Pose {
-                position: Hierarchy::to_world_point(bounds.center),
-                orientation: Hierarchy::to_world_rotation(Quat::IDENTITY),
-            };
-            previewer.preview(file_path, self.window_pose, button_pose);
+            previewer.preview(self.dir.join(name), self.window_pose, last_element_world_pose());
         }
         true
     }
@@ -1716,22 +1512,6 @@ impl FileBrowserB {
 
     // ----------------------------------------------------------------------- helpers
 
-    /// Number of rows that fit in `available_h`, clamped to [`FileBrowserB::max_visible_rows`]
-    /// when it is non-zero.
-    ///
-    /// `row_h` is the effective height of one row, computed by the caller so it matches what the
-    /// buttons actually reserve: `line * 2.0` for the explicit grid cells, or the current text
-    /// style's line height for the auto-height list buttons (see `draw_list`).
-    fn visible_rows_count(&self, available_h: f32, row_h: f32) -> usize {
-        let gutter = self.appearence.get_ui_settings_scaled().gutter;
-        let mut rows =
-            if row_h <= 0.0 { 1 } else { ((available_h + gutter) / (row_h + gutter)).floor().max(1.0) as usize };
-        if self.max_visible_rows > 0 {
-            rows = rows.min(self.max_visible_rows as usize);
-        }
-        rows.max(1)
-    }
-
     /// Whether the current mode offers the "New folder" toolbar button (and its input row):
     /// creating a destination folder makes sense when saving a file, and when selecting a
     /// directory to write into.
@@ -1742,7 +1522,7 @@ impl FileBrowserB {
     /// When changing a dir we reset the pending operation.
     fn change_dir(&mut self, new_dir: PathBuf) {
         self.dir = new_dir;
-        self.scroll = 0.0;
+        self.scroll_list.reset();
         self.files_selected_names.clear();
         self.confirm_delete = false;
         self.needs_refresh = true;
@@ -2045,40 +1825,6 @@ unsafe impl Send for BasicPreviewer {}
 
 const DIFFUSE_SIZE: usize = 128;
 
-/// Reads a raw RGBA bitmap file (see <https://github.com/bzotto/rgba_bitmap>): four bytes of `"RGBA"` magic, then the
-/// width and the height as big-endian `u32`s, then the RGBA8888 pixel data. Returns the size and the pixels as
-/// [`Color32`]s, ready for `Tex::set_colors32`.
-pub fn read_rgba_bitmap(path: &Path) -> Result<(usize, usize, Vec<Color32>), std::io::Error> {
-    use std::io::Read;
-
-    let mut header = [0u8; 12];
-    let mut file = std::fs::File::open(path)?;
-
-    file.read_exact(&mut header)?;
-    if &header[0..4] != b"RGBA" {
-        return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "Invalid magic"));
-    }
-    let width = u32::from_be_bytes([header[4], header[5], header[6], header[7]]) as usize;
-    let height = u32::from_be_bytes([header[8], header[9], header[10], header[11]]) as usize;
-    if width == 0 || height == 0 {
-        return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "Invalid dimensions"));
-    }
-
-    let mut data = Vec::new();
-    file.read_to_end(&mut data)?;
-    if data.len() != width * height * 4 {
-        return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "Pixel data size mismatch"));
-    }
-    // The length check above guarantees `data.len()` is a multiple of 4, so `as_chunks` leaves no remainder.
-    let pixels = data
-        .as_chunks::<4>()
-        .0
-        .iter()
-        .map(|px| Color32 { r: px[0], g: px[1], b: px[2], a: px[3] })
-        .collect();
-    Ok((width, height, pixels))
-}
-
 impl Default for BasicPreviewer {
     fn default() -> Self {
         let font = Font::default();
@@ -2206,11 +1952,8 @@ impl Previewer for BasicPreviewer {
         // lines are indented to align under the translated "path: " label.
         const PATH_MAX_CHARS: usize = 50;
         let path_label = t!("file_browser_b.path_label");
-        let path_line = format!(
-            "{}\n{}",
-            path_label,
-            FileBrowserB::wrap_chars_lines(&file_path.to_string_lossy(), PATH_MAX_CHARS).join("\n")
-        );
+        let path_line =
+            format!("{}\n{}", path_label, wrap_chars_lines(&file_path.to_string_lossy(), PATH_MAX_CHARS).join("\n"));
 
         // ------------------------------------------------------------------------ draw the panel
         const PANEL_W: f32 = 0.22;
@@ -2218,8 +1961,8 @@ impl Previewer for BasicPreviewer {
 
         // Labels squeeze their text instead of wrapping it, so the possibly long fields are pre-wrapped
         // on ~N chars (same separator-aware wrapping as the list annotations).
-        let title = FileBrowserB::wrap_chars_lines(&name, TITLE_MAX_CHARS).join("\n");
-        let kind = FileBrowserB::wrap_chars_lines(&kind, PATH_MAX_CHARS).join("\n");
+        let title = wrap_chars_lines(&name, TITLE_MAX_CHARS).join("\n");
+        let kind = wrap_chars_lines(&kind, PATH_MAX_CHARS).join("\n");
 
         // where to set the preview:
         let origin = [
