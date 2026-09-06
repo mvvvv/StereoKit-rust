@@ -4,10 +4,10 @@ use crate::{
     maths::{Pose, Quat, Vec2, Vec3},
     prelude::*,
     sprite::Sprite,
-    system::{Align, Assets, Hierarchy, Text, TextFit},
+    system::{Align, Assets, Hierarchy, Input, InputXY, Text, TextFit},
     tex::{Tex, TexFormat, TexType},
     ui::{Ui, UiBtnLayout, UiCut, UiPad, UiSliderData, UiVisual, UiWin},
-    util::{Color32, Color128, PickerMode, named_colors},
+    util::{Color32, Color128, Device, DisplayType, PickerMode, Time, named_colors},
 };
 use rust_i18n::t;
 use std::path::{Path, PathBuf};
@@ -230,6 +230,14 @@ pub struct FileBrowserB {
     sort_by: SortBy,
     sort_ascending: bool,
     scroll: f32,
+    /// Fractional remainder of the mouse wheel / thumbstick scrolling of the list, see
+    /// [`FileBrowserB::apply_input_scroll`]: the scroll stays expressed in whole rows, so the fraction of a row
+    /// scrolled by a partial input accumulates here until it makes a full row.
+    scroll_accum: f32,
+    /// Whether the scrollbar thumb of the list was focused on the previous frame: StereoKit's sliders already scroll
+    /// from the controller stick through their "secondary motion" while focused, so
+    ///  [`FileBrowserB::apply_input_scroll`] must not double it with its own window-level stick scrolling.
+    scrollbar_focused: bool,
     search: String,
     new_folder_name: String,
     show_new_folder: bool,
@@ -285,6 +293,8 @@ impl Default for FileBrowserB {
             sort_by: SortBy::Type,
             sort_ascending: true,
             scroll: 0.0,
+            scroll_accum: 0.0,
+            scrollbar_focused: false,
             search: String::with_capacity(255),
             new_folder_name: String::with_capacity(255),
             show_new_folder: false,
@@ -397,6 +407,9 @@ impl FileBrowserB {
             .window_type(UiWin::Normal)
             .begin();
 
+        // useful to know if the window is focused, so we can scroll the list with the mouse wheel or the controller.
+        let window_focused = Ui::get_last_element_focused().is_active();
+
         let line = Ui::get_line_height();
         let btn = self.appearence.scale_size(Vec2::new(line * 1.4, line * 1.4));
 
@@ -438,7 +451,7 @@ impl FileBrowserB {
 
         // The file list uses its own style, between the title and the labels.
         Ui::push_text_style(self.appearence.list_style);
-        self.draw_list(line, list_h, self.picker_mode);
+        self.draw_list(line, list_h, self.picker_mode, window_focused);
         Ui::pop_text_style();
 
         Ui::layout_pop();
@@ -759,7 +772,11 @@ impl FileBrowserB {
     /// in grid view, the lines break after `/` or `\` separators (too long names are hard-split), so the
     /// `TextFit::Exact` adjustment is proportional (one uniform scale for the whole note) — and tinted with
     /// [`Appearence::error_tint`] for broken entries.
-    fn draw_list(&mut self, line: f32, list_h: f32, mode: PickerMode) {
+    ///
+    /// When `window_focused` (an interactor points at the browser window, or at one of its entry buttons — see
+    /// [`FileBrowserB::run_preview_if_focused`]), the list also scrolls from the mouse wheel in simulation or
+    /// from the controller thumbsticks in XR, see [`FileBrowserB::apply_input_scroll`].
+    fn draw_list(&mut self, line: f32, list_h: f32, mode: PickerMode, mut window_focused: bool) {
         // If the directory to display doesn't exist
         if !self.dir.is_dir() {
             let at = Ui::get_layout_at();
@@ -907,8 +924,10 @@ impl FileBrowserB {
 
                     // Previewer callback while this entry's button (dir or file) is focused. Called
                     // right after the button/radio, before any other element steals
-                    // `Ui::get_last_element_focused` / `Ui::get_layout_last`.
-                    self.run_preview_if_focused(&name);
+                    // `Ui::get_last_element_focused` / `Ui::get_layout_last`. A focused button
+                    // also counts as a focused window: the interactor's focus has moved from the
+                    // window handle to the button, but it still points at the window.
+                    window_focused |= self.run_preview_if_focused(&name);
 
                     // Symlink target / error note, slightly below the name in the cell, as a
                     // SINGLE text with `\n` separated lines: TextFit::Exact then applies ONE
@@ -1012,8 +1031,10 @@ impl FileBrowserB {
 
                 // Previewer callback while this entry's button (dir or file) is focused. Called
                 // right after the button/radio, before the size/date labels of the row steal
-                // `Ui::get_layout_last`.
-                self.run_preview_if_focused(&name);
+                // `Ui::get_layout_last`. A focused button also counts as a focused window: the
+                // interactor's focus has moved from the window handle to the button, but it still
+                // points at the window.
+                window_focused |= self.run_preview_if_focused(&name);
 
                 // Column 2: size / item count (non-interactive label)
                 Ui::same_line();
@@ -1037,6 +1058,9 @@ impl FileBrowserB {
                 }
             }
         }
+
+        // Mouse wheel (simulation) / thumbstick (XR) scrolling.
+        self.apply_input_scroll(max_scroll, window_focused);
 
         // Handle deferred actions so we don't borrow self during the draw loop.
         if let Some(i) = dir_clicked {
@@ -1170,6 +1194,9 @@ impl FileBrowserB {
         self.scroll = value.y.round().clamp(0.0, max_scroll);
 
         let focus = Ui::get_anim_focus(id, slider.focus_state, slider.active_state);
+        // Remember the thumb focus for the next frame's `apply_input_scroll`: StereoKit's sliders
+        // already scroll from the controller stick ("secondary motion") while focused.
+        self.scrollbar_focused = slider.focus_state.is_active();
         // `button_center` is the center of the thumb, `draw_element` expects its top-left corner.
         let thumb_at = Vec3::new(slider.button_center.x + thumb_w / 2.0, slider.button_center.y + thumb_h / 2.0, tlb.z);
 
@@ -1197,6 +1224,68 @@ impl FileBrowserB {
         if slider.active_state.is_active() && prev_row != self.scroll {
             Ui::play_sound_on(UiVisual::SliderPush, thumb_at);
         }
+    }
+
+    /// Moves the file list scroll from the peripheral inputs, only when the browser window has the focus:
+    /// - in simulation ([`DisplayType::Flatscreen`]), the mouse wheel: [`Input::get_mouse()`]`.scroll_change`,
+    ///   `MOUSE_WHEEL_ROWS` rows per wheel notch, a notch towards the screen scrolling up the list. The
+    ///   `sk_app` backends report the wheel in Win32 `WHEEL_DELTA` units (±120 per notch, like StereoKit C's
+    ///   own mouse interactor tilt that divides `scroll_change` by thousands), but some others already
+    ///   normalize it to ±1 notches — both are handled below.
+    /// - in XR, the controller thumbsticks [`Input::xy`]: the stick with the largest Y deflection scrolls
+    ///   `STICK_ROWS_PER_SECOND` rows per second at full deflection, up = up the list. When the scrollbar thumb
+    ///   itself is focused, StereoKit's native slider "secondary motion" already scrolls it from the stick, so
+    ///   this window-level scrolling steps aside to avoid doubling it.
+    ///
+    /// The scroll stays expressed in whole rows (like the scrollbar, which rounds it): only the whole rows of the
+    /// accumulated input delta are applied to `self.scroll`, the fractional remainder carrying over in
+    /// [`FileBrowserB::scroll_accum`] until it makes a full row.
+    fn apply_input_scroll(&mut self, max_scroll: f32, window_focused: bool) {
+        if max_scroll <= 0.0 || !window_focused {
+            // Nothing to scroll, or nobody points at the window: drop the pending fraction so the
+            // next scroll session starts from a clean slate instead of jumping a row.
+            self.scroll_accum = 0.0;
+            return;
+        }
+
+        // Rows to scroll this frame: positive = further down the list.
+        const MOUSE_WHEEL_ROWS: f32 = 3.0;
+        const STICK_ROWS_PER_SECOND: f32 = 8.0;
+        const STICK_DEADZONE: f32 = 0.15;
+        const WHEEL_DELTA: f32 = 120.0;
+        const WHEEL_DELTA_THRESHOLD: f32 = 20.0;
+
+        let delta = if Device::get_display_type() == DisplayType::Flatscreen {
+            // Simulation: the mouse wheel.
+            let wheel = Input::get_mouse().scroll_change;
+            if wheel == 0.0 {
+                return;
+            }
+            // Deltas of at least a fraction of `WHEEL_DELTA` are Win32 wheel units, smaller ones are
+            // already normalized notches. Wheel forward (positive) scrolls up the list.
+            let notches = if wheel.abs() >= WHEEL_DELTA_THRESHOLD { wheel / WHEEL_DELTA } else { wheel };
+            -notches * MOUSE_WHEEL_ROWS
+        } else {
+            // XR: the controller thumbsticks, the one with the largest vertical deflection wins.
+            // Skip when the scrollbar thumb is focused: StereoKit's sliders already bind the stick.
+            if self.scrollbar_focused {
+                return;
+            }
+            let left = Input::xy(InputXY::LStick).y;
+            let right = Input::xy(InputXY::RStick).y;
+            let stick = if left.abs() >= right.abs() { left } else { right };
+            if stick.abs() < STICK_DEADZONE {
+                return;
+            }
+            // Stick forward (positive Y) scrolls up the list, like the wheel.
+            -stick * STICK_ROWS_PER_SECOND * Time::get_stepf()
+        };
+
+        self.scroll_accum += delta;
+        // Apply whole rows only, and keep the fraction for the next frame.
+        let rows = self.scroll_accum.trunc();
+        self.scroll_accum -= rows;
+        self.scroll = (self.scroll + rows).clamp(0.0, max_scroll);
     }
 
     /// Annotation drawn slightly below the entry name in the list and grid views: symlink entries show their target
@@ -1295,18 +1384,23 @@ impl FileBrowserB {
     /// [`Ui::get_layout_last`] its layout bounds. The bounds center (window-local layout coordinates) is converted
     /// into a world-space `bouton_pose` through the current UI hierarchy, exactly like StereoKit's `ui_popup_pose`
     /// does when it attaches a popup to the focused element.
-    fn run_preview_if_focused(&mut self, name: &str) {
-        let Some(previewer) = &mut self.preview else { return };
+    ///
+    /// Returns `true` when that button is focused, whether or not a previewer is configured. This is useful to know if
+    /// the window as a whole is focused.
+    fn run_preview_if_focused(&mut self, name: &str) -> bool {
         if !Ui::get_last_element_focused().is_active() {
-            return;
+            return false;
         }
-        let file_path = self.dir.join(name);
-        let bounds = Ui::get_layout_last();
-        let button_pose = Pose {
-            position: Hierarchy::to_world_point(bounds.center),
-            orientation: Hierarchy::to_world_rotation(Quat::IDENTITY),
-        };
-        previewer.preview(file_path, self.window_pose, button_pose);
+        if let Some(previewer) = &mut self.preview {
+            let file_path = self.dir.join(name);
+            let bounds = Ui::get_layout_last();
+            let button_pose = Pose {
+                position: Hierarchy::to_world_point(bounds.center),
+                orientation: Hierarchy::to_world_rotation(Quat::IDENTITY),
+            };
+            previewer.preview(file_path, self.window_pose, button_pose);
+        }
+        true
     }
 
     /// The description of the current selection shown in the bottom panels of the file modes: the selected file's

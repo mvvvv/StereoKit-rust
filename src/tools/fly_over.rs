@@ -3,7 +3,7 @@ use crate::{
     prelude::*,
     render::Renderer,
     sk::{AppMode, OriginMode},
-    system::{Handed, Input, Key, World},
+    system::{Input, InputButton, InputXY, Interactor, InteractorSource, Key, World},
     ui::Ui,
     util::Time,
 };
@@ -100,14 +100,29 @@ impl FlyOver {
         }
     }
 
+    /// Returns true if any interactor matching the given source currently has an element focused.
+    /// see also [`Interactor::all`] [`Interactor::get_focused`]
+    fn interactor_is_focused(source: InteractorSource) -> bool {
+        Interactor::all().any(|interactor| {
+            interactor.get_source().intersects(source) && interactor.get_focused() != 0
+        })
+    }
+
     /// Called from IStepper::step, after check_event here you can draw your UI
     fn draw(&mut self, _token: &MainThreadToken) {
         //----- move
         let mut camera_root = Renderer::get_camera_root();
         let head = Input::get_head();
 
-        let move_ctrler = Input::controller(Handed::Left);
-        let mut move_v = -move_ctrler.stick.x0y();
+        let move_stick = Input::xy(InputXY::LStick);
+        // If the move stick is in use, but its associated interactor has an element focused
+        // (e.g. UI), the stick input is consumed by that element: the camera shall not move.
+        let mut move_v =
+            if move_stick != Vec2::ZERO && Self::interactor_is_focused(InteractorSource::ControllerLeft) {
+                Vec3::ZERO
+            } else {
+                -move_stick.x0y()
+            };
 
         if cfg!(all(debug_assertions, not(target_os = "android"))) && !Ui::has_keyboard_focus() {
             if Input::key(Key::Up).is_just_active() {
@@ -132,7 +147,7 @@ impl FlyOver {
             move_v.y = head_forward.y * self.reverse;
             let mut shift = camera_pose.position;
 
-            if move_ctrler.is_stick_clicked() {
+            if Input::button(InputButton::LStick).is_active() {
                 speed_accelerator *= 3.0;
             }
 
@@ -142,11 +157,16 @@ impl FlyOver {
         }
 
         //----- rotate
-        let rotate_stick = Input::controller(Handed::Right).stick;
+        let rotate_stick = Input::xy(InputXY::RStick);
         let rotate_val = Vec2::dot(rotate_stick, -Vec2::X);
 
+        // If the rotate stick is in use, but its associated interactor has an element focused
+        // (e.g. UI), the stick input is consumed by that element: the camera shall not rotate.
+        let rotate_block =
+            rotate_stick != Vec2::ZERO && Self::interactor_is_focused(InteractorSource::ControllerRight);
+
         // Credit to Cazzola: https://discord.com/channels/805160376529715210/805160377130156124/1307293861680255067
-        if rotate_val != 0.0 {
+        if rotate_val != 0.0 && !rotate_block {
             let delta_rotate = Quat::from_angles(0.0, rotate_val * self.rotate_speed * Time::get_step_unscaledf(), 0.0);
             let camera_in_head_space = camera_root * Matrix::t(head.position).get_inverse();
             let rotated = camera_in_head_space * Matrix::r(delta_rotate);
