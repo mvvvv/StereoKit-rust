@@ -103,9 +103,7 @@ impl FlyOver {
     /// Returns true if any interactor matching the given source currently has an element focused.
     /// see also [`Interactor::all`] [`Interactor::get_focused`]
     fn interactor_is_focused(source: InteractorSource) -> bool {
-        Interactor::all().any(|interactor| {
-            interactor.get_source().intersects(source) && interactor.get_focused() != 0
-        })
+        Interactor::all().any(|interactor| interactor.get_source().intersects(source) && interactor.get_focused() != 0)
     }
 
     /// Called from IStepper::step, after check_event here you can draw your UI
@@ -117,12 +115,11 @@ impl FlyOver {
         let move_stick = Input::xy(InputXY::LStick);
         // If the move stick is in use, but its associated interactor has an element focused
         // (e.g. UI), the stick input is consumed by that element: the camera shall not move.
-        let mut move_v =
-            if move_stick != Vec2::ZERO && Self::interactor_is_focused(InteractorSource::ControllerLeft) {
-                Vec3::ZERO
-            } else {
-                -move_stick.x0y()
-            };
+        let mut move_v = if move_stick != Vec2::ZERO && Self::interactor_is_focused(InteractorSource::ControllerLeft) {
+            Vec3::ZERO
+        } else {
+            -move_stick.x0y()
+        };
 
         if cfg!(all(debug_assertions, not(target_os = "android"))) && !Ui::has_keyboard_focus() {
             if Input::key(Key::Up).is_just_active() {
@@ -162,8 +159,7 @@ impl FlyOver {
 
         // If the rotate stick is in use, but its associated interactor has an element focused
         // (e.g. UI), the stick input is consumed by that element: the camera shall not rotate.
-        let rotate_block =
-            rotate_stick != Vec2::ZERO && Self::interactor_is_focused(InteractorSource::ControllerRight);
+        let rotate_block = rotate_stick != Vec2::ZERO && Self::interactor_is_focused(InteractorSource::ControllerRight);
 
         // Credit to Cazzola: https://discord.com/channels/805160376529715210/805160377130156124/1307293861680255067
         if rotate_val != 0.0 && !rotate_block {

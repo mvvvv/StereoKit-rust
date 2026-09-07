@@ -129,7 +129,7 @@ impl Asset1 {
                     .image_layout(UiBtnLayout::Left)
                     .press()
                 {
-                    if let Some(sound_inst) = self.sound_to_play {
+                    if let Some(mut sound_inst) = self.sound_to_play {
                         sound_inst.stop();
                     }
                     if let Some(asset_to_show) = self.load_asset(name, &self.asset_sub_dir, file_name_str) {
@@ -267,7 +267,7 @@ impl Asset1 {
     fn close(&mut self, _triggering: bool) -> bool {
         if _triggering {
             Input::hand_material(Handed::Right, Some(self.hand_material.clone_ref()));
-            if let Some(sound_inst) = self.sound_to_play {
+            if let Some(mut sound_inst) = self.sound_to_play {
                 sound_inst.stop();
             }
             self.shutdown_completed = true;

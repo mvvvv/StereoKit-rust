@@ -33,7 +33,7 @@ pub const SHOW_LOG_WINDOW: &str = "Tool_ShowLogWindow";
 /// static LOG_LOG: Mutex<Vec<LogItem>> = Mutex::new(vec![]);
 /// let fn_mut = |level: LogLevel, log_text: &str| {
 ///    let items = LOG_LOG.lock().expect("Failed to lock log mutex");
-///    basic_log_fmt(level, log_text, 20, items);
+///    basic_log_fmt(level, log_text, items);
 /// };
 /// Log::subscribe(fn_mut);
 /// let mut log_window = LogWindow::new(&LOG_LOG);
@@ -46,6 +46,7 @@ pub const SHOW_LOG_WINDOW: &str = "Tool_ShowLogWindow";
 /// filename_scr = "screenshots/log_window.jpeg";
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
 ///     if iter == 0  {
+///         Log::info("Info log message");
 ///         Log::info("Info log message");
 ///         Log::warn("Warning log message");
 ///         Log::err ("Error log message");
@@ -197,29 +198,15 @@ impl<'a> LogWindow<'a> {
 /// A basic log formatter that splits long lines and counts repeated lines.
 /// * `level` - The log level.
 /// * `log_text` - The log text.
-/// * `line_len` - The maximum length of a line.
-pub fn basic_log_fmt(
-    level: LogLevel,
-    log_text: &str,
-    line_len: usize,
-    mut items: std::sync::MutexGuard<'_, Vec<LogItem>>,
-) {
+pub fn basic_log_fmt(level: LogLevel, log_text: &str, mut items: std::sync::MutexGuard<'_, Vec<LogItem>>) {
     for line_text in log_text.lines() {
-        let subs = line_text.as_bytes().chunks(line_len);
-        for (pos, sub_line) in subs.enumerate() {
-            if let Ok(mut sub_string) = String::from_utf8(sub_line.to_vec()) {
-                if pos > 0 {
-                    sub_string.insert_str(0, "»»»»");
-                }
-                if let Some(item) = items.last_mut()
-                    && item.text == sub_string
-                {
-                    item.count += 1;
-                    continue;
-                }
-
-                items.push(LogItem { level, text: sub_string.to_owned(), count: 1 });
-            };
+        if let Some(item) = items.last_mut()
+            && item.text == line_text
+        {
+            item.count += 1;
+            continue;
         }
+
+        items.push(LogItem { level, text: line_text.to_owned(), count: 1 });
     }
 }

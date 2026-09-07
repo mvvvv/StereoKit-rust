@@ -286,8 +286,9 @@ impl Mixer1 {
         // much larger than the data so playback starts at the beginning.
         let buffer_duration = duration * 2.0 + 0.5;
         let sound = Sound::create_stream_with(buffer_duration, SoundChannels::Mono, MIC_SAMPLE_RATE)
-            .inspect(|s| {
+            .map(|mut s| {
                 s.write_samples(&self.rec_buffer, None);
+                s
             })
             .ok();
         self.rec_buffer.clear();
@@ -482,7 +483,7 @@ impl Mixer1 {
         {
             if any_playing {
                 for track in &mut self.tracks {
-                    if let Some(inst) = track.inst.take() {
+                    if let Some(mut inst) = track.inst.take() {
                         inst.stop();
                     }
                     track.playing = false;
@@ -490,7 +491,7 @@ impl Mixer1 {
             } else {
                 // Start all tracks at the same time.
                 for track in &mut self.tracks {
-                    if let Some(inst) = track.inst.take() {
+                    if let Some(mut inst) = track.inst.take() {
                         inst.stop();
                     }
                     track.playing = true;
@@ -500,7 +501,7 @@ impl Mixer1 {
         Ui::same_line();
         if Ui::button("Clear all").size(Vec2::new(0.12, 0.08)).press() {
             for track in &mut self.tracks {
-                if let Some(inst) = track.inst.take() {
+                if let Some(mut inst) = track.inst.take() {
                     inst.stop();
                 }
             }
@@ -664,7 +665,7 @@ impl Mixer1 {
 
         // Remove marked tracks (from the end backward).
         for &i in to_remove.iter().rev() {
-            if let Some(inst) = self.tracks[i].inst.take() {
+            if let Some(mut inst) = self.tracks[i].inst.take() {
                 inst.stop();
             }
             self.tracks.remove(i);

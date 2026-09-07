@@ -336,15 +336,15 @@ impl<'a> UiInputBuilder<'a> {
     ///
     /// Returns the updated text in the input field if it has changed, otherwise `None`.
     ///
-    /// This mirrors the C# `UI.Input`/`UI.InputAt` behavior: a writable buffer is pre-filled with the current value 
-    /// and sized to `value.len() + 16` bytes of content room (with one extra byte so the native code can keep pushing 
-    /// the NUL terminator as text is inserted). The `buffer_size` handed to native must match the buffer we actually 
+    /// This mirrors the C# `UI.Input`/`UI.InputAt` behavior: a writable buffer is pre-filled with the current value
+    /// and sized to `value.len() + 16` bytes of content room (with one extra byte so the native code can keep pushing
+    /// the NUL terminator as text is inserted). The `buffer_size` handed to native must match the buffer we actually
     /// allocate, otherwise typing into a focused field would write past the end of the buffer.
     pub fn edit(&mut self) -> Option<String> {
         // Content room is the current text length + 16 bytes, mirroring C#'s
         // `new StringBuilder(value, value.Length + 16)` -> `builder.Capacity`.
         let cap = self.out_value.len() + 16;
-        // cap + 1 : one spare byte so the native layer can keep the NUL terminator one slot past the content as it 
+        // cap + 1 : one spare byte so the native layer can keep the NUL terminator one slot past the content as it
         // grows (utf_insert_char shifts the terminator forward on each insertion).
         let mut buffer = vec![0u8; cap + 1];
         buffer[..self.out_value.len()].copy_from_slice(self.out_value.as_bytes());
@@ -361,13 +361,8 @@ impl<'a> UiInputBuilder<'a> {
                 ) != 0
             },
             None => unsafe {
-                ui_input(
-                    self.id.as_ptr(),
-                    buffer.as_mut_ptr() as *mut c_char,
-                    cap as i32,
-                    self.size,
-                    self.type_text,
-                ) != 0
+                ui_input(self.id.as_ptr(), buffer.as_mut_ptr() as *mut c_char, cap as i32, self.size, self.type_text)
+                    != 0
             },
         };
 

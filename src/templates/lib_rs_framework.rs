@@ -46,32 +46,33 @@ fn android_main(app: AndroidApp) {
             android_logger::Config::default().with_max_level(log::LevelFilter::Debug).with_tag("STKit-rs"),
         );
     });
-    let sk = settings.init(app).unwrap();
 
-    _main(sk);
+    _main(settings);
 }
 
-pub fn _main(sk: Sk) {
+pub fn _main(settings: SkSettings) {
     let is_testing = false;
     Log::diag("Launch my_vr_program");
-    launch(sk, is_testing);
+    launch(settings, is_testing);
     Sk::shutdown();
 }
 
 /// The main function for all platforms
-pub fn launch(mut sk: Sk, _is_testing: bool) {
+pub fn launch(mut settings: SkSettings, _is_testing: bool) {
+    // Sending formated log to our mutex for the log window.
+    let fn_mut = |level: LogLevel, log_text: &str| {
+        let items = LOG_LOG.lock().unwrap();
+        basic_log_fmt(level, log_text, items);
+    };
+    Log::subscribe(fn_mut);
+
+    let mut sk = settings.init().unwrap();
     Log::diag(
         "======================================================================================================== !!",
     );
     Renderer::scaling(1.0);
     Renderer::multisample(4);
 
-    // Sending formated log to our mutex for the log window.
-    let fn_mut = |level: LogLevel, log_text: &str| {
-        let items = LOG_LOG.lock().unwrap();
-        basic_log_fmt(level, log_text, 120, items);
-    };
-    Log::subscribe(fn_mut);
     let mut log_window = LogWindow::new(&LOG_LOG);
     log_window.window_pose = Pose::new(Vec3::new(-0.7, 2.0, -0.3), Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0))));
     let mut show_log = false;

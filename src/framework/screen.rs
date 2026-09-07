@@ -884,10 +884,10 @@ impl Screen {
     /// Stop the spatial audio streams and clear the swapchain handle.
     /// Call this when the owner stepper is shutting down.
     pub fn shutdown(&mut self) {
-        if let Some(inst) = self.sound_left_inst.take() {
+        if let Some(mut inst) = self.sound_left_inst.take() {
             inst.stop();
         }
-        if let Some(inst) = self.sound_right_inst.take() {
+        if let Some(mut inst) = self.sound_right_inst.take() {
             inst.stop();
         }
         self.openxr_swapchain = None;

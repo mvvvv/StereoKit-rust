@@ -1,8 +1,4 @@
-use std::{
-    fs::File,
-    io::{Read, Write},
-    sync::Mutex,
-};
+use std::{path::Path, sync::Mutex};
 
 #[cfg(feature = "file-browser")]
 use std::path::PathBuf;
@@ -14,6 +10,7 @@ use crate::{
     prelude::*,
     render::Renderer,
     tex::{Tex, TexFormat},
+    tools::assets2d::{read_rgba_bitmap, write_rgba_bitmap},
     ui::Ui,
     util::{PickerMode, Platform},
 };
@@ -165,41 +162,18 @@ impl ScreenshotViewer {
             let mut file_name_lock = FILE_NAME.lock().expect("ScreenshotViewer: Failed to lock FILE_NAME mutex");
             let file_name = file_name_lock.to_string();
             if !file_name.is_empty() {
-                if let Ok(mut file) = File::open(&file_name) {
-                    if let Ok(mut tex) = Tex::find(CAPTURE_TEXTURE_ID) {
-                        let mut buf = [0u8; 12];
-                        if file.read_exact(&mut buf).is_ok() {
-                            // Vive le format RGBA !!! https://github.com/bzotto/rgba_bitmap
-                            let rgba_tag = format!("{:?}", &buf[0..4]);
-                            let mut four_u8 = [0u8; 4];
-                            four_u8.copy_from_slice(&buf[4..8]);
-                            let width = u32::from_be_bytes(four_u8) as usize;
-                            four_u8.copy_from_slice(&buf[8..12]);
-                            let height = u32::from_be_bytes(four_u8) as usize;
+                if let Ok(mut tex) = Tex::find(CAPTURE_TEXTURE_ID) {
+                    // Vive le format RGBA !!! https://github.com/bzotto/rgba_bitmap
+                    match read_rgba_bitmap(Path::new(&file_name)) {
+                        Ok((width, height, pixels)) => {
                             Log::diag(format!("RGBA file {} with size is {}x{}", file_name, width, height));
-                            if rgba_tag != "RGBA" {
-                                let mut data = vec![];
-                                match file.read_to_end(&mut data) {
-                                    Ok(mut _size) => {
-                                        let data_slice = data.as_slice();
-                                        tex.set_colors_u8(width, height, data_slice, 4);
-                                        self.screen = Sprite::from_tex(&self.tex, None, None).ok();
-                                    }
-                                    Err(err) => {
-                                        Log::warn(format!("Screenshoot Error when reading file {file_name} : {err:?}"))
-                                    }
-                                }
-                            } else {
-                                Log::warn(format!("File is not an RGBA {file_name}"));
-                            }
-                        } else {
-                            Log::warn(format!("Screenshoot Error unable to read rgba file infos {}", file_name));
+                            tex.set_colors32(width, height, &pixels);
+                            self.screen = Sprite::from_tex(&self.tex, None, None).ok();
                         }
-                    } else {
-                        Log::warn(format!("Screenshoot Error unable to get texture ScreenshotTex {}", file_name));
+                        Err(err) => Log::warn(format!("Screenshoot Error when reading file {file_name} : {err:?}")),
                     }
                 } else {
-                    Log::err(format!("ScreenshotViewer : file {} is not valid", file_name))
+                    Log::warn(format!("Screenshoot Error unable to get texture ScreenshotTex {}", file_name));
                 }
                 file_name_lock.clear();
             }
@@ -340,23 +314,9 @@ fn save_screenshot(file_name: &str) {
             let data = vec![0u8; size * 4];
             let data_slice = data.as_slice();
             if tex.get_color_data_u8(data_slice, 4, 0) {
-                match File::create(&name) {
-                    // Vive le format RGBA !!! https://github.com/bzotto/rgba_bitmap
-                    Ok(mut file) => {
-                        if let Err(err) = file.write_fmt(format_args!("RGBA")) {
-                            Log::warn(format!("Screenshoot Error when writing RGBA {} : {:?}", name, err));
-                        }
-                        if let Err(err) = file.write(&width.to_be_bytes()[4..]) {
-                            Log::warn(format!("Screenshoot Error when writing width {} : {:?}", name, err));
-                        }
-                        if let Err(err) = file.write(&height.to_be_bytes()[4..]) {
-                            Log::warn(format!("Screenshoot Error when writing height {} : {:?}", name, err));
-                        }
-                        if let Err(err) = file.write_all(data_slice) {
-                            Log::warn(format!("Screenshoot Error when writing raw image {} : {:?}", name, err));
-                        }
-                    }
-                    Err(err) => Log::warn(format!("Screenshoot Error when creating file {name} : {err:?}")),
+                // Vive le format RGBA !!! https://github.com/bzotto/rgba_bitmap
+                if let Err(err) = write_rgba_bitmap(Path::new(&name), width, height, data_slice) {
+                    Log::warn(format!("Screenshoot Error when writing bitmap {name} : {err:?}"));
                 }
             } else {
                 Log::warn(format!("Screenshoot Error when getting texture data {file_name}"));

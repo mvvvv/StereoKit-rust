@@ -652,7 +652,7 @@ impl Sound {
     /// stream_sound.write_samples(samples.as_slice(), Some(48000));
     /// assert_eq!(stream_sound.get_duration(), 0.5);
     ///
-    /// let stream_sound_inst = stream_sound.play([0.0, 0.0, -0.5], Some(0.5));
+    /// let mut stream_sound_inst = stream_sound.play([0.0, 0.0, -0.5], Some(0.5));
     ///
     /// number_of_steps = 300;
     /// test_steps!( // !!!! Get a proper main loop !!!!
@@ -1087,7 +1087,7 @@ impl Sound {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{sound::{Sound, SoundPlay, SoundFlags, SoundBus}};
     ///
-    /// let sound = Sound::from_file("sounds/plane_engine.mp3")
+    /// let mut sound = Sound::from_file("sounds/plane_engine.mp3")
     ///     .expect("A sound should be created");
     /// sound.decibels(70.0);
     ///
@@ -1097,7 +1097,7 @@ impl Sound {
     ///     bus: SoundBus::Music,
     ///     ..Default::default()
     /// };
-    /// let inst = sound.play_with([0.0, 0.0, 0.0], &settings);
+    /// let mut inst = sound.play_with([0.0, 0.0, 0.0], &settings);
     /// assert!(inst.is_playing());
     /// inst.stop();
     /// # sk::Sk::shutdown();
@@ -1143,8 +1143,9 @@ impl Sound {
     /// );
     /// # sk::Sk::shutdown();
     /// ```
-    pub fn decibels(&self, decibels: f32) {
+    pub fn decibels(&mut self, decibels: f32) -> &mut Self {
         unsafe { sound_set_decibels(self.0.as_ptr(), decibels) }
+        self
     }
 
     /// This will read samples from the sound stream, starting from the first unread sample. Check UnreadSamples for how
@@ -1162,7 +1163,7 @@ impl Sound {
     /// use stereokit_rust::sound::Sound;
     ///
     /// // Half of the samples won't be kept in the buffer (0.5 instead of 1.0)
-    /// let stream_sound = Sound::create_stream(0.5).
+    /// let mut stream_sound = Sound::create_stream(0.5).
     ///                            expect("A sound stream should be created");
     ///
     /// let mut samples: Vec<f32> = vec![0.0; 48000];
@@ -1206,7 +1207,7 @@ impl Sound {
     /// use stereokit_rust::sound::Sound;
     ///
     /// // Half of the samples won't be kept in the buffer (0.5 instead of 1.0)
-    /// let stream_sound = Sound::create_stream(1.0).
+    /// let mut stream_sound = Sound::create_stream(1.0).
     ///                            expect("A sound stream should be created");
     ///
     /// let mut samples: Vec<f32> = vec![0.0; 48000];
@@ -1218,9 +1219,10 @@ impl Sound {
     /// assert_eq!(stream_sound.get_unread_samples(), 48000);
     /// # sk::Sk::shutdown();
     /// ```
-    pub fn write_samples(&self, in_arr_samples: &[f32], sample_count: Option<u64>) {
+    pub fn write_samples(&mut self, in_arr_samples: &[f32], sample_count: Option<u64>) -> &mut Self {
         let sample_count = sample_count.unwrap_or(in_arr_samples.len() as u64);
         unsafe { sound_write_samples(self.0.as_ptr(), in_arr_samples.as_ptr(), sample_count) };
+        self
     }
 
     /// The id of this sound
@@ -1245,12 +1247,12 @@ impl Sound {
     /// for i in 0..48000 {
     ///     samples[i] = (i as f32 / 48000.0).sin();
     /// }
-    /// let sound = Sound::from_samples(&samples)
+    /// let mut sound = Sound::from_samples(&samples)
     ///                     .expect("Sound should be created from samples");
     ///
     /// assert_eq!(sound.get_cursor_samples(), 0);
     ///
-    /// let sound_inst = sound.play([0.0, 0.0, -0.5], Some(0.5));
+    /// let mut sound_inst = sound.play([0.0, 0.0, -0.5], Some(0.5));
     /// sound_inst.stop();
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
@@ -1361,7 +1363,7 @@ impl Sound {
     /// use stereokit_rust::sound::Sound;
     ///
     /// // Half of the samples won't be kept in the buffer (0.5 instead of 1.0)
-    /// let stream_sound = Sound::create_stream(1.0).
+    /// let mut stream_sound = Sound::create_stream(1.0).
     ///                            expect("A sound stream should be created");
     ///
     /// let mut samples: Vec<f32> = vec![0.0; 48000];
@@ -1636,7 +1638,7 @@ impl SoundInst {
     ///
     /// let plane_sound = Sound::from_file("sounds/plane_engine.mp3").
     ///                           expect("A sound should be created");
-    /// let plane_sound_inst = plane_sound.play([0.0, 0.0, 0.0], Some(1.0));
+    /// let mut plane_sound_inst = plane_sound.play([0.0, 0.0, 0.0], Some(1.0));
     ///
     /// number_of_steps = 400;
     /// test_steps!( // !!!! Get a proper main loop !!!!
@@ -1649,8 +1651,8 @@ impl SoundInst {
     /// );
     /// # sk::Sk::shutdown();
     /// ```
-    pub fn stop(self) {
-        unsafe { sound_inst_stop(self) }
+    pub fn stop(&mut self) {
+        unsafe { sound_inst_stop(*self) }
     }
 
     /// The 3D position in world space this sound instance is currently playing at. If this instance is no longer
@@ -2030,7 +2032,7 @@ impl SoundInst {
     ///
     /// let plane_sound = Sound::from_file("sounds/plane_engine.mp3").
     ///                           expect("A sound should be created");
-    /// let plane_sound_inst = plane_sound.play([0.0, 0.0, 0.0], Some(1.0));
+    /// let mut plane_sound_inst = plane_sound.play([0.0, 0.0, 0.0], Some(1.0));
     ///
     /// number_of_steps = 300;
     /// test_steps!( // !!!! Get a proper main loop !!!!

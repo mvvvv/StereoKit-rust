@@ -7,7 +7,7 @@ use stereokit_rust::{
     prelude::*,
     render::{Projection, Renderer},
     shader::Shader,
-    sk::{AppFocus, AppWindow, DisplayBlend},
+    sk::{AppFocus, AppWindow, DisplayBlend, SkSettings},
     sound::{Sound, SoundInst},
     sprite::Sprite,
     system::{
@@ -44,10 +44,19 @@ use super::{
     Test,
     hand_menu_radial1::{HAND_MENU_RADIAL1_ID, HandMenuRadial1, SHOW_FLOOR},
 };
-pub fn launch(mut sk: Sk, is_testing: bool, start_test: String) {
-    Log::diag(
-        "======================================================================================================================== !!",
-    );
+pub fn launch(mut settings: SkSettings, is_testing: bool, start_test: String) {
+    // Sending formated log to our mutex for the log window.
+    let fn_mut = |level: LogLevel, log_text: &str| {
+        let items = LOG_LOG.lock().unwrap();
+        basic_log_fmt(level, log_text, items);
+    };
+    Log::subscribe(fn_mut);
+    // need a way to do that properly Log::unsubscribe(fn_mut);
+
+    // Initialize StereoKit
+    let mut sk = settings.init().unwrap();
+
+    Log::diag("==================================================================================== !!");
 
     let mut window_demo_pose = Pose::new(Vec3::new(-0.7, 1.5, -0.3), Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0))));
 
@@ -117,14 +126,6 @@ pub fn launch(mut sk: Sk, is_testing: bool, start_test: String) {
     } else {
         Log::diag("Simultaneous hands and controllers tracking not available");
     }
-
-    // Sending formated log to our mutex for the log window.
-    let fn_mut = |level: LogLevel, log_text: &str| {
-        let items = LOG_LOG.lock().unwrap();
-        basic_log_fmt(level, log_text, 120, items);
-    };
-    Log::subscribe(fn_mut);
-    // need a way to do that properly Log::unsubscribe(fn_mut);
 
     let mut log_window = LogWindow::new(&LOG_LOG);
     log_window.window_pose = Pose::new(Vec3::new(-0.7, 2.0, -0.3), Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0))));
@@ -234,9 +235,7 @@ pub fn launch(mut sk: Sk, is_testing: bool, start_test: String) {
     assert!(!BackendVulkan::get_function_ptr("vkCreateBuffer").is_null());
     assert!(BackendVulkan::get_function_ptr("vkNotARealVkFunc").is_null());
 
-    Log::diag(
-        "===================================================================================================================== !!",
-    );
+    Log::diag("=========================================================== !!");
     Log::diag(format!("Thread id : {:?} / {:?} ", thread::current().name(), thread::current().id()));
     Log::diag(format!("Process id : {:?} / {:?} ", thread::current().name(), process::id()));
 

@@ -57,8 +57,7 @@ fn main() {
     }
     settings.standby_mode(StandbyMode::None);
 
-    let sk = settings.init().unwrap();
-    launch(sk, is_testing);
+    launch(settings, is_testing);
     Sk::shutdown();
 }
 

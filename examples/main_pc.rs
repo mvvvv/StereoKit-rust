@@ -107,8 +107,7 @@ fn main() {
 
     BackendVulkan::request(&BackendVulkanRequest::new(Some("sk_test_request")));
 
-    let sk = settings.init().unwrap();
-    launch(sk, is_testing, start_test);
+    launch(settings, is_testing, start_test);
     Sk::shutdown();
 }
 

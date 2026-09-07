@@ -7,8 +7,8 @@ use crate::{
     system::{Align, Assets, Text, TextFit},
     tex::{Tex, TexFormat, TexType},
     tools::assets2d::read_rgba_bitmap,
-    tools::ui_list::{
-        DoubleClick, ScrollList, is_last_element_focused, last_element_world_pose, wrap_chars, wrap_chars_lines,
+    tools::ui_widgets::{
+        DoubleClick, Scrollbar, is_last_element_focused, last_element_world_pose, wrap_chars, wrap_chars_lines,
     },
     ui::{Ui, UiBtnLayout, UiCut, UiPad, UiWin},
     util::{Color128, PickerMode, named_colors},
@@ -234,8 +234,8 @@ pub struct FileBrowserB {
     sort_by: SortBy,
     sort_ascending: bool,
     /// The scroll state, custom scrollbar and peripheral-input scrolling (mouse wheel / thumbsticks) of the file
-    /// list, see [`ScrollList`].
-    scroll_list: ScrollList,
+    /// list, see [`Scrollbar`].
+    scrollbar: Scrollbar,
     search: String,
     new_folder_name: String,
     show_new_folder: bool,
@@ -290,7 +290,7 @@ impl Default for FileBrowserB {
             files_selected_names: vec![],
             sort_by: SortBy::Type,
             sort_ascending: true,
-            scroll_list: ScrollList::default(),
+            scrollbar: Scrollbar::vertical(),
             search: String::with_capacity(255),
             new_folder_name: String::with_capacity(255),
             show_new_folder: false,
@@ -771,7 +771,7 @@ impl FileBrowserB {
     ///
     /// When `window_focused` (an interactor points at the browser window, or at one of its entry buttons — see
     /// [`FileBrowserB::run_preview_if_focused`]), the list also scrolls from the mouse wheel in simulation or
-    /// from the controller thumbsticks in XR, see [`ScrollList::apply_input_scroll`].
+    /// from the controller thumbsticks in XR, see [`Scrollbar::apply_input_scroll`].
     fn draw_list(&mut self, line: f32, list_h: f32, mode: PickerMode, mut window_focused: bool) {
         // If the directory to display doesn't exist
         if !self.dir.is_dir() {
@@ -819,15 +819,15 @@ impl FileBrowserB {
             1usize
         };
         // Dynamic row count based on the available height and the current view mode.
-        let visible_rows = self.scroll_list.visible_rows_count(usable_h, row_h, settings.gutter, self.max_visible_rows);
+        let visible_rows = self.scrollbar.visible_cells_count(usable_h, row_h, settings.gutter, self.max_visible_rows);
         let total_rows = total.div_ceil(columns);
 
         // Cut a right portion for the scrollbar.
         Ui::layout_push_cut(UiCut::Right, slider_w, false);
         let max_scroll = (total_rows as f32 - visible_rows as f32).max(0.0);
-        self.scroll_list.clamp_scroll(max_scroll);
+        self.scrollbar.clamp_scroll(max_scroll);
         if total_rows > visible_rows {
-            self.scroll_list.draw_scrollbar(
+            self.scrollbar.draw_scrollbar(
                 "fb_scroll",
                 slider_w,
                 list_area.y,
@@ -849,7 +849,7 @@ impl FileBrowserB {
             let grid_size = Vec2::new(grid_w, grid_h);
 
             // Scroll is expressed in grid rows: each skipped row == `columns` entries.
-            let start_row = self.scroll_list.scroll as usize;
+            let start_row = self.scrollbar.scroll as usize;
             for row in 0..visible_rows {
                 // Belt and braces: never draw a row that would not fit the reserved list area.
                 if Ui::get_layout_remaining().y < row_h {
@@ -948,7 +948,7 @@ impl FileBrowserB {
                 // NOTE: no explicit `Ui::next_line()` at the end of a grid row: the LAST button of
                 // the row has already ended the line (`ui_layout_reserve` calls `ui_nextline`
                 // internally, undone only by `ui_sameline`), so an explicit one would consume a
-                // SECOND `gutter` per row. The scroll math (`ScrollList::visible_rows_count` / `max_scroll`)
+                // SECOND `gutter` per row. The scroll math (`Scrollbar::visible_cells_count` / `max_scroll`)
                 // assumes exactly `row_h + gutter` per row, and that extra gutter made the
                 // scrollbar thumb reach the end of its track while the last row(s) of the list
                 // stayed unreachable.
@@ -960,7 +960,7 @@ impl FileBrowserB {
             let size_w = content_w * 0.20;
             let date_w = content_w - name_w - size_w - gutter * 2.0;
 
-            let start_row = self.scroll_list.scroll as usize;
+            let start_row = self.scrollbar.scroll as usize;
             for visible_i in 0..visible_rows {
                 // Belt and braces: never draw a row that would not fit the reserved list area.
                 if Ui::get_layout_remaining().y < row_h {
@@ -1059,7 +1059,7 @@ impl FileBrowserB {
         }
 
         // Mouse wheel (simulation) / thumbstick (XR) scrolling.
-        self.scroll_list.apply_input_scroll(max_scroll, window_focused);
+        self.scrollbar.apply_input_scroll(max_scroll, window_focused);
 
         // Handle deferred actions so we don't borrow self during the draw loop.
         if let Some(i) = dir_clicked {
@@ -1522,7 +1522,7 @@ impl FileBrowserB {
     /// When changing a dir we reset the pending operation.
     fn change_dir(&mut self, new_dir: PathBuf) {
         self.dir = new_dir;
-        self.scroll_list.reset();
+        self.scrollbar.reset();
         self.files_selected_names.clear();
         self.confirm_delete = false;
         self.needs_refresh = true;

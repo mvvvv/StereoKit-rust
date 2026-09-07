@@ -55,3 +55,43 @@ pub fn read_rgba_bitmap(path: &Path) -> Result<(usize, usize, Vec<Color32>), std
         .collect();
     Ok((width, height, pixels))
 }
+
+/// Writes a raw RGBA bitmap file (see <https://github.com/bzotto/rgba_bitmap>), the counterpart of
+/// [`read_rgba_bitmap`]: four bytes of `"RGBA"` magic, then the width and the height as big-endian `u32`s, then the
+/// RGBA8888 pixel data `pixels` (exactly `width * height * 4` bytes, row-major).
+///
+/// Returns an error when `pixels.len() != width * height * 4` (an [`std::io::ErrorKind::InvalidData`]) or when the
+/// file cannot be created / written.
+///
+/// ### Examples
+/// ```
+/// use stereokit_rust::tools::assets2d::{read_rgba_bitmap, write_rgba_bitmap};
+///
+/// let mut path = std::env::temp_dir();
+/// path.push("assets2d_write_rgba_bitmap.rgba");
+/// let (width, height) = (2usize, 1usize);
+/// let pixels: Vec<u8> = (0..width * height * 4).map(|i| i as u8).collect();
+/// write_rgba_bitmap(&path, width, height, &pixels).unwrap();
+/// let (w, h, read_pixels) = read_rgba_bitmap(&path).unwrap();
+/// assert_eq!((w, h), (width, height));
+/// assert_eq!(read_pixels.len(), pixels.len() / 4);
+/// assert_eq!((read_pixels[0].r, read_pixels[0].g, read_pixels[0].b, read_pixels[0].a), (0, 1, 2, 3));
+/// std::fs::remove_file(&path).unwrap();
+/// ```
+pub fn write_rgba_bitmap(path: &Path, width: usize, height: usize, pixels: &[u8]) -> Result<(), std::io::Error> {
+    use std::io::Write;
+
+    if pixels.len() != width * height * 4 {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            format!("Pixel data size mismatch: {} bytes for a {width}x{height} bitmap", pixels.len()),
+        ));
+    }
+
+    let mut file = std::fs::File::create(path)?;
+    file.write_all(b"RGBA")?;
+    file.write_all(&(width as u32).to_be_bytes())?;
+    file.write_all(&(height as u32).to_be_bytes())?;
+    file.write_all(pixels)?;
+    Ok(())
+}

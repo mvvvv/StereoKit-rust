@@ -161,7 +161,7 @@ impl Biplane1 {
     /// # Returns a boolean indicating whether the shutdown is completed.
     fn close(&mut self, triggering: bool) -> bool {
         if triggering {
-            if let Some(sound_inst) = self.plane_sound_inst {
+            if let Some(mut sound_inst) = self.plane_sound_inst {
                 sound_inst.stop();
             }
             self.shutdown_completed = true;

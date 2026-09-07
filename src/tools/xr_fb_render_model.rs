@@ -5,11 +5,11 @@
 //! <https://registry.khronos.org/OpenXR/specs/1.1/html/xrspec.html#XR_FB_render_model>
 use crate::{
     maths::{Matrix, Quat, Vec3, units::CM},
-    model::{Model, AnimMode},
+    model::{AnimMode, Model},
     prelude::*,
-    system::{TextBuilder, Backend, BackendOpenXR, BackendXRType, Handed, Input, Log},
+    system::{Backend, BackendOpenXR, BackendXRType, Handed, Input, Log, TextBuilder},
 };
-
+  
 use std::ffi::{CString, c_char};
 use std::ptr;
 
@@ -19,7 +19,6 @@ use openxr_sys::{
     Session, StructureType,
     pfn::{EnumerateRenderModelPathsFB, GetRenderModelPropertiesFB, LoadRenderModelFB, PathToString, StringToPath},
 };
-
 
 /// Extension name for XR_FB_render_model
 pub const XR_FB_RENDER_MODEL_EXTENSION_NAME: &str = "XR_FB_render_model";
