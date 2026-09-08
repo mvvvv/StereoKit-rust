@@ -1,6 +1,6 @@
 use crate::{
     maths::{Pose, Quat, Vec2, Vec3},
-    system::{Hierarchy, Input, InputXY, Key},
+    system::{Hierarchy, Input, InputButton, InputXY, Key},
     ui::{Ui, UiDir, UiSettings, UiSliderData, UiVisual},
     util::{Device, DisplayType, Time},
 };
@@ -300,8 +300,11 @@ impl Scrollbar {
     /// - in XR, the controller thumbsticks [`Input::xy`]: the stick with the largest deflection ALONG THE AXIS
     ///   (Y for a vertical scrollbar, X for a horizontal one) scrolls `STICK_CELLS_PER_SECOND` cells per second at
     ///   full deflection, stick forward scrolling up a vertical list, stick right towards the end of a horizontal
-    ///   strip. When the scrollbar thumb itself is focused, StereoKit's native slider "secondary motion" already
-    ///   scrolls it from the stick, so this window-level scrolling steps aside to avoid doubling it.
+    ///   strip. Clicking that winning stick inward (its [`InputButton::LStick`]/[`InputButton::RStick`] button,
+    ///   like the `fly_over` tool boosts its move speed) multiplies the scroll speed by
+    ///   `STICK_CLICK_SPEED_BOOST`. When the scrollbar thumb itself is focused, StereoKit's native slider
+    ///   "secondary motion" already scrolls it from the stick, so this window-level scrolling steps aside to
+    ///   avoid doubling it.
     ///
     /// The scroll stays expressed in whole cells (like [`Scrollbar::draw_scrollbar`], which rounds it): only the
     /// whole cells of the accumulated input delta are applied to `scroll`, the fractional remainder carrying over in
@@ -317,6 +320,7 @@ impl Scrollbar {
         // Cells to scroll this frame: positive = further towards the end of the content.
         const CELLS_PER_WHEEL_NOTCH: f32 = 3.0;
         const STICK_CELLS_PER_SECOND: f32 = 8.0;
+        const STICK_CLICK_SPEED_BOOST: f32 = 3.0;
         const STICK_DEADZONE: f32 = 0.15;
         const WHEEL_DELTA: f32 = 120.0;
         const WHEEL_DELTA_THRESHOLD: f32 = 20.0;
@@ -343,14 +347,18 @@ impl Scrollbar {
             let left = Input::xy(InputXY::LStick);
             let right = Input::xy(InputXY::RStick);
             let (left, right) = if self.dir == UiDir::Vertical { (left.y, right.y) } else { (left.x, right.x) };
-            let stick = if left.abs() >= right.abs() { left } else { right };
+            let left_wins = left.abs() >= right.abs();
+            let stick = if left_wins { left } else { right };
             if stick.abs() < STICK_DEADZONE {
                 return;
             }
+            // Clicking the winning stick inward boosts the scroll speed, like the move speed of `fly_over`.
+            let stick_button = if left_wins { InputButton::LStick } else { InputButton::RStick };
+            let speed_boost = if Input::button(stick_button).is_active() { STICK_CLICK_SPEED_BOOST } else { 1.0 };
             // Stick forward (positive Y) scrolls towards the start of a vertical list, like the wheel; stick
             // right (positive X) scrolls towards the end of a horizontal strip, like dragging its thumb.
             let stick_sign = if self.dir == UiDir::Vertical { -1.0 } else { 1.0 };
-            stick_sign * stick * STICK_CELLS_PER_SECOND * Time::get_stepf()
+            stick_sign * stick * STICK_CELLS_PER_SECOND * speed_boost * Time::get_stepf()
         };
 
         self.scroll_accum += delta;

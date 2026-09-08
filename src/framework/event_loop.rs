@@ -240,6 +240,7 @@ impl<'a> SkClosures<'a> {
         // Also detect Resume to wake up from sleep when the headset is turned back on.
         #[cfg(target_os = "android")]
         {
+            use crate::tools::ui_widgets::wrap_chars;
             use android_activity::{MainEvent, PollEvent};
 
             android_app.poll_events(Some(Duration::ZERO), |event| match event {
@@ -259,13 +260,17 @@ impl<'a> SkClosures<'a> {
                         // so we will drain them in the next frames until there is no more.
                         (self.on_window_event)(&mut self.sk, android_app);
                     }
+                    MainEvent::SaveState { .. } => {
+                        self.sleeping = SleepPhase::StoppingNow;
+                        Log::info("Android MainEvent::SaveState received");
+                    }
                     otherwise => {
-                        Log::diag(format!("Android MainEvent {:?} received", otherwise));
+                        Log::diag(wrap_chars(&format!("Android MainEvent {:?} received", otherwise), 80));
                     }
                 },
                 PollEvent::Timeout => {}
                 otherwise => {
-                    Log::diag(format!("Android PollEvent {:?} received", otherwise));
+                    Log::diag(wrap_chars(&format!("Android MainEvent {:?} received", otherwise), 80));
                 }
             });
         }

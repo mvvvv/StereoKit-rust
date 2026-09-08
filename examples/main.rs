@@ -27,7 +27,8 @@ pub fn android_main(app: AndroidApp) {
         .render_scaling(1.5)
         .depth_mode(DepthMode::D32)
         .omit_empty_frames(true)
-        .log_filter(LogLevel::Diagnostic);
+        .log_filter(LogLevel::Diagnostic)
+        .android_app(app);
 
     static APP_ONCE: OnceLock<()> = OnceLock::new();
     if APP_ONCE.get().is_some() {

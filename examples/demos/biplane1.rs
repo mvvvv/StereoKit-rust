@@ -50,7 +50,7 @@ impl Default for Biplane1 {
         };
         let plane_pose = Pose::new(Vec3::NEG_Z + Vec3::Y * 1.5, None);
         let mut plane_sound = Sound::from_file("sounds/plane_engine.mp3").unwrap();
-        plane_sound.id("sound_plane").decibels(100.0);
+        plane_sound.decibels(100.0);
 
         Self {
             id: "Plane1".to_string(),

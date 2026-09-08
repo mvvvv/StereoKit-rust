@@ -1000,8 +1000,9 @@ impl Sound {
         Sound(NonNull::new(unsafe { sound_find(sound_get_id(self.0.as_ptr())) }).expect("<asset>::clone_ref failed!"))
     }
 
-    /// Sets the unique identifier of this asset resource! This can be helpful for debugging,
-    /// managing your assets, or finding them later on!
+    /// Sets the unique identifier of this asset resource! This can be helpful for debugging, managing your assets, or
+    /// finding them later on! However, please note that, unlike other assets, deleting a sound is not immediate, and
+    /// you should not reuse an asset ID that has already been used.
     /// <https://stereokit.net/Pages/StereoKit/Sound/Id.html>
     ///
     /// see also [`sound_set_id`]

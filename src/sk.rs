@@ -617,12 +617,12 @@ impl SkSettings {
         self
     }
 
-    /// Initialize StereoKit with the given settings (here for Android platform).
-    /// <https://stereokit.net/Pages/StereoKit/SK/Initialize.html>
+    /// Temporary store AndroidApp instance using android_activity void pointer until init
     /// * `app` - The AndroidApp instance to use for initialization given by android_main() from <https://github.com/rust-mobile>
     #[cfg(target_os = "android")]
-    pub fn init(&mut self, app: AndroidApp) -> Result<Sk, StereoKitError> {
-        Sk::init(self, app)
+    pub fn android_app(&mut self, app: AndroidApp) -> &mut Self {
+        self.android_activity = Box::into_raw(Box::new(app)) as *mut c_void;
+        self
     }
 
     /// Initialize StereoKit with the given settings (here for non Android platform).
@@ -700,7 +700,6 @@ impl SkSettings {
     /// Sk::shutdown();
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sk_basic_example.jpeg" alt="screenshot" width="200">
-    #[cfg(not(target_os = "android"))]
     pub fn init(&mut self) -> Result<Sk, StereoKitError> {
         Sk::init(self)
     }
@@ -999,11 +998,12 @@ impl Sk {
     /// This must be done in the main thread. see [`Sk::init`]
     #[cfg(target_os = "android")]
     pub fn poll_first_events(app: &AndroidApp) {
+        use crate::tools::ui_widgets::wrap_chars;
         let mut ready_to_go = false;
         while !ready_to_go {
             app.poll_events(None, |event| match event {
                 PollEvent::Main(main_event) => {
-                    Log::diag(format!("MainEvent {:?} ", main_event));
+                    Log::diag(wrap_chars(&format!("MainEvent {:?} ", main_event), 80));
                     match main_event {
                         MainEvent::GainedFocus { .. } => {
                             ready_to_go = true;
@@ -1013,7 +1013,7 @@ impl Sk {
                         }
                     }
                 }
-                otherwise => Log::diag(format!("PollEvent {:?} ", otherwise)),
+                otherwise => Log::diag(wrap_chars(&format!("PollEvent {:?} ", otherwise), 80)),
             })
         }
     }
@@ -1027,6 +1027,7 @@ impl Sk {
     /// or `None` if no significant event occurred.
     #[cfg(target_os = "android")]
     pub fn poll_events(app: &AndroidApp) -> Option<MainEvent<'static>> {
+        use crate::tools::ui_widgets::wrap_chars;
         let mut result: Option<MainEvent<'static>> = None;
         // Drain Android activity events to prevent ANR.
         app.poll_events(Some(std::time::Duration::ZERO), |event| match event {
@@ -1047,13 +1048,17 @@ impl Sk {
                     let drained = Self::drain_input_events(app);
                     Log::diag(format!("Android MainEvent::InputAvailable received ({drained} input event(s))"));
                 }
+                MainEvent::SaveState { .. } => {
+                    Log::diag("Android MainEvent::SaveState received");
+                }
                 otherwise => {
-                    Log::diag(format!("Android MainEvent {:?} received", otherwise));
+                    use crate::tools::ui_widgets::wrap_chars;
+                    Log::diag(wrap_chars(&format!("Android MainEvent {:?}", otherwise), 80));
                 }
             },
             PollEvent::Timeout => {}
             otherwise => {
-                Log::diag(format!("Android PollEvent {:?} received", otherwise));
+                Log::diag(wrap_chars(&format!("Android PollEvent {:?}", otherwise), 80));
             }
         });
         result
@@ -1067,7 +1072,9 @@ impl Sk {
     ///
     /// It is best to use [`SkSettings::init`]
     #[cfg(target_os = "android")]
-    pub fn init(settings: &mut SkSettings, app: AndroidApp) -> Result<Sk, StereoKitError> {
+    pub fn init(settings: &mut SkSettings) -> Result<Sk, StereoKitError> {
+        let app = unsafe { *Box::from_raw(settings.android_activity as *mut AndroidApp) };
+
         Sk::poll_first_events(&app);
 
         #[cfg(not(feature = "no-event-loop"))]

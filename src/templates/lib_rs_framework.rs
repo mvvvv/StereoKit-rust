@@ -38,7 +38,8 @@ fn android_main(app: AndroidApp) {
         .render_multisample(4)
         .render_scaling(2.0)
         .depth_mode(DepthMode::Stencil)
-        .log_filter(LogLevel::Diagnostic);
+        .log_filter(LogLevel::Diagnostic)
+        .android_app(app);
 
     static APP_ONCE: OnceLock<()> = OnceLock::new();
     APP_ONCE.get_or_init(|| {

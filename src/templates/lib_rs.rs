@@ -20,7 +20,8 @@ pub fn android_main(app: AndroidApp) {
         .render_scaling(1.5)
         .depth_mode(DepthMode::D32)
         .omit_empty_frames(true)
-        .log_filter(LogLevel::Diagnostic);
+        .log_filter(LogLevel::Diagnostic)
+        .android_app(app);
 
     static APP_ONCE: OnceLock<()> = OnceLock::new();
     APP_ONCE.get_or_init(|| {
@@ -28,7 +29,7 @@ pub fn android_main(app: AndroidApp) {
             android_logger::Config::default().with_max_level(log::LevelFilter::Debug).with_tag("STKit-rs"),
         );
     });
-    let sk = settings.init(app).unwrap();
+    let sk = settings.init().unwrap();
 
     _main(sk);
 }
