@@ -1,9 +1,7 @@
-use std::{
-    env::{current_dir, set_current_dir},
-    fs::File,
-    io::{Read, Write},
-    sync::Mutex,
-};
+use std::{path::Path, sync::Mutex};
+
+#[cfg(feature = "file-browser")]
+use std::path::PathBuf;
 
 use stereokit_macros::IStepper;
 
@@ -12,16 +10,18 @@ use crate::{
     prelude::*,
     render::Renderer,
     tex::{Tex, TexFormat},
+    tools::assets2d::{read_rgba_bitmap, write_rgba_bitmap},
     ui::Ui,
     util::{PickerMode, Platform},
 };
 
 use crate::sprite::Sprite;
 
-use super::{
-    file_browser::{FILE_BROWSER_OPEN, FILE_BROWSER_SAVE, FileBrowser},
-    os_api::get_external_path,
-};
+#[cfg(feature = "file-browser")]
+use crate::tools::os_api::BrowseLocation;
+
+#[cfg(feature = "file-browser")]
+use super::file_browser_b::{BasicPreviewer, FILE_BROWSER_B_OPEN_MULTI, FILE_BROWSER_B_SAVE, FileBrowserB};
 
 /// Somewhere to store the selected filename
 static FILE_NAME: Mutex<String> = Mutex::new(String::new());
@@ -46,8 +46,9 @@ const BROWSER_SUFFIX: &str = "_file_browser";
 ///
 /// ### Examples
 /// ```
+/// # #[cfg(feature = "file-browser")] {
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{ui::Ui, tools::{file_browser::FILE_BROWSER_OPEN,
+/// use stereokit_rust::{ui::Ui, tools::{file_browser_b::FILE_BROWSER_B_OPEN_MULTI,
 ///                                      screenshot::{ScreenshotViewer, SHOW_SCREENSHOT_WINDOW}}};
 ///
 /// let mut screenshot_viewer = ScreenshotViewer::default();
@@ -66,10 +67,10 @@ const BROWSER_SUFFIX: &str = "_file_browser";
 ///     } else if iter == 1 {
 ///        sk.send_event(StepperAction::event( "main", SHOW_SCREENSHOT_WINDOW,"true",));
 ///        // The image is not visible at the next step, but at the step after.
-///        sk.send_event(StepperAction::event( "ScrViewer", FILE_BROWSER_OPEN, scr_file));
+///        sk.send_event(StepperAction::event( "ScrViewer", FILE_BROWSER_B_OPEN_MULTI, scr_file));
 ///     }
 /// );
-/// # sk::Sk::shutdown();
+/// # sk::Sk::shutdown();}
 /// ```
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/screenshot_viewer.jpeg" alt="screenshot" width="200">
 #[derive(IStepper)]
@@ -133,13 +134,16 @@ impl ScreenshotViewer {
                 self.close_file_browser()
             }
         } else if id == &self.id {
-            if key.eq(FILE_BROWSER_OPEN) {
-                let mut file_name = FILE_NAME.lock().expect("ScreenshotViewer: Failed to lock FILE_NAME mutex");
-                file_name.clear();
-                file_name.push_str(value);
-                self.screen = None;
-            } else if key.eq(FILE_BROWSER_SAVE) {
-                save_screenshot(value);
+            #[cfg(feature = "file-browser")]
+            {
+                if key.eq(FILE_BROWSER_B_OPEN_MULTI) {
+                    let mut file_name = FILE_NAME.lock().expect("ScreenshotViewer: Failed to lock FILE_NAME mutex");
+                    file_name.clear();
+                    file_name.push_str(value);
+                    self.screen = None;
+                } else if key.eq(FILE_BROWSER_B_SAVE) {
+                    save_screenshot(value);
+                }
             }
         }
     }
@@ -158,79 +162,64 @@ impl ScreenshotViewer {
             let mut file_name_lock = FILE_NAME.lock().expect("ScreenshotViewer: Failed to lock FILE_NAME mutex");
             let file_name = file_name_lock.to_string();
             if !file_name.is_empty() {
-                if let Ok(mut file) = File::open(&file_name) {
-                    if let Ok(mut tex) = Tex::find(CAPTURE_TEXTURE_ID) {
-                        let mut buf = [0u8; 12];
-                        if file.read_exact(&mut buf).is_ok() {
-                            // Vive le format RGBA !!! https://github.com/bzotto/rgba_bitmap
-                            let rgba_tag = format!("{:?}", &buf[0..4]);
-                            let mut four_u8 = [0u8; 4];
-                            four_u8.copy_from_slice(&buf[4..8]);
-                            let width = u32::from_be_bytes(four_u8) as usize;
-                            four_u8.copy_from_slice(&buf[8..12]);
-                            let height = u32::from_be_bytes(four_u8) as usize;
+                if let Ok(mut tex) = Tex::find(CAPTURE_TEXTURE_ID) {
+                    // Vive le format RGBA !!! https://github.com/bzotto/rgba_bitmap
+                    match read_rgba_bitmap(Path::new(&file_name)) {
+                        Ok((width, height, pixels)) => {
                             Log::diag(format!("RGBA file {} with size is {}x{}", file_name, width, height));
-                            if rgba_tag != "RGBA" {
-                                let mut data = vec![];
-                                match file.read_to_end(&mut data) {
-                                    Ok(mut _size) => {
-                                        let data_slice = data.as_slice();
-                                        tex.set_colors_u8(width, height, data_slice, 4);
-                                        self.screen = Sprite::from_tex(&self.tex, None, None).ok();
-                                    }
-                                    Err(err) => {
-                                        Log::warn(format!("Screenshoot Error when reading file {file_name} : {err:?}"))
-                                    }
-                                }
-                            } else {
-                                Log::warn(format!("File is not an RGBA {file_name}"));
-                            }
-                        } else {
-                            Log::warn(format!("Screenshoot Error unable to read rgba file infos {}", file_name));
+                            tex.set_colors32(width, height, &pixels);
+                            self.screen = Sprite::from_tex(&self.tex, None, None).ok();
                         }
-                    } else {
-                        Log::warn(format!("Screenshoot Error unable to get texture ScreenshotTex {}", file_name));
+                        Err(err) => Log::warn(format!("Screenshoot Error when reading file {file_name} : {err:?}")),
                     }
                 } else {
-                    Log::err(format!("ScreenshotViewer : file {} is not valid", file_name))
+                    Log::warn(format!("Screenshoot Error unable to get texture ScreenshotTex {}", file_name));
                 }
                 file_name_lock.clear();
             }
         }
         Ui::hseparator();
         if Ui::button("Open").press() {
-            if true {
-                let mut file_browser = FileBrowser::default();
-
-                if cfg!(target_os = "android")
-                    && let Some(img_dir) = get_external_path(&self.sk_info)
-                {
-                    file_browser.dir = img_dir;
-                }
-                if !file_browser.dir.exists() {
-                    file_browser.dir = current_dir().unwrap_or_default();
-                }
+            #[cfg(feature = "file-browser")]
+            {
+                let mut file_browser = FileBrowserB::default();
                 file_browser.caller = self.id.clone();
                 file_browser.window_pose = Ui::popup_pose(Vec3::ZERO);
+                file_browser.file_name_to_save = "scr_.rgba".into();
+                file_browser.dir = BrowseLocation::Pictures
+                    .get_path(&self.sk_info)
+                    .or_else(|| std::env::current_dir().ok())
+                    .unwrap_or_else(|| PathBuf::from("/"));
+                file_browser.root_dir =
+                    file_browser.dir.parent().map(PathBuf::from).unwrap_or_else(|| file_browser.dir.clone());
+                file_browser.appearence.window_size = Vec2 { x: 0.50, y: 0.6 };
+                file_browser.preview = Some(Box::new(BasicPreviewer::default()));
+                file_browser.appearence.handle_sprite = Sprite::from_file("icons/zoom.png", None, None).ok();
+                file_browser.appearence.set_ui_scale(0.6);
+
                 self.close_file_browser();
                 SkInfo::send_event(&self.sk_info, StepperAction::add(self.id.clone() + BROWSER_SUFFIX, file_browser));
-            } else if !Platform::get_file_picker_visible() {
-                Platform::file_picker_sz(
-                    PickerMode::Open,
-                    move |ok, file_name| {
-                        let mut name = FILE_NAME.lock().expect("ScreenshotViewer: Failed to lock FILE_NAME mutex");
-                        name.clear();
-                        if ok {
-                            Log::diag(format!("Open screenshot {file_name}"));
-                            name.push_str(file_name);
-                            Platform::file_picker_close();
-                        } else {
-                            // großen tricherie
-                            name.push_str("aaa.raw");
-                        }
-                    },
-                    &SCREENSHOT_FORMATS,
-                )
+            }
+            #[cfg(not(feature = "file-browser"))]
+            {
+                if !Platform::get_file_picker_visible() {
+                    Platform::file_picker_sz(
+                        PickerMode::Open,
+                        move |ok, file_name| {
+                            let mut name = FILE_NAME.lock().expect("ScreenshotViewer: Failed to lock FILE_NAME mutex");
+                            name.clear();
+                            if ok {
+                                Log::diag(format!("Open screenshot {file_name}"));
+                                name.push_str(file_name);
+                                Platform::file_picker_close();
+                            } else {
+                                // großen tricherie
+                                name.push_str("aaa.raw");
+                            }
+                        },
+                        &SCREENSHOT_FORMATS,
+                    )
+                }
             }
         }
         Ui::same_line();
@@ -261,31 +250,30 @@ impl ScreenshotViewer {
         Ui::same_line();
         Ui::push_enabled(self.screen.is_some(), None);
         if Ui::button("Save").press() && !Platform::get_file_picker_visible() {
-            if cfg!(target_os = "android")
-                && let Some(img_dir) = get_external_path(&self.sk_info)
-                && let Err(err) = set_current_dir(&img_dir)
+            #[cfg(feature = "file-browser")]
             {
-                Log::err(format!("Unable to move current_dir to {img_dir:?} : {err:?}"))
-            }
-            if true {
-                let mut file_browser = FileBrowser::default();
-
-                if cfg!(target_os = "android")
-                    && let Some(img_dir) = get_external_path(&self.sk_info)
-                {
-                    file_browser.dir = img_dir;
-                }
-                if !file_browser.dir.exists() {
-                    file_browser.dir = current_dir().unwrap_or_default();
-                }
+                let mut file_browser = FileBrowserB::default();
                 file_browser.picker_mode = PickerMode::Save;
                 file_browser.caller = self.id.clone();
                 file_browser.window_pose = Ui::popup_pose(Vec3::ZERO);
                 file_browser.file_name_to_save = "scr_.rgba".into();
                 file_browser.exts = vec![".rgba".into(), ".raw".into()];
+                file_browser.dir = BrowseLocation::Pictures
+                    .get_path(&self.sk_info)
+                    .or_else(|| std::env::current_dir().ok())
+                    .unwrap_or_else(|| PathBuf::from("/"));
+                file_browser.root_dir =
+                    file_browser.dir.parent().map(PathBuf::from).unwrap_or_else(|| file_browser.dir.clone());
+                file_browser.appearence.window_size = Vec2 { x: 0.50, y: 0.6 };
+                file_browser.preview = Some(Box::new(BasicPreviewer::default()));
+                file_browser.appearence.handle_sprite = Sprite::from_file("icons/zoom.png", None, None).ok();
+                file_browser.appearence.set_ui_scale(0.6);
+
                 self.close_file_browser();
                 SkInfo::send_event(&self.sk_info, StepperAction::add(self.id.clone() + BROWSER_SUFFIX, file_browser));
-            } else {
+            }
+            #[cfg(not(feature = "file-browser"))]
+            {
                 Platform::file_picker_sz(
                     PickerMode::Save,
                     move |ok, file_name| {
@@ -326,23 +314,9 @@ fn save_screenshot(file_name: &str) {
             let data = vec![0u8; size * 4];
             let data_slice = data.as_slice();
             if tex.get_color_data_u8(data_slice, 4, 0) {
-                match File::create(&name) {
-                    // Vive le format RGBA !!! https://github.com/bzotto/rgba_bitmap
-                    Ok(mut file) => {
-                        if let Err(err) = file.write_fmt(format_args!("RGBA")) {
-                            Log::warn(format!("Screenshoot Error when writing RGBA {} : {:?}", name, err));
-                        }
-                        if let Err(err) = file.write(&width.to_be_bytes()[4..]) {
-                            Log::warn(format!("Screenshoot Error when writing width {} : {:?}", name, err));
-                        }
-                        if let Err(err) = file.write(&height.to_be_bytes()[4..]) {
-                            Log::warn(format!("Screenshoot Error when writing height {} : {:?}", name, err));
-                        }
-                        if let Err(err) = file.write_all(data_slice) {
-                            Log::warn(format!("Screenshoot Error when writing raw image {} : {:?}", name, err));
-                        }
-                    }
-                    Err(err) => Log::warn(format!("Screenshoot Error when creating file {name} : {err:?}")),
+                // Vive le format RGBA !!! https://github.com/bzotto/rgba_bitmap
+                if let Err(err) = write_rgba_bitmap(Path::new(&name), width, height, data_slice) {
+                    Log::warn(format!("Screenshoot Error when writing bitmap {name} : {err:?}"));
                 }
             } else {
                 Log::warn(format!("Screenshoot Error when getting texture data {file_name}"));

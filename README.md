@@ -31,7 +31,7 @@ Let us know if you have launched the demos on an architecture not tested here.
 ### Download the source project
 
 - `git clone --recursive https://github.com/mvvvv/StereoKit-rust/`
-- On Linux get the following tools and dev libraries : git cmake ninja-build clang llvm lld libx11-dev libxfixes-dev libvulkan-dev libfontconfig-dev libxrandr-dev libxcursor-dev.
+- On Linux get the following tools and dev libraries : git cmake clang llvm lld ninja-build pkg-config libx11-dev libxfixes-dev libxrandr-dev libxcursor-dev libxi-dev libfontconfig-dev libwayland-dev libxkbcommon-dev libdecor-0-dev libfontconfig1-dev.
 - On macOS get the following tools and dev libraries : brew install cmake ninja molten-vk vulkan-headers.
   To run or test, set `DYLD_LIBRARY_PATH` so the dynamic linker finds MoltenVK:
   - `export DYLD_LIBRARY_PATH=$(brew --prefix molten-vk)/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}`
@@ -39,6 +39,7 @@ Let us know if you have launched the demos on an architecture not tested here.
 - On Windows[^2] get the following tools and dev libraries : "Git", "CMake", "Visual Studio Build Tools 2022(Development Desktop C++)" and "DotNet SDK v8+"
 - Install the project's tools from the project directory `cargo install --path .`
 - If you want to launch the demos then:
+  - If you do not have them as symbolic links under shaders_src, copy from `./StereoKit/Examples/Assets/Shaders/` the following files: `basic_shadow.hlsl` `basic_shadow_caster.hlsl` `compute_reaction.hlsl` and `texture3d.hlsl`
   - compile the shaders. From StereoKit-rust directory launch `cargo compile_sks`
   - for Windows only and if you don't use VSCode launchers, add to the PATH environment variable the directory `./target/debug/deps`
 
@@ -66,9 +67,24 @@ On Linux, you may have to set `RUSTFLAGS="-Clinker-plugin-lto"` if you encounter
 - Set the NDK path (which ends with it's version number) into ANDROID_NDK_ROOT environment variable.
 - Install [Ninja](https://ninja-build.org/)
 - Check that `adb` ($ANDROID_HOME/platform_tools/adb) is connecting to your headset.
-- Install: `cargo install cargo-apk` (cargo-xbuild has not been tested yet).
 - Download the target: `rustup target add aarch64-linux-android` for most of the existing android headsets.
-- Launch: `cargo apk run --example main`
+- Create project sk_demos:
+
+```bash
+cargo new_sk_rs_project sk_demos --with-gradle
+cd sk_demos
+#- modify Cargo.toml:
+ln -s ~/dvlt/StereoKit-rust/src/template/Cargo.toml_for_AndroidDemo.txt Cargo.toml
+#- replace src/ assets/ res/ app/ by these links
+ln -s ~/dvlt/StereoKit-rust/examples/main.rs src/lib.rs
+ln -s ~/dvlt/StereoKit-rust/examples/main_pc.rs src/main.rs
+ln -s ~/dvlt/StereoKit-rust/examples/demos/ src/demos
+ln -s ~/dvlt/StereoKit-rust/assets/ .
+ln -s ~/dvlt/StereoKit-rust/res/ .
+#--if you want to tweak/PR the project you should link the files to the originals located under `~/dvlt/StereoKit-rust/src/templates/gradle/`.
+
+clear; ./gradlew run --warning-mode all && sh logcat.cmd
+```
 
 ### Use your own event manager (PC only)
 
@@ -84,10 +100,9 @@ Use the commande `cargo new_sk_rs_project` to create your project [see the docum
 - Install mingw64-w64 (MSYS2 on windows)
 
 - Add the rust target gnu for windows:`rustup target add x86_64-pc-windows-gnu`
-- On linux we need wine to compile the shaders
+- On `non Windows OS` we use and need wine to compile the shaders
   - Add i386 architecture (i.e. `sudo dpkg --add-architecture i386` on Ubuntu).
-  - Install wine and winetricks.
-  - Install needed tools and libs: `winetricks corefonts d3dx9 d3dcompiler_47`
+  - Install wine.
 - Create a directory where necessary libs will be stored (i.e. ../x64-mingw-libs/) then add a link to the DLLs or static libs(*.a) the build will need after or during its creation. Example on Ubuntu 24.XX:
   - `ln -s /usr/lib/gcc/x86_64-w64-mingw32/13-win32/libgcc_s_seh-1.dll ../x64-mingw-libs/ && ln -s /usr/lib/gcc/x86_64-w64-mingw32/13-win32/libstdc++-6.dll ../x64-mingw-libs/`
   - or `ln -s /usr/lib/gcc/x86_64-w64-mingw32/13-win32/libgcc_eh.a ../x64-mingw-libs/ && ln -s /usr/lib/gcc/x86_64-w64-mingw32/13-win32/libstdc++.a ../x64-mingw-libs/`
@@ -100,7 +115,7 @@ Use the commande `cargo new_sk_rs_project` to create your project [see the docum
 
 - Install g++-aarch64-linux-gnu
 
-- Get the libraries libx11-dev:arm64 libxfixes-dev:arm64 libegl-dev:arm64 libgbm-dev:arm64 libfontconfig-dev:arm64 libxrandr-dev:arm64 libxcursor-dev:arm64. On Ubuntu 24:XX this can be done by adding a foreign architecture `dpkg --add-architecture arm64` with depot `http://ports.ubuntu.com/ubuntu-ports`. To avoid errors during `apt update` you'll have to specify the architectures of all depots in `/etc/apt/sources.list.d/ubuntu.sources`
+- Get the libraries gcc-aarch64-linux-gnu g++-aarch64-linux-gnu lld:arm64 libx11-dev:arm64 libxfixes-dev:arm64 libxrandr-dev:arm64 libxcursor-dev:arm64 libxi-dev:arm64 libfontconfig-dev:arm64 libwayland-dev:arm64 libxkbcommon-dev:arm64 libdecor-0-dev:arm64 libfontconfig1-dev:arm64. On Ubuntu 24:XX this can be done by adding a foreign architecture `dpkg --add-architecture arm64` with depot `http://ports.ubuntu.com/ubuntu-ports`. To avoid errors during `apt update` you'll have to specify the architectures of all depots in `/etc/apt/sources.list.d/ubuntu.sources`
 - Add the rust target aarch64 for linux:`rustup target add aarch64-unknown-linux-gnu`
 - Add a section `[target.aarch64-unknown-linux-gnu]` in your config.toml for setting `linker = "aarch64-linux-gnu-gcc"`
 - Launch `cargo build_sk_rs --example main_pc --aarch64-linux <the path of your exportable repository>`

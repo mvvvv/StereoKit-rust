@@ -30,6 +30,8 @@
       "cargo": {
         "args": [
           "build",
+          "-F",
+          "tools",
           "--example=main_pc"
         ],
         "filter": {
@@ -52,6 +54,8 @@
       "cargo": {
         "args": [
           "build",
+          "-F",
+          "tools",
           "--example=main_pc"
         ],
         "filter": {
@@ -73,6 +77,8 @@
       "cargo": {
         "args": [
           "run",
+          "-F",
+          "tools",
           "--example=main_pc"
         ],
         "filter": {
@@ -82,7 +88,7 @@
       },
       "args": [
         "--start",
-        "Layers1"
+        "Documents1"
       ],
       "cwd": "${workspaceFolder}",
       "env": {

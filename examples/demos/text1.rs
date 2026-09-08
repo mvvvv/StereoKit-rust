@@ -212,7 +212,7 @@ impl Text1 {
             } else {
                 let no = Sound::from_file("sounds/no.wav").unwrap();
                 self.inst_play = Some(no.play(Vec3::ONE, None));
-                Log::warn("Choosing the French keyboard is irrevocable!!");
+                Log::warn("Choosing the French keyboard is irrevocable!! Irreversible!! No turning back!!");
             }
         }
 

@@ -15,6 +15,7 @@ use crate::{
 };
 use std::{
     ffi::{CString, c_char, c_ushort},
+    ops::{Mul, MulAssign},
     ptr::{NonNull, null_mut},
 };
 
@@ -235,8 +236,13 @@ pub struct UiGesture : u32
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u32)]
 pub enum UiPad {
+    /// No padding, this matches the element’s layout bounds exactly!
     None = 0,
+    /// This applies padding inside the element’s layout bounds, and will inflate the layout bounds to fit the extra
+    /// padding.
     Inside = 1,
+    /// This will apply the padding outside of the layout bounds! This will maintain the size and position of the
+    /// layout volume, but the visual padding will go outside of the volume.
     Outside = 2,
 }
 
@@ -520,12 +526,20 @@ impl UiLathePt {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 #[repr(C)]
 /// Visual properties and spacing of the UI system.
 /// <https://stereokit.net/Pages/StereoKit/UISettings.html>
 ///
 /// see [`Ui::settings`]
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::ui::{Ui, UiSettings};
+///
+/// let settings = Ui::get_settings();
+/// assert_eq! (settings, UiSettings::default());
+/// ```
 pub struct UiSettings {
     /// The margin is the space between a window and its contents. In meters.
     pub margin: f32,
@@ -539,11 +553,62 @@ pub struct UiSettings {
     pub rounding: f32,
     /// How far up does the white back-border go on UI elements? This is a 0-1 percentage of the depth value.
     pub backplate_depth: f32,
-    // How wide is the back-border around the UI elements? In meters.
+    /// How wide is the back-border around the UI elements? In meters.
     pub backplate_border: f32,
     /// Defines the scale factor for the separator's thickness. The thickness is calculated by multiplying the height
     /// of the text by this factor. The default valus is 0.4f.
     pub separator_scale: f32,
+}
+
+/// Default value as defined by StereoKitC
+impl Default for UiSettings {
+    fn default() -> Self {
+        Self {
+            margin: 0.010000001,
+            padding: 0.010000001,
+            gutter: 0.010000001,
+            depth: 0.010000001,
+            rounding: 0.0075000003,
+            backplate_depth: 0.4,
+            backplate_border: 0.0005,
+            separator_scale: 0.4,
+        }
+    }
+}
+
+/// Multiplies every field of the UI settings by a scalar, uniformly scaling all spacing and sizing values.
+/// <https://stereokit.net/Pages/StereoKit/UISettings.html>
+impl Mul<f32> for UiSettings {
+    type Output = Self;
+    #[inline]
+    fn mul(self, rhs: f32) -> Self::Output {
+        Self {
+            margin: self.margin.mul(rhs),
+            padding: self.padding.mul(rhs),
+            gutter: self.gutter.mul(rhs),
+            depth: self.depth.mul(rhs),
+            rounding: self.rounding.mul(rhs),
+            backplate_depth: self.backplate_depth.mul(rhs),
+            backplate_border: self.backplate_border.mul(rhs),
+            separator_scale: self.separator_scale.mul(rhs),
+        }
+    }
+}
+
+/// Multiplies every individual field of the UI by a given scalar in place.
+/// <https://stereokit.net/Pages/StereoKit/UISettings.html>
+impl MulAssign<f32> for UiSettings {
+    #[inline]
+    fn mul_assign(&mut self, rhs: f32) {
+        self.margin.mul_assign(rhs);
+        self.padding.mul_assign(rhs);
+        self.gutter.mul_assign(rhs);
+        self.depth.mul_assign(rhs);
+        self.rounding.mul_assign(rhs);
+        self.backplate_depth.mul_assign(rhs);
+        self.backplate_border.mul_assign(rhs);
+        self.separator_scale.mul_assign(rhs);
+    }
 }
 
 /// StereoKit ffi type.
@@ -1720,7 +1785,8 @@ impl Ui {
     }
 
     /// This is an input field where users can input text to the app! Selecting it will spawn a virtual keyboard, or act
-    /// as the keyboard focus. Hitting escape or enter, or focusing another UI element will remove focus from this Input.
+    /// as the keyboard focus. Hitting escape or enter, or focusing another UI element will remove focus from this
+    /// Input. Shift+Enter adds a newline instead, and tab adds a tab.
     /// <https://stereokit.net/Pages/StereoKit/UI/Input.html>
     /// * `id` - An id for tracking element state. MUST be unique within current hierarchy.
     /// * `out_value` - The string that will store the Input’s content in.
@@ -1809,6 +1875,30 @@ impl Ui {
         if let Some(source) = Ui::hand_to_source(hand) { Interactor::is_interacting(source) } else { false }
     }
 
+    /// Is a [`Ui::input`] currently focused and taking keyboard input? A focused Input reads the whole keyboard event
+    /// queue, so this is how you tell whether your own keyboard handling should stand down for the frame.
+    /// <https://stereokit.net/Pages/StereoKit/UI/HasKeyboardFocus.html>
+    ///
+    /// see also [`ui_has_keyboard_focus`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::ui::Ui;
+    /// let mut username = String::from("user");
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     Ui::window("Input fields").begin();
+    ///     Ui::input("username1", &mut username).size([0.15, 0.03]).edit();
+    ///     Ui::window_end();
+    ///
+    ///     // These are unit tests. no way to focus something
+    ///     assert_eq!(Ui::has_keyboard_focus(), false);
+    /// );
+    /// ```
+    pub fn has_keyboard_focus() -> bool {
+        unsafe { ui_has_keyboard_focus() != 0 }
+    }
+
     /// Adds some text to the layout! Text uses the UI’s current font settings, which can be changed with
     /// Ui::push/pop_text_style. Can contain newlines!
     /// <https://stereokit.net/Pages/StereoKit/UI/Label.html>
@@ -1850,7 +1940,6 @@ impl Ui {
 
     /// Tells if the hand was involved in the active state of the most recently called UI element using an id. Active
     /// state is frequently a single frame in the case of Buttons, but could be many in the case of Sliders or Handles.
-    /// TODO: v0.4 These functions use hands instead of interactors, they need replaced!
     /// <https://stereokit.net/Pages/StereoKit/UI/LastElementHandActive.html>
     /// * `hand` - Which hand we’re checking.
     ///
@@ -1876,10 +1965,7 @@ impl Ui {
     ///     Ui::window_end();
     /// );
     /// ```
-    #[deprecated(
-        since = "0.4.0",
-        note = "TODO: These functions use hands instead of interactors, they need replaced!"
-    )]
+    #[deprecated(since = "0.4.0", note = "see [`Ui::last_element_source_active`] instead")]
     pub fn last_element_hand_active(hand: Handed) -> BtnState {
         if let Some(source) = Ui::hand_to_source(hand) {
             Ui::last_element_source_active(source)
@@ -1891,7 +1977,6 @@ impl Ui {
     /// Tells if the hand was involved in the focus state of the most recently called UI element using an id. Focus
     /// occurs when the hand is in or near an element, in such a way that indicates the user may be about to interact
     /// with it.
-    /// TODO: v0.4 These functions use hands instead of interactors, they need replaced!
     /// <https://stereokit.net/Pages/StereoKit/UI/LastElementHandFocused.html>
     /// * `hand` - Which hand we’re checking.
     ///
@@ -1916,10 +2001,7 @@ impl Ui {
     ///     Ui::window_end();
     /// );
     /// ```
-    #[deprecated(
-        since = "0.4.0",
-        note = "TODO: These functions use hands instead of interactors, they need replaced!"
-    )]
+    #[deprecated(since = "0.4.0", note = "see [`Ui::last_element_source_focused`] instead")]
     pub fn last_element_hand_focused(hand: Handed) -> BtnState {
         let source = match hand {
             Handed::Left => InteractorSource::HandLeft,
@@ -2234,12 +2316,12 @@ impl Ui {
     ///     Ui::label("panel 1").use_padding(false).draw();
     ///
     ///     Ui::layout_push_cut( UiCut::Right, 0.1, true);
-    ///     Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);
+    ///     Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), Some(UiPad::Outside));
     ///     Ui::label("panel 2").use_padding(false).draw();
     ///     Ui::layout_pop();
     ///
     ///     Ui::layout_push_cut( UiCut::Bottom, 0.08, false);
-    ///     Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);
+    ///     Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), Some(UiPad::Outside));
     ///     Ui::label("panel 3").use_padding(false).draw();
     ///     Ui::layout_pop();
     ///
@@ -2249,7 +2331,7 @@ impl Ui {
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_panel_at.jpeg" alt="screenshot" width="200">
     pub fn panel_at(start: impl Into<Vec3>, size: impl Into<Vec2>, padding: Option<UiPad>) {
-        let padding = padding.unwrap_or(UiPad::Outside);
+        let padding = padding.unwrap_or(UiPad::None);
         unsafe { ui_panel_at(start.into(), size.into(), padding) };
     }
 
@@ -2258,7 +2340,7 @@ impl Ui {
     /// matching End.
     /// <https://stereokit.net/Pages/StereoKit/UI/PanelBegin.html>
     /// * `padding` - Describes how padding is applied to the visual element of the Panel. If None the default value is
-    ///   UiPad::Outside
+    ///   UiPad::None
     ///
     /// see also [`ui_panel_begin`] [`Ui::panel_at`]
     /// ### Examples
@@ -2294,7 +2376,7 @@ impl Ui {
     /// ```
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_panel_begin.jpeg" alt="screenshot" width="200">
     pub fn panel_begin(padding: Option<UiPad>) {
-        let padding = padding.unwrap_or(UiPad::Outside);
+        let padding = padding.unwrap_or(UiPad::None);
         unsafe { ui_panel_begin(padding) };
     }
 
@@ -2442,7 +2524,7 @@ impl Ui {
     /// the interactive element. Does not include any text or label.
     /// <https://stereokit.net/Pages/StereoKit/UI/VProgressBar.html>
     /// * `percent` - A value between 0 and 1 indicating progress from 0% to 100%.
-    /// * `width` - Physical width of the slider on the window. 0 will fill the remaining amount of window space.
+    /// * `height` - Physical height of the slider on the window. 0 will fill the remaining amount of window space.
     /// * `flip_fill_direction` - By default, this fills from top to bottom. This allows you to flip the fill direction to
     ///   bottom to top.
     ///
@@ -2564,7 +2646,7 @@ impl Ui {
     /// <https://stereokit.net/Pages/StereoKit/UI/PushId.html>
     /// * `root_id` - The root id to use until the following PopId call. MUST be unique within current hierarchy.
     ///
-    /// see also [`ui_push_id`]
+    /// see also [`ui_push_id`] [`Ui::pop_id`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -2597,7 +2679,7 @@ impl Ui {
     /// <https://stereokit.net/Pages/StereoKit/UI/PushId.html>
     /// * `root_id` - The root id to use until the following PopId call. MUST be unique within current hierarchy.
     ///
-    /// see also [`ui_push_idi`]
+    /// see also [`ui_push_idi`] [`Ui::pop_id`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -2628,7 +2710,7 @@ impl Ui {
     /// <https://stereokit.net/Pages/StereoKit/UI/PopId.html>
     ///
     /// see also [`ui_pop_id`]
-    /// see example in [`Ui::push_id`]
+    /// see example in [`Ui::push_id`] [`Ui::push_id_int`]
     pub fn pop_id() {
         unsafe { ui_pop_id() };
     }
@@ -4047,7 +4129,7 @@ impl Ui {
     ///     Ui::label("panel 1").use_padding(false).draw();
     ///
     ///     Ui::layout_push_cut( UiCut::Right, 0.1, true);
-    ///     Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);
+    ///     Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), Some(UiPad::Outside));
     ///     Ui::label("panel 2").use_padding(false).draw();
     ///     Ui::layout_pop();
     ///     let b = Ui::get_layout_last();
@@ -4059,7 +4141,7 @@ impl Ui {
     ///     # assert!((b.dimensions.z - 0.0).abs() < 0.005);
     ///
     ///     Ui::layout_push_cut( UiCut::Bottom, 0.08, false);
-    ///     Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);
+    ///     Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), Some(UiPad::Outside));
     ///     Ui::label("panel 3").use_padding(false).draw();
     ///     Ui::layout_pop();
     ///     let b = Ui::get_layout_last();

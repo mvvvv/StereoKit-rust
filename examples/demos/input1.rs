@@ -3,7 +3,7 @@ use stereokit_rust::{
     maths::{Matrix, Pose, Quat, Vec2, Vec3, units::CM},
     prelude::*,
     system::{Handed, Input, InputButton, InputFloat, InputXY, Text, TextBuilder, TextStyle},
-    ui::{IdHashT, Ui, UiCut, UiSliderData, UiVisual},
+    ui::{IdHashT, Ui, UiCut, UiPad, UiSliderData, UiVisual},
     util::{
         Color128,
         named_colors::{RED, WHITE},
@@ -96,7 +96,7 @@ impl Input1 {
 
         // Left
         Ui::layout_push_cut(UiCut::Left, 0.14, true);
-        Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);
+        Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), Some(UiPad::Outside));
         Ui::label("Left").draw();
         //let move_ctrler = Input::controller(Handed::Left);
         let stick_vec2 = Input::xy(InputXY::LStick);
@@ -147,7 +147,7 @@ impl Input1 {
 
         // Right
         Ui::layout_push_cut(UiCut::Right, 0.14, true);
-        Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);
+        Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), Some(UiPad::Outside));
         Ui::label("Right").draw();
         //let move_ctrler = Input::controller(Handed::Right);
         let stick_vec2 = Input::xy(InputXY::RStick);
@@ -206,7 +206,7 @@ impl Input1 {
 
         // Left
         Ui::layout_push_cut(UiCut::Left, 0.14, true);
-        Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);
+        Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), Some(UiPad::Outside));
         Ui::label("Left").draw();
         let move_ctrler = Input::controller(Handed::Left);
         let slider_pt = move_ctrler.stick * Vec2 { x: 1.0, y: -1.0 };
@@ -256,7 +256,7 @@ impl Input1 {
 
         // Right
         Ui::layout_push_cut(UiCut::Right, 0.14, true);
-        Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);
+        Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), Some(UiPad::Outside));
         Ui::label("Right").draw();
         let move_ctrler = Input::controller(Handed::Right);
         let slider_pt = move_ctrler.stick * Vec2 { x: 1.0, y: -1.0 };

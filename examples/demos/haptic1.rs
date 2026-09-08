@@ -4,7 +4,7 @@ use stereokit_rust::{
     prelude::*,
     sprite::Sprite,
     system::{Input, InputHaptic, InputHapticCaps, Text, TextBuilder, TextStyle},
-    ui::{Ui, UiBtnLayout, UiCut},
+    ui::{Ui, UiBtnLayout, UiCut, UiPad},
     util::{
         Color128,
         named_colors::{GREEN, RED},
@@ -83,7 +83,7 @@ impl Haptic1 {
 
         for (cut, label, id, haptic) in controllers {
             Ui::layout_push_cut(cut, 0.18, true);
-            Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);
+            Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), Some(UiPad::Outside));
             Ui::label(label).draw();
 
             Ui::push_id(id);

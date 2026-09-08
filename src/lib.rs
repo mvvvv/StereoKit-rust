@@ -32,7 +32,8 @@
 //!   - Considering that you have already installed `Rust` with `stable-?????-unknown-linux-gnu` toolchain and the linux package
 //!     `build-essential`.
 //!   - Get the following tools and dev libraries : `git` `clang` `cmake` `lld` `llvm` `ninja-build` `libx11-dev`
-//!     `libxfixes-dev` `libvulkan-dev` `libfontconfig-dev` `libxkbcommon-x11-dev` `libxrandr-dev` `libxcursor-dev`.
+//!     `libxfixes-dev` `libvulkan-dev` `libfontconfig-dev` `libxkbcommon-x11-dev` `libxrandr-dev` `libxcursor-dev`
+//!     `libxi-dev` `libwayland-dev` `libxkbcommon-dev` `libdecor-0-dev`.
 //!   - For headless/CI environments or software rendering: `mesa-vulkan-drivers` (provides lavapipe software renderer).
 //!
 //! ### On `macOS`:
@@ -52,9 +53,15 @@
 //!
 //! ## Features
 //! - **`no-event-loop`**: Disables the framework (event loop, steppers, tools) for a lighter weight setup.
-//! - **`test-xr-mode`**: For testing - replaces `AppMode::Offscreen` with `AppMode::XR` in test macros to test with real XR devices.
+//! - **`test-xr-mode`**: For testing - replaces `AppMode::Offscreen` with `AppMode::XR` in test macros to test with real XR devices or simulator.
 //! - **`dynamic-openxr`**: Includes OpenXR loader dynamically for Android builds (APK).
 //! - **`build-dynamic-openxr`**: Builds OpenXR loader from Khronos OpenXR project for Android builds (APK).
+//! - **`force-local-deps`**: Use local dependencies for CPM module (see StereoKit CMake)
+//! - **`with-glam`**: Add Glam to your maths.
+//! - **`skc-in-dll`**: Create and use StereoKitC as a DLL when building for windows (MSVC & GNU)
+//! - **`profile`**: Enable profiling in StereoKitC using tracy
+//! - **`file-browser`**: Let you use the FileBrowserB stepper to browse your file system in your headset.
+//! - **`tools`**: All the extra tools features like `file-browser`
 //!
 //! Your `Cargo.toml` should contain the following lines:
 //! ```toml
@@ -147,8 +154,7 @@
 //! * Add the `Rust` target gnu for windows:`rustup target add x86_64-pc-windows-gnu`
 //! * On 'Non Windows OS': we need wine to compile the shaders:
 //!   - Add i386 architecture (i.e. `sudo dpkg --add-architecture i386` on Ubuntu).
-//!   - Install wine and winetricks.
-//!   - Install needed tools and libs: `winetricks corefonts d3dx9 d3dcompiler_47 dxvk`.
+//!   - Install wine.
 //! * Create a directory where necessary libs will be stored (i.e. ../x64-mingw-libs/) then add a link to the DLLs or
 //!   static libs (*.a) the build will need after or during its creation. Example on Ubuntu 24.XX:
 //!   - If you want to use DLLs:
@@ -212,12 +218,18 @@ pub use stereokit_macros::test_steps_no_event_loop as test_steps;
 /// Some of the errors you might encounter when using StereoKit-rust.
 use thiserror::Error;
 
+// Compile-time embedded translations of the tools (see the `file-browser` feature).
+#[cfg(feature = "locales")]
+rust_i18n::i18n!("locales", fallback = "en");
+
 /// Anchor related structs and functions.
 pub mod anchor;
 
 /// Compute shader related structs, enums and functions.
 ///
-/// With examples which are also unit tests.
+/// ## Examples
+/// which are also unit tests:
+///
 /// [![Compute](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/compute.jpeg)](compute::Compute)
 pub mod compute;
 
@@ -297,14 +309,6 @@ pub mod font;
 /// [![Screen](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/screen.jpeg)](framework::Screen)
 pub mod framework;
 
-/// International keyboard layout constants for use with
-/// [`util::Platform::keyboard_set_layout`].
-///
-/// Contains pre-built layouts for French AZERTY, German QWERTZ, Spanish,
-/// Portuguese (Brazil), Italian, Swedish/Nordic, Polish, Czech, Turkish,
-/// Russian, Ukrainian, Greek, Arabic, Hebrew and Japanese.
-pub mod locale;
-
 /// Material specific structs, enums and functions.
 ///
 /// ## Examples
@@ -341,6 +345,8 @@ pub mod maths;
 ///
 /// [![Mesh](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/meshes.jpeg)](mesh::Mesh)
 /// [![Vertex](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/basic_mesh.jpeg)](mesh::Vertex)
+/// [![Mesh from file](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_from_file.jpeg)](mesh::Mesh::from_file)
+/// [![Mesh from memory](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_from_memory.jpeg)](mesh::Mesh::from_memory)
 /// [![Mesh bounds](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_bounds.jpeg)](mesh::Mesh::bounds)
 /// [![Mesh set_data](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_set_data.jpeg)](mesh::Mesh::set_data)
 /// [![Mesh set_inds](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/mesh_set_inds.jpeg)](mesh::Mesh::set_inds)
@@ -418,6 +424,7 @@ pub mod sk;
 /// ## Examples
 /// which are also unit tests:
 ///
+/// [![Microphone](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/microphone.jpeg)](sound::Microphone)
 /// [![Sound](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sound.jpeg)](sound::Sound)
 /// [![SoundInst](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sound_inst.jpeg)](sound::SoundInst)
 pub mod sound;
@@ -463,7 +470,6 @@ pub mod interactor;
 /// [![Hand](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/hand.jpeg)](system::Hand)
 /// [![Controller](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/controller.jpeg)](system::Controller)
 /// [![Lines](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/lines.jpeg)](system::Lines)
-/// [![Microphone](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/microphone.jpeg)](system::Microphone)
 /// [![TextStyle](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/text_style.jpeg)](system::TextStyle)
 /// [![TextBuilder](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/text_builder.jpeg)](system::TextBuilder)
 /// [![Text](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/text.jpeg)](system::Text)
@@ -475,6 +481,7 @@ pub mod system;
 /// which are also unit tests:
 ///
 /// [![Tex](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/tex.jpeg)](tex::Tex)
+/// [![TexFormat](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/tex_yuv420p.jpeg)](tex::TexFormat)
 /// [![Tex from file](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/tex_from_file.jpeg)](tex::Tex::from_file)
 /// [![Tex gen_particle](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/tex_gen_particle.jpeg)](tex::Tex::gen_particle)
 /// [![SHCubemap](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sh_cubemap.jpeg)](tex::SHCubemap)
@@ -551,6 +558,10 @@ pub enum StereoKitError {
     MeshFind(String),
     #[error("failed to convert to CString {0} in mesh_find")]
     MeshCString(String),
+    #[error("failed to create mesh {0} from memory for reason {1}")]
+    MeshFromMem(String, String),
+    #[error("failed to create mesh {0} from file for reason {1}")]
+    MeshFromFile(PathBuf, String),
     #[error("failed to convert to CString {0} in tex_find")]
     TexCString(String),
     #[error("failed to find tex {0}")]

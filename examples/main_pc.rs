@@ -3,11 +3,13 @@ pub mod demos;
 pub const USAGE: &str = r#"Usage : program [OPTION] 
     launch Stereokit tests and demos
     
-        --test              : test mode (simulator or --headless or --xr)
-        --headless          : for --test run for a 1000 steps then screenshot
-        --xr                : force XR mode in testing mode (--test) run for 
-                              a 1000 steps then screenshot
-        --start [TEST NAME] : name of the only test demo to launch
+        --test              : test mode (see below)
+          --fullscreen      : for --test ask for the desktop window to start 
+                              out fullscreen!
+          --headless        : for --test run for a 1000 steps then screenshot
+          --xr              : for --test force XR mode run for a 1000 steps 
+                              then screenshot
+        --start [TEST NAME] : name of the demo to launch at start
         --log-env           : dump launch environment (env vars, cwd, parent 
                               process) to stderr for Linux
         --help              : help"#;
@@ -25,6 +27,7 @@ fn main() {
         system::LogLevel,
     };
 
+    let mut fullscreen = false;
     let mut headless = false;
     let mut xr = false;
     let mut is_testing = false;
@@ -33,9 +36,10 @@ fn main() {
     let mut args = env::args().skip(1);
     while let Some(arg) = args.next() {
         match &arg[..] {
+            "--test" => is_testing = true,
+            "--fullscreen" => fullscreen = true,
             "--headless" => headless = true,
             "--xr" => xr = true,
-            "--test" => is_testing = true,
             "--log-env" => log_env = true,
             "--start" => {
                 if let Some(arg_config) = args.next() {
@@ -75,10 +79,12 @@ fn main() {
         .origin(OriginMode::Floor)
         .render_multisample(4) // aka the default aka 0
         //.render_scaling(1.5) create distortion on SteamVR for Quest
+        .default_font_family("Noto Sans, SimSun")
         .depth_mode(DepthMode::D32)
         .omit_empty_frames(true)
         .log_filter(LogLevel::Diagnostic)
-        .no_flatscreen_fallback(true);
+        .no_flatscreen_fallback(true)
+        .fullscreen(fullscreen);
 
     if is_testing {
         if headless {
@@ -101,8 +107,7 @@ fn main() {
 
     BackendVulkan::request(&BackendVulkanRequest::new(Some("sk_test_request")));
 
-    let sk = settings.init().unwrap();
-    launch(sk, is_testing, start_test);
+    launch(settings, is_testing, start_test);
     Sk::shutdown();
 }
 

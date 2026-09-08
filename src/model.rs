@@ -19,9 +19,9 @@ use std::{
 /// group together complex objects that have multiple parts in them, and in fact, most model formats are composed this
 /// way already!
 ///
-/// This class contains a number of methods for creation. If you pass in a .obj, .stl, , .ply (ASCII), .gltf, or .glb,
-/// StereoKit will load that model from file, and assemble materials and transforms from the file information. But you
-/// can also assemble a model from procedurally generated meshes!
+/// This class contains a number of methods for creation. If you pass in a .obj, .stl, , .ply (ASCII), .gltf, .glb, or
+/// .svg StereoKit will load that model from file, and assemble materials and transforms from the file information. But
+/// you can also assemble a model from procedurally generated meshes!
 ///
 /// Because models include an offset transform for each mesh element, this does have the overhead of an extra matrix
 /// multiplication in order to execute a render command. So if you need speed, and only have a single mesh with a
@@ -281,7 +281,8 @@ impl Model {
         )
     }
 
-    /// Loads a list of mesh and material subsets from a .obj, .stl, .ply (ASCII), .gltf, or .glb file stored in memory.
+    /// Loads a list of mesh and material subsets from a .obj, .stl, .ply (ASCII), .gltf, .glb or .svg file stored in
+    /// memory. An .svg becomes a single flat, unlit, vertex colored node.
     /// Note that this function won’t work well on files that reference other files, such as .gltf files with
     /// references in them.
     /// <https://stereokit.net/Pages/StereoKit/Model/FromMemory.html>
@@ -330,7 +331,8 @@ impl Model {
         }
     }
 
-    /// Loads a list of mesh and material subsets from a .obj, .stl, .ply (ASCII), .gltf, or .glb file.
+    /// Loads a list of mesh and material subsets from a .obj, .stl, .ply (ASCII), .gltf, .glb or .svgfile. An .svg
+    /// becomes a single flat, unlit, vertex colored node.
     ///
     /// **Important**: The model is loaded only once. If you open the same file a second time, it will return the model
     /// loaded the first time and all its modifications afterwards. If you want two different instances, remember to
@@ -1077,7 +1079,7 @@ impl<'a> Anims<'a> {
         Anims { model: model.as_ref(), curr: -1 }
     }
 
-    /// Get the name of the animation at given index. This will block until the Model's metadata has finished loading.
+    /// Get the name of the animation at given index. This will block until the Model has finished loading.
     ///
     /// see also [`model_anim_get_name`]
     /// ### Examples
@@ -1108,7 +1110,7 @@ impl<'a> Anims<'a> {
         }
     }
 
-    /// Get the duration of the animation at given index. This will block until the Model's metadata has finished loading.
+    /// Get the duration of the animation at given index. This will block until the Model has finished loading.
     ///
     /// Returns `-0.01` if the index is out of bounds.
     /// see also [`model_anim_get_duration`]
@@ -1828,7 +1830,7 @@ impl<'a> Nodes<'a> {
         }
     }
 
-    /// Get the number of node of the model. This will block until the Model's metadata has finished loading.
+    /// Get the number of node of the model. This will block until the Model has finished loading.
     /// <https://stereokit.net/Pages/StereoKit/ModelNodeCollection.html>
     ///
     /// see also [NodeIter] [`model_node_count`]
@@ -1850,7 +1852,8 @@ impl<'a> Nodes<'a> {
         unsafe { model_node_count(self.model.0.as_ptr()) }
     }
 
-    /// Get the number of visual node of the model. This will block until the Model's metadata has finished loading.
+    /// Get the number of visual node of the model. This will block until the Model has finished loading, since visuals
+    /// arrive with the meshes.
     /// <https://stereokit.net/Pages/StereoKit/ModelVisualCollection.html>
     ///
     /// see also [NodeIter] [`model_node_visual_count`]
@@ -1874,7 +1877,7 @@ impl<'a> Nodes<'a> {
         unsafe { model_node_visual_count(self.model.0.as_ptr()) }
     }
 
-    /// Get the node at index. This will block until the Model's metadata has finished loading.
+    /// Get the node at index. This will block until the Model has finished loading, since visuals arrive with the meshes.
     /// <https://stereokit.net/Pages/StereoKit/ModelNodeCollection.html>
     ///
     /// see also [NodeIter] [`model_node_index`]
@@ -1904,7 +1907,8 @@ impl<'a> Nodes<'a> {
         }
     }
 
-    /// Get the visual node at index. This will block until the Model's metadata has finished loading.
+    /// Get the visual node at index. This will block until the Model has finished loading, since visuals arrive with
+    /// the meshes.
     /// <https://stereokit.net/Pages/StereoKit/ModelVisualCollection.html>
     ///
     /// see also [NodeIter] [`model_node_visual_index`]
@@ -1936,7 +1940,7 @@ impl<'a> Nodes<'a> {
 
     /// Returns the first root node in the Model's hierarchy. There may be additional root nodes, and these will be
     /// Siblings of this ModelNode. If there are no nodes present on the Model, this will be null. This will block
-    /// until the Model's metadata has finished loading.
+    /// until the Model has finished loading, since visuals arrive with the meshes.
     /// <https://stereokit.net/Pages/StereoKit/Model/RootNode.html>
     ///
     /// see also [`model_node_get_root`]
@@ -2026,18 +2030,20 @@ impl ModelNode<'_> {
     ///
     /// let model = Model::new();
     ///
-    /// let mut nodes = model.get_nodes();
-    /// nodes.add("root", Matrix::IDENTITY, None, None, false);
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     let mut nodes = model.get_nodes();
+    ///     nodes.add("root", Matrix::IDENTITY, None, None, false);
     ///
-    /// let mut node = nodes.find("root").expect("A node should exist!");
-    /// assert_eq!(node.get_name(), Some("root"));
+    ///     let mut node = nodes.find("root").expect("A node should exist!");
+    ///     assert_eq!(node.get_name(), Some("root"));
     ///
-    /// node.name("my_root_node");
-    /// assert_eq!(node.get_name(), Some("my_root_node"));
+    ///     node.name("my_root_node");
+    ///     assert_eq!(node.get_name(), Some("my_root_node"));
     ///
-    /// let node = nodes.find("my_root_node").expect("A node should exist!");
-    /// assert_eq!(node.get_name(), Some("my_root_node"));
-    /// assert!(nodes.find("root").is_none());
+    ///     let node = nodes.find("my_root_node").expect("A node should exist!");
+    ///     assert_eq!(node.get_name(), Some("my_root_node"));
+    ///     assert!(nodes.find("root").is_none());
+    /// );
     /// # sk::Sk::shutdown();
     /// ```
     pub fn name<S: AsRef<str>>(&mut self, name: S) -> &mut Self {
@@ -2061,11 +2067,14 @@ impl ModelNode<'_> {
     /// let mut nodes = model.get_nodes();
     /// nodes.add("cube", Matrix::IDENTITY, Some(&Mesh::cube()), Some(&Material::pbr()), false);
     ///
-    /// let mut node = nodes.find("cube").expect("A node should exist!");
-    /// assert_eq!(node.get_solid(), false);
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     let mut node = nodes.find("cube").expect("A node should exist!");
+    ///     assert_eq!(node.get_solid(), false);
     ///
-    /// node.solid(true);
-    /// assert_eq!(node.get_solid(), true);
+    ///     node.solid(true);
+    ///     assert_eq!(node.get_solid(), true);
+    ///     node.solid(false);
+    /// );
     /// # sk::Sk::shutdown();
     /// ```
     pub fn solid(&mut self, solid: bool) -> &mut Self {
@@ -2092,8 +2101,10 @@ impl ModelNode<'_> {
     /// let mut node = nodes.find("cube").expect("A node should exist!");
     /// assert_eq!(node.get_visible(), true);
     ///
-    /// node.visible(false);
-    /// assert_eq!(node.get_visible(), false);
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     node.visible(false);
+    ///     assert_eq!(node.get_visible(), false);
+    /// );
     /// # sk::Sk::shutdown();
     /// ```
     pub fn visible(&mut self, visible: bool) -> &mut Self {
@@ -2118,8 +2129,10 @@ impl ModelNode<'_> {
     /// let mut node = nodes.find("cube").expect("A node should exist!");
     /// assert_eq!(node.get_material(), Some(Material::pbr()));
     ///
-    /// node.material(Material::unlit());
-    /// assert_eq!(node.get_material(), Some(Material::unlit()));
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     node.material(Material::unlit());
+    ///     assert_eq!(node.get_material(), Some(Material::unlit()));
+    /// );
     /// # sk::Sk::shutdown();
     /// ```
     pub fn material<M: AsRef<Material>>(&mut self, material: M) -> &mut Self {
@@ -2144,8 +2157,10 @@ impl ModelNode<'_> {
     /// let mut node = nodes.find("cube").expect("A node should exist!");
     /// assert_eq!(node.get_material(), Some(Material::pbr()));
     ///
-    /// node.remove_material();
-    /// assert_eq!(node.get_material(), None);
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     node.remove_material();
+    ///     assert_eq!(node.get_material(), None);
+    /// );
     /// # sk::Sk::shutdown();
     /// ```
     pub fn remove_material(&mut self) -> &mut Self {
@@ -2170,8 +2185,10 @@ impl ModelNode<'_> {
     /// let mut node = nodes.find("mesh").expect("A node should exist!");
     /// assert_eq!(node.get_mesh(), Some(Mesh::cube()));
     ///
-    /// node.mesh(Mesh::sphere());
-    /// assert_eq!(node.get_mesh(), Some(Mesh::sphere()));
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     node.mesh(Mesh::sphere());
+    ///     assert_eq!(node.get_mesh(), Some(Mesh::sphere()));
+    /// );
     /// # sk::Sk::shutdown();
     /// ```
     pub fn mesh<M: AsRef<Mesh>>(&mut self, mesh: M) -> &mut Self {
@@ -2196,8 +2213,10 @@ impl ModelNode<'_> {
     /// let mut node = nodes.find("mesh").expect("A node should exist!");
     /// assert_eq!(node.get_mesh(), Some(Mesh::cube()));
     ///
-    /// node.remove_mesh();
-    /// assert_eq!(node.get_mesh(), None);
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     node.remove_mesh();
+    ///     assert_eq!(node.get_mesh(), None);
+    /// );
     /// # sk::Sk::shutdown();
     /// ```
     pub fn remove_mesh(&mut self) -> &mut Self {
@@ -2239,6 +2258,7 @@ impl ModelNode<'_> {
     /// node_child.local_transform(Matrix::t([-2.0, -2.0, -2.0]));
     /// assert_eq!(model.get_bounds().center, [0.0, 0.0, 0.0].into());
     /// assert_eq!(model.get_bounds().dimensions, [3.0, 3.0, 3.0].into());
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn model_transform(&mut self, transform_model_space: impl Into<Matrix>) -> &mut Self {
@@ -2286,6 +2306,7 @@ impl ModelNode<'_> {
     /// root_node
     ///     .add_child("child_mesh2", Matrix::IDENTITY, Some(&sphere), Some(&material), true)
     ///     .add_child("child_no_mesh", Matrix::IDENTITY, None, None, false);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn add_child<S: AsRef<str>>(
@@ -2338,6 +2359,7 @@ impl ModelNode<'_> {
     ///
     /// let node = nodes.find("mush").expect("Node mesh should exist");
     /// assert_eq!(node.get_id(), 2);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_id(&self) -> ModelNodeId {
@@ -2373,7 +2395,7 @@ impl ModelNode<'_> {
     }
 
     /// The Material associated with this node. May be None, or may also be re-used elsewhere. Getting this will block
-    /// until the Model's metadata has finished loading.
+    /// until the Model has finished loading, since visuals arrive with the meshes.
     /// <https://stereokit.net/Pages/StereoKit/ModelNode/Material.html>
     ///
     /// see also [`model_node_get_material`]
@@ -2439,6 +2461,7 @@ impl ModelNode<'_> {
     ///
     /// let next_node = next_node.iterate();
     /// assert!(next_node.is_none());
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn iterate(&'_ self) -> Option<ModelNode<'_>> {
@@ -2471,6 +2494,7 @@ impl ModelNode<'_> {
     ///
     /// let child_node = node.get_child().expect("Node should have a child");
     /// assert_eq!(child_node.get_name(), Some("mesh child1"));
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_child(&'_ self) -> Option<ModelNode<'_>> {
@@ -2509,6 +2533,7 @@ impl ModelNode<'_> {
     ///
     /// let sibling_node = node.get_sibling().expect("Node should have a sibling");
     /// assert_eq!(sibling_node.get_name(), Some("mush"));
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_sibling(&'_ self) -> Option<ModelNode<'_>> {
@@ -2547,6 +2572,7 @@ impl ModelNode<'_> {
     ///
     /// // Mesh is it's own parent.
     /// assert_eq!(child_node.get_parent().unwrap().get_name(), Some("mesh"));
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_parent(&'_ self) -> Option<ModelNode<'_>> {
@@ -2581,6 +2607,7 @@ impl ModelNode<'_> {
     /// let node = nodes.get_root_node().expect("We should have a root node");
     /// assert_eq!(node.get_name(), Some("mesh"));
     /// assert_eq!(node.get_model(), &model);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_model(&self) -> &Model {
@@ -2613,6 +2640,7 @@ impl ModelNode<'_> {
     ///        _ => assert_eq!(info, Info { name: "name1".to_string(), value: "value1".to_string() }),
     ///    }
     /// }
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_infos(&'_ self) -> Infos<'_> {
@@ -2700,6 +2728,7 @@ impl<'a> Infos<'a> {
     ///
     /// infos.clear();
     /// assert_eq!(infos.get_count(), 0);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn clear(&mut self) -> &mut Self {
@@ -2736,6 +2765,7 @@ impl<'a> Infos<'a> {
     ///
     /// assert_eq!(infos.get_info("name1"), None);
     /// assert_eq!(infos.get_info("name2"), Some("value2"));
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn remove_info<S: AsRef<str>>(&mut self, info_key_utf8: S) -> &mut Self {
@@ -2772,6 +2802,7 @@ impl<'a> Infos<'a> {
     ///
     /// assert_eq!(infos.get_info("name1"), Some("value1"));
     /// assert_eq!(infos.get_info("name2"), Some("value2"));
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn set_info<S: AsRef<str>>(&mut self, info_key_utf8: S, info_value_utf8: S) -> &mut Self {
@@ -2806,6 +2837,7 @@ impl<'a> Infos<'a> {
     /// assert_eq!(infos.get_info("name1"), Some("value1"));
     /// assert_eq!(infos.get_info("name2"), Some("value2"));
     /// assert_eq!(infos.get_info("name3333"), None);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_info<S: AsRef<str>>(&self, info_key_utf8: S) -> Option<&str> {
@@ -2842,6 +2874,7 @@ impl<'a> Infos<'a> {
     /// assert_eq!(infos.contains("name1"), true);
     /// assert_eq!(infos.contains("name2"), true);
     /// assert_eq!(infos.contains("name333"), false);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn contains<S: AsRef<str>>(&self, info_key_utf8: S) -> bool {
@@ -2875,6 +2908,7 @@ impl<'a> Infos<'a> {
     ///
     /// infos.clear();
     /// assert_eq!(infos.get_count(), 0);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_count(&self) -> i32 {

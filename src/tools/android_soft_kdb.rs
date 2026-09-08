@@ -314,9 +314,9 @@ impl AndroidSoftKbd {
     /// |---|---|
     /// | `"  "` cursor 0 | `Key::Left` |
     /// | `"  "` cursor 2 | `Key::Right` |
-    /// | 1-char text, cursor 0 | `text_inject_char('\x08')` (Backspace) |
-    /// | 1-char text, cursor 1 | `text_inject_char('\x7f')` (forward Del) |
-    /// | >2-char text | `text_inject_char` for each inserted char |
+    /// | 1-char text, cursor 0 | `text_inject('\x08')` (Backspace) |
+    /// | 1-char text, cursor 1 | `text_inject('\x7f')` (forward Del) |
+    /// | >2-char text | `text_inject` for each inserted char |
     ///
     /// After detecting a change we reset the `EditText` back to `"  "` cursor 1
     /// via the Java main thread and set `reset_pending = true`.  We skip
@@ -325,40 +325,6 @@ impl AndroidSoftKbd {
         use crate::system::{Input, Key};
         // use android_activity::InputStatus;
         // use android_activity::input::{InputEvent, KeyAction, Keycode};
-
-        // // --- KeyEvent path: intercept Backspace / ForwardDel before sk_app sees them ---
-        // // sk_app only feeds key *state* for these, never the SK text queue.
-        // if let Ok(mut iter) = app.input_events_iter() {
-        //     loop {
-        //         let read_input = iter.next(|event| match event {
-        //             InputEvent::KeyEvent(key_event) if key_event.action() == KeyAction::Down => {
-        //                 match key_event.key_code() {
-        //                     Keycode::Del => {
-        //                         Log::diag("AndroidSoftKbd: KeyEvent Del → inject \\x08");
-        //                         Input::text_inject_char('\x08');
-        //                         InputStatus::Handled
-        //                     }
-        //                     Keycode::ForwardDel => {
-        //                         Log::diag("AndroidSoftKbd: KeyEvent ForwardDel → inject \\x7f");
-        //                         Input::text_inject_char('\x7f');
-        //                         InputStatus::Handled
-        //                     }
-        //                     otherwise => {
-        //                         Log::diag(format!("AndroidSoftKbd: {:?} KeyEvent Unhandled", otherwise));
-        //                         InputStatus::Unhandled
-        //                     }
-        //                 }
-        //             }
-        //             otherwise => {
-        //                 Log::diag(format!("AndroidSoftKbd: {:?} InputEvent Unhandled", otherwise));
-        //                 InputStatus::Unhandled
-        //             }
-        //         });
-        //         if !read_input {
-        //             break;
-        //         }
-        //     }
-        // }
 
         // --- IME / InputConnection text-diff path ---
         let (text, start, _end) = match self.poll_edit_text() {
@@ -397,20 +363,25 @@ impl AndroidSoftKbd {
             // A character was deleted.
             if start == 0 {
                 // Log::diag("AndroidSoftKbd: inject Backspace (IME path)");
-                Input::text_inject_char('\x08');
+                Input::text_inject("\x08");
             } else {
                 // Log::diag("AndroidSoftKbd: inject Del (IME path)");
-                Input::text_inject_char('\x7f');
+                Input::text_inject("\x7f");
             }
         } else if char_count > 2 {
             // Characters were inserted at position 1 by the IME.
-            let chars: Vec<char> = text.chars().collect();
-            let insert_end = (start as usize).min(chars.len());
-            if insert_end > 1 {
-                // Log::diag(format!("AndroidSoftKbd: inject {} char(s)", insert_end - 1));
-                for ch in &chars[1..insert_end] {
-                    Input::text_inject_char(*ch);
-                }
+            //
+            // `start` is the caret position as reported by Java in UTF-16
+            // code units, *not* a byte index into the UTF-8 `text`.  For BMP
+            // text it equals the character (code point) position, so extract
+            // the inserted run by characters — byte-slicing here panics on
+            // multi-byte chars, e.g. `&text[1..2]` when a lone 'õ' (bytes
+            // 1..3) was inserted.
+            let insert_len = (start as usize).saturating_sub(1);
+            let inject_str: String = text.chars().skip(1).take(insert_len).collect();
+            if !inject_str.is_empty() {
+                // Log::diag(format!("AndroidSoftKbd: inject {} char(s)", insert_len));
+                Input::text_inject(inject_str);
             }
         } else {
             // 2 chars but not "  " → likely an accented char inserted at position 0 by a long-press.
@@ -420,9 +391,9 @@ impl AndroidSoftKbd {
             ));
             if start == 1 {
                 // we delete the non accented char and inject the accented one instead.
-                let chars: Vec<char> = text.chars().collect();
-                Input::text_inject_char('\x08');
-                Input::text_inject_char(chars[0]);
+                Input::text_inject("\x08");
+                let first_char: String = text.chars().take(1).collect();
+                Input::text_inject(first_char);
             }
         }
 

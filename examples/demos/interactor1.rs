@@ -203,7 +203,7 @@ impl Interactor1 {
         // Column 2: Events selection
         Ui::layout_push(Vec3::new(0.05, -0.04, 0.0), Vec2::new(0.45, 0.4), false);
         Ui::text("Events:").draw();
-        Ui::panel_begin(None);
+        Ui::panel_begin(Some(UiPad::Outside));
 
         let mut poke_enabled = (self.events & InteractorEvent::Poke) != InteractorEvent::empty();
         if Ui::toggle("Poke", &mut poke_enabled).interact().is_some() {

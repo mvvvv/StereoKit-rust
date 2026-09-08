@@ -5,6 +5,9 @@
   "!!!rust-analyzer.cargo.target": "aarch64-linux-android",
   "!!!rust-analyzer.cargo.buildScripts.enable": false,
   "rust-analyzer.cargo.buildScripts.overrideCommand": null,
+  "rust-analyzer.cargo.features": [
+    "tools",
+  ],
   "rust-analyzer.checkOnSave": true,
   "files.associations": {
     "locale": "cpp"

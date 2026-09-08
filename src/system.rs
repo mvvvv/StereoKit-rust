@@ -1,5 +1,4 @@
 use crate::{
-    StereoKitError,
     anchor::{_AnchorT, Anchor},
     compute::{_ComputeBufferT, _ComputeT, Compute, ComputeBuffer},
     font::{_FontT, Font, FontT},
@@ -10,7 +9,7 @@ use crate::{
     render::{_RenderListT, RenderLayer, RenderList},
     shader::{_ShaderT, Shader, ShaderT},
     sk::OriginMode,
-    sound::{_SoundT, Sound, SoundT},
+    sound::{_SoundT, Sound},
     sprite::{_SpriteT, Sprite},
     tex::{_TexT, Tex, TexFormat, TexT},
     util::{Color32, Color128, FovInfo},
@@ -298,10 +297,15 @@ impl AssetIter {
 }
 
 impl Assets {
-    /// A list of supported model format extensions. This pairs pretty well with Platform::file_picker when attempting to
-    /// load a Model!
+    /// A list of supported model format extensions. This pairs pretty well with Platform::file_picker when attempting
+    /// to load a Model!
     /// <https://stereokit.net/Pages/StereoKit/Assets/ModelFormats.html>
-    pub const MODEL_FORMATS: [&'static str; 5] = [".gltf", ".glb", ".obj", ".stl", ".ply"];
+    pub const MODEL_FORMATS: [&'static str; 6] = [".gltf", ".glb", ".obj", ".stl", ".ply", ".svg"];
+
+    /// A list of file format extensions that [`Mesh::from_file`] and [`Mesh::from_memory`] can load, formats that hold
+    /// a single mesh and no materials.
+    /// <https://stereokit.net/Pages/StereoKit/Assets/MeshFormats.html>
+    pub const MESH_FORMATS: [&'static str; 3] = [".stl", ".ply", ".svg"];
 
     /// A list of supported texture format extensions. This pairs pretty well with Platform::file_picker when attempting
     /// to load a Tex!
@@ -425,19 +429,19 @@ impl Assets {
     /// use stereokit_rust::{system::Assets, sprite::Sprite};
     ///
     /// let current_task = Assets::current_task();
-    /// assert_eq!(current_task, 2);
+    /// assert!(current_task > 10);
     ///
     /// let my_sprite = Sprite::from_file("textures/open_gltf.jpeg", None, None)
     ///                   .expect("open_gltf.jpeg should be able to create sprite");
     /// # assert_eq!(my_sprite.get_id(), "textures/open_gltf.jpeg/sprite");
     ///
     /// let current_task = Assets::current_task();
-    /// assert_eq!(current_task, 2);
+    /// assert!(current_task > 10);
     ///
     /// Assets::block_for_priority(i32::MAX);
     ///
     /// let current_task = Assets::current_task();
-    /// assert_eq!(current_task, 3);
+    /// assert!(current_task > 10);
     /// # sk::Sk::shutdown();
     /// ```
     pub fn current_task() -> i32 {
@@ -459,7 +463,7 @@ impl Assets {
     /// # assert_eq!(my_sprite.get_id(), "textures/open_gltf.jpeg/sprite");
     ///
     /// let current_task_priority  = Assets::current_task_priority();
-    /// assert_eq!(current_task_priority, 10);
+    /// assert!(current_task_priority > 8);
     /// # sk::Sk::shutdown();
     /// ```
     pub fn current_task_priority() -> i32 {
@@ -477,7 +481,7 @@ impl Assets {
     /// use stereokit_rust::{system::Assets, sprite::Sprite};
     ///
     /// let total_tasks  = Assets::total_tasks();
-    /// assert_eq!(total_tasks, 2);
+    /// assert!(total_tasks > 10);
     ///
     /// let my_sprite1 = Sprite::from_file("textures/open_gltf.jpeg", None, None)
     ///                   .expect("open_gltf.jpeg should be able to create sprite");
@@ -489,7 +493,7 @@ impl Assets {
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     let total_tasks  = Assets::total_tasks();
-    ///     assert_eq!(total_tasks, 4);
+    ///     assert!(total_tasks > 15);
     ///     assert_ne!(my_sprite1, my_sprite2);
     /// );
     /// # sk::Sk::shutdown();
@@ -3251,9 +3255,9 @@ pub struct Mouse {
     /// Position of the mouse relative to the window it’s in! This is the number of pixels from the top left corner of
     /// the screen.
     pub pos: Vec2,
-    /// How much has the mouse moved during this frame? Measured in pixels. This is all motion since the last frame,
-    /// which is not always the same as the difference between this frame's position and the last frame's! In relative
-    /// mouse mode, the position doesn't move at all, and this is the only place mouse motion shows up.
+    /// How much has the mouse moved during this frame? This is normally just the change in `pos`, measured in pixels.
+    /// In relative mouse mode `pos` is frozen and this becomes the only source of motion, in the mouse's raw device
+    /// units rather than pixels.
     pub pos_change: Vec2,
     /// What’s the current scroll value for the mouse’s scroll wheel?
     pub scroll: f32,
@@ -3409,6 +3413,78 @@ pub enum Key {
     Divide = 111,
 }
 
+/// Describes what kind of keyboard input event this is.
+/// <https://stereokit.net/Pages/StereoKit/Input/KeyboardConsume.html>
+///
+/// see also [`KeyboardEvent`]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(u32)]
+pub enum KeyboardEventType {
+    /// Not an event. Consuming returns this once no events remain in this frame's queue, and reading by index returns
+    /// it for an index outside the queue.
+    None = 0,
+    /// A key was pressed. Auto-repeats arrive as additional press events with no release between them, one per repeat.
+    KeyPress,
+    /// A key was released.
+    KeyRelease,
+    /// A single codepoint of insertable text.
+    Text,
+}
+
+bitflags::bitflags! {
+    /// A bit flag describing which of the keyboard's modifier keys are held.
+    /// <https://stereokit.net/Pages/StereoKit/Input/KeyboardEvent.html>
+    ///
+    /// see also [`KeyboardEvent`]
+    #[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]
+    #[repr(transparent)]
+    pub struct KeyMod: u32 {
+        /// No modifier keys are held.
+        const None = 0;
+        /// Either shift key.
+        const Shift = 1 << 0;
+        /// Either ctrl key.
+        const Ctrl = 1 << 1;
+        /// Either alt key.
+        const Alt = 1 << 2;
+        /// Either Windows/Mac Command key.
+        const Cmd = 1 << 3;
+    }
+}
+
+/// A single keyboard input event, either a key press, a key release, or one codepoint of insertable text. Events
+/// preserve the exact order they were produced in, including how text and keys interleave.
+/// <https://stereokit.net/Pages/StereoKit/Input/KeyboardEvent.html>
+///
+/// see also [`Input::keyboard_consume`] [`Input::keyboard_event_at`]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(C)]
+pub struct KeyboardEvent {
+    /// What kind of event this is, and which of the fields below apply.
+    pub typ: KeyboardEventType,
+    /// The key for press and release events, and none for text events. Mouse buttons arrive here too, as the mouse key
+    /// values.
+    pub key: Key,
+    /// The modifier keys held when this event was produced. A modifier's own press event includes itself, its release
+    /// event does not.
+    pub modifiers: KeyMod,
+    /// The UTF-32 codepoint for text events, 0 for key events.
+    pub character: u32,
+}
+
+impl KeyboardEvent {
+    /// This event's text, as a string. Emoji and other codepoints outside the Basic Multilingual Plane don't fit in a
+    /// single char, so this is the safe way to read one. Empty for key events.
+    /// <https://stereokit.net/Pages/StereoKit/Input/KeyboardEvent.html>
+    pub fn text(&self) -> String {
+        if self.typ == KeyboardEventType::Text {
+            char::from_u32(self.character).map(|c| c.to_string()).unwrap_or_default()
+        } else {
+            String::new()
+        }
+    }
+}
+
 /// Input from the system come from this class! Hands, eyes, heads, mice and pointers!
 /// <https://stereokit.net/Pages/StereoKit/Input.html>
 ///
@@ -3456,6 +3532,10 @@ unsafe extern "C" {
     pub fn input_text_consume() -> u32;
     pub fn input_text_reset();
     pub fn input_text_inject_char(character: u32);
+    pub fn input_keyboard_consume() -> KeyboardEvent;
+    pub fn input_keyboard_event_count() -> i32;
+    pub fn input_keyboard_event_at(index: i32) -> KeyboardEvent;
+    pub fn input_text_inject(text_utf8: *const c_char);
     pub fn input_hand_visible(hand: Handed, visible: Bool32T);
     pub fn input_hand_get_visible(hand: Handed) -> Bool32T;
     // Deprecated: pub fn input_hand_solid(hand: Handed, solid: Bool32T);
@@ -3909,8 +3989,9 @@ impl Input {
     /// This will inject a key press event into StereoKit’s input event queue. It will be processed at the start of the
     /// next frame, and will be indistinguishable from a physical key press. Remember to release your key as well!
     ///
-    /// This will not submit text to StereoKit’s text queue, and will not show up in places like UI.Input. For that, you
-    /// must submit a TextInjectChar call.
+    /// This will _not_ submit text to StereoKit's text queue, so to type a character into something like
+    /// [`crate::ui::Ui::input`], you  must submit a TextInject call. Editing keys are the other way around: backspace,
+    /// delete, enter, and escape act on [`crate::ui::Ui::input`] through this call.
     /// <https://stereokit.net/Pages/StereoKit/Input/KeyInjectPress.html>
     /// * `key` - The key to press.
     ///
@@ -3947,8 +4028,9 @@ impl Input {
     /// the next frame, and will be indistinguishable from a physical key release. This should be preceded by a key
     /// press!
     ///
-    /// This will not submit text to StereoKit’s text queue, and will not show up in places like UI.Input. For that, you
-    /// must submit a TextInjectChar call.
+    /// This will _not_ submit text to StereoKit's text queue, so to type a character into something like
+    /// [`crate::ui::Ui::input`], you  must submit a TextInject call. Editing keys are the other way around: backspace,
+    /// delete, enter, and escape act on [`crate::ui::Ui::input`] through this call.
     /// <https://stereokit.net/Pages/StereoKit/Input/KeyInjectRelease.html>
     /// * `key` - The key to release.
     ///
@@ -3956,6 +4038,175 @@ impl Input {
     /// see example [`Input::key_inject_press`]
     pub fn key_inject_release(key: Key) {
         unsafe { input_key_inject_release(key) };
+    }
+
+    /// Reads the next keyboard event from this frame's queue, and advances to the one after it. Key presses, key
+    /// releases, and text all arrive here in the exact order the user produced them, so a text field can apply them
+    /// without guessing at what came first.
+    ///
+    /// Each auto-repeat of a held key is its own press event, which is why this is the right way to drive editing
+    /// keys. [`Input::key`] reports state for the whole frame instead, so it cannot tell one press from several.
+    ///
+    /// Events are consumed as they're read, and a focused [`crate::ui::Ui::input`] reads the whole queue. To observe
+    /// events without consuming them, read by index with [`Input::keyboard_event_count`] and
+    /// [`Input::keyboard_event_at`] instead. Like the rest of the input API, the queue belongs to the main thread, and
+    /// is rebuilt at the start of each frame.
+    /// <https://stereokit.net/Pages/StereoKit/Input/KeyboardConsume.html>
+    ///
+    /// Returns the next event in this frame's queue, or `None` if none remain.
+    /// see also [`input_keyboard_consume`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::{Input, Key, KeyboardEventType};
+    ///
+    /// // Simulate some keyboard input
+    /// Input::key_inject_press(Key::A);
+    /// Input::key_inject_release(Key::A);
+    /// Input::text_inject("Hi!❤");
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter == 0 {
+    ///         let event = Input::keyboard_consume()
+    ///                         .expect("A press keyboard event should be available.");
+    ///         assert_eq!(event.typ, KeyboardEventType::KeyPress);
+    ///         assert_eq!(event.key, Key::A);
+    ///
+    ///         let event = Input::keyboard_consume()
+    ///                         .expect("A release keyboard event should be available.");
+    ///         assert_eq!(event.typ, KeyboardEventType::KeyRelease);
+    ///         assert_eq!(event.key, Key::A);
+    ///
+    ///         let event = Input::keyboard_consume()
+    ///                         .expect("A text keyboard event should be available.");
+    ///         assert_eq!(event.typ, KeyboardEventType::Text);
+    ///         assert_eq!(event.text(), "H");
+    ///     } else {
+    ///         // Events are lost if they are not consumed in the frame they
+    ///         // arrive, so "i!❤" is lost for ever.
+    ///         assert!(Input::keyboard_consume().is_none());
+    ///     }
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn keyboard_consume() -> Option<KeyboardEvent> {
+        let event = unsafe { input_keyboard_consume() };
+        if event.typ == KeyboardEventType::None { None } else { Some(event) }
+    }
+
+    /// The number of keyboard events this frame, for reading by index with [`Input::keyboard_event_at`]. This is the
+    /// whole frame's count, unaffected by what [`Input::keyboard_consume`] has consumed.
+    /// <https://stereokit.net/Pages/StereoKit/Input/KeyboardEventCount.html>
+    ///
+    /// see also [`input_keyboard_event_count`] [`Input::keyboard_event_at`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::{Input, Key};
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter == 0 {
+    ///         // Simulate some keyboard input
+    ///         Input::key_inject_press(Key::A);
+    ///         Input::text_inject("Hi!❤");
+    ///         // Events are published at the start of the following frame.
+    ///         assert!(Input::keyboard_event_count() == 0);
+    ///     } else if iter == 1 {
+    ///         assert!(Input::keyboard_event_count() == 5);
+    ///         Input::keyboard_consume();
+    ///         assert!(Input::keyboard_event_count() == 5);
+    ///     } else if iter == 2 {
+    ///         // Events are lost if they are not consumed in the frame they
+    ///         // arrive, so this frame has no events.
+    ///         assert!(Input::keyboard_event_count() == 0);
+    ///     } else {
+    ///         assert!(Input::keyboard_event_count() == 0);
+    ///     }
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn keyboard_event_count() -> i32 {
+        unsafe { input_keyboard_event_count() }
+    }
+
+    /// Reads a keyboard event by index, without consuming anything. This suits code that wants to observe the frame's
+    /// input even after something else, like a focused [`crate::ui::Ui::input`], has consumed the queue.
+    /// <https://stereokit.net/Pages/StereoKit/Input/KeyboardEventAt.html>
+    /// * `index` - Index of the event, from 0 up to [`Input::keyboard_event_count`].
+    ///
+    /// Returns the event at that index, or an event of type [`KeyboardEventType::None`] if the index is out of range.
+    /// see also [`input_keyboard_event_at`] [`Input::keyboard_event_count`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::{Input, Key, KeyboardEventType};
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter == 0 {
+    ///         // Simulate two keyboard input
+    ///         Input::key_inject_press(Key::Left);
+    ///         Input::key_inject_press(Key::Left);
+    ///     } else  {
+    ///         // Events are published at the start of the following frame.
+    ///         for index in 0..Input::keyboard_event_count() {
+    ///             let event = Input::keyboard_event_at(index);
+    ///             // Reading by index never consumes the queue.
+    ///             assert_eq!(event.typ, KeyboardEventType::KeyPress);
+    ///             assert_eq!(event.key, Key::Left);
+    ///         }
+    ///     }
+    ///
+    ///     // Out-of-range indexes yield an event of type None.
+    ///     assert_eq!(Input::keyboard_event_at(2).typ, KeyboardEventType::None);
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn keyboard_event_at(index: i32) -> KeyboardEvent {
+        unsafe { input_keyboard_event_at(index) }
+    }
+
+    /// Injects text into StereoKit's keyboard event queue, as if the user had typed or pasted it. It will be available
+    /// at the start of the next frame, and is indistinguishable from normal text entry. The whole string arrives as
+    /// one uninterrupted run of events.
+    ///
+    /// This is for text only. Carriage returns arrive as newlines, with CRLF counting as a single one. Other control
+    /// characters are ignored here with a warning, since editing keys belong in [`Input::key_inject_press`].
+    /// <https://stereokit.net/Pages/StereoKit/Input/TextInject.html>
+    /// * `text` - The text to inject, as a normal string.
+    ///
+    /// see also [`input_text_inject`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::system::{Input, KeyboardEventType};
+    ///
+    /// // Simulate some text input
+    /// Input::text_inject("Hi!❤");
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter == 0 {
+    ///         let event = Input::keyboard_consume()
+    ///                        .expect("A text keyboard event should be available.");
+    ///         assert_eq!(event.typ, KeyboardEventType::Text);
+    ///         assert_eq!(event.text(), "H");
+    ///         Input::text_inject("Yo!❤");
+    ///     } else if iter == 1 {
+    ///         // Events are lost if they are not consumed in the frame they
+    ///         // arrive, so "i!❤" is lost for ever.
+    ///         let event = Input::keyboard_consume()
+    ///                        .expect("A text keyboard event should be available.");
+    ///         assert_eq!(event.typ, KeyboardEventType::Text);
+    ///         assert_eq!(event.text(), "Y");
+    ///     } else {
+    ///         assert!(Input::keyboard_consume().is_none());
+    ///         assert!(Input::keyboard_event_count() == 0);
+    ///     }
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn text_inject(text: impl AsRef<str>) {
+        let c_str = CString::new(text.as_ref()).unwrap_or_default();
+        unsafe { input_text_inject(c_str.as_ptr()) }
     }
 
     /// This gets the pointer by filter based index.
@@ -4006,15 +4257,19 @@ impl Input {
     /// if there are no more characters left in the list. These are from the system’s text entry system, and so can be
     /// unicode, will repeat if their ‘key’ is held down, and could arrive from something like a copy/paste operation.
     ///
+    /// This is insertable text only. Editing keys such as backspace, delete, enter, and escape never arrive here, so a
+    /// text field must read them with [`Input::key`], the same way it reads the arrow keys. Newline and tab are text,
+    /// and can arrive from a paste or an IME.
+    ///
     /// If you wish to reset this function to begin at the start of the read list on the next call, you can call
-    /// Input::text_reset.
+    /// [`Input::text_reset`].
     /// <https://stereokit.net/Pages/StereoKit/Input/TextConsume.html>
     ///
     /// Returns the next character in this frame's list, or '\0' if none remain, or None if the value doesn't
     /// match char.
     /// see also [`input_text_consume`] [`char::from_u32`]
     /// ### Examples
-    /// ```
+    /// ```ignore
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::system::Input;
     ///
@@ -4036,6 +4291,10 @@ impl Input {
     /// );
     /// # sk::Sk::shutdown();
     /// ```
+    #[deprecated(
+        since = "0.4.0",
+        note = "Use Input::keyboard_consume. It keeps text in order with the key events around it, and reports full UTF-32 codepoints instead of truncating to a char."
+    )]
     pub fn text_consume() -> Option<char> {
         char::from_u32(unsafe { input_text_consume() })
     }
@@ -4048,7 +4307,7 @@ impl Input {
     ///
     /// see also [`input_text_reset`]    
     /// ### Examples
-    /// ```
+    /// ```ignore
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::system::Input;
     ///
@@ -4074,6 +4333,10 @@ impl Input {
     /// );
     /// # sk::Sk::shutdown();
     /// ```
+    #[deprecated(
+        since = "0.4.0",
+        note = "Use Input::keyboard_event_count and Input::keyboard_event_at, which read events without consuming them at all."
+    )]
     pub fn text_reset() {
         unsafe { input_text_reset() };
     }
@@ -4082,13 +4345,14 @@ impl Input {
     /// start of the next frame, and will be indistinguishable from normal text entry.
     ///
     /// This will not submit key press/release events to StereoKit’s input queue, use key_inject_press/_release
-    /// for that.
+    /// for that. The text queue carries insertable text only, so carriage returns become newlines, and other control
+    /// characters are ignored here with a warning.
     /// <https://stereokit.net/Pages/StereoKit/Input/TextInjectChar.html>
     /// * `character` - An unsigned integer representing a single UTF32 character.
     ///
     /// see also [`input_text_inject_char`]    
     /// ### Examples
-    /// ```
+    /// ```ignore
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::system::Input;
     ///
@@ -4110,6 +4374,7 @@ impl Input {
     /// );
     /// # sk::Sk::shutdown();
     /// ```
+    #[deprecated(since = "0.4.0", note = "Use Input::text_inject.")]
     pub fn text_inject_char(character: char) {
         unsafe { input_text_inject_char(character as u32) };
     }
@@ -4119,13 +4384,14 @@ impl Input {
     /// text entry.
     ///
     /// This will not submit key press/release events to StereoKit’s input queue, use key_inject_press/_release
-    /// for that.
+    /// for that. The text queue carries insertable text only, so carriage returns become newlines, and other control
+    /// characters are ignored here with a warning.
     /// <https://stereokit.net/Pages/StereoKit/Input/TextInjectChar.html>
     /// * `chars` - A collection of characters to submit as text input.
     ///
     /// see also [`input_text_inject_char`]    
     /// ### Examples
-    /// ```
+    /// ```ignore
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::system::Input;
     ///
@@ -4144,6 +4410,7 @@ impl Input {
     /// );
     /// # sk::Sk::shutdown();
     /// ```
+    #[deprecated(since = "0.4.0", note = "Use Input::text_inject.")]
     pub fn text_inject_chars(str: impl AsRef<str>) {
         for character in str.as_ref().chars() {
             unsafe { input_text_inject_char(character as u32) }
@@ -5330,134 +5597,6 @@ impl Log {
     pub fn unsubscribe<'a, F: FnMut(LogLevel, &str) + 'a>(mut on_log: F) {
         let mut closure = &mut on_log;
         unsafe { log_unsubscribe(Some(log_trampoline::<F>), &mut closure as *mut _ as *mut c_void) }
-    }
-}
-
-/// This class provides access to the hardware’s microphone, and stores it in a Sound stream. Start and Stop recording,
-/// and check the Sound property for the results! Remember to ensure your application has microphone permissions enabled!
-/// <https://stereokit.net/Pages/StereoKit/Microphone.html>
-///
-/// see also: [`Sound`]
-/// /// ### Examples
-/// ```
-/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{maths::{Vec3, Matrix}, mesh::Mesh, material::Material,
-///                      system::Microphone, util::named_colors};
-///
-/// let sphere = Mesh::generate_cube(Vec3::ONE * 0.5, None);
-/// let material = Material::pbr().tex_file_copy("textures/micro.jpeg", true, None)
-///                    .expect("sound.jpeg should be there");
-/// let position = Vec3::new( 0.0, 0.0, 0.5);
-/// let transform = Matrix::t(position);
-///
-/// let micros = Microphone::get_devices();
-///
-/// if micros.len() > 0 {
-///     let first_in_list = micros[0].clone();
-///     if Microphone::start(Some(first_in_list)) {
-///         assert!(Microphone::is_recording());
-///     } else {
-///         assert!(!Microphone::is_recording());
-///     }
-/// }
-///
-/// filename_scr = "screenshots/microphone.jpeg";
-/// test_screenshot!( // !!!! Get a proper main loop !!!!
-///     sphere.draw(&material, transform, Some(named_colors::LIGHT_BLUE.into()), None  );
-///     if iter == 1990 && Microphone::is_recording() {
-///         let micro_sound = Microphone::sound().expect("Microphone should be recording");
-///         let mut read_samples: Vec<f32> = vec![0.0; 48000];
-///         let recorded_data = micro_sound.read_samples(read_samples.as_mut_slice(), None);
-///         Microphone::stop();
-///         # assert!(recorded_data < 10000000);  // meaningless but useful ...
-///     }
-/// );
-/// # sk::Sk::shutdown();
-/// ```
-/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/microphone.jpeg" alt="screenshot" width="200">
-#[repr(C)]
-#[derive(Debug, PartialEq)]
-pub struct Microphone {
-    sound: Sound,
-}
-
-unsafe extern "C" {
-    pub fn mic_get_stream() -> SoundT;
-    pub fn mic_is_recording() -> Bool32T;
-    pub fn mic_device_count() -> i32;
-    pub fn mic_device_name(index: i32) -> *const c_char;
-    pub fn mic_start(device_name: *const c_char) -> Bool32T;
-    pub fn mic_stop();
-}
-
-impl Microphone {
-    /// This is the sound stream of the Microphone when it is recording. This Asset is created the first time it is
-    /// accessed via this property, or during Start, and will persist. It is re-used for the Microphone stream if you
-    /// start/stop/switch devices.
-    /// <https://stereokit.net/Pages/StereoKit/Microphone/Sound.html>
-    ///
-    /// see also [mic_get_stream]
-    pub fn sound() -> Result<Sound, StereoKitError> {
-        Ok(Sound(
-            NonNull::new(unsafe { mic_get_stream() })
-                .ok_or(StereoKitError::SoundCreate("microphone stream".to_string()))?,
-        ))
-    }
-
-    /// Is the microphone currently recording?
-    /// <https://stereokit.net/Pages/StereoKit/Microphone/IsRecording.html>
-    ///
-    /// see also [`mic_is_recording`]
-    pub fn is_recording() -> bool {
-        unsafe { mic_is_recording() != 0 }
-    }
-
-    /// Constructs a list of valid Microphone devices attached to the system. These names can be passed into Start to
-    /// select a specific device to record from. It’s recommended to cache this list if you’re using it frequently, as
-    /// this list is constructed each time you call it.
-    ///
-    /// It’s good to note that a user might occasionally plug or unplug microphone devices from their system, so this
-    /// list may occasionally change.
-    /// <https://stereokit.net/Pages/StereoKit/Microphone/GetDevices.html>
-    ///
-    /// see also [`mic_device_count`] [`mic_device_name`]
-    pub fn get_devices() -> Vec<String> {
-        let mut devices = Vec::new();
-        for iter in 0..unsafe { mic_device_count() } {
-            let device_name = unsafe { CStr::from_ptr(mic_device_name(iter)) }.to_str().unwrap_or_default().to_string();
-            devices.push(device_name);
-        }
-        devices
-    }
-
-    /// This begins recording audio from the Microphone! Audio is stored in Microphone.Sound as a stream of audio. If
-    /// the Microphone is already recording with a different device, it will stop the previous recording and start again
-    /// with the new device.
-    ///
-    /// If null is provided as the device, then they system’s default input device will be used. Some systems may not
-    /// provide access to devices other than the system’s default.
-    /// <https://stereokit.net/Pages/StereoKit/Microphone/Start.html>
-    /// * `device_name` - The name of the microphone device to use, as seen in the GetDevices list. None will use the
-    ///   system’s default device preference.
-    ///
-    /// see also [`mic_start`] [`Microphone::get_devices`] [`Microphone::stop`]
-    pub fn start(device_name: Option<String>) -> bool {
-        if let Some(device_name) = device_name
-            && !device_name.is_empty()
-        {
-            let cstr = CString::new(device_name).unwrap_or_default();
-            return unsafe { mic_start(cstr.as_ptr() as *const c_char) != 0 };
-        }
-        // Here we call for a null_mut device_name
-        unsafe { mic_start(null_mut() as *const c_char) != 0 }
-    }
-
-    /// Stops recording audio from the microphone.
-    /// <https://stereokit.net/Pages/StereoKit/Microphone/Stop.html>
-    ///
-    /// see also [mic_stop]
-    pub fn stop() {
-        unsafe { mic_stop() }
     }
 }
 

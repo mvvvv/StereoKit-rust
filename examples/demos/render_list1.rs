@@ -150,9 +150,11 @@ impl RenderList1 {
             .draw();
         if let Some(value) = Ui::toggle("Clear", &mut self.clear_primary).interact() {
             if value {
-                self.perspective = Matrix::perspective_focal(Vec2::ONE * 2048.0, 1500.0, 0.01, 1010.0)
+                self.perspective = Matrix::perspective_focal(Vec2::ONE * 2048.0, 1500.0, 0.01, 1010.0);
+                Renderer::enable_sky(false);
             } else {
-                self.perspective = Matrix::perspective(90.0, 1.0, 0.01, 1010.0)
+                self.perspective = Matrix::perspective(90.0, 1.0, 0.01, 1010.0);
+                Renderer::enable_sky(true);
             }
         };
         Ui::same_line();

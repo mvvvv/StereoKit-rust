@@ -13,8 +13,8 @@ use stereokit_rust::{
     tools::xr_comp_layers::{SwapchainSk, XrCompLayers},
     ui::Ui,
     util::{
-        named_colors::{self, RED},
         Color128, Time,
+        named_colors::{self, RED},
     },
 };
 

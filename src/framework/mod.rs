@@ -1,5 +1,9 @@
 #![cfg(not(feature = "no-event-loop"))]
 
+mod appearence;
+
+pub use appearence::Appearence;
+
 mod event_loop;
 
 pub use event_loop::EventLoop;

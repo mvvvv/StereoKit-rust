@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-//! This is a copycat of https://github.com/StereoKit/StereoKit/blob/develop/Examples/StereoKitTest/Demos/DemoPermissions.cs
+//! This is a copycat of <https://github.com/StereoKit/StereoKit/blob/develop/Examples/StereoKitTest/Demos/DemoPermissions.cs>
 
 use std::{cell::RefCell, rc::Rc};
 use stereokit_rust::{

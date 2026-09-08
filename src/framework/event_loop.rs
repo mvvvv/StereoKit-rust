@@ -108,7 +108,11 @@ enum SleepPhase {
     Sleeping,
     WakingUp,
     WokeUp,
+    /// sk-quit has been called first we can quit serenely
     Stopping,
+    /// Android destroyed the activity, we have to close what we can.
+    #[cfg(target_os = "android")]
+    StoppingNow,
 }
 
 /// Run the app with [SkClosures::run] or [SkClosures::run_app]
@@ -236,6 +240,7 @@ impl<'a> SkClosures<'a> {
         // Also detect Resume to wake up from sleep when the headset is turned back on.
         #[cfg(target_os = "android")]
         {
+            use crate::tools::ui_widgets::wrap_chars;
             use android_activity::{MainEvent, PollEvent};
 
             android_app.poll_events(Some(Duration::ZERO), |event| match event {
@@ -247,20 +252,25 @@ impl<'a> SkClosures<'a> {
                         }
                     }
                     MainEvent::Destroy => {
-                        Log::info("Android MainEvent::Destroy received");
+                        self.sleeping = SleepPhase::StoppingNow;
+                        Log::info("Android MainEvent::Destroy received we have to shutdown what we can!");
                     }
                     MainEvent::InputAvailable { .. } => {
                         // We have some Android input events to process, but we don't want to block the main loop,
                         // so we will drain them in the next frames until there is no more.
                         (self.on_window_event)(&mut self.sk, android_app);
                     }
+                    MainEvent::SaveState { .. } => {
+                        self.sleeping = SleepPhase::StoppingNow;
+                        Log::info("Android MainEvent::SaveState received");
+                    }
                     otherwise => {
-                        Log::diag(format!("Android MainEvent {:?} received", otherwise));
+                        Log::diag(wrap_chars(&format!("Android MainEvent {:?} received", otherwise), 80));
                     }
                 },
                 PollEvent::Timeout => {}
                 otherwise => {
-                    Log::diag(format!("Android PollEvent {:?} received", otherwise));
+                    Log::diag(wrap_chars(&format!("Android MainEvent {:?} received", otherwise), 80));
                 }
             });
         }
@@ -459,6 +469,13 @@ impl<'a> SkClosures<'a> {
                         self.sleeping = SleepPhase::WakingUp;
                     }
                 }
+                #[cfg(target_os = "android")]
+                SleepPhase::StoppingNow => {
+                    self.sk.steppers.shutdown();
+                    (self.shutdown)(&mut self.sk);
+                    self.sk.quit(None);
+                    break;
+                }
                 SleepPhase::Stopping => break,
             }
         }
@@ -648,7 +665,7 @@ pub trait IStepper {
 /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/stepper_actions.jpeg" alt="screenshot" width="200">
 pub enum StepperAction {
     /// Add a new stepper of TypeID,  identified by its StepperID
-    Add(Box<dyn for<'a> IStepper + Send + 'static>, TypeId, StepperId),
+    Add(Box<dyn IStepper + Send + 'static>, TypeId, StepperId),
     /// Remove all steppers of TypeID
     RemoveAll(TypeId),
     /// Remove the stepper identified by its StepperID

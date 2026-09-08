@@ -33,7 +33,7 @@ const LATHE_BUTTON: [UiLathePt; 6] = [
     },
 ];
 
-/// Copycat of the example https://github.com/StereoKit/StereoKit/blob/develop/Examples/StereoKitTest/Tests/TestCustomButton.cs
+/// Copycat of the example <https://github.com/StereoKit/StereoKit/blob/develop/Examples/StereoKitTest/Tests/TestCustomButton.cs>
 
 #[derive(IStepper)]
 pub struct Ui1 {
@@ -215,7 +215,7 @@ impl Ui1 {
         out_button_state.is_just_inactive()
     }
 
-    /// Copycat from https://github.com/StereoKit/StereoKit/blob/develop/Examples/StereoKitTest/Docs/DocSliderBehavior.cs
+    /// Copycat from <https://github.com/StereoKit/StereoKit/blob/develop/Examples/StereoKitTest/Docs/DocSliderBehavior.cs>
     pub fn ui_touch_panel(&mut self, size: Vec2) -> bool {
         let depth = Ui::get_settings().depth;
         let bounds = Ui::layout_reserve(size, false, depth);

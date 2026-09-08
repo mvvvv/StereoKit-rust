@@ -6,7 +6,7 @@ use stereokit_rust::{
     mesh::Mesh,
     prelude::*,
     system::{Handed, Input, Lines, Text, TextBuilder, TextStyle},
-    ui::{Ui, UiCut},
+    ui::{Ui, UiCut, UiPad},
     util::named_colors::{RED, WHITE},
 };
 
@@ -66,7 +66,7 @@ impl Anchor1 {
         Ui::window("Anchors").pose(&mut self.window_pose).begin();
         // checking if we support anchors
         Ui::layout_push_cut(UiCut::Left, 0.1, true);
-        Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), None);
+        Ui::panel_at(Ui::get_layout_at(), Ui::get_layout_remaining(), Some(UiPad::Outside));
         Ui::label("Capabilities:").draw();
         Ui::hseparator();
 

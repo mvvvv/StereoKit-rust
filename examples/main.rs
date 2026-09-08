@@ -6,16 +6,18 @@ use android_activity::AndroidApp;
 
 use demos::program::launch;
 use stereokit_rust::{
-    sk::Sk,
-    sk::{OriginMode, SkSettings},
-    system::{BackendOpenXR, Log, LogLevel}
+    sk::{OriginMode, Sk, SkSettings},
+    system::{BackendOpenXR, Log, LogLevel},
 };
 
 #[unsafe(no_mangle)]
 #[cfg(target_os = "android")]
 pub fn android_main(app: AndroidApp) {
     use std::sync::OnceLock;
-    use stereokit_rust::{sk::DepthMode, system::{BackendVulkan, BackendVulkanRequest}};
+    use stereokit_rust::{
+        sk::DepthMode,
+        system::{BackendVulkan, BackendVulkanRequest},
+    };
 
     let mut settings = SkSettings::default();
     settings
@@ -25,7 +27,8 @@ pub fn android_main(app: AndroidApp) {
         .render_scaling(1.5)
         .depth_mode(DepthMode::D32)
         .omit_empty_frames(true)
-        .log_filter(LogLevel::Diagnostic);
+        .log_filter(LogLevel::Diagnostic)
+        .android_app(app);
 
     static APP_ONCE: OnceLock<()> = OnceLock::new();
     if APP_ONCE.get().is_some() {
@@ -49,9 +52,7 @@ pub fn android_main(app: AndroidApp) {
 
     BackendVulkan::request(&BackendVulkanRequest::new(Some("sk_test_request")));
 
-    let sk = settings.init(app).unwrap();
-
-    _main(sk);
+    _main(settings);
 }
 
 // Fake main that cannot be called as main.rs is a cdylib. That's why main_pc.rs exists.
@@ -71,14 +72,13 @@ fn main() {
 
     //stereokit_rust::tools::load_all_extensions();
     BackendOpenXR::request_ext("XR_FB_display_refresh_rate");
-    let sk = settings.init().unwrap();
-    _main(sk);
+    _main(settings);
 }
 
-pub fn _main(sk: Sk) {
+pub fn _main(settings: SkSettings) {
     let is_testing = false;
     let start_test = "".to_string();
     Log::warn("Go go go !!!");
-    launch(sk, is_testing, start_test);
+    launch(settings, is_testing, start_test);
     Sk::shutdown();
 }

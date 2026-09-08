@@ -276,7 +276,7 @@ impl Screen1 {
         // Sound buttons — write a 1-second beep into Screen's spatial audio streams.
         if Ui::button("Sound Left").press() {
             let (left_id, _) = self.screen.get_sound_ids();
-            if let Ok(stream) = Sound::find(left_id) {
+            if let Ok(mut stream) = Sound::find(left_id) {
                 let samples: Vec<f32> =
                     (0..48000).map(|i| (i as f32 * 440.0 * 2.0 * std::f32::consts::PI / 48000.0).sin() * 0.5).collect();
                 stream.write_samples(&samples, None);
@@ -285,7 +285,7 @@ impl Screen1 {
         Ui::same_line();
         if Ui::button("Sound Right").press() {
             let (_, right_id) = self.screen.get_sound_ids();
-            if let Ok(stream) = Sound::find(right_id) {
+            if let Ok(mut stream) = Sound::find(right_id) {
                 let samples: Vec<f32> =
                     (0..48000).map(|i| (i as f32 * 880.0 * 2.0 * std::f32::consts::PI / 48000.0).sin() * 0.5).collect();
                 stream.write_samples(&samples, None);

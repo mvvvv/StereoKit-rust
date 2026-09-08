@@ -7,12 +7,12 @@ use stereokit_rust::{
     prelude::*,
     render::{Projection, Renderer},
     shader::Shader,
-    sk::{AppFocus, DisplayBlend},
+    sk::{AppFocus, AppWindow, DisplayBlend, SkSettings},
     sound::{Sound, SoundInst},
     sprite::Sprite,
     system::{
         Backend, BackendOpenXR, BackendVulkan, BackendXRType, DefaultInteractors, Input, Interaction, Interactor, Key,
-        Lines, LogItem, LogLevel, Text,
+        Lines, LogItem, LogLevel, MouseMode, Text,
     },
     tex::Tex,
     tools::{
@@ -33,7 +33,7 @@ use stereokit_rust::{
             is_meta_virtual_keyboard_extension_available,
         },
     },
-    ui::{Ui, UiBtnLayout},
+    ui::{Ui, UiBtnLayout, UiPad},
     util::{Device, Time},
 };
 
@@ -44,10 +44,19 @@ use super::{
     Test,
     hand_menu_radial1::{HAND_MENU_RADIAL1_ID, HandMenuRadial1, SHOW_FLOOR},
 };
-pub fn launch(mut sk: Sk, is_testing: bool, start_test: String) {
-    Log::diag(
-        "======================================================================================================================== !!",
-    );
+pub fn launch(mut settings: SkSettings, is_testing: bool, start_test: String) {
+    // Sending formated log to our mutex for the log window.
+    let fn_mut = |level: LogLevel, log_text: &str| {
+        let items = LOG_LOG.lock().unwrap();
+        basic_log_fmt(level, log_text, items);
+    };
+    Log::subscribe(fn_mut);
+    // need a way to do that properly Log::unsubscribe(fn_mut);
+
+    // Initialize StereoKit
+    let mut sk = settings.init().unwrap();
+
+    Log::diag("==================================================================================== !!");
 
     let mut window_demo_pose = Pose::new(Vec3::new(-0.7, 1.5, -0.3), Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0))));
 
@@ -70,6 +79,9 @@ pub fn launch(mut sk: Sk, is_testing: bool, start_test: String) {
     let mut passthrough = false;
     let mut passthough_blend_enabled = false;
     let simultaneous_hands_controllers_available = is_simultaneous_hands_and_controllers_supported(false);
+
+    let mut simulator_fullscreen = sk.get_settings().fullscreen != 0;
+    let mut mouse_mode_relative = false;
     //--------------------------------------------------------------------
 
     // First set the default interactors based on the backend, then try to activate simultaneous hand & controller if available
@@ -115,14 +127,6 @@ pub fn launch(mut sk: Sk, is_testing: bool, start_test: String) {
         Log::diag("Simultaneous hands and controllers tracking not available");
     }
 
-    // Sending formated log to our mutex for the log window.
-    let fn_mut = |level: LogLevel, log_text: &str| {
-        let items = LOG_LOG.lock().unwrap();
-        basic_log_fmt(level, log_text, 120, items);
-    };
-    Log::subscribe(fn_mut);
-    // need a way to do that properly Log::unsubscribe(fn_mut);
-
     let mut log_window = LogWindow::new(&LOG_LOG);
     log_window.window_pose = Pose::new(Vec3::new(-0.7, 2.0, -0.3), Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0))));
 
@@ -143,6 +147,9 @@ pub fn launch(mut sk: Sk, is_testing: bool, start_test: String) {
     notif.position = Vec3::new(0.0, 0.0, -0.6);
     if Backend::xr_type() == BackendXRType::Simulator {
         notif.text = "Press [F1] key to open the hand menu".into();
+        if simulator_fullscreen {
+            notif_escape(&mut sk)
+        }
     } else if cfg!(target_os = "android") || Device::get_runtime().unwrap_or_default().starts_with(" 'v") {
         notif.text = "Press menu button to open the hand menu".into();
     } else {
@@ -228,9 +235,7 @@ pub fn launch(mut sk: Sk, is_testing: bool, start_test: String) {
     assert!(!BackendVulkan::get_function_ptr("vkCreateBuffer").is_null());
     assert!(BackendVulkan::get_function_ptr("vkNotARealVkFunc").is_null());
 
-    Log::diag(
-        "===================================================================================================================== !!",
-    );
+    Log::diag("=========================================================== !!");
     Log::diag(format!("Thread id : {:?} / {:?} ", thread::current().name(), thread::current().id()));
     Log::diag(format!("Process id : {:?} / {:?} ", thread::current().name(), process::id()));
 
@@ -303,7 +308,10 @@ pub fn launch(mut sk: Sk, is_testing: bool, start_test: String) {
         scene_frame += 1;
 
         // Playing with projection in simulator mode
-        if Backend::xr_type() == BackendXRType::Simulator && Input::key(Key::P).is_just_active() {
+        if Backend::xr_type() == BackendXRType::Simulator
+            && Input::key(Key::P).is_just_active()
+            && !Ui::has_keyboard_focus()
+        {
             if Renderer::get_projection() == Projection::Perspective {
                 Renderer::projection(Projection::Orthographic);
             } else {
@@ -373,7 +381,7 @@ pub fn launch(mut sk: Sk, is_testing: bool, start_test: String) {
             }
         }
         Ui::same_line();
-        Ui::panel_begin(None);
+        Ui::panel_begin(Some(UiPad::Inside));
         if passthough_blend_enabled && let Some(new_value) = Ui::toggle("Passthrough MR", &mut passthrough).interact() {
             if new_value {
                 Log::info("Activate passthrough");
@@ -383,6 +391,41 @@ pub fn launch(mut sk: Sk, is_testing: bool, start_test: String) {
                 Log::info("Deactivate passthrough");
                 sk.send_event(StepperAction::event("main", SHOW_FLOOR, "true"));
                 Device::display_blend(DisplayBlend::Opaque);
+            }
+        } else if Backend::xr_type() == BackendXRType::Simulator {
+            if let Some(new_value) = Ui::toggle("fullscreen", &mut simulator_fullscreen).interact() {
+                if let Some(window) = AppWindow::main() {
+                    window.request_fullscreen(new_value);
+                    Log::info(format!("Simulator fullscreen: {simulator_fullscreen}"));
+                    if simulator_fullscreen {
+                        notif_escape(sk)
+                    }
+                } else {
+                    Log::warn("Unable to get AppWindow!");
+                }
+            }
+            Ui::same_line();
+            if let Some(new_value) = Ui::toggle("mouse relative", &mut mouse_mode_relative).interact() {
+                if new_value {
+                    Input::mouse_mode(MouseMode::Relative);
+                    Log::info("Mouse mode <Relative>");
+                    notif_escape(sk)
+                } else {
+                    Input::mouse_mode(MouseMode::Normal);
+                    Log::info("Mouse mode <Normal>");
+                }
+            }
+
+            if Input::key(Key::Esc).is_just_active() {
+                simulator_fullscreen = false;
+                if let Some(window) = AppWindow::main() {
+                    window.request_fullscreen(simulator_fullscreen);
+                    Log::info(format!("Simulator fullscreen: {simulator_fullscreen}"));
+                }
+
+                mouse_mode_relative = false;
+                Input::mouse_mode(MouseMode::Normal);
+                Log::info("Mouse mode <Normal> (ESC key)");
             }
         }
 
@@ -483,4 +526,13 @@ pub fn launch(mut sk: Sk, is_testing: bool, start_test: String) {
     })
     .shutdown(|sk| Log::info(format!("QuitReason is {:?}", sk.get_quit_reason())))
     .run();
+}
+
+/// Show the Esc notification
+fn notif_escape(sk: &mut Sk) {
+    let mut notif = HudNotification::default();
+    notif.duration = Some(5.0);
+    notif.position = Vec3::new(0.0, 0.1, -0.6);
+    notif.text = "Press [Esc] key to go back to normal".into();
+    sk.send_event(StepperAction::add("HudNotifESC", notif));
 }

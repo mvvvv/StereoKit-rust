@@ -43,11 +43,11 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ inputs.validateGradleWrapper }}
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         ref: ${{ inputs.branch || github.ref }}
         submodules: 'recursive'
-    - uses: gradle/actions/wrapper-validation@v4
+    - uses: gradle/actions/wrapper-validation@v6
 
   build-windows:
     runs-on: windows-latest
@@ -98,7 +98,7 @@ jobs:
 
     - name: Run tests 
       timeout-minutes: 15
-      run: cargo test --verbose -- --nocapture
+      run: cargo test --features tools --verbose -- --nocapture
       # run: |
       #   $failed = $false
       #   cargo test tests;             if ($LASTEXITCODE -ne 0) { $failed = $true }
@@ -145,7 +145,12 @@ jobs:
     - name: Install Prerequisites
       run: |
         sudo apt-get update
-        sudo apt-get install xvfb clang cmake lld ninja-build libx11-dev libxfixes-dev libvulkan-dev libfontconfig-dev libxkbcommon-x11-0 libxkbcommon0 libxrandr-dev libxcursor-dev libwayland-dev wayland-protocols libxkbcommon-dev mesa-vulkan-drivers mesa-utils llvm libx11-xcb1 libxcb-dri3-0
+        sudo apt-get install -y clang cmake lld ninja-build pkg-config \
+                             libx11-dev libxi-dev libxfixes-dev \
+                             libvulkan-dev libfontconfig-dev libfontconfig1-dev libxkbcommon-x11-0 \
+                             libxkbcommon0 libxrandr-dev libxcursor-dev libwayland-dev \
+                             wayland-protocols libxkbcommon-dev  libdecor-0-dev \
+                             xvfb mesa-vulkan-drivers mesa-utils llvm libx11-xcb1 libxcb-dri3-0
 
     - name: Install StereoKit
       run: cargo install --force --path . 
@@ -161,7 +166,7 @@ jobs:
       run: |
         export DISPLAY=:99
         Xvfb  :99 -screen 0 1280x1024x24 > /dev/null 2>&1 & sleep 5        
-        cargo test --verbose -- --test-threads=1
+        cargo test --features tools --verbose -- --test-threads=1
 
     - name: Build no-event-loop
       run: cargo build --verbose --features no-event-loop --example manual
@@ -218,7 +223,7 @@ jobs:
         timeout 2m cargo test --doc tex         -- --test-threads=1 || failed=1
         timeout 1m cargo test --doc sprite      -- --test-threads=1 || failed=1
         timeout 1m cargo test --doc font        -- --test-threads=1 || failed=1
-        timeout 1m cargo test --doc render_list -- --test-threads=1 || failed=1
+        timeout 1m cargo test --doc render      -- --test-threads=1 || failed=1
         timeout 1m cargo test --doc anchor      -- --test-threads=1 || failed=1
         timeout 1m cargo test --doc compute     -- --test-threads=1 || failed=1
         timeout 2m cargo test --doc util        -- --test-threads=1 || failed=1

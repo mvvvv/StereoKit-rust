@@ -1,7 +1,9 @@
 use crate::system::BackendOpenXR;
 
+pub mod assets2d;
 pub mod build_tools;
 pub mod os_api;
+pub mod ui_widgets;
 pub mod xr_android_depth_texture;
 pub mod xr_comp_layers;
 pub mod xr_fb_display_refresh_rate;
@@ -17,6 +19,12 @@ pub mod xr_meta_detached_controllers;
 
 #[cfg(not(feature = "no-event-loop"))]
 pub mod file_browser;
+
+#[cfg(all(feature = "locales", not(feature = "no-event-loop")))]
+pub mod locales;
+
+#[cfg(all(feature = "file-browser", not(feature = "no-event-loop")))]
+pub mod file_browser_b;
 
 #[cfg(not(feature = "no-event-loop"))]
 pub mod fly_over;
