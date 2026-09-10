@@ -1038,8 +1038,11 @@ impl Steppers {
     /// return false if sk_quit must be triggered.
     /// * token - The token where the event report will be created for this frame.
     ///
-    /// This must be call from the running [Sk] instance only.
-    pub(crate) fn step(&mut self, token: &mut MainThreadToken) -> bool {
+    /// This must be call from the running [Sk] instance only, or from the main thread of a `cargo-run_sk` plugin (see
+    /// the [`crate::plugin_abi`] module) driving its own [Steppers].
+    ///
+    /// see also [`Steppers::step_post_app`] which must be called right after the main app step.
+    pub fn step(&mut self, token: &mut MainThreadToken) -> bool {
         while let Some(action) = self.stepper_actions.pop_front() {
             match action {
                 StepperAction::Add(mut stepper, type_id, stepper_id) => {
@@ -1121,8 +1124,9 @@ impl Steppers {
         true
     }
 
-    /// Execute the post app steppers. This must be call from the running [Sk] instance only, and right after the app step.
-    pub(crate) fn step_post_app(&mut self, token: &mut MainThreadToken) {
+    /// Execute the post app steppers. This must be call from the running [Sk] instance only, or from the main thread
+    /// of a `cargo-run_sk` plugin, and right after the app step.
+    pub fn step_post_app(&mut self, token: &mut MainThreadToken) {
         let step_post_app = std::mem::take(&mut self.steppers_post_app);
         for index in step_post_app {
             if self.running_steppers[index].state == StepperState::Running {

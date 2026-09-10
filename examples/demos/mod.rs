@@ -59,20 +59,33 @@ use self::{
 pub struct Test {
     pub name: String,
     pub launcher: Box<dyn (Fn(&mut Sk) -> StepperId) + 'static>,
+    /// Produces the `StepperAction::add_*` of this view without targeting a particular [Sk]. This is what the
+    /// `cargo-run_sk` hot-reload plugin uses to run the views in its own [`Steppers`] instead of the host's. Only
+    /// [`Test::from_stepper`] fills it (views created with [`Test::new`] are not hot-reloadable).
+    pub add_action: Option<Box<dyn (Fn() -> StepperAction) + Send + 'static>>,
+    /// Path of the screenshot of this view, when one already exists. The `cargo-run_sk` viewer shows the 📷 flag for
+    /// those views.
+    pub screenshot: Option<String>,
 }
 
 impl Test {
     pub fn new<T: Fn(&mut Sk) -> StepperId + 'static>(name: impl AsRef<str>, launcher: T) -> Self {
-        Self { name: name.as_ref().to_string(), launcher: Box::new(launcher) }
+        Self { name: name.as_ref().to_string(), launcher: Box::new(launcher), add_action: None, screenshot: None }
     }
 
     /// Helper générique pour créer un Test en ne spécifiant le nom qu'une seule fois.
     pub fn from_stepper<S: IStepper + Default + Send + 'static>(name: &str) -> Self {
         let name_str = name.to_string();
-        Self::new(name, move |sk| {
-            sk.send_event(StepperAction::add_default::<S>(&name_str));
-            name_str.clone()
-        })
+        let launcher_name = name_str.clone();
+        Self {
+            name: name_str.clone(),
+            launcher: Box::new(move |sk| {
+                sk.send_event(StepperAction::add_default::<S>(&launcher_name));
+                launcher_name.clone()
+            }),
+            add_action: Some(Box::new(move || StepperAction::add_default::<S>(&name_str))),
+            screenshot: screenshot_file_for(name),
+        }
     }
 
     pub fn get_tests() -> Box<[Test]> {
@@ -123,4 +136,11 @@ impl Test {
         ];
         Box::new(tests)
     }
+}
+
+/// Conventional path of the screenshot of a view named `name`, when it exists.
+/// `screenshots/<name lowercased with spaces as underscores>.jpeg`
+fn screenshot_file_for(name: &str) -> Option<String> {
+    let file = format!("screenshots/{}.jpeg", name.to_lowercase().replace(' ', "_"));
+    std::path::Path::new(&file).is_file().then_some(file)
 }

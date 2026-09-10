@@ -42,6 +42,8 @@ force-local-deps = []
 with_glam = ["dep:glam"]
 # Create and use StereoKitC as a DLL when building for windows (MSVC & GNU)
 skc-in-dll = []
+# Create and use StereoKitC as a shared library (Linux). Foundation of the `cargo-run_sk` hot-reload workflow:
+skc-shared = ["dep:libloading"]
 # Replace AppMode::Offscreen with AppMode::XR in test macros. Monado Simulator should be your 
 test-xr-mode = []
 # Enable profiling in StereoKitC using tracy
@@ -68,6 +70,10 @@ name = "cargo-new_sk_rs_project"
 [[bin]]
 name = "cargo-build_sk_rs"
 
+[[bin]]
+name = "cargo-run_sk"
+required-features = ["skc-shared"]
+
 [build-dependencies]
 cmake = "0.1.58"
 
@@ -81,6 +87,10 @@ openxr-sys = "0.13"
 rust-i18n = { version = "4", optional = true }
 #stereokit-macros = { path = "./stereokit-macros", version = "0.6" }
 stereokit-macros = "0.6"
+
+# dlopen/dlsym support for the `cargo-run_sk` hot-reload host (Linux only for now)
+[target.'cfg(target_os = "linux")'.dependencies]
+libloading = { version = "0.9", optional = true }
 
 [target.'cfg(target_os = "android")'.dependencies]
 log = "0.4"

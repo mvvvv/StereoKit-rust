@@ -16,6 +16,12 @@ fn main() {
     let win_gnu_libs = env::var("SK_RUST_WIN_GNU_LIBS").unwrap_or_default();
     let skc_in_dll = cfg!(feature = "skc-in-dll");
 
+    // `skc-shared` (Linux only): StereoKitC is built as a self-contained shared library. Foundation of the
+    //`cargo-run_sk` hot-reload workflow: the host binary AND the dlopen'ed plugin .so both link `libStereoKitC.so`,
+    // so the dynamic loader deduplicates them by SONAME and the whole process shares ONE engine instance (hence a
+    //single Simulator/OpenXR session).
+    let skc_shared = cfg!(feature = "skc-shared") && target_family.as_str() == "unix" && target_os == "linux";
+
     let mut abi = env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_default();
     if abi == "aarch64" {
         abi = "arm64-v8a".to_string();
@@ -78,6 +84,12 @@ fn main() {
         } else {
             cmake_config.define("SK_BUILD_SHARED_LIBS", "OFF");
         }
+    } else if skc_shared {
+        cmake_config.define("SK_BUILD_SHARED_LIBS", "ON");
+        // Build the OpenXR loader as a shared library as well: openxr-sys calls xr* functions directly from Rust, so a
+        // second loader instance folded inside libStereoKitC.so would break cross-boundary XrInstance handles. With
+        // libopenxr_loader.so, host and plugin share the same loader.
+        cmake_config.define("SK_DYNAMIC_OPENXR", "ON");
     } else {
         cmake_config.define("SK_BUILD_SHARED_LIBS", "OFF");
     }
@@ -319,14 +331,20 @@ fn main() {
             println!("cargo:rustc-link-search=native={}/build/_deps/sk_app-build", dst.display());
             println!("cargo:rustc-link-search=native={}/build/_deps/sk_renderer-build/sk_ktx2", dst.display());
 
-            cargo_link!("StereoKitC");
-            cargo_link!("sk_app");
-            cargo_link!("sk_renderer");
-            cargo_link!("sk_ktx2");
-            cargo_link!("zstd_decompress");
+            if skc_shared {
+                // Everything folds inside libStereoKitC.so: link it dynamically (plus the shared openxr loader) and
+                // embed an rpath.
+                link_shared_stereokitec(&dst);
+            } else {
+                cargo_link!("StereoKitC");
+                cargo_link!("sk_app");
+                cargo_link!("sk_renderer");
+                cargo_link!("sk_ktx2");
+                cargo_link!("zstd_decompress");
 
-            cargo_link!("openxr_loader");
-            cargo_link!("meshoptimizer");
+                cargo_link!("openxr_loader");
+                cargo_link!("meshoptimizer");
+            }
 
             if cfg!(feature = "profile") {
                 cargo_link!("TracyClient");
@@ -487,4 +505,85 @@ pub fn copy_tree(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> std::io::Resul
         }
     }
     Ok(())
+}
+
+/// Link directives for the `skc-shared` configuration (Linux).
+///
+/// Links the shared `libStereoKitC.so` built by CMake (it folds sk_renderer, sk_app, sk_ktx2, zstd and meshoptimizer
+/// inside) plus the shared `libopenxr_loader.so`, and embeds an rpath so both are found at runtime without installing
+/// them. Any library dlopen'ed later that links the same sonames (the `cargo-run_sk` plugin) shares these exact instances.
+fn link_shared_stereokitec(dst: &Path) {
+    let build_dir = dst.join("build");
+    let skc_so = find_file(&build_dir, "libStereoKitC.so", 1);
+    let loader_dir = build_dir.join("_deps").join("openxr_loader-build");
+    let loader_so = find_file(&loader_dir, "libopenxr_loader.so", 6);
+
+    match &skc_so {
+        Some(path) => {
+            let dir = path.parent().unwrap();
+            println!("cargo:info=skc-shared: using {}", path.display());
+            println!("cargo:rustc-link-search=native={}", dir.display());
+
+            //---- Same as the Windows DLL flow: copy the .so under <target_dir>/deps/ where the cargo
+            //---- tools (cargo-build_sk_rs...) pick it up to ship it next to the executables.
+            let deps_libs = dst.parent().unwrap().parent().unwrap().parent().unwrap().join("deps");
+            let dest_file_so = deps_libs.join("libStereoKitC.so");
+            println!("cargo:info=libStereoKitC.so is copied from here --> {path:?}");
+            println!("cargo:info=                          to there --> {dest_file_so:?}");
+            let _lib_so = fs::copy(path, dest_file_so).unwrap();
+        }
+        None => {
+            // First build: CMake has not produced the .so yet. Link against the build dir anyway: the link only happens
+            // when compiling the crate targets, after CMake has run.
+            println!("cargo:info=skc-shared: libStereoKitC.so not found yet, using {}", build_dir.display());
+            println!("cargo:rustc-link-search=native={}", build_dir.display());
+        }
+    }
+    println!("cargo:rustc-link-lib=dylib=StereoKitC");
+
+    match &loader_so {
+        Some(path) => {
+            let dir = path.parent().unwrap();
+            println!("cargo:info=skc-shared: using {}", path.display());
+            println!("cargo:rustc-link-search=native={}", dir.display());
+            println!("cargo:rustc-link-lib=dylib=openxr_loader");
+        }
+        None => {
+            println!(
+                "cargo:warning=skc-shared: libopenxr_loader.so not found under {}, falling back to the default openxr_loader link",
+                loader_dir.display()
+            );
+            cargo_link!("openxr_loader");
+        }
+    }
+
+    // rpath so the host binary (and the cdylib plugin built from this crate) find the shared libs at runtime without
+    // any installation step.
+    println!("cargo:rustc-link-arg=-Wl,-rpath,{}", build_dir.display());
+    if let Some(path) = &loader_so {
+        println!("cargo:rustc-link-arg=-Wl,-rpath,{}", path.parent().unwrap().display());
+    }
+}
+
+/// Breadth-first search of `name` under `dir`, up to `max_depth` levels.
+fn find_file(dir: &Path, name: &str, max_depth: usize) -> Option<PathBuf> {
+    let Ok(entries) = fs::read_dir(dir) else {
+        return None;
+    };
+    for entry in entries.flatten() {
+        if entry.file_name().to_string_lossy() == name {
+            return Some(entry.path());
+        }
+    }
+    if max_depth <= 1 {
+        return None;
+    }
+    for entry in fs::read_dir(dir).ok().into_iter().flatten().flatten() {
+        if entry.file_type().map(|t| t.is_dir()).unwrap_or(false) {
+            if let Some(found) = find_file(&entry.path(), name, max_depth - 1) {
+                return Some(found);
+            }
+        }
+    }
+    None
 }

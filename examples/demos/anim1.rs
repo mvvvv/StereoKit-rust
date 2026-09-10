@@ -78,7 +78,7 @@ impl Default for Anim1 {
             sk_info: None,
             shutdown_completed: false,
 
-            title: "Stereokit Sprites".to_owned(),
+            title: "Anim1".to_owned(),
             mobile,
             transform,
             render_now,

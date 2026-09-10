@@ -95,6 +95,44 @@ This is the shortest way to launch your first PC VR/MR program[^1]: `cargo run -
 
 Use the commande `cargo new_sk_rs_project` to create your project [see the documentation](https://docs.rs/stereokit-rust/latest/stereokit_rust/).
 
+## Develop with hot-reload, the `cargo run_sk` viewer (Linux)
+
+`cargo run_sk` is a real-time viewer for a project under development: it keeps **one** StereoKit session
+alive (Simulator by default, OpenXR with `--xr`, offscreen with `--offscreen`) and hot-reloads the plugin
+library of your project each time it is rebuilt, without ever closing the session. It also watches your
+sources and runs the build command itself when they change, then offers your views (the `Test`s / your
+steppers) in a selector window, with on demand screenshots.
+
+- The host and the plugin both link the same shared `libStereoKitC.so` (feature `skc-shared`): there is
+  exactly ONE engine instance in the process, so the plugin safely drives the host's session.
+- The host<->plugin boundary is 100% C (opaque pointers + `#[repr(C)]` structs, see
+  [`stereokit_rust::plugin_abi`]). Never mix a host and a plugin built from different versions of
+  stereokit-rust: the host checks the versions before loading.
+- The state of the active view is reset on each reload (the view is re-selected automatically).
+
+### This repository
+
+```shell
+# terminal 1 - the viewer (fully automatic: watches src/, examples/, assets/)
+cargo run --bin cargo-run_sk --features skc-shared
+```
+
+Useful options: `--start Tex1` (select a view at start), `--xr` (real OpenXR runtime, e.g.
+`XR_RUNTIME_JSON=/usr/share/openxr/1/openxr_monado.json` for the Monado simulator),
+`--offscreen --test 120 --start Ui1` (headless run, screenshot then exit), `--list` (print the views
+of a plugin and exit), `--no-build`, `--build-cmd "<cmd>"`, `--watch <secs>`, `--fullscreen`.
+
+### Your own project (created with `cargo new_sk_rs_project`)
+
+Projects created from the framework template ship with `src/plugin_shim.rs` (declare your views there)
+and a `skc-shared` forwarding feature:
+
+```shell
+cargo install stereokit-rust --features skc-shared
+cargo run_sk
+# then edit src/ : the viewer rebuilds and reloads your views on the fly
+```
+
 ## Build the project's demo for Windows_x64 using GNU from Linux (and Windows and probably Mac)
 
 - Install mingw64-w64 (MSYS2 on windows)

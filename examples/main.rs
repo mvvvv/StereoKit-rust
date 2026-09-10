@@ -1,6 +1,11 @@
 #![cfg(not(feature = "no-event-loop"))]
 pub mod demos;
 
+/// Hot-reload plugin entry points for the `cargo-run_sk` dev viewer. The exported `sk_run_sk_*` symbols are inert
+/// unless the library is dlopen'ed by the host: they don't interfere with the normal (Android) launch.
+#[cfg(feature = "skc-shared")]
+mod run_sk_plugin;
+
 #[cfg(target_os = "android")]
 use android_activity::AndroidApp;
 

@@ -27,7 +27,8 @@ Usage : cargo build_sk_rs [Options] <Output_path>
         -h|--help                       : Display help
         
         
-    If you want DLL instead of static link use the feature skc-in-dll"#;
+    If you want DLL instead of static link use the feature skc-in-dll
+    If you want libStereoKitC.so instead of static link on Linux use the feature skc-shared"#;
 
 fn show_help() {
     println!("{USAGE}");
@@ -42,6 +43,9 @@ enum Target {
 fn main() {
     use std::{env, fs, path::PathBuf, process::Command};
 
+    let current_dir = env::current_dir().unwrap_or_default();
+    let current_dir_name = current_dir.file_name().and_then(|name| name.to_str()).unwrap_or("app");
+
     //----First the command line
     let mut output_path_name = "".to_string();
     let mut output_path_already_exists = false;
@@ -51,8 +55,8 @@ fn main() {
     let mut feature_list = vec![];
     let mut example = "".to_string();
     let mut example_exe = "".to_string();
-    let mut bin = "".to_string();
-    let mut bin_exe = "".to_string();
+    let mut bin = "--bin".to_string();
+    let mut bin_exe = format!("main_{current_dir_name}");
     let mut shaders_path_name = "".to_string();
     let mut profile = "--release".to_string();
 
@@ -185,6 +189,13 @@ fn main() {
         println!("You cannot specify both --example and --bin");
         panic!("{}", USAGE);
     }
+
+    // The skc-shared feature (forwarded to `cargo build` above) turns StereoKitC into a shared
+    // library (libStereoKitC.so) on Linux: as the DLL on Windows, it must be shipped with the
+    // executable. The features are comma separated: "skc-shared", "skc-shared,", "skc-shared,tools"...
+    let skc_shared = feature_list
+        .iter()
+        .any(|features| features.split(',').any(|feature| feature.trim() == "skc-shared"));
 
     //----Second the cargo build command
     let mut windows_exe = if cfg!(target_os = "windows") { ".exe" } else { "" };
@@ -323,6 +334,18 @@ fn main() {
                     }
                 }
             }
+        }
+    } else if skc_shared {
+        // 1-1 - the shared libraries created (other OS than Windows, with the skc-shared feature)
+        // libStereoKitC.so has been copied under deps/ by the stereokit-rust build script,
+        // exactly as the DLL is on Windows.
+        let c_so = "libStereoKitC.so";
+        let so_file = built_files.join("deps").join(c_so);
+        if so_file.is_file() {
+            let dest_file_so = output_path.join(so_file.file_name().unwrap_or_default());
+            println!("SO is copied from here --> {so_file:?}");
+            println!("               to there --> {dest_file_so:?}");
+            let _lib_so = fs::copy(&so_file, dest_file_so).unwrap();
         }
     }
 

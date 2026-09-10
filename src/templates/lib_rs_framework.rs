@@ -1,4 +1,8 @@
 pub mod c_stepper;
+/// Hot-reload plugin entry points for the `cargo-run_sk` dev viewer (PC only).
+/// Inert unless the library is dlopen'ed by the viewer.
+#[cfg(not(target_os = "android"))]
+pub mod plugin_shim;
 use std::sync::Mutex;
 
 use c_stepper::CStepper;
@@ -6,7 +10,7 @@ use stereokit_rust::{
     framework::{SkClosures, StepperAction},
     maths::{Pose, Quat, Vec2, Vec3, units::*},
     render::Renderer,
-    sk::{DisplayBlend, Sk, SkInfo},
+    sk::{DisplayBlend, Sk, SkInfo, SkSettings},
     sprite::Sprite,
     system::{Log, LogItem, LogLevel},
     tex::SHCubemap,

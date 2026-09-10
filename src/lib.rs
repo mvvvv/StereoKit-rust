@@ -378,6 +378,10 @@ pub mod model;
 /// Permission related structs, enums and functions for managing cross-platform permissions.
 pub mod permission;
 
+/// The C ABI shared between the `cargo-run_sk` hot-reload host and the plugin `.so` of the project under development
+/// (opaque pointers + `#[repr(C)]` structs only).
+pub mod plugin_abi;
+
 /// Prelude for StereoKit-rust. The basis for all StereoKit-rust programs.
 pub mod prelude;
 

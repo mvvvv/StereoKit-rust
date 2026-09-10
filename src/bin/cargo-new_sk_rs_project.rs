@@ -17,6 +17,9 @@ const MAIN_BIN_FRAMEWORK_TEMPLATE: &str = include_str!("../templates/main_bin_fr
 const LIB_RS_FRAMEWORK_TEMPLATE: &str = include_str!("../templates/lib_rs_framework.rs");
 const C_STEPPER_FRAMEWORK_TEMPLATE: &str = include_str!("../templates/c_stepper_framework.rs");
 
+// Hot-reload plugin shim for the `cargo-run_sk` dev viewer (framework projects)
+const PLUGIN_SHIM_TEMPLATE: &str = include_str!("../templates/plugin_shim.rs");
+
 // Gradle templates
 const GRADLE_BUILD: &str = include_str!("../templates/gradle/build.gradle");
 const GRADLE_SETTINGS: &str = include_str!("../templates/gradle/settings.gradle");
@@ -175,6 +178,7 @@ fn main() {
     write_main_rs(&project_path, &crate_name, basic);
     if !basic {
         write_file(&project_path, "src/c_stepper.rs", C_STEPPER_FRAMEWORK_TEMPLATE);
+        write_file(&project_path, "src/plugin_shim.rs", &PLUGIN_SHIM_TEMPLATE.replace("${SK_VERSION}", SK_VERSION));
     }
 
     if with_gradle {
@@ -187,6 +191,15 @@ fn main() {
     println!("To get started:");
     println!("  cd {project_name}");
     println!("  cargo run --bin main_{crate_name}");
+    if !basic && cfg!(target_os = "linux") {
+        println!();
+        println!("To develop with hot-reload (Simulator or OpenXR):");
+        if cfg!(not(feature = "skc-shared")) {
+            println!("  cargo install stereokit-rust --features skc-shared");
+        }
+        println!("  cargo run_sk");
+        println!("  # then edit src/ : the viewer rebuilds and reloads your views on the fly");
+    }
     if with_gradle {
         println!();
         println!("To build and run on an Android headset:");
@@ -217,7 +230,8 @@ ndk = "0.9.0"
     };
 
     let content = format!(
-        r#"[package]
+        r#"[workspace]
+[package]
 name = "{project_name}"
 version = "0.1.0"
 edition = "2024"
@@ -227,6 +241,10 @@ crate-type = ["lib", "cdylib"]
 
 [[bin]]
 name = "main_{crate_name}"
+
+[features]
+# Forwarded to stereokit-rust for the `cargo-run_sk` hot-reload workflow (Linux).
+skc-shared = ["stereokit-rust/skc-shared"]
 
 [dependencies]
 stereokit-rust = "{SK_VERSION}"
