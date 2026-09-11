@@ -1,17 +1,18 @@
-//! The C ABI shared between the `cargo-run_sk` hot-reload host and the plugin `.so` of the project under development.
+//! The C ABI shared between the `cargo-run_sk` hot-reload host and the plugin library of the project under development.
 //!
 //! Both sides are compiled from the *same* version of `stereokit_rust` (same rustc, same features), and both link the
-//! same shared `libStereoKitC.so` (see the `skc-shared` feature), so the whole process drives ONE StereoKit
-//! engine and ONE XR session. But no Rust type ever crosses the host<->plugin boundary: only opaque pointers and
-//! \[`repr(C)`\] structures.
+//! same shared StereoKitC library (`libStereoKitC.so` on Linux, `StereoKitC.dll` on Windows, `libStereoKitC.dylib`
+//! on macOS, see the `skc-shared`
+//! feature), so the whole process drives ONE StereoKit engine and ONE XR session. But no Rust type ever crosses the
+//! host<->plugin boundary: only opaque pointers and \[`repr(C)`\] structures.
 //!
 //! The plugin exports the `sk_run_sk_*` symbols described below; the host resolves them with `libloading` right after
-//! `dlopen`, checks [`crate::plugin_abi::SK_RUN_SK_ABI_VERSION`] (and the crate version guard), then drives the plugin each frame:
+//! loading it, checks [`crate::plugin_abi::SK_RUN_SK_ABI_VERSION`] (and the crate version guard), then drives the plugin each frame:
 //!
 //! ```text
-//! host: dlopen(plugin) -> version OK? -> views_count/view_info -> begin(sk)
-//!       each frame:                     step(sk, token)
-//!       before dlclose:                 end()
+//! host: load(plugin) -> version OK? -> views_count/view_info -> begin(sk)
+//!       each frame:                    step(sk, token)
+//!       before unload:                 end()
 //! ```
 
 use std::ffi::c_char;

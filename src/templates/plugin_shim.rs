@@ -5,7 +5,7 @@
 //! ```text
 //! cargo install stereokit-rust --version <stereokit-rust version> --features skc-shared --bin cargo-run_sk
 //! cargo build --features skc-shared
-//! cargo run_sk --lib target/debug/lib<your_crate>.so
+//! cargo run_sk --lib target/debug/lib<your_crate>.so   (Windows: <your_crate>.dll, macOS: lib<your_crate>.dylib)
 //! ```
 //!
 //! The host keeps a single StereoKit session alive (Simulator or OpenXR) and reloads this library each time
@@ -151,8 +151,8 @@ pub extern "C" fn sk_run_sk_version() -> u32 {
         0
     }
 
-    /// Called by the host before unloading (`dlclose`) the plugin, and at application shutdown. Shuts the plugin-side
-    /// steppers down.
+    /// Called by the host before unloading (`dlclose`/`FreeLibrary`) the plugin, and at application shutdown. Shuts
+    /// the plugin-side steppers down.
     #[unsafe(no_mangle)]
     pub extern "C" fn sk_run_sk_end() -> u32 {
         let mut plugin = PLUGIN.lock().unwrap();

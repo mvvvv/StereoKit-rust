@@ -6,7 +6,7 @@ name: Build Demo
 #
 # PC output directory contains:
 #   - the compiled executable (main_pc / main_pc.exe)
-#   - the StereoKitC DLL (Windows only, when built with skc-in-dll)
+#   - the StereoKitC shared library (Windows DLL / macOS dylib, when built with skc-shared)
 #   - the assets/ tree (including compiled shaders)
 #
 # Android output is a sideloadable APK (arm64-v8a).

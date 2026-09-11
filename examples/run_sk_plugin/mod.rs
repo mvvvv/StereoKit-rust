@@ -3,8 +3,9 @@
 //! This module turns the `main` example (a `cdylib`) into a **plugin** loadable by the `cargo-run_sk` host:
 //!
 //! - the host keeps a single StereoKit session alive (Simulator or OpenXR),
-//! - each time `cargo build --example main --features skc-shared` produces a new `libmain.so`, the host `end()`s the
-//!   old plugin, `dlclose`s it and `dlopen`s the new one, then calls `begin` again: the session survives,
+//! - each time `cargo build --example main --features skc-shared` produces a new plugin library (`libmain.so` on
+//!   Linux, `main.dll` on Windows, `libmain.dylib` on macOS), the host `end()`s the old plugin, unloads it and loads
+//!   the new one, then calls `begin` again: the session survives,
 //! - the views exposed here are the `Test`s of [`demos::Test::get_tests`], each one driven as an `IStepper` inside a
 //!   **plugin-side** [`Steppers`] manager (never inside the host's one, so no vtable or `TypeId` ever crosses the
 //!   host<->plugin boundary).

@@ -14,13 +14,15 @@ fn main() {
     let target_env = env::var("CARGO_CFG_TARGET_ENV").unwrap();
 
     let win_gnu_libs = env::var("SK_RUST_WIN_GNU_LIBS").unwrap_or_default();
-    let skc_in_dll = cfg!(feature = "skc-in-dll");
 
-    // `skc-shared` (Linux only): StereoKitC is built as a self-contained shared library. Foundation of the
-    //`cargo-run_sk` hot-reload workflow: the host binary AND the dlopen'ed plugin .so both link `libStereoKitC.so`,
-    // so the dynamic loader deduplicates them by SONAME and the whole process shares ONE engine instance (hence a
-    //single Simulator/OpenXR session).
-    let skc_shared = cfg!(feature = "skc-shared") && target_family.as_str() == "unix" && target_os == "linux";
+    // `skc-shared`: StereoKitC is built as a shared library (`StereoKitC.dll` on Windows MSVC & GNU,
+    // `libStereoKitC.so` on Linux, `libStereoKitC.dylib` on macOS). Foundation of the `cargo-run_sk` hot-reload
+    // workflow: the host binary AND the dlopen'ed/LoadLibrary'ed plugin library both link it, so the dynamic loader
+    // deduplicates them by SONAME/install-name/module-name and the whole process shares ONE engine instance (hence
+    // a single Simulator/OpenXR session).
+    let skc_shared = cfg!(feature = "skc-shared");
+    // Unix extras (shared OpenXR loader + rpath): the desktop unix flavors, i.e. `unix` minus Android.
+    let skc_shared_unix = skc_shared && target_family.as_str() == "unix" && target_os != "android";
 
     let mut abi = env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_default();
     if abi == "aarch64" {
@@ -79,18 +81,23 @@ fn main() {
     }
 
     if target_family.as_str() == "windows" {
-        if skc_in_dll {
+        if skc_shared {
             cmake_config.define("SK_BUILD_SHARED_LIBS", "ON");
         } else {
             cmake_config.define("SK_BUILD_SHARED_LIBS", "OFF");
         }
-    } else if skc_shared {
+    } else if skc_shared_unix {
         cmake_config.define("SK_BUILD_SHARED_LIBS", "ON");
         // Build the OpenXR loader as a shared library as well: openxr-sys calls xr* functions directly from Rust, so a
-        // second loader instance folded inside libStereoKitC.so would break cross-boundary XrInstance handles. With
-        // libopenxr_loader.so, host and plugin share the same loader.
+        // second loader instance folded inside the shared StereoKitC would break cross-boundary XrInstance handles.
+        // With a shared openxr_loader, host and plugin share the same loader.
         cmake_config.define("SK_DYNAMIC_OPENXR", "ON");
     } else {
+        if skc_shared {
+            println!(
+                "cargo:warning=skc-shared is only implemented on Windows, Linux and macOS for now: building StereoKitC static"
+            );
+        }
         cmake_config.define("SK_BUILD_SHARED_LIBS", "OFF");
     }
     cmake_config.define("SK_BUILD_TESTS", "OFF");
@@ -139,11 +146,12 @@ fn main() {
     match target_family.as_str() {
         "windows" => {
             println!("cargo:rustc-link-search=native={}/lib", dst.display());
+            println!("cargo:rustc-link-search=native={}/build", dst.display());
             println!("cargo:rustc-link-search=native={}/build/{}", dst.display(), profile_upper);
 
             // MinGW creates StereoKitC.a without the "lib" prefix, but Rust expects libStereoKitC.a
             // So we create a symlink/copy with the correct name
-            if target_env == "gnu" && !skc_in_dll {
+            if target_env == "gnu" && !skc_shared {
                 let build_dir = dst.join("build");
                 let skc_file = build_dir.join("StereoKitC.a");
                 let lib_skc_file = build_dir.join("libStereoKitC.a");
@@ -181,9 +189,7 @@ fn main() {
             }
             println!("cargo:rustc-link-search=native={}", dst.display());
             if target_env == "gnu" {
-                if !skc_in_dll {
-                    println!("cargo:rustc-link-search=native={}/build", dst.display());
-                    println!("cargo:rustc-link-search=native={}/lib", dst.display());
+                if !skc_shared {
                     println!("cargo:rustc-link-search=native={}/build/_deps/sk_renderer-build", dst.display());
                     println!(
                         "cargo:rustc-link-search=native={}/build/_deps/openxr_loader-build/src/loader",
@@ -219,7 +225,6 @@ fn main() {
                 } else {
                     //---- We have to extract the DLL i.e. ".\target\x86_64-pc-windows-gnu\debug\build\stereokit-rust-be362d37871b9048\out\build\StereoKitC.dll"
                     //---- and copy it to ".\target\x86_64-pc-windows-gnu\debug\deps\
-                    //println!("cargo:rustc-link-search=native={}/build", dst.display());
                     cargo_link!("StereoKitC");
                     if cfg!(debug_assertions) {
                         // openxr-sys/linked wants libopenxr_loader so it asks for -Wl -lopenxr_loader in final ld
@@ -270,7 +275,7 @@ fn main() {
                 );
 
                 // Link sk_renderer and sk_app libraries
-                if !skc_in_dll {
+                if !skc_shared {
                     cargo_link!("sk_renderer");
                     cargo_link!("sk_app");
                     cargo_link!("sk_ktx2");
@@ -331,9 +336,9 @@ fn main() {
             println!("cargo:rustc-link-search=native={}/build/_deps/sk_app-build", dst.display());
             println!("cargo:rustc-link-search=native={}/build/_deps/sk_renderer-build/sk_ktx2", dst.display());
 
-            if skc_shared {
-                // Everything folds inside libStereoKitC.so: link it dynamically (plus the shared openxr loader) and
-                // embed an rpath.
+            if skc_shared_unix {
+                // Everything folds inside the shared StereoKitC library: link it dynamically (plus the shared openxr
+                // loader) and embed an rpath.
                 link_shared_stereokitec(&dst);
             } else {
                 cargo_link!("StereoKitC");
@@ -507,16 +512,24 @@ pub fn copy_tree(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> std::io::Resul
     Ok(())
 }
 
-/// Link directives for the `skc-shared` configuration (Linux).
+/// Link directives for the `skc-shared` configuration (Linux & macOS).
 ///
-/// Links the shared `libStereoKitC.so` built by CMake (it folds sk_renderer, sk_app, sk_ktx2, zstd and meshoptimizer
-/// inside) plus the shared `libopenxr_loader.so`, and embeds an rpath so both are found at runtime without installing
-/// them. Any library dlopen'ed later that links the same sonames (the `cargo-run_sk` plugin) shares these exact instances.
+/// Links the shared StereoKitC library built by CMake (`libStereoKitC.so` on Linux, `libStereoKitC.dylib` on macOS;
+/// it folds sk_renderer, sk_app, sk_ktx2, zstd and meshoptimizer inside) plus the shared OpenXR loader, and embeds
+/// an rpath so both are found at runtime without installing them. Any library dlopen'ed later that links the same
+/// sonames/install-names (the `cargo-run_sk` plugin) shares these exact instances.
 fn link_shared_stereokitec(dst: &Path) {
+    // Shared library file names: CMake produces `.dylib` on macOS, `.so` on Linux.
+    let macos = env::var("CARGO_CFG_TARGET_OS").map(|os| os == "macos").unwrap_or(false);
+    let (skc_name, loader_name) = if macos {
+        ("libStereoKitC.dylib", "libopenxr_loader.dylib")
+    } else {
+        ("libStereoKitC.so", "libopenxr_loader.so")
+    };
     let build_dir = dst.join("build");
-    let skc_so = find_file(&build_dir, "libStereoKitC.so", 1);
+    let skc_so = find_file(&build_dir, skc_name, 1);
     let loader_dir = build_dir.join("_deps").join("openxr_loader-build");
-    let loader_so = find_file(&loader_dir, "libopenxr_loader.so", 6);
+    let loader_so = find_file(&loader_dir, loader_name, 6);
 
     match &skc_so {
         Some(path) => {
@@ -524,18 +537,18 @@ fn link_shared_stereokitec(dst: &Path) {
             println!("cargo:info=skc-shared: using {}", path.display());
             println!("cargo:rustc-link-search=native={}", dir.display());
 
-            //---- Same as the Windows DLL flow: copy the .so under <target_dir>/deps/ where the cargo
+            //---- Same as the Windows DLL flow: copy the shared lib under <target_dir>/deps/ where the cargo
             //---- tools (cargo-build_sk_rs...) pick it up to ship it next to the executables.
             let deps_libs = dst.parent().unwrap().parent().unwrap().parent().unwrap().join("deps");
-            let dest_file_so = deps_libs.join("libStereoKitC.so");
-            println!("cargo:info=libStereoKitC.so is copied from here --> {path:?}");
+            let dest_file_so = deps_libs.join(skc_name);
+            println!("cargo:info={skc_name} is copied from here --> {path:?}");
             println!("cargo:info=                          to there --> {dest_file_so:?}");
             let _lib_so = fs::copy(path, dest_file_so).unwrap();
         }
         None => {
-            // First build: CMake has not produced the .so yet. Link against the build dir anyway: the link only happens
-            // when compiling the crate targets, after CMake has run.
-            println!("cargo:info=skc-shared: libStereoKitC.so not found yet, using {}", build_dir.display());
+            // First build: CMake has not produced the shared lib yet. Link against the build dir anyway: the link only
+            // happens when compiling the crate targets, after CMake has run.
+            println!("cargo:info=skc-shared: {skc_name} not found yet, using {}", build_dir.display());
             println!("cargo:rustc-link-search=native={}", build_dir.display());
         }
     }
@@ -550,7 +563,7 @@ fn link_shared_stereokitec(dst: &Path) {
         }
         None => {
             println!(
-                "cargo:warning=skc-shared: libopenxr_loader.so not found under {}, falling back to the default openxr_loader link",
+                "cargo:warning=skc-shared: {loader_name} not found under {}, falling back to the default openxr_loader link",
                 loader_dir.display()
             );
             cargo_link!("openxr_loader");

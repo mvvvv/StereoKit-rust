@@ -191,7 +191,7 @@ fn main() {
     println!("To get started:");
     println!("  cd {project_name}");
     println!("  cargo run --bin main_{crate_name}");
-    if !basic && cfg!(target_os = "linux") {
+    if !basic && (cfg!(target_os = "linux") || cfg!(target_os = "windows")) {
         println!();
         println!("To develop with hot-reload (Simulator or OpenXR):");
         if cfg!(not(feature = "skc-shared")) {
@@ -243,7 +243,7 @@ crate-type = ["lib", "cdylib"]
 name = "main_{crate_name}"
 
 [features]
-# Forwarded to stereokit-rust for the `cargo-run_sk` hot-reload workflow (Linux).
+# Forwarded to stereokit-rust for the `cargo-run_sk` hot-reload workflow (Linux, Windows & macOS).
 skc-shared = ["stereokit-rust/skc-shared"]
 
 [dependencies]

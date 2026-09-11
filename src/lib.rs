@@ -58,7 +58,9 @@
 //! - **`build-dynamic-openxr`**: Builds OpenXR loader from Khronos OpenXR project for Android builds (APK).
 //! - **`force-local-deps`**: Use local dependencies for CPM module (see StereoKit CMake)
 //! - **`with-glam`**: Add Glam to your maths.
-//! - **`skc-in-dll`**: Create and use StereoKitC as a DLL when building for windows (MSVC & GNU)
+//! - **`skc-shared`**: Create and use StereoKitC as a shared library (`StereoKitC.dll` on Windows MSVC & GNU,
+//!   `libStereoKitC.so` on Linux, `libStereoKitC.dylib` on macOS). Foundation of the `cargo-run_sk` hot-reload
+//!   workflow.
 //! - **`profile`**: Enable profiling in StereoKitC using tracy
 //! - **`file-browser`**: Let you use the FileBrowserB stepper to browse your file system in your headset.
 //! - **`tools`**: All the extra tools features like `file-browser`

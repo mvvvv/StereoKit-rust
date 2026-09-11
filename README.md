@@ -95,7 +95,7 @@ This is the shortest way to launch your first PC VR/MR program[^1]: `cargo run -
 
 Use the commande `cargo new_sk_rs_project` to create your project [see the documentation](https://docs.rs/stereokit-rust/latest/stereokit_rust/).
 
-## Develop with hot-reload, the `cargo run_sk` viewer (Linux)
+## Develop with hot-reload, the `cargo run_sk` viewer (Linux, Windows & macOS)
 
 `cargo run_sk` is a real-time viewer for a project under development: it keeps **one** StereoKit session
 alive (Simulator by default, OpenXR with `--xr`, offscreen with `--offscreen`) and hot-reloads the plugin
@@ -103,12 +103,15 @@ library of your project each time it is rebuilt, without ever closing the sessio
 sources and runs the build command itself when they change, then offers your views (the `Test`s / your
 steppers) in a selector window, with on demand screenshots.
 
-- The host and the plugin both link the same shared `libStereoKitC.so` (feature `skc-shared`): there is
-  exactly ONE engine instance in the process, so the plugin safely drives the host's session.
+- The host and the plugin both link the same shared StereoKitC library (`libStereoKitC.so` on Linux,
+  `StereoKitC.dll` on Windows, `libStereoKitC.dylib` on macOS, feature `skc-shared`): there is exactly ONE engine
+  instance in the process, so the plugin safely drives the host's session.
 - The host<->plugin boundary is 100% C (opaque pointers + `#[repr(C)]` structs, see
   [`stereokit_rust::plugin_abi`]). Never mix a host and a plugin built from different versions of
   stereokit-rust: the host checks the versions before loading.
 - The state of the active view is reset on each reload (the view is re-selected automatically).
+- On macOS, as for any StereoKit application, install MoltenVK (`brew install molten-vk`) and set
+  `DYLD_LIBRARY_PATH` / `VK_ICD_FILENAMES` accordingly (see the crate documentation).
 
 ### This repository
 

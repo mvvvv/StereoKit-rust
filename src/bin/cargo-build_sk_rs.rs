@@ -27,8 +27,8 @@ Usage : cargo build_sk_rs [Options] <Output_path>
         -h|--help                       : Display help
         
         
-    If you want DLL instead of static link use the feature skc-in-dll
-    If you want libStereoKitC.so instead of static link on Linux use the feature skc-shared"#;
+    If you want StereoKitC as a shared library (StereoKitC.dll on Windows,
+    libStereoKitC.so on Linux) use the feature skc-shared"#;
 
 fn show_help() {
     println!("{USAGE}");
@@ -116,6 +116,9 @@ fn main() {
                     println!("No value specified for parameter --example.");
                     panic!("{}", USAGE);
                 }
+                //---we delete default bin
+                bin = "".into();
+                bin_exe = "".into();
             }
             "--bin" => {
                 bin = "--bin".to_string();
@@ -191,8 +194,8 @@ fn main() {
     }
 
     // The skc-shared feature (forwarded to `cargo build` above) turns StereoKitC into a shared
-    // library (libStereoKitC.so) on Linux: as the DLL on Windows, it must be shipped with the
-    // executable. The features are comma separated: "skc-shared", "skc-shared,", "skc-shared,tools"...
+    // library (libStereoKitC.so on Linux, libStereoKitC.dylib on macOS): as the DLL on Windows, it
+    // must be shipped with the executable. The features are comma separated: "skc-shared", "skc-shared,", "skc-shared,tools"...
     let skc_shared = feature_list
         .iter()
         .any(|features| features.split(',').any(|feature| feature.trim() == "skc-shared"));
@@ -337,9 +340,9 @@ fn main() {
         }
     } else if skc_shared {
         // 1-1 - the shared libraries created (other OS than Windows, with the skc-shared feature)
-        // libStereoKitC.so has been copied under deps/ by the stereokit-rust build script,
-        // exactly as the DLL is on Windows.
-        let c_so = "libStereoKitC.so";
+        // The shared StereoKitC library has been copied under deps/ by the stereokit-rust build
+        // script, exactly as the DLL is on Windows.
+        let c_so = if cfg!(target_os = "macos") { "libStereoKitC.dylib" } else { "libStereoKitC.so" };
         let so_file = built_files.join("deps").join(c_so);
         if so_file.is_file() {
             let dest_file_so = output_path.join(so_file.file_name().unwrap_or_default());
