@@ -37,11 +37,6 @@ fn main() {
     imp::main();
 }
 
-#[cfg(not(feature = "no-event-loop"))]
-fn main() {
-    imp::main();
-}
-
 #[cfg(all(any(target_os = "linux", target_os = "windows", target_os = "macos"), not(feature = "no-event-loop")))]
 mod imp {
     use std::{
@@ -78,13 +73,12 @@ mod imp {
         --xr                   : start in OpenXR mode (no flatscreen fallback)
         --offscreen            : start without any display (CI / screenshots)
         --lib <path>           : plugin library to load
-                                 (default: detected from the sources present:
+                                 (the COMPILED plugin: <name>.dll on Windows,
+                                 lib<name>.so on Linux, lib<name>.dylib on macOS;
+                                 default: detected from the sources present:
                                  src/bin/main_<crate>.rs -> target/debug/<plugin>,
                                  examples/main*.rs -> target/debug/examples/<plugin>,
-                                 else the first plugin file under target/debug/examples;
-                                 plugin files are lib<name>.so on Linux,
-                                 <name>.dll on Windows, lib<name>.dylib
-                                 on macOS)
+                                 else the first plugin file under target/debug/examples)
         --start <view name>    : view to select at start (name, or substring)
         --watch <secs>         : plugin library watch period, 0 disables (default 0.5)
         --build-cmd <command>  : build command run at startup and on source change.
@@ -314,13 +308,14 @@ mod imp {
         if let Ok(entries) = fs::read_dir(&examples_dir) {
             for entry in entries.flatten() {
                 let path = entry.path();
-                if let Some(file) = path.to_str() {
-                    let name = file.rsplit('/').next().unwrap_or_default();
-                    if name.starts_with("main_") {
-                        if let Some(stem) = name.strip_suffix(".rs") {
-                            return Some(stem.to_string());
-                        }
-                    }
+                // `file_name` (not a rsplit on '/'): Windows paths use '\'.
+                let Some(name) = path.file_name().and_then(|name| name.to_str()) else {
+                    continue;
+                };
+                if name.starts_with("main_")
+                    && let Some(stem) = name.strip_suffix(".rs")
+                {
+                    return Some(stem.to_string());
                 }
             }
         }
@@ -589,6 +584,19 @@ mod imp {
             }
         }
 
+        //---- Guard: a frequent mistake is to pass the plugin SOURCE to --lib instead of the
+        // compiled plugin library: LoadLibrary/dlopen would fail on the .rs file in a confusing way.
+        if lib_path.extension().is_some_and(|ext| ext.eq_ignore_ascii_case("rs")) {
+            eprintln!(
+                "cargo-run_sk: --lib expects the COMPILED plugin library (e.g. target/debug/examples/{}, \
+                 not the Rust source file {}). Omit --lib to let the viewer detect and build it itself.",
+                plugin_file("main"),
+                lib_path.display()
+            );
+            println!("{USAGE}");
+            return;
+        }
+
         //---- --list: load the plugin without any StereoKit session
         if list {
             let mut copy_counter = 0;
@@ -650,6 +658,7 @@ mod imp {
 
         // Everything below is captured by the FnMut step closure.
         let mut loaded_fp = fingerprint(&lib_path);
+        let mut failed_fp: Fingerprint = None; // a failing plugin file is retried only when it CHANGES
         let mut zombie: Option<Library> = None; // end()ed, unloaded on the NEXT frame
         let mut reload_requested = false; // first load will wake this up
         let mut active_view: Option<usize> = None;
@@ -695,8 +704,11 @@ mod imp {
             }
 
             // 3 - (Re)load the plugin when needed: the NEW plugin is loaded and validated BEFORE the old one is
-            //     retired, so a broken build never kills the running session.
-            if reload_requested || (plugin_cell.borrow().is_none() && lib_path.exists()) {
+            //     retired, so a broken build never kills the running session. A file whose load FAILED is not
+            //     retried every frame (log spam): only when it changes or an explicit reload is requested.
+            if reload_requested
+                || (plugin_cell.borrow().is_none() && lib_path.exists() && fingerprint(&lib_path) != failed_fp)
+            {
                 reload_requested = false;
                 let previous_name = active_view.and_then(|index| {
                     plugin_cell
@@ -721,10 +733,12 @@ mod imp {
                             .unwrap_or_else(|| "none".to_string());
                         *plugin_cell.borrow_mut() = Some(new_plugin);
                         status = format!("{views} views, active: {selected_name}");
+                        failed_fp = None;
                         Log::info(format!("cargo-run_sk: plugin loaded ({status})"));
                     }
                     Err(err) => {
                         Log::err(format!("cargo-run_sk: {err}"));
+                        failed_fp = fingerprint(&lib_path);
                         if plugin_cell.borrow().is_none() {
                             status = format!("load failed: {err}");
                         }
