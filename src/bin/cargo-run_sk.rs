@@ -27,17 +27,17 @@
 //!     cargo run --bin cargo-run_sk --features skc-shared -- --xr
 //! ```
 
-#[cfg(not(any(any(target_os = "linux", target_os = "windows", target_os = "macos"), feature = "no-event-loop")))]
+#[cfg(feature = "no-event-loop")]
 fn main() {
-    eprintln!("cargo-run_sk: only supported on Linux, Windows and macOS for now");
+    eprintln!("cargo-run_sk: only supported with event-loop");
 }
 
-#[cfg(all(any(target_os = "linux", target_os = "windows", target_os = "macos"), feature = "no-event-loop"))]
+#[cfg(not(feature = "no-event-loop"))]
 fn main() {
-    eprintln!("cargo-run_sk: requires the default event loop framework (do not use the no-event-loop feature)");
+    imp::main();
 }
 
-#[cfg(all(any(target_os = "linux", target_os = "windows", target_os = "macos"), not(feature = "no-event-loop")))]
+#[cfg(not(feature = "no-event-loop"))]
 fn main() {
     imp::main();
 }
@@ -167,7 +167,8 @@ mod imp {
 
         // SAFETY: the symbols below follow the `stereokit_rust::plugin_abi` contract.
         unsafe {
-            let lib = Library::new(&copy).map_err(|e| format!("cannot load {} (dlopen/LoadLibrary): {e}", copy.display()))?;
+            let lib =
+                Library::new(&copy).map_err(|e| format!("cannot load {} (dlopen/LoadLibrary): {e}", copy.display()))?;
 
             let version: Symbol<FnU32> = lib.get(b"sk_run_sk_version").map_err(missing("sk_run_sk_version"))?;
             if version() != SK_RUN_SK_ABI_VERSION {

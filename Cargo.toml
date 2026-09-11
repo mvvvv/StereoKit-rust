@@ -83,12 +83,10 @@ glam = { version = "0.33", optional = true }
 openxr-sys = "0.13"
 # Compile-time translations for the tools (see the `file-browser` feature), runtime locale switching
 rust-i18n = { version = "4", optional = true }
+# dlopen/dlsym (Linux, macOS) / LoadLibrary (Windows) support for the `cargo-run_sk` hot-reload host
+libloading = { version = "0.9", optional = true }
 #stereokit-macros = { path = "./stereokit-macros", version = "0.6" }
 stereokit-macros = "0.6"
-
-# dlopen/dlsym (Linux, macOS) / LoadLibrary (Windows) support for the `cargo-run_sk` hot-reload host
-[target.'cfg(any(target_os = "linux", target_os = "windows", target_os = "macos"))'.dependencies]
-libloading = { version = "0.9", optional = true }
 
 [target.'cfg(target_os = "android")'.dependencies]
 log = "0.4"
