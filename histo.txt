@@ -1,6 +1,6 @@
  #------A bunch of commands you'll use here
  #---- installing
- cargo install --path .  # -F no-event-loop 
+ cargo install --path .  -F skc-shared 
  cargo compile_sks
  rustup target add aarch64-linux-android
  rustup target add x86_64-pc-windows-gnu

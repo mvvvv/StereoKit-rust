@@ -102,7 +102,7 @@ jobs:
         uses: swatinem/rust-cache@v2
 
       - name: Install StereoKit cargo subcommands
-        run: cargo install --force --path .
+        run: cargo install --force --path . -F skc-shared
 
       - name: Build exportable demo
         shell: pwsh
@@ -141,7 +141,7 @@ jobs:
                              xvfb mesa-vulkan-drivers mesa-utils llvm libx11-xcb1 libxcb-dri3-0
 
       - name: Install StereoKit cargo subcommands
-        run: cargo install --force --path .
+        run: cargo install --force --path . -F skc-shared
 
       - name: Build exportable demo
         run: |
@@ -175,7 +175,7 @@ jobs:
           echo "$(brew --prefix coreutils)/libexec/gnubin" >> $GITHUB_PATH
 
       - name: Install StereoKit cargo subcommands
-        run: cargo install --force --path .
+        run: cargo install --force --path . -F skc-shared
 
       - name: Build exportable demo
         env:
@@ -209,7 +209,7 @@ jobs:
         uses: swatinem/rust-cache@v2
 
       - name: Install StereoKit cargo subcommands
-        run: cargo install --force --path .
+        run: cargo install --force --path . -F skc-shared
 
       - name: Build exportable demo
         shell: pwsh
@@ -249,7 +249,7 @@ jobs:
                              xvfb mesa-vulkan-drivers mesa-utils llvm libx11-xcb1 libxcb-dri3-0 
 
       - name: Install StereoKit cargo subcommands
-        run: cargo install --force --path .
+        run: cargo install --force --path . -F skc-shared
 
       - name: Build exportable demo
         run: |
@@ -312,7 +312,7 @@ jobs:
         run: rustup target add aarch64-linux-android
 
       - name: Install StereoKit cargo subcommands
-        run: cargo install --force --path .
+        run: cargo install --force --path . -F skc-shared
 
       - name: Get some shaders from StereoKit subproject
         run: |
@@ -408,7 +408,7 @@ jobs:
           ls -la x64-mingw-libs/
 
       - name: Install StereoKit cargo subcommands
-        run: cargo install --force --path .
+        run: cargo install --force --path . -F skc-shared
 
       - name: Build exportable demo
         run: |

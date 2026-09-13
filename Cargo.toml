@@ -59,15 +59,19 @@ features = ["tools"]
 [lib]
 crate-type = ["lib", "cdylib"]
 
+# Compile the shaders of the StereoKit-rust project
 [[bin]]
 name = "cargo-compile_sks"
 
+# Create a new StereoKit-rust project
 [[bin]]
 name = "cargo-new_sk_rs_project"
 
+# Build the release of the StereoKit-rust project
 [[bin]]
 name = "cargo-build_sk_rs"
 
+# Hot Reload of some ISteppers of the StereoKit-rust project
 [[bin]]
 name = "cargo-run_sk"
 required-features = ["skc-shared"]

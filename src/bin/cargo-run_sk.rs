@@ -147,6 +147,25 @@ mod imp {
         move |err| format!("plugin has no symbol {symbol}: {err}")
     }
 
+    /// Removes the stale plugin copies of previous loads from `target/run_sk`: they accumulate (one unique copy
+    /// per load, because the Windows linker/loader cannot overwrite or delete a loaded DLL). `keep`: the copy
+    /// being loaded right now, if any. Failures are ignored: on Windows the copy loaded by the current (or a
+    /// concurrent) session cannot be deleted, and will be on a later reload.
+    fn cleanup_plugin_copies(keep: Option<&Path>) {
+        let Ok(entries) = fs::read_dir("target/run_sk") else {
+            return;
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            let Some(name) = path.file_name().and_then(|name| name.to_str()) else { continue };
+            let stale = name.starts_with("plugin-")
+                && ["so", "dll", "dylib"].iter().any(|ext| path.extension().is_some_and(|e| e == *ext));
+            if stale && Some(path.as_path()) != keep {
+                fs::remove_file(&path).ok();
+            }
+        }
+    }
+
     /// Copies `src` to a unique file then loads it, checks the ABI and crate
     /// versions, reads the view list and eventually calls `begin`.
     /// * `sk` - the host `Sk` pointer, or `None` for a `--list` style inspection.
@@ -158,6 +177,9 @@ mod imp {
         let copy = copy_dir.join(format!("plugin-{copy_counter}.{}", plugin_ext()));
         *copy_counter += 1;
         fs::copy(src, &copy).map_err(|e| format!("cannot copy {} to {}: {e}", src.display(), copy.display()))?;
+        // Garbage-collect the copies of the previous loads: only the copy loaded by the current session may
+        // resist deletion (Windows), it will be picked up on the next reload.
+        cleanup_plugin_copies(Some(&copy));
 
         // SAFETY: the symbols below follow the `stereokit_rust::plugin_abi` contract.
         unsafe {
@@ -596,6 +618,9 @@ mod imp {
             println!("{USAGE}");
             return;
         }
+
+        //---- Purge the plugin copies left over by the previous runs (they accumulate one per load)
+        cleanup_plugin_copies(None);
 
         //---- --list: load the plugin without any StereoKit session
         if list {

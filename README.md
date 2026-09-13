@@ -37,7 +37,7 @@ Let us know if you have launched the demos on an architecture not tested here.
   - `export DYLD_LIBRARY_PATH=$(brew --prefix molten-vk)/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}`
   - `export VK_ICD_FILENAMES=$(brew --prefix molten-vk)/share/vulkan/icd.d/MoltenVK_icd.json`
 - On Windows[^2] get the following tools and dev libraries : "Git", "CMake", "Visual Studio Build Tools 2022(Development Desktop C++)" and "DotNet SDK v8+"
-- Install the project's tools from the project directory `cargo install --path .`
+- Install the project's tools from the project directory `cargo install --path . -F skc-shared`
 - If you want to launch the demos then:
   - If you do not have them as symbolic links under shaders_src, copy from `./StereoKit/Examples/Assets/Shaders/` the following files: `basic_shadow.hlsl` `basic_shadow_caster.hlsl` `compute_reaction.hlsl` and `texture3d.hlsl`
   - compile the shaders. From StereoKit-rust directory launch `cargo compile_sks`
@@ -131,7 +131,7 @@ Projects created from the framework template ship with `src/plugin_shim.rs` (dec
 and a `skc-shared` forwarding feature:
 
 ```shell
-cargo install stereokit-rust --features skc-shared
+cargo install stereokit-rust -F skc-shared
 cargo run_sk
 # then edit src/ : the viewer rebuilds and reloads your views on the fly
 ```

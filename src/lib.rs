@@ -44,7 +44,7 @@
 //!     * `export VK_ICD_FILENAMES=$(brew --prefix molten-vk)/share/vulkan/icd.d/MoltenVK_icd.json`
 //!
 //!
-//! Installing the stereokit_rust tools with `cargo install stereokit-rust` should help you to check
+//! Installing the stereokit_rust tools with `cargo install stereokit-rust -F skc-shared` should help you to check
 //! the missing dependencies.
 //!
 //! # Usage

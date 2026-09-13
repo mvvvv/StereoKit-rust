@@ -195,7 +195,7 @@ fn main() {
         println!();
         println!("To develop with hot-reload (Simulator or OpenXR):");
         if cfg!(not(feature = "skc-shared")) {
-            println!("  cargo install stereokit-rust --features skc-shared");
+            println!("  cargo install stereokit-rust -F skc-shared");
         }
         println!("  cargo run_sk");
         println!("  # then edit src/ : the viewer rebuilds and reloads your views on the fly");
