@@ -9,31 +9,20 @@ mod run_sk_plugin;
 #[cfg(target_os = "android")]
 use android_activity::AndroidApp;
 
-use demos::program::launch;
+use demos::program::{launch, sk_settings};
 use stereokit_rust::{
-    sk::{OriginMode, Sk, SkSettings},
-    system::{BackendOpenXR, Log, LogLevel},
+    sk::{Sk, SkSettings},
+    system::Log,
 };
 
 #[unsafe(no_mangle)]
 #[cfg(target_os = "android")]
 pub fn android_main(app: AndroidApp) {
     use std::sync::OnceLock;
-    use stereokit_rust::{
-        sk::DepthMode,
-        system::{BackendVulkan, BackendVulkanRequest},
-    };
 
-    let mut settings = SkSettings::default();
-    settings
-        .app_name("rust Demos")
-        .origin(OriginMode::Floor)
-        .render_multisample(4) // aka the default aka 0
-        .render_scaling(1.5)
-        .depth_mode(DepthMode::D32)
-        .omit_empty_frames(true)
-        .log_filter(LogLevel::Diagnostic)
-        .android_app(app);
+    // All the SkSettings AND the BackendOpenXR / BackendVulkan parameterizations are grouped in sk_settings()
+    let mut settings = sk_settings();
+    settings.android_app(app);
 
     static APP_ONCE: OnceLock<()> = OnceLock::new();
     if APP_ONCE.get().is_some() {
@@ -46,17 +35,6 @@ pub fn android_main(app: AndroidApp) {
         );
     });
     //stereokit_rust::tools::load_all_extensions();
-    BackendOpenXR::request_ext("XR_FB_display_refresh_rate");
-    BackendOpenXR::request_ext("XR_FB_render_model");
-    BackendOpenXR::request_ext("XR_META_virtual_keyboard");
-    BackendOpenXR::request_ext("XR_META_simultaneous_hands_and_controllers");
-    //BackendOpenXR::request_ext("XR_META_detached_controllers");
-    // Required by the Layers1 demo for cylinder composition layers.
-    BackendOpenXR::request_ext("XR_KHR_android_surface_swapchain");
-    BackendOpenXR::request_ext("XR_KHR_composition_layer_cylinder");
-
-    BackendVulkan::request(&BackendVulkanRequest::new(Some("sk_test_request")));
-
     _main(settings);
 }
 
@@ -67,16 +45,8 @@ pub fn android_main(app: AndroidApp) {
 fn main() {
     use stereokit_rust::sk::AppMode;
 
-    let mut settings = SkSettings::default();
-    settings
-        .app_name("rust Demos")
-        .origin(OriginMode::Stage)
-        .log_filter(LogLevel::Diagnostic)
-        .no_flatscreen_fallback(true)
-        .mode(AppMode::Simulator);
-
-    //stereokit_rust::tools::load_all_extensions();
-    BackendOpenXR::request_ext("XR_FB_display_refresh_rate");
+    let mut settings = sk_settings();
+    settings.no_flatscreen_fallback(true).mode(AppMode::Simulator);
     _main(settings);
 }
 

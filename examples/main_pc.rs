@@ -18,14 +18,9 @@ pub const USAGE: &str = r#"Usage : program [OPTION]
 #[cfg(not(feature = "no-event-loop"))]
 #[cfg(not(target_os = "android"))]
 fn main() {
-    use demos::program::launch;
+    use demos::program::{launch, sk_settings};
     use std::env;
-    use stereokit_rust::sk::{DepthMode, Sk, StandbyMode};
-    use stereokit_rust::system::{BackendOpenXR, BackendVulkan, BackendVulkanRequest};
-    use stereokit_rust::{
-        sk::{AppMode, OriginMode, SkSettings},
-        system::LogLevel,
-    };
+    use stereokit_rust::sk::{AppMode, Sk, StandbyMode};
 
     let mut fullscreen = false;
     let mut headless = false;
@@ -73,18 +68,9 @@ fn main() {
         println!("log-env only implemented for linux");
     }
 
-    let mut settings = SkSettings::default();
-    settings
-        .app_name("rust Demos")
-        .origin(OriginMode::Floor)
-        .render_multisample(4) // aka the default aka 0
-        //.render_scaling(1.5) create distortion on SteamVR for Quest
-        .default_font_family("Noto Sans, SimSun")
-        .depth_mode(DepthMode::D32)
-        .omit_empty_frames(true)
-        .log_filter(LogLevel::Diagnostic)
-        .no_flatscreen_fallback(true)
-        .fullscreen(fullscreen);
+    // All the SkSettings AND the BackendOpenXR / BackendVulkan parameterizations are grouped in sk_settings()
+    let mut settings = sk_settings();
+    settings.no_flatscreen_fallback(true).fullscreen(fullscreen);
 
     if is_testing {
         if headless {
@@ -97,15 +83,6 @@ fn main() {
         }
     }
     settings.standby_mode(StandbyMode::Slow);
-
-    //sterokit_rust::tools::load_all_extensions();
-    BackendOpenXR::request_ext("XR_FB_display_refresh_rate");
-    BackendOpenXR::request_ext("XR_META_virtual_keyboard");
-    BackendOpenXR::request_ext("XR_FB_render_model");
-    // Required by the Layers1 demo for cylinder composition layers.
-    BackendOpenXR::request_ext("XR_KHR_composition_layer_cylinder");
-
-    BackendVulkan::request(&BackendVulkanRequest::new(Some("sk_test_request")));
 
     launch(settings, is_testing, start_test);
     Sk::shutdown();

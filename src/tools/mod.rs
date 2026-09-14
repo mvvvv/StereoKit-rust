@@ -29,6 +29,9 @@ pub mod file_browser_b;
 #[cfg(not(feature = "no-event-loop"))]
 pub mod fly_over;
 
+#[cfg(all(feature = "skc-shared", not(feature = "no-event-loop")))]
+pub mod hot_reloading;
+
 #[cfg(not(feature = "no-event-loop"))]
 pub mod log_window;
 

@@ -7,12 +7,12 @@ use stereokit_rust::{
     prelude::*,
     render::{Projection, Renderer},
     shader::Shader,
-    sk::{AppFocus, AppWindow, DisplayBlend, SkSettings},
+    sk::{AppFocus, AppWindow, DepthMode, DisplayBlend, OriginMode, SkSettings},
     sound::{Sound, SoundInst},
     sprite::Sprite,
     system::{
-        Backend, BackendOpenXR, BackendVulkan, BackendXRType, DefaultInteractors, Input, Interaction, Interactor, Key,
-        Lines, LogItem, LogLevel, MouseMode, Text,
+        Backend, BackendOpenXR, BackendVulkan, BackendVulkanRequest, BackendXRType, DefaultInteractors, Input,
+        Interaction, Interactor, Key, Lines, LogItem, LogLevel, MouseMode, Text,
     },
     tex::Tex,
     tools::{
@@ -44,6 +44,44 @@ use super::{
     Test,
     hand_menu_radial1::{HAND_MENU_RADIAL1_ID, HandMenuRadial1, SHOW_FLOOR},
 };
+/// The SkSettings of the demos, grouped in one single place, at the same level as `launch`: the settings AND the
+/// BackendOpenXR / BackendVulkan parameterizations, which must be done before StereoKit initialization. This is
+/// the function the `cargo-run_sk` hot-reload viewer reads through the plugin ABI (`sk_run_sk_settings`) to
+/// initialize its session exactly like the demos. The launch-dependent settings (`mode`, `fullscreen`,
+/// `android_app`...) can still be adjusted by the callers on the returned value, before calling `launch`.
+pub fn sk_settings() -> SkSettings {
+    let mut settings = SkSettings::default();
+    settings
+        .app_name("rust Demos")
+        .origin(OriginMode::Floor)
+        .render_multisample(4) // aka the default aka 0
+        .depth_mode(DepthMode::D32)
+        .omit_empty_frames(true)
+        .log_filter(LogLevel::Diagnostic);
+
+    // Platform specific settings
+    #[cfg(target_os = "android")]
+    settings.render_scaling(1.5);
+    #[cfg(not(target_os = "android"))]
+    settings.default_font_family("Noto Sans, SimSun");
+
+    // The OpenXR extensions must be requested before SK.Initialize
+    BackendOpenXR::request_ext("XR_FB_display_refresh_rate");
+    BackendOpenXR::request_ext("XR_FB_render_model");
+    BackendOpenXR::request_ext("XR_META_virtual_keyboard");
+    #[cfg(target_os = "android")]
+    BackendOpenXR::request_ext("XR_META_simultaneous_hands_and_controllers");
+    // Required by the Layers1 demo for cylinder composition layers.
+    #[cfg(target_os = "android")]
+    BackendOpenXR::request_ext("XR_KHR_android_surface_swapchain");
+    BackendOpenXR::request_ext("XR_KHR_composition_layer_cylinder");
+
+    // The Vulkan requests must be registered before SK.Initialize too
+    BackendVulkan::request(&BackendVulkanRequest::new(Some("sk_test_request")));
+
+    settings
+}
+
 pub fn launch(mut settings: SkSettings, is_testing: bool, start_test: String) {
     // Sending formated log to our mutex for the log window.
     let fn_mut = |level: LogLevel, log_text: &str| {

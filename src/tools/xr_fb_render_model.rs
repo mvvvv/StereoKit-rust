@@ -9,7 +9,7 @@ use crate::{
     prelude::*,
     system::{Backend, BackendOpenXR, BackendXRType, Handed, Input, Log, TextBuilder},
 };
-  
+
 use std::ffi::{CString, c_char};
 use std::ptr;
 
@@ -474,17 +474,17 @@ const LEFT_SHIFT: f32 = 0.04; // Left hand animation timing offset for synchroni
 /// // Check if the extension is available before using the stepper
 /// if is_fb_render_model_extension_available() {
 ///     let mut stepper = XrFbRenderModelStepper::default();
-///     
+///
 ///     // Optional: customize controller model paths
 ///     stepper.left_controller_model_path = "/model_fb/controller/left".to_string();
 ///     stepper.right_controller_model_path = "/model_fb/controller/right".to_string();
-///     
+///
 ///     // Add the stepper to StereoKit
 ///     sk.send_event(StepperAction::add_default::<XrFbRenderModelStepper>("animate_controller"));
-///     
+///
 ///     // Enable controller rendering
 ///     sk.send_event(StepperAction::event("animate_controller", DRAW_CONTROLLER, "true"));
-///     
+///
 ///     test_steps!( // !!!! Get a proper main loop !!!!
 ///         // The stepper will automatically render controllers with animations
 ///         // based on input state (trigger, grip, etc.)
@@ -517,7 +517,7 @@ pub struct XrFbRenderModelStepper {
     /// Default: "/model_fb/controller/left" (Meta Quest controllers)
     pub left_controller_model_path: String,
 
-    /// Path to the right controller's render model in the OpenXR runtime  
+    /// Path to the right controller's render model in the OpenXR runtime
     /// Default: "/model_fb/controller/right" (Meta Quest controllers)
     pub right_controller_model_path: String,
 
@@ -624,7 +624,7 @@ impl XrFbRenderModelStepper {
     ///
     /// This function maps controller input states to specific animation times:
     /// - Stick directions (8 cardinal points): 1.18-1.64 range
-    /// - Trigger pressure: 0.6-0.66 range (variable based on pressure)  
+    /// - Trigger pressure: 0.6-0.66 range (variable based on pressure)
     /// - Grip pressure: 0.82-0.88 range (variable based on pressure)
     /// - Button combinations: 0.18, 0.32, 0.46, 0.98
     ///
@@ -650,7 +650,7 @@ impl XrFbRenderModelStepper {
                 let y = controller.stick.y;
 
                 // Map to 8 cardinal directions based on x/y dominance
-                let animation_time = 
+                let animation_time =
                     // Horizontal directions dominate
                     if x > 0.3 {
                         // right side
@@ -660,7 +660,7 @@ impl XrFbRenderModelStepper {
                             1.64  // Right-down direction
                         } else {
                             1.38  // Pure right direction
-                        } 
+                        }
                     } else if x < -0.3 {
                         // left side
                         if y > 0.3 {

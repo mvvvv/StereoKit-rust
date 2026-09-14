@@ -3,7 +3,6 @@ use crate::{
     framework::Appearence,
     maths::{Matrix, Pose, Vec2, Vec3},
     prelude::*,
-    sprite::Sprite,
     system::{Align, LogItem, LogLevel, Pivot, Text, TextBuilder, TextFit, TextStyle},
     tools::ui_widgets::Scrollbar,
     ui::Ui,
@@ -145,7 +144,6 @@ impl<'a> LogWindow<'a> {
         let mut appearence = Appearence::default();
         appearence.window_size = Vec2::new(0.8, 0.3);
         appearence.min_window_size = Vec2::new(0.25, 0.25);
-        appearence.handle_sprite = Some(Sprite::from_file("icons/log_viewer.png", None, None).unwrap_or_default());
         appearence.list_style = TextStyle::from_font(font_mono, 0.01, Color128::WHITE);
         Self {
             id: "LogWindow".to_string(),

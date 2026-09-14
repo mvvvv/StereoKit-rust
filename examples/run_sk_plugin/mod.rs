@@ -11,15 +11,15 @@
 //!   host<->plugin boundary).
 //!
 //! Safety: the boundary with the host is 100% C (opaque pointers + the `#[repr(C)]` types of
-//! [`stereokit_rust::plugin_abi`]). The `Sk` and [`MainThreadToken`] pointers are reinterpreted between two
-//! compilations of the *same* crate version: never mix a host and a plugin built from different versions or feature
-//! sets of `stereokit_rust` (the host checks both versions before calling `begin`).
-use std::{ffi::c_void, sync::Mutex};
+//! [`stereokit_rust::plugin_abi`]). The `Rc<RefCell<SkInfo>>` given to `begin` and the [`MainThreadToken`] pointer
+//! are reinterpreted between two compilations of the *same* crate version: never mix a host and a plugin built from
+//! different versions or feature sets of `stereokit_rust` (the host checks both versions before calling `begin`).
+use std::{cell::RefCell, ffi::c_void, rc::Rc, sync::Mutex};
 
 use stereokit_rust::{
     framework::{StepperAction, StepperId, Steppers},
     plugin_abi::{PluginViewInfo, SK_RUN_SK_ABI_VERSION},
-    sk::{MainThreadToken, Sk},
+    sk::{MainThreadToken, SkInfo, SkSettings},
     system::Log,
 };
 
@@ -27,10 +27,10 @@ use crate::demos::Test;
 
 /// Everything the plugin needs between `begin` and `end`.
 struct PluginState {
-    /// Pointer to the host `Sk`. Kept for future introspection, only valid on the main thread (see the SAFETY note on
-    /// `unsafe impl Send`).
+    /// The `SkInfo` of the host session: a clone of the `Rc` handed by the host `begin`. Kept for future
+    /// introspection, only used on the main thread (see the SAFETY note on `unsafe impl Send`).
     #[allow(dead_code)]
-    sk: *mut Sk,
+    sk_info: Rc<RefCell<SkInfo>>,
     /// The plugin-side steppers: where the views actually run.
     steppers: Steppers,
     /// The views exposed to the host.
@@ -40,7 +40,7 @@ struct PluginState {
 }
 
 // SAFETY: every `sk_run_sk_*` entry point is called by the host on its main thread only, so the state (including the
-// raw `Sk` pointer) is never actually shared across threads. The `Mutex` is just a convenient process-wide cell.
+// shared `SkInfo`) is never actually shared across threads. The `Mutex` is just a convenient process-wide cell.
 unsafe impl Send for PluginState {}
 
 static PLUGIN: Mutex<Option<PluginState>> = Mutex::new(None);
@@ -56,6 +56,19 @@ pub extern "C" fn sk_run_sk_version() -> u32 {
 #[unsafe(no_mangle)]
 pub extern "C" fn sk_run_sk_crate_version() -> *const std::ffi::c_char {
     concat!(env!("CARGO_PKG_VERSION"), "\0").as_ptr() as *const std::ffi::c_char
+}
+
+/// Fills the `settings` out-parameter with the settings of the demos (`crate::demos::program::sk_settings`), so the
+/// host session of the `cargo-run_sk` viewer is initialized exactly like the demos. Returns 0 on success, 1 for a
+/// null pointer.
+#[unsafe(no_mangle)]
+pub extern "C" fn sk_run_sk_settings(settings: *mut SkSettings) -> u32 {
+    // SAFETY: `settings` points to a `SkSettings` owned by the host.
+    let Some(settings) = (unsafe { settings.as_mut() }) else {
+        return 1;
+    };
+    *settings = crate::demos::program::sk_settings();
+    0
 }
 
 /// Number of views exposed by this plugin.
@@ -80,12 +93,12 @@ pub extern "C" fn sk_run_sk_view_info(index: u32, info: *mut PluginViewInfo) -> 
     0
 }
 
-/// Called by the host right after a successful load or reload. Stores the host `Sk` pointer and prepares the
-/// plugin-side steppers.
+/// Called by the host right after a successful load or reload. Stores the `SkInfo` of the host session and prepares
+/// the plugin-side steppers.
 /// Returns 0 on success, 1 for a null pointer, 2 if already begun.
 #[unsafe(no_mangle)]
-pub extern "C" fn sk_run_sk_begin(sk: *mut c_void) -> u32 {
-    if sk.is_null() {
+pub extern "C" fn sk_run_sk_begin(sk_info: *mut c_void) -> u32 {
+    if sk_info.is_null() {
         return 1;
     }
     let mut plugin = PLUGIN.lock().unwrap();
@@ -93,14 +106,15 @@ pub extern "C" fn sk_run_sk_begin(sk: *mut c_void) -> u32 {
         Log::err("run_sk plugin: begin() called twice without end()");
         return 2;
     }
-    // SAFETY: the host passes a pointer to its live `Sk`, built from the same
-    // crate version and features as this plugin (checked by the host), and
-    // calls us on its main thread.
-    let sk = sk.cast::<Sk>();
-    let sk_info = unsafe { (*sk).get_sk_info_clone() };
+    // SAFETY: the host passes a pointer to its live `Rc<RefCell<SkInfo>>`, built from the same crate version and
+    // features as this plugin (checked by the host), and calls us on its main thread. We only clone that `Rc` here:
+    // the plugin then owns a share of the host `SkInfo`, and the pointer itself is never used again.
+    let Some(sk_info) = (unsafe { sk_info.cast::<Rc<RefCell<SkInfo>>>().as_ref() }).cloned() else {
+        return 1;
+    };
     let tests = Test::get_tests();
     let count = tests.len();
-    *plugin = Some(PluginState { sk, steppers: Steppers::new(sk_info), tests, active_id: None });
+    *plugin = Some(PluginState { sk_info: sk_info.clone(), steppers: Steppers::new(sk_info), tests, active_id: None });
     Log::info(format!("run_sk plugin: begin, {count} views"));
     0
 }
@@ -133,7 +147,7 @@ pub extern "C" fn sk_run_sk_select(index: u32) -> u32 {
 /// Called by the host every frame, right after its own step callback. Drives the plugin-side steppers (pre-app then
 /// post-app, like `SkClosures` does). Returns 0 on success, 1 for a null token, 2 when the plugin is not begun.
 #[unsafe(no_mangle)]
-pub extern "C" fn sk_run_sk_step(_sk: *mut c_void, token: *mut c_void) -> u32 {
+pub extern "C" fn sk_run_sk_step(_sk_info: *mut c_void, token: *mut c_void) -> u32 {
     if token.is_null() {
         return 1;
     }

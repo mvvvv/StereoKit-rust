@@ -2,10 +2,7 @@
 use std::env;
 
 #[cfg(not(target_os = "android"))]
-use stereokit_rust::{
-    sk::{AppMode, OriginMode, SkSettings},
-    system::LogLevel,
-};
+use stereokit_rust::sk::AppMode;
 
 pub const USAGE: &str = r#"Usage : program [OPTION] 
     launch Stereokit tests and demos
@@ -18,8 +15,8 @@ pub const USAGE: &str = r#"Usage : program [OPTION]
 #[cfg(not(target_os = "android"))]
 /// The main function when launched on PC. Set --test to use the simulator
 fn main() {
-    use stereokit_rust::sk::{DepthMode, Sk, StandbyMode};
-    use vr_app::launch;
+    use stereokit_rust::sk::{Sk, StandbyMode};
+    use vr_app::{launch, sk_settings};
 
     let mut headless = false;
     let mut is_testing = false;
@@ -39,14 +36,8 @@ fn main() {
             }
         }
     }
-    let mut settings = SkSettings::default();
-    settings
-        .app_name("Template App")
-        .origin(OriginMode::Floor)
-        .render_scaling(2.0)
-        .depth_mode(DepthMode::D32)
-        .omit_empty_frames(true)
-        .log_filter(LogLevel::Diagnostic);
+    // All the SkSettings AND the BackendOpenXR / BackendVulkan parameterizations are grouped in sk_settings()
+    let mut settings = sk_settings();
 
     if is_testing {
         if headless {
@@ -57,7 +48,9 @@ fn main() {
     }
     settings.standby_mode(StandbyMode::None);
 
+    // main loop
     launch(settings, is_testing);
+
     Sk::shutdown();
 }
 

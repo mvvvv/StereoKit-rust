@@ -7,18 +7,29 @@
 //! host<->plugin boundary: only opaque pointers and \[`repr(C)`\] structures.
 //!
 //! The plugin exports the `sk_run_sk_*` symbols described below; the host resolves them with `libloading` right after
-//! loading it, checks [`crate::plugin_abi::SK_RUN_SK_ABI_VERSION`] (and the crate version guard), then drives the plugin each frame:
+//! loading it, checks [`crate::plugin_abi::SK_RUN_SK_ABI_VERSION`] (and the crate version guard), then drives the
+//! plugin each frame:
 //!
 //! ```text
-//! host: load(plugin) -> version OK? -> views_count/view_info -> begin(sk)
-//!       each frame:                    step(sk, token)
+//! host: load(plugin) -> version OK? -> settings -> views_count/view_info -> begin(sk_info)
+//!       each frame:                    step(sk_info, token)
 //!       before unload:                 end()
 //! ```
+//!
+//! `begin` and `step` receive an **opaque pointer to the `Rc<RefCell<SkInfo>>` of the host session**
+//!
+//! The settings of the host session are the ones of the project itself: the plugin exposes them through
+//! [`crate::plugin_abi::SkSettingsFn`] (`sk_run_sk_settings` -> the `sk_settings()` function of the project), and the
+//! host reads them before initializing StereoKit.
 
+use crate::sk::SkSettings;
 use std::ffi::c_char;
 
 /// Version of the `cargo-run_sk` plugin ABI. The host refuses to load a plugin whose version differs.
-pub const SK_RUN_SK_ABI_VERSION: u32 = 1;
+///
+/// * 1 - first version: `sk_run_sk_begin` received a pointer to the host `Sk`.
+/// * 2 - `sk_run_sk_begin` receives a pointer to the `Rc<RefCell<SkInfo>>` of the host session.
+pub const SK_RUN_SK_ABI_VERSION: u32 = 2;
 
 /// Number of bytes (including the nul terminator) of a view name.
 pub const SK_RUN_SK_NAME_MAX: usize = 64;
@@ -56,6 +67,12 @@ impl PluginViewInfo {
         String::from_utf8_lossy(&bytes).into_owned()
     }
 }
+
+/// Signature of the `sk_run_sk_settings` plugin function: fills the out-parameter with the [`SkSettings`] of the
+/// project (its `sk_settings()` function), so the host initializes its session exactly like the project does.
+///
+/// Returns 0 on success, 1 for a null pointer.
+pub type SkSettingsFn = unsafe extern "C" fn(settings: *mut SkSettings) -> u32;
 
 #[cfg(test)]
 mod tests {
