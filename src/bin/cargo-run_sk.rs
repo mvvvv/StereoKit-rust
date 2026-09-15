@@ -29,14 +29,21 @@ fn main() {
 
 #[cfg(all(any(target_os = "linux", target_os = "windows", target_os = "macos"), not(feature = "no-event-loop")))]
 mod imp {
-    use std::path::PathBuf;
+    use std::{path::PathBuf, sync::Mutex};
 
     use stereokit_rust::{
         framework::{SkClosures, StepperAction},
+        maths::{Pose, Quat, Vec3},
         sk::{AppMode, Sk, SkSettings},
-        system::Log,
-        tools::hot_reloading::{HotReloading, default_build_cmd, default_lib_path, plugin_file},
+        system::{Log, LogItem, LogLevel},
+        tools::{
+            hot_reloading::{HotReloading, default_build_cmd, default_lib_path, plugin_file},
+            log_window::{LogWindow, basic_log_fmt},
+        },
     };
+
+    /// Somewhere to copy the log, read by the viewer's [`LogWindow`].
+    static LOG_LOG: Mutex<Vec<LogItem>> = Mutex::new(vec![]);
 
     pub const USAGE: &str = r#"Usage : cargo run_sk [OPTION]
     Real-time viewer for the project under development: keeps a single
@@ -187,6 +194,7 @@ mod imp {
         // reloads) the plugin, and offers its views in a selector window.
         let mut hot_reloading = HotReloading::new(&lib_path)
             .build_cmd(build_cmd.unwrap_or_else(|| default_build_cmd(&lib_path)))
+            .window_pose(Pose::new(Vec3::new(-0.7, 1.5, -0.3), Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0)))))
             .watch(watch_secs)
             .test_steps(test_steps);
         if !start_view.is_empty() {
@@ -212,11 +220,25 @@ mod imp {
         } else {
             settings.mode(AppMode::Simulator);
         }
+        //---- The log window of the viewer: subscribed before the session starts, so the StereoKit initialization
+        // logs are captured too.
+        let fn_mut = |level: LogLevel, log_text: &str| {
+            let items = LOG_LOG.lock().expect("Failed to lock log mutex");
+            basic_log_fmt(level, log_text, items);
+        };
+        Log::subscribe(fn_mut);
+
         let mut sk = settings.init().expect("cargo-run_sk: cannot initialize StereoKit");
 
         //---- The viewer is now only this tool: it is stepped after the app callback, like the explicit call it
         // replaces.
         sk.send_event(StepperAction::add("hot_reloading", hot_reloading));
+
+        //---- The log window, on the left of the selector window: the developer sees the logs of the session
+        // without leaving the viewer (build tails, view selection, plugin messages...).
+        let mut log_window = LogWindow::new(&LOG_LOG);
+        log_window.window_pose = Pose::new(Vec3::new(-0.7, 2.0, -0.3), Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0))));
+        sk.send_event(StepperAction::add("LogWindow", log_window));
 
         //---- Main loop
         SkClosures::new(sk, |_sk, _token| {}).run();

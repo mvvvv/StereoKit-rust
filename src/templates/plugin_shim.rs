@@ -27,6 +27,14 @@ use stereokit_rust::{
     system::Log,
 };
 
+/// The `stereokit-rust` version this plugin was compiled against. The host compares it with its own: a mismatch means
+/// the two sides may have different struct layouts, so the load is rejected.
+/// You have to update this version with the same value of StereoKit-rust version from Cargo.toml
+#[unsafe(no_mangle)]
+pub extern "C" fn sk_run_sk_crate_version() -> *const std::ffi::c_char {
+    concat!("${SK_VERSION}", "\0").as_ptr() as *const std::ffi::c_char
+}
+
 /// Declare here the views (your steppers) exposed to the `cargo-run_sk` viewer.
 /// Each view is a name + a factory producing the `StepperAction::add_default` of the stepper to run. Add one line per
 /// view.
@@ -185,11 +193,4 @@ pub extern "C" fn sk_run_sk_version() -> u32 {
     }
 
     SK_RUN_SK_ABI_VERSION
-}
-
-/// The `stereokit-rust` version this plugin was compiled against. The host compares it with its own: a mismatch means
-/// the two sides may have different struct layouts, so the load is rejected.
-#[unsafe(no_mangle)]
-pub extern "C" fn sk_run_sk_crate_version() -> *const std::ffi::c_char {
-    concat!("${SK_VERSION}", "\0").as_ptr() as *const std::ffi::c_char
 }

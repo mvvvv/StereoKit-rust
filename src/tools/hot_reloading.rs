@@ -36,7 +36,7 @@ use std::{
 use libloading::{Library, Symbol};
 
 use crate::{
-    framework::{IStepper, StepperId},
+    framework::{Appearence, IStepper, StepperId},
     sk::{MainThreadToken, SkInfo, SkSettings},
     tools::build_tools::get_cargo_name,
 };
@@ -47,7 +47,7 @@ use crate::{
     plugin_abi::{PluginViewInfo, SK_RUN_SK_ABI_VERSION},
     render::Renderer,
     system::Log,
-    ui::Ui,
+    ui::{Ui, UiPad},
     util::Time,
 };
 
@@ -62,6 +62,9 @@ pub struct HotReloading {
     start_view: Option<String>,
     test_steps: u32,
     show_ui: bool,
+    appearence: Option<Appearence>,
+    /// The pose of the selector window, see [`HotReloading::window_pose`].
+    window_pose: Pose,
     /// The id of this stepper.
     id: StepperId,
     /// The [`SkInfo`] of the running session, handed to the plugin, see [`HotReloading::sk_info_ptr`].
@@ -86,6 +89,8 @@ impl HotReloading {
             start_view: None,
             test_steps: 0,
             show_ui: true,
+            appearence: None,
+            window_pose: Pose::new(Vec3::new(0.4, 1.35, -0.35), Some(Quat::from_angles(0.0, 180.0, 0.0))),
             id: "hot_reloading".to_string(),
             sk_info: None,
             loaded: Loaded::default(),
@@ -151,9 +156,21 @@ impl HotReloading {
         self.show_ui = show;
         self
     }
-}
 
-impl HotReloading {
+    /// Replaces the look of the selector window (window size, ui scale, text styles, tints...).
+    /// * `appearence` - The look of the selector window.
+    pub fn appearence(mut self, appearence: Appearence) -> Self {
+        self.appearence = Some(appearence);
+        self
+    }
+
+    /// Sets the pose of the selector window (by default facing the user, slightly to the right).
+    /// * `pose` - The pose of the selector window.
+    pub fn window_pose(mut self, pose: Pose) -> Self {
+        self.window_pose = pose;
+        self
+    }
+
     /// Reads the [`SkSettings`] of the project from its plugin (`sk_run_sk_settings` -> `sk_settings()`, extension
     /// requests included) and **replaces** `settings` with them before `Sk::init`. The plugin is kept loaded and
     /// *begun* at the first frame. Returns `Err(reason)`, with `settings` untouched, when the plugin is not loadable
@@ -189,6 +206,358 @@ impl HotReloading {
         let plugin = load_plugin(None, lib_path.as_ref(), &mut copy_counter)?;
         Ok(plugin.views.iter().map(|view| (view.name.clone(), view.has_screenshot)).collect())
     }
+
+    // ------------------------------------------------------------------
+    // Main thread workflow
+    // ------------------------------------------------------------------
+    /// The opaque pointer handed to the plugin (`sk_run_sk_begin`, `sk_run_sk_step`): a pointer to the
+    /// `Rc<RefCell<SkInfo>>` of the session, which lives at least as long as this stepper (the plugin clones it, see
+    /// [`crate::plugin_abi`]).
+    fn sk_info_ptr(&self) -> *mut c_void {
+        match &self.sk_info {
+            Some(sk_info) => (sk_info as *const Rc<RefCell<SkInfo>>).cast_mut().cast::<c_void>(),
+            None => std::ptr::null_mut(),
+        }
+    }
+
+    /// Starts the background watchers: the plugin library watch (unless [`HotReloading::watch`] is 0) and, unless
+    /// the auto-build is disabled (see [`HotReloading::no_build`]), the source watch running the build command.
+    fn start_watchers(&mut self) {
+        let (sender, receiver) = channel::<HostMsg>();
+        self.loaded.receiver = Some(receiver);
+        if self.watch_secs > 0.0 {
+            let sender = sender.clone();
+            let path = self.lib_path.clone();
+            let period = Duration::from_secs_f32(self.watch_secs);
+            thread::spawn(move || watch_lib(path, period, sender));
+        }
+        if let Some(build_cmd) = &self.build_cmd
+            && !self.watch_roots.is_empty()
+        {
+            let sender = sender.clone();
+            let roots = self.watch_roots.clone();
+            let cmd = build_cmd.clone();
+            thread::spawn(move || watch_sources_and_build(roots, Duration::from_secs(1), cmd, sender));
+        }
+        Log::info(format!(
+            "hot_reloading: plugin {}, build command: {}",
+            self.lib_path.display(),
+            self.build_cmd.as_deref().unwrap_or("none")
+        ));
+    }
+
+    /// Begins the plugin preloaded by [`HotReloading::apply_plugin_settings`], selects its start view and keeps it
+    /// as the running plugin. A `begin` failure drops it: the load logic retries.
+    fn begin_preloaded(&mut self) {
+        let Some(plugin) = self.loaded.preloaded.take() else { return };
+        let begin_status = plugin.begin(self.sk_info_ptr());
+        if begin_status != 0 {
+            Log::err(format!(
+                "hot_reloading: sk_run_sk_begin failed with status {begin_status}, the plugin will be reloaded."
+            ));
+            drop(plugin);
+            cleanup_plugin_copies(None);
+            return;
+        }
+        let selected = self
+            .start_view
+            .as_deref()
+            .and_then(|name| find_view(&plugin.views, name))
+            .filter(|&index| plugin.select(index as u32) == 0);
+        let views = plugin.views.len();
+        let selected_name =
+            selected.map(|index| plugin.views[index].name.clone()).unwrap_or_else(|| "none".to_string());
+        self.loaded.loaded_fp = fingerprint(&self.lib_path);
+        self.loaded.active_view = selected;
+        self.loaded.status = format!("{views} views, active: {selected_name}");
+        Log::info(format!("hot_reloading: plugin loaded ({})", self.loaded.status));
+        self.loaded.plugin = Some(plugin);
+    }
+
+    /// One frame of the workflow: the watcher messages, the zombie unload, the (re)load, the selector window, the
+    /// plugin step and the test mode.
+    fn step_project(&mut self, token: &MainThreadToken) {
+        let sk_info_ptr = self.sk_info_ptr();
+        self.drain_watcher_messages();
+        self.unload_zombie();
+        self.reload_if_needed(sk_info_ptr);
+        self.selector_window();
+        self.step_plugin(sk_info_ptr, token);
+        self.run_test_mode();
+    }
+
+    /// Drains the messages sent by the background watchers and updates the status line accordingly.
+    fn drain_watcher_messages(&mut self) {
+        let Some(receiver) = self.loaded.receiver.as_ref() else { return };
+        loop {
+            match receiver.try_recv() {
+                Ok(HostMsg::LibChanged) => {
+                    if fingerprint(&self.lib_path) != self.loaded.loaded_fp {
+                        self.loaded.reload_requested = true;
+                    }
+                }
+                Ok(HostMsg::BuildStarted) => self.loaded.status = "building...".to_string(),
+                Ok(HostMsg::BuildFinished { ok, tail }) => {
+                    if ok {
+                        self.loaded.status = "build ok".to_string();
+                        // In case the build produced a new lib while the watch thread was busy.
+                        if fingerprint(&self.lib_path) != self.loaded.loaded_fp {
+                            self.loaded.reload_requested = true;
+                        }
+                    } else {
+                        self.loaded.status = format!("build FAILED:\n{tail}");
+                    }
+                }
+                Err(TryRecvError::Empty) | Err(TryRecvError::Disconnected) => break,
+            }
+        }
+    }
+
+    /// Unloads the library of the plugin ended on the previous frame (its steppers may still be shutting down).
+    fn unload_zombie(&mut self) {
+        if let Some(lib) = self.loaded.zombie.take() {
+            drop(lib);
+        }
+    }
+
+    /// (Re)loads the plugin when a new library is available or a reload has been requested: the NEW plugin is
+    /// loaded and validated BEFORE the old one is retired, so a broken build never kills the running session. A file
+    /// whose load FAILED is not retried every frame (log spam): only when it changes or on an explicit reload.
+    /// * `sk_info_ptr` - The opaque pointer handed to `sk_run_sk_begin`.
+    fn reload_if_needed(&mut self, sk_info_ptr: *mut c_void) {
+        if !self.loaded.reload_requested
+            && (self.loaded.plugin.is_some()
+                || !self.lib_path.exists()
+                || fingerprint(&self.lib_path) == self.loaded.failed_fp)
+        {
+            return;
+        }
+        self.loaded.reload_requested = false;
+        let previous_name = self.loaded.active_view.and_then(|index| {
+            self.loaded.plugin.as_ref().and_then(|plugin| plugin.views.get(index).map(|view| view.name.clone()))
+        });
+        Log::info(format!("hot_reloading: loading plugin from {}", self.lib_path.display()));
+        let wanted_name = previous_name.or_else(|| self.start_view.clone());
+        match load_plugin(Some(sk_info_ptr), &self.lib_path, &mut self.loaded.copy_counter) {
+            Ok(new_plugin) => {
+                if let Some(old) = self.loaded.plugin.take() {
+                    old.end();
+                    self.loaded.zombie = Some(old.lib); // dlclose next frame
+                }
+                self.loaded.loaded_fp = fingerprint(&self.lib_path);
+                let selected = wanted_name.as_deref().and_then(|name| find_view(&new_plugin.views, name));
+                self.loaded.active_view = selected.filter(|&index| new_plugin.select(index as u32) == 0);
+                let views = new_plugin.views.len();
+                let selected_name = self
+                    .loaded
+                    .active_view
+                    .map(|index| new_plugin.views[index].name.clone())
+                    .unwrap_or_else(|| "none".to_string());
+                self.loaded.plugin = Some(new_plugin);
+                self.loaded.status = format!("{views} views, active: {selected_name}");
+                self.loaded.failed_fp = None;
+                Log::info(format!("hot_reloading: plugin loaded ({})", self.loaded.status));
+            }
+            Err(err) => {
+                Log::err(format!("hot_reloading: {err}"));
+                self.loaded.failed_fp = fingerprint(&self.lib_path);
+                if self.loaded.plugin.is_none() {
+                    self.loaded.status = format!("load failed: {err}");
+                }
+            }
+        }
+    }
+
+    /// The default [`Appearence`] of the selector window: a wide grid window, resizable and scalable with its
+    /// handle. Only built once a StereoKit session is running, see [`HotReloading::appearence`].
+    fn default_appearence() -> Appearence {
+        let mut appearence = Appearence::default();
+        appearence.window_size = Vec2::new(0.8, 0.6);
+        appearence.min_window_size = Vec2::new(0.3, 0.3);
+        appearence
+    }
+
+    /// Truncates `text` to at most `max_chars` characters, ending with an ellipsis when truncated.
+    fn ellipsize(text: &str, max_chars: usize) -> String {
+        if text.chars().count() <= max_chars {
+            text.to_owned()
+        } else {
+            format!("{}…", text.chars().take(max_chars.saturating_sub(1)).collect::<String>())
+        }
+    }
+
+    /// The new smoothed fps of the selector window after one more frame lasting `step` seconds: an exponential
+    /// moving average of the instantaneous `1.0 / step` with a ONE-SECOND time constant, so the value settles in
+    /// about a second whatever the frame rate (the previous half-and-half average was per frame, hence
+    /// frame-rate dependent). A `step` of zero (e.g. the very first frame) leaves the value untouched.
+    fn smooth_fps(fps: f64, step: f64) -> f64 {
+        /// The smoothing period in seconds: the memory of the average.
+        const SMOOTH_SECS: f64 = 1.0;
+        if step > 0.0 { fps + (1.0 / step - fps) * (1.0 - (-step / SMOOTH_SECS).exp()) } else { fps }
+    }
+
+    /// Draws the selector window: the fps, the status, the forced `Reload`/`Capture` buttons and the views of the
+    /// plugin in a panel laid out on as many columns as the window width allows. The window itself goes through
+    /// [`Appearence`]: its scaled `UiSettings` while drawing, its width, and its grab-able scale handle after
+    /// (drag it along the window local X to widen the grid, along Z to scale everything, the height always fits
+    /// the grid). The choices are applied immediately: a pressed view is selected (the previous one is properly
+    /// removed by the plugin), and a capture is taken right here.
+    fn selector_window(&mut self) {
+        let mut pressed: Option<usize> = None;
+        let mut capture = false;
+        if self.show_ui {
+            // The fps label: an average smoothed over one second, not frame-rate dependent (`smooth_fps`).
+            self.loaded.fps = Self::smooth_fps(self.loaded.fps, Time::get_step());
+            let appearence = self.appearence.get_or_insert_with(Self::default_appearence);
+            // The window is drawn with the Appearence-scaled UiSettings, restored exactly as they were afterwards.
+            let prev_settings = Ui::get_settings();
+            let settings = appearence.get_ui_settings_scaled();
+            Ui::settings(settings);
+            Ui::push_id(&self.id);
+
+            // The window width comes from `Appearence`, its height AUTO-FITS the grid below: a StereoKit window
+            // created with a fixed height would NOT grow with its content, the views would overflow it.
+            Ui::window("run_sk")
+                .pose(&mut self.window_pose)
+                .size(Vec2::new(appearence.scaled_window_size().x, 0.0))
+                .begin();
+            Ui::push_text_style(appearence.label_style);
+            if Ui::button("Reload").press() {
+                self.loaded.reload_requested = true;
+            }
+            Ui::same_line();
+            if Ui::button("Capture").press() {
+                capture = true;
+            }
+            Ui::same_line();
+            Ui::label(format!("{:.0} fps", self.loaded.fps)).use_padding(true).draw();
+
+            Ui::label(&self.loaded.status).use_padding(true).draw();
+            Ui::next_line();
+            Ui::hseparator();
+            Ui::pop_text_style();
+            Ui::push_text_style(appearence.list_style);
+            // The views of the plugin, in a panel whose column count adapts to the window width: fill it with as
+            // many columns as possible, like the grid mode of the file browser. The panel is drawn in the window's
+            // OWN layout flow: a child `Ui::layout_push` would isolate the grid extents (`parent = -1` in C), the
+            // window would never learn the grid size and would not grow to fit it.
+            match self.loaded.plugin.as_ref() {
+                Some(plugin) if !plugin.views.is_empty() => {
+                    let line = Ui::get_line_height();
+                    // The content width the window aims at, then the column count from the minimum cell width (a
+                    // few characters of text).
+                    let content_w = (appearence.scaled_window_size().x - settings.margin * 2.0).max(line);
+                    const MIN_CELL_CHARS: f32 = 5.0;
+                    let columns = ((content_w + settings.gutter) / (line * MIN_CELL_CHARS + settings.padding))
+                        .floor()
+                        .max(1.0) as usize;
+                    let cell_w = content_w / columns as f32 - settings.padding * 1.4;
+                    let cell_h = line * 1.0;
+                    // Names longer than the cell end with an ellipsis: one view stays on one single line.
+                    let max_chars = (((cell_w - settings.padding * 2.0) / (line * 0.35)).floor() as usize).max(4);
+                    let rows = plugin.views.len().div_ceil(columns);
+
+                    Ui::panel_begin(Some(UiPad::Inside));
+                    for row in 0..rows {
+                        for col in 0..columns {
+                            let index = row * columns + col;
+                            let Some(view) = plugin.views.get(index) else { break };
+                            if col > 0 {
+                                Ui::same_line();
+                            }
+                            // No explicit `Ui::next_line()` at the end of a grid row: the LAST button of the row
+                            // has already ended the line (`ui_layout_reserve` calls `ui_nextline` internally,
+                            // undone only by `ui_sameline`), so an explicit one would consume a SECOND `gutter`
+                            // per row.
+                            let active = self.loaded.active_view == Some(index);
+                            if active {
+                                Ui::push_tint(appearence.button_tint);
+                            }
+                            let label = Self::ellipsize(
+                                &format!("{}{}", view.name, if view.has_screenshot { " (img)" } else { "" }),
+                                max_chars,
+                            );
+                            if Ui::button(label).size(Vec2::new(cell_w, cell_h)).press() {
+                                pressed = Some(index);
+                            }
+                            if active {
+                                Ui::pop_tint();
+                            }
+                        }
+                    }
+                    // `panel_end` reserves the panel size in the window layout, so the auto-fitted window height
+                    // always ends up exactly around the grid.
+                    Ui::panel_end();
+                }
+                _ => Ui::label("no plugin loaded").use_padding(true).draw(),
+            }
+            Ui::pop_text_style();
+            Ui::window_end();
+
+            Ui::pop_id();
+            Ui::settings(prev_settings);
+
+            // Grab-able knob anchored to the window: dragging it along the window local X resizes the width, along
+            // Y the height, and along Z (towards the user) the whole scale, see `Appearence::scale_handle`.
+            appearence.scale_handle(&self.window_pose, "run_sk_scale");
+        }
+        if let Some(index) = pressed
+            && let Some(plugin) = self.loaded.plugin.as_ref()
+        {
+            self.loaded.active_view = if plugin.select(index as u32) == 0 { Some(index) } else { None };
+        }
+        if capture {
+            let name = self.view_name().unwrap_or_else(|| "none".to_string());
+            capture_screenshot(&name);
+        }
+    }
+
+    /// The name of the active view, if any.
+    fn view_name(&self) -> Option<String> {
+        self.loaded
+            .active_view
+            .and_then(|index| self.loaded.plugin.as_ref().and_then(|plugin| plugin.views.get(index)))
+            .map(|view| view.name.clone())
+    }
+
+    /// Steps the plugin: its own steppers then run pre-app then post-app, exactly like `SkClosures` does for the
+    /// host.
+    /// * `sk_info_ptr` - The opaque pointer handed to `sk_run_sk_step` (ignored by the plugin, params are reserved).
+    /// * `token` - The token of the current frame.
+    fn step_plugin(&mut self, sk_info_ptr: *mut c_void, token: &MainThreadToken) {
+        if let Some(plugin) = self.loaded.plugin.as_ref() {
+            let token_ptr: *mut c_void = (token as *const MainThreadToken).cast_mut().cast();
+            plugin.step(sk_info_ptr, token_ptr);
+        }
+    }
+
+    /// The test mode: screenshots the active view after [`HotReloading::test_steps`] frames, then asks the app to
+    /// quit (through a [`StepperAction::Quit`], so the shutdown sequence stays the normal one).
+    fn run_test_mode(&mut self) {
+        if self.test_steps == 0 {
+            return;
+        }
+        if self.loaded.test_step == 0
+            && self.loaded.active_view.is_none()
+            && let Some(plugin) = self.loaded.plugin.as_ref()
+            && !plugin.views.is_empty()
+            && plugin.select(0) == 0
+        {
+            self.loaded.active_view = Some(0);
+        }
+        self.loaded.test_step += 1;
+        if self.loaded.test_step == self.test_steps {
+            let name = self.view_name().unwrap_or_else(|| "none".to_string());
+            capture_screenshot(&name);
+        } else if self.loaded.test_step > self.test_steps {
+            // The event loop delivers the action at the next frame: `Steppers::step` then asks the app to quit.
+            SkInfo::send_event(
+                &self.sk_info,
+                StepperAction::Quit(self.id.clone(), "hot_reloading test mode".to_string()),
+            );
+            self.test_steps = 0; // one request is enough
+        }
+    }
 }
 
 impl IStepper for HotReloading {
@@ -197,6 +566,11 @@ impl IStepper for HotReloading {
     fn initialize(&mut self, id: StepperId, sk_info: Rc<RefCell<SkInfo>>) -> bool {
         self.id = id;
         self.sk_info = Some(sk_info);
+        // The look of the selector window: built here rather than in `new` because `Appearence` creates text style
+        // assets, and the stepper is usually built before `Sk::init` (see `HotReloading::appearence`).
+        let mut appearence = self.appearence.take().unwrap_or_else(Self::default_appearence);
+        appearence.start();
+        self.appearence = Some(appearence);
         self.start_watchers();
         self.begin_preloaded();
         true
@@ -252,8 +626,6 @@ struct Loaded {
     fps: f64,
     /// The number of steps run by the test mode.
     test_step: u32,
-    /// The pose of the selector window.
-    window_pose: Pose,
 }
 
 impl Default for Loaded {
@@ -271,7 +643,6 @@ impl Default for Loaded {
             status: "waiting for plugin".to_string(),
             fps: 0.0,
             test_step: 0,
-            window_pose: Pose::new(Vec3::new(0.4, 1.35, -0.35), Some(Quat::from_angles(0.0, 200.0, 0.0))),
         }
     }
 }
@@ -728,263 +1099,57 @@ fn capture_screenshot(view_name: &str) {
     );
 }
 
-// ------------------------------------------------------------------
-// Main thread workflow
-// ------------------------------------------------------------------
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-impl HotReloading {
-    /// The opaque pointer handed to the plugin (`sk_run_sk_begin`, `sk_run_sk_step`): a pointer to the
-    /// `Rc<RefCell<SkInfo>>` of the session, which lives at least as long as this stepper (the plugin clones it, see
-    /// [`crate::plugin_abi`]).
-    fn sk_info_ptr(&self) -> *mut c_void {
-        match &self.sk_info {
-            Some(sk_info) => (sk_info as *const Rc<RefCell<SkInfo>>).cast_mut().cast::<c_void>(),
-            None => std::ptr::null_mut(),
-        }
+    #[test]
+    fn smooth_fps_ignores_a_zero_step() {
+        // The very first frame may report a zero step: no inf, no NaN, no change.
+        assert_eq!(HotReloading::smooth_fps(72.0, 0.0), 72.0);
+        assert_eq!(HotReloading::smooth_fps(0.0, 0.0), 0.0);
     }
 
-    /// Starts the background watchers: the plugin library watch (unless [`HotReloading::watch`] is 0) and, unless
-    /// the auto-build is disabled (see [`HotReloading::no_build`]), the source watch running the build command.
-    fn start_watchers(&mut self) {
-        let (sender, receiver) = channel::<HostMsg>();
-        self.loaded.receiver = Some(receiver);
-        if self.watch_secs > 0.0 {
-            let sender = sender.clone();
-            let path = self.lib_path.clone();
-            let period = Duration::from_secs_f32(self.watch_secs);
-            thread::spawn(move || watch_lib(path, period, sender));
-        }
-        if let Some(build_cmd) = &self.build_cmd
-            && !self.watch_roots.is_empty()
-        {
-            let sender = sender.clone();
-            let roots = self.watch_roots.clone();
-            let cmd = build_cmd.clone();
-            thread::spawn(move || watch_sources_and_build(roots, Duration::from_secs(1), cmd, sender));
-        }
-        Log::info(format!(
-            "hot_reloading: plugin {}, build command: {}",
-            self.lib_path.display(),
-            self.build_cmd.as_deref().unwrap_or("none")
-        ));
-    }
-
-    /// Begins the plugin preloaded by [`HotReloading::apply_plugin_settings`], selects its start view and keeps it
-    /// as the running plugin. A `begin` failure drops it: the load logic retries.
-    fn begin_preloaded(&mut self) {
-        let Some(plugin) = self.loaded.preloaded.take() else { return };
-        let begin_status = plugin.begin(self.sk_info_ptr());
-        if begin_status != 0 {
-            Log::err(format!(
-                "hot_reloading: sk_run_sk_begin failed with status {begin_status}, the plugin will be reloaded."
-            ));
-            drop(plugin);
-            cleanup_plugin_copies(None);
-            return;
-        }
-        let selected = self
-            .start_view
-            .as_deref()
-            .and_then(|name| find_view(&plugin.views, name))
-            .filter(|&index| plugin.select(index as u32) == 0);
-        let views = plugin.views.len();
-        let selected_name =
-            selected.map(|index| plugin.views[index].name.clone()).unwrap_or_else(|| "none".to_string());
-        self.loaded.loaded_fp = fingerprint(&self.lib_path);
-        self.loaded.active_view = selected;
-        self.loaded.status = format!("{views} views, active: {selected_name}");
-        Log::info(format!("hot_reloading: plugin loaded ({})", self.loaded.status));
-        self.loaded.plugin = Some(plugin);
-    }
-
-    /// One frame of the workflow: the watcher messages, the zombie unload, the (re)load, the selector window, the
-    /// plugin step and the test mode.
-    fn step_project(&mut self, token: &MainThreadToken) {
-        let sk_info_ptr = self.sk_info_ptr();
-        self.drain_watcher_messages();
-        self.unload_zombie();
-        self.reload_if_needed(sk_info_ptr);
-        self.selector_window();
-        self.step_plugin(sk_info_ptr, token);
-        self.run_test_mode();
-        self.loaded.fps = ((1.0 / Time::get_step()) + self.loaded.fps) / 2.0;
-    }
-
-    /// Drains the messages sent by the background watchers and updates the status line accordingly.
-    fn drain_watcher_messages(&mut self) {
-        let Some(receiver) = self.loaded.receiver.as_ref() else { return };
-        loop {
-            match receiver.try_recv() {
-                Ok(HostMsg::LibChanged) => {
-                    if fingerprint(&self.lib_path) != self.loaded.loaded_fp {
-                        self.loaded.reload_requested = true;
-                    }
-                }
-                Ok(HostMsg::BuildStarted) => self.loaded.status = "building...".to_string(),
-                Ok(HostMsg::BuildFinished { ok, tail }) => {
-                    if ok {
-                        self.loaded.status = "build ok".to_string();
-                        // In case the build produced a new lib while the watch thread was busy.
-                        if fingerprint(&self.lib_path) != self.loaded.loaded_fp {
-                            self.loaded.reload_requested = true;
-                        }
-                    } else {
-                        self.loaded.status = format!("build FAILED:\n{tail}");
-                    }
-                }
-                Err(TryRecvError::Empty) | Err(TryRecvError::Disconnected) => break,
+    #[test]
+    fn smooth_fps_has_a_one_second_memory() {
+        // One simulated second of constant frames lands at 1 - e^-1 (~63%) of the target WHATEVER the frame
+        // rate: the smoothing is time based, not frame based.
+        let expected_ratio = 1.0 - (-1.0f64).exp();
+        for (steps, step) in [(30, 1.0 / 30.0), (90, 1.0 / 90.0), (144, 1.0 / 144.0)] {
+            let target = 1.0 / step;
+            let mut fps = 0.0;
+            for _ in 0..steps {
+                fps = HotReloading::smooth_fps(fps, step);
             }
-        }
-    }
-
-    /// Unloads the library of the plugin ended on the previous frame (its steppers may still be shutting down).
-    fn unload_zombie(&mut self) {
-        if let Some(lib) = self.loaded.zombie.take() {
-            drop(lib);
-        }
-    }
-
-    /// (Re)loads the plugin when a new library is available or a reload has been requested: the NEW plugin is
-    /// loaded and validated BEFORE the old one is retired, so a broken build never kills the running session. A file
-    /// whose load FAILED is not retried every frame (log spam): only when it changes or on an explicit reload.
-    /// * `sk_info_ptr` - The opaque pointer handed to `sk_run_sk_begin`.
-    fn reload_if_needed(&mut self, sk_info_ptr: *mut c_void) {
-        if !self.loaded.reload_requested
-            && (self.loaded.plugin.is_some()
-                || !self.lib_path.exists()
-                || fingerprint(&self.lib_path) == self.loaded.failed_fp)
-        {
-            return;
-        }
-        self.loaded.reload_requested = false;
-        let previous_name = self.loaded.active_view.and_then(|index| {
-            self.loaded.plugin.as_ref().and_then(|plugin| plugin.views.get(index).map(|view| view.name.clone()))
-        });
-        Log::info(format!("hot_reloading: loading plugin from {}", self.lib_path.display()));
-        let wanted_name = previous_name.or_else(|| self.start_view.clone());
-        match load_plugin(Some(sk_info_ptr), &self.lib_path, &mut self.loaded.copy_counter) {
-            Ok(new_plugin) => {
-                if let Some(old) = self.loaded.plugin.take() {
-                    old.end();
-                    self.loaded.zombie = Some(old.lib); // dlclose next frame
-                }
-                self.loaded.loaded_fp = fingerprint(&self.lib_path);
-                let selected = wanted_name.as_deref().and_then(|name| find_view(&new_plugin.views, name));
-                self.loaded.active_view = selected.filter(|&index| new_plugin.select(index as u32) == 0);
-                let views = new_plugin.views.len();
-                let selected_name = self
-                    .loaded
-                    .active_view
-                    .map(|index| new_plugin.views[index].name.clone())
-                    .unwrap_or_else(|| "none".to_string());
-                self.loaded.plugin = Some(new_plugin);
-                self.loaded.status = format!("{views} views, active: {selected_name}");
-                self.loaded.failed_fp = None;
-                Log::info(format!("hot_reloading: plugin loaded ({})", self.loaded.status));
-            }
-            Err(err) => {
-                Log::err(format!("hot_reloading: {err}"));
-                self.loaded.failed_fp = fingerprint(&self.lib_path);
-                if self.loaded.plugin.is_none() {
-                    self.loaded.status = format!("load failed: {err}");
-                }
-            }
-        }
-    }
-
-    /// Draws the selector window: the fps, the status, the forced `Reload`/`Capture` buttons and one button per view
-    /// of the plugin. The choices are applied immediately: a pressed view is selected (the previous one is properly
-    /// removed by the plugin), and a capture is taken right here.
-    fn selector_window(&mut self) {
-        let mut pressed: Option<usize> = None;
-        let mut capture = false;
-        if self.show_ui {
-            Ui::window("run_sk").pose(&mut self.loaded.window_pose).size(Vec2::new(0.26, 0.42)).begin();
-            Ui::label(format!("{:.0} fps", self.loaded.fps)).use_padding(true).draw();
-            Ui::label(&self.loaded.status).use_padding(true).draw();
-            if Ui::button("Reload").press() {
-                self.loaded.reload_requested = true;
-            }
-            Ui::same_line();
-            if Ui::button("Capture").press() {
-                capture = true;
-            }
-            Ui::next_line();
-            Ui::hseparator();
-            match self.loaded.plugin.as_ref() {
-                Some(plugin) => {
-                    for (index, view) in plugin.views.iter().enumerate() {
-                        let active = self.loaded.active_view == Some(index);
-                        let label = format!(
-                            "{}{}{}",
-                            if active { "> " } else { "" },
-                            view.name,
-                            if view.has_screenshot { " (img)" } else { "" }
-                        );
-                        if Ui::button(label).press() {
-                            pressed = Some(index);
-                        }
-                    }
-                }
-                None => Ui::label("no plugin loaded").use_padding(true).draw(),
-            }
-            Ui::window_end();
-        }
-        if let Some(index) = pressed
-            && let Some(plugin) = self.loaded.plugin.as_ref()
-        {
-            self.loaded.active_view = if plugin.select(index as u32) == 0 { Some(index) } else { None };
-        }
-        if capture {
-            let name = self.view_name().unwrap_or_else(|| "none".to_string());
-            capture_screenshot(&name);
-        }
-    }
-
-    /// The name of the active view, if any.
-    fn view_name(&self) -> Option<String> {
-        self.loaded
-            .active_view
-            .and_then(|index| self.loaded.plugin.as_ref().and_then(|plugin| plugin.views.get(index)))
-            .map(|view| view.name.clone())
-    }
-
-    /// Steps the plugin: its own steppers then run pre-app then post-app, exactly like `SkClosures` does for the
-    /// host.
-    /// * `sk_info_ptr` - The opaque pointer handed to `sk_run_sk_step` (ignored by the plugin, params are reserved).
-    /// * `token` - The token of the current frame.
-    fn step_plugin(&mut self, sk_info_ptr: *mut c_void, token: &MainThreadToken) {
-        if let Some(plugin) = self.loaded.plugin.as_ref() {
-            let token_ptr: *mut c_void = (token as *const MainThreadToken).cast_mut().cast();
-            plugin.step(sk_info_ptr, token_ptr);
-        }
-    }
-
-    /// The test mode: screenshots the active view after [`HotReloading::test_steps`] frames, then asks the app to
-    /// quit (through a [`StepperAction::Quit`], so the shutdown sequence stays the normal one).
-    fn run_test_mode(&mut self) {
-        if self.test_steps == 0 {
-            return;
-        }
-        if self.loaded.test_step == 0
-            && self.loaded.active_view.is_none()
-            && let Some(plugin) = self.loaded.plugin.as_ref()
-            && !plugin.views.is_empty()
-            && plugin.select(0) == 0
-        {
-            self.loaded.active_view = Some(0);
-        }
-        self.loaded.test_step += 1;
-        if self.loaded.test_step == self.test_steps {
-            let name = self.view_name().unwrap_or_else(|| "none".to_string());
-            capture_screenshot(&name);
-        } else if self.loaded.test_step > self.test_steps {
-            // The event loop delivers the action at the next frame: `Steppers::step` then asks the app to quit.
-            SkInfo::send_event(
-                &self.sk_info,
-                StepperAction::Quit(self.id.clone(), "hot_reloading test mode".to_string()),
+            let expected = target * expected_ratio;
+            assert!(
+                (fps - expected).abs() < expected * 0.01,
+                "{steps} frames of {step:.4}s gave {fps} instead of {expected}"
             );
-            self.test_steps = 0; // one request is enough
         }
+    }
+
+    #[test]
+    fn smooth_fps_converges_to_the_target() {
+        // Ten simulated seconds at 90 fps: the display is the real fps.
+        let step = 1.0 / 90.0;
+        let mut fps = 0.0;
+        for _ in 0..(90 * 10) {
+            fps = HotReloading::smooth_fps(fps, step);
+        }
+        assert!((fps - 90.0).abs() < 0.01, "fps {fps}");
+    }
+
+    #[test]
+    fn smooth_fps_absorbs_one_hiccup() {
+        // A single dropped frame barely moves a settled value, and it stays finite.
+        let step = 1.0 / 90.0;
+        let mut fps = 90.0;
+        for _ in 0..(90 * 2) {
+            fps = HotReloading::smooth_fps(fps, step);
+        }
+        fps = HotReloading::smooth_fps(fps, 0.1); // one 100 ms frame
+        assert!(fps > 75.0 && fps < 90.0, "one hiccup gave {fps}");
+        assert!(fps.is_finite());
     }
 }
