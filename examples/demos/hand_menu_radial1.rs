@@ -1,15 +1,16 @@
 use stereokit_rust::{
     framework::{HAND_MENU_RADIAL_FOCUS, HandMenuAction, HandMenuRadial, HandRadial, HandRadialLayer},
+    lighting::Lighting,
     material::{Cull, Material, Transparency},
     maths::{Matrix, Quat, Vec2, Vec3, Vec4},
     mesh::Mesh,
     model::Model,
     prelude::*,
-    render::{RenderBuilder, Renderer},
+    render::RenderBuilder,
     tex::{SHCubemap, Tex, TexFormat, TexSample},
     tools::{fly_over::ENABLE_FLY_OVER, log_window::SHOW_LOG_WINDOW, screenshot::SHOW_SCREENSHOT_WINDOW},
     util::{
-        Color128, Gradient, SHLight, SphericalHarmonics,
+        Gradient, SHLight, SphericalHarmonics,
         named_colors::{
             BLACK, BLUE, BURLY_WOOD, DARK_BLUE, DARK_GRAY, LIGHT_BLUE, LIGHT_CYAN, RED, SEA_GREEN, STEEL_BLUE, WHITE,
             YELLOW,
@@ -257,6 +258,9 @@ impl HandMenuRadial1 {
         let mut cube3 =
             SHCubemap::from_cubemap("hdri/sky_dawn.hdr", true, 0).unwrap_or_else(|_err| cube_default.clone_ref());
         cube3.sh.add(Vec3::new(-1.0, 0.15, -0.15).get_normalized(), RED).brightness(0.3);
+        let lights: [SHLight; 1] = [SHLight::new(Vec3::new(-1.0, 0.15, -0.15).get_normalized(), RED); 1];
+        let sh = SphericalHarmonics::from_lights(&lights);
+        cube3.set_cubemap_lighting(sh);
 
         // let cubemap_files = [
         //     "hdri/giza/right.png",
@@ -273,13 +277,14 @@ impl HandMenuRadial1 {
         //            --generate-mipmap right.png left.png top.png bottom.png front.png back.png cubemap_rgba32.ktx2
         let mut cube4 = SHCubemap::from_cubemap("hdri/giza/cubemap_rgba32.ktx2", true, 0)
             .unwrap_or_else(|_err| cube_default.clone_ref());
-        cube4
-            .sh
-            .add(Vec3::new(1.0, 0.25, 0.0).get_normalized(), Color128::WHITE)
-            .add(Vec3::new(-1.0, 0.25, 0.0).get_normalized(), DARK_GRAY)
-            .add(Vec3::new(0.0, 0.25, 1.0).get_normalized(), DARK_GRAY)
-            .add(Vec3::new(0.0, 0.25, -1.0).get_normalized(), DARK_GRAY)
-            .brightness(0.3);
+        let lights: [SHLight; 4] = [
+            SHLight::new(Vec3::new(1.0, 0.25, 0.0).get_normalized(), DARK_GRAY),
+            SHLight::new(Vec3::new(-1.0, 0.25, 0.0).get_normalized(), DARK_GRAY),
+            SHLight::new(Vec3::new(0.0, 0.25, 1.0).get_normalized(), DARK_GRAY),
+            SHLight::new(Vec3::new(0.0, 0.25, -1.0).get_normalized(), DARK_GRAY),
+        ];
+        let sh = SphericalHarmonics::from_lights(&lights);
+        cube4.set_cubemap_lighting(sh);
 
         //---Load hand menu
         let hand_menu_stepper = HandMenuRadial::new(HandRadialLayer::new(
@@ -471,7 +476,7 @@ impl HandMenuRadial1 {
         // draw a floor if needed
         if self.show_floor {
             if self.show_shadows && self.floor == 5 {
-                let light_pos = Renderer::get_sky_light().get_dominent_light_direction() * -15.0;
+                let light_pos = Lighting::get_main_light().dir_to * 15.0;
                 let camera = Matrix::t_r(light_pos, Quat::look_at(light_pos, Vec3::ZERO, None));
                 //Log::diag(format!("Camera at {:}", &light_pos));
 

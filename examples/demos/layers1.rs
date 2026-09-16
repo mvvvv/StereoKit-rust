@@ -168,7 +168,7 @@ impl Layers1 {
                 );
             }
             // Ready to go we can change the sky.
-            Renderer::enable_sky(false);
+            Renderer::skybox_visible(false);
             Renderer::clear_color(Color128::rgba(0.1, 0.4, 0.9, 0.0));
             true
         } else {
@@ -325,7 +325,7 @@ impl Layers1 {
         if triggering {
             self.quad_swapchain_sk = None;
             self.cylinder_swapchain_sk = None;
-            Renderer::enable_sky(true);
+            Renderer::skybox_visible(true);
             self.shutdown_completed = true;
         }
         self.shutdown_completed

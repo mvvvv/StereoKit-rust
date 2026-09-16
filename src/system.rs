@@ -357,11 +357,11 @@ impl Assets {
     /// }
     /// if cfg!(feature = "test-xr-mode") {
     ///     assert_eq!(sprite_count,    13 + 1 );
-    ///     assert_eq!(texture_count,   30 + 1 );
+    ///     assert_eq!(texture_count,   31 + 1 );
     ///     assert_eq!(model_count,     2);
     ///     assert_eq!(sound_count,     5);
-    ///     assert_eq!(material_count,  38 + 1 );
-    ///     assert_eq!(shader_count,    17);
+    ///     assert_eq!(material_count,  39 + 1 );
+    ///     assert_eq!(shader_count,    19);
     ///     assert_eq!(font_count,      1);
     ///     assert_eq!(mesh_count,  28);
     ///     assert_eq!(render_list_count, 1);
@@ -370,11 +370,11 @@ impl Assets {
     ///     assert_eq!(other_count, 0);
     /// } else {
     ///     assert_eq!(sprite_count,    13 + 1 );
-    ///     assert_eq!(texture_count,   24 + 1 );
+    ///     assert_eq!(texture_count,   25 + 1 );
     ///     assert_eq!(model_count,     2);
     ///     assert_eq!(sound_count,     5);
-    ///     assert_eq!(material_count,  38 + 1 );
-    ///     assert_eq!(shader_count,    17);
+    ///     assert_eq!(material_count,  39 + 1 );
+    ///     assert_eq!(shader_count,    19);
     ///     assert_eq!(font_count,      1);
     ///     assert_eq!(mesh_count,  28);
     ///     assert_eq!(render_list_count, 1);

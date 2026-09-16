@@ -1,7 +1,8 @@
 use crate::{
     StereoKitError,
+    lighting::{Lighting, lighting_get_ambient},
     maths::{Bool32T, Vec3},
-    render::{render_get_skylight, render_get_skytex, render_set_skylight, render_set_skytex},
+    render::{render_get_skybox_tex, render_set_skybox_tex},
     system::{AssetState, IAsset, Log},
     util::{Color32, Color128, Gradient, GradientKey, GradientT, SphericalHarmonics},
 };
@@ -650,7 +651,6 @@ unsafe extern "C" {
         array_data: *mut *mut c_void,
         array_count: i32,
         multisample: i32,
-        out_sh_lighting_info: *mut SphericalHarmonics,
     );
     pub fn tex_set_color_arr_mips(
         texture: TexT,
@@ -660,7 +660,6 @@ unsafe extern "C" {
         array_count: i32,
         mip_count: i32,
         multisample: i32,
-        out_sh_lighting_info: *mut SphericalHarmonics,
     );
     pub fn tex_set_mem(
         texture: TexT,
@@ -676,12 +675,7 @@ unsafe extern "C" {
     pub fn tex_get_data(texture: TexT, out_data: *mut c_void, data_size: usize, mip_level: i32);
     pub fn tex_gen_color(color: Color128, width: i32, height: i32, type_: TexType, format: TexFormat) -> TexT;
     pub fn tex_gen_particle(width: i32, height: i32, roundness: f32, gradient_linear: GradientT) -> TexT;
-    pub fn tex_gen_cubemap(
-        gradient: GradientT,
-        gradient_dir: Vec3,
-        resolution: i32,
-        out_sh_lighting_info: *mut SphericalHarmonics,
-    ) -> TexT;
+    pub fn tex_gen_cubemap(gradient: GradientT, gradient_dir: Vec3, resolution: i32) -> TexT;
     pub fn tex_gen_cubemap_sh(
         lookup: *const SphericalHarmonics,
         face_size: i32,
@@ -704,6 +698,8 @@ unsafe extern "C" {
     pub fn tex_set_loading_fallback(loading_texture: TexT);
     pub fn tex_set_error_fallback(error_texture: TexT);
     pub fn tex_get_cubemap_lighting(cubemap_texture: TexT) -> SphericalHarmonics;
+    pub fn tex_set_cubemap_lighting(cubemap_texture: TexT, lighting_info: *const SphericalHarmonics);
+    pub fn tex_gen_cubemap_reflection(source_cubemap: TexT, into: TexT, max_resolution: i32) -> TexT;
 }
 
 impl IAsset for Tex {
@@ -2214,7 +2210,6 @@ impl Tex {
                 data_ptr, // array_data = None
                 array_count as i32,
                 msaa,
-                null_mut(), // out_sh_lighting_info = None
             )
         };
         self
@@ -2284,7 +2279,6 @@ impl Tex {
                 array_data.len() as i32,
                 mip_count,
                 multisample,
-                null_mut(),
             )
         };
         self
@@ -2365,7 +2359,6 @@ impl Tex {
                 ptrs.len() as i32,
                 mip_count,
                 multisample,
-                null_mut(),
             )
         };
         self
@@ -2430,10 +2423,36 @@ impl Tex {
                 ptrs.len() as i32,
                 mip_count,
                 multisample,
-                null_mut(),
             )
         };
         self
+    }
+
+    /// If you already know the lighting, from generating the cubemap yourself for example, assigning it here skips the
+    /// calculation entirely. Assigning waits on a still-loading cubemap first, so the value sticks to its final
+    /// content. Uploading new pixels afterwards replaces it with a calculated one, so assign after the content, not
+    /// before.
+    /// <https://stereokit.net/Pages/StereoKit/Tex/CubemapLighting.html>
+    /// * `lighting_info` - The spherical harmonics representation of the cubemap's lighting.
+    ///
+    /// see also [`SHCubemap`] [`tex_set_cubemap_lighting`] [`Tex::get_cubemap_lighting`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{util::{named_colors, SHLight, SphericalHarmonics}, maths::Vec3,
+    ///                      tex::{Tex, TexFormat, TexType}};
+    ///
+    /// let tex = Tex::gen_color(named_colors::VIOLET, 128, 128,
+    ///                          TexType::Cubemap, TexFormat::Rgba32Srgb);
+    ///
+    /// // Skip the calculation by providing the lighting directly:
+    /// let lights = [SHLight::new(Vec3::UP, named_colors::WHITE)];
+    /// tex.set_cubemap_lighting(SphericalHarmonics::from_lights(&lights));
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn set_cubemap_lighting(&self, lighting_info: impl Into<SphericalHarmonics>) {
+        let lighting_info = lighting_info.into();
+        unsafe { tex_set_cubemap_lighting(self.0.as_ptr(), &lighting_info) }
     }
 
     /// This will override the default fallback texture that gets used before the Tex has finished loading. This is
@@ -3029,12 +3048,20 @@ impl Tex {
         Some(unsafe { tex_get_mips(self.0.as_ptr()) })
     }
 
-    /// ONLY valid for cubemap textures! This will calculate a spherical harmonics representation of the cubemap for use
-    /// with StereoKit’s lighting. First call may take a frame  or two of time, but subsequent calls will pull from a
-    /// cached value.
+    /// ONLY valid for cubemap textures! This is a spherical harmonics representation of the cubemap for use with
+    /// StereoKit's lighting. The first read calculates it, blocking for the result, and caches it. After new pixel
+    /// content is uploaded, reads keep answering with the previous lighting while a fresh calculation runs in the
+    /// background, swapping in once it's ready. Cubemaps over 32px per face need a mip chain to answer accurately, so
+    /// a raw mip-less skybox will warn and return zeroes. Generate a reflection from it with `gen_cubemap_reflection`
+    /// and query that instead, since it already carries the environment's lighting.
+    ///
+    /// If you already know the lighting, from generating the cubemap yourself for example, assigning it here via
+    /// [`Tex::set_cubemap_lighting`] skips the calculation entirely. Assigning waits on a still-loading cubemap first,
+    /// so the value sticks to its final content. Uploading new pixels afterwards replaces it with a calculated one, so
+    /// assign after the content, not before.
     /// <https://stereokit.net/Pages/StereoKit/Tex/CubemapLighting.html>
     ///
-    /// see also [`tex_get_cubemap_lighting`] use instead [`SHCubemap`]
+    /// see also [`tex_get_cubemap_lighting`] [`Tex::set_cubemap_lighting`] use instead [`SHCubemap`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -3056,6 +3083,60 @@ impl Tex {
             tex: Tex(NonNull::new(unsafe { tex_find(tex_get_id(self.0.as_ptr())) })
                 .expect("SHCubemap::get_cubemap_lighting Tex should be found!")),
         }
+    }
+
+    /// Generates a specular reflection cubemap from an environment cubemap: a GGX convolved mip chain suitable for
+    /// [`Lighting::reflection`](crate::lighting::Lighting::reflection). Skybox cubemaps carry only raw radiance at mip
+    /// 0, so reflections must be generated from them here. The result also carries the environment's lighting data,
+    /// ready in [`Tex::get_cubemap_lighting`] as soon as the reflection finishes loading.
+    ///
+    /// This is asynchronous: a still-loading source returns a pending texture right away, and generates when the load
+    /// finishes. If the source fails to load, a new result switches to the error fallback, while a reused `into` keeps
+    /// its previous content.
+    /// <https://stereokit.net/Pages/StereoKit/Tex/GenCubemapReflection.html>
+    /// * `source_cubemap` - The environment cubemap to convolve. It does not need to be loaded yet, generation chains
+    ///   off the load.
+    /// * `into` - When None, a new reflection texture is created. Otherwise this should be a reflection cubemap from an
+    ///   earlier call, whose contents are regenerated from the source, the fast path for frequently updated
+    ///   environments. The source itself is not a valid destination.
+    /// * `max_resolution` - Cap for the reflection texture's face resolution when a new texture is created. Reflection
+    ///   data is low frequency, so this can stay small.
+    ///
+    /// Returns the reflection cubemap, or None on failure.
+    /// see also [`tex_gen_cubemap_reflection`] [`Lighting::set_environment`](crate::lighting::Lighting::set_environment)
+    /// [`Lighting::reflection`](crate::lighting::Lighting::reflection)
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{lighting::Lighting, tex::{Tex, TexType, TexFormat},
+    ///                      util::Color128};
+    ///
+    /// let sky_cubemap = Tex::gen_color(Color128::WHITE, 128, 128, TexType::Cubemap, TexFormat::Rgba32Linear);
+    /// let reflection = Tex::gen_cubemap_reflection(&sky_cubemap, None, 64)
+    ///                     .expect("reflection should be generated");
+    /// Lighting::reflection(Some(&reflection));
+    ///
+    /// // The reflection generates asynchronously, so let it land before
+    /// // the app shuts down.
+    /// number_of_steps = 10;
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     system::Assets::block_for_priority(i32::MAX);
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn gen_cubemap_reflection(
+        source_cubemap: impl AsRef<Tex>,
+        into: Option<&Tex>,
+        max_resolution: i32,
+    ) -> Option<Tex> {
+        let tex = unsafe {
+            tex_gen_cubemap_reflection(
+                source_cubemap.as_ref().0.as_ptr(),
+                into.map_or(std::ptr::null_mut(), |tex| tex.0.as_ptr()),
+                max_resolution,
+            )
+        };
+        NonNull::new(tex).map(Tex)
     }
 
     /// Default 2x2 black opaque texture, this is the texture referred to as ‘black’ in the shader texture defaults.
@@ -3273,8 +3354,8 @@ impl SHCubemap {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     if tex.get_asset_state() != AssetState::Loaded {iter -= 1}
     ///     
-    ///     assert_ne!(sh_cubemap.sh.coefficients[0], Vec3::ZERO);
-    ///     assert_ne!(sh_cubemap.sh.coefficients[8], Vec3::ZERO);
+    ///     assert_eq!(sh_cubemap.sh.coefficients[0], Vec3::ZERO);
+    ///     assert_eq!(sh_cubemap.sh.coefficients[8], Vec3::ZERO);
     /// );
     /// assert_eq!(tex.get_asset_state(), AssetState::Loaded);
     /// # sk::Sk::shutdown();
@@ -3367,7 +3448,7 @@ impl SHCubemap {
     }
 
     /// Generates a cubemap texture from a gradient and a direction! These are entirely suitable for skyboxes, which
-    /// you can set via Renderer.SkyTex.
+    /// you can set via Renderer.SkyboxTex, or via Lighting::set_environment to light the scene with it as well.
     /// <https://stereokit.net/Pages/StereoKit/Tex/GenCubemap.html>
     /// * `gradient` - A color gradient the generator will sample from! This looks at the 0-1 range of the gradient.
     /// * `gradient_dir` - This vector points to where the ‘top’ of the color gradient will go. Conversely, the ‘bottom’
@@ -3406,12 +3487,12 @@ impl SHCubemap {
         gradient_dir: impl Into<Vec3>,
         resolution: i32,
     ) -> SHCubemap {
-        let mut sh = SphericalHarmonics::default();
         let tex = Tex(NonNull::new(unsafe {
-            tex_gen_cubemap(gradient.as_ref().0.as_ptr(), gradient_dir.into(), resolution, &mut sh)
+            tex_gen_cubemap(gradient.as_ref().0.as_ptr(), gradient_dir.into(), resolution)
         })
         .expect("SHCubemap::gen_cubemap_gradient should create texture"));
         //unsafe { sk.tex_addref(&cubemap.1) }
+        let sh = unsafe { tex_get_cubemap_lighting(tex.0.as_ptr()) };
         SHCubemap { sh, tex }
     }
 
@@ -3443,7 +3524,7 @@ impl SHCubemap {
     ///
     /// let tex = sh_cubemap.tex;
     /// assert_eq!(tex.get_asset_state(), AssetState::Loaded);
-    /// assert_eq!(sh_cubemap.sh.get_dominent_light_direction(), -Vec3::ONE.get_normalized());
+    /// assert_eq!(sh_cubemap.sh.get_dominant_light_direction_to(), Vec3::ONE.get_normalized());
     /// assert_ne!(sh_cubemap.sh.coefficients[0], Vec3::ZERO);
     /// assert_ne!(sh_cubemap.sh.coefficients[1], Vec3::ZERO);
     /// assert_eq!(sh_cubemap.sh.coefficients[8], Vec3::ZERO);
@@ -3464,79 +3545,31 @@ impl SHCubemap {
         SHCubemap { sh: lighting, tex }
     }
 
-    /// Get the associated lighting extracted from the cubemap.
+    /// If you already know the lighting, from generating the cubemap yourself for example, assigning it here skips the
+    /// calculation entirely. Assigning waits on a still-loading cubemap first, so the value sticks to its final
+    /// content. Uploading new pixels afterwards replaces it with a calculated one, so assign after the content, not
+    /// before.
     /// <https://stereokit.net/Pages/StereoKit/Tex/CubemapLighting.html>
+    /// * `lighting_info` - The spherical harmonics representation of the cubemap's lighting.
     ///
-    /// see also [`tex_gen_cubemap_sh`]
+    /// see also [`tex_set_cubemap_lighting`] [`SHCubemap::get_cubemap_lighting`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::Vec3, tex::SHCubemap, system::AssetState,
-    ///                      util::{named_colors, SHLight, SphericalHarmonics}};
+    /// use stereokit_rust::{util::{named_colors, SHLight, SphericalHarmonics}, maths::Vec3,
+    ///                      tex::SHCubemap};
     ///
-    /// let lights: [SHLight; 1] = [SHLight::new(Vec3::ONE, named_colors::WHITE); 1];
-    /// let sh = SphericalHarmonics::from_lights(&lights);
-    /// let sh_cubemap = SHCubemap::gen_cubemap_sh(sh, 128, 0.5, 1.0);
-    /// let tex = sh_cubemap.tex;
+    /// let mut sh_cubemap = SHCubemap::get_rendered_sky();
     ///
-    /// let mut sh_cubemap2 = SHCubemap::get_cubemap_lighting(tex);
-    /// sh_cubemap2.sh.brightness(1.0);
-    /// sh_cubemap2.render_as_sky();
-    /// let tex2 = sh_cubemap2.tex;
-    ///
-    /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     assert_eq!(tex2.get_asset_state(), AssetState::Loaded);
-    ///     assert_eq!(sh_cubemap2.sh.get_dominent_light_direction(), -Vec3::ONE.get_normalized());
-    ///     assert_ne!(sh_cubemap2.sh.coefficients[0], Vec3::ZERO);
-    ///     assert_ne!(sh_cubemap2.sh.coefficients[1], Vec3::ZERO);
-    ///     assert_eq!(sh_cubemap2.sh.coefficients[8], Vec3::ZERO);
-    /// );
+    /// // Skip the calculation by providing the lighting directly:
+    /// let lights = [SHLight::new(Vec3::UP, named_colors::WHITE)];
+    /// sh_cubemap.set_cubemap_lighting(SphericalHarmonics::from_lights(&lights));
     /// # sk::Sk::shutdown();
     /// ```
-    pub fn get_cubemap_lighting(cubemap_texture: impl AsRef<Tex>) -> SHCubemap {
-        SHCubemap {
-            sh: unsafe { tex_get_cubemap_lighting(cubemap_texture.as_ref().0.as_ptr()) },
-            tex: Tex(NonNull::new(unsafe { tex_find(tex_get_id(cubemap_texture.as_ref().0.as_ptr())) })
-                .expect("SHCubemap::get_cubemap_lighting Tex should be found!")),
-        }
-    }
-
-    /// Get the cubemap texture and SH light of the the current skylight
-    /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyLight.html>
-    /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyTex.html>
-    ///
-    /// see also [`crate::render::Renderer`]
-    /// ### Examples
-    /// ```
-    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{tex::SHCubemap, system::AssetState};
-    ///
-    /// let sh_cubemap = SHCubemap::get_rendered_sky();
-    ///
-    /// let tex = sh_cubemap.tex;
-    /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     if tex.get_asset_state() != AssetState::Loaded {iter -= 1}
-    ///     assert_eq!(tex.get_id(), "default/cubemap");
-    /// );
-    /// # sk::Sk::shutdown();
-    /// ```
-    pub fn get_rendered_sky() -> SHCubemap {
-        let skytex_ptr = unsafe { render_get_skytex() };
-        let tex = if let Some(nonnull_ptr) = NonNull::new(skytex_ptr) {
-            Tex(nonnull_ptr)
-        } else {
-            // Si render_get_skytex() retourne null, on crée un SHCubemap par défaut
-            Log::warn("render_get_skytex() returned null, creating default sky cubemap");
-            let gradient_keys = [
-                crate::util::GradientKey::new(crate::util::Color128::new(0.2, 0.4, 0.8, 1.0), 0.0), // Bleu ciel
-                crate::util::GradientKey::new(crate::util::Color128::new(0.8, 0.9, 1.0, 1.0), 1.0), // Blanc nuageux
-            ];
-            let gradient = crate::util::Gradient::new(Some(&gradient_keys));
-            let default_sh_cubemap = SHCubemap::gen_cubemap_gradient(gradient, crate::maths::Vec3::UP, 64);
-            return default_sh_cubemap;
-        };
-
-        SHCubemap { sh: unsafe { render_get_skylight() }, tex }
+    pub fn set_cubemap_lighting(&mut self, lighting_info: impl Into<SphericalHarmonics>) -> &mut Self {
+        let lighting_info = lighting_info.into();
+        unsafe { tex_set_cubemap_lighting(self.tex.0.as_ptr(), &lighting_info) }
+        self
     }
 
     /// Creates a clone of the same reference. Basically, the new variable is the same asset. This is what you get by
@@ -3563,11 +3596,12 @@ impl SHCubemap {
         SHCubemap { sh: self.sh, tex: self.tex.clone_ref() }
     }
 
-    /// set the spherical harmonics as skylight and the the cubemap texture as skytex
-    /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyLight.html>
-    /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyTex.html>
+    /// set cubemap texture as the skybox backdrop with [`Lighting::set_environment`] [`Lighting::reflection`] and
+    /// [`Lighting::ambient`].
+    /// <https://stereokit.net/Pages/StereoKit/Lighting/Ambient.html>
+    /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyboxTex.html>
     ///
-    /// see also see also [`crate::render::Renderer`]
+    /// see also see also [`crate::render::Renderer`] [`crate::lighting::Lighting`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -3575,19 +3609,97 @@ impl SHCubemap {
     ///
     /// let sh_cubemap = SHCubemap::from_cubemap("hdri/sky_dawn.hdr", true, 9999)
     ///                                .expect("Cubemap should be created");
-    /// assert_eq!(Renderer::get_enable_sky(), true);
+    /// assert_eq!(Renderer::get_skybox_visible(), true);
     ///
     /// sh_cubemap.render_as_sky();
     ///
-    /// Renderer::enable_sky(false);
-    /// assert_eq!(Renderer::get_enable_sky(), false);
+    /// Renderer::skybox_visible(false);
+    /// assert_eq!(Renderer::get_skybox_visible(), false);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn render_as_sky(&self) {
         unsafe {
-            render_set_skylight(&self.sh);
-            render_set_skytex(self.tex.0.as_ptr());
+            render_set_skybox_tex(self.tex.0.as_ptr());
+            Lighting::set_environment(Some(&self.tex));
+            Lighting::reflection(Some(&self.tex));
+            Lighting::ambient(self.sh);
         }
+    }
+
+    /// Get the associated lighting extracted from the cubemap.
+    /// <https://stereokit.net/Pages/StereoKit/Tex/CubemapLighting.html>
+    ///
+    /// see also [`tex_gen_cubemap_sh`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Vec3, tex::SHCubemap, system::AssetState,
+    ///                      util::{named_colors, SHLight, SphericalHarmonics}};
+    ///
+    /// let lights: [SHLight; 1] = [SHLight::new(Vec3::ONE, named_colors::WHITE); 1];
+    /// let sh = SphericalHarmonics::from_lights(&lights);
+    /// let sh_cubemap = SHCubemap::gen_cubemap_sh(sh, 128, 0.5, 1.0);
+    /// let tex = sh_cubemap.tex;
+    ///
+    /// let mut sh_cubemap2 = SHCubemap::get_cubemap_lighting(tex);
+    /// sh_cubemap2.sh.brightness(1.0);
+    /// sh_cubemap2.render_as_sky();
+    /// let tex2 = sh_cubemap2.tex;
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     assert_eq!(tex2.get_asset_state(), AssetState::Loaded);
+    ///     assert_eq!(sh_cubemap2.sh.get_dominant_light_direction_to(), Vec3::ONE.get_normalized());
+    ///     assert_ne!(sh_cubemap2.sh.coefficients[0], Vec3::ZERO);
+    ///     assert_ne!(sh_cubemap2.sh.coefficients[1], Vec3::ZERO);
+    ///     assert_eq!(sh_cubemap2.sh.coefficients[8], Vec3::ZERO);
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn get_cubemap_lighting(cubemap_texture: impl AsRef<Tex>) -> SHCubemap {
+        SHCubemap {
+            sh: unsafe { tex_get_cubemap_lighting(cubemap_texture.as_ref().0.as_ptr()) },
+            tex: Tex(NonNull::new(unsafe { tex_find(tex_get_id(cubemap_texture.as_ref().0.as_ptr())) })
+                .expect("SHCubemap::get_cubemap_lighting Tex should be found!")),
+        }
+    }
+
+    /// Get the cubemap texture and SH light of the current scene lighting
+    /// <https://stereokit.net/Pages/StereoKit/Lighting/Ambient.html>
+    /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyboxTex.html>
+    ///
+    /// see also [`crate::render::Renderer`] [`crate::lighting::Lighting`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{tex::SHCubemap, system::AssetState};
+    ///
+    /// let sh_cubemap = SHCubemap::get_rendered_sky();
+    ///
+    /// let tex = sh_cubemap.tex;
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if tex.get_asset_state() != AssetState::Loaded {iter -= 1}
+    ///     assert_eq!(tex.get_id(), "default/cubemap");
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn get_rendered_sky() -> SHCubemap {
+        let skytex_ptr = unsafe { render_get_skybox_tex() };
+        let tex = if let Some(nonnull_ptr) = NonNull::new(skytex_ptr) {
+            Tex(nonnull_ptr)
+        } else {
+            // If render_get_skybox_tex() returns null, we create a default SHCubemap
+            Log::warn("render_get_skybox_tex() returned null, creating default sky cubemap");
+            let gradient_keys = [
+                crate::util::GradientKey::new(crate::util::Color128::new(0.2, 0.4, 0.8, 1.0), 0.0), // Bleu ciel
+                crate::util::GradientKey::new(crate::util::Color128::new(0.8, 0.9, 1.0, 1.0), 1.0), // Blanc nuageux
+            ];
+            let gradient = crate::util::Gradient::new(Some(&gradient_keys));
+            let default_sh_cubemap = SHCubemap::gen_cubemap_gradient(gradient, crate::maths::Vec3::UP, 64);
+            return default_sh_cubemap;
+        };
+
+        SHCubemap { sh: unsafe { lighting_get_ambient() }, tex }
     }
 
     /// Get the cubemap tuple
@@ -3605,7 +3717,7 @@ impl SHCubemap {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     if tex.get_asset_state() != system::AssetState::Loaded {iter -= 1}
     ///     assert_eq!(tex.get_id(), "default/cubemap");
-    ///     assert_eq!(sh.get_dominent_light_direction(), Vec3 { x: -0.20119436, y: -0.92318374, z: -0.32749438 });
+    ///     assert_eq!(sh.get_dominant_light_direction_to(), Vec3 { x: 0.1900892, y: 0.9229183, z: 0.33479506 });
     /// );
     /// # sk::Sk::shutdown();
     /// ```

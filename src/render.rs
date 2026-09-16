@@ -1,5 +1,6 @@
 use crate::{
     StereoKitError,
+    lighting::Lighting,
     material::{Material, MaterialBuffer, MaterialBufferT, MaterialT},
     maths::{Bool32T, Matrix, Pose, Rect},
     mesh::{Mesh, MeshT},
@@ -222,12 +223,10 @@ unsafe extern "C" {
     pub fn render_get_projection() -> Projection;
     pub fn render_get_cam_root() -> Matrix;
     pub fn render_set_cam_root(cam_root: *const Matrix);
-    pub fn render_set_skytex(sky_texture: TexT);
-    pub fn render_get_skytex() -> TexT;
-    pub fn render_set_skymaterial(sky_material: MaterialT);
-    pub fn render_get_skymaterial() -> MaterialT;
-    pub fn render_set_skylight(light_info: *const SphericalHarmonics);
-    pub fn render_get_skylight() -> SphericalHarmonics;
+    pub fn render_set_skybox_tex(skybox_texture: TexT);
+    pub fn render_get_skybox_tex() -> TexT;
+    pub fn render_set_skybox_material(skybox_material: MaterialT);
+    pub fn render_get_skybox_material() -> MaterialT;
     pub fn render_set_filter(layer_filter: RenderLayer);
     pub fn render_get_filter() -> RenderLayer;
     pub fn render_set_scaling(display_tex_scale: f32);
@@ -241,8 +240,8 @@ unsafe extern "C" {
     pub fn render_has_capture_filter() -> Bool32T;
     pub fn render_set_clear_color(color_gamma: Color128);
     pub fn render_get_clear_color() -> Color128;
-    pub fn render_enable_skytex(show_sky: Bool32T);
-    pub fn render_enabled_skytex() -> Bool32T;
+    pub fn render_set_skybox_visible(visible: Bool32T);
+    pub fn render_get_skybox_visible() -> Bool32T;
 
     pub fn render_global_texture(register_slot: i32, texture: TexT);
     pub fn render_global_buffer(register_slot: i32, buffer: MaterialBufferT);
@@ -403,28 +402,37 @@ impl Renderer {
         unsafe { render_set_clear_color(color_gamma.into()) }
     }
 
-    /// Enables or disables rendering of the skybox texture! It’s enabled by default on Opaque displays, and completely
-    /// unavailable for transparent displays.
-    /// <https://stereokit.net/Pages/StereoKit/Renderer/EnableSky.html>
+    /// Is the skybox backdrop drawn? On by default on Opaque displays, and never drawn on transparent displays, where
+    /// the real world is the backdrop. This only affects the visual, leaving scene lighting from [`Lighting`]
+    /// untouched.
+    /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyboxVisible.html>
+    /// * `visible` - Whether the skybox backdrop should be drawn.
     ///
-    /// see also [`render_enable_skytex`] [`Renderer::clear_color`] [`crate::tex::SHCubemap`]
+    /// see also [`render_set_skybox_visible`] [`Renderer::clear_color`] [`crate::tex::SHCubemap`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::render::Renderer;
     ///
-    /// assert_eq!(Renderer::get_enable_sky(), true);
+    /// assert_eq!(Renderer::get_skybox_visible(), true);
     ///
-    /// Renderer::enable_sky(false);
-    /// assert_eq!(Renderer::get_enable_sky(), false);
+    /// Renderer::skybox_visible(false);
+    /// assert_eq!(Renderer::get_skybox_visible(), false);
     ///
-    /// Renderer::enable_sky(true);
-    /// assert_eq!(Renderer::get_enable_sky(), true);
+    /// Renderer::skybox_visible(true);
+    /// assert_eq!(Renderer::get_skybox_visible(), true);
     /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
+    pub fn skybox_visible(visible: bool) {
+        unsafe { render_set_skybox_visible(visible as Bool32T) }
+    }
+
+    /// Enables or disables rendering of the skybox.
+    /// <https://stereokit.net/Pages/StereoKit/Renderer/EnableSky.html>
+    #[deprecated(since = "0.4.0", note = "Use [`Renderer::skybox_visible`]")]
     pub fn enable_sky(enable: bool) {
-        unsafe { render_enable_skytex(enable as Bool32T) }
+        Renderer::skybox_visible(enable)
     }
 
     /// By default, StereoKit renders all first-person layers. This is a bit flag that allows you to change which layers
@@ -560,42 +568,28 @@ impl Renderer {
         unsafe { render_set_viewport_scaling(scaling) }
     }
 
-    /// Sets the lighting information for the scene! You can build one through [`SphericalHarmonics::from_lights`], or grab
-    /// one from [`crate::tex::SHCubemap`]
+    /// Scene lighting moved to its own class with the skybox/lighting split, this is `Lighting.Ambient` now. You can
+    /// still build one through [`SphericalHarmonics::from_lights`], or let [`Lighting::set_environment`] derive one
+    /// from a cubemap.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyLight.html>
-    ///
-    /// see also [`render_set_skylight`] [`crate::tex::SHCubemap`] [`crate::util::SHLight`]
-    /// ### Examples
-    /// ```
-    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{render::Renderer, maths::Vec3,
-    ///                      util::{named_colors, SphericalHarmonics, SHLight}};
-    ///
-    /// let light1 = SHLight::new([0.0, 1.0, 0.0], named_colors::WHITE);
-    /// let light2 = SHLight::new([0.0, 0.0, 1.0], named_colors::WHITE);
-    ///
-    /// let sh = SphericalHarmonics::from_lights(&[light1, light2]);
-    ///
-    /// Renderer::sky_light(sh);
-    /// let sky_light = Renderer::get_sky_light();
-    ///
-    /// assert_eq!(sky_light, sh);
-    /// assert_eq!(sh.get_dominent_light_direction(),
-    ///            Vec3 { x: -0.0, y: -1.0, z: -1.0 }.get_normalized());
-    /// # test_steps!();
-    /// # sk::Sk::shutdown();
-    /// ```
+    #[deprecated(since = "0.4.0", note = "Use [`Lighting::ambient`]")]
     pub fn sky_light(light_info: SphericalHarmonics) {
-        unsafe { render_set_skylight(&light_info) }
+        Lighting::ambient(light_info)
     }
 
-    /// Set a cubemap skybox texture for rendering a background! This is only visible on Opaque displays, since
-    /// transparent displays have the real world behind them already! StereoKit has a a default procedurally generated
-    /// skybox. You can load one with [`crate::tex::SHCubemap`]. If you’re trying to affect the lighting,
-    /// see [`Renderer::sky_light`].
-    /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyTex.html>
+    /// The cubemap texture the skybox backdrop draws! This is only visible on Opaque displays, since transparent
+    /// displays have the real world behind them already. It's shorthand for the skybox material's 'source' texture
+    /// parameter, and survives material swaps.
     ///
-    /// see also [`render_set_skytex`] [`crate::tex::SHCubemap`]
+    /// This is purely visual, and does not affect scene lighting. The typical way to set up a sky is
+    /// `Lighting::set_environment`, which assigns this along with the lighting it derives from the same cubemap.
+    /// Assign this directly to draw a different sky than the one you're lighting with. Assigning None restores
+    /// StereoKit's built-in default sky.
+    /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyboxTex.html>
+    /// * `skybox_texture` - The cubemap texture the skybox backdrop
+    ///   draws, or None to restore StereoKit's built-in default sky.
+    ///
+    /// see also [`render_set_skybox_tex`] [`crate::tex::SHCubemap`] [`Lighting::set_environment`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -604,51 +598,71 @@ impl Renderer {
     /// let sky_cubemap = SHCubemap::from_cubemap("hdri/sky_dawn.hdr", true, 9999)
     ///                        .expect("sky_cubemap should be created");
     ///
-    /// let sky_tex = sky_cubemap.get().1;
+    /// let skybox_tex = sky_cubemap.get().1;
     ///
     /// Assets::block_for_priority(i32::MAX);
     ///
-    /// Renderer::sky_tex(&sky_tex);
-    /// let sky_tex_get = Renderer::get_sky_tex();
+    /// Renderer::skybox_tex(&skybox_tex);
+    /// let skybox_tex_get = Renderer::get_skybox_tex();
     ///
-    /// assert_eq!(sky_tex_get, sky_tex);
+    /// assert_eq!(skybox_tex_get, skybox_tex);
     /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
+    pub fn skybox_tex(skybox_texture: impl AsRef<Tex>) {
+        unsafe { render_set_skybox_tex(skybox_texture.as_ref().0.as_ptr()) }
+    }
+
+    /// Deprecated with the skybox/lighting split! Assigning this still behaves like the old API: it routes through
+    /// `Lighting::set_environment`, so the cubemap drives reflections and ambient light as well as the backdrop. Call
+    /// that directly, or use [`Renderer::skybox_tex`] for just the backdrop.
+    /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyTex.html>
+    #[deprecated(
+        since = "0.4.0",
+        note = "Assigning routes through [`Lighting::set_environment`] for the old sky + lighting behavior. Call that directly, or use [`Renderer::skybox_tex`] for just the backdrop."
+    )]
     pub fn sky_tex(tex: impl AsRef<Tex>) {
-        unsafe { render_set_skytex(tex.as_ref().0.as_ptr()) }
+        Lighting::set_environment(Some(tex.as_ref()))
     }
 
     /// This is the Material that StereoKit is currently using to draw the skybox! It needs a special shader that's
-    /// tuned for a full-screen quad. If you just want to change the skybox image, try setting [`Renderer::sky_tex`]
-    /// instead.
-    ///  
+    /// tuned for a full-screen quad. If you just want to change the skybox image, try setting
+    /// [`Renderer::skybox_tex`] instead.
+    ///
     /// This value will never be null! If you try setting this to null, it will assign SK's built-in default sky
-    /// material. If you want to turn off the skybox, see [`Renderer::enable_sky`] instead.
-    ///  
+    /// material. If you want to turn off the skybox, see [`Renderer::skybox_visible`] instead.
+    ///
     /// Recommended Material settings would be:
     /// - DepthWrite: false
     /// - DepthTest: LessOrEq
     /// - QueueOffset: 100
     ///
-    /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyMaterial.html>
+    /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyboxMaterial.html>
+    /// * `skybox_material` - The material to draw the skybox with.
     ///
-    /// see also [`render_set_skymaterial`] [`crate::tex::SHCubemap`]
+    /// see also [`render_set_skybox_material`] [`crate::tex::SHCubemap`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{render::Renderer, material::Material};
     ///
     /// let material = Material::pbr().copy();
-    /// Renderer::sky_material(&material);
+    /// Renderer::skybox_material(&material);
     ///
-    /// let same_material = Renderer::get_sky_material();
+    /// let same_material = Renderer::get_skybox_material();
     /// assert_eq!(same_material, material);
     /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
+    pub fn skybox_material(skybox_material: impl AsRef<Material>) {
+        unsafe { render_set_skybox_material(skybox_material.as_ref().0.as_ptr()) }
+    }
+
+    /// Renamed alongside the skybox/lighting split, the material behaves the same as before.
+    /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyMaterial.html>
+    #[deprecated(since = "0.4.0", note = "Use [`Renderer::skybox_material`]")]
     pub fn sky_material(material: impl AsRef<Material>) {
-        unsafe { render_set_skymaterial(material.as_ref().0.as_ptr()) }
+        Renderer::skybox_material(material)
     }
 
     /// Adds a mesh to the render queue for this frame! If the Hierarchy has a transform on it, that transform is
@@ -660,8 +674,8 @@ impl Renderer {
     /// * `color` - A per-instance linear space color value to pass into the shader! Normally this gets used like a
     ///   material tint. If you’re adventurous and don’t need per-instance colors, this is a great spot to pack in
     ///   extra per-instance data for the shader! If None has default value of WHITE
-    /// * `layer` - All visuals are rendered using a layer bit-flag. By default, all layers are rendered, but this can be
-    ///   useful for filtering out objects for different rendering purposes! For example: rendering a mesh over the
+    /// * `layer` - All visuals are rendered using a layer bit-flag. By default, all layers are rendered, but this can
+    ///   be useful for filtering out objects for different rendering purposes! For example: rendering a mesh over the
     ///   user’s head from a 3rd person perspective, but filtering it out from the 1st person perspective.If None has
     ///   default value of RenderLayer::Layer0
     ///
@@ -1382,14 +1396,22 @@ impl Renderer {
         unsafe { render_get_clear_color() }
     }
 
-    /// Enables or disables rendering of the skybox texture! It’s enabled by default on Opaque displays, and completely
-    /// unavailable for transparent displays.
-    /// <https://stereokit.net/Pages/StereoKit/Renderer/EnableSky.html>
+    /// Is the skybox backdrop drawn? On by default on Opaque displays, and never drawn on transparent displays, where
+    /// the real world is the backdrop. This only affects the visual, leaving scene lighting from [`Lighting`]
+    /// untouched.
+    /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyboxVisible.html>
     ///
-    /// see also [`render_enabled_skytex`]
-    /// see example in [`Renderer::enable_sky`]
+    /// see also [`render_get_skybox_visible`]
+    /// see example in [`Renderer::skybox_visible`]
+    pub fn get_skybox_visible() -> bool {
+        unsafe { render_get_skybox_visible() != 0 }
+    }
+
+    /// Enables or disables rendering of the skybox.
+    /// <https://stereokit.net/Pages/StereoKit/Renderer/EnableSky.html>
+    #[deprecated(since = "0.4.0", note = "Use [`Renderer::get_skybox_visible`]")]
     pub fn get_enable_sky() -> bool {
-        unsafe { render_enabled_skytex() != 0 }
+        Renderer::get_skybox_visible()
     }
 
     /// This tells if capture_filter has been overridden to a specific value via Renderer::override_capture_filter.
@@ -1462,53 +1484,63 @@ impl Renderer {
         unsafe { render_get_viewport_scaling() }
     }
 
-    /// Gets the lighting information for the scene! You can build one through SphericalHarmonics::from_lights, or grab
-    /// one from [`crate::tex::SHCubemap`].
+    /// Scene lighting moved to its own class with the skybox/lighting split, this is [`Lighting::ambient`] now. You can
+    /// still build one through [`SphericalHarmonics::from_lights`], or let [`Lighting::set_environment`] derive one
+    /// from a cubemap.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyLight.html>
-    ///
-    /// see also [`render_get_skylight`]
-    /// see example in [`Renderer::sky_light`]
+    #[deprecated(since = "0.4.0", note = "Use [`Lighting::get_ambient`]")]
     pub fn get_sky_light() -> SphericalHarmonics {
-        unsafe { render_get_skylight() }
+        Lighting::get_ambient()
     }
 
-    /// Get the cubemap skybox texture for rendering a background! This is only visible on Opaque displays, since
-    /// transparent displays have the real world behind them already! StereoKit has a a default procedurally generated
-    /// skybox. You can load one with [`crate::tex::SHCubemap`]. If you’re trying to affect the lighting,
-    /// see Renderer::sky_light.
-    /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyTex.html>
+    /// The cubemap texture the skybox backdrop draws! This is only visible on Opaque displays, since transparent
+    /// displays have the real world behind them already. It's shorthand for the skybox material's 'source' texture
+    /// parameter, and survives material swaps.
     ///
-    /// see also [`render_get_skytex`]
-    /// see example in [`Renderer::sky_tex`]
-    pub fn get_sky_tex() -> Tex {
-        let skytex_ptr = unsafe { render_get_skytex() };
-        if let Some(nonnull_ptr) = NonNull::new(skytex_ptr) {
+    /// This is purely visual, and does not affect scene lighting, see [`Lighting`].
+    /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyboxTex.html>
+    ///
+    /// see also [`render_get_skybox_tex`]
+    /// see example in [`Renderer::skybox_tex`]
+    pub fn get_skybox_tex() -> Tex {
+        let skybox_tex_ptr = unsafe { render_get_skybox_tex() };
+        if let Some(nonnull_ptr) = NonNull::new(skybox_tex_ptr) {
             Tex(nonnull_ptr)
         } else {
-            // Si render_get_skytex() retourne null, on retourne une texture d'erreur par défaut
-            Log::warn("render_get_skytex() returned null, returning error texture");
+            // If render_get_skybox_tex() returns null, we return a default error texture
+            Log::warn("render_get_skybox_tex() returned null, returning error texture");
             Tex::error()
         }
     }
 
+    /// Deprecated with the skybox/lighting split, the texture behaves the same as before, see
+    /// [`Renderer::get_skybox_tex`].
+    /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyTex.html>
+    #[deprecated(since = "0.4.0", note = "Use [`Renderer::get_skybox_tex`]")]
+    pub fn get_sky_tex() -> Tex {
+        Renderer::get_skybox_tex()
+    }
+
     /// This is the Material that StereoKit is currently using to draw the skybox! It needs a special shader that's
-    /// tuned for a full-screen quad. If you just want to change the skybox image, try setting [`Renderer::sky_tex`]
-    /// instead.
-    ///  
+    /// tuned for a full-screen quad. If you just want to change the skybox image, try setting
+    /// [`Renderer::skybox_tex`] instead.
+    ///
     /// This value will never be null! If you try setting this to null, it will assign SK's built-in default sky
-    /// material. If you want to turn off the skybox, see [`Renderer::enable_sky`] instead.
-    ///  
-    /// Recommended Material settings would be:
-    /// - DepthWrite: false
-    /// - DepthTest: LessOrEq
-    /// - QueueOffset: 100
+    /// material. If you want to turn off the skybox, see [`Renderer::skybox_visible`] instead.
+    /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyboxMaterial.html>
     ///
+    /// see also [`render_get_skybox_material`]
+    /// see example in [`Renderer::skybox_material`]
+    pub fn get_skybox_material() -> Material {
+        Material(NonNull::new(unsafe { render_get_skybox_material() }).expect("Sky material should not be null!"))
+    }
+
+    /// Renamed alongside the skybox/lighting split, the material behaves the same as before, see
+    /// [`Renderer::get_skybox_material`].
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SkyMaterial.html>
-    ///
-    /// see also [`render_get_skymaterial`]
-    /// see example in [`Renderer::sky_material`]
+    #[deprecated(since = "0.4.0", note = "Use [`Renderer::get_skybox_material`]")]
     pub fn get_sky_material() -> Material {
-        Material(NonNull::new(unsafe { render_get_skymaterial() }).expect("Sky material should not be null!"))
+        Renderer::get_skybox_material()
     }
 }
 

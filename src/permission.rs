@@ -2,8 +2,10 @@ use std::fmt;
 
 use crate::maths::Bool32T;
 
-/// A list of permissions that StereoKit knows about. On some platforms (like Android), these permissions may need to be
-/// explicitly requested before using certain features.
+/// A list of permissions that StereoKit knows about, each named for the feature it unlocks. On some platforms
+/// (like Android), these permissions may need to be explicitly requested before using certain features. Runtimes
+/// group features into system permissions differently, so several of these may resolve to the same underlying system
+/// permission.
 /// <https://stereokit.net/Pages/StereoKit/PermissionType.html>
 ///
 /// see also: [`Permission`]
@@ -29,12 +31,27 @@ pub enum PermissionType {
     /// explicitly approve.
     /// This maps to android.permission.FACE_TRACKING on Android XR, but varies per-runtime.
     FaceTracking = 4,
-    /// For access to data in the user's space, this can be for things like spatial anchors, plane detection, hit
-    /// testing, etc. This is typically an interactive permission that the user will need to explicitly approve.
+    /// For estimating ambient lighting from the user's surroundings, this is what the world lighting source feeds into
+    /// Lighting.Ambient. This is typically an interactive permission that the user will need to explicitly approve.
     /// This maps to android.permission.SCENE_UNDERSTANDING_COARSE on Android XR, but varies per-runtime.
-    Scene = 5,
+    AmbientEstimation = 5,
+    /// For estimating an environment cubemap from the user's surroundings, this is what the world lighting source
+    /// feeds into [`Lighting::reflection`](crate::lighting::Lighting::reflection). The estimate shows imagery of the
+    /// user's space, so runtimes may treat it more strictly than ambient estimation. This is typically an interactive
+    /// permission that the user will need to explicitly approve. This maps to
+    /// android.permission.SCENE_UNDERSTANDING_FINE on Android XR, but varies per-runtime.
+    ReflectionEstimation = 6,
+    /// For reading depth data about the user's surroundings via Sensor.Depth, useful for things like occlusion. This
+    /// is typically an interactive permission that the user will need to explicitly approve. This maps to
+    /// android.permission.SCENE_UNDERSTANDING_FINE on Android XR, but varies per-runtime.
+    DepthSensing = 7,
+    /// For creating and persisting spatial anchors in the user's space, via StereoKit's Anchor API. Some runtimes
+    /// grant this automatically from the manifest entry, while others treat it as an interactive permission.
+    /// This maps to android.permission.SCENE_UNDERSTANDING_COARSE on Android XR and
+    /// com.oculus.permission.USE_ANCHOR_API on Meta, but varies per-runtime.
+    Anchors = 8,
     /// This enum is for tracking the number of value in this enum.
-    Max = 6,
+    Max = 9,
 }
 
 impl fmt::Display for PermissionType {
@@ -45,27 +62,46 @@ impl fmt::Display for PermissionType {
             PermissionType::EyeInput => write!(f, "Eye Input"),
             PermissionType::HandTracking => write!(f, "Hand Tracking"),
             PermissionType::FaceTracking => write!(f, "Face Tracking"),
-            PermissionType::Scene => write!(f, "Scene"),
+            PermissionType::AmbientEstimation => write!(f, "Ambient Estimation"),
+            PermissionType::ReflectionEstimation => write!(f, "Reflection Estimation"),
+            PermissionType::DepthSensing => write!(f, "Depth Sensing"),
+            PermissionType::Anchors => write!(f, "Anchors"),
             PermissionType::Max => write!(f, "Max"),
         }
     }
 }
 
 /// Permissions can be in a variety of states, depending on how users interact with them. Sometimes they're
-/// automatically granted, user denied, or just unknown for the current runtime!
+/// automatically granted, user denied, or just unknown for the current runtime! A positive value means you're clear to
+/// use the feature, zero or negative means you're not.
 /// <https://stereokit.net/Pages/StereoKit/PermissionState.html>
 ///
 /// see also: [`Permission`]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(i32)]
 pub enum PermissionState {
-    /// This permission is known to StereoKit, but not available to request. Typically this means the correct permission
-    /// string is not listed in the AndroidManifest.xml or similar.
-    Unavailable = -2,
-    /// This app is capable of using the permission, but it needs to be requested first with [`Permission::request`].
+    /// StereoKit knows this permission, but nothing you do at runtime can get it granted. Usually the permission
+    /// string is missing from the AndroidManifest.xml or equivalent, so check there first. Some runtimes also report
+    /// this when an administrator or parental control has locked the feature off, which no amount of asking will
+    /// change. Fix your app's manifest, or work without the feature.
+    Unavailable = -5,
+    /// The permission was refused, and the system will not prompt for it again. Requesting it is legal, but nothing
+    /// will happen. Only the user can undo this, from the system's settings. Work without the feature, and if it
+    /// matters, tell the user where to turn it back on.
+    Blocked = -4,
+    /// The permission was refused, but the system is still willing to prompt for it. Not every platform has this
+    /// state; where the first refusal is final, you'll get blocked instead. You can request it again, ideally at
+    /// a moment where the user understands why you need it.
+    Denied = -3,
+    /// A permission request is in flight: a dialog may be up, or StereoKit is waiting to see if the system will answer
+    /// one. This settles on its own once the system answers, or the user dismisses the dialog. Wait, and check back
+    /// later.
+    Requesting = -2,
+    /// This app can use the permission, but hasn't been granted it yet. Ask for it with [`Permission::request`].
     Capable = -1,
     /// StereoKit doesn't know about the permission on the current runtime. This happens when the runtime has a unique
-    /// permission string (or not) and StereoKit doesn't know what it is to look up its current status.
+    /// permission string (or not) and StereoKit doesn't know what it is to look up its current status. There's no
+    /// reliable action here, try the feature and see if it works.
     Unknown = 0,
     /// This permission is entirely approved and you can go ahead and use the associated features!
     Granted = 1,
@@ -75,6 +111,9 @@ impl fmt::Display for PermissionState {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             PermissionState::Unavailable => write!(f, "Unavailable"),
+            PermissionState::Blocked => write!(f, "Blocked"),
+            PermissionState::Denied => write!(f, "Denied"),
+            PermissionState::Requesting => write!(f, "Requesting"),
             PermissionState::Capable => write!(f, "Capable"),
             PermissionState::Unknown => write!(f, "Unknown"),
             PermissionState::Granted => write!(f, "Granted"),
@@ -119,6 +158,9 @@ impl Permission {
     /// match microphone_state {
     ///     PermissionState::Granted => println!("Microphone access granted"),
     ///     PermissionState::Capable => println!("Microphone access needs to be requested"),
+    ///     PermissionState::Requesting => println!("Microphone access is being requested"),
+    ///     PermissionState::Denied => println!("Microphone access denied"),
+    ///     PermissionState::Blocked => println!("Microphone access blocked"),
     ///     PermissionState::Unavailable => println!("Microphone access unavailable"),
     ///     PermissionState::Unknown => println!("Microphone permission state unknown"),
     /// }
@@ -130,10 +172,12 @@ impl Permission {
         unsafe { permission_state(permission) }
     }
 
-    /// Does this permission need the user to approve it? This typically means a popup window will come up when you
-    /// request this permission, and the user has a chance to decline it.
+    /// Might requesting this permission interrupt the user with a popup? This is a prediction from how sensitive the
+    /// platform considers the permission, not a promise. The system can still grant one silently, most often when the
+    /// user already approved a related permission earlier in the session, so a true here means "may interrupt" rather
+    /// than "will".
     ///
-    /// If your app is an Android Service, this only reflects the Dangerous status of the permission.
+    /// There's no way to know for certain in advance, since the answer depends on what the user has already agreed to.
     /// <https://stereokit.net/Pages/StereoKit/Permission/IsInteractive.html>
     /// * `permission` - The permission you're interested in.
     ///
@@ -234,6 +278,9 @@ mod tests {
         assert_eq!(PermissionType::EyeInput as u32, 2);
         assert_eq!(PermissionType::HandTracking as u32, 3);
         assert_eq!(PermissionType::FaceTracking as u32, 4);
-        assert_eq!(PermissionType::Scene as u32, 5);
+        assert_eq!(PermissionType::AmbientEstimation as u32, 5);
+        assert_eq!(PermissionType::ReflectionEstimation as u32, 6);
+        assert_eq!(PermissionType::DepthSensing as u32, 7);
+        assert_eq!(PermissionType::Anchors as u32, 8);
     }
 }

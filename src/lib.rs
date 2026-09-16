@@ -311,6 +311,12 @@ pub mod font;
 /// [![Screen](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/screen.jpeg)](framework::Screen)
 pub mod framework;
 
+/// Lighting specific structs, enums and functions.
+///
+/// ## Examples
+/// which are also unit tests:
+pub mod lighting;
+
 /// Material specific structs, enums and functions.
 ///
 /// ## Examples

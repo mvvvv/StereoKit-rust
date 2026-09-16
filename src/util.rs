@@ -250,6 +250,37 @@ impl Color128 {
         unsafe { color_to_gamma(*self) }
     }
 
+    /// Converts to Color32, clamping each channel to 0-1 first. Costs a little more than the implicit conversion,
+    /// which skips the clamp and crushes out of range values into hue garbage. In Rust the casting used by the
+    /// implicit conversion saturates as well, so this stays explicit about the intent, and matches the C# behavior of
+    /// keeping HDR colors sane.
+    /// <https://stereokit.net/Pages/StereoKit/Color/ToColor32Sat.html>
+    ///
+    /// Returns a crushed down color.
+    /// see also [`Color32`] [`Color32::from`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::util::{Color32, Color128};
+    ///
+    /// let hdr_color = Color128 { r: 1.5, g: 0.25, b: -0.5, a: 1.0 };
+    /// // The saturating conversion clamps each channel to 0-1 first:
+    /// let clamped = hdr_color.to_color32_sat();
+    /// assert_eq!(clamped, Color32 { r: 255, g: 63, b: 0, a: 255 });
+    ///
+    /// // In range colors come through unchanged, just like the implicit
+    /// // conversion would give them to you:
+    /// let color = Color128 { r: 1.0, g: 0.25, b: 0.0, a: 1.0 };
+    /// assert_eq!(Color32::from(color), color.to_color32_sat());
+    /// ```
+    pub fn to_color32_sat(&self) -> Color32 {
+        Color32::new(
+            (self.r.clamp(0.0, 1.0) * 255.0) as u8,
+            (self.g.clamp(0.0, 1.0) * 255.0) as u8,
+            (self.b.clamp(0.0, 1.0) * 255.0) as u8,
+            (self.a.clamp(0.0, 1.0) * 255.0) as u8,
+        )
+    }
+
     /// Converts the gamma space color to a Hue/Saturation/Value format! Does not consider transparency when
     /// calculating the result.
     /// <https://stereokit.net/Pages/StereoKit/Color/ToHSV.html>   
@@ -500,6 +531,8 @@ pub struct Color32 {
 }
 
 impl From<Color128> for Color32 {
+    /// This does _not_ convert from linear to gamma corrected, or clamp to 0-1 first, so out of range values get
+    /// crushed to the 0-255 byte range. For HDR colors, see [`Color128::to_color32_sat`].
     fn from(a: Color128) -> Self {
         Self::new((a.r * 255.0) as u8, (a.g * 255.0) as u8, (a.b * 255.0) as u8, (a.a * 255.0) as u8)
     }
@@ -2263,7 +2296,7 @@ impl Platform {
 #[derive(Debug, Copy, Clone, PartialEq)]
 #[repr(C)]
 pub struct SHLight {
-    /// Direction to the light source.
+    /// Direction to the light source. StereoKit expects this normalized, and anything it hands back is.
     pub dir_to: Vec3,
     /// Color of the light in linear space! Values here can exceed 1.
     pub color: Color128,
@@ -2280,14 +2313,30 @@ impl SHLight {
 /// Spherical Harmonics are kinda like Fourier, but on a sphere. That doesn’t mean terribly much to me, and could be
 /// wrong, but check out here for more details about how Spherical Harmonics work in this context!
 ///
-/// However, the more prctical thing is, SH can be a function that describes a value over the surface of a sphere! This
+/// However, the more practical thing is, SH can be a function that describes a value over the surface of a sphere! This
 /// is particularly useful for lighting, since you can basically store the lighting information for a space in this
 /// value! This is often used for lightmap data, or a light probe grid, but StereoKit just uses a single SH for the
 /// entire scene. It’s a gross oversimplification, but looks quite good, and is really fast! That’s extremely great
 /// when you’re trying to hit 60fps, or even 144fps.
+///
+/// StereoKit's SH format at a glance, both for this CPU side struct, and for the GPU side representation:
+///
+/// | Choice        | SphericalHarmonics struct            | Shader constants          |
+/// |---------------|--------------------------------------|---------------------------|
+/// | Basis phase   | No Condon-Shortley phase             | Same                      |
+/// | Normalization | Orthonormal, constants at eval time  | Constants pre-baked       |
+/// | Domain        | Radiance, no cosine lobe             | Irradiance, lobe baked in |
+/// | Packing       | Bands ascending, RGB per coefficient | 7 Vec4s, dot-product form |
+///
+/// This struct is the CPU side format! Math and imports happen here, and StereoKit converts it to the baked shader
+/// form once per lighting change. With no phase factor, all basis signs are positive, so a light from above lands as a
+/// _positive_ `coefficients[1]` (the linear y term), and the linear band points _toward_ the brightest region. Watch
+/// out when importing coefficients from elsewhere as many libraries (ARCore, DirectXMath) include the phase factor,
+/// flipping the odd terms (coefficients 2, 4, 6, and 8) relative to this. If imported lighting shows up rotated 180
+/// degrees, with up reading as down, negate those four!
 /// <https://stereokit.net/Pages/StereoKit/SphericalHarmonics.html>
 ///
-/// see also: [`crate::tex::SHCubemap`]
+/// see also: [`crate::tex::SHCubemap`] [`crate::lighting::Lighting`]
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -2304,8 +2353,8 @@ impl SHLight {
 ///   .add(Vec3::NEG_Z, named_colors::BLUE)
 ///   .add(Vec3::NEG_X, named_colors::RED);
 ///
-/// assert_eq!(sh.get_sample(Vec3::UP), Color128 { r: 0.5813507, g: 0.8046322, b: 0.5813487, a: 1.0 });
-/// assert_eq!(sh.get_dominent_light_direction(), Vec3 { x: 0.27644092, y: 0.2728996, z: 0.9214696 });
+/// assert_eq!(sh.get_sample(Vec3::UP), Color128 { r: 0.6804411, g: 0.5155136, b: 0.6804395, a: 1.0 });
+/// assert_eq!(sh.get_dominant_light_direction_to(), -Vec3 { x: 0.68859357, y: 0.6797723, z: 0.25248432 });
 /// # sk::Sk::shutdown();
 /// ```
 #[derive(Debug, Default, Copy, Clone, PartialEq)]
@@ -2319,7 +2368,9 @@ unsafe extern "C" {
     pub fn sh_brightness(ref_harmonics: *mut SphericalHarmonics, scale: f32);
     pub fn sh_add(ref_harmonics: *mut SphericalHarmonics, light_dir: Vec3, light_color: Vec3);
     pub fn sh_lookup(harmonics: *const SphericalHarmonics, normal: Vec3) -> Color128;
-    pub fn sh_dominant_dir(harmonics: *const SphericalHarmonics) -> Vec3;
+    pub fn sh_dominant_dir_to(harmonics: *const SphericalHarmonics) -> Vec3;
+    pub fn sh_dominant_light(harmonics: *const SphericalHarmonics) -> SHLight;
+    pub fn sh_subtract_light(ref_harmonics: *mut SphericalHarmonics, light: SHLight) -> SHLight;
 }
 impl SphericalHarmonics {
     /// Creates a SphericalHarmonics approximation of the irradiance given from a set of directional lights!
@@ -2340,8 +2391,8 @@ impl SphericalHarmonics {
     ///
     /// let sh = SphericalHarmonics::from_lights(&[light0, light1, light2]);
     ///
-    /// assert_eq!(sh.get_sample(Vec3::UP), Color128 { r: 2.2098913, g: 0.0, b: 0.0, a: 1.0 });
-    /// assert_eq!(sh.get_dominent_light_direction(), -Vec3::ONE.get_normalized());
+    /// assert_eq!(sh.get_sample(Vec3::UP), Color128 { r: 1.6718271, g: 0.0, b: 0.0, a: 1.0 });
+    /// assert_eq!(sh.get_dominant_light_direction_to(), Vec3::ONE.get_normalized());
     /// # sk::Sk::shutdown();
     /// ```
     pub fn from_lights(lights: &[SHLight]) -> Self {
@@ -2365,8 +2416,8 @@ impl SphericalHarmonics {
     ///
     /// let sh = SphericalHarmonics::new(coefficient);
     ///
-    /// assert_eq!(sh.get_sample([1.0, 0.0, 1.0]), Color128 { r: 11.453729, g: 0.0, b: 0.0, a: 1.0 });
-    /// assert_eq!(sh.get_dominent_light_direction(), Vec3::new(-1.0, 0.0, -1.0).get_normalized());
+    /// assert_eq!(sh.get_sample([1.0, 0.0, 1.0]), Color128 { r: 10.937505, g: 0.0, b: 0.0, a: 1.0 });
+    /// assert_eq!(sh.get_dominant_light_direction_to(), Vec3::new(1.0, 0.0, 1.0).get_normalized());
     /// # sk::Sk::shutdown();
     /// ```
     pub fn new(coefficients: [Vec3; 9]) -> Self {
@@ -2378,7 +2429,7 @@ impl SphericalHarmonics {
     /// from a field of points.
     /// <https://stereokit.net/Pages/StereoKit/SphericalHarmonics/Add.html>
     /// * `light_dir` - The direction of the light source.
-    /// * `light_color` - Color of the light, in linear color space.
+    /// * `light_color` - Color of the light, in linear color space. Values can exceed 1.
     ///
     /// see also [`sh_add`]
     /// ### Examples
@@ -2392,8 +2443,8 @@ impl SphericalHarmonics {
     ///   .add([0.0, 1.0, 0.0], named_colors::GREEN)
     ///   .add([0.0, 0.0, 1.0], named_colors::BLUE);
     ///
-    /// assert_eq!(sh.get_sample([1.0, 0.0, 1.0]), Color128 { r: 11.453729, g: -0.2956792, b: 4.4505944, a: 1.0 });
-    /// assert_eq!(sh.get_dominent_light_direction(), Vec3 { x: -0.21951628, y: -0.21670417, z: -0.95123714 });
+    /// assert_eq!(sh.get_sample([1.0, 0.0, 1.0]), Color128 { r: 10.937505, g: -0.28235292, b: 4.2500043, a: 1.0 });
+    /// assert_eq!(sh.get_dominant_light_direction_to(), -Vec3 { x: -0.5101562, y: -0.50362086, z: -0.69721353 });
     /// # sk::Sk::shutdown();
     /// ```
     pub fn add(&mut self, light_dir: impl Into<Vec3>, light_color: impl Into<Color128>) -> &mut Self {
@@ -2420,17 +2471,17 @@ impl SphericalHarmonics {
     /// sh.add([1.0, 0.0, 1.0], named_colors::RED)
     ///   .brightness(0.5);
     ///
-    /// assert_eq!(sh.get_sample([1.0, 0.0, 1.0]), Color128 { r: 5.726864, g: 0.0, b: 0.0, a: 1.0 });
-    /// assert_eq!(sh.get_dominent_light_direction(), Vec3::new(-1.0, 0.0, -1.0).get_normalized());
+    /// assert_eq!(sh.get_sample([1.0, 0.0, 1.0]), Color128 { r: 5.4687524, g: 0.0, b: 0.0, a: 1.0 });
+    /// assert_eq!(sh.get_dominant_light_direction_to(), Vec3::new(1.0, 0.0, 1.0).get_normalized());
     ///
     /// sh.brightness(2.0);
-    /// assert_eq!(sh.get_sample([1.0, 0.0, 1.0]), Color128 { r: 11.453729, g: 0.0, b: 0.0, a: 1.0 });
-    /// assert_eq!(sh.get_dominent_light_direction(), Vec3::new(-1.0, 0.0, -1.0).get_normalized());
+    /// assert_eq!(sh.get_sample([1.0, 0.0, 1.0]), Color128 { r: 10.937505, g: 0.0, b: 0.0, a: 1.0 });
+    /// assert_eq!(sh.get_dominant_light_direction_to(), Vec3::new(1.0, 0.0, 1.0).get_normalized());
     ///
     ///
     /// sh.brightness(0.0);
     /// assert_eq!(sh.get_sample([1.0, 0.0, 1.0]), Color128::BLACK);
-    /// assert_eq!(sh.get_dominent_light_direction(), Vec3::new(0.0, 1.0, 0.0).get_normalized());
+    /// assert_eq!(sh.get_dominant_light_direction_to(), Vec3::new(0.0, 1.0, 0.0).get_normalized());
     /// # sk::Sk::shutdown();
     /// ```
     pub fn brightness(&mut self, scale: f32) -> &mut Self {
@@ -2438,7 +2489,8 @@ impl SphericalHarmonics {
         self
     }
 
-    /// Look up the color information in a particular direction!
+    /// Look up the color information in a particular direction: the irradiance for a surface whose normal faces that
+    /// way.
     /// <https://stereokit.net/Pages/StereoKit/SphericalHarmonics/Sample.html>
     /// * `normal` - The direction to look in. Should be normalized.
     ///
@@ -2448,13 +2500,12 @@ impl SphericalHarmonics {
         unsafe { sh_lookup(self, normal.into()) }
     }
 
-    /// Returns the dominant direction of the light represented by this spherical harmonics data. The direction value is
-    /// normalized.
-    /// You can get the color of the light in this direction by using the struct’s Sample method:
-    /// light.get_sample(-light.get_dominent_light_direction()).
-    /// <https://stereokit.net/Pages/StereoKit/SphericalHarmonics/DominantLightDirection.html>
+    /// The direction toward the strongest light source in this lighting data, following the same convention as
+    /// [`SHLight::dir_to`]. The value is normalized, and sampling the light's color is
+    /// `sh.get_sample(sh.get_dominant_light_direction_to())`.
+    /// <https://stereokit.net/Pages/StereoKit/SphericalHarmonics/DominantLightDirectionTo.html>
     ///
-    /// see also [`sh_brightness`]
+    /// see also [`sh_dominant_dir_to`] [`SphericalHarmonics::get_dominant_light`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -2466,11 +2517,81 @@ impl SphericalHarmonics {
     ///   .add([1.0, 1.0, 0.0], named_colors::GREEN)
     ///   .add([0.0, 1.0, 1.0], named_colors::BLUE);
     ///
-    /// assert_eq!(sh.get_dominent_light_direction(), Vec3 { x: -0.3088678, y: -0.6715365, z: -0.6735276 });
+    /// assert_eq!(sh.get_dominant_light_direction_to(), -Vec3 { x: -0.7184874, y: -0.48949966, z: -0.49413145 });
     /// # sk::Sk::shutdown();
     /// ```
+    pub fn get_dominant_light_direction_to(&self) -> Vec3 {
+        unsafe { sh_dominant_dir_to(self) }
+    }
+
+    /// The dominant directional light in this lighting data, the same derivation `Lighting::get_main_light` uses! The
+    /// direction is normalized, and the color is the projection matched directional component: the light you could
+    /// remove from this SH, or add back on top of it.
+    /// <https://stereokit.net/Pages/StereoKit/SphericalHarmonics/DominantLight.html>
+    ///
+    /// see also [`sh_dominant_light`] [`SphericalHarmonics::subtract_light`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::util::{named_colors, SphericalHarmonics};
+    ///
+    /// let mut sh = SphericalHarmonics::default();
+    /// sh.add([1.0, 0.0, 1.0], named_colors::RED)
+    ///   .add([1.0, 1.0, 0.0], named_colors::GREEN)
+    ///   .add([0.0, 1.0, 1.0], named_colors::BLUE);
+    ///
+    /// let dominant_light = sh.get_dominant_light();
+    /// assert_eq!(dominant_light.dir_to, sh.get_dominant_light_direction_to());
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn get_dominant_light(&self) -> SHLight {
+        unsafe { sh_dominant_light(self) }
+    }
+
+    /// Returns the dominant direction of the light represented by this spherical harmonics data. The direction value is
+    /// normalized.
+    /// You can get the color of the light in this direction by using the struct’s Sample method:
+    /// `light.get_sample(-light.get_dominent_light_direction())`.
+    /// <https://stereokit.net/Pages/StereoKit/SphericalHarmonics/DominantLightDirection.html>
+    #[deprecated(since = "0.4.0", note = "Use `-get_dominant_light_direction_to` instead. Note the negation!")]
     pub fn get_dominent_light_direction(&self) -> Vec3 {
-        unsafe { sh_dominant_dir(self) }
+        -unsafe { sh_dominant_dir_to(self) }
+    }
+
+    /// Removes a directional light from this lighting data, clamped to the light actually present so the result stays
+    /// physical. Pairs with `DominantLight` for splitting the dominant light out of an SH, the way
+    /// `Lighting::get_main_light` does.
+    /// <https://stereokit.net/Pages/StereoKit/SphericalHarmonics/SubtractLight.html>
+    /// * `light` - The light to remove, such as one from
+    ///   `get_dominant_light`.
+    ///
+    /// Returns the light actually removed, which may be dimmer than requested when this SH doesn't contain that much
+    /// light.
+    /// see also [`sh_subtract_light`] [`SphericalHarmonics::get_dominant_light`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::util::{Color128, named_colors, SphericalHarmonics};
+    ///
+    /// let mut sh = SphericalHarmonics::default();
+    /// sh.add([1.0, 0.0, 1.0], named_colors::RED)
+    ///   .add([1.0, 1.0, 0.0], named_colors::GREEN)
+    ///   .add([0.0, 1.0, 1.0], named_colors::BLUE);
+    ///
+    /// // Split the dominant light out of this SH:
+    /// let dominant_light = sh.get_dominant_light();
+    /// let before: f32 = sh.coefficients[0].x + sh.coefficients[0].y + sh.coefficients[0].z;
+    /// let removed_light = sh.subtract_light(dominant_light);
+    /// let after: f32 = sh.coefficients[0].x + sh.coefficients[0].y + sh.coefficients[0].z;
+    ///
+    /// // What comes back is the light actually present here, and this SH is
+    /// // dimmer without it:
+    /// assert_ne!(removed_light.color, Color128::BLACK);
+    /// assert!(after < before);
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn subtract_light(&mut self, light: SHLight) -> SHLight {
+        unsafe { sh_subtract_light(self, light) }
     }
 
     /// Converts the SphericalHarmonic into a vector of coefficients 9 long. Useful for storing calculated data!
@@ -2483,7 +2604,26 @@ impl SphericalHarmonics {
     }
 }
 
-/// This class contains time information for the current session and frame!
+/// A snapshot of how frames have been reaching the display recently, for checking performance at runtime. Only the
+/// flatscreen app modes present through a surface StereoKit can time; in XR and Offscreen this is all zeros.
+/// <https://stereokit.net/Pages/StereoKit/PresentStats.html>
+///
+/// see also [`Time::get_perf_present`]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Default)]
+#[repr(C)]
+pub struct PresentStats {
+    /// Microseconds from the most recent present call to its first pixel on screen, or 0 when the platform gave no
+    /// display time for it.
+    pub latency_us: u64,
+    /// Presents among the last 128 with a known display time.
+    pub sample_count: u32,
+    /// Of those, how many stayed on screen for two or more refreshes. A repeated frame is a visible hitch.
+    pub repeat_count: u32,
+}
+
+/// This class contains time information for the current session  and frame! Where StereoKit can see the display's
+/// timing, steps and totals follow when frames reach the screen rather than when their code ran, so animation lands
+/// where the display shows it.
 /// <https://stereokit.net/Pages/StereoKit/Time.html>
 ///
 /// ### Examples
@@ -2549,6 +2689,7 @@ unsafe extern "C" {
     pub fn time_frame() -> u64;
     pub fn time_perf_cpu_us() -> u64;
     pub fn time_perf_gpu_us() -> u64;
+    pub fn time_perf_present() -> PresentStats;
 }
 
 impl Time {
@@ -2811,8 +2952,9 @@ impl Time {
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     let cpu_us = Time::get_perf_cpu_us();
-    ///     // CPU time should be non-zero after first few frames
-    ///     assert_eq!(cpu_us, 0);
+    ///     // Timing data is not available during the first few frames, after
+    ///     // that the CPU render work shows up as a small non-zero number.
+    ///     if iter > 5 { assert!(cpu_us > 0) }
     /// );
     /// # sk::Sk::shutdown();
     /// ```
@@ -2841,5 +2983,30 @@ impl Time {
     /// ```
     pub fn get_perf_gpu_us() -> u64 {
         unsafe { time_perf_gpu_us() }
+    }
+
+    /// How frames have been reaching the display recently: the latency from the last present call to its pixels, and
+    /// how many recent frames were shown twice. StereoKit paces itself against the display in the Simulator and Window
+    /// app modes, and this is the readout of that. In XR the runtime owns presentation, and Offscreen has no display,
+    /// so both report zeros.
+    /// <https://stereokit.net/Pages/StereoKit/Time/PerfPresent.html>
+    ///
+    /// see also [`time_perf_present`] [`PresentStats`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::util::Time;
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     let stats = Time::get_perf_present();
+    ///     // Only the last 128 presents are sampled, and a repeated frame can
+    ///     // never outnumber the samples it was counted from.
+    ///     assert!(stats.sample_count <= 128);
+    ///     assert!(stats.repeat_count <= stats.sample_count);
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn get_perf_present() -> PresentStats {
+        unsafe { time_perf_present() }
     }
 }

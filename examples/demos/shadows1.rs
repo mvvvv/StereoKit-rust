@@ -3,6 +3,7 @@
 // !!!!!!!
 use stereokit_rust::{
     font::Font,
+    lighting::Lighting,
     material::{Material, MaterialBuffer},
     maths::{Matrix, Pose, Quat, Vec2, Vec3, Vec4},
     mesh::Mesh,
@@ -132,7 +133,7 @@ impl Default for Shadows1 {
             shadow_map,
             shadow_buffer,
 
-            light_dir: Renderer::get_sky_light().get_dominent_light_direction(),
+            light_dir: -Lighting::get_main_light().dir_to,
             previous_light_pos: Vec3::ZERO,
             current_shadow_mode: SHADOW_MODE,
             window_pose: Pose::new([0.75, 1.8, -0.75], Some(Quat::Y_180)),
@@ -154,7 +155,7 @@ impl Shadows1 {
     fn check_event(&mut self, _id: &StepperId, key: &str, value: &str) {
         if key.eq(SKY_DOME_CHANGED) {
             // Recalculate light direction when sky dome changes
-            self.light_dir = Renderer::get_sky_light().get_dominent_light_direction();
+            self.light_dir = -Lighting::get_main_light().dir_to;
             Log::info(format!("Light direction updated due to sky dome change: {value}/ {}", self.light_dir));
         }
     }

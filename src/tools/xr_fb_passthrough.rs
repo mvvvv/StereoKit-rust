@@ -274,9 +274,9 @@ impl FbPassthroughStepper {
 
     fn start_sky(&mut self) {
         self.old_color = Renderer::get_clear_color();
-        self.old_sky = Renderer::get_enable_sky();
+        self.old_sky = Renderer::get_skybox_visible();
         Renderer::clear_color(Color128::BLACK_TRANSPARENT);
-        Renderer::enable_sky(false);
+        Renderer::skybox_visible(false);
     }
 
     fn pause_passthrough(&mut self) {
@@ -303,7 +303,7 @@ impl FbPassthroughStepper {
             }
         }
         Renderer::clear_color(self.old_color);
-        Renderer::enable_sky(self.old_sky);
+        Renderer::skybox_visible(self.old_sky);
     }
 
     /// Check if all the binded functions are ready.

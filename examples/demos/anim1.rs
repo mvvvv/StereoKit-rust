@@ -151,7 +151,7 @@ impl Anim1 {
             Log::info(format!(
                 "sample : {:?} / dominent direction {}",
                 cube.sh.get_sample(Vec3::ONE),
-                cube.sh.get_dominent_light_direction()
+                cube.sh.get_dominant_light_direction_to()
             ))
         }
     }
