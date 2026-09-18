@@ -136,6 +136,8 @@ cargo run_sk
 # then edit src/ : the viewer rebuilds and reloads your views on the fly
 ```
 
+See [`hot_reloading.md`](hot_reloading.md) for the reference documentation (architecture, plugin ABI, internals).
+
 ## Build the project's demo for Windows_x64 using GNU from Linux (and Windows and probably Mac)
 
 - Install mingw64-w64 (MSYS2 on windows)
