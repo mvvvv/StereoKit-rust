@@ -49,7 +49,7 @@ ktx create --cubemap --encode uastc  --format R8G8B8A8_UNORM  --assign-oetf line
 #---- launch tests
 clear;cargo test --features tools -- --nocapture            
 clear;cargo test --features tools --doc tools -- mesh::Mesh   
-clear;XR_RUNTIME_JSON=/usr/share/openxr/1/openxr_monado.json cargo test --features test-xr-mode,file_browser -- --test-threads=1
+clear;XR_RUNTIME_JSON=/usr/share/openxr/1/openxr_monado.json cargo test --features test-xr-mode,tools -- --test-threads=1
 #- launch tests with llvmpipe:
 clear;VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.json cargo test
 

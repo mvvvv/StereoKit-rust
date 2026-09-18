@@ -18,7 +18,7 @@ crate-type = ["lib", "cdylib"]
 stereokit-rust = { path = "../StereoKit-rust", features = ["tools"]}
 thiserror = "2.0"
 bitflags = "2.13"
-openxr-sys = "0.13"
+openxr-sys = "0.14"
 stereokit-macros = { path = "../StereoKit-rust/stereokit-macros" }
 
 [target.'cfg(target_os = "android")'.dependencies]

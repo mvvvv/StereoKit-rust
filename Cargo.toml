@@ -84,7 +84,7 @@ cmake = "0.1.58"
 thiserror = "2.0"
 bitflags = "2.13"
 glam = { version = "0.33", optional = true }
-openxr-sys = "0.13"
+openxr-sys = "0.14"
 # Compile-time translations for the tools (see the `file-browser` feature), runtime locale switching
 rust-i18n = { version = "4", optional = true }
 # dlopen/dlsym (Linux, macOS) / LoadLibrary (Windows) support for the `cargo-run_sk` hot-reload host
