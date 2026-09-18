@@ -818,6 +818,7 @@ unsafe extern "C" {
         out_opt_interactor: *mut Interactor,
         out_opt_focus_state: *mut BtnState,
     ) -> BtnState;
+    pub fn ui_block_at(bounds: Bounds);
     // Deprecated : pub fn ui_volume_at(id: *const c_char, bounds: Bounds) -> Bool32T;
     // Deprecated : pub fn ui_volume_at_16(id: *const c_ushort, bounds: Bounds) -> Bool32T;
     // Deprecated : pub fn ui_interact_volume_at(bounds: Bounds, out_hand: *mut Handed) -> BtnState;
@@ -3813,6 +3814,38 @@ impl Ui {
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_toggle.jpeg" alt="screenshot" width="200">
     pub fn toggle(text: impl AsRef<str>, out_value: &mut bool) -> UiToggleBuilder<'_> {
         UiToggleBuilder::new(text, out_value)
+    }
+
+    /// A volume that catches interactors without reacting to them, so UI elements behind it can't be focused or
+    /// activated through it. Useful for modal overlays, or for custom visuals that should occlude the UI behind them.
+    /// Interactors already active on an element are not interrupted.
+    /// <https://stereokit.net/Pages/StereoKit/UI/BlockAt.html>
+    /// * `bounds` - Size and position of the volume, relative to the current Hierarchy.
+    ///
+    /// see also [`ui_block_at`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{ui::Ui, maths::{Pose, Bounds}};
+    ///
+    /// let mut window_pose = Pose::new(
+    ///     [0.01, 0.055, 0.9], Some([0.0, 185.0, 0.0].into()));
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     Ui::window("Block At").pose(&mut window_pose).begin();
+    ///
+    ///     // A user blocker floating in world space in front of the button
+    ///     Ui::block_at(Bounds::new([0.0, -0.05, 0.05], [0.2, 0.05, 0.02]));
+    ///
+    ///     // The button behind the blocker can't be focused or activated through it
+    ///     let pressed = Ui::button("Behind").press();
+    ///     assert_eq!(pressed, false);
+    ///     Ui::window_end();
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn block_at(bounds: impl Into<Bounds>) {
+        unsafe { ui_block_at(bounds.into()) }
     }
 
     /// A volume for helping to build one interactor interactions. This checks for the presence of an interactor inside
