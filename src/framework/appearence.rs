@@ -141,7 +141,7 @@ impl Appearence {
     /// # use stereokit_rust::{font::Font, framework::Appearence};
     /// let font = Font::default();
     /// let appearence = Appearence::new(&font, 0.024);
-    /// assert_eq!(appearence.title_style.get_layout_height(), 0.024);
+    /// assert!((appearence.title_style.get_layout_height() - 0.024).abs() < 0.00000001);
     /// # sk::Sk::shutdown();
     /// ```
     pub fn new(font: &Font, title_layout_height: f32) -> Self {

@@ -167,6 +167,7 @@ pub fn launch(mut settings: SkSettings, is_testing: bool, start_test: String) {
 
     let mut log_window = LogWindow::new(&LOG_LOG);
     log_window.window_pose = Pose::new(Vec3::new(-0.7, 2.0, -0.3), Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0))));
+    log_window.appearence.handle_sprite = Sprite::from_file("icons/log_viewer.png", None, None).ok();
 
     let tex_particule = Tex::gen_particle(128, 128, 0.9, None);
     let exit_button =
