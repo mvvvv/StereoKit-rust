@@ -2977,7 +2977,7 @@ impl Time {
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     let gpu_us = Time::get_perf_gpu_us();
     ///     // GPU time should be non-zero after first few frames
-    ///     assert_eq!(gpu_us, 0);
+    ///     if iter > 5 { assert_ne!(gpu_us, 0); }
     /// );
     /// # sk::Sk::shutdown();
     /// ```
