@@ -1038,7 +1038,7 @@ impl Steppers {
     /// return false if sk_quit must be triggered.
     /// * token - The token where the event report will be created for this frame.
     ///
-    /// This must be call from the running [Sk] instance only, or from the main thread of a `cargo-run_sk` plugin (see
+    /// This must be call from the running [Sk] instance only, or from the main thread of a hot reload plugin (see
     /// the [`crate::plugin_abi`] module) driving its own [Steppers].
     ///
     /// see also [`Steppers::step_post_app`] which must be called right after the main app step.
@@ -1125,7 +1125,7 @@ impl Steppers {
     }
 
     /// Execute the post app steppers. This must be call from the running [Sk] instance only, or from the main thread
-    /// of a `cargo-run_sk` plugin, and right after the app step.
+    /// of a hot reload plugin, and right after the app step.
     pub fn step_post_app(&mut self, token: &mut MainThreadToken) {
         let step_post_app = std::mem::take(&mut self.steppers_post_app);
         for index in step_post_app {

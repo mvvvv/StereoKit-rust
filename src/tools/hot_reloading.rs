@@ -2,7 +2,7 @@
 //!
 //! [`HotReloading`] is an [`IStepper`] keeping **one** session alive while the plugin library of the project under
 //! development is rebuilt: the plugin is swapped **without closing the session**, and its views (the `Test`s) are
-//! offered in a selector window. The `cargo-run_sk` viewer is exactly this, plus the command line parsing.
+//! offered in a selector window. The `hot reloading` viewer is exactly this, plus the command line parsing.
 //!
 //! The plugin is a `cdylib` built from the same project, with the same version of `stereokit-rust` and the
 //! `skc-shared` feature (both sides then link the same shared StereoKitC library and drive ONE engine, through the

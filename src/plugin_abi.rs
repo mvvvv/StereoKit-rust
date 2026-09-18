@@ -1,4 +1,4 @@
-//! The C ABI shared between the `cargo-run_sk` hot-reload host and the plugin library of the project under development.
+//! The C ABI shared between the `main_hot_reloading` hot-reload host and the plugin library of the project under development.
 //!
 //! Both sides are compiled from the *same* version of `stereokit_rust` (same rustc, same features), and both link the
 //! same shared StereoKitC library (`libStereoKitC.so` on Linux, `StereoKitC.dll` on Windows, `libStereoKitC.dylib`
@@ -25,7 +25,7 @@
 use crate::sk::SkSettings;
 use std::ffi::c_char;
 
-/// Version of the `cargo-run_sk` plugin ABI. The host refuses to load a plugin whose version differs.
+/// Version of the hot reload plugin ABI. The host refuses to load a plugin whose version differs.
 ///
 /// * 1 - first version: `sk_run_sk_begin` received a pointer to the host `Sk`.
 /// * 2 - `sk_run_sk_begin` receives a pointer to the `Rc<RefCell<SkInfo>>` of the host session.

@@ -1,12 +1,9 @@
-//! Hot-reload plugin entry points for the `cargo-run_sk` dev viewer.
+//! Hot-reload plugin entry points for the `hot reloading` dev viewer.
 //!
-//! `src/plugin_shim.rs` turns this crate into a **plugin** loadable by the `cargo-run_sk` host:
+//! `src/plugin_shim.rs` turns this crate into a **plugin** loadable by the `hot reloading` host:
 //!
-//! ```text
-//! cargo install stereokit-rust --version <stereokit-rust version> --features skc-shared --bin cargo-run_sk
-//! cargo build --features skc-shared
-//! cargo run_sk --lib target/debug/lib<your_crate>.so   (Windows: <your_crate>.dll, macOS: lib<your_crate>.dylib)
-//! ```
+//! `main_hot_reloading` (see github repo) is the default and basic viewer (host) but you can implement yours to mix it
+//! with your favorite tools.
 //!
 //! The host keeps a single StereoKit session alive (Simulator or OpenXR) and reloads this library each time
 //! `cargo build --features skc-shared` produces a new one: no session restart, no headset re-pairing. Your views (the
@@ -35,7 +32,7 @@ pub extern "C" fn sk_run_sk_crate_version() -> *const std::ffi::c_char {
     concat!("${SK_VERSION}", "\0").as_ptr() as *const std::ffi::c_char
 }
 
-/// Declare here the views (your steppers) exposed to the `cargo-run_sk` viewer.
+/// Declare here the views (your steppers) exposed to the `hot reloading` viewer.
 /// Each view is a name + a factory producing the `StepperAction::add_default` of the stepper to run. Add one line per
 /// view.
 fn views() -> Vec<(&'static str, Box<dyn Fn() -> StepperAction + Send>)> {
@@ -48,7 +45,7 @@ fn views() -> Vec<(&'static str, Box<dyn Fn() -> StepperAction + Send>)> {
 }
 
 /// Fills the `settings` out-parameter with the settings of this project (its `sk_settings()` function, defined in
-/// `src/lib.rs`), so the host session of the `cargo-run_sk` viewer is initialized exactly like your app. Returns 0
+/// `src/lib.rs`), so the host session of the `hot reloading` viewer is initialized exactly like your app. Returns 0
 /// on success, 1 for a null pointer.
 #[unsafe(no_mangle)]
 pub extern "C" fn sk_run_sk_settings(settings: *mut SkSettings) -> u32 {
@@ -194,4 +191,3 @@ pub extern "C" fn sk_run_sk_end() -> u32 {
     }
     0
 }
-

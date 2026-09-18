@@ -40,7 +40,7 @@ no-event-loop = []
 force-local-deps = []
 # Add Glam to maths
 with_glam = ["dep:glam"]
-# Create and use StereoKitC as a shared library. Foundation of the `cargo-run_sk` hot-reload workflow.
+# Create and use StereoKitC as a shared library. Foundation of the hot-reload workflow.
 skc-shared = ["dep:libloading"]
 # Replace AppMode::Offscreen with AppMode::XR in test macros. Monado Simulator should be your 
 test-xr-mode = []
@@ -71,9 +71,9 @@ name = "cargo-new_sk_rs_project"
 [[bin]]
 name = "cargo-build_sk_rs"
 
-# Hot Reload of some ISteppers of the StereoKit-rust project
+# Real-time hot-reload viewer for a project under development.It is NOT installed by `cargo install`
 [[bin]]
-name = "cargo-run_sk"
+name = "main_hot_reloading"
 required-features = ["skc-shared"]
 
 [build-dependencies]
@@ -87,7 +87,7 @@ glam = { version = "0.33", optional = true }
 openxr-sys = "0.14"
 # Compile-time translations for the tools (see the `file-browser` feature), runtime locale switching
 rust-i18n = { version = "4", optional = true }
-# dlopen/dlsym (Linux, macOS) / LoadLibrary (Windows) support for the `cargo-run_sk` hot-reload host
+# dlopen/dlsym (Linux, macOS) / LoadLibrary (Windows) support for the hot-reload host.
 libloading = { version = "0.9", optional = true }
 #stereokit-macros = { path = "./stereokit-macros", version = "0.6" }
 stereokit-macros = "0.6"

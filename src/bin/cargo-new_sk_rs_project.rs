@@ -17,7 +17,7 @@ const MAIN_BIN_FRAMEWORK_TEMPLATE: &str = include_str!("../templates/main_bin_fr
 const LIB_RS_FRAMEWORK_TEMPLATE: &str = include_str!("../templates/lib_rs_framework.rs");
 const C_STEPPER_FRAMEWORK_TEMPLATE: &str = include_str!("../templates/c_stepper_framework.rs");
 
-// Hot-reload plugin shim for the `cargo-run_sk` dev viewer (framework projects)
+// Hot-reload plugin shim for the hot reload dev viewer (framework projects)
 const PLUGIN_SHIM_TEMPLATE: &str = include_str!("../templates/plugin_shim.rs");
 
 // Gradle templates
@@ -191,15 +191,6 @@ fn main() {
     println!("To get started:");
     println!("  cd {project_name}");
     println!("  cargo run --bin main_{crate_name}");
-    if !basic && (cfg!(target_os = "linux") || cfg!(target_os = "windows")) {
-        println!();
-        println!("To develop with hot-reload (Simulator or OpenXR):");
-        if cfg!(not(feature = "skc-shared")) {
-            println!("  cargo install stereokit-rust -F skc-shared");
-        }
-        println!("  cargo run_sk");
-        println!("  # then edit src/ : the viewer rebuilds and reloads your views on the fly");
-    }
     if with_gradle {
         println!();
         println!("To build and run on an Android headset:");
@@ -243,7 +234,7 @@ crate-type = ["lib", "cdylib"]
 name = "main_{crate_name}"
 
 [features]
-# Forwarded to stereokit-rust for the `cargo-run_sk` hot-reload workflow (Linux, Windows & macOS).
+# Forwarded to stereokit-rust for the hot-reload workflow (Linux, Windows & macOS).
 skc-shared = ["stereokit-rust/skc-shared"]
 
 [dependencies]

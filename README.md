@@ -37,7 +37,7 @@ Let us know if you have launched the demos on an architecture not tested here.
   - `export DYLD_LIBRARY_PATH=$(brew --prefix molten-vk)/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}`
   - `export VK_ICD_FILENAMES=$(brew --prefix molten-vk)/share/vulkan/icd.d/MoltenVK_icd.json`
 - On Windows[^2] get the following tools and dev libraries : "Git", "CMake", "Visual Studio Build Tools 2022(Development Desktop C++)" and "DotNet SDK v8+"
-- Install the project's tools from the project directory `cargo install --path . -F skc-shared`
+- Install the project's tools from the project directory: `cargo install --path .`
 - If you want to launch the demos then:
   - If you do not have them as symbolic links under shaders_src, copy from `./StereoKit/Examples/Assets/Shaders/` the following files: `basic_shadow.hlsl` `basic_shadow_caster.hlsl` `compute_reaction.hlsl` and `texture3d.hlsl`
   - compile the shaders. From StereoKit-rust directory launch `cargo compile_sks`
@@ -95,9 +95,9 @@ This is the shortest way to launch your first PC VR/MR program[^1]: `cargo run -
 
 Use the commande `cargo new_sk_rs_project` to create your project [see the documentation](https://docs.rs/stereokit-rust/latest/stereokit_rust/).
 
-## Develop with hot-reload, the `cargo run_sk` viewer (Linux, Windows & macOS)
+## Develop with hot-reload, the `main_hot_reloading` viewer (Linux, Windows & macOS)
 
-`cargo run_sk` is a real-time viewer for a project under development: it keeps **one** StereoKit session
+`main_hot_reloading` is a real-time viewer for a project under development: it keeps **one** StereoKit session
 alive (Simulator by default, OpenXR with `--xr`, offscreen with `--offscreen`) and hot-reloads the plugin
 library of your project each time it is rebuilt, without ever closing the session. It also watches your
 sources and runs the build command itself when they change, then offers your views (the `Test`s / your
@@ -117,7 +117,7 @@ steppers) in a selector window, with on demand screenshots.
 
 ```shell
 # terminal 1 - the viewer (fully automatic: watches src/, examples/, assets/)
-cargo run --bin cargo-run_sk --features skc-shared
+cargo run --bin main_hot_reloading --features skc-shared
 ```
 
 Useful options: `--start Tex1` (select a view at start), `--xr` (real OpenXR runtime, e.g.
@@ -125,15 +125,20 @@ Useful options: `--start Tex1` (select a view at start), `--xr` (real OpenXR run
 `--offscreen --test 120 --start Ui1` (headless run, screenshot then exit), `--list` (print the views
 of a plugin and exit), `--no-build`, `--build-cmd "<cmd>"`, `--watch <secs>`, `--fullscreen`.
 
+The viewer is not a cargo subcommand and is never installed by `cargo install` (it links the shared
+`libStereoKitC.so`): to get a self-contained copy, deploy it next to its shared libraries (see below).
+
 ### Your own project (created with `cargo new_sk_rs_project`)
 
 Projects created from the framework template ship with `src/plugin_shim.rs` (declare your views there)
 and a `skc-shared` forwarding feature:
 
 ```shell
-cargo install stereokit-rust -F skc-shared
-cargo run_sk
-# then edit src/ : the viewer rebuilds and reloads your views on the fly
+# deploy the viewer ONCE
+cargo build_sk_rs --bin main_hot_reloading --features skc-shared  <viewer_dir>
+# then, from your project directory (the viewer builds and reloads the plugin of the cwd):
+cd my_project && <viewer_dir>/main_hot_reloading
+# edit src/ : the viewer rebuilds and reloads your views on the fly
 ```
 
 See [`hot_reloading.md`](hot_reloading.md) for the reference documentation (architecture, plugin ABI, internals).

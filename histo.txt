@@ -1,6 +1,6 @@
  #------A bunch of commands you'll use here
  #---- installing
- cargo install --path .  -F skc-shared 
+ cargo install --path .  
  cargo compile_sks
  rustup target add aarch64-linux-android
  rustup target add x86_64-pc-windows-gnu
@@ -9,6 +9,12 @@
  export VK_ICD_FILENAMES=$(brew --prefix molten-vk)/share/vulkan/icd.d/MoltenVK_icd.json
 #-Linux can use llvmpipe instead of the GPU driver almost for the simulator:
 VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.json
+
+#---- hot reloading demos
+cargo run --bin main_hot_reloading --features skc-shared -- --start Ui1
+clear;XR_RUNTIME_JSON=/usr/share/openxr/1/openxr_monado.json cargo run --bin main_hot_reloading --features skc-shared -- --xr --start Ui1
+cargo build_sk_rs --bin main_hot_reloading --features skc-shared ~/bin/sk_hot_reloading/
+cd ../sk_project && ~/bin/sk_hot_reloading/main_hot_reloading 
 
 #---- building for pc
 cargo run --example main_pc -F tools 

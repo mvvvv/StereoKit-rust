@@ -1,6 +1,6 @@
-//! Plugin side of the `cargo-run_sk` hot-reload workflow.
+//! Plugin side of the  hot-reload workflow.
 //!
-//! This module turns the `main` example (a `cdylib`) into a **plugin** loadable by the `cargo-run_sk` host:
+//! This module turns the `main` example (a `cdylib`) into a **plugin** loadable by the hot reload host:
 //!
 //! - the host keeps a single StereoKit session alive (Simulator or OpenXR),
 //! - each time `cargo build --example main --features skc-shared` produces a new plugin library (`libmain.so` on
@@ -59,7 +59,7 @@ pub extern "C" fn sk_run_sk_crate_version() -> *const std::ffi::c_char {
 }
 
 /// Fills the `settings` out-parameter with the settings of the demos (`crate::demos::program::sk_settings`), so the
-/// host session of the `cargo-run_sk` viewer is initialized exactly like the demos. Returns 0 on success, 1 for a
+/// host session of the hot reload viewer is initialized exactly like the demos. Returns 0 on success, 1 for a
 /// null pointer.
 #[unsafe(no_mangle)]
 pub extern "C" fn sk_run_sk_settings(settings: *mut SkSettings) -> u32 {

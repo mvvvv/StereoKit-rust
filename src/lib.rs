@@ -44,7 +44,7 @@
 //!     * `export VK_ICD_FILENAMES=$(brew --prefix molten-vk)/share/vulkan/icd.d/MoltenVK_icd.json`
 //!
 //!
-//! Installing the stereokit_rust tools with `cargo install stereokit-rust -F skc-shared` should help you to check
+//! Installing the stereokit_rust tools with `cargo install stereokit-rust` should help you to check
 //! the missing dependencies.
 //!
 //! # Usage
@@ -59,8 +59,7 @@
 //! - **`force-local-deps`**: Use local dependencies for CPM module (see StereoKit CMake)
 //! - **`with-glam`**: Add Glam to your maths.
 //! - **`skc-shared`**: Create and use StereoKitC as a shared library (`StereoKitC.dll` on Windows MSVC & GNU,
-//!   `libStereoKitC.so` on Linux, `libStereoKitC.dylib` on macOS). Foundation of the `cargo-run_sk` hot-reload
-//!   workflow.
+//!   `libStereoKitC.so` on Linux, `libStereoKitC.dylib` on macOS). Foundation of the hot-reload workflow.
 //! - **`profile`**: Enable profiling in StereoKitC using tracy
 //! - **`file-browser`**: Let you use the FileBrowserB stepper to browse your file system in your headset.
 //! - **`tools`**: All the extra tools features like `file-browser`
@@ -386,7 +385,7 @@ pub mod model;
 /// Permission related structs, enums and functions for managing cross-platform permissions.
 pub mod permission;
 
-/// The C ABI shared between the `cargo-run_sk` hot-reload host and the plugin `.so` of the project under development
+/// The C ABI shared between the hot-reload host and the plugin `.so` of the project under development
 /// (opaque pointers + `#[repr(C)]` structs only).
 pub mod plugin_abi;
 

@@ -1,6 +1,6 @@
 pub mod c_stepper;
 
-/// Hot-reload plugin entry points for the `cargo-run_sk` viewer. The exported `sk_run_sk_*` symbols are inert
+/// Hot-reload plugin entry points for the hot reloading viewer. The exported `sk_run_sk_*` symbols are inert
 /// unless the library is dlopen'ed by the host: they don't interfere with the normal (Android) launch.
 #[cfg(all(feature = "skc-shared", not(target_os = "android")))]
 pub mod plugin_shim;

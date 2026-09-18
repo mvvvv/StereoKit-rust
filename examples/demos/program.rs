@@ -46,9 +46,9 @@ use super::{
 };
 /// The SkSettings of the demos, grouped in one single place, at the same level as `launch`: the settings AND the
 /// BackendOpenXR / BackendVulkan parameterizations, which must be done before StereoKit initialization. This is
-/// the function the `cargo-run_sk` hot-reload viewer reads through the plugin ABI (`sk_run_sk_settings`) to
-/// initialize its session exactly like the demos. The launch-dependent settings (`mode`, `fullscreen`,
-/// `android_app`...) can still be adjusted by the callers on the returned value, before calling `launch`.
+/// the function the hot-reload viewer reads through the plugin ABI (`sk_run_sk_settings`) to initialize its session
+/// exactly like the demos. The launch-dependent settings (`mode`, `fullscreen`, `android_app`...) can still be
+/// adjusted by the callers on the returned value, before calling `launch`.
 pub fn sk_settings() -> SkSettings {
     let mut settings = SkSettings::default();
     settings

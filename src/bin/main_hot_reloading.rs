@@ -1,4 +1,4 @@
-//! `cargo-run_sk` — a real-time viewer with in-process hot-reload for StereoKit-rust projects (Linux, Windows &
+//! `main_hot_reloading` — a real-time viewer with in-process hot-reload for StereoKit-rust projects (Linux, Windows &
 //! macOS).
 //!
 //! The host keeps **one** StereoKit session alive (Simulator by default, OpenXR with `--xr`, offscreen with
@@ -7,19 +7,19 @@
 //! # Typical workflow (this repository)
 //! ```bash
 //! # terminal 1 - the viewer (Simulator by default)
-//! cargo run_sk
+//! cargo run --bin main_hot_reloading --features skc-shared
 //! ```
 //! Fully automatic: by default the viewer also watches `src/bin/` and `examples/` and runs the build command itself at
 //! startup and then on each change (`--no-build` to disable, `--build-cmd` to customize).
 //!
 //! With the Monado simulator runtime:
 //! ```bash
-//! XR_RUNTIME_JSON=/usr/share/openxr/1/openxr_monado.json cargo-run_sk --xr
+//! XR_RUNTIME_JSON=/usr/share/openxr/1/openxr_monado.json main_hot_reloading --xr
 //! ```
 
 #[cfg(feature = "no-event-loop")]
 fn main() {
-    eprintln!("cargo-run_sk: only supported with event-loop");
+    eprintln!("main_hot_reloading: only supported with event-loop");
 }
 
 #[cfg(not(feature = "no-event-loop"))]
@@ -45,7 +45,7 @@ mod imp {
     /// Somewhere to copy the log, read by the viewer's [`LogWindow`].
     static LOG_LOG: Mutex<Vec<LogItem>> = Mutex::new(vec![]);
 
-    pub const USAGE: &str = r#"Usage : cargo run_sk [OPTION]
+    pub const USAGE: &str = r#"Usage : main_hot_reloading [OPTION]
     Real-time viewer for the project under development: keeps a single
     StereoKit session alive (Simulator or OpenXR) and hot-reloads the
     plugin library each time it is rebuilt.
@@ -75,9 +75,9 @@ mod imp {
         -h | --help            : display this help
 
     Examples:
-        cargo run_sk 
-        cargo run_sk --xr --start Tex1
-        cargo run_sk --offscreen --test 120 --start Ui1"#;
+        main_hot_reloading
+        main_hot_reloading --xr --start Tex1
+        main_hot_reloading --offscreen --test 120 --start Ui1"#;
 
     // ------------------------------------------------------------------
     // main
@@ -103,8 +103,8 @@ mod imp {
         while let Some(arg) = argv.get(index).cloned() {
             index += 1;
             match &arg[..] {
-                // cargo may pass the subcommand name itself as first argument
-                "run_sk" => {}
+                // the binary name itself may be passed as first argument
+                "main_hot_reloading" => {}
                 "--simulator" => {}
                 "--xr" => xr = true,
                 "--offscreen" => offscreen = true,
@@ -165,7 +165,7 @@ mod imp {
         // compiled plugin library: LoadLibrary/dlopen would fail on the .rs file in a confusing way.
         if lib_path.extension().is_some_and(|ext| ext.eq_ignore_ascii_case("rs")) {
             eprintln!(
-                "cargo-run_sk: --lib expects the COMPILED plugin library (e.g. target/debug/examples/{}, \
+                "main_hot_reloading: --lib expects the COMPILED plugin library (e.g. target/debug/examples/{}, \
                  not the Rust source file {}). Omit --lib to let the viewer detect and build it itself.",
                 plugin_file("main"),
                 lib_path.display()
@@ -178,13 +178,13 @@ mod imp {
         if list {
             return match HotReloading::list_views(&lib_path) {
                 Ok(views) => {
-                    println!("cargo-run_sk: {} views in {}", views.len(), lib_path.display());
+                    println!("main_hot_reloading: {} views in {}", views.len(), lib_path.display());
                     for (index, (name, has_screenshot)) in views.iter().enumerate() {
                         println!("  [{index:2}] {name} {}", if *has_screenshot { "[screenshot]" } else { "" });
                     }
                 }
                 Err(err) => {
-                    eprintln!("cargo-run_sk: {err}");
+                    eprintln!("main_hot_reloading: {err}");
                     std::process::exit(1);
                 }
             };
@@ -208,11 +208,11 @@ mod imp {
         // is initialized.
         let mut settings = SkSettings::default();
         if let Err(err) = hot_reloading.apply_plugin_settings(&mut settings) {
-            Log::warn(format!("cargo-run_sk: {err}"));
+            Log::warn(format!("main_hot_reloading: {err}"));
         }
 
         //---- The launch-dependent settings stay in the host: they are applied on top of the project ones.
-        settings.app_name("cargo-run_sk").fullscreen(fullscreen);
+        settings.app_name("main_hot_reloading").fullscreen(fullscreen);
         if xr {
             settings.mode(AppMode::XR).no_flatscreen_fallback(true);
         } else if offscreen {
@@ -228,7 +228,7 @@ mod imp {
         };
         Log::subscribe(fn_mut);
 
-        let mut sk = settings.init().expect("cargo-run_sk: cannot initialize StereoKit");
+        let mut sk = settings.init().expect("main_hot_reloading: cannot initialize StereoKit");
 
         //---- The viewer is now only this tool: it is stepped after the app callback, like the explicit call it
         // replaces.

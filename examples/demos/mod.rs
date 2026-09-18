@@ -60,10 +60,10 @@ pub struct Test {
     pub name: String,
     pub launcher: Box<dyn (Fn(&mut Sk) -> StepperId) + 'static>,
     /// Produces the `StepperAction::add_*` of this view without targeting a particular [Sk]. This is what the
-    /// `cargo-run_sk` hot-reload plugin uses to run the views in its own [`Steppers`] instead of the host's. Only
+    /// hot-reload plugin uses to run the views in its own [`Steppers`] instead of the host's. Only
     /// [`Test::from_stepper`] fills it (views created with [`Test::new`] are not hot-reloadable).
     pub add_action: Option<Box<dyn (Fn() -> StepperAction) + Send + 'static>>,
-    /// Path of the screenshot of this view, when one already exists. The `cargo-run_sk` viewer shows the 📷 flag for
+    /// Path of the screenshot of this view, when one already exists. The hot reload viewer shows the 📷 flag for
     /// those views.
     pub screenshot: Option<String>,
 }

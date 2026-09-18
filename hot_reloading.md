@@ -1,13 +1,13 @@
-# Hot reloading: the `cargo run_sk` viewer
+# Hot reloading: the `main_hot_reloading` viewer
 
-`cargo-run_sk` is a real-time viewer for a StereoKit-rust project under development. It keeps **one** StereoKit
+`main_hot_reloading` is a real-time viewer for a StereoKit-rust project under development. It keeps **one** StereoKit
 session alive (Simulator by default, real OpenXR with `--xr`, headless with `--offscreen`) and hot-reloads the
 plugin library of the project each time it is rebuilt: the new library is loaded **inside the running process**,
 without ever closing the session or re-pairing a headset. The views of the project (its `Test`s / `IStepper`s) are
 offered in a selector window, with on-demand screenshots.
 
 ```text
-        cargo-run_sk (host)                      plugin = the project (cdylib)
+        main_hot_reloading (host)                      plugin = the project (cdylib)
   +---------------------------+          +-------------------------------------+
   | ONE SkSettings, ONE       |          | sk_run_sk_settings() -> SkSettings  |
   | Sk session, ONE engine    |  dlopen  | sk_run_sk_views_count() / _view_info|
@@ -46,20 +46,20 @@ The retained design ("Option B") is an **in-process plugin with a real, continuo
 
 | Path | Role |
 | --- | --- |
-| [`Cargo.toml`](Cargo.toml) | `skc-shared = ["dep:libloading"]` feature, `[[bin]] cargo-run_sk` (`required-features = ["skc-shared"]`), `libloading` for `dlopen`/`dlsym` (Linux, macOS) and `LoadLibrary` (Windows). |
-| [`build.rs`](build.rs) | `SK_BUILD_SHARED_LIBS=ON` with `skc-shared` (Windows, Linux, macOS) and `SK_DYNAMIC_OPENXR=ON` on Linux/macOS (shared OpenXR loader); links `dylib=StereoKitC` + `dylib=openxr_loader`, copies `libStereoKitC.*` under `target/debug/deps/` for [`cargo-build_sk_rs`](src/bin/cargo-build_sk_rs.rs), embeds an rpath so nothing has to be installed. Elsewhere: warning + static build. |
+| [`Cargo.toml`](Cargo.toml) | `skc-shared = ["dep:libloading"]` feature, `[[bin]] main_hot_reloading` (`required-features = ["skc-shared"]`, deployed by `cargo build_sk_rs`, never installed by `cargo install`), `libloading` for `dlopen`/`dlsym` (Linux, macOS) and `LoadLibrary` (Windows). |
+| [`build.rs`](build.rs) | `SK_BUILD_SHARED_LIBS=ON` with `skc-shared` (Windows, Linux, macOS) and `SK_DYNAMIC_OPENXR=ON` on Linux/macOS (shared OpenXR loader); links `dylib=StereoKitC` + `dylib=openxr_loader`, copies `libStereoKitC.*` **and `libopenxr_loader.*` (with its link names)** under `target/debug/deps/` for [`cargo-build_sk_rs`](src/bin/cargo-build_sk_rs.rs) (which deploys them next to the executable), registers `$ORIGIN`-relative CMake rpaths and embeds an rpath with `$ORIGIN` first, so a deployed copy is self-contained and nothing has to be installed. Elsewhere: warning + static build. |
 | [`src/plugin_abi.rs`](src/plugin_abi.rs) | The C contract shared by both sides: `SK_RUN_SK_ABI_VERSION`, `SK_RUN_SK_NAME_MAX`, `PluginViewInfo`, `SkSettingsFn`, the `sk_*` symbol documentation. |
 | [`src/tools/hot_reloading.rs`](src/tools/hot_reloading.rs) | The reusable host-side tool: `HotReloading`, an `IStepper` that watches, builds, loads, swaps, selects and captures. Also `plugin_file`, `default_lib_path`, `default_build_cmd`, `default_watch_roots`. |
-| [`src/bin/cargo-run_sk.rs`](src/bin/cargo-run_sk.rs) | The `cargo run_sk` viewer: command line parsing, session initialization with the project settings, `HotReloading` + `LogWindow` steppers, main loop. |
+| [`src/bin/main_hot_reloading.rs`](src/bin/main_hot_reloading.rs) | The `main_hot_reloading` viewer: command line parsing, session initialization with the project settings, `HotReloading` + `LogWindow` steppers, main loop. |
 | [`src/tools/log_window.rs`](src/tools/log_window.rs) | The log window shown next to the selector window (build tails, plugin messages, StereoKit logs). |
 | [`examples/run_sk_plugin/mod.rs`](examples/run_sk_plugin/mod.rs) | The plugin side of this repository, wired in [`examples/main.rs`](examples/main.rs) under `#[cfg(feature = "skc-shared")]`; exposes the `Test::get_tests()` views. |
 | [`src/templates/plugin_shim.rs`](src/templates/plugin_shim.rs) | The plugin shim generated for projects created by [`cargo new_sk_rs_project`](src/bin/cargo-new_sk_rs_project.rs) (non-basic projects, `${SK_VERSION}` substituted), declared in [`src/templates/lib_rs_framework.rs`](src/templates/lib_rs_framework.rs) as `#[cfg(all(feature = "skc-shared", not(target_os = "android")))] pub mod plugin_shim;`. |
 | [`src/tools/mod.rs`](src/tools/mod.rs) | `pub mod hot_reloading;` under `#[cfg(all(feature = "skc-shared", not(feature = "no-event-loop")))]`. |
 | [`src/framework/event_loop.rs`](src/framework/event_loop.rs) | `Steppers::step` and `Steppers::step_post_app` are public, so the copy of the framework **inside the plugin** can run its own steppers without owning the `Sk`/`SkClosures` of the host. |
-| [`README.md`](README.md) | User-facing section "Develop with hot-reload, the `cargo run_sk` viewer". |
+| [`README.md`](README.md) | User-facing section "Develop with hot-reload, the `main_hot_reloading` viewer". |
 
 A new project also gets a `skc-shared = ["stereokit-rust/skc-shared"]` forwarding feature in its generated
-`Cargo.toml`, and a "Next steps" line pointing at `cargo run_sk`.
+`Cargo.toml`, and a "Next steps" line pointing at `main_hot_reloading`.
 
 ## 3. The plugin ABI
 
@@ -92,32 +92,46 @@ Notes:
 
 ### 4.1 Installation
 
+The reusable tools (`cargo build_sk_rs`, `cargo compile_sks`, `cargo new_sk_rs_project`) are statically linked and
+installed with:
+
 ```shell
-# from the project directory (installs cargo-compile_sks, cargo-build_sk_rs, cargo-new_sk_rs_project, cargo-run_sk)
-cargo install --path . -F skc-shared
+# from the project directory
+cargo install --path .
 
 # or from crates.io
-cargo install stereokit-rust -F skc-shared
+cargo install stereokit-rust
 ```
 
-Once installed, `cargo run_sk` (cargo resolves the unknown subcommand to the `cargo-run_sk` binary) can be used from
-any StereoKit-rust project.
+The viewer is deliberately **not** a cargo subcommand and is **not** installed by `cargo install`: it links the shared
+`libStereoKitC.so` (`required-features = ["skc-shared"]`), so it must live next to it, and next to
+`libopenxr_loader.so.1`. `cargo build_sk_rs` deploys exactly that set, with a `$ORIGIN` rpath, so the deployed copy is
+self-contained (and survives a `cargo clean`, a feature change or a moved source tree):
+
+```shell
+# from the StereoKit-rust source directory: copies main_hot_reloading + libStereoKitC.so +
+# libopenxr_loader.so.1 (with all its link names) + assets/shaders into <viewer_dir>
+cargo build_sk_rs <viewer_dir> --features skc-shared --bin main_hot_reloading
+```
+
+`<viewer_dir>/main_hot_reloading` can then be launched from any StereoKit-rust project directory (the plugin of the
+cwd is what it builds and reloads).
 
 ### 4.2 This repository
 
 ```shell
 # Simulator, fully automatic: watches src/, examples/, assets/, shaders_src/, Cargo.toml, build.rs,
 # builds the plugin (cargo build --example main --features skc-shared) at startup and on each change.
-cargo run --bin cargo-run_sk --features skc-shared
+cargo run --bin main_hot_reloading --features skc-shared
 
 # real OpenXR runtime, here the Monado simulator
-XR_RUNTIME_JSON=/usr/share/openxr/1/openxr_monado.json cargo run --bin cargo-run_sk --features skc-shared -- --xr
+XR_RUNTIME_JSON=/usr/share/openxr/1/openxr_monado.json cargo run --bin main_hot_reloading --features skc-shared -- --xr
 
 # headless: run 120 frames on one view, screenshot it, quit
-cargo run --bin cargo-run_sk --features skc-shared -- --offscreen --test 120 --start Ui1
+cargo run --bin main_hot_reloading --features skc-shared -- --offscreen --test 120 --start Ui1
 
 # print the views of the (already built) plugin and exit, without any StereoKit session
-cargo run --bin cargo-run_sk --features skc-shared -- --list
+cargo run --bin main_hot_reloading --features skc-shared -- --list
 ```
 
 ### 4.3 Your own project
@@ -127,8 +141,8 @@ declared:
 
 ```shell
 cd my_project
-cargo install stereokit-rust -F skc-shared   # if not already done
-cargo run_sk
+# the viewer is deployed once from the StereoKit-rust source directory (see 4.1), then run from here:
+<viewer_dir>/main_hot_reloading
 # then edit src/ : the viewer rebuilds and reloads your views on the fly
 ```
 
@@ -174,7 +188,7 @@ feature.
 ## 5. Library API of the tool
 
 `HotReloading` is a plain `IStepper`, so it can be embedded in any StereoKit-rust application, not only in the
-`cargo run_sk` viewer:
+`main_hot_reloading` viewer:
 
 ```text
 let mut hot_reloading = HotReloading::auto_detect();
@@ -288,7 +302,7 @@ grid).
 
 The viewer also adds a `LogWindow` stepper (`tools::log_window`), fed by a log buffer subscribed with `Log::subscribe`
 **before** the session starts: StereoKit initialization logs, the build tails, the view selections and the plugin
-messages are visible in the session without leaving the viewer. In the `cargo-run_sk` binary the selector window and
+messages are visible in the session without leaving the viewer. In the `main_hot_reloading` binary the selector window and
 the log window are both placed on the left of the session.
 
 ## 8. Design decisions and risks
@@ -327,7 +341,7 @@ the log window are both placed on the left of the session.
 ## 10. Validation performed
 
 - `cargo check` with the default features: no regression.
-- `cargo run --bin cargo-run_sk --features skc-shared -- --list`: 35 views of the `main` plugin listed without any
+- `cargo run --bin main_hot_reloading --features skc-shared -- --list`: 35 views of the `main` plugin listed without any
   StereoKit session.
 - `--offscreen --test 20 --start "Test A"`: exit code 0 and a rendered screenshot file.
 - Real edit → auto-build → hot swap cycle: `begin/end/begin` traces, automatic re-selection of the active view, the
@@ -342,18 +356,18 @@ the log window are both placed on the left of the session.
 ## 11. Status and history
 
 - **v1** (ABI 1): `sk_run_sk_begin` received a pointer to the host `Sk`; the whole viewer logic lived inside
-  `src/bin/cargo-run_sk.rs` (CLI + watcher + swap + UI), validated with the Simulator and Monado.
+  `src/bin/main_hot_reloading.rs` (CLI + watcher + swap + UI), validated with the Simulator and Monado.
 - **v2** (current, ABI 2): `sk_run_sk_begin` receives a pointer to the `Rc<RefCell<SkInfo>>` of the host session; the
-  viewer logic became the reusable `tools::hot_reloading::HotReloading` `IStepper` (the `cargo-run_sk` binary is now
+  viewer logic became the reusable `tools::hot_reloading::HotReloading` `IStepper` (the `main_hot_reloading` binary is now
   only the CLI + the `LogWindow`), the fps display and the selector window were reworked, and the workflow was
   extended to Windows/macOS and to the projects generated by `cargo new_sk_rs_project` (template `plugin_shim.rs`,
   forwarded `skc-shared` feature, "Next steps" hint).
 
 ## See also
 
-- [`README.md`](README.md) — "Develop with hot-reload, the `cargo run_sk` viewer" (user-facing quick start).
+- [`README.md`](README.md) — "Develop with hot-reload, the `main_hot_reloading` viewer" (user-facing quick start).
 - [`src/plugin_abi.rs`](src/plugin_abi.rs) — the C ABI, documented for both sides.
 - [`src/tools/hot_reloading.rs`](src/tools/hot_reloading.rs) — the tool itself, with its module documentation.
-- [`src/bin/cargo-run_sk.rs`](src/bin/cargo-run_sk.rs) — the viewer (`--help` output and the main loop).
+- [`src/bin/main_hot_reloading.rs`](src/bin/main_hot_reloading.rs) — the viewer (`--help` output and the main loop).
 - [`examples/run_sk_plugin/mod.rs`](examples/run_sk_plugin/mod.rs) and
   [`src/templates/plugin_shim.rs`](src/templates/plugin_shim.rs) — the two plugin-side shims.

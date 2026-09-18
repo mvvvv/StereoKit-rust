@@ -340,8 +340,8 @@ fn main() {
         }
     } else if skc_shared {
         // 1-1 - the shared libraries created (other OS than Windows, with the skc-shared feature)
-        // The shared StereoKitC library has been copied under deps/ by the stereokit-rust build
-        // script, exactly as the DLL is on Windows.
+        // The shared StereoKitC library and its OpenXR loader have been copied under deps/ by the
+        // stereokit-rust build script, exactly as the DLL is on Windows.
         let c_so = if cfg!(target_os = "macos") { "libStereoKitC.dylib" } else { "libStereoKitC.so" };
         let so_file = built_files.join("deps").join(c_so);
         if so_file.is_file() {
@@ -349,6 +349,39 @@ fn main() {
             println!("SO is copied from here --> {so_file:?}");
             println!("               to there --> {dest_file_so:?}");
             let _lib_so = fs::copy(&so_file, dest_file_so).unwrap();
+        }
+        // 1-2 - the OpenXR loader is the other half of the pair: the `$ORIGIN` rpath of libStereoKitC.so
+        // resolves it next to itself, so it must be deployed too. Every name of the chain is shipped
+        // (libopenxr_loader.so -> libopenxr_loader.so.1 -> libopenxr_loader.so.1.1.60), keeping the
+        // link names as links.
+        let loader_base = if cfg!(target_os = "macos") {
+            "libopenxr_loader.dylib"
+        } else {
+            "libopenxr_loader.so"
+        };
+        let deps_dir = built_files.join("deps");
+        if let Ok(entries) = fs::read_dir(&deps_dir) {
+            for entry in entries.flatten() {
+                let name = entry.file_name();
+                if !name.to_string_lossy().starts_with(loader_base) {
+                    continue;
+                }
+                let dest = output_path.join(&name);
+                let _ = fs::remove_file(&dest);
+                let src = entry.path();
+                if fs::symlink_metadata(&src).map(|meta| meta.file_type().is_symlink()).unwrap_or(false) {
+                    let target = fs::read_link(&src).unwrap_or_else(|_| PathBuf::from(&name));
+                    println!("Loader link {dest:?} -> {target:?}");
+                    #[cfg(unix)]
+                    let _link = std::os::unix::fs::symlink(&target, &dest);
+                    #[cfg(not(unix))]
+                    let _link = fs::copy(&src, &dest);
+                } else {
+                    println!("Loader is copied from here --> {src:?}");
+                    println!("               to there --> {dest:?}");
+                    let _loader = fs::copy(&src, &dest).unwrap();
+                }
+            }
         }
     }
 

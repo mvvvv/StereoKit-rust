@@ -16,10 +16,10 @@ fn main() {
     let win_gnu_libs = env::var("SK_RUST_WIN_GNU_LIBS").unwrap_or_default();
 
     // `skc-shared`: StereoKitC is built as a shared library (`StereoKitC.dll` on Windows MSVC & GNU,
-    // `libStereoKitC.so` on Linux, `libStereoKitC.dylib` on macOS). Foundation of the `cargo-run_sk` hot-reload
-    // workflow: the host binary AND the dlopen'ed/LoadLibrary'ed plugin library both link it, so the dynamic loader
-    // deduplicates them by SONAME/install-name/module-name and the whole process shares ONE engine instance (hence
-    // a single Simulator/OpenXR session).
+    // `libStereoKitC.so` on Linux, `libStereoKitC.dylib` on macOS). Foundation of the hot-reload workflow: the host
+    // binary AND the dlopen'ed/LoadLibrary'ed plugin library both link it, so the dynamic loader deduplicates them by
+    // SONAME/install-name/module-name and the whole process shares ONE engine instance (hence a single
+    // Simulator/OpenXR session).
     let skc_shared = cfg!(feature = "skc-shared");
     // Unix extras (shared OpenXR loader + rpath): the desktop unix flavors, i.e. `unix` minus Android.
     let skc_shared_unix = skc_shared && target_family.as_str() == "unix" && target_os != "android";
@@ -137,6 +137,11 @@ fn main() {
     }
     if cfg!(feature = "profile") {
         cmake_config.define("SK_PROFILE", "ON");
+    }
+    if skc_shared_unix {
+        // Relocatable shared libraries: CMake then records `$ORIGIN`-relative build rpaths.
+        cmake_config.define("CMAKE_BUILD_RPATH_USE_ORIGIN", "ON");
+        cmake_config.define("CMAKE_BUILD_RPATH", "$ORIGIN");
     }
 
     let dst = cmake_config.build();
@@ -517,7 +522,7 @@ pub fn copy_tree(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> std::io::Resul
 /// Links the shared StereoKitC library built by CMake (`libStereoKitC.so` on Linux, `libStereoKitC.dylib` on macOS;
 /// it folds sk_renderer, sk_app, sk_ktx2, zstd and meshoptimizer inside) plus the shared OpenXR loader, and embeds
 /// an rpath so both are found at runtime without installing them. Any library dlopen'ed later that links the same
-/// sonames/install-names (the `cargo-run_sk` plugin) shares these exact instances.
+/// sonames/install-names (the `main_hot_reloading` plugin) shares these exact instances.
 fn link_shared_stereokitec(dst: &Path) {
     // Shared library file names: CMake produces `.dylib` on macOS, `.so` on Linux.
     let macos = env::var("CARGO_CFG_TARGET_OS").map(|os| os == "macos").unwrap_or(false);
@@ -530,6 +535,7 @@ fn link_shared_stereokitec(dst: &Path) {
     let skc_so = find_file(&build_dir, skc_name, 1);
     let loader_dir = build_dir.join("_deps").join("openxr_loader-build");
     let loader_so = find_file(&loader_dir, loader_name, 6);
+    let deps_libs = dst.parent().unwrap().parent().unwrap().parent().unwrap().join("deps");
 
     match &skc_so {
         Some(path) => {
@@ -539,7 +545,6 @@ fn link_shared_stereokitec(dst: &Path) {
 
             //---- Same as the Windows DLL flow: copy the shared lib under <target_dir>/deps/ where the cargo
             //---- tools (cargo-build_sk_rs...) pick it up to ship it next to the executables.
-            let deps_libs = dst.parent().unwrap().parent().unwrap().parent().unwrap().join("deps");
             let dest_file_so = deps_libs.join(skc_name);
             println!("cargo:info={skc_name} is copied from here --> {path:?}");
             println!("cargo:info=                          to there --> {dest_file_so:?}");
@@ -560,6 +565,31 @@ fn link_shared_stereokitec(dst: &Path) {
             println!("cargo:info=skc-shared: using {}", path.display());
             println!("cargo:rustc-link-search=native={}", dir.display());
             println!("cargo:rustc-link-lib=dylib=openxr_loader");
+
+            //---- Ship the loader next to libStereoKitC.so under <target_dir>/deps/, as the DLL is on Windows: the
+            //---- `$ORIGIN` rpath of a deployed libStereoKitC.so resolves it right there, and cargo-build_sk_rs copies
+            //---- the complete set next to the executable. The real file is copied, the link names point to it.
+            let real_loader = fs::canonicalize(path).unwrap_or_else(|_| path.clone());
+            let real_name = real_loader.file_name().unwrap_or_else(|| std::ffi::OsStr::new(loader_name));
+            if let Ok(entries) = fs::read_dir(dir) {
+                for entry in entries.flatten() {
+                    let name = entry.file_name();
+                    if name == real_name || !name.to_string_lossy().starts_with(loader_name) {
+                        continue;
+                    }
+                    let dest = deps_libs.join(&name);
+                    let _ = fs::remove_file(&dest);
+                    #[cfg(unix)]
+                    let _link = std::os::unix::fs::symlink(real_name, &dest)
+                        .or_else(|_| fs::copy(entry.path(), &dest).map(|_| ()));
+                    #[cfg(not(unix))]
+                    let _link = fs::copy(entry.path(), &dest);
+                }
+            }
+            let dest_loader = deps_libs.join(real_name);
+            println!("cargo:info={} is copied from here --> {real_loader:?}", real_name.to_string_lossy());
+            println!("cargo:info=                          to there --> {dest_loader:?}");
+            let _loader_so = fs::copy(&real_loader, dest_loader);
         }
         None => {
             println!(
@@ -570,11 +600,18 @@ fn link_shared_stereokitec(dst: &Path) {
         }
     }
 
-    // rpath so the host binary (and the cdylib plugin built from this crate) find the shared libs at runtime without
-    // any installation step.
-    println!("cargo:rustc-link-arg=-Wl,-rpath,{}", build_dir.display());
+    // rpath so the executables of this crate (and the cdylib plugin built from it) find the shared libs at runtime
+    // without any installation step. `$ORIGIN` (the directory of the executable itself, `@loader_path` on macOS) comes
+    // FIRST: a binary deployed next to libStereoKitC.so and its loader is then self-contained, and survives a
+    // `cargo clean`, a feature change or a moved source tree. The build-tree directories stay as a fallback for
+    // in-tree runs. One `-rpath` option per entry, so ld keeps them in order (a colon separated list is GNU ld only).
+    let origin = if macos { "@loader_path" } else { "$ORIGIN" };
+    let mut rpaths = vec![origin.to_string(), build_dir.display().to_string()];
     if let Some(path) = &loader_so {
-        println!("cargo:rustc-link-arg=-Wl,-rpath,{}", path.parent().unwrap().display());
+        rpaths.push(path.parent().unwrap().display().to_string());
+    }
+    for entry in rpaths {
+        println!("cargo:rustc-link-arg=-Wl,-rpath,{entry}");
     }
 }
 
