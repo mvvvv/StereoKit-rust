@@ -1,18 +1,19 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use stereokit_rust::{
     font::Font,
     include_asset_tree,
     material::Material,
     maths::{Matrix, Pose, Quat, Vec2, Vec3},
-    mesh::Mesh,
-    model::{AnimMode, Model},
+    model::Model,
     prelude::*,
     render::Renderer,
-    sound::{Sound, SoundInst},
+    sound::SoundInst,
     sprite::Sprite,
-    system::{Assets, Handed, Input, Text, TextBuilder, TextStyle},
-    tex::Tex,
-    tools::os_api::{PathEntry, get_assets},
+    system::{Handed, Input, Text, TextBuilder, TextStyle},
+    tools::{
+        asset_preview::AssetToShow,
+        os_api::{PathEntry, get_assets},
+    },
     ui::{Ui, UiBtnLayout},
     util::named_colors::{DARK_BLUE, RED, YELLOW},
 };
@@ -132,7 +133,9 @@ impl Asset1 {
                     if let Some(mut sound_inst) = self.sound_to_play {
                         sound_inst.stop();
                     }
-                    if let Some(asset_to_show) = self.load_asset(name, &self.asset_sub_dir, file_name_str) {
+                    if let Some(asset_to_show) =
+                        AssetToShow::from_file(&self.asset_sub_dir.join(name), self.asset_pose.position)
+                    {
                         self.model_to_show = Some(asset_to_show.model);
                         self.sound_to_play = asset_to_show.sound_inst;
                     } else {
@@ -206,64 +209,6 @@ impl Asset1 {
         TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
     }
 
-    /// Open asset regarding its extension
-    fn load_asset(&self, name: &std::ffi::OsString, asset_sub_dir: &Path, file_name_str: &str) -> Option<AssetToShow> {
-        let file_path = asset_sub_dir.join(name);
-        if let Some(ext) = file_path.extension() {
-            let ext = ".".to_string() + ext.to_str().unwrap_or("!!ERROR!!");
-            if Assets::MODEL_FORMATS.contains(&ext.as_str()) {
-                if let Ok(model) = Model::from_file(file_path, None, None) {
-                    let mut anims = model.get_anims();
-                    if anims.get_count() > 0 {
-                        anims.play_anim_idx(0, AnimMode::Loop);
-                    }
-                    Some(AssetToShow::model(model))
-                } else {
-                    Log::err(format!("Unable to load model {file_name_str:?} !!"));
-                    None
-                }
-            } else if Assets::TEXTURE_FORMATS.contains(&ext.as_str()) {
-                let model = Model::new();
-                let mesh = Mesh::generate_plane_up(Vec2::ONE * 6.0, None, true);
-                let tex = Tex::from_file(file_path, true, None).unwrap_or_default();
-                let mut material = Material::pbr_clip().copy();
-                material.diffuse_tex(tex).clip_cutoff(0.1);
-                model.get_nodes().add("tex_plane", Matrix::IDENTITY, Some(&mesh), Some(&material), true);
-                Some(AssetToShow::model(model))
-            } else if ext == ".sks" {
-                let model = Model::new();
-                let mesh = Mesh::generate_plane_up(Vec2::ONE * 6.0, None, true);
-                let tex = Tex::from_file("textures/open_gltf.jpeg", true, None).unwrap_or_default();
-                if let Ok(mut material) = Material::from_file(&file_path, None) {
-                    material.diffuse_tex(tex);
-                    model.get_nodes().add("tex_plane", Matrix::IDENTITY, Some(&mesh), Some(&material), true);
-                    Some(AssetToShow::model(model))
-                } else {
-                    None
-                }
-            } else if Assets::SOUND_FORMATS.contains(&ext.as_str()) {
-                let model = Model::new();
-                let mesh = Mesh::generate_cube(Vec3::ONE * 4.0, None);
-                let tex = Tex::from_file("textures/sound.jpeg", true, None).unwrap_or_default();
-
-                if let Ok(sound) = Sound::from_file(file_path) {
-                    let sound_inst = sound.play(self.asset_pose.position, None);
-
-                    let mut material = Material::default_copy();
-                    material.diffuse_tex(tex);
-                    model.get_nodes().add("tex_sound", Matrix::IDENTITY, Some(&mesh), Some(&material), true);
-                    Some(AssetToShow::sound(model, sound_inst))
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
-        } else {
-            None
-        }
-    }
-
     fn close(&mut self, _triggering: bool) -> bool {
         if _triggering {
             Input::hand_material(Handed::Right, Some(self.hand_material.clone_ref()));
@@ -275,19 +220,5 @@ impl Asset1 {
         } else {
             self.shutdown_completed
         }
-    }
-}
-
-struct AssetToShow {
-    model: Model,
-    sound_inst: Option<SoundInst>,
-}
-
-impl AssetToShow {
-    fn model(model: Model) -> Self {
-        AssetToShow { model, sound_inst: None }
-    }
-    fn sound(model: Model, sound_inst: SoundInst) -> Self {
-        AssetToShow { model, sound_inst: Some(sound_inst) }
     }
 }

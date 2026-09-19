@@ -1,13 +1,15 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use stereokit_rust::{
     font::Font,
     framework::Appearence,
     maths::{Matrix, Pose, Quat, Vec2, Vec3},
     prelude::*,
+    render::Renderer,
     sprite::Sprite,
     system::{Align, Log, Text, TextBuilder, TextFit, TextStyle},
     tools::{
+        asset_preview::AssetToShow,
         file_browser_b::{
             BasicPreviewer, FILE_BROWSER_B_DELETE_MULTI, FILE_BROWSER_B_OPEN_MULTI, FILE_BROWSER_B_SAVE,
             FILE_BROWSER_B_SELECT, FILE_BROWSER_B_SELECT_DIR, FILE_BROWSER_B_SELECT_MULTI, FileBrowserB,
@@ -34,6 +36,7 @@ use stereokit_rust::{
 pub struct Documents1 {
     id: StepperId,
     sk_info: Option<Rc<RefCell<SkInfo>>>,
+    shutdown_completed: bool,
 
     pub window_pose: Pose,
     /// Size, scaling, text styles and tints of the demo window, same as [`FileBrowserB`].
@@ -60,6 +63,16 @@ pub struct Documents1 {
     /// [`Documents1::events_received`].
     events_scroll: Vec2,
 
+    /// The files received from the last file-carrying browser event, loaded as displayable assets with
+    /// [`AssetToShow::from_file`] (the file visualization of the asset1 demo), laid out in a row. Empty when no
+    /// displayable file was received yet.
+    assets_to_show: Vec<ShownAsset>,
+    /// Anchor of the row of displayed assets: they are laid out along the X axis, centered on its position. Each
+    /// asset is then moved with its own grabbable [`Ui::handle`] like in the asset1 demo.
+    pub asset_pose: Pose,
+    /// Fixed per-axis base scale of the displayed assets.
+    pub asset_scale: Vec3,
+
     radio_off: Sprite,
     radio_on: Sprite,
     right_arrow: Sprite,
@@ -76,6 +89,7 @@ impl Default for Documents1 {
         Self {
             id: "Documents1".to_string(),
             sk_info: None,
+            shutdown_completed: false,
 
             window_pose: Pose::new(Vec3::new(0.0, 1.5, -1.0), Some(Quat::look_dir(Vec3::Z))),
             appearence: Appearence::default(),
@@ -88,6 +102,10 @@ impl Default for Documents1 {
 
             events_received: String::new(),
             events_scroll: Vec2::ZERO,
+
+            assets_to_show: vec![],
+            asset_pose: Pose::new(Vec3::new(0.0, 1.3, -0.3), None),
+            asset_scale: Vec3::ONE * 0.02,
 
             radio_off: Sprite::radio_off(),
             radio_on: Sprite::radio_on(),
@@ -114,6 +132,11 @@ impl Documents1 {
     /// The multi-file events span several lines (paths indented under the event name) and the scrollbar handles the
     /// overflow, so this is only a memory bound, not a display one.
     const MAX_EVENT_LINES: usize = 50;
+    /// Maximum number of assets displayed at once: the file loading is not lazy, so a huge multi-selection could
+    /// freeze the frame. The extra paths are dropped, with a log.
+    const MAX_SHOWN_ASSETS: usize = 10;
+    /// Spacing of the row of displayed assets, in meters.
+    const ASSET_SPACING: f32 = 0.15;
 
     /// Logs the event, then formats its paths (see [`FileBrowserB::get_selected_paths`]) and prepends them to
     /// [`Documents1::events_received`] (most recent first): `event_name: path` on ONE line for a single path, the
@@ -135,6 +158,38 @@ impl Documents1 {
         self.events_received = all.join("\n");
         // The newest lines were just added on top of the log: reset the scroll of the events text to show them.
         self.events_scroll = Vec2::ZERO;
+    }
+
+    /// Loads the paths carried by a browser event as displayable assets (see [`AssetToShow::from_file`]) and
+    /// displays them in the scene like in the asset1 demo, laid out in a row and replacing the previously displayed
+    /// ones (their sounds are stopped first). Does nothing when the event carries no path.
+    fn show_files(&mut self, value: &str) {
+        let paths = FileBrowserB::get_selected_paths(value);
+        if paths.is_empty() {
+            return;
+        }
+        for shown in &mut self.assets_to_show {
+            shown.asset.stop_sound();
+        }
+        self.assets_to_show.clear();
+
+        // The assets are laid out along the X axis, centered on the anchor pose. The sounds play right where their
+        // own asset will be drawn.
+        let count = paths.len().min(Self::MAX_SHOWN_ASSETS) as f32;
+        for (index, path) in paths.iter().enumerate().take(Self::MAX_SHOWN_ASSETS) {
+            let offset_x = (index as f32 - (count - 1.0) / 2.0) * Self::ASSET_SPACING;
+            let pose = Pose::new(self.asset_pose.position + Vec3::X * offset_x, None);
+            if let Some(asset) = AssetToShow::from_file(Path::new(path), pose.position) {
+                self.assets_to_show.push(ShownAsset { asset, pose, model_scale: 1.0 });
+            }
+        }
+        if paths.len() > Self::MAX_SHOWN_ASSETS {
+            Log::info(format!(
+                "Documents1 displays only the first {} assets out of {}",
+                Self::MAX_SHOWN_ASSETS,
+                paths.len()
+            ));
+        }
     }
 
     /// Called from IStepper::initialize here you can abort the initialization by returning false
@@ -167,6 +222,12 @@ impl Documents1 {
             | FILE_BROWSER_B_SELECT_MULTI
             | FILE_BROWSER_B_DELETE_MULTI => {
                 self.remember_event(key, value);
+                // Display the received file in the scene, like in the asset1 demo. The directory and delete
+                // events carry no displayable file: the current display is left unchanged.
+                if !matches!(key, FILE_BROWSER_B_SELECT_DIR | FILE_BROWSER_B_DELETE_MULTI) {
+                    self.show_files(value);
+                } else {
+                }
             }
             _ => {}
         }
@@ -196,8 +257,41 @@ impl Documents1 {
         // Grab-able knob beside the window: resizes / scales it, exactly like on FileBrowserB.
         self.appearence.scale_handle(&self.window_pose, "documents1_scale_handle");
 
+        // The files received from a browser are displayed with a grabbable handle each, exactly like on the asset1
+        // demo: the handle gets the base bounds (model bounds * fixed asset_scale); StereoKit's ui_handle_begin
+        // multiplies them internally by the asset's `model_scale`, keeping the grab volume matched to the drawn
+        // size. Passing `model_scale` enables two-handed translate/rotate AND uniform scaling. One handle id per
+        // asset: StereoKit keys the handle state by id.
+        for (index, shown) in self.assets_to_show.iter_mut().enumerate() {
+            let handle_id = format!("documents1_asset_{index}");
+            if Ui::handle(&handle_id, &mut shown.pose, shown.asset.model.get_bounds() * self.asset_scale)
+                .scale(&mut shown.model_scale)
+                .grab()
+                && let Some(mut sound) = shown.asset.sound_inst
+            {
+                sound.position(shown.pose.position);
+            }
+            // Combine the fixed per-axis base scale with the user-driven uniform scale.
+            let model_transform = shown.pose.to_matrix(Some(self.asset_scale * shown.model_scale));
+            Renderer::add_model(&shown.asset.model, model_transform, None, None);
+        }
+
         // Title floating behind the window
         TextBuilder::new(&self.title).transform(self.title_transform).style(self.title_style).add();
+    }
+
+    /// Stops the sounds of the displayed assets when the stepper is shut down.
+    fn close(&mut self, _triggering: bool) -> bool {
+        if _triggering {
+            for shown in &mut self.assets_to_show {
+                shown.asset.stop_sound();
+            }
+            self.assets_to_show.clear();
+            self.shutdown_completed = true;
+            true
+        } else {
+            self.shutdown_completed
+        }
     }
 
     /// One button per [`PickerMode`], laid out four per line.
@@ -412,4 +506,12 @@ fn parse_exts(input: &str) -> Vec<String> {
         .filter(|ext| !ext.is_empty())
         .map(|ext| if ext.starts_with('.') { ext } else { format!(".{ext}") })
         .collect()
+}
+
+/// An asset displayed in the scene by [`Documents1`]: its [`AssetToShow`] visualization, its own pose (moved with
+/// its own grabbable [`Ui::handle`]) and its own user-driven uniform scale (two-handed squeeze on the handle).
+struct ShownAsset {
+    asset: AssetToShow,
+    pose: Pose,
+    model_scale: f32,
 }

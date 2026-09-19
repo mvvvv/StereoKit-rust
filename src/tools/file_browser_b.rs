@@ -6,7 +6,7 @@ use crate::{
     sprite::Sprite,
     system::{Align, Assets, Text, TextFit},
     tex::{Tex, TexFormat, TexType},
-    tools::assets2d::read_rgba_bitmap,
+    tools::asset_preview::read_rgba_bitmap,
     tools::ui_widgets::{
         DoubleClick, Scrollbar, is_last_element_focused, last_element_world_pose, wrap_chars, wrap_chars_lines,
     },

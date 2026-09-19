@@ -1,6 +1,6 @@
 use crate::system::BackendOpenXR;
 
-pub mod assets2d;
+pub mod asset_preview;
 pub mod build_tools;
 pub mod os_api;
 pub mod ui_widgets;

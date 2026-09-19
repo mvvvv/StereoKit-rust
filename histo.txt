@@ -19,8 +19,8 @@ cd ../sk_project && ~/bin/sk_hot_reloading/main_hot_reloading
 #---- building for pc
 cargo run --example main_pc -F tools 
 cargo run --example main_pc -F tools -- --test
-cargo build_sk_rs --example main_pc  ../sk_builds/SK_demo_linux/ && steam steam://rungameid/18159045590636298240
-FORCE_LOCAL_DEPS=ON DEP_SK_RENDERER_SOURCE="/opt/sk_renderer" cargo build_sk_rs --example main_pc -F force-local-deps ../sk_builds/SK_demo_linux/
+cargo build_sk_rs --features tools  --example main_pc  ../sk_builds/SK_demo_linux/ && steam steam://rungameid/18159045590636298240
+FORCE_LOCAL_DEPS=ON DEP_SK_RENDERER_SOURCE="/opt/sk_renderer" cargo build_sk_rs --example main_pc --features tools,force-local-deps ../sk_builds/SK_demo_linux/
 
 #---- cross building for pc
 RUSTFLAGS="-Clinker-plugin-lto" cargo build_sk_rs --features tools --example main_pc --x64-linux ../sk_builds/SK_demo_linux_x64/  #same as above on x86_64 linux PC

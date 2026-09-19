@@ -10,7 +10,7 @@ use crate::{
     prelude::*,
     render::Renderer,
     tex::{Tex, TexFormat},
-    tools::assets2d::{read_rgba_bitmap, write_rgba_bitmap},
+    tools::asset_preview::{read_rgba_bitmap, write_rgba_bitmap},
     ui::Ui,
     util::{PickerMode, Platform},
 };
