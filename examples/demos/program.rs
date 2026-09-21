@@ -1,4 +1,3 @@
-use openxr_sys::EnvironmentBlendMode;
 use std::{process, sync::Mutex, thread};
 use stereokit_rust::{
     font::Font,
@@ -8,33 +7,26 @@ use stereokit_rust::{
     prelude::*,
     render::{Projection, Renderer},
     shader::Shader,
-    sk::{AppFocus, AppWindow, DepthMode, DisplayBlend, OriginMode, SkSettings},
+    sk::{DepthMode, OriginMode, SkSettings},
     sound::{Sound, SoundInst},
     sprite::Sprite,
     system::{
-        Backend, BackendOpenXR, BackendVulkan, BackendVulkanRequest, BackendXRType, DefaultInteractors, Input,
-        Interaction, Interactor, Key, Lines, LogItem, LogLevel, MouseMode, Text,
+        Backend, BackendOpenXR, BackendVulkan, BackendVulkanRequest, BackendXRType, Input, Key, Lines, LogItem,
+        LogLevel, Text,
     },
     tex::Tex,
     tools::{
+        control_panel::ControlPanel,
         fly_over::{FLY_OVER_ID, FlyOver},
         log_window::{LogWindow, basic_log_fmt},
         notif::HudNotification,
-        os_api::get_env_blend_modes,
         screenshot::ScreenshotViewer,
-        xr_fb_display_refresh_rate::{
-            get_all_display_refresh_rates, get_display_refresh_rate, set_display_refresh_rate,
-        },
-        xr_meta_simultaneous_hands_controllers::{
-            is_simultaneous_hands_and_controllers_supported, pause_simultaneous_hands_and_controllers,
-            resume_simultaneous_hands_and_controllers,
-        },
         xr_meta_virtual_keyboard::{
             XR_META_VIRTUAL_KEYBOARD_EXTENSION_NAME, XrMetaVirtualKeyboardStepper,
             is_meta_virtual_keyboard_extension_available,
         },
     },
-    ui::{Ui, UiBtnLayout, UiPad},
+    ui::{Ui, UiBtnLayout},
     util::{Device, Time},
 };
 
@@ -114,7 +106,6 @@ pub fn launch(mut settings: SkSettings, is_testing: bool, start_test: String) {
     appearence_demos.handle_sprite = Sprite::from_file("icons/SK.png", None, None).ok();
     appearence_demos.start();
 
-    let mut last_focus = AppFocus::Background;
     let mut hidden_time = std::time::SystemTime::now();
     let mut now = std::time::SystemTime::now();
 
@@ -128,56 +119,10 @@ pub fn launch(mut settings: SkSettings, is_testing: bool, start_test: String) {
     const TEST_NUMBER_OF_STEPS: u32 = 1000;
     let mut test_step = 0u32;
 
-    let mut passthrough = false;
-    let mut passthough_blend_enabled = false;
-    let simultaneous_hands_controllers_available = is_simultaneous_hands_and_controllers_supported(false);
-
-    let mut simulator_fullscreen = sk.get_settings().fullscreen != 0;
-    let mut mouse_mode_relative = false;
-    //--------------------------------------------------------------------
-
-    // First set the default interactors based on the backend, then try to activate simultaneous hand & controller if available
-    // Build the list of DefaultInteractors choices based on the backend type
-    let interactor_choices: Vec<(DefaultInteractors, bool, &str)> = {
-        let xr_tp = Backend::xr_type();
-        if xr_tp == BackendXRType::OpenXR {
-            let mut choices: Vec<(DefaultInteractors, bool, &str)> = vec![
-                (DefaultInteractors::Default, false, "Interaction: Default"),
-                (DefaultInteractors::All, false, "Interaction: All"),
-            ];
-            if simultaneous_hands_controllers_available {
-                choices.insert(0, (DefaultInteractors::All, true, "Interaction: Hands & Controllers"));
-            }
-            choices.push((DefaultInteractors::Hands, false, "Interaction: Hands"));
-            choices.push((DefaultInteractors::Controllers, false, "Interaction: Controllers"));
-            choices
-        } else {
-            // Simulator only Mouse
-            vec![
-                (DefaultInteractors::Default, false, "Interaction: Default"),
-                (DefaultInteractors::Mouse, false, "Interaction: Mouse"),
-            ]
-        }
-    };
-    let mut current_interactor_idx = 0usize;
-    Interaction::set_default_interactors(interactor_choices[current_interactor_idx].0);
-
-    // Activate simultaneous hand & controller
-    if simultaneous_hands_controllers_available {
-        Log::info("✅ Simultaneous hands and controllers tracking available");
-        if interactor_choices[current_interactor_idx].1 {
-            if resume_simultaneous_hands_and_controllers(sk.get_sk_info_clone(), true) {
-                Log::info("Simultaneous hands and controllers tracking enabled at start");
-            } else {
-                Log::err("❌ Failed to enable simultaneous hands and controllers tracking at start");
-                current_interactor_idx =
-                    (current_interactor_idx + interactor_choices.len() - 1) % interactor_choices.len();
-                Interaction::set_default_interactors(interactor_choices[current_interactor_idx].0);
-            }
-        }
-    } else {
-        Log::diag("Simultaneous hands and controllers tracking not available");
-    }
+    // The runtime controls (passthrough, fullscreen, mouse, FPS, interactors, refresh rate, viewport scaling).
+    let mut control_panel = ControlPanel::new(sk.get_sk_info_clone());
+    // Ask the floor of the HandMenuRadial1 demo to follow the passthrough mode.
+    control_panel.passthrough_event = Some(("main".into(), SHOW_FLOOR.into()));
 
     let mut log_window = LogWindow::new(&LOG_LOG);
     log_window.window_pose = Pose::new(Vec3::new(-0.7, 2.0, -0.3), Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0))));
@@ -200,8 +145,8 @@ pub fn launch(mut settings: SkSettings, is_testing: bool, start_test: String) {
     notif.position = Vec3::new(0.0, 0.0, -0.6);
     if Backend::xr_type() == BackendXRType::Simulator {
         notif.text = "Press [F1] key to open the hand menu".into();
-        if simulator_fullscreen {
-            notif_escape(&mut sk)
+        if control_panel.simulator_fullscreen {
+            control_panel.notif_escape()
         }
     } else if cfg!(target_os = "android") || Device::get_runtime().unwrap_or_default().starts_with(" 'v") {
         notif.text = "Press menu button to open the hand menu".into();
@@ -220,45 +165,6 @@ pub fn launch(mut settings: SkSettings, is_testing: bool, start_test: String) {
     sk.send_event(StepperAction::add("Tool_LogWindow", log_window));
     sk.send_event(StepperAction::add_default::<ScreenshotViewer>("Tool_Screenshoot"));
     sk.send_event(StepperAction::add_default::<FlyOver>(FLY_OVER_ID));
-
-    let blend_modes = get_env_blend_modes(true);
-    if blend_modes.contains(&EnvironmentBlendMode::ADDITIVE) || blend_modes.contains(&EnvironmentBlendMode::ALPHA_BLEND)
-    {
-        passthough_blend_enabled = true;
-        if passthrough {
-            Device::display_blend(DisplayBlend::AnyTransparent);
-            Log::info("Passthrough Activated at start !!");
-        } else {
-            Log::info("Passthrough Deactived at start !!");
-        }
-    } else {
-        Log::diag("No Passthrough !!")
-    }
-
-    let next_refresh_rate_image = Sprite::arrow_right();
-    let mut current_refresh_rate = get_display_refresh_rate().unwrap_or(0.0);
-    let mut refresh_rates = vec![];
-    let refresh_rate_editable = BackendOpenXR::ext_enabled("XR_FB_display_refresh_rate");
-    if refresh_rate_editable {
-        refresh_rates = get_all_display_refresh_rates(true);
-        // Initialize current_refresh_rate with the maximum available refresh rate
-        if let Some(&max_rate) = refresh_rates.iter().max_by(|a, b| a.partial_cmp(b).unwrap()) {
-            current_refresh_rate = max_rate;
-        }
-        Log::info(format!("Initial display rate is {current_refresh_rate:?}"));
-    } else {
-        Log::diag("No editable refresh rate !");
-    }
-
-    let next_interactor_image = Sprite::arrow_right();
-
-    let mut viewport_scaling = Renderer::get_viewport_scaling();
-
-    //---Above this value, there is distortion
-    let mut reduce_to = 1.0;
-    // You don't need to reduce this value as long as render_scaling is less or equal to 1.0:
-    // let mut multisample = Renderer::get_multisample() as f32;
-    let mut fps = 72.0;
 
     let tests = Test::get_tests();
 
@@ -313,19 +219,7 @@ pub fn launch(mut settings: SkSettings, is_testing: bool, start_test: String) {
             }
         }
 
-        if last_focus != sk.get_app_focus() {
-            last_focus = sk.get_app_focus();
-            Log::info(format!("App focus changed to : {last_focus:?}"));
-
-            if !set_display_refresh_rate(current_refresh_rate, true) {
-                current_refresh_rate = 0.0;
-            }
-
-            Log::diag("Current Interactors after focus change:");
-            for interactor in Interactor::all() {
-                Log::diag(format!("----Type: {:?} / {:?}", interactor.get_type(), interactor.get_source()));
-            }
-        }
+        control_panel.update();
 
         // In case we close the active_scene we have to free the choice to select an other one
         let mut launch_next = false;
@@ -439,133 +333,7 @@ pub fn launch(mut settings: SkSettings, is_testing: bool, start_test: String) {
             }
         }
         Ui::same_line();
-        Ui::panel_begin(Some(UiPad::Inside));
-        if passthough_blend_enabled && let Some(new_value) = Ui::toggle("Passthrough MR", &mut passthrough).interact() {
-            if new_value {
-                Log::info("Activate passthrough");
-                sk.send_event(StepperAction::event("main", SHOW_FLOOR, "false"));
-                Device::display_blend(DisplayBlend::AnyTransparent);
-            } else {
-                Log::info("Deactivate passthrough");
-                sk.send_event(StepperAction::event("main", SHOW_FLOOR, "true"));
-                Device::display_blend(DisplayBlend::Opaque);
-            }
-        } else if Backend::xr_type() == BackendXRType::Simulator {
-            if let Some(new_value) = Ui::toggle("fullscreen", &mut simulator_fullscreen).interact() {
-                if let Some(window) = AppWindow::main() {
-                    window.request_fullscreen(new_value);
-                    Log::info(format!("Simulator fullscreen: {simulator_fullscreen}"));
-                    if simulator_fullscreen {
-                        notif_escape(sk)
-                    }
-                } else {
-                    Log::warn("Unable to get AppWindow!");
-                }
-            }
-            Ui::same_line();
-            if let Some(new_value) = Ui::toggle("mouse relative", &mut mouse_mode_relative).interact() {
-                if new_value {
-                    Input::mouse_mode(MouseMode::Relative);
-                    Log::info("Mouse mode <Relative>");
-                    notif_escape(sk)
-                } else {
-                    Input::mouse_mode(MouseMode::Normal);
-                    Log::info("Mouse mode <Normal>");
-                }
-            }
-
-            if Input::key(Key::Esc).is_just_active() {
-                simulator_fullscreen = false;
-                if let Some(window) = AppWindow::main() {
-                    window.request_fullscreen(simulator_fullscreen);
-                    Log::info(format!("Simulator fullscreen: {simulator_fullscreen}"));
-                }
-
-                mouse_mode_relative = false;
-                Input::mouse_mode(MouseMode::Normal);
-                Log::info("Mouse mode <Normal> (ESC key)");
-            }
-        }
-
-        Ui::same_line();
-        fps = ((1.0 / Time::get_step()) + fps) / 2.0;
-        Ui::label(format!("FPS: {fps:3.0}")).size(Vec2::new(0.1, 0.0)).use_padding(true).draw();
-
-        // DefaultInteractors choice - cycling button
-        if interactor_choices.len() > 1 {
-            if Ui::button(interactor_choices[current_interactor_idx].2).image(&next_interactor_image).press() {
-                // Deactivate simultaneous if currently active
-                if interactor_choices[current_interactor_idx].1 {
-                    pause_simultaneous_hands_and_controllers(sk.get_sk_info_clone(), true);
-                }
-                // Cycle to next
-                current_interactor_idx = (current_interactor_idx + 1) % interactor_choices.len();
-                let (new_interactor, new_simultaneous, new_label) = interactor_choices[current_interactor_idx];
-                Interaction::set_default_interactors(new_interactor);
-                if new_simultaneous && !resume_simultaneous_hands_and_controllers(sk.get_sk_info_clone(), true) {
-                    Log::err("Failed to enable simultaneous hands and controllers tracking");
-                    // Fall back to previous choice
-                    current_interactor_idx =
-                        (current_interactor_idx + interactor_choices.len() - 1) % interactor_choices.len();
-                    Interaction::set_default_interactors(interactor_choices[current_interactor_idx].0);
-                }
-                Log::info(format!("Interactors set to: {new_label}"));
-            }
-        } else {
-            Ui::label(interactor_choices[0].2).use_padding(true).draw();
-        }
-
-        Ui::same_line();
-
-        if refresh_rate_editable
-            && Ui::button(format!("Up to {:?} FPS", current_refresh_rate as u32))
-                .image(&next_refresh_rate_image)
-                .press()
-        {
-            let mut restart = true;
-            for i in &refresh_rates {
-                if *i > current_refresh_rate {
-                    current_refresh_rate = *i;
-                    restart = false;
-                    break;
-                }
-            }
-            if restart {
-                current_refresh_rate = refresh_rates[0]
-            }
-            if !set_display_refresh_rate(current_refresh_rate, true) {
-                current_refresh_rate = 0.0;
-            }
-        }
-
-        Ui::next_line();
-        Ui::label("Viewport scaling:").use_padding(true).draw();
-        Ui::same_line();
-        Ui::label(format!("{viewport_scaling:.2}")).use_padding(true).draw();
-        Ui::same_line();
-        if let Some(new_value) = Ui::hslider("scaling", &mut viewport_scaling, 0.1, 1.0).step(0.05).interact() {
-            Renderer::viewport_scaling(new_value);
-            viewport_scaling = new_value;
-        }
-
-        if reduce_to < viewport_scaling {
-            viewport_scaling = reduce_to;
-            Renderer::viewport_scaling(viewport_scaling);
-            reduce_to = 1.0;
-        } else {
-            reduce_to = 1.0
-        }
-
-        // Ui::label("MSAA:").use_padding(true).draw();
-        // Ui::same_line();
-        // Ui::label(format!("{:.0}", multisample)).use_padding(true).draw();
-        // Ui::same_line();
-        // if let Some(new_value) = Ui::hslider("msaa", &mut multisample, 0.1, 8.0, Some(1.0), None, None, None) {
-        //     Renderer::multisample(new_value as i32);
-        //     multisample = new_value;
-        // }
-
-        Ui::panel_end();
+        control_panel.draw();
 
         Ui::pop_text_style();
 
@@ -591,13 +359,4 @@ pub fn launch(mut settings: SkSettings, is_testing: bool, start_test: String) {
     })
     .shutdown(|sk| Log::info(format!("QuitReason is {:?}", sk.get_quit_reason())))
     .run();
-}
-
-/// Show the Esc notification
-fn notif_escape(sk: &mut Sk) {
-    let mut notif = HudNotification::default();
-    notif.duration = Some(5.0);
-    notif.position = Vec3::new(0.0, 0.1, -0.6);
-    notif.text = "Press [Esc] key to go back to normal".into();
-    sk.send_event(StepperAction::add("HudNotifESC", notif));
 }

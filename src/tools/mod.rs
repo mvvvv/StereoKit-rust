@@ -27,6 +27,9 @@ pub mod locales;
 pub mod file_browser_b;
 
 #[cfg(not(feature = "no-event-loop"))]
+pub mod control_panel;
+
+#[cfg(not(feature = "no-event-loop"))]
 pub mod fly_over;
 
 #[cfg(all(feature = "skc-shared", not(feature = "no-event-loop")))]

@@ -503,6 +503,7 @@ pub mod tex;
 /// ## Examples
 /// which are also unit tests:
 ///
+/// [![Control panel](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/control_panel.jpeg)](tools::control_panel::ControlPanel)
 /// [![FileBrowser](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/file_browser.jpeg)](tools::file_browser::FileBrowser)
 /// [![FlyOver](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/fly_over.jpeg)](tools::fly_over::FlyOver)
 /// [![Log window](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/log_window.jpeg)](tools::log_window::LogWindow)
