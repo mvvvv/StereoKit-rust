@@ -2,7 +2,7 @@ use crate::{
     font::Font,
     maths::{Bounds, Matrix, Pose, Vec2, Vec3},
     sprite::Sprite,
-    system::{Pivot, Text, TextBuilder, TextStyle},
+    system::{Log, Pivot, Text, TextBuilder, TextStyle},
     ui::{Ui, UiSettings},
     util::{Color128, named_colors},
 };
@@ -24,7 +24,9 @@ use crate::{
 /// current scale), then [`Appearence::scale_handle`] every frame after the window itself has been drawn.
 pub struct Appearence {
     /// The `window_size` set by [`Appearence::default`], and the reference size the released scale-handle
-    /// anchor is proportional to, see [`Appearence::scale_handle`]. Default is `Vec2::new(0.6, 0.8)`.
+    /// anchor is proportional to, see [`Appearence::scale_handle`]. Default is `Vec2::new(0.6, 0.8)`. A
+    /// coordinate left at `0.0` marks an unmanaged axis (e.g. an auto-fit height)turns `keep_window_ratio` off with a
+    /// warning.
     pub window_size: Vec2,
     /// The reference size of the window used to apply scale and position of the [`Appearence::scale_handle`] this is
     /// always Vec2::new(0.6, 0.8),
@@ -32,9 +34,9 @@ pub struct Appearence {
     /// Interactive resize floor for [`Appearence::window_size`] (meters) applied while dragging the scale
     /// handle, see [`Appearence::scale_handle`]. Default is `Vec2::new(0.45, 0.45)`.
     pub min_window_size: Vec2,
-    /// When `true`, the interactive resize keeps the `window_size` aspect ratio. Default is `false` (free X / Y resize).
+    /// When `true`, the interactive resize keeps the `window_size` aspect ratio. Default is `false`. Can't be used
+    /// with a windows_size 0.0 value.
     pub keep_window_ratio: bool,
-
     /// The [`UiSettings`] used to draw the window. It is multiplied by the current ui scale (see
     /// [`Appearence::get_ui_scale`]) to give the settings returned by [`Appearence::get_ui_settings_scaled`].
     pub ui_settings: UiSettings,
@@ -161,6 +163,14 @@ impl Appearence {
         // value can break the draw loop or the scale-handle interactions.
         const ABS_MIN_WINDOW: Vec2 = Vec2::new(0.01, 0.01); // hard floor for the resize floor itself
         self.min_window_size = Vec2::max(self.min_window_size, ABS_MIN_WINDOW);
+        // A `window_size` coordinate at 0.0 (negatives are normalized to 0.0) is an unmanaged axis, which
+        // `keep_window_ratio` cannot cope with: it gets turned off.
+        if self.keep_window_ratio && (self.window_size.x <= 0.0 || self.window_size.y <= 0.0) {
+            Log::warn(
+                "Appearence::start: a `window_size` coordinate is 0.0 (unmanaged axis), turning `keep_window_ratio` off",
+            );
+            self.keep_window_ratio = false;
+        }
         if self.keep_window_ratio {
             // Ratio locked: lift `window_size` to the floor with one uniform factor, so the aspect ratio
             // survives the `min_window_size` clamp as well.
@@ -169,7 +179,14 @@ impl Appearence {
                 .max(1.0);
             self.window_size *= factor;
         } else {
-            self.window_size = Vec2::max(self.window_size, self.min_window_size);
+            // Unmanaged axes (coordinate at 0.0) stay at 0.0, exempt from the `min_window_size` floor.
+            self.window_size = Vec2::max(self.window_size, Vec2::ZERO);
+            if self.window_size.x > 0.0 {
+                self.window_size.x = self.window_size.x.max(self.min_window_size.x);
+            }
+            if self.window_size.y > 0.0 {
+                self.window_size.y = self.window_size.y.max(self.min_window_size.y);
+            }
         }
 
         self.scale_handle_offset = self.scale_handle_default_offset;
@@ -265,7 +282,8 @@ impl Appearence {
     ///   which uniformly scales the whole window, see the internal `scale_all`.
     ///
     /// When [`Appearence::keep_window_ratio`] is `true`, the local X and Y drag deltas are merged into a single
-    /// uniform size factor instead, so the window keeps its aspect ratio while resizing.
+    /// uniform size factor instead, so the window keeps its aspect ratio while resizing. A [`Appearence::window_size`]
+    /// coordinate left at `0.0` marks an unmanaged axis.
     ///
     /// On release, the knob springs back to its default anchor, scaled proportionally to the current drawn
     /// window size (`window_size * ui_scale`) so it keeps hugging the window edge. While the handle is
@@ -303,7 +321,8 @@ impl Appearence {
             let (start_offset, start_scale, start_size) =
                 *self.scale_grab.get_or_insert((handle_offset, self.ui_scale, self.window_size));
 
-            if self.keep_window_ratio {
+            // A `window_size` coordinate at 0.0 is an unmanaged axis.
+            if self.keep_window_ratio && start_size.x > 0.0 && start_size.y > 0.0 {
                 // Ratio locked: the X and Y drag deltas are averaged into one uniform size factor applied to
                 // both dimensions, and the `min_window_size` floor is applied to the factor itself, so the
                 // aspect ratio survives even the clamp.
@@ -314,8 +333,13 @@ impl Appearence {
                     .max(self.min_window_size.y / start_size.y.max(0.001));
                 self.window_size = start_size * factor;
             } else {
-                self.window_size.x = (start_size.x + offset.x - start_offset.x).max(self.min_window_size.x);
-                self.window_size.y = (start_size.y + offset.y - start_offset.y).max(self.min_window_size.y);
+                // Unmanaged axes (coordinate at 0.0) stay at 0.0 whatever the drag.
+                if start_size.x > 0.0 {
+                    self.window_size.x = (start_size.x + offset.x - start_offset.x).max(self.min_window_size.x);
+                }
+                if start_size.y > 0.0 {
+                    self.window_size.y = (start_size.y + offset.y - start_offset.y).max(self.min_window_size.y);
+                }
             }
             self.ui_scale = (start_scale + (offset.z - start_offset.z) * self.scale_per_meter)
                 .clamp(self.scale_bounds.0, self.scale_bounds.1);
@@ -330,17 +354,20 @@ impl Appearence {
                 .style(self.title_style)
                 .size(label_size)
                 .add();
-            TextBuilder::new(format!("{:.2}", self.window_size.x))
-                .transform(Matrix::t_r(handle_pose.position - up * 0.03, orientation))
-                .style(self.small_style)
-                .size(label_size)
-                .add();
-            TextBuilder::new(format!("{:.2}", self.window_size.y))
-                .transform(Matrix::t_r(handle_pose.position + right * 0.04, orientation))
-                .style(self.small_style)
-                .size(label_size)
-                .add();
-
+            if start_size.x > 0.0 {
+                TextBuilder::new(format!("{:.2}", self.window_size.x))
+                    .transform(Matrix::t_r(handle_pose.position - up * 0.03, orientation))
+                    .style(self.small_style)
+                    .size(label_size)
+                    .add();
+            }
+            if start_size.y > 0.0 {
+                TextBuilder::new(format!("{:.2}", self.window_size.y))
+                    .transform(Matrix::t_r(handle_pose.position + right * 0.04, orientation))
+                    .style(self.small_style)
+                    .size(label_size)
+                    .add();
+            }
             // Live scale of this drag frame, for the caller to propagate to its child windows.
             Some(self.ui_scale)
         } else {
@@ -364,7 +391,7 @@ impl Appearence {
             let size = 0.055 * self.ui_scale;
             let aspect = sprite.get_aspect();
             let scale = size / aspect.max(1.0);
-            sprite.draw(handle_pose.to_matrix(Some(Vec3::new(scale, scale * aspect, 1.0))), Pivot::Center, None, None);
+            sprite.draw(handle_pose.to_matrix(Some(Vec3::new(scale * aspect, scale, 1.0))), Pivot::Center, None, None);
         }
 
         result

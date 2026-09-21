@@ -1,7 +1,8 @@
 use openxr_sys::EnvironmentBlendMode;
 use std::{process, sync::Mutex, thread};
 use stereokit_rust::{
-    framework::{ISTEPPER_REMOVED, SkClosures},
+    font::Font,
+    framework::{Appearence, ISTEPPER_REMOVED, SkClosures},
     maths::{Pose, Quat, Vec2, Vec3, units::*},
     model::Model,
     prelude::*,
@@ -69,12 +70,19 @@ pub fn sk_settings() -> SkSettings {
     BackendOpenXR::request_ext("XR_FB_display_refresh_rate");
     BackendOpenXR::request_ext("XR_FB_render_model");
     BackendOpenXR::request_ext("XR_META_virtual_keyboard");
+
     #[cfg(target_os = "android")]
     BackendOpenXR::request_ext("XR_META_simultaneous_hands_and_controllers");
+
     // Required by the Layers1 demo for cylinder composition layers.
     #[cfg(target_os = "android")]
     BackendOpenXR::request_ext("XR_KHR_android_surface_swapchain");
+
     BackendOpenXR::request_ext("XR_KHR_composition_layer_cylinder");
+
+    // Solving SteamVR linux with Steam link for Quest 2
+    #[cfg(not(target_os = "android"))]
+    BackendOpenXR::exclude_ext("XR_EXT_hand_tracking");
 
     // The Vulkan requests must be registered before SK.Initialize too
     BackendVulkan::request(&BackendVulkanRequest::new(Some("sk_test_request")));
@@ -98,7 +106,13 @@ pub fn launch(mut settings: SkSettings, is_testing: bool, start_test: String) {
 
     let mut window_demo_pose = Pose::new(Vec3::new(-0.7, 1.5, -0.3), Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0))));
 
-    let demo_win_width = 60.0 * CM;
+    // The Demos window goes through `Appearence`: its width is resizable.
+    let text_height = Ui::get_text_style().get_layout_height();
+    let font = Font::default();
+    let mut appearence_demos = Appearence::new(&font, text_height * 4.0 / 3.0);
+    appearence_demos.window_size = Vec2::new(60.0 * CM, 0.0);
+    appearence_demos.handle_sprite = Sprite::from_file("icons/SK.png", None, None).ok();
+    appearence_demos.start();
 
     let mut last_focus = AppFocus::Background;
     let mut hidden_time = std::time::SystemTime::now();
@@ -360,42 +374,47 @@ pub fn launch(mut settings: SkSettings, is_testing: bool, start_test: String) {
 
         Lines::add_axis(Pose::IDENTITY, Some(0.5), None);
 
+        // The Demos window width comes from `Appearence`.
+        let demo_win_width = appearence_demos.scaled_window_size().x;
+        let prev_settings = Ui::get_settings();
+        Ui::settings(appearence_demos.get_ui_settings_scaled());
+
         Ui::window("Demos").pose(&mut window_demo_pose).size(Vec2::new(demo_win_width, 0.0)).begin();
+        // The Appearence text styles are what zoom the window content.
+        Ui::push_text_style(appearence_demos.label_style);
         Ui::push_enabled(deleting_scene.is_none(), None);
-        let mut start = 0usize;
-        let mut curr_width_total = 0.0;
         let ui_settings = Ui::get_settings();
         let style = Ui::get_text_style();
-        let mut i = 0;
-        for test in tests.iter() {
-            i += 1;
-            let width = Text::size_layout(&test.name, Some(style), None).x + ui_settings.padding * 2.0;
-            if curr_width_total + width + ui_settings.gutter > demo_win_width {
-                let inflate =
-                    (demo_win_width - (curr_width_total - ui_settings.gutter + 0.0001)) / ((i - start) as f32);
-                for t in start..i {
-                    let test_in_line = &tests[t];
-                    let curr_width = Text::size_layout(&test_in_line.name, Some(style), None).x
-                        + ui_settings.padding * 2.0
-                        + inflate;
-                    if Ui::button(&test_in_line.name).size(Vec2::new(curr_width, 0.0)).press() {
-                        Log::info(format!("Starting scene: {}", test_in_line.name));
-                        next_scene = Some(test_in_line);
-                    }
-                    Ui::same_line();
-                }
-                start = i;
-            }
-            if start == i {
-                curr_width_total = ui_settings.margin * 2.0;
-            }
-            curr_width_total += width + ui_settings.gutter;
-        }
-        for t in start..tests.len() {
-            let test = tests.get(t).unwrap();
-            let curr_width = Text::size_layout(&test.name, Some(style), None).x + ui_settings.padding * 2.0;
 
-            if Ui::button(&test.name).size(Vec2::new(curr_width, 0.0)).press() {
+        // The tests buttons, laid out in a grid.
+        let content_width = demo_win_width - ui_settings.margin * 2.0;
+        let widths: Vec<f32> = tests
+            .iter()
+            .map(|test| Text::size_layout(&test.name, Some(style), None).x + ui_settings.padding * 2.0)
+            .collect();
+        // Column count: the widest one whose cells (each sized by the widest button it holds) still fit the window width.
+        let mut cells = vec![widths.iter().copied().fold(0.0, f32::max)];
+        for columns in 1..=widths.len() {
+            let mut candidate = vec![0.0f32; columns];
+            for (index, width) in widths.iter().enumerate() {
+                let cell = &mut candidate[index % columns];
+                *cell = (*cell).max(*width);
+            }
+            if candidate.iter().sum::<f32>() + ui_settings.gutter * (columns - 1) as f32 > content_width {
+                break;
+            }
+            cells = candidate;
+        }
+        // Share the leftover width over the cells, so the grid still spans the window width.
+        let columns = cells.len();
+        let extra = (content_width - (cells.iter().sum::<f32>() + ui_settings.gutter * (columns - 1) as f32 + 0.0001))
+            / columns as f32;
+        for cell in &mut cells {
+            *cell += extra;
+        }
+
+        for (index, test) in tests.iter().enumerate() {
+            if Ui::button(&test.name).size(Vec2::new(cells[index % columns], 0.0)).press() {
                 Log::info(format!("Starting scene: {}", test.name));
                 next_scene = Some(test);
             }
@@ -407,7 +426,7 @@ pub fn launch(mut settings: SkSettings, is_testing: bool, start_test: String) {
         if Ui::button("Exit")
             .image(&exit_button)
             .image_layout(UiBtnLayout::CenterNoText)
-            .size(Vec2::new(0.10, 0.10))
+            .size(appearence_demos.scale_size(Vec2::new(0.10, 0.10)))
             .press()
         {
             Log::diag(format!("Closure Thread id : {:?} / {:?} ", thread::current().name(), thread::current().id()));
@@ -548,7 +567,14 @@ pub fn launch(mut settings: SkSettings, is_testing: bool, start_test: String) {
 
         Ui::panel_end();
 
+        Ui::pop_text_style();
+
         Ui::window_end();
+
+        Ui::settings(prev_settings);
+
+        // Grab-able knob anchored to the window.
+        appearence_demos.scale_handle(&window_demo_pose, "demos_scale_handle");
     })
     // .on_window_event(|_sk| {
     //     // we hope to flood the log with external controllers soon ...
