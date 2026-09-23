@@ -3,6 +3,7 @@ use std::{
     rc::Rc,
     sync::{Arc, Mutex},
 };
+
 use stereokit_rust::{
     font::Font,
     framework::Screen,
@@ -33,6 +34,7 @@ pub struct Screen1 {
     /// Shared with the `extra_param_ui` closure so the slider can mutate it.
     switch_interval: Arc<Mutex<f32>>,
     paused: bool,
+    always_visible: bool,
 
     // Display mode: texture (default) or swapchain quad-layer
     use_swapchain: bool,
@@ -75,7 +77,7 @@ impl Default for Screen1 {
 
         let initial_texture = textures.first().map(|t| t.clone_ref()).unwrap_or_else(Tex::default);
 
-        let mut screen = Screen::new("screen1_demo", initial_texture);
+        let mut screen = Screen::new("Screen1_demo", initial_texture);
         screen.resolution(1024, 1024).screen_orientation(Quat::Y_180);
         if textures.len() > 1 {
             screen.set_texture(1, Some(textures[1].clone_ref()));
@@ -92,6 +94,7 @@ impl Default for Screen1 {
             last_switch_time: 0.0,
             switch_interval: Arc::new(Mutex::new(3.0)),
             paused: false,
+            always_visible: false,
 
             use_swapchain: false,
             swapchain_sk: None,
@@ -108,15 +111,16 @@ impl Default for Screen1 {
             window_pose: Pose::new(Vec3::new(0.35, 1.5, -0.6), Some(Quat::Y_180)),
             text: "Screen1".to_owned(),
             text_style: Text::make_style(Font::default(), 0.3, RED),
-            transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y * 0.2, Quat::Y_180),
+            transform: Matrix::t_r(Vec3::NEG_Y * 1.7, Quat::look_dir(Vec3::new(-0.3, 0.0, 1.0))),
         }
     }
 }
 
 impl Screen1 {
     fn start(&mut self) -> bool {
-        // Read texture dimensions from the first texture for swapchain creation.
         Assets::block_for_priority(i32::MAX);
+
+        // Read texture dimensions from the first texture for swapchain creation.
         if let Some(tex) = self.textures.first()
             && let Some((w, h, _)) = tex.get_data_infos(0)
         {
@@ -124,9 +128,7 @@ impl Screen1 {
             self.tex_height = h;
         }
 
-        // Register the slide-speed slider inside Screen's hamburger panel.
-        // The closure captures a clone of the Arc so it can read/write switch_interval
-        // without borrowing self (required by the 'static + Send bound).
+        // Register the slide-speed slider inside Screen's settings panel.
         let shared_interval = Arc::clone(&self.switch_interval);
         self.screen.set_extra_param_ui(move || {
             let mut interval = shared_interval.lock().unwrap();
@@ -190,20 +192,33 @@ impl Screen1 {
         // In swapchain mode, acquire+release every frame (required by OpenXR: any swapchain
         // referenced in a composition layer must be acquired and released in the same frame).
         // Re-render only when the slide changed; on other frames acquire+release with no draw.
+        let mut swapchain_failed = false;
         if self.use_swapchain
             && let Some(sc) = &mut self.swapchain_sk
         {
             if let Err(e) = sc.acquire_image(None) {
                 Log::warn(format!("Screen1: Failed to acquire swapchain image: {e}"));
-                self.swapchain_sk = None;
+                swapchain_failed = true;
             } else {
                 if slide_changed && let Some(render_tex) = sc.get_render_target_mut() {
                     let idx = self.current_texture_index;
                     if let Some(tex) = self.textures.get(idx) {
                         if let Some((w, h, count)) = tex.get_data_infos(0) {
-                            let pixels = vec![Color32::default(); count];
-                            tex.get_color_data::<Color32>(&pixels, 0);
-                            render_tex.set_colors32(w, h, &pixels);
+                            // The wrapped swapchain image has a fixed size: a slide with other
+                            // dimensions could not be uploaded into it.
+                            if w != self.tex_width || h != self.tex_height {
+                                Log::warn(format!(
+                                    "Screen1: slide {idx} is {w}x{h}, the swapchain is {}x{}: not rendered.",
+                                    self.tex_width, self.tex_height
+                                ));
+                            } else {
+                                let pixels = vec![Color32::default(); count];
+                                if tex.get_color_data::<Color32>(&pixels, 0) {
+                                    render_tex.set_colors32(w, h, &pixels);
+                                } else {
+                                    Log::warn(format!("Screen1: could not read the pixels of slide {idx}"));
+                                }
+                            }
                         }
                     } else {
                         Log::warn(format!("Screen1: No texture for index {idx}"));
@@ -211,69 +226,73 @@ impl Screen1 {
                 }
                 if let Err(e) = sc.release_image() {
                     Log::warn(format!("Screen1: Failed to release swapchain image: {e}"));
-                    self.swapchain_sk = None;
+                    swapchain_failed = true;
                 } else {
                     let handle = sc.handle;
                     self.screen.set_swapchain(handle);
                 }
             }
         }
+        if swapchain_failed {
+            self.disable_swapchain();
+        }
 
-        // Draw the Screen: submits a quad-layer if a swapchain is set, otherwise renders the mesh.
+        // Draw Screen: In swapchain mode, a composition cylinder or quad-layer is submitted instead of rendering the mesh.
         self.screen.draw(token);
 
         // Video-player transport controls anchored just above the screen via get_top().
-        let d = self.screen.get_screen_distance();
-        let btn_size = Vec2::new(0.06 * d.sqrt(), 0.06 * d.sqrt());
-        let surface_size = Vec2::new(0.4 * d, 0.1 * d);
-        let controls_pose = self.screen.get_top(Vec3::new(0.30 * d.sqrt(), 0.0, 0.0));
-        Ui::push_surface(controls_pose, Vec3::ZERO, surface_size);
-        // Previous
-        if Ui::button("prev")
-            .image(&self.sprite_prev)
-            .image_layout(UiBtnLayout::CenterNoText)
-            .size(btn_size)
-            .press()
-        {
-            self.prev_texture();
-            self.last_switch_time = current_time;
-        }
-        Ui::same_line();
-        // Play / Pause — green tint when playing
-        if self.paused {
-            if Ui::button("play").image(&self.sprite_play).image_layout(UiBtnLayout::Center).size(btn_size).press() {
-                self.paused = false;
+        if self.screen.is_focused() {
+            // The transport toolbar follows the screen zoom
+            let scale = self.screen.get_ui_scale();
+            let d = Screen::UI_REFERENCE_DISTANCE;
+            let btn_size = Vec2::new(0.06 * d.sqrt(), 0.06 * d.sqrt()) * scale;
+            let surface_size = Vec2::new(0.4 * d, 0.1 * d) * scale;
+            let controls_pose = self.screen.get_top(Vec3::new(0.30 * d.sqrt() * scale, 0.0, 0.0));
+            Ui::push_surface(controls_pose, Vec3::ZERO, surface_size);
+            if Ui::button("prev")
+                .image(&self.sprite_prev)
+                .image_layout(UiBtnLayout::CenterNoText)
+                .size(btn_size)
+                .press()
+            {
+                self.prev_texture();
                 self.last_switch_time = current_time;
             }
-        } else {
-            Ui::push_tint(Color128::new(0.3, 1.0, 0.3, 1.0));
-            let clicked = Ui::button("pause")
-                .image(&self.sprite_pause)
-                .image_layout(UiBtnLayout::Center)
-                .size(btn_size)
-                .press();
-            Ui::pop_tint();
-            if clicked {
-                self.paused = true;
+            Ui::same_line();
+            if self.paused {
+                if Ui::button("play").image(&self.sprite_play).image_layout(UiBtnLayout::Center).size(btn_size).press()
+                {
+                    self.paused = false;
+                    self.last_switch_time = current_time;
+                }
+            } else {
+                Ui::push_tint(Color128::new(0.3, 1.0, 0.3, 1.0));
+                let clicked = Ui::button("pause")
+                    .image(&self.sprite_pause)
+                    .image_layout(UiBtnLayout::Center)
+                    .size(btn_size)
+                    .press();
+                Ui::pop_tint();
+                if clicked {
+                    self.paused = true;
+                }
             }
+            Ui::same_line();
+            if Ui::button("next")
+                .image(&self.sprite_next)
+                .image_layout(UiBtnLayout::CenterNoText)
+                .size(btn_size)
+                .press()
+            {
+                self.next_texture();
+                self.last_switch_time = current_time;
+            }
+            Ui::pop_surface();
         }
-        Ui::same_line();
-        // Next
-        if Ui::button("next")
-            .image(&self.sprite_next)
-            .image_layout(UiBtnLayout::CenterNoText)
-            .size(btn_size)
-            .press()
-        {
-            self.next_texture();
-            self.last_switch_time = current_time;
-        }
-        Ui::pop_surface();
 
         // Control window
         Ui::window("Screen1").pose(&mut self.window_pose).size(Vec2::new(0.24, 0.0)).begin();
 
-        // Sound buttons — write a 1-second beep into Screen's spatial audio streams.
         if Ui::button("Sound Left").press() {
             let (left_id, _) = self.screen.get_sound_ids();
             if let Ok(mut stream) = Sound::find(left_id) {
@@ -302,6 +321,7 @@ impl Screen1 {
             .press()
             && want_swapchain
         {
+            // Back to the mesh rendering: the Screen must stop submitting the composition layer.
             self.use_swapchain = false;
             self.screen.clear_swapchain();
         }
@@ -317,8 +337,16 @@ impl Screen1 {
                 self.screen.set_swapchain(handle);
                 self.use_swapchain = true;
             } else {
-                Log::warn("Screen1: Swapchain not available (requires OpenXR)");
+                Log::warn(
+                    "Screen1: no swapchain handle: it is created in start() and requires OpenXR (it is \
+                           dropped for good after a swapchain failure)",
+                );
             }
+        }
+
+        // Focus-driven toolbars may be locked
+        if let Some(always_visible) = Ui::toggle("Toolbars always visible", &mut self.always_visible).interact() {
+            self.screen.always_visible(always_visible);
         }
 
         Ui::window_end();
@@ -328,13 +356,21 @@ impl Screen1 {
 
     fn close(&mut self, triggering: bool) -> bool {
         if triggering {
-            // Stop spatial audio streams, clear swapchain reference in Screen.
+            // Stop spatial audio streams, clear the swapchain reference in Screen.
             self.screen.shutdown();
-            // Drop SwapchainSk: its Drop impl calls XrCompLayers::destroy_swapchain once.
-            self.swapchain_sk = None;
+            self.disable_swapchain();
             self.shutdown_completed = true;
         }
         self.shutdown_completed
+    }
+
+    /// Drop the swapchain and tell the Screen to stop submitting a composition layer. The two must always go together:
+    /// dropping `SwapchainSk` destroys the underlying OpenXR swapchain, and `Screen::draw` would keep submitting that
+    /// dead handle until `clear_swapchain` is called.
+    fn disable_swapchain(&mut self) {
+        self.screen.clear_swapchain();
+        self.use_swapchain = false;
+        self.swapchain_sk = None;
     }
 
     fn next_texture(&mut self) {

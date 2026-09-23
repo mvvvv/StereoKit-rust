@@ -354,11 +354,7 @@ fn main() {
         // resolves it next to itself, so it must be deployed too. Every name of the chain is shipped
         // (libopenxr_loader.so -> libopenxr_loader.so.1 -> libopenxr_loader.so.1.1.60), keeping the
         // link names as links.
-        let loader_base = if cfg!(target_os = "macos") {
-            "libopenxr_loader.dylib"
-        } else {
-            "libopenxr_loader.so"
-        };
+        let loader_base = if cfg!(target_os = "macos") { "libopenxr_loader.dylib" } else { "libopenxr_loader.so" };
         let deps_dir = built_files.join("deps");
         if let Ok(entries) = fs::read_dir(&deps_dir) {
             for entry in entries.flatten() {

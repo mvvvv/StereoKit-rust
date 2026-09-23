@@ -55,6 +55,7 @@ pub fn sk_settings() -> SkSettings {
     // Platform specific settings
     #[cfg(target_os = "android")]
     settings.render_scaling(1.5);
+
     #[cfg(not(target_os = "android"))]
     settings.default_font_family("Noto Sans, SimSun");
 
@@ -72,9 +73,8 @@ pub fn sk_settings() -> SkSettings {
 
     BackendOpenXR::request_ext("XR_KHR_composition_layer_cylinder");
 
-    // Solving SteamVR linux with Steam link for Quest 2
-    #[cfg(not(target_os = "android"))]
-    BackendOpenXR::exclude_ext("XR_EXT_hand_tracking");
+    // Hand tracking backup
+    // BackendOpenXR::exclude_ext("XR_EXT_hand_tracking");
 
     // The Vulkan requests must be registered before SK.Initialize too
     BackendVulkan::request(&BackendVulkanRequest::new(Some("sk_test_request")));
@@ -102,7 +102,7 @@ pub fn launch(mut settings: SkSettings, is_testing: bool, start_test: String) {
     let text_height = Ui::get_text_style().get_layout_height();
     let font = Font::default();
     let mut appearence_demos = Appearence::new(&font, text_height * 4.0 / 3.0);
-    appearence_demos.window_size = Vec2::new(60.0 * CM, 0.0);
+    appearence_demos.window_size = Vec2::new(80.0 * CM, 0.0);
     appearence_demos.handle_sprite = Sprite::from_file("icons/SK.png", None, None).ok();
     appearence_demos.start();
 

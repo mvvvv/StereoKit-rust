@@ -64,10 +64,8 @@ pub struct Appearence {
     /// handle was grabbed, so each drag axis is applied as a delta from them.
     scale_grab: Option<(Vec3, f32, Vec2)>,
 
-    /// Optional custom visual for the scale handle: when `Some`, [`Appearence::scale_handle`] no longer draws
-    /// the built-in knob and draws this sprite instead, centered on the knob and scaled to its footprint
-    /// (`0.035 * ui_scale` meters on its largest axis, aspect ratio preserved). The grab volume and the drag
-    /// behavior are unchanged. Default is `None` (built-in knob).
+    /// Optional custom visual for the scale handle. Width is important as it's use to scale the sprite :
+    /// `sprite.get_width() as f32 / 2000.0 * self.ui_scale`. 128 pixels for regular windows or 256 for large Screen.
     pub handle_sprite: Option<Sprite>,
 
     /// Text style of the header
@@ -388,7 +386,7 @@ impl Appearence {
         // so it follows both the drag position and the window scaling. Drawn after the grab logic so the pose
         // used is the one updated by the drag of this frame.
         if let Some(sprite) = &self.handle_sprite {
-            let size = 0.055 * self.ui_scale;
+            let size = sprite.get_width() as f32 / 2000.0 * self.ui_scale;
             let aspect = sprite.get_aspect();
             let scale = size / aspect.max(1.0);
             sprite.draw(handle_pose.to_matrix(Some(Vec3::new(scale * aspect, scale, 1.0))), Pivot::Center, None, None);
