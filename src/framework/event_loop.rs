@@ -915,7 +915,14 @@ impl StepperHandler {
     }
 }
 
-/// A lazy way to identify IStepper instances
+/// A lazy way to identify IStepper instances.
+///
+/// The ids are **not** unique keys: several steppers of the same manager may share one. The id is given by the
+/// [`StepperAction::add`] action and handed to [`IStepper::initialize`] (which stores it in the `id` field of the
+/// stepper), so the `id` of a `Default` implementation is only a placeholder, overwritten at the next frame.
+///
+/// An [`StepperAction::event`] or a [`StepperAction::remove`] targets **all** the steppers using that id. See
+/// [`Steppers::get_duplicated_ids`] to detect such a collision.
 pub type StepperId = String;
 /// Event indicating that the stepper is running.
 pub const ISTEPPER_RUNNING: &str = "IStepper_Running";
@@ -1285,6 +1292,50 @@ impl Steppers {
     /// ```
     pub fn get_count(&self) -> usize {
         self.running_steppers.len()
+    }
+
+    /// The [`StepperId`]s used by more than one of the steppers of this manager, sorted and deduplicated. An empty
+    /// vector is the normal case.
+    ///
+    /// Sharing an id is allowed (see [`Steppers`]) but is almost always a mistake: an event or a
+    /// [`StepperAction::remove`] targeting that id then hits all the steppers which use it. This is the typical
+    /// "two steppers, one name" of a hot reload workflow.
+    ///
+    /// see also [Sk::get_steppers]
+    /// ### Example
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{framework::{StepperAction, Steppers}, tools::title::Title, util::named_colors};
+    ///
+    /// let mut steppers = Steppers::new(sk.get_sk_info_clone());
+    ///
+    /// let title = Title::new("Title", Some(named_colors::BLUE), None, None);
+    /// steppers.send_event(StepperAction::add("Title_ID", title.clone()));
+    /// steppers.send_event(StepperAction::add("Title_ID", title));
+    ///
+    /// // From now on sk runs this manager (and 'steppers' contains the previous one).
+    /// sk.swap_steppers(&mut steppers);
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter == 2 {
+    ///         // Both steppers are running: they share the id "Title_ID".
+    ///         assert_eq!(sk.get_steppers_count(), 2);
+    ///         assert_eq!(sk.get_steppers().get_duplicated_ids(), vec!["Title_ID".to_string()]);
+    ///     }
+    /// );
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn get_duplicated_ids(&self) -> Vec<StepperId> {
+        let handlers = &self.running_steppers;
+
+        let mut duplicates: Vec<StepperId> = handlers
+            .iter()
+            .filter(|handler| handlers.iter().filter(|other| other.id == handler.id).count() > 1)
+            .map(|handler| handler.id.clone())
+            .collect();
+        duplicates.sort();
+        duplicates.dedup();
+        duplicates
     }
 }
 
