@@ -232,8 +232,8 @@ pub fn copy_tree(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> std::io::Resul
     }
     Ok(())
 }
-
-/// Reading Cargo.toml file of the current dir, looking for a \[package\]/name field and returning its value.
+/// Reading Cargo.toml file of the current dir, looking for a \[package\]/name field and returning its value, see
+/// [`get_cargo_name_in`].
 ///
 /// Returns the name of the package as a String or an Error.
 /// ### Examples
@@ -244,9 +244,24 @@ pub fn copy_tree(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> std::io::Resul
 /// assert_eq!(name, "stereokit-rust");
 /// ```
 pub fn get_cargo_name() -> Result<String, Error> {
-    // File Cargo.toml must exist in the current path
+    get_cargo_name_in(Path::new("."))
+}
+
+/// Reading Cargo.toml file of the given directory, looking for a \[package\]/name field and returning its value.
+///
+/// Returns the name of the package as a String or an Error.
+/// ### Examples
+/// ```
+/// use std::path::Path;
+/// use stereokit_rust::tools::build_tools::get_cargo_name_in;
+/// // The Cargo.toml of this repository
+/// let name = get_cargo_name_in(Path::new(".")).expect("name should be found");
+/// assert_eq!(name, "stereokit-rust");
+/// ```
+pub fn get_cargo_name_in(dir: &Path) -> Result<String, Error> {
+    // File Cargo.toml must exist in dir
     let lines = {
-        let file = File::open("./Cargo.toml")?;
+        let file = File::open(dir.join("Cargo.toml"))?;
         io::BufReader::new(file).lines()
     };
     let mut in_package = false;
