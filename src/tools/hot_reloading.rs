@@ -179,6 +179,39 @@ impl HotReloading {
         self
     }
 
+    /// The pose of the selector window, as the user just left it: the window is moved with its own title bar, which
+    /// updates that pose in place every frame (see [`HotReloading::window_pose`] for the pose it starts at).
+    ///
+    /// A host app can memorize it, with the ui scale of [`HotReloading::get_ui_scale`], and put it back at the next
+    /// session with [`HotReloading::set_window_pose`] / [`HotReloading::set_ui_scale`].
+    pub fn get_window_pose(&self) -> Pose {
+        self.window_pose
+    }
+
+    /// Puts the selector window where it was, e.g. at the placement a host app memorized for it (see
+    /// [`HotReloading::get_window_pose`]): the window is drawn at that pose at the next frame.
+    /// * `pose` - The pose of the selector window.
+    pub fn set_window_pose(&mut self, pose: Pose) {
+        self.window_pose = pose;
+    }
+
+    /// The ui scale of the selector window (see [`Appearence::get_ui_scale`]), `1.0` until [`IStepper::initialize`]
+    /// built that [`Appearence`] — the stepper is usually built before `Sk::init`, see [`HotReloading::appearence`].
+    pub fn get_ui_scale(&self) -> f32 {
+        self.appearence.as_ref().map_or(1.0, Appearence::get_ui_scale)
+    }
+
+    /// Scales the selector window, text included, exactly like dragging the handle of its [`Appearence`] along the
+    /// window-local Z axis does (the value is clamped to the bounds of that handle, see [`Appearence::set_ui_scale`]).
+    /// Ignored while the stepper is not initialized, since the [`Appearence`] and the text styles it scales are built
+    /// there: a host app restoring a memorized placement calls it right after [`IStepper::initialize`] returned.
+    /// * `ui_scale` - The ui scale of the selector window.
+    pub fn set_ui_scale(&mut self, ui_scale: f32) {
+        if let Some(appearence) = self.appearence.as_mut() {
+            appearence.set_ui_scale(ui_scale);
+        }
+    }
+
     /// Reads the [`SkSettings`] of the project from its plugin (`sk_run_sk_settings` -> `sk_settings()`, extension
     /// requests included) and **replaces** `settings` with them before `Sk::init`. The plugin is kept loaded and
     /// *begun* at the first frame. Returns `Err(reason)`, with `settings` untouched, when the plugin is not loadable
