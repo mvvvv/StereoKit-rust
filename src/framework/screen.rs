@@ -89,7 +89,7 @@ impl ScreenRepo {
 /// described below.
 /// * [`Appearence`] is applied at the screen level: the screen is drawn at `Appearence::window_size * ui_scale`,
 ///   exactly like an `Appearence` window, and the [`Appearence::scale_handle`] knob anchored to the screen is THE
-///   interactive diagonal / zoom control.
+///   interactive diagonal / zoom control.The zoom follows the diagonal.
 ///
 /// Like `Screen`, it is a concave mesh whose curvature, diagonal, and distance from the viewer are adjustable at
 /// runtime. It also ships with:
@@ -331,6 +331,41 @@ impl Screen {
         size.x.max(size.y) / PI
     }
 
+    /// Diagonal (meters) of a `size`.
+    fn diagonal_of(size: Vec2) -> f32 {
+        (size.x.powf(2.0) + size.y.powf(2.0)).sqrt()
+    }
+
+    /// Diagonal range the zoom can drive: [`Appearence::scale_bounds`] mapped through the base (unzoomed) size — the
+    /// zoom is the diagonal of that base size — then clipped by [`Screen::MIN_DIAGONAL`] / [`Screen::MAX_DIAGONAL`] and
+    /// by the view circle. [`Appearence::scale_bounds`] is the app's choice and is respected as-is: the zoom, and the
+    /// diagonal with it, never leave it.
+    pub fn diagonal_range(&self) -> (f32, f32) {
+        Self::diagonal_range_for(
+            self.appearence.window_size,
+            self.appearence.scale_bounds,
+            self.screen_size,
+            self.screen_diagonal,
+            self.screen_distance,
+        )
+    }
+
+    /// [`Screen::diagonal_range`] as a pure function: `zoom_bounds` mapped through the diagonal of `base_size`, then
+    /// clipped by [`Screen::MIN_DIAGONAL`] / [`Screen::MAX_DIAGONAL`] and by the view circle of `distance`.
+    fn diagonal_range_for(
+        base_size: Vec2,
+        zoom_bounds: (f32, f32),
+        size: Vec2,
+        current_diagonal: f32,
+        distance: f32,
+    ) -> (f32, f32) {
+        let base = Self::diagonal_of(base_size).max(f32::EPSILON);
+        let min = (base * zoom_bounds.0).clamp(Self::MIN_DIAGONAL, Self::MAX_DIAGONAL);
+        let max = Self::clamp_diagonal(size, current_diagonal, distance, base * zoom_bounds.1)
+            .clamp(Self::MIN_DIAGONAL, Self::MAX_DIAGONAL);
+        (min, max.max(min))
+    }
+
     /// Clamp `diagonal` to [`Self::MIN_DIAGONAL`] / [`Self::MAX_DIAGONAL`], then return the diagonal really reachable
     /// for a screen of `size` / `current_diagonal` at `distance`: the requested size is shrunk uniformly (the aspect
     /// ratio is preserved) when it would not fit the view circle.
@@ -402,13 +437,24 @@ impl Screen {
         self
     }
 
-    /// Set the screen diagonal (the size is adjusted proportionally, so the aspect ratio never changes).
+    /// Set the screen diagonal. The zoom follows it — the screen is the base (unzoomed) size scaled by the diagonal
+    /// ratio, and the [`Appearence`] zoom is set to that ratio — so the toolbars and the texts scale with the video. The
+    /// zoom respects [`Appearence::scale_bounds`], so the reachable diagonals are
+    /// `base diagonal * scale_bounds`, see [`Screen::diagonal_range`]; a request outside that range is clamped. The size
+    /// is adjusted proportionally, so the aspect ratio never changes.
     pub fn screen_diagonal(&mut self, diagonal: f32) -> &mut Self {
-        let effective = Self::clamp_diagonal(self.screen_size, self.screen_diagonal, self.screen_distance, diagonal);
+        let (min, max) = self.diagonal_range();
+        let effective = Self::clamp_diagonal(self.screen_size, self.screen_diagonal, self.screen_distance, diagonal)
+            .clamp(min, max);
         if (effective - self.screen_diagonal).abs() > f32::EPSILON {
-            let size = self.screen_size * (effective / self.screen_diagonal.max(f32::EPSILON));
+            // The zoom is the diagonal relative to the base size, and the screen is the base size at that zoom — which
+            // keeps `sync_appearence_to_screen` a no-op on the base. `scale_bounds` is respected: `effective` already
+            // comes from `diagonal_range`, so `set_ui_scale` does not clamp.
+            let base = Self::diagonal_of(self.appearence.window_size).max(f32::EPSILON);
+            self.appearence.set_ui_scale(effective / base);
+            let size = self.appearence.window_size * self.appearence.get_ui_scale();
             self.screen_size = size;
-            self.screen_diagonal = (size.x.powf(2.0) + size.y.powf(2.0)).sqrt();
+            self.screen_diagonal = Self::diagonal_of(size);
             self.adapt_screen();
             self.sync_appearence_to_screen();
         }
@@ -743,6 +789,7 @@ impl Screen {
     /// The parameter window, floating in front of the screen (fixed width, auto height). Holds the screen diagonal
     /// and curvature sliders, plus the optional app-provided extra-param UI. The diagonal slider keeps the aspect
     /// ratio, so it is the fallback when the [`Appearence::scale_handle`] knob cannot be grabbed.
+
     fn draw_param_window(&mut self, screen_transform: Matrix, bounds_center: Vec3) {
         if !self.show_param {
             return;
@@ -751,10 +798,15 @@ impl Screen {
         let info_position = Vec3::new(bounds_center.x, bounds_center.y, Self::PARAM_WINDOW_Z);
         let mut window_pose = Pose::new(info_position, None) * screen_transform;
 
+        // The zoom follows the diagonal and this panel holds the diagonal slider.
+        let zoom = self.appearence.get_ui_scale();
+        self.appearence.set_ui_scale(1.0);
+        let mut new_diagonal = None;
+
         let prev_settings = Ui::get_settings();
         Ui::settings(self.appearence.get_ui_settings_scaled());
 
-        // The width is the scaled `PARAM_WINDOW_WIDTH`, so the window follows the ui zoom.
+        // The width is `PARAM_WINDOW_WIDTH`: the panel is drawn at scale 1, so its width does not follow the zoom.
         let window_width = self.appearence.scale_size(Vec2::new(Self::PARAM_WINDOW_WIDTH, 0.0)).x;
         Ui::window(&self.repo.id_window_param)
             .pose(&mut window_pose)
@@ -788,11 +840,13 @@ impl Screen {
         Ui::same_line();
         Ui::label(format!("{:.2}", self.screen_diagonal)).use_padding(true).draw();
         Ui::same_line();
+        // The slider spans exactly the diagonals the zoom can reach.
+        let (min_diagonal, max_diagonal) = self.diagonal_range();
         let mut diagonal = self.screen_diagonal;
         if let Some(new_value) =
-            Ui::hslider(&self.repo.id_slider_diagonal, &mut diagonal, Self::MIN_DIAGONAL, Self::MAX_DIAGONAL).interact()
+            Ui::hslider(&self.repo.id_slider_diagonal, &mut diagonal, min_diagonal, max_diagonal).interact()
         {
-            self.screen_diagonal(new_value);
+            new_diagonal = Some(new_value);
         }
         Ui::pop_tint();
 
@@ -827,8 +881,12 @@ impl Screen {
         Ui::pop_text_style();
 
         Ui::window_end();
-        // Restore the caller's UiSettings exactly as they were before this window was drawn.
+        // Restore the caller's UiSettings and the zoom exactly as they were before this window was drawn.
         Ui::settings(prev_settings);
+        self.appearence.set_ui_scale(zoom);
+        if let Some(diagonal) = new_diagonal {
+            self.screen_diagonal(diagonal);
+        }
 
         if close {
             self.show_param = false;
@@ -1385,6 +1443,23 @@ mod tests {
         assert!((Screen::min_distance_for(Vec2::new(2.0, 1.0)) - 2.0 / PI).abs() < 1e-6);
         assert!((Screen::min_distance_for(Vec2::new(1.0, 3.0)) - 3.0 / PI).abs() < 1e-6);
         assert!((Screen::max_size_for(2.0) - 2.0 * PI).abs() < 1e-6);
+    }
+
+    /// `scale_bounds` is respected: the reachable diagonals are the bounds mapped through the base size.
+    #[test]
+    fn diagonal_range_respects_scale_bounds() {
+        let base = Vec2::new(0.32, 0.24); // a 0.4 m diagonal
+        let base_diagonal = Screen::diagonal_of(base);
+        // A wide view circle: the zoom bounds alone decide.
+        let (min, max) = Screen::diagonal_range_for(base, (0.5, 4.0), base, base_diagonal, 100.0);
+        assert!((min - 0.5 * base_diagonal).abs() < 1e-4);
+        assert!((max - 4.0 * base_diagonal).abs() < 1e-4);
+        // `MIN_DIAGONAL` stays a floor even when the zoom bounds ask for less.
+        let (min, _) = Screen::diagonal_range_for(base, (0.1, 4.0), base, base_diagonal, 100.0);
+        assert!((min - Screen::MIN_DIAGONAL).abs() < 1e-6);
+        // The view circle can cap the max below the zoom bound.
+        let (_, max) = Screen::diagonal_range_for(base, (0.5, 4.0), base, base_diagonal, 0.1);
+        assert!(max < 4.0 * base_diagonal);
     }
 
     #[test]
