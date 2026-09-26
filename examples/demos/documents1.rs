@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use stereokit_rust::{
     font::Font,
-    framework::Appearence,
+    framework::{Appearence, Resizing},
     maths::{Matrix, Pose, Quat, Vec2, Vec3},
     prelude::*,
     render::Renderer,
@@ -202,7 +202,7 @@ impl Documents1 {
         // A nice handle
         self.appearence.handle_sprite = Sprite::from_file("icons/zoom.png", None, None).ok();
 
-        self.appearence.keep_window_ratio = true;
+        self.appearence.resizing = Resizing::KeepRatio;
         self.appearence.start();
         true
     }

@@ -1,6 +1,6 @@
 use std::f32::consts::PI;
 
-use crate::framework::Appearence;
+use crate::framework::{Appearence, Resizing};
 use crate::sound::{SoundBus, SoundPlay};
 use crate::util::{Color128, Time, named_colors};
 use crate::{
@@ -87,7 +87,7 @@ impl ScreenRepo {
 /// described below.
 /// * [`Appearence`] is applied at the screen level: the screen is drawn at `Appearence::window_size * ui_scale`,
 ///   exactly like an `Appearence` window, and the [`Appearence::scale_handle`] knob anchored to the screen is THE
-///   interactive resize / zoom control. The screen displays a video, so [`Appearence::keep_window_ratio`] is set,
+///   interactive diagonal / zoom control.
 ///
 /// Like `Screen`, it is a concave mesh whose curvature, diagonal, and distance from the viewer are adjustable at
 /// runtime. It also ships with:
@@ -171,7 +171,7 @@ pub struct Screen {
     extra_param_ui: Option<Box<dyn FnMut() + Send + 'static>>,
 
     /// Look & feel applied at the screen level: its `window_size` mirrors the screen size, and its scale handle is the
-    /// interactive resize / zoom control. Its [`Appearence::keep_window_ratio`] is `true`.
+    /// interactive diagonal / zoom control ([`Resizing::ZoomOnly`]).
     appearence: Appearence,
     /// Has [`Appearence::start`] already run? Deferred to the first focused frame, so pre-draw property tweaks
     /// (`window_size`, text styles...) are always taken into account.
@@ -236,9 +236,9 @@ impl Screen {
 
         let mut appearence = Appearence::default();
         appearence.window_size = screen_size;
-        appearence.scale_bounds = (0.25, 4.0);
+        appearence.scale_bounds = (0.5, 4.0);
         appearence.min_window_size = Vec2::new(0.01, 0.01);
-        appearence.keep_window_ratio = true;
+        appearence.resizing = Resizing::ZoomOnly;
         appearence.handle_sprite = Sprite::from_file("icons/zoom2.png", None, None).ok();
         let mut this = Self {
             repo: ScreenRepo::new(id.to_string()),
@@ -463,9 +463,11 @@ impl Screen {
         &mut self.appearence
     }
 
-    /// Keep the screen (video) aspect ratio while the [`Appearence::scale_handle`] knob resizes it. Default is true.
-    pub fn keep_window_ratio(&mut self, keep: bool) -> &mut Self {
-        self.appearence.keep_window_ratio = keep;
+    /// How the [`Appearence::scale_handle`] knob resizes and zooms the screen. Default is [`Resizing::ZoomOnly`]: as
+    /// the video / swapchain has a locked aspect ratio, the knob only manages the screen diagonal (the ui zoom). Switch
+    /// to [`Resizing::KeepRatio`] (or [`Resizing::Free`]) to let the knob resize the screen too.
+    pub fn resizing(&mut self, resizing: Resizing) -> &mut Self {
+        self.appearence.resizing = resizing;
         self
     }
 

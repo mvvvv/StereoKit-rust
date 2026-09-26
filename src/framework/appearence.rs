@@ -7,14 +7,67 @@ use crate::{
     util::{Color128, named_colors},
 };
 
+/// How the [`Appearence::scale_handle`] knob resizes and zooms the window. It combines the former aspect-ratio
+/// flag with the choice of the drag axes the knob cares about:
+/// - the in-plane axes (local X = width, local Y = height) either resize [`Appearence::window_size`] freely, resize
+///   it keeping its aspect ratio, or are ignored,
+/// - the local Z axis (towards / away from the user) either drives the ui scale (zoom, see
+///   [`Appearence::get_ui_scale`]) or is ignored.
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
+pub enum Resizing {
+    /// Free resize (local X = width, local Y = height) and zoom (local Z). This is the default.
+    #[default]
+    Free,
+    /// Uniform resize — one size factor for both axes, keeping the `window_size` aspect ratio — and zoom.
+    ///
+    /// A [`Appearence::window_size`] coordinate left at `0.0` marks an unmanaged axis, which this mode cannot cope
+    /// with: [`Appearence::start`] turns it into [`Resizing::Free`] with a warning.
+    KeepRatio,
+    /// Zoom only (local Z): the in-plane axes are ignored and `window_size` never changes, so the whole window zooms
+    /// uniformly — its diagonal, for a window with a locked aspect ratio. Meant for the video
+    /// [`crate::framework::Screen`], whose knob then only manages the diagonal. While grabbed, only the zoom label is
+    /// drawn.
+    ZoomOnly,
+    /// Free resize (local X = width, local Y = height), zoom forbidden (the local Z axis is ignored).
+    FreeNoZoom,
+    /// Uniform resize keeping the `window_size` aspect ratio, zoom forbidden (the local Z axis is ignored).
+    KeepRatioNoZoom,
+}
+
+impl Resizing {
+    /// Does this mode resize [`Appearence::window_size`] with the in-plane drag axes?
+    pub fn resizes_window(self) -> bool {
+        matches!(self, Resizing::Free | Resizing::KeepRatio | Resizing::FreeNoZoom | Resizing::KeepRatioNoZoom)
+    }
+
+    /// Does this mode keep the `window_size` aspect ratio while resizing?
+    pub fn keeps_ratio(self) -> bool {
+        matches!(self, Resizing::KeepRatio | Resizing::KeepRatioNoZoom)
+    }
+
+    /// Does the local Z axis drive the ui scale (zoom)?
+    pub fn zooms(self) -> bool {
+        matches!(self, Resizing::Free | Resizing::KeepRatio | Resizing::ZoomOnly)
+    }
+
+    /// The same resize behavior with the aspect-ratio lock removed, the zoom flag unchanged.
+    fn without_ratio(self) -> Self {
+        match self {
+            Resizing::KeepRatio => Resizing::Free,
+            Resizing::KeepRatioNoZoom => Resizing::FreeNoZoom,
+            other => other,
+        }
+    }
+}
+
 /// The look & feel of a UI window: size, scaling, text styles and extra tints.
 /// - the ui scale (read with [`Appearence::get_ui_scale`], set with [`Appearence::start`] or
 ///   [`Appearence::set_ui_scale`]) uniformly scales the whole window: its size, every [`UiSettings`] value and
 ///   the `layout_height` of the four text styles,
-/// - [`Appearence::scale_handle`] draws the grab-able knob that interactively drives both
-///   [`Appearence::window_size`] (local X = width, local Y = height) and the ui scale (local Z),
-///   and [`Appearence::handle_sprite`], when set, replaces the built-in knob visual with a custom sprite,
-/// - [`Appearence::keep_window_ratio`] locks the `window_size` aspect ratio while resizing with the handle,
+/// - [`Appearence::scale_handle`] draws the grab-able knob that interactively drives [`Appearence::window_size`]
+///   (local X = width, local Y = height) and the ui scale (local Z), as chosen by [`Appearence::resizing`] — see
+///   [`Resizing`] — and [`Appearence::handle_sprite`], when set, replaces the built-in knob visual with a custom
+///   sprite,
 /// - the four text styles, from the biggest ([`Appearence::title_style`]) to the smallest
 ///   ([`Appearence::small_style`]), give the UI some relief,
 /// - the three tints color directory buttons, input fields and error entries,
@@ -25,8 +78,8 @@ use crate::{
 pub struct Appearence {
     /// The `window_size` set by [`Appearence::default`], and the reference size the released scale-handle
     /// anchor is proportional to, see [`Appearence::scale_handle`]. Default is `Vec2::new(0.6, 0.8)`. A
-    /// coordinate left at `0.0` marks an unmanaged axis (e.g. an auto-fit height)turns `keep_window_ratio` off with a
-    /// warning.
+    /// coordinate left at `0.0` marks an unmanaged axis (e.g. an auto-fit height): it turns a ratio-preserving
+    /// [`Appearence::resizing`] off with a warning.
     pub window_size: Vec2,
     /// The reference size of the window used to apply scale and position of the [`Appearence::scale_handle`] this is
     /// always Vec2::new(0.6, 0.8),
@@ -34,9 +87,9 @@ pub struct Appearence {
     /// Interactive resize floor for [`Appearence::window_size`] (meters) applied while dragging the scale
     /// handle, see [`Appearence::scale_handle`]. Default is `Vec2::new(0.45, 0.45)`.
     pub min_window_size: Vec2,
-    /// When `true`, the interactive resize keeps the `window_size` aspect ratio. Default is `false`. Can't be used
-    /// with a windows_size 0.0 value.
-    pub keep_window_ratio: bool,
+    /// How the [`Appearence::scale_handle`] knob resizes [`Appearence::window_size`] and whether it zooms.Default is
+    /// [`Resizing::Free`]: free in-plane resize and zoom.
+    pub resizing: Resizing,
     /// The [`UiSettings`] used to draw the window. It is multiplied by the current ui scale (see
     /// [`Appearence::get_ui_scale`]) to give the settings returned by [`Appearence::get_ui_settings_scaled`].
     pub ui_settings: UiSettings,
@@ -95,7 +148,7 @@ impl Default for Appearence {
         Self {
             reference_window_size: Vec2::new(0.6, 0.8),
             min_window_size: Vec2::new(0.45, 0.45),
-            keep_window_ratio: false,
+            resizing: Resizing::default(),
             window_size: Vec2::new(0.6, 0.8),
             ui_settings: Ui::get_settings(),
             ui_scale: 1.0,
@@ -161,15 +214,15 @@ impl Appearence {
         // value can break the draw loop or the scale-handle interactions.
         const ABS_MIN_WINDOW: Vec2 = Vec2::new(0.01, 0.01); // hard floor for the resize floor itself
         self.min_window_size = Vec2::max(self.min_window_size, ABS_MIN_WINDOW);
-        // A `window_size` coordinate at 0.0 (negatives are normalized to 0.0) is an unmanaged axis, which
-        // `keep_window_ratio` cannot cope with: it gets turned off.
-        if self.keep_window_ratio && (self.window_size.x <= 0.0 || self.window_size.y <= 0.0) {
+        // A `window_size` coordinate at 0.0 (negatives are normalized to 0.0) is an unmanaged axis, which the
+        // ratio-preserving resizing cannot cope with: it gets turned off.
+        if self.resizing.keeps_ratio() && (self.window_size.x <= 0.0 || self.window_size.y <= 0.0) {
             Log::warn(
-                "Appearence::start: a `window_size` coordinate is 0.0 (unmanaged axis), turning `keep_window_ratio` off",
+                "Appearence::start: a `window_size` coordinate is 0.0 (unmanaged axis), turning the ratio-preserving resizing off",
             );
-            self.keep_window_ratio = false;
+            self.resizing = self.resizing.without_ratio();
         }
-        if self.keep_window_ratio {
+        if self.resizing.keeps_ratio() {
             // Ratio locked: lift `window_size` to the floor with one uniform factor, so the aspect ratio
             // survives the `min_window_size` clamp as well.
             let factor = (self.min_window_size.x / self.window_size.x.max(0.001))
@@ -273,21 +326,25 @@ impl Appearence {
         position * self.ui_scale
     }
     /// Scale handle: a small grab-able knob in world space, anchored to `window_pose` in its local space so it
-    /// follows the window when it moves. While held, each drag axis drives its own appearance property:
+    /// follows the window when it moves. While held, each drag axis drives its own appearance property, as chosen by
+    /// [`Appearence::resizing`]:
     /// - the local X axis (the window width direction) modifies [`Appearence::window_size`].x,
     /// - the local Y axis (the window height direction) modifies [`Appearence::window_size`].y,
     /// - the local Z axis (towards / away from the user) modifies the ui scale (see [`Appearence::get_ui_scale`]),
     ///   which uniformly scales the whole window, see the internal `scale_all`.
     ///
-    /// When [`Appearence::keep_window_ratio`] is `true`, the local X and Y drag deltas are merged into a single
-    /// uniform size factor instead, so the window keeps its aspect ratio while resizing. A [`Appearence::window_size`]
-    /// coordinate left at `0.0` marks an unmanaged axis.
+    /// With [`Resizing::KeepRatio`], the local X and Y drag deltas are merged into a single uniform size factor
+    /// instead, so the window keeps its aspect ratio while resizing. With [`Resizing::ZoomOnly`] the two in-plane axes
+    /// are ignored and only the local Z axis is used: the `window_size` never changes, so the whole window zooms
+    /// uniformly — its diagonal, for a window with a locked aspect ratio like [`crate::framework::Screen`]. The
+    /// `NoZoom` variants ignore the local Z axis. A [`Appearence::window_size`] coordinate left at `0.0` marks an
+    /// unmanaged axis.
     ///
     /// On release, the knob springs back to its default anchor, scaled proportionally to the current drawn
     /// window size (`window_size * ui_scale`) so it keeps hugging the window edge. While the handle is
-    /// grabbed, three small labels around the knob show the live values it drives: the scale factor in
-    /// percent in front of the knob (towards the user), the window width below it and the window height
-    /// on its right.
+    /// grabbed, two or three small labels around the knob show the live values it drives: the scale factor in
+    /// percent in front of the knob (towards the user) when the mode zooms, the window width below it and the
+    /// window height on its right when it resizes.
     ///
     /// When [`Appearence::handle_sprite`] is set, its sprite is drawn in place of the built-in knob visual,
     /// but the grab volume and the drag behavior stay the same.
@@ -319,52 +376,62 @@ impl Appearence {
             let (start_offset, start_scale, start_size) =
                 *self.scale_grab.get_or_insert((handle_offset, self.ui_scale, self.window_size));
 
-            // A `window_size` coordinate at 0.0 is an unmanaged axis.
-            if self.keep_window_ratio && start_size.x > 0.0 && start_size.y > 0.0 {
-                // Ratio locked: the X and Y drag deltas are averaged into one uniform size factor applied to
-                // both dimensions, and the `min_window_size` floor is applied to the factor itself, so the
-                // aspect ratio survives even the clamp.
-                let drag = (offset.x - start_offset.x + offset.y - start_offset.y) * 0.5;
-                let reference = (start_size.x + start_size.y) * 0.5;
-                let factor = ((reference + drag) / reference.max(0.001))
-                    .max(self.min_window_size.x / start_size.x.max(0.001))
-                    .max(self.min_window_size.y / start_size.y.max(0.001));
-                self.window_size = start_size * factor;
-            } else {
-                // Unmanaged axes (coordinate at 0.0) stay at 0.0 whatever the drag.
-                if start_size.x > 0.0 {
-                    self.window_size.x = (start_size.x + offset.x - start_offset.x).max(self.min_window_size.x);
-                }
-                if start_size.y > 0.0 {
-                    self.window_size.y = (start_size.y + offset.y - start_offset.y).max(self.min_window_size.y);
+            // The in-plane axes resize the window (freely or keeping its aspect ratio); `ZoomOnly` ignores them.
+            if self.resizing.resizes_window() {
+                // A `window_size` coordinate at 0.0 is an unmanaged axis.
+                if self.resizing.keeps_ratio() && start_size.x > 0.0 && start_size.y > 0.0 {
+                    // Ratio locked: the X and Y drag deltas are averaged into one uniform size factor applied to
+                    // both dimensions, and the `min_window_size` floor is applied to the factor itself, so the
+                    // aspect ratio survives even the clamp.
+                    let drag = (offset.x - start_offset.x + offset.y - start_offset.y) * 0.5;
+                    let reference = (start_size.x + start_size.y) * 0.5;
+                    let factor = ((reference + drag) / reference.max(0.001))
+                        .max(self.min_window_size.x / start_size.x.max(0.001))
+                        .max(self.min_window_size.y / start_size.y.max(0.001));
+                    self.window_size = start_size * factor;
+                } else {
+                    // Unmanaged axes (coordinate at 0.0) stay at 0.0 whatever the drag.
+                    if start_size.x > 0.0 {
+                        self.window_size.x = (start_size.x + offset.x - start_offset.x).max(self.min_window_size.x);
+                    }
+                    if start_size.y > 0.0 {
+                        self.window_size.y = (start_size.y + offset.y - start_offset.y).max(self.min_window_size.y);
+                    }
                 }
             }
-            self.ui_scale = (start_scale + (offset.z - start_offset.z) * self.scale_per_meter)
-                .clamp(self.scale_bounds.0, self.scale_bounds.1);
+            // The local Z axis (towards / away from the user) drives the ui scale, unless the mode forbids zoom.
+            if self.resizing.zooms() {
+                self.ui_scale = (start_scale + (offset.z - start_offset.z) * self.scale_per_meter)
+                    .clamp(self.scale_bounds.0, self.scale_bounds.1);
+            }
             self.scale_all();
             self.scale_handle_offset = offset;
 
-            // While grabbed, three small labels around the knob show the live values it drives:
+            // While grabbed, small labels around the knob show the live values it drives.
             let label_size = Vec2::new(0.05, 0.02) * self.ui_scale;
             let orientation = handle_pose.orientation;
-            TextBuilder::new(format!("{:.0}%", self.ui_scale * 100.0))
-                .transform(Matrix::t_r(handle_pose.position + forward * 0.05, orientation))
-                .style(self.title_style)
-                .size(label_size)
-                .add();
-            if start_size.x > 0.0 {
-                TextBuilder::new(format!("{:.2}", self.window_size.x))
-                    .transform(Matrix::t_r(handle_pose.position - up * 0.03, orientation))
-                    .style(self.small_style)
+            if self.resizing.zooms() {
+                TextBuilder::new(format!("{:.0}%", self.ui_scale * 100.0))
+                    .transform(Matrix::t_r(handle_pose.position + forward * 0.05, orientation))
+                    .style(self.title_style)
                     .size(label_size)
                     .add();
             }
-            if start_size.y > 0.0 {
-                TextBuilder::new(format!("{:.2}", self.window_size.y))
-                    .transform(Matrix::t_r(handle_pose.position + right * 0.04, orientation))
-                    .style(self.small_style)
-                    .size(label_size)
-                    .add();
+            if self.resizing.resizes_window() {
+                if start_size.x > 0.0 {
+                    TextBuilder::new(format!("{:.2}", self.window_size.x))
+                        .transform(Matrix::t_r(handle_pose.position - up * 0.03, orientation))
+                        .style(self.small_style)
+                        .size(label_size)
+                        .add();
+                }
+                if start_size.y > 0.0 {
+                    TextBuilder::new(format!("{:.2}", self.window_size.y))
+                        .transform(Matrix::t_r(handle_pose.position + right * 0.04, orientation))
+                        .style(self.small_style)
+                        .size(label_size)
+                        .add();
+                }
             }
             // Live scale of this drag frame, for the caller to propagate to its child windows.
             Some(self.ui_scale)

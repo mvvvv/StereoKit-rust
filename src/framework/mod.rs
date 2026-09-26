@@ -3,6 +3,7 @@
 mod appearence;
 
 pub use appearence::Appearence;
+pub use appearence::Resizing;
 
 mod event_loop;
 
