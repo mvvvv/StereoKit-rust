@@ -60,6 +60,7 @@ struct ScreenRepo {
     id_btn_show_param: String,
     id_btn_close_param: String,
     id_window_param: String,
+    id_slider_diagonal: String,
     sprite_close: Sprite,
     sprite_menu: Sprite,
     id_material: String,
@@ -74,6 +75,7 @@ impl ScreenRepo {
             id_btn_show_param: id.clone() + "_btn_show",
             id_btn_close_param: id.clone() + "_btn_close",
             id_window_param: id.clone() + "_window_param",
+            id_slider_diagonal: id.clone() + "_slider_diagonal",
             sprite_close: Sprite::close(),
             sprite_menu: Sprite::list(),
             id_material: id + "_material",
@@ -93,6 +95,7 @@ impl ScreenRepo {
 /// runtime. It also ships with:
 /// * two spatial stereo audio streams (left / right)
 /// * an optional single-line overlay text rendered above the content
+/// * a parameter window (opened from the toolbar) with the screen diagonal and curvature sliders
 /// * an optional extra-param UI callback injected into the parameter window
 ///
 /// Two texture slots (`0` and `1`) allow cross-fading between images without dropping GPU handles.
@@ -737,7 +740,9 @@ impl Screen {
         Ui::pop_surface();
     }
 
-    /// The parameter window, floating in front of the screen (fixed width, auto height).
+    /// The parameter window, floating in front of the screen (fixed width, auto height). Holds the screen diagonal
+    /// and curvature sliders, plus the optional app-provided extra-param UI. The diagonal slider keeps the aspect
+    /// ratio, so it is the fallback when the [`Appearence::scale_handle`] knob cannot be grabbed.
     fn draw_param_window(&mut self, screen_transform: Matrix, bounds_center: Vec3) {
         if !self.show_param {
             return;
@@ -774,6 +779,22 @@ impl Screen {
         Ui::pop_text_style();
 
         Ui::push_text_style(self.appearence.label_style);
+
+        // The diagonal row: label + value + slider. The aspect ratio is kept, so the slider uniformly resizes the
+        // screen (`Screen::screen_diagonal`), exactly what the [`Appearence::scale_handle`] knob does when it is
+        // grabbable. It is the fallback when the knob cannot be grabbed.
+        Ui::push_tint(self.appearence.input_tint);
+        Ui::label("Diagonal").use_padding(true).draw();
+        Ui::same_line();
+        Ui::label(format!("{:.2}", self.screen_diagonal)).use_padding(true).draw();
+        Ui::same_line();
+        let mut diagonal = self.screen_diagonal;
+        if let Some(new_value) =
+            Ui::hslider(&self.repo.id_slider_diagonal, &mut diagonal, Self::MIN_DIAGONAL, Self::MAX_DIAGONAL).interact()
+        {
+            self.screen_diagonal(new_value);
+        }
+        Ui::pop_tint();
 
         // The curvature row: label + value + slider. With `cylindrical` (default) the slider snaps
         // to 0.0 (nearly flat cylinder) or 1.0 (tight cylinder); otherwise any value in [0, 1].
