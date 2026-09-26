@@ -1,8 +1,8 @@
 use crate::{
     font::Font,
-    maths::{Bounds, Matrix, Pose, Vec2, Vec3},
+    maths::{Bounds, Matrix, Pose, Quat, Vec2, Vec3},
     sprite::Sprite,
-    system::{Log, Pivot, Text, TextBuilder, TextStyle},
+    system::{Input, Log, Pivot, Text, TextBuilder, TextStyle},
     ui::{Ui, UiSettings},
     util::{Color128, named_colors},
 };
@@ -68,6 +68,8 @@ impl Resizing {
 ///   (local X = width, local Y = height) and the ui scale (local Z), as chosen by [`Appearence::resizing`] — see
 ///   [`Resizing`] — and [`Appearence::handle_sprite`], when set, replaces the built-in knob visual with a custom
 ///   sprite,
+/// - the [`Appearence::scale_handle`] knob turns to face the head while an interactor points at it (based on the
+///   previous frame's focus), so aiming at it is easy to see,
 /// - the four text styles, from the biggest ([`Appearence::title_style`]) to the smallest
 ///   ([`Appearence::small_style`]), give the UI some relief,
 /// - the three tints color directory buttons, input fields and error entries,
@@ -121,6 +123,9 @@ pub struct Appearence {
     /// `sprite.get_width() as f32 / 2000.0 * self.ui_scale`. 128 pixels for regular windows or 256 for large Screen.
     pub handle_sprite: Option<Sprite>,
 
+    /// Did the scale handle have focus on the previous frame?
+    handle_focused: bool,
+
     /// Text style of the header
     pub title_style: TextStyle,
     /// Text style of the list entries
@@ -158,6 +163,7 @@ impl Default for Appearence {
             scale_handle_offset: Vec3::ZERO,
             scale_grab: None,
             handle_sprite: None,
+            handle_focused: false,
             scale_bounds: (0.5, 2.0),
 
             // Four text styles give the window some relief
@@ -340,6 +346,10 @@ impl Appearence {
     /// `NoZoom` variants ignore the local Z axis. A [`Appearence::window_size`] coordinate left at `0.0` marks an
     /// unmanaged axis.
     ///
+    /// If the knob had focus on the previous frame, it is turned to face the head, so it is obvious that it is being
+    /// aimed at. The cue is binary (no fade / timeout), and using the previous frame's focus keeps this frame's
+    /// orientation from feeding back into the focus test.
+    ///
     /// On release, the knob springs back to its default anchor, scaled proportionally to the current drawn
     /// window size (`window_size * ui_scale`) so it keeps hugging the window edge. While the handle is
     /// grabbed, two or three small labels around the knob show the live values it drives: the scale factor in
@@ -362,12 +372,17 @@ impl Appearence {
         let handle_center =
             window_pose.position + right * handle_offset.x + up * handle_offset.y + forward * handle_offset.z;
         let mut handle_pose = Pose::new(handle_center, Some(window_pose.orientation));
+        // Focus cue: if the knob had focus on the previous frame, turn it to face the head.
+        if self.handle_focused {
+            handle_pose.orientation = Quat::look_at(handle_pose.position, Input::get_head().position, None);
+        }
         // A custom handle sprite replaces the built-in knob visual, see the drawing after the grab logic.
         let draw_default_handle = self.handle_sprite.is_none();
         let grabbed =
             Ui::handle(id, &mut handle_pose, Bounds::bounds_centered(Vec3::new(1.0, 1.0, 0.3) * 0.035 * self.ui_scale))
                 .draw_handle(draw_default_handle)
                 .grab();
+        self.handle_focused = grabbed || Ui::get_last_element_focused().is_active();
         let result = if grabbed {
             let delta = handle_pose.position - window_pose.position;
             let offset = Vec3::new(Vec3::dot(delta, right), Vec3::dot(delta, up), Vec3::dot(delta, forward));
