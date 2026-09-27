@@ -36,20 +36,18 @@ use std::{
 use libloading::{Library, Symbol};
 
 use crate::{
-    framework::{Appearence, IStepper, StepperId},
-    sk::{MainThreadToken, SkInfo, SkSettings},
-    tools::build_tools::get_cargo_name_in,
-};
-
-use crate::{
-    framework::StepperAction,
+    framework::{Appearence, IStepper, StepperAction, StepperId},
     maths::{Pose, Quat, Vec2, Vec3},
     plugin_abi::{PluginViewInfo, SK_RUN_SK_ABI_VERSION},
     render::Renderer,
+    sk::{MainThreadToken, SkInfo, SkSettings},
     system::Log,
+    tools::build_tools::get_cargo_name_in,
     ui::{Ui, UiPad},
     util::Time,
 };
+
+pub const HOT_RELOADING_ID: &str = "Tool_Hot_Reloading";
 
 /// Hot reloads the plugin library of **one** project inside the running StereoKit session: build, watch, load,
 /// swap, select and capture are driven by this [`IStepper`], see the [module documentation](self).

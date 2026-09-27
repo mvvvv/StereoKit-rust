@@ -10,6 +10,7 @@ use crate::{
 };
 use std::sync::Mutex;
 
+pub const LOG_WINDOW_ID: &str = "Tool_LogWindow";
 pub const SHOW_LOG_WINDOW: &str = "Tool_ShowLogWindow";
 
 /// A simple log window to display the logs.
