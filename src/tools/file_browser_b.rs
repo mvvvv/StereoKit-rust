@@ -17,6 +17,7 @@ use rust_i18n::t;
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
+pub const FILE_BROWSER_ID_PREFIX: &str = "File_Browser_B";
 pub const FILE_BROWSER_B_SAVE: &str = "File_Browser_B_save";
 pub const FILE_BROWSER_B_SELECT_DIR: &str = "File_Browser_B_select_dir";
 pub const FILE_BROWSER_B_OPEN_MULTI: &str = "File_Browser_B_open_multi";
@@ -327,6 +328,12 @@ impl FileBrowserB {
         // Capture the current (possibly user-tweaked) font sizes as the base heights the draw
         // loop multiplies by `ui_scale`, so scaling never compounds over the frames.
         self.appearence.start();
+        // The id this window is added under is the key it is memorized under.
+        #[cfg(feature = "placement")]
+        {
+            self.appearence.placement.ensure_key(FILE_BROWSER_ID_PREFIX);
+            self.appearence.restore_placement(&mut self.window_pose);
+        }
 
         // We ajust the preview appearence if any
         if let Some(preview) = self.preview.as_deref_mut() {

@@ -42,6 +42,8 @@ force-local-deps = []
 with_glam = ["dep:glam"]
 # Create and use StereoKitC as a shared library. Foundation of the hot-reload workflow.
 skc-shared = ["dep:libloading"]
+# Where the windows are memorized between two sessions: the placement option of `Appearence`.
+placement = ["dep:serde", "dep:serde_json"]
 # Replace AppMode::Offscreen with AppMode::XR in test macros. Monado Simulator should be your 
 test-xr-mode = []
 # Enable profiling in StereoKitC using tracy
@@ -50,8 +52,8 @@ profile = []
 # (compile-time embedded `locales/*` catalogues, runtime switch with tools::locales::set_locale)
 file-browser = ["locales"]
 locales = ["dep:rust-i18n"]
-# All the extra tools. Usefull for test/doc
-tools = ["file-browser"]
+# All the extra tools. Useful for test/doc
+tools = ["file-browser", "placement"]
 
 [package.metadata.docs.rs]
 features = ["tools"]
@@ -89,6 +91,9 @@ openxr-sys = "0.14"
 rust-i18n = { version = "4", optional = true }
 # dlopen/dlsym (Linux, macOS) / LoadLibrary (Windows) support for the hot-reload host.
 libloading = { version = "0.9", optional = true }
+# The file format of the placements of the windows (the `placement` feature).
+serde = { version = "1", features = ["derive"], optional = true }
+serde_json = { version = "1", optional = true }
 #stereokit-macros = { path = "./stereokit-macros", version = "0.6" }
 stereokit-macros = "0.6"
 

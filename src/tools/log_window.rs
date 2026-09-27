@@ -21,6 +21,9 @@ pub const SHOW_LOG_WINDOW: &str = "Tool_ShowLogWindow";
 ///   `window_size` is a wide, low log panel (`0.8 x 0.3` meters, resizable down to `0.25 x 0.12`); set
 ///   `appearence.window_size` before start for another size. The log lines are drawn with
 ///   [`Appearence::list_style`] ONLY, the levels are told apart by color, through the tints below.
+/// * `placement` - Where the window is memorized between two sessions, see [`Appearence::placement`]. Left as it is,
+///   the window is memorized under the id it is added under; give it a key first (`appearence.placement.ensure_key`)
+///   to name it another way. Nothing is memorized until the app installs a sink (see [`crate::framework::set_sink`]).
 /// * `tint_diag` / `tint_info` / `tint_warn` / `tint_err` - The tints applied over [`Appearence::list_style`] to
 ///   the lines of each log level, see [`LogWindow::level_tint`].
 ///
@@ -220,6 +223,13 @@ impl<'a> LogWindow<'a> {
         // Captures the current (possibly user-tweaked) text heights as the base the ui scale multiplies,
         // and applies the current scale, see `Appearence::start`.
         self.appearence.start();
+        // The id this window is added under is the key it is memorized under (see `Appearence::placement`), and the
+        // placement of the previous session is applied now that the text styles have their base heights.
+        #[cfg(feature = "placement")]
+        {
+            self.appearence.placement.ensure_key(&self.id);
+            self.appearence.restore_placement(&mut self.window_pose);
+        }
         true
     }
 
@@ -251,6 +261,7 @@ impl<'a> LogWindow<'a> {
 
         // Grab-able knob anchored to the window: dragging it along the window local X resizes the width,
         // along Y the height, and along Z (towards the user) the whole scale, see `Appearence::scale_handle`.
+        // It also memorizes the placement of the window on every frame (see `Appearence::placement`).
         self.appearence.scale_handle(&self.window_pose, "log_window_scale");
     }
 

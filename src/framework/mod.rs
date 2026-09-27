@@ -4,6 +4,10 @@ mod appearence;
 
 pub use appearence::Appearence;
 pub use appearence::Resizing;
+#[cfg(feature = "placement")]
+pub use appearence::{
+    JsonPlacementStore, Placement, PlacementSink, SAVE_THROTTLE, WindowPlacement, set_json_file, set_sink, sink,
+};
 
 mod event_loop;
 

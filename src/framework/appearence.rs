@@ -6,6 +6,11 @@ use crate::{
     ui::{Ui, UiSettings},
     util::{Color128, named_colors},
 };
+#[cfg(feature = "placement")]
+use std::{
+    sync::{Arc, OnceLock},
+    time::{Duration, Instant},
+};
 
 /// How the [`Appearence::scale_handle`] knob resizes and zooms the window. It combines the former aspect-ratio
 /// flag with the choice of the drag axes the knob cares about:
@@ -73,7 +78,9 @@ impl Resizing {
 /// - the four text styles, from the biggest ([`Appearence::title_style`]) to the smallest
 ///   ([`Appearence::small_style`]), give the UI some relief,
 /// - the three tints color directory buttons, input fields and error entries,
-/// - [`Appearence::double_click_delay`] is the maximum delay between the two presses of a "double-click".
+/// - [`Appearence::double_click_delay`] is the maximum delay between the two presses of a "double-click",
+/// - the `placement` option (the `placement` feature) memorizes where the window stands, how big it is and the ui scale
+///   it was left at, so the next session opens it there.
 ///
 /// Call [`Appearence::start`] once when the window stepper starts (it captures the base text heights and applies the
 /// current scale), then [`Appearence::scale_handle`] every frame after the window itself has been drawn.
@@ -144,6 +151,10 @@ pub struct Appearence {
 
     /// Maximum delay in seconds between the two presses (`JustActive`) of a "double-click" on an entry. Default is 0.5.
     pub double_click_delay: f32,
+
+    /// Where the window is memorized between two sessions: its key, and what it takes to hand its placement.
+    #[cfg(feature = "placement")]
+    pub placement: Placement,
 }
 
 impl Default for Appearence {
@@ -177,6 +188,8 @@ impl Default for Appearence {
             input_tint: named_colors::SADDLE_BROWN.into(),
             error_tint: named_colors::RED.into(),
             double_click_delay: 0.5,
+            #[cfg(feature = "placement")]
+            placement: Placement::default(),
 
             ui_settings_scaled: Ui::get_settings(),
         }
@@ -237,13 +250,8 @@ impl Appearence {
             self.window_size *= factor;
         } else {
             // Unmanaged axes (coordinate at 0.0) stay at 0.0, exempt from the `min_window_size` floor.
-            self.window_size = Vec2::max(self.window_size, Vec2::ZERO);
-            if self.window_size.x > 0.0 {
-                self.window_size.x = self.window_size.x.max(self.min_window_size.x);
-            }
-            if self.window_size.y > 0.0 {
-                self.window_size.y = self.window_size.y.max(self.min_window_size.y);
-            }
+            let window_size = self.window_size;
+            self.set_window_size(window_size);
         }
 
         self.scale_handle_offset = self.scale_handle_default_offset;
@@ -268,6 +276,53 @@ impl Appearence {
         self.ui_scale = ui_scale.clamp(self.scale_bounds.0, self.scale_bounds.1);
         // Scale the four text styles with the new ui scale.
         self.scale_all();
+    }
+
+    /// Sets the base [`Appearence::window_size`] the window is drawn at in metres.
+    pub fn set_window_size(&mut self, window_size: Vec2) {
+        let size = Vec2::max(window_size, Vec2::ZERO);
+        self.window_size = Vec2::new(
+            if size.x > 0.0 { size.x.max(self.min_window_size.x) } else { size.x },
+            if size.y > 0.0 { size.y.max(self.min_window_size.y) } else { size.y },
+        );
+    }
+
+    /// Gives the window its memorized placement back — where it stands, how big it is and the ui scale it was left at,
+    /// see [`Appearence::placement`].
+    /// * `window_pose` - The pose of the window, given back its memorized one.
+    #[cfg(feature = "placement")]
+    pub fn restore_placement(&mut self, window_pose: &mut Pose) {
+        let Some(placement) = self.placement.memorized() else {
+            return;
+        };
+        Log::diag(format!(
+            "[placement] {}: restored at ({:.2}, {:.2}, {:.2}), size {:?}, ui scale {:.2}",
+            self.placement.key(),
+            placement.pose.position.x,
+            placement.pose.position.y,
+            placement.pose.position.z,
+            placement.window_size,
+            placement.ui_scale,
+        ));
+        placement.apply_to(window_pose, self);
+        self.placement.know(placement);
+    }
+
+    /// Offers the live placement of the window — where it stands, [`Appearence::window_size`] and its ui scale.
+    /// * `window_pose` - Where the window stands.
+    #[cfg(feature = "placement")]
+    pub fn track_placement(&mut self, window_pose: &Pose) {
+        let placement = WindowPlacement::of(window_pose, self);
+        self.placement.offer(placement, false);
+    }
+
+    /// The same as [`Appearence::track_placement`], whatever the throttle: what the `close` of a window uses, so a
+    /// window moved, resized or scaled since the last write keeps its last gesture for the next run.
+    /// * `window_pose` - Where the window stands.
+    #[cfg(feature = "placement")]
+    pub fn flush_placement(&mut self, window_pose: &Pose) {
+        let placement = WindowPlacement::of(window_pose, self);
+        self.placement.offer(placement, true);
     }
 
     /// Scale the font sizes with ui_scale as well: `UiSettings` scaling does NOT affect text styles, so each of the
@@ -463,6 +518,10 @@ impl Appearence {
             None
         };
 
+        // The placement of the window — where it stands, how big it is and the ui scale it was left at.
+        #[cfg(feature = "placement")]
+        self.track_placement(window_pose);
+
         // Custom handle visual: when set, the sprite is drawn in place of the built-in knob, centered on it
         // and scaled to its footprint (`0.055 * ui_scale` meters on its largest axis, aspect ratio preserved),
         // so it follows both the drag position and the window scaling. Drawn after the grab logic so the pose
@@ -475,5 +534,506 @@ impl Appearence {
         }
 
         result
+    }
+}
+
+/// The shortest delay between two writes of the same placement: a window dragged for a second costs one write — once
+/// it came to rest — not sixty.
+#[cfg(feature = "placement")]
+pub const SAVE_THROTTLE: Duration = Duration::from_secs(1);
+
+/// The placement of one window: what it takes to put it back where, at the size and at the scale it was left.
+#[cfg(feature = "placement")]
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct WindowPlacement {
+    /// Where the window stands, in world space: the pose [`crate::ui::Ui::window`] was given.
+    pub pose: Pose,
+    /// The base [`Appearence::window_size`] of the window, in metres, *before* [`WindowPlacement::ui_scale`].
+    /// `None` — the way a placement memorized before the size was tracked (or written by hand) reads — leaves the
+    /// window the size its stepper gave it, instead of shrinking it to an arbitrary default.
+    pub window_size: Option<Vec2>,
+    /// The ui scale of the window, see [`Appearence::get_ui_scale`].
+    pub ui_scale: f32,
+}
+
+#[cfg(feature = "placement")]
+impl WindowPlacement {
+    /// The live placement of a window: where `pose` puts it, what `appearence` sizes and scales it at.
+    /// * `pose` - The pose of the window.
+    /// * `appearence` - The look of the window.
+    pub fn of(pose: &Pose, appearence: &Appearence) -> Self {
+        Self { pose: *pose, window_size: Some(appearence.window_size), ui_scale: appearence.get_ui_scale() }
+    }
+
+    /// The placement of a window held as plain components:
+    /// * `pos` - World-space position of the window, in metres.
+    /// * `quat` - World-space orientation quaternion `(x, y, z, w)`.
+    /// * `window_size` - The base size of the window (see [`WindowPlacement::window_size`]), `None` when the store holds
+    ///   none.
+    /// * `ui_scale` - The ui scale of the window.
+    pub fn from_components(pos: [f32; 3], quat: [f32; 4], window_size: Option<[f32; 2]>, ui_scale: f32) -> Self {
+        Self {
+            pose: Pose::new(Vec3::new(pos[0], pos[1], pos[2]), Some(orientation_of(quat))),
+            window_size: window_size.map(|size| Vec2::new(size[0], size[1])),
+            ui_scale,
+        }
+    }
+
+    /// Puts this placement back on a window.
+    /// * `pose` - The pose of the window, replaced by the memorized one.
+    /// * `appearence` - The look of the window, given back its memorized size and ui scale.
+    pub fn apply_to(&self, pose: &mut Pose, appearence: &mut Appearence) {
+        *pose = self.pose;
+        if let Some(window_size) = self.window_size {
+            appearence.set_window_size(window_size);
+        }
+        appearence.set_ui_scale(self.ui_scale);
+    }
+}
+
+#[cfg(feature = "placement")]
+impl Default for WindowPlacement {
+    fn default() -> Self {
+        Self { pose: Pose::IDENTITY, window_size: None, ui_scale: 1.0 }
+    }
+}
+
+/// The orientation a placement is memorized with, repaired from the four components a store holds (see
+/// [`WindowPlacement::from_components`]).
+#[cfg(feature = "placement")]
+fn orientation_of(quat: [f32; 4]) -> Quat {
+    let mut orientation = Quat { x: quat[0], y: quat[1], z: quat[2], w: quat[3] };
+    let length_sq: f32 = quat.iter().map(|component| component * component).sum();
+    if length_sq > f32::EPSILON {
+        orientation.normalize();
+    } else {
+        orientation = Quat::IDENTITY;
+    }
+    orientation
+}
+
+/// Where the placements of the windows of the session are kept between two runs: the app implements this once (a JSON
+/// file, a configuration...) and installs it with [`set_sink`]. It is called on the main thread only, from
+/// [`Appearence::restore_placement`] and the writes of [`Appearence::track_placement`] /
+/// [`Appearence::flush_placement`].
+#[cfg(feature = "placement")]
+pub trait PlacementSink: Send + Sync {
+    /// The placement memorized for the window named `key`, if any. Called once per window, when it starts.
+    fn load(&self, key: &str) -> Option<WindowPlacement>;
+
+    /// Memorizes `placement` for the window named `key`. Called when the placement really changed, at most once per
+    /// [`SAVE_THROTTLE`] (and immediately on an [`Appearence::flush_placement`]).
+    fn save(&self, key: &str, placement: WindowPlacement);
+}
+
+/// The sink of the session, `None` until the app installs one (see [`set_sink`]).
+#[cfg(feature = "placement")]
+static SINK: OnceLock<Arc<dyn PlacementSink>> = OnceLock::new();
+
+/// Installs the sink where the placements of every window are kept, once at start-up. Ignored when a sink is already
+/// installed (the first one wins, like [`crate::system::Log::subscribe`]): a session has one place to remember windows
+/// in, whichever part of the app asks for it first.
+/// * `sink` - The store of the app, see [`PlacementSink`].
+#[cfg(feature = "placement")]
+pub fn set_sink(sink: Arc<dyn PlacementSink>) {
+    let _ = SINK.set(sink);
+}
+
+/// The sink of the session, if the app installed one: without it, no window is memorized at all.
+#[cfg(feature = "placement")]
+pub fn sink() -> Option<&'static Arc<dyn PlacementSink>> {
+    SINK.get()
+}
+
+/// The placement option of one window, held by [`Appearence`] (see [`Appearence::placement`]): the **key** the window
+/// is memorized under, and what it takes to hand its placement to the [`PlacementSink`] of the app when it changed.
+///
+/// The key must mean the same window at the next run: the id the window stepper is added under for a window there is
+/// only one of (a tool names itself with it, see [`Placement::ensure_key`]), the rank it is opened at for a window
+/// several of which live side by side (the id of a file browser is unique to its session, the rank of its launcher is
+/// not: the app gives the key, see [`Placement::ensure_key`]).
+///
+/// The option is inert — nothing is loaded, nothing is written — when the app installed no sink or when the window has
+/// no key, which is what [`Placement::default`] is.
+#[cfg(feature = "placement")]
+#[derive(Debug, Default)]
+pub struct Placement {
+    /// The key the window is memorized under. Empty: the window is not memorized.
+    key: String,
+    /// The last placement the caller offered, whether it was written or held back by the throttle.
+    observed: Option<WindowPlacement>,
+    /// The last placement handed to the sink (or restored from it), for the change detection.
+    written: Option<WindowPlacement>,
+    /// When the last write happened, for the throttle. `None` before the first write of the session.
+    last_save: Option<Instant>,
+}
+
+#[cfg(feature = "placement")]
+impl Placement {
+    /// The placement option of the window memorized under `key`.
+    /// * `key` - The key the window is memorized under, see [`Placement::ensure_key`].
+    pub fn new(key: impl Into<String>) -> Self {
+        Self { key: key.into(), observed: None, written: None, last_save: None }
+    }
+
+    /// The key the window is memorized under.
+    pub fn key(&self) -> &str {
+        &self.key
+    }
+
+    /// Gives the option `key` **when it has none**: a tool names itself with the id it is added under, and the app names
+    /// the windows it opens several times — the key must mean the same window at the next run, which the id of a window
+    /// opened this session does not. This way, whichever of the two asks, the other one does not overwrite it.
+    /// * `key` - The key to use when the option has none.
+    pub fn ensure_key(&mut self, key: &str) {
+        if self.key.is_empty() {
+            self.key = key.to_string();
+        }
+    }
+
+    /// The placement memorized for this window by the previous run, if any (see [`PlacementSink::load`]).
+    pub(crate) fn memorized(&self) -> Option<WindowPlacement> {
+        sink().and_then(|sink| sink.load(&self.key))
+    }
+
+    /// Remembers `placement` as the one now in place: nothing is written back before the user moves the window (see
+    /// [`WindowPlacement::apply_to`], which is what applies it).
+    pub(crate) fn know(&mut self, placement: WindowPlacement) {
+        self.observed = Some(placement);
+        self.written = Some(placement);
+    }
+
+    /// Hands `placement` to the [`PlacementSink`] of the app when it changed, at most once per [`SAVE_THROTTLE`] — or
+    /// immediately when `force`, which is what the `close` of a window does.
+    pub(crate) fn offer(&mut self, placement: WindowPlacement, force: bool) {
+        self.observed = Some(placement);
+        if self.written.as_ref() == Some(&placement) {
+            return;
+        }
+        if self.key.is_empty() {
+            return;
+        }
+        let Some(sink) = sink() else {
+            return;
+        };
+        let due = force || self.last_save.is_none_or(|last_save| last_save.elapsed() >= SAVE_THROTTLE);
+        if !due {
+            return;
+        }
+        sink.save(&self.key, placement);
+        self.written = Some(placement);
+        self.last_save = Some(Instant::now());
+    }
+}
+
+// ── A store ready to use: one JSON map file (the `placement` feature) ───────────────────────────────────────────
+//
+// Any app that wants its windows back where they were can stop here: [`set_json_file`] installs a [`JsonPlacementStore`]
+// — one JSON map file, keyed like the store of any app — and the `Appearence::placement` option does the rest. The
+// file holds one [`StoredPlacement`] per window, converted from and to [`WindowPlacement`] at the boundary; an app that
+// keeps its placements elsewhere (a registry, a configuration of its own) implements [`PlacementSink`] instead.
+
+#[cfg(feature = "placement")]
+use std::{
+    collections::HashMap,
+    fs,
+    path::{Path, PathBuf},
+    sync::Mutex,
+};
+
+#[cfg(feature = "placement")]
+use serde::{Deserialize, Serialize};
+
+/// One [`WindowPlacement`] as the JSON file holds it: `Pose` and `Vec2` come from the maths of this crate and are not
+/// `Serialize`, so their components are stored in plain floats and converted at the boundary (see
+/// [`WindowPlacement::from_components`] and the public fields of [`WindowPlacement`]).
+#[cfg(feature = "placement")]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+struct StoredPlacement {
+    /// World-space position of the window, in metres.
+    #[serde(default)]
+    pos: [f32; 3],
+    /// World-space orientation quaternion `(x, y, z, w)`, identity by default.
+    #[serde(default = "identity_quat")]
+    quat: [f32; 4],
+    /// The base [`WindowPlacement::window_size`]: written since the size is memorized, absent — and then left alone — in
+    /// a file written before, or by hand.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    window_size: Option<[f32; 2]>,
+    /// The ui scale of the window ([`WindowPlacement::ui_scale`]), `1.0` by default.
+    #[serde(default = "unit_scale")]
+    ui_scale: f32,
+}
+
+/// The quaternion of a file that holds none: the window faces where its default pose put it.
+#[cfg(feature = "placement")]
+fn identity_quat() -> [f32; 4] {
+    [Quat::IDENTITY.x, Quat::IDENTITY.y, Quat::IDENTITY.z, Quat::IDENTITY.w]
+}
+
+/// The ui scale of a file that holds none: no scaling, which is the scale an [`Appearence`] starts with.
+#[cfg(feature = "placement")]
+fn unit_scale() -> f32 {
+    1.0
+}
+
+#[cfg(feature = "placement")]
+impl From<WindowPlacement> for StoredPlacement {
+    /// Writes a placement as the file holds it.
+    fn from(placement: WindowPlacement) -> Self {
+        Self {
+            pos: [placement.pose.position.x, placement.pose.position.y, placement.pose.position.z],
+            quat: [
+                placement.pose.orientation.x,
+                placement.pose.orientation.y,
+                placement.pose.orientation.z,
+                placement.pose.orientation.w,
+            ],
+            window_size: placement.window_size.map(|size| [size.x, size.y]),
+            ui_scale: placement.ui_scale,
+        }
+    }
+}
+
+#[cfg(feature = "placement")]
+impl From<StoredPlacement> for WindowPlacement {
+    /// Reads a placement as a window takes it (the broken orientations are repaired, see
+    /// [`WindowPlacement::from_components`]).
+    fn from(stored: StoredPlacement) -> Self {
+        Self::from_components(stored.pos, stored.quat, stored.window_size, stored.ui_scale)
+    }
+}
+
+/// Writes `content` to `path` **atomically**: it goes to a temporary neighbour of `path`, then is renamed onto it. An
+/// interrupted write therefore leaves the previous content (or none) instead of a truncated file, and a reader never
+/// sees half of the content. The parent directory is created when it is missing.
+#[cfg(feature = "placement")]
+fn write_atomic(path: &Path, content: &str) -> std::io::Result<()> {
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    let temporary = path.with_extension("tmp");
+    fs::write(&temporary, content)?;
+    fs::rename(temporary, path)
+}
+
+/// A [`PlacementSink`] keeping every placement in one JSON map file — the store a typical app wants (see
+/// [`set_json_file`]). The file is written atomically (see [`write_atomic`]) and read again before every write, so
+/// several writers of one file — the app and, in a hot reloading session, the plugin it loads — never drop each other's
+/// entries.
+#[cfg(feature = "placement")]
+pub struct JsonPlacementStore {
+    /// The placements, as the file held them when it was read and as they were updated since.
+    store: Mutex<HashMap<String, StoredPlacement>>,
+    /// The file the store is read from and written to.
+    path: PathBuf,
+}
+
+#[cfg(feature = "placement")]
+impl JsonPlacementStore {
+    /// The store of the JSON map file at `path`, which needs not exist yet: the first run of an app has no placement to
+    /// give back.
+    /// * `path` - The file the placements are read from and written to.
+    pub fn load_from(path: impl Into<PathBuf>) -> Self {
+        let path = path.into();
+        Self { store: Mutex::new(read_map(&path)), path }
+    }
+
+    /// The file the placements are read from and written to.
+    pub fn path(&self) -> &Path {
+        &self.path
+    }
+}
+
+#[cfg(feature = "placement")]
+impl PlacementSink for JsonPlacementStore {
+    fn load(&self, key: &str) -> Option<WindowPlacement> {
+        self.store.lock().ok()?.get(key).copied().map(WindowPlacement::from)
+    }
+
+    fn save(&self, key: &str, placement: WindowPlacement) {
+        let Ok(mut store) = self.store.lock() else {
+            return;
+        };
+        // The file is read again before the write: another writer of the same file must not have the entries it
+        // memorized since this store was loaded dropped by this write.
+        *store = read_map(&self.path);
+        store.insert(key.to_string(), placement.into());
+        let Ok(json) = serde_json::to_string_pretty(&*store) else {
+            Log::err("placement store: a placement can not be serialized");
+            return;
+        };
+        if let Err(error) = write_atomic(&self.path, &json) {
+            Log::err(format!("placement store: can not write {}: {error}", self.path.display()));
+        }
+    }
+}
+
+/// The placements held by the JSON map file at `path`. A file that is not there — the first run of an app — is not a
+/// failure: there is no placement to give back. A file that can not be parsed (a hand edit, a file of another version)
+/// is the same story, and the next write replaces it.
+#[cfg(feature = "placement")]
+fn read_map(path: &Path) -> HashMap<String, StoredPlacement> {
+    fs::read_to_string(path)
+        .ok()
+        .and_then(|content| serde_json::from_str(&content).ok())
+        .unwrap_or_default()
+}
+
+/// Installs the JSON map file at `path` as the store of the placements of the session, exactly like [`set_sink`] does
+/// with a store of your own. One call at start-up, and every window carrying the [`Appearence::placement`] option comes
+/// back where — at the size and at the scale — it was left.
+/// * `path` - The file the placements are read from and written to.
+#[cfg(feature = "placement")]
+pub fn set_json_file(path: impl Into<PathBuf>) {
+    set_sink(Arc::new(JsonPlacementStore::load_from(path)));
+}
+
+#[cfg(all(test, feature = "placement"))]
+mod tests {
+    use std::sync::{
+        Mutex,
+        atomic::{AtomicUsize, Ordering},
+    };
+
+    use super::*;
+
+    /// How many placements the sink of the test was handed, and which ones: the sink is installed globally (the first
+    /// one wins), so the test reads what it receives through statics instead of an instance.
+    static SAVES: AtomicUsize = AtomicUsize::new(0);
+    static SAVED: Mutex<Vec<(String, WindowPlacement)>> = Mutex::new(Vec::new());
+
+    /// A sink counting what it is handed, so the test watches the change detection and the throttle without any file.
+    struct CountingSink;
+
+    impl PlacementSink for CountingSink {
+        fn load(&self, _key: &str) -> Option<WindowPlacement> {
+            None
+        }
+
+        fn save(&self, key: &str, placement: WindowPlacement) {
+            SAVES.fetch_add(1, Ordering::Relaxed);
+            SAVED.lock().unwrap_or_else(|error| error.into_inner()).push((key.to_string(), placement));
+        }
+    }
+
+    /// A placement of the test, differing from the others by its size (no `Appearence` is built: that needs a session).
+    fn placement_of(width: f32) -> WindowPlacement {
+        WindowPlacement { pose: Pose::IDENTITY, window_size: Some(Vec2::new(width, 0.0)), ui_scale: 1.5 }
+    }
+
+    /// The option hands the sink what changed and nothing else: not the placement it just restored (the window is
+    /// exactly where the store left it), not twice the same one, and not the one of a window without a key. The
+    /// throttle holds the changes of a same second back, and the flush of a close writes the last gesture anyway.
+    #[test]
+    fn a_placement_is_handed_to_the_sink_only_when_it_changed() {
+        set_sink(Arc::new(CountingSink));
+
+        let mut placement = Placement::new("a_test_key");
+        assert_eq!(placement.key(), "a_test_key");
+        placement.ensure_key("another_key");
+        assert_eq!(placement.key(), "a_test_key", "the key given by the app is not overwritten");
+
+        let mut late = Placement::default();
+        assert!(late.key().is_empty());
+        late.ensure_key("a_late_key");
+        assert_eq!(late.key(), "a_late_key", "an option with no key takes the one the window gives it");
+
+        // What the store knows — what a `restore` just read back — is not written again.
+        let restored = placement_of(0.3);
+        placement.know(restored);
+        placement.offer(restored, false);
+        assert_eq!(SAVES.load(Ordering::Relaxed), 0, "a placement the store already holds is not written back");
+
+        // A change is written at once: nothing was written yet in this session.
+        let moved = placement_of(0.5);
+        placement.offer(moved, false);
+        assert_eq!(SAVES.load(Ordering::Relaxed), 1, "the first change is due straight away");
+
+        // The throttle holds the following ones back...
+        placement.offer(placement_of(0.6), false);
+        assert_eq!(SAVES.load(Ordering::Relaxed), 1, "not twice in the same second");
+
+        // ...and the flush of a close writes the last gesture anyway.
+        let scaled = WindowPlacement { ui_scale: 1.8, ..placement_of(0.6) };
+        placement.offer(scaled, true);
+        assert_eq!(SAVES.load(Ordering::Relaxed), 2, "a flush ignores the throttle");
+
+        let saved = SAVED.lock().unwrap_or_else(|error| error.into_inner());
+        assert_eq!(saved.len(), 2, "the sink was handed exactly the two placements that differed from the store");
+        assert_eq!(saved[0], ("a_test_key".to_string(), moved));
+        assert_eq!(saved[1], ("a_test_key".to_string(), scaled));
+
+        // A window without a key is memorized nowhere, whatever it does.
+        let mut keyless = Placement::default();
+        keyless.offer(placement_of(0.7), true);
+        assert_eq!(SAVES.load(Ordering::Relaxed), 2, "a window with no key is not handed to the sink");
+    }
+
+    /// Two orientations are the same one within the rounding of a normalization: a store only holds the four components
+    /// of the quaternion, and reading them repairs it again (see [`WindowPlacement::from_components`]).
+    fn same_orientation(left: Quat, right: Quat) -> bool {
+        (left.x - right.x).abs() < 1e-6
+            && (left.y - right.y).abs() < 1e-6
+            && (left.z - right.z).abs() < 1e-6
+            && (left.w - right.w).abs() < 1e-6
+    }
+
+    /// A quaternion of zeros (a truncated or hand-written store) must not be used as is: an orientation of length zero
+    /// can not be turned into a rotation, and the window would be drawn in an unusable direction, or not at all. One
+    /// of another length is normalized, since it would scale the window instead of turning it.
+    #[test]
+    fn a_degenerate_orientation_falls_back_on_the_identity() {
+        let broken = WindowPlacement::from_components([0.0; 3], [0.0; 4], None, 1.0);
+        assert!(same_orientation(broken.pose.orientation, Quat::IDENTITY));
+
+        // A quaternion of length two is the same rotation as its normalized form: the window must not be scaled by it.
+        let rounded = WindowPlacement::from_components([0.0; 3], [0.0, 0.0, 0.0, 2.0], None, 1.0);
+        assert!(same_orientation(rounded.pose.orientation, Quat::IDENTITY));
+    }
+
+    /// The JSON store gives back what a window was left at — its pose, its size, its ui scale — and writes the entries
+    /// of the writers of the same file as its own (see [`JsonPlacementStore`]: the file is read again before every
+    /// write, so an app and the plugin a hot reloading session loads never drop each other's placements).
+    #[cfg(feature = "placement")]
+    #[test]
+    fn a_json_store_round_trips_a_placement_and_keeps_the_entries_of_another_writer() {
+        let dir = std::env::temp_dir().join(format!("sk-placement-{}-json", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        let path = dir.join("window_placements.json");
+
+        let store = JsonPlacementStore::load_from(&path);
+        assert_eq!(store.path(), path.as_path());
+        assert!(store.load("a_window").is_none(), "the first run of an app has no placement to give back");
+
+        // What a window was left at comes back as it was.
+        let placement =
+            WindowPlacement::from_components([-0.7, 1.5, -0.5], [0.0, 0.383, 0.0, 0.924], Some([0.95, 0.0]), 1.35);
+        store.save("a_window", placement);
+        let read = store.load("a_window").expect("written");
+        assert_eq!(read.window_size, Some(Vec2::new(0.95, 0.0)), "the width, and the height left unmanaged, as is");
+        assert_eq!(read.ui_scale, 1.35);
+        assert_eq!(read.pose.position.x, -0.7);
+        assert_eq!(read.pose.position.y, 1.5);
+        assert_eq!(read.pose.position.z, -0.5);
+        assert!(same_orientation(read.pose.orientation, placement.pose.orientation));
+
+        // A window never resized keeps the size its stepper gave it: the key is not written at all.
+        let compact = serde_json::to_string(&StoredPlacement::from(WindowPlacement::default())).expect("serializable");
+        assert!(!compact.contains("window_size"), "a window without a size writes no key: {compact}");
+        store.save("another_window", WindowPlacement::default());
+
+        // Another writer of the same file keeps its entries...
+        let other = JsonPlacementStore::load_from(&path);
+        other.save("another_writer", WindowPlacement::default());
+
+        // ...and so does this one, whose next write is not lost either.
+        store.save("a_window", WindowPlacement::from_components([0.0; 3], [0.0; 4], None, 1.0));
+        let fresh = JsonPlacementStore::load_from(&path);
+        assert!(fresh.load("a_window").is_some(), "the entry of the first writer is still in the file");
+        assert!(fresh.load("another_writer").is_some(), "the entry of the other writer survived the write");
+        assert!(fresh.load("another_window").is_some());
+
+        let _ = fs::remove_dir_all(&dir);
     }
 }
