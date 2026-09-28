@@ -2450,7 +2450,7 @@ impl Tex {
     /// tex.set_cubemap_lighting(SphericalHarmonics::from_lights(&lights));
     /// # sk::Sk::shutdown();
     /// ```
-    pub fn set_cubemap_lighting(&self, lighting_info: impl Into<SphericalHarmonics>) {
+    pub fn set_cubemap_lighting(&mut self, lighting_info: impl Into<SphericalHarmonics>) {
         let lighting_info = lighting_info.into();
         unsafe { tex_set_cubemap_lighting(self.0.as_ptr(), &lighting_info) }
     }
@@ -3331,6 +3331,9 @@ impl SHCubemap {
     ///
     /// Equirectangular images look like an unwrapped globe with the poles all stretched out, and are sometimes referred
     /// to as HDRIs.
+    ///
+    /// The file stays the raw radiance skybox in [`SHCubemap::tex`], while the lighting comes from a reflection
+    /// generated with [`SHCubemap::gen_cubemap_reflection`], since a mip-less skybox can't project its own.
     /// <https://stereokit.net/Pages/StereoKit/Tex/FromCubemap.html>
     /// * `cubemap_file` - Filename of the cubemap image.
     /// * `srgb_data` - Is this image color data in sRGB format, or is it normal/metal/rough/data that's not for direct
@@ -3339,7 +3342,7 @@ impl SHCubemap {
     /// * `load_priority` - The priority sort order for this asset in the async loading system. Lower values mean loading
     ///   sooner.
     ///
-    /// see also [`tex_create_cubemap_file`]
+    /// see also [`tex_create_cubemap_file`] [`SHCubemap::gen_cubemap_reflection`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -3347,15 +3350,18 @@ impl SHCubemap {
     ///
     /// let sh_cubemap = SHCubemap::from_cubemap("hdri/sky_dawn.hdr", true, 9999)
     ///                                .expect("Cubemap should be created");
+    ///
+    /// // The generated reflection carries the environment's lighting,
+    /// // unlike the raw mip-less skybox.
+    /// assert_ne!(sh_cubemap.sh.coefficients[0], Vec3::ZERO);
+    /// assert_ne!(sh_cubemap.sh.coefficients[1], Vec3::ZERO);
+    ///
     /// sh_cubemap.render_as_sky();
     ///
     /// let tex = sh_cubemap.tex;
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     if tex.get_asset_state() != AssetState::Loaded {iter -= 1}
-    ///     
-    ///     assert_eq!(sh_cubemap.sh.coefficients[0], Vec3::ZERO);
-    ///     assert_eq!(sh_cubemap.sh.coefficients[8], Vec3::ZERO);
     /// );
     /// assert_eq!(tex.get_asset_state(), AssetState::Loaded);
     /// # sk::Sk::shutdown();
@@ -3376,7 +3382,12 @@ impl SHCubemap {
                     .ok_or(StereoKitError::TexFile(path_buf.clone(), "tex_create_cubemap_file failed".to_string()))?,
             );
 
-        Ok(Tex::get_cubemap_lighting(&tex))
+        // A raw skybox cubemap has no mip chain, so it can't project its own lighting. Generating a reflection
+        // convolves the environment and carries its spherical harmonics, while the raw radiance stays the skybox.
+        let reflection = Self::gen_cubemap_reflection(&tex, None, 64)
+            .ok_or(StereoKitError::TexFile(path_buf, "gen_cubemap_reflection failed".to_string()))?;
+
+        Ok(SHCubemap { sh: reflection.sh, tex })
     }
 
     /// Creates a cubemap texture from 6 different image files! If you have a single equirectangular image, use
@@ -3443,8 +3454,12 @@ impl SHCubemap {
             "tex_create_cubemap_files failed".to_string(),
         ))?);
 
-        //Ok(Tex::get_cubemap_lighting(&tex))
-        Ok(SHCubemap { sh: SphericalHarmonics::default(), tex })
+        let reflection = Self::gen_cubemap_reflection(&tex, None, 64).ok_or(StereoKitError::TexFiles(
+            PathBuf::from(r"one_of_6_files"),
+            "gen_cubemap_reflection failed".to_string(),
+        ))?;
+
+        Ok(SHCubemap { sh: reflection.sh, tex })
     }
 
     /// Generates a cubemap texture from a gradient and a direction! These are entirely suitable for skyboxes, which
@@ -3543,6 +3558,55 @@ impl SHCubemap {
         })
         .expect("SHCubemap::gen_cubemap_sh should create texture"));
         SHCubemap { sh: lighting, tex }
+    }
+
+    /// Generates a specular reflection cubemap from an environment cubemap, the [`SHCubemap`] flavor of
+    /// [`Tex::gen_cubemap_reflection`]: a GGX convolved mip chain suitable for
+    /// [`Lighting::reflection`](crate::lighting::Lighting::reflection), bundled with the spherical harmonics it
+    /// carries. This is how a raw mip-less skybox, such as the one [`SHCubemap::from_cubemap`] loads, gets its
+    /// lighting.
+    ///
+    /// Generation is asynchronous, so reading the lighting waits for the convolution to land, just like
+    /// [`SHCubemap::get_cubemap_lighting`] waits for its cubemap. The returned [`SHCubemap::tex`] is the reflection,
+    /// not the source.
+    /// <https://stereokit.net/Pages/StereoKit/Tex/GenCubemapReflection.html>
+    /// * `source_cubemap` - The environment cubemap to convolve. It does not need to be loaded yet, generation chains
+    ///   off the load.
+    /// * `into` - When None, a new reflection texture is created. Otherwise this should be a reflection cubemap from an
+    ///   earlier call, whose contents are regenerated from the source, the fast path for frequently updated
+    ///   environments. The source itself is not a valid destination.
+    /// * `max_resolution` - Cap for the reflection texture's face resolution when a new texture is created. Reflection
+    ///   data is low frequency, so this can stay small.
+    ///
+    /// Returns the reflection cubemap and its lighting, or None on failure.
+    /// see also [`tex_gen_cubemap_reflection`] [`Tex::gen_cubemap_reflection`] [`SHCubemap::from_cubemap`]
+    /// [`Lighting::reflection`](crate::lighting::Lighting::reflection)
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{maths::Vec3, tex::SHCubemap, system::AssetState,
+    ///                      util::{named_colors, Color128, Gradient, GradientKey}};
+    ///
+    /// let keys = [
+    ///     GradientKey::new(Color128::BLACK, 0.0),
+    ///     GradientKey::new(named_colors::CYAN, 0.5),
+    ///     GradientKey::new(named_colors::WHITE, 1.0)];
+    /// let sky_cubemap = SHCubemap::gen_cubemap_gradient(Gradient::new(Some(&keys)), Vec3::UP, 128);
+    ///
+    /// let reflection = SHCubemap::gen_cubemap_reflection(&sky_cubemap.tex, None, 64)
+    ///                            .expect("reflection should be generated");
+    ///
+    /// assert_eq!(reflection.tex.get_asset_state(), AssetState::Loaded);
+    /// assert_ne!(reflection.sh.coefficients[0], Vec3::ZERO);
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn gen_cubemap_reflection(
+        source_cubemap: impl AsRef<Tex>,
+        into: Option<&Tex>,
+        max_resolution: i32,
+    ) -> Option<SHCubemap> {
+        let reflection = Tex::gen_cubemap_reflection(source_cubemap, into, max_resolution)?;
+        Some(reflection.get_cubemap_lighting())
     }
 
     /// If you already know the lighting, from generating the cubemap yourself for example, assigning it here skips the

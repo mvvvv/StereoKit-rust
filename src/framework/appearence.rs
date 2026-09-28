@@ -818,7 +818,7 @@ fn write_atomic(path: &Path, content: &str) -> std::io::Result<()> {
 }
 
 /// A [`PlacementSink`] keeping every placement in one JSON map file — the store a typical app wants (see
-/// [`set_json_file`]). The file is written atomically (see [`write_atomic`]) and read again before every write, so
+/// [`set_json_file`]). The file is written atomically (see `write_atomic`) and read again before every write, so
 /// several writers of one file — the app and, in a hot reloading session, the plugin it loads — never drop each other's
 /// entries.
 #[cfg(feature = "placement")]

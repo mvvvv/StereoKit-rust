@@ -12,8 +12,8 @@ use stereokit_rust::{
     util::{
         Gradient, SHLight, SphericalHarmonics,
         named_colors::{
-            BLACK, BLUE, BURLY_WOOD, DARK_BLUE, DARK_GRAY, LIGHT_BLUE, LIGHT_CYAN, RED, SEA_GREEN, STEEL_BLUE, WHITE,
-            YELLOW,
+            BLACK, BLUE, BURLY_WOOD, DARK_BLUE, DARK_GRAY, LIGHT_BLUE, LIGHT_CYAN, ORANGE, RED, SEA_GREEN, STEEL_BLUE,
+            WHITE,
         },
     },
 };
@@ -241,13 +241,7 @@ impl HandMenuRadial1 {
             .brightness(1.9);
 
         let mut gradient = Gradient::new(None);
-        gradient
-            .add(RED, 0.01)
-            .add(YELLOW, 0.1)
-            .add(LIGHT_CYAN, 0.3)
-            .add(LIGHT_BLUE, 0.4)
-            .add(BLUE, 0.5)
-            .add(BLACK, 0.7);
+        gradient.add(RED, 0.01).add(ORANGE, 0.1).add(BLUE, 0.3).add(DARK_BLUE, 0.7);
         let mut cube1 = SHCubemap::gen_cubemap_gradient(&gradient, Vec3::NEG_Z, 1);
         cube1.sh.add(Vec3::new(0.0, 0.0, 1.0), RED).brightness(0.3);
 

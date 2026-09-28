@@ -5,7 +5,6 @@ use stereokit_rust::{
     prelude::*,
     shader::Shader,
     system::{Handed, Input},
-    tex::SHCubemap,
     tools::notif::HudNotification,
     util::named_colors::{DARK_RED, WHITE},
 };
@@ -147,12 +146,6 @@ impl Anim1 {
         if Input::hand(Handed::Right).is_just_gripped() {
             self.stage += 1;
             self.render_now = true;
-            let cube = SHCubemap::get_rendered_sky();
-            Log::info(format!(
-                "sample : {:?} / dominent direction {}",
-                cube.sh.get_sample(Vec3::ONE),
-                cube.sh.get_dominant_light_direction_to()
-            ))
         }
     }
 
