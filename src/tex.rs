@@ -2442,7 +2442,7 @@ impl Tex {
     /// use stereokit_rust::{util::{named_colors, SHLight, SphericalHarmonics}, maths::Vec3,
     ///                      tex::{Tex, TexFormat, TexType}};
     ///
-    /// let tex = Tex::gen_color(named_colors::VIOLET, 128, 128,
+    /// let mut tex = Tex::gen_color(named_colors::VIOLET, 128, 128,
     ///                          TexType::Cubemap, TexFormat::Rgba32Srgb);
     ///
     /// // Skip the calculation by providing the lighting directly:

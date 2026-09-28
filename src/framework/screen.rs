@@ -120,15 +120,15 @@ impl ScreenRepo {
 ///
 /// // Bring the screen close, give it a tight diagonal, and an overlay.
 /// // `always_visible` forces the toolbars on: headless tests have no pointer to focus them.
-/// screen.resolution(320, 240)
+/// screen.resolution(800, 600)
 ///       .screen_distance(2.3)   // 2.3 m away from the viewer
-///       .screen_diagonal(1.2)   // 1.2 m diagonal (compact)
 ///       .set_overlay_text("Hello, Screen!")
 ///       .always_visible(true);
 ///
 /// filename_scr = "screenshots/screen.jpeg"; fov_scr = 20.0;
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
 ///     screen.draw(&token);
+///
 /// );
 /// # sk::Sk::shutdown();
 /// ```
@@ -335,9 +335,9 @@ impl Screen {
         (size.x.powf(2.0) + size.y.powf(2.0)).sqrt()
     }
 
-    /// Diagonal (meters) of the current [`Screen::screen_size`], always derived from it: the size is the single
-    /// stored source of truth (it follows `Appearence::window_size * ui_scale`), so the diagonal is never cached in a
-    /// field of its own. Only the ui zoom can make it change as long as the size stays fixed.
+    /// Diagonal (meters) of the current [`Screen::screen_size`], always derived from it: the size is the single stored
+    /// source of truth (it follows `Appearence::window_size * ui_scale`), so the diagonal is never cached in a field
+    /// of its own. Only the ui zoom can make it change as long as the size stays fixed.
     fn diagonal(&self) -> f32 {
         Self::diagonal_of(self.screen_size)
     }
