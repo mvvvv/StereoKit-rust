@@ -5,7 +5,9 @@
 //!
 //! - **Record a track**: a single REC/STOP button. The microphone is "warmed up" in a thread (to avoid freezing the
 //!   main loop) and then samples are captured directly. On stop, the voice becomes a new track.
-//! - **Adjust volume**: a master volume slider (`Audio::volume`, truly global) + a per-track volume slider.
+//! - **Adjust volume**: a master volume slider (`Audio::volume`, truly global) + a per-track volume slider, plus a
+//!   per-track *loudness* slider editing the sound's real-world level at 1 m (`Sound::get_decibels` /
+//!   `Sound::decibels`).
 //! - **Tune each track**: all [`SoundPlay`] parameters are editable per track — pitch, spread, cutoff, delay, bus and
 //!   flags (Loop / HeadLocked / PropagationDelay).
 //! - **Launch all tracks at once**: a PLAY ALL / STOP ALL button starts or stops all tracks simultaneously.
@@ -183,7 +185,7 @@ impl Default for Mixer1 {
             bus_volumes: [1.0; 4],
             env_preset: 0,
             // Window placed at eye level, facing the user.
-            console_pose: Pose::new(Vec3::new(0.0, 1.5, -0.6), Some(Quat::look_dir(Vec3::Z))),
+            console_pose: Pose::new(Vec3::new(0.0, 1.5, -1.4), Some(Quat::look_dir(Vec3::Z))),
 
             sprite_play: Sprite::arrow_right(),
             sprite_toggle_on: Sprite::toggle_on(),
@@ -308,7 +310,7 @@ impl Mixer1 {
         // different heights => a real 3D layout.
         let t = self.tracks.len() as f32;
         let angle: f32 = -0.7 + t * 0.28;
-        let pos = Vec3::new(angle.sin() * 0.85, 1.15 + (t * 0.6).sin() * 0.1, -0.85 + angle.cos() * 0.15);
+        let pos = Vec3::new(angle.sin() * 0.85, 1.15 + (t * 0.6).sin() * 0.1, -1.25 + angle.cos() * 0.15);
         let pose = Pose::new(pos, Some(Quat::look_dir(Vec3::Z)));
         self.tracks.push(Track {
             id,
@@ -607,6 +609,22 @@ impl Mixer1 {
             Ui::same_line();
             if Ui::button("Delete").size(Vec2::new(0.06, 0.035)).press() {
                 to_remove.push(i);
+            }
+
+            // ---- Sound loudness at 1 meter (decibels) ----------------------
+            // Unlike `volume` (a simple trim) and the master volume, this is the sound's *real-world* loudness:
+            // StereoKit measures the waveform and plays it at the level declared here, then attenuates physically
+            // with distance (-6 dB per doubling). The value is stored in the `Sound` asset itself: `get_decibels`
+            // reads it back every frame, `decibels` writes it (affecting all instances of the sound, so a
+            // duplicated track sharing the same asset follows along).
+            Ui::next_line();
+            if let Some(sound) = track.sound.as_mut() {
+                let mut db = sound.get_decibels();
+                Ui::label(format!("Loudness: {:.0} dB", db)).use_padding(false).draw();
+                Ui::same_line();
+                if let Some(v) = Ui::hslider("decibels", &mut db, 0.0, 120.0).step(1.0).interact() {
+                    sound.decibels(v);
+                }
             }
 
             // ---- Track SoundPlay parameters --------------------------------
