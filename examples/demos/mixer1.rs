@@ -3,6 +3,8 @@
 //!
 //! Stripped-down version of [`Mixer1`]: only the essentials.
 //!
+//! - **Choose the microphone**: a radio list above the REC panel picks the input device used for the next recording
+//!   (`Microphone::get_devices`), with a "Default" entry for the system's default device.
 //! - **Record a track**: a single REC/STOP button. The microphone is "warmed up" in a thread (to avoid freezing the
 //!   main loop) and then samples are captured directly. On stop, the voice becomes a new track.
 //! - **Adjust volume**: a master volume slider (`Audio::volume`, truly global) + a per-track volume slider, plus a
@@ -137,6 +139,11 @@ pub struct Mixer1 {
     rec_buffer: Vec<f32>,
     /// The sound stream returned by the mic (for capture).
     mic_stream: Option<Sound>,
+    /// Cached list of the system's microphone devices (see [`Microphone::get_devices`]). Refreshed by the "Refresh"
+    /// button, since devices can be plugged or unplugged at runtime.
+    mic_devices: Vec<String>,
+    /// Microphone device selected by the user in the radio list. `None` means the system's default input device.
+    mic_selected: Option<String>,
 
     // ---- Tracks & console --------------------------------------------------
     /// All tracks in the mixer.
@@ -161,6 +168,10 @@ pub struct Mixer1 {
     sprite_toggle_on: Sprite,
     /// "Inactive" icon (toggle off) for the REC button at rest.
     sprite_rec_off: Sprite,
+    /// "Unselected" radio icon for the microphone selection list.
+    sprite_radio_off: Sprite,
+    /// "Selected" radio icon for the microphone selection list.
+    sprite_radio_on: Sprite,
 }
 
 unsafe impl Send for Mixer1 {}
@@ -178,6 +189,8 @@ impl Default for Mixer1 {
             mic_started: Arc::new(AtomicBool::new(false)),
             rec_buffer: Vec::new(),
             mic_stream: None,
+            mic_devices: Vec::new(),
+            mic_selected: None,
 
             tracks: Vec::new(),
             next_track_id: 1,
@@ -190,13 +203,17 @@ impl Default for Mixer1 {
             sprite_play: Sprite::arrow_right(),
             sprite_toggle_on: Sprite::toggle_on(),
             sprite_rec_off: Sprite::toggle_off(),
+            sprite_radio_off: Sprite::radio_off(),
+            sprite_radio_on: Sprite::radio_on(),
         }
     }
 }
 
 impl Mixer1 {
-    /// Called once at stepper initialization. Returns `false` to cancel. Here we have nothing special to prepare.
+    /// Called once at stepper initialization. Returns `false` to cancel. Caches the microphone device list (devices
+    /// can be plugged or unplugged later, the "Refresh" button in the UI updates this list).
     fn start(&mut self) -> bool {
+        self.mic_devices = Microphone::get_devices();
         true
     }
 
@@ -246,9 +263,11 @@ impl Mixer1 {
         let started_flag = self.mic_started.clone();
         started_flag.store(false, Ordering::SeqCst);
 
-        // Start the mic in a thread to avoid freezing the main loop.
+        // Start the mic in a thread to avoid freezing the main loop. Use the device selected in the radio list above
+        // the REC panel (`None` = system's default input device).
+        let device = self.mic_selected.clone();
         self.mic_thread = Some(thread::spawn(move || {
-            let ok = Microphone::start(None, Some(MIC_SAMPLE_RATE));
+            let ok = Microphone::start(device, Some(MIC_SAMPLE_RATE));
             started_flag.store(ok, Ordering::SeqCst);
         }));
 
@@ -424,11 +443,49 @@ impl Mixer1 {
         Audio::environment(ENV_PRESETS[self.env_preset].1);
 
         // --- Main console ----------------------------------------------------
-        Ui::window("Mixer1")
-            .pose(&mut self.console_pose)
-            .size(Vec2::new(0.42, 0.0))
-            .move_type(UiMove::FaceUser)
-            .begin();
+        Ui::window("Mixer1").pose(&mut self.console_pose).move_type(UiMove::FaceUser).begin();
+
+        // ============================================================
+        // Microphone selection (radio list, above the REC panel)
+        // ============================================================
+        Ui::panel_begin(Some(UiPad::Inside));
+        Ui::label("Microphone:").use_padding(false).draw();
+        Ui::same_line();
+        // Devices can be plugged or unplugged at runtime: let the user refresh the list.
+        if Ui::button("Refresh").size(Vec2::new(0.09, 0.03)).press() {
+            self.mic_devices = Microphone::get_devices();
+        }
+        Ui::next_line();
+
+        // `Default` selects the system's default input device (`None`).
+        // `new_selection` records the user's choice so `self` stays free of
+        // mutable borrows during the loop over `self.mic_devices`.
+        let mut new_selection: Option<Option<usize>> = None;
+        if Ui::radio("Default", self.mic_selected.is_none())
+            .images(&self.sprite_radio_off, &self.sprite_radio_on)
+            .image_layout(UiBtnLayout::Left)
+            .press()
+        {
+            new_selection = Some(None);
+        }
+        for (i, device) in self.mic_devices.iter().enumerate() {
+            if Ui::radio(device.as_str(), self.mic_selected.as_deref() == Some(device.as_str()))
+                .images(&self.sprite_radio_off, &self.sprite_radio_on)
+                .image_layout(UiBtnLayout::Left)
+                .press()
+            {
+                new_selection = Some(Some(i));
+            }
+        }
+        if let Some(selection) = new_selection {
+            self.mic_selected = match selection {
+                Some(i) => self.mic_devices.get(i).cloned(),
+                None => None,
+            };
+        }
+        Ui::panel_end();
+
+        Ui::hseparator();
 
         // ============================================================
         // Recording (single REC/STOP button)
