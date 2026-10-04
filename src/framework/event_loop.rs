@@ -261,7 +261,6 @@ impl<'a> SkClosures<'a> {
                         (self.on_window_event)(&mut self.sk, android_app);
                     }
                     MainEvent::SaveState { .. } => {
-                        self.sleeping = SleepPhase::StoppingNow;
                         Log::info("Android MainEvent::SaveState received");
                     }
                     otherwise => {
