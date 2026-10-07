@@ -7203,8 +7203,10 @@ pub enum SpatialNodeType {
     Dynamic = 1,
 }
 
-/// World contains information about the real world around the user. This includes things like play boundaries, scene
-/// understanding, and other various things.
+/// World contains information about the real world around the user. This includes things like play boundaries, the
+/// tracking origin, and occlusion or raycasting against the world mesh. For detecting specific things in the user's
+/// space, like planes, markers, or anchors, see [`Spatial`](crate::spatial::Spatial) and
+/// [`SpatialEntity`](crate::spatial::SpatialEntity).
 /// <https://stereokit.net/Pages/StereoKit/World.html>
 pub struct World;
 

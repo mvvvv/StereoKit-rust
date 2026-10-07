@@ -85,7 +85,7 @@ cmake = "0.1.58"
 [dependencies]
 thiserror = "2.0"
 bitflags = "2.13"
-glam = { version = "0.33", optional = true }
+glam = { version = "0.34", optional = true }
 openxr-sys = "0.14"
 # Compile-time translations for the tools (see the `file-browser` feature), runtime locale switching
 rust-i18n = { version = "4", optional = true }

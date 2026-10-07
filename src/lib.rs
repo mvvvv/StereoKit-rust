@@ -440,6 +440,9 @@ pub mod sk;
 /// [![SoundInst](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/sound_inst.jpeg)](sound::SoundInst)
 pub mod sound;
 
+/// Spatial and spatial entity related structs, enums and functions.
+pub mod spatial;
+
 /// Sprite related structs, enums and functions.
 ///
 /// ## Examples

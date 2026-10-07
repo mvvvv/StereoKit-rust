@@ -92,6 +92,7 @@ unsafe extern "C" {
     pub fn anchor_get_changed(anchor: AnchorT) -> Bool32T;
     pub fn anchor_get_name(anchor: AnchorT) -> *const c_char;
     pub fn anchor_get_tracked(anchor: AnchorT) -> BtnState;
+    pub fn anchor_delete(anchor: AnchorT);
     pub fn anchor_clear_stored();
     pub fn anchor_get_capabilities() -> AnchorCaps;
     pub fn anchor_get_count() -> i32;
@@ -293,6 +294,28 @@ impl Anchor {
     /// ```
     pub fn try_set_persistent(&self, persistent: bool) -> bool {
         unsafe { anchor_try_set_persistent(self.0.as_ptr(), persistent as Bool32T) != 0 }
+    }
+
+    /// Removes this Anchor from the world. It's unpersisted if persistent, the system stops tracking it, and it's
+    /// removed from [`Anchor::anchors`]. This Anchor object remains safe to use, but reports as untracked.
+    /// <https://stereokit.net/Pages/StereoKit/Anchor/Delete.html>
+    ///
+    /// see also [`anchor_delete`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{anchor::Anchor, maths::Pose};
+    ///
+    /// // create an anchor in center of the world, then remove it
+    /// if let Ok(anchor) = Anchor::from_pose(Pose::default()) {
+    ///     anchor.delete();
+    /// }
+    /// # Anchor::clear_store(); // !!!! Clear the store to avoid side effects for other tests !!!!
+    /// # test_steps!();
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn delete(&self) {
+        unsafe { anchor_delete(self.0.as_ptr()) };
     }
 
     /// This describes the anchoring capabilities of the current XR anchoring backend. Some systems like a HoloLens can

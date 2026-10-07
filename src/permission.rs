@@ -50,8 +50,17 @@ pub enum PermissionType {
     /// This maps to android.permission.SCENE_UNDERSTANDING_COARSE on Android XR and
     /// com.oculus.permission.USE_ANCHOR_API on Meta, but varies per-runtime.
     Anchors = 8,
+    /// For detecting walls, floors, tables and other surfaces in the user's space, via
+    /// [`SpatialCapability::PlaneTracking`](crate::spatial::SpatialCapability::PlaneTracking). This is typically an
+    /// interactive permission that the user will need to explicitly approve.
+    /// This maps to android.permission.SCENE_UNDERSTANDING_COARSE on Android XR, but varies per-runtime.
+    PlaneTracking = 9,
+    /// For detecting QR codes, ArUco markers and AprilTags in the user's space, via the spatial marker capabilities.
+    /// This is typically an interactive permission that the user will need to explicitly approve.
+    /// This maps to android.permission.SCENE_UNDERSTANDING_COARSE on Android XR, but varies per-runtime.
+    MarkerTracking = 10,
     /// This enum is for tracking the number of value in this enum.
-    Max = 9,
+    Max = 11,
 }
 
 impl fmt::Display for PermissionType {
@@ -66,6 +75,8 @@ impl fmt::Display for PermissionType {
             PermissionType::ReflectionEstimation => write!(f, "Reflection Estimation"),
             PermissionType::DepthSensing => write!(f, "Depth Sensing"),
             PermissionType::Anchors => write!(f, "Anchors"),
+            PermissionType::PlaneTracking => write!(f, "Plane Tracking"),
+            PermissionType::MarkerTracking => write!(f, "Marker Tracking"),
             PermissionType::Max => write!(f, "Max"),
         }
     }
@@ -282,5 +293,7 @@ mod tests {
         assert_eq!(PermissionType::ReflectionEstimation as u32, 6);
         assert_eq!(PermissionType::DepthSensing as u32, 7);
         assert_eq!(PermissionType::Anchors as u32, 8);
+        assert_eq!(PermissionType::PlaneTracking as u32, 9);
+        assert_eq!(PermissionType::MarkerTracking as u32, 10);
     }
 }

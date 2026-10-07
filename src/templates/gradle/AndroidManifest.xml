@@ -7,36 +7,40 @@
     <uses-feature android:name="oculus.software.trackedkeyboard" android:required="false" />
     <uses-feature android:name="com.oculus.software.body_tracking" android:required="false" />
     <uses-feature android:name="com.oculus.experimental.enabled" android:required="true" />
-    <uses-feature android:name="com.oculus.feature.CONTEXTUAL_BOUNDARYLESS_APP" android:required="false" />
+    <uses-feature android:name="com.oculus.feature.CONTEXTUAL_BOUNDARYLESS_APP"
+        android:required="false" />
     <uses-feature android:name="com.oculus.feature.PASSTHROUGH" android:required="true" />
     <uses-feature android:name="com.oculus.feature.RENDER_MODEL" android:required="false" />
     <uses-permission android:name="horizonos.permission.HAND_TRACKING" />
+    <uses-permission android:name="horizonos.permission.BODY_TRACKING" />
     <uses-permission android:name="horizonos.permission.FACE_TRACKING" />
     <uses-permission android:name="horizonos.permission.EYE_TRACKING" />
-    <uses-permission android:name="horizonos.permission.USE_ANCHOR_API" />
     <uses-permission android:name="horizonos.permission.USE_SCENE" />
-    <uses-permission android:name="horizonos.permission.IMPORT_EXPORT_IOT_MAP_DATA" />
-    <uses-permission android:name="com.oculus.permission.BODY_TRACKING" />
     <uses-permission android:name="com.oculus.permission.RENDER_MODEL" />
+    <uses-permission android:name="horizonos.permission.USE_ANCHOR_API" />
+    <uses-permission android:name="horizonos.permission.IMPORT_EXPORT_IOT_MAP_DATA" />
     <uses-permission android:name="com.oculus.permission.BOUNDARY_VISIBILITY" />
     <uses-permission android:name="com.oculus.permission.TRACKED_KEYBOARD" />
     <uses-permission android:name="com.oculus.permission.USE_COLOCATION_DISCOVERY_API" />
     <!-- Android XR -->
     <uses-feature android:name="android.software.xr.immersive" android:required="false" />
-    <uses-feature android:name="android.software.xr.api.openxr" android:version="0x00010001" android:required="false" />
+    <uses-feature android:name="android.software.xr.api.openxr" android:version="0x00010001"
+        android:required="false" />
     <uses-feature android:name="android.hardware.xr.input.hand_tracking" android:required="false" />
     <uses-feature android:name="android.hardware.xr.input.controller" android:required="false" />
     <uses-feature android:name="android.hardware.xr.input.eye_tracking" android:required="false" />
+    <uses-permission android:name="android.permission.SCENE_UNDERSTANDING" />
     <uses-permission android:name="android.permission.SCENE_UNDERSTANDING_COARSE" />
-	<uses-permission android:name="android.permission.HAND_TRACKING" />
+    <uses-permission android:name="android.permission.SCENE_UNDERSTANDING_FINE" />
+    <uses-permission android:name="android.permission.HAND_TRACKING" />
     <uses-permission android:name="android.permission.EYE_TRACKING_FINE" />
-	<!-- Vive specific -->
-	<meta-data android:name="no_controller_pairing" android:value="true" />
-	<uses-feature android:name="wave.feature.handtracking"    android:required="false"/>
-	<uses-feature android:name="wave.feature.tracker"         android:required="false"/>
-	<uses-feature android:name="wave.feature.eyetracking"     android:required="false" />
-	<uses-feature android:name="wave.feature.sceneperception" android:required="false" />
-	<uses-feature android:name="wave.feature.marker"          android:required="true" />
+    <!-- Vive specific -->
+    <meta-data android:name="no_controller_pairing" android:value="true" />
+    <uses-feature android:name="wave.feature.handtracking" android:required="false" />
+    <uses-feature android:name="wave.feature.tracker" android:required="false" />
+    <uses-feature android:name="wave.feature.eyetracking" android:required="false" />
+    <uses-feature android:name="wave.feature.sceneperception" android:required="false" />
+    <uses-feature android:name="wave.feature.marker" android:required="true" />
     <!-- Snapdragon -->
     <uses-permission android:name="com.qualcomm.qti.qxr.QXRServiceClientPermission" />
     <queries>
@@ -52,9 +56,15 @@
     <uses-permission android:name="org.khronos.openxr.permission.OPENXR" />
     <uses-permission android:name="org.khronos.openxr.permission.OPENXR_SYSTEM" />
     <queries>
-        <provider android:authorities="org.khronos.openxr.runtime_broker;org.khronos.openxr.system_runtime_broker" android:name="org.khronos.openxr" />
-        <intent><action android:name="org.khronos.openxr.OpenXRRuntimeService" /></intent>
-        <intent><action android:name="org.khronos.openxr.OpenXRApiLayerService" /></intent>
+        <provider
+            android:authorities="org.khronos.openxr.runtime_broker;org.khronos.openxr.system_runtime_broker"
+            android:name="org.khronos.openxr" />
+        <intent>
+            <action android:name="org.khronos.openxr.OpenXRRuntimeService" />
+        </intent>
+        <intent>
+            <action android:name="org.khronos.openxr.OpenXRApiLayerService" />
+        </intent>
     </queries>
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -71,14 +81,16 @@
         android:hasCode="true"
         android:icon="@mipmap/app_icon"
         android:roundIcon="@mipmap/app_icon"
-        android:supportsRtl="true" >
+        android:supportsRtl="true">
         <!-- Oculus/Meta-->
         <meta-data android:name="com.oculus.handtracking.version" android:value="V2.0" />
         <meta-data android:name="com.oculus.ossplash" android:value="true" />
-        <meta-data android:name="com.oculus.ossplash.background" android:value="passthrough-contextual"/>        
+        <meta-data android:name="com.oculus.ossplash.background"
+            android:value="passthrough-contextual" />
         <meta-data android:name="com.oculus.supportedDevices" android:value="quest2|questpro|quest3" />
         <meta-data android:name="com.oculus.intent.category.VR" android:value="vr_only" />
-        <uses-native-library android:name="libopenxr_forwardloader.oculus.so" android:required="false"/>
+        <uses-native-library android:name="libopenxr_forwardloader.oculus.so"
+            android:required="false" />
         <!-- Pico -->
         <meta-data android:name="pvr.app.type" android:value="vr" />
         <meta-data android:name="handtracking" android:value="1" />
@@ -86,8 +98,10 @@
         <meta-data android:name="spaces.version" android:value="0.15.0" />
         <!-- Android XR -->
         <uses-native-library android:name="libopenxr.google.so" android:required="false" />
-        <property android:name="android.window.PROPERTY_ACTIVITY_XR_START_MODE" android:value="XR_ACTIVITY_START_MODE_FULL_SPACE_UNMANAGED" />
-        <property android:name="android.window.PROPERTY_XR_BOUNDARY_TYPE_RECOMMENDED" android:value="XR_BOUNDARY_TYPE_LARGE" />
+        <property android:name="android.window.PROPERTY_ACTIVITY_XR_START_MODE"
+            android:value="XR_ACTIVITY_START_MODE_FULL_SPACE_UNMANAGED" />
+        <property android:name="android.window.PROPERTY_XR_BOUNDARY_TYPE_RECOMMENDED"
+            android:value="XR_BOUNDARY_TYPE_LARGE" />
         <profileable android:shell="true" />
 
         <activity
@@ -98,7 +112,7 @@
             android:exported="true"
             android:screenOrientation="landscape"
             android:windowSoftInputMode="adjustNothing"
-            android:resizeableActivity="false" >
+            android:resizeableActivity="false">
             <meta-data android:name="com.oculus.vr.focusaware" android:value="true" />
             <meta-data android:name="android.app.lib_name" android:value="${libName}" />
             <intent-filter>
