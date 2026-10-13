@@ -34,6 +34,7 @@ pub mod shaders1;
 pub mod shaders2;
 pub mod shadows1;
 pub mod skin1;
+pub mod spatial1;
 pub mod sprite1;
 pub mod stereo1;
 pub mod subpass1;
@@ -51,7 +52,8 @@ use self::{
     a_stepper::AStepper, anchor1::Anchor1, anim1::Anim1, asset1::Asset1, b_stepper::BStepper, biplane1::Biplane1,
     c_stepper::CStepper, compute1::Compute1, font1::Font1, interactor1::Interactor1, layers1::Layers1, math1::Math1,
     mixer1::Mixer1, permission1::Permission1, render_list1::RenderList1, screen1::Screen1, shaders1::Shaders1,
-    shaders2::Shaders2, shadows1::Shadows1, skin1::Skin1, sprite1::Sprite1, stereo1::Stereo1, subpass1::Subpass1,
+    shaders2::Shaders2, shadows1::Shadows1, skin1::Skin1, spatial1::Spatial1, sprite1::Sprite1, stereo1::Stereo1,
+    subpass1::Subpass1,
     tex1::Tex1, tex2::Tex2, text1::Text1, text2::Text2, threads1::Threads1, threads2::Threads2, ui1::Ui1, ui2::Ui2,
     ui3::Ui3,
 };
@@ -97,6 +99,7 @@ impl Test {
             Test::from_stepper::<Threads1>("Threads1"),
             Test::from_stepper::<Threads2>("Threads2"),
             Test::from_stepper::<Anchor1>("Anchor1"),
+            Test::from_stepper::<Spatial1>("Spatial1"),
             Test::from_stepper::<Text1>("Text1"),
             Test::from_stepper::<Text2>("Text2"),
             Test::from_stepper::<Font1>("Font1"),

@@ -5,6 +5,7 @@ use stereokit_rust::{
     maths::{Matrix, Pose, Quat, Ray, Vec3},
     mesh::Mesh,
     prelude::*,
+    spatial::{Spatial, SpatialCapability},
     system::{Handed, Input, Lines, Text, TextBuilder, TextStyle},
     ui::{Ui, UiCut, UiPad},
     util::named_colors::{RED, WHITE},
@@ -21,6 +22,8 @@ pub struct Anchor1 {
     ui_box_material: Material,
     text: String,
     text_style: TextStyle,
+    was_requested: bool,
+    shutdown_completed: bool,
 }
 
 unsafe impl Send for Anchor1 {}
@@ -37,14 +40,39 @@ impl Default for Anchor1 {
             ui_box_material: Material::ui_box(),
             text: "Anchor1".to_owned(),
             text_style: Text::make_style(Font::default(), 0.3, RED),
+            was_requested: false,
+            shutdown_completed: false,
         }
     }
 }
 
 impl Anchor1 {
     fn start(&mut self) -> bool {
-        self.anchors = Anchor::anchors().collect();
+        // Another demo may have used Spatial::disable, which overrides Anchor's own request.
+        self.was_requested = Spatial::is_requested(SpatialCapability::Anchor);
+        Spatial::request(SpatialCapability::Anchor);
+        for anchor in Anchor::anchors() {
+            self.track(anchor);
+        }
         true
+    }
+
+    fn close(&mut self, triggering: bool) -> bool {
+        if triggering {
+            if !self.was_requested {
+                Spatial::disable(SpatialCapability::Anchor);
+            }
+            self.anchors.clear();
+            self.shutdown_completed = true;
+        }
+        self.shutdown_completed
+    }
+
+    /// Each enumeration makes new Anchor objects, so Name is what identifies them.
+    fn track(&mut self, anchor: Anchor) {
+        if !self.anchors.iter().any(|a| a.get_name() == anchor.get_name()) {
+            self.anchors.push(anchor);
+        }
     }
 
     fn check_event(&mut self, _id: &StepperId, _key: &str, _value: &str) {}
@@ -91,7 +119,7 @@ impl Anchor1 {
         if Ui::button("Create New").press() {
             if let Ok(anchor) = Anchor::from_pose(pose_tip) {
                 anchor.try_set_persistent(true);
-                self.anchors.push(anchor);
+                self.track(anchor);
             } else {
                 Log::err("Failed to create anchor from pose")
             }
@@ -119,9 +147,10 @@ impl Anchor1 {
             );
         }
 
-        // log new anchor
+        // Persisted anchors can be discovered well after this demo starts.
         for anchor in Anchor::new_anchors() {
-            Log::info(format!("New anchor : {}", anchor.get_name()));
+            Log::info(format!("New anchor: {}", anchor.get_name()));
+            self.track(anchor);
         }
         TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
     }

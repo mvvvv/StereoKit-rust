@@ -7,7 +7,7 @@ use crate::{
     model::{Model, ModelT},
     system::{IAsset, Log, assets_releaseref_threadsafe},
     tex::{Tex, TexFormat, TexT},
-    util::{Color128, SphericalHarmonics},
+    util::{Color128, Future, SphericalHarmonics},
 };
 use std::{
     self,
@@ -161,6 +161,41 @@ pub enum Projection {
     Orthographic = 1,
 }
 
+/// GPU memory held by StereoKit's renderer. This covers what StereoKit allocates itself, not swapchain images, which
+/// belong to the XR runtime or the OS. On devices that share memory between the CPU and GPU, like standalone headsets,
+/// this is still the right number to watch, as it comes out of the same RAM other apps need.
+/// <https://stereokit.net/Pages/StereoKit/GPUMemory.html>
+///
+/// see also [`Renderer::gpu_memory`]
+#[derive(Debug, Copy, Clone, Default)]
+#[repr(C)]
+pub struct GPUMemory {
+    /// Bytes the renderer holds from the driver. Allocations are packed into larger blocks, so this is a little above
+    /// the used bytes.
+    pub reserved_bytes: u64,
+    /// Bytes bound to live resources, the total of the categories below.
+    pub used_bytes: u64,
+    /// The highest the used bytes have been since startup.
+    pub peak_bytes: u64,
+    /// Used bytes in textures that hold image data, like loaded images and cubemaps.
+    pub texture_bytes: u64,
+    /// Used bytes in render targets, depth buffers and compute textures.
+    pub target_bytes: u64,
+    /// Used bytes in mesh vertex and index data.
+    pub mesh_bytes: u64,
+    /// Used bytes in material and compute buffers.
+    pub buffer_bytes: u64,
+    /// Used bytes in short-lived memory, like per-frame scratch space and copies of data still uploading. This spikes
+    /// while assets load.
+    pub transient_bytes: u64,
+    /// How much GPU memory the driver suggests this app stays under, or 0 if the driver can't say. Many standalone
+    /// headsets can't.
+    pub budget_bytes: u64,
+    /// GPU memory this app is using according to the driver, counting allocations outside StereoKit too, or 0 if the
+    /// driver can't say.
+    pub device_usage_bytes: u64,
+}
+
 /// Do you need to draw something? Well, you’re probably in the right place! This static class includes a variety of
 /// different drawing methods, from rendering Models and Meshes, to setting rendering options and drawing to offscreen
 /// surfaces! Even better, it’s entirely a static class, so you can call it from anywhere :)
@@ -236,6 +271,8 @@ unsafe extern "C" {
     pub fn render_set_multisample(display_tex_multisample: i32);
     pub fn render_get_multisample() -> i32;
     pub fn render_override_capture_filter(use_override_filter: Bool32T, layer_filter: RenderLayer);
+    pub fn render_get_gpu_memory() -> GPUMemory;
+    pub fn render_gpu_future() -> Future;
     pub fn render_get_capture_filter() -> RenderLayer;
     pub fn render_has_capture_filter() -> Bool32T;
     pub fn render_set_clear_color(color_gamma: Color128);
@@ -1385,6 +1422,28 @@ impl Renderer {
     /// see example in [`Renderer::override_capture_filter`]
     pub fn get_capture_filter() -> RenderLayer {
         unsafe { render_get_capture_filter() }
+    }
+
+    /// How much GPU memory the renderer holds right now, and what it's being used for: textures, render targets,
+    /// meshes, and buffers. This is useful for keeping an eye on an app's footprint, especially on standalone headsets,
+    /// where GPU memory comes out of the same RAM every running app shares.
+    /// <https://stereokit.net/Pages/StereoKit/Renderer/GPUMemory.html>
+    ///
+    /// see also [`render_get_gpu_memory`] [`GPUMemory`]
+    pub fn gpu_memory() -> GPUMemory {
+        unsafe { render_get_gpu_memory() }
+    }
+
+    /// A [`Future`] that finishes once all GPU work submitted so far is done, including work from other threads and the
+    /// XR runtime. Wait on it before freeing something the GPU may still be using, like an OpenXR swapchain. Draws
+    /// queued this frame aren't covered until the frame renders. Any thread may call this.
+    /// <https://stereokit.net/Pages/StereoKit/Renderer/GPUFuture.html>
+    ///
+    /// Returns a [`Future`] for all GPU work submitted so far.
+    ///
+    /// see also [`render_gpu_future`] [`Future::wait`]
+    pub fn gpu_future() -> Future {
+        unsafe { render_gpu_future() }
     }
 
     /// This is the gamma space color the renderer will clear the screen to when beginning to draw a new frame.

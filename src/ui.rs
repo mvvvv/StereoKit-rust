@@ -630,8 +630,9 @@ pub struct UiSliderData {
     pub focus_state: BtnState,
     /// The current active/pressed state of the slider.
     pub active_state: BtnState,
-    /// The id of the interactor that is interacting with this slider, or -1 if none.
-    pub interactor: i32,
+    /// The interactor hovering over or pressing this slider, or the none interactor ([`Interactor::NONE`], -1) when
+    /// nothing is.
+    pub interactor: Interactor,
 }
 
 /// This class is a collection of user interface and interaction methods! StereoKit uses an Immediate Mode GUI system,

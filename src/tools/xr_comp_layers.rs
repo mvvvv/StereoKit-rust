@@ -7,6 +7,7 @@
 use crate::{
     maths::{Pose, Rect, Vec2},
     prelude::*,
+    render::Renderer,
     system::{Backend, BackendGraphics, BackendOpenXR, BackendXRType},
     tex::{Tex, TexFormat, TexType},
 };
@@ -458,6 +459,7 @@ impl XrCompLayers {
         // We need to get the function pointer directly
         let xr_destroy_swapchain = BackendOpenXR::get_function::<DestroySwapchain>("xrDestroySwapchain");
 
+        Renderer::gpu_future().wait();
         if let Some(func) = xr_destroy_swapchain {
             unsafe {
                 func(swapchain);
@@ -525,6 +527,12 @@ pub struct SwapchainSk {
 
 impl Drop for SwapchainSk {
     fn drop(&mut self) {
+        for tex in &mut self.images {
+            unsafe {
+                tex.set_native_surface(null_mut(), TexType::Image, 0, 0, 0, 0);
+            }
+        }
+        self.images.clear();
         XrCompLayers::destroy_swapchain(self.handle);
         self.handle = Swapchain::default();
     }
@@ -678,11 +686,9 @@ impl SwapchainSk {
                 );
                 Log::diag(format!("SwapchainSk::wrap: Setting native surface for image {}...", idx));
                 unsafe {
-                    // `owned: false` because the VkImage is owned by the OpenXR swapchain.
-                    // The runtime destroys it when `xrDestroySwapchain` is called.
-                    // Passing `owned: true` would cause a double-free: `Drop for SwapchainSk`
-                    // destroys the swapchain first, then each `Tex::drop` would try to
-                    // destroy the already-freed VkImage, producing Vulkan validation errors.
+                    // StereoKit only borrows the VkImage, which is owned by the OpenXR swapchain. The runtime destroys
+                    // it when `xrDestroySwapchain` is called, so detach the image first by passing null to
+                    // `set_native_surface`, then destroy the swapchain once `Renderer::gpu_future()` completes.
                     image_sk.set_native_surface(
                         img.image as *mut std::ffi::c_void,
                         TexType::Rendertarget,
@@ -690,7 +696,6 @@ impl SwapchainSk {
                         width as i32,
                         height as i32,
                         1,
-                        false,
                     );
                 }
                 Log::diag(format!("SwapchainSk::wrap: Image {} wrapped successfully", idx));

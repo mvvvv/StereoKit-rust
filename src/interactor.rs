@@ -251,10 +251,17 @@ unsafe extern "C" {
 ///
 /// # sk::Sk::shutdown();
 /// ```
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)]
 pub struct Interactor {
     inst: i32,
+}
+
+impl Default for Interactor {
+    /// The default Interactor is the "none" interactor, matching [`Interactor::NONE`].
+    fn default() -> Self {
+        Interactor::NONE
+    }
 }
 
 impl Interactor {

@@ -625,7 +625,6 @@ unsafe extern "C" {
         height: i32,
         surface_count: i32,
         multisample: i32,
-        owned: Bool32T,
     );
     pub fn tex_get_surface(texture: TexT) -> *mut c_void;
     pub fn tex_create_from_hardware_buffer(hardware_buffer: *mut c_void, owns_buffer: Bool32T) -> TexT;
@@ -2070,13 +2069,19 @@ impl Tex {
         self
     }
 
-    /// This function is dependent on the graphics backend! It will take a texture resource for the current graphics
-    /// backend (D3D or GL) and wrap it in a StereoKit texture for use within StereoKit. This is a bit of an advanced
-    /// feature.
+    /// Wraps a native texture from the graphics backend, a `VkImage` on Vulkan, so StereoKit can draw with it or render
+    /// to it. StereoKit only borrows the image, and never destroys it. To free it safely, detach it by passing
+    /// `std::ptr::null_mut()`, then destroy the image once [`crate::render::Renderer::gpu_future`] completes. This is a
+    /// bit of an advanced feature.
+    ///
+    /// StereoKit no longer takes ownership of native textures, it always borrows them. Drop the old `owned` argument,
+    /// and destroy the image yourself once [`crate::render::Renderer::gpu_future`] completes after detaching the image
+    /// with `std::ptr::null_mut()`.
     /// # Safety
-    /// native_surface must be a valid pointer to a texture resource for the current graphics backend.
+    /// native_surface must be a valid pointer to a texture resource for the current graphics backend, or null to detach.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetNativeSurface.html>
-    /// * `native_surface` - For Vulkan, this should be a VkImage handle, coerced into the IntPtr.
+    /// * `native_surface` - A `VkImage` handle, coerced into a `*mut c_void`. `std::ptr::null_mut()` detaches the
+    ///   current image, leaving this Tex empty like a freshly created one.
     /// * `tex_type` - The image flags that tell SK how to treat the texture, this should match up with the settings the
     ///   texture was originally created with. If SK can figure the appropriate settings, it may override the value
     ///   provided here.
@@ -2092,10 +2097,8 @@ impl Tex {
     /// * `surface_count` - Texture array surface count. This should match up with the settings the texture was
     ///   originally created with. If SK can figure the appropriate settings, it may override the value provided here.
     ///   1 is a valide default value.
-    /// * `owned` - Should ownership of this texture resource be passed on to StereoKit? If so, StereoKit may delete
-    ///   it when it’s finished with it. True is a valide default value, if this is not desired, pass in false.
     ///
-    /// see also [`tex_set_surface`]
+    /// see also [`tex_set_surface`] [`Tex::get_native_surface`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -2103,7 +2106,7 @@ impl Tex {
     ///
     /// let mut tex = Tex::new(TexType::Image, TexFormat::Rgba32Srgb, None);
     /// let native_surface = tex.get_native_surface();
-    /// unsafe { tex.set_native_surface(native_surface, TexType::Image, 0, 1, 1, 1, false); }
+    /// unsafe { tex.set_native_surface(native_surface, TexType::Image, 0, 1, 1, 1); }
     /// # sk::Sk::shutdown();
     /// ```
     #[allow(clippy::too_many_arguments)]
@@ -2115,7 +2118,6 @@ impl Tex {
         width: i32,
         height: i32,
         surface_count: i32,
-        owned: bool,
     ) -> &mut Self {
         unsafe {
             tex_set_surface(
@@ -2127,7 +2129,6 @@ impl Tex {
                 height,
                 surface_count,
                 1,
-                owned as Bool32T,
             )
         };
         self
@@ -2685,10 +2686,11 @@ impl Tex {
         NonNull::new(unsafe { tex_get_zbuffer(self.0.as_ptr()) }).map(Tex)
     }
 
-    /// This will return the texture’s native resource for use with external libraries. For Vulkan, this should be a
-    /// VkImage handle, coerced into the IntPtr. This call will block execution until the texture is loaded, if it is
-    /// not already.
+    /// This will return the texture’s native resource for use with external libraries, a `VkImage` on Vulkan. This call
+    /// will block execution until the texture is loaded, if it is not already.
     /// <https://stereokit.net/Pages/StereoKit/Tex/GetNativeSurface.html>
+    ///
+    /// Returns a `VkImage` handle, coerced into a `*mut c_void`.
     ///
     /// see also [`tex_get_surface`]
     /// see example in [`Tex::set_native_surface`]

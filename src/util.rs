@@ -3010,3 +3010,80 @@ impl Time {
         unsafe { time_perf_present() }
     }
 }
+
+/// Where a future's work is at. Negative values are failures, so `state < 0` catches any of them.
+/// <https://stereokit.net/Pages/StereoKit/FutureState.html>
+///
+/// see also [`Future`]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(i32)]
+pub enum FutureState {
+    /// The work couldn't complete, like work still pending when StereoKit shut down. The operation itself may say more
+    /// about why.
+    Failed = -1,
+    /// Not a valid future, like a zero-initialized one. This counts as done.
+    None = 0,
+    /// The work is still in progress.
+    Pending = 1,
+    /// The work has finished.
+    Ready = 2,
+}
+
+/// A Future tracks work that finishes later, like GPU commands that are still running. You can check on it each step
+/// with [`Future::state`] or [`Future::is_done`], or block until it's done with [`Future::wait`]. From async code, run
+/// [`Future::wait`] on a background task and await that, so no frame stalls.
+///
+/// Futures never need releasing, and any thread may create, check, or wait on one. A `default` Future is invalid and
+/// counts as done. Failures show up as a negative [`FutureState`] rather than as errors, so check the state when the
+/// outcome matters.
+/// <https://stereokit.net/Pages/StereoKit/Future.html>
+///
+/// see also [`FutureState`] [`crate::render::Renderer::gpu_future`]
+#[derive(Debug, Copy, Clone)]
+#[repr(C)]
+pub struct Future {
+    // Mirrors native `future_t`, which is passed to and from native by value.
+    _slot: *mut c_void,
+    _generation: u64,
+}
+
+impl Default for Future {
+    /// A zero-initialized Future is invalid and counts as done, matching a native `future_t{}`.
+    fn default() -> Self {
+        Self { _slot: std::ptr::null_mut(), _generation: 0 }
+    }
+}
+
+unsafe extern "C" {
+    pub fn future_check(future: Future) -> FutureState;
+    pub fn future_wait(future: Future) -> FutureState;
+}
+
+impl Future {
+    /// Where the work is at right now, without blocking. Any thread may ask.
+    /// <https://stereokit.net/Pages/StereoKit/Future/State.html>
+    ///
+    /// see also [`future_check`]
+    pub fn state(self) -> FutureState {
+        unsafe { future_check(self) }
+    }
+
+    /// True once the work is no longer [`FutureState::Pending`], including when it failed. Check [`Future::state`] to
+    /// tell those apart.
+    /// <https://stereokit.net/Pages/StereoKit/Future/IsDone.html>
+    pub fn is_done(self) -> bool {
+        self.state() != FutureState::Pending
+    }
+
+    /// Blocks the calling thread until the work is done. Avoid this on the main thread when you can, since it stalls
+    /// the frame until the GPU catches up.
+    /// <https://stereokit.net/Pages/StereoKit/Future/Wait.html>
+    ///
+    /// Returns how the work ended, [`FutureState::Ready`], [`FutureState::Failed`], or [`FutureState::None`] for an
+    /// invalid Future.
+    ///
+    /// see also [`future_wait`]
+    pub fn wait(self) -> FutureState {
+        unsafe { future_wait(self) }
+    }
+}

@@ -251,12 +251,12 @@ pub enum MarkerType {
 
 /// Predefined ArUco marker dictionaries. A dictionary describes the grid size of the markers, and how many unique
 /// marker ids it contains. The tracker can only detect markers from the dictionary it's configured for.
-/// <https://stereokit.net/Pages/StereoKit/ArucoDict.html>
+/// <https://stereokit.net/Pages/StereoKit/ArUcoDict.html>
 ///
 /// see also [`Spatial::set_aruco_dictionary`]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
-pub enum ArucoDict {
+pub enum ArUcoDict {
     /// Let StereoKit pick, currently 4x4, 50 ids.
     Default = 0,
     /// 4x4 grid, 50 unique ids.
@@ -353,8 +353,8 @@ unsafe extern "C" {
     pub fn spatial_get_marker_size(marker_type: MarkerType) -> f32;
     pub fn spatial_set_marker_stationary(marker_type: MarkerType, stationary: Bool32T);
     pub fn spatial_get_marker_stationary(marker_type: MarkerType) -> Bool32T;
-    pub fn spatial_set_aruco_dictionary(dictionary: ArucoDict);
-    pub fn spatial_get_aruco_dictionary() -> ArucoDict;
+    pub fn spatial_set_aruco_dictionary(dictionary: ArUcoDict);
+    pub fn spatial_get_aruco_dictionary() -> ArUcoDict;
     pub fn spatial_set_april_tag_dictionary(dictionary: AprilTagDict);
     pub fn spatial_get_april_tag_dictionary() -> AprilTagDict;
 
@@ -721,35 +721,35 @@ impl Spatial {
     }
 
     /// Which family of ArUco markers [`SpatialCapability::Aruco`] looks for. Markers from other dictionaries aren't
-    /// detected, so this must match the markers you printed! [`ArucoDict::Default`] lets StereoKit pick. Changing it
+    /// detected, so this must match the markers you printed! [`ArUcoDict::Default`] lets StereoKit pick. Changing it
     /// while ArUco markers are being tracked restarts that tracking.
-    /// <https://stereokit.net/Pages/StereoKit/Spatial/ArucoDictionary.html>
+    /// <https://stereokit.net/Pages/StereoKit/Spatial/ArUcoDictionary.html>
     /// * `dictionary` - The marker dictionary to look for.
     ///
     /// see also [`spatial_set_aruco_dictionary`] [`Spatial::get_aruco_dictionary`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::spatial::{ArucoDict, Spatial};
+    /// use stereokit_rust::spatial::{ArUcoDict, Spatial};
     ///
-    /// assert_eq!(Spatial::get_aruco_dictionary(), ArucoDict::Default);
-    /// Spatial::set_aruco_dictionary(ArucoDict::Dict5x5_100);
-    /// assert_eq!(Spatial::get_aruco_dictionary(), ArucoDict::Dict5x5_100);
+    /// assert_eq!(Spatial::get_aruco_dictionary(), ArUcoDict::Default);
+    /// Spatial::set_aruco_dictionary(ArUcoDict::Dict5x5_100);
+    /// assert_eq!(Spatial::get_aruco_dictionary(), ArUcoDict::Dict5x5_100);
     /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
-    pub fn set_aruco_dictionary(dictionary: ArucoDict) {
+    pub fn set_aruco_dictionary(dictionary: ArUcoDict) {
         unsafe { spatial_set_aruco_dictionary(dictionary) }
     }
 
     /// Which family of ArUco markers [`SpatialCapability::Aruco`] looks for, see [`Spatial::set_aruco_dictionary`].
-    /// <https://stereokit.net/Pages/StereoKit/Spatial/ArucoDictionary.html>
+    /// <https://stereokit.net/Pages/StereoKit/Spatial/ArUcoDictionary.html>
     ///
     /// Returns the current ArUco marker dictionary.
     ///
     /// see also [`spatial_get_aruco_dictionary`]
     /// see example in [`Spatial::set_aruco_dictionary`]
-    pub fn get_aruco_dictionary() -> ArucoDict {
+    pub fn get_aruco_dictionary() -> ArUcoDict {
         unsafe { spatial_get_aruco_dictionary() }
     }
 
@@ -1953,9 +1953,9 @@ mod tests {
         assert_eq!(MarkerType::Aruco as u32, 3);
         assert_eq!(MarkerType::AprilTag as u32, 4);
 
-        assert_eq!(ArucoDict::Default as u32, 0);
-        assert_eq!(ArucoDict::Dict4x4_50 as u32, 1);
-        assert_eq!(ArucoDict::Dict7x7_1000 as u32, 16);
+        assert_eq!(ArUcoDict::Default as u32, 0);
+        assert_eq!(ArUcoDict::Dict4x4_50 as u32, 1);
+        assert_eq!(ArUcoDict::Dict7x7_1000 as u32, 16);
 
         assert_eq!(AprilTagDict::Default as u32, 0);
         assert_eq!(AprilTagDict::Tag16h5 as u32, 1);
