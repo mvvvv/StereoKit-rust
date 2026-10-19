@@ -227,6 +227,12 @@ fn main() {
                     println!("cargo:rustc-link-arg=-lshell32");
                     println!("cargo:rustc-link-arg=-lgdi32");
                     println!("cargo:rustc-link-arg=-lcomdlg32");
+                    // sk_app's CMake links `winmm dwmapi` privately, but we link `libsk_app.a`
+                    // directly, so its transitive dependencies are not propagated. `dwmapi`
+                    // provides `DwmGetCompositionTimingInfo` (used by `ska_platform_get_vblank_ns`);
+                    // `winmm` is listed for parity with sk_app's CMake.
+                    println!("cargo:rustc-link-arg=-ldwmapi");
+                    println!("cargo:rustc-link-arg=-lwinmm");
                 } else {
                     //---- We have to extract the DLL i.e. ".\target\x86_64-pc-windows-gnu\debug\build\stereokit-rust-be362d37871b9048\out\build\StereoKitC.dll"
                     //---- and copy it to ".\target\x86_64-pc-windows-gnu\debug\deps\
