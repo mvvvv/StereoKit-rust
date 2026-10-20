@@ -1177,7 +1177,6 @@ impl Sk {
     /// let mut settings = SkSettings::default();
     /// settings
     ///     .app_name("Test")
-    ///     .disable_desktop_input_window(true)
     ///     .mode(AppMode::Offscreen);
     ///
     /// let sk = Sk::init(&settings).expect("StereoKit should initialize");
