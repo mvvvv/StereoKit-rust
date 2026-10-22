@@ -492,6 +492,14 @@ impl Screen {
         self.show_param
     }
 
+    /// Is the screen a cylinder (`true`, the default) rather than a sphere centred on the viewer? What the "Free
+    /// curvature" toggle of the parameter window flips (see [`Screen::cylindrical`]): a cylindrical screen snaps its
+    /// curvature to one of the two ends of the slider, a free one takes any value in between. A caller that memorizes
+    /// the choice of the user reads it here.
+    pub fn is_cylindrical(&self) -> bool {
+        self.cylindrical
+    }
+
     /// The [`Appearence`] applied at the screen level.
     pub fn appearence(&self) -> &Appearence {
         &self.appearence
@@ -890,7 +898,11 @@ impl Screen {
         }
 
         let overlay_y = self.screen_size.y / 2.0 + 0.04 * factor_size;
-        let overlay_pos = Vec3::new(-0.05, overlay_y, bounds_center_z);
+        // The text starts **right of the hamburger button**, which stands at the same height and is centred on the
+        // screen (see [`Screen::draw_hamburger`]): anchored where that button is, the beginning of the overlay is hidden
+        // behind it. The x axis of a screen facing its user runs the other way round, so clearing the button — it spans
+        // `0.033 * d` to each side — means going **negative**, and the text then begins a little to its right.
+        let overlay_pos = Vec3::new(-0.16, overlay_y, bounds_center_z);
         let overlay_pose = Pose::new(overlay_pos, None) * screen_transform;
         Ui::push_surface(overlay_pose, Vec3::X * -0.01 * d, Vec2::ZERO);
         Ui::text(&self.overlay_text)
