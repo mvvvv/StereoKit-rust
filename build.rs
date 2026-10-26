@@ -504,6 +504,10 @@ fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=StereoKit/StereoKitC/stereokit.h");
     println!("cargo:rerun-if-changed=StereoKit/StereoKitC/stereokit_ui.h");
+    // The C++ sources are compiled by cmake from this build script, so cargo
+    // has to know they can invalidate the build too. Without this, editing a
+    // .cpp/.h under StereoKitC silently keeps linking the previous library.
+    println!("cargo:rerun-if-changed=StereoKit/StereoKitC");
 }
 
 /// Recursive fn to copy all the content of a directory to another one.
