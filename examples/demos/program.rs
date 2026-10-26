@@ -65,11 +65,25 @@ pub fn sk_settings() -> SkSettings {
     BackendOpenXR::request_ext("XR_META_virtual_keyboard");
 
     #[cfg(target_os = "android")]
-    BackendOpenXR::request_ext("XR_META_simultaneous_hands_and_controllers");
-
-    // Required by the Layers1 demo for cylinder composition layers.
-    #[cfg(target_os = "android")]
-    BackendOpenXR::request_ext("XR_KHR_android_surface_swapchain");
+    {
+        BackendOpenXR::request_ext("XR_META_simultaneous_hands_and_controllers");
+        // Required by the Layers1 demo for cylinder composition layers.
+        BackendOpenXR::request_ext("XR_KHR_android_surface_swapchain");
+        // Android XR
+        BackendOpenXR::request_ext("XR_ANDROID_eye_tracking");
+        BackendOpenXR::request_ext("XR_ANDROID_mouse_interaction");
+        BackendOpenXR::request_ext("XR_ANDROID_spatial_object_tracking");
+        // BackendOpenXR::request_ext("XR_ANDROID_trackables_qr_code");
+        BackendOpenXR::request_ext("XR_ANDROID_scene_meshing");
+        BackendOpenXR::request_ext("XR_ANDROID_spatial_discovery_bounds");
+        BackendOpenXR::request_ext("XR_ANDROID_spatial_discovery_raycast");
+        BackendOpenXR::request_ext("XR_ANDROID_spatial_entity_bound_anchor");
+        BackendOpenXR::request_ext("XR_ANDROID_depth_texture");
+        BackendOpenXR::request_ext("XR_ANDROID_spatial_anchor_space");
+        BackendOpenXR::request_ext("XR_ANDROID_trackables");
+        BackendOpenXR::request_ext("XR_ANDROID_trackables_marker");
+        BackendOpenXR::request_ext("XR_ANDROID_trackables_object");
+    }
 
     BackendOpenXR::request_ext("XR_KHR_composition_layer_cylinder");
 

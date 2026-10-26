@@ -5,10 +5,10 @@ edition = "2024"
 
 [features]
 default = ["file-browser", "locales"]
-# As we are linking to StereoKit-rust we have to mimic this feature.
+# As we are linking to StereoKit-rust we have to mimic these features.
 no-event-loop = []   
-# Mimic and forward to the lib, for the demos using FileBrowserB.
 file-browser = [] 
+skc-shared = []
 locales = []
 
 [lib]

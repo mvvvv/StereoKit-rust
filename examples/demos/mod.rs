@@ -53,9 +53,8 @@ use self::{
     c_stepper::CStepper, compute1::Compute1, font1::Font1, interactor1::Interactor1, layers1::Layers1, math1::Math1,
     mixer1::Mixer1, permission1::Permission1, render_list1::RenderList1, screen1::Screen1, shaders1::Shaders1,
     shaders2::Shaders2, shadows1::Shadows1, skin1::Skin1, spatial1::Spatial1, sprite1::Sprite1, stereo1::Stereo1,
-    subpass1::Subpass1,
-    tex1::Tex1, tex2::Tex2, text1::Text1, text2::Text2, threads1::Threads1, threads2::Threads2, ui1::Ui1, ui2::Ui2,
-    ui3::Ui3,
+    subpass1::Subpass1, tex1::Tex1, tex2::Tex2, text1::Text1, text2::Text2, threads1::Threads1, threads2::Threads2,
+    ui1::Ui1, ui2::Ui2, ui3::Ui3,
 };
 
 pub struct Test {

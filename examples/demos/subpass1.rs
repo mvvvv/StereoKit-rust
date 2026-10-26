@@ -1,3 +1,5 @@
+use std::sync::Once;
+
 use stereokit_rust::{
     font::Font,
     material::Material,
@@ -6,7 +8,7 @@ use stereokit_rust::{
     model::Model,
     prelude::*,
     render::Renderer,
-    system::{Text, World},
+    system::{Backend, BackendGraphics, BackendVulkan, Text, TextStyle, World},
     ui::{Ui, UiMove, UiPad, UiSettings, UiWin},
     util::{Time, named_colors},
 };
@@ -20,11 +22,21 @@ const DEPTH_WAVE: usize = 1;
 const NIGHT_VISION: usize = 2;
 const DYNAMIC_CLOUD: usize = 3;
 
+/// Effects whose shader samples the depth input attachment of the main pass.
+/// On Vulkan that needs `VK_KHR_depth_stencil_resolve`; the remaining effect is
+/// colour only, and runs on any device.
+const DEPTH_EFFECTS: [usize; 3] = [DEPTH_AWARE, DEPTH_WAVE, DYNAMIC_CLOUD];
+
 /// IStepper implementation for testing the subpass post-process shaders.
 ///
 /// This demo lets you toggle each of the four subpass effects (depth vignette,
 /// scan-wave, night-vision, dynamic cloud fog) on or off, and exposes their
 /// shader parameters as live sliders so you can experiment with them.
+///
+/// The three depth effects sample the depth of the MSAA main pass and need
+/// `VK_KHR_depth_stencil_resolve` on Vulkan, see
+/// [`Subpass1::depth_effects_supported`]; night vision is colour only and always
+/// works.
 #[derive(IStepper)]
 pub struct Subpass1 {
     id: StepperId,
@@ -33,8 +45,15 @@ pub struct Subpass1 {
 
     // --- UI state ---
     pub window_pose: Pose,
+    /// Compact text style for this window's dense parameter rows. Built once in
+    /// [`Subpass1::default`]: a style owns a Material, and rebuilding it every
+    /// frame creates a new pipeline every frame.
+    compact_style: TextStyle,
     /// Per-effect enabled flag.
     effects_enabled: [bool; NUM_EFFECTS],
+    /// Whether this device can sample the depth of the MSAA pass, see
+    /// [`Subpass1::depth_effects_supported`]. False disables [`DEPTH_EFFECTS`].
+    depth_effects_ok: bool,
     /// Per-effect tunable float parameters (defaults from the shader metadata).
     depth_aware_power: f32,
     depth_aware_smooth: f32,
@@ -71,6 +90,9 @@ unsafe impl Send for Subpass1 {}
 
 impl Default for Subpass1 {
     fn default() -> Self {
+        // Only the colour effect can run without depth resolve, see `DEPTH_EFFECTS`.
+        let depth_effects_ok = Self::depth_effects_supported();
+
         // ---- Post-process materials from the subpass shaders ----
         let depth_aware = Material::from_file("shaders/subpass/depth_aware.hlsl.sks", None).unwrap_or_default();
         let depth_wave = Material::from_file("shaders/subpass/depth_wave.hlsl.sks", None).unwrap_or_default();
@@ -98,8 +120,16 @@ impl Default for Subpass1 {
             shutdown_completed: false,
 
             window_pose: Pose::new(Vec3::new(0.4, 1.9, -0.5), Some(Quat::from_angles(0.0, 180.0, 0.0))),
-            // Start with night-vision on so the user immediately sees an effect.
-            effects_enabled: [false, true, false, false],
+            // Reduce line height by 20% for a more compact UI.
+            compact_style: Text::make_style(
+                Font::default(),
+                Ui::get_text_style().get_layout_height() * 0.8,
+                named_colors::WHITE,
+            ),
+            // Start with an effect on so the user immediately sees something: the
+            // scan wave when the depth is readable, night vision when it isn't.
+            effects_enabled: [false, depth_effects_ok, !depth_effects_ok, false],
+            depth_effects_ok,
             depth_aware_power: 2.0,
             depth_aware_smooth: 0.5,
             depth_wave_range: 25.0,
@@ -132,6 +162,34 @@ impl Default for Subpass1 {
 }
 
 impl Subpass1 {
+    /// Whether `effects_index` samples the depth of the main pass, and therefore
+    /// can't run without [`Subpass1::depth_effects_supported`].
+    fn effect_needs_depth(effects_index: usize) -> bool {
+        DEPTH_EFFECTS.contains(&effects_index)
+    }
+
+    /// Whether the depth input attachment of the main pass can be sampled here.
+    ///
+    /// Reads the MSAA depth inside a subpass, which needs
+    /// `VK_KHR_depth_stencil_resolve` on Vulkan. Without the extension
+    /// sk_renderer drops such an effect and logs a critical error, so the demo
+    /// keeps it out of the post-process chain instead.
+    pub fn depth_effects_supported() -> bool {
+        let supported = Backend::graphics() != BackendGraphics::Vulkan
+            || BackendVulkan::ext_enabled("VK_KHR_depth_stencil_resolve");
+        if !supported {
+            // Asked again by every `Default`, so only say it once.
+            static WARNED: Once = Once::new();
+            WARNED.call_once(|| {
+                Log::diag(
+                    "Subpass1: depth effects disabled, this Vulkan device lacks VK_KHR_depth_stencil_resolve. The \
+                     colour effects still work.",
+                )
+            });
+        }
+        supported
+    }
+
     /// Called from IStepper::initialize. Here you can abort initialization by returning false.
     fn start(&mut self) -> bool {
         World::occlusion(stereokit_rust::system::OcclusionCaps::Mesh);
@@ -179,6 +237,14 @@ impl Subpass1 {
             None,
         );
 
+        // Keep the depth effects out of the chain when the pass's depth can't be
+        // read, whatever the UI state says.
+        if !self.depth_effects_ok {
+            for index in DEPTH_EFFECTS {
+                self.effects_enabled[index] = false;
+            }
+        }
+
         // Animate the wave distance for a living scanline feel when enabled.
         if self.effects_enabled[DEPTH_WAVE] {
             self.depth_wave_distance = 0.5 + (Time::get_totalf().sin() * 0.5 + 0.5) * self.depth_wave_range;
@@ -202,10 +268,8 @@ impl Subpass1 {
             .window_type(UiWin::Head)
             .begin();
 
-        // Reduce line height by 50% for a more compact UI.
-        let compact_style =
-            Text::make_style(Font::default(), Ui::get_text_style().get_layout_height() * 0.8, named_colors::WHITE);
-        Ui::push_text_style(compact_style);
+        // Reduce line height by 20% for a more compact UI.
+        Ui::push_text_style(self.compact_style);
 
         // Reduce all UI spacing (padding, gutter, margin) by 50% as well.
         let old_settings = Ui::get_settings();
@@ -217,10 +281,14 @@ impl Subpass1 {
         });
 
         Ui::label("Toggle effects and tune parameters:").use_padding(true).draw();
+        if !self.depth_effects_ok {
+            Ui::label("Depth effects need VK_KHR_depth_stencil_resolve here.").use_padding(true).draw();
+        }
 
         Ui::hseparator();
         Ui::panel_begin(Some(UiPad::Outside));
         // Depth aware
+        Ui::push_enabled(self.depth_effects_ok, None);
         if Ui::toggle("Depth Vignette", &mut self.effects_enabled[DEPTH_AWARE])
             .size([0.15, 0.0])
             .interact()
@@ -229,7 +297,8 @@ impl Subpass1 {
             self.depth_aware_power = 2.0;
             self.depth_aware_smooth = 0.5;
         }
-        Ui::push_enabled(self.effects_enabled[DEPTH_AWARE], None);
+        Ui::pop_enabled();
+        Ui::push_enabled(self.depth_effects_ok && self.effects_enabled[DEPTH_AWARE], None);
         Ui::same_line();
         Ui::label(format!("power: {:.2}", self.depth_aware_power)).use_padding(true).draw();
         Ui::same_line();
@@ -244,6 +313,7 @@ impl Subpass1 {
         Ui::hseparator();
         Ui::panel_begin(Some(UiPad::Outside));
         // Depth wave
+        Ui::push_enabled(self.depth_effects_ok, None);
         if Ui::toggle("Scan Wave", &mut self.effects_enabled[DEPTH_WAVE])
             .size([0.15, 0.0])
             .interact()
@@ -252,7 +322,8 @@ impl Subpass1 {
             self.depth_wave_range = 25.0;
             self.depth_wave_width = 0.15;
         }
-        Ui::push_enabled(self.effects_enabled[DEPTH_WAVE], None);
+        Ui::pop_enabled();
+        Ui::push_enabled(self.depth_effects_ok && self.effects_enabled[DEPTH_WAVE], None);
         Ui::same_line();
         Ui::label("color r/g/b:").use_padding(true).draw();
         Ui::same_line();
@@ -304,6 +375,7 @@ impl Subpass1 {
         Ui::hseparator();
         Ui::panel_begin(Some(UiPad::Outside));
         // Dynamic cloud fog
+        Ui::push_enabled(self.depth_effects_ok, None);
         if Ui::toggle("Dynamic Cloud", &mut self.effects_enabled[DYNAMIC_CLOUD])
             .size([0.15, 0.0])
             .interact()
@@ -314,7 +386,8 @@ impl Subpass1 {
             self.cloud_speed = 8.5;
             self.cloud_fog_color = Vec3::new(0.5, 0.55, 0.6);
         }
-        Ui::push_enabled(self.effects_enabled[DYNAMIC_CLOUD], None);
+        Ui::pop_enabled();
+        Ui::push_enabled(self.depth_effects_ok && self.effects_enabled[DYNAMIC_CLOUD], None);
 
         Ui::same_line();
         Ui::label("color r/g/b:").use_padding(true).draw();
@@ -340,7 +413,9 @@ impl Subpass1 {
 
         Ui::hseparator();
         if Ui::button("All On").press() {
-            self.effects_enabled = [true; NUM_EFFECTS];
+            // Only the effects this device can actually run.
+            self.effects_enabled =
+                std::array::from_fn(|index| !Self::effect_needs_depth(index) || self.depth_effects_ok);
         }
         Ui::same_line();
         if Ui::button("All Off").press() {
