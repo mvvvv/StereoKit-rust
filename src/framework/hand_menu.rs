@@ -4,14 +4,11 @@ use crate::{
     mesh::{Inds, Mesh, Vertex},
     prelude::*,
     sound::Sound,
-    system::{
-        Align, Backend, BackendXRType, FingerId, Hand, Handed, Hierarchy, Input, JointId, Key, Lines, TextBuilder,
-        TextStyle,
-    },
+    system::{Align, FingerId, Hand, Handed, Hierarchy, Input, JointId, Key, Lines, TextBuilder, TextStyle},
     tex::Tex,
     ui::{Ui, UiColor},
     util::{
-        Color128, Time,
+        Color128, Device, Time,
         named_colors::{GREEN, WHITE},
     },
 };
@@ -422,6 +419,7 @@ pub struct HandMenuRadial {
     sk_info: Option<Rc<RefCell<SkInfo>>>,
     enabled: bool,
 
+    is_emulator: bool,
     menu_stack: Vec<String>,
     menu_pose: Pose,
     dest_pose: Pose,
@@ -511,6 +509,7 @@ impl HandMenuRadial {
     /// add it to the Stepper list via (Sk|SkInfo).send_event(StepperAction::add_default()).
     /// <https://stereokit.net/Pages/StereoKit.Framework/HandMenuRadial/HandMenuRadial.html>
     pub fn new(root_layer: HandRadialLayer) -> Self {
+        let is_emulator = Device::is_emulator().is_some();
         let root = Rc::new(HandRadial::Layer(root_layer));
         let active_layer = root.clone();
         let last_selected = root.clone();
@@ -535,6 +534,7 @@ impl HandMenuRadial {
             sk_info: None,
             enabled: false,
 
+            is_emulator,
             menu_stack: Vec::new(),
             menu_pose: Pose::default(),
             dest_pose: Pose::default(),
@@ -610,7 +610,7 @@ impl HandMenuRadial {
             return;
         };
         let mut show_menu = false;
-        if Backend::xr_type() == BackendXRType::Simulator {
+        if self.is_emulator {
             if Input::key(Self::SIMULATOR_KEY).is_just_active() {
                 show_menu = true
             }
@@ -888,7 +888,7 @@ impl HandMenuRadial {
             self.close()
         };
         let mut close_menu = false;
-        if Backend::xr_type() == BackendXRType::Simulator {
+        if self.is_emulator {
             if Input::key(Self::SIMULATOR_KEY).is_just_active() {
                 close_menu = true
             }

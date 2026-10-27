@@ -150,14 +150,15 @@ pub fn launch(mut settings: SkSettings, is_testing: bool, start_test: String) {
         };
 
     Log::diag(format!(
-        "Runtime {} / Device {}",
+        "Runtime {} / Device {} / Emulator {:?}",
         Device::get_runtime().unwrap_or("???"),
-        Device::get_name().unwrap_or("???")
+        Device::get_name().unwrap_or("???"),
+        Device::is_emulator()
     ));
     let mut notif = HudNotification::default();
     notif.duration = Some(10.0);
     notif.position = Vec3::new(0.0, 0.0, -0.6);
-    if Backend::xr_type() == BackendXRType::Simulator {
+    if Device::is_emulator().is_some() {
         notif.text = "Press [F1] key to open the hand menu".into();
         if control_panel.simulator_fullscreen {
             control_panel.notif_escape()

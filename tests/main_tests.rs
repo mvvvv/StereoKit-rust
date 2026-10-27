@@ -38,6 +38,10 @@ fn main() {
     stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     use stereokit_rust::maths::Matrix;
 
+    // Device::is_emulator() needs StereoKit to be initialized (on Android, the Java VM is only known after that).
+    #[cfg(not(any(target_os = "android", feature = "test-xr-mode")))]
+    assert_eq!(stereokit_rust::util::Device::is_emulator(), None);
+
     {
         let (circle, material_circle) = material1();
 

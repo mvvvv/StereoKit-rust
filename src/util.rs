@@ -13,6 +13,9 @@ use std::{
     ptr::NonNull,
 };
 
+#[cfg(target_os = "android")]
+use crate::tools::os_api::android_build_field;
+
 /// A color value stored as 4 floats with values that are generally between 0 and 1! Note that there’s also a Color32
 /// structure, and that 4 floats is generally a lot more than you need. So, use this for calculating individual
 /// colors at quality, but maybe store them en-masse with Color32!
@@ -1009,6 +1012,31 @@ unsafe extern "C" {
     pub fn device_has_hand_tracking() -> Bool32T;
 }
 
+/// This describes what kind of emulator or simulator the app is running on, if any, as returned by
+/// [`Device::is_emulator`].
+///
+/// An emulator can mimic the device it emulates: the Android XR emulator reports the same OpenXR `systemName` as the
+/// emulated headset (e.g. `Moohan` for the Galaxy XR), so [`Device::get_name`] and [`Device::get_runtime`] can't tell
+/// them apart. This enum is the way to know whether the head, hands, eyes, ... you get are real or simulated.
+///
+/// Don't forget that an emulator can also be more limited than the real device (for example, the Android XR emulator
+/// only supports right hand pinch, no grab or poke), so use this as a hint and not as a substitute for a capability
+/// check (see [`Device::has_hand_tracking`]).
+///
+/// see also [`Device::is_emulator`] [`Device::get_name`] [`Device::get_runtime`] [`Device::has_hand_tracking`]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(u32)]
+pub enum Emulator {
+    /// The app is running on the Android emulator (including the Android XR emulator), as told by the
+    /// `android.os.Build` fields.
+    Android = 0,
+    /// The app is running on a Monado simulator, its OpenXR `systemName` is `Monado: Simulated HMD`.
+    Monado = 1,
+    /// The app is running on StereoKit's flatscreen simulator, its OpenXR `systemName` is `Simulator` (see also
+    /// [`BackendXRType::Simulator`](crate::system::BackendXRType::Simulator)).
+    Simulator = 2,
+}
+
 impl Device {
     /// Allows you to set and get the current blend mode of the device! Setting this may not succeed if the blend mode
     /// is not valid.
@@ -1177,6 +1205,98 @@ impl Device {
     /// ```
     pub fn has_hand_tracking() -> bool {
         unsafe { device_has_hand_tracking() != 0 }
+    }
+
+    /// Tells what kind of emulator or simulator the app is running on, if any: `Some(`[`Emulator::Android`]`)` for the
+    /// Android emulator (including the Android XR emulator), `Some(`[`Emulator::Monado`]`)` for the Monado simulated HMD
+    /// and `Some(`[`Emulator::Simulator`]`)` for StereoKit's own flatscreen simulator. `None` means real hardware, or
+    /// that StereoKit isn't initialized yet and there is nothing to look at.
+    ///
+    /// This is needed because an emulator can mimic the device it emulates: the Android XR emulator reports the same
+    /// OpenXR `systemName` as the emulated headset (e.g. `Moohan` for the Galaxy XR), so [`Device::get_name`] and
+    /// [`Device::get_runtime`] can't tell them apart. The Monado simulator is easier to spot, its `systemName` says
+    /// `Monado: Simulated HMD`.
+    ///
+    /// On Android, this reads the `android.os.Build` fields (`HARDWARE`, `DEVICE`, `FINGERPRINT`, `MODEL`) through JNI;
+    /// elsewhere it looks at the OpenXR `systemName` (see [`Device::get_name`]). The answer is cached on the first
+    /// successful call, so call this again after StereoKit is initialized: before that, this answers `None` without
+    /// caching it (on Android, the Java VM is needed to read the fields).
+    ///
+    /// see also [`Emulator`] [`Device::get_name`] [`Device::get_runtime`] [`Device::has_hand_tracking`]
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::util::Device;
+    ///
+    /// # if cfg!(not(any(target_os = "android", feature = "test-xr-mode"))) {
+    /// // These are the expected results for offscreen tests on a PC:
+    /// assert_eq!(Device::is_emulator(), None);
+    /// # }
+    /// ```
+    pub fn is_emulator() -> Option<Emulator> {
+        /// Set on the first successful call: neither the `android.os.Build` fields nor the OpenXR `systemName` change
+        /// while the app runs.
+        static EMULATOR: std::sync::OnceLock<Option<Emulator>> = std::sync::OnceLock::new();
+        if let Some(emulator) = EMULATOR.get() {
+            return *emulator;
+        }
+
+        // The outer `None` means StereoKit isn't initialized yet, so we can't tell. The inner one means there is no
+        // emulator, that answer can be cached.
+        #[cfg(target_os = "android")]
+        let detection = {
+            // `android.os.Build` mirrors the system properties the emulator sets (`HARDWARE` is `ro.hardware`, `DEVICE`
+            // is `ro.product.device`, ...), but it's a public Java API, so there's no need for the `libc` crate, an FFI
+            // declaration of `__system_property_get` or a `getprop` process. Only public fields are usable, hidden ones
+            // like `Build.CHARACTERISTICS` are rejected by the hidden API policy. The Java VM is only known after
+            // `Sk::initialize`, hence `None` before that.
+            android_build_field("HARDWARE").map(|hardware| {
+                let device = android_build_field("DEVICE").unwrap_or_default();
+                let fingerprint = android_build_field("FINGERPRINT").unwrap_or_default();
+                let model = android_build_field("MODEL").unwrap_or_default();
+                // The Android emulator (including the Android XR emulator) sets at least one of these markers:
+                // - `HARDWARE` is `goldfish` or `ranchu` (the emulated boards),
+                // - `DEVICE` starts with `emulator` (e.g. `emulator64_x86_64`),
+                // - `FINGERPRINT` starts with `generic` or contains `/emulator`,
+                // - `MODEL` is an `Android SDK built for ...` model or an `sdk_gphone...` one.
+                if matches!(hardware.as_str(), "goldfish" | "ranchu")
+                    || device.starts_with("emulator")
+                    || fingerprint.starts_with("generic")
+                    || fingerprint.contains("/emulator")
+                    || model.contains("sdk_gphone")
+                    || model.contains("Emulator")
+                    || model.contains("SDK built for")
+                {
+                    Some(Emulator::Android)
+                } else {
+                    None
+                }
+            })
+        };
+
+        #[cfg(not(target_os = "android"))]
+        let detection = {
+            let name = unsafe { device_get_name() };
+            if name.is_null() {
+                // StereoKit isn't initialized yet, there is no system name to look at.
+                None
+            } else {
+                // SAFETY: `device_get_name` returns a null terminated string owned by StereoKit, checked above.
+                let name = unsafe { CStr::from_ptr(name) }.to_string_lossy().to_lowercase();
+                Some(if name.contains("simulated hmd") {
+                    Some(Emulator::Monado)
+                } else if name.contains("simulator") {
+                    Some(Emulator::Simulator)
+                } else {
+                    None
+                })
+            }
+        };
+
+        match detection {
+            Some(emulator) => *EMULATOR.get_or_init(|| emulator),
+            // StereoKit isn't initialized yet, don't cache the answer.
+            None => None,
+        }
     }
 
     /// This is the name of the active device! From OpenXR, this is the same as systemName from XrSystemProperties. The

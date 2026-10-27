@@ -1359,3 +1359,40 @@ pub fn get_env_blend_modes(with_log: bool) -> Vec<EnvironmentBlendMode> {
     }
     modes[0..(count as usize)].into()
 }
+
+/// Reads a static `String` field of the Java class `android.os.Build` (for example `HARDWARE` or `DEVICE`), and returns
+/// its value, or `None` if the field is null, unreadable or if the Java VM isn't available yet.
+///
+/// `android.os.Build` mirrors the system properties (`HARDWARE` is `ro.hardware`, `DEVICE` is `ro.product.device`, ...)
+/// but it's a public Java API, so there's no need for the `libc` crate, an FFI declaration of `__system_property_get` or
+/// a `getprop` process. The Java VM is only known after `Sk::initialize`, so this returns `None` before that.
+///
+/// This is used by [`crate::util::Device::is_emulator`] to detect the Android emulator.
+#[cfg(target_os = "android")]
+pub fn android_build_field(field: &str) -> Option<String> {
+    use jni::{jni_sig, jni_str, objects::JString, strings::JNIString};
+
+    if BackendAndroid::java_vm().is_null() {
+        return None;
+    }
+    let vm = unsafe { jni::JavaVM::from_raw(BackendAndroid::java_vm() as _) };
+    vm.attach_current_thread(|env| -> jni::errors::Result<Option<String>> {
+        let build_class = env.find_class(jni_str!("android/os/Build"))?;
+        let value = env.get_static_field(&build_class, JNIString::new(field), jni_sig!("Ljava/lang/String;"))?;
+        // A pending Java exception (unknown field, wrong signature, ...) makes the following JNI calls unreliable.
+        if env.exception_check() {
+            env.exception_clear();
+            return Ok(None);
+        }
+        let value = value.l()?;
+        if value.is_null() {
+            return Ok(None);
+        }
+        let value = unsafe { JString::from_raw(env, value.into_raw() as jni::sys::jstring) };
+        Ok(Some(value.try_to_string(env)?))
+    })
+    .unwrap_or_else(|error| {
+        Log::err(format!("android_build_field({}) failed: {}", field, error));
+        None
+    })
+}

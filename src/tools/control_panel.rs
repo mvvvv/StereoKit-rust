@@ -21,7 +21,7 @@ use crate::{
         },
     },
     ui::{Ui, UiPad},
-    util::{Device, Time},
+    util::{Device, Emulator, Time},
 };
 
 /// The runtime control panel of an app: the controls that are handy in every build, gathered in one place and drawn
@@ -108,6 +108,8 @@ pub struct ControlPanel {
     /// [`SkInfo::send_event`]): [`ControlPanel::new`] receives it, see [`Sk::get_sk_info_clone`]. Unlike an IStepper
     /// of this crate, it is not an `Option`: [`ControlPanel::new`] is the only constructor and always gets one.
     sk_info: Rc<RefCell<SkInfo>>,
+    /// Are we runnin an emulator/simulator ?
+    is_emulator: Option<Emulator>,
     /// The [`DefaultInteractors`] choices of the current backend: the interactor set, whether it needs the
     /// simultaneous hands & controllers tracking and the label of its cycling button.
     interactor_choices: Vec<(DefaultInteractors, bool, &'static str)>,
@@ -139,6 +141,7 @@ impl ControlPanel {
     ///
     /// see also [`ControlPanel::update`] [`ControlPanel::draw`]
     pub fn new(sk_info: Rc<RefCell<SkInfo>>) -> Self {
+        let is_emulator = Device::is_emulator();
         let passthrough_event = None;
         let simultaneous_hands_controllers_available = is_simultaneous_hands_and_controllers_supported(false);
         let simulator_fullscreen = SkInfo::settings_from(&Some(sk_info.clone())).fullscreen != 0;
@@ -226,6 +229,7 @@ impl ControlPanel {
             fps,
 
             sk_info,
+            is_emulator,
             interactor_choices,
             current_interactor_idx,
             refresh_rate_editable,
@@ -327,45 +331,56 @@ impl ControlPanel {
         }
         if let Some(new_value) = passthrough_toggled {
             self.set_passthrough(new_value);
-        } else if Backend::xr_type() == BackendXRType::Simulator {
-            let fullscreen_toggled = Ui::toggle("fullscreen", &mut self.simulator_fullscreen).interact();
-            if let Some(new_value) = fullscreen_toggled {
-                if let Some(window) = AppWindow::main() {
-                    window.request_fullscreen(new_value);
-                    Log::info(format!("Simulator fullscreen: {}", self.simulator_fullscreen));
-                    if self.simulator_fullscreen {
-                        self.notif_escape()
+        } else {
+            match self.is_emulator {
+                Some(Emulator::Simulator) => {
+                    let fullscreen_toggled = Ui::toggle("fullscreen", &mut self.simulator_fullscreen).interact();
+                    if let Some(new_value) = fullscreen_toggled {
+                        if let Some(window) = AppWindow::main() {
+                            window.request_fullscreen(new_value);
+                            Log::info(format!("Simulator fullscreen: {}", self.simulator_fullscreen));
+                            if self.simulator_fullscreen {
+                                self.notif_escape()
+                            }
+                        } else {
+                            Log::warn("Unable to get AppWindow!");
+                        }
                     }
-                } else {
-                    Log::warn("Unable to get AppWindow!");
-                }
-            }
-            Ui::same_line();
-            let mouse_mode_toggled = Ui::toggle("mouse relative", &mut self.mouse_mode_relative).interact();
-            if let Some(new_value) = mouse_mode_toggled {
-                if new_value {
-                    Input::mouse_mode(MouseMode::Relative);
-                    Log::info("Mouse mode <Relative>");
-                    self.notif_escape()
-                } else {
-                    Input::mouse_mode(MouseMode::Normal);
-                    Log::info("Mouse mode <Normal>");
-                }
-            }
+                    Ui::same_line();
+                    let mouse_mode_toggled = Ui::toggle("mouse relative", &mut self.mouse_mode_relative).interact();
+                    if let Some(new_value) = mouse_mode_toggled {
+                        if new_value {
+                            Input::mouse_mode(MouseMode::Relative);
+                            Log::info("Mouse mode <Relative>");
+                            self.notif_escape()
+                        } else {
+                            Input::mouse_mode(MouseMode::Normal);
+                            Log::info("Mouse mode <Normal>");
+                        }
+                    }
 
-            if Input::key(Key::Esc).is_just_active() {
-                self.simulator_fullscreen = false;
-                if let Some(window) = AppWindow::main() {
-                    window.request_fullscreen(self.simulator_fullscreen);
-                    Log::info(format!("Simulator fullscreen: {}", self.simulator_fullscreen));
-                }
+                    if Input::key(Key::Esc).is_just_active() {
+                        self.simulator_fullscreen = false;
+                        if let Some(window) = AppWindow::main() {
+                            window.request_fullscreen(self.simulator_fullscreen);
+                            Log::info(format!("Simulator fullscreen: {}", self.simulator_fullscreen));
+                        }
 
-                self.mouse_mode_relative = false;
-                Input::mouse_mode(MouseMode::Normal);
-                Log::info("Mouse mode <Normal> (ESC key)");
+                        self.mouse_mode_relative = false;
+                        Input::mouse_mode(MouseMode::Normal);
+                        Log::info("Mouse mode <Normal> (ESC key)");
+                    }
+                }
+                _ => (),
             }
         }
-
+        if self.is_emulator.is_some() {
+            Ui::same_line();
+            if Ui::button("Inject F1 key").press() {
+                Input::key_inject_press(Key::F1);
+                Input::key_inject_release(Key::F1);
+            }
+        }
         Ui::same_line();
         self.fps = ((1.0 / Time::get_step()) + self.fps) / 2.0;
         Ui::label(format!("FPS: {:3.0}", self.fps)).size(Vec2::new(0.1, 0.0)).use_padding(true).draw();
