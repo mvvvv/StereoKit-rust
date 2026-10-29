@@ -13,7 +13,7 @@ use stereokit_rust::{
     sound::Sound,
     sprite::Sprite,
     system::{Assets, Backend, BackendXRType, Text, TextBuilder, TextStyle},
-    tex::{Tex, TexFormat},
+    tex::{TexData, Tex, TexFormat},
     tools::xr_comp_layers::{SwapchainSk, XrCompLayers},
     ui::{Ui, UiBtnLayout},
     util::{Color32, Color128, Time, named_colors::RED},
@@ -70,7 +70,7 @@ impl Default for Screen1 {
 
         let mut textures = Vec::new();
         for path in texture_paths {
-            if let Ok(tex) = Tex::from_file(path, true, None) {
+            if let Ok(tex) = Tex::from_file(path, TexData::Srgb, None) {
                 textures.push(tex);
             }
         }

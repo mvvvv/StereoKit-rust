@@ -14,7 +14,7 @@ use stereokit_rust::{
         Backend, BackendOpenXR, BackendVulkan, BackendVulkanRequest, BackendXRType, Input, Key, Lines, LogItem,
         LogLevel, Text,
     },
-    tex::Tex,
+    tex::{TexData, Tex},
     tools::{
         control_panel::ControlPanel,
         fly_over::{FLY_OVER_ID, FlyOver},
@@ -144,7 +144,7 @@ pub fn launch(mut settings: SkSettings, is_testing: bool, start_test: String) {
 
     let tex_particule = Tex::gen_particle(128, 128, 0.9, None);
     let exit_button =
-        match Sprite::from_tex(Tex::from_file("textures/exit.jpeg", true, None).unwrap_or_default(), None, None) {
+        match Sprite::from_tex(Tex::from_file("textures/exit.jpeg", TexData::Srgb, None).unwrap_or_default(), None, None) {
             Ok(sprite) => sprite,
             Err(_) => Sprite::from_tex(&tex_particule, None, None).unwrap(),
         };
@@ -170,7 +170,7 @@ pub fn launch(mut settings: SkSettings, is_testing: bool, start_test: String) {
     }
     sk.send_event(StepperAction::add("HudNotif1", notif));
 
-    let mobile = Model::from_file("mobiles.gltf", Some(Shader::pbr()), None).unwrap_or_default();
+    let mobile = Model::from_file("mobiles.gltf", Some(Shader::pbr()), None, None).unwrap_or_default();
     Log::diag(format!("{:?}", mobile.get_id()));
     for iter in mobile.get_nodes().visuals() {
         Log::diag(format!("{:?}", iter.get_mesh().unwrap().get_id()));

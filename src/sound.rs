@@ -188,12 +188,13 @@ impl Audio {
 /// see also: [`Sound`]
 /// /// ### Examples
 /// ```
+/// # use stereokit_rust::tex::TexData;
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{maths::{Vec3, Matrix}, mesh::Mesh, material::Material,
 ///                      sound::Microphone, util::named_colors};
 ///
 /// let sphere = Mesh::generate_cube(Vec3::ONE * 0.5, None);
-/// let material = Material::pbr().tex_file_copy("textures/micro.jpeg", true, None)
+/// let material = Material::pbr().tex_file_copy("textures/micro.jpeg", TexData::Srgb, None)
 ///                    .expect("sound.jpeg should be there");
 /// let position = Vec3::new( 0.0, 0.0, 0.5);
 /// let transform = Matrix::t(position);
@@ -504,12 +505,13 @@ impl SoundPlay {
 ///
 /// ### Examples
 /// ```
+/// # use stereokit_rust::tex::TexData;
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{maths::{Vec3, Quat, Matrix}, mesh::Mesh, material::Material,  
 ///                      sound::Sound, util::named_colors};
 ///
 /// let mesh = Mesh::generate_cube(Vec3::ONE * 1.6, None);
-/// let material = Material::unlit().tex_file_copy("textures/sound.jpeg", true, None)
+/// let material = Material::unlit().tex_file_copy("textures/sound.jpeg", TexData::Srgb, None)
 ///                    .expect("sound.jpeg should be there");
 /// let mut position = Vec3::new(-0.5, 0.0, 0.5);
 /// let rotation = Quat::from_angles(45.0, 45.0, 45.0);
@@ -1552,10 +1554,10 @@ impl Sound {
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{maths::{Vec3, Matrix}, mesh::Mesh, material::Material,
-///                      sound::Sound, util::named_colors};
+///                      sound::Sound, tex::TexData, util::named_colors};
 ///
 /// let sphere = Mesh::generate_sphere(0.5, None);
-/// let material = Material::pbr().tex_file_copy("textures/sound.jpeg", true, None)
+/// let material = Material::pbr().tex_file_copy("textures/sound.jpeg", TexData::Srgb, None)
 ///                    .expect("sound.jpeg should be there");
 /// let mut position1 = Vec3::new(-0.5, 0.0, 0.5);
 /// let mut position2 = Vec3::new( 0.5, 0.0, 0.5);

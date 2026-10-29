@@ -5,13 +5,16 @@ use stereokit_rust::{
     model::Model,
     prelude::*,
     system::{Handed, Input},
-    tex::{Tex, TexFormat, TexType},
+    tex::{Tex, TexData, TexFormat, TexType},
     tools::notif::HudNotification,
     util::{
         Color32, Color128, Gradient,
         named_colors::{BLACK, BLUE, LIGHT_BLUE, RED, YELLOW},
     },
 };
+
+/// Same flags as the `set_colors*` helpers use internally: upload the pixels right away, without compression.
+const IMMEDIATE: TexData = TexData::Blocking.union(TexData::CompressNone);
 
 #[derive(IStepper)]
 pub struct Tex1 {
@@ -53,7 +56,7 @@ impl Tex1 {
 impl Default for Tex1 {
     fn default() -> Self {
         //World::occlusion_enabled(true);
-        let mut tex_default = Tex::from_file("textures/open_gltf.jpeg", true, None).unwrap();
+        let mut tex_default = Tex::from_file("textures/open_gltf.jpeg", TexData::Srgb, None).unwrap();
         // !!! don't set an id here if you want to come back as the tex_default is saved as error_fallback
         Tex::set_error_fallback(&tex_default);
         tex_default.id("here I can set an id !!!");
@@ -64,7 +67,7 @@ impl Default for Tex1 {
             //r"textures/open_gltf.jpeg",
             r"textures/screenshot.jpeg",
         ];
-        let mut tex_zarbi = Tex::from_files(&files, true, None).unwrap();
+        let mut tex_zarbi = Tex::from_files(&files, TexData::Srgb, None).unwrap();
         tex_zarbi.id("zarbi zarbi");
 
         //---- Textures
@@ -120,22 +123,31 @@ impl Default for Tex1 {
         let color_dots128 = raw_dots128.as_slice();
 
         let mut tex_color_32a = Tex::new(TexType::Image, TexFormat::Rgba32Srgb, Some("tex_color"));
-        unsafe {
-            tex_color_32a
-                .id("tex_color32a")
-                .set_colors(width, height, color_dots.as_ptr() as *mut std::os::raw::c_void)
-        };
+        tex_color_32a.id("tex_color32a").set_colors_data(
+            width,
+            height,
+            color_dots,
+            TexFormat::Rgba32Srgb,
+            IMMEDIATE,
+            None,
+        );
 
         let mut tex_color_32b = Tex::gen_color(BLUE, 10, 10, TexType::Dynamic, TexFormat::Rgba32Srgb);
-        unsafe {
-            tex_color_32b
-                .id("tex_color32b")
-                .set_colors(width, height, color_dots.as_ptr() as *mut std::os::raw::c_void)
-        };
+        tex_color_32b.id("tex_color32b").set_colors_data(
+            width,
+            height,
+            color_dots,
+            TexFormat::Rgba32Srgb,
+            IMMEDIATE,
+            None,
+        );
 
-        let mut tex_color_32c = Tex::from_color32(color_dots, width, height, true).unwrap();
+        let mut tex_color_32c =
+            Tex::from_colors(color_dots, width, height, TexFormat::Rgba32Srgb, TexData::Srgb, None, None);
         tex_color_32c.id("tex_color32c");
-        let mut tex_color_32d = Tex::from_color128(color_dots128, width, height, true).unwrap();
+
+        let mut tex_color_32d =
+            Tex::from_colors(color_dots128, width, height, TexFormat::Rgba128, TexData::Srgb, None, None);
         tex_color_32d.id("tex_color32d");
         let tex_vide = Tex::new(TexType::ImageNomips, TexFormat::Rgba128, Some("tex_vide"));
         let tex_vide2 = Tex::new(TexType::ImageNomips, TexFormat::R8, Some("tex_vide2"));
@@ -173,7 +185,9 @@ impl Default for Tex1 {
         vide.id("vide mat").diffuse_tex(&tex_vide);
 
         let mut particule = basic_material.copy();
-        particule.id("particule mat").diffuse_tex(tex_particule.copy(None, None).unwrap());
+        particule
+            .id("particule mat")
+            .diffuse_tex(tex_particule.copy(None, None, TexData::CompressNone, None).unwrap());
 
         let mut vide2 = basic_material.copy();
         vide2.id("vide mat2").diffuse_tex(&tex_vide2).tex_transform(Vec4::new(0.0, 0.0, 2.0, 2.0));
@@ -310,10 +324,38 @@ impl Tex1 {
                 // get a texture flood error
                 0 => {}
                 1 => {
-                    self.tex_vide.set_colors128(self.width, self.height, self.raw_dots128.as_slice());
-                    self.tex_vide2.set_colors_r8(self.width, self.height, self.raw_dots_byte.as_slice());
-                    self.tex_vide3.set_colors_r16(self.width, self.height, self.raw_dots_u16.as_slice());
-                    self.tex_vide4.set_colors_r32(self.width, self.height, self.raw_dots_u32.as_slice());
+                    self.tex_vide.set_colors_data(
+                        self.width,
+                        self.height,
+                        self.raw_dots128.as_slice(),
+                        TexFormat::Rgba128,
+                        IMMEDIATE,
+                        None,
+                    );
+                    self.tex_vide2.set_colors_data(
+                        self.width,
+                        self.height,
+                        self.raw_dots_byte.as_slice(),
+                        TexFormat::R8,
+                        IMMEDIATE,
+                        None,
+                    );
+                    self.tex_vide3.set_colors_data(
+                        self.width,
+                        self.height,
+                        self.raw_dots_u16.as_slice(),
+                        TexFormat::R16un,
+                        IMMEDIATE,
+                        None,
+                    );
+                    self.tex_vide4.set_colors_data(
+                        self.width,
+                        self.height,
+                        self.raw_dots_u32.as_slice(),
+                        TexFormat::R32f,
+                        IMMEDIATE,
+                        None,
+                    );
                     Log::info(format!(
                         "R8 height width : {:?}x{:?} / asset_state {:?}",
                         self.tex_vide2.get_height(),
@@ -327,7 +369,7 @@ impl Tex1 {
                         let vec = vec![self.base_color; size];
                         let array = vec.as_slice();
                         self.tex_default.get_color_data(array, mip);
-                        self.tex_color_32a.set_colors32(w, h, array);
+                        self.tex_color_32a.set_colors_data(w, h, array, TexFormat::Rgba32Srgb, IMMEDIATE, None);
                         Log::info(format!(
                             "mips {:?} / anisotropy {} / size {}x{}",
                             self.tex_default.get_mips(),
@@ -345,7 +387,14 @@ impl Tex1 {
                         let color32_buff = vec![self.base_color; size];
                         Log::info(format!("--Tex in mip {} -> {}x{} = {}", mip, w, h, color32_buff.len()));
                         if tex_i.get_color_data(color32_buff.as_slice(), mip) {
-                            self.tex_color_32b.set_colors32(w, h, &color32_buff[..]);
+                            self.tex_color_32b.set_colors_data(
+                                w,
+                                h,
+                                &color32_buff[..],
+                                TexFormat::Rgba32Srgb,
+                                IMMEDIATE,
+                                None,
+                            );
                             Log::info(format!("--Tex out mips number {:?}", self.tex_color_32b.get_mips()));
                         }
                     }
@@ -357,7 +406,14 @@ impl Tex1 {
                         let color128_buff = vec![self.base_color128; size];
                         Log::info(format!("--Tex in mip {} -> {}x{} = {}", mip, w, h, color128_buff.len()));
                         if tex_i.get_color_data(color128_buff.as_slice(), mip) {
-                            self.tex_vide.set_colors128(w, h, &color128_buff[..]);
+                            self.tex_vide.set_colors_data(
+                                w,
+                                h,
+                                &color128_buff[..],
+                                TexFormat::Rgba128,
+                                IMMEDIATE,
+                                None,
+                            );
                             Log::info(format!("--Tex out mips number {:?}", self.tex_vide.get_mips()));
                         }
                     }
@@ -369,7 +425,7 @@ impl Tex1 {
                         let color_r8_buff: Vec<u8> = vec![60; size];
                         Log::info(format!("--Tex in mip {} -> {}x{} = {}", mip, w, h, color_r8_buff.len()));
                         if tex_i.get_color_data(color_r8_buff.as_slice(), mip) {
-                            self.tex_vide2.set_colors_r8(w, h, &color_r8_buff[..]);
+                            self.tex_vide2.set_colors_data(w, h, &color_r8_buff[..], TexFormat::R8, IMMEDIATE, None);
                             Log::info(format!("--Tex out mips number {:?}", self.tex_vide2.get_mips()));
                         }
                     }
@@ -381,7 +437,14 @@ impl Tex1 {
                         let color_r16_buff: Vec<u16> = vec![60; size];
                         Log::info(format!("--Tex in mip {} -> {}x{} = {}", mip, w, h, color_r16_buff.len()));
                         if tex_i.get_color_data(color_r16_buff.as_slice(), mip) {
-                            self.tex_vide3.set_colors_r16(w, h, &color_r16_buff[..]);
+                            self.tex_vide3.set_colors_data(
+                                w,
+                                h,
+                                &color_r16_buff[..],
+                                TexFormat::R16un,
+                                IMMEDIATE,
+                                None,
+                            );
                             Log::info(format!("--Tex out mips number {:?}", self.tex_vide3.get_mips()));
                         }
                     }
@@ -393,7 +456,7 @@ impl Tex1 {
                         let color_r32_buff: Vec<f32> = vec![0.5; size];
                         Log::info(format!("--Tex in mip {} -> {}x{} = {}", mip, w, h, color_r32_buff.len()));
                         if tex_i.get_color_data(color_r32_buff.as_slice(), mip) {
-                            self.tex_vide4.set_colors_r32(w, h, &color_r32_buff[..]);
+                            self.tex_vide4.set_colors_data(w, h, &color_r32_buff[..], TexFormat::R32f, IMMEDIATE, None);
                             Log::info(format!("--Tex out mips number {:?}", self.tex_vide4.get_mips()));
                         }
                     }

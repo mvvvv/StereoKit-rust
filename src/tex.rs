@@ -42,7 +42,8 @@ bitflags::bitflags! {
         /// the distance.
         const Mips         = 1 << 4;
         /// This texture's data will be updated frequently from the CPU (not renders)! This ensures the graphics card
-        /// stores it someplace where writes are easy to do quickly.
+        /// stores it someplace where writes are easy to do quickly. Dynamic textures are never compressed, since
+        /// compression would have to run again on every update.
         const Dynamic      = 1 << 5;
         /// This texture contains depth data, not color data! It is writeable and readable. This makes it great for
         /// shadowmaps or other textures that need to be read from later on.
@@ -62,6 +63,50 @@ impl TexType {
         self.bits()
     }
 }
+bitflags::bitflags! {
+    /// Flags for texture data: what it holds, how StereoKit should store it on the GPU, and how the call that receives
+    /// it behaves. Each flag means the same thing in every function that takes one. With no flags, work happens
+    /// asynchronously on the asset system, using the app wide default compression, which starts as quality.
+    /// <https://stereokit.net/Pages/StereoKit/TexData.html>
+    ///
+    /// see also [`Tex`]
+    #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+    #[repr(C)]
+    pub struct TexData: u32 {
+        /// Linear data, like roughness, metalness, or a mask. Compression follows the default, and the call is
+        /// asynchronous.
+        const None            = 0;
+        /// Color data stored in sRGB, which is what most color images are. This only applies where the data's format
+        /// isn't already known, like when decoding an image file. This has the same value `true` had for the older
+        /// sRGB bool parameter.
+        const Srgb            = 1 << 0;
+        /// A tangent space normal map. This is reserved for dedicated normal map compression, and is treated like
+        /// linear data for now.
+        const Normal          = 1 << 1;
+        /// The alpha channel is unused, so StereoKit may pick a format without one. HDR data with an alpha channel,
+        /// like floating point colors, only compresses with this, since compressed HDR formats have no alpha.
+        const Opaque          = 1 << 2;
+        /// Alpha is only a cutout mask, so 1 bit of alpha is enough.
+        const Cutout          = 1 << 3;
+        /// Never compress this texture. Use this for textures you read back on the CPU, or small images that need to
+        /// stay pixel exact.
+        const CompressNone    = 1 << 8;
+        /// Compress this texture, preferring quality over size. This wins over compress_small, and compress_none wins
+        /// over this.
+        const CompressQuality = 1 << 9;
+        /// Compress this texture, preferring a small size over quality.
+        const CompressSmall   = 1 << 10;
+        /// Finish the work before the call returns, so the texture is loaded (or failed) right away. Without this, the
+        /// work happens on the asset system, and the texture keeps its previous content until the new content is
+        /// ready. Asynchronous calls copy your data first, so blocking avoids that copy, which can be worthwhile for
+        /// large uploads from a thread that can afford to wait. On the main thread, blocking can cause a hitch.
+        const Blocking        = 1 << 16;
+    }
+}
+
+/// What [`Tex::set_colors`] did before it took flags, kept by the overloads without them.
+const IMMEDIATE: TexData = TexData::Blocking.union(TexData::CompressNone);
+
 /// What type of color information will the texture contain? A good default here is Rgba32, which gives 8-bit sRGB
 /// color with alpha! Most format names end in a short suffix telling you how the GPU interprets the bits when sampled
 /// in a shader:
@@ -524,9 +569,9 @@ pub enum TexAddress {
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{maths::Matrix, util::named_colors,
-///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
+///                      tex::{TexData, Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
 ///
-/// let tex_left = Tex::from_file("textures/open_gltf.jpeg", true, None)
+/// let tex_left = Tex::from_file("textures/open_gltf.jpeg", TexData::Srgb, None)
 ///                    .expect("tex_left should be created");
 ///
 /// let tex_right = Tex::gen_color(named_colors::RED, 1, 1, TexType::Image, TexFormat::Rgba32Srgb);
@@ -595,23 +640,23 @@ unsafe extern "C" {
         color_format: TexFormat,
         depth_format: TexFormat,
     ) -> TexT;
-    pub fn tex_create_color32(in_arr_data: *mut Color32, width: i32, height: i32, srgb_data: Bool32T) -> TexT;
-    pub fn tex_create_color128(in_arr_data: *mut Color128, width: i32, height: i32, srgb_data: Bool32T) -> TexT;
-    pub fn tex_create_mem(data: *mut c_void, data_size: usize, srgb_data: Bool32T, load_priority: i32) -> TexT;
-    pub fn tex_create_file(file_utf8: *const c_char, srgb_data: Bool32T, load_priority: i32) -> TexT;
+    pub fn tex_create_color32(in_arr_data: *mut Color32, width: i32, height: i32, flags: TexData) -> TexT;
+    pub fn tex_create_color128(in_arr_data: *mut Color128, width: i32, height: i32, flags: TexData) -> TexT;
+    pub fn tex_create_mem(data: *mut c_void, data_size: usize, flags: TexData, load_priority: i32) -> TexT;
+    pub fn tex_create_file(file_utf8: *const c_char, flags: TexData, load_priority: i32) -> TexT;
     pub fn tex_create_file_arr(
         in_arr_files: *mut *const c_char,
         file_count: i32,
-        srgb_data: Bool32T,
+        flags: TexData,
         load_priority: i32,
     ) -> TexT;
-    pub fn tex_create_cubemap_file(cubemap_file: *const c_char, srgb_data: Bool32T, load_priority: i32) -> TexT;
+    pub fn tex_create_cubemap_file(cubemap_file: *const c_char, flags: TexData, load_priority: i32) -> TexT;
     pub fn tex_create_cubemap_files(
         in_arr_cube_face_file_xxyyzz: *mut *const c_char,
-        srgb_data: Bool32T,
+        flags: TexData,
         load_priority: i32,
     ) -> TexT;
-    pub fn tex_copy(texture: TexT, type_: TexType, format: TexFormat) -> TexT;
+    pub fn tex_copy(texture: TexT, type_: TexType, format: TexFormat, flags: TexData, into: TexT) -> TexT;
     pub fn tex_gen_mips(texture: TexT) -> Bool32T;
     pub fn tex_set_id(texture: TexT, id: *const c_char);
     pub fn tex_get_id(texture: TexT) -> *const c_char;
@@ -641,8 +686,25 @@ unsafe extern "C" {
         texture: TexT,
         asset_on_load_callback: ::std::option::Option<unsafe extern "C" fn(texture: TexT, context: *mut c_void)>,
     );
-    pub fn tex_set_colors(texture: TexT, width: i32, height: i32, data: *mut c_void);
-    pub fn tex_set_colors_3d(texture: TexT, width: i32, height: i32, depth: i32, data: *mut c_void);
+    pub fn tex_set_colors(
+        texture: TexT,
+        width: i32,
+        height: i32,
+        data: *mut c_void,
+        flags: TexData,
+        data_format: TexFormat,
+        priority: i32,
+    );
+    pub fn tex_set_colors_3d(
+        texture: TexT,
+        width: i32,
+        height: i32,
+        depth: i32,
+        data: *mut c_void,
+        flags: TexData,
+        data_format: TexFormat,
+        priority: i32,
+    );
     pub fn tex_set_color_arr(
         texture: TexT,
         width: i32,
@@ -650,6 +712,9 @@ unsafe extern "C" {
         array_data: *mut *mut c_void,
         array_count: i32,
         multisample: i32,
+        flags: TexData,
+        data_format: TexFormat,
+        priority: i32,
     );
     pub fn tex_set_color_arr_mips(
         texture: TexT,
@@ -659,15 +724,12 @@ unsafe extern "C" {
         array_count: i32,
         mip_count: i32,
         multisample: i32,
-    );
-    pub fn tex_set_mem(
-        texture: TexT,
-        data: *mut c_void,
-        data_size: usize,
-        srgb_data: Bool32T,
-        blocking: Bool32T,
+        flags: TexData,
+        data_format: TexFormat,
         priority: i32,
     );
+    pub fn tex_set_size(texture: TexT, width: i32, height: i32, depth: i32, array_count: i32, multisample: i32);
+    pub fn tex_set_mem(texture: TexT, data: *mut c_void, data_size: usize, flags: TexData, priority: i32);
     pub fn tex_add_zbuffer(texture: TexT, format: TexFormat);
     pub fn tex_set_zbuffer(texture: TexT, depth_texture: TexT);
     pub fn tex_get_zbuffer(texture: TexT) -> TexT;
@@ -681,10 +743,14 @@ unsafe extern "C" {
         light_spot_size_pct: f32,
         light_spot_intensity: f32,
     ) -> TexT;
+    pub fn tex_gen_cubemap_reflection(source_cubemap: TexT, into: TexT, max_resolution: i32, flags: TexData) -> TexT;
     pub fn tex_get_format(texture: TexT) -> TexFormat;
+    pub fn tex_get_input_format(texture: TexT) -> TexFormat;
     pub fn tex_get_width(texture: TexT) -> i32;
     pub fn tex_get_height(texture: TexT) -> i32;
     pub fn tex_get_depth(texture: TexT) -> i32;
+    pub fn tex_get_array_count(texture: TexT) -> i32;
+    pub fn tex_get_type(texture: TexT) -> TexType;
     pub fn tex_set_sample(texture: TexT, sample: TexSample);
     pub fn tex_get_sample(texture: TexT) -> TexSample;
     pub fn tex_set_sample_comp(texture: TexT, compare: TexSampleComp);
@@ -698,7 +764,8 @@ unsafe extern "C" {
     pub fn tex_set_error_fallback(error_texture: TexT);
     pub fn tex_get_cubemap_lighting(cubemap_texture: TexT) -> SphericalHarmonics;
     pub fn tex_set_cubemap_lighting(cubemap_texture: TexT, lighting_info: *const SphericalHarmonics);
-    pub fn tex_gen_cubemap_reflection(source_cubemap: TexT, into: TexT, max_resolution: i32) -> TexT;
+    pub fn tex_set_compression_default(compression: TexData);
+    pub fn tex_get_compression_default() -> TexData;
 }
 
 impl IAsset for Tex {
@@ -727,7 +794,9 @@ impl Tex {
     /// Sets up an empty texture container! Fill it with data using SetColors next! Creates a default unique asset Id.
     /// <https://stereokit.net/Pages/StereoKit/Tex/Tex.html>
     /// * `texture_type` - What type of texture is it? Just a 2D Image? A Cubemap? Should it have mip-maps?
-    /// * `format` - What information is the texture composed of? 32 bit colors, 64 bit colors, etc.
+    /// * `format` - The InputFormat, which [`Tex::set_colors`] assumes for data that doesn't carry a format of its own,
+    ///   like byte arrays or pointers. Typed data like [`Color32`] arrays doesn't need this to match, unless the texture
+    ///   is [`TexType::Dynamic`].
     /// * `id` - A unique asset Id for this texture, this is used to find the texture later on, and to reference it.
     ///   if
     ///
@@ -771,13 +840,14 @@ impl Tex {
     }
 
     /// Loads an image file stored in memory directly into a texture! Supported formats are: jpg, png, tga, bmp, psd,
-    /// gif, hdr, pic, ktx2.
+    /// gif, hdr, pic, ktx2. By default this is part of the asynchronous asset pipeline, add [`TexData::Blocking`] to wait
+    /// for the image to fully load before this returns.
     /// Asset Id will be the same as the filename.
     /// <https://stereokit.net/Pages/StereoKit/Tex/FromMemory.html>
     /// * `data` - The binary data of an image file, this is NOT a raw RGB color array!
-    /// * `srgb_data` - Is this image color data in sRGB format, or is it normal/metal/rough/data that’s not for direct
-    ///   display? sRGB colors get converted to linear color space on the graphics card, so getting this right can have
-    ///   a big impact on visuals.
+    /// * `flags` - What this image holds, and how StereoKit should store it. [`TexData::Srgb`] suits most color images,
+    ///   while normal/metal/rough/data images want [`TexData::None`]. Add a compression flag to override the default
+    ///   compression.
     /// * `priority` - The priority sort order for this asset in the async loading system. Lower values mean loading
     ///   sooner. If None will be set to 10
     ///
@@ -785,16 +855,16 @@ impl Tex {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::Matrix, tex::Tex, mesh::Mesh, material::Material};
+    /// use stereokit_rust::{maths::Matrix, tex::{TexData, Tex}, mesh::Mesh, material::Material};
     ///
     /// let plane_mesh = Mesh::generate_plane_up([1.0,1.0], None, true);
     ///
     /// let left_data  = std::include_bytes!("../assets/textures/open_gltf.jpeg");
     /// let right_data = std::include_bytes!("../assets/textures/log_viewer.jpeg");
     ///
-    /// let tex_left  = Tex::from_memory(left_data, true, None)
+    /// let tex_left  = Tex::from_memory(left_data, TexData::Srgb, None)
     ///                          .expect("open_gltf.jpeg should be loaded");
-    /// let tex_right = Tex::from_memory(right_data, true, None)
+    /// let tex_right = Tex::from_memory(right_data, TexData::Srgb, None)
     ///                          .expect("open_gltf.jpeg should be loaded");
     ///
     /// let material_left  = Material::pbr().tex_copy(tex_left);
@@ -809,10 +879,10 @@ impl Tex {
     /// );
     /// # sk::Sk::shutdown();
     /// ```
-    pub fn from_memory(data: &[u8], srgb_data: bool, priority: Option<i32>) -> Result<Tex, StereoKitError> {
+    pub fn from_memory(data: &[u8], flags: TexData, priority: Option<i32>) -> Result<Tex, StereoKitError> {
         let priority = priority.unwrap_or(10);
         Ok(Tex(NonNull::new(unsafe {
-            tex_create_mem(data.as_ptr() as *mut c_void, data.len(), srgb_data as Bool32T, priority)
+            tex_create_mem(data.as_ptr() as *mut c_void, data.len(), flags, priority)
         })
         .ok_or(StereoKitError::TexMemory)?))
     }
@@ -822,9 +892,9 @@ impl Tex {
     /// <https://stereokit.net/Pages/StereoKit/Tex/FromFile.html>
     /// * `file_utf8` - An absolute filename, or a filename relative to the assets folder. Supports jpg, png, tga, bmp,
     ///   psd, gif, hdr, pic, ktx2.
-    /// * `srgb_data` - Is this image color data in sRGB format, or is it normal/metal/rough/data that’s not for direct
-    ///   display? sRGB colors get converted to linear color space on the graphics card, so getting this right can have
-    ///   a big impact on visuals.
+    /// * `flags` - What this image holds, and how StereoKit should store it. [`TexData::Srgb`] suits most color images,
+    ///   while normal/metal/rough/data images want [`TexData::None`]. Add a compression flag to override the default
+    ///   compression.
     /// * `priority` - The priority sort order for this asset in the async loading system. Lower values mean loading
     ///   sooner. If None will be set to 10
     ///
@@ -833,15 +903,15 @@ impl Tex {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::Matrix, system::AssetState,
-    ///                      tex::Tex, mesh::Mesh, material::Material};
+    ///                      tex::{TexData, Tex}, mesh::Mesh, material::Material};
     ///
     /// let plane_mesh = Mesh::generate_plane_up([1.0,1.0], None, true);
     ///
-    /// let tex_left  = Tex::from_file("textures/open_gltf.jpeg", true, Some(9999))
+    /// let tex_left  = Tex::from_file("textures/open_gltf.jpeg", TexData::Srgb, Some(9999))
     ///                          .expect("tex_left should be created");
-    /// let tex_right = Tex::from_file("textures/log_viewer.jpeg", true, Some(9999))
+    /// let tex_right = Tex::from_file("textures/log_viewer.jpeg", TexData::Srgb, Some(9999))
     ///                          .expect("tex_right should be created");
-    /// let tex_floor = Tex::from_file("not a file so we'll have error tex", true, Some(9999))
+    /// let tex_floor = Tex::from_file("not a file so we'll have error tex", TexData::Srgb, Some(9999))
     ///                          .expect("tex_error should be loaded");
     ///
     /// let material_left  = Material::pbr().tex_copy(&tex_left);
@@ -871,7 +941,7 @@ impl Tex {
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/tex_from_file.jpeg" alt="screenshot" width="200">
     pub fn from_file(
         file_utf8: impl AsRef<Path>,
-        srgb_data: bool,
+        flags: TexData,
         priority: Option<i32>,
     ) -> Result<Tex, StereoKitError> {
         let priority = priority.unwrap_or(10);
@@ -882,7 +952,7 @@ impl Tex {
                 .to_str()
                 .ok_or(StereoKitError::TexFile(path_buf.clone(), "CString conversion".to_string()))?,
         )?;
-        Ok(Tex(NonNull::new(unsafe { tex_create_file(c_str.as_ptr(), srgb_data as Bool32T, priority) })
+        Ok(Tex(NonNull::new(unsafe { tex_create_file(c_str.as_ptr(), flags, priority) })
             .ok_or(StereoKitError::TexFile(path_buf, "tex_create failed".to_string()))?))
     }
 
@@ -893,23 +963,23 @@ impl Tex {
     /// <https://stereokit.net/Pages/StereoKit/Tex/FromFiles.html>
     /// * `files_utf8` - An absolute filenames, or filenames relative to the assets folder. Supports jpg, png, tga, bmp,
     ///   psd, gif, hdr, pic, ktx2.
-    /// * `srgb_data` - Is this image color data in sRGB format, or is it normal/metal/rough/data that’s not for direct
-    ///   display? sRGB colors get converted to linear color space on the graphics card, so getting this right can have
-    ///   a big impact on visuals.
+    /// * `flags` - What this image holds, and how StereoKit should store it. [`TexData::Srgb`] suits most color images,
+    ///   while normal/metal/rough/data images want [`TexData::None`]. Add a compression flag to override the default
+    ///   compression.
     /// * `priority` - The priority sort order for this asset in the async loading system. Lower values mean loading
-    ///   sooner. If None will be set to 10    
+    ///   sooner. If None will be set to 10
     ///
     /// see also [`tex_create_file`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::{ Matrix},
-    ///                      tex::{Tex}, mesh::Mesh, material::Material};
+    ///                      tex::{TexData, Tex}, mesh::Mesh, material::Material};
     ///
     /// let plane_mesh = Mesh::generate_plane_up([1.0,1.0], None, true);
     ///
     /// let tex  = Tex::from_files(&["textures/open_gltf.jpeg",
-    ///                                   "textures/log_viewer.jpeg"], true, Some(100))
+    ///                                   "textures/log_viewer.jpeg"], TexData::Srgb, Some(100))
     ///                    .expect("tex should be created");
     ///
     /// let material  = Material::pbr().tex_copy(tex);
@@ -923,7 +993,7 @@ impl Tex {
     /// ```
     pub fn from_files<P: AsRef<Path>>(
         files_utf8: &[P],
-        srgb_data: bool,
+        flags: TexData,
         priority: Option<i32>,
     ) -> Result<Tex, StereoKitError> {
         let priority = priority.unwrap_or(10);
@@ -942,7 +1012,7 @@ impl Tex {
         }
         let in_arr_files_cstr = c_files_ptr.as_mut_slice().as_mut_ptr();
         let tex = Tex(NonNull::new(unsafe {
-            tex_create_file_arr(in_arr_files_cstr, files_utf8.len() as i32, srgb_data as Bool32T, priority)
+            tex_create_file_arr(in_arr_files_cstr, files_utf8.len() as i32, flags, priority)
         })
         .ok_or(StereoKitError::TexFile(
             PathBuf::from(r"one_of_many_files"),
@@ -951,25 +1021,25 @@ impl Tex {
         Ok(tex)
     }
 
-    /// Creates a texture and sets the texture’s pixels using a color array! This will be an image of type TexType.Image,
-    /// and a format of TexFormat.Rgba32 or TexFormat.Rgba32Linear depending on the value of the sRGBData parameter.
+    /// Creates a texture and sets the texture’s pixels using a color array! This is asynchronous and compressed unless
+    /// the flags say otherwise.
+    /// This will be an image of type TexType.Image, and a format of TexFormat.Rgba32 or TexFormat.Rgba32Linear
+    /// depending on the flags.
     /// <https://stereokit.net/Pages/StereoKit/Tex/FromColors.html>
     /// * `colors` - An array of 32 bit colors, should be a length of width*height.
     /// * `width` - Width in pixels of the texture. Powers of two are generally best!
     /// * `height` - Height in pixels of the texture. Powers of two are generally best!
-    /// * `srgb_data` - s this image color data in sRGB format, or is it normal/metal/rough/data that’s not for direct
-    ///   display? sRGB colors get converted to linear color space on the graphics card, so getting this right can have
-    ///   a big impact on visuals.
+    /// * `flags` - What this image holds, and how StereoKit should store it. See [`TexData`].
     ///
     /// see also [`tex_create_color32`] [`Tex::gen_color`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::Matrix, util::named_colors, system::Pivot,
-    ///                      tex::Tex, sprite::Sprite};
+    ///                      tex::{TexData, Tex}, sprite::Sprite};
     ///
     /// let color_dots = [named_colors::RED; 128 * 128];
-    /// let tex = Tex::from_color32(&color_dots, 128, 128, true)
+    /// let tex = Tex::from_color32(&color_dots, 128, 128, TexData::Srgb)
     ///                        .expect("Tex should be created");    
     ///
     /// let mut sprite = Sprite::from_tex(&tex, None, None).expect("Sprite should be created");
@@ -977,13 +1047,13 @@ impl Tex {
     /// let mut tex_id = tex.get_id().to_string();
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     if iter == 1 {
-    ///         let tex2 = Tex::from_color32(&color_dots, 128, 128, true)
+    ///         let tex2 = Tex::from_color32(&color_dots, 128, 128, TexData::Srgb)
     ///                            .expect("Tex should be created");
     ///         assert_ne!(tex_id, tex2.get_id());
     ///         tex_id = tex2.get_id().to_string();
     ///         sprite = Sprite::from_tex(&tex2, None, None).expect("Sprite should be created");
     ///     } else if iter == 2 {
-    ///         let tex3 = Tex::from_color32(&color_dots, 128, 128, true)
+    ///         let tex3 = Tex::from_color32(&color_dots, 128, 128, TexData::Srgb)
     ///                            .expect("Tex should be created");
     ///         assert_ne!(tex_id, tex3.get_id());
     ///         sprite = Sprite::from_tex(&tex3, None, None).expect("Sprite should be created");
@@ -996,7 +1066,7 @@ impl Tex {
         colors: &[Color32],
         width: usize,
         height: usize,
-        srgb_data: bool,
+        flags: TexData,
     ) -> Result<Tex, StereoKitError> {
         if width * height != { colors }.len() {
             return Err(StereoKitError::TexColor(
@@ -1005,7 +1075,7 @@ impl Tex {
             ));
         }
         Ok(Tex(NonNull::new(unsafe {
-            tex_create_color32(colors.as_ptr() as *mut Color32, width as i32, height as i32, srgb_data as i32)
+            tex_create_color32(colors.as_ptr() as *mut Color32, width as i32, height as i32, flags)
         })
         .ok_or(StereoKitError::TexColor(
             format!("{height}x{width}"),
@@ -1013,17 +1083,18 @@ impl Tex {
         ))?))
     }
 
-    /// Creates a texture and sets the texture’s pixels using a color array! Color values are converted to 32 bit colors,
-    /// so this means a memory allocation and conversion. Prefer the Color32 overload for performance, or create an empty
-    /// Texture and use SetColors for more flexibility. This will be an image of type TexType.Image, and a format of
-    /// TexFormat. Rgba32 or TexFormat.Rgba32Linear depending on the value of the sRGBData parameter.
+    /// Creates a texture and sets the texture's pixels using a full precision color array! Colors over 1 are kept, so
+    /// this works for HDR data. This will be an image of type `TexType.Image` with `TexFormat.Rgba128` data. With
+    /// TexData.Srgb the colors are gamma space, and convert to linear first. Like SetColors with flags, this is
+    /// asynchronous and compressed unless the flags say otherwise. Compressed full precision data follows HDR rules, so
+    /// add TexData.Opaque if alpha doesn't matter.
     /// <https://stereokit.net/Pages/StereoKit/Tex/FromColors.html>
     /// * `colors` - An array of 128 bit colors, should be a length of width*height.
     /// * `width` - Width in pixels of the texture. Powers of two are generally best!
     /// * `height` - Height in pixels of the texture. Powers of two are generally best!
-    /// * `srgb_data` - s this image color data in sRGB format, or is it normal/metal/rough/data that’s not for direct
-    ///   display? sRGB colors get converted to linear color space on the graphics card, so getting this right can have
-    ///   a big impact on visuals.
+    /// * `flags` - What this image holds, and how StereoKit should store it. With [`TexData::Srgb`], suits most color
+    /// images, while normal/metal/rough/data images want [`TexData::None`]. Add a compression flag to override the
+    /// default compression.
     ///
     /// Important: The color conversion from 128 to 32 may crash if the data do not contains color128.
     ///
@@ -1032,12 +1103,12 @@ impl Tex {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::Matrix, util::Color128,
-    ///                      tex::Tex, mesh::Mesh, material::Material};
+    ///                      tex::{TexData, Tex}, mesh::Mesh, material::Material};
     ///
     /// let plane_mesh = Mesh::generate_plane_up([1.0,1.0], None, true);
     ///
     /// let color_dots = [Color128::new(0.1, 0.2, 0.5, 1.0); 128 * 128];
-    /// let tex = Tex::from_color128(&color_dots, 128, 128, true)
+    /// let tex = Tex::from_color128(&color_dots, 128, 128, TexData::Srgb)
     ///                            .expect("Tex should be created");
     ///
     /// let material  = Material::pbr().tex_copy(tex);
@@ -1053,7 +1124,7 @@ impl Tex {
         colors: &[Color128],
         width: usize,
         height: usize,
-        srgb_data: bool,
+        flags: TexData,
     ) -> Result<Tex, StereoKitError> {
         if width * height != { colors }.len() {
             return Err(StereoKitError::TexColor(
@@ -1062,12 +1133,66 @@ impl Tex {
             ));
         }
         Ok(Tex(NonNull::new(unsafe {
-            tex_create_color128(colors.as_ptr() as *mut Color128, width as i32, height as i32, srgb_data as i32)
+            tex_create_color128(colors.as_ptr() as *mut Color128, width as i32, height as i32, flags)
         })
         .ok_or(StereoKitError::TexColor(
             format!("{height}x{width}"),
             "tex_create_color128 failed".to_string(),
         ))?))
+    }
+
+    /// Creates a texture from raw pixel data in any format, such as [`TexFormat::R16un`] heights or
+    /// [`TexFormat::Rgba64un`] color. The format also becomes the [`Tex::get_input_format`]. Like
+    /// [`Tex::set_colors_data`] with flags, this is asynchronous and compressed by default, and [`Tex::get_format`] is
+    /// final as soon as this returns.
+    /// <https://stereokit.net/Pages/StereoKit/Tex/FromColors.html>
+    /// * `data` - Tightly packed pixels in `format`, should be `width*height` pixels long.
+    /// * `width` - Width in pixels of the texture.
+    /// * `height` - Height in pixels of the texture.
+    /// * `format` - The format of `data`.
+    /// * `flags` - How this data should be stored, and whether this call blocks. See [`TexData`].
+    /// * `tex_type` - The texture's type, [`TexType::Image`] generates mips. If None has default value of
+    ///   [`TexType::Image`].
+    /// * `priority` - The priority sort order for the upload in the async loading system. Lower values mean loading
+    ///   sooner. If None will be set to 10.
+    ///
+    /// see also [`tex_create`] [`tex_set_colors`] [`Tex::set_colors_data`] [`Tex::from_color32`] [`Tex::from_color128`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{util::{named_colors, Color32}, tex::{TexData, Tex, TexFormat}};
+    ///
+    /// let color_dots = [named_colors::CYAN; 16 * 16];
+    /// let tex = Tex::from_colors(&color_dots, 16, 16, TexFormat::Rgba32Srgb,
+    ///                                 TexData::Blocking | TexData::CompressNone, None, None);
+    ///
+    /// let check_dots = [Color32::WHITE; 16 * 16];
+    /// assert!(tex.get_color_data::<Color32>(&check_dots, 0));
+    /// assert_eq!(check_dots, color_dots);
+    /// assert_eq!(tex.get_input_format(), Some(TexFormat::Rgba32Srgb));
+    ///
+    /// let heights = [1024u16; 4 * 4];
+    /// let tex_r16 = Tex::from_colors(&heights, 4, 4, TexFormat::R16un,
+    ///                                     TexData::Blocking | TexData::CompressNone, None, None);
+    ///
+    /// let check_heights = [0u16; 4 * 4];
+    /// assert!(tex_r16.get_color_data::<u16>(&check_heights, 0));
+    /// assert_eq!(check_heights, heights);
+    /// assert_eq!(tex_r16.get_input_format(), Some(TexFormat::R16un));
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn from_colors<T>(
+        data: &[T],
+        width: usize,
+        height: usize,
+        format: TexFormat,
+        flags: TexData,
+        tex_type: Option<TexType>,
+        priority: Option<i32>,
+    ) -> Tex {
+        let mut tex = Tex::new(tex_type.unwrap_or(TexType::Image), format, None);
+        tex.set_colors_data(width, height, data, format, flags, priority);
+        tex
     }
 
     /// This will assemble a texture ready for rendering to! It creates a render target texture with no mip maps and a
@@ -1264,12 +1389,12 @@ impl Tex {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::Matrix, util::named_colors,
-    ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
+    ///                      tex::{TexData, Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
     ///
     /// let tex_err = Tex::gen_color(named_colors::RED, 128, 128, TexType::Image, TexFormat::Rgba32Srgb);
     /// Tex::set_error_fallback(&tex_err);
     ///
-    /// let tex = Tex::from_file("file that doesn't exist", true, None)
+    /// let tex = Tex::from_file("file that doesn't exist", TexData::Srgb, None)
     ///                    .expect("tex should be created");
     /// let material  = Material::pbr().tex_copy(tex);
     /// let plane_mesh = Mesh::generate_plane_up([1.0,1.0], None, true);
@@ -1284,6 +1409,20 @@ impl Tex {
         unsafe { tex_set_error_fallback(fallback.as_ref().0.as_ptr()) };
     }
 
+    /// The compression textures use when their [`TexData`] doesn't include one. Only the compression flags
+    /// ([`TexData::CompressNone`], [`TexData::CompressQuality`], [`TexData::CompressSmall`]) are kept, and
+    /// [`TexData::None`] behaves like [`TexData::CompressNone`].
+    /// <https://stereokit.net/Pages/StereoKit/Tex/DefaultCompression.html>
+    /// * `compression` - Only the compression flags ([`TexData::CompressNone`], [`TexData::CompressQuality`],
+    ///   [`TexData::CompressSmall`]) are kept.
+    ///
+    /// see also [`tex_set_compression_default`]
+    ///
+    /// see example in [`Tex::get_default_compression`]
+    pub fn set_default_compression(compression: TexData) {
+        unsafe { tex_set_compression_default(compression) };
+    }
+
     /// Looks for a Material asset that’s already loaded, matching the given id!
     /// <https://stereokit.net/Pages/StereoKit/Tex/Find.html>
     /// * `id` - The id of the texture to find.
@@ -1292,7 +1431,7 @@ impl Tex {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{util::named_colors, tex::{Tex, TexFormat, TexType}};
+    /// use stereokit_rust::{util::named_colors, tex::{TexData, Tex, TexFormat, TexType}};
     ///
     /// let mut tex_blue = Tex::gen_color(named_colors::BLUE, 1, 1, TexType::Image, TexFormat::Rgba32Srgb);
     /// assert!(tex_blue.get_id().starts_with("auto/tex_"));
@@ -1300,7 +1439,7 @@ impl Tex {
     /// let same_tex_blue = Tex::find("my_tex_blue").expect("my_tex_blue should be found");
     /// assert_eq!(tex_blue, same_tex_blue);
     ///
-    /// let tex = Tex::from_file("textures/open_gltf.jpeg", true, None)
+    /// let tex = Tex::from_file("textures/open_gltf.jpeg", TexData::Srgb, None)
     ///                    .expect("tex should be created");
     /// assert_eq!(tex.get_id(), "textures/open_gltf.jpeg");
     /// let same_tex = Tex::find("textures/open_gltf.jpeg")
@@ -1315,26 +1454,32 @@ impl Tex {
         ))
     }
 
-    /// Copy the current texture into a new texture, with the option to convert it to a different format or type! This
-    /// is a GPU blit operation, so the source texture does not need to be readable from the CPU. If the source texture
-    /// doesn't have mip-maps but the destination type does, they'll be generated for you!
+    /// This will copy the texture's pixels into a texture, optionally compressing it on the way. This is a GPU operation,
+    /// so the source does not need to be readable from the CPU, and it's finished when this returns. If the source
+    /// doesn't have mip-maps but the destination type does, they're generated before any compression. Copying a
+    /// rendertarget into a compressed image is a good way to keep rendered or generated content cheap to draw.
     /// <https://stereokit.net/Pages/StereoKit/Tex.html>
-    /// * `tex_type` - What type of texture should the new texture be? Image types with mip-maps will have mips
-    ///   generated for them if the source doesn't have them. If None has default value of TexType::Image.
-    /// * `tex_format` - What format should the new texture be in? If None is specified, the new texture will use the
-    ///   same format as the source (TexFormat::None).
+    /// * `tex_type` - What type of texture should the copy be? Image types with mip-maps will have mips generated for
+    ///   them if the source doesn't have them. If None has default value of TexType::Image.
+    /// * `tex_format` - The copy's format. None picks one from the flags, which means the default compression unless the
+    ///   flags say otherwise. A block compressed format is used exactly as given.
+    /// * `flags` - Compression and content flags for picking the format. A copy always finishes before returning, and
+    ///   its color space comes from the source, so Blocking and Srgb don't apply. TexData::None uses the default
+    ///   compression, and TexData::CompressNone keeps it uncompressed.
+    /// * `into` - An existing texture to copy into, instead of creating a new one. It takes on the copy's type, format,
+    ///   and size, and anything using it sees the new content.
     ///
     /// see also [`tex_copy`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{util::Color32, tex::{Tex, TexFormat, TexType}};
+    /// use stereokit_rust::{util::Color32, tex::{TexData, Tex, TexFormat, TexType}};
     ///
     ///
     /// let tex_blue = Tex::gen_color(Color32::new(64, 32, 255, 255), 5, 5,
     ///                               TexType::ImageNomips, TexFormat::Rgba32Linear);
     ///
-    /// let tex_copy = tex_blue.copy(None, Some(TexFormat::Rgba32Srgb))
+    /// let tex_copy = tex_blue.copy(None, Some(TexFormat::Rgba32Srgb), TexData::CompressNone, None)
     ///                             .expect("copy should be done");
     /// let mut color_data = [Color32::WHITE; 25];
     /// assert!(tex_copy.get_color_data::<Color32>(&mut color_data, 0));
@@ -1342,7 +1487,7 @@ impl Tex {
     /// assert_eq!(tex_blue.get_mips(), Some(1));
     /// assert_eq!(tex_copy.get_mips(), Some(3));
     ///
-    /// let tex_copy = tex_blue.copy(Some(TexType::ImageNomips), None)
+    /// let tex_copy = tex_blue.copy(Some(TexType::ImageNomips), None, TexData::CompressNone, None)
     ///                             .expect("copy should be done");
     /// let mut color_data = [Color32::WHITE; 25];
     /// assert!(tex_copy.get_color_data::<Color32>(&mut color_data, 0));
@@ -1350,10 +1495,17 @@ impl Tex {
     /// assert_eq!(tex_copy.get_mips(), Some(1));
     /// # sk::Sk::shutdown();
     /// ```
-    pub fn copy(&self, tex_type: Option<TexType>, tex_format: Option<TexFormat>) -> Result<Tex, StereoKitError> {
+    pub fn copy(
+        &self,
+        tex_type: Option<TexType>,
+        tex_format: Option<TexFormat>,
+        flags: TexData,
+        into: Option<&Tex>,
+    ) -> Result<Tex, StereoKitError> {
         let type_ = tex_type.unwrap_or(TexType::Image);
         let format = tex_format.unwrap_or(TexFormat::None);
-        Ok(Tex(NonNull::new(unsafe { tex_copy(self.0.as_ptr(), type_, format) })
+        let into = into.map_or(null_mut(), |tex| tex.0.as_ptr());
+        Ok(Tex(NonNull::new(unsafe { tex_copy(self.0.as_ptr(), type_, format, flags, into) })
             .ok_or(StereoKitError::TexCopy(self.get_id().into()))?))
     }
 
@@ -1365,14 +1517,14 @@ impl Tex {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{util::named_colors,tex::{Tex, TexFormat, TexType}};
+    /// use stereokit_rust::{util::named_colors,tex::{TexData, Tex, TexFormat, TexType}};
     ///
     /// let tex_blue = Tex::gen_color(named_colors::BLUE, 1, 1, TexType::Image, TexFormat::Rgba32Srgb);
     /// assert!(tex_blue.get_id().starts_with("auto/tex_"));
     /// let same_tex_blue = tex_blue.clone_ref();
     /// assert_eq!(tex_blue, same_tex_blue);
     ///
-    /// let tex = Tex::from_file("textures/open_gltf.jpeg", true, None)
+    /// let tex = Tex::from_file("textures/open_gltf.jpeg", TexData::Srgb, None)
     ///                    .expect("tex should be created");
     /// assert_eq!(tex.get_id(), "textures/open_gltf.jpeg");
     /// let same_tex = tex.clone_ref();
@@ -1390,14 +1542,14 @@ impl Tex {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{util::named_colors,tex::{Tex, TexFormat, TexType}};
+    /// use stereokit_rust::{util::named_colors,tex::{TexData, Tex, TexFormat, TexType}};
     ///
     /// let mut tex_blue = Tex::gen_color(named_colors::BLUE, 1, 1, TexType::Image, TexFormat::Rgba32Srgb);
     /// assert!(tex_blue.get_id().starts_with("auto/tex_"));
     /// tex_blue.id("my_tex_blue");
     /// assert_eq!(tex_blue.get_id(), "my_tex_blue");
     ///
-    /// let tex = Tex::from_file("textures/open_gltf.jpeg", true, None)
+    /// let tex = Tex::from_file("textures/open_gltf.jpeg", TexData::Srgb, None)
     ///                        .expect("tex should be created");
     /// assert_eq!(tex.get_id(), "textures/open_gltf.jpeg");
     /// tex_blue.id("my_tex_image");
@@ -1441,16 +1593,13 @@ impl Tex {
     }
 
     /// Loads an image file stored in memory directly into the created texture! Supported formats are: jpg, png, tga,
-    /// bmp, psd, gif, hdr, pic, ktx2. This method introduces a blocking boolean parameter, which allows you to specify
-    /// whether this method blocks until the image fully loads! The default case is to have it as part of the
-    /// asynchronous asset pipeline, in which the Asset Id will
-    /// be the same as the filename.
+    /// bmp, psd, gif, hdr, pic, ktx2. By default this is part of the asynchronous asset pipeline, add
+    /// [`TexData::Blocking`] to wait for the image to fully load before this returns.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetMemory.html>
     /// * `data` - The binary data of an image file, this is NOT a raw RGB color array!
-    /// * `srgb_data` - Is this image color data in sRGB format, or is it normal/metal/rough/data that’s not for direct
-    ///   display? sRGB colors get converted to linear color space on the graphics card, so getting this right can have
-    ///   a big impact on visuals.
-    /// * `blocking` - Will this method wait for the image to load. By default, we try to load it asynchronously.
+    /// * `flags` - What this image holds, and how StereoKit should store it. [`TexData::Srgb`] suits most color images,
+    ///   while normal/metal/rough/data images want [`TexData::None`]. Add a compression flag to override the default
+    ///   compression.
     /// * `priority` - The priority sort order for this asset in the async loading system. Lower values mean loading
     ///   sooner. If None will be set to 10
     ///
@@ -1459,12 +1608,12 @@ impl Tex {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::Matrix,
-    ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
+    ///                      tex::{TexData, Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
     ///
     /// let image_data = std::include_bytes!("../assets/textures/open_gltf.jpeg");
     /// let mut tex = Tex::new(TexType::Image, TexFormat::Rgba32Srgb, None);
     ///
-    /// tex.set_memory(image_data, true, false, Some(0));
+    /// tex.set_memory(image_data, TexData::Srgb, Some(0));
     ///
     /// let plane_mesh = Mesh::generate_plane_up([1.0,1.0], None, true);
     /// let material  = Material::pbr().tex_copy(tex);
@@ -1475,24 +1624,16 @@ impl Tex {
     /// );
     /// # sk::Sk::shutdown();
     /// ```
-    pub fn set_memory(&mut self, data: &[u8], srgb_data: bool, blocking: bool, priority: Option<i32>) -> &mut Self {
+    pub fn set_memory(&mut self, data: &[u8], flags: TexData, priority: Option<i32>) -> &mut Self {
         let priority = priority.unwrap_or(10);
-        unsafe {
-            tex_set_mem(
-                self.0.as_ptr(),
-                data.as_ptr() as *mut c_void,
-                data.len(),
-                srgb_data as Bool32T,
-                blocking as Bool32T,
-                priority,
-            )
-        };
+        unsafe { tex_set_mem(self.0.as_ptr(), data.as_ptr() as *mut c_void, data.len(), flags, priority) };
         self
     }
 
-    /// Set the texture’s pixels using a pointer to a chunk of memory! This is great if you’re pulling in some color
-    /// data from native code, and don’t want to pay the cost of trying to marshal that data around.
-    /// The data should contains width*height*(TextureFormat size) bytes.
+    /// Set the texture's pixels using a pointer to a chunk of memory containing color data in the texture's
+    /// InputFormat! This is great if you're pulling in some color data from native code, and don't want to pay the cost
+    /// of trying to marshal that data around. To pass data in another format, use [`Tex::set_colors_data`] with a data
+    /// format. Should be width*height*size_of_format bytes large. This blocks, and isn't compressed.
     /// Warning: The check width*height*(TextureFormat size) upon the size of the data values must be done before
     /// calling this function.
     /// Warning: The color data type must be compliant with the format of the texture.
@@ -1522,14 +1663,16 @@ impl Tex {
     /// # sk::Sk::shutdown();
     /// ```
     pub unsafe fn set_colors(&mut self, width: usize, height: usize, data: *mut std::os::raw::c_void) -> &mut Self {
-        unsafe { tex_set_colors(self.0.as_ptr(), width as i32, height as i32, data) };
+        unsafe { tex_set_colors(self.0.as_ptr(), width as i32, height as i32, data, IMMEDIATE, TexFormat::None, 10) };
         self
     }
 
-    /// Set the texture’s pixels using a color array! This function should only be called on textures with a format of
-    /// Rgba32 or Rgba32Linear. You can call this as many times as you’d like, even with different widths and heights.
-    /// Calling this multiple times will mark it as dynamic on the graphics card. Calling this function can also result
-    /// in building mip-maps, which has a non-zero cost: use TexType.ImageNomips when creating the Tex to avoid this.
+    /// Set the texture's pixels using a color array! This uploads as [`TexFormat::Rgba32Srgb`], or
+    /// [`TexFormat::Rgba32Linear`] when that's the [`Tex::get_input_format`], and the texture takes on that format. You
+    /// can call this as many times as you'd like, even with different widths and heights. Create it with
+    /// [`TexType::Dynamic`] if you update it often, though Dynamic textures only take data in their own format. This
+    /// blocks, and isn't compressed. Calling this function can also result in building mip-maps, which has a non-zero
+    /// cost: use [`TexType::ImageNomips`] when creating the Tex to avoid this.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetColors.html>
     /// * `width` - Width in pixels of the texture. Powers of two are generally best!
     /// * `height` - Height in pixels of the texture. Powers of two are generally best!
@@ -1581,16 +1724,24 @@ impl Tex {
             return self;
         }
         unsafe {
-            tex_set_colors(self.0.as_ptr(), width as i32, height as i32, data.as_ptr() as *mut std::os::raw::c_void)
+            tex_set_colors(
+                self.0.as_ptr(),
+                width as i32,
+                height as i32,
+                data.as_ptr() as *mut std::os::raw::c_void,
+                IMMEDIATE,
+                self.implied_format(TexFormat::Rgba32Srgb, TexFormat::Rgba32Linear),
+                10,
+            )
         };
         self
     }
 
-    /// Set the texture’s pixels using a color array! This function should only be called on textures with a format of
-    /// Rgba128. You can call this as many times as you’d like, even with different widths and heights. Calling this
-    /// multiple times will mark it as dynamic on the graphics card.
-    /// Calling this function can also result in building mip-maps, which has a non-zero cost: use TexType.ImageNomips
-    /// when creating the Tex to avoid this.
+    /// Set the texture's pixels using a 128 bit color array! This uploads as [`TexFormat::Rgba128`], and the texture
+    /// takes on that format. You can call this as many times as you'd like, even with different widths and heights.
+    /// Create it with [`TexType::Dynamic`] if you update it often, though Dynamic textures only take data in their own
+    /// format. This blocks, and isn't compressed. Calling this function can also result in building mip-maps, which has
+    /// a non-zero cost: use [`TexType::ImageNomips`] when creating the Tex to avoid this.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetColors.html>
     /// * `width` - Width in pixels of the texture. Powers of two are generally best!
     /// * `height` - Height in pixels of the texture. Powers of two are generally best!
@@ -1641,15 +1792,25 @@ impl Tex {
             return self;
         }
         unsafe {
-            tex_set_colors(self.0.as_ptr(), width as i32, height as i32, data.as_ptr() as *mut std::os::raw::c_void)
+            tex_set_colors(
+                self.0.as_ptr(),
+                width as i32,
+                height as i32,
+                data.as_ptr() as *mut std::os::raw::c_void,
+                IMMEDIATE,
+                TexFormat::Rgba128,
+                10,
+            )
         };
         self
     }
 
-    /// Set the texture’s pixels using a scalar array for channel R !  This function should only be called on textures
-    /// with a format of R8. You can call this as many times as you’d like, even with different widths and heights.
-    /// Calling this multiple times will mark it as dynamic on the graphics card. Calling this function can also result
-    /// in building mip-maps, which has a non-zero cost: use TexType.ImageNomips when creating the Tex to avoid this.
+    /// Set the texture's pixels using a byte array! Bytes don't say what format they are, so they're read as the
+    /// texture's [`Tex::get_input_format`], such as [`TexFormat::R8`]. To pass bytes in another format, use
+    /// [`Tex::set_colors_data`] with a data format. You can call this as many times as you'd like, even with different
+    /// widths and heights. Create it with [`TexType::Dynamic`] if you update it often. This blocks, and isn't
+    /// compressed. Calling this function can also result in building mip-maps, which has a non-zero cost: use
+    /// [`TexType::ImageNomips`] when creating the Tex to avoid this.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetColors.html>
     /// * `width` - Width in pixels of the texture. Powers of two are generally best!
     /// * `height` - Height in pixels of the texture. Powers of two are generally best!
@@ -1700,15 +1861,24 @@ impl Tex {
             return self;
         }
         unsafe {
-            tex_set_colors(self.0.as_ptr(), width as i32, height as i32, data.as_ptr() as *mut std::os::raw::c_void)
+            tex_set_colors(
+                self.0.as_ptr(),
+                width as i32,
+                height as i32,
+                data.as_ptr() as *mut std::os::raw::c_void,
+                IMMEDIATE,
+                TexFormat::None,
+                10,
+            )
         };
         self
     }
 
     /// Non canonical function !!
-    /// Set the texture’s pixels using an u8 array !  This function should only be called for all textures format
-    /// with a format of R8. You can call this as many times as you’d like, even with different widths and heights.
-    /// Calling this multiple times will mark it as dynamic on the graphics card. Calling this function can also result
+    /// Set the texture's pixels using an u8 array of tightly packed pixels! The bytes are read as the texture's
+    /// [`Tex::get_input_format`]. You can call this as many times as you'd like, even with different widths and
+    /// heights. Create it with [`TexType::Dynamic`] if you update it often. This blocks, and isn't compressed.
+    /// Calling this function can also result
     /// in building mip-maps, which has a non-zero cost: use TexType.ImageNomips when creating the Tex to avoid this.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetColors.html>
     /// * `width` - Width in pixels of the texture. Powers of two are generally best!
@@ -1748,15 +1918,94 @@ impl Tex {
             return self;
         }
         unsafe {
-            tex_set_colors(self.0.as_ptr(), width as i32, height as i32, data.as_ptr() as *mut std::os::raw::c_void)
+            tex_set_colors(
+                self.0.as_ptr(),
+                width as i32,
+                height as i32,
+                data.as_ptr() as *mut std::os::raw::c_void,
+                IMMEDIATE,
+                TexFormat::None,
+                10,
+            )
         };
         self
     }
 
-    /// Set the texture’s pixels using a scalar array for channel R ! This function should only be called on textures
-    /// with a format of R16un. You can call this as many times as you’d like, even with different widths and heights.
-    /// Calling this multiple times will mark it as dynamic on the graphics card. Calling this function can also result
-    /// in building mip-maps, which has a non-zero cost: use TexType.ImageNomips when creating the Tex to avoid this.
+    /// Set the texture's pixels from data in any format. You can call this as many times as you'd like, even with
+    /// different sizes and formats, and [`Tex::get_format`] follows. Dynamic textures only take data in their own
+    /// format. Without [`TexData::Blocking`] this returns right away, the data is copied, and the texture keeps its
+    /// previous content until the new pixels are ready. Unless the flags say otherwise, the texture is compressed using
+    /// the default compression. [`Tex::get_format`] is final as soon as this returns. If you call this again before an
+    /// earlier upload starts, only the newest one is uploaded.
+    /// <https://stereokit.net/Pages/StereoKit/Tex/SetColors.html>
+    /// * `width` - Width in pixels of the texture.
+    /// * `height` - Height in pixels of the texture.
+    /// * `data` - Tightly packed pixels in `data_format`, should be `width*height` pixels long.
+    /// * `data_format` - The format of `data`, such as [`TexFormat::Rgba32Srgb`] for [`Color32`] or
+    ///   [`TexFormat::Rgba128`] for [`Color128`].
+    /// * `flags` - How this data should be stored, and whether this call blocks. See [`TexData`].
+    /// * `priority` - The priority sort order for the upload in the async loading system. Lower values mean loading
+    ///   sooner. If None will be set to 10.
+    ///
+    /// see also [`tex_set_colors`] [`Tex::set_colors`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{util::{named_colors, Color32}, tex::{TexData, Tex, TexFormat, TexType}};
+    ///
+    /// let color_dots = [named_colors::CYAN; 16 * 16];
+    /// let mut tex = Tex::new(TexType::Image, TexFormat::Rgba32Srgb, None);
+    ///
+    /// tex.set_colors_data(16, 16, &color_dots, TexFormat::Rgba32Srgb,
+    ///                     TexData::Blocking | TexData::CompressNone, None);
+    ///
+    /// let check_dots = [Color32::WHITE; 16 * 16];
+    /// assert!(tex.get_color_data::<Color32>(&check_dots, 0));
+    /// assert_eq!(check_dots, color_dots);
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn set_colors_data<T>(
+        &mut self,
+        width: usize,
+        height: usize,
+        data: &[T],
+        data_format: TexFormat,
+        flags: TexData,
+        priority: Option<i32>,
+    ) -> &mut Self {
+        let priority = priority.unwrap_or(10);
+        let byte_size = std::mem::size_of_val(data);
+        if width * height * data_format.bytes_per_pixel() > byte_size {
+            Log::err(format!(
+                "{}x{} in the {:?} format needs more bytes than the {} given to Tex::set_colors_data for texture {}",
+                width,
+                height,
+                data_format,
+                byte_size,
+                self.get_id()
+            ));
+            return self;
+        }
+        unsafe {
+            tex_set_colors(
+                self.0.as_ptr(),
+                width as i32,
+                height as i32,
+                data.as_ptr() as *mut std::os::raw::c_void,
+                flags,
+                data_format,
+                priority,
+            )
+        };
+        self
+    }
+
+    /// Set the texture's pixels using a 16 bit array! This uploads as [`TexFormat::R16un`], or
+    /// [`TexFormat::Rgba64un`] when that's the [`Tex::get_input_format`], and the texture takes on that format. You can
+    /// call this as many times as you'd like, even with different widths and heights. Create it with
+    /// [`TexType::Dynamic`] if you update it often, though Dynamic textures only take data in their own format. This
+    /// blocks, and isn't compressed. Calling this function can also result in building mip-maps, which has a non-zero
+    /// cost: use [`TexType::ImageNomips`] when creating the Tex to avoid this.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetColors.html>
     /// * `width` - Width in pixels of the texture. Powers of two are generally best!
     /// * `height` - Height in pixels of the texture. Powers of two are generally best!
@@ -1807,15 +2056,25 @@ impl Tex {
             return self;
         }
         unsafe {
-            tex_set_colors(self.0.as_ptr(), width as i32, height as i32, data.as_ptr() as *mut std::os::raw::c_void)
+            tex_set_colors(
+                self.0.as_ptr(),
+                width as i32,
+                height as i32,
+                data.as_ptr() as *mut std::os::raw::c_void,
+                IMMEDIATE,
+                self.implied_format(TexFormat::R16un, TexFormat::Rgba64un),
+                10,
+            )
         };
         self
     }
 
-    /// Set the texture’s pixels using a scalar array! This function should only be called on textures with a format of
-    /// R32. You can call this as many times as you’d like, even with different widths and heights. Calling this
-    /// multiple times will mark it as dynamic on the graphics card. Calling this function can also result in building
-    /// mip-maps, which has a non-zero cost: use TexType.ImageNomips when creating the Tex to avoid this.
+    /// Set the texture's pixels using a float array! This uploads as [`TexFormat::R32f`], or [`TexFormat::Rgba128`]
+    /// when that's the [`Tex::get_input_format`], and the texture takes on that format. You can call this as many times
+    /// as you'd like, even with different widths and heights. Create it with [`TexType::Dynamic`] if you update it
+    /// often, though Dynamic textures only take data in their own format. This blocks, and isn't compressed. Calling
+    /// this function can also result in building mip-maps, which has a non-zero cost: use [`TexType::ImageNomips`] when
+    /// creating the Tex to avoid this.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetColors.html>
     /// * `width` - Width in pixels of the texture. Powers of two are generally best!
     /// * `height` - Height in pixels of the texture. Powers of two are generally best!
@@ -1866,14 +2125,23 @@ impl Tex {
             return self;
         }
         unsafe {
-            tex_set_colors(self.0.as_ptr(), width as i32, height as i32, data.as_ptr() as *mut std::os::raw::c_void)
+            tex_set_colors(
+                self.0.as_ptr(),
+                width as i32,
+                height as i32,
+                data.as_ptr() as *mut std::os::raw::c_void,
+                IMMEDIATE,
+                self.implied_format(TexFormat::R32f, TexFormat::Rgba128),
+                10,
+            )
         };
         self
     }
 
-    /// Set the contents of a 3D (volume) texture from a contiguous block of memory. The texture must be created
-    /// with [`TexType::Volume`]. Pass `std::ptr::null_mut()` to allocate an empty volume (e.g. for use as a compute
-    /// UAV). Slice-major layout: all of slice 0, then slice 1, etc., each slice being `width * height` pixels of
+    /// Set the contents of a 3D (volume) texture from a contiguous block of memory in the texture's
+    /// [`Tex::get_input_format`]. The texture must be created with [`TexType::Volume`]. Pass `std::ptr::null_mut()` to
+    /// allocate an empty volume (e.g. for use as a compute UAV). This blocks, and isn't compressed. Slice-major layout:
+    /// all of slice 0, then slice 1, etc., each slice being `width * height` pixels of
     /// the texture's format.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetColors.html>
     /// * `width` - Width in pixels.
@@ -1911,13 +2179,25 @@ impl Tex {
         depth: usize,
         data: *mut std::os::raw::c_void,
     ) -> &mut Self {
-        unsafe { tex_set_colors_3d(self.0.as_ptr(), width as i32, height as i32, depth as i32, data) };
+        unsafe {
+            tex_set_colors_3d(
+                self.0.as_ptr(),
+                width as i32,
+                height as i32,
+                depth as i32,
+                data,
+                IMMEDIATE,
+                TexFormat::None,
+                10,
+            )
+        };
         self
     }
 
-    /// Set the contents of a 3D (volume) texture from a byte array. The texture must be created with
-    /// [`TexType::Volume`] and a single-channel format such as [`TexFormat::R8`]. Slice-major layout: all of
-    /// slice 0, then slice 1, etc., each slice being `width * height` bytes.
+    /// Set the contents of a 3D (volume) texture from a byte array. The bytes are read as the texture's
+    /// [`Tex::get_input_format`], such as [`TexFormat::R8`]. The texture must be created with [`TexType::Volume`].
+    /// Slice-major layout: all of slice 0, then slice 1, etc., each slice being `width * height` bytes. This blocks,
+    /// and isn't compressed.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetColors.html>
     /// * `width` - Width in pixels.
     /// * `height` - Height in pixels.
@@ -1962,14 +2242,18 @@ impl Tex {
                 height as i32,
                 depth as i32,
                 data.as_ptr() as *mut std::os::raw::c_void,
+                IMMEDIATE,
+                TexFormat::None,
+                10,
             )
         };
         self
     }
 
-    /// Set the contents of a 3D (volume) texture from a [`Color32`] array. The texture must be created with
-    /// [`TexType::Volume`] and a format of [`TexFormat::Rgba32Srgb`] or [`TexFormat::Rgba32Linear`].
-    /// Slice-major layout: all of slice 0, then slice 1, etc., each slice being `width * height` pixels.
+    /// Set the contents of a 3D (volume) texture from a [`Color32`] array. This uploads as [`TexFormat::Rgba32Srgb`],
+    /// or [`TexFormat::Rgba32Linear`] when that's the [`Tex::get_input_format`], and the texture takes on that format.
+    /// The texture must be created with [`TexType::Volume`]. Slice-major layout: all of slice 0, then slice 1, etc.,
+    /// each slice being `width * height` pixels. This blocks, and isn't compressed.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetColors.html>
     /// * `width` - Width in pixels.
     /// * `height` - Height in pixels.
@@ -2028,6 +2312,78 @@ impl Tex {
                 height as i32,
                 depth as i32,
                 data.as_ptr() as *mut std::os::raw::c_void,
+                IMMEDIATE,
+                self.implied_format(TexFormat::Rgba32Srgb, TexFormat::Rgba32Linear),
+                10,
+            )
+        };
+        self
+    }
+
+    /// Set the contents of a 3D (volume) texture, with control over when the upload happens. Volumes are never
+    /// compressed. Slice-major layout: all of slice 0, then slice 1, and so on.
+    /// <https://stereokit.net/Pages/StereoKit/Tex/SetColors.html>
+    /// * `width` - Width in pixels.
+    /// * `height` - Height in pixels.
+    /// * `depth` - Depth in pixels (number of slices).
+    /// * `data` - `width*height*depth` pixels in `data_format`.
+    /// * `data_format` - The format of `data`.
+    /// * `flags` - Whether this call blocks. See [`TexData`].
+    /// * `priority` - The priority sort order for the upload in the async loading system. Lower values mean loading
+    ///   sooner. If None will be set to 10.
+    ///
+    /// see also [`tex_set_colors_3d`] [`Tex::set_colors_3d`] [`Tex::set_colors_3d_ptr`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{util::{named_colors, Color32}, tex::{TexData, Tex, TexFormat, TexType}};
+    ///
+    /// let volume_data = [named_colors::MAGENTA; 4 * 4 * 4];
+    /// let mut tex = Tex::new(TexType::Volume, TexFormat::Rgba32Srgb, None);
+    ///
+    /// tex.set_colors_3d_data(4, 4, 4, &volume_data, TexFormat::Rgba32Srgb,
+    ///                        TexData::Blocking | TexData::CompressNone, None);
+    ///
+    /// let check_data = [Color32::WHITE; 4 * 4];
+    /// assert!(tex.get_color_data::<Color32>(&check_data, 0));
+    /// assert_eq!(check_data, [named_colors::MAGENTA; 4 * 4]);
+    /// # sk::Sk::shutdown();
+    /// ```
+    #[allow(clippy::too_many_arguments)]
+    pub fn set_colors_3d_data<T>(
+        &mut self,
+        width: usize,
+        height: usize,
+        depth: usize,
+        data: &[T],
+        data_format: TexFormat,
+        flags: TexData,
+        priority: Option<i32>,
+    ) -> &mut Self {
+        let priority = priority.unwrap_or(10);
+        let byte_size = std::mem::size_of_val(data);
+        if width * height * depth * data_format.bytes_per_pixel() > byte_size {
+            Log::err(format!(
+                "{}x{}x{} in the {:?} format needs more bytes than the {} given to Tex::set_colors_3d_data for texture {}",
+                width,
+                height,
+                depth,
+                data_format,
+                byte_size,
+                self.get_id()
+            ));
+            return self;
+        }
+        unsafe {
+            tex_set_colors_3d(
+                self.0.as_ptr(),
+                width as i32,
+                height as i32,
+                depth as i32,
+                data.as_ptr() as *mut std::os::raw::c_void,
+                flags,
+                data_format,
+                priority,
             )
         };
         self
@@ -2120,16 +2476,7 @@ impl Tex {
         surface_count: i32,
     ) -> &mut Self {
         unsafe {
-            tex_set_surface(
-                self.0.as_ptr(),
-                native_surface,
-                tex_type,
-                native_fmt,
-                width,
-                height,
-                surface_count,
-                1,
-            )
+            tex_set_surface(self.0.as_ptr(), native_surface, tex_type, native_fmt, width, height, surface_count, 1)
         };
         self
     }
@@ -2202,24 +2549,52 @@ impl Tex {
     ) -> &mut Self {
         let array_count = array_count.unwrap_or(1);
         let msaa = msaa.unwrap_or(1);
-        unsafe {
-            let data_ptr: *mut *mut std::os::raw::c_void = null_mut();
-            tex_set_color_arr(
-                self.0.as_ptr(),
-                width as i32,
-                height as i32,
-                data_ptr, // array_data = None
-                array_count as i32,
-                msaa,
-            )
-        };
+        unsafe { tex_set_size(self.0.as_ptr(), width as i32, height as i32, 1, array_count as i32, msaa) };
+        self
+    }
+
+    /// Set the texture's size without providing any color data. This overload also takes a depth, for Volume textures.
+    /// <https://stereokit.net/Pages/StereoKit/Tex/SetSize.html>
+    /// * `width` - Width in pixels of the texture. Powers of two are generally best!
+    /// * `height` - Height in pixels of the texture. Powers of two are generally best!
+    /// * `depth` - Depth in pixels, only used by Volume textures. Use 1 for everything else.
+    /// * `array_count` - How many surfaces are in this texture? A normal texture only has 1. Volume textures ignore
+    ///   this. If None will be set to 1.
+    /// * `msaa` - Multisample anti-aliasing, this is only important for render target type textures! Volume textures
+    ///   ignore this. If None will be set to 1.
+    ///
+    /// see also [`tex_set_size`] [`Tex::set_size`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::tex::{Tex, TexFormat, TexType};
+    /// let mut tex = Tex::new(TexType::Volume, TexFormat::Rgba32Srgb, None);
+    ///
+    /// tex.set_size_3d(16, 16, 8, None, None);
+    /// assert_eq!(tex.get_width(),  Some(16));
+    /// assert_eq!(tex.get_height(), Some(16));
+    /// assert_eq!(tex.get_depth(),  Some(8));
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn set_size_3d(
+        &mut self,
+        width: usize,
+        height: usize,
+        depth: usize,
+        array_count: Option<usize>,
+        msaa: Option<i32>,
+    ) -> &mut Self {
+        let array_count = array_count.unwrap_or(1);
+        let msaa = msaa.unwrap_or(1);
+        unsafe { tex_set_size(self.0.as_ptr(), width as i32, height as i32, depth as i32, array_count as i32, msaa) };
         self
     }
 
     /// Set the texture's pixels for a multi-layer and/or mip-mapped texture, using an array of raw pointers.
     /// Each pointer in `array_data` represents one layer (face for cubemaps, slice for array textures), and points
     /// to a tightly packed block containing all mip levels for that layer in the order `[mip0][mip1][mip2]...`.
-    /// The memory layout per mip should match the texture's format. This is the raw pointer variant for advanced use
+    /// The data is read as the texture's [`Tex::get_input_format`]. This blocks, and isn't compressed. This is the raw
+    /// pointer variant for advanced use
     /// cases like uploading pre-decoded image data from native code.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetColors.html>
     /// * `width` - Width in pixels of mip 0. Powers of two are generally best!
@@ -2280,6 +2655,9 @@ impl Tex {
                 array_data.len() as i32,
                 mip_count,
                 multisample,
+                IMMEDIATE,
+                TexFormat::None,
+                10,
             )
         };
         self
@@ -2287,8 +2665,8 @@ impl Tex {
 
     /// Set the texture's pixels for a multi-layer and/or mip-mapped texture using a jagged [`Color32`] array.
     /// Each entry in `array_data` is one layer (face for cubemaps, slice for array textures), packed as
-    /// `[mip0][mip1][mip2]...`. This function should only be called on textures with a format of
-    /// [`TexFormat::Rgba32Srgb`] or [`TexFormat::Rgba32Linear`].
+    /// `[mip0][mip1][mip2]...`. This uploads as [`TexFormat::Rgba32Srgb`], or [`TexFormat::Rgba32Linear`] when that's
+    /// the [`Tex::get_input_format`], and the texture takes on that format. This blocks, and isn't compressed.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetColors.html>
     /// * `width` - Width in pixels of mip 0. Powers of two are generally best!
     /// * `height` - Height in pixels of mip 0. Powers of two are generally best!
@@ -2360,6 +2738,9 @@ impl Tex {
                 ptrs.len() as i32,
                 mip_count,
                 multisample,
+                IMMEDIATE,
+                self.implied_format(TexFormat::Rgba32Srgb, TexFormat::Rgba32Linear),
+                10,
             )
         };
         self
@@ -2367,7 +2748,8 @@ impl Tex {
 
     /// Set the texture's pixels for a multi-layer and/or mip-mapped texture using a jagged byte array. Each entry
     /// in `array_data` is one layer (face for cubemaps, slice for array textures), packed as
-    /// `[mip0][mip1][mip2]...`. The byte layout per mip should match the texture's format.
+    /// `[mip0][mip1][mip2]...`. The bytes are read as the texture's [`Tex::get_input_format`]. This blocks, and isn't
+    /// compressed.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetColors.html>
     /// * `width` - Width in pixels of mip 0. Powers of two are generally best!
     /// * `height` - Height in pixels of mip 0. Powers of two are generally best!
@@ -2424,6 +2806,82 @@ impl Tex {
                 ptrs.len() as i32,
                 mip_count,
                 multisample,
+                IMMEDIATE,
+                TexFormat::None,
+                10,
+            )
+        };
+        self
+    }
+
+    /// Set the pixels of a multi-layer and/or mip-mapped texture. Each entry in `array_data` is one layer (face for
+    /// cubemaps, slice for array textures), packed as `[mip0][mip1][mip2]...`. See the single image overload
+    /// ([`Tex::set_colors_data`]) for how flags and formats behave.
+    /// <https://stereokit.net/Pages/StereoKit/Tex/SetColors.html>
+    /// * `width` - Width in pixels of mip 0.
+    /// * `height` - Height in pixels of mip 0.
+    /// * `array_data` - One array per layer, each holding that layer's packed mips.
+    /// * `mip_count` - The number of mip levels packed into each layer's data. Use 1 to have mips generated if the
+    ///   texture has them.
+    /// * `data_format` - The format of the data.
+    /// * `flags` - How this data should be stored, and whether this call blocks. See [`TexData`].
+    /// * `priority` - The priority sort order for the upload in the async loading system. Lower values mean loading
+    ///   sooner. If None will be set to 10.
+    ///
+    /// see also [`tex_set_color_arr_mips`] [`Tex::set_colors_arr_mips`] [`Tex::set_colors_arr_mips_ptr`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{util::{named_colors, Color32}, tex::{TexData, Tex, TexFormat, TexType}};
+    /// let layer0_mip0 = [named_colors::RED; 16 * 16];
+    /// let layer0_mip1 = [named_colors::GREEN; 8 * 8];
+    /// let layer1_mip0 = [named_colors::BLUE; 64 * 64];
+    /// let layer1_mip1 = [named_colors::YELLOW; 32 * 32];
+    /// let array_data = [
+    ///     &layer0_mip0[..],
+    ///     &layer0_mip1[..],
+    ///     &layer1_mip0[..],
+    ///     &layer1_mip1[..],
+    /// ];
+    /// let mut tex = Tex::new(TexType::Image, TexFormat::Rgba32Srgb, None);
+    /// tex.set_colors_arr_mips_data(16, 16, &array_data, 2, TexFormat::Rgba32Srgb,
+    ///                              TexData::Blocking | TexData::CompressNone, None);
+    /// let check_data256 = [named_colors::BLACK; 16 * 16];
+    /// let check_data64 = [named_colors::BLACK; 8 * 8];
+    /// assert!(tex.get_color_data::<Color32>(&check_data256, 0));
+    /// assert_eq!(check_data256, [named_colors::RED; 16 * 16]);
+    /// assert!(tex.get_color_data::<Color32>(&check_data64, 1));
+    /// assert_eq!(check_data64, [named_colors::GREEN; 8 * 8]);
+    /// # sk::Sk::shutdown();
+    /// ```
+    #[allow(clippy::too_many_arguments)]
+    pub fn set_colors_arr_mips_data<T>(
+        &mut self,
+        width: usize,
+        height: usize,
+        array_data: &[&[T]],
+        mip_count: i32,
+        data_format: TexFormat,
+        flags: TexData,
+        priority: Option<i32>,
+    ) -> &mut Self {
+        let priority = priority.unwrap_or(10);
+        let mut ptrs = Vec::with_capacity(array_data.len());
+        for layer in array_data {
+            ptrs.push(layer.as_ptr() as *mut std::os::raw::c_void);
+        }
+        unsafe {
+            tex_set_color_arr_mips(
+                self.0.as_ptr(),
+                width as i32,
+                height as i32,
+                ptrs.as_mut_ptr(),
+                ptrs.len() as i32,
+                mip_count,
+                1,
+                flags,
+                data_format,
+                priority,
             )
         };
         self
@@ -2466,14 +2924,14 @@ impl Tex {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::Matrix, util::named_colors,
-    ///                      tex::{Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
+    ///                      tex::{TexData, Tex, TexFormat, TexType}, mesh::Mesh, material::Material};
     ///
     /// let tex_fallback = Tex::gen_color(named_colors::VIOLET, 128, 128, TexType::Image, TexFormat::Rgba32Srgb);
     /// let mut tex = Tex::new(TexType::Image, TexFormat::Rgba32Srgb, None);
     /// tex.fallback_override(&tex_fallback);
     ///
     /// let tex = Tex::new(TexType::Image, TexFormat::Rgba32Srgb, Some("tex_left_ID"));
-    /// let tex_metal = Tex::from_file("textures/parquet2/parquet2metal.ktx2", true, Some(9999))
+    /// let tex_metal = Tex::from_file("textures/parquet2/parquet2metal.ktx2", TexData::Srgb, Some(9999))
     ///                          .expect("Metal tex should be created");
     /// let mut material  = Material::pbr().tex_copy(tex);
     /// material.metal_tex(&tex_metal);
@@ -2597,8 +3055,33 @@ impl Tex {
         unsafe { CStr::from_ptr(tex_get_id(self.0.as_ptr())) }.to_str().unwrap_or_default()
     }
 
+    /// The compression textures use when their [`TexData`] doesn't include one. Only the compression flags
+    /// ([`TexData::CompressNone`], [`TexData::CompressQuality`], [`TexData::CompressSmall`]) are kept, and
+    /// [`TexData::None`] behaves like [`TexData::CompressNone`]. This starts as [`TexData::CompressQuality`].
+    /// <https://stereokit.net/Pages/StereoKit/Tex/DefaultCompression.html>
+    ///
+    /// see also [`tex_get_compression_default`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::tex::{Tex, TexData};
+    ///
+    /// assert_eq!(Tex::get_default_compression(), TexData::CompressQuality);
+    ///
+    /// Tex::set_default_compression(TexData::CompressSmall);
+    /// assert_eq!(Tex::get_default_compression(), TexData::CompressSmall);
+    ///
+    /// Tex::set_default_compression(TexData::CompressQuality);
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn get_default_compression() -> TexData {
+        unsafe { tex_get_compression_default() }
+    }
+
     /// Textures are loaded asyncronously, so this tells you the current state of this texture! This also can tell if
-    /// an error occured, and what type of error it may have been.
+    /// an error occured, and what type of error it may have been. New data set on a loaded texture reads as LoadedMeta
+    /// until it lands. In the meantime its metadata, like [`Tex::get_format`], already describes the new data, while the
+    /// previous pixels are still what draws.
     /// <https://stereokit.net/Pages/StereoKit/Tex/AssetState.html>
     ///
     /// see also [`tex_asset_state`]
@@ -2606,17 +3089,17 @@ impl Tex {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{util::named_colors, system::AssetState,
-    ///                      tex::{Tex, TexFormat, TexType}};
+    ///                      tex::{TexData, Tex, TexFormat, TexType}};
     ///
     /// let tex = Tex::gen_color(named_colors::VIOLET, 128, 128,
     ///                          TexType::Image, TexFormat::Rgba32Srgb);
     /// assert_eq!(tex.get_asset_state(), AssetState::Loaded);
     ///
-    /// let tex_icon = Tex::from_file("icons/checked.png", true, None)
+    /// let tex_icon = Tex::from_file("icons/checked.png", TexData::Srgb, None)
     ///                         .expect("Tex_icon should be created");
     /// assert_ne!(tex_icon.get_asset_state(), AssetState::NotFound);
     ///
-    /// let tex_not_icon = Tex::from_file("icccons/checddked.png", true, None)
+    /// let tex_not_icon = Tex::from_file("icccons/checddked.png", TexData::Srgb, None)
     ///                             .expect("Tex_not_icon should be created");
     /// assert_ne!(tex_not_icon.get_asset_state(), AssetState::Loaded);    
     ///
@@ -2644,16 +3127,16 @@ impl Tex {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{util::named_colors, system::AssetState,
-    ///                      tex::{Tex, TexFormat, TexType}};
+    ///                      tex::{TexData, Tex, TexFormat, TexType}};
     ///
     /// let tex = Tex::gen_color(named_colors::VIOLET, 128, 128,
     ///                          TexType::Image, TexFormat::Rgba128);
     /// assert_eq!(tex.get_format(), Some(TexFormat::Rgba128));
     ///
-    /// let tex_icon = Tex::from_file("icons/checked.png", true, None)
+    /// let tex_icon = Tex::from_file("icons/checked.png", TexData::Srgb | TexData::CompressNone, None)
     ///                         .expect("Tex_icon should be created");
     ///
-    /// let tex_not_icon = Tex::from_file("icccons/checddked.png", true, None)
+    /// let tex_not_icon = Tex::from_file("icccons/checddked.png", TexData::Srgb, None)
     ///                             .expect("Tex_not_icon should be created");
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
@@ -2758,6 +3241,91 @@ impl Tex {
         Some(unsafe { tex_get_depth(self.0.as_ptr()) } as usize)
     }
 
+    /// Typed data carries its own format, with one variant the texture can opt into.
+    fn implied_format(&self, usual: TexFormat, variant: TexFormat) -> TexFormat {
+        if self.get_input_format() == Some(variant) { variant } else { usual }
+    }
+
+    /// The number of layers in this texture: 6 for a cubemap, the layer count for a texture array, and 1 otherwise.
+    /// This will be a blocking call if [`Tex::get_asset_state`] is less than LoadedMeta so None will be returned
+    /// instead.
+    /// <https://stereokit.net/Pages/StereoKit/Tex/ArrayCount.html>
+    ///
+    /// see also [`tex_get_array_count`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{util::named_colors, tex::{Tex, TexFormat, TexType}};
+    ///
+    /// let tex = Tex::gen_color(named_colors::VIOLET, 8, 8, TexType::Image, TexFormat::Rgba32Srgb);
+    /// assert_eq!(tex.get_array_count(), Some(1));
+    ///
+    /// let tex = Tex::gen_color(named_colors::VIOLET, 8, 8, TexType::Cubemap, TexFormat::Rgba32Srgb);
+    /// assert_eq!(tex.get_array_count(), Some(6));
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn get_array_count(&self) -> Option<usize> {
+        match self.get_asset_state() {
+            AssetState::Loaded => (),
+            AssetState::LoadedMeta => (),
+            AssetState::None => (),
+            _ => return None,
+        }
+        Some(unsafe { tex_get_array_count(self.0.as_ptr()) } as usize)
+    }
+
+    /// The type flags this texture has, like whether it's a cubemap, has mips, or is a rendertarget. This will be a
+    /// blocking call if [`Tex::get_asset_state`] is less than LoadedMeta so None will be returned instead.
+    /// <https://stereokit.net/Pages/StereoKit/Tex/Type.html>
+    ///
+    /// see also [`tex_get_type`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{util::named_colors, tex::{Tex, TexFormat, TexType}};
+    ///
+    /// let tex = Tex::gen_color(named_colors::VIOLET, 8, 8,
+    ///                          TexType::ImageNomips, TexFormat::Rgba32Srgb);
+    /// assert_eq!(tex.get_type(), Some(TexType::ImageNomips));
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn get_type(&self) -> Option<TexType> {
+        match self.get_asset_state() {
+            AssetState::Loaded => (),
+            AssetState::LoadedMeta => (),
+            AssetState::None => (),
+            _ => return None,
+        }
+        Some(unsafe { tex_get_type(self.0.as_ptr()) })
+    }
+
+    /// The format [`Tex::set_colors`] and [`Tex::set_size`] assume data comes in when the call doesn't say. This is the
+    /// format the texture was created with, or the plain color format of a loaded file, and often differs from
+    /// [`Tex::get_format`] once a texture is compressed. [`TexFormat::None`] means data always needs an explicit
+    /// format. This will be a blocking call if [`Tex::get_asset_state`] is less than LoadedMeta so None will be
+    /// returned instead.
+    /// <https://stereokit.net/Pages/StereoKit/Tex/InputFormat.html>
+    ///
+    /// see also [`tex_get_input_format`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{util::named_colors, tex::{Tex, TexFormat, TexType}};
+    ///
+    /// let tex = Tex::gen_color(named_colors::VIOLET, 8, 8, TexType::Image, TexFormat::Rgba32Srgb);
+    /// assert_eq!(tex.get_input_format(), Some(TexFormat::Rgba32Srgb));
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn get_input_format(&self) -> Option<TexFormat> {
+        match self.get_asset_state() {
+            AssetState::Loaded => (),
+            AssetState::LoadedMeta => (),
+            AssetState::None => (),
+            _ => return None,
+        }
+        Some(unsafe { tex_get_input_format(self.0.as_ptr()) })
+    }
+
     /// Non-canon function which returns a tuple made of (width, heigh, size) of the corresponding texture.
     ///
     /// use `mip` < 0 for textures using [`TexType::ImageNomips`]
@@ -2771,7 +3339,7 @@ impl Tex {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{util::{named_colors, Color32}, system::AssetState,
-    ///                      tex::{Tex, TexFormat, TexType}};
+    ///                      tex::{TexData, Tex, TexFormat, TexType}};
     ///
     /// let color_dots = [named_colors::CYAN; 16 * 16];
     /// let mut tex = Tex::new(TexType::Image, TexFormat::Rgba32Srgb, None);
@@ -2791,7 +3359,7 @@ impl Tex {
     /// assert_eq!(height, 8);
     /// assert_eq!(size, 64);
     ///
-    /// let tex_icon = Tex::from_file("icons/checked.png", true, None)
+    /// let tex_icon = Tex::from_file("icons/checked.png", TexData::Srgb, None)
     ///                        .expect("Tex_icon should be created");
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     // We ensure to have the Tex loaded.
@@ -2839,7 +3407,9 @@ impl Tex {
     }
 
     /// Retrieve the color data of the texture from the GPU. This can be a very slow operation,
-    /// so use it cautiously. The out_data pointer must correspond to an array with the correct size.
+    /// so use it cautiously. The out_data pointer must correspond to an array with the correct size. Textures are
+    /// compressed by default, and a compressed texture gives back its raw compressed blocks rather than pixels, so check
+    /// [`Tex::get_format`]. Load or set a texture with [`TexData::CompressNone`] if you plan to read its pixels.
     /// <https://stereokit.net/Pages/StereoKit/Tex/GetColorData.html>
     /// * mip_level - Retrieves the color data for a specific mip-mapping level. This function will log a fail and
     ///   return a black array if an invalid mip-level is provided.
@@ -2902,7 +3472,9 @@ impl Tex {
 
     /// Non canonical function!
     /// Retrieve the color data of the texture from the GPU. This can be a very slow operation,
-    /// so use it cautiously. The out_data pointer must correspond to an u8 array with the correct size.
+    /// so use it cautiously. The out_data pointer must correspond to an u8 array with the correct size. Textures are
+    /// compressed by default, and a compressed texture gives back its raw compressed blocks rather than pixels, so check
+    /// [`Tex::get_format`]. Load or set a texture with [`TexData::CompressNone`] if you plan to read its pixels.
     /// <https://stereokit.net/Pages/StereoKit/Tex/GetColorData.html>
     /// * `color_size`: number of bytes of the color (Color32: 4, Color128: 16 ...)
     /// * `mip_level` - Retrieves the color data for a specific mip-mapping level. This function will log a fail and
@@ -3011,7 +3583,7 @@ impl Tex {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{util::named_colors, system::{AssetState, Assets},
-    ///                      tex::{Tex, TexFormat, TexType}};
+    ///                      tex::{TexData, Tex, TexFormat, TexType}};
     ///
     /// let tex_nomips = Tex::gen_color(named_colors::VIOLET, 128, 128,
     ///                                 TexType::ImageNomips, TexFormat::Rgba32Srgb);
@@ -3019,11 +3591,11 @@ impl Tex {
     /// let tex = Tex::gen_color(named_colors::VIOLET, 128, 128,
     ///                          TexType::Image, TexFormat::Rgba32Srgb);
     ///
-    /// let tex_icon = Tex::from_file("icons/checked.png", true, None)
+    /// let tex_icon = Tex::from_file("icons/checked.png", TexData::Srgb, None)
     ///                         .expect("Tex_icon should be created");
     /// assert_eq!(tex_icon.get_mips(), None);
     ///
-    /// let tex_not_icon = Tex::from_file("Not an icon file", true, None)
+    /// let tex_not_icon = Tex::from_file("Not an icon file", TexData::Srgb, None)
     ///                             .expect("Tex_not_icon should be created");
     ///
     /// Assets::block_for_priority(99);
@@ -3103,6 +3675,10 @@ impl Tex {
     ///   environments. The source itself is not a valid destination.
     /// * `max_resolution` - Cap for the reflection texture's face resolution when a new texture is created. Reflection
     ///   data is low frequency, so this can stay small.
+    /// * `flags` - Compression and Blocking are used here, since a reflection is always opaque color in a known format.
+    ///   [`TexData::None`] uses the default compression, and [`TexData::CompressNone`] keeps the convolved texture as
+    ///   is, which can still be rendered into. [`TexData::Blocking`] waits for the source to load and the reflection to
+    ///   finish before returning.
     ///
     /// Returns the reflection cubemap, or None on failure.
     /// see also [`tex_gen_cubemap_reflection`] [`Lighting::set_environment`](crate::lighting::Lighting::set_environment)
@@ -3114,7 +3690,7 @@ impl Tex {
     ///                      util::Color128};
     ///
     /// let sky_cubemap = Tex::gen_color(Color128::WHITE, 128, 128, TexType::Cubemap, TexFormat::Rgba32Linear);
-    /// let reflection = Tex::gen_cubemap_reflection(&sky_cubemap, None, 64)
+    /// let reflection = Tex::gen_cubemap_reflection(&sky_cubemap, None, 64, None)
     ///                     .expect("reflection should be generated");
     /// Lighting::reflection(Some(&reflection));
     ///
@@ -3130,12 +3706,14 @@ impl Tex {
         source_cubemap: impl AsRef<Tex>,
         into: Option<&Tex>,
         max_resolution: i32,
+        flags: Option<TexData>,
     ) -> Option<Tex> {
         let tex = unsafe {
             tex_gen_cubemap_reflection(
                 source_cubemap.as_ref().0.as_ptr(),
                 into.map_or(std::ptr::null_mut(), |tex| tex.0.as_ptr()),
                 max_resolution,
+                flags.unwrap_or(TexData::None),
             )
         };
         NonNull::new(tex).map(Tex)
@@ -3288,9 +3866,9 @@ impl Tex {
 /// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-/// use stereokit_rust::{tex::SHCubemap, system::AssetState};
+/// use stereokit_rust::{tex::{TexData, SHCubemap}, system::AssetState};
 ///
-/// let sh_cubemap = SHCubemap::from_cubemap("hdri/sky_dawn.hdr", true, 9999)
+/// let sh_cubemap = SHCubemap::from_cubemap("hdri/sky_dawn.hdr", TexData::Srgb, 9999)
 ///                                .expect("Cubemap should be created");
 ///
 /// sh_cubemap.render_as_sky();
@@ -3324,7 +3902,7 @@ impl SHCubemap {
         srgb_data: bool,
         priority: i32,
     ) -> Result<SHCubemap, StereoKitError> {
-        Self::from_cubemap(equirectangular_file_utf8, srgb_data, priority)
+        Self::from_cubemap(equirectangular_file_utf8, if srgb_data { TexData::Srgb } else { TexData::None }, priority)
     }
 
     /// Creates a cubemap texture from a single file! This will load KTX2 files with 6 surfaces, or convert
@@ -3338,9 +3916,9 @@ impl SHCubemap {
     /// generated with [`SHCubemap::gen_cubemap_reflection`], since a mip-less skybox can't project its own.
     /// <https://stereokit.net/Pages/StereoKit/Tex/FromCubemap.html>
     /// * `cubemap_file` - Filename of the cubemap image.
-    /// * `srgb_data` - Is this image color data in sRGB format, or is it normal/metal/rough/data that's not for direct
-    ///   display? sRGB colors get converted to linear color space on the graphics card, so getting this right can have
-    ///   a big impact on visuals.
+    /// * `flags` - What this image holds, and how StereoKit should store it. [`TexData::Srgb`] suits most color images,
+    ///   while normal/metal/rough/data images want [`TexData::None`]. Add a compression flag to override the default
+    ///   compression.
     /// * `load_priority` - The priority sort order for this asset in the async loading system. Lower values mean loading
     ///   sooner.
     ///
@@ -3348,9 +3926,9 @@ impl SHCubemap {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{maths::Vec3, tex::SHCubemap, system::AssetState};
+    /// use stereokit_rust::{maths::Vec3, tex::{SHCubemap, TexData}, system::AssetState};
     ///
-    /// let sh_cubemap = SHCubemap::from_cubemap("hdri/sky_dawn.hdr", true, 9999)
+    /// let sh_cubemap = SHCubemap::from_cubemap("hdri/sky_dawn.hdr", TexData::Srgb, 9999)
     ///                                .expect("Cubemap should be created");
     ///
     /// // The generated reflection carries the environment's lighting,
@@ -3370,7 +3948,7 @@ impl SHCubemap {
     /// ```
     pub fn from_cubemap(
         cubemap_file: impl AsRef<Path>,
-        srgb_data: bool,
+        flags: TexData,
         load_priority: i32,
     ) -> Result<SHCubemap, StereoKitError> {
         let path = cubemap_file.as_ref();
@@ -3378,15 +3956,12 @@ impl SHCubemap {
         let c_str = CString::new(
             path.to_str().ok_or(StereoKitError::TexCString(path.to_str().unwrap_or_default().to_owned()))?,
         )?;
-        let tex =
-            Tex(
-                NonNull::new(unsafe { tex_create_cubemap_file(c_str.as_ptr(), srgb_data as Bool32T, load_priority) })
-                    .ok_or(StereoKitError::TexFile(path_buf.clone(), "tex_create_cubemap_file failed".to_string()))?,
-            );
+        let tex = Tex(NonNull::new(unsafe { tex_create_cubemap_file(c_str.as_ptr(), flags, load_priority) })
+            .ok_or(StereoKitError::TexFile(path_buf.clone(), "tex_create_cubemap_file failed".to_string()))?);
 
         // A raw skybox cubemap has no mip chain, so it can't project its own lighting. Generating a reflection
         // convolves the environment and carries its spherical harmonics, while the raw radiance stays the skybox.
-        let reflection = Self::gen_cubemap_reflection(&tex, None, 64)
+        let reflection = Self::gen_cubemap_reflection(&tex, None, 64, None)
             .ok_or(StereoKitError::TexFile(path_buf, "gen_cubemap_reflection failed".to_string()))?;
 
         Ok(SHCubemap { sh: reflection.sh, tex })
@@ -3397,9 +3972,9 @@ impl SHCubemap {
     /// order of the file names is +X -X +Y -Y +Z -Z
     /// <https://stereokit.net/Pages/StereoKit/Tex/FromCubemapFile.html>
     /// * `files_utf8` - 6 image filenames, in order of/ +X, -X, +Y, -Y, +Z, -Z.
-    /// * `srgb_data` - Is this image color data in sRGB format, or is it normal/metal/rough/data that's not for direct
-    ///   display? sRGB colors get converted to linear color space on the graphics card, so getting this right can have a
-    ///   big impact on visuals.
+    /// * `flags` - What this image holds, and how StereoKit should store it. [`TexData::Srgb`] suits most color images,
+    ///   while normal/metal/rough/data images want [`TexData::None`]. Add a compression flag to override the default
+    ///   compression.
     /// * `load_priority` - The priority sort order for this asset in the async loading system. Lower values mean loading
     ///   sooner.
     ///
@@ -3407,7 +3982,7 @@ impl SHCubemap {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{system::AssetState, tex::SHCubemap};
+    /// use stereokit_rust::{system::AssetState, tex::{SHCubemap, TexData}};
     ///
     /// let cubemap_files = [
     ///     "hdri/giza/right.png",
@@ -3417,7 +3992,7 @@ impl SHCubemap {
     ///     "hdri/giza/front.png",
     ///     "hdri/giza/back.png",
     /// ];
-    /// let sh_cubemap = SHCubemap::from_cubemap_files(&cubemap_files, true, 9999)
+    /// let sh_cubemap = SHCubemap::from_cubemap_files(&cubemap_files, TexData::Srgb, 9999)
     ///                                 .expect("Cubemap should be created");
     /// sh_cubemap.render_as_sky();
     ///
@@ -3431,7 +4006,7 @@ impl SHCubemap {
     /// ```
     pub fn from_cubemap_files<P: AsRef<Path>>(
         files_utf8: &[P; 6],
-        srgb_data: bool,
+        flags: TexData,
         load_priority: i32,
     ) -> Result<SHCubemap, StereoKitError> {
         let mut c_files = Vec::new();
@@ -3448,15 +4023,16 @@ impl SHCubemap {
             c_files_ptr.push(str.as_ptr());
         }
         let in_arr_cube_face_file_xxyyzz = c_files_ptr.as_mut_slice().as_mut_ptr();
-        let tex = Tex(NonNull::new(unsafe {
-            tex_create_cubemap_files(in_arr_cube_face_file_xxyyzz, srgb_data as Bool32T, load_priority)
-        })
-        .ok_or(StereoKitError::TexFiles(
-            PathBuf::from(r"one_of_6_files"),
-            "tex_create_cubemap_files failed".to_string(),
-        ))?);
+        let tex =
+            Tex(
+                NonNull::new(unsafe { tex_create_cubemap_files(in_arr_cube_face_file_xxyyzz, flags, load_priority) })
+                    .ok_or(StereoKitError::TexFiles(
+                    PathBuf::from(r"one_of_6_files"),
+                    "tex_create_cubemap_files failed".to_string(),
+                ))?,
+            );
 
-        let reflection = Self::gen_cubemap_reflection(&tex, None, 64).ok_or(StereoKitError::TexFiles(
+        let reflection = Self::gen_cubemap_reflection(&tex, None, 64, None).ok_or(StereoKitError::TexFiles(
             PathBuf::from(r"one_of_6_files"),
             "gen_cubemap_reflection failed".to_string(),
         ))?;
@@ -3579,6 +4155,10 @@ impl SHCubemap {
     ///   environments. The source itself is not a valid destination.
     /// * `max_resolution` - Cap for the reflection texture's face resolution when a new texture is created. Reflection
     ///   data is low frequency, so this can stay small.
+    /// * `flags` - Compression and Blocking are used here, since a reflection is always opaque color in a known format.
+    ///   [`TexData::None`] uses the default compression, and [`TexData::CompressNone`] keeps the convolved texture as
+    ///   is, which can still be rendered into. [`TexData::Blocking`] waits for the source to load and the reflection to
+    ///   finish before returning.
     ///
     /// Returns the reflection cubemap and its lighting, or None on failure.
     /// see also [`tex_gen_cubemap_reflection`] [`Tex::gen_cubemap_reflection`] [`SHCubemap::from_cubemap`]
@@ -3595,7 +4175,7 @@ impl SHCubemap {
     ///     GradientKey::new(named_colors::WHITE, 1.0)];
     /// let sky_cubemap = SHCubemap::gen_cubemap_gradient(Gradient::new(Some(&keys)), Vec3::UP, 128);
     ///
-    /// let reflection = SHCubemap::gen_cubemap_reflection(&sky_cubemap.tex, None, 64)
+    /// let reflection = SHCubemap::gen_cubemap_reflection(&sky_cubemap.tex, None, 64, None)
     ///                            .expect("reflection should be generated");
     ///
     /// assert_eq!(reflection.tex.get_asset_state(), AssetState::Loaded);
@@ -3606,8 +4186,9 @@ impl SHCubemap {
         source_cubemap: impl AsRef<Tex>,
         into: Option<&Tex>,
         max_resolution: i32,
+        flags: Option<TexData>,
     ) -> Option<SHCubemap> {
-        let reflection = Tex::gen_cubemap_reflection(source_cubemap, into, max_resolution)?;
+        let reflection = Tex::gen_cubemap_reflection(source_cubemap, into, max_resolution, flags)?;
         Some(reflection.get_cubemap_lighting())
     }
 
@@ -3671,9 +4252,9 @@ impl SHCubemap {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{tex::SHCubemap, render::Renderer};
+    /// use stereokit_rust::{tex::{TexData, SHCubemap}, render::Renderer};
     ///
-    /// let sh_cubemap = SHCubemap::from_cubemap("hdri/sky_dawn.hdr", true, 9999)
+    /// let sh_cubemap = SHCubemap::from_cubemap("hdri/sky_dawn.hdr", TexData::Srgb, 9999)
     ///                                .expect("Cubemap should be created");
     /// assert_eq!(Renderer::get_skybox_visible(), true);
     ///

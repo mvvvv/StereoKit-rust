@@ -212,7 +212,7 @@ pub struct GPUMemory {
 /// let material = Material::pbr();
 /// let transform_sun = Matrix::t([-6.0, -4.0, -10.0]);
 ///
-/// let plane = Model::from_file("plane.glb", None, None).expect("plane.glb should be there");
+/// let plane = Model::from_file("plane.glb", None, None, None).expect("plane.glb should be there");
 /// let transform_plane = Matrix::t_r_s([0.0, 0.2, -0.7], [0.0, 120.0, 0.0], [0.15, 0.15, 0.15]);
 ///
 /// // We want to replace the gray background with a dark blue sky:
@@ -281,7 +281,11 @@ unsafe extern "C" {
     pub fn render_get_skybox_visible() -> Bool32T;
 
     pub fn render_global_texture(register_slot: i32, texture: TexT);
+    pub fn render_get_global_texture(register_slot: i32) -> TexT;
     pub fn render_global_buffer(register_slot: i32, buffer: MaterialBufferT);
+    pub fn render_set_global_tex(name: *const c_char, texture: TexT);
+    pub fn render_get_global_tex(name: *const c_char) -> TexT;
+    pub fn render_set_global_buffer(name: *const c_char, buffer: MaterialBufferT);
     pub fn render_add_mesh(
         mesh: MeshT,
         material: MaterialT,
@@ -630,9 +634,9 @@ impl Renderer {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{render::Renderer, system::Assets, tex::SHCubemap};
+    /// use stereokit_rust::{render::Renderer, system::Assets, tex::{TexData, SHCubemap}};
     ///
-    /// let sky_cubemap = SHCubemap::from_cubemap("hdri/sky_dawn.hdr", true, 9999)
+    /// let sky_cubemap = SHCubemap::from_cubemap("hdri/sky_dawn.hdr", TexData::Srgb, 9999)
     ///                        .expect("sky_cubemap should be created");
     ///
     /// let skybox_tex = sky_cubemap.get().1;
@@ -771,7 +775,7 @@ impl Renderer {
     /// use stereokit_rust::{render::{Renderer, RenderLayer}, maths::Matrix,
     ///                      model::Model, util::named_colors};
     ///
-    /// let model = Model::from_file("plane.glb", None, None).expect("plane.glb should be there");
+    /// let model = Model::from_file("plane.glb", None, None, None).expect("plane.glb should be there");
     /// let transform1 = Matrix::t([-2.5, 0.0, -5.0]);
     /// let transform2 = Matrix::t([ 2.5, 0.0, -5.0]);
     ///
@@ -972,21 +976,21 @@ impl Renderer {
         render.render_to(to_render_target, to_target_index);
     }
 
-    /// This attaches a texture resource globally across all shaders. StereoKit uses this to attach the sky cubemap for
-    /// use in reflections across all materials (register 11). It can be used for things like shadowmaps, wind data, etc.
-    ///  Prefer a higher registers (11+) to prevent conflicting with normal Material textures.
+    /// This attaches a texture resource globally across all shaders, by register number. A global set this way
+    /// overrides any texture a Material sets in that register.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SetGlobalTexture.html>
-    /// * `texture_register` - The texture resource register the texture will bind to. SK uses register 11 already, so
-    ///   values above that should be fine.
+    /// * `texture_register` - The texture resource register the texture will bind to.
     /// * `tex` - The texture to assign globally. Setting None here will clear any texture that is currently bound.
+    ///
+    /// Obsolete in the C# API: shaders now share globals by name, prefer [`Renderer::set_global_texture_by_name`].
     ///
     /// see also [`render_global_texture`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{render::Renderer, tex::Tex};
+    /// use stereokit_rust::{render::Renderer, tex::{Tex, TexData}};
     ///
-    /// let tex = Tex::from_file("hdri/sky_dawn.jpeg", true, None)
+    /// let tex = Tex::from_file("hdri/sky_dawn.jpeg", TexData::Srgb, None)
     ///                    .expect("tex should be created");
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
@@ -1006,14 +1010,76 @@ impl Renderer {
         }
     }
 
-    /// This attaches a buffer resource globally across all shaders. StereoKit uses this to attach the stereokit
-    /// rendering constants. It can be used for things like shadowmaps, wind data, etc.
+    /// This attaches a texture globally to every shader texture with this name, wherever a Material has left that
+    /// texture at its default. StereoKit uses this to provide the reflection cubemap as `sk_cubemap`. It can be used for
+    /// things like shadowmaps, wind data, etc. A texture set on the Material itself always wins over a global one.
+    /// <https://stereokit.net/Pages/StereoKit/Renderer/SetGlobalTexture.html>
+    /// * `name` - The name of the texture in the shader. Only the first 31 characters are used, so keep names shorter
+    ///   than that.
+    /// * `tex` - The texture to assign globally. Setting None here will clear any texture that is currently bound.
+    ///
+    /// see also [`render_set_global_tex`] [`Renderer::get_global_texture`]
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::{render::Renderer, tex::{Tex, TexData}};
+    ///
+    /// let tex = Tex::from_file("hdri/sky_dawn.jpeg", TexData::Srgb, None)
+    ///                    .expect("tex should be created");
+    ///
+    /// test_steps!( // !!!! Get a proper main loop !!!!
+    ///     if iter < 2 {
+    ///         Renderer::set_global_texture_by_name("my_texture", Some(&tex));
+    ///     } else {
+    ///         Renderer::set_global_texture_by_name("my_texture", None);
+    ///     }
+    /// );
+    /// assert_eq!(Renderer::get_global_texture("my_texture"), None);
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn set_global_texture_by_name<S: AsRef<str>>(name: S, tex: Option<&Tex>) {
+        let cstr = CString::new(name.as_ref()).unwrap_or_default();
+        unsafe { render_set_global_tex(cstr.as_ptr(), tex.map_or(null_mut(), |tex| tex.0.as_ptr())) }
+    }
+
+    /// This attaches a buffer resource globally across all shaders, by register number.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SetGlobalBuffer.html>
-    /// * `buffer_register` - Valid values are 3-16. This is the register id that this data will be bound to. In HLSL,
+    /// * `buffer_register` - Valid values are 3-15. This is the register id that this data will be bound to. In HLSL,
     ///   you'll see the slot id for '3' indicated like this `: register(b3)`
     /// * `buffer` - The data buffer you would like to bind
     ///
+    /// Obsolete in the C# API: shaders now share globals by name, prefer [`Renderer::set_global_buffer_by_name`].
+    ///
     /// see also [`render_global_buffer`] []
+    #[deprecated(since = "0.40.0", note = "Shaders now share globals by name, use set_global_buffer_by_name instead.")]
+    pub fn set_global_buffer<T>(buffer_register: i32, buffer: &MaterialBuffer<T>) {
+        unsafe {
+            render_global_buffer(buffer_register, buffer.as_ref().as_ptr());
+        }
+    }
+
+    /// Unbinds any global MaterialBuffer previously bound to this register slot (3-16). Equivalent to passing None
+    /// to [`Renderer::set_global_buffer`]. Provided as a convenience method.
+    /// <https://stereokit.net/Pages/StereoKit/Renderer/SetGlobalBuffer.html>
+    /// * `buffer_register` - Valid values are 3-16. This is the register id the data was bound to.
+    ///
+    /// see also [`render_global_buffer`] [`Renderer::set_global_buffer`]
+    #[deprecated(
+        since = "0.40.0",
+        note = "Shaders now share globals by name, use unset_global_buffer_by_name instead."
+    )]
+    pub fn unset_global_buffer(buffer_register: i32) {
+        unsafe { render_global_buffer(buffer_register, std::ptr::null_mut()) }
+    }
+
+    /// This attaches a buffer globally to every shader cbuffer with this name, wherever a Material has left that buffer
+    /// unset. It can be used for things like shadowmaps, wind data, etc.
+    /// <https://stereokit.net/Pages/StereoKit/Renderer/SetGlobalBuffer.html>
+    /// * `name` - The name of the cbuffer in the shader. Only the first 31 characters are used, so keep names shorter
+    ///   than that.
+    /// * `buffer` - The data buffer you would like to bind.
+    ///
+    /// see also [`render_set_global_buffer`] [`Renderer::unset_global_buffer_by_name`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -1029,23 +1095,22 @@ impl Renderer {
     /// buffer.set(&mut globals as *mut _);
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     // Bind the buffer to slot 3 so shaders can read it.
-    ///     Renderer::set_global_buffer( 3, &buffer);
+    ///     // Bind the buffer to slot_3 so shaders can read it.
+    ///     Renderer::set_global_buffer_by_name( "slot_3", &buffer);
     /// );
     /// # } sk::Sk::shutdown();
     /// ```
-    pub fn set_global_buffer<T>(buffer_register: i32, buffer: &MaterialBuffer<T>) {
-        unsafe {
-            render_global_buffer(buffer_register, buffer.as_ref().as_ptr());
-        }
+    pub fn set_global_buffer_by_name<S: AsRef<str>, T>(name: S, buffer: &MaterialBuffer<T>) {
+        let cstr = CString::new(name.as_ref()).unwrap_or_default();
+        unsafe { render_set_global_buffer(cstr.as_ptr(), buffer.as_ref().as_ptr()) }
     }
 
-    /// Unbinds any global MaterialBuffer previously bound to this register slot (3-16). Equivalent to passing None
-    /// to [`Renderer::set_global_buffer`]. Provided as a convenience method.
+    /// This attaches a buffer globally to every shader cbuffer with this name, wherever a Material has left that buffer
+    /// unset. This is for clearing a buffer with None.
     /// <https://stereokit.net/Pages/StereoKit/Renderer/SetGlobalBuffer.html>
-    /// * `buffer_register` - Valid values are 3-16. This is the register id the data was bound to.
+    /// * `name` - The name of the cbuffer in the shader.
     ///
-    /// see also [`render_global_buffer`] [`Renderer::set_global_buffer`]
+    /// see also [`render_set_global_buffer`] [`Renderer::set_global_buffer_by_name`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -1058,16 +1123,17 @@ impl Renderer {
     /// # {
     /// let buffer = MaterialBuffer::<Globals>::new();
     /// test_steps!(
-    ///     Renderer::set_global_buffer(4, &buffer);
+    ///     Renderer::set_global_buffer_by_name("slot_4", &buffer);
     ///     // Later we decide to unbind it completely
     ///     if iter == number_of_steps -1 {
-    ///         Renderer::unset_global_buffer(4);
+    ///         Renderer::unset_global_buffer_by_name("slot_4");
     ///     }
     /// );
     /// # } sk::Sk::shutdown();
     /// ```
-    pub fn unset_global_buffer(buffer_register: i32) {
-        unsafe { render_global_buffer(buffer_register, std::ptr::null_mut()) }
+    pub fn unset_global_buffer_by_name<S: AsRef<str>>(name: S) {
+        let cstr = CString::new(name.as_ref()).unwrap_or_default();
+        unsafe { render_set_global_buffer(cstr.as_ptr(), null_mut()) }
     }
 
     /// Schedules a screenshot for the end of the frame! The view will be rendered from the given pose, with a
@@ -1361,6 +1427,19 @@ impl Renderer {
         unsafe { render_set_ortho_size(view_port_height_meters) }
     }
 
+    /// Gets the texture last assigned globally with [`Renderer::set_global_texture_by_name`].
+    /// <https://stereokit.net/Pages/StereoKit/Renderer/GetGlobalTexture.html>
+    /// * `name` - The name of the texture in the shader.
+    ///
+    /// Returns the global texture with this name, or None if none is set.
+    ///
+    /// see also [`render_get_global_tex`] [`Renderer::set_global_texture_by_name`]
+    /// see example in [`Renderer::set_global_texture_by_name`]
+    pub fn get_global_texture<S: AsRef<str>>(name: S) -> Option<Tex> {
+        let cstr = CString::new(name.as_ref()).unwrap_or_default();
+        NonNull::new(unsafe { render_get_global_tex(cstr.as_ptr()) }).map(Tex)
+    }
+
     /// Gets the root transform of the camera! This will be the identity matrix by default. The user’s head
     /// location will then be relative to this point. This is great to use if you’re trying to do teleportation,
     /// redirected walking, or just shifting the floor around.
@@ -1617,7 +1696,7 @@ impl Renderer {
 ///                      tex::{Tex, TexType, TexFormat}, material::Material,
 ///                      mesh::Mesh, render::{RenderList, RenderClear, RenderBuilder}};
 ///
-/// let model = Model::from_file("plane.glb", None, None).unwrap_or_default().copy();
+/// let model = Model::from_file("plane.glb", None, None, None).unwrap_or_default().copy();
 ///
 /// let render_tex = Tex::gen_color(Color128::WHITE, 128, 128,
 ///                       TexType::Rendertarget, TexFormat::Rgba32Srgb);
@@ -2012,7 +2091,7 @@ impl RenderList {
     ///                      tex::{Tex, TexType, TexFormat}, material::Material,
     ///                      mesh::Mesh, render::{RenderBuilder, RenderList,RenderClear, RenderLayer}};
     ///
-    /// let model = Model::from_file("plane.glb", None, None).unwrap_or_default().copy();
+    /// let model = Model::from_file("plane.glb", None, None, None).unwrap_or_default().copy();
     ///
     /// let at = Vec3::new(-2.0, 8.0, 20.9);
     /// let perspective = Matrix::perspective(45.0, 1.0, 0.01, 1550.0);
@@ -2089,7 +2168,7 @@ impl RenderList {
     ///                      tex::{Tex, TexType, TexFormat}, material::Material,
     ///                      mesh::Mesh, render::{RenderBuilder, RenderList,RenderClear, RenderLayer}};
     ///
-    /// let model = Model::from_file("plane.glb", None, None).unwrap_or_default().copy();
+    /// let model = Model::from_file("plane.glb", None, None, None).unwrap_or_default().copy();
     /// let material_override = Material::pbr().copy();
     ///
     /// let at = Vec3::new(-2.0, 8.0, 20.9);

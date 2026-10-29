@@ -55,7 +55,7 @@ impl Default for RenderList1 {
         let render_tex_b =
             Tex::render_target(128, 128, None, TexFormat::Rgba32Srgb, TexFormat::Depth16).unwrap_or_default();
         let mut render_mat = Material::pbr().copy();
-        let model = Model::from_file("plane.glb", None, None).unwrap_or_default();
+        let model = Model::from_file("plane.glb", None, None, None).unwrap_or_default();
 
         let transform_model = Matrix::r(Quat::from_angles(90.0, 90.0, 45.0));
         let material_quad = Material::pbr();

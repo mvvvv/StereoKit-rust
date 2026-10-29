@@ -9,7 +9,7 @@ use crate::{
     maths::{Pose, Quat, Vec2, Vec3, units::CM},
     prelude::*,
     render::Renderer,
-    tex::{Tex, TexFormat},
+    tex::{Tex, TexData, TexFormat},
     tools::asset_preview::{read_rgba_bitmap, write_rgba_bitmap},
     ui::Ui,
     util::{PickerMode, Platform},
@@ -167,7 +167,7 @@ impl ScreenshotViewer {
                     match read_rgba_bitmap(Path::new(&file_name)) {
                         Ok((width, height, pixels)) => {
                             Log::diag(format!("RGBA file {} with size is {}x{}", file_name, width, height));
-                            tex.set_colors32(width, height, &pixels);
+                            tex.set_colors_data(width, height, &pixels, TexFormat::Rgba32Srgb, TexData::None, None);
                             self.screen = Sprite::from_tex(&self.tex, None, None).ok();
                         }
                         Err(err) => Log::warn(format!("Screenshoot Error when reading file {file_name} : {err:?}")),

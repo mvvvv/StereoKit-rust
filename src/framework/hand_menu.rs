@@ -5,7 +5,7 @@ use crate::{
     prelude::*,
     sound::Sound,
     system::{Align, FingerId, Hand, Handed, Hierarchy, Input, JointId, Key, Lines, TextBuilder, TextStyle},
-    tex::Tex,
+    tex::{Tex, TexData},
     ui::{Ui, UiColor},
     util::{
         Color128, Device, Time,
@@ -366,6 +366,7 @@ pub const HAND_MENU_RADIAL_FOCUS: &str = "hand_menu_radial_focus";
 ///
 /// ### Examples
 /// ```
+/// # use stereokit_rust::tex::TexData;
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{framework::*, material::Material};
 ///
@@ -374,7 +375,7 @@ pub const HAND_MENU_RADIAL_FOCUS: &str = "hand_menu_radial_focus";
 ///
 /// // nice icon
 /// let mut menu_ico = Material::pbr_clip()
-///     .tex_file_copy("icons/hamburger.png", true, None).unwrap_or_default();
+///     .tex_file_copy("icons/hamburger.png", TexData::Srgb, None).unwrap_or_default();
 /// menu_ico.clip_cutoff(0.1);
 ///
 /// //---Create then load hand menu radial
@@ -521,10 +522,10 @@ impl HandMenuRadial {
         generate_slice_mesh(360.0, activation_btn_radius, activation_btn_radius + 0.005, 0.0, &mut activation_ring);
         let child_indicator = generate_child_indicator(Self::MAX_DIST - 0.008, 0.004);
         let img_frame = generate_img_frame(Self::MIN_DIST + 0.013, 0.012);
-        let tex_checked = Tex::from_file("icons/radio.png", true, None).unwrap_or_default();
+        let tex_checked = Tex::from_file("icons/radio.png", TexData::Srgb, None).unwrap_or_default();
         let mut checked_material = Material::pbr_clip().copy();
         checked_material.diffuse_tex(tex_checked).clip_cutoff(0.1);
-        let tex_on_checked = Tex::from_file("icons/checked.png", true, None).unwrap_or_default();
+        let tex_on_checked = Tex::from_file("icons/checked.png", TexData::Srgb, None).unwrap_or_default();
         let mut on_checked_material = Material::pbr_clip().copy();
         on_checked_material.diffuse_tex(tex_on_checked).clip_cutoff(0.1).color_tint(GREEN);
         let mut text_style = TextStyle::default();

@@ -320,7 +320,7 @@ impl Lighting {
     ///                      util::Color128};
     ///
     /// let sky_cubemap = Tex::gen_color(Color128::WHITE, 128, 128, TexType::Cubemap, TexFormat::Rgba32Linear);
-    /// let reflection = Tex::gen_cubemap_reflection(&sky_cubemap, None, 64)
+    /// let reflection = Tex::gen_cubemap_reflection(&sky_cubemap, None, 64, None)
     ///                     .expect("reflection should be generated");
     /// Lighting::reflection(Some(&reflection));
     ///

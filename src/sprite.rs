@@ -422,6 +422,8 @@ impl Sprite {
     ///
     /// let sprite = Sprite::from_file("hdri/sky_dawn.hdr", None, None)
     ///                  .expect("open_gltf.jpeg should be able to create sprite");
+    /// // Compression runs on the asset system, so let it land before reading the size.
+    /// system::Assets::block_for_priority(i32::MAX);
     /// assert_eq!(sprite.get_aspect(), 2.0);
     /// # test_steps!();
     /// # sk::Sk::shutdown();
@@ -445,6 +447,8 @@ impl Sprite {
     ///
     /// let sprite = Sprite::from_file("hdri/sky_dawn.hdr", None, None)
     ///                  .expect("open_gltf.jpeg should be able to create sprite");
+    /// // Compression runs on the asset system, so let it land before reading the size.
+    /// system::Assets::block_for_priority(i32::MAX);
     /// assert_eq!(sprite.get_height(), 2048);
     /// # test_steps!();
     /// # sk::Sk::shutdown();
@@ -468,6 +472,8 @@ impl Sprite {
     ///
     /// let sprite = Sprite::from_file("hdri/sky_dawn.hdr", None, None)
     ///                  .expect("open_gltf.jpeg should be able to create sprite");
+    /// // Compression runs on the asset system, so let it land before reading the size.
+    /// system::Assets::block_for_priority(i32::MAX);
     /// assert_eq!(sprite.get_width(), 4096);
     /// # test_steps!();
     /// # sk::Sk::shutdown();
@@ -491,6 +497,8 @@ impl Sprite {
     ///
     /// let sprite = Sprite::from_file("hdri/sky_dawn.hdr", None, None)
     ///                  .expect("open_gltf.jpeg should be able to create sprite");
+    /// // Compression runs on the asset system, so let it land before reading the size.
+    /// system::Assets::block_for_priority(i32::MAX);
     /// assert_eq!(sprite.get_normalized_dimensions(), Vec2::new(1.0, 0.5));
     /// # test_steps!();
     /// # sk::Sk::shutdown();

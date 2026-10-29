@@ -56,7 +56,7 @@ impl Default for Tex2 {
 
         let mut material = Material::from_file("shaders/texture3d.hlsl.sks", None).unwrap_or_default();
         material.transparency(Transparency::Blend);
-        material.get_all_param_info().set_texture("volume", &volume).set_matrix("world_inv", world_inv);
+        material.get_all_param_info().set_texture("volume", Some(&volume)).set_matrix("world_inv", world_inv);
 
         Self {
             id: "Tex2".to_string(),

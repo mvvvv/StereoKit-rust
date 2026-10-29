@@ -107,7 +107,7 @@ impl Default for Subpass1 {
         let mesh_cube = Mesh::generate_cube(Vec3::ONE * 0.5, None);
         let mesh_sphere = Mesh::generate_sphere(0.5, None);
         let mesh_round_cube = Mesh::generate_rounded_cube(Vec3::ONE * 0.5, 0.1, None);
-        let model = Model::from_file("plane.glb", None, None).unwrap_or_default();
+        let model = Model::from_file("plane.glb", None, None, None).unwrap_or_default();
 
         let transform_model = Matrix::t_r(Vec3::new(5.0, 11.0, -15.0), [45.0, 45.0, 45.0]);
         let transform_cube = Matrix::t_r(Vec3::new(-0.6, 1.0, -2.6), [45.0, 45.0, 0.0]);

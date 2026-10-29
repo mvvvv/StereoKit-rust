@@ -1,3 +1,4 @@
+use crate::tex::TexData;
 use crate::{
     font::Font,
     framework::{Appearence, ISTEPPER_REMOVED},
@@ -1875,7 +1876,7 @@ impl Previewer for BasicPreviewer {
             if Assets::TEXTURE_FORMATS.contains(&ext.as_str()) {
                 // Asset1 pattern: load the texture from file; StereoKit decodes it asynchronously
                 // in its own job threads, and the sprite displays it as soon as it is ready.
-                let image_tex = Tex::from_file(&file_path, true, None).unwrap_or_else(|err| {
+                let image_tex = Tex::from_file(&file_path, TexData::Srgb, None).unwrap_or_else(|err| {
                     Log::warn(format!("BasicPreviewer cannot load the texture {file_path:?}: {err}"));
                     Tex::default()
                 });
@@ -1885,7 +1886,7 @@ impl Previewer for BasicPreviewer {
                 // big-endian u32s, then the RGBA8888 pixels, uploaded into the display texture with its real size.
                 match read_rgba_bitmap(&file_path) {
                     Ok((width, height, pixels)) => {
-                        let image_tex = Tex::from_color32(&pixels, width, height, true).unwrap_or_default();
+                        let image_tex = Tex::from_color32(&pixels, width, height, TexData::Srgb).unwrap_or_default();
                         // Log::diag(format!(
                         //     "BasicPreviewer loaded RGBA bitmap {}: {file_path:?} ({width}x{height})",
                         //     image_tex.get_id()

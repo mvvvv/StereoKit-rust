@@ -5,7 +5,7 @@ use stereokit_rust::{
     mesh::{Mesh, Vertex},
     prelude::*,
     system::{OcclusionCaps, Text, World},
-    tex::Tex,
+    tex::{TexData, Tex},
     tools::notif::HudNotification,
     ui::{Ui, UiMove, UiWin},
     util::{
@@ -50,7 +50,7 @@ impl Default for Shaders1 {
         let mut blinker_material =
             Material::from_file("shaders/blinker.hlsl.sks", Some("red_material")).unwrap_or_default();
         blinker_material
-            .diffuse_tex(Tex::from_file("textures/open_gltf.jpeg", true, None).unwrap_or_default())
+            .diffuse_tex(Tex::from_file("textures/open_gltf.jpeg", TexData::Srgb, None).unwrap_or_default())
             .tex_transform(Vec4::new(0.0, 0.0, 4.0, 4.0))
             .color_tint(WHITE);
 
@@ -62,7 +62,7 @@ impl Default for Shaders1 {
             .time(10.0);
 
         // fresh water
-        let bump_tex = Tex::from_file("textures/water/bump_large.ktx2", true, None).unwrap();
+        let bump_tex = Tex::from_file("textures/water/bump_large.ktx2", TexData::Srgb, None).unwrap();
 
         let mut water2 =
             Material::from_file("shaders/water_pbr2.hlsl.sks", "water_pbr2_s".into()).unwrap_or_default().copy();

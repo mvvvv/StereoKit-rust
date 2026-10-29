@@ -7,7 +7,7 @@ use stereokit_rust::{
     model::Model,
     prelude::*,
     render::RenderBuilder,
-    tex::{SHCubemap, Tex, TexFormat, TexSample},
+    tex::{TexData, SHCubemap, Tex, TexFormat, TexSample},
     tools::{fly_over::ENABLE_FLY_OVER, log_window::SHOW_LOG_WINDOW, screenshot::SHOW_SCREENSHOT_WINDOW},
     util::{
         Gradient, SHLight, SphericalHarmonics,
@@ -57,16 +57,17 @@ impl Default for HandMenuRadial1 {
         Log::diag("calcaire_blanc params:");
         let param_infos = tile.get_all_param_info();
         for param in tile.get_all_param_info() {
-            match param.get_name() {
-                "metal" => {
-                    let mut metal_tex = param_infos.get_texture("metal").unwrap();
+            // A texture parameter that the material leaves at the shader's default reads as None,
+            // there's nothing to copy over in that case.
+            match (param.get_name(), param_infos.get_texture(param.get_name())) {
+                ("metal", Some(mut metal_tex)) => {
                     metal_tex.sample_mode(TexSample::Anisotropic).anisotropy(6);
                     clean_tile.metal_tex(metal_tex);
                     &mut clean_tile
                 }
-                "diffuse" => clean_tile.diffuse_tex(param_infos.get_texture("diffuse").unwrap()),
-                "normal" => clean_tile.normal_tex(param_infos.get_texture("normal").unwrap()),
-                "occlusion" => clean_tile.occlusion_tex(param_infos.get_texture("occlusion").unwrap()),
+                ("diffuse", Some(diffuse_tex)) => clean_tile.diffuse_tex(diffuse_tex),
+                ("normal", Some(normal_tex)) => clean_tile.normal_tex(normal_tex),
+                ("occlusion", Some(occlusion_tex)) => clean_tile.occlusion_tex(occlusion_tex),
                 _ => &mut clean_tile,
             };
             assert!(param_infos.has_param(param.get_name(), param.get_type()));
@@ -80,13 +81,13 @@ impl Default for HandMenuRadial1 {
             .queue_offset(11);
 
         // old parquet
-        let parquet_img = Tex::from_file("textures/parquet2/parquet2.ktx2", true, None).unwrap();
-        let parquetao = Tex::from_file("textures/parquet2/parquet2ao.ktx2", true, None).unwrap();
-        let parquetroughness = Tex::from_file("textures/parquet2/parquet2roughness.ktx2", true, None).unwrap();
-        let parquetmetal = Tex::from_file("textures/parquet2/parquet2metal.ktx2", true, None).unwrap();
-        let bump_tex = Tex::from_file("textures/water/bump_large.ktx2", true, None).unwrap();
-        let bump_tile_tex = Tex::from_file("textures/water/bump_large_tiles.ktx2", true, None).unwrap();
-        let bump_inverse_tex = Tex::from_file("textures/water/bump_large_inverse.ktx2", true, None).unwrap();
+        let parquet_img = Tex::from_file("textures/parquet2/parquet2.ktx2", TexData::Srgb, None).unwrap();
+        let parquetao = Tex::from_file("textures/parquet2/parquet2ao.ktx2", TexData::Srgb, None).unwrap();
+        let parquetroughness = Tex::from_file("textures/parquet2/parquet2roughness.ktx2", TexData::Srgb, None).unwrap();
+        let parquetmetal = Tex::from_file("textures/parquet2/parquet2metal.ktx2", TexData::Srgb, None).unwrap();
+        let bump_tex = Tex::from_file("textures/water/bump_large.ktx2", TexData::Srgb, None).unwrap();
+        let bump_tile_tex = Tex::from_file("textures/water/bump_large_tiles.ktx2", TexData::Srgb, None).unwrap();
+        let bump_inverse_tex = Tex::from_file("textures/water/bump_large_inverse.ktx2", TexData::Srgb, None).unwrap();
         //let mut parquet = Material::pbr().copy();
         let mut parquet =
             Material::from_file("shaders/large_tile_pbr.hlsl.sks", "parquet_pbr".into()).unwrap_or_default();
@@ -204,17 +205,17 @@ impl HandMenuRadial1 {
         let change_floor4 = SkInfo::get_message_closure(sk_info.clone(), id.clone(), CHANGE_FLOOR);
         let change_floor5 = SkInfo::get_message_closure(sk_info.clone(), id.clone(), CHANGE_FLOOR);
 
-        let mut menu_ico = Material::pbr_clip().tex_file_copy("icons/hamburger.png", true, None).unwrap_or_default();
+        let mut menu_ico = Material::pbr_clip().tex_file_copy("icons/hamburger.png", TexData::Srgb, None).unwrap_or_default();
         menu_ico.clip_cutoff(0.1);
 
         let mut screenshot_ico =
-            Material::pbr_clip().tex_file_copy("icons/screenshot.png", true, None).unwrap_or_default();
+            Material::pbr_clip().tex_file_copy("icons/screenshot.png", TexData::Srgb, None).unwrap_or_default();
         screenshot_ico.clip_cutoff(0.1);
 
-        let mut log_ico = Material::pbr_clip().tex_file_copy("icons/log_viewer.png", true, None).unwrap_or_default();
+        let mut log_ico = Material::pbr_clip().tex_file_copy("icons/log_viewer.png", TexData::Srgb, None).unwrap_or_default();
         log_ico.clip_cutoff(0.1);
 
-        let mut fly_over_ico = Material::pbr_clip().tex_file_copy("icons/fly_over.png", true, None).unwrap_or_default();
+        let mut fly_over_ico = Material::pbr_clip().tex_file_copy("icons/fly_over.png", TexData::Srgb, None).unwrap_or_default();
         fly_over_ico.clip_cutoff(0.1);
 
         //---- Sky domes and floor
@@ -250,7 +251,7 @@ impl HandMenuRadial1 {
         let cube2 = SHCubemap::gen_cubemap_sh(sh, 15, 5.0, 0.02);
 
         let mut cube3 =
-            SHCubemap::from_cubemap("hdri/sky_dawn.hdr", true, 0).unwrap_or_else(|_err| cube_default.clone_ref());
+            SHCubemap::from_cubemap("hdri/sky_dawn.hdr", TexData::Srgb, 0).unwrap_or_else(|_err| cube_default.clone_ref());
         cube3.sh.add(Vec3::new(-1.0, 0.15, -0.15).get_normalized(), RED).brightness(0.3);
         let lights: [SHLight; 1] = [SHLight::new(Vec3::new(-1.0, 0.15, -0.15).get_normalized(), RED); 1];
         let sh = SphericalHarmonics::from_lights(&lights);
@@ -264,12 +265,12 @@ impl HandMenuRadial1 {
         //     "hdri/giza/front.png",
         //     "hdri/giza/back.png",
         // ];
-        // cube4 = SHCubemap::from_cubemap_files(&cubemap_files, true, 0).unwrap_or(SHCubemap::get_rendered_sky());
+        // cube4 = SHCubemap::from_cubemap_files(&cubemap_files, TexData::Srgb, 0).unwrap_or(SHCubemap::get_rendered_sky());
 
         // You can also zip the files:
         // ktx create --cubemap --encode uastc  --format R8G8B8A8_UNORM  --assign-oetf linear --assign-primaries bt709
         //            --generate-mipmap right.png left.png top.png bottom.png front.png back.png cubemap_rgba32.ktx2
-        let mut cube4 = SHCubemap::from_cubemap("hdri/giza/cubemap_rgba32.ktx2", true, 0)
+        let mut cube4 = SHCubemap::from_cubemap("hdri/giza/cubemap_rgba32.ktx2", TexData::Srgb, 0)
             .unwrap_or_else(|_err| cube_default.clone_ref());
         let lights: [SHLight; 4] = [
             SHLight::new(Vec3::new(1.0, 0.25, 0.0).get_normalized(), DARK_GRAY),

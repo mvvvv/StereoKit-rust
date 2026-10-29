@@ -7,6 +7,7 @@ use stereokit_rust::{
     system::{Text, TextBuilder, TextStyle},
     util::named_colors::RED,
 };
+use stereokit_rust::tex::TexData;
 
 const ID: &str = "demo_0";
 
@@ -60,10 +61,10 @@ impl HandMenuRadial0 {
         let value_selected3 = self.value_selected.clone();
 
         // nice icons
-        let mut menu_ico = Material::pbr_clip().tex_file_copy("icons/hamburger.png", true, None).unwrap_or_default();
+        let mut menu_ico = Material::pbr_clip().tex_file_copy("icons/hamburger.png", TexData::Srgb, None).unwrap_or_default();
         menu_ico.clip_cutoff(0.1);
 
-        let mut show_ico = Material::pbr_clip().tex_file_copy("icons/log_viewer.png", true, None).unwrap_or_default();
+        let mut show_ico = Material::pbr_clip().tex_file_copy("icons/log_viewer.png", TexData::Srgb, None).unwrap_or_default();
         show_ico.clip_cutoff(0.1);
 
         //---Load hand menu

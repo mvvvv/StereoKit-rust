@@ -7,6 +7,7 @@ use crate::{
     render::RenderLayer,
     shader::{Shader, ShaderT},
     system::{AssetState, IAsset, Log},
+    tex::TexData,
     util::Color128,
 };
 use std::{
@@ -97,8 +98,14 @@ unsafe extern "C" {
         data_size: usize,
         shader: ShaderT,
         priority: i32,
+        tex_flags: TexData,
     ) -> ModelT;
-    pub fn model_create_file(filename_utf8: *const c_char, shader: ShaderT, priority: i32) -> ModelT;
+    pub fn model_create_file(
+        filename_utf8: *const c_char,
+        shader: ShaderT,
+        priority: i32,
+        tex_flags: TexData,
+    ) -> ModelT;
     pub fn model_set_id(model: ModelT, id: *const c_char);
     pub fn model_get_id(model: ModelT) -> *const c_char;
     pub fn model_addref(model: ModelT);
@@ -292,6 +299,10 @@ impl Model {
     /// * `data` - The binary data of a model file, this is NOT a raw array of vertex and index data!
     /// * `shader` - The shader to use for the model's materials!, if None, this will automatically determine the best
     ///   available shader to use.
+    /// * `tex_flags` - Compression for the model's textures. Only the compression flags and [`TexData::Blocking`] are
+    ///   used here, since the model already knows which textures are color, data, or normals. [`TexData::None`] (or
+    ///   None) uses the default compression, and [`TexData::Blocking`] loads the model and its textures before
+    ///   returning.
     /// * `priority` - The priority loading queue to process the mesh on.
     ///   Lower values will process first, using i32::MAX will push this mesh to the end. None will default to 10.
     ///
@@ -303,7 +314,7 @@ impl Model {
     ///
     /// let my_bytes = std::include_bytes!("../assets/plane.glb");
     ///
-    /// let model = Model::from_memory("my_bytes_center.glb", my_bytes, None, None)
+    /// let model = Model::from_memory("my_bytes_center.glb", my_bytes, None, None, None)
     ///                 .unwrap_or_default().copy();
     /// let transform = Matrix::t_r_s(Vec3::Y * 0.10, [0.0, 110.0, 0.0], Vec3::ONE * 0.09);
     ///
@@ -318,13 +329,22 @@ impl Model {
         file_name: S,
         data: &[u8],
         shader: Option<Shader>,
+        tex_flags: Option<TexData>,
         priority: Option<i32>,
     ) -> Result<Model, StereoKitError> {
         let c_file_name = CString::new(file_name.as_ref())?;
         let shader = shader.map(|shader| shader.0.as_ptr()).unwrap_or(null_mut());
         let priority = priority.unwrap_or(10);
+        let tex_flags = tex_flags.unwrap_or(TexData::None);
         match NonNull::new(unsafe {
-            model_create_mem(c_file_name.as_ptr(), data.as_ptr() as *const c_void, data.len(), shader, priority)
+            model_create_mem(
+                c_file_name.as_ptr(),
+                data.as_ptr() as *const c_void,
+                data.len(),
+                shader,
+                priority,
+                tex_flags,
+            )
         }) {
             Some(model) => Ok(Model(model)),
             None => Err(StereoKitError::ModelFromMem(file_name.as_ref().to_owned(), "file not found!".to_owned())),
@@ -342,6 +362,10 @@ impl Model {
     ///   is specified in the path.
     /// * `shader` - The shader to use for the model’s materials! If None, this will automatically determine the best
     ///   shader available to use.
+    /// * `tex_flags` - Compression for the model's textures. Only the compression flags and [`TexData::Blocking`] are
+    ///   used here, since the model already knows which textures are color, data, or normals. [`TexData::None`] (or
+    ///   None) uses the default compression, and [`TexData::Blocking`] loads the model and its textures before
+    ///   returning.
     /// * `priority` - The priority loading queue to process the mesh on. Lower values will process first, None
     ///   will default to 10.
     ///
@@ -351,7 +375,7 @@ impl Model {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model};
     ///
-    /// let model = Model::from_file("center.glb", None, None)
+    /// let model = Model::from_file("center.glb", None, None, None)
     ///                              .expect("Should load the model from file").copy();
     /// let transform = Matrix::t_r_s(Vec3::NEG_Y * 0.40, [0.0, 190.0, 0.0], Vec3::ONE * 0.25);
     ///
@@ -365,6 +389,7 @@ impl Model {
     pub fn from_file(
         file: impl AsRef<Path>,
         shader: Option<Shader>,
+        tex_flags: Option<TexData>,
         priority: Option<i32>,
     ) -> Result<Model, StereoKitError> {
         let path = file.as_ref();
@@ -372,7 +397,8 @@ impl Model {
         let c_str = CString::new(path.to_str().unwrap_or_default())?;
         let shader = shader.map(|shader| shader.0.as_ptr()).unwrap_or(null_mut());
         let priority = priority.unwrap_or(10);
-        match NonNull::new(unsafe { model_create_file(c_str.as_ptr(), shader, priority) }) {
+        let tex_flags = tex_flags.unwrap_or(TexData::None);
+        match NonNull::new(unsafe { model_create_file(c_str.as_ptr(), shader, priority, tex_flags) }) {
             Some(model) => Ok(Model(model)),
             None => Err(StereoKitError::ModelFromFile(path_buf.to_owned(), "file not found!".to_owned())),
         }
@@ -387,7 +413,7 @@ impl Model {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::model::Model;
     ///
-    /// let model = Model::from_file("center.glb", None, None).expect("Model should load");
+    /// let model = Model::from_file("center.glb", None, None, None).expect("Model should load");
     /// let model_copy = model.copy();
     ///
     /// assert_ne!(model, model_copy);
@@ -415,7 +441,7 @@ impl Model {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{model::Model, system::{Assets, AssetState}};
     ///
-    /// let mut model = Model::from_file("center.glb", None, None).expect("Model should load");
+    /// let mut model = Model::from_file("center.glb", None, None, None).expect("Model should load");
     /// model.id("my_model_id");
     ///
     /// let same_model = Model::find("my_model_id").expect("Model should be found");
@@ -442,7 +468,7 @@ impl Model {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{model::Model, system::{Assets, AssetState}};
     ///
-    /// let model = Model::from_file("center.glb", None, None).expect("Model should load");
+    /// let model = Model::from_file("center.glb", None, None, None).expect("Model should load");
     ///
     /// let same_model = model.clone_ref();
     ///
@@ -583,7 +609,7 @@ impl Model {
     /// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model, util::named_colors,
     ///                      render::RenderLayer};
     ///
-    /// let model = Model::from_file("center.glb", None, None)
+    /// let model = Model::from_file("center.glb", None, None, None)
     ///                        .expect("Could not load model").copy();
     /// let transform1 = Matrix::t_r_s([-0.70, -0.70, 0.0], [0.0, 190.0, 0.0], [0.25, 0.25, 0.25]);
     /// let transform2 = transform1 * Matrix::t(Vec3::X * 0.70);
@@ -624,7 +650,7 @@ impl Model {
     /// use stereokit_rust::{maths::{Vec3, Matrix}, model::Model, util::named_colors,
     ///                      material::Material, render::RenderLayer};
     ///
-    /// let model = Model::from_file("cuve.glb", None, None)
+    /// let model = Model::from_file("cuve.glb", None, None, None)
     ///                        .expect("Could not load model").copy();
     /// let transform1 = Matrix::t_r_s([-0.50, -0.10, 0.0], [45.0, 0.0, 0.0], [0.07, 0.07, 0.07]);
     /// let transform2 = transform1 * Matrix::t(Vec3::X * 0.70);
@@ -778,7 +804,7 @@ impl Model {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{model::Model, system::{Assets, AssetState}};
     /// # {
-    /// let model = Model::from_file("center.glb", None, None).expect("Model should load");
+    /// let model = Model::from_file("center.glb", None, None, None).expect("Model should load");
     ///
     /// Assets::block_for_priority(i32::MAX);
     /// test_steps!( // !!!! Get a proper main loop !!!!
@@ -851,7 +877,7 @@ impl Model {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::model::{Model, AnimMode};
     ///
-    /// let model = Model::from_file("mobiles.gltf", None, None)
+    /// let model = Model::from_file("mobiles.gltf", None, None, None)
     ///                              .expect("Could not load model").copy();
     /// let anims = model.get_anims();
     /// assert_eq!(anims.get_count(), 3);
@@ -998,7 +1024,7 @@ impl Model {
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{maths::{Vec3, Matrix}, model::{Model, AnimMode}, system::Assets};
 ///
-/// let model = Model::from_file("center.glb", None, None)
+/// let model = Model::from_file("center.glb", None, None, None)
 ///                              .expect("Could not load model").copy();
 /// let transform = Matrix::t_r_s(Vec3::NEG_Y * 0.40, [0.0, 190.0, 0.0], Vec3::ONE * 0.25);
 ///
@@ -1086,7 +1112,7 @@ impl<'a> Anims<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{model::Model, system::Assets};
     ///
-    /// let model = Model::from_file("mobiles.gltf", None, None)
+    /// let model = Model::from_file("mobiles.gltf", None, None, None)
     ///                              .expect("Could not load model").copy();
     /// Assets::block_for_priority(i32::MAX);
     ///
@@ -1118,7 +1144,7 @@ impl<'a> Anims<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::model::Model;
     ///
-    /// let model = Model::from_file("center.glb", None, None)
+    /// let model = Model::from_file("center.glb", None, None, None)
     ///                              .expect("Could not load model").copy();
     /// let anims = model.get_anims();
     /// assert_eq!(anims.get_count(), 1);
@@ -1150,7 +1176,7 @@ impl<'a> Anims<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::Matrix, model::{Model, AnimMode}};
     ///
-    /// let model = Model::from_file("center.glb", None, None)
+    /// let model = Model::from_file("center.glb", None, None, None)
     ///                              .expect("Could not load model").copy();
     /// let mut anims = model.get_anims();
     /// assert_eq!(anims.get_count(), 1);
@@ -1183,7 +1209,7 @@ impl<'a> Anims<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::model::{Model, AnimMode};
     ///
-    /// let model = Model::from_file("center.glb", None, None)
+    /// let model = Model::from_file("center.glb", None, None, None)
     ///                              .expect("Could not load model").copy();
     /// let mut anims = model.get_anims();
     ///
@@ -1219,7 +1245,7 @@ impl<'a> Anims<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::model::{Model, AnimMode};
     ///
-    /// let model = Model::from_file("center.glb", None, None)
+    /// let model = Model::from_file("center.glb", None, None, None)
     ///                              .expect("Could not load model").copy();
     /// let mut anims = model.get_anims();
     ///
@@ -1251,7 +1277,7 @@ impl<'a> Anims<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::model::{Model, AnimMode};
     ///
-    /// let model = Model::from_file("center.glb", None, None)
+    /// let model = Model::from_file("center.glb", None, None, None)
     ///                              .expect("Could not load model").copy();
     /// let mut anims = model.get_anims();
     /// anims.play_anim_idx(0, AnimMode::Manual);
@@ -1289,7 +1315,7 @@ impl<'a> Anims<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::model::{Model, AnimMode};
     ///
-    /// let model = Model::from_file("center.glb", None, None)
+    /// let model = Model::from_file("center.glb", None, None, None)
     ///                              .expect("Could not load model").copy();
     /// let mut anims = model.get_anims();
     /// anims.play_anim_idx(0, AnimMode::Manual);
@@ -1327,7 +1353,7 @@ impl<'a> Anims<'a> {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::model::{Model};
-    /// let model = Model::from_file("center.glb", None, None)
+    /// let model = Model::from_file("center.glb", None, None, None)
     ///     .expect("Could not load model")
     ///     .copy();
     ///
@@ -1356,7 +1382,7 @@ impl<'a> Anims<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::model::{Model};
     ///
-    /// let model = Model::from_file("mobiles.gltf", None, None)
+    /// let model = Model::from_file("mobiles.gltf", None, None, None)
     ///                             .expect("Could not load model").copy();
     ///
     /// let count = model.get_anims().get_count();
@@ -1378,7 +1404,7 @@ impl<'a> Anims<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::model::{Model, AnimMode};
     ///
-    /// let model = Model::from_file("mobiles.gltf", None, None)
+    /// let model = Model::from_file("mobiles.gltf", None, None, None)
     ///                            .expect("Could not load model").copy();
     ///
     /// let mut anims = model.get_anims();
@@ -1402,7 +1428,7 @@ impl<'a> Anims<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::model::{Model, AnimMode};
     ///
-    /// let model = Model::from_file("mobiles.gltf", None, None)
+    /// let model = Model::from_file("mobiles.gltf", None, None, None)
     ///                           .expect("Could not load model").copy();
     ///
     /// let mut anims = model.get_anims();
@@ -1428,7 +1454,7 @@ impl<'a> Anims<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::model::{Model, AnimMode};
     ///
-    /// let model = Model::from_file("center.glb", None, None)
+    /// let model = Model::from_file("center.glb", None, None, None)
     ///                           .expect("Could not load model").copy();
     ///
     /// let mut anims = model.get_anims();
@@ -1452,7 +1478,7 @@ impl<'a> Anims<'a> {
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::model::{Model, AnimMode};
     ///
-    /// let model = Model::from_file("center.glb", None, None)
+    /// let model = Model::from_file("center.glb", None, None, None)
     ///                          .expect("Could not load model").copy();
     /// let mut anims = model.get_anims();
     /// assert_eq!(anims.get_anim_completion(), 0.0);
@@ -1478,7 +1504,7 @@ impl<'a> Anims<'a> {
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{maths::{Vec3, Matrix} ,model::Model, util::Color128};
 ///
-/// let model = Model::from_file("center.glb", None, None)
+/// let model = Model::from_file("center.glb", None, None, None)
 ///                           .expect("Could not load model").copy();
 /// let transform = Matrix::t_r_s(Vec3::NEG_Y * 0.40, [0.0, 190.0, 0.0], Vec3::ONE * 0.25);
 ///

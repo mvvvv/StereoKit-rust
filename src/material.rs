@@ -3,14 +3,14 @@ use crate::compute::{ComputeBuffer, ComputeBufferT};
 use crate::maths::{Bool32T, Matrix, Vec2, Vec3, Vec4};
 use crate::shader::{Shader, ShaderT};
 use crate::system::{IAsset, Log, asset_get_id, asset_set_id};
-use crate::tex::{Tex, TexT};
+use crate::tex::{Tex, TexData, TexT};
 use crate::ui::IdHashT;
 use crate::util::Color128;
 use std::ffi::{CStr, CString, c_char, c_void};
 use std::marker::PhantomData;
 use std::mem::MaybeUninit;
 use std::path::Path;
-use std::ptr::NonNull;
+use std::ptr::{NonNull, null_mut};
 
 /// Also known as ‘alpha’ for those in the know. But there’s actually more than one type of transparency in rendering!
 /// The horrors. We’re keepin’ it fairly simple for now, so you get three options!
@@ -407,19 +407,22 @@ impl Material {
     /// if so you can use unwrap_or_default() to get the default.
     /// <https://stereokit.net/Pages/StereoKit/Tex/FromFile.html>
     /// * `tex_file_name` - The file name of the texture to load.
-    /// * `srgb_data` - If true, the texture will be loaded as sRGB data.
+    /// * `flags` - What this image holds, and how StereoKit should store it. [`TexData::Srgb`] suits most color images,
+    ///   while normal/metal/rough/data images want [`TexData::None`]. Add a compression flag to override the default
+    ///   compression.
     /// * `priority` - The priority sort order for this asset in the async loading system. Lower values mean loading
     ///   sooner.
     ///
     /// see also [Material::diffuse_tex] [`material_create`] [`material_set_id`]
     /// ### Examples
     /// ```
+    /// # use stereokit_rust::tex::TexData;
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::material::Material;
+    /// use stereokit_rust::{material::Material};
     ///
     /// let material1 = Material::unlit().copy();
     /// let material2 = Material::unlit().copy();
-    /// let material3 = Material::unlit().tex_file_copy("textures/open_gltf.jpeg", true, None)
+    /// let material3 = Material::unlit().tex_file_copy("textures/open_gltf.jpeg", TexData::Srgb, None)
     ///                    .expect("open_gltf.jpeg should load");
     ///
     /// assert_eq!(&material1.get_all_param_info().get_texture("diffuse").unwrap_or_default().get_id(),
@@ -431,10 +434,10 @@ impl Material {
     pub fn tex_file_copy(
         &mut self,
         tex_file_name: impl AsRef<Path>,
-        srgb_data: bool,
+        flags: TexData,
         priority: Option<i32>,
     ) -> Result<Material, StereoKitError> {
-        let tex = Tex::from_file(&tex_file_name, srgb_data, priority);
+        let tex = Tex::from_file(&tex_file_name, flags, priority);
         match tex {
             Ok(tex) => {
                 let mut mat = self.copy();
@@ -458,11 +461,11 @@ impl Material {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{material::Material, tex::Tex};
+    /// use stereokit_rust::{material::Material, tex::{TexData, Tex}};
     ///
     /// let material1 = Material::unlit().copy();
     /// let material2 = Material::unlit().copy();
-    /// let tex = Tex::from_file("textures/open_gltf.jpeg", true, None)
+    /// let tex = Tex::from_file("textures/open_gltf.jpeg", TexData::Srgb, None)
     ///                    .expect("tex should be created");
     /// let material3 = Material::unlit().tex_copy(tex);
     ///
@@ -611,12 +614,12 @@ impl Material {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{material::Material, tex::Tex};
+    /// use stereokit_rust::{material::Material, tex::{TexData, Tex}};
     ///
     /// let mut material = Material::unlit().copy();
     /// let default_tex = material.get_all_param_info().get_texture("diffuse").unwrap_or_default();
     ///
-    /// let tex = Tex::from_file("textures/open_gltf.jpeg", true, None)
+    /// let tex = Tex::from_file("textures/open_gltf.jpeg", TexData::Srgb, None)
     ///                    .expect("tex should be created");
     /// material.diffuse_tex(&tex);
     ///
@@ -677,13 +680,13 @@ impl Material {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{util::named_colors, material::Material, tex::Tex};
+    /// use stereokit_rust::{util::named_colors, material::Material, tex::{TexData, Tex}};
     ///
     /// let mut material = Material::pbr_clip()
-    ///                       .tex_file_copy("textures/water/bump_large.ktx2", true, Some(0))
+    ///                       .tex_file_copy("textures/water/bump_large.ktx2", TexData::Srgb, Some(0))
     ///                       .expect("tex bump_large.ktx2 should be created");
     ///
-    /// let tex = Tex::from_file("textures/water/bump_large_inverse.ktx2", true, None)
+    /// let tex = Tex::from_file("textures/water/bump_large_inverse.ktx2", TexData::Srgb, None)
     ///                    .expect("tex should be created");
     /// material.emission_tex(&tex).emission_factor(named_colors::RED);
     ///
@@ -743,9 +746,9 @@ impl Material {
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
     /// use stereokit_rust::{maths::{Matrix, Vec3}, system::AssetState,
-    ///                      tex::{Tex, SHCubemap}, mesh::Mesh,
+    ///                      tex::{TexData, Tex, SHCubemap}, mesh::Mesh,
     ///                      material::Material};
-    /// let mut sh_cubemap = SHCubemap::from_cubemap("hdri/sky_dawn.hdr", true, 9999)
+    /// let mut sh_cubemap = SHCubemap::from_cubemap("hdri/sky_dawn.hdr", TexData::Srgb, 9999)
     ///                         .expect("Cubemap should be created");
     /// sh_cubemap.sh.brightness(18.0);
     /// sh_cubemap.render_as_sky();
@@ -755,7 +758,7 @@ impl Material {
     /// // Pack two images into a single ORM texture:
     /// //   source 0 → R channel (Occlusion)
     /// //   source 1 → G and B channels (Roughness + Metallic)
-    /// let metal_tex = Tex::from_file("textures/screenshot.jpeg", true, None)
+    /// let metal_tex = Tex::from_file("textures/screenshot.jpeg", TexData::Srgb, None)
     ///                     .expect("tex should be created");
     ///
     /// let mut material = Material::pbr().copy();
@@ -778,13 +781,13 @@ impl Material {
     ///
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{material::Material, tex::Tex};
+    /// use stereokit_rust::{material::Material, tex::{TexData, Tex}};
     ///
     /// let mut material = Material::pbr_clip()
-    ///                     .tex_file_copy("textures/parquet2/parquet2.ktx2", true, Some(0))
+    ///                     .tex_file_copy("textures/parquet2/parquet2.ktx2", TexData::Srgb, Some(0))
     ///                     .unwrap_or_default();
     ///
-    /// let tex = Tex::from_file("textures/parquet2/parquet2metal.ktx2", true, None)
+    /// let tex = Tex::from_file("textures/parquet2/parquet2metal.ktx2", TexData::Srgb, None)
     ///                    .expect("tex should be created");
     /// material.metal_tex(&tex).metallic_amount(0.68);
     ///
@@ -816,12 +819,12 @@ impl Material {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{material::Material, tex::Tex};
+    /// use stereokit_rust::{material::Material, tex::{TexData, Tex}};
     ///
     /// let mut material = Material::from_file("shaders/water_pbr2.hlsl.sks", None)
     ///                      .unwrap_or_default();
     ///
-    /// let tex = Tex::from_file("textures/water/bump_large.ktx2", true, None)
+    /// let tex = Tex::from_file("textures/water/bump_large.ktx2", TexData::Srgb, None)
     ///                    .expect("tex should be created");
     /// material.normal_tex(&tex);
     ///
@@ -854,12 +857,12 @@ impl Material {
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{material::Material, tex::Tex};
+    /// use stereokit_rust::{material::Material, tex::{TexData, Tex}};
     ///
     /// let mut material = Material::from_file("shaders/large_tile_pbr.hlsl.sks", None)
     ///                       .unwrap_or_default();
     ///
-    /// let tex = Tex::from_file("textures/parquet2/parquet2ao.ktx2", true, None)
+    /// let tex = Tex::from_file("textures/parquet2/parquet2ao.ktx2", TexData::Srgb, None)
     ///                    .expect("tex should be created");
     /// material.occlusion_tex(&tex);
     ///
@@ -2143,29 +2146,44 @@ impl<'a> ParamInfos<'a> {
     /// and the value is not set!
     /// <https://stereokit.net/Pages/StereoKit/Material/SetTexture.html>
     /// * `name` - the name of the parameter to set
-    /// * `value` - the [Tex] to set for the parameter
+    /// * `value` - the [Tex] to set for the parameter. None returns the texture to the shader's default, which a global
+    ///   texture set via [`Renderer::set_global_texture_by_name`](crate::render::Renderer::set_global_texture_by_name)
+    ///   can fill.
     ///
     /// see also [`material_set_texture`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
-    /// use stereokit_rust::{material::Material, tex::{Tex}};
+    /// use stereokit_rust::{material::{Material, MaterialParam}, tex::{Tex, TexData}};
     ///
     /// let material = Material::from_file("shaders/brick_pbr.hlsl.sks", None)
     ///                    .unwrap_or_default();
     /// let mut param_infos = material.get_all_param_info();
-    /// assert_ne!( param_infos.get_texture("metal").unwrap_or_default(), Tex::default() );
-    /// let metal_tex = Tex::from_file("textures/open_gltf.jpeg", true, None)
+    ///
+    /// // The parameter exists, but nothing is set on the Material yet, so this is None and
+    /// // the shader's own default is what draws, or a global texture fills in.
+    /// assert!(param_infos.has_param("metal", MaterialParam::Texture));
+    /// assert_eq!(param_infos.get_texture("metal"), None);
+    ///
+    /// let metal_tex = Tex::from_file("textures/open_gltf.jpeg", TexData::Srgb, None)
     ///                    .expect("tex should be created");
-    /// param_infos.set_texture("metal", &metal_tex);
+    /// param_infos.set_texture("metal", Some(&metal_tex));
     /// assert_eq!( param_infos.get_texture("metal").unwrap_or_default(), metal_tex );
+    ///
+    /// // None returns the texture to the shader's default.
+    /// param_infos.set_texture("metal", None);
+    /// assert_eq!(param_infos.get_texture("metal"), None);
     /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
-    pub fn set_texture<S: AsRef<str>>(&mut self, name: S, value: impl AsRef<Tex>) -> &mut Self {
+    pub fn set_texture<S: AsRef<str>>(&mut self, name: S, value: Option<&Tex>) -> &mut Self {
         unsafe {
             let cstr = &CString::new(name.as_ref()).unwrap_or_default();
-            material_set_texture(self.material.0.as_ptr(), cstr.as_ptr(), value.as_ref().0.as_ptr())
+            material_set_texture(
+                self.material.0.as_ptr(),
+                cstr.as_ptr(),
+                value.map_or(null_mut(), |tex| tex.0.as_ptr()),
+            )
         };
         self
     }
@@ -2619,9 +2637,13 @@ impl<'a> ParamInfos<'a> {
         }
     }
 
-    /// Gets the value of a shader parameter with the given name. If no parameter is found,None will be returned.
+    /// Gets the texture this Material has set for the shader parameter with the given name. This is None if the
+    /// parameter isn't found, or if it's at the shader's default, where a global texture may fill it instead. Use
+    /// [`ParamInfos::has_param`] to tell those apart.
     /// <https://stereokit.net/Pages/StereoKit/Material/GetTexture.html>
     /// * `name` - The name of the parameter to get.
+    ///
+    /// Returns the texture this Material set, otherwise None.
     ///
     /// see also [`material_get_texture`]
     /// see example in [`ParamInfos::set_texture`]
@@ -2770,8 +2792,8 @@ impl ParamInfo {
     }
 }
 
-/// This is a chunk of memory that will get bound to all shaders at a particular register slot. StereoKit uses this to
-/// provide engine values to the shader, and you can also use this to drive graphical shader systems of your own!
+/// This is a chunk of memory that will get bound to all shaders with a cbuffer of a particular name. StereoKit uses this
+/// to provide engine values to the shader, and you can also use this to drive graphical shader systems of your own!
 ///
 /// For example, if your application has a custom lighting system, fog, wind, or some other system that multiple shaders
 /// might need to refer to, this is the perfect tool to use.
@@ -2813,7 +2835,7 @@ impl ParamInfo {
 /// # sk::Sk::shutdown();
 ///
 /// // In your shader, declare a matching cbuffer bound to the slot you
-/// // bind this MaterialBuffer to (see Renderer::set_global_buffer in StereoKit).
+/// // bind this MaterialBuffer to (see Renderer::set_global_buffer_by_name in StereoKit).
 /// ```
 #[derive(Debug, PartialEq)]
 pub struct MaterialBuffer<T> {
@@ -2863,8 +2885,9 @@ impl<T> Default for MaterialBuffer<T> {
     }
 }
 impl<T> MaterialBuffer<T> {
-    /// Create a new global MaterialBuffer that can be bound to a register slot id via Renderer.SetGlobalBuffer. All
-    /// shaders will have access to the data provided via this instance's `Set`.
+    /// Create a new global MaterialBuffer that can be bound to a shader cbuffer by name via
+    /// [`Renderer::set_global_buffer_by_name`](crate::render::Renderer::set_global_buffer_by_name). All shaders will
+    /// have access to the data provided via this instance's `set`.
     /// <https://stereokit.net/Pages/StereoKit/MaterialBuffer/MaterialBuffer.html>
     ///
     /// see also [`material_buffer_create`]
@@ -2903,7 +2926,7 @@ impl<T> MaterialBuffer<T> {
             .unwrap_or_default()
     }
 
-    /// Internal: returns raw pointer for FFI binding usage (Renderer::set_global_buffer).
+    /// Internal: returns raw pointer for FFI binding usage (Renderer::set_global_buffer_by_name).
     pub(crate) fn as_ptr(&self) -> MaterialBufferT {
         self._material_buffer
     }

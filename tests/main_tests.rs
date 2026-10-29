@@ -3,6 +3,7 @@ use stereokit_rust::{material::Material, mesh::Mesh};
 
 #[cfg(not(feature = "no-event-loop"))]
 use stereokit_rust::prelude::*;
+use stereokit_rust::tex::TexData;
 
 #[cfg(not(feature = "no-event-loop"))]
 fn main() {
@@ -73,7 +74,7 @@ fn hand_menu_radial0(sk_info: Option<Rc<RefCell<SkInfo>>>) -> String {
     let mut swap_value = true;
 
     // nice icon
-    let mut menu_ico = Material::pbr_clip().tex_file_copy("icons/hamburger.png", true, None).unwrap_or_default();
+    let mut menu_ico = Material::pbr_clip().tex_file_copy("icons/hamburger.png", TexData::Srgb, None).unwrap_or_default();
     menu_ico.clip_cutoff(0.1);
 
     //---Load hand menu

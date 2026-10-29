@@ -202,9 +202,11 @@ fn main() {
                     );
                     println!("cargo:rustc-link-search=native={win_gnu_libs}");
                     println!("cargo:rustc-link-search=native={}/build/_deps/sk_renderer-build/sk_ktx2", dst.display());
+                    println!("cargo:rustc-link-search=native={}/build/_deps/sk_renderer-build/sk_texenc", dst.display());
 
                     // Order matters: libs that depend on others should be listed first
                     cargo_link!("static=StereoKitC");
+                    cargo_link!("sk_texenc");
                     cargo_link!("static=sk_renderer");
                     cargo_link!("static=sk_app");
                     cargo_link!("sk_ktx2");
@@ -284,11 +286,17 @@ fn main() {
                     dst.display(),
                     profile_upper
                 );
+                println!(
+                    "cargo:rustc-link-search=native={}/build/_deps/sk_renderer-build/sk_texenc/{}",
+                    dst.display(),
+                    profile_upper
+                );
 
                 // Link sk_renderer and sk_app libraries
                 if !skc_shared {
                     cargo_link!("sk_renderer");
                     cargo_link!("sk_app");
+                    cargo_link!("sk_texenc");
                     cargo_link!("sk_ktx2");
                     cargo_link!("zstd_decompress");
                 }
@@ -346,6 +354,7 @@ fn main() {
             println!("cargo:rustc-link-search=native={}/build/_deps/sk_renderer-build", dst.display());
             println!("cargo:rustc-link-search=native={}/build/_deps/sk_app-build", dst.display());
             println!("cargo:rustc-link-search=native={}/build/_deps/sk_renderer-build/sk_ktx2", dst.display());
+            println!("cargo:rustc-link-search=native={}/build/_deps/sk_renderer-build/sk_texenc", dst.display());
 
             if skc_shared_unix {
                 // Everything folds inside the shared StereoKitC library: link it dynamically (plus the shared openxr
@@ -353,6 +362,7 @@ fn main() {
                 link_shared_stereokitec(&dst);
             } else {
                 cargo_link!("StereoKitC");
+                cargo_link!("sk_texenc");
                 cargo_link!("sk_app");
                 cargo_link!("sk_renderer");
                 cargo_link!("sk_ktx2");

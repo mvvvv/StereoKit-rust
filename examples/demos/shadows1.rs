@@ -12,7 +12,7 @@ use stereokit_rust::{
     render::{RenderBuilder, RenderLayer, Renderer},
     sprite::Sprite,
     system::{Input, Log, Text, TextBuilder, TextStyle},
-    tex::{Tex, TexAddress, TexFormat, TexSample, TexSampleComp, TexType},
+    tex::{TexData, Tex, TexAddress, TexFormat, TexSample, TexSampleComp, TexType},
     ui::{Ui, UiBtnLayout},
     util::named_colors,
 };
@@ -108,7 +108,7 @@ impl Default for Shadows1 {
         shadow_mat.set_variant(SHADOW_MAP_VARIANT, Some(&caster_mat));
 
         let mut floor_mat = shadow_mat
-            .tex_file_copy("textures/parquet2/parquet2.ktx2", true, None)
+            .tex_file_copy("textures/parquet2/parquet2.ktx2", TexData::Srgb, None)
             .unwrap_or_else(|_| shadow_mat.copy());
         floor_mat.tex_transform(Vec4::new(0.0, 0.0, 2.0, 2.0));
 
@@ -147,7 +147,7 @@ impl Default for Shadows1 {
 impl Shadows1 {
     // Called by derive macro during IStepper::initialize
     fn start(&mut self) -> bool {
-        Renderer::set_global_buffer(13, &self.shadow_buffer);
+        Renderer::set_global_buffer_by_name("shadow_buffer", &self.shadow_buffer);
         true
     }
 

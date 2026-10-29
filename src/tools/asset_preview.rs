@@ -5,7 +5,7 @@ use crate::{
     model::{AnimMode, Model},
     sound::{Sound, SoundInst},
     system::{Assets, Log},
-    tex::Tex,
+    tex::{Tex, TexData},
     util::Color32,
 };
 use std::path::Path;
@@ -52,7 +52,7 @@ impl AssetToShow {
         if let Some(ext) = file_path.extension() {
             let ext = ".".to_string() + ext.to_str().unwrap_or("!!ERROR!!");
             if Assets::MODEL_FORMATS.contains(&ext.as_str()) {
-                if let Ok(model) = Model::from_file(file_path, None, None) {
+                if let Ok(model) = Model::from_file(file_path, None, None, None) {
                     let mut anims = model.get_anims();
                     if anims.get_count() > 0 {
                         anims.play_anim_idx(0, AnimMode::Loop);
@@ -65,7 +65,7 @@ impl AssetToShow {
             } else if Assets::TEXTURE_FORMATS.contains(&ext.as_str()) {
                 let model = Model::new();
                 let mesh = Mesh::generate_plane_up(Vec2::ONE * 6.0, None, true);
-                let tex = Tex::from_file(file_path, true, None).unwrap_or_default();
+                let tex = Tex::from_file(file_path, TexData::Srgb, None).unwrap_or_default();
                 let mut material = Material::pbr_clip().copy();
                 material.diffuse_tex(tex).clip_cutoff(0.1);
                 model.get_nodes().add("tex_plane", Matrix::IDENTITY, Some(&mesh), Some(&material), true);
@@ -73,7 +73,7 @@ impl AssetToShow {
             } else if ext == ".sks" {
                 let model = Model::new();
                 let mesh = Mesh::generate_plane_up(Vec2::ONE * 6.0, None, true);
-                let tex = Tex::from_file("textures/open_gltf.jpeg", true, None).unwrap_or_default();
+                let tex = Tex::from_file("textures/open_gltf.jpeg", TexData::Srgb, None).unwrap_or_default();
                 if let Ok(mut material) = Material::from_file(file_path, None) {
                     material.diffuse_tex(tex);
                     model.get_nodes().add("tex_plane", Matrix::IDENTITY, Some(&mesh), Some(&material), true);
@@ -84,7 +84,7 @@ impl AssetToShow {
             } else if Assets::SOUND_FORMATS.contains(&ext.as_str()) {
                 let model = Model::new();
                 let mesh = Mesh::generate_cube(Vec3::ONE * 4.0, None);
-                let tex = Tex::from_file("textures/sound.jpeg", true, None).unwrap_or_default();
+                let tex = Tex::from_file("textures/sound.jpeg", TexData::Srgb, None).unwrap_or_default();
 
                 if let Ok(sound) = Sound::from_file(file_path) {
                     let sound_inst = sound.play(sound_origin, None);

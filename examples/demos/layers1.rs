@@ -9,7 +9,7 @@ use stereokit_rust::{
     prelude::*,
     render::{RenderBuilder, RenderClear, RenderList, Renderer},
     system::{Backend, BackendXRType, Text, TextBuilder, TextFit, TextStyle},
-    tex::{Tex, TexFormat},
+    tex::{TexData, Tex, TexFormat},
     tools::xr_comp_layers::{SwapchainSk, XrCompLayers},
     ui::Ui,
     util::{
@@ -127,7 +127,7 @@ impl Layers1 {
             // prepare the quad scene: spinning sphere
             let mut mat = Material::default().copy();
             mat.id("quadmat");
-            if let Ok(floor) = Tex::from_file("textures/parquet2/parquet2.ktx2", true, None) {
+            if let Ok(floor) = Tex::from_file("textures/parquet2/parquet2.ktx2", TexData::Srgb, None) {
                 mat.diffuse_tex(&floor);
             }
             self.quad_render_list

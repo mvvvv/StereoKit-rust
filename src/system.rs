@@ -514,7 +514,7 @@ impl Assets {
     ///                      model::Model, util::named_colors};
     ///
     /// // The model is loaded asynchronously, so we need to wait for it to be loaded before we can screenshot it.
-    /// let model = Model::from_file("cuve.glb", None, None)
+    /// let model = Model::from_file("cuve.glb", None, None, None)
     ///                 .expect("mobiles.gltf should be a valid model");
     /// let transform = Matrix::t_r_s([0.15, -0.75, -1.0], [0.0, 110.0, 0.0], [0.4, 0.4, 0.4]);
     ///
@@ -3618,7 +3618,7 @@ impl Input {
     ///
     /// assert_eq!(Input::get_controller_model(Handed::Left).get_id(), "default/model_controller_l");
     ///
-    /// let model_left = Model::from_file("center.glb", None, None)
+    /// let model_left = Model::from_file("center.glb", None, None, None)
     ///                     .expect("mobiles.gltf should be a valid model");
     /// Assets::block_for_priority(i32::MAX);
     ///
