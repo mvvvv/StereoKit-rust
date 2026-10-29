@@ -12,7 +12,7 @@ use crate::{
         DoubleClick, Scrollbar, is_last_element_focused, last_element_world_pose, wrap_chars, wrap_chars_lines,
     },
     ui::{Ui, UiBtnLayout, UiCut, UiPad, UiWin},
-    util::{Color128, PickerMode, named_colors},
+    util::{Color32, PickerMode, named_colors},
 };
 use rust_i18n::t;
 use std::path::{Path, PathBuf};
@@ -1773,9 +1773,9 @@ pub trait Previewer: Send {
 /// - its full path, wrapped on ~30 chars (same separator-aware wrapping as the list annotations).
 ///
 /// A small panel at the right of the text also shows a thumbnail: for image files (extensions in
-/// [`Assets::TEXTURE_FORMATS`], like the asset1 demo) it is the [`Tex`] loaded from the file, for any other entry an
-/// identicon-like pattern derived from its bytes. The file probing / pattern generation runs in a worker thread, and
-/// every asset access happens on the main thread.
+/// [`Assets::TEXTURE_FORMATS`], like the asset1 demo) it is the [`Tex`] loaded from the file, for raw RGBA bitmaps
+/// (`.rgba` / `.raw`, see [`read_rgba_bitmap`]) the pixels read from the file, and a transparent placeholder for any
+/// other entry. Every asset access happens on the main thread.
 ///
 /// The panel is placed relative to `bouton_pose`.
 ///
@@ -1820,30 +1820,33 @@ pub struct BasicPreviewer {
     /// The style mapping is: the panel title uses [`Appearence::title_style`], the information lines
     /// [`Appearence::label_style`] (defaulted to a dimmer `LIGHT_GRAY`), and the full path [`Appearence::small_style`].
     pub appearence: Appearence,
-    /// Thumbnail sprite currently displayed in the panel at the right of the text.
+    /// Thumbnail sprite currently displayed in the panel at the right of the text: the sprite of the texture loaded
+    /// from the file for image files, the sprite of [`BasicPreviewer::thumb_tex`] for raw RGBA bitmaps and for the
+    /// entries with nothing to show.
     sprite: Sprite,
-    /// Keeps the transparent tex when no preview is available
-    black_image_tex: Tex,
-    /// Path of the entry whose thumbnail is being produced: a worker thread is spawned only when the focused entry
+    /// Texture the thumbnail shows for raw RGBA bitmaps (`.rgba` / `.raw`), a single transparent pixel when there is
+    /// nothing to show. It is created once and its content is replaced for each entry instead of creating a texture
+    /// per entry: StereoKit caches sprites by `"<tex id>/sprite"` and recycles the auto-generated ids
+    /// (`auto/tex_<n>`) of the assets released in between, so a [`Sprite::from_tex`] of a texture created for each
+    /// entry would find the sprite of a previous preview in that cache and freeze the thumbnail on the previous
+    /// image. File textures don't have this problem, their id being the hash of the file name.
+    thumb_tex: Tex,
+    /// Path of the entry whose thumbnail is being produced: the thumbnail is (re)built only when the focused entry
     /// changes, not at every frame.
     thumb_path: PathBuf,
 }
 
 unsafe impl Send for BasicPreviewer {}
 
-const DIFFUSE_SIZE: usize = 128;
-
 impl Default for BasicPreviewer {
     fn default() -> Self {
         let font = Font::default();
-        let black_image_tex = Tex::gen_color(
-            Color128::BLACK_TRANSPARENT,
-            DIFFUSE_SIZE as i32,
-            DIFFUSE_SIZE as i32,
-            TexType::ImageNomips,
-            TexFormat::Rgba32Srgb,
-        );
-        let sprite = Sprite::from_tex(&black_image_tex, None, None).unwrap_or_default();
+        // Single transparent pixel, see `BasicPreviewer::thumb_tex`: created once, its content is then replaced
+        // by the pixels of the raw RGBA bitmaps (this blocking call also loads the texture, so the later
+        // `Tex::set_colors32` calls are accepted).
+        let mut thumb_tex = Tex::new(TexType::ImageNomips, TexFormat::Rgba32Srgb, None);
+        thumb_tex.set_colors32(1, 1, &[Color32::BLACK_TRANSPARENT]);
+        let sprite = Sprite::from_tex(&thumb_tex, None, None).unwrap_or_default();
         // Same text style hierarchy as the browser: bigger and brighter for the title
         // (`title_style`), UI default size slightly dimmed for the information lines
         // (`label_style`), smaller and dimmer for the full path (`small_style`).
@@ -1852,7 +1855,16 @@ impl Default for BasicPreviewer {
         // Capture the base heights of the (possibly tweaked) styles above, so `set_ui_scale`
         // scalings never compound over the frames.
         appearence.start();
-        Self { appearence, black_image_tex, sprite, thumb_path: PathBuf::new() }
+        Self { appearence, sprite, thumb_tex, thumb_path: PathBuf::new() }
+    }
+}
+
+impl BasicPreviewer {
+    /// Empties the thumbnail: the shared thumbnail texture goes back to a single transparent pixel, and the panel
+    /// displays the sprite of that texture. See [`BasicPreviewer::thumb_tex`].
+    fn clear_thumbnail(&mut self) {
+        self.thumb_tex.set_colors32(1, 1, &[Color32::BLACK_TRANSPARENT]);
+        self.sprite = Sprite::from_tex(&self.thumb_tex, None, None).unwrap_or_default();
     }
 }
 
@@ -1883,23 +1895,20 @@ impl Previewer for BasicPreviewer {
                 self.sprite = Sprite::from_tex(&image_tex, None, None).unwrap_or_default();
             } else if ext == ".rgba" || ext == ".raw" {
                 // Raw RGBA bitmap (https://github.com/bzotto/rgba_bitmap): "RGBA" magic, then the width and height as
-                // big-endian u32s, then the RGBA8888 pixels, uploaded into the display texture with its real size.
+                // big-endian u32s, then the RGBA8888 pixels, uploaded into the shared thumbnail texture with its real
+                // size. The texture is reused for each entry, see `BasicPreviewer::thumb_tex`.
                 match read_rgba_bitmap(&file_path) {
                     Ok((width, height, pixels)) => {
-                        let image_tex = Tex::from_color32(&pixels, width, height, TexData::Srgb).unwrap_or_default();
-                        // Log::diag(format!(
-                        //     "BasicPreviewer loaded RGBA bitmap {}: {file_path:?} ({width}x{height})",
-                        //     image_tex.get_id()
-                        // ));
-                        self.sprite = Sprite::from_tex(&image_tex, None, None).unwrap_or_default();
+                        self.thumb_tex.set_colors32(width, height, &pixels);
+                        self.sprite = Sprite::from_tex(&self.thumb_tex, None, None).unwrap_or_default();
                     }
                     Err(error) => {
                         Log::warn(format!("BasicPreviewer cannot load the RGBA bitmap {file_path:?}: {error}"));
-                        self.sprite = Sprite::from_tex(&self.black_image_tex, None, None).unwrap_or_default();
+                        self.clear_thumbnail();
                     }
                 }
             } else {
-                self.sprite = Sprite::from_tex(&self.black_image_tex, None, None).unwrap_or_default();
+                self.clear_thumbnail();
             }
             self.thumb_path = file_path.clone();
         }

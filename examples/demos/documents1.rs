@@ -459,7 +459,8 @@ impl Documents1 {
         let mut file_browser = FileBrowserB::default();
 
         // Start browsing from the location chosen with the demo radio buttons.
-        file_browser.dir = BrowseLocation::Pictures
+        file_browser.dir = self
+            .location
             .get_path(&self.sk_info)
             .or_else(|| std::env::current_dir().ok())
             .unwrap_or_else(|| PathBuf::from("/"));
