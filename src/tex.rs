@@ -1143,7 +1143,7 @@ impl Tex {
 
     /// Creates a texture from raw pixel data in any format, such as [`TexFormat::R16un`] heights or
     /// [`TexFormat::Rgba64un`] color. The format also becomes the [`Tex::get_input_format`]. Like
-    /// [`Tex::set_colors_data`] with flags, this is asynchronous and compressed by default, and [`Tex::get_format`] is
+    /// [`Tex::set_color_data`] with flags, this is asynchronous and compressed by default, and [`Tex::get_format`] is
     /// final as soon as this returns.
     /// <https://stereokit.net/Pages/StereoKit/Tex/FromColors.html>
     /// * `data` - Tightly packed pixels in `format`, should be `width*height` pixels long.
@@ -1156,7 +1156,7 @@ impl Tex {
     /// * `priority` - The priority sort order for the upload in the async loading system. Lower values mean loading
     ///   sooner. If None will be set to 10.
     ///
-    /// see also [`tex_create`] [`tex_set_colors`] [`Tex::set_colors_data`] [`Tex::from_color32`] [`Tex::from_color128`]
+    /// see also [`tex_create`] [`tex_set_colors`] [`Tex::set_color_data`] [`Tex::from_color32`] [`Tex::from_color128`]
     /// ### Examples
     /// ```
     /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
@@ -1191,7 +1191,7 @@ impl Tex {
         priority: Option<i32>,
     ) -> Tex {
         let mut tex = Tex::new(tex_type.unwrap_or(TexType::Image), format, None);
-        tex.set_colors_data(width, height, data, format, flags, priority);
+        tex.set_color_data(width, height, data, format, flags, priority);
         tex
     }
 
@@ -1632,7 +1632,7 @@ impl Tex {
 
     /// Set the texture's pixels using a pointer to a chunk of memory containing color data in the texture's
     /// InputFormat! This is great if you're pulling in some color data from native code, and don't want to pay the cost
-    /// of trying to marshal that data around. To pass data in another format, use [`Tex::set_colors_data`] with a data
+    /// of trying to marshal that data around. To pass data in another format, use [`Tex::set_color_data`] with a data
     /// format. Should be width*height*size_of_format bytes large. This blocks, and isn't compressed.
     /// Warning: The check width*height*(TextureFormat size) upon the size of the data values must be done before
     /// calling this function.
@@ -1807,7 +1807,7 @@ impl Tex {
 
     /// Set the texture's pixels using a byte array! Bytes don't say what format they are, so they're read as the
     /// texture's [`Tex::get_input_format`], such as [`TexFormat::R8`]. To pass bytes in another format, use
-    /// [`Tex::set_colors_data`] with a data format. You can call this as many times as you'd like, even with different
+    /// [`Tex::set_color_data`] with a data format. You can call this as many times as you'd like, even with different
     /// widths and heights. Create it with [`TexType::Dynamic`] if you update it often. This blocks, and isn't
     /// compressed. Calling this function can also result in building mip-maps, which has a non-zero cost: use
     /// [`TexType::ImageNomips`] when creating the Tex to avoid this.
@@ -1956,7 +1956,7 @@ impl Tex {
     /// let color_dots = [named_colors::CYAN; 16 * 16];
     /// let mut tex = Tex::new(TexType::Image, TexFormat::Rgba32Srgb, None);
     ///
-    /// tex.set_colors_data(16, 16, &color_dots, TexFormat::Rgba32Srgb,
+    /// tex.set_color_data(16, 16, &color_dots, TexFormat::Rgba32Srgb,
     ///                     TexData::Blocking | TexData::CompressNone, None);
     ///
     /// let check_dots = [Color32::WHITE; 16 * 16];
@@ -1964,7 +1964,7 @@ impl Tex {
     /// assert_eq!(check_dots, color_dots);
     /// # sk::Sk::shutdown();
     /// ```
-    pub fn set_colors_data<T>(
+    pub fn set_color_data<T>(
         &mut self,
         width: usize,
         height: usize,
@@ -1977,7 +1977,7 @@ impl Tex {
         let byte_size = std::mem::size_of_val(data);
         if width * height * data_format.bytes_per_pixel() > byte_size {
             Log::err(format!(
-                "{}x{} in the {:?} format needs more bytes than the {} given to Tex::set_colors_data for texture {}",
+                "{}x{} in the {:?} format needs more bytes than the {} given to Tex::set_color_data for texture {}",
                 width,
                 height,
                 data_format,
@@ -2816,7 +2816,7 @@ impl Tex {
 
     /// Set the pixels of a multi-layer and/or mip-mapped texture. Each entry in `array_data` is one layer (face for
     /// cubemaps, slice for array textures), packed as `[mip0][mip1][mip2]...`. See the single image overload
-    /// ([`Tex::set_colors_data`]) for how flags and formats behave.
+    /// ([`Tex::set_color_data`]) for how flags and formats behave.
     /// <https://stereokit.net/Pages/StereoKit/Tex/SetColors.html>
     /// * `width` - Width in pixels of mip 0.
     /// * `height` - Height in pixels of mip 0.
@@ -3411,6 +3411,10 @@ impl Tex {
     /// compressed by default, and a compressed texture gives back its raw compressed blocks rather than pixels, so check
     /// [`Tex::get_format`]. Load or set a texture with [`TexData::CompressNone`] if you plan to read its pixels.
     /// <https://stereokit.net/Pages/StereoKit/Tex/GetColorData.html>
+    /// * `color_data` - A buffer with **one element per pixel** of the `mip_level` (see [`Tex::get_data_infos`]):
+    ///   `[Color32]` for [`TexFormat::Rgba32Srgb`], `[Color128]` for [`TexFormat::Rgba128`], `[u8]` for
+    ///   [`TexFormat::R8`] ... A buffer sized in bytes (`width * height * 4` for a RGBA8888 texture) will fail the
+    ///   size check: use [`Tex::get_color_data_u8`] instead.
     /// * mip_level - Retrieves the color data for a specific mip-mapping level. This function will log a fail and
     ///   return a black array if an invalid mip-level is provided.
     ///
@@ -3444,13 +3448,15 @@ impl Tex {
         };
         if size_test * size_of::<T>() != size_of_color {
             Log::err(format!(
-                "Size of the Tex {} is {}x{}/mip={} when size of the given buffer is {} instead of {}. Function Tex::get_color failed!",
+                "Size of the Tex {} is {}x{}/mip={} when size of the given buffer is {} instead of {} ({} bytes per pixel for a `[{}]` buffer). Function Tex::get_color_data failed!",
                 self.get_id(),
-                height,
                 width,
+                height,
                 mip_level,
                 size_of_color,
                 size_test * size_of::<T>(),
+                size_of::<T>(),
+                std::any::type_name::<T>(),
             ));
             return false;
         }
@@ -3507,13 +3513,14 @@ impl Tex {
 
         if size_test * color_size != size_of_color {
             Log::err(format!(
-                "Size of the Tex {} is {}x{}/mip={} when size of the given buffer is {} instead of {}. Function Tex::get_color_data_u8 failed!",
+                "Size of the Tex {} is {}x{}/mip={} when size of the given buffer is {} instead of {} ({} bytes per pixel). Function Tex::get_color_data_u8 failed!",
                 self.get_id(),
-                height,
                 width,
+                height,
                 mip_level,
                 size_of_color,
                 size_test * color_size,
+                color_size,
             ));
             return false;
         }

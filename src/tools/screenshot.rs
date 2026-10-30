@@ -12,7 +12,7 @@ use crate::{
     tex::{Tex, TexData, TexFormat},
     tools::asset_preview::{read_rgba_bitmap, write_rgba_bitmap},
     ui::Ui,
-    util::{PickerMode, Platform},
+    util::{Color32, PickerMode, Platform},
 };
 
 use crate::sprite::Sprite;
@@ -167,7 +167,7 @@ impl ScreenshotViewer {
                     match read_rgba_bitmap(Path::new(&file_name)) {
                         Ok((width, height, pixels)) => {
                             Log::diag(format!("RGBA file {} with size is {}x{}", file_name, width, height));
-                            tex.set_colors_data(width, height, &pixels, TexFormat::Rgba32Srgb, TexData::None, None);
+                            tex.set_color_data(width, height, &pixels, TexFormat::Rgba32Srgb, TexData::None, None);
                             self.screen = Sprite::from_tex(&self.tex, None, None).ok();
                         }
                         Err(err) => Log::warn(format!("Screenshoot Error when reading file {file_name} : {err:?}")),
@@ -310,12 +310,15 @@ fn save_screenshot(file_name: &str) {
 
     if let Ok(tex) = Tex::find(CAPTURE_TEXTURE_ID) {
         if let Some((width, height, size)) = tex.get_data_infos(0) {
-            Log::diag(format!("size is {}", size * 4));
-            let data = vec![0u8; size * 4];
-            let data_slice = data.as_slice();
-            if tex.get_color_data_u8(data_slice, 4, 0) {
+            // The screenshot texture is a TexFormat::Rgba32Srgb texture, so, one Color32 per pixel :
+            // `Tex::get_color_data` expects `color_data.len() == width * height` elements.
+            let color_data = vec![Color32::default(); size];
+            if tex.get_color_data(color_data.as_slice(), 0) {
                 // Vive le format RGBA !!! https://github.com/bzotto/rgba_bitmap
-                if let Err(err) = write_rgba_bitmap(Path::new(&name), width, height, data_slice) {
+                let data_slice: Vec<u8> =
+                    color_data.iter().flat_map(|color| [color.r, color.g, color.b, color.a]).collect();
+                Log::diag(format!("size is {}", data_slice.len()));
+                if let Err(err) = write_rgba_bitmap(Path::new(&name), width, height, data_slice.as_slice()) {
                     Log::warn(format!("Screenshoot Error when writing bitmap {name} : {err:?}"));
                 }
             } else {

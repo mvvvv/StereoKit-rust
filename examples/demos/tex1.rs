@@ -56,7 +56,11 @@ impl Tex1 {
 impl Default for Tex1 {
     fn default() -> Self {
         //World::occlusion_enabled(true);
-        let mut tex_default = Tex::from_file("textures/open_gltf.jpeg", TexData::Srgb, None).unwrap();
+        // CompressNone is required here: a loaded texture is block compressed (BC/ASTC) by default, and
+        // `Tex::get_color_data` can only read back pixels from an uncompressed texture (see the anisotropy
+        // test at the bottom of `draw`).
+        let mut tex_default =
+            Tex::from_file("textures/open_gltf.jpeg", TexData::Srgb | TexData::CompressNone, None).unwrap();
         // !!! don't set an id here if you want to come back as the tex_default is saved as error_fallback
         Tex::set_error_fallback(&tex_default);
         tex_default.id("here I can set an id !!!");
@@ -123,7 +127,7 @@ impl Default for Tex1 {
         let color_dots128 = raw_dots128.as_slice();
 
         let mut tex_color_32a = Tex::new(TexType::Image, TexFormat::Rgba32Srgb, Some("tex_color"));
-        tex_color_32a.id("tex_color32a").set_colors_data(
+        tex_color_32a.id("tex_color32a").set_color_data(
             width,
             height,
             color_dots,
@@ -133,7 +137,7 @@ impl Default for Tex1 {
         );
 
         let mut tex_color_32b = Tex::gen_color(BLUE, 10, 10, TexType::Dynamic, TexFormat::Rgba32Srgb);
-        tex_color_32b.id("tex_color32b").set_colors_data(
+        tex_color_32b.id("tex_color32b").set_color_data(
             width,
             height,
             color_dots,
@@ -324,7 +328,7 @@ impl Tex1 {
                 // get a texture flood error
                 0 => {}
                 1 => {
-                    self.tex_vide.set_colors_data(
+                    self.tex_vide.set_color_data(
                         self.width,
                         self.height,
                         self.raw_dots128.as_slice(),
@@ -332,7 +336,7 @@ impl Tex1 {
                         IMMEDIATE,
                         None,
                     );
-                    self.tex_vide2.set_colors_data(
+                    self.tex_vide2.set_color_data(
                         self.width,
                         self.height,
                         self.raw_dots_byte.as_slice(),
@@ -340,7 +344,7 @@ impl Tex1 {
                         IMMEDIATE,
                         None,
                     );
-                    self.tex_vide3.set_colors_data(
+                    self.tex_vide3.set_color_data(
                         self.width,
                         self.height,
                         self.raw_dots_u16.as_slice(),
@@ -348,7 +352,7 @@ impl Tex1 {
                         IMMEDIATE,
                         None,
                     );
-                    self.tex_vide4.set_colors_data(
+                    self.tex_vide4.set_color_data(
                         self.width,
                         self.height,
                         self.raw_dots_u32.as_slice(),
@@ -362,22 +366,6 @@ impl Tex1 {
                         self.tex_vide2.get_width(),
                         self.tex_vide2.get_asset_state(),
                     ));
-
-                    // test with anisotropy using stage value
-                    let mip = self.stage / 3;
-                    if let Some((w, h, size)) = self.tex_default.get_data_infos(mip) {
-                        let vec = vec![self.base_color; size];
-                        let array = vec.as_slice();
-                        self.tex_default.get_color_data(array, mip);
-                        self.tex_color_32a.set_colors_data(w, h, array, TexFormat::Rgba32Srgb, IMMEDIATE, None);
-                        Log::info(format!(
-                            "mips {:?} / anisotropy {} / size {}x{}",
-                            self.tex_default.get_mips(),
-                            self.tex_default.get_anisotropy(),
-                            w,
-                            h,
-                        ));
-                    }
                 }
                 2 => {
                     let tex_i = &self.tex_particule;
@@ -387,7 +375,7 @@ impl Tex1 {
                         let color32_buff = vec![self.base_color; size];
                         Log::info(format!("--Tex in mip {} -> {}x{} = {}", mip, w, h, color32_buff.len()));
                         if tex_i.get_color_data(color32_buff.as_slice(), mip) {
-                            self.tex_color_32b.set_colors_data(
+                            self.tex_color_32b.set_color_data(
                                 w,
                                 h,
                                 &color32_buff[..],
@@ -406,14 +394,7 @@ impl Tex1 {
                         let color128_buff = vec![self.base_color128; size];
                         Log::info(format!("--Tex in mip {} -> {}x{} = {}", mip, w, h, color128_buff.len()));
                         if tex_i.get_color_data(color128_buff.as_slice(), mip) {
-                            self.tex_vide.set_colors_data(
-                                w,
-                                h,
-                                &color128_buff[..],
-                                TexFormat::Rgba128,
-                                IMMEDIATE,
-                                None,
-                            );
+                            self.tex_vide.set_color_data(w, h, &color128_buff[..], TexFormat::Rgba128, IMMEDIATE, None);
                             Log::info(format!("--Tex out mips number {:?}", self.tex_vide.get_mips()));
                         }
                     }
@@ -425,7 +406,7 @@ impl Tex1 {
                         let color_r8_buff: Vec<u8> = vec![60; size];
                         Log::info(format!("--Tex in mip {} -> {}x{} = {}", mip, w, h, color_r8_buff.len()));
                         if tex_i.get_color_data(color_r8_buff.as_slice(), mip) {
-                            self.tex_vide2.set_colors_data(w, h, &color_r8_buff[..], TexFormat::R8, IMMEDIATE, None);
+                            self.tex_vide2.set_color_data(w, h, &color_r8_buff[..], TexFormat::R8, IMMEDIATE, None);
                             Log::info(format!("--Tex out mips number {:?}", self.tex_vide2.get_mips()));
                         }
                     }
@@ -437,14 +418,7 @@ impl Tex1 {
                         let color_r16_buff: Vec<u16> = vec![60; size];
                         Log::info(format!("--Tex in mip {} -> {}x{} = {}", mip, w, h, color_r16_buff.len()));
                         if tex_i.get_color_data(color_r16_buff.as_slice(), mip) {
-                            self.tex_vide3.set_colors_data(
-                                w,
-                                h,
-                                &color_r16_buff[..],
-                                TexFormat::R16un,
-                                IMMEDIATE,
-                                None,
-                            );
+                            self.tex_vide3.set_color_data(w, h, &color_r16_buff[..], TexFormat::R16un, IMMEDIATE, None);
                             Log::info(format!("--Tex out mips number {:?}", self.tex_vide3.get_mips()));
                         }
                     }
@@ -456,20 +430,34 @@ impl Tex1 {
                         let color_r32_buff: Vec<f32> = vec![0.5; size];
                         Log::info(format!("--Tex in mip {} -> {}x{} = {}", mip, w, h, color_r32_buff.len()));
                         if tex_i.get_color_data(color_r32_buff.as_slice(), mip) {
-                            self.tex_vide4.set_colors_data(w, h, &color_r32_buff[..], TexFormat::R32f, IMMEDIATE, None);
+                            self.tex_vide4.set_color_data(w, h, &color_r32_buff[..], TexFormat::R32f, IMMEDIATE, None);
                             Log::info(format!("--Tex out mips number {:?}", self.tex_vide4.get_mips()));
                         }
                     }
                 }
-                _ => {
-                    self.stage = 0;
+                _ => (),
+            }
+
+            // test with anisotropy using stage value
+            let mip = self.stage % 11;
+            if let Some((w, h, size)) = self.tex_default.get_data_infos(mip) {
+                let dots = vec![self.base_color; size];
+                if self.tex_default.get_color_data(dots.as_slice(), mip) {
+                    self.tex_color_32a.set_color_data(w, h, dots.as_slice(), TexFormat::Rgba32Srgb, IMMEDIATE, None);
+                    Log::info(format!(
+                        "mips {mip}/{:?} - anisotropy {} - size {}x{}",
+                        self.tex_default.get_mips(),
+                        self.tex_default.get_anisotropy(),
+                        w,
+                        h,
+                    ));
                 }
             }
         }
 
         self.render_now = false;
         if Input::hand(Handed::Right).is_just_gripped() {
-            self.stage += 1;
+            self.stage = (self.stage + 1) % 127;
             self.render_now = true;
         }
     }

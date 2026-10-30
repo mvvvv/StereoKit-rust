@@ -70,7 +70,9 @@ impl Default for Screen1 {
 
         let mut textures = Vec::new();
         for path in texture_paths {
-            if let Ok(tex) = Tex::from_file(path, TexData::Srgb, None) {
+            // CompressNone: these slides are read back with `Tex::get_color_data` before being uploaded into the
+            // swapchain image, and a block compressed texture can't be read back as pixels.
+            if let Ok(tex) = Tex::from_file(path, TexData::Srgb | TexData::CompressNone, None) {
                 textures.push(tex);
             }
         }
