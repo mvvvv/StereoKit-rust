@@ -1,7 +1,9 @@
 use openxr_sys::EnvironmentBlendMode;
 
 use crate::{
+    lighting::{Lighting, LightingSource},
     maths::{Vec2, Vec3},
+    permission::{Permission, PermissionState, PermissionType},
     prelude::*,
     render::Renderer,
     sk::{AppFocus, AppWindow, DisplayBlend},
@@ -41,6 +43,8 @@ use crate::{
 ///   see [`crate::tools::xr_fb_display_refresh_rate`],
 /// * the [`Renderer::viewport_scaling`] (reduced back to 2.0 above the value where the image gets distorted),
 /// * the passthrough blend mode when the device supports it, see [`crate::tools::os_api::get_env_blend_modes`],
+/// * the world lighting source when the device estimates lighting from the user's surroundings, see
+///   [`Lighting::is_source_available`] and [`crate::lighting::LightingSource::World`],
 /// * the fullscreen and the relative mouse modes in the Simulator, with the `[Esc]` key to leave them.
 ///
 /// ### Fields that can be set before drawing:
@@ -48,6 +52,11 @@ use crate::{
 ///   to activate it at start.
 /// * `passthrough_event` - An optional `(stepper id, event key)` event to send when the passthrough toggle changes
 ///   (`"true"` = activated, `"false"` = deactivated), so the app can react (e.g. hide its floor). Default is `None`.
+/// * `world_lighting` - Whether the world lighting source is requested. Default is `false`: use
+///   [`ControlPanel::set_world_lighting`] to request it at start.
+/// * `world_lighting_event` - An optional `(stepper id, event key)` event to send when the world lighting source
+///   changes (`"true"` = world requested, `"false"` = back to manual), so the app can react (e.g. reapply its own
+///   ambient probe). Default is `None`.
 /// * `viewport_scaling` - The viewport scaling in use, initialized with [`Renderer::get_viewport_scaling`].
 /// * `fps` - The smoothed FPS shown by the panel. Default is 72.0.
 /// * `simulator_fullscreen` - Whether the Simulator window should be fullscreen, initialized from the settings,
@@ -56,6 +65,7 @@ use crate::{
 ///
 /// ### Events:
 /// * `passthrough_event` - see the field of the same name, sent to the stepper it names.
+/// * `world_lighting_event` - see the field of the same name, sent to the stepper it names.
 ///
 /// ### Examples
 /// ```
@@ -94,6 +104,17 @@ pub struct ControlPanel {
     /// Optional event sent when the passthrough toggle changes, as `(target stepper id, event key)`: the value sent
     /// is `"true"` when the passthrough is activated, `"false"` when it is deactivated. Default is `None`.
     pub passthrough_event: Option<(StepperId, String)>,
+    /// Whether the world lighting source is requested. Only shown when [`ControlPanel::world_lighting_available`] is
+    /// true: use [`ControlPanel::set_world_lighting`] to change it and request the source.
+    pub world_lighting: bool,
+    /// `true` when the device can estimate the scene lighting from the user's surroundings, see
+    /// [`Lighting::is_source_available`]: only then does [`ControlPanel::draw`] show the world lighting toggle.
+    /// Set by [`ControlPanel::new`].
+    pub world_lighting_available: bool,
+    /// Optional event sent when the world lighting source changes, as `(target stepper id, event key)`: the value
+    /// sent is `"true"` when the world source is requested, `"false"` when the panel goes back to manual. Default is
+    /// `None`.
+    pub world_lighting_event: Option<(StepperId, String)>,
     /// Whether the Simulator window is fullscreen, initialized from the settings by [`ControlPanel::new`].
     pub simulator_fullscreen: bool,
     /// Whether the mouse is in [`MouseMode::Relative`] in the Simulator. Default is `false`.
@@ -103,6 +124,10 @@ pub struct ControlPanel {
     /// The smoothed FPS displayed by the panel, in frames per second (the frame time comes from
     /// [`Time::get_step`], so this is a `f64`).
     pub fps: f64,
+
+    /// The world lighting source StereoKit really had at the previous [`ControlPanel::update`], used to restore the
+    /// app's environment when it is lost (see [`ControlPanel::set_world_lighting`]).
+    world_lighting_active: bool,
 
     /// The [`SkInfo`] smart pointer of the running [`Sk`], needed to send the events of this panel (see
     /// [`SkInfo::send_event`]): [`ControlPanel::new`] receives it, see [`Sk::get_sk_info_clone`]. Unlike an IStepper
@@ -200,6 +225,33 @@ impl ControlPanel {
             Log::diag("No Passthrough !!")
         }
 
+        // The world lighting source needs light estimation from the XR runtime, and may still ask for a
+        // permission when requested (see `Lighting::is_source_pending`).
+        let world_lighting_available = Lighting::is_source_available(LightingSource::World);
+        let world_lighting = Lighting::get_source() == LightingSource::World;
+        if world_lighting_available {
+            Log::info("✅ World lighting (light estimation) available")
+        } else {
+            // The source needs both the runtime's light estimation support (`XR_ANDROID_light_estimation`) and
+            // the ambient estimation permission declared in the AndroidManifest, see `Permission::get_state`.
+            let light_estimation_enabled = BackendOpenXR::ext_enabled("XR_ANDROID_light_estimation");
+            let ambient_permission = Permission::get_state(PermissionType::AmbientEstimation);
+            Log::diag("No world lighting source !!");
+            if light_estimation_enabled && ambient_permission != PermissionState::Unavailable {
+                // Both gates pass, so the runtime itself refuses to estimate the lighting: some devices, and
+                // emulators, advertise the extension without supporting it.
+                Log::diag("---- light estimation enabled and permitted, but the runtime reports no support");
+            } else {
+                Log::diag(format!(
+                    "---- light estimation {}, ambient permission {}, reflection permission {}, emulator {:?}",
+                    if light_estimation_enabled { "enabled" } else { "not enabled" },
+                    ambient_permission,
+                    Permission::get_state(PermissionType::ReflectionEstimation),
+                    Device::is_emulator(),
+                ));
+            }
+        }
+
         let next_refresh_rate_image = Sprite::arrow_right();
         let mut current_refresh_rate = get_display_refresh_rate().unwrap_or(0.0);
         let mut refresh_rates = vec![];
@@ -223,11 +275,15 @@ impl ControlPanel {
             passthrough: false,
             passthrough_blend_enabled,
             passthrough_event,
+            world_lighting,
+            world_lighting_available,
+            world_lighting_event: None,
             simulator_fullscreen,
             mouse_mode_relative,
             viewport_scaling,
             fps,
 
+            world_lighting_active: world_lighting,
             sk_info,
             is_emulator,
             interactor_choices,
@@ -273,9 +329,59 @@ impl ControlPanel {
         }
     }
 
+    /// Rebuilds the scene lighting from the skybox that is still displayed, see [`ControlPanel::set_world_lighting`]:
+    /// leaving the world source stops the estimation but keeps its last estimate, so the app's environment has to be
+    /// applied again.
+    fn restore_environment(&self) {
+        let sky = Renderer::get_skybox_tex();
+        Lighting::set_environment(Some(&sky));
+    }
+
+    /// Requests (`active` = `true`) or leaves the world lighting source, where the device estimates the scene
+    /// lighting from the user's surroundings (see [`LightingSource::World`]): the state is remembered by
+    /// [`ControlPanel::world_lighting`] for the toggle of [`ControlPanel::draw`], [`Lighting::request_source`] is
+    /// called and [`ControlPanel::world_lighting_event`] is sent. Nothing is done when the device has no light
+    /// estimation (see [`ControlPanel::world_lighting_available`]), except remembering the value.
+    ///
+    /// Requesting the world source may show a permission dialog: the source only switches once it is granted, check
+    /// [`Lighting::is_source_pending`]. [`ControlPanel::update`] keeps [`ControlPanel::world_lighting`] in sync with
+    /// the source StereoKit really has. Leaving the world source also reapplies the app's environment (from the
+    /// skybox that is still displayed) when it was really in use, since the world source's estimates would otherwise
+    /// stay in place.
+    ///
+    /// see also [`ControlPanel::new`] [`ControlPanel::draw`] [`Lighting::get_source`]
+    pub fn set_world_lighting(&mut self, active: bool) {
+        self.world_lighting = active;
+        if !self.world_lighting_available {
+            Log::diag("World lighting is not available on this device");
+            return;
+        }
+        if active {
+            // Asynchronous: a permission dialog may still be in flight (see `Lighting::is_source_pending`).
+            Lighting::request_source(LightingSource::World);
+            Log::info("World lighting requested");
+        } else {
+            let was_world = Lighting::get_source() == LightingSource::World;
+            Lighting::request_source(LightingSource::Manual);
+            Log::info("World lighting deactivated");
+            // The manual source applies immediately.
+            self.world_lighting_active = false;
+            if was_world {
+                // The world source overrode the environment, and leaving it doesn't restore it: rebuild the
+                // lighting from the sky that is still displayed.
+                self.restore_environment();
+            }
+        }
+        if let Some((target, key)) = &self.world_lighting_event {
+            self.send_event(StepperAction::event(target.as_str(), key.as_str(), if active { "true" } else { "false" }));
+        }
+    }
+
     /// To be called once per frame, before [`ControlPanel::draw`]: when the app focus changes, the display refresh
     /// rate is re-applied (a device usually forgets it when the app loses the focus) and the current interactors are
-    /// logged, so the panel stays in sync with the device.
+    /// logged, so the panel stays in sync with the device. The world lighting toggle also follows the source
+    /// StereoKit really has (see [`Lighting::get_source`]), which settles asynchronously after a
+    /// [`ControlPanel::set_world_lighting`] call.
     ///
     /// see also [`ControlPanel::draw`] [`crate::sk::sk_app_focus`]
     pub fn update(&mut self) {
@@ -291,6 +397,26 @@ impl ControlPanel {
             Log::diag("Current Interactors after focus change:");
             for interactor in Interactor::all() {
                 Log::diag(format!("----Type: {:?} / {:?}", interactor.get_type(), interactor.get_source()));
+            }
+        }
+
+        // The world lighting source settles asynchronously (typically a permission dialog), and may also be
+        // changed outside the panel: follow the source StereoKit really has.
+        if self.world_lighting_available && !Lighting::is_source_pending() {
+            if Lighting::get_source() == LightingSource::World {
+                self.world_lighting = true;
+                self.world_lighting_active = true;
+            } else {
+                if self.world_lighting_active {
+                    // The source was lost, or left outside the panel: its estimates would otherwise stay in place.
+                    Log::warn("World lighting stopped, restoring the app environment");
+                    self.restore_environment();
+                } else if self.world_lighting {
+                    // The request settled back to manual, e.g. the permission was declined.
+                    Log::warn("World lighting request settled back to manual");
+                }
+                self.world_lighting = false;
+                self.world_lighting_active = false;
             }
         }
     }
@@ -314,6 +440,9 @@ impl ControlPanel {
     /// It draws:
     /// * the passthrough toggle when the device supports it (see [`ControlPanel::passthrough_blend_enabled`]) and
     ///   sends [`ControlPanel::passthrough_event`] when it changes,
+    /// * the world lighting toggle when the device supports light estimation (see
+    ///   [`ControlPanel::world_lighting_available`]), and sends [`ControlPanel::world_lighting_event`] when it
+    ///   changes,
     /// * in the Simulator, the `fullscreen` and `mouse relative` toggles, and handles the `[Esc]` key (see
     ///   [`ControlPanel::notif_escape`]),
     /// * the smoothed FPS (see [`ControlPanel::fps`]),
@@ -372,6 +501,17 @@ impl ControlPanel {
                     }
                 }
                 _ => (),
+            }
+        }
+        if self.world_lighting_available {
+            Ui::same_line();
+            if let Some(new_value) = Ui::toggle("World lighting", &mut self.world_lighting).interact() {
+                self.set_world_lighting(new_value);
+            }
+            if Lighting::is_source_pending() {
+                // The permission dialog is in flight, the source isn't switched yet.
+                Ui::same_line();
+                Ui::label("(permission...)").use_padding(true).draw();
             }
         }
         if self.is_emulator.is_some() {

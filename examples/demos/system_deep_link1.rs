@@ -3,12 +3,12 @@ use stereokit_rust::{
     maths::{Matrix, Pose, Quat, Vec2, Vec3, units::CM},
     prelude::*,
     system::{Log, Text, TextBuilder, TextStyle},
-    tools::os_api::{SystemAction, system_deep_link},
+    tools::os_api::{SystemAction, app_package_name, is_horizon_os, system_deep_link},
     ui::Ui,
     util::named_colors::GREEN,
 };
 
-/// Demo to test the system_deep_link function with various Meta Quest actions
+/// Demo of [`system_deep_link`], showing the links which work on the current platform.
 #[derive(IStepper)]
 pub struct SystemDeepLink1 {
     id: StepperId,
@@ -19,6 +19,8 @@ pub struct SystemDeepLink1 {
     pub transform: Matrix,
     pub text: String,
     text_style: TextStyle,
+    /// Meta Horizon OS, the only platform with the `systemux://` links. Detected at start.
+    horizon_os: bool,
 }
 
 unsafe impl Send for SystemDeepLink1 {}
@@ -35,13 +37,32 @@ impl Default for SystemDeepLink1 {
             transform: Matrix::t_r((Vec3::NEG_Z * 2.5) + Vec3::Y, Quat::Y_180),
             text: "SystemDeepLink1".to_string(),
             text_style: Text::make_style(Font::default(), 0.3, GREEN),
+            horizon_os: false,
         }
+    }
+}
+
+/// Draws a button which triggers a system deep link when pressed, and logs the result.
+fn link_button(label: &str, action: impl FnOnce() -> SystemAction) {
+    if Ui::button(label).press() {
+        let result = system_deep_link(action());
+        Log::info(format!("{label} - Result: {:?}", result));
+    }
+}
+
+/// The settings page of this app, with its real package name.
+fn app_settings() -> SystemAction {
+    match app_package_name() {
+        Some(package) => SystemAction::Settings { setting: Some(format!("/applications?package={package}")) },
+        None => SystemAction::Settings { setting: None },
     }
 }
 
 impl SystemDeepLink1 {
     /// Called from IStepper::initialize here you can abort the initialization by returning false
     fn start(&mut self) -> bool {
+        self.horizon_os = is_horizon_os();
+        Log::info(format!("SystemDeepLink1: {}", self.platform()));
         true
     }
 
@@ -55,137 +76,112 @@ impl SystemDeepLink1 {
             .size(Vec2::new(self.window_width, 0.0))
             .begin();
 
-        // Browser Actions Row
-        Ui::label("Open Browser:").use_padding(true).draw();
-        if Ui::button("Google").press() {
-            let result = system_deep_link(SystemAction::Browser { url: "https://www.google.com".to_string() });
-            Log::info(format!("Open Google - Result: {:?}", result));
-        }
-        Ui::same_line();
-        if Ui::button("Youtube").press() {
-            let result = system_deep_link(SystemAction::Browser { url: "https://www.youtube.com".to_string() });
-            Log::info(format!("Open Youtube - Result: {:?}", result));
-        }
-        Ui::same_line();
+        Ui::label(self.platform()).use_padding(true).draw();
 
-        if Ui::button("StereoKit Website").press() {
-            let result = system_deep_link(SystemAction::Browser { url: "https://stereokit.net".to_string() });
-            Log::info(format!("Open StereoKit Website - Result: {:?}", result));
-        }
-        Ui::same_line();
-        if Ui::button("StereoKit-rust GitHub").press() {
-            let result =
-                system_deep_link(SystemAction::Browser { url: "https://github.com/mvvvv/StereoKit-rust".to_string() });
-            Log::info(format!("Open StereoKit-rust doc - Result: {:?}", result));
-        }
-
-        Ui::hseparator();
-
-        // Store section
-        Ui::label("Open Store:").use_padding(true).draw();
-        if Ui::button("Front Page").press() {
-            let result = system_deep_link(SystemAction::Store { app_id: None });
-            Log::info(format!("Open Store Front Page - Result: {:?}", result));
-        }
-        Ui::same_line();
-        if Ui::button("A great game").press() {
-            let result = system_deep_link(SystemAction::Store { app_id: Some("3749621795127676".to_string()) });
-            Log::info(format!("Open Specific App - Result: {:?}", result));
-        }
-        Ui::same_line();
-        if Ui::button("Another great game").press() {
-            let result = system_deep_link(SystemAction::Store { app_id: Some("4015163475201433".to_string()) });
-            Log::info(format!("Open Specific App - Result: {:?}", result));
-        }
-        Ui::hseparator();
-
-        // Settings section
-        Ui::label("Open Settings:").use_padding(true).draw();
-        if Ui::button("General").press() {
-            let result = system_deep_link(SystemAction::Settings { setting: Some("/system".to_string()) });
-            Log::info(format!("Open General Settings - Result: {:?}", result));
-        }
-        Ui::same_line();
-        if Ui::button("Controllers").press() {
-            let result = system_deep_link(SystemAction::Settings { setting: Some("/controllers".to_string()) });
-            Log::info(format!("Open Controllers Settings - Result: {:?}", result));
-        }
-        Ui::same_line();
-        if Ui::button("Movement Tracking").press() {
-            let result = system_deep_link(SystemAction::Settings { setting: Some("/hands".to_string()) });
-            Log::info(format!("Open Movement Tracking Settings - Result: {:?}", result));
-        }
-        Ui::same_line();
-        if Ui::button("Bluetooth").press() {
-            let result = system_deep_link(SystemAction::Settings { setting: Some("/bluetooth".to_string()) });
-            Log::info(format!("Open Bluetooth Settings - Result: {:?}", result));
-        }
-        Ui::same_line();
-        // Third row of settings
-        if Ui::button("WiFi").press() {
-            let result = system_deep_link(SystemAction::Settings { setting: Some("/wifi".to_string()) });
-            Log::info(format!("Open WiFi Settings - Result: {:?}", result));
-        }
-
-        if Ui::button("Display").press() {
-            let result = system_deep_link(SystemAction::Settings { setting: Some("/device".to_string()) });
-            Log::info(format!("Open Display & brightness Settings - Result: {:?}", result));
-        }
-        Ui::same_line();
-        if Ui::button("Guardian").press() {
-            let result = system_deep_link(SystemAction::Settings { setting: Some("/guardian".to_string()) });
-            Log::info(format!("Open Guardian Settings - Result: {:?}", result));
-        }
-        Ui::same_line();
-        // Fourth row of settings
-        if Ui::button("Accounts").press() {
-            let result = system_deep_link(SystemAction::Settings { setting: Some("/accounts".to_string()) });
-            Log::info(format!("Open Accounts Settings - Result: {:?}", result));
-        }
-        Ui::same_line();
-        if Ui::button("Notifications").press() {
-            let result = system_deep_link(SystemAction::Settings { setting: Some("/notifications".to_string()) });
-            Log::info(format!("Open Notifications Settings - Result: {:?}", result));
-        }
-
-        if Ui::button("App Settings").press() {
-            let result = system_deep_link(SystemAction::Settings {
-                setting: Some("/applications?package=com.stereokit.rust_binding.demos".to_string()),
-            });
-            Log::info(format!("Open VR Shell App Settings - Result: {:?}", result));
-        }
-
-        Ui::hseparator();
-
-        // File Manager section
-        Ui::label("Open File Manager:").use_padding(true).draw();
-        if Ui::button("Recents Tab").press() {
-            let result = system_deep_link(SystemAction::FileManager { path: None });
-            Log::info(format!("Open File Manager (Recents) - Result: {:?}", result));
-        }
-        Ui::same_line();
-        if Ui::button("Media Tab").press() {
-            let result = system_deep_link(SystemAction::FileManager { path: Some("/media/".to_string()) });
-            Log::info(format!("Open Media Tab - Result: {:?}", result));
-        }
-        Ui::same_line();
-        if Ui::button("Downloads Tab").press() {
-            let result = system_deep_link(SystemAction::FileManager { path: Some("/downloads/".to_string()) });
-            Log::info(format!("Open Downloads Tab - Result: {:?}", result));
-        }
-
-        Ui::hseparator();
-
-        // Bug Report section
-        Ui::label("System Actions:").use_padding(true).draw();
-        if Ui::button("Open Bug Reporter").press() {
-            let result = system_deep_link(SystemAction::BugReport);
-            Log::info(format!("Open Bug Reporter - Result: {:?}", result));
+        if self.horizon_os {
+            self.draw_horizon_os();
+        } else if cfg!(target_os = "android") {
+            self.draw_android();
         }
 
         Ui::window_end();
 
         // Title of this demo:
         TextBuilder::new(&self.text).transform(self.transform).style(self.text_style).add();
+    }
+
+    /// The name of the platform, for the window and the logs.
+    fn platform(&self) -> &'static str {
+        if self.horizon_os {
+            "Meta Horizon OS"
+        } else if cfg!(target_os = "android") {
+            "Android"
+        } else {
+            "Deep links need Android"
+        }
+    }
+
+    /// The `systemux://` links documented by Meta for Horizon OS.
+    fn draw_horizon_os(&mut self) {
+        Ui::label("Browser:").use_padding(true).draw();
+        link_button("Google", || SystemAction::Browser { url: "https://www.google.com".to_string() });
+        Ui::same_line();
+        link_button("Youtube", || SystemAction::Browser { url: "https://www.youtube.com".to_string() });
+        Ui::same_line();
+        link_button("StereoKit Website", || SystemAction::Browser { url: "https://stereokit.net".to_string() });
+        Ui::same_line();
+        link_button("StereoKit-rust GitHub", || SystemAction::Browser {
+            url: "https://github.com/mvvvv/StereoKit-rust".to_string(),
+        });
+
+        Ui::hseparator();
+
+        Ui::label("Store:").use_padding(true).draw();
+        link_button("Front Page", || SystemAction::Store { app_id: None });
+        Ui::same_line();
+        link_button("A great game", || SystemAction::Store { app_id: Some("3749621795127676".to_string()) });
+        Ui::same_line();
+        link_button("Another great game", || SystemAction::Store { app_id: Some("4015163475201433".to_string()) });
+
+        Ui::hseparator();
+
+        Ui::label("Settings:").use_padding(true).draw();
+        link_button("Main", || SystemAction::Settings { setting: None });
+        Ui::same_line();
+        link_button("Hand Tracking", || SystemAction::Settings { setting: Some("/hands".to_string()) });
+        Ui::same_line();
+        link_button("App Settings", app_settings);
+
+        Ui::hseparator();
+
+        Ui::label("Files:").use_padding(true).draw();
+        link_button("Recents", || SystemAction::FileManager { path: None });
+        Ui::same_line();
+        link_button("Media", || SystemAction::FileManager { path: Some("/media/".to_string()) });
+        Ui::same_line();
+        link_button("Downloads", || SystemAction::FileManager { path: Some("/downloads/".to_string()) });
+
+        Ui::hseparator();
+
+        link_button("Bug Reporter", || SystemAction::BugReport);
+    }
+
+    /// The standard Android intents which [`system_deep_link`] uses outside Horizon OS.
+    fn draw_android(&mut self) {
+        Ui::label("Browser:").use_padding(true).draw();
+        link_button("Google", || SystemAction::Browser { url: "https://www.google.com".to_string() });
+        Ui::same_line();
+        link_button("Youtube", || SystemAction::Browser { url: "https://www.youtube.com".to_string() });
+        Ui::same_line();
+        link_button("StereoKit Website", || SystemAction::Browser { url: "https://stereokit.net".to_string() });
+        Ui::same_line();
+        link_button("StereoKit-rust GitHub", || SystemAction::Browser {
+            url: "https://github.com/mvvvv/StereoKit-rust".to_string(),
+        });
+
+        Ui::hseparator();
+
+        Ui::label("Play Store:").use_padding(true).draw();
+        link_button("Front Page", || SystemAction::Store { app_id: None });
+        Ui::same_line();
+        link_button("Youtube", || SystemAction::Store { app_id: Some("com.google.android.youtube".to_string()) });
+
+        Ui::hseparator();
+
+        Ui::label("Settings:").use_padding(true).draw();
+        link_button("Main", || SystemAction::Settings { setting: None });
+        Ui::same_line();
+        link_button("WiFi", || SystemAction::Settings { setting: Some("/wifi".to_string()) });
+        Ui::same_line();
+        link_button("Bluetooth", || SystemAction::Settings { setting: Some("/bluetooth".to_string()) });
+        Ui::same_line();
+        link_button("Display", || SystemAction::Settings { setting: Some("/device".to_string()) });
+        Ui::same_line();
+        link_button("App Settings", app_settings);
+
+        Ui::hseparator();
+
+        Ui::label("Files:").use_padding(true).draw();
+        link_button("Open", || SystemAction::FileManager { path: None });
     }
 }

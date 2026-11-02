@@ -953,56 +953,14 @@ pub fn show_soft_input_ime(_sk_info: &Option<Rc<RefCell<SkInfo>>>, _show: bool) 
 /// Open the default browser. Adapted from https://github.com/amodm/webbrowser-rs
 #[cfg(target_os = "android")]
 pub fn launch_browser_android(url: &str) -> bool {
-    use jni::{
-        jni_sig, jni_str,
-        objects::{JObject, JValue},
-    };
-
     Log::diag(format!("launch_browser_android: Attempting to open URL: {}", url));
-    let vm = unsafe { jni::JavaVM::from_raw(BackendAndroid::java_vm() as _) };
-    vm.attach_current_thread(|env| -> jni::errors::Result<bool> {
-        let activity = unsafe { jni::objects::JObject::from_raw(env, BackendAndroid::activity() as _) };
-        // Create ACTION_VIEW object
-        let intent_class = env.find_class(jni_str!("android/content/Intent"))?;
-        let action_view =
-            env.get_static_field(&intent_class, jni_str!("ACTION_VIEW"), jni_sig!("Ljava/lang/String;"))?;
-        // Create Uri object
-        let uri_class = env.find_class(jni_str!("android/net/Uri"))?;
-        let url_string = env.new_string(url)?;
-        let uri = env
-            .call_static_method(
-                &uri_class,
-                jni_str!("parse"),
-                jni_sig!("(Ljava/lang/String;)Landroid/net/Uri;"),
-                &[JValue::Object(&JObject::from(url_string))],
-            )?
-            .l()?;
-        // Create new ACTION_VIEW intent with the uri
-        let intent = env.alloc_object(&intent_class)?;
-        env.call_method(
-            &intent,
-            jni_str!("<init>"),
-            jni_sig!("(Ljava/lang/String;Landroid/net/Uri;)V"),
-            &[action_view.borrow(), JValue::Object(&uri)],
-        )?;
-        // Start the intent activity.
-        env.call_method(
-            &activity,
-            jni_str!("startActivity"),
-            jni_sig!("(Landroid/content/Intent;)V"),
-            &[JValue::Object(&intent)],
-        )?;
-        if env.exception_check() {
-            let _ = env.exception_clear();
-            Log::err("launch_browser_android: Activity exception occurred (cleared)");
-            return Ok(false);
+    match start_android_intent(&AndroidIntent::View { uri: url.to_string(), browsable: false }) {
+        Ok(()) => true,
+        Err(error) => {
+            Log::err(format!("launch_browser_android error: {}", error));
+            false
         }
-        Ok(true)
-    })
-    .unwrap_or_else(|e| {
-        Log::err(format!("launch_browser_android error: {:?}", e));
-        false
-    })
+    }
 }
 
 /// Open nothing has we aren't on Android
@@ -1011,249 +969,803 @@ pub fn launch_browser_android(_url: &str) -> bool {
     false
 }
 
-/// Supported system deep link actions for Meta Quest following official Meta specifications
+/// The Android package of the Meta Horizon OS shell which handles the system deep links.
+#[cfg(target_os = "android")]
+const VR_SHELL_PACKAGE: &str = "com.oculus.vrshell";
+
+/// The Meta Horizon OS shell activity which receives the system deep links: this is the activity
+/// used by the `adb` command of Meta's guide (`com.oculus.vrshell/.MainActivity`).
+#[cfg(target_os = "android")]
+const VR_SHELL_ACTIVITY: &str = "com.oculus.vrshell.MainActivity";
+
+/// `Intent.FLAG_ACTIVITY_NEW_TASK`: start the target activity in its own task.
+///
+/// Without it, the activity is started inside the task of this app, which is a Full Space task on
+/// Android XR, and it then stays hidden behind the app (browser, Play Store, document picker, ...).
+#[cfg(target_os = "android")]
+const FLAG_ACTIVITY_NEW_TASK: i32 = 0x1000_0000;
+
+/// Whether the Android Java VM and the activity are available: StereoKit only knows them once
+/// `Sk::initialize` has run.
+#[cfg(target_os = "android")]
+fn android_jni_ready() -> bool {
+    !BackendAndroid::java_vm().is_null() && !BackendAndroid::activity().is_null()
+}
+
+/// A system deep link action, following the
+/// [Meta Horizon OS System Deep Linking guide](https://developers.meta.com/vr/documentation/native/ps-system-deep-linking/).
+///
+/// Meta documents the **Intent** (`systemux://...`) and, for some actions, the **URI** that the VR
+/// Shell (`com.oculus.vrshell`) expects. [`system_deep_link`] sends both to the VR Shell on Horizon
+/// OS.
+///
+/// Android XR has no `systemux://` shell, so on such a device [`system_deep_link`] translates the
+/// action to the matching standard Android intent:
+///
+/// | Action | Horizon OS `intent_data` | Horizon OS `uri` | Android XR intent |
+/// | --- | --- | --- | --- |
+/// | [`SystemAction::Browser`] | `systemux://browser` | the URL | `ACTION_VIEW` + `CATEGORY_BROWSABLE` |
+/// | [`SystemAction::Store`] | `systemux://store` | `/item/<app id>` | the Play Store page of the package |
+/// | [`SystemAction::Settings`] | `systemux://settings` | see the variant | `android.settings.*` |
+/// | [`SystemAction::FileManager`] | `systemux://file-manager` | `/media/`, `/downloads/` | `ACTION_OPEN_DOCUMENT` |
+/// | [`SystemAction::BugReport`] | `systemux://bug_report` | none | `ACTION_BUG_REPORT` |
 #[derive(Debug, Clone, PartialEq)]
 pub enum SystemAction {
-    /// Open the browser with a URL
-    /// Intent: systemux://browser, URI: [any valid URL]
-    Browser { url: String },
-    /// Open the store
-    /// Intent: systemux://store, URI: \[none\] for front page or /item/\[ID\] for specific app
-    Store { app_id: Option<String> },
-    /// Open settings
-    /// Intent: systemux://settings, URI options:
-    /// - \[none\]: Main settings page
-    /// - /hands: Hand tracking settings
-    /// - /system: System settings
-    /// - /privacy: Privacy settings
-    /// - /controllers: Controllers settings
-    /// - /bluetooth: Bluetooth settings
-    /// - /wifi: WiFi settings
-    /// - /device: Device settings
-    /// - /guardian: Guardian/Boundary settings
-    /// - /accounts: Accounts settings
-    /// - /notifications: Notifications settings
-    /// - /applications?package=com.X.Y: Settings for specific app
-    Settings { setting: Option<String> },
-    /// Open Files app
-    /// Intent: systemux://file-manager, URI: \[none\] for Recents, /media/ for Media tab, /downloads/ for Downloads tab
-    FileManager { path: Option<String> },
-    /// Open Meta bug reporter
-    /// Intent: systemux://bug_report, URI: N/A
+    /// Open the browser with a URL.
+    ///
+    /// Horizon OS: `systemux://browser` with the URL as URI. Android XR: `ACTION_VIEW` with
+    /// `CATEGORY_BROWSABLE`, which opens the default browser (usually in a panel, in the Home
+    /// Space).
+    Browser {
+        /// The URL to open.
+        url: String,
+    },
+    /// Open the store.
+    ///
+    /// Horizon OS: `systemux://store` without URI for the front page, or `/item/<ID>` for a given
+    /// app, `ID` being the numeric Meta app ID.
+    ///
+    /// Android XR: the Google Play Store page of the app, so `app_id` must then be an **Android
+    /// package name** (for example `com.example.app`). A numeric Meta app ID can't be opened by the
+    /// Play Store, and [`system_deep_link`] returns `false` for it.
+    Store {
+        /// `None` for the store front page, or the app ID.
+        app_id: Option<String>,
+    },
+    /// Open the settings.
+    ///
+    /// Horizon OS: `systemux://settings` with one of the URIs documented by Meta:
+    /// - `None`: the settings main page,
+    /// - `/hands`: the hand tracking settings page,
+    /// - `/applications?package=com.X.Y`: the settings page of an installed app.
+    ///
+    /// The other paths (`/system`, `/privacy`, `/controllers`, `/bluetooth`, `/wifi`, `/device`,
+    /// `/guardian`, `/accounts`, `/notifications`, ...) aren't in Meta's current documentation, and
+    /// may not open anything on recent Horizon OS versions; they are still forwarded to the VR
+    /// Shell as is.
+    ///
+    /// Android XR: translated to the closest public `android.settings.*` action: `/wifi` →
+    /// `WIFI_SETTINGS`, `/bluetooth` and `/controllers` → `BLUETOOTH_SETTINGS`, `/device` →
+    /// `DISPLAY_SETTINGS`, `/privacy` → `PRIVACY_SETTINGS`, `/accounts` → `SYNC_SETTINGS`,
+    /// `/notifications` → `ALL_APPS_NOTIFICATION_SETTINGS`, `/applications?package=com.X.Y` →
+    /// `APPLICATION_DETAILS_SETTINGS`, and everything else to the main settings page (Android XR has
+    /// no public action for hand tracking, guardian, ...).
+    ///
+    /// A value which already is an Android action (`android.settings.`...) is used as is, which is
+    /// the escape hatch to reach an Android XR settings page not covered here.
+    ///
+    /// On Android XR, the pages of the `com.android.settings` app are displayed above a Full Space
+    /// app, but `/privacy` (`PRIVACY_SETTINGS`) is redirected by the system to the permission
+    /// controller's Safety Center, which stays hidden behind a Full Space app: open it from the
+    /// Home Space.
+    ///
+    /// For `/applications?package=com.X.Y`, use the real package name of the app (see
+    /// [`app_package_name`]): a wrong one makes the settings app open nothing at all.
+    Settings {
+        /// `None` for the main settings page, or a settings URI/action.
+        setting: Option<String>,
+    },
+    /// Open the Files app.
+    ///
+    /// Horizon OS: `systemux://file-manager` without URI for the "Recents" tab, `/media/` for the
+    /// "Media" tab, or `/downloads/` for the "Downloads" tab.
+    ///
+    /// Android XR: the system document picker (`ACTION_OPEN_DOCUMENT`); the requested tab can't be
+    /// selected.
+    FileManager {
+        /// `None` for the default tab, or a tab path.
+        path: Option<String>,
+    },
+    /// Open the system bug reporter.
+    ///
+    /// Horizon OS: `systemux://bug_report`. Android XR: `ACTION_BUG_REPORT`, if the device provides
+    /// a handler for it.
     BugReport,
 }
 
-/// System Deep Link function for Meta Quest following Meta specifications.
-/// This function uses the VR Shell package to trigger various system actions.
+impl SystemAction {
+    /// The `intent_data` and `uri` extras that the Meta Horizon OS shell (`com.oculus.vrshell`)
+    /// expects for this action, following the
+    /// [System Deep Linking guide](https://developers.meta.com/vr/documentation/native/ps-system-deep-linking/).
+    ///
+    /// Returns `(intent_data, uri)`, `uri` being empty when the action doesn't use one.
+    ///
+    /// ### Examples
+    /// ```
+    /// use stereokit_rust::tools::os_api::SystemAction;
+    ///
+    /// assert_eq!(
+    ///     SystemAction::Browser { url: "https://www.meta.com".to_string() }.horizon_deep_link(),
+    ///     ("systemux://browser", "https://www.meta.com".to_string())
+    /// );
+    /// assert_eq!(
+    ///     SystemAction::Store { app_id: Some("1234567890".to_string()) }.horizon_deep_link(),
+    ///     ("systemux://store", "/item/1234567890".to_string())
+    /// );
+    /// ```
+    pub fn horizon_deep_link(&self) -> (&'static str, String) {
+        match self {
+            SystemAction::Browser { url } => ("systemux://browser", url.clone()),
+            SystemAction::Store { app_id } => {
+                ("systemux://store", app_id.as_ref().map(|app_id| format!("/item/{app_id}")).unwrap_or_default())
+            }
+            SystemAction::Settings { setting } => {
+                ("systemux://settings", setting.as_deref().unwrap_or_default().to_string())
+            }
+            SystemAction::FileManager { path } => {
+                ("systemux://file-manager", path.as_deref().unwrap_or_default().to_string())
+            }
+            SystemAction::BugReport => ("systemux://bug_report", String::new()),
+        }
+    }
+
+    /// A short description of this action, for the logs.
+    fn describe(&self) -> String {
+        match self {
+            SystemAction::Browser { url } => format!("opening the browser at {url}"),
+            SystemAction::Store { app_id } => match app_id {
+                Some(app_id) => format!("opening the store page of {app_id}"),
+                None => "opening the store front page".to_string(),
+            },
+            SystemAction::Settings { setting } => match setting.as_deref().filter(|setting| !setting.is_empty()) {
+                Some(setting) => format!("opening the settings page {setting}"),
+                None => "opening the settings".to_string(),
+            },
+            SystemAction::FileManager { path } => match path.as_deref().filter(|path| !path.is_empty()) {
+                Some(path) => format!("opening the Files app at {path}"),
+                None => "opening the Files app".to_string(),
+            },
+            SystemAction::BugReport => "opening the bug reporter".to_string(),
+        }
+    }
+}
+
+/// A standard Android intent, used for the platforms which have no Meta VR Shell (Android XR,
+/// Android phones, ...).
+#[cfg(any(target_os = "android", test))]
+#[derive(Debug, Clone, PartialEq)]
+enum AndroidIntent {
+    /// `Intent(Intent.ACTION_VIEW, Uri.parse(uri))`, with `Intent.CATEGORY_BROWSABLE` if `browsable`.
+    View {
+        /// The URI to open.
+        uri: String,
+        /// Whether to add `CATEGORY_BROWSABLE` (restrict the intent to browser-like apps).
+        browsable: bool,
+    },
+    /// `Intent(action)`, with an optional data URI.
+    Action {
+        /// The intent action (for example `android.settings.SETTINGS`).
+        action: String,
+        /// The optional data URI (for example `package:com.example.app`).
+        data: Option<String>,
+    },
+    /// `Intent(Intent.ACTION_OPEN_DOCUMENT)` with `CATEGORY_OPENABLE` and a MIME type.
+    OpenDocument {
+        /// The MIME type of the documents to pick.
+        mime: String,
+    },
+}
+
+#[cfg(any(target_os = "android", test))]
+impl AndroidIntent {
+    /// A short description of this intent, for the logs.
+    #[cfg(target_os = "android")]
+    fn describe(&self) -> String {
+        match self {
+            AndroidIntent::View { uri, .. } => format!("ACTION_VIEW {uri}"),
+            AndroidIntent::Action { action, data } => match data {
+                Some(data) => format!("{action} ({data})"),
+                None => action.clone(),
+            },
+            AndroidIntent::OpenDocument { mime } => format!("ACTION_OPEN_DOCUMENT ({mime})"),
+        }
+    }
+}
+
+#[cfg(any(target_os = "android", test))]
+impl SystemAction {
+    /// The standard Android intent which does the same thing as this action, for the devices
+    /// without a Meta VR Shell (Android XR, Android phones, ...).
+    ///
+    /// Returns the reason of the failure when the action has no Android equivalent.
+    fn android_intent(&self) -> std::result::Result<AndroidIntent, String> {
+        Ok(match self {
+            SystemAction::Browser { url } => AndroidIntent::View { uri: url.clone(), browsable: true },
+            SystemAction::Store { app_id } => {
+                let uri = match app_id.as_deref() {
+                    None => "https://play.google.com/store/apps".to_string(),
+                    // The Play Store works with Android package names, not with Meta's numeric app
+                    // IDs.
+                    Some(app_id) if app_id.contains('.') => {
+                        format!("https://play.google.com/store/apps/details?id={app_id}")
+                    }
+                    Some(app_id) => {
+                        return Err(format!(
+                            "'{app_id}' is not an Android package name: pass the Android package of the app \
+                             (like 'com.example.app') to open its Play Store page on Android XR"
+                        ));
+                    }
+                };
+                AndroidIntent::View { uri, browsable: false }
+            }
+            SystemAction::Settings { setting } => {
+                let Some(setting) = setting.as_deref().map(str::trim).filter(|setting| !setting.is_empty()) else {
+                    return Ok(AndroidIntent::Action { action: "android.settings.SETTINGS".to_string(), data: None });
+                };
+                // Escape hatch for the settings pages we don't map.
+                if setting.starts_with("android.settings.") {
+                    return Ok(AndroidIntent::Action { action: setting.to_string(), data: None });
+                }
+                if let Some(package) = setting.strip_prefix("/applications?package=") {
+                    return Ok(AndroidIntent::Action {
+                        action: "android.settings.APPLICATION_DETAILS_SETTINGS".to_string(),
+                        data: Some(format!("package:{package}")),
+                    });
+                }
+                let action = match setting {
+                    "/wifi" => "android.settings.WIFI_SETTINGS",
+                    "/bluetooth" | "/controllers" => "android.settings.BLUETOOTH_SETTINGS",
+                    "/device" => "android.settings.DISPLAY_SETTINGS",
+                    "/privacy" => "android.settings.PRIVACY_SETTINGS",
+                    "/accounts" => "android.settings.SYNC_SETTINGS",
+                    "/notifications" => "android.settings.ALL_APPS_NOTIFICATION_SETTINGS",
+                    // `/hands`, `/guardian`, `/system`, ... have no public Android XR action: the
+                    // main settings page is the closest thing we can open.
+                    _ => "android.settings.SETTINGS",
+                };
+                AndroidIntent::Action { action: action.to_string(), data: None }
+            }
+            // The document picker opens on its last tab; Android has no intent to choose one.
+            SystemAction::FileManager { .. } => AndroidIntent::OpenDocument { mime: "*/*".to_string() },
+            SystemAction::BugReport => {
+                AndroidIntent::Action { action: "android.intent.action.BUG_REPORT".to_string(), data: None }
+            }
+        })
+    }
+}
+
+/// Calls `android.net.Uri.parse` and returns the resulting `Uri`.
+#[cfg(target_os = "android")]
+fn android_uri<'local>(env: &mut jni::Env<'local>, uri: &str) -> jni::errors::Result<jni::objects::JObject<'local>> {
+    use jni::{
+        jni_sig, jni_str,
+        objects::{JObject, JValue},
+    };
+
+    let uri_class = env.find_class(jni_str!("android/net/Uri"))?;
+    let uri_string = env.new_string(uri)?;
+    env.call_static_method(
+        &uri_class,
+        jni_str!("parse"),
+        jni_sig!("(Ljava/lang/String;)Landroid/net/Uri;"),
+        &[JValue::Object(&JObject::from(uri_string))],
+    )?
+    .l()
+}
+
+/// The class name and the message of the Java exception which is being thrown, if any, after
+/// clearing it: a pending exception makes every other JNI call unreliable.
+#[cfg(target_os = "android")]
+fn take_java_exception(env: &mut jni::Env<'_>) -> Option<(String, String)> {
+    match env.exception_catch() {
+        Ok(()) => None,
+        Err(jni::errors::Error::CaughtJavaException { name, msg, .. }) => Some((name, msg)),
+        Err(error) => Some(("unknown".to_string(), error.to_string())),
+    }
+}
+
+/// Why a Java call failed.
+#[cfg(target_os = "android")]
+enum JavaFailure {
+    /// The Java exception which was thrown, already caught and cleared: its class name and message.
+    Exception {
+        /// The fully qualified class name (for example `android.content.ActivityNotFoundException`).
+        name: String,
+        /// The exception message.
+        message: String,
+    },
+    /// A JNI level failure, without any Java exception.
+    Jni(String),
+}
+
+#[cfg(target_os = "android")]
+impl JavaFailure {
+    /// A human readable description, for the logs.
+    fn describe(&self) -> String {
+        match self {
+            JavaFailure::Exception { name, message } => format!("{name}: {message}"),
+            JavaFailure::Jni(error) => format!("JNI error: {error}"),
+        }
+    }
+}
+
+/// Calls `Activity.startActivity(intent)` on the activity of the app.
 ///
-/// # Arguments
-/// * `action` - The system action to perform
+/// `jni` post-checks every call and returns `Err(JavaException)` while leaving the exception
+/// pending, so it has to be caught here: that's how the class of the exception is known (see
+/// [`JavaFailure::Exception`]), and a pending exception must not be left behind (the JVM would
+/// rethrow it when the thread is detached).
+#[cfg(target_os = "android")]
+fn start_activity(env: &mut jni::Env<'_>, intent: &jni::objects::JObject<'_>) -> std::result::Result<(), JavaFailure> {
+    use jni::{
+        jni_sig, jni_str,
+        objects::{JObject, JValue},
+    };
+
+    let activity = unsafe { JObject::from_raw(env, BackendAndroid::activity() as _) };
+    match env.call_method(
+        &activity,
+        jni_str!("startActivity"),
+        jni_sig!("(Landroid/content/Intent;)V"),
+        &[JValue::Object(intent)],
+    ) {
+        Ok(_) => Ok(()),
+        Err(error) => Err(match take_java_exception(env) {
+            Some((name, message)) => JavaFailure::Exception { name, message },
+            None => JavaFailure::Jni(error.to_string()),
+        }),
+    }
+}
+
+/// Starts `intent` from the Android activity of the app.
 ///
-/// # Examples
+/// Returns the Java exception name and message when the system refused the intent (no app for this
+/// action, ...).
+#[cfg(target_os = "android")]
+fn start_android_intent(intent: &AndroidIntent) -> std::result::Result<(), String> {
+    use jni::{
+        jni_sig, jni_str,
+        objects::{JObject, JValue},
+    };
+
+    if !android_jni_ready() {
+        return Err("the Android Java VM isn't available yet (call system_deep_link after Sk::initialize)".to_string());
+    }
+
+    let vm = unsafe { jni::JavaVM::from_raw(BackendAndroid::java_vm() as _) };
+    let started = vm.attach_current_thread(|env| -> jni::errors::Result<std::result::Result<(), String>> {
+        let intent_class = env.find_class(jni_str!("android/content/Intent"))?;
+
+        let java_intent = match intent {
+            AndroidIntent::View { uri, browsable } => {
+                let action = env
+                    .get_static_field(&intent_class, jni_str!("ACTION_VIEW"), jni_sig!("Ljava/lang/String;"))?
+                    .l()?;
+                let data = android_uri(env, uri)?;
+                let java_intent = env.new_object(
+                    &intent_class,
+                    jni_sig!("(Ljava/lang/String;Landroid/net/Uri;)V"),
+                    &[JValue::Object(&action), JValue::Object(&data)],
+                )?;
+                if *browsable {
+                    let category = env
+                        .get_static_field(
+                            &intent_class,
+                            jni_str!("CATEGORY_BROWSABLE"),
+                            jni_sig!("Ljava/lang/String;"),
+                        )?
+                        .l()?;
+                    env.call_method(
+                        &java_intent,
+                        jni_str!("addCategory"),
+                        jni_sig!("(Ljava/lang/String;)Landroid/content/Intent;"),
+                        &[JValue::Object(&category)],
+                    )?;
+                }
+                java_intent
+            }
+            AndroidIntent::Action { action, data } => {
+                let data = match data {
+                    Some(data) => android_uri(env, data)?,
+                    None => JObject::null(),
+                };
+                let action = env.new_string(action)?;
+                env.new_object(
+                    &intent_class,
+                    jni_sig!("(Ljava/lang/String;Landroid/net/Uri;)V"),
+                    &[JValue::Object(&JObject::from(action)), JValue::Object(&data)],
+                )?
+            }
+            AndroidIntent::OpenDocument { mime } => {
+                let action = env
+                    .get_static_field(&intent_class, jni_str!("ACTION_OPEN_DOCUMENT"), jni_sig!("Ljava/lang/String;"))?
+                    .l()?;
+                let java_intent =
+                    env.new_object(&intent_class, jni_sig!("(Ljava/lang/String;)V"), &[JValue::Object(&action)])?;
+                let mime = env.new_string(mime)?;
+                env.call_method(
+                    &java_intent,
+                    jni_str!("setType"),
+                    jni_sig!("(Ljava/lang/String;)Landroid/content/Intent;"),
+                    &[JValue::Object(&JObject::from(mime))],
+                )?;
+                let category = env
+                    .get_static_field(&intent_class, jni_str!("CATEGORY_OPENABLE"), jni_sig!("Ljava/lang/String;"))?
+                    .l()?;
+                env.call_method(
+                    &java_intent,
+                    jni_str!("addCategory"),
+                    jni_sig!("(Ljava/lang/String;)Landroid/content/Intent;"),
+                    &[JValue::Object(&category)],
+                )?;
+                java_intent
+            }
+        };
+        // Launch the target in its own task: started inside this app's task (a Full Space task on
+        // Android XR), the browser / Play Store / document picker would open behind the app.
+        env.call_method(
+            &java_intent,
+            jni_str!("addFlags"),
+            jni_sig!("(I)Landroid/content/Intent;"),
+            &[jni::objects::JValue::Int(FLAG_ACTIVITY_NEW_TASK)],
+        )?;
+
+        Ok(start_activity(env, &java_intent).map_err(|failure| failure.describe()))
+    });
+
+    match started {
+        Ok(started) => started,
+        Err(error) => Err(format!("JNI error: {error}")),
+    }
+}
+
+/// Calls `PackageManager.getLaunchIntentForPackage` for the Meta VR Shell, and returns its launch
+/// intent (`null` when the VR Shell isn't installed or is hidden by the package visibility rules).
+#[cfg(target_os = "android")]
+fn vr_shell_launch_intent<'local>(env: &mut jni::Env<'local>) -> jni::errors::Result<jni::objects::JObject<'local>> {
+    use jni::{
+        jni_sig, jni_str,
+        objects::{JObject, JValue},
+    };
+
+    let activity = unsafe { JObject::from_raw(env, BackendAndroid::activity() as _) };
+    let package_manager = env
+        .call_method(&activity, jni_str!("getPackageManager"), jni_sig!("()Landroid/content/pm/PackageManager;"), &[])?
+        .l()?;
+    let package_name = env.new_string(VR_SHELL_PACKAGE)?;
+    env.call_method(
+        &package_manager,
+        jni_str!("getLaunchIntentForPackage"),
+        jni_sig!("(Ljava/lang/String;)Landroid/content/Intent;"),
+        &[JValue::Object(&JObject::from(package_name))],
+    )?
+    .l()
+}
+
+/// Sends a Meta Horizon OS system deep link to the VR Shell.
+///
+/// Returns `Ok(true)` when the intent was handed to the VR Shell, `Ok(false)` when this device has
+/// no VR Shell at all (Android XR, Android phone, ...) so the caller can use a standard Android
+/// intent instead, and `Err` when the VR Shell exists but couldn't be started.
+#[cfg(target_os = "android")]
+fn start_vr_shell_deep_link(intent_data: &str, uri: &str) -> std::result::Result<bool, String> {
+    use jni::{
+        jni_sig, jni_str,
+        objects::{JObject, JValue},
+    };
+
+    if !android_jni_ready() {
+        return Err("the Android Java VM isn't available yet (call system_deep_link after Sk::initialize)".to_string());
+    }
+
+    let vm = unsafe { jni::JavaVM::from_raw(BackendAndroid::java_vm() as _) };
+    let started = vm.attach_current_thread(|env| -> jni::errors::Result<std::result::Result<bool, String>> {
+        // The documented way: the launch intent of the VR Shell.
+        let launch_intent = vr_shell_launch_intent(env)?;
+
+        // With `targetSdkVersion` 30 and up, the package visibility rules hide the VR Shell from
+        // `getLaunchIntentForPackage` unless the manifest declares it in a `<queries>` element. The
+        // explicit intent of the `adb` command in Meta's guide still works in that case.
+        let explicit = launch_intent.is_null();
+        let java_intent = if explicit {
+            let intent_class = env.find_class(jni_str!("android/content/Intent"))?;
+            let action =
+                env.get_static_field(&intent_class, jni_str!("ACTION_VIEW"), jni_sig!("Ljava/lang/String;"))?.l()?;
+            let data = android_uri(env, intent_data)?;
+            let java_intent = env.new_object(
+                &intent_class,
+                jni_sig!("(Ljava/lang/String;Landroid/net/Uri;)V"),
+                &[JValue::Object(&action), JValue::Object(&data)],
+            )?;
+            let package = env.new_string(VR_SHELL_PACKAGE)?;
+            let class = env.new_string(VR_SHELL_ACTIVITY)?;
+            env.call_method(
+                &java_intent,
+                jni_str!("setClassName"),
+                jni_sig!("(Ljava/lang/String;Ljava/lang/String;)Landroid/content/Intent;"),
+                &[JValue::Object(&JObject::from(package)), JValue::Object(&JObject::from(class))],
+            )?;
+            java_intent
+        } else {
+            launch_intent
+        };
+
+        // `intent_data` is the action to run (`systemux://...`), `uri` its optional parameter.
+        for (key, value) in [("intent_data", intent_data), ("uri", uri)] {
+            if value.is_empty() {
+                continue;
+            }
+            let java_key = env.new_string(key)?;
+            let java_value = env.new_string(value)?;
+            env.call_method(
+                &java_intent,
+                jni_str!("putExtra"),
+                jni_sig!("(Ljava/lang/String;Ljava/lang/String;)Landroid/content/Intent;"),
+                &[JValue::Object(&JObject::from(java_key)), JValue::Object(&JObject::from(java_value))],
+            )?;
+        }
+
+        Ok(match start_activity(env, &java_intent) {
+            Ok(()) => Ok(true),
+            // When the VR Shell isn't installed (Android XR), only the explicit intent fails, and it
+            // fails with ActivityNotFoundException: this device simply doesn't run Horizon OS.
+            Err(JavaFailure::Exception { name, .. }) if explicit && name.ends_with("ActivityNotFoundException") => {
+                Ok(false)
+            }
+            Err(failure) => Err(format!("startActivity({VR_SHELL_PACKAGE}) failed: {}", failure.describe())),
+        })
+    });
+
+    match started {
+        Ok(started) => started,
+        Err(error) => Err(format!("JNI error: {error}")),
+    }
+}
+
+/// Triggers a system deep link: the Meta Horizon OS `systemux://` intent when the VR Shell is
+/// available, or the equivalent standard Android intent on Android XR (and on any other Android
+/// device).
+///
+/// On Meta Horizon OS this follows the
+/// [System Deep Linking guide](https://developers.meta.com/vr/documentation/native/ps-system-deep-linking/):
+/// the `intent_data` and `uri` extras are sent to `com.oculus.vrshell`, through its launch intent
+/// or, when the package visibility rules hide it (targetSdk 30+ without a `<queries>` entry for
+/// `com.oculus.vrshell`), through the explicit `com.oculus.vrshell/.MainActivity` intent used by
+/// the `adb` command of the guide. Adding
+///
+/// ```xml
+/// <queries>
+///     <package android:name="com.oculus.vrshell" />
+/// </queries>
 /// ```
-/// // Open browser with URL
-/// system_deep_link(SystemAction::Browser("https://www.oculus.com".to_string()));
 ///
-/// // Open store with app ID
-/// system_deep_link(SystemAction::Store("1234567890".to_string()));
+/// to your `AndroidManifest.xml` is still recommended on Horizon OS.
 ///
-/// // Open home screen
-/// system_deep_link(SystemAction::Home);
+/// Android XR has no `systemux://` shell: the action is then translated to a standard Android
+/// intent (see [`SystemAction`]), and the target app opens the same way as when the user launches
+/// it, in its own panel in the Home Space. Embedding it inside your app's space would need the
+/// Jetpack XR `ActivityPanelEntity` and the `EMBED_ACTIVITY` capability, which aren't reachable
+/// from an OpenXR app.
 ///
-/// // Custom action
-/// system_deep_link(SystemAction::Custom {
-///     action: "myaction".to_string(),
-///     data: Some("mydata".to_string())
-/// });
+/// See also [`SystemAction::horizon_deep_link`].
+///
+/// # Return
+/// `true` when the intent was handed to the system, `false` when the platform refused it (no
+/// handler for the action, numeric Meta store ID on Android XR, not an Android platform, ...).
+///
+/// # Testing with `adb`
+/// On Horizon OS, the same deep link can be triggered without your app (see Meta's guide):
+/// ```text
+/// adb shell am start -a android.intent.action.VIEW -n com.oculus.vrshell/.MainActivity -d "systemux://settings" -e uri "/hands"
 /// ```
-/// System Deep Link function for Meta Quest following Meta specifications.
-/// This function uses the VR Shell package to trigger various system actions.
-///
-/// # Arguments
-/// * `action` - The system action to perform
-///
-/// # Examples
+/// On Android XR, the translated intent is a plain Android one:
+/// ```text
+/// adb shell am start -a android.settings.SETTINGS
+/// adb shell am start -a android.intent.action.VIEW -d "https://www.meta.com"
+/// adb shell am start -a android.intent.action.OPEN_DOCUMENT -t "*/*"
 /// ```
-/// // Open browser with URL
-/// system_deep_link(SystemAction::Browser("https://www.oculus.com".to_string()));
 ///
-/// // Open store with app ID
-/// system_deep_link(SystemAction::Store("1234567890".to_string()));
+/// ### Examples
+/// ```no_run
+/// use stereokit_rust::tools::os_api::{SystemAction, system_deep_link};
 ///
-/// // Open home screen
-/// system_deep_link(SystemAction::Home);
-///
-/// // Custom action
-/// System Deep Link function for Meta Quest following official Meta specifications.
-/// This function uses PackageManager.getLaunchIntentForPackage() with intent_data and uri extras
-/// as documented in Meta's System Deep Linking guide.
-///
-/// # Arguments
-/// * `action` - The system action to perform
-///
-/// # Examples
-/// ```
-/// // Open browser with URL
+/// // Open the browser with a URL on Horizon OS, or the default browser on Android XR.
 /// system_deep_link(SystemAction::Browser { url: "https://www.meta.com".to_string() });
 ///
-/// // Open store front page
+/// // Open the store front page, or the page of an app. On Android XR, `app_id` must be the
+/// // Android package name of the app.
 /// system_deep_link(SystemAction::Store { app_id: None });
+/// system_deep_link(SystemAction::Store { app_id: Some("com.example.app".to_string()) });
 ///
-/// // Open store page for specific app
-/// system_deep_link(SystemAction::Store { app_id: Some("1234567890".to_string()) });
-///
-/// // Open settings main page
+/// // Open the main settings page, or a specific one.
 /// system_deep_link(SystemAction::Settings { setting: None });
-///
-/// // Open hand tracking settings
 /// system_deep_link(SystemAction::Settings { setting: Some("/hands".to_string()) });
+/// system_deep_link(SystemAction::Settings { setting: Some("/applications?package=com.example.app".to_string()) });
 ///
-/// // Open controllers settings
-/// system_deep_link(SystemAction::Settings { setting: Some("/controllers".to_string()) });
-///
-/// // Open WiFi settings
-/// system_deep_link(SystemAction::Settings { setting: Some("/wifi".to_string()) });
-///
-/// // Open Guardian/Boundary settings
-/// system_deep_link(SystemAction::Settings { setting: Some("/guardian".to_string()) });
-///
-/// // Open settings for specific app
-/// system_deep_link(SystemAction::Settings { setting: Some("/applications?package=com.oculus.browser".to_string()) });
-///
-/// // Open bug reporter
+/// // Open the Files app, and the bug reporter.
+/// system_deep_link(SystemAction::FileManager { path: None });
 /// system_deep_link(SystemAction::BugReport);
 /// ```
 #[cfg(target_os = "android")]
 pub fn system_deep_link(action: SystemAction) -> bool {
     use crate::system::Log;
-    use jni::objects::JValue;
 
-    // Prepare action info according to Meta specifications (outside JNI context)
-    let (intent_data, uri_value, display_data) = match &action {
-        SystemAction::Browser { url } => {
-            ("systemux://browser", url.clone(), format!("Opening browser with URL: {}", url))
+    Log::info(format!("system_deep_link: {}", action.describe()));
+
+    if is_horizon_os() {
+        let (intent_data, uri) = action.horizon_deep_link();
+        match start_vr_shell_deep_link(intent_data, &uri) {
+            Ok(true) => {
+                Log::info(format!("system_deep_link: sent '{intent_data}' (uri: '{uri}') to the Horizon OS VR Shell"));
+                return true;
+            }
+            Ok(false) => Log::diag(format!(
+                "system_deep_link: {VR_SHELL_PACKAGE} not available, using a standard Android intent"
+            )),
+            Err(error) => Log::warn(format!(
+                "system_deep_link: Horizon OS VR Shell failed, using a standard Android intent: {error}"
+            )),
         }
-        SystemAction::Store { app_id } => {
-            let uri = match app_id {
-                Some(id) => format!("/item/{}", id),
-                None => String::new(),
-            };
-            (
-                "systemux://store",
-                uri,
-                format!(
-                    "Opening store{}",
-                    if app_id.is_some() {
-                        format!(" for app: {}", app_id.as_ref().expect("app_id should be Some"))
-                    } else {
-                        String::new()
-                    }
-                ),
-            )
+    }
+
+    match action.android_intent() {
+        Ok(intent) => match start_android_intent(&intent) {
+            Ok(()) => {
+                Log::info(format!("system_deep_link: started {}", intent.describe()));
+                true
+            }
+            Err(error) => {
+                Log::warn(format!("system_deep_link: {} failed: {error}", intent.describe()));
+                false
+            }
+        },
+        Err(message) => {
+            Log::warn(format!("system_deep_link: {message}"));
+            false
         }
-        SystemAction::Settings { setting } => {
-            let uri = setting.as_deref().unwrap_or("");
-            (
-                "systemux://settings",
-                uri.to_string(),
-                format!("Opening settings{}", if !uri.is_empty() { format!(": {}", uri) } else { String::new() }),
-            )
-        }
-        SystemAction::FileManager { path } => {
-            let uri = path.as_deref().unwrap_or("");
-            (
-                "systemux://file-manager",
-                uri.to_string(),
-                format!("Opening file manager{}", if !uri.is_empty() { format!(": {}", uri) } else { String::new() }),
-            )
-        }
-        SystemAction::BugReport => ("systemux://bug_report", String::new(), "Opening bug report".to_string()),
-    };
-
-    Log::info(format!("system_deep_link: {}", display_data));
-    Log::diag(format!(
-        "system_deep_link: Attempting to launch VR Shell with intent_data='{}', uri='{}'",
-        intent_data, uri_value
-    ));
-
-    let vm = unsafe { jni::JavaVM::from_raw(BackendAndroid::java_vm() as _) };
-    vm.attach_current_thread(|env| -> jni::errors::Result<bool> {
-        use jni::{jni_sig, jni_str};
-        let activity = unsafe { jni::objects::JObject::from_raw(env, BackendAndroid::activity() as _) };
-
-        // Get PackageManager from context (following Meta specification)
-        let package_manager = env
-            .call_method(
-                &activity,
-                jni_str!("getPackageManager"),
-                jni_sig!("()Landroid/content/pm/PackageManager;"),
-                &[],
-            )?
-            .l()?;
-
-        // Get launch intent for VR Shell (following Meta specification)
-        let package_name = env.new_string("com.oculus.vrshell")?;
-        let intent = env
-            .call_method(
-                &package_manager,
-                jni_str!("getLaunchIntentForPackage"),
-                jni_sig!("(Ljava/lang/String;)Landroid/content/Intent;"),
-                &[JValue::Object(&package_name.into())],
-            )?
-            .l()?;
-        if intent.is_null() {
-            Log::err("system_deep_link: getLaunchIntentForPackage returned null");
-            return Ok(false);
-        }
-
-        // Add intent_data extra (following Meta specification)
-        let intent_data_key = env.new_string("intent_data")?;
-        let intent_data_value = env.new_string(intent_data)?;
-        env.call_method(
-            &intent,
-            jni_str!("putExtra"),
-            jni_sig!("(Ljava/lang/String;Ljava/lang/String;)Landroid/content/Intent;"),
-            &[JValue::Object(&intent_data_key.into()), JValue::Object(&intent_data_value.into())],
-        )?;
-
-        // Add uri extra if not empty (following Meta specification)
-        if !uri_value.is_empty() {
-            let uri_key = env.new_string("uri")?;
-            let uri_value_string = env.new_string(&uri_value)?;
-            env.call_method(
-                &intent,
-                jni_str!("putExtra"),
-                jni_sig!("(Ljava/lang/String;Ljava/lang/String;)Landroid/content/Intent;"),
-                &[JValue::Object(&uri_key.into()), JValue::Object(&uri_value_string.into())],
-            )?;
-        }
-
-        // Start activity (following Meta specification)
-        env.call_method(
-            &activity,
-            jni_str!("startActivity"),
-            jni_sig!("(Landroid/content/Intent;)V"),
-            &[JValue::Object(&intent)],
-        )?;
-        if env.exception_check() {
-            let _ = env.exception_clear();
-            Log::err("system_deep_link: Activity exception occurred (cleared)");
-            return Ok(false);
-        }
-        Log::info(format!("system_deep_link: Successfully executed: {}", display_data));
-        Ok(true)
-    })
-    .unwrap_or_else(|e| {
-        Log::err(format!("system_deep_link: Failed with error: {:?}", e));
-        false
-    })
+    }
 }
 
+/// Triggers a system deep link. See the Android version of this function for the details.
+///
+/// This is a no-op returning `false` on the platforms which aren't Android.
 #[cfg(not(target_os = "android"))]
-pub fn system_deep_link(_action: SystemAction) -> bool {
+pub fn system_deep_link(action: SystemAction) -> bool {
     use crate::system::Log;
-    Log::warn("system_deep_link: Not supported on non-Android platforms");
+    Log::warn(format!("system_deep_link: not supported on this platform, ignoring '{}'", action.describe()));
     false
+}
+
+/// The Android package name of the app, or `None` on the platforms which aren't Android and before
+/// `Sk::initialize`.
+///
+/// It's what goes in the `/applications?package=...` settings URI, which is how
+/// [`SystemAction::Settings`] opens the settings page of the app itself on both Horizon OS and
+/// Android XR. Hard coding that package name in the code breaks as soon as the app is renamed.
+///
+/// ### Examples
+/// ```no_run
+/// use stereokit_rust::tools::os_api::{SystemAction, app_package_name, system_deep_link};
+///
+/// if let Some(package) = app_package_name() {
+///     system_deep_link(SystemAction::Settings { setting: Some(format!("/applications?package={package}")) });
+/// }
+/// ```
+#[cfg(target_os = "android")]
+pub fn app_package_name() -> Option<String> {
+    use jni::{
+        jni_sig, jni_str,
+        objects::{JObject, JString},
+    };
+
+    if !android_jni_ready() {
+        return None;
+    }
+    let vm = unsafe { jni::JavaVM::from_raw(BackendAndroid::java_vm() as _) };
+    vm.attach_current_thread(|env| -> jni::errors::Result<String> {
+        let activity = unsafe { JObject::from_raw(env, BackendAndroid::activity() as _) };
+        let package =
+            env.call_method(&activity, jni_str!("getPackageName"), jni_sig!("()Ljava/lang/String;"), &[])?.l()?;
+        let package = unsafe { JString::from_raw(env, package.into_raw() as jni::sys::jstring) };
+        package.try_to_string(env)
+    })
+    .ok()
+}
+
+/// The app package name. Always `None` on the platforms which aren't Android.
+///
+/// see also [`app_package_name`]
+#[cfg(not(target_os = "android"))]
+pub fn app_package_name() -> Option<String> {
+    None
+}
+
+/// Whether the app runs on Meta Horizon OS, the only platform where the `systemux://` system deep
+/// links are available.
+///
+/// The check looks for the Meta VR Shell package (which handles the deep links) and, when the
+/// package visibility rules hide it, for the Meta manufacturer/brand in `android.os.Build`. The
+/// answer is cached after the first call, since it can't change while the app runs.
+///
+/// It returns `false` on Android XR, on plain Android devices, on the platforms which aren't
+/// Android, and before `Sk::initialize` (the Java VM isn't known yet).
+///
+/// see also [`system_deep_link`]
+///
+/// ### Examples
+/// ```no_run
+/// use stereokit_rust::tools::os_api::is_horizon_os;
+///
+/// if is_horizon_os() {
+///     println!("Meta Horizon OS: the systemux:// links are available");
+/// } else {
+///     println!("Android XR or another platform: system_deep_link uses standard Android intents");
+/// }
+/// ```
+#[cfg(target_os = "android")]
+pub fn is_horizon_os() -> bool {
+    use std::sync::OnceLock;
+
+    static IS_HORIZON_OS: OnceLock<bool> = OnceLock::new();
+    if let Some(is_horizon_os) = IS_HORIZON_OS.get() {
+        return *is_horizon_os;
+    }
+    match probe_horizon_os() {
+        Some(is_horizon_os) => {
+            let _ = IS_HORIZON_OS.set(is_horizon_os);
+            is_horizon_os
+        }
+        // The Java VM isn't available yet, don't cache a wrong answer.
+        None => false,
+    }
+}
+
+/// Whether the app runs on Meta Horizon OS. Always `false` on the platforms which aren't Android.
+///
+/// see also [`is_horizon_os`]
+#[cfg(not(target_os = "android"))]
+pub fn is_horizon_os() -> bool {
+    false
+}
+
+/// The platform detection behind [`is_horizon_os`]: `None` when the Java VM isn't available yet.
+#[cfg(target_os = "android")]
+fn probe_horizon_os() -> Option<bool> {
+    if !android_jni_ready() {
+        return None;
+    }
+
+    // The VR Shell is what handles the `systemux://` deep links: its presence is the best clue.
+    let vr_shell_found = {
+        let vm = unsafe { jni::JavaVM::from_raw(BackendAndroid::java_vm() as _) };
+        vm.attach_current_thread(|env| -> jni::errors::Result<bool> {
+            vr_shell_launch_intent(env).map(|launch_intent| !launch_intent.is_null())
+        })
+        .ok()
+    };
+    if vr_shell_found == Some(true) {
+        return Some(true);
+    }
+
+    // The package visibility rules (targetSdk 30+ without a `<queries>` entry) can hide the VR
+    // Shell, so fall back to the `android.os.Build` fields of the Meta devices.
+    let meta_build = ["MANUFACTURER", "BRAND"].iter().any(|field| {
+        android_build_field(field).is_some_and(|value| {
+            let value = value.to_ascii_lowercase();
+            value.contains("oculus") || value == "meta"
+        })
+    });
+    Some(meta_build)
 }
 
 /// Get the list of environnement blend_modes available on this device.
@@ -1395,4 +1907,100 @@ pub fn android_build_field(field: &str) -> Option<String> {
         Log::err(format!("android_build_field({}) failed: {}", field, error));
         None
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn horizon_deep_links_follow_meta_documentation() {
+        assert_eq!(
+            SystemAction::Browser { url: "https://www.meta.com".to_string() }.horizon_deep_link(),
+            ("systemux://browser", "https://www.meta.com".to_string())
+        );
+        assert_eq!(SystemAction::Store { app_id: None }.horizon_deep_link(), ("systemux://store", String::new()));
+        assert_eq!(
+            SystemAction::Store { app_id: Some("1234567890".to_string()) }.horizon_deep_link(),
+            ("systemux://store", "/item/1234567890".to_string())
+        );
+        assert_eq!(
+            SystemAction::Settings { setting: Some("/hands".to_string()) }.horizon_deep_link(),
+            ("systemux://settings", "/hands".to_string())
+        );
+        assert_eq!(
+            SystemAction::FileManager { path: Some("/downloads/".to_string()) }.horizon_deep_link(),
+            ("systemux://file-manager", "/downloads/".to_string())
+        );
+        assert_eq!(SystemAction::BugReport.horizon_deep_link(), ("systemux://bug_report", String::new()));
+    }
+
+    #[test]
+    fn android_intents_follow_the_android_xr_mapping() {
+        assert_eq!(
+            SystemAction::Browser { url: "https://stereokit.net".to_string() }.android_intent().unwrap(),
+            AndroidIntent::View { uri: "https://stereokit.net".to_string(), browsable: true }
+        );
+        assert_eq!(
+            SystemAction::Store { app_id: None }.android_intent().unwrap(),
+            AndroidIntent::View { uri: "https://play.google.com/store/apps".to_string(), browsable: false }
+        );
+        assert_eq!(
+            SystemAction::Store { app_id: Some("com.example.app".to_string()) }.android_intent().unwrap(),
+            AndroidIntent::View {
+                uri: "https://play.google.com/store/apps/details?id=com.example.app".to_string(),
+                browsable: false
+            }
+        );
+        // Meta's numeric app IDs have no meaning for the Play Store.
+        assert!(SystemAction::Store { app_id: Some("1234567890".to_string()) }.android_intent().is_err());
+
+        let settings =
+            |setting: &str| SystemAction::Settings { setting: Some(setting.to_string()) }.android_intent().unwrap();
+        assert_eq!(
+            SystemAction::Settings { setting: None }.android_intent().unwrap(),
+            AndroidIntent::Action { action: "android.settings.SETTINGS".to_string(), data: None }
+        );
+        assert_eq!(
+            settings("/wifi"),
+            AndroidIntent::Action { action: "android.settings.WIFI_SETTINGS".to_string(), data: None }
+        );
+        assert_eq!(
+            settings("/controllers"),
+            AndroidIntent::Action { action: "android.settings.BLUETOOTH_SETTINGS".to_string(), data: None }
+        );
+        assert_eq!(
+            settings("/device"),
+            AndroidIntent::Action { action: "android.settings.DISPLAY_SETTINGS".to_string(), data: None }
+        );
+        // No public Android XR action for hand tracking: the main settings page is the fallback.
+        assert_eq!(
+            settings("/hands"),
+            AndroidIntent::Action { action: "android.settings.SETTINGS".to_string(), data: None }
+        );
+        assert_eq!(
+            settings("/notifications"),
+            AndroidIntent::Action { action: "android.settings.ALL_APPS_NOTIFICATION_SETTINGS".to_string(), data: None }
+        );
+        assert_eq!(
+            settings("/applications?package=com.example.app"),
+            AndroidIntent::Action {
+                action: "android.settings.APPLICATION_DETAILS_SETTINGS".to_string(),
+                data: Some("package:com.example.app".to_string())
+            }
+        );
+        assert_eq!(
+            settings("android.settings.INPUT_METHOD_SETTINGS"),
+            AndroidIntent::Action { action: "android.settings.INPUT_METHOD_SETTINGS".to_string(), data: None }
+        );
+
+        assert_eq!(
+            SystemAction::FileManager { path: Some("/media/".to_string()) }.android_intent().unwrap(),
+            AndroidIntent::OpenDocument { mime: "*/*".to_string() }
+        );
+        assert_eq!(
+            SystemAction::BugReport.android_intent().unwrap(),
+            AndroidIntent::Action { action: "android.intent.action.BUG_REPORT".to_string(), data: None }
+        );
+    }
 }

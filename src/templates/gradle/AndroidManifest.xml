@@ -34,6 +34,9 @@
     <uses-permission android:name="android.permission.SCENE_UNDERSTANDING_FINE" />
     <uses-permission android:name="android.permission.HAND_TRACKING" />
     <uses-permission android:name="android.permission.EYE_TRACKING_FINE" />
+    <queries>
+        <package android:name="com.oculus.vrshell" />
+    </queries>
     <!-- Vive specific -->
     <meta-data android:name="no_controller_pairing" android:value="true" />
     <uses-feature android:name="wave.feature.handtracking" android:required="false" />

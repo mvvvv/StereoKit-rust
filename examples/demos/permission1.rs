@@ -8,7 +8,7 @@ use stereokit_rust::{
     permission::{Permission, PermissionState, PermissionType},
     prelude::*,
     system::{Align, Text, TextBuilder, TextStyle},
-    tools::os_api::{SystemAction, system_deep_link},
+    tools::os_api::{SystemAction, app_package_name, system_deep_link},
     ui::{Ui, UiPad},
     util::named_colors::{CYAN, RED},
 };
@@ -123,9 +123,9 @@ impl Permission1 {
         if cfg!(target_os = "android") && Ui::button("App Settings").press() {
             Ui::hseparator();
             let result = system_deep_link(SystemAction::Settings {
-                setting: Some("/applications?package=com.stereokit.rust_binding.demos".to_string()),
+                setting: app_package_name().map(|package| format!("/applications?package={package}")),
             });
-            Log::info(format!("Open VR Shell App Settings - Result: {:?}", result));
+            Log::info(format!("Open App Settings - Result: {:?}", result));
         }
         Ui::window_end();
 
