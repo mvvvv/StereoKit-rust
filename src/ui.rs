@@ -1055,6 +1055,9 @@ unsafe extern "C" {
         size: Vec2,
         type_: TextContext,
     ) -> Bool32T;
+    pub fn ui_input_caret_get() -> i32;
+    pub fn ui_input_caret_set(start: i32, end: i32);
+    pub fn ui_input_is_focused(id: *const c_char) -> Bool32T;
     pub fn ui_input_at(
         id: *const c_char,
         buffer: *mut c_char,
@@ -1836,6 +1839,39 @@ impl Ui {
     /// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/ui_input.jpeg" alt="screenshot" width="200">
     pub fn input(id: impl AsRef<str>, out_value: &mut String) -> UiInputBuilder<'_> {
         UiInputBuilder::new(id, out_value)
+    }
+
+    /// Caret position, in characters, of the [`Ui::input`] that currently has
+    /// the keyboard focus, or `-1` when no input field is focused. `0` is the
+    /// start of the text.
+    ///
+    /// see also [`ui_input_caret_get`]
+    pub fn input_caret() -> i32 {
+        unsafe { ui_input_caret_get() }
+    }
+
+    /// Moves the caret and the selection of the focused [`Ui::input`].
+    /// `start` and `end` are character positions in the current text,
+    /// `start == end` for a plain caret; both are clamped by the next
+    /// [`Ui::input`] call.
+    ///
+    /// see also [`ui_input_caret_set`]
+    pub fn input_caret_set(start: i32, end: i32) {
+        unsafe { ui_input_caret_set(start, end) }
+    }
+
+    /// Tells if this [`Ui::input`] is the field that has the keyboard focus.
+    /// Must be called at the same UI id stack level as the input it refers to.
+    ///
+    /// see also [`ui_input_is_focused`]
+    pub fn input_is_focused(id: impl AsRef<str>) -> bool {
+        let id = CString::new(id.as_ref()).unwrap_or_default();
+        Self::input_is_focused_c(&id)
+    }
+
+    /// [`Ui::input_is_focused`] without the string copy.
+    pub(crate) fn input_is_focused_c(id: &CString) -> bool {
+        unsafe { ui_input_is_focused(id.as_ptr()) != 0 }
     }
 
     /// Maps the legacy Handed concept onto interactor sources: a side covers its hand and controller, and the right

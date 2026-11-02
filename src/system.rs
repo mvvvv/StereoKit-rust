@@ -6478,6 +6478,25 @@ bitflags::bitflags! {
     }
 }
 
+impl fmt::Display for TextContext {
+    /// The name of the context (`Text`, `Number`, `Uri` or `Password`), ready to be shown in a label: the [`Debug`]
+    /// representation of a bitflags is `TextContext(Text)`, which is not meant to be displayed.
+    ///
+    /// see also [`crate::ui::Ui::input`]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let name = if *self == TextContext::Number {
+            "Number"
+        } else if *self == TextContext::Uri {
+            "Uri"
+        } else if *self == TextContext::Password {
+            "Password"
+        } else {
+            "Text"
+        };
+        write!(f, "{name}")
+    }
+}
+
 /// A collection of functions for rendering and working with text. These are a lower level access to text rendering than
 /// the UI text functions, and are completely unaware of the UI code.
 /// <https://stereokit.net/Pages/StereoKit/Text.html>

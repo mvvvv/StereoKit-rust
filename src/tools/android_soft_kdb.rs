@@ -10,16 +10,20 @@
 //! ```ignore
 //! sk.send_event(StepperAction::add(ANDROID_SOFT_KBD_ID, AndroidSoftKbd::default()));
 //! ```
+//!
+//! The [`ControlPanel`](crate::tools::control_panel::ControlPanel) does it by default on Android (its "Android
+//! Keyboard" toggle, see `ControlPanel::set_android_keyboard`), so an app that draws the panel has nothing to do.
 
 use android_activity::AndroidApp;
 
-use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Arc, Mutex};
 
 use crate::{
     prelude::*,
     sk::{AppFocus, sk_app_focus},
-    system::{Input, Key, TextContext},
+    system::TextContext,
+    tools::ime_bridge::{self, FieldState},
     ui::Ui,
     util::Platform,
 };
@@ -27,12 +31,14 @@ use crate::{
 /// Stepper ID for [`AndroidSoftKbd`].
 pub const ANDROID_SOFT_KBD_ID: &str = "Tool_AndroidSoftKbdID";
 
-/// Idle content of the hidden `EditText`: two spaces with the caret in the
-/// middle, so Del/Left/Right always have a character on each side.
-const IME_BASELINE: &str = "  ";
+/// Frames a replacement may wait for the field to apply it before it is
+/// dropped (the field lost the focus, or it is not drawn by `Ui::input`).
+const IME_PENDING_FRAMES: u32 = 60;
 
-/// Caret position of [`IME_BASELINE`].
-const IME_BASELINE_CARET: i32 = 1;
+/// Frames a composing text may stay unchanged before it is published anyway
+/// (~1 s at 90 Hz): a keyboard that never ends its composition must not lock
+/// the field.
+const IME_COMPOSING_FRAMES: u32 = 90;
 
 /// Frames between two `showSoftInput` requests (~0.11 s at 90 Hz). The first
 /// attempt of a cycle may only re-focus the view, hence the short interval.
@@ -53,11 +59,12 @@ const IME_SHOW_FLAGS: i32 = 2;
 /// `InputMethodManager.SHOW_IMPLICIT`, used for the decor view request.
 const IME_SHOW_IMPLICIT: i32 = 1;
 
-/// `InputType.TYPE_CLASS_TEXT | TYPE_TEXT_FLAG_MULTI_LINE |
-/// TYPE_TEXT_FLAG_NO_SUGGESTIONS`. Without `NO_SUGGESTIONS` the IME keeps a
-/// composing region that it rewrites while typing, which the text diff below
-/// would see as replacements.
-const EDIT_TEXT_INPUT_TYPE: i32 = 0x1 | 0x0002_0000 | 0x0008_0000;
+/// `InputType.TYPE_CLASS_TEXT | TYPE_TEXT_FLAG_MULTI_LINE`.
+///
+/// The suggestion strip is *not* disabled (`TYPE_TEXT_FLAG_NO_SUGGESTIONS`):
+/// advanced IME features (voice input, translation, autocorrect) live there,
+/// and the text exchange below handles the composing text they produce.
+const EDIT_TEXT_INPUT_TYPE: i32 = 0x1 | 0x0002_0000;
 
 /// `EditorInfo.IME_FLAG_NO_EXTRACT_UI | IME_FLAG_NO_FULLSCREEN |
 /// IME_FLAG_NO_ENTER_ACTION`, with `IME_ACTION_NONE` in the action bits.
@@ -68,7 +75,29 @@ const EDIT_TEXT_INPUT_TYPE: i32 = 0x1 | 0x0002_0000 | 0x0008_0000;
 /// all for a multi-line editor.
 const EDIT_TEXT_IME_OPTIONS: i32 = 0x1 | 0x4000_0000 | 0x1000_0000 | 0x0200_0000;
 
-/// Outcome of one IME request.
+/// A mirror write queued on the Java main thread: the state the hidden view
+/// holds when the write is decided (`from`) and the state it is being given
+/// (`to`). The view keeps `from` until the Java thread runs, and the poll must
+/// not take that for an IME edit.
+#[derive(Clone)]
+struct MirrorWrite {
+    from: FieldState,
+    to: FieldState,
+}
+
+/// State of the hidden `EditText`, as read each frame.
+struct ImeSample {
+    /// Text and caret of the hidden view.
+    state: FieldState,
+    /// The IME is composing: its text is provisional (autocorrect, dictation or
+    /// translation preview).
+    composing: bool,
+}
+
+/// `EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING`: keep what is typed out of the
+/// IME's learning dictionary (used for password fields).
+const IME_FLAG_NO_PERSONALIZED_LEARNING: i32 = 0x0100_0000;
+
 #[derive(Default)]
 struct ShowOutcome {
     /// `InputMethodManager.showSoftInput` accepted the request for our view.
@@ -105,17 +134,29 @@ pub struct AndroidSoftKbd {
     /// `0` = absent, `1` = creation in progress, `>1` = valid jobject.
     edit_text: Arc<Mutex<usize>>,
 
-    /// A Java-main-thread callback resetting the `EditText` is in flight.
-    reset_in_flight: Arc<AtomicBool>,
+    /// Last state of the hidden `EditText` that was exchanged with the field:
+    /// the reference both sides converge to (`EditText` → field, or field →
+    /// `EditText`).
+    ime_state: Option<FieldState>,
 
-    /// The last reset was applied: the buffer is back to [`IME_BASELINE`],
-    /// whatever `last_seen` still says.
-    reset_applied: Arc<AtomicBool>,
+    /// Frames a replacement has been waiting for the field to apply it.
+    pending_frames: u32,
 
-    /// Last `(text, caret)` already turned into StereoKit events. It is the
-    /// reference for the next diff, so a rewritten character (composing text,
-    /// accent, autocorrect) is a replacement and not a second insertion.
-    last_seen: Option<(String, i32)>,
+    /// Last composing state seen, and for how many frames it has not changed.
+    composing_state: Option<FieldState>,
+    composing_frames: u32,
+
+    /// Kind of text the hidden `EditText` is configured for.
+    input_context: Option<TextContext>,
+
+    /// State written into the hidden `EditText` but not applied yet by the Java
+    /// main thread, and for how many frames it has been pending.
+    mirror_in_flight: Option<MirrorWrite>,
+    mirror_frames: u32,
+
+    /// The hidden `EditText` could not be read on the previous frame: only the
+    /// transitions are logged, so a failing read doesn't flood the log.
+    read_error: bool,
 
     /// The IME was asked to show but nothing proves it is displayed yet.
     show_pending: bool,
@@ -163,9 +204,14 @@ impl Default for AndroidSoftKbd {
 
             android_app: None,
             edit_text: Arc::new(Mutex::new(0)),
-            reset_in_flight: Arc::new(AtomicBool::new(false)),
-            reset_applied: Arc::new(AtomicBool::new(false)),
-            last_seen: None,
+            ime_state: None,
+            pending_frames: 0,
+            composing_state: None,
+            composing_frames: 0,
+            input_context: None,
+            mirror_in_flight: None,
+            mirror_frames: 0,
+            read_error: false,
             show_pending: false,
             show_frames: 0,
             show_cooldown: 0,
@@ -191,6 +237,8 @@ impl AndroidSoftKbd {
         }
         let sk_i = self.sk_info.as_ref().expect("sk_info should be Some").borrow();
         self.android_app = Some(sk_i.get_android_app().clone());
+        // `Ui::input` starts exchanging its text with the hidden `EditText`.
+        ime_bridge::set_active(true);
         true
     }
 
@@ -278,9 +326,15 @@ impl AndroidSoftKbd {
         self.ime_seen_input = false;
         self.ime_had_sk_focus = false;
         self.ime_unfocused_frames = 0;
-        self.last_seen = None;
-        self.reset_in_flight.store(false, Ordering::Release);
-        self.reset_applied.store(false, Ordering::Release);
+        // A new `EditText` starts empty: the first exchange mirrors the field
+        // content into it (never the other way round).
+        self.ime_state = None;
+        self.pending_frames = 0;
+        self.composing_state = None;
+        self.composing_frames = 0;
+        self.input_context = None;
+        self.mirror_in_flight = None;
+        self.mirror_frames = 0;
         self.arm_show_ime();
     }
 
@@ -294,9 +348,16 @@ impl AndroidSoftKbd {
         self.show_pending = false;
         self.show_frames = 0;
         self.show_cooldown = 0;
-        self.last_seen = None;
-        self.reset_in_flight.store(false, Ordering::Release);
-        self.reset_applied.store(false, Ordering::Release);
+        self.ime_state = None;
+        self.pending_frames = 0;
+        self.composing_state = None;
+        self.composing_frames = 0;
+        self.input_context = None;
+        self.mirror_in_flight = None;
+        self.mirror_frames = 0;
+        // A replacement the field never applied must not land in a later
+        // session.
+        ime_bridge::clear_replacement();
     }
 
     /// Hide the IME of the hidden `EditText` and give the window its normal
@@ -519,9 +580,15 @@ impl AndroidSoftKbd {
         .ok()
     }
 
-    /// Read the hidden `EditText` text and caret. `None` if the view is absent.
-    fn poll_edit_text(&self) -> Option<(String, i32)> {
-        use jni::{jni_sig, jni_str, objects::JString};
+    /// Read the hidden `EditText` state: its text, its caret and whether the IME
+    /// is composing (in which case the text is provisional). `None` if the view
+    /// is absent or unreadable.
+    ///
+    /// The text is decoded by [`read_editable_text`], which tolerates an unpaired
+    /// UTF-16 surrogate (a Java-to-Rust conversion would fail on it and leave the
+    /// bridge blind for good).
+    fn poll_edit_text(&self) -> Option<ImeSample> {
+        use jni::{jni_sig, jni_str, objects::JValue};
 
         let raw = *self.edit_text.lock().expect("Failed to lock edit_text mutex");
         if raw <= 1 {
@@ -530,21 +597,52 @@ impl AndroidSoftKbd {
         let app = self.android_app.as_ref()?;
 
         let vm = unsafe { jni::JavaVM::from_raw(app.vm_as_ptr() as _) };
-        vm.attach_current_thread(|env| -> jni::errors::Result<Option<(String, i32)>> {
-            let edit_text = local_ref(env, raw)?;
+        vm.attach_current_thread(|env| -> jni::errors::Result<ImeSample> {
+            // The references created below (view, text, char array, class…) live
+            // in a local frame popped at the end: this runs on every frame, and
+            // an attached thread does not free them by itself.
+            env.with_local_frame(24, |env| {
+                let edit_text = local_ref(env, raw)?;
 
-            let editable =
-                env.call_method(&edit_text, jni_str!("getText"), jni_sig!("()Landroid/text/Editable;"), &[])?.l()?;
-            let text_obj =
-                env.call_method(&editable, jni_str!("toString"), jni_sig!("()Ljava/lang/String;"), &[])?.l()?;
-            let jstr = unsafe { JString::from_raw(env, text_obj.into_raw() as jni::sys::jstring) };
-            let text = jstr.to_string();
+                let editable = env
+                    .call_method(&edit_text, jni_str!("getText"), jni_sig!("()Landroid/text/Editable;"), &[])?
+                    .l()?;
+                // Never fails on the encoding: see `read_editable_text`.
+                let text = read_editable_text(env, &editable)?;
 
-            let caret = env.call_method(&edit_text, jni_str!("getSelectionStart"), jni_sig!("()I"), &[])?.i()?;
+                let caret_utf16 =
+                    env.call_method(&edit_text, jni_str!("getSelectionStart"), jni_sig!("()I"), &[])?.i()?;
+                // Java counts UTF-16 units, StereoKit counts characters.
+                let caret = utf16_to_chars(&text, caret_utf16);
 
-            Ok(Some((text, caret)))
+                // `BaseInputConnection.getComposingSpanStart/End(Editable)`: a
+                // non-negative range means the IME is composing (autocorrect,
+                // dictation, translation preview), so the text is not final yet.
+                let class_bic = env.find_class(jni_str!("android/view/inputmethod/BaseInputConnection"))?;
+                let composing_start = env
+                    .call_static_method(
+                        &class_bic,
+                        jni_str!("getComposingSpanStart"),
+                        jni_sig!("(Landroid/text/Spannable;)I"),
+                        &[JValue::Object(&editable)],
+                    )?
+                    .i()?;
+                let composing_end = env
+                    .call_static_method(
+                        &class_bic,
+                        jni_str!("getComposingSpanEnd"),
+                        jni_sig!("(Landroid/text/Spannable;)I"),
+                        &[JValue::Object(&editable)],
+                    )?
+                    .i()?;
+
+                Ok(ImeSample {
+                    state: FieldState { text, caret },
+                    composing: composing_start >= 0 && composing_end >= 0,
+                })
+            })
         })
-        .unwrap_or(None)
+        .ok()
     }
 
     /// Create the hidden `EditText` on the Java UI thread (asynchronous).
@@ -615,20 +713,9 @@ impl AndroidSoftKbd {
                 )?;
                 let _ = env.call_method(&edit_text, jni_str!("requestFocus"), jni_sig!("()Z"), &[])?;
 
-                let two_spaces = env.new_string(IME_BASELINE)?;
-                env.call_method(
-                    &edit_text,
-                    jni_str!("setText"),
-                    jni_sig!("(Ljava/lang/CharSequence;)V"),
-                    &[JValue::Object(&two_spaces)],
-                )?;
-                env.call_method(
-                    &edit_text,
-                    jni_str!("setSelection"),
-                    jni_sig!("(II)V"),
-                    &[IME_BASELINE_CARET.into(), IME_BASELINE_CARET.into()],
-                )?;
-
+                // The view starts empty: the first exchange of the session
+                // mirrors the focused field text into it.
+                //
                 // `into_raw` transfers the ownership: the reference is released
                 // when the view is destroyed (`destroy_edit_text`).
                 let raw = env.new_global_ref(&edit_text)?.into_raw() as usize;
@@ -646,6 +733,8 @@ impl AndroidSoftKbd {
     /// Called from `IStepper::shutdown` when the stepper is removed: close the
     /// session and release the hidden `EditText`.
     fn close(&mut self, _triggering: bool) -> bool {
+        // `Ui::input` stops exchanging text with the hidden `EditText`.
+        ime_bridge::set_active(false);
         let has_view = *self.edit_text.lock().expect("Failed to lock edit_text mutex") > 1;
         if let Some(app) = self.android_app.clone().filter(|_| self.ime_open || has_view) {
             self.close_session(&app);
@@ -701,168 +790,231 @@ impl AndroidSoftKbd {
         }));
     }
 
-    /// Inject what the IME wrote into the hidden `EditText`.
+    /// Exchange the hidden `EditText` state with the focused `Ui::input`.
     ///
-    /// The buffer is compared to the last injected state (`last_seen`): caret
-    /// move → Left/Right, removal → `Key::Backspace`, insertion →
-    /// `Input::text_inject`, replacement → Backspace + insert.
+    /// The IME edits the *real* text of the field (mirrored into the hidden
+    /// view), so an IME change is published as a whole `(text, caret)`
+    /// replacement that [`Ui::input`] applies: translation, dictation,
+    /// autocorrect and caret moves all come through as they are, with no per
+    /// character injection and no size limit.
     ///
-    /// Deletions must go through `Input::key_inject_press`: StereoKit's text
-    /// queue only carries insertable characters, so `"\x08"`/`"\x7f"` are
-    /// dropped with a warning. Each state is handled once, and the reset posted
-    /// afterwards only applies when the content is unchanged, so a slow Java
-    /// thread can neither duplicate an event nor wipe new characters.
+    /// While the IME composes, its text is provisional and nothing is
+    /// published. The other way round, when StereoKit edited the text (its own
+    /// keyboard, or the application assigning the buffer), the field state is
+    /// written back into the hidden `EditText`.
+    ///
+    /// Writing into the `EditText` happens on the Java main thread, so the view
+    /// keeps the old text for a frame or two: [`Self::mirror_in_flight`] marks
+    /// those states, otherwise the old text would be taken for an IME edit and
+    /// published back to the field (which is how a backspace could be undone).
+    ///
+    /// [`Ui::input`]: crate::ui::Ui::input
     fn poll_input_events(&mut self, app: &AndroidApp) {
-        let (text, caret) = match self.poll_edit_text() {
-            Some(s) => s,
-            None => return,
+        // Without a focused `Ui::input` there is nothing to mirror, and the
+        // published field state would be stale.
+        if !Ui::has_keyboard_focus() {
+            return;
+        }
+        let Some(ime) = self.poll_edit_text() else {
+            if !self.read_error {
+                self.read_error = true;
+                Log::diag("AndroidSoftKbd: the hidden EditText is unreadable, retrying every frame");
+            }
+            // The hidden view can stay unreadable for a moment (a JNI error, a
+            // view being recreated): a mirror write waiting for it must not
+            // block the bridge forever.
+            if self.mirror_in_flight.is_some() {
+                if self.mirror_frames < IME_PENDING_FRAMES {
+                    self.mirror_frames += 1;
+                } else {
+                    Log::diag("AndroidSoftKbd: the EditText stayed unreadable, dropping the pending mirror write");
+                    self.mirror_in_flight = None;
+                    self.mirror_frames = 0;
+                }
+            }
+            return;
         };
 
-        // The Java main thread applied a reset while we were reading the
-        // `EditText`: the text and the caret below may come from two different
-        // states. Skip this frame, the next read will be consistent.
-        if self.reset_applied.swap(false, Ordering::AcqRel) {
-            self.last_seen = None;
+        if self.read_error {
+            self.read_error = false;
+            Log::diag("AndroidSoftKbd: the hidden EditText is readable again");
+        }
+
+        // Provisional text (autocorrect, dictation, translation preview): wait
+        // for the commit. A keyboard that never ends its composition would lock
+        // the field, so a text that stopped moving is published anyway.
+        if ime.composing {
+            let stable = self.composing_state.as_ref() == Some(&ime.state);
+            self.composing_frames = if stable { self.composing_frames + 1 } else { 0 };
+            self.composing_state = Some(ime.state.clone());
+            if self.composing_frames < IME_COMPOSING_FRAMES {
+                return;
+            }
+        } else {
+            self.composing_state = None;
+            self.composing_frames = 0;
+        }
+
+        // Keep the keyboard type in sync with the kind of text the field holds
+        // (password masking, numeric or URI keyboards…).
+        if let Some(context) = ime_bridge::field_context() {
+            self.apply_context(app, context);
+        }
+
+        // A mirror write is on its way to the Java thread: the view may still
+        // hold the old text, which must not be taken for an IME edit.
+        if let Some(write) = self.mirror_in_flight.clone() {
+            if ime.state == write.to {
+                // Applied.
+                self.mirror_in_flight = None;
+                self.mirror_frames = 0;
+                self.ime_state = Some(ime.state);
+                return;
+            }
+            if ime.state == write.from && self.mirror_frames < IME_PENDING_FRAMES {
+                // Not applied yet: the view still holds the previous state.
+                self.mirror_frames += 1;
+                return;
+            }
+            // The IME typed meanwhile, or the write never landed: forget it.
+            self.mirror_in_flight = None;
+            self.mirror_frames = 0;
+        }
+
+        let Some(previous) = self.ime_state.as_ref() else {
+            // First exchange of the session: the field content wins, otherwise
+            // the empty `EditText` would wipe it.
+            if let Some(field) = ime_bridge::field() {
+                self.write_mirror(app, &field, true, &ime.state);
+                self.ime_state = Some(field);
+            }
+            return;
+        };
+
+        // The IME moved: hand the whole state over to the field.
+        if ime.state != *previous {
+            ime_bridge::propose(ime.state.clone());
+            self.ime_seen_input = true;
+            self.ime_state = Some(ime.state);
+            self.pending_frames = 0;
             return;
         }
 
-        let at_baseline = text == IME_BASELINE && caret == IME_BASELINE_CARET;
-
-        if at_baseline {
-            // The `EditText` is back to its idle state: nothing to inject.
-            self.last_seen = None;
-            return;
-        }
-
-        if self.last_seen.as_ref().is_some_and(|(seen, seen_caret)| *seen_caret == caret && seen == &text) {
-            // Already handled, the reset is still on its way.
-            self.schedule_edit_text_reset(app, text);
-            return;
-        }
-
-        let (previous, previous_caret) =
-            self.last_seen.clone().unwrap_or_else(|| (IME_BASELINE.to_string(), IME_BASELINE_CARET));
-
-        Self::inject_ime_change(&previous, previous_caret, &text, caret);
-        // The IME produced something: it is displayed, stop asking for it.
-        self.ime_seen_input = true;
-        self.schedule_edit_text_reset(app, text.clone());
-        self.last_seen = Some((text, caret));
-    }
-
-    /// Compare the new hidden `EditText` state to the previous one and inject
-    /// the matching StereoKit events.
-    ///
-    /// `previous` mirrors what the `EditText` contained when the events already
-    /// sent to StereoKit were consumed: a character rewritten by the IME
-    /// (composing text, accent, autocorrect) is a replacement, not a second
-    /// insertion.
-    fn inject_ime_change(previous: &str, previous_caret: i32, text: &str, caret: i32) {
-        let previous: Vec<char> = previous.chars().collect();
-        let current: Vec<char> = text.chars().collect();
-
-        // Common prefix and suffix, in characters: everything between them was
-        // removed and/or inserted by the IME.
-        let max_prefix = previous.len().min(current.len());
-        let mut prefix = 0;
-        while prefix < max_prefix && previous[prefix] == current[prefix] {
-            prefix += 1;
-        }
-        let max_suffix = max_prefix - prefix;
-        let mut suffix = 0;
-        while suffix < max_suffix && previous[previous.len() - 1 - suffix] == current[current.len() - 1 - suffix] {
-            suffix += 1;
-        }
-
-        let removed = previous.len() - prefix - suffix;
-        let inserted: String = current[prefix..current.len() - suffix].iter().collect();
-
-        if removed == 0 && inserted.is_empty() {
-            // Only the caret moved: arrow key(s).
-            let delta = caret - previous_caret;
-            let key = if delta < 0 { Key::Left } else { Key::Right };
-            for _ in 0..delta.unsigned_abs() {
-                Input::key_inject_press(key);
-                Input::key_inject_release(key);
+        // A replacement still waiting for the field means it holds the old
+        // text: writing that back now would undo the IME edit.
+        if ime_bridge::has_replacement() {
+            self.pending_frames += 1;
+            if self.pending_frames > IME_PENDING_FRAMES {
+                // Keep `ime_state`: the next IME edit proposes the whole text
+                // again, so the two sides resynchronize by themselves.
+                Log::diag("AndroidSoftKbd: the text field did not take the IME text, dropping it");
+                ime_bridge::clear_replacement();
+                self.pending_frames = 0;
             }
             return;
         }
+        self.pending_frames = 0;
 
-        // Backspace and not Del: system keyboards only provide a Backspace, and
-        // both baseline characters are identical, so a forward deletion could
-        // not be told apart from a Backspace anyway.
-        for _ in 0..removed {
-            Input::key_inject_press(Key::Backspace);
-            Input::key_inject_release(Key::Backspace);
-        }
-        if !inserted.is_empty() {
-            // Line breaks are forwarded as text: `input_text_inject` turns `\r`
-            // and `\r\n` into `\n`. The Return key is a separate key of the
-            // StereoKit keyboard layout, this path only carries the character.
-            Input::text_inject(&inserted);
+        // The field moved on its own: mirror it into the hidden `EditText`.
+        let mirror = {
+            let Some(previous) = self.ime_state.as_ref() else { return };
+            ime_bridge::field()
+                .filter(|field| *field != *previous)
+                .map(|field| (field.text != previous.text, previous.clone(), field))
+        };
+        if let Some((set_text, from, field)) = mirror {
+            self.write_mirror(app, &field, set_text, &from);
+            self.ime_state = Some(field);
         }
     }
 
-    /// Post a Java-main-thread callback resetting the hidden `EditText` back to
-    /// [`IME_BASELINE`].
-    ///
-    /// The content is only overwritten when it still is `expected`: anything the
-    /// IME produced in the meantime is left for the next `poll_input_events`
-    /// instead of being wiped.
-    fn schedule_edit_text_reset(&mut self, app: &AndroidApp, expected: String) {
-        use jni::{jni_sig, jni_str, objects::JValue};
+    /// Configure the hidden `EditText` for the kind of text the field holds:
+    /// password masking, numeric or URI keyboards, plain text otherwise.
+    fn apply_context(&mut self, app: &AndroidApp, context: TextContext) {
+        use jni::{jni_sig, jni_str};
 
-        let edit_text_raw = *self.edit_text.lock().expect("Failed to lock edit_text mutex");
-        if edit_text_raw <= 1 {
+        if self.input_context == Some(context) {
             return;
         }
-        // One reset in flight is enough: the next one is only needed once the
-        // content changed again.
-        if self.reset_in_flight.swap(true, Ordering::AcqRel) {
+        let raw = *self.edit_text.lock().expect("Failed to lock edit_text mutex");
+        if raw <= 1 {
             return;
         }
+        self.input_context = Some(context);
 
         let app2 = app.clone();
-        let reset_in_flight = Arc::clone(&self.reset_in_flight);
-        let reset_applied = Arc::clone(&self.reset_applied);
         app.run_on_java_main_thread(Box::new(move || {
             let jvm = unsafe { jni::JavaVM::from_raw(app2.vm_as_ptr() as _) };
-            let result = jvm.attach_current_thread(|env| -> jni::errors::Result<bool> {
-                let edit_text = local_ref(env, edit_text_raw)?;
-
-                let editable = env
-                    .call_method(&edit_text, jni_str!("getText"), jni_sig!("()Landroid/text/Editable;"), &[])?
-                    .l()?;
-                let text_obj =
-                    env.call_method(&editable, jni_str!("toString"), jni_sig!("()Ljava/lang/String;"), &[])?.l()?;
-                let jstr = unsafe { jni::objects::JString::from_raw(env, text_obj.into_raw() as jni::sys::jstring) };
-                if jstr.to_string() != expected {
-                    // The IME typed more while this reset was queued: keep it.
-                    return Ok(false);
-                }
-
-                let two_spaces = env.new_string(IME_BASELINE)?;
+            let result = jvm.attach_current_thread(|env| -> jni::errors::Result<()> {
+                let edit_text = local_ref(env, raw)?;
                 env.call_method(
                     &edit_text,
-                    jni_str!("setText"),
-                    jni_sig!("(Ljava/lang/CharSequence;)V"),
-                    &[JValue::Object(&two_spaces)],
+                    jni_str!("setInputType"),
+                    jni_sig!("(I)V"),
+                    &[input_type_of(context).into()],
                 )?;
+                env.call_method(
+                    &edit_text,
+                    jni_str!("setImeOptions"),
+                    jni_sig!("(I)V"),
+                    &[ime_options_of(context).into()],
+                )?;
+                Ok(())
+            });
+            if let Err(e) = result {
+                Log::err(format!("AndroidSoftKbd: EditText keyboard type JNI error: {e:?}"));
+            }
+        }));
+    }
+
+    /// Write a field state into the hidden `EditText` (on the Java main thread),
+    /// so the IME sees the text and the caret StereoKit has.
+    fn write_mirror(&mut self, app: &AndroidApp, field: &FieldState, set_text: bool, from: &FieldState) {
+        use jni::{jni_sig, jni_str, objects::JValue};
+
+        let raw = *self.edit_text.lock().expect("Failed to lock edit_text mutex");
+        if raw <= 1 {
+            return;
+        }
+        let app2 = app.clone();
+        let field = field.clone();
+        let expected = from.text.clone();
+        self.mirror_in_flight = Some(MirrorWrite { from: from.clone(), to: field.clone() });
+        self.mirror_frames = 0;
+        app.run_on_java_main_thread(Box::new(move || {
+            let jvm = unsafe { jni::JavaVM::from_raw(app2.vm_as_ptr() as _) };
+            let result = jvm.attach_current_thread(|env| -> jni::errors::Result<()> {
+                let edit_text = local_ref(env, raw)?;
+
+                // Conditional write: the IME may have typed since this write was
+                // queued, and overwriting would lose its input.
+                if set_text {
+                    let editable = env
+                        .call_method(&edit_text, jni_str!("getText"), jni_sig!("()Landroid/text/Editable;"), &[])?
+                        .l()?;
+                    if read_editable_text(env, &editable)? != expected {
+                        return Ok(());
+                    }
+                    let text = env.new_string(&field.text)?;
+                    env.call_method(
+                        &edit_text,
+                        jni_str!("setText"),
+                        jni_sig!("(Ljava/lang/CharSequence;)V"),
+                        &[JValue::Object(&text)],
+                    )?;
+                }
+                let caret = chars_to_utf16(&field.text, field.caret);
                 env.call_method(
                     &edit_text,
                     jni_str!("setSelection"),
                     jni_sig!("(II)V"),
-                    &[IME_BASELINE_CARET.into(), IME_BASELINE_CARET.into()],
+                    &[caret.into(), caret.into()],
                 )?;
-
-                Ok(true)
+                Ok(())
             });
-            match result {
-                Ok(true) => reset_applied.store(true, Ordering::Release),
-                Ok(false) => {}
-                Err(e) => Log::err(format!("AndroidSoftKbd: schedule_edit_text_reset JNI error: {e:?}")),
+            if let Err(e) = result {
+                Log::err(format!("AndroidSoftKbd: EditText mirror JNI error: {e:?}"));
             }
-            reset_in_flight.store(false, Ordering::Release);
         }));
     }
 }
@@ -871,6 +1023,82 @@ impl AndroidSoftKbd {
 fn local_ref<'local>(env: &mut jni::Env<'local>, raw: usize) -> jni::errors::Result<jni::objects::JObject<'local>> {
     let object = unsafe { jni::objects::JObject::from_raw(env, raw as jni::sys::jobject) };
     env.new_local_ref(&object)
+}
+
+/// Read the text of the hidden `EditText` as a Rust `String`, **without ever
+/// failing on its encoding**.
+///
+/// The IME can leave an unpaired UTF-16 surrogate in the text (one half of an
+/// emoji, a dictation inserting a code point in two steps, a caret moved inside
+/// a pair…), and the Java-to-Rust string conversion rejects it: `JString` is
+/// decoded as modified UTF-8, which has no representation for a lone surrogate,
+/// so every read used to fail with a `DecodingError` — the mirror then stopped
+/// for good and the failure was logged on every frame.
+///
+/// The text is read as UTF-16 code units (`String.getChars`, the very units
+/// Android counts for the caret) and decoded with [`String::from_utf16_lossy`]:
+/// a lone surrogate becomes `U+FFFD` and the mirror keeps working. The unit
+/// count never changes, so the caret conversions stay valid.
+fn read_editable_text(env: &mut jni::Env<'_>, editable: &jni::objects::JObject<'_>) -> jni::errors::Result<String> {
+    use jni::{jni_sig, jni_str, objects::JValue};
+
+    let text = env.call_method(editable, jni_str!("toString"), jni_sig!("()Ljava/lang/String;"), &[])?.l()?;
+    let length = env.call_method(&text, jni_str!("length"), jni_sig!("()I"), &[])?.i()?;
+    if length <= 0 {
+        return Ok(String::new());
+    }
+    let units = env.new_char_array(length as usize)?;
+    env.call_method(
+        &text,
+        jni_str!("getChars"),
+        jni_sig!("(II[CI)V"),
+        &[0i32.into(), length.into(), JValue::Object(&units), 0i32.into()],
+    )?;
+    let mut buffer = vec![0u16; length as usize];
+    units.get_region(env, 0, &mut buffer)?;
+    Ok(String::from_utf16_lossy(&buffer))
+}
+
+/// Android `InputType` of a StereoKit `TextContext`.
+fn input_type_of(context: TextContext) -> i32 {
+    let bits = context.bits();
+    if bits == TextContext::Number.bits() {
+        0x2 // TYPE_CLASS_NUMBER
+    } else if bits == TextContext::Uri.bits() {
+        0x1 | 0x10 // TYPE_CLASS_TEXT | TYPE_TEXT_VARIATION_URI
+    } else if bits == TextContext::Password.bits() {
+        0x1 | 0x80 // TYPE_CLASS_TEXT | TYPE_TEXT_VARIATION_PASSWORD
+    } else {
+        EDIT_TEXT_INPUT_TYPE
+    }
+}
+
+/// `EditorInfo.imeOptions` of a StereoKit `TextContext`.
+fn ime_options_of(context: TextContext) -> i32 {
+    if context.bits() == TextContext::Password.bits() {
+        // Keep the password out of the IME's learning dictionary.
+        EDIT_TEXT_IME_OPTIONS | IME_FLAG_NO_PERSONALIZED_LEARNING
+    } else {
+        EDIT_TEXT_IME_OPTIONS
+    }
+}
+
+/// Convert a Java caret offset (UTF-16 units) to a StereoKit caret (characters).
+fn utf16_to_chars(text: &str, offset: i32) -> i32 {
+    let offset = offset.max(0) as usize;
+    let mut units = 0;
+    for (index, character) in text.chars().enumerate() {
+        if units >= offset {
+            return index as i32;
+        }
+        units += character.len_utf16();
+    }
+    text.chars().count() as i32
+}
+
+/// Convert a StereoKit caret (characters) to a Java caret offset (UTF-16 units).
+fn chars_to_utf16(text: &str, caret: i32) -> i32 {
+    text.chars().take(caret.max(0) as usize).map(char::len_utf16).sum::<usize>() as i32
 }
 
 /// Local reference to the activity behind `app`.

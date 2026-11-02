@@ -26,6 +26,12 @@ use crate::{
     util::{Device, Emulator, Time},
 };
 
+#[cfg(target_os = "android")]
+use crate::{
+    tools::android_soft_kdb::{ANDROID_SOFT_KBD_ID, AndroidSoftKbd},
+    util::Platform,
+};
+
 /// The runtime control panel of an app: the controls that are handy in every build, gathered in one place and drawn
 /// where the app wants it (typically on the same line as its "Exit" button).
 ///
@@ -45,6 +51,8 @@ use crate::{
 /// * the passthrough blend mode when the device supports it, see [`crate::tools::os_api::get_env_blend_modes`],
 /// * the world lighting source when the device estimates lighting from the user's surroundings, see
 ///   [`Lighting::is_source_available`] and [`crate::lighting::LightingSource::World`],
+/// * the Android soft keyboard bridge on Android, see `crate::tools::android_soft_kdb`: on by default, the system
+///   IME (dictation, translation, autocorrect…) mirrors the focused `Ui::input` field,
 /// * the fullscreen and the relative mouse modes in the Simulator, with the `[Esc]` key to leave them.
 ///
 /// ### Fields that can be set before drawing:
@@ -62,6 +70,7 @@ use crate::{
 /// * `simulator_fullscreen` - Whether the Simulator window should be fullscreen, initialized from the settings,
 ///   see [`SkInfo::settings_from`].
 /// * `mouse_mode_relative` - Whether the mouse is in [`MouseMode::Relative`] in the Simulator. Default is `false`.
+/// * `android_keyboard` - Whether the Android soft keyboard bridge is active (Android only). Default is `true`.
 ///
 /// ### Events:
 /// * `passthrough_event` - see the field of the same name, sent to the stepper it names.
@@ -119,6 +128,9 @@ pub struct ControlPanel {
     pub simulator_fullscreen: bool,
     /// Whether the mouse is in [`MouseMode::Relative`] in the Simulator. Default is `false`.
     pub mouse_mode_relative: bool,
+    /// Whether the Android soft keyboard bridge is active. When it is, the `AndroidSoftKbd` stepper mirrors the
+    /// focused `Ui::input`.
+    pub android_keyboard: bool,
     /// The current viewport scaling, see [`Renderer::viewport_scaling`].
     pub viewport_scaling: f32,
     /// The smoothed FPS displayed by the panel, in frames per second (the frame time comes from
@@ -162,7 +174,8 @@ impl ControlPanel {
     /// * checks the passthrough availability (see [`ControlPanel::set_passthrough`] to activate it),
     /// * reads the display refresh rates (see [`get_all_display_refresh_rates`]),
     /// * captures [`Renderer::get_viewport_scaling`] and the `fullscreen` state of the settings
-    ///   (see [`SkInfo::settings_from`]).
+    ///   (see [`SkInfo::settings_from`]),
+    /// * registers and activates the Android soft keyboard bridge on Android (see `set_android_keyboard`).
     ///
     /// see also [`ControlPanel::update`] [`ControlPanel::draw`]
     pub fn new(sk_info: Rc<RefCell<SkInfo>>) -> Self {
@@ -271,7 +284,8 @@ impl ControlPanel {
 
         let viewport_scaling = Renderer::get_viewport_scaling();
 
-        Self {
+        #[cfg_attr(not(target_os = "android"), allow(unused_mut))]
+        let mut control_panel = Self {
             passthrough: false,
             passthrough_blend_enabled,
             passthrough_event,
@@ -294,7 +308,15 @@ impl ControlPanel {
             next_refresh_rate_image,
             next_interactor_image,
             last_focus: AppFocus::Background,
-        }
+            android_keyboard: false,
+        };
+
+        // The Android soft keyboard bridge is activated by default: the system IME mirrors the focused `Ui::input`
+        // field, which brings dictation, translation and autocorrect to the app.
+        #[cfg(target_os = "android")]
+        control_panel.set_android_keyboard(true);
+
+        control_panel
     }
 
     /// Sends a [`StepperAction`] to the event loop: [`SkInfo::send_event`] takes the `Option<Rc<RefCell<SkInfo>>>`
@@ -302,6 +324,32 @@ impl ControlPanel {
     /// [`ControlPanel::sk_info`], see [`ControlPanel::new`].
     fn send_event(&self, action: StepperAction) {
         SkInfo::send_event(&Some(self.sk_info.clone()), action);
+    }
+
+    /// Activates (`on` = `true`) or deactivates the `AndroidSoftKbd` stepper: when it is active, the focused
+    /// `Ui::input` field is mirrored into a hidden `EditText`, and the Android IME (dictation, translation,
+    /// autocorrect, emojis…) edits it while StereoKit's own fallback keyboard is dismissed. When it is off, the
+    /// fallback keyboard comes back. The state is remembered by [`ControlPanel::android_keyboard`].
+    ///
+    /// [`ControlPanel::new`] activates it at start up (on Android only), and [`ControlPanel::draw`] shows a toggle
+    /// calling this function. Nothing is done when the state does not change.
+    ///
+    /// see also [`ControlPanel::new`] [`ControlPanel::draw`]
+    #[cfg(target_os = "android")]
+    pub fn set_android_keyboard(&mut self, on: bool) {
+        if self.android_keyboard == on {
+            return;
+        }
+        self.android_keyboard = on;
+        if on {
+            Log::info("Android soft keyboard bridge activated");
+            Platform::force_fallback_keyboard(false);
+            self.send_event(StepperAction::add_default::<AndroidSoftKbd>(ANDROID_SOFT_KBD_ID));
+        } else {
+            Log::info("Android soft keyboard bridge deactivated, back to the StereoKit keyboard");
+            Platform::force_fallback_keyboard(true);
+            self.send_event(StepperAction::remove(ANDROID_SOFT_KBD_ID));
+        }
     }
 
     /// Activates (`active` = `true`) or deactivates the passthrough: the state is remembered by
@@ -524,6 +572,20 @@ impl ControlPanel {
         Ui::same_line();
         self.fps = ((1.0 / Time::get_step()) + self.fps) / 2.0;
         Ui::label(format!("FPS: {:3.0}", self.fps)).size(Vec2::new(0.1, 0.0)).use_padding(true).draw();
+
+        // The Android soft keyboard bridge, on the left of the interactors: toggled off, StereoKit's own fallback
+        // keyboard comes back.
+        #[cfg(target_os = "android")]
+        {
+            // The toggle writes into a copy: `android_keyboard` keeps the state in
+            // use, which is what `set_android_keyboard` compares to know if it has
+            // something to do.
+            let mut on = self.android_keyboard;
+            if Ui::toggle("Android Keyboard", &mut on).interact().is_some() {
+                self.set_android_keyboard(on);
+            }
+            Ui::same_line();
+        }
 
         // DefaultInteractors choice - cycling button
         if self.interactor_choices.len() > 1 {

@@ -1,4 +1,3 @@
-use std::mem::transmute;
 use stereokit_rust::{
     font::Font,
     maths::{Matrix, Pose, Quat, Vec2, Vec3, units::CM},
@@ -12,9 +11,6 @@ use stereokit_rust::{
         named_colors::{RED, WHITE},
     },
 };
-
-#[cfg(target_os = "android")]
-use stereokit_rust::tools::android_soft_kdb::{ANDROID_SOFT_KBD_ID, AndroidSoftKbd};
 
 pub const FR_KEY_TEXT: &str = r#"²|&|é|"|'|(|\-|è|_|ç|à|)|=|{|}|spr:sk/ui/backspace-\b-8-3|spr:sk/ui/close----close
 Tab-\t-9-3|a|z|e|r|t|y|u|i|o|p|^|$|[|]|\|
@@ -42,8 +38,6 @@ pub struct Text1 {
 
     pub window_demo_pose: Pose,
     pub demo_win_width: f32,
-    pub android_keyboard: bool,
-    pub android_keyboard_ime: bool,
     pub keyboard_layout_fr: bool,
     pub virtual_keyboard_visible: bool,
     inst_play: Option<SoundInst>,
@@ -72,8 +66,6 @@ impl Default for Text1 {
 
             window_demo_pose: Pose::new(Vec3::new(0.0, 1.5, -1.3), Some(Quat::look_dir(Vec3::new(1.0, 0.0, 1.0)))),
             demo_win_width: 80.0 * CM,
-            android_keyboard: false,
-            android_keyboard_ime: false,
             keyboard_layout_fr: false,
             virtual_keyboard_visible: false,
             inst_play: None,
@@ -84,7 +76,7 @@ impl Default for Text1 {
             next_value: Sprite::arrow_right(),
             radio_on: Sprite::radio_on(),
             radio_off: Sprite::radio_off(),
-            text_style_test: Text::make_style(Font::default(), 0.05, WHITE),
+            text_style_test: Text::make_style(Font::default(), 0.02, WHITE),
 
             text: "text1".to_owned(),
             text_style: Text::make_style(Font::default(), 0.3, RED),
@@ -114,7 +106,7 @@ impl Text1 {
             .press()
         {
             let font = Font::default();
-            self.text_style_test = Text::make_style(font, 0.05, WHITE);
+            self.text_style_test = Text::make_style(font, 0.02, WHITE);
             self.font_selected = 1;
         }
         Ui::same_line();
@@ -132,7 +124,7 @@ impl Text1 {
             } else {
                 Font::from_file("fonts/Noto_Emoji/NotoEmoji-VariableFont_wght.ttf").unwrap_or_default()
             };
-            self.text_style_test = Text::make_style(font, 0.05, WHITE);
+            self.text_style_test = Text::make_style(font, 0.02, WHITE);
             self.font_selected = 2;
         }
         Ui::same_line();
@@ -146,59 +138,12 @@ impl Text1 {
             } else {
                 Font::from_file("fonts/Inter/Inter-VariableFont_opsz_wght.ttf").unwrap_or_default()
             };
-            self.text_style_test = Text::make_style(font, 0.05, WHITE);
+            self.text_style_test = Text::make_style(font, 0.02, WHITE);
             self.font_selected = 3;
         }
         Ui::next_line();
 
-        #[cfg(target_os = "android")]
-        {
-            use stereokit_rust::tools::xr_meta_virtual_keyboard::{
-                KEYBOARD_SHOW, XR_META_VIRTUAL_KEYBOARD_EXTENSION_NAME,
-            };
-
-            if let Some(new_value) = Ui::toggle("Android Keyboard", &mut self.android_keyboard).interact() {
-                if new_value {
-                    Platform::force_fallback_keyboard(false);
-                    SkInfo::send_event(
-                        &self.sk_info,
-                        StepperAction::add_default::<AndroidSoftKbd>(ANDROID_SOFT_KBD_ID),
-                    );
-                } else {
-                    Platform::force_fallback_keyboard(true);
-                    SkInfo::send_event(&self.sk_info, StepperAction::remove(ANDROID_SOFT_KBD_ID));
-                }
-            }
-
-            Ui::same_line();
-            if let Some(new_value) = Ui::toggle("Meta Virtual Keyboard", &mut self.virtual_keyboard_visible).interact()
-            {
-                let event_value = if new_value { "true" } else { "false" };
-                SkInfo::send_event(
-                    &self.sk_info,
-                    StepperAction::event(XR_META_VIRTUAL_KEYBOARD_EXTENSION_NAME, KEYBOARD_SHOW, event_value),
-                );
-            }
-
-            // Ui::same_line();
-            // if let Some(new_value) = Ui::toggle("Winit IME Keyboard", self.android_keyboard_ime).interact() {
-            //     self.android_keyboard_ime = new_value;
-            //     if new_value {
-            //         Platform::force_fallback_keyboard(false);
-            //     } else {
-            //         Platform::force_fallback_keyboard(true);
-            //     }
-            // }
-
-            // if self.android_keyboard_ime && Platform::is_keyboard_visible() {
-            //     Platform::keyboard_show(false, TextContext::Text);
-            //     Input::key_inject_press(Key::Left);
-            //     Input::key_inject_release(Key::Left);
-            //     show_soft_input_ime(self.sk_info.as_ref().unwrap().clone(), true);
-            // }
-        }
-        Ui::same_line();
-        if let Some(new_value) = Ui::toggle("French keyboard", &mut self.keyboard_layout_fr).interact() {
+        if let Some(new_value) = Ui::toggle("SK French keyboard", &mut self.keyboard_layout_fr).interact() {
             self.keyboard_layout_fr = true; // we can't reverse right now ^_^
             let keyboard_layouts = vec![FR_KEY_TEXT, FR_KEY_TEXT_SHIFT, FR_KEY_TEXT_ALT];
             if new_value {
@@ -217,9 +162,13 @@ impl Text1 {
         }
 
         Ui::same_line();
-        if Ui::button(format!("{:?}", self.text_context)).image(&self.next_value).press() {
-            self.text_context =
-                unsafe { transmute::<u32, stereokit_rust::system::TextContext>(((self.text_context.bits()) + 1) % 4) };
+        if Ui::button(self.text_context.to_string()).image(&self.next_value).press() {
+            self.text_context = match self.text_context {
+                TextContext::Text => TextContext::Number,
+                TextContext::Number => TextContext::Uri,
+                TextContext::Uri => TextContext::Password,
+                _ => TextContext::Text,
+            };
         }
         if Ui::button("Quit Demos").press() {
             SkInfo::send_event(&self.sk_info, StepperAction::quit(&self.id, "Quit button test"));
@@ -248,11 +197,6 @@ impl Text1 {
     }
 
     fn close(&mut self, _shutting_down: bool) -> bool {
-        #[cfg(target_os = "android")]
-        if self.android_keyboard {
-            SkInfo::send_event(&self.sk_info, StepperAction::remove(ANDROID_SOFT_KBD_ID));
-            self.android_keyboard = false;
-        }
         self.shutdown_completed = true;
         self.shutdown_completed
     }

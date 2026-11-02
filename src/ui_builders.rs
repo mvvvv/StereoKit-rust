@@ -8,10 +8,10 @@ use crate::{
     sprite::{Sprite, SpriteT},
     system::{Align, TextContext, TextFit},
     ui::{
-        UiBtnLayout, UiConfirm, UiGesture, UiMove, UiNotify, UiScroll, UiWin, ui_button, ui_button_at, ui_button_img,
-        ui_button_img_at, ui_button_round, ui_button_round_at, ui_handle_begin, ui_handle_end, ui_hslider,
-        ui_hslider_at, ui_input, ui_input_at, ui_label, ui_text, ui_text_at, ui_toggle, ui_toggle_at, ui_toggle_img,
-        ui_toggle_img_at, ui_vslider, ui_vslider_at, ui_window_begin,
+        Ui, UiBtnLayout, UiConfirm, UiGesture, UiMove, UiNotify, UiScroll, UiWin, ui_button, ui_button_at,
+        ui_button_img, ui_button_img_at, ui_button_round, ui_button_round_at, ui_handle_begin, ui_handle_end,
+        ui_hslider, ui_hslider_at, ui_input, ui_input_at, ui_label, ui_text, ui_text_at, ui_toggle, ui_toggle_at,
+        ui_toggle_img, ui_toggle_img_at, ui_vslider, ui_vslider_at, ui_window_begin,
     },
     util::Color128,
 };
@@ -340,7 +340,32 @@ impl<'a> UiInputBuilder<'a> {
     /// and sized to `value.len() + 16` bytes of content room (with one extra byte so the native code can keep pushing
     /// the NUL terminator as text is inserted). The `buffer_size` handed to native must match the buffer we actually
     /// allocate, otherwise typing into a focused field would write past the end of the buffer.
+    ///
+    /// On Android, when the IME bridge stepper (`tools::android_soft_kdb`) is running, this field also exchanges its
+    /// text with the Android IME: an IME edit (typing, voice input, translation, caret move) is applied to `out_value`
+    /// before drawing, and the resulting text is handed back to the IME. Applications need nothing more than this call.
     pub fn edit(&mut self) -> Option<String> {
+        // Only the field that already has the keyboard focus exchanges text with
+        // the IME: another `Ui::input` of the same frame must not take it.
+        let focused = crate::tools::ime_bridge::is_active() && Ui::input_is_focused_c(&self.id);
+
+        // Whole-text replacement coming from the Android IME: applied before
+        // drawing, so the field, the application and the IME all show the same
+        // text this frame.
+        let replaced = if focused {
+            match crate::tools::ime_bridge::take_replacement() {
+                Some(state) => {
+                    self.out_value.clear();
+                    self.out_value.push_str(&state.text);
+                    Ui::input_caret_set(state.caret, state.caret);
+                    true
+                }
+                None => false,
+            }
+        } else {
+            false
+        };
+
         // Content room is the current text length + 16 bytes, mirroring C#'s
         // `new StringBuilder(value, value.Length + 16)` -> `builder.Capacity`.
         let cap = self.out_value.len() + 16;
@@ -366,7 +391,19 @@ impl<'a> UiInputBuilder<'a> {
             },
         };
 
-        if changed {
+        // Hand the field state to the IME bridge, so the hidden `EditText`
+        // follows StereoKit (its own keyboard, or the application assigning the
+        // buffer). Only the field with the keyboard focus is concerned.
+        if focused {
+            // A negative caret means the field lost the focus while it was
+            // drawn: publishing it would move the IME caret to the start.
+            let caret = Ui::input_caret();
+            if caret >= 0 {
+                crate::tools::ime_bridge::publish_field(self.out_value, caret, self.type_text);
+            }
+        }
+
+        if changed || replaced {
             match unsafe { CStr::from_ptr(buffer.as_ptr() as *const c_char).to_str() } {
                 Ok(new_value) => {
                     self.out_value.clear();

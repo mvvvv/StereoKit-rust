@@ -2,6 +2,7 @@ use crate::system::BackendOpenXR;
 
 pub mod asset_preview;
 pub mod build_tools;
+pub mod ime_bridge;
 pub mod os_api;
 pub mod ui_widgets;
 pub mod xr_android_depth_texture;
