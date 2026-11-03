@@ -86,6 +86,8 @@ ln -s ~/dvlt/StereoKit-rust/res/ .
 clear; ./gradlew run --warning-mode all && sh logcat.cmd
 ```
 
+To run these demos without a headset, on the **Android XR emulator**, see [`README_EMUL_ANDROID.md`](README_EMUL_ANDROID.md).
+
 ### Use your own event manager (PC only)
 
 The demos above are using an event loop based framework. If you want to use your own loop and event manager, have a look to [manual.rs](https://github.com/mvvvv/StereoKit-rust/blob/master/examples/manual.rs).
