@@ -43,6 +43,7 @@ pub struct Text1 {
     inst_play: Option<SoundInst>,
     pub show_keyboard: bool,
     pub text_sample: String,
+    pub text_sample2: String,
     font_selected: u8,
     text_context: TextContext,
     text_style_test: TextStyle,
@@ -71,6 +72,7 @@ impl Default for Text1 {
             inst_play: None,
             show_keyboard: false,
             text_sample: String::from("😃‣‣‣‣😃"),
+            text_sample2: String::from("2nd Input"),
             font_selected: 1,
             text_context: TextContext::Text,
             next_value: Sprite::arrow_right(),
@@ -183,10 +185,14 @@ impl Text1 {
         Ui::push_text_style(self.text_style_test);
         //Ui::push_preserve_keyboard(true);
         Ui::input("Text_Sample", &mut self.text_sample)
-            .size(Vec2::new(0.77, 0.8))
+            .size(Vec2::new(0.77, 0.4))
             .type_text(self.text_context)
             .edit();
-        // Ui::next_line();
+        Ui::next_line();
+        Ui::input("Text_Sample_2", &mut self.text_sample2)
+            .size(Vec2::new(0.77, 0.4))
+            .type_text(self.text_context)
+            .edit();
         // Ui::push_preserve_keyboard(true);
         // Ui::text(&self.text_sample, None, None, None);
         Ui::pop_text_style();
