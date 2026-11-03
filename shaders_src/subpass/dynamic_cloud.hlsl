@@ -53,23 +53,6 @@ float noise(float3 x)
         f.z);
 }
 
-// Inverts a rigid body transformation view matrix (View -> World)
-// Rotation is inverted by transposition; translation is adjusted accordingly.
-matrix sk_matrix_view_inverse(matrix v)
-{
-    // Extract and transpose the 3x3 rotation component
-    float3x3 inv_rot = transpose((float3x3)v);
-
-    // Compute world space translation (-R^T * T)
-    float3 inv_trans = -mul(inv_rot, v[3].xyz);
-
-    return matrix(
-        float4(inv_rot[0], 0.0),
-        float4(inv_rot[1], 0.0),
-        float4(inv_rot[2], 0.0),
-        float4(inv_trans, 1.0));
-}
-
 float4 ps(psIn input, uint view_id : SV_ViewID) : SV_TARGET
 {
     float4 c = color.SubpassLoad();
@@ -81,9 +64,13 @@ float4 ps(psIn input, uint view_id : SV_ViewID) : SV_TARGET
     float3 pos_view = view.xyz / view.w;
     float dist = length(pos_view);
 
-    // 2. Transform position from View Space to World Space
-    matrix view_inv = sk_matrix_view_inverse(sk_view[view_id]);
-    float3 pos_world = mul(float4(pos_view, 1.0), view_inv).xyz;
+    // 2. Transform position from View Space to World Space.
+    //    The view matrix is a rigid transform (rotation + translation), so its
+    //    inverse is the transposed rotation and the negated translation, both
+    //    applied to the view-space position.
+    float4x4 view_mat  = sk_view[view_id];
+    float3   view_pos  = view_mat[3].xyz;
+    float3   pos_world = mul(pos_view - view_pos, transpose((float3x3)view_mat));
 
     // 3. Compute wind displacement in World Space over time
     float3 wind = normalize(wind_direction) * (time * sk_time);

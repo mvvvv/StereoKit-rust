@@ -183,6 +183,8 @@ fn main() {
             cargo_link!("gdi32");
             cargo_link!("advapi32");
             cargo_link!("ole32");
+            cargo_link!("dwmapi");
+            cargo_link!("winmm");
             if cfg!(feature = "profile") {
                 cargo_link!("TracyClient");
             }
@@ -202,7 +204,10 @@ fn main() {
                     );
                     println!("cargo:rustc-link-search=native={win_gnu_libs}");
                     println!("cargo:rustc-link-search=native={}/build/_deps/sk_renderer-build/sk_ktx2", dst.display());
-                    println!("cargo:rustc-link-search=native={}/build/_deps/sk_renderer-build/sk_texenc", dst.display());
+                    println!(
+                        "cargo:rustc-link-search=native={}/build/_deps/sk_renderer-build/sk_texenc",
+                        dst.display()
+                    );
 
                     // Order matters: libs that depend on others should be listed first
                     cargo_link!("static=StereoKitC");
@@ -432,12 +437,17 @@ fn main() {
 
                 cargo_link!("dylib=c++");
             } else if target_os == "macos" {
-                // macOS uses MoltenVK for Vulkan support
+                // macOS uses MoltenVK for Vulkan support.
                 println!("cargo:info=Building for macOS - using native frameworks");
                 cargo_link!("framework=Metal");
-                cargo_link!("framework=QuartzCore");
+                cargo_link!("framework=QuartzCore"); // CAMetalLayer (Metal surface)
                 cargo_link!("framework=AppKit");
                 cargo_link!("framework=Foundation");
+                cargo_link!("framework=Cocoa"); // AppKit + Foundation umbrella (sk_app)
+                cargo_link!("framework=IOKit"); // IOKit/hidsystem/IOLLEvent.h (key modifiers, sk_app)
+                cargo_link!("framework=CoreVideo"); // CVDisplayLink (sk_app presentation timing)
+                cargo_link!("framework=UniformTypeIdentifiers"); // UTType (sk_app file dialogs)
+                cargo_link!("framework=CoreText"); // sk_fontfile.cpp system font lookup
                 // MoltenVK is typically provided via brew or vulkan-sdk
                 println!("cargo:rustc-link-search=native=/usr/local/lib");
                 println!("cargo:rustc-link-search=native=/opt/homebrew/lib");
