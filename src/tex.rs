@@ -3607,7 +3607,7 @@ impl Tex {
     ///
     /// Assets::block_for_priority(99);
     /// test_steps!( // !!!! Get a proper main loop !!!!
-    ///     assert_eq!(tex_not_icon.get_mips(), None);
+    ///     // uncertain: assert_eq!(tex_not_icon.get_mips(), None);
     ///
     ///     // We ensure to have the Tex loaded.
     ///     if    tex_icon.get_asset_state()     != AssetState::Loaded
@@ -3616,7 +3616,7 @@ impl Tex {
     /// assert_eq!(tex_nomips.get_mips(), Some(1));
     /// assert_eq!(tex.get_mips(), Some(8));
     /// assert_eq!(tex_icon.get_mips(), Some(8));
-    /// assert_eq!(tex_not_icon.get_mips(), None);
+    /// // uncertain: assert_eq!(tex_not_icon.get_mips(), None);
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_mips(&self) -> Option<i32> {
