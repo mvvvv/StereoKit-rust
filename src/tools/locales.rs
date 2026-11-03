@@ -10,7 +10,7 @@ use crate::util::Platform;
 /// without a catalogue falls back to English, and a key missing from a catalogue falls back to English before
 /// returning the key itself.
 ///
-/// ### Example
+/// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!();
 /// use stereokit_rust::tools::locales::{set_locale, locale_language_and_country};
@@ -23,6 +23,8 @@ use crate::util::Platform;
 ///
 /// set_locale("zh");
 /// assert_eq!(locale_language_and_country(), ("中文".to_string(), "".to_string()));
+/// # test_steps!();
+/// # sk::Sk::shutdown();
 /// ```
 pub fn set_locale(locale: &str) {
     rust_i18n::set_locale(locale);
@@ -59,6 +61,8 @@ pub fn locale_language_and_country() -> (String, String) {
 /// use stereokit_rust::tools::locales::available_locales;
 ///
 /// assert_eq!(available_locales(), vec!["de", "en", "es", "fr", "it", "ja", "ko", "pt", "zh"]);
+/// # test_steps!();
+/// # sk::Sk::shutdown();
 /// ```
 pub fn available_locales() -> Vec<String> {
     rust_i18n::available_locales!().iter().map(|l| l.to_string()).collect()
@@ -91,7 +95,7 @@ pub fn available_locales() -> Vec<String> {
 /// `\-` = hyphen, `\|` = pipe, `\\` = backslash,
 /// `\b` = backspace, `\t` = tab, `\n` = newline.
 ///
-/// ## Example
+/// ### Examples
 /// ```
 /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
 /// use stereokit_rust::{
@@ -101,6 +105,8 @@ pub fn available_locales() -> Vec<String> {
 /// };
 /// let layouts = vec![Keyboard::DE, Keyboard::DE_SHIFT, Keyboard::DE_ALT];
 /// assert_eq!(Platform::keyboard_set_layout(TextContext::Text, &layouts), true);
+/// # test_steps!();
+/// # sk::Sk::shutdown();
 /// ```
 pub struct Keyboard;
 
@@ -572,6 +578,7 @@ Ctrl--17-4-mod|Cmd--91-3|Alt--18-3-go_0| - -32-13|Alt--18-3-go_0|Ctrl--17-3-mod|
     ///
     /// assert_eq!(Keyboard::apply_locale("fr_FR.UTF-8"), Some("Français (AZERTY)"));
     /// assert_eq!(Keyboard::apply_locale("xx"), None);
+    /// # test_steps!();
     /// # sk::Sk::shutdown();
     /// ```
     pub fn apply_locale(locale: &str) -> Option<&'static str> {
