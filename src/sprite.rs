@@ -221,6 +221,8 @@ impl Sprite {
     ///
     /// let sprite = Sprite::from_file("icons/log_viewer.png", Some(SpriteType::Single), Some("MY_ID"))
     ///                   .expect("open_gltf.jpeg should be able to create sprite");
+    /// // The image loads on the asset system, so let it land before reading its size.
+    /// system::Assets::block_until(&sprite, system::AssetState::Loaded);
     ///
     /// assert_eq!(sprite.get_id(), "icons/log_viewer.png/sprite");
     /// assert_eq!(sprite.get_height(), 128);
@@ -408,6 +410,10 @@ impl Sprite {
 
     /// The aspect ratio of the sprite! This is width/height. You may also be interested in the NormalizedDimensions property,
     /// which are normalized to the 0-1 range.
+    ///
+    /// Returns 1 while the sprite's image is still loading asynchronously, which is the case right after
+    /// [`Sprite::from_file`]. Wait for it with [`crate::system::Assets::block_until`] and
+    /// [`crate::system::AssetState::Loaded`].
     /// <https://stereokit.net/Pages/StereoKit/Sprite/Aspect.html>
     ///
     /// see also [`sprite_get_aspect`]
@@ -418,6 +424,8 @@ impl Sprite {
     ///
     /// let sprite = Sprite::from_file("icons/log_viewer.png", Some(SpriteType::Single), Some("MY_ID"))
     ///                   .expect("open_gltf.jpeg should be able to create sprite");
+    /// // The image loads on the asset system, so let it land before reading its size.
+    /// system::Assets::block_until(&sprite, system::AssetState::Loaded);
     /// assert_eq!(sprite.get_aspect(), 1.0);
     ///
     /// let sprite = Sprite::from_file("hdri/sky_dawn.hdr", None, None)
@@ -433,6 +441,10 @@ impl Sprite {
     }
 
     /// Get the height in pixel
+    ///
+    /// Returns 0 while the sprite's image is still loading asynchronously, which is the case right after
+    /// [`Sprite::from_file`]. Wait for it with [`crate::system::Assets::block_until`] and
+    /// [`crate::system::AssetState::Loaded`].
     /// <https://stereokit.net/Pages/StereoKit/Sprite/Height.html>
     ///
     /// see also [`sprite_get_height`]
@@ -443,6 +455,8 @@ impl Sprite {
     ///
     /// let sprite = Sprite::from_file("icons/log_viewer.png", Some(SpriteType::Single), Some("MY_ID"))
     ///                   .expect("open_gltf.jpeg should be able to create sprite");
+    /// // The image loads on the asset system, so let it land before reading its size.
+    /// system::Assets::block_until(&sprite, system::AssetState::Loaded);
     /// assert_eq!(sprite.get_height(), 128);
     ///
     /// let sprite = Sprite::from_file("hdri/sky_dawn.hdr", None, None)
@@ -458,6 +472,10 @@ impl Sprite {
     }
 
     /// Get the width in pixel
+    ///
+    /// Returns 0 while the sprite's image is still loading asynchronously, which is the case right after
+    /// [`Sprite::from_file`]. Wait for it with [`crate::system::Assets::block_until`] and
+    /// [`crate::system::AssetState::Loaded`].
     /// <https://stereokit.net/Pages/StereoKit/Sprite/Width.html>
     ///
     /// see also [`sprite_get_width`]
@@ -468,6 +486,8 @@ impl Sprite {
     ///
     /// let sprite = Sprite::from_file("icons/log_viewer.png", Some(SpriteType::Single), Some("MY_ID"))
     ///                   .expect("open_gltf.jpeg should be able to create sprite");
+    /// // The image loads on the asset system, so let it land before reading its size.
+    /// system::Assets::block_until(&sprite, system::AssetState::Loaded);
     /// assert_eq!(sprite.get_width(), 128);
     ///
     /// let sprite = Sprite::from_file("hdri/sky_dawn.hdr", None, None)
@@ -483,6 +503,10 @@ impl Sprite {
     }
 
     /// Get the width and height of the sprite, normalized so the maximum value is 1.
+    ///
+    /// Returns [Vec2::ONE] while the sprite's image is still loading asynchronously, which is the case right after
+    /// [`Sprite::from_file`]. Wait for it with [`crate::system::Assets::block_until`] and
+    /// [`crate::system::AssetState::Loaded`].
     /// <https://stereokit.net/Pages/StereoKit/Sprite/NormalizedDimensions.html>
     ///
     /// see also [`sprite_get_dimensions_normalized`]
@@ -493,6 +517,8 @@ impl Sprite {
     ///
     /// let sprite = Sprite::from_file("icons/log_viewer.png", Some(SpriteType::Single), Some("MY_ID"))
     ///                   .expect("open_gltf.jpeg should be able to create sprite");
+    /// // The image loads on the asset system, so let it land before reading its size.
+    /// system::Assets::block_until(&sprite, system::AssetState::Loaded);
     /// assert_eq!(sprite.get_normalized_dimensions(), Vec2::ONE);
     ///
     /// let sprite = Sprite::from_file("hdri/sky_dawn.hdr", None, None)
