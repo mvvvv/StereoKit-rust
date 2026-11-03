@@ -60,7 +60,7 @@ pub enum DepthTest {
     /// Draw any pixel that’s not exactly at the value in the zbuffer.
     NotEqual = 5,
     /// Don’t look at the zbuffer at all, just draw everything, always, all the time! At this point, the order at
-    /// which the mesh gets drawn will be super important, so don’t forget about Material.QueueOffset!
+    /// which the mesh gets drawn will be super important, so don’t forget about [`Material::queue_offset`]!
     Always = 6,
     /// Never draw a pixel, regardless of what’s in the zbuffer. I can think of better ways to do this, but uhh,
     /// this is here for completeness! Maybe you can find a use for it.
@@ -1168,7 +1168,11 @@ impl Material {
     }
 
     /// This property will force this material to draw earlier or later in the draw queue. Positive values make it draw
-    /// later, negative makes it earlier. This can be helpful for tweaking performance! If you know an object is always
+    /// later, negative makes it earlier. This is really helpful when doing tricks with the depth buffer, or are working
+    ///  with transparent objects. Good offset values should probably be specific, well managed, and small. Think of it
+    /// as a layer rather than a distance, so probably less than 10. Values are clamped to the -128 to 127 range.
+    ///
+    /// This can be helpful for tweaking performance! If you know an object is always
     /// going to be close to the user and likely to obscure lots of objects (like hands), drawing it earlier can mean
     /// objects behind it get discarded much faster! Similarly, objects that are far away (skybox!) can be pushed
     /// towards the back of the queue, so they’re more likely to be discarded early.
@@ -2705,7 +2709,7 @@ impl<'a> ParamInfos<'a> {
     ///
     /// let material = Material::unlit();
     /// let param_infos = material.get_all_param_info();
-    /// assert_eq!( param_infos.get_count(), 5);
+    /// assert_eq!( param_infos.get_count(), 4);
     /// # sk::Sk::shutdown();
     /// ```
     pub fn get_count(&self) -> i32 {
