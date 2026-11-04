@@ -14,17 +14,13 @@ use stereokit_rust::{
         Backend, BackendOpenXR, BackendVulkan, BackendVulkanRequest, BackendXRType, Input, Key, Lines, LogItem,
         LogLevel, Text,
     },
-    tex::{TexData, Tex},
+    tex::{Tex, TexData},
     tools::{
         control_panel::ControlPanel,
         fly_over::{FLY_OVER_ID, FlyOver},
         log_window::{LogWindow, basic_log_fmt},
         notif::HudNotification,
         screenshot::ScreenshotViewer,
-        xr_meta_virtual_keyboard::{
-            XR_META_VIRTUAL_KEYBOARD_EXTENSION_NAME, XrMetaVirtualKeyboardStepper,
-            is_meta_virtual_keyboard_extension_available,
-        },
     },
     ui::{Ui, UiBtnLayout},
     util::{Device, Time},
@@ -62,13 +58,20 @@ pub fn sk_settings() -> SkSettings {
     // The OpenXR extensions must be requested before SK.Initialize
     BackendOpenXR::request_ext("XR_FB_display_refresh_rate");
     BackendOpenXR::request_ext("XR_FB_render_model");
-    BackendOpenXR::request_ext("XR_META_virtual_keyboard");
+    // BackendOpenXR::request_ext("XR_META_virtual_keyboard");
+
+    // BackendOpenXR::request_ext("XR_EXT_spatial_container");
 
     #[cfg(target_os = "android")]
     {
-        BackendOpenXR::request_ext("XR_META_simultaneous_hands_and_controllers");
+        // Meta Horizon OS
+        // BackendOpenXR::request_ext("XR_FB_scene");
+        // BackendOpenXR::request_ext("XR_FB_scene_capture");
+        // BackendOpenXR::request_ext("XR_META_simultaneous_hands_and_controllers");
+
         // Required by the Layers1 demo for cylinder composition layers.
         BackendOpenXR::request_ext("XR_KHR_android_surface_swapchain");
+
         // Android XR
         BackendOpenXR::request_ext("XR_ANDROID_eye_tracking");
         BackendOpenXR::request_ext("XR_ANDROID_mouse_interaction");
@@ -143,11 +146,14 @@ pub fn launch(mut settings: SkSettings, is_testing: bool, start_test: String) {
     log_window.appearence.handle_sprite = Sprite::from_file("icons/log_viewer.png", None, None).ok();
 
     let tex_particule = Tex::gen_particle(128, 128, 0.9, None);
-    let exit_button =
-        match Sprite::from_tex(Tex::from_file("textures/exit.jpeg", TexData::Srgb, None).unwrap_or_default(), None, None) {
-            Ok(sprite) => sprite,
-            Err(_) => Sprite::from_tex(&tex_particule, None, None).unwrap(),
-        };
+    let exit_button = match Sprite::from_tex(
+        Tex::from_file("textures/exit.jpeg", TexData::Srgb, None).unwrap_or_default(),
+        None,
+        None,
+    ) {
+        Ok(sprite) => sprite,
+        Err(_) => Sprite::from_tex(&tex_particule, None, None).unwrap(),
+    };
 
     Log::diag(format!(
         "Runtime {} / Device {} / Emulator {:?}",
@@ -190,16 +196,6 @@ pub fn launch(mut settings: SkSettings, is_testing: bool, start_test: String) {
                 next_scene = Some(test);
             }
         }
-    }
-
-    // Add virtual keyboard stepper if extension is available
-    if is_meta_virtual_keyboard_extension_available() {
-        Log::info("✅ XR_META_virtual_keyboard extension available");
-        let keyboard_stepper = XrMetaVirtualKeyboardStepper::new(false);
-        sk.send_event(StepperAction::add(XR_META_VIRTUAL_KEYBOARD_EXTENSION_NAME, keyboard_stepper));
-        //sk.send_event(StepperAction::event(XR_META_VIRTUAL_KEYBOARD_EXTENSION_NAME, KEYBOARD_SHOW, "true"));
-    } else {
-        Log::diag("XR_META_virtual_keyboard extension not available");
     }
 
     let mut inst_play: Option<SoundInst> = None;
