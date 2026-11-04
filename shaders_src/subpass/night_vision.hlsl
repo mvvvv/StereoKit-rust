@@ -33,14 +33,14 @@ float4 ps(psIn input, uint view_id : SV_ViewID) : SV_TARGET
     float lum = dot(c.rgb, float3(0.299, 0.587, 0.114));
 
     // Calculate pixel-aligned blocky UVs
-    // sk_lighting_sh_sk_screen_size gives screen dimensions (width, height)
+    // sk_screen_size.xy gives screen dimensions (width, height)
     // Grain size controls the width/height of the grain blocks in pixels
     float2 screen_res = sk_screen_size.xy;
     float2 pixel_coord = input.uv * screen_res;
     float2 block_uv = floor(pixel_coord / max(grain_size, 1.0)) / screen_res;
 
     // Dynamic noise based on quantized block UVs
-    float time_seed = frac(sk_time.x);
+    float time_seed = frac(sk_time);
     float noise = frac(sin(dot(block_uv + time_seed, float2(12.9898, 78.233))) * 43758.5453);
 
     // Apply green tinting, amplification, and noise overlay

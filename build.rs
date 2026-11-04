@@ -198,10 +198,8 @@ fn main() {
             if target_env == "gnu" {
                 if !skc_shared {
                     println!("cargo:rustc-link-search=native={}/build/_deps/sk_renderer-build", dst.display());
-                    println!(
-                        "cargo:rustc-link-search=native={}/build/_deps/openxr_loader-build/src/loader",
-                        dst.display()
-                    );
+                    // openxr_loader_nano (PR #1433) installs the loader at the root of its build tree
+                    println!("cargo:rustc-link-search=native={}/build/_deps/openxr_loader-build", dst.display());
                     println!("cargo:rustc-link-search=native={win_gnu_libs}");
                     println!("cargo:rustc-link-search=native={}/build/_deps/sk_renderer-build/sk_ktx2", dst.display());
                     println!(
@@ -386,8 +384,8 @@ fn main() {
                 cargo_link!("android");
 
                 //---- A directory whose content is only used during the production of the APK (no need for DEBUG/RELEASE sub directory)
-                //---- Copying from ./target/aarch64-linux-android/debug/build/stereokit-rust-1d044aba61d6313d/out/lib/libopenxr_loader.so
-                //---- to   ./target/runtime_libs/
+                //---- Copying the OpenXR loader built by CMake (`build-dynamic-openxr` feature) from the CMake install
+                //---- tree to ./target/runtime_libs/<abi>/, where the APK packaging picks it up.
                 let target_dir = Path::new(&out_dir)
                     .parent()
                     .unwrap()
@@ -408,8 +406,21 @@ fn main() {
                 if let Err(_e) = fs::create_dir(&runtime_libs) {};
                 let dest_file_so = runtime_libs.join("libopenxr_loader.so");
                 if cfg!(feature = "build-dynamic-openxr") {
-                    let file_so = dst.join("lib/libopenxr_loader.so");
-                    let _lib_o = fs::copy(file_so, dest_file_so).expect("Unable to copy libopenxr_loader.so");
+                    // CMake installs the loader under CMAKE_INSTALL_LIBDIR: this build sets it to `install` on Android.
+                    let candidates = [
+                        dst.join("install").join("libopenxr_loader.so"),
+                        dst.join("lib").join("libopenxr_loader.so"),
+                        dst.join("build").join("_deps").join("openxr_loader-build").join("libopenxr_loader.so"),
+                    ];
+                    let file_so = candidates
+                        .iter()
+                        .find(|path| path.exists())
+                        .cloned()
+                        .unwrap_or_else(|| dst.join("lib").join("libopenxr_loader.so"));
+                    println!("cargo:info=libopenxr_loader.so is copied from here --> {file_so:?}");
+                    let _lib_o = fs::copy(&file_so, &dest_file_so).unwrap_or_else(|e| {
+                        panic!("Unable to copy libopenxr_loader.so from {} : {e}", file_so.display())
+                    });
                 } else if let Err(_e) = fs::remove_file(dest_file_so) {
                 }
 
@@ -460,7 +471,6 @@ fn main() {
                 cargo_link!("vulkan");
                 cargo_link!("X11");
                 cargo_link!("Xfixes");
-                cargo_link!("fontconfig");
             }
         }
         _ => {
@@ -522,6 +532,7 @@ fn main() {
 
     // Tell cargo to invalidate the built crate whenever the wrapper changes
     println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-env-changed=SK_SYSROOT");
     println!("cargo:rerun-if-changed=StereoKit/StereoKitC/stereokit.h");
     println!("cargo:rerun-if-changed=StereoKit/StereoKitC/stereokit_ui.h");
     // The C++ sources are compiled by cmake from this build script, so cargo

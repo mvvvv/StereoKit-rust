@@ -30,9 +30,9 @@ include = [
 readme = "README_short.md"
 
 [features]
-# Add openxr_loader.so in Android APK
+# Ship your own openxr_loader (e.g. the one of the device) instead of linking it
 dynamic-openxr = []
-# Build openxr_loader from Khronos OpenXR project
+# Build openxr_loader from the openxr_loader_nano project, a drop-in for the Khronos loader (PR #1433)
 build-dynamic-openxr = ["dynamic-openxr"]
 # Disable the framework (event loop, steppers, tools)
 no-event-loop = []
