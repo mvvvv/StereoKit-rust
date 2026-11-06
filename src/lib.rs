@@ -386,6 +386,11 @@ pub mod mesh;
 pub mod model;
 
 /// Permission related structs, enums and functions for managing cross-platform permissions.
+///
+/// ## Examples
+/// which are also unit tests:
+///
+/// [![Permission panel](https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/permission_panel.jpeg)](permission::PermissionPanel)
 pub mod permission;
 
 /// The C ABI shared between the hot-reload host and the plugin `.so` of the project under development

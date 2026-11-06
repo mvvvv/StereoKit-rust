@@ -2,6 +2,18 @@ use std::fmt;
 
 use crate::maths::Bool32T;
 
+#[cfg(not(feature = "no-event-loop"))]
+use crate::{
+    framework::Appearence,
+    maths::{Pose, Vec2, Vec3},
+    prelude::*,
+    sprite::Sprite,
+    system::{Align, TextFit},
+    tools::os_api::{SystemAction, app_package_name, system_deep_link},
+    ui::{Ui, UiPad},
+    util::{Color128, named_colors},
+};
+
 /// A list of permissions that StereoKit knows about, each named for the feature it unlocks. On some platforms
 /// (like Android), these permissions may need to be explicitly requested before using certain features. Runtimes
 /// group features into system permissions differently, so several of these may resolve to the same underlying system
@@ -80,6 +92,36 @@ impl fmt::Display for PermissionType {
             PermissionType::Max => write!(f, "Max"),
         }
     }
+}
+
+impl PermissionType {
+    /// Every permission StereoKit knows about, in declaration order. [`PermissionType::Max`] is only the count of the
+    /// values of the enum, it is not part of this list.
+    ///
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::permission::PermissionType;
+    ///
+    /// assert_eq!(PermissionType::ALL.len(), PermissionType::Max as usize);
+    /// for permission in PermissionType::ALL {
+    ///     println!("{permission}");
+    /// }
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub const ALL: [PermissionType; 11] = [
+        PermissionType::Microphone,
+        PermissionType::Camera,
+        PermissionType::EyeInput,
+        PermissionType::HandTracking,
+        PermissionType::FaceTracking,
+        PermissionType::AmbientEstimation,
+        PermissionType::ReflectionEstimation,
+        PermissionType::DepthSensing,
+        PermissionType::Anchors,
+        PermissionType::PlaneTracking,
+        PermissionType::MarkerTracking,
+    ];
 }
 
 /// Permissions can be in a variety of states, depending on how users interact with them. Sometimes they're
@@ -254,6 +296,310 @@ impl Permission {
     }
 }
 
+/// Event that shows (`"true"`) or hides (`"false"`) the [`PermissionPanel`] window. Send it with
+/// [`StepperAction::event`] to the id the panel has been added under.
+#[cfg(not(feature = "no-event-loop"))]
+pub const SHOW_PERMISSION_PANEL: &str = "Permission_Panel_show";
+
+/// A window listing every permission StereoKit knows about on the current runtime with its [`PermissionState`], and a
+/// *Request* button for each permission that can still be granted ([`PermissionState::Capable`]). A request may bring
+/// up a system dialog that the user answers on their own time: the OS settles the state asynchronously, so the panel
+/// only reads [`Permission::get_state`] every frame and follows the answer by itself.
+///
+/// It is meant to be dropped in **any** application: add it as a stepper
+/// ([`StepperAction::add_default`](crate::framework::StepperAction::add_default)), it draws its own window and that's
+/// it. When only one or two permissions matter, call [`Permission::get_state`] and [`Permission::request`] directly
+/// instead, see the examples of [`Permission`].
+///
+/// ### Fields that can be changed before initialization:
+/// * `enabled` - Whether the window is shown at start. Default is `true`.
+/// * `window_pose` - Where the window stands. Default is [`Ui::popup_pose`] of `Vec3::ZERO`, in front of the user.
+/// * `appearence` - The look of the window: size, scaling and text styles, see [`Appearence`]. The default
+///   `window_size` is `0.5 x 0.0` meters, the height being left to the number of rows, and the ui scale is 60%
+///   ([`Appearence::set_ui_scale`]) so the whole list stays compact. The window is resizable down to the
+///   [`Appearence::min_window_size`] floor.
+/// * `placement` - Where the window is memorized between two sessions, see [`Appearence::placement`]. Left as it is,
+///   the window is memorized under the id it is added under; nothing is memorized until the app installs a sink (see
+///   [`crate::framework::set_sink`]).
+/// * `title` - The title of the window. Default is `"Permissions"`.
+/// * `description` - The explanatory text drawn under the title, with [`Appearence::label_style`]. Default is a short
+///   reminder of what the list shows.
+/// * `show_description` - Draw `description` when `true`. Default is `true`.
+/// * `show_close` - Show the close button ([`Sprite::close`]) in the top right corner of the window, which removes
+///   this stepper. Default is `true`.
+/// * `show_request_all` - Show the *Request All Capable* button that chains every capable permission into a single OS
+///   prompt. Default is `true`.
+/// * `show_app_settings` - Show the *App Settings* button, which opens the system settings page of the app where a
+///   permission refused for good ([`PermissionState::Blocked`]) can be turned back on. Android only, ignored
+///   elsewhere. Default is `true`.
+/// * `tint_granted` / `tint_pending` / `tint_refused` - The tints of the state column, chosen by
+///   [`PermissionPanel::state_tint`]: granted permissions, permissions that can still be asked for, and permissions
+///   the app won't get at runtime. Default are [`named_colors::LIGHT_GREEN`], [`named_colors::YELLOW`] and
+///   [`named_colors::RED`].
+///
+/// ### Events this stepper is listening to:
+/// * `SHOW_PERMISSION_PANEL` - Event that shows the window ("true") or hides it ("false"), the panel keeps running
+///   either way.
+///
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::{
+///     maths::{Pose, Quat, Vec3},
+///     permission::PermissionPanel,
+/// };
+///
+/// let mut permission_panel = PermissionPanel::default();
+/// permission_panel.title = "My app permissions".into();
+/// permission_panel.window_pose = Pose::new([0.0, 0.25, -0.4], Some(Quat::look_dir(Vec3::Z)));
+///
+/// sk.send_event(StepperAction::add("Permission_Panel", permission_panel));
+///
+/// (width_scr, height_scr, fov_scr) = (600, 600, 26.0);
+/// filename_scr = "screenshots/permission_panel.jpeg";
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+/// );
+/// # sk::Sk::shutdown();
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/permission_panel.jpeg" alt="screenshot" width="200">
+#[cfg(not(feature = "no-event-loop"))]
+#[derive(IStepper)]
+pub struct PermissionPanel {
+    id: StepperId,
+    sk_info: Option<Rc<RefCell<SkInfo>>>,
+    enabled: bool,
+
+    pub window_pose: Pose,
+    pub appearence: Appearence,
+
+    pub title: String,
+    pub description: String,
+    pub show_description: bool,
+    pub show_close: bool,
+    pub show_request_all: bool,
+    pub show_app_settings: bool,
+
+    pub tint_granted: Color128,
+    pub tint_pending: Color128,
+    pub tint_refused: Color128,
+
+    /// The face of the close button, see [`PermissionPanel::show_close`].
+    close_icon: Sprite,
+}
+
+#[cfg(not(feature = "no-event-loop"))]
+unsafe impl Send for PermissionPanel {}
+
+#[cfg(not(feature = "no-event-loop"))]
+impl Default for PermissionPanel {
+    fn default() -> Self {
+        let mut appearence = Appearence::default();
+        // As wide as a small panel, and as tall as its rows: the height is left to the content.
+        appearence.window_size = Vec2::new(0.5, 0.0);
+        // A compact list: 60% of the regular ui scale, the scale handle can still change it afterwards.
+        appearence.set_ui_scale(0.6);
+
+        Self {
+            id: "PermissionPanel".to_string(),
+            sk_info: None,
+            enabled: true,
+
+            window_pose: Ui::popup_pose(Vec3::ZERO),
+            appearence,
+
+            title: "Permissions".to_string(),
+            description: "Permissions of this app on this runtime, and their current state.".to_string(),
+            show_description: true,
+            show_close: true,
+            show_request_all: true,
+            show_app_settings: true,
+
+            tint_granted: named_colors::LIGHT_GREEN.into(),
+            tint_pending: named_colors::YELLOW.into(),
+            tint_refused: named_colors::RED.into(),
+
+            close_icon: Sprite::close(),
+        }
+    }
+}
+
+#[cfg(not(feature = "no-event-loop"))]
+impl PermissionPanel {
+    /// Builds a panel with its own `title`, every other property as in [`PermissionPanel::default`].
+    /// * `title` - The title of the window, also drawn as its header by [`Ui::window`].
+    ///
+    /// ### Examples
+    /// ```
+    /// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+    /// use stereokit_rust::permission::PermissionPanel;
+    ///
+    /// let permission_panel = PermissionPanel::new("My app permissions");
+    /// assert_eq!(permission_panel.title, "My app permissions");
+    /// # sk::Sk::shutdown();
+    /// ```
+    pub fn new(title: impl Into<String>) -> Self {
+        Self { title: title.into(), ..Default::default() }
+    }
+
+    /// The tint of the state column for a given state, see [`PermissionPanel::tint_granted`],
+    /// [`PermissionPanel::tint_pending`] and [`PermissionPanel::tint_refused`].
+    /// * `state` - The current state of a permission, as given by [`Permission::get_state`].
+    pub fn state_tint(&self, state: PermissionState) -> Color128 {
+        match state {
+            PermissionState::Granted => self.tint_granted,
+            PermissionState::Capable | PermissionState::Requesting | PermissionState::Unknown => self.tint_pending,
+            PermissionState::Denied | PermissionState::Blocked | PermissionState::Unavailable => self.tint_refused,
+        }
+    }
+
+    /// Removes this stepper, what the close button does.
+    pub fn close(&self) {
+        SkInfo::send_event(&self.sk_info, StepperAction::remove(self.id.clone()));
+    }
+
+    /// Called from IStepper::initialize here you can abort the initialization by returning false
+    fn start(&mut self) -> bool {
+        // Captures the current (possibly user-tweaked) text heights as the base the ui scale multiplies,
+        // and applies the current scale, see `Appearence::start`.
+        self.appearence.start();
+        // The id this window is added under is the key it is memorized under (see `Appearence::placement`), and the
+        // placement of the previous session is applied now that the text styles have their base heights.
+        #[cfg(feature = "placement")]
+        {
+            self.appearence.placement.ensure_key(&self.id);
+            self.appearence.restore_placement(&mut self.window_pose);
+        }
+        true
+    }
+
+    /// Called from IStepper::step, here you can check the event report
+    fn check_event(&mut self, _id: &StepperId, key: &str, value: &str) {
+        if key.eq(SHOW_PERMISSION_PANEL) {
+            self.enabled = value.parse().unwrap_or(false);
+        }
+    }
+
+    /// Called from IStepper::step, after check_event here you can draw your UI
+    fn draw(&mut self, _token: &MainThreadToken) {
+        // The window is drawn with the Appearence-scaled UiSettings, restored exactly as they were afterwards.
+        let prev_settings = Ui::get_settings();
+        Ui::settings(self.appearence.get_ui_settings_scaled());
+        Ui::push_id(&self.id);
+
+        Ui::window(&self.title)
+            .pose(&mut self.window_pose)
+            .size(self.appearence.scaled_window_size())
+            .begin();
+
+        // Close button, alone on its row at the left edge of the window.
+        if self.show_close {
+            let diameter = Ui::get_line_height();
+            if Ui::button_round("permission_panel_close", &self.close_icon, diameter).press() {
+                self.close();
+            }
+        }
+
+        // The width of the content area, in meters: it follows the window when it is resized or zoomed with the scale
+        // handle, see `Appearence`.
+        let usable_width = Ui::get_layout_remaining().x;
+
+        if self.show_description && !self.description.is_empty() {
+            Ui::same_line();
+            Ui::hspace(0.8);
+            // A `label` squeezes the text into one line, a `text` wraps it at the given width with an automatic height.
+            Ui::same_line();
+            Ui::push_text_style(self.appearence.title_style);
+            Ui::text(&self.description).draw();
+            Ui::pop_text_style();
+        }
+
+        Ui::hseparator();
+
+        // Column widths, in fractions of the usable width of the window.
+        let col_permission = usable_width * 0.45;
+        let col_state = usable_width * 0.25;
+        let col_interactive = usable_width * 0.30;
+        let row_height = Ui::get_line_height();
+
+        // The rows use the list style of the Appearence, like the file browser's list.
+        Ui::push_text_style(self.appearence.list_style);
+        for permission in PermissionType::ALL {
+            let state = Permission::get_state(permission);
+            Ui::push_id(format!("permission_{}", permission as u32));
+
+            Ui::panel_begin(Some(UiPad::Outside));
+            // Column 1: the permission name, squeezed instead of wrapped so each row stays on one line.
+            Ui::text(permission.to_string())
+                .size(Vec2::new(col_permission, row_height))
+                .text_align(Align::CenterLeft)
+                .fit(TextFit::Squeeze)
+                .draw();
+            // Column 2: the current state, tinted by what it means
+            Ui::same_line();
+            Ui::push_tint(self.state_tint(state));
+            Ui::text(state.to_string())
+                .size(Vec2::new(col_state, row_height))
+                .text_align(Align::CenterLeft)
+                .fit(TextFit::Squeeze)
+                .draw();
+            Ui::pop_tint();
+            // Column 3: will requesting it show a system dialog the user has to answer?
+            if Permission::is_interactive(permission) {
+                Ui::same_line();
+                Ui::text("(interactive)")
+                    .size(Vec2::new(col_interactive, row_height))
+                    .text_align(Align::CenterLeft)
+                    .fit(TextFit::Squeeze)
+                    .draw();
+            }
+            // Column 4: the request button, only while the OS is willing to ask for this permission
+            if state == PermissionState::Capable {
+                Ui::same_line();
+                if Ui::button("Request").size(Vec2::new(0.0, row_height)).press() {
+                    Permission::request(&[permission]);
+                }
+            }
+            // Whatever the columns above used, the row spans the whole width of the window.
+            Ui::hspace(Ui::get_layout_remaining().x.max(0.0));
+            Ui::panel_end();
+            Ui::pop_id();
+        }
+        Ui::pop_text_style();
+
+        // Requesting several at once chains them into a single OS prompt.
+        Ui::hseparator();
+        Ui::push_text_style(self.appearence.label_style);
+        if self.show_request_all && Ui::button("Request All Capable").press() {
+            let capable: Vec<PermissionType> = PermissionType::ALL
+                .into_iter()
+                .filter(|permission| Permission::get_state(*permission) == PermissionState::Capable)
+                .collect();
+            if capable.is_empty() {
+                Log::info("PermissionPanel: no permission is capable, nothing to request");
+            } else {
+                Permission::request(&capable);
+            }
+        }
+        // A permission refused for good ("Blocked") can only be turned back on from the system settings of the app.
+        if cfg!(target_os = "android") && self.show_app_settings && Ui::button("App Settings").press() {
+            let result = system_deep_link(SystemAction::Settings {
+                setting: app_package_name().map(|package| format!("/applications?package={package}")),
+            });
+            Log::info(format!("PermissionPanel: open app settings - {result:?}"));
+        }
+        Ui::pop_text_style();
+
+        Ui::window_end();
+
+        Ui::pop_id();
+        Ui::settings(prev_settings);
+
+        // Grab-able knob anchored to the window: dragging it resizes / zooms the window (see `Appearence`), and it
+        // memorizes the placement of the window (see `Appearence::placement`).
+        self.appearence.scale_handle(&self.window_pose, "permission_panel_scale");
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -264,11 +610,19 @@ mod tests {
         // without initializing StereoKit since the macro doesn't work from inside the crate
 
         // Test that we can iterate through permission types
-        for i in 0..(PermissionType::Max as u32) {
-            let permission = unsafe { std::mem::transmute::<u32, PermissionType>(i) };
+        for permission in PermissionType::ALL {
             // Just make sure we can call the functions without crashing
             let _state = Permission::get_state(permission);
             let _interactive = Permission::is_interactive(permission);
+        }
+    }
+
+    #[test]
+    fn test_permission_all() {
+        // `PermissionType::ALL` must list every value of the enum, in declaration order, `Max` excluded.
+        assert_eq!(PermissionType::ALL.len(), PermissionType::Max as usize);
+        for (index, permission) in PermissionType::ALL.into_iter().enumerate() {
+            assert_eq!(permission as usize, index);
         }
     }
 
