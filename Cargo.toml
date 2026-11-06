@@ -52,8 +52,12 @@ profile = []
 # (compile-time embedded `locales/*` catalogues, runtime switch with tools::locales::set_locale)
 file-browser = ["locales"]
 locales = ["dep:rust-i18n"]
+# Voice dictation: streaming speech to text with sherpa-onnx (tools::voice_dictation::VoiceDictation).
+# The sherpa-onnx native library is downloaded by its build script; see the module documentation for the model files.
+# The dictation window uses the file browser to choose the model folder, hence the `file-browser` dependency.
+voice-dictation = ["dep:sherpa-onnx", "file-browser"]
 # All the extra tools. Useful for test/doc
-tools = ["file-browser", "placement"]
+tools = ["file-browser", "placement", "voice-dictation"]
 
 [package.metadata.docs.rs]
 features = ["tools"]
@@ -89,6 +93,8 @@ glam = { version = "0.34", optional = true }
 openxr-sys = "0.14"
 # Compile-time translations for the tools (see the `file-browser` feature), runtime locale switching
 rust-i18n = { version = "4", optional = true }
+# Streaming speech to text, for the `voice-dictation` feature.
+sherpa-onnx = { version = "2.0.1", optional = true }
 # dlopen/dlsym (Linux, macOS) / LoadLibrary (Windows) support for the hot-reload host.
 libloading = { version = "0.9", optional = true }
 # The file format of the placements of the windows (the `placement` feature).

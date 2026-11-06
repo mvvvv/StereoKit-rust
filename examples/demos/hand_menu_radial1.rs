@@ -7,7 +7,7 @@ use stereokit_rust::{
     model::Model,
     prelude::*,
     render::RenderBuilder,
-    tex::{TexData, SHCubemap, Tex, TexFormat, TexSample},
+    tex::{SHCubemap, Tex, TexData, TexFormat, TexSample},
     tools::{fly_over::ENABLE_FLY_OVER, log_window::SHOW_LOG_WINDOW, screenshot::SHOW_SCREENSHOT_WINDOW},
     util::{
         Gradient, SHLight, SphericalHarmonics,
@@ -205,17 +205,20 @@ impl HandMenuRadial1 {
         let change_floor4 = SkInfo::get_message_closure(sk_info.clone(), id.clone(), CHANGE_FLOOR);
         let change_floor5 = SkInfo::get_message_closure(sk_info.clone(), id.clone(), CHANGE_FLOOR);
 
-        let mut menu_ico = Material::pbr_clip().tex_file_copy("icons/hamburger.png", TexData::Srgb, None).unwrap_or_default();
+        let mut menu_ico =
+            Material::pbr_clip().tex_file_copy("icons/hamburger.png", TexData::Srgb, None).unwrap_or_default();
         menu_ico.clip_cutoff(0.1);
 
         let mut screenshot_ico =
             Material::pbr_clip().tex_file_copy("icons/screenshot.png", TexData::Srgb, None).unwrap_or_default();
         screenshot_ico.clip_cutoff(0.1);
 
-        let mut log_ico = Material::pbr_clip().tex_file_copy("icons/log_viewer.png", TexData::Srgb, None).unwrap_or_default();
+        let mut log_ico =
+            Material::pbr_clip().tex_file_copy("icons/log_viewer.png", TexData::Srgb, None).unwrap_or_default();
         log_ico.clip_cutoff(0.1);
 
-        let mut fly_over_ico = Material::pbr_clip().tex_file_copy("icons/fly_over.png", TexData::Srgb, None).unwrap_or_default();
+        let mut fly_over_ico =
+            Material::pbr_clip().tex_file_copy("icons/fly_over.png", TexData::Srgb, None).unwrap_or_default();
         fly_over_ico.clip_cutoff(0.1);
 
         //---- Sky domes and floor
@@ -250,8 +253,8 @@ impl HandMenuRadial1 {
         let sh = SphericalHarmonics::from_lights(&lights);
         let cube2 = SHCubemap::gen_cubemap_sh(sh, 15, 5.0, 0.02);
 
-        let mut cube3 =
-            SHCubemap::from_cubemap("hdri/sky_dawn.hdr", TexData::Srgb, 0).unwrap_or_else(|_err| cube_default.clone_ref());
+        let mut cube3 = SHCubemap::from_cubemap("hdri/sky_dawn.hdr", TexData::Srgb, 0)
+            .unwrap_or_else(|_err| cube_default.clone_ref());
         cube3.sh.add(Vec3::new(-1.0, 0.15, -0.15).get_normalized(), RED).brightness(0.3);
         let lights: [SHLight; 1] = [SHLight::new(Vec3::new(-1.0, 0.15, -0.15).get_normalized(), RED); 1];
         let sh = SphericalHarmonics::from_lights(&lights);

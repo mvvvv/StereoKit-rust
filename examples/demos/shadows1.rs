@@ -12,7 +12,7 @@ use stereokit_rust::{
     render::{RenderBuilder, RenderLayer, Renderer},
     sprite::Sprite,
     system::{Input, Log, Text, TextBuilder, TextStyle},
-    tex::{TexData, Tex, TexAddress, TexFormat, TexSample, TexSampleComp, TexType},
+    tex::{Tex, TexAddress, TexData, TexFormat, TexSample, TexSampleComp, TexType},
     ui::{Ui, UiBtnLayout},
     util::named_colors,
 };

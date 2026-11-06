@@ -13,7 +13,7 @@ use stereokit_rust::{
     sound::Sound,
     sprite::Sprite,
     system::{Assets, Backend, BackendXRType, Text, TextBuilder, TextStyle},
-    tex::{TexData, Tex, TexFormat},
+    tex::{Tex, TexData, TexFormat},
     tools::xr_comp_layers::{SwapchainSk, XrCompLayers},
     ui::{Ui, UiBtnLayout},
     util::{Color32, Color128, Time, named_colors::RED},

@@ -4,10 +4,11 @@ version = "0.1.0"
 edition = "2024"
 
 [features]
-default = ["file-browser", "locales"]
+default = ["voice-dictation", "locales"]
 # As we are linking to StereoKit-rust we have to mimic these features.
 no-event-loop = []   
 file-browser = [] 
+voice-dictation = ["file-browser"]
 skc-shared = []
 locales = []
 

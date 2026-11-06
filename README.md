@@ -176,6 +176,25 @@ See [`hot_reloading.md`](hot_reloading.md) for the reference documentation (arch
 
 - Launch `cargo build_sk_rs --example main_pc --x64-linux <the path of your exportable repository>`.
 
+## Voice dictation (`voice-dictation` feature)
+
+`tools::voice_dictation::VoiceDictation` is a streaming speech-to-text tool built on
+[sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx). The module also ships `VoicePanel`, a ready-to-use window (pop-up
+at 60% scale, close button, live level and a scrollable log of the committed sentences), which the `voice1` demo simply
+registers:
+
+- `cargo run --features voice-dictation --example main_pc`, then **Model folder** to pick the
+  directory of a streaming model, or set `SHERPA_ONNX_MODEL_DIR` to skip the picker. No model is shipped with this
+  project: download one from [Hugging Face](https://huggingface.co/kouhxp/sherpa-onnx-streaming-zipformer-fr-kroko) or
+  the [sherpa-onnx releases](https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models) (the Android demo shows
+  buttons opening those pages).
+- On Android/Quest the microphone permission is requested at start, the build copies the two sherpa-onnx `.so` files
+  to `target/runtime_libs/<abi>/` for the APK, and the model files have to be pushed to the device.
+
+It is also the way to get dictation on Horizon OS: the microphone of the system keyboard depends on Meta's voice
+dictation service, which is not available on every device, region or language (the browser's microphone is the web
+page's own voice search, not the keyboard one).
+
 ## Troubleshooting
 
 Submit bugs on the [Issues tab](https://github.com/mvvvv/StereoKit-rust/issues), and ask questions in the [Discussions tab](https://github.com/mvvvv/StereoKit-rust/discussions)!
@@ -191,6 +210,7 @@ This project was made possible thanks to the work of many talents on the followi
 - [openxrs](https://github.com/Ralith/openxrs) nice binding of OpenXR.
 - [blender](https://www.blender.org/) for gltf files, HDRI, models and demo animations
 - [gimp](https://www.gimp.org/) for icons files.
+- [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx) streaming speech to text, used by the `voice-dictation` feature.
 - bitflags.
 - android_logger.
 - this_error & anyerror.

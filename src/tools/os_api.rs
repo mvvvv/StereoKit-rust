@@ -423,12 +423,12 @@ pub enum BrowseLocation {
     /// PC: the app's internal files dir — Linux `~/.local/share/<app>`,
     /// macOS `~/Library/Application Support/<app>`, Windows `%APPDATA%\<app>`.
     Internal,
-    /// Android: app external data path (`/storage/emulated/0/Android/data/<package>/files`).
+    /// Android: app external data path (`/storage/self/primary/Android/data/<package>/files`).
     /// PC: the app's settings dir — Linux `~/.config/<app>`,
     /// macOS `~/Library/Application Support/<app>`, Windows `%APPDATA%\<app>`.
     #[default]
     External,
-    /// Android: shared public Documents folder (`/storage/emulated/0/Documents`).
+    /// Android: shared public Documents folder (`/storage/self/primary/Documents`).
     /// PC: the user's `Documents` folder.
     Documents,
     Pictures,
@@ -439,7 +439,7 @@ pub enum BrowseLocation {
 
 impl BrowseLocation {
     /// The on-disk directory name, used to build the public directory path
-    /// (e.g. `/storage/emulated/0/<dir>` on Android, `~/<dir>` on PC).
+    /// (e.g. `/storage/self/primary/<dir>` on Android, `~/<dir>` on PC).
     pub fn as_str(&self) -> &'static str {
         match self {
             BrowseLocation::Internal => "internal",
@@ -539,7 +539,7 @@ pub fn get_public_dir(dir_type: BrowseLocation) -> Option<PathBuf> {
     } else {
         // Fallback si le StorageManager ne répond pas
         Log::diag(format!("get_public_dir({:?}) resolved to uggly default", dir_type));
-        Some(PathBuf::from(format!("/storage/emulated/0/{}", dir_type.as_str())))
+        Some(PathBuf::from(format!("/storage/self/primary/{}", dir_type.as_str())))
     }
 }
 

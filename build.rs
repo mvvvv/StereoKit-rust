@@ -431,6 +431,12 @@ fn main() {
                     fs::copy(&sk_app_jar, &dest_jar).expect("Unable to copy sk_app.jar");
                 }
 
+                // `voice-dictation` links sherpa-onnx as a shared library on Android: copy the two libraries it links
+                // next to the OpenXR loader, where the gradle template packages them for the APK.
+                if cfg!(feature = "voice-dictation") {
+                    copy_sherpa_onnx_android_libs(target_dir, &abi);
+                }
+
                 // // On Android, we must ensure that we're dynamically linking against the C++ standard library.
                 // // For more details, see https://github.com/rust-windowing/android-ndk-rs/issues/167
                 // // build tools do not add libc++_shared.so to the APK so we must do it ourselves
@@ -677,4 +683,38 @@ fn find_file(dir: &Path, name: &str, max_depth: usize) -> Option<PathBuf> {
         }
     }
     None
+}
+
+/// Copy the sherpa-onnx shared libraries of the `voice-dictation` feature to `target/runtime_libs/<abi>/`, where the
+/// Android gradle template picks them up for the APK.
+///
+/// The sherpa-onnx crate build script downloads a prebuilt archive and unpacks it under
+/// `target/sherpa-onnx-prebuilt/jniLibs/<abi>/`. Only `libsherpa-onnx-c-api.so` and `libonnxruntime.so` are needed:
+/// they are the libraries its `-l` directives link.
+#[allow(dead_code)]
+fn copy_sherpa_onnx_android_libs(target_dir: &Path, abi: &str) {
+    let source = target_dir.join("sherpa-onnx-prebuilt").join("jniLibs").join(abi);
+    if !source.is_dir() {
+        println!(
+            "cargo:warning=voice-dictation: no sherpa-onnx libraries for {abi} in {} (was the Android archive built?)",
+            source.display()
+        );
+        return;
+    }
+    let dest = target_dir.join("runtime_libs").join(abi);
+    if let Err(error) = fs::create_dir_all(&dest) {
+        println!("cargo:warning=voice-dictation: could not create {}: {error}", dest.display());
+        return;
+    }
+    for name in ["libsherpa-onnx-c-api.so", "libonnxruntime.so"] {
+        let from = source.join(name);
+        if !from.is_file() {
+            println!("cargo:warning=voice-dictation: {} is missing in {}", name, source.display());
+            continue;
+        }
+        match fs::copy(&from, dest.join(name)) {
+            Ok(_) => println!("cargo:info=voice-dictation: {} copied to {}", name, dest.display()),
+            Err(error) => println!("cargo:warning=voice-dictation: could not copy {}: {error}", from.display()),
+        }
+    }
 }

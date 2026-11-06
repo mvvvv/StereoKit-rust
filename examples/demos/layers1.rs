@@ -9,7 +9,7 @@ use stereokit_rust::{
     prelude::*,
     render::{RenderBuilder, RenderClear, RenderList, Renderer},
     system::{Backend, BackendXRType, Text, TextBuilder, TextFit, TextStyle},
-    tex::{TexData, Tex, TexFormat},
+    tex::{Tex, TexData, TexFormat},
     tools::xr_comp_layers::{SwapchainSk, XrCompLayers},
     ui::Ui,
     util::{

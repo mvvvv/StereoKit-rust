@@ -5,7 +5,7 @@ use stereokit_rust::{
     mesh::{Mesh, Vertex},
     prelude::*,
     system::{OcclusionCaps, Text, World},
-    tex::{TexData, Tex},
+    tex::{Tex, TexData},
     tools::notif::HudNotification,
     ui::{Ui, UiMove, UiWin},
     util::{
