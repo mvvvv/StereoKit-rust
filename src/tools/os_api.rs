@@ -470,7 +470,54 @@ impl BrowseLocation {
     }
 }
 
-// Récupère le chemin d'un dossier public sans méthodes obsolètes (API 30+)
+/// Root of the emulated (internal) storage, as returned by
+/// `StorageManager.getPrimaryStorageVolume().getDirectory().getAbsolutePath()`.
+///
+/// That physical path always belongs to the **first** user (`/storage/emulated/0`), even when the
+/// app runs as another user, so it must never be used as is on a multi-user device.
+#[cfg(any(target_os = "android", test))]
+const EMULATED_STORAGE_ROOT_PREFIX: &str = "/storage/emulated/";
+
+/// Per-user alias of the emulated storage root: the kernel resolves it to `/storage/emulated/<user id>`
+/// of the user the calling process belongs to, which is the right root on multi-user devices.
+#[cfg(any(target_os = "android", test))]
+const PER_USER_PRIMARY_STORAGE_ROOT: &str = "/storage/self/primary";
+
+/// Map the physical root of the primary storage volume to the root to use for the current user.
+///
+/// `StorageVolume.getDirectory()` returns a *physical* path, which always belongs to the first user
+/// (`/storage/emulated/0`) for an emulated volume: it is therefore remapped to the per-user alias
+/// `/storage/self/primary`, which the kernel resolves to `/storage/emulated/<user id>` of the process.
+/// A physical volume (adopted SD card) has no such alias and is kept as is.
+#[cfg(any(target_os = "android", test))]
+fn per_user_public_root(volume_root: &str) -> PathBuf {
+    if volume_root.starts_with(EMULATED_STORAGE_ROOT_PREFIX) {
+        PathBuf::from(PER_USER_PRIMARY_STORAGE_ROOT)
+    } else {
+        PathBuf::from(volume_root)
+    }
+}
+
+/// Get the path to a shared public folder on Android.
+///
+/// Resolves the root of the primary storage volume through `StorageManager` (no deprecated API),
+/// then appends the [`BrowseLocation`] folder name.
+///
+/// `StorageVolume.getDirectory()` returns the *physical* emulated path, which always belongs to the
+/// first user (`/storage/emulated/0`). So that the result stays valid on multi-user devices, an
+/// emulated root is remapped to the per-user alias `/storage/self/primary`, which the kernel resolves
+/// to `/storage/emulated/<user id>` of the current process. A physical primary volume (adopted SD
+/// card) is used as is, since no alias exists for it.
+///
+/// ### Examples
+/// ```
+/// use stereokit_rust::tools::os_api::{get_public_dir, BrowseLocation};
+///
+/// // e.g. `/storage/self/primary/Documents`
+/// if let Some(documents) = get_public_dir(BrowseLocation::Documents) {
+///     println!("Documents folder: {documents:?}");
+/// }
+/// ```
 #[cfg(target_os = "android")]
 pub fn get_public_dir(dir_type: BrowseLocation) -> Option<PathBuf> {
     use jni::{
@@ -532,14 +579,27 @@ pub fn get_public_dir(dir_type: BrowseLocation) -> Option<PathBuf> {
         .ok()?;
 
     if !path_str.is_empty() {
-        let mut path = PathBuf::from(path_str);
-        path.push(dir_type.as_str());
+        // `StorageVolume.getDirectory()` gives the *physical* path of the volume, i.e.
+        // `/storage/emulated/0` for the emulated primary storage, which always belongs to the
+        // first user. `per_user_public_root` remaps it to the per-user alias
+        // `/storage/self/primary` (see its documentation), so multi-user devices resolve the
+        // right folder, while a physical primary volume (adopted SD card) is kept as is.
+        let root = per_user_public_root(&path_str);
+        Log::diag(format!(
+            "get_public_dir({:?}) uses root {:?} (primary volume root: {:?})",
+            dir_type, root, path_str
+        ));
+        let path = root.join(dir_type.as_str());
         Log::diag(format!("get_public_dir({:?}) resolved to {:?}", dir_type, path));
         Some(path)
     } else {
         // Fallback si le StorageManager ne répond pas
         Log::diag(format!("get_public_dir({:?}) resolved to uggly default", dir_type));
-        Some(PathBuf::from(format!("/storage/self/primary/{}", dir_type.as_str())))
+        Some(PathBuf::from(format!(
+            "{}/{}",
+            PER_USER_PRIMARY_STORAGE_ROOT,
+            dir_type.as_str()
+        )))
     }
 }
 
@@ -2002,5 +2062,18 @@ mod tests {
             SystemAction::BugReport.android_intent().unwrap(),
             AndroidIntent::Action { action: "android.intent.action.BUG_REPORT".to_string(), data: None }
         );
+    }
+
+    #[test]
+    fn public_dir_uses_the_per_user_alias_for_emulated_storage() {
+        // `StorageVolume.getDirectory()` returns the physical emulated path, which always belongs to
+        // the first user: it must be remapped to the per-user alias, whatever the user id.
+        assert_eq!(per_user_public_root("/storage/emulated/0"), PathBuf::from(PER_USER_PRIMARY_STORAGE_ROOT));
+        assert_eq!(per_user_public_root("/storage/emulated/10"), PathBuf::from(PER_USER_PRIMARY_STORAGE_ROOT));
+
+        // A physical primary volume (adopted SD card) has no per-user alias: it is kept as is.
+        assert_eq!(per_user_public_root("/storage/1A2B-3C4D"), PathBuf::from("/storage/1A2B-3C4D"));
+        // Neither is an arbitrary mount point.
+        assert_eq!(per_user_public_root("/mnt/media_rw/1234"), PathBuf::from("/mnt/media_rw/1234"));
     }
 }
