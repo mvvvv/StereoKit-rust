@@ -17,7 +17,7 @@ pub enum PathEntry {
     File(OsString),
     Dir(OsString),
 }
-
+///
 /// For bin tools only
 pub fn get_shaders_source_dir() -> String {
     std::env::var("SK_RUST_SHADERS_SOURCE_DIR").unwrap_or("shaders_src".into())
