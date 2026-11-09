@@ -657,6 +657,8 @@ mod tests {
 // VoicePanel: a ready-to-use dictation window
 // ---------------------------------------------------------------------------
 
+#[cfg(all(not(feature = "no-event-loop"), target_os = "android"))]
+use crate::permission::{Permission, PermissionState, PermissionType};
 #[cfg(not(feature = "no-event-loop"))]
 use crate::{
     font::Font,
@@ -667,11 +669,6 @@ use crate::{
     ui::{UiBtnLayout, UiPad, UiScroll},
     util::Time,
 };
-#[cfg(all(not(feature = "no-event-loop"), target_os = "android"))]
-use crate::{
-    permission::{Permission, PermissionState, PermissionType},
-    tools::os_api::{SystemAction, system_deep_link},
-};
 #[cfg(not(feature = "no-event-loop"))]
 use crate::{
     tools::{
@@ -681,16 +678,14 @@ use crate::{
     util::PickerMode,
 };
 
-/// Pages opened by the download buttons, on Android only: the headset has no other browser.
-#[cfg(all(not(feature = "no-event-loop"), target_os = "android"))]
-const MODEL_PAGES: [(&str, &str); 3] = [
-    (
-        "French model (HF, 4 files)",
-        "https://huggingface.co/kouhxp/sherpa-onnx-streaming-zipformer-fr-kroko",
-    ),
-    ("sherpa-onnx models", "https://k2-fsa.github.io/sherpa/onnx/pretrained_models/index.html"),
-    ("Models archive", "https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models"),
-];
+/// Height of the provisional text area, in window units (before scaling): about three lines of the label style.
+#[cfg(not(feature = "no-event-loop"))]
+const PARTIAL_AREA_HEIGHT: f32 = 0.075;
+
+/// Characters of the provisional text kept for display. Past that, only the tail of the utterance is shown, with a
+/// leading ellipsis: the newest words are the ones worth reading.
+#[cfg(not(feature = "no-event-loop"))]
+const PARTIAL_MAX_CHARS: usize = 110;
 
 /// A ready-to-use dictation window: model folder picker, record/stop, live level, provisional text and a
 /// scrollable log of the committed sentences.
@@ -875,29 +870,18 @@ impl VoicePanel {
         }
         Ui::next_line();
 
-        // On Android there is no other browser to download a model from.
-        #[cfg(target_os = "android")]
-        {
-            for (index, (label, url)) in MODEL_PAGES.iter().enumerate() {
-                if index > 0 {
-                    Ui::same_line();
-                }
-                if Ui::button(*label).size(Vec2::new(self.appearence.scale(0.16), self.appearence.scale(0.03))).press()
-                    && !system_deep_link(SystemAction::Browser { url: (*url).to_string() })
-                {
-                    Log::warn(format!("VoicePanel: could not open '{url}'"));
-                }
-            }
-            Ui::next_line();
-        }
-
-        // Provisional text of the current utterance: several lines, scaled to the area.
+        // Provisional text of the current utterance, in its own frame like the log below. It keeps the text style's own
+        // size: `TextFit::Exact` must be avoided here, since it scales the whole utterance to fit a single line, so a
+        // partial grows smaller as it grows longer (long partials, as the streaming models of the Android devices
+        // produce, end up unreadable). `Wrap` keeps every word at the style size, `Clip` stops it from spilling out of
+        // its box, and only the tail of a long utterance is shown: the newest words are the ones worth reading.
         let partial = self.dictation.as_ref().map(|dictation| dictation.partial()).unwrap_or_default();
-        Ui::text(partial)
-            .size(Vec2::new(0.0, self.appearence.scale(0.075)))
-            .fit(TextFit::Wrap | TextFit::Exact)
+        Ui::panel_begin(Some(UiPad::Inside));
+        Ui::text(partial_tail(partial, PARTIAL_MAX_CHARS))
+            .size(Vec2::new(0.0, self.appearence.scale(PARTIAL_AREA_HEIGHT)))
+            .fit(TextFit::Wrap | TextFit::Clip)
             .draw();
-        Ui::next_line();
+        Ui::panel_end();
 
         // Each flush of the dictation becomes one more line of this text area, separated by CRLF.
         if let Some(dictation) = &mut self.dictation {
@@ -1002,4 +986,39 @@ fn level_dots(level: f32) -> String {
 #[cfg(not(feature = "no-event-loop"))]
 fn waiting_dots(time: f32) -> String {
     ".".repeat(1 + (time * 3.0) as usize % 3)
+}
+
+/// Tail of `text`, `max_chars` characters at most, with a leading ellipsis when the beginning is dropped.
+///
+/// The provisional text of a dictation grows as the user speaks, and its box is a few lines high: showing the newest
+/// words (the end of the sentence) is more useful than showing the beginning, which the user already knows.
+#[cfg(not(feature = "no-event-loop"))]
+fn partial_tail(text: &str, max_chars: usize) -> String {
+    let count = text.chars().count();
+    if count <= max_chars || max_chars < 2 {
+        return text.to_string();
+    }
+    // The ellipsis takes one of the characters: the tail keeps `max_chars - 1` of them.
+    let tail: String = text.chars().skip(count - (max_chars - 1)).collect();
+    format!("…{tail}")
+}
+
+#[cfg(all(test, not(feature = "no-event-loop")))]
+mod panel_tests {
+    use super::*;
+
+    #[test]
+    fn partial_tail_keeps_the_newest_words() {
+        // Short enough: the text is returned untouched.
+        assert_eq!(partial_tail("bonjour", 10), "bonjour");
+        // Exactly the limit: still untouched, no ellipsis.
+        assert_eq!(partial_tail("bonjour!!!", 10), "bonjour!!!");
+        // Past the limit: the beginning is dropped, an ellipsis marks it, and the length stays within the limit.
+        let text = "un deux trois quatre cinq six sept";
+        let tail = partial_tail(text, 15);
+        assert_eq!(tail.chars().count(), 15);
+        let newest: String = tail.chars().skip(1).collect();
+        assert!(tail.starts_with('…'));
+        assert!(text.ends_with(&newest));
+    }
 }
