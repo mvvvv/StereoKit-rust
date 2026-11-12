@@ -62,8 +62,9 @@
 //!   right end. Every window fits its text - drawn smaller than the panel's, so more of it fits, the panel's own texts
 //!   using the same size - and closes itself with its own button, standing beside it on the right; grabbing any of them
 //!   tears it off into a series of its own, which follows the hand: dropping it over another series inserts it there,
-//!   where it was dropped. A window put aside that way is left alone by the dictation, which opens the next series
-//!   beside it. The grab aura is off for the series, so the background of a window turns blue while the hand is on it.
+//!   where it was dropped. The series the window lands in - the one it opens when it lands on none - becomes the
+//!   *current* one: the texts the dictation commits next are added to it. The grab aura is off for the series, so the
+//!   background of a window turns blue while the hand is on it.
 //!
 //! # Example
 //!
@@ -682,7 +683,7 @@ use crate::{
     framework::Appearence,
     maths::{Pose, Vec2, Vec3},
     sprite::Sprite,
-    system::{Align, Hierarchy, TextFit, TextStyle},
+    system::{Align, Hierarchy, Text, TextFit, TextStyle},
     ui::{UiBtnLayout, UiMove, UiPad, UiScroll, UiWin},
     util::{Color128, Time, named_colors},
 };
@@ -698,6 +699,11 @@ use crate::{
 /// Height of the provisional text area, in window units (before scaling): about three lines of the label style.
 #[cfg(not(feature = "no-event-loop"))]
 const PARTIAL_AREA_HEIGHT: f32 = 0.075;
+
+/// Height of the log area of the committed sentences, in window units (before scaling): about ten lines of the
+/// smaller style of the texts of the window.
+#[cfg(not(feature = "no-event-loop"))]
+const LOG_AREA_HEIGHT: f32 = 0.35;
 
 /// Characters of the provisional text kept for display. Past that, only the tail of the utterance is shown, with a
 /// leading ellipsis: the newest words are the ones worth reading.
@@ -822,8 +828,6 @@ struct BatchGroup {
     pose: Pose,
     /// The chunks, from the top window to the bottom one.
     chunks: Vec<BatchChunk>,
-    /// The user put this window aside on its own: the dictation does not add to it, a new series opens instead.
-    isolated: bool,
 }
 
 /// What the user asked of the batch windows, applied once the frame is drawn.
@@ -867,19 +871,29 @@ fn batch_pose_moved(expected: Pose, actual: Pose) -> bool {
     (actual.position - expected.position).length() > BATCH_MOVE_EPSILON || turned(Vec3::UP) || turned(Vec3::RIGHT)
 }
 
-/// Append `chunk` at the bottom of the last series, or open a new series at `anchor` when there is none, or when the
-/// last series is a window the user put aside. Returns `true` when a series was opened.
+/// Append `chunk` at the bottom of the current series - the last one in the list - or open a new series at `anchor`
+/// when there is none. Returns `true` when a series was opened. [`batch_make_current`] chooses the current series.
 #[cfg(not(feature = "no-event-loop"))]
 fn batch_push(groups: &mut Vec<BatchGroup>, anchor: Pose, series: u64, chunk: BatchChunk) -> bool {
     match groups.last_mut() {
-        Some(group) if !group.isolated => {
+        Some(group) => {
             group.chunks.push(chunk);
             false
         }
-        _ => {
-            groups.push(BatchGroup { series, pose: anchor, chunks: vec![chunk], isolated: false });
+        None => {
+            groups.push(BatchGroup { series, pose: anchor, chunks: vec![chunk] });
             true
         }
+    }
+}
+
+/// Make the series numbered `series` the current one, the one the dictation adds its next texts to: it goes last in
+/// the list, which is where [`batch_push`] appends. An unknown series changes nothing.
+#[cfg(not(feature = "no-event-loop"))]
+fn batch_make_current(groups: &mut Vec<BatchGroup>, series: u64) {
+    if let Some(index) = groups.iter().position(|group| group.series == series) {
+        let group = groups.remove(index);
+        groups.push(group);
     }
 }
 
@@ -959,15 +973,17 @@ fn batch_drop_slot(
 ///
 /// ### Live and batch modes
 /// [`VoicePanel::mode`] chooses where the committed texts go:
-/// * [`DictationMode::Live`] - each committed text is appended to the log of the window, as it comes.
+/// * [`DictationMode::Live`] - each committed text is appended to the log of the window, as it comes, and the log is
+///   brought to its end so the new line is always the one on screen.
 /// * [`DictationMode::Batch`] - each committed text opens a *batch* window instead, stacked in *series*: a series is
 ///   headed by a title bar of its own (numbered `#N`) that moves it as a whole, with **Send** (which appends the
 ///   series to the log) and **Clear** (which drops it) on its right end. Every window fits its text - drawn 40% smaller
 ///   than the text of the panel, which uses the same size - with its own text area and its close button outside, on its
 ///   right. Grabbing any window tears it off: it opens a series of its own, follows the hand, and dropping it over
 ///   another series inserts it there, where it was dropped (the series it comes from is not a target for that drag, so
-///   the tear holds). A window put aside is left alone by the dictation, which opens the next series beside it. As the
-///   grab aura is off for the series, the background of a window turns blue while the hand is on it.
+///   the tear holds). The series a window lands in - the one it opens when it lands on none - becomes the *current*
+///   one: the dictation adds its next texts there, and so does the series the user moves by its header. As the grab
+///   aura is off for the series, the background of a window turns blue while the hand is on it.
 ///
 /// A series is placed beside the window when it opens, and stays there when the mode goes back to
 /// [`DictationMode::Live`]: the pending texts are never lost.
@@ -1057,7 +1073,11 @@ pub struct VoicePanel {
     dictation_log: String,
     /// Scroll state of `dictation_log`, driven by the scrollbar of its text area.
     log_scroll: Vec2,
-    /// The series of batch windows, the last one receiving the new texts.
+    /// Whether new text arrived in `dictation_log` since the last draw. The log is then brought to its end, which
+    /// needs the width of the text area: it is only known at draw time.
+    log_follow_end: bool,
+    /// The series of batch windows. The last one is the *current* series - the one the dictation adds the texts it
+    /// commits to, and the one a new series stands beside.
     batch_groups: Vec<BatchGroup>,
     /// Texts given to [`VoicePanel::add_batch_text`] before the window started, waiting for a series to open at its
     /// place.
@@ -1112,6 +1132,7 @@ impl Default for VoicePanel {
             shared_recording: false,
             dictation_log: String::new(),
             log_scroll: Vec2::ZERO,
+            log_follow_end: false,
             batch_groups: Vec::new(),
             batch_pending: Vec::new(),
             batch_next_id: 1,
@@ -1317,6 +1338,7 @@ impl VoicePanel {
             {
                 self.dictation_log.clear();
                 self.log_scroll = Vec2::ZERO;
+                self.log_follow_end = false;
             }
             Ui::panel_end();
 
@@ -1385,9 +1407,20 @@ impl VoicePanel {
         // style of the batch windows, so more lines fit.
         Ui::panel_begin(Some(UiPad::Outside));
         Ui::push_text_style(self.batch_style);
+        // A new text brings the log to its end: the scroll is the offset of the text in meters, so it is set to what
+        // the log has below its visible area. The width of the text area is only known here, so the arrival of a text
+        // only raises `log_follow_end`. The UI lays the text out in the width minus a line height, which the
+        // scrollbar takes, so the measure does the same; the log simply stays at its top while it fits.
+        if self.log_follow_end {
+            self.log_follow_end = false;
+            let area_height = self.appearence.scale(LOG_AREA_HEIGHT);
+            let wrap_width = (Ui::get_layout_remaining().x - Ui::get_line_height()).max(0.0);
+            let text_height = Text::size_layout(&self.dictation_log, Some(self.batch_style), Some(wrap_width)).y;
+            self.log_scroll = Vec2::new(0.0, (text_height - area_height).max(0.0));
+        }
         Ui::text(&self.dictation_log)
             .scroll(&mut self.log_scroll, UiScroll::Vertical)
-            .size(Vec2::new(0.0, self.appearence.scale(0.35)))
+            .size(Vec2::new(0.0, self.appearence.scale(LOG_AREA_HEIGHT)))
             .fit(TextFit::Wrap)
             .draw();
         Ui::pop_text_style();
@@ -1489,8 +1522,9 @@ impl VoicePanel {
         }
     }
 
-    /// Where a new series opens: beside the last series, on its left, in the frame of that series, so the series line
-    /// up, with the room of the close buttons in between. The very first one opens beside the panel.
+    /// Where a new series opens: beside the current series (the last one in the list), on its left, in the frame of
+    /// that series, so the series line up, with the room of the close buttons in between. The very first one opens
+    /// beside the panel.
     fn batch_next_anchor(&self) -> Pose {
         let Some(last) = self.batch_groups.last() else {
             return self.batch_anchor();
@@ -1502,8 +1536,9 @@ impl VoicePanel {
         }
     }
 
-    /// Add `text` as a new batch window, at the bottom of the last series - or in a new series, when there is no series
-    /// yet, or when the last one is a window the user put aside.
+    /// Add `text` as a new batch window, at the bottom of the current series - or in a new series, when there is no
+    /// series yet. The series the user moves, or the one a dragged window lands in, is the current one, see
+    /// [`VoicePanel::draw_batch`].
     ///
     /// It is what the dictation does with each committed text in [`DictationMode::Batch`]; calling it directly lets an
     /// application hand over texts of its own. The windows are drawn in both modes, so a text can be queued before the
@@ -1519,16 +1554,18 @@ impl VoicePanel {
         }
     }
 
-    /// Append `text` to the log of the committed sentences, as a new line.
+    /// Append `text` to the log of the committed sentences, as a new line, and bring the log to its end at the next
+    /// draw - a new line is what the user is waiting to read.
     fn push_log(&mut self, text: &str) {
         if !self.dictation_log.is_empty() {
             self.dictation_log.push_str("\r\n");
         }
         self.dictation_log.push_str(text);
+        self.log_follow_end = true;
     }
 
-    /// Add `text` as a new batch window, at the bottom of the last series - or in a new series, when there is no series
-    /// yet, or when the last one is a window the user put aside.
+    /// Add `text` as a new batch window, at the bottom of the current series - or in a new series, when there is no
+    /// series yet.
     fn push_batch(&mut self, text: String) {
         let chunk = BatchChunk {
             id: self.batch_next_id,
@@ -1551,6 +1588,10 @@ impl VoicePanel {
     /// per chunk. Grabbing any window tears it off: it opens a series of its own that follows the hand, and joins the
     /// series it is dropped on, unless that is the series it comes from. A series of a single window is moved by its
     /// window, header included.
+    ///
+    /// A series the user moves by its header becomes the *current* one: the texts the dictation commits next are added
+    /// to it, at the bottom, and a series opened later stands beside it. So does the series a dragged window lands in,
+    /// or the one a torn-off window opens: a detachment hands the dictation over to the new batch it makes.
     fn draw_batch(&mut self) {
         if self.batch_groups.is_empty() {
             return;
@@ -1561,6 +1602,8 @@ impl VoicePanel {
         // A fixed width wraps the text, an empty height lets the UI fit the window to that text.
         let size = Vec2::new(self.batch_width(), 0.0);
         let mut intents = Vec::new();
+        // The series the user moved this frame: it becomes the current one, where the dictation adds the next texts.
+        let mut moved_series = None;
 
         // The grab aura draws a glowing volume around every window: on a stack of batch windows it hides the text and
         // the buttons, so it is turned off for them. They stay grabbable by their body.
@@ -1573,6 +1616,7 @@ impl VoicePanel {
             // The header of the series is a window of its own, so its grab volume is exactly that bar: dragging it moves
             // the whole series. It shows the number of the series behind a `#`, and its buttons sit on the bar, laid out
             // by hand to keep the number room.
+            let pose_before = group.pose;
             Ui::window(format!("#{}", group.series))
                 .pose(&mut group.pose)
                 .size(size)
@@ -1581,6 +1625,11 @@ impl VoicePanel {
                 .begin();
             let focused = Ui::get_last_element_focused().is_active();
             end_batch_window(focused);
+            // The pose the UI gives back tells whether the user moved the series by its header: it then becomes the
+            // current one, where the dictation adds the next texts.
+            if batch_pose_moved(pose_before, group.pose) {
+                moved_series = Some(group.series);
+            }
 
             let action = self.appearence.scale_size(BATCH_ACTION_SIZE);
             let margin = self.appearence.scale(0.012);
@@ -1693,6 +1742,12 @@ impl VoicePanel {
             }
         }
 
+        // A series the user moved by its header becomes the current one: the dictation adds its next texts there. It
+        // goes last in the list, where `batch_push` appends.
+        if let Some(series) = moved_series {
+            batch_make_current(&mut groups, series);
+        }
+
         self.batch_groups = groups;
         Ui::pop_id();
         Ui::pop_grab_aura();
@@ -1726,8 +1781,8 @@ impl VoicePanel {
         }
     }
 
-    /// Take the chunk `id` out of the series numbered `from`: it opens a series of its own at `pose`, put aside from
-    /// the dictation, and follows the hand.
+    /// Take the chunk `id` out of the series numbered `from`: it opens a series of its own at `pose`, last in the list
+    /// so it is the current one - the dictation adds its next texts there - and follows the hand.
     fn open_series(&mut self, id: u64, from: u64, pose: Pose) {
         if let Some(mut chunk) = batch_remove(&mut self.batch_groups, id) {
             chunk.dragging = true;
@@ -1735,12 +1790,13 @@ impl VoicePanel {
             chunk.from = Some(from);
             let series = self.batch_next_series;
             self.batch_next_series += 1;
-            self.batch_groups.push(BatchGroup { series, pose, chunks: vec![chunk], isolated: true });
+            self.batch_groups.push(BatchGroup { series, pose, chunks: vec![chunk] });
         }
     }
 
     /// Put the chunk `id` back among the series: in the series it was dropped on, at the place it was dropped, or in a
-    /// series of its own when it lands on none.
+    /// series of its own when it lands on none. That series becomes the current one, where the dictation adds the texts
+    /// it commits next.
     fn drop_chunk(&mut self, id: u64, pose: Pose) {
         let Some(mut chunk) = batch_remove(&mut self.batch_groups, id) else {
             return;
@@ -1755,15 +1811,17 @@ impl VoicePanel {
         let skip = chunk.from.take();
         match batch_drop_slot(&self.batch_groups, middle, self.batch_width(), line, gap, skip) {
             Some((series_index, slot)) => {
-                let series = &mut self.batch_groups[series_index];
-                series.chunks.insert(slot, chunk);
-                // It holds more than the window the user had put aside: the dictation can add to it again.
-                series.isolated = false;
+                let series = self.batch_groups[series_index].series;
+                self.batch_groups[series_index].chunks.insert(slot, chunk);
+                // The series the user just dropped the window on is where the next texts go.
+                batch_make_current(&mut self.batch_groups, series);
             }
             None => {
+                // It landed on no series: it opens one of its own at the pose it was dropped at, last in the list, so
+                // it is the current one, and it is the new batch that comes out of the detachment.
                 let series = self.batch_next_series;
                 self.batch_next_series += 1;
-                self.batch_groups.push(BatchGroup { series, pose, chunks: vec![chunk], isolated: true });
+                self.batch_groups.push(BatchGroup { series, pose, chunks: vec![chunk] });
             }
         }
     }
@@ -1840,7 +1898,12 @@ mod panel_tests {
 
     /// A series of the chunks `chunks`, numbered `series`.
     fn group(series: u64, chunks: Vec<BatchChunk>) -> BatchGroup {
-        BatchGroup { series, pose: Pose::IDENTITY, chunks, isolated: false }
+        BatchGroup { series, pose: Pose::IDENTITY, chunks }
+    }
+
+    /// The numbers of the series, in the order of the list: the last one is the current one.
+    fn series_numbers(groups: &[BatchGroup]) -> Vec<u64> {
+        groups.iter().map(|group| group.series).collect()
     }
 
     /// The ids of the chunks of the series `index`.
@@ -1849,30 +1912,51 @@ mod panel_tests {
     }
 
     #[test]
-    fn batch_push_stacks_the_chunks_in_the_last_series() {
+    fn batch_push_stacks_the_chunks_in_the_current_series() {
         let mut groups = Vec::new();
+        // No series yet: the first chunk opens one, where the anchor asks.
         assert!(batch_push(&mut groups, Pose::IDENTITY, 1, chunk(1)));
         assert_eq!(ids(&groups, 0), vec![1]);
-        // The last series takes the new chunks, so no new series is opened.
+        assert_eq!(groups[0].series, 1);
+        // The current series takes the new chunks, so no new series is opened.
         assert!(!batch_push(&mut groups, Pose::IDENTITY, 2, chunk(2)));
         assert_eq!(groups.len(), 1);
         assert_eq!(ids(&groups, 0), vec![1, 2]);
-        assert_eq!(groups[0].series, 1);
     }
 
     #[test]
-    fn batch_push_opens_a_new_series_beside_a_window_put_aside() {
-        let mut groups = vec![BatchGroup { isolated: true, ..group(7, vec![chunk(1)]) }];
-        // The window was put aside by the user: the dictation opens a series of its own, right after it.
-        assert!(batch_push(&mut groups, Pose::IDENTITY, 8, chunk(2)));
-        assert_eq!(groups.len(), 2);
-        assert_eq!(ids(&groups, 0), vec![1]);
-        assert_eq!(ids(&groups, 1), vec![2]);
-        assert_eq!(groups[1].series, 8);
-        assert!(!groups[1].isolated);
-        // And that new series takes the following chunks.
-        assert!(!batch_push(&mut groups, Pose::IDENTITY, 9, chunk(3)));
-        assert_eq!(ids(&groups, 1), vec![2, 3]);
+    fn batch_push_does_not_open_a_series_beside_a_torn_off_window() {
+        // A window torn off the dictation opens the current series: the next text stacks in it, not in a series beside.
+        let mut groups = vec![group(7, vec![chunk(1)])];
+        assert!(!batch_push(&mut groups, Pose::IDENTITY, 8, chunk(2)));
+        assert_eq!(series_numbers(&groups), vec![7]);
+        assert_eq!(ids(&groups, 0), vec![1, 2]);
+    }
+
+    #[test]
+    fn batch_make_current_moves_the_series_last() {
+        let mut groups = vec![group(1, vec![chunk(1)]), group(2, vec![chunk(2)]), group(3, vec![chunk(3)])];
+        // The user moves the first series by its header: it becomes the current one, last in the list.
+        batch_make_current(&mut groups, 1);
+        assert_eq!(series_numbers(&groups), vec![2, 3, 1]);
+        assert_eq!(ids(&groups, 2), vec![1]);
+        // The dictation appends the next text to it.
+        assert!(!batch_push(&mut groups, Pose::IDENTITY, 4, chunk(4)));
+        assert_eq!(ids(&groups, 2), vec![1, 4]);
+        // An unknown series changes nothing.
+        batch_make_current(&mut groups, 42);
+        assert_eq!(series_numbers(&groups), vec![2, 3, 1]);
+    }
+
+    #[test]
+    fn batch_make_current_keeps_the_windows_of_the_series_in_order() {
+        // Dropping a window in a series inserts it at the place it was dropped, and that series becomes the current one,
+        // with its windows untouched.
+        let mut groups = vec![group(1, vec![chunk(1), chunk(2)]), group(2, vec![chunk(3)])];
+        groups[0].chunks.insert(1, chunk(4));
+        batch_make_current(&mut groups, 1);
+        assert_eq!(series_numbers(&groups), vec![2, 1]);
+        assert_eq!(ids(&groups, 1), vec![1, 4, 2]);
     }
 
     #[test]
