@@ -134,8 +134,6 @@ impl Test {
             Test::from_stepper::<browser1::Browser1>("Browser1"),
             #[cfg(target_os = "android")]
             Test::from_stepper::<system_deep_link1::SystemDeepLink1>("SystemDeepLink"),
-            #[cfg(feature = "voice-dictation")]
-            Test::from_stepper::<stereokit_rust::tools::voice_dictation::VoicePanel>("VoicePanel"),
         ];
         Box::new(tests)
     }

@@ -100,6 +100,9 @@ pub fn sk_settings() -> SkSettings {
 }
 
 pub fn launch(mut settings: SkSettings, is_testing: bool, start_test: String) {
+    #[cfg(feature = "voice-dictation")]
+    use stereokit_rust::tools::voice_dictation::{DICTATION_STATE, VOICE_PANEL_ID, VoicePanel};
+
     // Sending formated log to our mutex for the log window.
     let fn_mut = |level: LogLevel, log_text: &str| {
         let items = LOG_LOG.lock().unwrap();
@@ -187,6 +190,16 @@ pub fn launch(mut settings: SkSettings, is_testing: bool, start_test: String) {
     sk.send_event(StepperAction::add_default::<ScreenshotViewer>("Tool_Screenshoot"));
     sk.send_event(StepperAction::add_default::<FlyOver>(FLY_OVER_ID));
 
+    // The voice dictation panel is not one of the demo views: it stands beside them from the start, and the Dictation
+    // button of the control panel brings it back when its own close button hid it. It shares its recording state on its
+    // own id, which is where the control panel listens to show it on that button.
+    #[cfg(feature = "voice-dictation")]
+    {
+        let mut voice_panel = VoicePanel::default();
+        voice_panel.state_event = Some((VOICE_PANEL_ID.into(), DICTATION_STATE.into()));
+        sk.send_event(StepperAction::add(VOICE_PANEL_ID, voice_panel));
+    }
+
     let tests = Test::get_tests();
 
     if !start_test.is_empty() {
@@ -230,7 +243,7 @@ pub fn launch(mut settings: SkSettings, is_testing: bool, start_test: String) {
             }
         }
 
-        control_panel.update();
+        control_panel.update(token);
 
         // In case we close the active_scene we have to free the choice to select an other one
         let mut launch_next = false;

@@ -32,6 +32,11 @@
 //! <https://huggingface.co/kouhxp/sherpa-onnx-streaming-zipformer-fr-kroko> (155 MB encoder, but far better). See the
 //! [sherpa-onnx pre-trained models](https://k2-fsa.github.io/sherpa/onnx/pretrained_models/index.html) for the others.
 //!
+//! [`VoicePanel`] takes the folder of a model from `SHERPA_ONNX_MODEL_DIR`, or from its model folder picker. When
+//! neither gave one, it looks for a [`DEFAULT_MODEL_FOLDER`] (`sherpa_models`) folder in the user's `Documents`, which
+//! is where pushing the model files is the easiest - `adb push <model dir> /storage/self/primary/Documents/sherpa_models`
+//! on Android.
+//!
 //! # Android
 //!
 //! On Android the sherpa-onnx crate links its C API as a shared library: its build script downloads the
@@ -45,8 +50,20 @@
 //!
 //! The module also ships [`VoicePanel`], a ready-to-use stepper window: model folder picker, record/stop, live level,
 //! provisional text and a scrollable log of the committed sentences. It pops up in front of the user, at 60% scale,
-//! closes itself with its close button, and can be resized / zoomed with its scale handle. The `voice1` demo only
-//! registers it.
+//! hides itself with its close button (the stepper stays registered, its batch windows stay on screen), and can be
+//! resized / zoomed with its scale handle. The `voice1` demo only registers it.
+//!
+//! The window delivers the committed texts in two ways ([`DictationMode`]):
+//!
+//! * **Live** - each committed text goes straight to the log of the window, as it comes.
+//! * **Batch** - each committed text opens a *batch* window instead, and the windows stack in *series* beside the
+//!   panel, so a text can be reread, kept apart, and sent once it reads right. A series is headed by a title bar
+//!   (`#N`) that moves the whole series, with `Send` (append the series to the log) and `Clear` (drop it) on its
+//!   right end. Every window fits its text - drawn smaller than the panel's, so more of it fits, the panel's own texts
+//!   using the same size - and closes itself with its own button, standing beside it on the right; grabbing any of them
+//!   tears it off into a series of its own, which follows the hand: dropping it over another series inserts it there,
+//!   where it was dropped. A window put aside that way is left alone by the dictation, which opens the next series
+//!   beside it. The grab aura is off for the series, so the background of a window turns blue while the hand is on it.
 //!
 //! # Example
 //!
@@ -665,9 +682,9 @@ use crate::{
     framework::Appearence,
     maths::{Pose, Vec2, Vec3},
     sprite::Sprite,
-    system::{Align, TextFit},
-    ui::{UiBtnLayout, UiPad, UiScroll},
-    util::Time,
+    system::{Align, Hierarchy, TextFit, TextStyle},
+    ui::{UiBtnLayout, UiMove, UiPad, UiScroll, UiWin},
+    util::{Color128, Time, named_colors},
 };
 #[cfg(not(feature = "no-event-loop"))]
 use crate::{
@@ -687,19 +704,321 @@ const PARTIAL_AREA_HEIGHT: f32 = 0.075;
 #[cfg(not(feature = "no-event-loop"))]
 const PARTIAL_MAX_CHARS: usize = 110;
 
+/// Width of a batch window, in window units (before scaling). Its height follows its text, so the series reflows.
+#[cfg(not(feature = "no-event-loop"))]
+const BATCH_WINDOW_WIDTH: f32 = 0.44;
+
+/// Height given to a batch window the UI has not measured yet, in window units (before scaling), so a brand new
+/// series stacks its windows without waiting a frame.
+#[cfg(not(feature = "no-event-loop"))]
+const BATCH_ESTIMATE_HEIGHT: f32 = 0.16;
+
+/// Vertical gap between the windows of the same batch series, in window units (before scaling).
+#[cfg(not(feature = "no-event-loop"))]
+const BATCH_GAP: f32 = 0.012;
+
+/// Size of the square close button of a batch window, in window units (before scaling).
+#[cfg(not(feature = "no-event-loop"))]
+const BATCH_CLOSE_SIZE: f32 = 0.03;
+
+/// Size of the `Send` and `Clear` buttons that sit on the header of a series, in window units (before scaling).
+#[cfg(not(feature = "no-event-loop"))]
+const BATCH_ACTION_SIZE: Vec2 = Vec2::new(0.08, 0.03);
+
+/// Gap between a batch window and the buttons that stand beside it, in window units (before scaling): they are far
+/// enough from the window's face to be pinched on their own.
+#[cfg(not(feature = "no-event-loop"))]
+const BATCH_CLOSE_GAP: f32 = 0.04;
+
+/// How far the buttons of a series stand in front of its windows, in window units (before scaling). Just enough for the
+/// grab volume of a window not to catch a pinch meant for a button: a button standing out further shifts with the eyes
+/// in a stereo view, which reads as a parallax offset.
+#[cfg(not(feature = "no-event-loop"))]
+const BATCH_CLOSE_FORWARD: f32 = 0.002;
+
+/// Height of the text of a batch window, relative to the text of the window: 40% smaller.
+#[cfg(not(feature = "no-event-loop"))]
+const BATCH_TEXT_SCALE: f32 = 0.6;
+
+/// Id of the [`VoicePanel`] stepper: add it with `StepperAction::add(VOICE_PANEL_ID, panel)`, so the events of the
+/// panel ([`SHOW_PARAM_WINDOW`], [`DICTATION_STATE`]) have a single, known target to be sent to.
+#[cfg(not(feature = "no-event-loop"))]
+pub const VOICE_PANEL_ID: &str = "Tool_VoicePanel";
+
+/// Event key that shows (`"true"`) or hides (`"false"`) the parameter window of a [`VoicePanel`]; any other value
+/// toggles it. The series of batch windows are drawn in both cases, and a running session keeps delivering to them.
+#[cfg(not(feature = "no-event-loop"))]
+pub const SHOW_PARAM_WINDOW: &str = "Tool_ShowParamWindow";
+
+/// Event key a [`VoicePanel`] sends to share its recording state with the app: `"true"` while the session records (or
+/// warms up, the record button then being a *stop* one), `"false"` when it is idle. The value is sent to the stepper of
+/// [`VoicePanel::state_event`] each time it changes, so the app can show that state elsewhere — the *dictation* button
+/// of a [`ControlPanel`](crate::tools::control_panel::ControlPanel) shows the same icon pair.
+#[cfg(not(feature = "no-event-loop"))]
+pub const DICTATION_STATE: &str = "Tool_DictationState";
+
+/// Folder looked up in the user's Documents when no model was given: `Documents/sherpa_models`. Pushing the model
+/// files there is all it takes for a [`VoicePanel`] to find them at start.
+#[cfg(not(feature = "no-event-loop"))]
+pub const DEFAULT_MODEL_FOLDER: &str = "sherpa_models";
+
+/// Tint of the background of a window of a series the user is on. The grab aura is off for the series, so the
+/// background says which window is focused: it multiplies the color of the window's body. It shifts it towards blue
+/// without brightening it much, so the white text of the window stays readable while the hand is on it.
+#[cfg(not(feature = "no-event-loop"))]
+const BATCH_FOCUS_TINT: Color128 = Color128::new(0.9, 1.2, 2.6, 1.0);
+
+/// Distance under which two poses are the same, in meters: the round trip of the pose of a window nobody grabbed is
+/// not perfectly exact.
+#[cfg(not(feature = "no-event-loop"))]
+const BATCH_MOVE_EPSILON: f32 = 0.001;
+
+/// How deep in front of or behind a series a window can be dropped to be inserted into it, in meters.
+#[cfg(not(feature = "no-event-loop"))]
+const BATCH_DROP_DEPTH: f32 = 0.08;
+
+/// Extra room around a series in which a dropped window still inserts into it, in meters.
+#[cfg(not(feature = "no-event-loop"))]
+const BATCH_DROP_MARGIN: f32 = 0.02;
+
+/// Where the committed texts of a dictation go, in [`VoicePanel`].
+#[cfg(not(feature = "no-event-loop"))]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum DictationMode {
+    /// Each committed text goes straight to the log of the window, as it comes.
+    #[default]
+    Live,
+    /// Each committed text opens a *batch* window instead, so the text can be reread, corrected by chunks, and sent
+    /// or dropped once it is right.
+    Batch,
+}
+
+/// One committed text, shown in its own batch window.
+#[cfg(not(feature = "no-event-loop"))]
+#[derive(Debug, Clone, PartialEq)]
+struct BatchChunk {
+    /// Unique id of the chunk: it names the window, and follows the chunk from series to series.
+    id: u64,
+    /// The text to show.
+    text: String,
+    /// Height of the window, in meters, as the UI gave it back on the last frame. The window follows its text, and the
+    /// series stacks the windows with this height.
+    height: f32,
+    /// The user grabbed the window of this chunk, and has not let it go yet.
+    dragging: bool,
+    /// Number of the series this window was torn off, for the duration of that drag: dropping it back on that series
+    /// would undo the gesture, so it is not a target until the window is let go.
+    from: Option<u64>,
+}
+
+/// Batch windows standing in the same series, under a header that moves them all.
+#[cfg(not(feature = "no-event-loop"))]
+#[derive(Debug, Clone, PartialEq)]
+struct BatchGroup {
+    /// Number of the series: it names its header, and is unique for the whole session.
+    series: u64,
+    /// Pose of the bottom centre of the header: the header stands above the first window, and dragging it moves the
+    /// whole series.
+    pose: Pose,
+    /// The chunks, from the top window to the bottom one.
+    chunks: Vec<BatchChunk>,
+    /// The user put this window aside on its own: the dictation does not add to it, a new series opens instead.
+    isolated: bool,
+}
+
+/// What the user asked of the batch windows, applied once the frame is drawn.
+#[cfg(not(feature = "no-event-loop"))]
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum BatchIntent {
+    /// Close the window of the chunk.
+    Close(u64),
+    /// Add the whole series holding the chunk to the log, and drop it.
+    Send(u64),
+    /// Drop the whole series holding the chunk, without sending it.
+    Clear(u64),
+    /// Take the chunk out of the series numbered `from`: it opens a series of its own, at that pose.
+    Detach { id: u64, from: u64, pose: Pose },
+    /// Put the chunk back among the series, at the pose it was dropped at.
+    Drop { id: u64, pose: Pose },
+}
+
+/// Height of a series, in meters, from the bottom of its header to the bottom of its last window: the gap under the
+/// header, its windows, and the gaps between them.
+#[cfg(not(feature = "no-event-loop"))]
+fn batch_group_height(chunks: &[BatchChunk], gap: f32) -> f32 {
+    chunks.iter().map(|chunk| chunk.height).sum::<f32>() + chunks.len() as f32 * gap
+}
+
+/// Pose of the window of the chunk at `index` of a series standing at `pose`: the windows stack downwards, in the frame
+/// of the series, each one under the height the UI gave it, the first one a `gap` under the header. `gap` is the scaled
+/// gap between two windows.
+#[cfg(not(feature = "no-event-loop"))]
+fn batch_chunk_pose(pose: Pose, chunks: &[BatchChunk], gap: f32, index: usize) -> Pose {
+    let offset = (index as f32 + 1.0) * gap + chunks[..index].iter().map(|chunk| chunk.height).sum::<f32>();
+    Pose { position: pose.position - (pose.orientation * Vec3::UP) * offset, orientation: pose.orientation }
+}
+
+/// Did the window move (or turn) since the pose we gave it?
+#[cfg(not(feature = "no-event-loop"))]
+fn batch_pose_moved(expected: Pose, actual: Pose) -> bool {
+    // A quaternion and its opposite describe the same rotation, and the UI does not promise which one it gives back:
+    // the axes are compared, not the components.
+    let turned = |axis: Vec3| (expected.orientation * axis - actual.orientation * axis).length() > BATCH_MOVE_EPSILON;
+    (actual.position - expected.position).length() > BATCH_MOVE_EPSILON || turned(Vec3::UP) || turned(Vec3::RIGHT)
+}
+
+/// Append `chunk` at the bottom of the last series, or open a new series at `anchor` when there is none, or when the
+/// last series is a window the user put aside. Returns `true` when a series was opened.
+#[cfg(not(feature = "no-event-loop"))]
+fn batch_push(groups: &mut Vec<BatchGroup>, anchor: Pose, series: u64, chunk: BatchChunk) -> bool {
+    match groups.last_mut() {
+        Some(group) if !group.isolated => {
+            group.chunks.push(chunk);
+            false
+        }
+        _ => {
+            groups.push(BatchGroup { series, pose: anchor, chunks: vec![chunk], isolated: false });
+            true
+        }
+    }
+}
+
+/// Remove the chunk `id` from its series, and the series itself when it was its last chunk.
+#[cfg(not(feature = "no-event-loop"))]
+fn batch_remove(groups: &mut Vec<BatchGroup>, id: u64) -> Option<BatchChunk> {
+    for group_index in 0..groups.len() {
+        if let Some(chunk_index) = groups[group_index].chunks.iter().position(|chunk| chunk.id == id) {
+            let chunk = groups[group_index].chunks.remove(chunk_index);
+            if groups[group_index].chunks.is_empty() {
+                groups.remove(group_index);
+            }
+            return Some(chunk);
+        }
+    }
+    None
+}
+
+/// Remove the whole series holding the chunk `id`, and give it back.
+#[cfg(not(feature = "no-event-loop"))]
+fn batch_take_group(groups: &mut Vec<BatchGroup>, id: u64) -> Option<BatchGroup> {
+    let group_index = groups.iter().position(|group| group.chunks.iter().any(|chunk| chunk.id == id))?;
+    Some(groups.remove(group_index))
+}
+
+/// Where a window dropped at `point` (the centre of that window, in world space) inserts itself: the series it lands
+/// on, and the place it takes in it. `None` when it lands on no series. `width` is the scaled width of a window, `line`
+/// the height of the title bar of a series, and `gap` the scaled gap between two windows; the heights of the windows and
+/// of the body of the header are the ones the UI measured. The series numbered `skip` is left out, which is the one a
+/// window was just torn off.
+#[cfg(not(feature = "no-event-loop"))]
+fn batch_drop_slot(
+    groups: &[BatchGroup],
+    point: Vec3,
+    width: f32,
+    line: f32,
+    gap: f32,
+    skip: Option<u64>,
+) -> Option<(usize, usize)> {
+    for (group_index, group) in groups.iter().enumerate() {
+        if skip == Some(group.series) {
+            continue;
+        }
+        let in_series = point - group.pose.position;
+        let across = Vec3::dot(in_series, group.pose.orientation * Vec3::RIGHT);
+        let down = Vec3::dot(in_series, group.pose.orientation * Vec3::UP);
+        let depth = Vec3::dot(in_series, group.pose.orientation * Vec3::FORWARD);
+        let height = batch_group_height(&group.chunks, gap);
+        if across.abs() <= width / 2.0 + BATCH_DROP_MARGIN
+            && depth.abs() <= BATCH_DROP_DEPTH
+            && down <= line + BATCH_DROP_MARGIN
+            && down >= -height - BATCH_DROP_MARGIN
+        {
+            // The place it takes: the number of windows whose middle stands above the drop point.
+            let mut slot = 0;
+            let mut top = gap;
+            for chunk in &group.chunks {
+                if down >= -(top + chunk.height / 2.0) {
+                    break;
+                }
+                top += chunk.height + gap;
+                slot += 1;
+            }
+            return Some((group_index, slot));
+        }
+    }
+    None
+}
+
 /// A ready-to-use dictation window: model folder picker, record/stop, live level, provisional text and a
 /// scrollable log of the committed sentences.
 ///
-/// It appears in front of the user ([`Ui::popup_pose`]), can be moved, resized and zoomed with its scale handle, and
-/// closes itself with its close button ([`Sprite::close`]).
+/// It appears in front of the user ([`Ui::popup_pose`]), can be moved, resized and zoomed with its scale handle — the
+/// icon of the tool (`icons/voice_dictation.png`) marks its knob — and hides itself with its close button
+/// ([`Sprite::close`]) without removing the stepper: the series of batch windows stay on screen, and the
+/// [`SHOW_PARAM_WINDOW`] event shows the window again.
+///
+/// ### Live and batch modes
+/// [`VoicePanel::mode`] chooses where the committed texts go:
+/// * [`DictationMode::Live`] - each committed text is appended to the log of the window, as it comes.
+/// * [`DictationMode::Batch`] - each committed text opens a *batch* window instead, stacked in *series*: a series is
+///   headed by a title bar of its own (numbered `#N`) that moves it as a whole, with **Send** (which appends the
+///   series to the log) and **Clear** (which drops it) on its right end. Every window fits its text - drawn 40% smaller
+///   than the text of the panel, which uses the same size - with its own text area and its close button outside, on its
+///   right. Grabbing any window tears it off: it opens a series of its own, follows the hand, and dropping it over
+///   another series inserts it there, where it was dropped (the series it comes from is not a target for that drag, so
+///   the tear holds). A window put aside is left alone by the dictation, which opens the next series beside it. As the
+///   grab aura is off for the series, the background of a window turns blue while the hand is on it.
+///
+/// A series is placed beside the window when it opens, and stays there when the mode goes back to
+/// [`DictationMode::Live`]: the pending texts are never lost.
+///
+/// The parameter window itself can be hidden ([`VoicePanel::show_param_window`], or the [`SHOW_PARAM_WINDOW`] event):
+/// the series stay on screen, and a running session keeps delivering to them.
 ///
 /// ### Fields that can be changed before initialization:
 /// * `appearence` - The look of the window (text styles, size, scale handle...), at 60% scale by default. See
 ///   [`Appearence`] and [`Appearence::set_ui_scale`].
+/// * `mode` - Where the committed texts go, [`DictationMode::Live`] by default.
+/// * `show_param_window` - Whether the parameter window is drawn, `true` by default. The series of batch windows are
+///   drawn either way, and a running session keeps delivering to them.
+/// * `state_event` - An optional `(stepper id, event key)` event to send the recording state to, `None` by default.
+///   Give [`VOICE_PANEL_ID`] as the target and [`DICTATION_STATE`] as the key: the value is `"true"` while the session
+///   records (or warms up), `"false"` when it is idle.
 /// * `window_pose` - Where the window stands. Default is [`Pose::IDENTITY`], replaced by [`Ui::popup_pose`] at start.
 ///
 /// ### Events this stepper is listening to:
-/// None, the window closes itself with its close button.
+/// * [`SHOW_PARAM_WINDOW`] - Shows the parameter window (`"true"`) or hides it (`"false"`); any other value toggles
+///   it. The batch series stay on screen, and a running session keeps feeding them. The window hides itself with its
+///   close button, without removing the stepper, and this event shows it again.
+///
+/// ### Events this stepper sends:
+/// * [`DICTATION_STATE`] - The recording state of the session, sent on the stepper of [`VoicePanel::state_event`] each
+///   time it changes: `"true"` while the session records (or warms up), `"false"` when it is idle. Send it on
+///   [`VOICE_PANEL_ID`] (the panel's own id), which is where the
+///   [`ControlPanel`](crate::tools::control_panel::ControlPanel) of this crate listens to show the same *record* /
+///   *stop* icon on its dictation button.
+///
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!(); // !!!! Get a proper way to initialize sk !!!!
+/// use stereokit_rust::tools::voice_dictation::{DictationMode, VOICE_PANEL_ID, VoicePanel};
+///
+/// let mut panel = VoicePanel::default();
+/// panel.show_param_window = true;
+/// panel.mode = DictationMode::Batch;
+/// // Texts queued before the window is on screen open their series once it has a place.
+/// panel.add_batch_text("Hello, this is the first recognized text.");
+/// panel.add_batch_text("And a second one, a bit longer, to see the window fit its own text.");
+/// sk.send_event(StepperAction::add(VOICE_PANEL_ID, panel));
+///
+/// filename_scr = "screenshots/voice_panel.jpeg";
+/// width_scr = 400; height_scr = 400; fov_scr = 60.0;
+/// from_scr = maths::Vec3::new(0.17, 0.0, 0.30); at_scr = maths::Vec3::new(0.17, 0.0, -0.45);
+/// test_screenshot!( // !!!! Get a proper main loop !!!!
+/// );
+/// # sk::Sk::shutdown();
+/// ```
+/// <img src="https://raw.githubusercontent.com/mvvvv/StereoKit-rust/refs/heads/master/screenshots/voice_panel.jpeg" alt="screenshot" width="200">
 #[cfg(not(feature = "no-event-loop"))]
 #[derive(IStepper)]
 pub struct VoicePanel {
@@ -713,13 +1032,45 @@ pub struct VoicePanel {
     pub window_pose: Pose,
     /// Directory of the loaded model, `None` until one is loaded.
     pub model_dir: Option<PathBuf>,
+    /// Where the committed texts go: straight to the log, or into batch windows. See [`DictationMode`].
+    pub mode: DictationMode,
+    /// Draw the parameter window (model folder, record controls, mode, texts)? Default is `true`.
+    ///
+    /// The series of batch windows are drawn **whether it is shown or not**: hiding the parameters leaves the user's
+    /// texts on screen, and a running session keeps delivering to them. Set it directly, or with the
+    /// [`SHOW_PARAM_WINDOW`] event.
+    pub show_param_window: bool,
+    /// Optional event sent to share the recording state, as `(target stepper id, event key)` — give [`VOICE_PANEL_ID`]
+    /// as the target (the panel's own id) and [`DICTATION_STATE`] as the key: the value is `"true"` while the session
+    /// records (or warms up, the record button then being a *stop* one), `"false"` when it is idle, and it is sent each
+    /// time the state changes. The app can then show that state elsewhere: the
+    /// [`ControlPanel`](crate::tools::control_panel::ControlPanel) of this crate listens to it and carries the same icon
+    /// pair on its **Dictation** button. Default is `None`.
+    pub state_event: Option<(StepperId, String)>,
 
     /// The dictation session, `None` until a model is loaded.
     dictation: Option<VoiceDictation>,
+    /// The recording state last shared with the app through [`VoicePanel::state_event`], so the event is only sent
+    /// when it changes.
+    shared_recording: bool,
     /// The committed sentences of the dictation, one per CRLF.
     dictation_log: String,
     /// Scroll state of `dictation_log`, driven by the scrollbar of its text area.
     log_scroll: Vec2,
+    /// The series of batch windows, the last one receiving the new texts.
+    batch_groups: Vec<BatchGroup>,
+    /// Texts given to [`VoicePanel::add_batch_text`] before the window started, waiting for a series to open at its
+    /// place.
+    batch_pending: Vec<String>,
+    /// Id given to the next batch chunk.
+    batch_next_id: u64,
+    /// Number given to the next series of batch windows, which names its header.
+    batch_next_series: u64,
+    /// Text style of the batch windows, [40% smaller](BATCH_TEXT_SCALE) than the text of the window. The text style of
+    /// the UI is not scaled by the appearence, so this one is not either.
+    batch_style: TextStyle,
+    /// Height of `batch_style`, in meters: the text of the UI, 40% smaller.
+    batch_text_height: f32,
     /// The model status: the chosen folder, or what is missing.
     status: String,
     /// Elapsed time in seconds, for the animated ellipsis of the microphone warm-up.
@@ -737,20 +1088,36 @@ unsafe impl Send for VoicePanel {}
 impl Default for VoicePanel {
     fn default() -> Self {
         // 60% of the base look by default, and a window the scale handle can resize and zoom.
-        let mut appearence = Appearence::new(&Font::default(), 0.024);
-        appearence.window_size = Vec2::new(0.62, 0.50);
-        appearence.min_window_size = Vec2::new(0.40, 0.34);
+        let font = Font::default();
+        let mut appearence = Appearence::new(&font, 0.024);
+        appearence.window_size = Vec2::new(0.62, 0.0);
+        appearence.min_window_size = Vec2::new(0.50, 0.0);
+        appearence.scale_handle_default_offset = Vec3::new(0.33, 0.04, 0.006);
+        appearence.handle_sprite = Sprite::from_file("icons/voice_dictation.png", None, None).ok();
         appearence.set_ui_scale(0.6);
+        // The text of the batch windows is drawn smaller than the one of the window. The text style of the UI is not
+        // scaled by the appearence, so neither is this one.
+        let batch_text_height = Ui::get_text_style().get_layout_height() * BATCH_TEXT_SCALE;
         Self {
-            id: "VoicePanel".to_string(),
+            id: VOICE_PANEL_ID.to_string(),
             sk_info: None,
             shutdown_completed: false,
             appearence,
             window_pose: Pose::IDENTITY,
             model_dir: None,
+            mode: DictationMode::Live,
+            show_param_window: false,
+            state_event: None,
             dictation: None,
+            shared_recording: false,
             dictation_log: String::new(),
             log_scroll: Vec2::ZERO,
+            batch_groups: Vec::new(),
+            batch_pending: Vec::new(),
+            batch_next_id: 1,
+            batch_next_series: 1,
+            batch_style: TextStyle::from_font(&font, batch_text_height, named_colors::WHITE),
+            batch_text_height,
             status: "No model: choose the model folder (encoder/decoder/joiner .onnx + tokens.txt).".to_string(),
             anim_time: 0.0,
             close_sprite: Sprite::close(),
@@ -767,6 +1134,11 @@ impl VoicePanel {
         self.window_pose = Ui::popup_pose(Vec3::new(0.0, 0.0, 0.10));
         self.appearence.start();
 
+        // The texts given before the window was on screen can open their series now that it has a place.
+        for text in std::mem::take(&mut self.batch_pending) {
+            self.push_batch(text);
+        }
+
         #[cfg(target_os = "android")]
         if Permission::get_state(PermissionType::Microphone) == PermissionState::Capable {
             Permission::request(&[PermissionType::Microphone]);
@@ -776,13 +1148,28 @@ impl VoicePanel {
         if let Some(dir) = std::env::var_os("SHERPA_ONNX_MODEL_DIR") {
             self.load_model(Path::new(&dir));
         }
+
+        // No model given: `Documents/sherpa_models` is the conventional place to push one to, so it is tried too.
+        if self.model_dir.is_none()
+            && let Some(documents) = BrowseLocation::Documents.get_path(&self.sk_info)
+        {
+            let dir = documents.join(DEFAULT_MODEL_FOLDER);
+            if dir.is_dir() {
+                self.load_model(&dir);
+            }
+        }
         true
     }
 
-    /// Called by the derive macro during `IStepper::step` to handle events: the folder chosen in the file browser.
+    /// Called by the derive macro during `IStepper::step` to handle events: the folder chosen in the file browser, and
+    /// the visibility of the parameter window.
     fn check_event(&mut self, id: &StepperId, key: &str, value: &str) {
         if id != &self.id {
             return;
+        }
+        if key.eq(SHOW_PARAM_WINDOW) {
+            // "true" or "false" sets it, anything else toggles it.
+            self.show_param_window = value.parse().unwrap_or(!self.show_param_window);
         }
         if key == FILE_BROWSER_B_SELECT_DIR
             && let Some(dir) = FileBrowserB::get_selected_paths(value).first()
@@ -797,20 +1184,84 @@ impl VoicePanel {
 
         let previous_settings = Ui::get_settings();
         Ui::settings(self.appearence.get_ui_settings_scaled());
+        // The texts of the window and of the batch windows share the smaller style. The text style of the UI is not
+        // scaled by the appearence, so neither is this one.
+        self.batch_style.layout_height(self.batch_text_height);
 
+        // The session runs whether the parameter window is on screen or not: the texts it commits are the work of the
+        // user, and the series that show them are always drawn.
+        self.update_session();
+
+        if self.show_param_window {
+            self.draw_param_window();
+        }
+
+        // The series live outside the window of the panel, and outlive it.
+        self.draw_batch();
+
+        Ui::settings(previous_settings);
+
+        if self.show_param_window {
+            // Grab-able knob beside the window: resizes / zooms it, exactly like on the file browser.
+            self.appearence.scale_handle(&self.window_pose, "voice_panel_scale_handle");
+        }
+    }
+
+    /// Move the session forward, and give each committed text to the log or to a batch window.
+    ///
+    /// It runs even when the parameter window is hidden, so a session started before hiding it keeps delivering its
+    /// texts to the series, which stay on screen. The recording state is also shared through
+    /// [`VoicePanel::state_event`] there, so the app shows it even while the window is hidden.
+    fn update_session(&mut self) {
+        if let Some(dictation) = &mut self.dictation {
+            dictation.update();
+        }
+        let mut finals = Vec::new();
+        if let Some(dictation) = &mut self.dictation {
+            while let Some(sentence) = dictation.take_final() {
+                finals.push(sentence);
+            }
+        }
+        for sentence in finals {
+            match self.mode {
+                DictationMode::Live => self.push_log(&sentence),
+                DictationMode::Batch => self.push_batch(sentence),
+            }
+        }
+
+        // The app may show the recording state elsewhere (the dictation button of its control panel, for instance):
+        // it is shared each time it changes. Warming up counts as recording, since the button then is a *stop* one.
+        let recording = self
+            .dictation
+            .as_ref()
+            .map(|dictation| dictation.is_starting() || dictation.is_recording())
+            .unwrap_or(false);
+        if recording != self.shared_recording {
+            self.shared_recording = recording;
+            if let Some((target, key)) = &self.state_event {
+                let value = if recording { "true" } else { "false" };
+                SkInfo::send_event(&self.sk_info, StepperAction::event(target.as_str(), key.as_str(), value));
+            }
+        }
+    }
+
+    /// Draw the parameter window: model folder, record controls, mode, provisional text and log.
+    fn draw_param_window(&mut self) {
         Ui::window("Voice dictation")
             .pose(&mut self.window_pose)
             .size(self.appearence.scaled_window_size())
             .begin();
 
-        // Header row: the close button, the model folder picker, the status, then the record controls.
+        // Header row: the close button, the model folder picker and the status.
         if Ui::button("close")
             .image(&self.close_sprite)
             .size(Vec2::new(self.appearence.scale(0.03), self.appearence.scale(0.03)))
             .image_layout(UiBtnLayout::CenterNoText)
             .press()
         {
-            SkInfo::send_event(&self.sk_info, StepperAction::remove(self.id.clone()));
+            // The close button only hides the window, it does not remove the stepper: the series of batch windows stay
+            // on screen, and a running session keeps delivering to them. The `SHOW_PARAM_WINDOW` event shows it again.
+            self.show_param_window = false;
         }
         Ui::same_line();
 
@@ -823,12 +1274,15 @@ impl VoicePanel {
         Ui::same_line();
         Ui::text(&self.status).fit(TextFit::Exact).draw();
 
+        // The recording controls take a line of their own: the header line is already full once the status is on it.
+        let mut after_controls = false;
         if let Some(dictation) = &mut self.dictation {
-            dictation.update();
             let running = dictation.is_running();
             let starting = dictation.is_starting();
             let recording = dictation.is_recording();
-            // While the session warms up, the button cancels it; once recording, it stops it.
+            // While the session warms up, the button cancels it; once recording, it stops it. The recipe is the one
+            // of the REC button of the mixer demo: the built-in toggle icons, the label, and a tint that is green
+            // when the session is idle and red while it records. The panel around the button gives it some relief.
             let label = if starting {
                 "Starting..."
             } else if recording {
@@ -836,22 +1290,36 @@ impl VoicePanel {
             } else {
                 "Record"
             };
-            Ui::same_line();
-            if Ui::button(label).size(Vec2::new(self.appearence.scale(0.10), self.appearence.scale(0.03))).press() {
+            let icon = if starting || recording { Sprite::toggle_on() } else { Sprite::toggle_off() };
+            Ui::panel_begin(Some(UiPad::Inside));
+            if starting || recording {
+                Ui::push_tint(Color128::from(named_colors::RED).to_gamma());
+            } else {
+                Ui::push_tint(Color128::from(named_colors::GREEN).to_gamma());
+            }
+            if Ui::button(label)
+                .size(Vec2::new(self.appearence.scale(0.13), self.appearence.scale(0.03)))
+                .image(&icon)
+                .image_layout(UiBtnLayout::Left)
+                .press()
+            {
                 if running {
                     dictation.stop();
                 } else {
                     dictation.start();
                 }
             }
+            Ui::pop_tint();
             Ui::same_line();
-            if Ui::button("Clear")
+            if Ui::button("Clear Log")
                 .size(Vec2::new(self.appearence.scale(0.07), self.appearence.scale(0.03)))
                 .press()
             {
                 self.dictation_log.clear();
                 self.log_scroll = Vec2::ZERO;
             }
+            Ui::panel_end();
+
             Ui::same_line();
             // The dots follow the microphone level, or the waiting time while the microphone warms up. They live in a
             // fixed-size box so the controls around them never move.
@@ -867,40 +1335,62 @@ impl VoicePanel {
                 .use_padding(false)
                 .text_align(Align::CenterLeft)
                 .draw();
+            after_controls = true;
         }
-        Ui::next_line();
+
+        // Where the committed texts go: left of the recording controls, in a frame of its own so the pair reads as one
+        // setting. The radios carry their sprites, so the active one shows.
+        if after_controls {
+            Ui::same_line();
+        }
+        Ui::panel_begin(Some(UiPad::Inside));
+        if Ui::radio("Live", self.mode == DictationMode::Live)
+            .images(Sprite::radio_off(), Sprite::radio_on())
+            .size(Vec2::new(self.appearence.scale(0.09), self.appearence.scale(0.03)))
+            .press()
+        {
+            self.mode = DictationMode::Live;
+        }
+        Ui::same_line();
+        if Ui::radio("Batch", self.mode == DictationMode::Batch)
+            .images(Sprite::radio_off(), Sprite::radio_on())
+            .size(Vec2::new(self.appearence.scale(0.10), self.appearence.scale(0.03)))
+            .press()
+        {
+            self.mode = DictationMode::Batch;
+        }
+        Ui::panel_end();
 
         // Provisional text of the current utterance, in its own frame like the log below. It keeps the text style's own
         // size: `TextFit::Exact` must be avoided here, since it scales the whole utterance to fit a single line, so a
         // partial grows smaller as it grows longer (long partials, as the streaming models of the Android devices
         // produce, end up unreadable). `Wrap` keeps every word at the style size, `Clip` stops it from spilling out of
         // its box, and only the tail of a long utterance is shown: the newest words are the ones worth reading.
+        // The texts of the window use the smaller style of the batch windows, so more of them fits.
         let partial = self.dictation.as_ref().map(|dictation| dictation.partial()).unwrap_or_default();
-        Ui::panel_begin(Some(UiPad::Inside));
+        Ui::panel_begin(Some(UiPad::Outside));
+        Ui::push_text_style(self.batch_style);
         Ui::text(partial_tail(partial, PARTIAL_MAX_CHARS))
             .size(Vec2::new(0.0, self.appearence.scale(PARTIAL_AREA_HEIGHT)))
             .fit(TextFit::Wrap | TextFit::Clip)
             .draw();
+        Ui::pop_text_style();
         Ui::panel_end();
 
-        // Each flush of the dictation becomes one more line of this text area, separated by CRLF.
-        if let Some(dictation) = &mut self.dictation {
-            while let Some(sentence) = dictation.take_final() {
-                if !self.dictation_log.is_empty() {
-                    self.dictation_log.push_str("\r\n");
-                }
-                self.dictation_log.push_str(&sentence);
-            }
-        }
+        Ui::hseparator();
+
         // `TextFit::Exact` would scale the whole log into the box, leaving nothing to scroll, so the log uses `Wrap`:
         // long lines wrap, and the vertical scrollbar appears as soon as the lines overflow. The panel gives the
-        // committed text its own frame, so it stands out from the rest of the window.
-        Ui::panel_begin(Some(UiPad::Inside));
+        // committed text its own frame, so it stands out from the rest of the window, and it is drawn in the smaller
+        // style of the batch windows, so more lines fit.
+        Ui::panel_begin(Some(UiPad::Outside));
+        Ui::push_text_style(self.batch_style);
         Ui::text(&self.dictation_log)
             .scroll(&mut self.log_scroll, UiScroll::Vertical)
-            .size(Vec2::new(0.0, self.appearence.scale(0.15)))
+            .size(Vec2::new(0.0, self.appearence.scale(0.35)))
             .fit(TextFit::Wrap)
             .draw();
+        Ui::pop_text_style();
         Ui::panel_end();
 
         if let Some(error) = self.dictation.as_ref().and_then(|dictation| dictation.error()) {
@@ -911,10 +1401,6 @@ impl VoicePanel {
         }
 
         Ui::window_end();
-        Ui::settings(previous_settings);
-
-        // Grab-able knob beside the window: resizes / zooms it, exactly like on the file browser.
-        self.appearence.scale_handle(&self.window_pose, "voice_panel_scale_handle");
     }
 
     /// Called by the derive macro during `IStepper::shutdown`.
@@ -924,10 +1410,7 @@ impl VoicePanel {
         self.shutdown_completed = true;
         self.shutdown_completed
     }
-}
 
-#[cfg(not(feature = "no-event-loop"))]
-impl VoicePanel {
     /// Load the streaming model found in `dir`, replacing the current one. The running session is stopped first, and
     /// the status line explains what is missing when `dir` does not hold a complete model.
     fn load_model(&mut self, dir: &Path) {
@@ -952,27 +1435,353 @@ impl VoicePanel {
         }
     }
 
-    /// Launch a [`FileBrowserB`] stepper in directory mode. Since its caller id is this stepper id, the selection comes
-    /// back as a [`FILE_BROWSER_B_SELECT_DIR`] event in [`VoicePanel::check_event`].
+    /// Launch a [`FileBrowserB`] stepper in directory mode, opened on the folder of the model in use (or the platform
+    /// documents folder when there is none). Since its caller id is this stepper id, the selection comes back as a
+    /// [`FILE_BROWSER_B_SELECT_DIR`] event in [`VoicePanel::check_event`].
     fn spawn_model_browser(&mut self) {
         self.browser_counter = (self.browser_counter + 1) % 1000;
         let mut file_browser = FileBrowserB::default();
         file_browser.picker_mode = PickerMode::SelectDirectory;
         // The caller id MUST match this stepper id so we receive the selection back.
         file_browser.caller = self.id.clone();
-        file_browser.dir = BrowseLocation::Documents
-            .get_path(&self.sk_info)
+        // The folder of the model in use is where the user was last time, so the browser opens there.
+        file_browser.dir = self
+            .model_dir
+            .clone()
+            .or_else(|| BrowseLocation::Documents.get_path(&self.sk_info))
             .or_else(|| std::env::current_dir().ok())
             .unwrap_or_else(|| PathBuf::from("/"));
         file_browser.root_dir =
             file_browser.dir.parent().map(PathBuf::from).unwrap_or_else(|| file_browser.dir.clone());
-        file_browser.appearence.window_size = Vec2 { x: 0.50, y: 0.6 };
+        // Shorter than the browser default, with the floor of the resize handle lowered as well so that the window is
+        // not lifted back to the default height at start.
+        file_browser.appearence.window_size = Vec2 { x: 0.50, y: 0.42 };
+        file_browser.appearence.min_window_size.y = 0.30;
         file_browser.appearence.handle_sprite = Sprite::from_file("icons/zoom.png", None, None).ok();
         file_browser.appearence.set_ui_scale(0.6);
         SkInfo::send_event(
             &self.sk_info,
             StepperAction::add(format!("{}_{}", FILE_BROWSER_ID_PREFIX, self.browser_counter), file_browser),
         );
+    }
+
+    /// Scaled width of a batch window: its height follows its text.
+    fn batch_width(&self) -> f32 {
+        self.appearence.scale(BATCH_WINDOW_WIDTH)
+    }
+
+    /// Scaled distance between the right edge of a batch window and the left edge of the next series: the close button
+    /// of the windows stands in between.
+    fn batch_side_room(&self) -> f32 {
+        self.appearence.scale(BATCH_CLOSE_GAP + BATCH_CLOSE_SIZE + BATCH_GAP)
+    }
+
+    /// Where a new series of batch windows opens: beside the window of the panel, on its left, in the frame of that
+    /// window, so the series faces the user like the panel does.
+    fn batch_anchor(&self) -> Pose {
+        let offset = self.appearence.scaled_window_size().x / 2.0
+            + self.batch_width() / 2.0
+            + self.batch_side_room()
+            + self.appearence.scale(0.02);
+        Pose {
+            position: self.window_pose.position - (self.window_pose.orientation * Vec3::RIGHT) * offset,
+            orientation: self.window_pose.orientation,
+        }
+    }
+
+    /// Where a new series opens: beside the last series, on its left, in the frame of that series, so the series line
+    /// up, with the room of the close buttons in between. The very first one opens beside the panel.
+    fn batch_next_anchor(&self) -> Pose {
+        let Some(last) = self.batch_groups.last() else {
+            return self.batch_anchor();
+        };
+        let offset = self.batch_width() + self.batch_side_room();
+        Pose {
+            position: last.pose.position - (last.pose.orientation * Vec3::RIGHT) * offset,
+            orientation: last.pose.orientation,
+        }
+    }
+
+    /// Add `text` as a new batch window, at the bottom of the last series - or in a new series, when there is no series
+    /// yet, or when the last one is a window the user put aside.
+    ///
+    /// It is what the dictation does with each committed text in [`DictationMode::Batch`]; calling it directly lets an
+    /// application hand over texts of its own. The windows are drawn in both modes, so a text can be queued before the
+    /// user switches to [`DictationMode::Batch`]. Texts added before the window started are kept, and placed once it is
+    /// on screen.
+    pub fn add_batch_text(&mut self, text: impl Into<String>) {
+        let text = text.into();
+        if self.sk_info.is_none() {
+            // Not started yet: the window has no place on screen, so the text waits for the series to open.
+            self.batch_pending.push(text);
+        } else {
+            self.push_batch(text);
+        }
+    }
+
+    /// Append `text` to the log of the committed sentences, as a new line.
+    fn push_log(&mut self, text: &str) {
+        if !self.dictation_log.is_empty() {
+            self.dictation_log.push_str("\r\n");
+        }
+        self.dictation_log.push_str(text);
+    }
+
+    /// Add `text` as a new batch window, at the bottom of the last series - or in a new series, when there is no series
+    /// yet, or when the last one is a window the user put aside.
+    fn push_batch(&mut self, text: String) {
+        let chunk = BatchChunk {
+            id: self.batch_next_id,
+            text,
+            // The UI measures the height of the window on its first frame: until then, the series uses this estimate.
+            height: self.appearence.scale(BATCH_ESTIMATE_HEIGHT),
+            dragging: false,
+            from: None,
+        };
+        self.batch_next_id += 1;
+        let anchor = self.batch_next_anchor();
+        if batch_push(&mut self.batch_groups, anchor, self.batch_next_series, chunk) {
+            self.batch_next_series += 1;
+        }
+    }
+
+    /// Draw the series of batch windows, and apply what the user asks of them.
+    ///
+    /// Each series is drawn as its header bar, which stands alone so grabbing it moves the whole series, then one window
+    /// per chunk. Grabbing any window tears it off: it opens a series of its own that follows the hand, and joins the
+    /// series it is dropped on, unless that is the series it comes from. A series of a single window is moved by its
+    /// window, header included.
+    fn draw_batch(&mut self) {
+        if self.batch_groups.is_empty() {
+            return;
+        }
+        // Drawing needs `&mut self` for the sprites and the text styles: the series leave the tool meanwhile.
+        let mut groups = std::mem::take(&mut self.batch_groups);
+        let gap = self.appearence.scale(BATCH_GAP);
+        // A fixed width wraps the text, an empty height lets the UI fit the window to that text.
+        let size = Vec2::new(self.batch_width(), 0.0);
+        let mut intents = Vec::new();
+
+        // The grab aura draws a glowing volume around every window: on a stack of batch windows it hides the text and
+        // the buttons, so it is turned off for them. They stay grabbable by their body.
+        Ui::push_grab_aura(false);
+        // Every id of the series hangs under this one, so their short titles ("1", "2"…) can not collide with the
+        // windows of the application.
+        Ui::push_id("voice_dictation_batch");
+
+        for group in groups.iter_mut() {
+            // The header of the series is a window of its own, so its grab volume is exactly that bar: dragging it moves
+            // the whole series. It shows the number of the series behind a `#`, and its buttons sit on the bar, laid out
+            // by hand to keep the number room.
+            Ui::window(format!("#{}", group.series))
+                .pose(&mut group.pose)
+                .size(size)
+                .window_type(UiWin::Head)
+                .move_type(UiMove::FaceUser)
+                .begin();
+            let focused = Ui::get_last_element_focused().is_active();
+            end_batch_window(focused);
+
+            let action = self.appearence.scale_size(BATCH_ACTION_SIZE);
+            let margin = self.appearence.scale(0.012);
+            let forward = -self.appearence.scale(BATCH_CLOSE_FORWARD);
+            // The buttons are centred on the height of the bar, at the right end of it, and stand in front of the
+            // header so a pinch on them is not caught by its grab volume. A UI element hangs under its top left corner:
+            // the top of the button is half a button above the middle of the bar.
+            let y = (Ui::get_line_height() + action.y) / 2.0;
+            let clear_x = size.x / 2.0 - margin - action.x;
+            // The buttons keep their readable text, and the series id keeps them apart from the other series.
+            Ui::push_id(format!("series_{}", group.series));
+            Hierarchy::push(group.pose, None);
+            if Ui::button("Send").at(Vec3::new(clear_x - margin - action.x, y, forward), action).press()
+                && let Some(chunk) = group.chunks.first()
+            {
+                intents.push(BatchIntent::Send(chunk.id));
+            }
+            if Ui::button("Clear").at(Vec3::new(clear_x, y, forward), action).press()
+                && let Some(chunk) = group.chunks.first()
+            {
+                intents.push(BatchIntent::Clear(chunk.id));
+            }
+            Hierarchy::pop();
+            Ui::pop_id();
+
+            let count = group.chunks.len();
+            for index in 0..count {
+                let alone = count == 1;
+                let expected = batch_chunk_pose(group.pose, &group.chunks, gap, index);
+                let mut window_pose = expected;
+                let id = group.chunks[index].id;
+                let dragging = group.chunks[index].dragging;
+
+                Ui::window(format!("batch_{id}"))
+                    .pose(&mut window_pose)
+                    .size(size)
+                    .window_type(UiWin::Body)
+                    .move_type(UiMove::FaceUser)
+                    .begin();
+                // The window handle the UI has just made is the last element: it is active while the window is held,
+                // and focused while the user is on it. The grab aura is off for the series, so its background says so.
+                let held = Ui::get_last_element_active().is_active();
+                let focused = Ui::get_last_element_focused().is_active();
+
+                // The text of the chunk: it wraps at the width of the window, and its height is its own, so the window
+                // fits it exactly.
+                Ui::push_text_style(self.batch_style);
+                Ui::text(&group.chunks[index].text).size(Vec2::ZERO).fit(TextFit::Wrap).draw();
+                Ui::pop_text_style();
+                end_batch_window(focused);
+
+                // The bounds the UI gives back measure the window: the series stacks the next one under it, so a
+                // window grows and shrinks with its text.
+                let measured = Ui::get_layout_last().dimensions.y;
+                if measured > 0.0 {
+                    group.chunks[index].height = measured;
+                }
+
+                // The close button of the window stands beside it and in front of it, in the frame of the window: the
+                // window can not catch a pinch meant for it, and it faces the user like the window does.
+                let button = self.appearence.scale(BATCH_CLOSE_SIZE);
+                Hierarchy::push(window_pose, None);
+                if Ui::button(format!("close_{id}"))
+                    .image(&self.close_sprite)
+                    .at(
+                        Vec3::new(
+                            size.x / 2.0 + self.appearence.scale(BATCH_CLOSE_GAP),
+                            0.0,
+                            -self.appearence.scale(BATCH_CLOSE_FORWARD),
+                        ),
+                        Vec2::new(button, button),
+                    )
+                    .image_layout(UiBtnLayout::CenterNoText)
+                    .press()
+                {
+                    intents.push(BatchIntent::Close(id));
+                }
+                Hierarchy::pop();
+
+                // The pose the UI gives back tells what the user did with the window.
+                let moved = batch_pose_moved(expected, window_pose);
+                if alone {
+                    // A series of a single window: dragging the window moves the series itself, header included, and
+                    // it may land on another series when the user lets it go.
+                    if held {
+                        if moved {
+                            // The header keeps its place above the window that was dragged.
+                            let up = window_pose.orientation * Vec3::UP;
+                            group.pose = Pose {
+                                position: window_pose.position + up * gap,
+                                orientation: window_pose.orientation,
+                            };
+                        }
+                        group.chunks[index].dragging = dragging || moved;
+                    } else if dragging {
+                        group.chunks[index].dragging = false;
+                        intents.push(BatchIntent::Drop { id, pose: window_pose });
+                    }
+                } else if dragging {
+                    // Let go after being torn off: it may land back in a series.
+                    if !held {
+                        group.chunks[index].dragging = false;
+                        intents.push(BatchIntent::Drop { id, pose: window_pose });
+                    }
+                } else if held && moved {
+                    // Grabbed and moved: this window leaves the series and opens one of its own, under the hand.
+                    group.chunks[index].dragging = true;
+                    intents.push(BatchIntent::Detach { id, from: group.series, pose: window_pose });
+                }
+            }
+        }
+
+        self.batch_groups = groups;
+        Ui::pop_id();
+        Ui::pop_grab_aura();
+        for intent in intents {
+            self.apply_batch_intent(intent);
+        }
+    }
+
+    /// Apply one of the things the user asked of the batch windows.
+    fn apply_batch_intent(&mut self, intent: BatchIntent) {
+        match intent {
+            BatchIntent::Close(id) => {
+                batch_remove(&mut self.batch_groups, id);
+            }
+            BatchIntent::Send(id) => {
+                // Sending a series hands it over to the log, as if its texts had been dictated live.
+                if let Some(group) = batch_take_group(&mut self.batch_groups, id) {
+                    for chunk in group.chunks {
+                        let text = chunk.text.trim();
+                        if !text.is_empty() {
+                            self.push_log(text);
+                        }
+                    }
+                }
+            }
+            BatchIntent::Clear(id) => {
+                batch_take_group(&mut self.batch_groups, id);
+            }
+            BatchIntent::Detach { id, from, pose } => self.open_series(id, from, pose),
+            BatchIntent::Drop { id, pose } => self.drop_chunk(id, pose),
+        }
+    }
+
+    /// Take the chunk `id` out of the series numbered `from`: it opens a series of its own at `pose`, put aside from
+    /// the dictation, and follows the hand.
+    fn open_series(&mut self, id: u64, from: u64, pose: Pose) {
+        if let Some(mut chunk) = batch_remove(&mut self.batch_groups, id) {
+            chunk.dragging = true;
+            // The series it comes from is not a landing place for this drag: letting go over it would undo the tear.
+            chunk.from = Some(from);
+            let series = self.batch_next_series;
+            self.batch_next_series += 1;
+            self.batch_groups.push(BatchGroup { series, pose, chunks: vec![chunk], isolated: true });
+        }
+    }
+
+    /// Put the chunk `id` back among the series: in the series it was dropped on, at the place it was dropped, or in a
+    /// series of its own when it lands on none.
+    fn drop_chunk(&mut self, id: u64, pose: Pose) {
+        let Some(mut chunk) = batch_remove(&mut self.batch_groups, id) else {
+            return;
+        };
+        chunk.dragging = false;
+        let gap = self.appearence.scale(BATCH_GAP);
+        let line = Ui::get_line_height();
+        // A window is grabbed and dropped anywhere on its body: its middle is the point that decides where it lands.
+        let middle = pose.position - (pose.orientation * Vec3::UP) * (chunk.height / 2.0);
+        // The series the window was just torn off is not a target: the gesture has to mean something. Past this drag,
+        // the window can come back to it.
+        let skip = chunk.from.take();
+        match batch_drop_slot(&self.batch_groups, middle, self.batch_width(), line, gap, skip) {
+            Some((series_index, slot)) => {
+                let series = &mut self.batch_groups[series_index];
+                series.chunks.insert(slot, chunk);
+                // It holds more than the window the user had put aside: the dictation can add to it again.
+                series.isolated = false;
+            }
+            None => {
+                let series = self.batch_next_series;
+                self.batch_next_series += 1;
+                self.batch_groups.push(BatchGroup { series, pose, chunks: vec![chunk], isolated: true });
+            }
+        }
+    }
+}
+
+/// End a window of a series, its background tinted when the user is on it.
+///
+/// `focused` is what [`Ui::get_last_element_focused`] said right after the window began, when its grab handle was the
+/// last element the UI had made. The tint is pushed only around [`Ui::window_end`]: the content of the window is already
+/// drawn, so only its background takes the highlight.
+#[cfg(not(feature = "no-event-loop"))]
+fn end_batch_window(focused: bool) {
+    if focused {
+        Ui::push_tint(BATCH_FOCUS_TINT);
+    }
+    Ui::window_end();
+    if focused {
+        Ui::pop_tint();
     }
 }
 
@@ -1005,6 +1814,8 @@ fn partial_tail(text: &str, max_chars: usize) -> String {
 
 #[cfg(all(test, not(feature = "no-event-loop")))]
 mod panel_tests {
+    use crate::maths::Quat;
+
     use super::*;
 
     #[test]
@@ -1020,5 +1831,132 @@ mod panel_tests {
         let newest: String = tail.chars().skip(1).collect();
         assert!(tail.starts_with('…'));
         assert!(text.ends_with(&newest));
+    }
+
+    /// A batch chunk naming itself after its id, with a window 0.1 m high.
+    fn chunk(id: u64) -> BatchChunk {
+        BatchChunk { id, text: format!("text {id}"), height: 0.1, dragging: false, from: None }
+    }
+
+    /// A series of the chunks `chunks`, numbered `series`.
+    fn group(series: u64, chunks: Vec<BatchChunk>) -> BatchGroup {
+        BatchGroup { series, pose: Pose::IDENTITY, chunks, isolated: false }
+    }
+
+    /// The ids of the chunks of the series `index`.
+    fn ids(groups: &[BatchGroup], index: usize) -> Vec<u64> {
+        groups[index].chunks.iter().map(|chunk| chunk.id).collect()
+    }
+
+    #[test]
+    fn batch_push_stacks_the_chunks_in_the_last_series() {
+        let mut groups = Vec::new();
+        assert!(batch_push(&mut groups, Pose::IDENTITY, 1, chunk(1)));
+        assert_eq!(ids(&groups, 0), vec![1]);
+        // The last series takes the new chunks, so no new series is opened.
+        assert!(!batch_push(&mut groups, Pose::IDENTITY, 2, chunk(2)));
+        assert_eq!(groups.len(), 1);
+        assert_eq!(ids(&groups, 0), vec![1, 2]);
+        assert_eq!(groups[0].series, 1);
+    }
+
+    #[test]
+    fn batch_push_opens_a_new_series_beside_a_window_put_aside() {
+        let mut groups = vec![BatchGroup { isolated: true, ..group(7, vec![chunk(1)]) }];
+        // The window was put aside by the user: the dictation opens a series of its own, right after it.
+        assert!(batch_push(&mut groups, Pose::IDENTITY, 8, chunk(2)));
+        assert_eq!(groups.len(), 2);
+        assert_eq!(ids(&groups, 0), vec![1]);
+        assert_eq!(ids(&groups, 1), vec![2]);
+        assert_eq!(groups[1].series, 8);
+        assert!(!groups[1].isolated);
+        // And that new series takes the following chunks.
+        assert!(!batch_push(&mut groups, Pose::IDENTITY, 9, chunk(3)));
+        assert_eq!(ids(&groups, 1), vec![2, 3]);
+    }
+
+    #[test]
+    fn batch_remove_drops_the_series_it_empties() {
+        let mut groups = vec![group(1, vec![chunk(1), chunk(2)]), group(2, vec![chunk(3)])];
+        assert_eq!(batch_remove(&mut groups, 2).map(|chunk| chunk.id), Some(2));
+        assert_eq!(groups.len(), 2);
+        assert_eq!(ids(&groups, 0), vec![1]);
+        assert_eq!(batch_remove(&mut groups, 3).map(|chunk| chunk.id), Some(3));
+        assert_eq!(groups.len(), 1);
+        assert_eq!(batch_remove(&mut groups, 42).map(|chunk| chunk.id), None);
+    }
+
+    #[test]
+    fn batch_take_group_removes_the_whole_series() {
+        let mut groups = vec![group(1, vec![chunk(1), chunk(2)]), group(2, vec![chunk(3)])];
+        let group = batch_take_group(&mut groups, 2).expect("the series of the chunk");
+        assert_eq!(group.chunks.len(), 2);
+        assert_eq!(group.series, 1);
+        assert_eq!(groups.len(), 1);
+        assert_eq!(ids(&groups, 0), vec![3]);
+        assert!(batch_take_group(&mut groups, 2).is_none());
+    }
+
+    #[test]
+    fn batch_group_height_adds_the_windows_and_the_gaps() {
+        assert_eq!(batch_group_height(&[], 0.01), 0.0);
+        // The gap under the header is part of the height of the series: one window of 0.1 m and its gap.
+        assert!((batch_group_height(&[chunk(1)], 0.01) - 0.11).abs() < 1e-6);
+        assert!((batch_group_height(&[chunk(1), chunk(2)], 0.01) - 0.22).abs() < 1e-6);
+    }
+
+    #[test]
+    fn batch_chunks_stack_downwards_in_the_frame_of_the_series() {
+        let gap = 0.01;
+        let top = Pose::new([0.0, 1.5, -0.5], None);
+        let chunks = vec![chunk(1), chunk(2)];
+        // The first window stands one gap under the header, the next ones under the height of the window above.
+        let first = batch_chunk_pose(top, &chunks, gap, 0);
+        assert!((first.position.y - (1.5 - 0.01)).abs() < 1e-5);
+        let second = batch_chunk_pose(top, &chunks, gap, 1);
+        assert!((second.position.y - (1.5 - 0.12)).abs() < 1e-5);
+        assert_eq!(second.orientation, top.orientation);
+        // The windows stack under the height the UI measured for each of them.
+        let mut tall = chunks.clone();
+        tall[0].height = 0.3;
+        let below = batch_chunk_pose(top, &tall, gap, 1);
+        assert!((below.position.y - (1.5 - 0.32)).abs() < 1e-5);
+        // The stack follows the frame of the series, not the axes of the world.
+        let turned = Pose::new([0.0, 0.0, 0.0], Some(Quat::from_angles(0.0, 0.0, 90.0)));
+        let below = batch_chunk_pose(turned, &chunks, gap, 1);
+        assert!((below.position.length() - 0.12).abs() < 1e-5);
+        assert!(below.position.x.abs() > 0.1);
+    }
+
+    #[test]
+    fn batch_drop_slot_finds_the_series_and_the_place() {
+        let width = 0.2;
+        let line = 0.03;
+        let gap = 0.01;
+        let groups = vec![
+            BatchGroup { pose: Pose::new([0.0, 1.0, 0.0], None), ..group(1, vec![chunk(1), chunk(2)]) },
+            BatchGroup { pose: Pose::new([0.5, 1.0, 0.0], None), ..group(2, vec![chunk(3)]) },
+        ];
+        let slot = |point: Vec3, skip: Option<u64>| batch_drop_slot(&groups, point, width, line, gap, skip);
+        // Dropped on the upper half of the second window of the first series: it inserts between the two.
+        assert_eq!(slot(Vec3::new(0.02, 1.0 - 0.15, 0.0), None), Some((0, 1)));
+        // Dropped on the title bar of that series: it inserts at its top.
+        assert_eq!(slot(Vec3::new(0.0, 1.02, 0.0), None), Some((0, 0)));
+        // Dropped at the bottom of that series: it inserts at the end.
+        assert_eq!(slot(Vec3::new(0.0, 0.77, 0.0), None), Some((0, 2)));
+        // Dropped on the upper half of the second series: it inserts there, at the top.
+        assert_eq!(slot(Vec3::new(0.5, 0.97, 0.0), None), Some((1, 0)));
+        // The series the window was torn off is not a target, so the tear holds.
+        assert_eq!(slot(Vec3::new(0.02, 1.0 - 0.15, 0.0), Some(1)), None);
+        // Far from every series: it lands on none.
+        assert_eq!(slot(Vec3::new(2.0, 1.0, 0.0), None), None);
+    }
+
+    #[test]
+    fn batch_pose_moved_sees_moves_and_turns() {
+        let pose = Pose::new([0.0, 1.0, -0.5], Some(Quat::from_angles(0.0, 20.0, 0.0)));
+        assert!(!batch_pose_moved(pose, pose));
+        assert!(batch_pose_moved(pose, Pose::new([0.0, 1.02, -0.5], Some(pose.orientation))));
+        assert!(batch_pose_moved(pose, Pose::new(pose.position, Some(Quat::from_angles(0.0, 40.0, 0.0)))));
     }
 }

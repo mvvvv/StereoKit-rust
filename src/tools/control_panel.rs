@@ -6,7 +6,7 @@ use crate::{
     permission::{Permission, PermissionState, PermissionType},
     prelude::*,
     render::Renderer,
-    sk::{AppFocus, AppWindow, DisplayBlend},
+    sk::{AppFocus, AppWindow, DisplayBlend, MainThreadToken},
     sprite::Sprite,
     system::{
         Backend, BackendOpenXR, BackendXRType, DefaultInteractors, Input, Interaction, Interactor, Key, MouseMode,
@@ -49,6 +49,8 @@ use crate::{
 ///   see [`crate::tools::xr_fb_display_refresh_rate`],
 /// * the [`Renderer::viewport_scaling`] (reduced back to 2.0 above the value where the image gets distorted),
 /// * the passthrough blend mode when the device supports it, see [`crate::tools::os_api::get_env_blend_modes`],
+/// * the **Dictation** toggle when the `voice-dictation` feature is on: it shows the recording state of that panel and
+///   raises its `SHOW_PARAM_WINDOW` event, so the app gets back the window its own close button hid,
 /// * the world lighting source when the device estimates lighting from the user's surroundings, see
 ///   [`Lighting::is_source_available`] and [`crate::lighting::LightingSource::World`],
 /// * the Android soft keyboard bridge on Android, see `crate::tools::android_soft_kdb`: on by default, the system
@@ -65,6 +67,8 @@ use crate::{
 /// * `world_lighting_event` - An optional `(stepper id, event key)` event to send when the world lighting source
 ///   changes (`"true"` = world requested, `"false"` = back to manual), so the app can react (e.g. reapply its own
 ///   ambient probe). Default is `None`.
+/// * `dictation_recording` - Whether the voice dictation session records. Should be `false` at start. Only there
+///   when the `voice-dictation` feature is on.
 /// * `viewport_scaling` - The viewport scaling in use, initialized with [`Renderer::get_viewport_scaling`].
 /// * `fps` - The smoothed FPS shown by the panel. Default is 72.0.
 /// * `simulator_fullscreen` - Whether the Simulator window should be fullscreen, initialized from the settings,
@@ -75,6 +79,8 @@ use crate::{
 /// ### Events:
 /// * `passthrough_event` - see the field of the same name, sent to the stepper it names.
 /// * `world_lighting_event` - see the field of the same name, sent to the stepper it names.
+/// * the **Dictation** toggle sends `SHOW_PARAM_WINDOW` (`"true"`) to the voice dictation panel, and the panel listens to
+///   the `DICTATION_STATE` it shares back (see [`ControlPanel::update`]), both when the `voice-dictation` feature is on.
 ///
 /// ### Examples
 /// ```
@@ -90,7 +96,7 @@ use crate::{
 /// number_of_steps = 4; filename_scr = "screenshots/control_panel.jpeg"; fov_scr = 30.0;
 /// from_scr = Vec3::new(0.0, 0.0, 0.35); at_scr = Vec3::new(0.0, 0.0, -0.4);
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
-///     control_panel.update();
+///     control_panel.update(token);
 ///     Ui::window("A window").pose(&mut window_pose).begin();
 ///     if Ui::button("Exit").size(Vec2::new(0.10, 0.10)).press() {
 ///         sk.send_event(StepperAction::quit("main", "Exit button pressed"));
@@ -124,6 +130,10 @@ pub struct ControlPanel {
     /// sent is `"true"` when the world source is requested, `"false"` when the panel goes back to manual. Default is
     /// `None`.
     pub world_lighting_event: Option<(StepperId, String)>,
+    /// Whether the voice dictation session records. Should be false at Start.
+    /// `false`.
+    #[cfg(feature = "voice-dictation")]
+    pub dictation_recording: bool,
     /// Whether the Simulator window is fullscreen, initialized from the settings by [`ControlPanel::new`].
     pub simulator_fullscreen: bool,
     /// Whether the mouse is in [`MouseMode::Relative`] in the Simulator. Default is `false`.
@@ -292,6 +302,8 @@ impl ControlPanel {
             world_lighting,
             world_lighting_available,
             world_lighting_event: None,
+            #[cfg(feature = "voice-dictation")]
+            dictation_recording: false,
             simulator_fullscreen,
             mouse_mode_relative,
             viewport_scaling,
@@ -425,14 +437,32 @@ impl ControlPanel {
         }
     }
 
-    /// To be called once per frame, before [`ControlPanel::draw`]: when the app focus changes, the display refresh
-    /// rate is re-applied (a device usually forgets it when the app loses the focus) and the current interactors are
-    /// logged, so the panel stays in sync with the device. The world lighting toggle also follows the source
-    /// StereoKit really has (see [`Lighting::get_source`]), which settles asynchronously after a
-    /// [`ControlPanel::set_world_lighting`] call.
+    /// To be called once per frame, before [`ControlPanel::draw`], with the [`MainThreadToken`] of the step: when the
+    /// app focus changes, the display refresh rate is re-applied (a device usually forgets it when the app loses the
+    /// focus) and the current interactors are logged, so the panel stays in sync with the device. The world lighting
+    /// toggle also follows the source StereoKit really has (see [`Lighting::get_source`]), which settles asynchronously
+    /// after a [`ControlPanel::set_world_lighting`] call.
+    ///
+    /// It also listens to the recording state the voice dictation panel shares, when the `voice-dictation` feature is
+    /// on: `DICTATION_STATE` sent on its `VOICE_PANEL_ID` sets `ControlPanel::dictation_recording`, which picks the icon
+    /// of the **Dictation** button.
     ///
     /// see also [`ControlPanel::draw`] [`crate::sk::sk_app_focus`]
-    pub fn update(&mut self) {
+    pub fn update(&mut self, token: &MainThreadToken) {
+        // The voice dictation panel shares whether it records by event: the Dictation button shows it.
+        #[cfg(feature = "voice-dictation")]
+        for event in token.get_event_report() {
+            if let StepperAction::Event(stepper_id, key, value) = event
+                && stepper_id == crate::tools::voice_dictation::VOICE_PANEL_ID
+                && key == crate::tools::voice_dictation::DICTATION_STATE
+            {
+                self.dictation_recording = value == "true";
+            }
+        }
+        // Without the feature, the token is only there to keep a single call shape.
+        #[cfg(not(feature = "voice-dictation"))]
+        let _ = token;
+
         let app_focus = unsafe { crate::sk::sk_app_focus() };
         if self.last_focus != app_focus {
             self.last_focus = app_focus;
@@ -493,6 +523,8 @@ impl ControlPanel {
     ///   changes,
     /// * in the Simulator, the `fullscreen` and `mouse relative` toggles, and handles the `[Esc]` key (see
     ///   [`ControlPanel::notif_escape`]),
+    /// * the **Dictation** toggle when the `voice-dictation` feature is on: it shows the recording state of that panel
+    ///   and raises its `SHOW_PARAM_WINDOW` event, so the app gets back the window its own close button hid,
     /// * the smoothed FPS (see [`ControlPanel::fps`]),
     /// * the [`DefaultInteractors`] cycling button,
     /// * the display refresh rate cycling button, when the device accepts it,
@@ -567,6 +599,17 @@ impl ControlPanel {
             if Ui::button("Inject F1 key").press() {
                 Input::key_inject_press(Key::F1);
                 Input::key_inject_release(Key::F1);
+            }
+        }
+        // The Dictation toggle shows the recording state the voice dictation panel shares.
+        #[cfg(feature = "voice-dictation")]
+        {
+            use crate::tools::voice_dictation::{SHOW_PARAM_WINDOW, VOICE_PANEL_ID};
+
+            Ui::same_line();
+            let mut shown = self.dictation_recording;
+            if Ui::toggle("Dictation", &mut shown).interact().is_some() {
+                self.send_event(StepperAction::event(VOICE_PANEL_ID, SHOW_PARAM_WINDOW, "true"));
             }
         }
         Ui::same_line();

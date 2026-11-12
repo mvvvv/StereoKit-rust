@@ -180,16 +180,10 @@ See [`hot_reloading.md`](hot_reloading.md) for the reference documentation (arch
 
 `tools::voice_dictation::VoiceDictation` is a streaming speech-to-text tool built on
 [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx). The module also ships `VoicePanel`, a ready-to-use window (pop-up
-at 60% scale, close button, live level and a scrollable log of the committed sentences), which the `voice1` demo simply
-registers:
 
-- `cargo run --features voice-dictation --example main_pc`, then **Model folder** to pick the
-  directory of a streaming model, or set `SHERPA_ONNX_MODEL_DIR` to skip the picker. No model is shipped with this
-  project: download one from [Hugging Face](https://huggingface.co/kouhxp/sherpa-onnx-streaming-zipformer-fr-kroko) or
-  the [sherpa-onnx releases](https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models).
 - On Android/Quest the microphone permission is requested at start, the build copies the two sherpa-onnx `.so` files
   to `target/runtime_libs/<abi>/` for the APK, and the model files have to be pushed to the device
-  (`adb push <model dir> /storage/self/primary/`) before picking that folder with **Model folder**.
+  (`adb push <model dir> /storage/self/primary/Documents/sherpa_models/`) — where the window picks them up by itself.
 
 It is also the way to get dictation on Horizon OS: the microphone of the system keyboard depends on Meta's voice
 dictation service, which is not available on every device, region or language (the browser's microphone is the web
