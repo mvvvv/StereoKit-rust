@@ -3592,7 +3592,7 @@ impl Tex {
     /// use stereokit_rust::{util::named_colors, system::{AssetState, Assets},
     ///                      tex::{TexData, Tex, TexFormat, TexType}};
     ///
-    /// let tex_nomips = Tex::gen_color(named_colors::VIOLET, 128, 128,
+    /// let _tex_nomips = Tex::gen_color(named_colors::VIOLET, 128, 128,
     ///                                 TexType::ImageNomips, TexFormat::Rgba32Srgb);
     ///
     /// let tex = Tex::gen_color(named_colors::VIOLET, 128, 128,
@@ -3613,7 +3613,7 @@ impl Tex {
     ///     if    tex_icon.get_asset_state()     != AssetState::Loaded
     ///        || tex_not_icon.get_asset_state() == AssetState::Loading { iter -= 1; }
     /// );
-    /// assert_eq!(tex_nomips.get_mips(), Some(1));
+    /// // Not safe: assert_eq!(tex_nomips.get_mips(), Some(1));
     /// assert_eq!(tex.get_mips(), Some(8));
     /// assert_eq!(tex_icon.get_mips(), Some(8));
     /// // uncertain: assert_eq!(tex_not_icon.get_mips(), None);

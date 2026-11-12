@@ -1615,7 +1615,7 @@ impl VoicePanel {
 
     /// Add `text` as a new batch window, at the bottom of the current series - or in a new series, when there is no
     /// series yet. The series the user moves, or the one a dragged window lands in, is the current one, see
-    /// [`VoicePanel::draw_batch`].
+    /// `VoicePanel::draw_batch`.
     ///
     /// It is what the dictation does with each committed text in [`DictationMode::Batch`]; calling it directly lets an
     /// application hand over texts of its own. The windows are drawn in both modes, so a text can be queued before the
