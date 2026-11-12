@@ -62,9 +62,11 @@
 //!   right end. Every window fits its text - drawn smaller than the panel's, so more of it fits, the panel's own texts
 //!   using the same size - and closes itself with its own button, standing beside it on the right; grabbing any of them
 //!   tears it off into a series of its own, which follows the hand: dropping it over another series inserts it there,
-//!   where it was dropped. The series the window lands in - the one it opens when it lands on none - becomes the
-//!   *current* one: the texts the dictation commits next are added to it. The grab aura is off for the series, so the
-//!   background of a window turns blue while the hand is on it.
+//!   where it was dropped. A whole series merges the same way: dragged by its header over another series, it hands its
+//!   windows over when let go, where it was dropped. The series a window lands in - the one it opens when it lands on
+//!   none - becomes the *current* one: the texts the dictation commits next are added to it. While a window or a series
+//!   is dragged, the header of the series it would join tints red, which says the two can be merged by letting go. The
+//!   grab aura is off for the series, so the background of a window turns blue while the hand is on it.
 //!
 //! # Example
 //!
@@ -774,6 +776,12 @@ pub const DEFAULT_MODEL_FOLDER: &str = "sherpa_models";
 #[cfg(not(feature = "no-event-loop"))]
 const BATCH_FOCUS_TINT: Color128 = Color128::new(0.9, 1.2, 2.6, 1.0);
 
+/// Tint of the header of a series that would take the window the user is dragging: letting go merges the two. Like
+/// [`BATCH_FOCUS_TINT`], it multiplies the color of the background, and it shifts it towards red without brightening it
+/// much, so the number and the buttons of the header stay readable.
+#[cfg(not(feature = "no-event-loop"))]
+const BATCH_MERGE_TINT: Color128 = Color128::new(2.6, 0.9, 0.9, 1.0);
+
 /// Distance under which two poses are the same, in meters: the round trip of the pose of a window nobody grabbed is
 /// not perfectly exact.
 #[cfg(not(feature = "no-event-loop"))]
@@ -828,6 +836,9 @@ struct BatchGroup {
     pose: Pose,
     /// The chunks, from the top window to the bottom one.
     chunks: Vec<BatchChunk>,
+    /// The user moves this series by its header, and has not let it go yet: dropping it over another series merges the
+    /// two.
+    dragging: bool,
 }
 
 /// What the user asked of the batch windows, applied once the frame is drawn.
@@ -844,6 +855,9 @@ enum BatchIntent {
     Detach { id: u64, from: u64, pose: Pose },
     /// Put the chunk back among the series, at the pose it was dropped at.
     Drop { id: u64, pose: Pose },
+    /// Merge the series numbered `series` into the one it was let go over, when there is one: its windows take the
+    /// place of the drop, and the series they join becomes the current one.
+    Merge(u64),
 }
 
 /// Height of a series, in meters, from the bottom of its header to the bottom of its last window: the gap under the
@@ -881,7 +895,7 @@ fn batch_push(groups: &mut Vec<BatchGroup>, anchor: Pose, series: u64, chunk: Ba
             false
         }
         None => {
-            groups.push(BatchGroup { series, pose: anchor, chunks: vec![chunk] });
+            groups.push(BatchGroup { series, pose: anchor, chunks: vec![chunk], dragging: false });
             true
         }
     }
@@ -895,6 +909,38 @@ fn batch_make_current(groups: &mut Vec<BatchGroup>, series: u64) {
         let group = groups.remove(index);
         groups.push(group);
     }
+}
+
+/// Merge the series numbered `series` into the one numbered `target`, under the `slot` first windows of it: the windows
+/// of the merged series keep their order, and take the place of the drop. The target becomes the current series.
+/// Returns `false` when one of the two is unknown, or when they are the same.
+#[cfg(not(feature = "no-event-loop"))]
+fn batch_merge(groups: &mut Vec<BatchGroup>, series: u64, target: u64, slot: usize) -> bool {
+    if series == target {
+        return false;
+    }
+    let Some(index) = groups.iter().position(|group| group.series == series) else {
+        return false;
+    };
+    if !groups.iter().any(|group| group.series == target) {
+        return false;
+    }
+    // The merged series leaves the list first: the target may stand after it.
+    let merged = groups.remove(index);
+    let Some(index) = groups.iter().position(|group| group.series == target) else {
+        return false;
+    };
+    let slot = slot.min(groups[index].chunks.len());
+    groups[index].chunks.splice(slot..slot, merged.chunks);
+    batch_make_current(groups, target);
+    true
+}
+
+/// The point of a series that decides where its windows land when the series itself is dropped: the middle of its
+/// header bar, which is what the user holds. `line` is the height of that bar.
+#[cfg(not(feature = "no-event-loop"))]
+fn batch_header_point(group: &BatchGroup, line: f32) -> Vec3 {
+    group.pose.position + group.pose.orientation * Vec3::UP * (line / 2.0)
 }
 
 /// Remove the chunk `id` from its series, and the series itself when it was its last chunk.
@@ -922,8 +968,8 @@ fn batch_take_group(groups: &mut Vec<BatchGroup>, id: u64) -> Option<BatchGroup>
 /// Where a window dropped at `point` (the centre of that window, in world space) inserts itself: the series it lands
 /// on, and the place it takes in it. `None` when it lands on no series. `width` is the scaled width of a window, `line`
 /// the height of the title bar of a series, and `gap` the scaled gap between two windows; the heights of the windows and
-/// of the body of the header are the ones the UI measured. The series numbered `skip` is left out, which is the one a
-/// window was just torn off.
+/// of the body of the header are the ones the UI measured. The series numbered in `skip` are left out: the one a window
+/// was just torn off, and the one it stands in meanwhile, which goes away with it.
 #[cfg(not(feature = "no-event-loop"))]
 fn batch_drop_slot(
     groups: &[BatchGroup],
@@ -931,10 +977,10 @@ fn batch_drop_slot(
     width: f32,
     line: f32,
     gap: f32,
-    skip: Option<u64>,
+    skip: &[u64],
 ) -> Option<(usize, usize)> {
     for (group_index, group) in groups.iter().enumerate() {
-        if skip == Some(group.series) {
+        if skip.contains(&group.series) {
             continue;
         }
         let in_series = point - group.pose.position;
@@ -963,6 +1009,34 @@ fn batch_drop_slot(
     None
 }
 
+/// The series the user would merge something into if it were let go now: `None` when it would land on no series.
+///
+/// Two things can be held: a *window*, which would join the series under it (see [`batch_drop_slot`]), or a *series*,
+/// dragged by its header, whose windows would join the series under that bar. It is what
+/// [`VoicePanel::drop_chunk`] and [`VoicePanel::merge_group`] will find, read a frame ahead so that series can say it -
+/// its header tints red, which tells the user the two can be merged. `width` is the scaled width of a window, `line`
+/// the height of the title bar of a series, and `gap` the scaled gap between two windows.
+#[cfg(not(feature = "no-event-loop"))]
+fn batch_drop_target(groups: &[BatchGroup], width: f32, line: f32, gap: f32) -> Option<u64> {
+    // A series held by its header: the bar under the hand is the point that decides where its windows go.
+    if let Some(group) = groups.iter().find(|group| group.dragging) {
+        return batch_drop_slot(groups, batch_header_point(group, line), width, line, gap, &[group.series])
+            .map(|(index, _)| groups[index].series);
+    }
+    // The window the user holds, and the series it stands in until it is dropped: that series goes away with the
+    // window, so it is not a landing place, just as in `drop_chunk`.
+    let group = groups.iter().find(|group| group.chunks.iter().any(|chunk| chunk.dragging))?;
+    let index = group.chunks.iter().position(|chunk| chunk.dragging)?;
+    let chunk = &group.chunks[index];
+    let pose = batch_chunk_pose(group.pose, &group.chunks, gap, index);
+    // A window is grabbed and dropped anywhere on its body: its middle is the point that decides where it lands.
+    let middle = pose.position - (pose.orientation * Vec3::UP) * (chunk.height / 2.0);
+    // The series the window was torn off is not a target for this drag either. Both numbers come the same way as in
+    // `drop_chunk`, a duplicate being harmless.
+    let skip = [chunk.from.unwrap_or(group.series), group.series];
+    batch_drop_slot(groups, middle, width, line, gap, &skip).map(|(index, _)| groups[index].series)
+}
+
 /// A ready-to-use dictation window: model folder picker, record/stop, live level, provisional text and a
 /// scrollable log of the committed sentences.
 ///
@@ -981,9 +1055,12 @@ fn batch_drop_slot(
 ///   than the text of the panel, which uses the same size - with its own text area and its close button outside, on its
 ///   right. Grabbing any window tears it off: it opens a series of its own, follows the hand, and dropping it over
 ///   another series inserts it there, where it was dropped (the series it comes from is not a target for that drag, so
-///   the tear holds). The series a window lands in - the one it opens when it lands on none - becomes the *current*
-///   one: the dictation adds its next texts there, and so does the series the user moves by its header. As the grab
-///   aura is off for the series, the background of a window turns blue while the hand is on it.
+///   the tear holds). A whole series merges the same way: its header dragged over another series hands its windows over
+///   when let go, where it was dropped. The series a window lands in - the one it opens when it lands on none - becomes
+///   the *current* one: the dictation adds its next texts there, and so does the series the user moves by its header.
+///   While a window or a series is dragged, the header of the series it would join turns red, which says that letting go
+///   merges the two. As the grab aura is off for the series, the background of a window turns blue while the hand is on
+///   it.
 ///
 /// A series is placed beside the window when it opens, and stays there when the mode goes back to
 /// [`DictationMode::Live`]: the pending texts are never lost.
@@ -1592,6 +1669,11 @@ impl VoicePanel {
     /// A series the user moves by its header becomes the *current* one: the texts the dictation commits next are added
     /// to it, at the bottom, and a series opened later stands beside it. So does the series a dragged window lands in,
     /// or the one a torn-off window opens: a detachment hands the dictation over to the new batch it makes.
+    ///
+    /// A window held by the user is a drop waiting to happen: the header of the series it would join tints red, so the
+    /// user sees where to let go to merge the two (see [`batch_drop_target`]). The same holds for a series dragged by
+    /// its header: let go over another series and the two merge, the windows of the moved one taking the place of the
+    /// drop.
     fn draw_batch(&mut self) {
         if self.batch_groups.is_empty() {
             return;
@@ -1604,6 +1686,10 @@ impl VoicePanel {
         let mut intents = Vec::new();
         // The series the user moved this frame: it becomes the current one, where the dictation adds the next texts.
         let mut moved_series = None;
+        // What letting go would do with what the user is dragging - a window or a whole series: the series it would
+        // join tints its header red, so the user sees the two can be merged. The pose of what is held is only known
+        // from the previous frame here, and a frame is nothing at the speed of a hand.
+        let merge_target = batch_drop_target(&groups, self.batch_width(), Ui::get_line_height(), gap);
 
         // The grab aura draws a glowing volume around every window: on a stack of batch windows it hides the text and
         // the buttons, so it is turned off for them. They stay grabbable by their body.
@@ -1624,11 +1710,29 @@ impl VoicePanel {
                 .move_type(UiMove::FaceUser)
                 .begin();
             let focused = Ui::get_last_element_focused().is_active();
-            end_batch_window(focused);
-            // The pose the UI gives back tells whether the user moved the series by its header: it then becomes the
-            // current one, where the dictation adds the next texts.
+            // The grab handle of the header is the last element the UI made: it is active while the user moves the
+            // series, and stops when the hand lets go.
+            let held = Ui::get_last_element_active().is_active();
+            // The header says what a drop would do with the series: red when it would take what the user is dragging -
+            // letting go merges the two - and blue while the hand is on the header itself.
+            let tint = if merge_target == Some(group.series) {
+                Some(BATCH_MERGE_TINT)
+            } else if focused {
+                Some(BATCH_FOCUS_TINT)
+            } else {
+                None
+            };
+            end_batch_window(tint);
+            // The pose the UI gives back tells whether the user moves the series by its header: it then becomes the
+            // current one, where the dictation adds the next texts, and it is held for a drop that merges it into
+            // another series.
             if batch_pose_moved(pose_before, group.pose) {
                 moved_series = Some(group.series);
+                group.dragging = true;
+            } else if group.dragging && !held {
+                // Let go: the series joins the one it was dropped on, if it was dropped on one.
+                group.dragging = false;
+                intents.push(BatchIntent::Merge(group.series));
             }
 
             let action = self.appearence.scale_size(BATCH_ACTION_SIZE);
@@ -1679,7 +1783,9 @@ impl VoicePanel {
                 Ui::push_text_style(self.batch_style);
                 Ui::text(&group.chunks[index].text).size(Vec2::ZERO).fit(TextFit::Wrap).draw();
                 Ui::pop_text_style();
-                end_batch_window(focused);
+                // A window takes the focus tint only: the red of a merge is for the header of the series that would
+                // take it, see `batch_drop_target`.
+                end_batch_window(focused.then_some(BATCH_FOCUS_TINT));
 
                 // The bounds the UI gives back measure the window: the series stacks the next one under it, so a
                 // window grows and shrinks with its text.
@@ -1778,6 +1884,25 @@ impl VoicePanel {
             }
             BatchIntent::Detach { id, from, pose } => self.open_series(id, from, pose),
             BatchIntent::Drop { id, pose } => self.drop_chunk(id, pose),
+            BatchIntent::Merge(series) => self.merge_group(series),
+        }
+    }
+
+    /// Merge the series numbered `series` into the one its header was let go over, when there is one: the windows of
+    /// the series take the place of the drop, in their own order, and the series they join becomes the current one.
+    fn merge_group(&mut self, series: u64) {
+        let Some(group) = self.batch_groups.iter().find(|group| group.series == series) else {
+            return;
+        };
+        // The bar under the hand is what the user places: its middle is the point that decides where the windows go.
+        let line = Ui::get_line_height();
+        let point = batch_header_point(group, line);
+        let gap = self.appearence.scale(BATCH_GAP);
+        if let Some((index, slot)) =
+            batch_drop_slot(&self.batch_groups, point, self.batch_width(), line, gap, &[series])
+        {
+            let target = self.batch_groups[index].series;
+            batch_merge(&mut self.batch_groups, series, target, slot);
         }
     }
 
@@ -1790,7 +1915,7 @@ impl VoicePanel {
             chunk.from = Some(from);
             let series = self.batch_next_series;
             self.batch_next_series += 1;
-            self.batch_groups.push(BatchGroup { series, pose, chunks: vec![chunk] });
+            self.batch_groups.push(BatchGroup { series, pose, chunks: vec![chunk], dragging: false });
         }
     }
 
@@ -1809,7 +1934,7 @@ impl VoicePanel {
         // The series the window was just torn off is not a target: the gesture has to mean something. Past this drag,
         // the window can come back to it.
         let skip = chunk.from.take();
-        match batch_drop_slot(&self.batch_groups, middle, self.batch_width(), line, gap, skip) {
+        match batch_drop_slot(&self.batch_groups, middle, self.batch_width(), line, gap, skip.as_slice()) {
             Some((series_index, slot)) => {
                 let series = self.batch_groups[series_index].series;
                 self.batch_groups[series_index].chunks.insert(slot, chunk);
@@ -1821,24 +1946,25 @@ impl VoicePanel {
                 // it is the current one, and it is the new batch that comes out of the detachment.
                 let series = self.batch_next_series;
                 self.batch_next_series += 1;
-                self.batch_groups.push(BatchGroup { series, pose, chunks: vec![chunk] });
+                self.batch_groups.push(BatchGroup { series, pose, chunks: vec![chunk], dragging: false });
             }
         }
     }
 }
 
-/// End a window of a series, its background tinted when the user is on it.
+/// End a window, or the header, of a series, its background tinted with `tint`.
 ///
-/// `focused` is what [`Ui::get_last_element_focused`] said right after the window began, when its grab handle was the
-/// last element the UI had made. The tint is pushed only around [`Ui::window_end`]: the content of the window is already
-/// drawn, so only its background takes the highlight.
+/// The callers read the tint from what the UI said right after the window began, when its grab handle was the last
+/// element the UI had made ([`Ui::get_last_element_focused`]), and from [`batch_drop_target`] for a header. The tint is
+/// pushed only around [`Ui::window_end`]: the content of the window is already drawn, so only its background takes the
+/// highlight.
 #[cfg(not(feature = "no-event-loop"))]
-fn end_batch_window(focused: bool) {
-    if focused {
-        Ui::push_tint(BATCH_FOCUS_TINT);
+fn end_batch_window(tint: Option<Color128>) {
+    if let Some(tint) = tint {
+        Ui::push_tint(tint);
     }
     Ui::window_end();
-    if focused {
+    if tint.is_some() {
         Ui::pop_tint();
     }
 }
@@ -1898,7 +2024,7 @@ mod panel_tests {
 
     /// A series of the chunks `chunks`, numbered `series`.
     fn group(series: u64, chunks: Vec<BatchChunk>) -> BatchGroup {
-        BatchGroup { series, pose: Pose::IDENTITY, chunks }
+        BatchGroup { series, pose: Pose::IDENTITY, chunks, dragging: false }
     }
 
     /// The numbers of the series, in the order of the list: the last one is the current one.
@@ -2021,19 +2147,80 @@ mod panel_tests {
             BatchGroup { pose: Pose::new([0.0, 1.0, 0.0], None), ..group(1, vec![chunk(1), chunk(2)]) },
             BatchGroup { pose: Pose::new([0.5, 1.0, 0.0], None), ..group(2, vec![chunk(3)]) },
         ];
-        let slot = |point: Vec3, skip: Option<u64>| batch_drop_slot(&groups, point, width, line, gap, skip);
+        let slot = |point: Vec3, skip: &[u64]| batch_drop_slot(&groups, point, width, line, gap, skip);
         // Dropped on the upper half of the second window of the first series: it inserts between the two.
-        assert_eq!(slot(Vec3::new(0.02, 1.0 - 0.15, 0.0), None), Some((0, 1)));
+        assert_eq!(slot(Vec3::new(0.02, 1.0 - 0.15, 0.0), &[]), Some((0, 1)));
         // Dropped on the title bar of that series: it inserts at its top.
-        assert_eq!(slot(Vec3::new(0.0, 1.02, 0.0), None), Some((0, 0)));
+        assert_eq!(slot(Vec3::new(0.0, 1.02, 0.0), &[]), Some((0, 0)));
         // Dropped at the bottom of that series: it inserts at the end.
-        assert_eq!(slot(Vec3::new(0.0, 0.77, 0.0), None), Some((0, 2)));
+        assert_eq!(slot(Vec3::new(0.0, 0.77, 0.0), &[]), Some((0, 2)));
         // Dropped on the upper half of the second series: it inserts there, at the top.
-        assert_eq!(slot(Vec3::new(0.5, 0.97, 0.0), None), Some((1, 0)));
+        assert_eq!(slot(Vec3::new(0.5, 0.97, 0.0), &[]), Some((1, 0)));
         // The series the window was torn off is not a target, so the tear holds.
-        assert_eq!(slot(Vec3::new(0.02, 1.0 - 0.15, 0.0), Some(1)), None);
+        assert_eq!(slot(Vec3::new(0.02, 1.0 - 0.15, 0.0), &[1]), None);
+        // Several series can be left out at once.
+        assert_eq!(slot(Vec3::new(0.02, 1.0 - 0.15, 0.0), &[1, 2]), None);
         // Far from every series: it lands on none.
-        assert_eq!(slot(Vec3::new(2.0, 1.0, 0.0), None), None);
+        assert_eq!(slot(Vec3::new(2.0, 1.0, 0.0), &[]), None);
+    }
+
+    #[test]
+    fn batch_drop_target_names_the_series_a_dragged_window_would_join() {
+        let width = 0.2;
+        let line = 0.03;
+        let gap = 0.01;
+        // Nothing is held by the user: no series is singled out.
+        assert_eq!(batch_drop_target(&[group(1, vec![chunk(1)])], width, line, gap), None);
+        // A window of the second series is held right over the first one: letting go merges it there.
+        let mut held = chunk(2);
+        held.dragging = true;
+        let groups = vec![
+            BatchGroup { pose: Pose::new([0.0, 1.0, 0.0], None), ..group(1, vec![chunk(1)]) },
+            BatchGroup { pose: Pose::new([0.0, 1.0, 0.0], None), ..group(2, vec![held.clone()]) },
+        ];
+        assert_eq!(batch_drop_target(&groups, width, line, gap), Some(1));
+        // Held away from every series: it would open one of its own.
+        let groups = vec![
+            BatchGroup { pose: Pose::new([0.0, 1.0, 0.0], None), ..group(1, vec![chunk(1)]) },
+            BatchGroup { pose: Pose::new([2.0, 1.0, 0.0], None), ..group(2, vec![held]) },
+        ];
+        assert_eq!(batch_drop_target(&groups, width, line, gap), None);
+    }
+
+    #[test]
+    fn batch_merge_inserts_the_windows_and_makes_the_target_current() {
+        let mut groups = vec![group(1, vec![chunk(1), chunk(2)]), group(2, vec![chunk(3)]), group(3, vec![chunk(4)])];
+        // The series 3 is dropped on the upper half of the second window of the series 1: its window takes the place.
+        assert!(batch_merge(&mut groups, 3, 1, 1));
+        assert_eq!(series_numbers(&groups), vec![2, 1]);
+        assert_eq!(ids(&groups, 1), vec![1, 4, 2]);
+        // The series it joined is the current one: the dictation appends the next text there.
+        assert!(!batch_push(&mut groups, Pose::IDENTITY, 5, chunk(5)));
+        assert_eq!(ids(&groups, 1), vec![1, 4, 2, 5]);
+        // A series cannot merge into itself, nor into one that does not exist.
+        assert!(!batch_merge(&mut groups, 1, 1, 0));
+        assert!(!batch_merge(&mut groups, 1, 42, 0));
+        assert!(!batch_merge(&mut groups, 42, 1, 0));
+        assert_eq!(ids(&groups, 1), vec![1, 4, 2, 5]);
+    }
+
+    #[test]
+    fn batch_drop_target_also_sees_a_series_held_by_its_header() {
+        let width = 0.2;
+        let line = 0.03;
+        let gap = 0.01;
+        // The second series is held by its header, right over the first one: letting go merges the two.
+        let groups = vec![
+            BatchGroup { pose: Pose::new([0.0, 1.0, 0.0], None), ..group(1, vec![chunk(1)]) },
+            BatchGroup { pose: Pose::new([0.0, 1.0, 0.0], None), dragging: true, ..group(2, vec![chunk(2), chunk(3)]) },
+        ];
+        assert_eq!(batch_drop_target(&groups, width, line, gap), Some(1));
+        // Held away from every series: it would stay where it is.
+        let groups = vec![
+            BatchGroup { pose: Pose::new([0.0, 1.0, 0.0], None), ..group(1, vec![chunk(1)]) },
+            BatchGroup { pose: Pose::new([2.0, 1.0, 0.0], None), dragging: true, ..group(2, vec![chunk(2)]) },
+        ];
+        assert_eq!(batch_drop_target(&groups, width, line, gap), None);
     }
 
     #[test]
