@@ -11,8 +11,9 @@ use stereokit_rust::{
     tools::{
         asset_preview::AssetToShow,
         file_browser_b::{
-            BasicPreviewer, FILE_BROWSER_B_DELETE_MULTI, FILE_BROWSER_B_OPEN_MULTI, FILE_BROWSER_B_SAVE,
-            FILE_BROWSER_B_SELECT, FILE_BROWSER_B_SELECT_DIR, FILE_BROWSER_B_SELECT_MULTI, FileBrowserB,
+            ALL_BROWSE_LOCATIONS_ROOT, BasicPreviewer, FILE_BROWSER_B_DELETE_MULTI, FILE_BROWSER_B_OPEN_MULTI,
+            FILE_BROWSER_B_SAVE, FILE_BROWSER_B_SELECT, FILE_BROWSER_B_SELECT_DIR, FILE_BROWSER_B_SELECT_MULTI,
+            FileBrowserB,
         },
         locales::{available_locales, locale, set_locale},
         os_api::BrowseLocation,
@@ -21,15 +22,35 @@ use stereokit_rust::{
     util::{PickerMode, named_colors::GREEN},
 };
 
+/// How [`Documents1`] sets [`FileBrowserB::root_dir`] on the browsers it launches, to exercise the
+/// locations drop-down button of the breadcrumbs (see [`FileBrowserB`]): the breadcrumb row always
+/// starts with a down-arrow button listing the other locations, but a restriction limits it to the
+/// locations it allows (none when the location is the only one allowed).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum RootDirChoice {
+    /// No restriction: `root_dir` stays empty, the browser can navigate anywhere.
+    #[default]
+    Unrestricted,
+    /// `root_dir` is the virtual [`ALL_BROWSE_LOCATIONS_ROOT`] marker: only the [`BrowseLocation`]s
+    /// and their subdirectories are reachable (no other folder of their common parent directory),
+    /// and the breadcrumbs popup lists every other existing location.
+    AllBrowseLocations,
+    /// `root_dir` is the selected [`BrowseLocation`] itself: it is the only allowed location, so the
+    /// breadcrumb row has no drop-down button.
+    LocationOnly,
+}
+
 /// Demo showing how to use [`FileBrowserB`] in all its modes.
 ///
 /// It provides one button per [`PickerMode`]: open a file, open multiple files, select a file, select multiple
 /// files, save a file, select a directory, delete a file, delete multiple files, delete a directory. The starting
 /// storage location is chosen with radio
-/// buttons, the extension filter is entered in a text field (e.g. `.txt, .md, .rs`) and the language of the browser
-/// texts is cycled through the [`available_locales`] with a right arrow button. The events received from the
-/// browser are concatenated in a multi-line log, most recent first, displayed in a scrollable text area and logged:
-/// the demo never deletes anything itself, it only shows the [`FileBrowserB`] events.
+/// buttons, its [`FileBrowserB::root_dir`] restriction too (none, the virtual
+/// [`ALL_BROWSE_LOCATIONS_ROOT`] restricting the navigation to the [`BrowseLocation`]s only, or the location itself
+/// — see [`RootDirChoice`]), the extension filter is entered in a text field (e.g. `.txt, .md, .rs`) and the
+/// language of the browser texts is cycled through the [`available_locales`] with a right arrow button. The events
+/// received from the browser are concatenated in a multi-line log, most recent first, displayed in a scrollable text
+/// area and logged: the demo never deletes anything itself, it only shows the [`FileBrowserB`] events.
 ///
 /// The demo panel uses [`Appearence`] to resize/zoom the demo window.
 #[derive(IStepper)]
@@ -47,6 +68,8 @@ pub struct Documents1 {
     pub location: BrowseLocation,
     /// The resolved path of `location`, displayed under the radios.
     pub location_path: Option<std::path::PathBuf>,
+    /// How the next launched browser restricts its navigation, see [`RootDirChoice`].
+    pub root_dir_choice: RootDirChoice,
     /// The file extensions filter for the next launched browser, entered as `.txt, .md, .rs`.
     /// An empty input means no filter (all files).
     pub exts_input: String,
@@ -97,6 +120,7 @@ impl Default for Documents1 {
 
             location: BrowseLocation::External,
             location_path: None,
+            root_dir_choice: RootDirChoice::default(),
             exts_input: String::new(),
             browser_counter: 0,
 
@@ -322,8 +346,8 @@ impl Documents1 {
         Ui::pop_text_style();
     }
 
-    /// The settings shared by every launched browser: the starting location, the extension filter and the language
-    /// of the browser texts.
+    /// The settings shared by every launched browser: the starting location, its root_dir restriction, the extension
+    /// filter and the language of the browser texts.
     fn draw_browser_settings(&mut self) {
         Ui::push_text_style(self.appearence.title_style);
         Ui::label("Browser location:").draw();
@@ -331,6 +355,11 @@ impl Documents1 {
 
         Ui::push_text_style(self.appearence.label_style);
         self.draw_location_chooser();
+        Ui::pop_text_style();
+
+        self.draw_root_dir_chooser();
+
+        Ui::push_text_style(self.appearence.label_style);
         self.draw_exts_input();
         self.draw_locale_chooser();
         Ui::pop_text_style();
@@ -375,6 +404,59 @@ impl Documents1 {
             .map(|p| p.to_string_lossy().to_string())
             .unwrap_or_else(|| "unavailable".to_string());
         Ui::label(format!("Absolute path: {path_text}")).draw();
+        Ui::pop_text_style();
+    }
+
+    /// The [`FileBrowserB::root_dir`] matching the [`Documents1::root_dir_choice`] for the given resolved
+    /// `location_path`: empty (no restriction), the virtual [`ALL_BROWSE_LOCATIONS_ROOT`] marker, or the location
+    /// itself. Empty when the location has no resolved path.
+    fn root_dir_for(&self, location_path: &Option<PathBuf>) -> PathBuf {
+        match self.root_dir_choice {
+            RootDirChoice::Unrestricted => PathBuf::new(),
+            RootDirChoice::AllBrowseLocations => PathBuf::from(ALL_BROWSE_LOCATIONS_ROOT),
+            RootDirChoice::LocationOnly => location_path.clone().unwrap_or_default(),
+        }
+    }
+
+    /// The [`RootDirChoice`] chooser: how the next launched browser restricts its navigation, shown as radio buttons
+    /// with the effective [`FileBrowserB::root_dir`] displayed under them. This is what exercises the locations
+    /// drop-down button of the breadcrumbs in [`FileBrowserB`].
+    fn draw_root_dir_chooser(&mut self) {
+        const CHOICES: [(&str, RootDirChoice); 3] = [
+            ("no restriction", RootDirChoice::Unrestricted),
+            ("all browse locations", RootDirChoice::AllBrowseLocations),
+            ("the location only", RootDirChoice::LocationOnly),
+        ];
+
+        Ui::push_text_style(self.appearence.title_style);
+        Ui::label("Browser root restriction:").draw();
+        Ui::pop_text_style();
+
+        Ui::push_text_style(self.appearence.label_style);
+        for (label, choice) in CHOICES.iter() {
+            Ui::same_line();
+            if Ui::radio(label, self.root_dir_choice == *choice)
+                .size(self.appearence.scale_size(Vec2::new(0.13, 0.03)))
+                .images(&self.radio_off, &self.radio_on)
+                .image_layout(UiBtnLayout::Left)
+                .press()
+            {
+                self.root_dir_choice = *choice;
+            }
+        }
+
+        // Show the effective root_dir of the next launched browser.
+        Ui::push_text_style(self.appearence.small_style);
+        let root_dir = self.root_dir_for(&self.location_path);
+        let root_text = if root_dir.as_os_str().is_empty() {
+            "none (no restriction)".to_string()
+        } else if self.root_dir_choice == RootDirChoice::AllBrowseLocations {
+            format!("{} (all browse locations)", root_dir.to_string_lossy())
+        } else {
+            root_dir.to_string_lossy().to_string()
+        };
+        Ui::label(format!("root_dir: {root_text}")).draw();
+        Ui::pop_text_style();
         Ui::pop_text_style();
     }
 
@@ -459,11 +541,12 @@ impl Documents1 {
         let mut file_browser = FileBrowserB::default();
 
         // Start browsing from the location chosen with the demo radio buttons.
-        file_browser.dir = self
-            .location
-            .get_path(&self.sk_info)
-            .or_else(|| std::env::current_dir().ok())
-            .unwrap_or_else(|| PathBuf::from("/"));
+        let location_path = self.location.get_path(&self.sk_info);
+        self.location_path = location_path.clone();
+        file_browser.dir =
+            location_path.clone().or_else(|| std::env::current_dir().ok()).unwrap_or_else(|| PathBuf::from("/"));
+        // Restrict the navigation as chosen with the root_dir radio buttons.
+        file_browser.root_dir = self.root_dir_for(&location_path);
 
         // Extension filter from the demo input field, entered as `.txt, .md, .rs`.
         // An empty input means no filter (all files).

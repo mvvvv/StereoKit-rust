@@ -2,12 +2,13 @@ use crate::tex::TexData;
 use crate::{
     font::Font,
     framework::{Appearence, ISTEPPER_REMOVED},
-    maths::{Pose, Vec2, Vec3},
+    maths::{Bounds, Pose, Vec2, Vec3},
     prelude::*,
     sprite::Sprite,
     system::{Align, Assets, Text, TextFit},
     tex::{Tex, TexFormat, TexType},
     tools::asset_preview::read_rgba_bitmap,
+    tools::os_api::BrowseLocation,
     tools::ui_widgets::{
         DoubleClick, Scrollbar, is_last_element_focused, last_element_world_pose, wrap_chars, wrap_chars_lines,
     },
@@ -25,6 +26,15 @@ pub const FILE_BROWSER_B_OPEN_MULTI: &str = "File_Browser_B_open_multi";
 pub const FILE_BROWSER_B_DELETE_MULTI: &str = "File_Browser_B_delete_multi";
 pub const FILE_BROWSER_B_SELECT: &str = "File_Browser_B_select";
 pub const FILE_BROWSER_B_SELECT_MULTI: &str = "File_Browser_B_select_multi";
+
+/// A virtual [`FileBrowserB::root_dir`] value: when `root_dir` contains this marker, the browsable
+/// universe is the union of the [`BrowseLocation`]s and their subdirectories, and nothing else.
+///
+/// The breadcrumb row starts with a drop-down button listing the other existing locations, the
+/// trail starts at the location holding [`FileBrowserB::dir`], and navigating above a location (Up,
+/// breadcrumbs, popup) is clamped to the location instead of reaching the plain filesystem parent
+/// directory.
+pub const ALL_BROWSE_LOCATIONS_ROOT: &str = "/all_browse_locations";
 
 /// How to sort file entries in [`FileBrowserB`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -105,7 +115,11 @@ impl FileEntry {
 ///   directory unless `root_dir` is set, in which case navigation is clamped to it.
 ///
 /// ### Fields that can be changed before initialization:
-/// * `root_dir` - When non-empty, the user cannot navigate above this directory.
+/// * `root_dir` - When non-empty, the user cannot navigate above this directory. The breadcrumb row starts with a
+///   down-arrow button listing the other [`BrowseLocation`]s to switch to them: all of them when `root_dir` is
+///   empty, only the ones it allows otherwise (nothing is listed when it is the only location allowed). Set it to
+///   [`ALL_BROWSE_LOCATIONS_ROOT`] to restrict the browsable universe to the [`BrowseLocation`]s (and their
+///   subdirectories) instead of a real directory.
 /// * `exts` - The file extensions to filter (e.g. `[".png".into(), ".jpg".into()]`).
 /// * `window_pose` - The pose where to show the browser window.
 /// * `appearence.window_size` - The size of the browser window. Default is `Vec2{x: 0.6, y: 0.8}`.
@@ -248,6 +262,17 @@ pub struct FileBrowserB {
     /// [`Appearence::double_click_delay`] and [`FileBrowserB::double_click_or_uncheck`].
     double_click: DoubleClick,
 
+    /// The resolved paths of [`BrowseLocation::ALL`], computed once at start (resolving the public folders is
+    /// expensive on Android, and the paths do not change while the browser is open). Kept in the
+    /// [`BrowseLocation::ALL`] order.
+    browse_locations: Vec<(BrowseLocation, PathBuf)>,
+    /// Whether the popup listing the other [`BrowseLocation`]s allowed by [`FileBrowserB::root_dir`] is open.
+    /// See [`FileBrowserB::draw_locations_dropdown_button`] and [`FileBrowserB::draw_browse_locations_popup`].
+    show_browse_locations: bool,
+    /// Layout bounds (hierarchy local) of the drop-down button of the breadcrumb row in the current frame: the
+    /// anchor of the browse-locations popup. `None` when that button was not drawn.
+    location_button: Option<Bounds>,
+
     radio_off: Sprite,
     radio_on: Sprite,
     check_off: Sprite,
@@ -301,6 +326,10 @@ impl Default for FileBrowserB {
             status: String::with_capacity(128),
             double_click: DoubleClick::default(),
 
+            browse_locations: vec![],
+            show_browse_locations: false,
+            location_button: None,
+
             radio_off: Sprite::radio_off(),
             radio_on: Sprite::radio_on(),
             check_off: Sprite::toggle_off(),
@@ -342,6 +371,12 @@ impl FileBrowserB {
         }
 
         self.refresh();
+        // Resolve the known storage locations once: their paths let the breadcrumbs collapse to a
+        // single location button and feed the locations popup (see `draw_breadcrumbs`).
+        self.browse_locations = BrowseLocation::ALL
+            .iter()
+            .filter_map(|&location| location.get_path(&self.sk_info).map(|path| (location, path)))
+            .collect();
         Log::diag(format!("FileBrowserB browsing {:?}", self.dir));
         true
     }
@@ -499,6 +534,10 @@ impl FileBrowserB {
         }
 
         self.draw_status_line();
+
+        // The browse-locations popup is drawn last so it covers the whole window content. It is
+        // anchored to the drop-down button drawn by `draw_toolbar`.
+        self.draw_browse_locations_popup(btn);
         Ui::window_end();
 
         // Restore the caller's UiSettings exactly as they were before this window was drawn.
@@ -545,8 +584,15 @@ impl FileBrowserB {
             && let Some(parent) = self.dir.parent()
         {
             let parent = parent.to_path_buf();
-            // Clamp to root if a root is set.
-            let new_dir = if !self.root_dir.as_os_str().is_empty() && !parent.starts_with(&self.root_dir) {
+            // Clamp to the allowed root: a real `root_dir`, or the `BrowseLocation` holding `dir`
+            // when `root_dir` is the virtual all-locations root.
+            let new_dir = if self.root_is_all_browse_locations() {
+                match self.browse_location_of_dir() {
+                    Some((_, root)) if parent.starts_with(&root) => parent,
+                    Some((_, root)) => root,
+                    None => parent,
+                }
+            } else if !self.root_dir.as_os_str().is_empty() && !parent.starts_with(&self.root_dir) {
                 self.root_dir.clone()
             } else {
                 parent
@@ -608,17 +654,27 @@ impl FileBrowserB {
         // we reduce the size of the buttons:
         let btn = btn * 0.9;
 
+        // The popup anchor is refreshed every frame, see `draw_browse_locations_popup`.
+        self.location_button = None;
+
         // Build path components from filesystem root to current dir.
         let components: Vec<PathBuf> =
             self.dir.ancestors().collect::<Vec<_>>().into_iter().rev().map(PathBuf::from).collect();
 
-        // If root_dir is set, only show breadcrumbs from root_dir onwards.
+        // The trail starts at the visible root: `root_dir` when it is a real directory, or the
+        // `BrowseLocation` holding `dir` when `root_dir` is the virtual all-locations root.
         // If root_dir is empty (default), show the full path.
-        let start_idx = if self.root_dir.as_os_str().is_empty() {
-            0
+        let start_dir = if self.root_is_all_browse_locations() {
+            self.browse_location_of_dir().map(|(_, path)| path)
+        } else if self.root_dir.as_os_str().is_empty() {
+            None
         } else {
-            components.iter().position(|c| *c == self.root_dir).unwrap_or(0)
+            Some(self.root_dir.clone())
         };
+        let start_idx = start_dir
+            .as_ref()
+            .and_then(|root| components.iter().position(|component| component == root))
+            .unwrap_or(0);
 
         // (label, target path) pairs to display, from root to current dir.
         let labels: Vec<(String, PathBuf)> = components
@@ -654,11 +710,19 @@ impl FileBrowserB {
         // Deferred navigation target, applied after the borrow of the labels.
         let mut navigate: Option<PathBuf> = None;
 
-        Ui::push_tint(self.appearence.button_tint);
-        Ui::push_text_style(self.appearence.small_style);
         // The UI layout advances leftward: x starts at the row's top-left corner and decreases,
         // unbounded on the right — the path may overflow the window.
         let mut x = at.x;
+
+        // The row always starts with the drop-down button offering the other BrowseLocations allowed
+        // by `root_dir` (nothing is drawn when there is none).
+        let dropdown_w = self.draw_locations_dropdown_button(btn, Vec3::new(x, at.y, at.z));
+        if dropdown_w > 0.0 {
+            x -= dropdown_w + gutter / 3.0;
+        }
+
+        Ui::push_tint(self.appearence.button_tint);
+        Ui::push_text_style(self.appearence.small_style);
         for (label, target) in &labels {
             let w = btn_w(label);
             if Ui::button(label).at([x, at.y, at.z], [w, btn.y]).press() {
@@ -672,6 +736,168 @@ impl FileBrowserB {
         if let Some(target) = navigate {
             self.navigate_to(target);
         }
+    }
+
+    /// Draws the leading drop-down button of the breadcrumb row: an `arrow_down` icon opening the
+    /// browse-locations popup, so the [`BrowseLocation`]s stay reachable from anywhere. It is drawn
+    /// on every breadcrumb row where at least one other location is available. Returns the button
+    /// width, `0.0` when it was not drawn.
+    fn draw_locations_dropdown_button(&mut self, btn: Vec2, at: Vec3) -> f32 {
+        if self.other_browse_locations().is_empty() {
+            return 0.0;
+        }
+        Ui::push_tint(self.appearence.button_tint);
+        Ui::push_id("fb_locations_dropdown");
+        let pressed = Ui::button("fb_locations_dropdown")
+            .image(&self.arrow_down)
+            .image_layout(UiBtnLayout::CenterNoText)
+            .at([at.x, at.y, at.z], [btn.y, btn.y])
+            .press();
+        Ui::pop_id();
+        Ui::pop_tint();
+
+        self.set_location_button_anchor(at, btn.y, btn.y);
+        if pressed {
+            self.show_browse_locations = !self.show_browse_locations;
+        }
+        btn.y
+    }
+
+    /// Stores the layout bounds of a breadcrumb-row button drawn at `at` (its top-left corner) with
+    /// the given `width` and `height`: the anchor of the browse-locations popup, see
+    /// [`FileBrowserB::draw_browse_locations_popup`].
+    fn set_location_button_anchor(&mut self, at: Vec3, width: f32, height: f32) {
+        self.location_button = Some(Bounds {
+            center: Vec3::new(at.x - width / 2.0, at.y - height / 2.0, at.z),
+            dimensions: Vec3::new(width, height, 0.0),
+        });
+    }
+
+    /// Draws the popup listing the other [`BrowseLocation`]s allowed by
+    /// [`FileBrowserB::root_dir`], anchored just below the leading drop-down button (see
+    /// [`FileBrowserB::draw_locations_dropdown_button`]). Pressing an entry navigates to that
+    /// location.
+    ///
+    /// Nothing is drawn when the popup is closed, when the drop-down button is gone (the dir
+    /// changed, which closes the popup) or when no other location is allowed.
+    fn draw_browse_locations_popup(&mut self, btn: Vec2) {
+        if !self.show_browse_locations {
+            return;
+        }
+        let Some(anchor) = self.location_button else {
+            self.show_browse_locations = false;
+            return;
+        };
+        let locations = self.other_browse_locations();
+        if locations.is_empty() {
+            self.show_browse_locations = false;
+            return;
+        }
+        // Same reduced size as the breadcrumb buttons.
+        let btn = btn * 0.9;
+
+        // Wide enough for the longest location name, plus some padding.
+        let width = locations
+            .iter()
+            .map(|(label, _)| label.chars().count() as f32 * btn.x * 0.15 + btn.y * 1.5)
+            .fold(0.0_f32, f32::max);
+
+        // Left edge of the drop-down button, right below its bottom edge (X+ goes left, Y+ goes up).
+        // The negative Z offset lifts the popup in front of the window content instead of blending
+        // with it.
+        let start = Vec3::new(
+            anchor.center.x + anchor.dimensions.x / 2.0,
+            anchor.center.y - anchor.dimensions.y / 2.0 - btn.y * 0.1,
+            anchor.center.z - 0.02,
+        );
+
+        Ui::push_id("fb_browse_locations");
+        // Brighter than the breadcrumbs: the popup floats above the window and must read clearly.
+        Ui::push_text_style(self.appearence.label_style);
+        // Auto height: the panel wraps the buttons actually drawn.
+        Ui::layout_push(start, Vec2::new(width, 0.0), false);
+        Ui::panel_begin(Some(UiPad::Inside));
+
+        let mut chosen = None;
+        let count = locations.len();
+        for (index, (label, path)) in locations.iter().enumerate() {
+            // Auto-sized buttons: the fixed layout width only drives the popup panel's width.
+            if Ui::button(label).press() {
+                chosen = Some(path.clone());
+            }
+            if index + 1 < count {
+                Ui::next_line();
+            }
+        }
+
+        Ui::panel_end();
+        Ui::layout_pop();
+        Ui::pop_text_style();
+        Ui::pop_id();
+
+        if let Some(path) = chosen {
+            self.navigate_to(path);
+        }
+    }
+
+    /// Whether [`FileBrowserB::root_dir`] is the virtual [`ALL_BROWSE_LOCATIONS_ROOT`]: the browsable
+    /// universe is then the union of the [`BrowseLocation`]s (and their subdirectories) instead of a
+    /// real directory.
+    fn root_is_all_browse_locations(&self) -> bool {
+        self.root_dir.to_string_lossy().contains(ALL_BROWSE_LOCATIONS_ROOT)
+    }
+
+    /// The resolved [`BrowseLocation`] holding [`FileBrowserB::dir`] (itself included), with its path.
+    /// The deepest location wins when several are nested. `None` when `dir` is outside every location.
+    fn browse_location_of_dir(&self) -> Option<(BrowseLocation, PathBuf)> {
+        self.browse_locations
+            .iter()
+            .filter(|(_, path)| self.dir == *path || self.dir.starts_with(path))
+            .max_by_key(|(_, path)| path.components().count())
+            .map(|(location, path)| (*location, path.clone()))
+    }
+
+    /// The [`BrowseLocation`]s other than the one holding the browsed directory whose resolved
+    /// directory is allowed by [`FileBrowserB::root_dir`] and exists on disk: the entries of the
+    /// breadcrumbs popup, as `(label, path)` pairs. An empty `root_dir` and the virtual
+    /// [`ALL_BROWSE_LOCATIONS_ROOT`] allow every existing location, while a real `root_dir` only
+    /// allows the locations inside it. Locations resolving to the same folder (`Internal` and
+    /// `External` on macOS and Windows) are only listed once, and distinct locations sharing the same
+    /// final folder name (the app's data and settings folders on Linux) are named after their generic
+    /// location instead, so their buttons never collide.
+    fn other_browse_locations(&self) -> Vec<(String, PathBuf)> {
+        let all_locations = self.root_dir.as_os_str().is_empty() || self.root_is_all_browse_locations();
+        // The browsed location itself (or the browsed directory, when it is not a location) is never
+        // one of the "other" locations. The location holding a subdirectory stays listed, as a way
+        // back to its root.
+        let mut seen = vec![self.dir.clone()];
+        let mut candidates = Vec::new();
+        for (location, path) in &self.browse_locations {
+            if !path.is_dir()
+                || (!all_locations && !path.starts_with(&self.root_dir))
+                || seen.iter().any(|known| known == path)
+            {
+                continue;
+            }
+            seen.push(path.clone());
+            candidates.push((*location, Self::location_label(path), path.clone()));
+        }
+        candidates
+            .iter()
+            .map(|(location, label, path)| {
+                let name_collision = candidates.iter().filter(|(_, other, _)| other == label).count() > 1;
+                let label = if name_collision { location.as_str().to_string() } else { label.clone() };
+                (label, path.clone())
+            })
+            .collect()
+    }
+
+    /// The name shown for a resolved [`BrowseLocation`] path: its final component, or the whole path
+    /// for a filesystem root.
+    fn location_label(path: &Path) -> String {
+        path.file_name()
+            .map(|name| name.to_string_lossy().into_owned())
+            .unwrap_or_else(|| path.to_string_lossy().into_owned())
     }
 
     fn draw_new_folder_input(&mut self) {
@@ -1534,10 +1760,17 @@ impl FileBrowserB {
         self.files_selected_names.clear();
         self.confirm_delete = false;
         self.needs_refresh = true;
+        // The locations popup only makes sense for the location its button was opened from.
+        self.show_browse_locations = false;
     }
 
     /// Can we browse the parent directory ?
     fn can_go_up(&self) -> bool {
+        if self.root_is_all_browse_locations() {
+            // The virtual root is the `BrowseLocation` holding `dir`: going above it would leave the
+            // allowed universe.
+            return self.browse_location_of_dir().is_some_and(|(_, root)| self.dir != root);
+        }
         match self.dir.parent() {
             Some(parent) => {
                 if self.root_dir.as_os_str().is_empty() {
@@ -1552,8 +1785,14 @@ impl FileBrowserB {
 
     /// Switching to a parent directory from the breadcrumbs
     fn navigate_to(&mut self, target: PathBuf) {
-        // Only navigate within the root if a root is set.
-        if !self.root_dir.as_os_str().is_empty() && !target.starts_with(&self.root_dir) {
+        if self.root_is_all_browse_locations() {
+            // Only the BrowseLocations and their subdirectories are reachable with the virtual root.
+            if !self.browse_locations.iter().any(|(_, path)| target.starts_with(path)) {
+                Log::warn(format!("FileBrowserB: refusing to navigate outside the browse locations to {:?}", target));
+                return;
+            }
+        } else if !self.root_dir.as_os_str().is_empty() && !target.starts_with(&self.root_dir) {
+            // Only navigate within the root if a real root is set.
             Log::warn(format!("FileBrowserB: refusing to navigate outside root to {:?}", target));
             return;
         }

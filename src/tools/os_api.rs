@@ -438,6 +438,19 @@ pub enum BrowseLocation {
 }
 
 impl BrowseLocation {
+    /// Every [`BrowseLocation`], in display order (the application internals first, then the user's public
+    /// folders). Useful to enumerate the locations a directory (e.g. the `root_dir` of a file browser) contains,
+    /// resolving each one with [`BrowseLocation::get_path`].
+    pub const ALL: [BrowseLocation; 7] = [
+        BrowseLocation::Internal,
+        BrowseLocation::External,
+        BrowseLocation::Documents,
+        BrowseLocation::Pictures,
+        BrowseLocation::Movies,
+        BrowseLocation::Music,
+        BrowseLocation::Downloads,
+    ];
+
     /// The on-disk directory name, used to build the public directory path
     /// (e.g. `/storage/self/primary/<dir>` on Android, `~/<dir>` on PC).
     pub fn as_str(&self) -> &'static str {

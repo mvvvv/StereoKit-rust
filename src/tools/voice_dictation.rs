@@ -693,6 +693,7 @@ use crate::{
     maths::{Pose, Vec2, Vec3},
     sprite::Sprite,
     system::{Align, Hierarchy, Text, TextFit, TextStyle},
+    tools::file_browser_b::ALL_BROWSE_LOCATIONS_ROOT,
     ui::{UiBtnLayout, UiMove, UiPad, UiScroll, UiWin},
     util::{Color128, Time, named_colors},
 };
@@ -1592,8 +1593,7 @@ impl VoicePanel {
             .or_else(|| BrowseLocation::Documents.get_path(&self.sk_info))
             .or_else(|| std::env::current_dir().ok())
             .unwrap_or_else(|| PathBuf::from("/"));
-        file_browser.root_dir =
-            file_browser.dir.parent().map(PathBuf::from).unwrap_or_else(|| file_browser.dir.clone());
+        file_browser.root_dir = PathBuf::from(ALL_BROWSE_LOCATIONS_ROOT);
         // Shorter than the browser default, with the floor of the resize handle lowered as well so that the window is
         // not lifted back to the default height at start.
         file_browser.appearence.window_size = Vec2 { x: 0.50, y: 0.42 };
