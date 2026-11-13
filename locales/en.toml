@@ -1,6 +1,6 @@
 # English (fallback) catalogue of the crate's tools.
-# Looked up at runtime by the `t!` macro of rust-i18n (see `src/tools/file_browser_b.rs`),
-# switchable with `tools::locale::set_locale`. Add a `<locale>.toml` file with the
+# Looked up at runtime by the `t!` macro of rust-i18n (see `src/tools/file_browser_b.rs` and
+# `src/tools/voice_dictation.rs`), switchable with `tools::locale::set_locale`. Add a `<locale>.toml` file with the
 # same keys to add a language.
 [locales]
 language = "English"
@@ -97,3 +97,22 @@ access_line = "access: %{access}"
 read_only = "read-only"
 read_write = "read/write"
 path_label = "path:"
+
+[voice_dictation]
+# --- parameter window ---
+title = "Voice dictation"
+model_folder = "Model folder:"
+record = "Record"
+stop = "Stop"
+starting = "Starting..."
+clear_log = "Clear Log"
+mode_live = "Live"
+mode_batch = "Batch"
+
+# --- status line ---
+status_no_model = "No model: choose the model folder (encoder/decoder/joiner .onnx + tokens.txt)."
+status_no_streaming_model = "No streaming model in '%{dir}': need encoder/decoder/joiner .onnx and tokens.txt."
+
+# --- batch series header ---
+send = "Send"
+clear = "Clear"

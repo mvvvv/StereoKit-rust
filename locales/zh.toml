@@ -89,3 +89,22 @@ access_line = "访问权限：%{access}"
 read_only = "只读"
 read_write = "读/写"
 path_label = "路径："
+
+[voice_dictation]
+# --- 参数窗口 ---
+title = "语音听写"
+model_folder = "模型文件夹："
+record = "录音"
+stop = "停止"
+starting = "正在启动..."
+clear_log = "清除日志"
+mode_live = "实时"
+mode_batch = "批量"
+
+# --- 状态行 ---
+status_no_model = "没有模型：请选择模型文件夹（encoder/decoder/joiner .onnx + tokens.txt）。"
+status_no_streaming_model = "'%{dir}' 中没有流式模型：需要 encoder/decoder/joiner .onnx 和 tokens.txt。"
+
+# --- 批量系列标题栏 ---
+send = "发送"
+clear = "清除"

@@ -48,13 +48,10 @@ placement = ["dep:serde", "dep:serde_json"]
 test-xr-mode = []
 # Enable profiling in StereoKitC using tracy
 profile = []
-# Add the in-VR file browser tool (tools::file_browser_b::FileBrowserB), translated with rust-i18n
-# (compile-time embedded `locales/*` catalogues, runtime switch with tools::locales::set_locale)
+# Add the in-VR file browser tool (tools::file_browser_b::FileBrowserB)
 file-browser = ["locales"]
 locales = ["dep:rust-i18n"]
-# Voice dictation: streaming speech to text with sherpa-onnx (tools::voice_dictation::VoiceDictation).
-# The sherpa-onnx native library is downloaded by its build script; see the module documentation for the model files.
-# The dictation window uses the file browser to choose the model folder, hence the `file-browser` dependency.
+# Voice dictation: streaming speech to text with sherpa-onnx.
 voice-dictation = ["dep:sherpa-onnx", "file-browser"]
 # All the extra tools. Useful for test/doc
 tools = ["file-browser", "placement", "voice-dictation"]

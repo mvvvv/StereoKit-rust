@@ -89,3 +89,22 @@ access_line = "액세스: %{access}"
 read_only = "읽기 전용"
 read_write = "읽기/쓰기"
 path_label = "경로:"
+
+[voice_dictation]
+# --- 매개변수 창 ---
+title = "음성 받아쓰기"
+model_folder = "모델 폴더:"
+record = "녹음"
+stop = "중지"
+starting = "시작 중..."
+clear_log = "로그 지우기"
+mode_live = "실시간"
+mode_batch = "일괄"
+
+# --- 상태 줄 ---
+status_no_model = "모델 없음: 모델 폴더를 선택하세요 (encoder/decoder/joiner .onnx + tokens.txt)."
+status_no_streaming_model = "'%{dir}'에 스트리밍 모델이 없습니다: encoder/decoder/joiner .onnx와 tokens.txt가 필요합니다."
+
+# --- 일괄 시리즈 헤더 ---
+send = "보내기"
+clear = "지우기"

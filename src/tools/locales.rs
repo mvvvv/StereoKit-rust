@@ -1,9 +1,10 @@
 use crate::system::{Log, TextContext};
 use crate::util::Platform;
-/// Sets the locale used by some of the tools like [`FileBrowserB`](crate::tools::file_browser_b::FileBrowserB) texts
-/// (window title, toolbar, panels, entry annotations, preview panel...), e.g. `set_locale("fr")`. It is a global setting
+/// Sets the locale used by some of the tools like [`FileBrowserB`](crate::tools::file_browser_b::FileBrowserB) and
+/// [`VoicePanel`](crate::tools::voice_dictation::VoicePanel) texts (window title, toolbar, panels, entry annotations,
+/// preview panel, dictation status...), e.g. `set_locale("fr")`. It is a global setting
 /// (shared with any other rust-i18n user of the crate)
-/// applied from the next drawn frame — no need to close and reopen the browser.
+/// applied from the next drawn frame — no need to close and reopen the tools windows.
 ///
 /// The available locales are the `locales/*.toml` catalogues compiled into the crate (English fallback, Chinese,
 /// French, German, Italian, Japanese, Korean, Portuguese and Spanish bundled, see [`available_locales`]); a locale

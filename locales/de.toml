@@ -89,3 +89,22 @@ access_line = "Zugriff: %{access}"
 read_only = "schreibgeschützt"
 read_write = "Lesen/Schreiben"
 path_label = "Pfad:"
+
+[voice_dictation]
+# --- Parameterfenster ---
+title = "Sprachdiktat"
+model_folder = "Modellordner:"
+record = "Aufnehmen"
+stop = "Stopp"
+starting = "Startet..."
+clear_log = "Protokoll löschen"
+mode_live = "Live"
+mode_batch = "Stapel"
+
+# --- Statuszeile ---
+status_no_model = "Kein Modell: Wählen Sie den Modellordner (encoder/decoder/joiner .onnx + tokens.txt)."
+status_no_streaming_model = "Kein Streaming-Modell in '%{dir}': encoder/decoder/joiner .onnx und tokens.txt erforderlich."
+
+# --- Kopfzeile einer Stapelserie ---
+send = "Senden"
+clear = "Löschen"

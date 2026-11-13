@@ -89,3 +89,22 @@ access_line = "accesso: %{access}"
 read_only = "sola lettura"
 read_write = "lettura/scrittura"
 path_label = "percorso:"
+
+[voice_dictation]
+# --- finestra dei parametri ---
+title = "Dettatura vocale"
+model_folder = "Cartella del modello:"
+record = "Registra"
+stop = "Ferma"
+starting = "Avvio..."
+clear_log = "Cancella registro"
+mode_live = "Live"
+mode_batch = "A lotti"
+
+# --- riga di stato ---
+status_no_model = "Nessun modello: scegli la cartella del modello (encoder/decoder/joiner .onnx + tokens.txt)."
+status_no_streaming_model = "Nessun modello di streaming in '%{dir}': servono encoder/decoder/joiner .onnx e tokens.txt."
+
+# --- intestazione di una serie di lotti ---
+send = "Invia"
+clear = "Cancella"

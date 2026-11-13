@@ -92,3 +92,22 @@ access_line = "accès : %{access}"
 read_only = "lecture seule"
 read_write = "lecture/écriture"
 path_label = "chemin :"
+
+[voice_dictation]
+# --- fenêtre des paramètres ---
+title = "Dictée vocale"
+model_folder = "Dossier du modèle :"
+record = "Enregistrer"
+stop = "Arrêter"
+starting = "Démarrage..."
+clear_log = "Effacer le journal"
+mode_live = "Direct"
+mode_batch = "Par lots"
+
+# --- ligne d'état ---
+status_no_model = "Aucun modèle : choisissez le dossier du modèle (encoder/decoder/joiner .onnx + tokens.txt)."
+status_no_streaming_model = "Aucun modèle de flux dans '%{dir}' : il faut encoder/decoder/joiner .onnx et tokens.txt."
+
+# --- en-tête d'une série de lots ---
+send = "Envoyer"
+clear = "Effacer"

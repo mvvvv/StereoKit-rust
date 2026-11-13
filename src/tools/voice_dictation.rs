@@ -51,7 +51,9 @@
 //! The module also ships [`VoicePanel`], a ready-to-use stepper window: model folder picker, record/stop, live level,
 //! provisional text and a scrollable log of the committed sentences. It pops up in front of the user, at 60% scale,
 //! hides itself with its close button (the stepper stays registered, its batch windows stay on screen), and can be
-//! resized / zoomed with its scale handle. The `voice1` demo only registers it.
+//! resized / zoomed with its scale handle. The `voice1` demo only registers it. Its texts (title, buttons, statuses)
+//! follow the locale selected with [`set_locale`](crate::tools::locales::set_locale), through the `voice_dictation`
+//! keys of the `locales/*.toml` catalogues, like the texts of the file browser.
 //!
 //! The window delivers the committed texts in two ways ([`DictationMode`]):
 //!
@@ -96,6 +98,11 @@ use std::{
 };
 
 use sherpa_onnx::{OnlineRecognizer, OnlineRecognizerConfig};
+
+// Texts of the `VoicePanel` window, translated with the same `locales/*.toml` catalogues as the file browser (see
+// `tools::locales::set_locale`). Only `VoicePanel` is translated, and it is not compiled without the event loop.
+#[cfg(not(feature = "no-event-loop"))]
+use rust_i18n::t;
 
 use crate::{
     prelude::*,
@@ -1037,6 +1044,32 @@ fn batch_drop_target(groups: &[BatchGroup], width: f32, line: f32, gap: f32) -> 
     batch_drop_slot(groups, middle, width, line, gap, &skip).map(|(index, _)| groups[index].series)
 }
 
+/// What the status line of the parameter window says. The texts are looked up when the window is drawn, so a locale
+/// change (see [`set_locale`](crate::tools::locales::set_locale)) applies to the next frame, like the other texts of
+/// the window.
+#[cfg(not(feature = "no-event-loop"))]
+#[derive(Debug, Clone, PartialEq)]
+enum ModelStatus {
+    /// No model folder chosen yet.
+    NoModel,
+    /// The folder of the streaming model in use.
+    Loaded(String),
+    /// A folder that does not hold a complete streaming model.
+    Invalid(String),
+}
+
+#[cfg(not(feature = "no-event-loop"))]
+impl ModelStatus {
+    /// The text of the status line, in the current locale.
+    fn text(&self) -> std::borrow::Cow<'static, str> {
+        match self {
+            ModelStatus::NoModel => t!("voice_dictation.status_no_model"),
+            ModelStatus::Loaded(dir) => std::borrow::Cow::Owned(dir.clone()),
+            ModelStatus::Invalid(dir) => t!("voice_dictation.status_no_streaming_model", dir = dir.clone()),
+        }
+    }
+}
+
 /// A ready-to-use dictation window: model folder picker, record/stop, live level, provisional text and a
 /// scrollable log of the committed sentences.
 ///
@@ -1168,8 +1201,9 @@ pub struct VoicePanel {
     batch_style: TextStyle,
     /// Height of `batch_style`, in meters: the text of the UI, 40% smaller.
     batch_text_height: f32,
-    /// The model status: the chosen folder, or what is missing.
-    status: String,
+    /// What the status line of the parameter window says. The texts are looked up when the window is drawn, so a
+    /// locale change applies to the next frame, like the other texts of the window.
+    status: ModelStatus,
     /// Elapsed time in seconds, for the animated ellipsis of the microphone warm-up.
     anim_time: f32,
     /// The close button icon.
@@ -1216,7 +1250,7 @@ impl Default for VoicePanel {
             batch_next_series: 1,
             batch_style: TextStyle::from_font(&font, batch_text_height, named_colors::WHITE),
             batch_text_height,
-            status: "No model: choose the model folder (encoder/decoder/joiner .onnx + tokens.txt).".to_string(),
+            status: ModelStatus::NoModel,
             anim_time: 0.0,
             close_sprite: Sprite::close(),
             browser_counter: 0,
@@ -1345,7 +1379,7 @@ impl VoicePanel {
 
     /// Draw the parameter window: model folder, record controls, mode, provisional text and log.
     fn draw_param_window(&mut self) {
-        Ui::window("Voice dictation")
+        Ui::window(t!("voice_dictation.title"))
             .pose(&mut self.window_pose)
             .size(self.appearence.scaled_window_size())
             .begin();
@@ -1363,14 +1397,14 @@ impl VoicePanel {
         }
         Ui::same_line();
 
-        if Ui::button("Model folder:")
+        if Ui::button(t!("voice_dictation.model_folder"))
             .size(Vec2::new(self.appearence.scale(0.17), self.appearence.scale(0.03)))
             .press()
         {
             self.spawn_model_browser();
         }
         Ui::same_line();
-        Ui::text(&self.status).fit(TextFit::Exact).draw();
+        Ui::text(self.status.text()).fit(TextFit::Exact).draw();
 
         // The recording controls take a line of their own: the header line is already full once the status is on it.
         let mut after_controls = false;
@@ -1382,11 +1416,11 @@ impl VoicePanel {
             // of the REC button of the mixer demo: the built-in toggle icons, the label, and a tint that is green
             // when the session is idle and red while it records. The panel around the button gives it some relief.
             let label = if starting {
-                "Starting..."
+                t!("voice_dictation.starting")
             } else if recording {
-                "Stop"
+                t!("voice_dictation.stop")
             } else {
-                "Record"
+                t!("voice_dictation.record")
             };
             let icon = if starting || recording { Sprite::toggle_on() } else { Sprite::toggle_off() };
             Ui::panel_begin(Some(UiPad::Inside));
@@ -1409,7 +1443,7 @@ impl VoicePanel {
             }
             Ui::pop_tint();
             Ui::same_line();
-            if Ui::button("Clear Log")
+            if Ui::button(t!("voice_dictation.clear_log"))
                 .size(Vec2::new(self.appearence.scale(0.07), self.appearence.scale(0.03)))
                 .press()
             {
@@ -1443,7 +1477,7 @@ impl VoicePanel {
             Ui::same_line();
         }
         Ui::panel_begin(Some(UiPad::Inside));
-        if Ui::radio("Live", self.mode == DictationMode::Live)
+        if Ui::radio(t!("voice_dictation.mode_live"), self.mode == DictationMode::Live)
             .images(Sprite::radio_off(), Sprite::radio_on())
             .size(Vec2::new(self.appearence.scale(0.09), self.appearence.scale(0.03)))
             .press()
@@ -1451,7 +1485,7 @@ impl VoicePanel {
             self.mode = DictationMode::Live;
         }
         Ui::same_line();
-        if Ui::radio("Batch", self.mode == DictationMode::Batch)
+        if Ui::radio(t!("voice_dictation.mode_batch"), self.mode == DictationMode::Batch)
             .images(Sprite::radio_off(), Sprite::radio_on())
             .size(Vec2::new(self.appearence.scale(0.10), self.appearence.scale(0.03)))
             .press()
@@ -1527,7 +1561,7 @@ impl VoicePanel {
         match DictationModel::from_dir(dir) {
             Some(model) => {
                 Log::info(format!("VoicePanel: model found in '{}'", dir.display()));
-                self.status = dir.display().to_string();
+                self.status = ModelStatus::Loaded(dir.display().to_string());
                 self.model_dir = Some(dir.to_path_buf());
                 match self.dictation.as_mut() {
                     // Stops the running session and keeps the tool.
@@ -1536,11 +1570,8 @@ impl VoicePanel {
                 }
             }
             None => {
-                self.status = format!(
-                    "No streaming model in '{}': need encoder/decoder/joiner .onnx and tokens.txt.",
-                    dir.display()
-                );
-                Log::warn(format!("VoicePanel: {}", self.status));
+                self.status = ModelStatus::Invalid(dir.display().to_string());
+                Log::warn(format!("VoicePanel: {}", self.status.text()));
             }
         }
     }
@@ -1746,12 +1777,14 @@ impl VoicePanel {
             // The buttons keep their readable text, and the series id keeps them apart from the other series.
             Ui::push_id(format!("series_{}", group.series));
             Hierarchy::push(group.pose, None);
-            if Ui::button("Send").at(Vec3::new(clear_x - margin - action.x, y, forward), action).press()
+            if Ui::button(t!("voice_dictation.send"))
+                .at(Vec3::new(clear_x - margin - action.x, y, forward), action)
+                .press()
                 && let Some(chunk) = group.chunks.first()
             {
                 intents.push(BatchIntent::Send(chunk.id));
             }
-            if Ui::button("Clear").at(Vec3::new(clear_x, y, forward), action).press()
+            if Ui::button(t!("voice_dictation.clear")).at(Vec3::new(clear_x, y, forward), action).press()
                 && let Some(chunk) = group.chunks.first()
             {
                 intents.push(BatchIntent::Clear(chunk.id));
@@ -2229,5 +2262,22 @@ mod panel_tests {
         assert!(!batch_pose_moved(pose, pose));
         assert!(batch_pose_moved(pose, Pose::new([0.0, 1.02, -0.5], Some(pose.orientation))));
         assert!(batch_pose_moved(pose, Pose::new(pose.position, Some(Quat::from_angles(0.0, 40.0, 0.0)))));
+    }
+
+    /// The texts of the window come from the `voice_dictation` section of the catalogues: every locale has them, a
+    /// translated locale really changes them, and the model folder placeholder is substituted.
+    #[test]
+    fn voice_dictation_texts_are_translated() {
+        for locale in crate::tools::locales::available_locales() {
+            let title = rust_i18n::t!("voice_dictation.title", locale = locale.as_str());
+            assert!(!title.is_empty(), "no title in the locale {locale}");
+            assert_ne!(title, "voice_dictation.title", "no title key in the locale {locale}");
+        }
+        assert_eq!(rust_i18n::t!("voice_dictation.title", locale = "fr"), "Dictée vocale");
+        assert_eq!(rust_i18n::t!("voice_dictation.send", locale = "fr"), "Envoyer");
+        assert_eq!(
+            rust_i18n::t!("voice_dictation.status_no_streaming_model", locale = "fr", dir = "/tmp"),
+            "Aucun modèle de flux dans '/tmp' : il faut encoder/decoder/joiner .onnx et tokens.txt."
+        );
     }
 }

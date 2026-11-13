@@ -89,3 +89,22 @@ access_line = "アクセス：%{access}"
 read_only = "読み取り専用"
 read_write = "読み取り/書き込み"
 path_label = "パス："
+
+[voice_dictation]
+# --- パラメータウィンドウ ---
+title = "音声入力"
+model_folder = "モデルフォルダ："
+record = "録音"
+stop = "停止"
+starting = "起動中..."
+clear_log = "ログを消去"
+mode_live = "ライブ"
+mode_batch = "バッチ"
+
+# --- ステータス行 ---
+status_no_model = "モデルがありません：モデルフォルダを選択してください（encoder/decoder/joiner .onnx + tokens.txt）。"
+status_no_streaming_model = "'%{dir}' にストリーミングモデルがありません：encoder/decoder/joiner .onnx と tokens.txt が必要です。"
+
+# --- バッチシリーズのヘッダー ---
+send = "送信"
+clear = "消去"
