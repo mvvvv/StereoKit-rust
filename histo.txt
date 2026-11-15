@@ -1,12 +1,12 @@
- #------A bunch of commands you'll use here
- #---- installing
- cargo install --path .  
- cargo compile_sks
- rustup target add aarch64-linux-android
- rustup target add x86_64-pc-windows-gnu
- #-MacOS needs this variable to retrieve MoltenVK library:
- export DYLD_LIBRARY_PATH=$(brew --prefix molten-vk)/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}
- export VK_ICD_FILENAMES=$(brew --prefix molten-vk)/share/vulkan/icd.d/MoltenVK_icd.json
+#------A bunch of commands you'll use here
+#---- installing
+clear; cargo install --path . -F skc-shared
+cargo compile_sks
+rustup target add aarch64-linux-android
+rustup target add x86_64-pc-windows-gnu
+#-MacOS needs this variable to retrieve MoltenVK library:
+export DYLD_LIBRARY_PATH=$(brew --prefix molten-vk)/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}
+export VK_ICD_FILENAMES=$(brew --prefix molten-vk)/share/vulkan/icd.d/MoltenVK_icd.json
 #-Linux can use llvmpipe instead of the GPU driver almost for the simulator:
 VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.json
 

@@ -1,13 +1,13 @@
 [package]
-name = "sk_demos"     # Use this Cargo.toml for the Android demo only
+name = "sk_demos" # Use this Cargo.toml for the Android demo only
 version = "0.1.0"
 edition = "2024"
 
 [features]
 default = ["voice-dictation", "locales"]
 # As we are linking to StereoKit-rust we have to mimic these features.
-no-event-loop = []   
-file-browser = [] 
+no-event-loop = []
+file-browser = []
 voice-dictation = ["file-browser"]
 skc-shared = []
 locales = []
@@ -16,14 +16,16 @@ locales = []
 crate-type = ["lib", "cdylib"]
 
 [dependencies]
-stereokit-rust = { path = "../StereoKit-rust", features = ["tools"]}
+stereokit-rust = { path = "../StereoKit-rust", features = ["tools"] }
 thiserror = "2.0"
 bitflags = "2.13"
 openxr-sys = "0.14"
-stereokit-macros = { path = "../StereoKit-rust/stereokit-macros" }
 
 [target.'cfg(target_os = "android")'.dependencies]
-stereokit-rust = { path = "../StereoKit-rust", features = ["build-dynamic-openxr", "tools"] }
+stereokit-rust = { path = "../StereoKit-rust", features = [
+    "build-dynamic-openxr",
+    "tools",
+] }
 log = "0.4"
 android_logger = "0.15"
 android-activity = { version = "0.6", features = ["native-activity"] }

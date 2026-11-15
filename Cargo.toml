@@ -51,7 +51,7 @@ profile = []
 # Add the in-VR file browser tool (tools::file_browser_b::FileBrowserB)
 file-browser = ["locales"]
 locales = ["dep:rust-i18n"]
-# Voice dictation: streaming speech to text with sherpa-onnx.
+# Voice dictation: streaming speech to text with sherpa-onnx (no prebuilt library for the windows-gnu target)
 voice-dictation = ["dep:sherpa-onnx", "file-browser"]
 # All the extra tools. Useful for test/doc
 tools = ["file-browser", "placement", "voice-dictation"]
@@ -90,8 +90,6 @@ glam = { version = "0.34", optional = true }
 openxr-sys = "0.14"
 # Compile-time translations for the tools (see the `file-browser` feature), runtime locale switching
 rust-i18n = { version = "4", optional = true }
-# Streaming speech to text, for the `voice-dictation` feature.
-sherpa-onnx = { version = "2.0.1", optional = true }
 # dlopen/dlsym (Linux, macOS) / LoadLibrary (Windows) support for the hot-reload host.
 libloading = { version = "0.9", optional = true }
 # The file format of the placements of the windows (the `placement` feature).
@@ -99,6 +97,11 @@ serde = { version = "1", features = ["derive"], optional = true }
 serde_json = { version = "1", optional = true }
 #stereokit-macros = { path = "./stereokit-macros", version = "0.6" }
 stereokit-macros = "0.6"
+
+# sherpa-onnx (the `voice-dictation` feature) ships prebuilt libraries for linux, macos, android, ios and
+# windows-msvc, but none for windows-gnu.
+[target.'cfg(not(all(target_os = "windows", target_env = "gnu")))'.dependencies]
+sherpa-onnx = { version = "2.0.1", optional = true }
 
 [target.'cfg(target_os = "android")'.dependencies]
 log = "0.4"

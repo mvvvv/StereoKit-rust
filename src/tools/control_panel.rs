@@ -132,7 +132,7 @@ pub struct ControlPanel {
     pub world_lighting_event: Option<(StepperId, String)>,
     /// Whether the voice dictation session records. Should be false at Start.
     /// `false`.
-    #[cfg(feature = "voice-dictation")]
+    #[cfg(voice_dictation)]
     pub dictation_recording: bool,
     /// Whether the Simulator window is fullscreen, initialized from the settings by [`ControlPanel::new`].
     pub simulator_fullscreen: bool,
@@ -302,7 +302,7 @@ impl ControlPanel {
             world_lighting,
             world_lighting_available,
             world_lighting_event: None,
-            #[cfg(feature = "voice-dictation")]
+            #[cfg(voice_dictation)]
             dictation_recording: false,
             simulator_fullscreen,
             mouse_mode_relative,
@@ -450,7 +450,7 @@ impl ControlPanel {
     /// see also [`ControlPanel::draw`] [`crate::sk::sk_app_focus`]
     pub fn update(&mut self, token: &MainThreadToken) {
         // The voice dictation panel shares whether it records by event: the Dictation button shows it.
-        #[cfg(feature = "voice-dictation")]
+        #[cfg(voice_dictation)]
         for event in token.get_event_report() {
             if let StepperAction::Event(stepper_id, key, value) = event
                 && stepper_id == crate::tools::voice_dictation::VOICE_PANEL_ID
@@ -459,8 +459,9 @@ impl ControlPanel {
                 self.dictation_recording = value == "true";
             }
         }
-        // Without the feature, the token is only there to keep a single call shape.
-        #[cfg(not(feature = "voice-dictation"))]
+        // Without the tool (feature off, or target without sherpa-onnx), the token is only there to keep a single
+        // call shape.
+        #[cfg(not(voice_dictation))]
         let _ = token;
 
         let app_focus = unsafe { crate::sk::sk_app_focus() };
@@ -602,7 +603,7 @@ impl ControlPanel {
             }
         }
         // The Dictation toggle shows the recording state the voice dictation panel shares.
-        #[cfg(feature = "voice-dictation")]
+        #[cfg(voice_dictation)]
         {
             use crate::tools::voice_dictation::{SHOW_PARAM_WINDOW, VOICE_PANEL_ID};
 

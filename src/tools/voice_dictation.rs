@@ -16,6 +16,9 @@
 //! stereokit-rust = { version = "0.4", features = ["voice-dictation"] }
 //! ```
 //!
+//! sherpa-onnx is not compiled for the `x86_64-pc-windows-gnu` (mingw) target, even when the feature is on, so the
+//! `tools` feature keeps working there (see the `voice_dictation` cfg emitted by `build.rs`).
+//!
 //! # Model
 //!
 //! A streaming (online) transducer model is needed: an `encoder`, a `decoder`, a `joiner` and a `tokens.txt`.

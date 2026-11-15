@@ -37,6 +37,20 @@ fn main() {
 
     println!("cargo:info=Compiling with {target_env} for {target_os} with profile {profile}");
 
+    // sherpa-onnx (the `voice-dictation` feature) ships prebuilt libraries for linux, macos, android, ios and
+    // windows-msvc, but none for the windows-gnu (mingw) target.
+    println!("cargo:rustc-check-cfg=cfg(voice_dictation)");
+    if target_os == "windows" && target_env == "gnu" {
+        if cfg!(feature = "voice-dictation") {
+            println!(
+                "cargo:warning=voice-dictation: sherpa-onnx has no prebuilt library for {target_os}-{target_env}, the \
+                 dictation tool stays disabled"
+            );
+        }
+    } else {
+        println!("cargo:rustc-cfg=voice_dictation");
+    }
+
     if env::var("DOCS_RS").is_ok() {
         println!("cargo:warning=Skipping build on docs.rs");
         return;
@@ -370,7 +384,10 @@ fn main() {
             if skc_shared_unix {
                 // Everything folds inside the shared StereoKitC library: link it dynamically (plus the shared openxr
                 // loader) and embed an rpath.
-                link_shared_stereokitec(&dst);
+                let deps_libs = cargo_profile_dir(&out_dir)
+                    .expect("OUT_DIR must live under <target_dir>/[<triple>/]<profile>/build")
+                    .join("deps");
+                link_shared_stereokitec(&dst, &deps_libs);
             } else {
                 cargo_link!("StereoKitC");
                 cargo_link!("sk_texenc");
@@ -491,14 +508,12 @@ fn main() {
 
     if host_arch == target_arch && target_os != "android" {
         let target_dir_name = env::var("CARGO_TARGET_DIR").unwrap_or("target".into());
-        let mut target_dir =
-            Path::new(&out_dir).parent().unwrap().parent().unwrap().parent().unwrap().parent().unwrap();
-        if !target_dir.ends_with(&target_dir_name) {
-            //cross compilation, we need to go up one more level
-            target_dir = target_dir.parent().unwrap();
-        }
-        println!("cargo:info=Can we copy skshaderc* to {target_dir:?}/tools ?");
-        if target_dir.ends_with(&target_dir_name) && target_dir.exists() {
+        let target_dir = cargo_target_dir(&out_dir);
+        println!(
+            "cargo:info=Can we copy skshaderc* to {}/tools ?",
+            target_dir.as_deref().unwrap_or(Path::new("<?>")).display()
+        );
+        if let Some(target_dir) = target_dir.as_deref().filter(|dir| dir.exists()) {
             let distrib = target_dir.join("tools");
             let tools_dir = if let Some(sk_renderer_src) = dep_sk_renderer_src {
                 println!("cargo:info=--yes! we copy skshaderc from {sk_renderer_src:?}");
@@ -525,7 +540,7 @@ fn main() {
                 println!("cargo:warning=Tools directory not found at {tools_dir:?}");
             }
         } else {
-            println!("cargo:warning={target_dir_name} directory {target_dir:?} does not exist");
+            println!("cargo:warning={target_dir_name} directory not found from OUT_DIR={out_dir}");
         }
     } else {
         println!(
@@ -596,7 +611,10 @@ fn cargo_target_dir(out_dir: &str) -> Option<PathBuf> {
 /// it folds sk_renderer, sk_app, sk_ktx2, zstd and meshoptimizer inside) plus the shared OpenXR loader, and embeds
 /// an rpath so both are found at runtime without installing them. Any library dlopen'ed later that links the same
 /// sonames/install-names (the `main_hot_reloading` plugin) shares these exact instances.
-fn link_shared_stereokitec(dst: &Path) {
+///
+/// `deps_libs` is `<target_dir>/[<triple>/]<profile>/deps` (see [`cargo_profile_dir`]): both shared libraries are
+/// copied there, where `cargo-build_sk_rs` picks them up to ship them next to the executable.
+fn link_shared_stereokitec(dst: &Path, deps_libs: &Path) {
     // Shared library file names: CMake produces `.dylib` on macOS, `.so` on Linux.
     let macos = env::var("CARGO_CFG_TARGET_OS").map(|os| os == "macos").unwrap_or(false);
     let (skc_name, loader_name) = if macos {
@@ -608,7 +626,7 @@ fn link_shared_stereokitec(dst: &Path) {
     let skc_so = find_file(&build_dir, skc_name, 1);
     let loader_dir = build_dir.join("_deps").join("openxr_loader-build");
     let loader_so = find_file(&loader_dir, loader_name, 6);
-    let deps_libs = dst.parent().unwrap().parent().unwrap().parent().unwrap().join("deps");
+    let _ = fs::create_dir_all(deps_libs);
 
     match &skc_so {
         Some(path) => {
@@ -621,7 +639,12 @@ fn link_shared_stereokitec(dst: &Path) {
             let dest_file_so = deps_libs.join(skc_name);
             println!("cargo:info={skc_name} is copied from here --> {path:?}");
             println!("cargo:info=                          to there --> {dest_file_so:?}");
-            let _lib_so = fs::copy(path, dest_file_so).unwrap();
+            // Not fatal: with `cargo install` the `deps` directory is only a staging area for `cargo-build_sk_rs`,
+            // which is never run there, so a copy failure must not break the installation.
+            let _lib_so = fs::copy(path, &dest_file_so).unwrap_or_else(|err| {
+                println!("cargo:warning=skc-shared: unable to copy {skc_name} to {}: {err}", dest_file_so.display());
+                0
+            });
         }
         None => {
             // First build: CMake has not produced the shared lib yet. Link against the build dir anyway: the link only

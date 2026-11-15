@@ -189,6 +189,8 @@ It is also the way to get dictation on Horizon OS: the microphone of the system 
 dictation service, which is not available on every device, region or language (the browser's microphone is the web
 page's own voice search, not the keyboard one).
 
+sherpa-onnx is not compiled for the `x86_64-pc-windows-gnu` (mingw) target.
+
 ## Troubleshooting
 
 Submit bugs on the [Issues tab](https://github.com/mvvvv/StereoKit-rust/issues), and ask questions in the [Discussions tab](https://github.com/mvvvv/StereoKit-rust/discussions)!

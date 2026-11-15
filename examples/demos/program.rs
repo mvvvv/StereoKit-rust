@@ -100,7 +100,7 @@ pub fn sk_settings() -> SkSettings {
 }
 
 pub fn launch(mut settings: SkSettings, is_testing: bool, start_test: String) {
-    #[cfg(feature = "voice-dictation")]
+    #[cfg(voice_dictation)]
     use stereokit_rust::tools::voice_dictation::{DICTATION_STATE, VOICE_PANEL_ID, VoicePanel};
 
     // Sending formated log to our mutex for the log window.
@@ -193,7 +193,7 @@ pub fn launch(mut settings: SkSettings, is_testing: bool, start_test: String) {
     // The voice dictation panel is not one of the demo views: it stands beside them from the start, and the Dictation
     // button of the control panel brings it back when its own close button hid it. It shares its recording state on its
     // own id, which is where the control panel listens to show it on that button.
-    #[cfg(feature = "voice-dictation")]
+    #[cfg(voice_dictation)]
     {
         let mut voice_panel = VoicePanel::default();
         voice_panel.state_event = Some((VOICE_PANEL_ID.into(), DICTATION_STATE.into()));
