@@ -700,7 +700,8 @@ impl StepperAction {
     /// to do before Sk.initialize is called, the constructor is called right away, and Initialize is called right after
     /// Sk.initialize, or at the start of the next frame before the next main Step callback if SK is already initialized.
     /// <https://stereokit.net/Pages/StereoKit/SK/AddStepper.html>
-    /// * `stepper_id` - The id to give to the stepper.
+    /// * `stepper_id` - The id to give to the stepper. A stepper running under that id is shut down and replaced (see
+    ///   [`StepperAction::add`]).
     ///
     /// ### Examples
     /// ```
@@ -732,7 +733,9 @@ impl StepperAction {
     /// to do before Sk.initialize is called, the constructor is called right away, and Initialize is called right after
     /// Sk.initialize, or at the start of the next frame before the next main Step callback if SK is already initialized.
     /// <https://stereokit.net/Pages/StereoKit/SK/AddStepper.html>
-    /// * `stepper_id` - The id of the stepper.
+    /// * `stepper_id` - The id of the stepper. It names **one** stepper: a stepper running under that id is shut down
+    ///   and replaced by this one, so a view that adds its windows again — a hot-reloaded stepper, a player restarted
+    ///   under the same id — never piles up behind the one it replaces.
     /// * `stepper` - The stepper to add.
     ///
     /// ### Examples
@@ -1052,6 +1055,23 @@ impl Steppers {
         while let Some(action) = self.stepper_actions.pop_front() {
             match action {
                 StepperAction::Add(mut stepper, type_id, stepper_id) => {
+                    // A stepper id names **one** stepper: the events addressed to it must reach that one, and a view
+                    // that adds its windows again — a hot-reloaded stepper, a player restarted under the same id — must
+                    // not pile up behind an instance that keeps drawing, or keeps a microphone running (see
+                    // `VoicePanel`). The running stepper of that id is shut down, and the new one takes its place.
+                    let running = self
+                        .running_steppers
+                        .iter()
+                        .any(|stepper_h| stepper_h.id == stepper_id && stepper_h.state != StepperState::Closing);
+                    if running {
+                        Log::info(format!("Stepper {stepper_id} is added again: the running one is replaced"));
+                    }
+                    for stepper_h in self.running_steppers.iter_mut().filter(|stepper_h| stepper_h.id == stepper_id) {
+                        if stepper_h.state != StepperState::Closing {
+                            stepper_h.stepper.shutdown();
+                            stepper_h.state = StepperState::Closing;
+                        }
+                    }
                     if stepper.initialize(stepper_id.clone(), self.sk_info.clone()) {
                         let stepper_h =
                             StepperHandler { id: stepper_id, type_id, stepper, state: StepperState::Initializing };

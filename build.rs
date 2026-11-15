@@ -1,5 +1,11 @@
 use cmake::Config;
-use std::{env, fs, path::Path, path::PathBuf};
+use std::{
+    env,
+    ffi::{OsStr, OsString},
+    fs,
+    path::Path,
+    path::PathBuf,
+};
 
 macro_rules! cargo_link {
     ($feature:expr) => {
@@ -252,8 +258,9 @@ fn main() {
                     cargo_link!("meshoptimizer");
                     println!("cargo:rustc-link-search=native={win_gnu_libs}");
                     let deuleuleu = "StereoKitC.dll";
-                    let target_dir = Path::new(&out_dir).parent().unwrap().parent().unwrap().parent().unwrap();
-                    let deps_libs = target_dir.join("deps");
+                    let deps_libs = cargo_profile_dir(&out_dir)
+                        .expect("OUT_DIR must live under <target_dir>/[<triple>/]<profile>/build")
+                        .join("deps");
                     println!("cargo:rustc-link-search=native={}", deps_libs.to_str().unwrap());
                     println!("cargo:info=dst --> {dst:?}");
                     let dest_file_dll = deps_libs.join(deuleuleu);
@@ -317,8 +324,9 @@ fn main() {
                 let deuleuleu = lib.clone() + ".dll";
                 let lib_lib = lib.clone() + ".lib";
                 let lib_pdb = lib.clone() + ".pdb";
-                let target_dir = Path::new(&out_dir).parent().unwrap().parent().unwrap().parent().unwrap();
-                let deps_libs = target_dir.join("deps");
+                let deps_libs = cargo_profile_dir(&out_dir)
+                    .expect("OUT_DIR must live under <target_dir>/[<triple>/]<profile>/build")
+                    .join("deps");
                 println!("cargo:info=dst --> {dst:?}");
                 //---Do we have a .dll ?
                 let file_dll = dst.join("build").join(&profile).join(&deuleuleu);
@@ -386,21 +394,10 @@ fn main() {
                 //---- A directory whose content is only used during the production of the APK (no need for DEBUG/RELEASE sub directory)
                 //---- Copying the OpenXR loader built by CMake (`build-dynamic-openxr` feature) from the CMake install
                 //---- tree to ./target/runtime_libs/<abi>/, where the APK packaging picks it up.
-                let target_dir = Path::new(&out_dir)
-                    .parent()
-                    .unwrap()
-                    .parent()
-                    .unwrap()
-                    .parent()
-                    .unwrap()
-                    .parent()
-                    .unwrap()
-                    .parent()
-                    .unwrap();
+                let target_dir = cargo_target_dir(&out_dir).expect("OUT_DIR must live under the target directory");
                 let mut runtime_libs = target_dir.join("runtime_libs");
                 println!("cargo:info=dst --> {dst:?}");
                 println!("cargo:info=Android runtime_libs are copied here --> {runtime_libs:?}");
-                assert!(target_dir.ends_with("target"));
                 if let Err(_e) = fs::create_dir(&runtime_libs) {};
                 runtime_libs = runtime_libs.join(&abi);
                 if let Err(_e) = fs::create_dir(&runtime_libs) {};
@@ -434,7 +431,7 @@ fn main() {
                 // `voice-dictation` links sherpa-onnx as a shared library on Android: copy the two libraries it links
                 // next to the OpenXR loader, where the gradle template packages them for the APK.
                 if cfg!(feature = "voice-dictation") {
-                    copy_sherpa_onnx_android_libs(target_dir, &abi);
+                    copy_sherpa_onnx_android_libs(&target_dir, &abi);
                 }
 
                 // // On Android, we must ensure that we're dynamically linking against the C++ standard library.
@@ -562,6 +559,35 @@ pub fn copy_tree(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> std::io::Resul
         }
     }
     Ok(())
+}
+
+/// The directory Cargo runs this build script from — `<target_dir>/[<triple>/]<profile>` — found by walking up from
+/// `OUT_DIR` to the parent of its `build` directory.
+///
+/// The depth of `OUT_DIR` is **not** a constant: recent Cargo versions nest the hash of the package in a directory of
+/// its own (`build/<package>/<hash>/out`, where older ones used `build/<package>-<hash>/out`), so counting a fixed
+/// number of `parent()` calls lands one level off — in `build` instead of the profile directory, or in the triple
+/// directory instead of `target`.
+fn cargo_profile_dir(out_dir: &str) -> Option<PathBuf> {
+    Path::new(out_dir)
+        .ancestors()
+        .find(|path| path.file_name() == Some(OsStr::new("build")))
+        .and_then(Path::parent)
+        .map(Path::to_path_buf)
+}
+
+/// The `target` directory Cargo builds into: the first ancestor of `OUT_DIR` that carries the name of
+/// `CARGO_TARGET_DIR`, `target` by default (see [`cargo_profile_dir`] for why it is searched, not counted).
+fn cargo_target_dir(out_dir: &str) -> Option<PathBuf> {
+    let name = env::var_os("CARGO_TARGET_DIR")
+        .as_deref()
+        .and_then(|dir| Path::new(dir).file_name())
+        .map(OsStr::to_os_string)
+        .unwrap_or_else(|| OsString::from("target"));
+    Path::new(out_dir)
+        .ancestors()
+        .find(|path| path.file_name() == Some(name.as_os_str()))
+        .map(Path::to_path_buf)
 }
 
 /// Link directives for the `skc-shared` configuration (Linux & macOS).
