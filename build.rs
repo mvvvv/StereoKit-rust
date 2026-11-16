@@ -40,15 +40,15 @@ fn main() {
     // sherpa-onnx (the `voice-dictation` feature) ships prebuilt libraries for linux, macos, android, ios and
     // windows-msvc, but none for the windows-gnu (mingw) target.
     println!("cargo:rustc-check-cfg=cfg(voice_dictation)");
-    if target_os == "windows" && target_env == "gnu" {
-        if cfg!(feature = "voice-dictation") {
+    if cfg!(feature = "voice-dictation") {
+        if target_os == "windows" && target_env == "gnu" {
             println!(
                 "cargo:warning=voice-dictation: sherpa-onnx has no prebuilt library for {target_os}-{target_env}, the \
                  dictation tool stays disabled"
             );
+        } else {
+            println!("cargo:rustc-cfg=voice_dictation");
         }
-    } else {
-        println!("cargo:rustc-cfg=voice_dictation");
     }
 
     if env::var("DOCS_RS").is_ok() {
