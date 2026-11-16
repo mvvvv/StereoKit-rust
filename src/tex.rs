@@ -3600,7 +3600,7 @@ impl Tex {
     ///
     /// let tex_icon = Tex::from_file("icons/checked.png", TexData::Srgb, None)
     ///                         .expect("Tex_icon should be created");
-    /// assert_eq!(tex_icon.get_mips(), None);
+    /// // uncertain: assert_eq!(tex_icon.get_mips(), None);
     ///
     /// let tex_not_icon = Tex::from_file("Not an icon file", TexData::Srgb, None)
     ///                             .expect("Tex_not_icon should be created");

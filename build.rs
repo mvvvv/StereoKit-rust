@@ -334,6 +334,19 @@ fn main() {
                     println!("cargo:rustc-link-arg=/DEFAULTLIB:msvcrtd");
                 }
 
+                // `voice-dictation` links the prebuilt sherpa-onnx libraries, and the only Windows
+                // archives it publishes are built with the *static* CRT
+                // (`sherpa-onnx-v<version>-win-<arch>-static-MT-Release-lib`, i.e. /MT): every object
+                // in them carries a `/DEFAULTLIB:LIBCMT` directive. Rust, StereoKitC and all the
+                // CMake-built dependencies use the dynamic CRT, so MSVC emits
+                // `warning LNK4098: defaultlib 'LIBCMT' conflicts with use of other libs` on every
+                // test, example and bin that links sherpa-onnx. The linker drops LIBCMT anyway (the
+                // dynamic CRT provides the symbols it needs), so make that explicit and keep the
+                // warning out of the logs.
+                if cfg!(feature = "voice-dictation") {
+                    println!("cargo:rustc-link-arg=/NODEFAULTLIB:LIBCMT");
+                }
+
                 let lib: String = "StereoKitC".into();
                 let deuleuleu = lib.clone() + ".dll";
                 let lib_lib = lib.clone() + ".lib";

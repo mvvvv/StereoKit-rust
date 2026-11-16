@@ -919,12 +919,16 @@ impl StepperHandler {
 
 /// A lazy way to identify IStepper instances.
 ///
-/// The ids are **not** unique keys: several steppers of the same manager may share one. The id is given by the
-/// [`StepperAction::add`] action and handed to [`IStepper::initialize`] (which stores it in the `id` field of the
-/// stepper), so the `id` of a `Default` implementation is only a placeholder, overwritten at the next frame.
+/// The id is given by the [`StepperAction::add`] action and handed to [`IStepper::initialize`] (which stores it in the
+/// `id` field of the stepper), so the `id` of a `Default` implementation is only a placeholder, overwritten at the next
+/// frame.
 ///
-/// An [`StepperAction::event`] or a [`StepperAction::remove`] targets **all** the steppers using that id. See
-/// [`Steppers::get_duplicated_ids`] to detect such a collision.
+/// Inside one [`Steppers`] manager, an id names **one** stepper: adding a stepper under the id of one which is still
+/// running shuts that one down and replaces it. Two managers (see [`Sk::swap_steppers`]) may of course run steppers
+/// sharing the same id, since they know nothing of each other.
+///
+/// An [`StepperAction::event`] or a [`StepperAction::remove`] is reported to all the running steppers, which react when
+/// the id is theirs. See [`Steppers::get_duplicated_ids`] to detect an id still shared by a stepper being replaced.
 pub type StepperId = String;
 /// Event indicating that the stepper is running.
 pub const ISTEPPER_RUNNING: &str = "IStepper_Running";
@@ -948,7 +952,7 @@ pub const ISTEPPER_REMOVED: &str = "IStepper_Removed";
 /// steppers.send_event(StepperAction::add("Title_blue_ID1", title.clone()));
 ///
 /// title.transform = Matrix::t_r([-0.5, -0.5, -1.5], [0.0, 245.0, 0.0]);
-/// // We may use the same ID for different steppers
+/// // Each manager runs its own steppers: 'steppers' and sk may both run a "Title_blue_ID2".
 /// steppers.send_event(StepperAction::add("Title_blue_ID2", title.clone()));
 /// sk      .send_event(StepperAction::add("Title_blue_ID2", title.clone()));
 ///
@@ -1104,8 +1108,10 @@ impl Steppers {
         }
 
         // 1 - Managing the not running steppers.
+        // The steppers to remove are memorized by index and not by id: a stepper added again under the id of one
+        // which is still closing must survive the removal of the stepper it replaces.
         let mut removed_steppers = vec![];
-        for stepper_h in &mut self.running_steppers {
+        for (index, stepper_h) in self.running_steppers.iter_mut().enumerate() {
             match stepper_h.state {
                 StepperState::Initializing => {
                     if stepper_h.stepper.initialize_done() {
@@ -1117,20 +1123,17 @@ impl Steppers {
                 StepperState::Running => (),
                 StepperState::Closing => {
                     if stepper_h.stepper.shutdown_done() {
-                        removed_steppers.push(stepper_h.id.clone());
+                        removed_steppers.push(index);
                         token.event_report.push(StepperAction::event(stepper_h.id.as_str(), ISTEPPER_REMOVED, "true"));
                     }
                 }
             }
         }
-        self.running_steppers.retain(|stepper_h| {
-            if removed_steppers.contains(&stepper_h.id) {
-                Log::info(format!("Stepper {} is removed.", stepper_h.id));
-                false
-            } else {
-                true
-            }
-        });
+        // The indices are collected in ascending order: removing them in reverse keeps them valid.
+        for index in removed_steppers.into_iter().rev() {
+            let stepper_h = self.running_steppers.remove(index);
+            Log::info(format!("Stepper {} is removed.", stepper_h.id));
+        }
 
         // 2 - Running the Running steppers
         let (mut step_pre_app, mut step_post_app): (Vec<usize>, Vec<usize>) = (0..self.running_steppers.len())
@@ -1255,21 +1258,16 @@ impl Steppers {
         // 2 - Waiting for the shutdowns
         for _iter in 0..50 {
             let mut removed_steppers = vec![];
-            for stepper_h in
-                &mut self.running_steppers.iter_mut().filter(|stepper_h| stepper_h.state == StepperState::Closing)
-            {
-                if stepper_h.stepper.shutdown_done() {
-                    removed_steppers.push(stepper_h.id.clone());
+            for (index, stepper_h) in self.running_steppers.iter_mut().enumerate() {
+                if stepper_h.state == StepperState::Closing && stepper_h.stepper.shutdown_done() {
+                    removed_steppers.push(index);
                 }
             }
-            self.running_steppers.retain(|stepper_h| {
-                if removed_steppers.contains(&stepper_h.id) {
-                    Log::info(format!("Stepper {} is removed.", stepper_h.id));
-                    false
-                } else {
-                    true
-                }
-            });
+            // The indices are collected in ascending order: removing them in reverse keeps them valid.
+            for index in removed_steppers.into_iter().rev() {
+                let stepper_h = self.running_steppers.remove(index);
+                Log::info(format!("Stepper {} is removed.", stepper_h.id));
+            }
             if self.running_steppers.is_empty() {
                 break;
             }
@@ -1316,9 +1314,10 @@ impl Steppers {
     /// The [`StepperId`]s used by more than one of the steppers of this manager, sorted and deduplicated. An empty
     /// vector is the normal case.
     ///
-    /// Sharing an id is allowed (see [`Steppers`]) but is almost always a mistake: an event or a
-    /// [`StepperAction::remove`] targeting that id then hits all the steppers which use it. This is the typical
-    /// "two steppers, one name" of a hot reload workflow.
+    /// An id names one stepper in a manager (see [`StepperAction::add`]): adding a stepper under the id of one which is
+    /// still running shuts that one down and replaces it. This list can therefore only be non-empty during the frames
+    /// where a replaced stepper is still closing, next to the one which took over its id — a stepper whose
+    /// [`IStepper::shutdown_done`] returns false for too long is then reported here.
     ///
     /// see also [Sk::get_steppers]
     /// ### Example
@@ -1330,6 +1329,7 @@ impl Steppers {
     ///
     /// let title = Title::new("Title", Some(named_colors::BLUE), None, None);
     /// steppers.send_event(StepperAction::add("Title_ID", title.clone()));
+    /// // The same id again: the running one is shut down and replaced by this one.
     /// steppers.send_event(StepperAction::add("Title_ID", title));
     ///
     /// // From now on sk runs this manager (and 'steppers' contains the previous one).
@@ -1337,9 +1337,9 @@ impl Steppers {
     ///
     /// test_steps!( // !!!! Get a proper main loop !!!!
     ///     if iter == 2 {
-    ///         // Both steppers are running: they share the id "Title_ID".
-    ///         assert_eq!(sk.get_steppers_count(), 2);
-    ///         assert_eq!(sk.get_steppers().get_duplicated_ids(), vec!["Title_ID".to_string()]);
+    ///         // Only the last stepper remains under that id, so there is no duplicate.
+    ///         assert_eq!(sk.get_steppers_count(), 1);
+    ///         assert!(sk.get_steppers().get_duplicated_ids().is_empty());
     ///     }
     /// );
     /// # sk::Sk::shutdown();

@@ -209,29 +209,30 @@ jobs:
       run: |
         export DYLD_LIBRARY_PATH=$(brew --prefix molten-vk)/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}
         export MVK_CONFIG_LOG_LEVEL=0
-        failed=0
-        timeout 1m cargo test tests             || failed=1
-        timeout 3m cargo test --doc maths       || failed=1
-        timeout 1m cargo test --doc ui          || failed=1
-        timeout 1m cargo test --doc framework   || failed=1
-        timeout 1m cargo test --doc tools       || failed=1
-        timeout 1m cargo test --doc sound       || failed=1
-        timeout 1m cargo test --doc interactor  || failed=1
-        timeout 3m cargo test --doc system      || failed=1
-        timeout 1m cargo test --doc permission  || failed=1
-        timeout 1m cargo test --doc material    || failed=1
-        timeout 1m cargo test --doc shader      || failed=1
-        timeout 2m cargo test --doc tex         || failed=1
-        timeout 1m cargo test --doc sprite      || failed=1
-        timeout 1m cargo test --doc font        || failed=1
-        timeout 1m cargo test --doc render      || failed=1
-        timeout 1m cargo test --doc anchor      || failed=1
-        timeout 1m cargo test --doc compute     || failed=1
-        timeout 2m cargo test --doc util        || failed=1
-        timeout 1m cargo test --doc sk          || failed=1
-        timeout 1m cargo test --doc mesh        || failed=1
-        timeout 1m cargo test --doc model       || failed=1
-        exit $failed
+        cargo test --features tools --verbose -- --nocapture
+      # failed=0
+      # timeout 1m cargo test tests             || failed=1
+      # timeout 3m cargo test --doc maths       || failed=1
+      # timeout 1m cargo test --doc ui          || failed=1
+      # timeout 1m cargo test --doc framework   || failed=1
+      # timeout 1m cargo test --doc tools       || failed=1
+      # timeout 1m cargo test --doc sound       || failed=1
+      # timeout 1m cargo test --doc interactor  || failed=1
+      # timeout 3m cargo test --doc system      || failed=1
+      # timeout 1m cargo test --doc permission  || failed=1
+      # timeout 1m cargo test --doc material    || failed=1
+      # timeout 1m cargo test --doc shader      || failed=1
+      # timeout 2m cargo test --doc tex         || failed=1
+      # timeout 1m cargo test --doc sprite      || failed=1
+      # timeout 1m cargo test --doc font        || failed=1
+      # timeout 1m cargo test --doc render      || failed=1
+      # timeout 1m cargo test --doc anchor      || failed=1
+      # timeout 1m cargo test --doc compute     || failed=1
+      # timeout 2m cargo test --doc util        || failed=1
+      # timeout 1m cargo test --doc sk          || failed=1
+      # timeout 1m cargo test --doc mesh        || failed=1
+      # timeout 1m cargo test --doc model       || failed=1
+      # exit $failed
 
     - name: Build no-event-loop
       run: cargo build --verbose --features no-event-loop --example manual
