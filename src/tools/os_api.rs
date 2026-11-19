@@ -598,21 +598,14 @@ pub fn get_public_dir(dir_type: BrowseLocation) -> Option<PathBuf> {
         // `/storage/self/primary` (see its documentation), so multi-user devices resolve the
         // right folder, while a physical primary volume (adopted SD card) is kept as is.
         let root = per_user_public_root(&path_str);
-        Log::diag(format!(
-            "get_public_dir({:?}) uses root {:?} (primary volume root: {:?})",
-            dir_type, root, path_str
-        ));
+        Log::diag(format!("get_public_dir({:?}) uses root {:?} (primary volume root: {:?})", dir_type, root, path_str));
         let path = root.join(dir_type.as_str());
         Log::diag(format!("get_public_dir({:?}) resolved to {:?}", dir_type, path));
         Some(path)
     } else {
         // Fallback si le StorageManager ne répond pas
         Log::diag(format!("get_public_dir({:?}) resolved to uggly default", dir_type));
-        Some(PathBuf::from(format!(
-            "{}/{}",
-            PER_USER_PRIMARY_STORAGE_ROOT,
-            dir_type.as_str()
-        )))
+        Some(PathBuf::from(format!("{}/{}", PER_USER_PRIMARY_STORAGE_ROOT, dir_type.as_str())))
     }
 }
 

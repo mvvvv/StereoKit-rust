@@ -57,6 +57,8 @@ struct ScreenRepo {
     id_handle: String,
     id_focus_probe: String,
     id_toolbar: String,
+    id_app_row: String,
+    id_bottom_row: String,
     id_btn_show_param: String,
     id_btn_close_param: String,
     id_window_param: String,
@@ -72,6 +74,8 @@ impl ScreenRepo {
             id_handle: id.clone() + "_handle",
             id_focus_probe: id.clone() + "_focus_probe",
             id_toolbar: id.clone() + "_toolbar",
+            id_app_row: id.clone() + "_app_row",
+            id_bottom_row: id.clone() + "_bottom_row",
             id_btn_show_param: id.clone() + "_btn_show",
             id_btn_close_param: id.clone() + "_btn_close",
             id_window_param: id.clone() + "_window_param",
@@ -79,6 +83,66 @@ impl ScreenRepo {
             sprite_close: Sprite::close(),
             sprite_menu: Sprite::list(),
             id_material: id + "_material",
+        }
+    }
+}
+
+/// Which of the two rows of a [`Screen`] a [`ToolbarButton`] belongs to: the app row hung on its toolbar strip, or the
+/// row centred under its bottom edge. It carries the id the buttons of that row are drawn under.
+#[derive(Clone, Copy)]
+enum RowSlot {
+    /// The row hung on the strip, to the user's left of the screen's own toolbar.
+    App,
+    /// A row of `count` buttons centred under the bottom edge of the screen.
+    Bottom { count: usize },
+}
+
+impl RowSlot {
+    /// The id the buttons of this row are drawn under, from the ids of the screen.
+    fn id<'r>(&self, repo: &'r ScreenRepo) -> &'r str {
+        match self {
+            RowSlot::App => &repo.id_app_row,
+            RowSlot::Bottom { .. } => &repo.id_bottom_row,
+        }
+    }
+}
+
+/// The curvature of the **top edge** of a [`Screen`], in its local space: the depth `z` of the surface at an abscissa
+/// `x`, so the toolbars above the screen can follow its curve instead of floating on a flat plane.
+///
+/// It is the same curve the mesh is built on (see `Screen::adapt_screen_cylinder` and
+/// `Screen::adapt_screen_spherical`):
+/// * a **cylinder** bends the top edge on an arc of `radius`, centred at `(0, 0, centre_z)`,
+/// * a **sphere** bends it on an arc of `edge_radius` — the top edge of the spherical cap, at
+///   `radius * sin(height / (2 * radius))` — centred at `(0, 0, centre_z)` too,
+/// * a **flat** screen has no curvature: `z` is the same everywhere.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum ScreenCurve {
+    /// A flat screen: `z` is `z` for every `x`, and the top edge stands at `edge_y`.
+    Flat { z: f32, edge_y: f32 },
+    /// The top edge is an arc of a circle of `radius`, centred at `(0, 0, centre_z)`, standing at `edge_y`.
+    Arc { radius: f32, centre_z: f32, edge_y: f32 },
+}
+
+impl ScreenCurve {
+    /// The depth of the surface at the abscissa `x`, clamped to the ends of the arc: the toolbars at an `x` past the
+    /// edge of a strongly curved screen rest on its last point instead of vanishing behind it.
+    pub fn z_at(&self, x: f32) -> f32 {
+        match *self {
+            ScreenCurve::Flat { z, .. } => z,
+            ScreenCurve::Arc { radius, centre_z, .. } => {
+                let radius = radius.max(f32::EPSILON);
+                let x = x.clamp(-radius, radius);
+                centre_z + (radius * radius - x * x).max(0.0).sqrt()
+            }
+        }
+    }
+
+    /// The `y` of the top edge of the screen: `height / 2`, except for a sphere whose top edge is the chord of its
+    /// arc, at `radius * sin(height / (2 * radius))`.
+    pub fn edge_y(&self) -> f32 {
+        match *self {
+            ScreenCurve::Flat { edge_y, .. } | ScreenCurve::Arc { edge_y, .. } => edge_y,
         }
     }
 }
@@ -107,8 +171,11 @@ pub struct ToolbarLayout {
     pub gap: f32,
     /// The height of the centre line of the row, in the screen's local space.
     pub row_y: f32,
-    /// The `z` of the row: the centre of the screen's bounds, where the framework's toolbars stand.
+    /// The `z` of the row: the depth of the grab bar, the reference of the row. Each element carries its own `z`, on
+    /// the curvature of the screen (see [`ScreenCurve`]).
     pub z: f32,
+    /// The curvature of the top edge of the screen: the depth every element of the row is laid on.
+    pub curve: ScreenCurve,
     /// The distance-driving grab bar, on the row (its `z` dimension is the depth of its grab volume).
     pub bar: Bounds,
     /// The centre and the width of the zoom knob ([`Appearence::scale_handle`]).
@@ -158,12 +225,13 @@ impl ToolbarLayout {
     const FIT_MIN: f32 = 0.25;
 
     /// Builds the layout of a screen `size` meters big — `zoom` times its base size, see [`Screen::toolbar_scale`] —
-    /// with `app_width` meters reserved on the user's left for the row of an app, at the `z` of the screen's bounds.
-    /// `margin` is the margin of the screen's scaled [`UiSettings`], the room kept free on both sides of the screen.
+    /// with `app_width` meters reserved on the user's left for the row of an app, the whole row laid on the `curve` of
+    /// the screen's top edge. `margin` is the margin of the screen's [`UiSettings`], the room kept free on both sides
+    /// of the screen.
     ///
     /// The screen's own elements are shrunk by [`ToolbarLayout::fit`] when the app row leaves them less room than they
     /// need; the app row itself is never resized here — its owner reads [`ToolbarLayout::fit`] to follow.
-    pub fn for_size(size: Vec2, zoom: f32, app_width: f32, z: f32, margin: f32) -> Self {
+    pub fn for_size(size: Vec2, zoom: f32, app_width: f32, curve: ScreenCurve, margin: f32) -> Self {
         let scale = Screen::toolbar_scale_for_zoom(zoom);
         let app_width = app_width.max(0.0);
 
@@ -192,43 +260,170 @@ impl ToolbarLayout {
             (overlay_width * fit, gap * fit, button * fit, bar_length * fit, bar_thickness * fit, knob * fit);
         let overlay_height = overlay_height * fit;
 
-        // One row, centred vertically on `row_y`, `gap / 2` above the top edge, and laid out around the grab bar, which
-        // is centred on the screen's vertical centre line: the knob and the app's room to the user's left, the
-        // parameter button and the overlay text to their right.
-        let row_y = size.y * 0.5 + gap * 0.5 + button * 0.5;
+        // One row, centred vertically on `row_y`, `gap / 2` above the top edge of the screen — the real edge of a
+        // sphere is the chord of its arc — and laid out around the grab bar, which is centred on the screen's vertical
+        // centre line: the knob and the app's room to the user's left, the parameter button and the overlay text to
+        // their right. Each element is laid on the curvature of the screen: its own `x` gives its `z`.
+        let row_y = curve.edge_y() + gap * 0.5 + button * 0.5;
         let knob_x = bar_length * 0.5 + gap + knob * 0.5;
         let hamburger_x = -(bar_length * 0.5 + gap + button * 0.5);
         let overlay_right = -(bar_length * 0.5 + gap + button + gap);
-        let overlay_center = Vec3::new(overlay_right - overlay_width * 0.5, row_y, z);
+        let overlay_x = overlay_right - overlay_width * 0.5;
         let bar_depth = (bar_thickness * 0.6).clamp(0.004, 0.020);
 
-        let bar = Bounds::new(Vec3::new(0.0, row_y, z), Vec3::new(bar_length, bar_thickness, bar_depth));
-        let hamburger = Bounds::new(Vec3::new(hamburger_x, row_y, z), Vec3::new(button, button, 0.0));
-        let knob = (Vec3::new(knob_x, row_y, z), knob);
+        let bar_z = curve.z_at(0.0);
+        let bar = Bounds::new(Vec3::new(0.0, row_y, bar_z), Vec3::new(bar_length, bar_thickness, bar_depth));
+        let hamburger =
+            Bounds::new(Vec3::new(hamburger_x, row_y, curve.z_at(hamburger_x)), Vec3::new(button, button, 0.0));
+        let knob = (Vec3::new(knob_x, row_y, curve.z_at(knob_x)), knob);
+        let overlay = (Vec3::new(overlay_x, row_y, curve.z_at(overlay_x)), Vec2::new(overlay_width, overlay_height));
         let app_row_right = knob_x + knob.1 * 0.5 + gap;
 
-        // The strip covers the row, the room of the app included.
-        let left = overlay_center.x - overlay_width * 0.5;
+        // The strip covers the row, the room of the app included, and spans the depths of the curved elements.
+        let left = overlay.0.x - overlay_width * 0.5;
         let right = app_row_right + app_width;
         let half_height = (button * 0.5).max(knob.1 * 0.5).max(overlay_height * 0.5).max(bar_thickness * 0.5);
+        let z_min = (bar.center.z - bar_depth * 0.5).min(hamburger.center.z).min(knob.0.z).min(overlay.0.z);
+        let z_max = (bar.center.z + bar_depth * 0.5).max(hamburger.center.z).max(knob.0.z).max(overlay.0.z);
         let strip = Bounds::new(
-            Vec3::new((left + right) * 0.5, row_y, z),
-            Vec3::new((right - left).max(0.0), half_height * 2.0, 0.0),
+            Vec3::new((left + right) * 0.5, row_y, (z_min + z_max) * 0.5),
+            Vec3::new((right - left).max(0.0), half_height * 2.0, (z_max - z_min).max(0.0)),
         );
 
-        Self {
-            scale,
-            fit,
-            gap,
-            row_y,
-            z,
-            bar,
-            knob,
-            hamburger,
-            overlay: (overlay_center, Vec2::new(overlay_width, overlay_height)),
-            app_row_right,
-            button,
-            strip,
+        Self { scale, fit, gap, row_y, z: bar_z, curve, bar, knob, hamburger, overlay, app_row_right, button, strip }
+    }
+
+    /// The width and the height of a row of `count` **square buttons** of `button` meters on the strip, spaced with
+    /// `settings`: the buttons, their padding, the gutters between them and the margin of the surface on both ends.
+    ///
+    /// It is what [`Screen::set_app_row`] declares to the screen, and the width an app that lays its own row out must
+    /// reserve; its width ends exactly on the surface of the last button placed by [`ToolbarLayout::app_row_button_x`],
+    /// so the room reserved and the buttons drawn cannot drift apart. A row of no button takes no room.
+    pub fn row_size(count: usize, button: Vec2, settings: &UiSettings) -> Vec2 {
+        if count == 0 {
+            return Vec2::ZERO;
+        }
+        let count = count as f32;
+        Vec2::new(
+            count * (button.x + 2.0 * settings.padding) + (count - 1.0) * settings.gutter + 2.0 * settings.margin,
+            button.y + 2.0 * (settings.padding + settings.margin),
+        )
+    }
+
+    /// The `x` of the centre of the `index`-th button of an app row hung on the strip, counted from the room left for
+    /// it — one margin and one padding past [`ToolbarLayout::app_row_right`] — towards the user's left: the button,
+    /// then one `step` (its width, its two paddings and one gutter) per button.
+    pub fn app_row_button_x(&self, index: usize, button: Vec2, settings: &UiSettings) -> f32 {
+        let step = button.x + 2.0 * settings.padding + settings.gutter;
+        self.app_row_right + settings.margin + settings.padding + button.x * 0.5 + index as f32 * step
+    }
+
+    /// The `x` of the centre of the `index`-th button of a row of `count` buttons **centred on the screen's vertical
+    /// centre line** — the transport controls under its bottom edge — counted from the user's left: the row takes
+    /// [`ToolbarLayout::row_size`] and its buttons fill from the left end towards their right, so the row is symmetric
+    /// about the centre line whatever its number of buttons.
+    pub fn bottom_row_button_x(&self, index: usize, count: usize, button: Vec2, settings: &UiSettings) -> f32 {
+        let step = button.x + 2.0 * settings.padding + settings.gutter;
+        let width = Self::row_size(count, button, settings).x;
+        width * 0.5 - settings.margin - settings.padding - button.x * 0.5 - index as f32 * step
+    }
+}
+
+/// One button of a row hung on the toolbar of a [`Screen`], for [`Screen::draw_app_row`] and
+/// [`Screen::draw_bottom_row`]: the label it falls back on, the icon it wears, and how that icon sits in it.
+///
+/// Its `text` is best kept the **same whatever the state of the button** — the icon carries the state — because the
+/// screen identifies a button by its position in the row, not by its label (see [`Screen::draw_app_row`]): a switch
+/// whose label changes from *Pause* to *Play* keeps the focus of the pointer that pressed it.
+///
+/// ## Example
+/// ```ignore
+/// let row = [
+///     ToolbarButton::new("Typing").icon(&icons.keyboard).tint(ON),
+///     ToolbarButton::new("Touch").icon(&icons.touch),
+/// ];
+/// for index in screen.draw_app_row(&row).iter() {
+///     match index {
+///         0 => remote.set_keyboard_armed(!remote.keyboard_armed()),
+///         _ => remote.cycle_touch_mode(),
+///     }
+/// }
+/// ```
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ToolbarButton<'a> {
+    /// The label of the button — drawn when it has no `icon`.
+    pub text: &'a str,
+    /// The icon of the button: it is then drawn alone (see `icon_layout`), the label being only its identity.
+    pub icon: Option<&'a Sprite>,
+    /// How the icon sits in the button. [`UiBtnLayout::CenterNoText`] — the icon alone, centred — unless set.
+    pub icon_layout: UiBtnLayout,
+    /// A tint for the button, the look of a switch that is **on**. `None` draws it with the tints in force.
+    pub tint: Option<Color128>,
+}
+
+impl<'a> ToolbarButton<'a> {
+    /// A button wearing the label `text`, and no icon.
+    pub fn new(text: &'a str) -> Self {
+        Self { text, icon: None, icon_layout: UiBtnLayout::CenterNoText, tint: None }
+    }
+
+    /// The icon the button wears, alone in it, its label kept as its identity only.
+    pub fn icon(mut self, icon: &'a Sprite) -> Self {
+        self.icon = Some(icon);
+        self
+    }
+
+    /// The icon the button wears **when `icon` is there** — what an icon pair hands out (`pair.icon(on)`): the button
+    /// keeps its label alone when it is not.
+    pub fn icon_when(mut self, icon: Option<&'a Sprite>) -> Self {
+        if let Some(icon) = icon {
+            self.icon = Some(icon);
+        }
+        self
+    }
+
+    /// How the icon sits in the button (default is [`UiBtnLayout::CenterNoText`]).
+    pub fn icon_layout(mut self, icon_layout: UiBtnLayout) -> Self {
+        self.icon_layout = icon_layout;
+        self
+    }
+
+    /// A tint for the button — the look of a switch that is **on** (the callers hold the tints in force with
+    /// [`Ui::push_tint`] / [`Ui::pop_tint`] themselves).
+    pub fn tint(mut self, tint: Color128) -> Self {
+        self.tint = Some(tint);
+        self
+    }
+}
+
+/// The buttons of a row pressed during one frame: bit `index` is the button at `index` of the row drawn by
+/// [`Screen::draw_app_row`] or [`Screen::draw_bottom_row`].
+///
+/// It is a mask and not a single index: two pointers can press two buttons of the same row in the same frame, and a row
+/// of switches has no reason to drop one of them. A row of 32 buttons fits in it; a longer one keeps its first 32.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct ToolbarPress(u32);
+
+impl ToolbarPress {
+    /// Is any button of the row pressed this frame?
+    pub fn any(&self) -> bool {
+        self.0 != 0
+    }
+
+    /// Is the button at `index` of the row pressed this frame?
+    pub fn pressed(&self, index: usize) -> bool {
+        index < 32 && self.0 & (1 << index) != 0
+    }
+
+    /// The indices of the buttons pressed this frame, from the first of the row to the last.
+    pub fn iter(&self) -> impl Iterator<Item = usize> + '_ {
+        (0..32).filter(move |index| self.pressed(*index))
+    }
+
+    /// Records the button at `index` as pressed.
+    fn set(&mut self, index: usize) {
+        if index < 32 {
+            self.0 |= 1 << index;
         }
     }
 }
@@ -683,10 +878,28 @@ impl Screen {
         self.appearence.get_ui_scale()
     }
 
-    /// The [`UiSettings`] of the screen's [`Appearence`], scaled by its ui zoom: the padding, gutter and margin an
-    /// app row hanging on the screen's toolbar should space itself with (see [`Screen::app_row_pose`]).
+    /// The [`UiSettings`] of the screen's [`Appearence`], scaled by its ui zoom: the padding, gutter and margin its
+    /// toolbar — and a row hung on it — space themselves with (see [`Screen::toolbar_settings`]).
     pub fn ui_settings_scaled(&self) -> UiSettings {
         self.appearence.get_ui_settings_scaled()
+    }
+
+    /// The [`UiSettings`] of the screen at its current zoom: what its own toolbar and the rows it draws space
+    /// themselves with (see [`Screen::set_app_row`], [`Screen::draw_app_row`]).
+    ///
+    /// The screen applies them around everything it draws, and restores the ones in force afterwards. A widget of your
+    /// own drawn on the strip should be drawn the same way — inside `Ui::settings(screen.toolbar_settings())` — so its
+    /// margin is the one the layout reserved: a widget placed with other settings is off centre in its surface.
+    pub fn toolbar_settings(&self) -> UiSettings {
+        self.ui_settings_scaled()
+    }
+
+    /// The previous settings, after applying [`Screen::toolbar_settings`] to the `Ui`. The settings are global to the
+    /// `Ui` and not a stack: hand the returned ones back to [`Ui::settings`] when the drawing is done.
+    fn apply_toolbar_settings(&self) -> UiSettings {
+        let previous = Ui::get_settings();
+        Ui::settings(self.toolbar_settings());
+        previous
     }
 
     /// The bounded scale of the screen's chrome (the grab bar, the zoom knob, the parameter button and the overlay
@@ -715,14 +928,69 @@ impl Screen {
     }
 
     /// The layout of the toolbar strip above the screen: the grab bar, the zoom knob, the parameter button, the
-    /// overlay text and the room reserved for an app row, all in the screen's local space (see [`ToolbarLayout`]).
+    /// overlay text and the room reserved for an app row, all in the screen's local space, laid on the curvature of
+    /// the screen (see [`ToolbarLayout`]).
     pub fn toolbar_layout(&self) -> ToolbarLayout {
         ToolbarLayout::for_size(
             self.screen_size,
             self.toolbar_scale(),
             self.app_toolbar_width,
-            self.screen.get_bounds().center.z,
+            self.curve(),
             self.ui_settings_scaled().margin,
+        )
+    }
+
+    /// The curvature of the top edge of the screen, in its local space (see [`ScreenCurve`]): the depth the toolbars
+    /// above the screen are laid on.
+    pub fn curve(&self) -> ScreenCurve {
+        let edge_y = self.screen_size.y * 0.5;
+        let flat = |z: f32| ScreenCurve::Flat { z, edge_y };
+        if self.curvature <= 0.0 {
+            return flat(self.screen_distance);
+        }
+        let radius = self.screen_radius();
+        let centre_z = self.screen_distance - radius;
+        if self.cylindrical {
+            return ScreenCurve::Arc { radius, centre_z, edge_y };
+        }
+        // A sphere: the top edge is the chord of the cap, at `radius * sin(height / (2 * radius))`, on a circle of
+        // `radius * cos(height / (2 * radius))`.
+        let half_angle = (self.screen_size.y / (2.0 * radius)).clamp(0.0, PI * 0.5);
+        ScreenCurve::Arc {
+            radius: (radius * half_angle.cos()).max(f32::EPSILON),
+            centre_z,
+            edge_y: radius * half_angle.sin(),
+        }
+    }
+
+    /// The point of the screen's toolbar area at the abscissa `x` and the height `y`, on the curvature of the screen
+    /// (see [`Screen::curve`]), moved `forward` meters towards the user.
+    pub fn curve_point(&self, x: f32, y: f32, forward: f32) -> Vec3 {
+        Vec3::new(x, y, self.curve().z_at(x) - forward)
+    }
+
+    /// The pose to hand to [`Ui::push_surface`] (with [`Vec3::ZERO`] as its layout start) for a widget of `size` meters
+    /// centred on `(x, y)` — `y` is the height of the toolbar row, e.g. [`ToolbarLayout::row_y`] — on the curvature of
+    /// the screen and facing the user, moved `forward` meters towards them.
+    ///
+    /// A `Ui` surface starts its content one **margin** towards the user's right and down from its pose, so the pose is
+    /// the top-right corner of the widget, that margin included; the margin is the one of the [`UiSettings`] in force
+    /// when the widget is drawn, which is what [`Ui::push_surface`] applies.
+    pub fn widget_pose(&self, x: f32, y: f32, size: Vec2, forward: f32) -> Pose {
+        let margin = Ui::get_settings().margin;
+        let pos = Vec3::new(x + margin + size.x * 0.5, y + margin + size.y * 0.5, self.curve().z_at(x) - forward);
+        Pose::new(pos, None) * self.screen_pose.to_matrix(None)
+    }
+
+    /// The size of the [`Ui`] surface a **button** of `size` meters needs when it is drawn with `settings`: the button,
+    /// its padding and one margin on both sides — the pair of [`Screen::widget_pose`].
+    ///
+    /// It is the surface of the buttons of [`Screen::app_row_button`] and [`Screen::bottom_row_button`]: an app that
+    /// draws its own widget on the strip pairs it with [`Screen::widget_pose`] the same way.
+    pub fn widget_surface(button: Vec2, settings: &UiSettings) -> Vec2 {
+        Vec2::new(
+            button.x + 2.0 * (settings.padding + settings.margin),
+            button.y + 2.0 * (settings.padding + settings.margin),
         )
     }
 
@@ -731,6 +999,19 @@ impl Screen {
     /// room for it (see [`ToolbarLayout::fit`]). Pass `0.0` when the app shows no row.
     pub fn set_app_toolbar_width(&mut self, width: f32) -> &mut Self {
         self.app_toolbar_width = width.max(0.0);
+        self
+    }
+
+    /// Declare the **number of buttons** of the app row hung on the screen's toolbar (see [`Screen::draw_app_row`]):
+    /// call it **before** [`Screen::draw`], so the strip the focus probe covers holds the row and the screen's own
+    /// elements make room for it. `0` when the app shows no row.
+    ///
+    /// The width reserved is [`ToolbarLayout::row_size`] of that many buttons of [`Screen::toolbar_button`] — the
+    /// declaration and the buttons [`Screen::draw_app_row`] places come from the same formula, so they cannot drift
+    /// apart. Use [`Screen::set_app_toolbar_width`] instead for a row of another width.
+    pub fn set_app_row(&mut self, count: usize) -> &mut Self {
+        let button = Vec2::new(self.toolbar_button(), self.toolbar_button());
+        self.app_toolbar_width = ToolbarLayout::row_size(count, button, &self.toolbar_settings()).x;
         self
     }
 
@@ -747,12 +1028,42 @@ impl Screen {
     /// its own elements make room for it: the two widths are expected to be the same.
     pub fn app_row_pose(&self, width: f32, height: f32) -> Pose {
         let layout = self.toolbar_layout();
-        let margin = self.ui_settings_scaled().margin;
-        self.local_pose(Vec3::new(
-            layout.app_row_right + width.max(0.0) + margin,
-            layout.row_y + height * 0.5 + margin,
-            layout.z,
-        ))
+        let margin = Ui::get_settings().margin;
+        let x = layout.app_row_right + width.max(0.0) + margin;
+        self.local_pose(Vec3::new(x, layout.row_y + height * 0.5 + margin, layout.curve.z_at(x)))
+    }
+
+    /// The pose and the surface size of the `index`-th **button** of the app row declared with [`Screen::set_app_row`],
+    /// counted from the room this row hangs on — past the zoom knob — towards the user's left (see
+    /// [`ToolbarLayout::app_row_button_x`]): on the curvature of the screen, at the height of the row, with the size
+    /// the layout hands out (so the button is the size of the screen's own buttons, at any zoom).
+    ///
+    /// [`Screen::draw_app_row`] places a whole row with it; an app that draws its own widgets there pairs it with its
+    /// own pose (see [`Screen::app_row_pose`]).
+    pub fn app_row_button(&self, index: usize) -> (Pose, Vec2) {
+        let layout = self.toolbar_layout();
+        let settings = self.toolbar_settings();
+        let button = Vec2::new(layout.button, layout.button);
+        let x = layout.app_row_button_x(index, button, &settings);
+        let surface = Self::widget_surface(button, &settings);
+        let pose = self.widget_pose(x, layout.row_y, button, 0.0);
+        (pose, surface)
+    }
+
+    /// The pose and the surface size of the `index`-th button of a row of `count` buttons **centred under the bottom
+    /// edge** of the screen — the transport controls of a player — counted from the user's left, one gap below the
+    /// screen, on the curvature of the screen (see [`ToolbarLayout::bottom_row_button_x`]).
+    ///
+    /// [`Screen::draw_bottom_row`] places a whole row with it.
+    pub fn bottom_row_button(&self, index: usize, count: usize) -> (Pose, Vec2) {
+        let layout = self.toolbar_layout();
+        let settings = self.toolbar_settings();
+        let button = Vec2::new(layout.button, layout.button);
+        let x = layout.bottom_row_button_x(index, count, button, &settings);
+        let y = -(self.screen_size.y * 0.5 + layout.gap) - button.y * 0.5;
+        let surface = Self::widget_surface(button, &settings);
+        let pose = self.widget_pose(x, y, button, 0.0);
+        (pose, surface)
     }
 
     /// The icon of the parameter (hamburger) button. Default is [`Sprite::list`]; an app that has its own hamburger
@@ -847,7 +1158,6 @@ impl Screen {
     }
 
     /// Called from IStepper::step, after check_event here you can draw your UI and scene.
-
     pub fn draw(&mut self, _token: &MainThreadToken) {
         // Focus bookkeeping
         self.focus_timer = (self.focus_timer - Time::get_stepf()).max(0.0);
@@ -855,6 +1165,10 @@ impl Screen {
 
         // The strip of this frame: one row above the screen, its boxes never overlapping (see `ToolbarLayout`).
         let layout = self.toolbar_layout();
+        // Everything the screen draws spaces itself with the settings of its own zoom: the layout margin, the margin a
+        // `Ui` surface leaves around its content and the widgets drawn here are then the same (see
+        // `Screen::toolbar_settings`).
+        let settings = self.apply_toolbar_settings();
         // The grab handle first.
         self.draw_grab_handle(&layout);
         let bounds = self.screen.get_bounds();
@@ -876,9 +1190,11 @@ impl Screen {
         }
         // The open parameter window keeps the toolbars visible but it never closes itself: only its close button does.
         self.draw_param_window(screen_transform, bounds.center);
-        self.draw_overlay(screen_transform, &layout);
+        self.draw_overlay(&layout);
         // The focus probe is registered after every toolbar element.
         self.draw_focus_probe(&layout);
+        // The settings of the app are back in force: the screen owns its own only for what it draws itself.
+        Ui::settings(settings);
 
         if self.draw_swapchain() {
             // The swapchain quad/cylinder layer is submitted at sort order -1 (behind the main scene).
@@ -984,7 +1300,7 @@ impl Screen {
         self.appearence.scale_handle_anchor.x = 0.0;
         self.appearence.scale_handle_anchor.y = 0.0;
         self.appearence.scale_handle_anchor.offset =
-            Vec3::new(layout.knob.0.x, layout.knob.0.y - self.screen_size.y * 0.5, -layout.z + 0.02);
+            Vec3::new(layout.knob.0.x, layout.knob.0.y - self.screen_size.y * 0.5, -layout.knob.0.z + 0.02);
     }
 
     /// The hamburger button, on its own surface anchored above the screen: it opens the parameter window.
@@ -993,16 +1309,11 @@ impl Screen {
             return;
         }
 
-        let margin = self.ui_settings_scaled().margin;
         let btn_size = Vec2::new(layout.hamburger.dimensions.x, layout.hamburger.dimensions.y);
         let surface_size = btn_size * 1.1;
-        // A `Ui::push_surface` lays its content out from its start towards the user's right (`-x`), one margin below
-        // it: the pose is the top-right corner of the button, margin included, so the button lands on `hamburger`.
-        let button_pose = self.local_pose(Vec3::new(
-            layout.hamburger.center.x + margin + btn_size.x * 0.5,
-            layout.hamburger.center.y + margin + btn_size.y * 0.5,
-            layout.hamburger.center.z,
-        ));
+        // The pose is the top-right corner of the button, margin included, on the curvature of the screen (see
+        // [`Screen::widget_pose`]), so the button lands on `hamburger`.
+        let button_pose = self.widget_pose(layout.hamburger.center.x, layout.hamburger.center.y, btn_size, 0.0);
         Ui::push_surface(button_pose, Vec3::ZERO, surface_size);
         let pressed = Ui::button(&self.repo.id_btn_show_param)
             .image(&self.repo.sprite_menu)
@@ -1022,7 +1333,6 @@ impl Screen {
     /// The parameter window, floating in front of the screen (fixed width, auto height). Holds the screen diagonal
     /// and curvature sliders, plus the optional app-provided extra-param UI. The diagonal slider keeps the aspect
     /// ratio, so it is the fallback when the [`Appearence::scale_handle`] knob cannot be grabbed.
-
     fn draw_param_window(&mut self, screen_transform: Matrix, bounds_center: Vec3) {
         if !self.show_param {
             return;
@@ -1129,24 +1439,22 @@ impl Screen {
     /// The overlay text, on its own surface anchored above the screen, to the user's right of the parameter button
     /// (see [`ToolbarLayout::overlay`]), on a **dark blue backplate** so it reads whatever the video behind it. Only
     /// drawn while the screen is focused.
-    fn draw_overlay(&mut self, screen_transform: Matrix, layout: &ToolbarLayout) {
+    fn draw_overlay(&mut self, layout: &ToolbarLayout) {
         if self.overlay_text.is_empty() || !self.screen_focused {
             return;
         }
 
         let (centre, size) = layout.overlay;
-        let margin = self.ui_settings_scaled().margin;
+        let margin = Ui::get_settings().margin;
 
         // One surface for the backplate **and** the text, so both live in the same frame and cannot drift apart: the
-        // panel is the box of the text, a touch wider, centred on it.
+        // panel is the box of the text, a touch wider, centred on it. The pose is the top-right corner of the box,
+        // margin included, on the curvature of the screen (see [`Screen::widget_pose`]).
         //
-        // A `Ui` surface starts its content one margin towards the user's right and down from its pose, so the pose is
-        // the top-right corner of the box (margin included) and the box's centre sits at `-margin - size / 2` in the
-        // surface's frame. `Ui::panel_at` takes the **top-right corner** of the element it draws, as the layout does:
-        // its centre is half a panel back from there.
-        let overlay_pose =
-            Pose::new(Vec3::new(centre.x + margin + size.x * 0.5, centre.y + margin + size.y * 0.5, centre.z), None)
-                * screen_transform;
+        // A `Ui` surface starts its content one margin towards the user's right and down from its pose, so the box's
+        // centre sits at `-margin - size / 2` in the surface's frame. `Ui::panel_at` takes the **top-right corner** of
+        // the element it draws, as the layout does: its centre is half a panel back from there.
+        let overlay_pose = self.widget_pose(centre.x, centre.y, size, 0.0);
         Ui::push_surface(overlay_pose, Vec3::ZERO, Vec2::ZERO);
 
         let box_centre = Vec3::new(-margin - size.x * 0.5, -margin - size.y * 0.5, 0.0);
@@ -1158,6 +1466,84 @@ impl Screen {
         // The text, drawn a little in front of the surface, so it stays on top of the panel.
         Ui::text(&self.overlay_text).size(size).text_align(Align::Center).fit(TextFit::Exact).draw();
         Ui::pop_surface();
+    }
+
+    /// Draw the app row declared with [`Screen::set_app_row`] — declare it first: the strip of the screen has reserved
+    /// its room, and the screen's own buttons made room for it.
+    ///
+    /// Each button takes the square size of the screen's own buttons (see [`ToolbarLayout::button`], `fit` included),
+    /// on its own surface on the curvature of the screen (see [`Screen::app_row_button`]), to the user's left of the
+    /// screen's toolbar, so a row of icons is read as one with the knob and the parameter button, at any zoom.
+    ///
+    /// Returns the buttons pressed this frame (see [`ToolbarPress`]): the app maps an index to its own action. The row
+    /// keeps the toolbars of the screen alive while a pointer is on it.
+    ///
+    /// ## Example
+    /// ```ignore
+    /// // Before the screen draws, so its strip holds the row:
+    /// screen.set_app_row(2);
+    /// screen.draw(&token);
+    /// // Then the row itself:
+    /// let row = [ToolbarButton::new("Touch").icon(&touch_icon), ToolbarButton::new("Typing")];
+    /// for index in screen.draw_app_row(&row).iter() {
+    ///     match index {
+    ///         0 => remote.cycle_touch_mode(),
+    ///         _ => remote.set_keyboard_armed(!remote.keyboard_armed()),
+    ///     }
+    /// }
+    /// ```
+    pub fn draw_app_row(&mut self, buttons: &[ToolbarButton<'_>]) -> ToolbarPress {
+        self.draw_row(buttons, RowSlot::App)
+    }
+
+    /// Draw a row of `buttons` **centred under the bottom edge** of the screen — the transport controls of a player —
+    /// each on its own surface on the curvature of the screen, counted from the user's left (see
+    /// [`Screen::bottom_row_button`]).
+    ///
+    /// Returns the buttons pressed this frame (see [`ToolbarPress`]). The row keeps the toolbars of the screen alive
+    /// while a pointer is on it — the strip of the focus probe does not cover it.
+    pub fn draw_bottom_row(&mut self, buttons: &[ToolbarButton<'_>]) -> ToolbarPress {
+        self.draw_row(buttons, RowSlot::Bottom { count: buttons.len() })
+    }
+
+    /// Draws the `buttons` of a row, each on its own surface, and collects the ones pressed: the geometry of every
+    /// button comes from the screen ([`Screen::app_row_button`], [`Screen::bottom_row_button`]), the widget from
+    /// [`ToolbarButton`].
+    ///
+    /// The row is drawn with the [`UiSettings`] of the screen (see [`Screen::toolbar_settings`]) and pushes the **index**
+    /// of each button as its id: a switch whose label follows its state keeps the focus of the pointer, and two rows
+    /// of two screens never share a button.
+    fn draw_row(&mut self, buttons: &[ToolbarButton<'_>], row: RowSlot) -> ToolbarPress {
+        let mut pressed = ToolbarPress::default();
+        if buttons.is_empty() {
+            return pressed;
+        }
+
+        let previous = self.apply_toolbar_settings();
+        let layout = self.toolbar_layout();
+        let button_size = Vec2::new(layout.button, layout.button);
+        Ui::push_id(row.id(&self.repo));
+        for (index, button) in buttons.iter().enumerate() {
+            let (pose, surface) = match row {
+                RowSlot::App => self.app_row_button(index),
+                RowSlot::Bottom { count } => self.bottom_row_button(index, count),
+            };
+            Ui::push_surface(pose, Vec3::ZERO, surface);
+            // The index of the button is its id, whatever its label: a label that follows the state of a switch does
+            // not make it another button from frame to frame.
+            Ui::push_id_int(index as i32);
+            if draw_toolbar_button(button, button_size) {
+                pressed.set(index);
+            }
+            Ui::pop_id();
+            Ui::pop_surface();
+        }
+        Ui::pop_id();
+        Ui::settings(previous);
+
+        // Pressing a row of the screen is a pointer interaction: keep the toolbars (and the row) visible.
+        self.refresh_focus_from_last_element();
+        pressed
     }
 
     /// Submit a quad/cylinder layer using the OpenXR swapchain if one is set.
@@ -1221,13 +1607,21 @@ impl Screen {
     /// - A spherical screen keeps the legacy [`Screen`] flattening: `radius = screen_distance + 1 / curvature - 1`, so
     ///   `curvature = 1.0` is the tight sphere centred on the viewer and `curvature = 0.0` a nearly flat sphere.
     fn screen_radius(&self) -> f32 {
-        if self.curvature <= 0.0 {
-            self.screen_distance + Self::FLAT_RADIUS
-        } else if self.cylindrical {
-            self.screen_distance / self.curvature
+        Self::radius_for(self.screen_distance, self.curvature, self.cylindrical, self.appearence.get_ui_scale())
+    }
+
+    /// [`Screen::screen_radius`] as a pure function: the radius the shape is bent on at `distance` and `curvature`,
+    /// scaled by the `zoom` so a zoomed screen keeps its shape — and its wrap angle — instead of curling further and
+    /// further around the viewer.
+    fn radius_for(distance: f32, curvature: f32, cylindrical: bool, zoom: f32) -> f32 {
+        let base = if curvature <= 0.0 {
+            distance + Self::FLAT_RADIUS
+        } else if cylindrical {
+            distance / curvature
         } else {
-            self.screen_distance + (1.0 / self.curvature - 1.0)
-        }
+            distance + (1.0 / curvature - 1.0)
+        };
+        base * zoom.max(f32::EPSILON)
     }
 
     /// Rebuild the mesh and refresh the [`SwapchainLayerCache`] after a change of size, distance or curvature.
@@ -1621,13 +2015,16 @@ impl Screen {
     /// front of that plane would beat the toolbar elements in the UI focus test and make them unusable.
     fn focus_bounds_for(mesh_bounds: Bounds, strip: Bounds, margin: f32) -> Bounds {
         let depth = mesh_bounds.dimensions.z * 0.5 + margin;
-        // The volume stops on the top edge of the screen: the surface itself is never part of the chrome.
+        // The volume starts **behind the deepest element of the curved strip**: a slab in front of one would beat it in
+        // the UI focus test and make it unusable, and it stops on the top edge of the screen — the surface itself is
+        // never part of the chrome.
+        let front = strip.center.z + strip.dimensions.z * 0.5;
         let screen_top = mesh_bounds.center.y + mesh_bounds.dimensions.y * 0.5;
         let bottom = (strip.center.y - strip.dimensions.y * 0.5 - margin).max(screen_top);
         let top = strip.center.y + strip.dimensions.y * 0.5 + margin;
         let height = (top - bottom).max(0.0);
         Bounds::new(
-            Vec3::new(strip.center.x, bottom + height * 0.5, mesh_bounds.center.z + depth * 0.5),
+            Vec3::new(strip.center.x, bottom + height * 0.5, front + depth * 0.5),
             Vec3::new(strip.dimensions.x + 2.0 * margin, height, depth),
         )
     }
@@ -1647,10 +2044,10 @@ impl Screen {
     /// distance drag carries the window instead of resizing it.
     pub fn get_top(&self, offset: impl Into<Vec3>) -> Pose {
         let layout = self.toolbar_layout();
-        let margin = self.ui_settings_scaled().margin;
+        let margin = Ui::get_settings().margin;
         let row = layout.hamburger.dimensions.y.max(layout.knob.1);
         let top = layout.strip.center.y + layout.strip.dimensions.y * 0.5 + layout.gap + row;
-        let pos = Vec3::new(0.0, top + margin, layout.z) + offset.into();
+        let pos = Vec3::new(0.0, top + margin, layout.curve.z_at(0.0)) + offset.into();
         Pose::new(pos, None) * self.screen_pose.to_matrix(None)
     }
 
@@ -1665,10 +2062,29 @@ impl Screen {
     /// distance.
     pub fn get_bottom(&self, offset: impl Into<Vec3>) -> Pose {
         let layout = self.toolbar_layout();
-        let margin = self.ui_settings_scaled().margin;
-        let pos = Vec3::new(0.0, -(self.screen_size.y * 0.5 + layout.gap) + margin, layout.z) + offset.into();
+        let margin = Ui::get_settings().margin;
+        let pos =
+            Vec3::new(0.0, -(self.screen_size.y * 0.5 + layout.gap) + margin, layout.curve.z_at(0.0)) + offset.into();
         Pose::new(pos, None) * self.screen_pose.to_matrix(None)
     }
+}
+
+/// Draws one button of a row of a [`Screen`]: its label, or its icon alone when it has one, with its tint when it
+/// wears one. Returns whether the user pressed it this frame.
+fn draw_toolbar_button(button: &ToolbarButton<'_>, size: Vec2) -> bool {
+    let tinted = button.tint.is_some();
+    if let Some(tint) = button.tint {
+        Ui::push_tint(tint);
+    }
+    let mut widget = Ui::button(button.text).size(size);
+    if let Some(icon) = button.icon {
+        widget = widget.image(icon).image_layout(button.icon_layout);
+    }
+    let pressed = widget.press();
+    if tinted {
+        Ui::pop_tint();
+    }
+    pressed
 }
 
 #[cfg(test)]
@@ -1728,6 +2144,77 @@ mod tests {
         }
     }
 
+    /// A flat curve of depth `z` for a `size` screen, the shape a `curvature = 0` screen has.
+    fn flat(size: Vec2, z: f32) -> ScreenCurve {
+        ScreenCurve::Flat { z, edge_y: size.y * 0.5 }
+    }
+
+    /// The curvature of an arc of `radius` whose top edge stands at `edge_y`, the shape a cylindrical screen has.
+    fn arc(radius: f32, centre_z: f32, edge_y: f32) -> ScreenCurve {
+        ScreenCurve::Arc { radius, centre_z, edge_y }
+    }
+
+    /// The depth of the curve: the centre of the screen at `z(0)`, its ends on the radius, and a clamp for an abscissa
+    /// past the end of the arc.
+    #[test]
+    fn curve_depth_follows_the_arc() {
+        let curve = arc(2.2, 0.0, 1.08);
+        assert!((curve.z_at(0.0) - 2.2).abs() < 1e-6);
+        assert!((curve.z_at(2.2) - 0.0).abs() < 1e-6);
+        assert!((curve.z_at(1.5) - (2.2f32 * 2.2 - 1.5 * 1.5).sqrt()).abs() < 1e-6);
+        // Past the end of the arc, the last point of the screen.
+        assert!((curve.z_at(9.0) - 0.0).abs() < 1e-6);
+        // Symmetric, and a flat curve is constant.
+        assert!((curve.z_at(-1.5) - curve.z_at(1.5)).abs() < 1e-6);
+        let flat = ScreenCurve::Flat { z: 2.2, edge_y: 1.08 };
+        assert!((flat.z_at(1.5) - 2.2).abs() < 1e-6);
+        assert!((flat.edge_y() - 1.08).abs() < 1e-6);
+        assert!((curve.edge_y() - 1.08).abs() < 1e-6);
+    }
+    /// The radius of the shape follows the zoom: a screen zoomed twice bends on a radius twice as big, so it keeps its
+    /// shape and its wrap angle instead of wrapping further around the viewer.
+    #[test]
+    fn screen_radius_keeps_the_wrap_angle_when_zooming() {
+        for (distance, curvature, cylindrical) in
+            [(2.2_f32, 1.0_f32, true), (2.2, 0.5, true), (2.2, 1.0, false), (2.2, 0.0, true)]
+        {
+            let base = Screen::radius_for(distance, curvature, cylindrical, 1.0);
+            let zoomed = Screen::radius_for(distance, curvature, cylindrical, 4.0);
+            assert!((zoomed - base * 4.0).abs() < 1e-3);
+            // A screen four times wider, bent on a four times bigger radius, wraps the same angle.
+            assert!(((3.84 * 4.0) / zoomed - 3.84 / base).abs() < 1e-6);
+        }
+    }
+
+    /// On a curved screen, every element of the row takes the depth of the curve at its own `x`; the strip spans those
+    /// depths, and its front face is the deepest element (the grab bar, at `x = 0`).
+    #[test]
+    fn toolbar_layout_follows_the_curve() {
+        let size = Vec2::new(3.84, 2.16);
+        let curve = arc(2.2, 0.0, size.y * 0.5);
+        let layout = ToolbarLayout::for_size(size, 1.0, 0.63, curve, 0.01);
+        assert!((layout.bar.center.z - curve.z_at(0.0)).abs() < 1e-6);
+        assert!((layout.knob.0.z - curve.z_at(layout.knob.0.x)).abs() < 1e-6);
+        assert!((layout.hamburger.center.z - curve.z_at(layout.hamburger.center.x)).abs() < 1e-6);
+        assert!((layout.overlay.0.z - curve.z_at(layout.overlay.0.x)).abs() < 1e-6);
+        // The bar, centred, is the deepest element of the row; the others are closer to the user.
+        assert!(layout.knob.0.z < layout.bar.center.z);
+        assert!(layout.hamburger.center.z < layout.bar.center.z);
+        assert!(layout.overlay.0.z < layout.hamburger.center.z);
+        // The strip holds every depth, and its back face is the deepest element: the focus probe starts behind it.
+        let strip = layout.strip;
+        for z in [layout.bar.center.z, layout.knob.0.z, layout.hamburger.center.z, layout.overlay.0.z] {
+            assert!(z >= strip.center.z - strip.dimensions.z * 0.5 - 1e-6);
+            assert!(z <= strip.center.z + strip.dimensions.z * 0.5 + 1e-6);
+        }
+        assert!(strip.center.z + strip.dimensions.z * 0.5 >= layout.bar.center.z);
+        // The curve changes the depths, not the spacing of the row in x.
+        let flat_layout = ToolbarLayout::for_size(size, 1.0, 0.63, flat(size, 2.2), 0.01);
+        assert!((layout.knob.0.x - flat_layout.knob.0.x).abs() < 1e-6);
+        assert!((layout.hamburger.center.x - flat_layout.hamburger.center.x).abs() < 1e-6);
+        assert!((layout.overlay.0.x - flat_layout.overlay.0.x).abs() < 1e-6);
+    }
+
     /// A box centred on `centre`, `size` meters wide and high, in the plane of the toolbar.
     fn box_at(centre: Vec3, size: Vec2) -> Bounds {
         Bounds::new(centre, Vec3::new(size.x, size.y, 0.0))
@@ -1743,6 +2230,75 @@ mod tests {
     fn contains(outer: &Bounds, inner: &Bounds) -> bool {
         (outer.center.x - inner.center.x).abs() + inner.dimensions.x * 0.5 <= outer.dimensions.x * 0.5 + 1e-6
             && (outer.center.y - inner.center.y).abs() + inner.dimensions.y * 0.5 <= outer.dimensions.y * 0.5 + 1e-6
+    }
+
+    /// The rows of an app are one geometry seen from its two ends: the room `row_size` declares ends exactly on the
+    /// surface of the last button `app_row_button_x` places, the buttons are one `step` apart, and the row under the
+    /// bottom edge is symmetric about the screen's centre line, its first button on the user's left.
+    #[test]
+    fn rows_size_and_place_their_buttons() {
+        let settings = UiSettings::default();
+        let size = Vec2::new(3.84, 2.16);
+        let layout = ToolbarLayout::for_size(size, 1.0, 0.0, flat(size, 2.2), settings.margin);
+        let button = Vec2::new(layout.button, layout.button);
+        let step = button.x + 2.0 * settings.padding + settings.gutter;
+
+        // One step between two buttons of the app row, and the row grows towards the user's left.
+        assert!(
+            (layout.app_row_button_x(1, button, &settings) - layout.app_row_button_x(0, button, &settings) - step)
+                .abs()
+                < 1e-6
+        );
+        assert!(layout.app_row_button_x(1, button, &settings) > layout.app_row_button_x(0, button, &settings));
+
+        // The room declared for three buttons ends exactly on the surface of the third: the declaration and the
+        // buttons cannot drift apart.
+        let width = ToolbarLayout::row_size(3, button, &settings).x;
+        let last_edge =
+            layout.app_row_button_x(2, button, &settings) + button.x * 0.5 + settings.padding + settings.margin;
+        assert!((last_edge - (layout.app_row_right + width)).abs() < 1e-6);
+
+        // The same, from the surface size: a row is its surfaces and the gutters between them, less the margins the
+        // surfaces share.
+        let surface = Screen::widget_surface(button, &settings);
+        let expected = 3.0 * surface.x + 2.0 * settings.gutter - 4.0 * settings.margin;
+        assert!((width - expected).abs() < 1e-6);
+
+        // A row under the bottom edge is centred on the centre line, whatever its number of buttons.
+        for count in [1_usize, 2, 3, 4, 5] {
+            let xs: Vec<f32> = (0..count).map(|i| layout.bottom_row_button_x(i, count, button, &settings)).collect();
+            let sum: f32 = xs.iter().sum();
+            assert!(sum.abs() < 1e-5, "{count} buttons centred: {sum}");
+            // Its first button is the one on the user's left, and they are one step apart.
+            assert!(xs[0] >= *xs.last().unwrap());
+            for pair in xs.windows(2) {
+                assert!((pair[0] - pair[1] - step).abs() < 1e-6);
+            }
+        }
+
+        // No button of a row takes room.
+        assert_eq!(ToolbarLayout::row_size(0, button, &settings), Vec2::ZERO);
+    }
+
+    /// [`ToolbarPress`] reports every button of a row pressed in the same frame, in the order of the row.
+    #[test]
+    fn toolbar_press_reports_the_buttons_pressed() {
+        let mut press = ToolbarPress::default();
+        assert!(!press.any());
+        assert_eq!(press.iter().count(), 0);
+
+        press.set(0);
+        press.set(3);
+        press.set(3);
+        assert!(press.any());
+        assert!(press.pressed(0) && press.pressed(3));
+        assert!(!press.pressed(1));
+        assert_eq!(press.iter().collect::<Vec<_>>(), vec![0, 3]);
+
+        // A row longer than the mask keeps its first 32 buttons.
+        press.set(32);
+        assert!(!press.pressed(32));
+        assert_eq!(press.iter().count(), 2);
     }
 
     /// One row, no overlaps, the whole chrome inside the strip — for every realistic screen size and for an app row of
@@ -1763,7 +2319,7 @@ mod tests {
         ];
         for (size, zoom) in cases {
             for app_width in app_widths {
-                let layout = ToolbarLayout::for_size(size, zoom, app_width, 2.2, 0.01);
+                let layout = ToolbarLayout::for_size(size, zoom, app_width, flat(size, 2.2), 0.01);
                 // The bar is a grip, never a beam.
                 assert!(layout.bar.dimensions.x <= ToolbarLayout::BAR_LENGTH_MAX + 1e-6);
                 assert!(layout.bar.dimensions.y <= ToolbarLayout::BAR_THICKNESS_MAX + 1e-6);
@@ -1820,17 +2376,19 @@ mod tests {
         for screen_size in [Vec2::new(1.024, 1.024), Vec2::new(0.32, 0.24), Vec2::new(3.84, 2.16)] {
             let mesh_z = 2.2;
             let mesh = Bounds::new(Vec3::new(0.0, 0.0, mesh_z), Vec3::new(screen_size.x, screen_size.y, 0.0));
-            let layout = ToolbarLayout::for_size(screen_size, 1.0, 0.63, mesh_z, 0.01);
+            let layout = ToolbarLayout::for_size(screen_size, 1.0, 0.63, flat(screen_size, mesh_z), 0.01);
             let focus = Screen::focus_bounds_for(mesh, layout.strip, 0.1);
-            // The corners of the strip are in the volume — tested just behind the toolbar plane: the volume starts on
-            // it and only extends behind (see `focus_volume_never_reaches_in_front_of_the_toolbar_plane`), while the
-            // real pointer test works on any element on or behind that plane (see `draw_focus_probe`).
+            // The corners of the strip are in the volume — tested just behind its deepest element (the grab bar), where
+            // the volume starts: it only extends behind the strip (see
+            // `focus_volume_never_reaches_in_front_of_the_toolbar_plane`), while the real pointer test works on any
+            // element on or behind that plane (see `draw_focus_probe`).
             let strip = layout.strip;
+            let back = strip.center.z + strip.dimensions.z * 0.5 + 0.001;
             for (x, y) in [(-1.0_f32, -1.0_f32), (1.0, -1.0), (-1.0, 1.0), (1.0, 1.0)] {
                 let behind = Vec3::new(
                     strip.center.x + x * strip.dimensions.x * 0.5,
                     strip.center.y + y * strip.dimensions.y * 0.5,
-                    mesh_z + 0.001,
+                    back,
                 );
                 assert!(
                     focus.contains_point(behind),
@@ -1838,8 +2396,8 @@ mod tests {
                 );
             }
             // The strip stops on the top edge: the screen surface is not part of the volume.
-            assert!(!focus.contains_point(Vec3::new(0.0, screen_size.y / 2.0 - 0.01, mesh_z + 0.001)));
-            assert!(!focus.contains_point(Vec3::new(0.0, 0.0, mesh_z + 0.001)));
+            assert!(!focus.contains_point(Vec3::new(0.0, screen_size.y / 2.0 - 0.01, back)));
+            assert!(!focus.contains_point(Vec3::new(0.0, 0.0, back)));
         }
     }
 
@@ -1859,7 +2417,7 @@ mod tests {
                 Vec3::new(0.0, 0.0, 2.2 - z_extent * 0.5),
                 Vec3::new(screen_size.x, screen_size.y, z_extent),
             );
-            let layout = ToolbarLayout::for_size(screen_size, 1.0, 0.0, mesh.center.z, 0.0);
+            let layout = ToolbarLayout::for_size(screen_size, 1.0, 0.0, flat(screen_size, mesh.center.z), 0.0);
             let focus = Screen::focus_bounds_for(mesh, layout.strip, 0.1);
             let front_face = focus.center.z - focus.dimensions.z * 0.5;
             assert!(

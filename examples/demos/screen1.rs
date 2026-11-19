@@ -6,7 +6,7 @@ use std::{
 
 use stereokit_rust::{
     font::Font,
-    framework::Screen,
+    framework::{Screen, ToolbarButton},
     maths::{Matrix, Pose, Quat, Vec2, Vec3},
     prelude::*,
     sk::{MainThreadToken, SkInfo},
@@ -15,7 +15,7 @@ use stereokit_rust::{
     system::{Assets, Backend, BackendXRType, Text, TextBuilder, TextStyle},
     tex::{Tex, TexData, TexFormat},
     tools::xr_comp_layers::{SwapchainSk, XrCompLayers},
-    ui::{Ui, UiBtnLayout, UiSettings},
+    ui::{Ui, UiBtnLayout},
     util::{Color32, Color128, Time, named_colors::RED},
 };
 
@@ -240,63 +240,44 @@ impl Screen1 {
         }
 
         // The transport controls of the demo hang on the screen's own toolbar row, to the user's left of the zoom knob
-        // (see `Screen::app_row_pose`). The room they take is declared **before** the screen draws, so the strip the
-        // pointer focuses holds them and the screen's own toolbar (bar, knob, parameter button) makes room for them;
-        // the buttons themselves take the square size the layout hands out once the screen has drawn (with its `fit`),
-        // so they are exactly the size of the screen's own buttons — bar and knob included — at any zoom.
-        let settings = self.screen.ui_settings_scaled();
-        let base = Vec2::new(self.screen.toolbar_button(), self.screen.toolbar_button());
-        let (declared, _) = transport_row(base, &settings);
-        self.screen.set_app_toolbar_width(if self.screen.is_focused() { declared } else { 0.0 });
+        // (see `Screen::set_app_row`). The room they take is declared **before** the screen draws, so the strip the
+        // pointer focuses holds them and the screen's own toolbar (bar, knob, parameter button) makes room for them.
+        self.screen.set_app_row(if self.screen.is_focused() { 3 } else { 0 });
 
         // Draw Screen: In swapchain mode, a composition cylinder or quad-layer is submitted instead of rendering the mesh.
         self.screen.draw(token);
 
-        // Video-player transport controls, on the row declared just above.
+        // Video-player transport controls, on the row declared just above: the screen places and draws them (see
+        // `Screen::draw_app_row`), each on its own surface on the curvature of the video, at the square size of its own
+        // buttons (with its `fit`), so they are exactly the size of the screen's own buttons at any zoom.
         if self.screen.is_focused() {
-            let size = self.screen.toolbar_layout().button;
-            let button = Vec2::new(size, size);
-            let (width, height) = transport_row(button, &settings);
-            let controls_pose = self.screen.app_row_pose(width, height);
-            Ui::push_surface(controls_pose, Vec3::ZERO, Vec2::new(width, height));
-            if Ui::button("prev")
-                .image(&self.sprite_prev)
-                .image_layout(UiBtnLayout::CenterNoText)
-                .size(button)
-                .press()
-            {
+            let play = if self.paused {
+                ToolbarButton::new("play").icon(&self.sprite_play).icon_layout(UiBtnLayout::Center)
+            } else {
+                ToolbarButton::new("pause")
+                    .icon(&self.sprite_pause)
+                    .icon_layout(UiBtnLayout::Center)
+                    .tint(Color128::new(0.3, 1.0, 0.3, 1.0))
+            };
+            let row = [
+                ToolbarButton::new("prev").icon(&self.sprite_prev),
+                play,
+                ToolbarButton::new("next").icon(&self.sprite_next),
+            ];
+            let pressed = self.screen.draw_app_row(&row);
+
+            if pressed.pressed(0) {
                 self.prev_texture();
                 self.last_switch_time = current_time;
             }
-            Ui::same_line();
-            if self.paused {
-                if Ui::button("play").image(&self.sprite_play).image_layout(UiBtnLayout::Center).size(button).press() {
-                    self.paused = false;
-                    self.last_switch_time = current_time;
-                }
-            } else {
-                Ui::push_tint(Color128::new(0.3, 1.0, 0.3, 1.0));
-                let clicked = Ui::button("pause")
-                    .image(&self.sprite_pause)
-                    .image_layout(UiBtnLayout::Center)
-                    .size(button)
-                    .press();
-                Ui::pop_tint();
-                if clicked {
-                    self.paused = true;
-                }
+            if pressed.pressed(1) {
+                self.paused = !self.paused;
+                self.last_switch_time = current_time;
             }
-            Ui::same_line();
-            if Ui::button("next")
-                .image(&self.sprite_next)
-                .image_layout(UiBtnLayout::CenterNoText)
-                .size(button)
-                .press()
-            {
+            if pressed.pressed(2) {
                 self.next_texture();
                 self.last_switch_time = current_time;
             }
-            Ui::pop_surface();
         }
 
         // Control window
@@ -408,15 +389,6 @@ impl Screen1 {
         self.screen.set_texture(tex_slot, Some(new_tex.clone_ref()));
         self.screen.set_tex_curr(tex_slot);
     }
-}
-
-/// The width and the height of the transport row of the demo — three square buttons — for a `button` size and the
-/// scaled [`UiSettings`] of its screen: what the row declares to the screen before it draws, and what it lays out once
-/// the screen has drawn (see [`Screen1::draw`]).
-fn transport_row(button: Vec2, settings: &UiSettings) -> (f32, f32) {
-    let width = 3.0 * (button.x + 2.0 * settings.padding) + 2.0 * settings.gutter + 2.0 * settings.margin;
-    let height = button.y + 2.0 * (settings.padding + settings.margin);
-    (width, height)
 }
 
 #[allow(dead_code)]
