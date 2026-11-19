@@ -693,9 +693,9 @@ use crate::permission::{Permission, PermissionState, PermissionType};
 use crate::{
     font::Font,
     framework::Appearence,
-    maths::{Pose, Vec2, Vec3},
+    maths::{Bounds, Pose, Vec2, Vec3},
     sprite::Sprite,
-    system::{Align, Hierarchy, Text, TextFit, TextStyle},
+    system::{Align, Hierarchy, Input, Text, TextFit, TextStyle},
     tools::file_browser_b::ALL_BROWSE_LOCATIONS_ROOT,
     ui::{UiBtnLayout, UiMove, UiPad, UiScroll, UiWin},
     util::{Color128, Time, named_colors},
@@ -1227,7 +1227,6 @@ impl Default for VoicePanel {
         let mut appearence = Appearence::new(&font, 0.024);
         appearence.window_size = Vec2::new(0.62, 0.0);
         appearence.min_window_size = Vec2::new(0.50, 0.0);
-        appearence.scale_handle_default_offset = Vec3::new(0.33, 0.04, 0.006);
         appearence.handle_sprite = Sprite::from_file("icons/voice_dictation.png", None, None).ok();
         appearence.set_ui_scale(0.6);
         // The text of the batch windows is drawn smaller than the one of the window. The text style of the UI is not
@@ -1328,18 +1327,19 @@ impl VoicePanel {
         // user, and the series that show them are always drawn.
         self.update_session();
 
-        if self.show_param_window {
-            self.draw_param_window();
-        }
+        // The bounds of the parameter window anchor its scale knob (the batch windows, drawn after it, would
+        // otherwise be the "last layout" the UI gives back).
+        let param_bounds = self.show_param_window.then(|| self.draw_param_window());
 
         // The series live outside the window of the panel, and outlive it.
         self.draw_batch();
 
         Ui::settings(previous_settings);
 
-        if self.show_param_window {
-            // Grab-able knob beside the window: resizes / zooms it, exactly like on the file browser.
-            self.appearence.scale_handle(&self.window_pose, "voice_panel_scale_handle");
+        if let Some(param_bounds) = param_bounds {
+            // Grab-able knob beside the window: resizes / zooms it, exactly like on the file browser. The bounds the
+            // panel window gave back anchor the knob on its real top-right corner.
+            self.appearence.scale_handle(&self.window_pose, param_bounds, "voice_panel_scale_handle");
         }
     }
 
@@ -1382,7 +1382,10 @@ impl VoicePanel {
     }
 
     /// Draw the parameter window: model folder, record controls, mode, provisional text and log.
-    fn draw_param_window(&mut self) {
+    ///
+    /// Returns the bounds the window took, as [`Ui::get_layout_last`] gives them right after [`Ui::window_end`],
+    /// so the scale knob can anchor on its real top-right corner.
+    fn draw_param_window(&mut self) -> Bounds {
         Ui::window(t!("voice_dictation.title"))
             .pose(&mut self.window_pose)
             .size(self.appearence.scaled_window_size())
@@ -1549,6 +1552,7 @@ impl VoicePanel {
         }
 
         Ui::window_end();
+        Ui::get_layout_last()
     }
 
     /// Called by the derive macro during `IStepper::shutdown`.
@@ -1667,12 +1671,20 @@ impl VoicePanel {
 
     /// Append `text` to the log of the committed sentences, as a new line, and bring the log to its end at the next
     /// draw - a new line is what the user is waiting to read.
+    ///
+    /// The text is also **typed** into the app, with [`Input::text_inject`].
     fn push_log(&mut self, text: &str) {
         if !self.dictation_log.is_empty() {
             self.dictation_log.push_str("\r\n");
         }
         self.dictation_log.push_str(text);
         self.log_follow_end = true;
+
+        if text.ends_with(char::is_whitespace) {
+            Input::text_inject(text);
+        } else {
+            Input::text_inject(format!("{text} "));
+        }
     }
 
     /// Add `text` as a new batch window, at the bottom of the current series - or in a new series, when there is no

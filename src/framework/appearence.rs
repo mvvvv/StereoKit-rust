@@ -65,6 +65,54 @@ impl Resizing {
     }
 }
 
+/// Where the [`Appearence::scale_handle`] knob rests when it is not grabbed, in window-local space.
+///
+/// The place is described *relative to the drawn window*, never relative to a fixed reference size: the knob keeps
+/// hugging the same corner / edge whatever [`Appearence::window_size`], the ui scale and an unmanaged (auto-fit)
+/// axis do, and it follows a resize / zoom done elsewhere (a memorized placement, a slider, the `Screen`).
+///
+/// The point is built in two parts:
+/// * `x` and `y` place it in the drawn window: `x` is a fraction of the width measured from the vertical centre
+///   line (`0.0` = centre, `0.5` = right edge, `-0.5` = left edge), `y` a fraction of the height measured **down
+///   from the top edge** (`0.0` = top edge, `1.0` = bottom edge),
+/// * `offset` is added in meters, in window-local space: `+X` right, `+Y` up, `+Z` towards the user. It holds the
+///   small gap outside the window and the depth of the knob in front of the window plane.
+///
+/// The default is `(0.5, 0.0)` with an offset of `(0.012, 0.012, 0.006)`: the knob rests just outside the
+/// **top-right corner** of the window, 12 mm right of its right edge and 12 mm above its top edge, 6 mm in front of
+/// it. That corner is the stable landmark of any window: it is where the header ends, whatever the height of the
+/// window (an auto-fit one included). Use `(0.5, 0.5)` with a negative `offset.y` to hug the middle of the right
+/// edge instead, or `(0.5, 1.0)` for the bottom-right corner.
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub struct ScaleHandleAnchor {
+    /// Horizontal place of the anchor: fractions of the drawn width from the window's vertical centre line
+    /// (`0.5` = right edge).
+    pub x: f32,
+    /// Vertical place of the anchor: fractions of the drawn height, measured **downwards from the top edge**
+    /// (`0.0` = top edge, `1.0` = bottom edge).
+    pub y: f32,
+    /// Meters added to that place, in window-local space (`+X` right, `+Y` up, `+Z` towards the user).
+    pub offset: Vec3,
+}
+
+impl Default for ScaleHandleAnchor {
+    fn default() -> Self {
+        Self { x: 0.5, y: 0.0, offset: Vec3::new(0.012, 0.012, 0.006) }
+    }
+}
+
+impl ScaleHandleAnchor {
+    /// The window-local place of the anchor for a window drawn `drawn` meters wide and high, whose top edge sits
+    /// `top` meters above the window pose (the pose of a StereoKit window is the top-centre of its body, the header
+    /// stands above it — see [`Appearence::scale_handle`]).
+    /// * `drawn` - The size the window is really drawn at, in meters. A `0.0` axis (an unmanaged, auto-fit one) has
+    ///   no extent: the anchor then falls back on `offset` on that axis.
+    /// * `top` - The height of the top edge above the window pose, in meters.
+    pub fn point_for(&self, drawn: Vec2, top: f32) -> Vec3 {
+        Vec3::new(self.x * drawn.x.max(0.0), top - self.y * drawn.y.max(0.0), 0.0) + self.offset
+    }
+}
+
 /// The look & feel of a UI window: size, scaling, text styles and extra tints.
 /// - the ui scale (read with [`Appearence::get_ui_scale`], set with [`Appearence::start`] or
 ///   [`Appearence::set_ui_scale`]) uniformly scales the whole window: its size, every [`UiSettings`] value and
@@ -72,7 +120,10 @@ impl Resizing {
 /// - [`Appearence::scale_handle`] draws the grab-able knob that interactively drives [`Appearence::window_size`]
 ///   (local X = width, local Y = height) and the ui scale (local Z), as chosen by [`Appearence::resizing`] — see
 ///   [`Resizing`] — and [`Appearence::handle_sprite`], when set, replaces the built-in knob visual with a custom
-///   sprite,
+///   sprite. [`Appearence::handle_size`] gives the knob a width of the caller's choosing, shared by its visual and
+///   its grab volume,
+/// - the knob rests where [`Appearence::scale_handle_anchor`] says, relative to the *drawn* window: by default just
+///   outside its top-right corner, whatever its size, its ui scale and an auto-fit axis,
 /// - the [`Appearence::scale_handle`] knob turns to face the head while an interactor points at it (based on the
 ///   previous frame's focus), so aiming at it is easy to see,
 /// - the four text styles, from the biggest ([`Appearence::title_style`]) to the smallest
@@ -83,16 +134,15 @@ impl Resizing {
 ///   it was left at, so the next session opens it there.
 ///
 /// Call [`Appearence::start`] once when the window stepper starts (it captures the base text heights and applies the
-/// current scale), then [`Appearence::scale_handle`] every frame after the window itself has been drawn.
+/// current scale), then [`Appearence::scale_handle`] every frame right after [`Ui::window_end`], handing it the bounds
+/// [`Ui::get_layout_last`] gives back so the knob hugs the real edges of the window.
 pub struct Appearence {
-    /// The `window_size` set by [`Appearence::default`], and the reference size the released scale-handle
-    /// anchor is proportional to, see [`Appearence::scale_handle`]. Default is `Vec2::new(0.6, 0.8)`. A
-    /// coordinate left at `0.0` marks an unmanaged axis (e.g. an auto-fit height): it turns a ratio-preserving
-    /// [`Appearence::resizing`] off with a warning.
+    /// The size the window is drawn at, before the ui scale: the real size is
+    /// [`Appearence::scaled_window_size`]. Default is `Vec2::new(0.6, 0.8)`. A coordinate left at `0.0` marks an
+    /// unmanaged axis (e.g. an auto-fit height): it turns a ratio-preserving [`Appearence::resizing`] off with a
+    /// warning, and the scale handle anchors on the *real* drawn size when [`Appearence::scale_handle`] is given the
+    /// window bounds, see [`Appearence::scale_handle_anchor`].
     pub window_size: Vec2,
-    /// The reference size of the window used to apply scale and position of the [`Appearence::scale_handle`] this is
-    /// always Vec2::new(0.6, 0.8),
-    reference_window_size: Vec2,
     /// Interactive resize floor for [`Appearence::window_size`] (meters) applied while dragging the scale
     /// handle, see [`Appearence::scale_handle`]. Default is `Vec2::new(0.45, 0.45)`.
     pub min_window_size: Vec2,
@@ -111,16 +161,14 @@ pub struct Appearence {
     pub scale_per_meter: f32,
     /// Zoom bounds for the scale handle, see [`Appearence::scale_handle`]. Default is 0.5 to 2.0.
     pub scale_bounds: (f32, f32),
-    /// Default window-local offset of the scale handle: on release, the handle springs back here, scaled
-    /// proportionally to the current drawn window size (`window_size * ui_scale`) relative to
-    /// `Appearence::reference_window_size`, so it hugs the window edge at its current size,
-    /// see [`Appearence::scale_handle`]. Default is `Vec3::new(0.31, 0.04, 0.006)` you can change it as long as it's
-    /// relative to `Appearence::reference_window_size` and on the right of the window .
-    pub scale_handle_default_offset: Vec3,
+    /// Where the scale handle rests when it is not grabbed, relative to the drawn window: the default hugs the
+    /// **top-right corner** of the window (just outside it), whatever its size, its ui scale and an auto-fit axis.
+    /// See [`ScaleHandleAnchor`]. The resting place is recomputed every frame, see [`Appearence::scale_handle`].
+    pub scale_handle_anchor: ScaleHandleAnchor,
     /// Current window-local offset of the scale handle, the grab-able knob that drives the ui scale (see
     /// [`Appearence::get_ui_scale`]) and [`Appearence::window_size`]: while held, dragging it resizes / scales
-    /// the window relative to where it was grabbed. Initialized to [`Appearence::scale_handle_default_offset`],
-    /// recomputed on each release.
+    /// the window relative to where it was grabbed. Recomputed from [`Appearence::scale_handle_anchor`] every frame
+    /// the handle is not grabbed, so it follows a resize / zoom done elsewhere.
     scale_handle_offset: Vec3,
     /// Current scale-grab session: the handle offset, the `ui_scale` and the `window_size` captured when the
     /// handle was grabbed, so each drag axis is applied as a delta from them.
@@ -128,7 +176,17 @@ pub struct Appearence {
 
     /// Optional custom visual for the scale handle. Width is important as it's use to scale the sprite :
     /// `sprite.get_width() as f32 / 2000.0 * self.ui_scale`. 128 pixels for regular windows or 256 for large Screen.
+    ///
+    /// [`Appearence::handle_size`], when set, overrides that pixel size: the sprite is then drawn to fit it.
     pub handle_sprite: Option<Sprite>,
+
+    /// Width of the knob of [`Appearence::scale_handle`], in meters at `ui_scale = 1`, used for **both** its visual
+    /// and its grab volume — a surface that sizes its toolbars itself (like [`crate::framework::Screen`]) sets it so
+    /// the knob that is seen is the knob that can be grabbed, whatever the sprite it wears.
+    ///
+    /// `None` keeps the historical sizing of the windows: a `0.035 * ui_scale` meters grab volume, and the sprite
+    /// drawn from its pixel width (`sprite.get_width() / 2000.0 * ui_scale`).
+    pub handle_size: Option<f32>,
 
     /// Did the scale handle have focus on the previous frame?
     handle_focused: bool,
@@ -162,7 +220,6 @@ impl Default for Appearence {
         // Font shared by the four text styles below.
         let font = Font::default();
         Self {
-            reference_window_size: Vec2::new(0.6, 0.8),
             min_window_size: Vec2::new(0.45, 0.45),
             resizing: Resizing::default(),
             window_size: Vec2::new(0.6, 0.8),
@@ -170,10 +227,11 @@ impl Default for Appearence {
             ui_scale: 1.0,
             scale_per_meter: 2.0,
             // Scale handle at its default anchor.
-            scale_handle_default_offset: Vec3::new(0.31, 0.04, 0.006),
+            scale_handle_anchor: ScaleHandleAnchor::default(),
             scale_handle_offset: Vec3::ZERO,
             scale_grab: None,
             handle_sprite: None,
+            handle_size: None,
             handle_focused: false,
             scale_bounds: (0.5, 2.0),
 
@@ -254,7 +312,6 @@ impl Appearence {
             self.set_window_size(window_size);
         }
 
-        self.scale_handle_offset = self.scale_handle_default_offset;
         self.scale_per_meter = self.scale_per_meter.max(0.01);
         self.double_click_delay = self.double_click_delay.max(0.0);
 
@@ -266,6 +323,8 @@ impl Appearence {
         ];
 
         self.set_ui_scale(self.ui_scale);
+        // The resting offset depends on the ui scale, so it is computed once that is settled.
+        self.scale_handle_offset = self.resting_handle_offset(None);
     }
 
     /// Scale the window before or at start or after. Useful when you want to have the same look than the calling
@@ -386,6 +445,26 @@ impl Appearence {
     pub fn scale_pos(&self, position: Vec3) -> Vec3 {
         position * self.ui_scale
     }
+
+    /// The window-local offset the scale handle rests at, for the window as it is drawn: the real bounds the UI gave
+    /// back when the caller passes them, the configured size otherwise. See [`Appearence::scale_handle_anchor`].
+    fn resting_handle_offset(&self, window_bounds: Option<Bounds>) -> Vec3 {
+        let (drawn, top) = match window_bounds {
+            // A StereoKit window pose is the top-centre of the body, the header standing above it: the bounds tell
+            // where the real top edge is, an auto-fit height and the margin included.
+            Some(bounds) => {
+                (Vec2::new(bounds.dimensions.x, bounds.dimensions.y), bounds.center.y + bounds.dimensions.y / 2.0)
+            }
+            // No bounds (a surface that is not a `Ui::window`, like the `Screen`): the pose is the centre of the size
+            // the appearence drives.
+            None => {
+                let drawn = self.scaled_window_size();
+                (drawn, drawn.y / 2.0)
+            }
+        };
+        self.scale_handle_anchor.point_for(drawn, top)
+    }
+
     /// Scale handle: a small grab-able knob in world space, anchored to `window_pose` in its local space so it
     /// follows the window when it moves. While held, each drag axis drives its own appearance property, as chosen by
     /// [`Appearence::resizing`]:
@@ -405,23 +484,41 @@ impl Appearence {
     /// aimed at. The cue is binary (no fade / timeout), and using the previous frame's focus keeps this frame's
     /// orientation from feeding back into the focus test.
     ///
-    /// On release, the knob springs back to its default anchor, scaled proportionally to the current drawn
-    /// window size (`window_size * ui_scale`) so it keeps hugging the window edge. While the handle is
-    /// grabbed, two or three small labels around the knob show the live values it drives: the scale factor in
-    /// percent in front of the knob (towards the user) when the mode zooms, the window width below it and the
-    /// window height on its right when it resizes.
+    /// On release, the knob springs back to its resting anchor ([`Appearence::scale_handle_anchor`]) — by default
+    /// just outside the **top-right corner** of the window. The resting place is computed from the window size at
+    /// every frame, so it follows a resize or a zoom done elsewhere (a memorized placement, a slider, another frame's
+    /// drag); there is no fixed reference size any more. While the handle is grabbed, two or three small labels
+    /// around the knob show the live values it drives: the scale factor in percent in front of the knob (towards
+    /// the user) when the mode zooms, the window width below it and the window height on its right when it resizes.
     ///
     /// When [`Appearence::handle_sprite`] is set, its sprite is drawn in place of the built-in knob visual,
-    /// but the grab volume and the drag behavior stay the same.
+    /// but the grab volume and the drag behavior stay the same. [`Appearence::handle_size`], when set, is the width
+    /// of both the visual and the grab volume of the knob.
     ///
-    /// * `window_pose` - The world-space pose of the window the handle is anchored to.
+    /// * `window_pose` - The world-space pose of the window the handle is anchored to. A StereoKit window pose is the
+    ///   top-centre of its body: its header stands above the pose.
+    /// * `window_bounds` - The bounds the UI gives the window back, i.e. [`Ui::get_layout_last`] right after
+    ///   [`Ui::window_end`]: the handle then hugs the **real** top/right edges, an auto-fit height, a margin and the
+    ///   header included. Pass `None` for a surface that is not a `Ui::window` (like [`crate::framework::Screen`]);
+    ///   the anchor then uses `window_size * ui_scale` and assumes the pose is the centre of that size.
     /// * `id` - The unique StereoKit UI id of the handle element. "h" is ok as long as you stay inside the window
     ///   [`Ui::push_id`]
     ///
     /// Returns `Some(ui_scale)` on every frame the handle is grabbed, so the caller can propagate the live
     /// scale to its child windows and `None` when the handle is not grabbed.
-    pub fn scale_handle(&mut self, window_pose: &Pose, id: &str) -> Option<f32> {
+    pub fn scale_handle(
+        &mut self,
+        window_pose: &Pose,
+        window_bounds: impl Into<Option<Bounds>>,
+        id: &str,
+    ) -> Option<f32> {
         let (right, up, forward) = (window_pose.get_right(), window_pose.get_up(), window_pose.get_forward());
+        // The place the knob rests this frame: the top-right corner of the window, from the real bounds when the
+        // caller gives them back, from the configured size otherwise.
+        let resting_offset = self.resting_handle_offset(window_bounds.into());
+        if self.scale_grab.is_none() {
+            self.scale_handle_offset = resting_offset;
+        }
 
         let handle_offset = self.scale_handle_offset;
         let handle_center =
@@ -433,10 +530,12 @@ impl Appearence {
         }
         // A custom handle sprite replaces the built-in knob visual, see the drawing after the grab logic.
         let draw_default_handle = self.handle_sprite.is_none();
-        let grabbed =
-            Ui::handle(id, &mut handle_pose, Bounds::bounds_centered(Vec3::new(1.0, 1.0, 0.3) * 0.035 * self.ui_scale))
-                .draw_handle(draw_default_handle)
-                .grab();
+        // The width of the knob: the caller's own when it gave one (a surface that sizes its toolbars itself, like
+        // the `Screen`), the historical 0.035 m otherwise.
+        let grab_size = self.handle_size.unwrap_or(0.035) * self.ui_scale;
+        let grabbed = Ui::handle(id, &mut handle_pose, Bounds::bounds_centered(Vec3::new(1.0, 1.0, 0.3) * grab_size))
+            .draw_handle(draw_default_handle)
+            .grab();
         self.handle_focused = grabbed || Ui::get_last_element_focused().is_active();
         let result = if grabbed {
             let delta = handle_pose.position - window_pose.position;
@@ -477,12 +576,14 @@ impl Appearence {
             self.scale_all();
             self.scale_handle_offset = offset;
 
-            // While grabbed, small labels around the knob show the live values it drives.
-            let label_size = Vec2::new(0.05, 0.02) * self.ui_scale;
+            // While grabbed, small labels around the knob show the live values it drives. They are sized from the
+            // knob itself, so a big knob (a `Screen` zoomed in) does not wear tiny labels lost on its side.
+            let visual = self.handle_size.unwrap_or(0.055) * self.ui_scale;
+            let label_size = Vec2::new(0.91, 0.36) * visual;
             let orientation = handle_pose.orientation;
             if self.resizing.zooms() {
                 TextBuilder::new(format!("{:.0}%", self.ui_scale * 100.0))
-                    .transform(Matrix::t_r(handle_pose.position + forward * 0.05, orientation))
+                    .transform(Matrix::t_r(handle_pose.position + forward * (0.91 * visual), orientation))
                     .style(self.title_style)
                     .size(label_size)
                     .add();
@@ -490,14 +591,14 @@ impl Appearence {
             if self.resizing.resizes_window() {
                 if start_size.x > 0.0 {
                     TextBuilder::new(format!("{:.2}", self.window_size.x))
-                        .transform(Matrix::t_r(handle_pose.position - up * 0.03, orientation))
+                        .transform(Matrix::t_r(handle_pose.position - up * (0.55 * visual), orientation))
                         .style(self.small_style)
                         .size(label_size)
                         .add();
                 }
                 if start_size.y > 0.0 {
                     TextBuilder::new(format!("{:.2}", self.window_size.y))
-                        .transform(Matrix::t_r(handle_pose.position + right * 0.04, orientation))
+                        .transform(Matrix::t_r(handle_pose.position + right * (0.73 * visual), orientation))
                         .style(self.small_style)
                         .size(label_size)
                         .add();
@@ -506,15 +607,9 @@ impl Appearence {
             // Live scale of this drag frame, for the caller to propagate to its child windows.
             Some(self.ui_scale)
         } else {
-            // Released: the knob springs back to its default anchor, scaled proportionally to the current
-            // drawn window size (`window_size * ui_scale`) so it keeps hugging the window edge.
+            // Released: the knob springs back to its resting anchor, on the window as it is drawn this frame.
             self.scale_grab = None;
-            let drawn = self.window_size * self.ui_scale;
-            self.scale_handle_offset = Vec3::new(
-                self.scale_handle_default_offset.x * drawn.x / self.reference_window_size.x.max(0.001),
-                self.scale_handle_default_offset.y * drawn.y / self.reference_window_size.y.max(0.001),
-                self.scale_handle_default_offset.z,
-            );
+            self.scale_handle_offset = resting_offset;
             None
         };
 
@@ -522,12 +617,15 @@ impl Appearence {
         #[cfg(feature = "placement")]
         self.track_placement(window_pose);
 
-        // Custom handle visual: when set, the sprite is drawn in place of the built-in knob, centered on it
-        // and scaled to its footprint (`0.055 * ui_scale` meters on its largest axis, aspect ratio preserved),
-        // so it follows both the drag position and the window scaling. Drawn after the grab logic so the pose
-        // used is the one updated by the drag of this frame.
+        // Custom handle visual: when set, the sprite is drawn in place of the built-in knob, centered on it and
+        // scaled to its footprint — `handle_size` meters on its largest axis when the caller gave one, the sprite's
+        // own `width / 2000` rule otherwise — aspect ratio preserved, so it follows both the drag position and the
+        // window scaling. Drawn after the grab logic so the pose used is the one updated by the drag of this frame.
         if let Some(sprite) = &self.handle_sprite {
-            let size = sprite.get_width() as f32 / 2000.0 * self.ui_scale;
+            let size = match self.handle_size {
+                Some(handle_size) => handle_size * self.ui_scale,
+                None => sprite.get_width() as f32 / 2000.0 * self.ui_scale,
+            };
             let aspect = sprite.get_aspect();
             let scale = size / aspect.max(1.0);
             sprite.draw(handle_pose.to_matrix(Some(Vec3::new(scale * aspect, scale, 1.0))), Pivot::Center, None, None);
@@ -1035,5 +1133,64 @@ mod tests {
         assert!(fresh.load("another_window").is_some());
 
         let _ = fs::remove_dir_all(&dir);
+    }
+}
+
+#[cfg(test)]
+mod anchor_tests {
+    use super::*;
+
+    /// The default anchor hugs the top-right corner of the drawn window: 12 mm right of its right edge, 12 mm above
+    /// its top edge, 6 mm in front of it — whatever the window size. A 0.6 x 0.8 window whose header makes its top
+    /// edge stand 3 cm above the pose is the StereoKit default: the knob rests at `(0.312, 0.042, 0.006)`.
+    #[test]
+    fn the_default_anchor_hugs_the_top_right_corner() {
+        let point = ScaleHandleAnchor::default().point_for(Vec2::new(0.6, 0.8), 0.03);
+        assert!((point.x - 0.312).abs() < 1e-6, "12 mm right of the right edge: {point:?}");
+        assert!((point.y - 0.042).abs() < 1e-6, "12 mm above the top edge: {point:?}");
+        assert!((point.z - 0.006).abs() < 1e-6, "6 mm in front of the window: {point:?}");
+    }
+
+    /// The anchor is a fraction of the *drawn* size, so a bigger window still gets its knob outside its own corner,
+    /// not at the place of another size.
+    #[test]
+    fn the_default_anchor_follows_the_window_size() {
+        let anchor = ScaleHandleAnchor::default();
+        let wide = anchor.point_for(Vec2::new(1.2, 0.5), 0.03);
+        assert!((wide.x - 0.612).abs() < 1e-6, "right edge of a 1.2 m wide window: {wide:?}");
+        assert!((wide.y - 0.042).abs() < 1e-6, "the height never moves the top edge: {wide:?}");
+
+        // A taller window keeps the knob on its top edge: the fraction is measured downwards from that edge.
+        let tall = anchor.point_for(Vec2::new(0.6, 2.0), 0.03);
+        assert!((tall.y - 0.042).abs() < 1e-6, "still on the top edge: {tall:?}");
+    }
+
+    /// An unmanaged (auto-fit) axis has no drawn extent: the anchor falls back on the offset on that axis, which is
+    /// what keeps an auto-height window's knob at its top edge instead of at an arbitrary height.
+    #[test]
+    fn an_unmanaged_axis_falls_back_on_the_offset() {
+        let point = ScaleHandleAnchor::default().point_for(Vec2::new(0.6, 0.0), 0.0);
+        assert!((point.x - 0.312).abs() < 1e-6, "{point:?}");
+        assert!((point.y - 0.012).abs() < 1e-6, "12 mm above the body top, no height to scale: {point:?}");
+
+        // The screen case: no bounds, so the pose is the centre of the configured size and `top` is its half height.
+        let screen = ScaleHandleAnchor { x: 0.0, y: 0.0, offset: Vec3::new(0.15, 0.05, 0.02) }
+            .point_for(Vec2::new(3.84, 2.16), 1.08);
+        assert!((screen.x - 0.15).abs() < 1e-6, "right of the centre line: {screen:?}");
+        assert!((screen.y - 1.13).abs() < 1e-6, "above the top edge: {screen:?}");
+    }
+
+    /// Another edge is only a change of the fractions: the middle of the right edge, or the bottom-right corner.
+    #[test]
+    fn the_anchor_can_hug_another_edge() {
+        let middle = ScaleHandleAnchor { x: 0.5, y: 0.5, offset: Vec3::new(0.012, -0.012, 0.006) };
+        let point = middle.point_for(Vec2::new(0.6, 0.8), 0.03);
+        assert!((point.x - 0.312).abs() < 1e-6, "{point:?}");
+        assert!((point.y - -0.382).abs() < 1e-6, "the middle of an 0.8 m high window, 12 mm below it: {point:?}");
+
+        let bottom = ScaleHandleAnchor { x: -0.5, y: 1.0, offset: Vec3::ZERO };
+        let point = bottom.point_for(Vec2::new(0.6, 0.8), 0.03);
+        assert!((point.x - -0.3).abs() < 1e-6, "the left edge: {point:?}");
+        assert!((point.y - -0.77).abs() < 1e-6, "the bottom edge: {point:?}");
     }
 }

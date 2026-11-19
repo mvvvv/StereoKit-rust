@@ -507,7 +507,7 @@ impl HotReloading {
             // Y the height, and along Z (towards the user) the whole scale, see `Appearence::scale_handle`. It also
             // memorizes the placement of the selector window (see `Appearence::placement`), so it comes back there, at
             // the same size, at the next session.
-            appearence.scale_handle(&self.window_pose, "run_sk_scale");
+            appearence.scale_handle(&self.window_pose, Ui::get_layout_last(), "run_sk_scale");
         }
         if let Some(index) = pressed
             && let Some(plugin) = self.loaded.plugin.as_ref()

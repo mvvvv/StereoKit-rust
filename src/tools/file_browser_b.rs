@@ -548,7 +548,7 @@ impl FileBrowserB {
         // X resizes the width, along Y the height, and along Z (towards the user) the whole scale.
         // While grabbed, the live scale is forwarded to the child windows: the preview panel text
         // styles follow the browser scale.
-        if let Some(scale) = self.appearence.scale_handle(&self.window_pose, "h")
+        if let Some(scale) = self.appearence.scale_handle(&self.window_pose, Ui::get_layout_last(), "h")
             && let Some(preview) = self.preview.as_deref_mut()
         {
             preview.set_ui_scale(scale);

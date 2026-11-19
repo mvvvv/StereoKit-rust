@@ -596,7 +596,7 @@ impl PermissionPanel {
 
         // Grab-able knob anchored to the window: dragging it resizes / zooms the window (see `Appearence`), and it
         // memorizes the placement of the window (see `Appearence::placement`).
-        self.appearence.scale_handle(&self.window_pose, "permission_panel_scale");
+        self.appearence.scale_handle(&self.window_pose, Ui::get_layout_last(), "permission_panel_scale");
     }
 }
 

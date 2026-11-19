@@ -279,7 +279,7 @@ impl Documents1 {
         Ui::settings(prev_settings);
 
         // Grab-able knob beside the window: resizes / scales it, exactly like on FileBrowserB.
-        self.appearence.scale_handle(&self.window_pose, "documents1_scale_handle");
+        self.appearence.scale_handle(&self.window_pose, Ui::get_layout_last(), "documents1_scale_handle");
 
         // The files received from a browser are displayed with a grabbable handle each, exactly like on the asset1
         // demo: the handle gets the base bounds (model bounds * fixed asset_scale); StereoKit's ui_handle_begin

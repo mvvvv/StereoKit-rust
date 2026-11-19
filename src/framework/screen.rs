@@ -13,7 +13,7 @@ use crate::{
     sprite::Sprite,
     system::{Align, BtnState, Input, Lines, Log, TextFit},
     tex::Tex,
-    ui::{Ui, UiBtnLayout, UiConfirm, UiMove, UiWin},
+    ui::{Ui, UiBtnLayout, UiConfirm, UiMove, UiSettings, UiWin},
 };
 use crate::{maths::Rect, tools::xr_comp_layers::XrCompLayers};
 use openxr_sys::Swapchain;
@@ -79,6 +79,156 @@ impl ScreenRepo {
             sprite_close: Sprite::close(),
             sprite_menu: Sprite::list(),
             id_material: id + "_material",
+        }
+    }
+}
+
+/// The chrome scale and the boxes of the toolbar strip above a [`Screen`], in the screen's local space (`+x` to the
+/// user's left, `+y` up, `+z` towards the viewer).
+///
+/// It is the single source of truth of the toolbar: the grab bar, the zoom knob, the parameter (hamburger) button, the
+/// overlay text and the room an app reserves for its own row (see [`Screen::set_app_toolbar_width`]) are laid out from
+/// it, and the focus probe of the screen wraps the strip. Every size is derived from [`Screen::toolbar_scale`] — a
+/// bounded scale — so the whole strip follows the screen without ever dwarfing it.
+///
+/// The elements share one row, from the user's left to their right:
+/// `[app row] · [knob] · [bar] · [hamburger] · [overlay text]`
+/// — the **grab bar is centred on the screen's vertical centre line**, the zoom knob and the room of the app hang to
+/// its left, the parameter button and the overlay text to its right, and the boxes never overlap whatever the screen
+/// size, the ui zoom and the widths.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ToolbarLayout {
+    /// The bounded chrome scale of the screen (see [`Screen::toolbar_scale`]).
+    pub scale: f32,
+    /// The factor applied to the screen's own elements when the app row leaves too little room for them
+    /// (see [`ToolbarLayout::for_size`]). `1.0` when everything fits.
+    pub fit: f32,
+    /// The gap between two elements of the row.
+    pub gap: f32,
+    /// The height of the centre line of the row, in the screen's local space.
+    pub row_y: f32,
+    /// The `z` of the row: the centre of the screen's bounds, where the framework's toolbars stand.
+    pub z: f32,
+    /// The distance-driving grab bar, on the row (its `z` dimension is the depth of its grab volume).
+    pub bar: Bounds,
+    /// The centre and the width of the zoom knob ([`Appearence::scale_handle`]).
+    pub knob: (Vec3, f32),
+    /// The parameter (hamburger) button.
+    pub hamburger: Bounds,
+    /// The centre and the size of the overlay text box.
+    pub overlay: (Vec3, Vec2),
+    /// The right edge (towards the user's right) of the room left for an app row, one gap past the knob.
+    pub app_row_right: f32,
+    /// The size of a **square button** of the row at this scale, [`ToolbarLayout::fit`] applied: the size an app row
+    /// gives its own buttons, so the icons it wears are the same as the ones of the screen — the parameter button and
+    /// the zoom knob — at any zoom.
+    pub button: f32,
+    /// The strip that covers the whole row; the focus probe of the screen adds the focus margin around it.
+    pub strip: Bounds,
+}
+
+impl ToolbarLayout {
+    /// The width of the parameter button at `scale = 1`: the height of a toolbar button, so the icon it wears
+    /// (`button - 2 * padding` = 0.096 m) is the size the buttons of an app row on the strip give their own icons.
+    const HAMBURGER: f32 = 0.116;
+    /// The width of the zoom knob at `scale = 1`: the size of an icon of the row, optical bump included, so the knob
+    /// reads as one of them.
+    const KNOB: f32 = 0.105;
+    /// The length of the grab bar at `scale = 1`, bounded so a large screen does not get a several metre grip.
+    const BAR_LENGTH: f32 = 0.40;
+    /// The shortest grip of the grab bar, in meters.
+    const BAR_LENGTH_MIN: f32 = 0.20;
+    /// The longest grip of the grab bar, in meters: it follows the zoom, up to this length.
+    const BAR_LENGTH_MAX: f32 = 0.90;
+    /// The thickness of the grab bar, as a fraction of a button of the row: a band under the icons, never a slab as
+    /// tall as they are.
+    const BAR_THICKNESS_RATIO: f32 = 0.45;
+    /// The thinnest grab band, in meters.
+    const BAR_THICKNESS_MIN: f32 = 0.030;
+    /// The thickest grab band, in meters: a zoomed in screen does not turn the bar into a block.
+    const BAR_THICKNESS_MAX: f32 = 0.070;
+    /// The overlay text box at `scale = 1` (33 x 5.2 cm): the text of a `Screen` is a short status line, so the box is
+    /// wider than it is high — [`TextFit::Exact`] then sizes the glyphs from its width, and its height is what the
+    /// dark blue backplate that carries it takes.
+    const OVERLAY_TEXT: Vec2 = Vec2::new(0.33, 0.052);
+    /// The gap between two elements of the row, as a fraction of the parameter button.
+    const GAP: f32 = 0.25;
+    /// The smallest factor the screen's own elements are ever shrunk to: an app row wider than the screen overflows,
+    /// but the framework's toolbar never disappears.
+    const FIT_MIN: f32 = 0.25;
+
+    /// Builds the layout of a screen `size` meters big — `zoom` times its base size, see [`Screen::toolbar_scale`] —
+    /// with `app_width` meters reserved on the user's left for the row of an app, at the `z` of the screen's bounds.
+    /// `margin` is the margin of the screen's scaled [`UiSettings`], the room kept free on both sides of the screen.
+    ///
+    /// The screen's own elements are shrunk by [`ToolbarLayout::fit`] when the app row leaves them less room than they
+    /// need; the app row itself is never resized here — its owner reads [`ToolbarLayout::fit`] to follow.
+    pub fn for_size(size: Vec2, zoom: f32, app_width: f32, z: f32, margin: f32) -> Self {
+        let scale = Screen::toolbar_scale_for_zoom(zoom);
+        let app_width = app_width.max(0.0);
+
+        // The sizes at this scale, before the fit. `button` is the square button an app row gives its own buttons: its
+        // icon is then the one of the parameter button, at any zoom.
+        let button = Self::HAMBURGER * scale;
+        let knob = Self::KNOB * scale;
+        let bar_length = (Self::BAR_LENGTH * scale).clamp(Self::BAR_LENGTH_MIN, Self::BAR_LENGTH_MAX);
+        let bar_thickness =
+            (Self::BAR_THICKNESS_RATIO * button).clamp(Self::BAR_THICKNESS_MIN, Self::BAR_THICKNESS_MAX);
+        let gap = Self::GAP * button;
+        let overlay_height = Self::OVERLAY_TEXT.y * scale;
+        // The overlay text keeps its designed width whatever room is left: squeezed into the margin of a small screen,
+        // it would be unreadable. It may overflow a little rather than shrink.
+        let overlay_width = Self::OVERLAY_TEXT.x * scale;
+
+        // The fit only ever shrinks the screen's own chrome: the app row keeps the width its owner gave it.
+        let own_width = overlay_width + gap + button + gap + bar_length + gap + knob + gap;
+        let own_room = (size.x - 2.0 * margin - app_width).max(0.0);
+        let fit = if own_width > own_room && own_width > f32::EPSILON {
+            (own_room / own_width).clamp(Self::FIT_MIN, 1.0)
+        } else {
+            1.0
+        };
+        let (overlay_width, gap, button, bar_length, bar_thickness, knob) =
+            (overlay_width * fit, gap * fit, button * fit, bar_length * fit, bar_thickness * fit, knob * fit);
+        let overlay_height = overlay_height * fit;
+
+        // One row, centred vertically on `row_y`, `gap / 2` above the top edge, and laid out around the grab bar, which
+        // is centred on the screen's vertical centre line: the knob and the app's room to the user's left, the
+        // parameter button and the overlay text to their right.
+        let row_y = size.y * 0.5 + gap * 0.5 + button * 0.5;
+        let knob_x = bar_length * 0.5 + gap + knob * 0.5;
+        let hamburger_x = -(bar_length * 0.5 + gap + button * 0.5);
+        let overlay_right = -(bar_length * 0.5 + gap + button + gap);
+        let overlay_center = Vec3::new(overlay_right - overlay_width * 0.5, row_y, z);
+        let bar_depth = (bar_thickness * 0.6).clamp(0.004, 0.020);
+
+        let bar = Bounds::new(Vec3::new(0.0, row_y, z), Vec3::new(bar_length, bar_thickness, bar_depth));
+        let hamburger = Bounds::new(Vec3::new(hamburger_x, row_y, z), Vec3::new(button, button, 0.0));
+        let knob = (Vec3::new(knob_x, row_y, z), knob);
+        let app_row_right = knob_x + knob.1 * 0.5 + gap;
+
+        // The strip covers the row, the room of the app included.
+        let left = overlay_center.x - overlay_width * 0.5;
+        let right = app_row_right + app_width;
+        let half_height = (button * 0.5).max(knob.1 * 0.5).max(overlay_height * 0.5).max(bar_thickness * 0.5);
+        let strip = Bounds::new(
+            Vec3::new((left + right) * 0.5, row_y, z),
+            Vec3::new((right - left).max(0.0), half_height * 2.0, 0.0),
+        );
+
+        Self {
+            scale,
+            fit,
+            gap,
+            row_y,
+            z,
+            bar,
+            knob,
+            hamburger,
+            overlay: (overlay_center, Vec2::new(overlay_width, overlay_height)),
+            app_row_right,
+            button,
+            strip,
         }
     }
 }
@@ -199,6 +349,9 @@ pub struct Screen {
     focus_grace: f32,
     /// When `true`, the toolbars ignore the pointer focus and stay always visible.
     always_visible: bool,
+    /// The width, in meters, an app reserves on the user's left of the toolbar for its own row (see
+    /// [`Screen::set_app_toolbar_width`]): the strip covers it and the screen's own elements make room for it.
+    app_toolbar_width: f32,
 }
 
 // SAFETY: every field is either plain data or a StereoKit handle (`Mesh`, `Material`, `Tex`,
@@ -218,6 +371,11 @@ impl Screen {
     pub const MIN_DIAGONAL: f32 = 0.2;
     /// Distance the screen toolbars are calibrated for (the default [`Screen::screen_distance`].
     pub const UI_REFERENCE_DISTANCE: f32 = 2.2;
+    /// The smallest chrome scale: a shrunk screen keeps a readable toolbar, but never bigger than itself.
+    pub const TOOLBAR_SCALE_MIN: f32 = 0.75;
+    /// The largest chrome scale: the toolbar follows the zoom of the screen (see [`Screen::toolbar_scale`]), up to
+    /// the maximum zoom of the [`Appearence`] of the screen — four times the default size.
+    pub const TOOLBAR_SCALE_MAX: f32 = 4.0;
     /// Radius a `curvature = 0.0` screen is capped to, on top of [`Screen::screen_distance`]: far
     /// enough that the screen looks flat, close enough to keep the vertex math accurate (the sagitta
     /// of a one metre wide screen is below a millimetre). Legacy value of the spherical `Screen`.
@@ -282,6 +440,7 @@ impl Screen {
             focus_margin: 0.1,
             focus_grace: 0.4,
             always_visible: false,
+            app_toolbar_width: 0.0,
         };
 
         let screen_tex = screen_tex.as_ref().clone_ref();
@@ -297,7 +456,8 @@ impl Screen {
         this.update_pose_cache(Input::get_head().position);
         this.adapt_screen();
         // Anchor the scale knob right next to the grab bar.
-        this.update_knob_anchor(this.factor_size(), this.screen.get_bounds().center.z);
+        let layout = this.toolbar_layout();
+        this.update_knob_anchor(&layout);
 
         let sound_settings = SoundPlay { bus: SoundBus::Music, volume: 1.0, ..Default::default() };
         this.sound_left_inst = Some(this.sound_left.play_with(this.sound_position(-1), &sound_settings));
@@ -523,6 +683,85 @@ impl Screen {
         self.appearence.get_ui_scale()
     }
 
+    /// The [`UiSettings`] of the screen's [`Appearence`], scaled by its ui zoom: the padding, gutter and margin an
+    /// app row hanging on the screen's toolbar should space itself with (see [`Screen::app_row_pose`]).
+    pub fn ui_settings_scaled(&self) -> UiSettings {
+        self.appearence.get_ui_settings_scaled()
+    }
+
+    /// The bounded scale of the screen's chrome (the grab bar, the zoom knob, the parameter button and the overlay
+    /// text): it is the **zoom of the screen** — the ui scale of its [`Appearence`] — so the toolbar grows and shrinks
+    /// with the video exactly like the zoom percentage the knob shows, the icons and their buttons at the same rate as
+    /// the image, whatever the base size of the screen. It is capped between [`Screen::TOOLBAR_SCALE_MIN`] and
+    /// [`Screen::TOOLBAR_SCALE_MAX`].
+    ///
+    /// It follows the screen zoom and **not** the distance: a grab-bar drag carries the toolbars with the screen
+    /// instead of resizing them.
+    pub fn toolbar_scale(&self) -> f32 {
+        Self::toolbar_scale_for_zoom(self.appearence.get_ui_scale())
+    }
+
+    /// The size of a **square button** of the screen's toolbar at the current scale: an app row that hangs on the strip
+    /// gives its own buttons that size (see [`Screen::app_row_pose`]), so their icons are the ones of the screen — the
+    /// parameter button and the zoom knob — at any zoom.
+    pub fn toolbar_button(&self) -> f32 {
+        ToolbarLayout::HAMBURGER * self.toolbar_scale()
+    }
+
+    /// [`Screen::toolbar_scale`] as a pure function of the screen zoom: the ui scale of the screen's [`Appearence`],
+    /// bounded. A zoom of `1.0` is the base size of the screen, whatever it is.
+    fn toolbar_scale_for_zoom(zoom: f32) -> f32 {
+        zoom.clamp(Self::TOOLBAR_SCALE_MIN, Self::TOOLBAR_SCALE_MAX)
+    }
+
+    /// The layout of the toolbar strip above the screen: the grab bar, the zoom knob, the parameter button, the
+    /// overlay text and the room reserved for an app row, all in the screen's local space (see [`ToolbarLayout`]).
+    pub fn toolbar_layout(&self) -> ToolbarLayout {
+        ToolbarLayout::for_size(
+            self.screen_size,
+            self.toolbar_scale(),
+            self.app_toolbar_width,
+            self.screen.get_bounds().center.z,
+            self.ui_settings_scaled().margin,
+        )
+    }
+
+    /// Reserves `width` meters on the user's left of the toolbar for the row an app hangs there (see
+    /// [`Screen::app_row_pose`]): the strip the focus probe covers grows with it, and the screen's own elements make
+    /// room for it (see [`ToolbarLayout::fit`]). Pass `0.0` when the app shows no row.
+    pub fn set_app_toolbar_width(&mut self, width: f32) -> &mut Self {
+        self.app_toolbar_width = width.max(0.0);
+        self
+    }
+
+    /// The world pose of a point of the screen's local space.
+    pub fn local_pose(&self, local: Vec3) -> Pose {
+        Pose::new(local, None) * self.screen_pose.to_matrix(None)
+    }
+
+    /// The pose to hand to [`Ui::push_surface`] (with [`Vec3::ZERO`] as its layout start) for an app row `width` x
+    /// `height` meters, hanging one gap to the user's left of the screen's own toolbar (past the zoom knob), at the
+    /// height of that toolbar.
+    ///
+    /// Declare the width first with [`Screen::set_app_toolbar_width`], so the strip of the screen covers the row and
+    /// its own elements make room for it: the two widths are expected to be the same.
+    pub fn app_row_pose(&self, width: f32, height: f32) -> Pose {
+        let layout = self.toolbar_layout();
+        let margin = self.ui_settings_scaled().margin;
+        self.local_pose(Vec3::new(
+            layout.app_row_right + width.max(0.0) + margin,
+            layout.row_y + height * 0.5 + margin,
+            layout.z,
+        ))
+    }
+
+    /// The icon of the parameter (hamburger) button. Default is [`Sprite::list`]; an app that has its own hamburger
+    /// icon sets it here, the way [`Appearence::handle_sprite`] replaces the visual of the zoom knob.
+    pub fn set_param_icon(&mut self, sprite: Sprite) -> &mut Self {
+        self.repo.sprite_menu = sprite;
+        self
+    }
+
     /// Set text to display above the screen while a pointer focuses it.
     /// Pass an empty string to clear.
     ///
@@ -614,11 +853,11 @@ impl Screen {
         self.focus_timer = (self.focus_timer - Time::get_stepf()).max(0.0);
         self.screen_focused = self.always_visible || self.show_param || self.focus_timer > 0.0;
 
+        // The strip of this frame: one row above the screen, its boxes never overlapping (see `ToolbarLayout`).
+        let layout = self.toolbar_layout();
         // The grab handle first.
-        self.draw_grab_handle();
+        self.draw_grab_handle(&layout);
         let bounds = self.screen.get_bounds();
-        let factor_size = self.factor_size();
-        let d = self.reference_distance_factor();
         let screen_transform = self.screen_pose.to_matrix(None);
 
         // The toolbars around the screen
@@ -630,16 +869,16 @@ impl Screen {
             }
             Ui::push_id(&self.repo.id_toolbar);
             // The scale knob resizes / zooms the screen directly
-            self.draw_scale_knob(factor_size, bounds.center.z);
+            self.draw_scale_knob(&layout);
             // The hamburger button opens the parameter window.
-            self.draw_hamburger(screen_transform, bounds.center.z, factor_size, d);
+            self.draw_hamburger(&layout);
             Ui::pop_id();
         }
         // The open parameter window keeps the toolbars visible but it never closes itself: only its close button does.
         self.draw_param_window(screen_transform, bounds.center);
-        self.draw_overlay(screen_transform, bounds.center.z, factor_size, d);
+        self.draw_overlay(screen_transform, &layout);
         // The focus probe is registered after every toolbar element.
-        self.draw_focus_probe();
+        self.draw_focus_probe(&layout);
 
         if self.draw_swapchain() {
             // The swapchain quad/cylinder layer is submitted at sort order -1 (behind the main scene).
@@ -672,10 +911,10 @@ impl Screen {
     }
 
     /// The focus probe: an invisible UI volume covering the toolbar strip.
-    fn draw_focus_probe(&mut self) {
+    fn draw_focus_probe(&mut self, layout: &ToolbarLayout) {
         let mut focused = BtnState::Inactive;
         Ui::push_surface(self.screen_pose, Vec3::ZERO, Vec2::ZERO);
-        Ui::volume_at(&self.repo.id_focus_probe, self.focus_bounds(), UiConfirm::Push, None, Some(&mut focused));
+        Ui::volume_at(&self.repo.id_focus_probe, self.focus_bounds(layout), UiConfirm::Push, None, Some(&mut focused));
         Ui::pop_surface();
         if focused.is_active() {
             self.refresh_focus();
@@ -683,24 +922,11 @@ impl Screen {
     }
 
     /// The screen grab bar.
-    fn draw_grab_handle(&mut self) {
+    fn draw_grab_handle(&mut self, layout: &ToolbarLayout) {
         // Read before the drag is applied: the bar must not jump under the user's hand.
-        let factor_size = self.factor_size();
-        let bounds_center_z = self.screen.get_bounds().center.z;
-        let grab_position = Vec3::new(
-            0.0, //
-            self.screen_size.y / 2.0 + 0.05 * factor_size,
-            bounds_center_z,
-        );
-        let grab_dimension = Vec3::new(
-            factor_size * 0.2, //
-            factor_size * 0.01,
-            factor_size * 0.0025,
-        );
-        let grabbed =
-            Ui::handle(&self.repo.id_handle, &mut self.screen_pose, Bounds::new(grab_position, grab_dimension))
-                .draw_handle(self.screen_focused)
-                .grab();
+        let grabbed = Ui::handle(&self.repo.id_handle, &mut self.screen_pose, layout.bar)
+            .draw_handle(self.screen_focused)
+            .grab();
         self.refresh_focus_from_last_element();
         if grabbed {
             let head = Input::get_head();
@@ -731,9 +957,9 @@ impl Screen {
     }
 
     /// The [`Appearence`] scale handle knob.
-    fn draw_scale_knob(&mut self, factor_size: f32, bounds_center_z: f32) {
-        self.update_knob_anchor(factor_size, bounds_center_z);
-        let scale_grabbed = self.appearence.scale_handle(&self.screen_pose, "h").is_some();
+    fn draw_scale_knob(&mut self, layout: &ToolbarLayout) {
+        self.update_knob_anchor(layout);
+        let scale_grabbed = self.appearence.scale_handle(&self.screen_pose, None, "h").is_some();
         self.sync_screen_to_appearence();
         // A pointer on the knob — the only resize / zoom control — is focus: keep the toolbars alive.
         self.refresh_focus_from_last_element();
@@ -743,32 +969,41 @@ impl Screen {
         }
     }
 
-    /// Recompute the [`Appearence`] scale-handle anchor (`scale_handle_default_offset`).
-    fn update_knob_anchor(&mut self, factor_size: f32, bounds_center_z: f32) {
-        let drawn = self.appearence.scaled_window_size();
-        // Right of the bar: the bar half-width is `0.1 * factor_size`, plus a small gap. Same height as the bar.
-        let knob_x = factor_size * 0.1 + 0.08;
-        let knob_y = self.screen_size.y / 2.0 + 0.05 * factor_size;
-        // `forward` points from the screen towards the user, hence the negated plane depth.
-        self.appearence.scale_handle_default_offset =
-            Vec3::new(knob_x * 0.8 / drawn.x.max(0.001), knob_y * 0.85 / drawn.y.max(0.001), -bounds_center_z + 0.02);
+    /// Recompute the [`Appearence`] scale-handle anchor ([`crate::framework::ScaleHandleAnchor`]) from the layout of
+    /// the strip: the knob rests where [`ToolbarLayout::knob`] says, and it is as big as its box — the knob that is
+    /// seen is the knob that can be grabbed (see [`Appearence::handle_size`]).
+    ///
+    /// The screen is not a `Ui::window`, so the handle gets no bounds: its anchor starts from the screen centre line
+    /// and from its top edge (`x` and `y` at `0.0`), and the offset holds the local place of the knob — on the toolbar
+    /// row, 2 cm in front of its plane. The pose's forward axis points towards the user and the screen's local `+z`
+    /// goes the other way, hence the negated plane depth.
+    fn update_knob_anchor(&mut self, layout: &ToolbarLayout) {
+        let ui_scale = self.appearence.get_ui_scale().max(f32::EPSILON);
+        // `handle_size` is expressed at `ui_scale = 1`, while the layout already carries the current zoom.
+        self.appearence.handle_size = Some(layout.knob.1 / ui_scale);
+        self.appearence.scale_handle_anchor.x = 0.0;
+        self.appearence.scale_handle_anchor.y = 0.0;
+        self.appearence.scale_handle_anchor.offset =
+            Vec3::new(layout.knob.0.x, layout.knob.0.y - self.screen_size.y * 0.5, -layout.z + 0.02);
     }
 
     /// The hamburger button, on its own surface anchored above the screen: it opens the parameter window.
-    fn draw_hamburger(&mut self, screen_transform: Matrix, bounds_center_z: f32, factor_size: f32, d: f32) {
+    fn draw_hamburger(&mut self, layout: &ToolbarLayout) {
         if self.show_param {
             return;
         }
 
-        let info_position = Vec3::new(
-            0.0, //
-            self.screen_size.y / 2.0 + 0.04 * factor_size,
-            bounds_center_z,
-        );
-        let button_pose = Pose::new(info_position, None) * screen_transform;
-        let btn_size = Vec2::new(0.06 * d, 0.06 * d);
+        let margin = self.ui_settings_scaled().margin;
+        let btn_size = Vec2::new(layout.hamburger.dimensions.x, layout.hamburger.dimensions.y);
         let surface_size = btn_size * 1.1;
-        Ui::push_surface(button_pose, Vec3::X * 0.02 * d, surface_size);
+        // A `Ui::push_surface` lays its content out from its start towards the user's right (`-x`), one margin below
+        // it: the pose is the top-right corner of the button, margin included, so the button lands on `hamburger`.
+        let button_pose = self.local_pose(Vec3::new(
+            layout.hamburger.center.x + margin + btn_size.x * 0.5,
+            layout.hamburger.center.y + margin + btn_size.y * 0.5,
+            layout.hamburger.center.z,
+        ));
+        Ui::push_surface(button_pose, Vec3::ZERO, surface_size);
         let pressed = Ui::button(&self.repo.id_btn_show_param)
             .image(&self.repo.sprite_menu)
             .image_layout(UiBtnLayout::CenterNoText)
@@ -891,25 +1126,37 @@ impl Screen {
         }
     }
 
-    /// The overlay text, on its own surface anchored above the screen centre. Only drawn while the screen is focused.
-    fn draw_overlay(&mut self, screen_transform: Matrix, bounds_center_z: f32, factor_size: f32, d: f32) {
+    /// The overlay text, on its own surface anchored above the screen, to the user's right of the parameter button
+    /// (see [`ToolbarLayout::overlay`]), on a **dark blue backplate** so it reads whatever the video behind it. Only
+    /// drawn while the screen is focused.
+    fn draw_overlay(&mut self, screen_transform: Matrix, layout: &ToolbarLayout) {
         if self.overlay_text.is_empty() || !self.screen_focused {
             return;
         }
 
-        let overlay_y = self.screen_size.y / 2.0 + 0.04 * factor_size;
-        // The text starts **right of the hamburger button**, which stands at the same height and is centred on the
-        // screen (see [`Screen::draw_hamburger`]): anchored where that button is, the beginning of the overlay is hidden
-        // behind it. The x axis of a screen facing its user runs the other way round, so clearing the button — it spans
-        // `0.033 * d` to each side — means going **negative**, and the text then begins a little to its right.
-        let overlay_pos = Vec3::new(-0.16, overlay_y, bounds_center_z);
-        let overlay_pose = Pose::new(overlay_pos, None) * screen_transform;
-        Ui::push_surface(overlay_pose, Vec3::X * -0.01 * d, Vec2::ZERO);
-        Ui::text(&self.overlay_text)
-            .size(Vec2::new(0.15, 0.04) * Self::UI_REFERENCE_DISTANCE * self.appearence.get_ui_scale())
-            .text_align(Align::Center)
-            .fit(TextFit::Exact)
-            .draw();
+        let (centre, size) = layout.overlay;
+        let margin = self.ui_settings_scaled().margin;
+
+        // One surface for the backplate **and** the text, so both live in the same frame and cannot drift apart: the
+        // panel is the box of the text, a touch wider, centred on it.
+        //
+        // A `Ui` surface starts its content one margin towards the user's right and down from its pose, so the pose is
+        // the top-right corner of the box (margin included) and the box's centre sits at `-margin - size / 2` in the
+        // surface's frame. `Ui::panel_at` takes the **top-right corner** of the element it draws, as the layout does:
+        // its centre is half a panel back from there.
+        let overlay_pose =
+            Pose::new(Vec3::new(centre.x + margin + size.x * 0.5, centre.y + margin + size.y * 0.5, centre.z), None)
+                * screen_transform;
+        Ui::push_surface(overlay_pose, Vec3::ZERO, Vec2::ZERO);
+
+        let box_centre = Vec3::new(-margin - size.x * 0.5, -margin - size.y * 0.5, 0.0);
+        let panel = Vec2::new(size.x * 1.03, size.y * 1.15);
+        Ui::push_tint(named_colors::DARK_BLUE);
+        Ui::panel_at(Vec3::new(box_centre.x + panel.x * 0.5, box_centre.y + panel.y * 0.5, box_centre.z), panel, None);
+        Ui::pop_tint();
+
+        // The text, drawn a little in front of the surface, so it stays on top of the panel.
+        Ui::text(&self.overlay_text).size(size).text_align(Align::Center).fit(TextFit::Exact).draw();
         Ui::pop_surface();
     }
 
@@ -1363,74 +1610,64 @@ impl Screen {
         self.ray_thickness
     }
 
-    /// Shared factor used to scale UI elements relative to screen distance and diagonal.
-    fn factor_size(&self) -> f32 {
-        Self::toolbar_scale_for(self.diagonal(), self.appearence.get_ui_scale())
+    /// Bounds of the focus volume, in the screen's model space: the toolbar strip of `layout`, widened by the focus
+    /// margin, and extending behind its plane (never in front of it, see [`Screen::focus_bounds_for`]).
+    fn focus_bounds(&self, layout: &ToolbarLayout) -> Bounds {
+        Self::focus_bounds_for(self.screen.get_bounds(), layout.strip, self.focus_margin)
     }
 
-    /// [`Screen::factor_size`] as a pure function: screen diagonal + ui zoom, and nothing else.
-    fn toolbar_scale_for(screen_diagonal: f32, ui_scale: f32) -> f32 {
-        (Self::UI_REFERENCE_DISTANCE.powf(2.0) + screen_diagonal.max(1.0).powf(2.0)).sqrt() * ui_scale
-    }
-
-    /// `sqrt` of [`Screen::UI_REFERENCE_DISTANCE`], times the ui zoom.
-    fn reference_distance_factor(&self) -> f32 {
-        Self::UI_REFERENCE_DISTANCE.sqrt() * self.appearence.get_ui_scale()
-    }
-
-    /// Bounds of the focus volume, in the screen's model space.
-    fn focus_bounds(&self) -> Bounds {
-        Self::focus_bounds_for(self.screen.get_bounds(), self.factor_size(), self.focus_margin)
-    }
-
-    /// [`Screen::focus_bounds`] as a pure function (mesh bounds, toolbar scale, margin), so the
-    /// geometry it guarantees can be unit tested.
-    fn focus_bounds_for(mesh_bounds: Bounds, factor_size: f32, margin: f32) -> Bounds {
-        let half = mesh_bounds.dimensions * 0.5;
-        // Sitting on the top edge, half a screen high (plus the grazing margin on top).
-        let bottom = mesh_bounds.center.y + half.y;
-        let height = half.y + margin;
-        // On a screen narrower than its toolbar strip, the scale knob hangs right of the mesh (see
-        // `update_knob_anchor`): the volume is then as wide as the strip, not as the screen.
-        let half_width = half.x.max(factor_size * 0.1 + 0.08) + margin;
-        // From the toolbar plane backwards: a slab in front of the plane would beat the toolbar
-        // elements themselves in the UI focus test, making the bar, the knob and the button unusable.
-        let depth = half.z + margin;
+    /// [`Screen::focus_bounds`] as a pure function (mesh bounds, toolbar strip, margin), so the geometry it guarantees
+    /// can be unit tested. The volume sits on the strip and extends **backwards** from the toolbar plane: a slab in
+    /// front of that plane would beat the toolbar elements in the UI focus test and make them unusable.
+    fn focus_bounds_for(mesh_bounds: Bounds, strip: Bounds, margin: f32) -> Bounds {
+        let depth = mesh_bounds.dimensions.z * 0.5 + margin;
+        // The volume stops on the top edge of the screen: the surface itself is never part of the chrome.
+        let screen_top = mesh_bounds.center.y + mesh_bounds.dimensions.y * 0.5;
+        let bottom = (strip.center.y - strip.dimensions.y * 0.5 - margin).max(screen_top);
+        let top = strip.center.y + strip.dimensions.y * 0.5 + margin;
+        let height = (top - bottom).max(0.0);
         Bounds::new(
-            Vec3::new(mesh_bounds.center.x, bottom + height * 0.5, mesh_bounds.center.z + depth * 0.5),
-            Vec3::new(half_width * 2.0, height, depth),
+            Vec3::new(strip.center.x, bottom + height * 0.5, mesh_bounds.center.z + depth * 0.5),
+            Vec3::new(strip.dimensions.x + 2.0 * margin, height, depth),
         )
     }
 
-    /// Returns a world-space [`Pose`] at the top-centre edge of the screen. The window origin is placed just above the
-    /// top edge, outside the screen content area, at the same height as the hamburger button.
-    /// `offset` is added in screen-local space before applying the screen transform, allowing the caller to shift the
-    /// pose horizontally to avoid overlapping other windows.
-    /// Useful for anchoring a UI window (e.g. transport controls) with [`UiMove::None`].
+    /// Returns a world-space [`Pose`] **above the toolbar strip** of the screen, at the top-right corner of a surface
+    /// anchored there (see [`Ui::push_surface`]): the content of the surface starts one margin below and to the user's
+    /// right of it, so a row of [`Ui::push_surface(pose, Vec3::ZERO, size)`](Ui::push_surface) stands above the
+    /// screen's own toolbar, extending towards the user's right.
     ///
-    /// Size the window and its `offset` from [`Screen::UI_REFERENCE_DISTANCE`] and [`Screen::get_ui_scale`] — not from
-    /// the screen distance — so that a distance drag carries the window instead of resizing it.
+    /// The pose is one gap and one toolbar row above the top of the strip (see [`Screen::toolbar_layout`]), which is
+    /// where a row as high as the screen's own buttons (`ToolbarLayout::hamburger`) lands: a taller row overlaps the
+    /// strip — add its extra height to `offset.y`, or better, hang it on the strip itself with
+    /// [`Screen::set_app_toolbar_width`] and [`Screen::app_row_pose`], so it shares the screen's row and never covers
+    /// the grab bar. `offset` is added in screen-local space before applying the screen transform.
+    ///
+    /// Size the window and its `offset` from [`Screen::toolbar_scale`] — never from the screen distance — so that a
+    /// distance drag carries the window instead of resizing it.
     pub fn get_top(&self, offset: impl Into<Vec3>) -> Pose {
-        let bounds = self.screen.get_bounds();
-        let factor_size = self.factor_size();
-        let screen_transform = self.screen_pose.to_matrix(None);
-        let pos = Vec3::new(0.0, self.screen_size.y / 2.0 + 0.04 * factor_size, bounds.center.z) + offset.into();
-        Pose::new(pos, None) * screen_transform
+        let layout = self.toolbar_layout();
+        let margin = self.ui_settings_scaled().margin;
+        let row = layout.hamburger.dimensions.y.max(layout.knob.1);
+        let top = layout.strip.center.y + layout.strip.dimensions.y * 0.5 + layout.gap + row;
+        let pos = Vec3::new(0.0, top + margin, layout.z) + offset.into();
+        Pose::new(pos, None) * self.screen_pose.to_matrix(None)
     }
 
-    /// Returns a world-space [`Pose`] at the bottom-centre edge of the screen. The window origin is placed just below
-    /// the bottom edge, outside the screen content area. `offset` is added in screen-local space before applying the
-    /// screen transform.
-    /// Useful for anchoring a UI window (e.g. status bar) with [`UiMove::None`].
+    /// Returns a world-space [`Pose`] on the bottom edge of the screen, one gap below it, at the **top-right corner of
+    /// a surface** anchored there (see [`Ui::push_surface`]): the content of the surface starts one margin below and to
+    /// the user's right of it, so a row hangs under the screen and extends towards the user's right.
     ///
-    /// Like [`Screen::get_top`], size the window and its `offset` from [`Screen::UI_REFERENCE_DISTANCE`] and
-    /// [`Screen::get_ui_scale`], never from the screen distance.
+    /// `offset` is added in screen-local space before applying the screen transform.
+    /// Useful for anchoring a UI window (e.g. transport controls) with [`UiMove::None`].
+    ///
+    /// Like [`Screen::get_top`], size the window and its `offset` from [`Screen::toolbar_scale`], never from the screen
+    /// distance.
     pub fn get_bottom(&self, offset: impl Into<Vec3>) -> Pose {
-        let bounds = self.screen.get_bounds();
-        let factor_size = self.factor_size();
-        let screen_transform = self.screen_pose.to_matrix(None);
-        let pos = Vec3::new(0.0, -(self.screen_size.y / 2.0 + 0.04 * factor_size), bounds.center.z) + offset.into();
-        Pose::new(pos, None) * screen_transform
+        let layout = self.toolbar_layout();
+        let margin = self.ui_settings_scaled().margin;
+        let pos = Vec3::new(0.0, -(self.screen_size.y * 0.5 + layout.gap) + margin, layout.z) + offset.into();
+        Pose::new(pos, None) * self.screen_pose.to_matrix(None)
     }
 }
 
@@ -1473,53 +1710,135 @@ mod tests {
         assert!((Screen::clamp_diagonal(size, distance, 100.0) - Screen::MAX_DIAGONAL).abs() < 1e-6);
     }
 
-    /// The toolbars are sized from the screen size and the ui zoom only: `toolbar_scale_for` has no
-    /// distance parameter, which is what keeps a grab-bar drag from resizing them.
+    /// The chrome scale is the zoom of the screen: `1.0` for its base size, `2.0` zoomed twice, capped at the maximum
+    /// zoom of the screen's `Appearence` and floored for a shrunk one.
     #[test]
-    fn toolbar_scale_follows_size_and_zoom_only() {
-        let scale = Screen::toolbar_scale_for(4.4, 1.0);
-        assert!(scale > Screen::UI_REFERENCE_DISTANCE);
-        // The ui zoom is a plain multiplier.
-        assert!((Screen::toolbar_scale_for(4.4, 2.0) - scale * 2.0).abs() < 1e-6);
-        // A bigger screen means a bigger factor.
-        assert!(Screen::toolbar_scale_for(8.0, 1.0) > scale);
-        // A degenerate size falls back on the 1 m floor instead of collapsing the toolbars.
-        assert!((Screen::toolbar_scale_for(0.0, 1.0) - Screen::toolbar_scale_for(1.0, 1.0)).abs() < 1e-6);
+    fn toolbar_scale_follows_the_zoom_once() {
+        assert!((Screen::toolbar_scale_for_zoom(1.0) - 1.0).abs() < 1e-6);
+        assert!((Screen::toolbar_scale_for_zoom(2.0) - 2.0).abs() < 1e-6);
+        assert!((Screen::toolbar_scale_for_zoom(4.0) - 4.0).abs() < 1e-6);
+        // The bounds hold whatever the zoom.
+        assert!((Screen::toolbar_scale_for_zoom(8.0) - Screen::TOOLBAR_SCALE_MAX).abs() < 1e-6);
+        assert!((Screen::toolbar_scale_for_zoom(0.1) - Screen::TOOLBAR_SCALE_MIN).abs() < 1e-6);
+        // The zoom is the sole input: the base size of the screen plays no part in it.
+        for zoom in [0.5_f32, 1.0, 1.5, 2.0, 3.0, 4.0] {
+            let scale = Screen::toolbar_scale_for_zoom(zoom);
+            assert!((Screen::TOOLBAR_SCALE_MIN..=Screen::TOOLBAR_SCALE_MAX).contains(&scale));
+            assert!((scale - zoom.max(Screen::TOOLBAR_SCALE_MIN)).abs() < 1e-6);
+        }
     }
 
-    /// The focus volume must cover the strip above the screen — the grab bar, the hamburger button and
-    /// first of all the scale knob, the only resize / zoom control — and must **not** include the
-    /// screen surface itself: pointing at, or touching, the content is not a chrome interaction.
+    /// A box centred on `centre`, `size` meters wide and high, in the plane of the toolbar.
+    fn box_at(centre: Vec3, size: Vec2) -> Bounds {
+        Bounds::new(centre, Vec3::new(size.x, size.y, 0.0))
+    }
+
+    /// Do two boxes of the toolbar strip share any surface?
+    fn overlaps(a: &Bounds, b: &Bounds) -> bool {
+        (a.center.x - b.center.x).abs() < (a.dimensions.x + b.dimensions.x) * 0.5 - 1e-6
+            && (a.center.y - b.center.y).abs() < (a.dimensions.y + b.dimensions.y) * 0.5 - 1e-6
+    }
+
+    /// Is `inner` entirely inside `outer`?
+    fn contains(outer: &Bounds, inner: &Bounds) -> bool {
+        (outer.center.x - inner.center.x).abs() + inner.dimensions.x * 0.5 <= outer.dimensions.x * 0.5 + 1e-6
+            && (outer.center.y - inner.center.y).abs() + inner.dimensions.y * 0.5 <= outer.dimensions.y * 0.5 + 1e-6
+    }
+
+    /// One row, no overlaps, the whole chrome inside the strip — for every realistic screen size and for an app row of
+    /// the width the remote sub-menu of Sk-Streams takes (0.63 m at scale 1). The bar stays a bounded grip.
+    #[test]
+    fn toolbar_layout_is_one_row_without_overlaps() {
+        // No app row, a small one, and the three-button sub-menu of the remote desktop of Sk-Streams.
+        let app_widths = [0.0, 0.30, 0.63];
+        // (screen size, zoom of the screen): the chrome scale follows the zoom, whatever the base size.
+        let cases = [
+            (Vec2::new(0.32, 0.24), 1.0),
+            (Vec2::new(1.024, 1.024), 1.0),
+            (Vec2::new(1.024, 1.024), 4.0),
+            (Vec2::new(1.6, 0.9), 1.0),
+            (Vec2::new(3.84, 2.16), 1.0),
+            (Vec2::new(7.68, 4.32), 2.0),
+            (Vec2::new(13.33, 7.5), 4.0),
+        ];
+        for (size, zoom) in cases {
+            for app_width in app_widths {
+                let layout = ToolbarLayout::for_size(size, zoom, app_width, 2.2, 0.01);
+                // The bar is a grip, never a beam.
+                assert!(layout.bar.dimensions.x <= ToolbarLayout::BAR_LENGTH_MAX + 1e-6);
+                assert!(layout.bar.dimensions.y <= ToolbarLayout::BAR_THICKNESS_MAX + 1e-6);
+                assert!(
+                    layout.bar.dimensions.y < layout.button,
+                    "the bar must stay a band under the icons, not a block as tall as they are"
+                );
+                // The button size the layout hands out is the one of the parameter button, knobs included.
+                assert!((layout.hamburger.dimensions.x - layout.button).abs() < 1e-6);
+                assert!((layout.knob.1 - ToolbarLayout::KNOB / ToolbarLayout::HAMBURGER * layout.button).abs() < 1e-6);
+                // The row holds the overlay, the hamburger, the bar and the knob, and none of them overlap.
+                let boxes = [
+                    layout.bar,
+                    layout.hamburger,
+                    box_at(layout.knob.0, Vec2::new(layout.knob.1, layout.knob.1)),
+                    box_at(layout.overlay.0, layout.overlay.1),
+                ];
+                for (index, a) in boxes.iter().enumerate() {
+                    for b in &boxes[index + 1..] {
+                        assert!(!overlaps(a, b), "{a:?} overlaps {b:?} for {size:?} and an app row of {app_width}");
+                    }
+                }
+                // The strip covers them all, and reaches the room of the app row.
+                for b in boxes {
+                    assert!(contains(&layout.strip, &b), "{b:?} is outside the strip {strip:?}", strip = layout.strip);
+                }
+                assert!(
+                    layout.strip.center.x + layout.strip.dimensions.x * 0.5 >= layout.app_row_right + app_width - 1e-6
+                );
+                // The knob is the grab target: its box is on the row.
+                assert!((layout.knob.0.y - layout.row_y).abs() < 1e-6);
+                // The row is regular: one gap between every two elements, and the grab bar is centred on the screen.
+                let hamburger_left = layout.hamburger.center.x - layout.hamburger.dimensions.x * 0.5;
+                let hamburger_right = layout.hamburger.center.x + layout.hamburger.dimensions.x * 0.5;
+                let overlay_right = layout.overlay.0.x + layout.overlay.1.x * 0.5;
+                let bar_left = layout.bar.center.x - layout.bar.dimensions.x * 0.5;
+                let bar_right = layout.bar.center.x + layout.bar.dimensions.x * 0.5;
+                let knob_left = layout.knob.0.x - layout.knob.1 * 0.5;
+                let knob_right = layout.knob.0.x + layout.knob.1 * 0.5;
+                assert!(layout.bar.center.x.abs() < 1e-6, "the grab bar is centred on the screen");
+                assert!((hamburger_left - overlay_right - layout.gap).abs() < 1e-6);
+                assert!((bar_left - hamburger_right - layout.gap).abs() < 1e-6);
+                assert!((knob_left - bar_right - layout.gap).abs() < 1e-6);
+                assert!((layout.app_row_right - knob_right - layout.gap).abs() < 1e-6);
+            }
+        }
+    }
+
+    /// The focus volume must cover the strip above the screen — the grab bar, the hamburger button, the overlay text
+    /// and first of all the scale knob, the only resize / zoom control — and must **not** include the screen surface
+    /// itself: pointing at, or touching, the content is not a chrome interaction.
     #[test]
     fn focus_volume_is_the_strip_above_the_screen() {
-        // A square screen (the demo) and a narrow one, where the knob hangs right of the mesh.
-        for screen_size in [Vec2::new(1.024, 1.024), Vec2::new(0.32, 0.24)] {
+        for screen_size in [Vec2::new(1.024, 1.024), Vec2::new(0.32, 0.24), Vec2::new(3.84, 2.16)] {
             let mesh_z = 2.2;
             let mesh = Bounds::new(Vec3::new(0.0, 0.0, mesh_z), Vec3::new(screen_size.x, screen_size.y, 0.0));
-            let factor = Screen::toolbar_scale_for((screen_size.x.powf(2.0) + screen_size.y.powf(2.0)).sqrt(), 1.0);
-            let focus = Screen::focus_bounds_for(mesh, factor, 0.1);
-
-            // Element anchors written the way the drawing code writes them: the hamburger surface is
-            // `0.06 * sqrt(UI_REFERENCE_DISTANCE) * 1.1` wide (see `draw_hamburger`) so its top is
-            // half of that above its own anchor, and the knob sprite is `0.055 * ui_scale` wide (see
-            // `Appearence::scale_handle`).
-            let top = screen_size.y / 2.0;
-            let bar = Vec3::new(0.0, top + 0.05 * factor, mesh_z);
-            let hamburger_top = top + 0.04 * factor + 0.06 * Screen::UI_REFERENCE_DISTANCE.sqrt() * 1.1 * 0.5;
-            let hamburger = Vec3::new(0.0, hamburger_top, mesh_z);
-            let knob = Vec3::new(0.1 * factor + 0.08, top + 0.05 * factor, mesh_z);
-            // Tested just behind the toolbar plane: the volume starts on it and only extends behind
-            // (see `focus_volume_never_reaches_in_front_of_the_toolbar_plane`), while the real
-            // pointer test works on any element on or behind that plane (see `draw_focus_probe`).
-            for p in [bar, hamburger, knob, knob + Vec3::Y * 0.0275] {
-                let behind = Vec3::new(p.x, p.y, p.z + 0.001);
+            let layout = ToolbarLayout::for_size(screen_size, 1.0, 0.63, mesh_z, 0.01);
+            let focus = Screen::focus_bounds_for(mesh, layout.strip, 0.1);
+            // The corners of the strip are in the volume — tested just behind the toolbar plane: the volume starts on
+            // it and only extends behind (see `focus_volume_never_reaches_in_front_of_the_toolbar_plane`), while the
+            // real pointer test works on any element on or behind that plane (see `draw_focus_probe`).
+            let strip = layout.strip;
+            for (x, y) in [(-1.0_f32, -1.0_f32), (1.0, -1.0), (-1.0, 1.0), (1.0, 1.0)] {
+                let behind = Vec3::new(
+                    strip.center.x + x * strip.dimensions.x * 0.5,
+                    strip.center.y + y * strip.dimensions.y * 0.5,
+                    mesh_z + 0.001,
+                );
                 assert!(
                     focus.contains_point(behind),
                     "the focus volume must contain {behind:?} for a {screen_size:?} screen"
                 );
             }
             // The strip stops on the top edge: the screen surface is not part of the volume.
-            assert!(!focus.contains_point(Vec3::new(0.0, top - 0.01, mesh_z + 0.001)));
+            assert!(!focus.contains_point(Vec3::new(0.0, screen_size.y / 2.0 - 0.01, mesh_z + 0.001)));
             assert!(!focus.contains_point(Vec3::new(0.0, 0.0, mesh_z + 0.001)));
         }
     }
@@ -1540,8 +1859,8 @@ mod tests {
                 Vec3::new(0.0, 0.0, 2.2 - z_extent * 0.5),
                 Vec3::new(screen_size.x, screen_size.y, z_extent),
             );
-            let factor = Screen::toolbar_scale_for((screen_size.x.powf(2.0) + screen_size.y.powf(2.0)).sqrt(), 1.0);
-            let focus = Screen::focus_bounds_for(mesh, factor, 0.1);
+            let layout = ToolbarLayout::for_size(screen_size, 1.0, 0.0, mesh.center.z, 0.0);
+            let focus = Screen::focus_bounds_for(mesh, layout.strip, 0.1);
             let front_face = focus.center.z - focus.dimensions.z * 0.5;
             assert!(
                 front_face >= mesh.center.z - 1e-6,

@@ -263,7 +263,7 @@ impl<'a> LogWindow<'a> {
         // Grab-able knob anchored to the window: dragging it along the window local X resizes the width,
         // along Y the height, and along Z (towards the user) the whole scale, see `Appearence::scale_handle`.
         // It also memorizes the placement of the window on every frame (see `Appearence::placement`).
-        self.appearence.scale_handle(&self.window_pose, "log_window_scale");
+        self.appearence.scale_handle(&self.window_pose, Ui::get_layout_last(), "log_window_scale");
     }
 
     /// The scrollable log list: a vertical [`Scrollbar`] for the lines, a horizontal one for the too-long

@@ -366,7 +366,7 @@ pub fn launch(mut settings: SkSettings, is_testing: bool, start_test: String) {
         Ui::settings(prev_settings);
 
         // Grab-able knob anchored to the window.
-        appearence_demos.scale_handle(&window_demo_pose, "demos_scale_handle");
+        appearence_demos.scale_handle(&window_demo_pose, Ui::get_layout_last(), "demos_scale_handle");
     })
     // .on_window_event(|_sk| {
     //     // we hope to flood the log with external controllers soon ...
