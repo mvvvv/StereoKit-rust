@@ -1,7 +1,8 @@
 use crate::{
-    maths::{Pose, Quat, Vec2, Vec3},
-    system::{Hierarchy, Input, InputButton, InputXY, Key},
-    ui::{Ui, UiDir, UiSettings, UiSliderData, UiVisual},
+    maths::{Bounds, Pose, Quat, Vec2, Vec3},
+    sprite::Sprite,
+    system::{Align, BtnState, Hierarchy, Input, InputButton, InputXY, Key, Text},
+    ui::{Ui, UiColor, UiColorState, UiCut, UiDir, UiPad, UiSettings, UiSliderData, UiVisual},
     util::{Device, DisplayType, Time},
 };
 use std::time::Instant;
@@ -116,6 +117,293 @@ impl DoubleClick {
     pub fn reset(&mut self) {
         self.last = None;
     }
+}
+
+/// A drop-down (combo box) button: a [`Ui::button`] showing the current choice with an optional icon — typically a
+/// [`Sprite::arrow_down`] — that opens a real drop-down list above or below it.
+///
+/// The list is at most [`Dropdown::max_visible`] rows high: a vertical [`Scrollbar`] appears when there are more
+/// choices, and the rows are plain [`Ui::text`] made interactive with [`Ui::button_behavior`] (with a hover
+/// highlight), so the list never renders as a stack of buttons.
+///
+/// The widget keeps the state a drop-down needs (whether the list is open, how many rows it shows, its scroll and
+/// where its button was drawn); the caller keeps the choices and the selection. A typical frame:
+/// 1. [`Dropdown::button`] draws the button at the current layout position, on the same line as the other elements,
+/// 2. draw the rest of the UI,
+/// 3. [`Dropdown::list`] draws the choices, floating in front of the UI — call it after the enclosing window or panel
+///    so the list covers its content — and returns the index of the pressed choice.
+///
+/// [`Dropdown::draw`] does the two calls in a row, for a drop-down whose list may float over what follows it.
+///
+/// ### Examples
+/// ```
+/// # stereokit_rust::test_init_sk!();
+/// use stereokit_rust::{sprite::Sprite, tools::ui_widgets::Dropdown, ui::Ui};
+///
+/// // In the app's frame, inside the current `Ui` layout:
+/// let mut dropdown = Dropdown::default();
+/// let choices = ["English", "French", "German"];
+/// let mut selected = 0;
+/// test_steps!( // !!!! Get a proper main loop !!!!
+///     if let Some(index) = dropdown.draw("language", choices[selected], Some(&Sprite::arrow_down()), &choices) {
+///         selected = index;
+///     }
+///     Ui::label(format!("Language: {}", choices[selected])).draw();
+/// );
+/// # sk::Sk::shutdown();
+/// ```
+/// How far in front of the current UI the drop-down list floats, in meters: at the depth of the window / panel behind
+/// it, its backplate would share its plane with theirs and flicker (z-fighting).
+const DROPDOWN_LIFT: f32 = 0.05;
+
+/// Extra lift of the hover highlight and of the row texts over the backplate of the list, so they never share their
+/// plane with it.
+const ROW_LIFT: f32 = 0.002;
+
+pub struct Dropdown {
+    /// Whether the list of choices is open. [`Dropdown::button`] toggles it, [`Dropdown::list`] closes it when a
+    /// choice is pressed or when its button was not drawn.
+    pub open: bool,
+    /// Whether the list opens above the button (`true`) or below it (`false`, the default).
+    pub up: bool,
+    /// The maximum number of rows displayed at once: the list is at most that many rows high, and shows a vertical
+    /// scrollbar when it has more choices. Default is 6, and at least 1 row is always shown.
+    pub max_visible: usize,
+    /// The vertical scroll of the list, expressed in whole rows.
+    scrollbar: Scrollbar,
+    /// Whether an interactor pointed at the button of the last [`Dropdown::button`] call: the list then also scrolls
+    /// from the mouse wheel / controller stick while only the button is focused.
+    button_focused: bool,
+    /// The layout bounds of the button drawn by [`Dropdown::button`] on the current frame: the anchor of the list,
+    /// see [`Dropdown::list`]. `None` until the button has been drawn this frame.
+    anchor: Option<Bounds>,
+}
+
+impl Default for Dropdown {
+    /// A closed drop-down, opening its list below the button and showing at most 6 rows at once.
+    fn default() -> Self {
+        Self {
+            open: false,
+            up: false,
+            max_visible: 6,
+            scrollbar: Scrollbar::vertical(),
+            button_focused: false,
+            anchor: None,
+        }
+    }
+}
+
+impl Dropdown {
+    /// A closed drop-down, opening its list below the button, like [`Dropdown::default`].
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// A closed drop-down whose list opens above the button, e.g. for a UI sitting at the bottom of the view, see
+    /// [`Dropdown::up`].
+    pub fn upwards() -> Self {
+        Self { up: true, ..Self::default() }
+    }
+
+    /// Draws the button of the drop-down at the current layout position: `text` is the current choice, `image` an
+    /// optional icon drawn on the left of it (e.g. [`Sprite::arrow_down`]). Pressing it opens or closes the list, and
+    /// its layout bounds are remembered for [`Dropdown::list`], which must be called later in the same frame.
+    ///
+    /// `id` is a root id for the button, making two drop-downs showing the same text independent.
+    ///
+    /// Returns whether the button was pressed this frame.
+    pub fn button(&mut self, id: &str, text: &str, image: Option<&Sprite>) -> bool {
+        // The anchor of the previous frame is stale: the enclosing layout may have moved since.
+        self.anchor = None;
+        Ui::push_id(id);
+        let mut button = Ui::button(text);
+        if let Some(image) = image {
+            button = button.image(image);
+        }
+        let pressed = button.press();
+        self.anchor = Some(Ui::get_layout_last());
+        self.button_focused = Ui::get_last_element_focused().is_active();
+        Ui::pop_id();
+        if pressed {
+            self.open = !self.open;
+            if self.open {
+                // A freshly opened list starts at its first row.
+                self.scrollbar.reset();
+            }
+        }
+        pressed
+    }
+
+    /// Draws the list of `choices` when the drop-down is open, floating in front of the UI as a real drop-down: at
+    /// most [`Dropdown::max_visible`] rows high, with a vertical [`Scrollbar`] when there are more choices. The list
+    /// is at least as wide as the drop-down button and wide enough for the longest choice, and opens above the
+    /// button when [`Dropdown::up`], below it otherwise.
+    ///
+    /// The rows are [`Ui::text`] made interactive with [`Ui::button_behavior`]: the hovered / pressed row is
+    /// highlighted, and pressing one closes the list and returns its index. The list also scrolls from the mouse
+    /// wheel in simulation or the controller thumbsticks in XR while the button or one of its rows is focused, see
+    /// [`Scrollbar::apply_input_scroll`].
+    ///
+    /// Nothing is drawn (and `None` is returned) when the list is closed, when it is empty, or when
+    /// [`Dropdown::button`] was not called this frame.
+    pub fn list<S: AsRef<str>>(&mut self, id: &str, choices: &[S]) -> Option<usize> {
+        if !self.open {
+            return None;
+        }
+        let Some(anchor) = self.anchor else {
+            self.open = false;
+            return None;
+        };
+        if choices.is_empty() {
+            self.open = false;
+            return None;
+        }
+
+        let settings = Ui::get_settings();
+        let style = Ui::get_text_style();
+        let line = Ui::get_line_height();
+        let total = choices.len();
+        let visible_rows = total.min(self.max_visible.max(1));
+
+        // `UiCut::Right` needs a fixed width: the scrollbar takes a strip on the right of the list.
+        let slider_w = if total > visible_rows { line * 0.7 } else { 0.0 };
+
+        // At least as wide as the button, wide enough for the longest choice, plus the scrollbar strip.
+        let width = choices
+            .iter()
+            .map(|choice| Text::size_layout(choice.as_ref(), Some(style), None).x + settings.padding * 2.0)
+            .fold(anchor.dimensions.x, f32::max)
+            + slider_w;
+
+        // A real drop-down: a bounded height, not a list following the number of choices.
+        let height = visible_rows as f32 * line;
+
+        // The layout grows downward from its top-left corner (X+ goes left, Y+ goes up): when the list opens above
+        // the button, its top is one list height higher. The negative Z offset lifts the list in front of the UI it
+        // covers instead of blending with it (see `DROPDOWN_LIFT`).
+        let mut start = Vec3::new(
+            anchor.center.x + anchor.dimensions.x / 2.0,
+            anchor.center.y - anchor.dimensions.y / 2.0 - settings.padding * 0.5,
+            anchor.center.z - DROPDOWN_LIFT,
+        );
+        if self.up {
+            start.y += height + settings.padding;
+        }
+
+        Ui::push_id(format!("{id}_list"));
+        Ui::layout_push(start, Vec2::new(width, height), false);
+        // The list is an explicit box: the rows are placed exactly `line` apart, without the layout gutter that used
+        // to space them too far apart and pushed the last choices out of reach.
+        let list_at = Ui::get_layout_at();
+        Ui::panel_at(list_at, Vec2::new(width, height), Some(UiPad::None));
+
+        let max_scroll = (total - visible_rows) as f32;
+        self.scrollbar.clamp_scroll(max_scroll);
+
+        // Cut the scrollbar strip, then the rows use the width left of it.
+        if slider_w > 0.0 {
+            Ui::layout_push_cut(UiCut::Right, slider_w, false);
+            self.scrollbar.draw_scrollbar(
+                &format!("{id}_scroll"),
+                slider_w,
+                height,
+                max_scroll,
+                visible_rows,
+                total,
+                &settings,
+            );
+            Ui::layout_pop();
+        }
+        let content_w = width - slider_w;
+
+        let mut chosen = None;
+        // Whether the user points at the button or at one of the rows: `Ui::get_last_element_focused` only knows the
+        // LAST row drawn, so the focus of every row is accumulated here for `Scrollbar::apply_input_scroll`.
+        let mut list_focused = self.button_focused;
+        let (start_row, visible_rows) = dropdown_rows(total, self.max_visible, self.scrollbar.scroll);
+        let row_size = Vec2::new(content_w, line);
+        for row in 0..visible_rows {
+            let index = start_row + row;
+            if index >= total {
+                break;
+            }
+            // `line` per row: no gutter, so `visible_rows` rows always fit the fixed height and the scroll can
+            // reach every choice.
+            let row_tlb = list_at - Vec3::new(0.0, row as f32 * line, 0.0);
+
+            // The row is not a button: `Ui::button_behavior` only brings the interaction (hover, press, focus) to
+            // the row bounds, with an id unique per choice.
+            let mut finger_offset = 0.0;
+            let mut button_state = BtnState::empty();
+            let mut focus_state = BtnState::empty();
+            Ui::push_id_int(index as i32);
+            Ui::button_behavior(
+                row_tlb,
+                row_size,
+                choices[index].as_ref(),
+                &mut finger_offset,
+                &mut button_state,
+                &mut focus_state,
+                None,
+            );
+            Ui::pop_id();
+            list_focused |= button_state.is_active() || focus_state.is_active();
+
+            // Hover / press highlight, behind the text and just in front of the list backplate.
+            if button_state.is_active() {
+                Ui::push_tint(Ui::get_theme_color(UiColor::Common, Some(UiColorState::Active)));
+                Ui::panel_at(row_tlb - Vec3::new(0.0, 0.0, ROW_LIFT), row_size, Some(UiPad::None));
+                Ui::pop_tint();
+            }
+            Ui::text(choices[index].as_ref())
+                .at(row_tlb - Vec3::new(settings.padding * 0.5, 0.0, ROW_LIFT), row_size)
+                .text_align(Align::CenterLeft)
+                .draw();
+
+            if button_state.is_just_inactive() {
+                chosen = Some(index);
+            }
+        }
+
+        Ui::layout_pop();
+        Ui::pop_id();
+
+        // Mouse wheel (simulation) / controller thumbsticks (XR): scroll the list while the user points at the
+        // dropdown button or at one of its rows, see `Scrollbar::apply_input_scroll`.
+        self.scrollbar.apply_input_scroll(max_scroll, list_focused);
+
+        if chosen.is_some() {
+            self.open = false;
+        }
+        chosen
+    }
+
+    /// [`Dropdown::button`] followed by [`Dropdown::list`]: the shortcut for a drop-down whose list is allowed to
+    /// float over the UI drawn after it (the list is lifted in front of that UI).
+    pub fn draw<S: AsRef<str>>(
+        &mut self,
+        id: &str,
+        text: &str,
+        image: Option<&Sprite>,
+        choices: &[S],
+    ) -> Option<usize> {
+        self.button(id, text, image);
+        self.list(id, choices)
+    }
+
+    /// Closes the list, if it is open.
+    pub fn close(&mut self) {
+        self.open = false;
+    }
+}
+
+/// The first choice shown by a [`Dropdown`] list and the number of rows it displays, for `total` choices: at most
+/// `max_visible` rows (and at least one), with `scroll` clamped to the last page. The result is expressed the same way
+/// as [`Scrollbar::scroll`], so `start + rows` always reaches `total` at the end of the scroll, even with many choices.
+fn dropdown_rows(total: usize, max_visible: usize, scroll: f32) -> (usize, usize) {
+    let visible = total.min(max_visible.max(1));
+    let max_scroll = total.saturating_sub(visible) as f32;
+    (scroll.clamp(0.0, max_scroll) as usize, visible)
 }
 
 /// The scroll state of ONE scroll axis of a scrollable UI element: current position, custom scrollbar and
@@ -519,5 +807,39 @@ mod tests {
         let thumb = scrollbar_thumb_size(UiDir::Horizontal, 1.0, 0.01, 1, 1000);
         assert!((thumb.x - 0.0055).abs() < 1e-6);
         assert!((thumb.y - 0.0055).abs() < 1e-6);
+    }
+
+    #[test]
+    fn dropdown_rows_reach_the_last_choice() {
+        assert_eq!(dropdown_rows(9, 6, 0.0), (0, 6));
+        // Scrolled to the end, the last choice (Chinese, after Portuguese) is part of the visible rows.
+        assert_eq!(dropdown_rows(9, 6, 3.0), (3, 6));
+        // An out of range scroll is clamped to the last page.
+        assert_eq!(dropdown_rows(9, 6, 99.0), (3, 6));
+        // Everything fits: no scroll.
+        assert_eq!(dropdown_rows(3, 6, 2.0), (0, 3));
+        // At least one row, even with a zero `max_visible`.
+        assert_eq!(dropdown_rows(4, 0, 0.0), (0, 1));
+    }
+
+    #[test]
+    fn dropdown_starts_closed() {
+        let dropdown = Dropdown::default();
+        assert!(!dropdown.open);
+        assert!(!dropdown.up);
+        assert!(dropdown.anchor.is_none());
+
+        // The upward constructor only changes the direction of the list.
+        let upwards = Dropdown::upwards();
+        assert!(!upwards.open);
+        assert!(upwards.up);
+        assert!(upwards.anchor.is_none());
+        // A real drop-down shows a bounded number of rows, so a scrollbar can appear.
+        assert_eq!(upwards.max_visible, 6);
+
+        // Closing an already closed drop-down is a no-op.
+        let mut dropdown = Dropdown::new();
+        dropdown.close();
+        assert!(!dropdown.open);
     }
 }

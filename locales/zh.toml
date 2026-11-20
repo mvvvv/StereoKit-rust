@@ -108,3 +108,28 @@ status_no_streaming_model = "'%{dir}' 中没有流式模型：需要 encoder/dec
 # --- 批量系列标题栏 ---
 send = "发送"
 clear = "清除"
+
+[control_panel]
+# --- 开关、按钮和标签 ---
+passthrough_mr = "透视 MR"
+fullscreen = "全屏"
+mouse_relative = "相对鼠标"
+world_lighting = "真实环境光照"
+permission_pending = "（权限...）"
+inject_f1 = "注入 F1 键"
+dictation = "语音听写"
+fps = "FPS：%{fps}"
+up_to_fps = "最高 %{rate} FPS"
+viewport_scaling = "视口缩放："
+android_keyboard = "Android 键盘"
+
+# --- DefaultInteractors 切换按钮 ---
+interaction_default = "交互：默认"
+interaction_all = "交互：全部"
+interaction_hands_controllers = "交互：手部与控制器"
+interaction_hands = "交互：手部"
+interaction_controllers = "交互：控制器"
+interaction_mouse = "交互：鼠标"
+
+# --- HUD 通知 ---
+notif_escape = "按 [Esc] 键恢复正常"

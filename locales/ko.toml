@@ -108,3 +108,28 @@ status_no_streaming_model = "'%{dir}'에 스트리밍 모델이 없습니다: en
 # --- 일괄 시리즈 헤더 ---
 send = "보내기"
 clear = "지우기"
+
+[control_panel]
+# --- 토글, 버튼 및 레이블 ---
+passthrough_mr = "패스스루 MR"
+fullscreen = "전체 화면"
+mouse_relative = "상대 마우스"
+world_lighting = "실제 조명"
+permission_pending = "(권한...)"
+inject_f1 = "F1 키 주입"
+dictation = "받아쓰기"
+fps = "FPS: %{fps}"
+up_to_fps = "최대 %{rate} FPS"
+viewport_scaling = "뷰포트 배율:"
+android_keyboard = "Android 키보드"
+
+# --- DefaultInteractors 순환 버튼 ---
+interaction_default = "입력: 기본"
+interaction_all = "입력: 전체"
+interaction_hands_controllers = "입력: 핸드 및 컨트롤러"
+interaction_hands = "입력: 핸드"
+interaction_controllers = "입력: 컨트롤러"
+interaction_mouse = "입력: 마우스"
+
+# --- HUD 알림 ---
+notif_escape = "[Esc] 키를 눌러 정상 상태로 돌아갑니다"

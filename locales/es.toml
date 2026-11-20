@@ -108,3 +108,28 @@ status_no_streaming_model = "Ningún modelo de transmisión en '%{dir}': se nece
 # --- cabecera de una serie de lotes ---
 send = "Enviar"
 clear = "Borrar"
+
+[control_panel]
+# --- conmutadores, botones y etiquetas ---
+passthrough_mr = "Passthrough MR"
+fullscreen = "pantalla completa"
+mouse_relative = "ratón relativo"
+world_lighting = "Iluminación real"
+permission_pending = "(permiso...)"
+inject_f1 = "Inyectar tecla F1"
+dictation = "Dictado"
+fps = "FPS: %{fps}"
+up_to_fps = "Hasta %{rate} FPS"
+viewport_scaling = "Escala de la vista:"
+android_keyboard = "Teclado Android"
+
+# --- botón de ciclo de DefaultInteractors ---
+interaction_default = "Interacción: por defecto"
+interaction_all = "Interacción: todo"
+interaction_hands_controllers = "Interacción: manos y mandos"
+interaction_hands = "Interacción: manos"
+interaction_controllers = "Interacción: mandos"
+interaction_mouse = "Interacción: ratón"
+
+# --- notificación HUD ---
+notif_escape = "Pulse la tecla [Esc] para volver a la normalidad"

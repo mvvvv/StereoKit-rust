@@ -108,3 +108,28 @@ status_no_streaming_model = "Kein Streaming-Modell in '%{dir}': encoder/decoder/
 # --- Kopfzeile einer Stapelserie ---
 send = "Senden"
 clear = "Löschen"
+
+[control_panel]
+# --- Schalter, Schaltflächen und Beschriftungen ---
+passthrough_mr = "Passthrough MR"
+fullscreen = "Vollbild"
+mouse_relative = "relative Maus"
+world_lighting = "Weltbeleuchtung"
+permission_pending = "(Berechtigung...)"
+inject_f1 = "F1-Taste senden"
+dictation = "Diktat"
+fps = "FPS: %{fps}"
+up_to_fps = "Bis zu %{rate} FPS"
+viewport_scaling = "Viewport-Skalierung:"
+android_keyboard = "Android-Tastatur"
+
+# --- Umschaltfläche der DefaultInteractors ---
+interaction_default = "Interaktion: Standard"
+interaction_all = "Interaktion: Alle"
+interaction_hands_controllers = "Interaktion: Hände & Controller"
+interaction_hands = "Interaktion: Hände"
+interaction_controllers = "Interaktion: Controller"
+interaction_mouse = "Interaktion: Maus"
+
+# --- HUD-Benachrichtigung ---
+notif_escape = "[Esc] drücken, um zum Normalzustand zurückzukehren"

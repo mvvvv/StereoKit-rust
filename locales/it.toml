@@ -108,3 +108,28 @@ status_no_streaming_model = "Nessun modello di streaming in '%{dir}': servono en
 # --- intestazione di una serie di lotti ---
 send = "Invia"
 clear = "Cancella"
+
+[control_panel]
+# --- interruttori, pulsanti ed etichette ---
+passthrough_mr = "Passthrough MR"
+fullscreen = "schermo intero"
+mouse_relative = "mouse relativo"
+world_lighting = "Illuminazione reale"
+permission_pending = "(autorizzazione...)"
+inject_f1 = "Inietta il tasto F1"
+dictation = "Dettatura"
+fps = "FPS: %{fps}"
+up_to_fps = "Fino a %{rate} FPS"
+viewport_scaling = "Scala della vista:"
+android_keyboard = "Tastiera Android"
+
+# --- pulsante di ciclo dei DefaultInteractors ---
+interaction_default = "Interazione: predefinita"
+interaction_all = "Interazione: tutto"
+interaction_hands_controllers = "Interazione: mani e controller"
+interaction_hands = "Interazione: mani"
+interaction_controllers = "Interazione: controller"
+interaction_mouse = "Interazione: mouse"
+
+# --- notifica HUD ---
+notif_escape = "Premi il tasto [Esc] per tornare alla normalità"

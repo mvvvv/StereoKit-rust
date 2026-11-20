@@ -1,7 +1,7 @@
 # English (fallback) catalogue of the crate's tools.
-# Looked up at runtime by the `t!` macro of rust-i18n (see `src/tools/file_browser_b.rs` and
-# `src/tools/voice_dictation.rs`), switchable with `tools::locale::set_locale`. Add a `<locale>.toml` file with the
-# same keys to add a language.
+# Looked up at runtime by the `t!` macro of rust-i18n (see `src/tools/file_browser_b.rs`,
+# `src/tools/voice_dictation.rs` and `src/tools/control_panel.rs`), switchable with
+# `tools::locale::set_locale`. Add a `<locale>.toml` file with the same keys to add a language.
 [locales]
 language = "English"
 country = ""
@@ -116,3 +116,28 @@ status_no_streaming_model = "No streaming model in '%{dir}': need encoder/decode
 # --- batch series header ---
 send = "Send"
 clear = "Clear"
+
+[control_panel]
+# --- toggles, buttons and labels ---
+passthrough_mr = "Passthrough MR"
+fullscreen = "fullscreen"
+mouse_relative = "mouse relative"
+world_lighting = "World lighting"
+permission_pending = "(permission...)"
+inject_f1 = "Inject F1 key"
+dictation = "Dictation"
+fps = "FPS: %{fps}"
+up_to_fps = "Up to %{rate} FPS"
+viewport_scaling = "Viewport scaling:"
+android_keyboard = "Android Keyboard"
+
+# --- DefaultInteractors cycling button ---
+interaction_default = "Interaction: Default"
+interaction_all = "Interaction: All"
+interaction_hands_controllers = "Interaction: Hands & Controllers"
+interaction_hands = "Interaction: Hands"
+interaction_controllers = "Interaction: Controllers"
+interaction_mouse = "Interaction: Mouse"
+
+# --- HUD notification ---
+notif_escape = "Press [Esc] key to go back to normal"

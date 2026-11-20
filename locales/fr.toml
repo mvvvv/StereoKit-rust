@@ -111,3 +111,28 @@ status_no_streaming_model = "Aucun modèle de flux dans '%{dir}' : il faut encod
 # --- en-tête d'une série de lots ---
 send = "Envoyer"
 clear = "Effacer"
+
+[control_panel]
+# --- interrupteurs, boutons et libellés ---
+passthrough_mr = "Passthrough MR"
+fullscreen = "plein écran"
+mouse_relative = "souris relative"
+world_lighting = "Éclairage réel"
+permission_pending = "(autorisation...)"
+inject_f1 = "Injecter la touche F1"
+dictation = "Dictée"
+fps = "FPS : %{fps}"
+up_to_fps = "Jusqu'à %{rate} FPS"
+viewport_scaling = "Échelle de la vue :"
+android_keyboard = "Clavier Android"
+
+# --- bouton de cycle des DefaultInteractors ---
+interaction_default = "Interaction : par défaut"
+interaction_all = "Interaction : tout"
+interaction_hands_controllers = "Interaction : mains et manettes"
+interaction_hands = "Interaction : mains"
+interaction_controllers = "Interaction : manettes"
+interaction_mouse = "Interaction : souris"
+
+# --- notification HUD ---
+notif_escape = "Appuyez sur la touche [Échap] pour revenir à la normale"

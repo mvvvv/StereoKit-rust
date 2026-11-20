@@ -26,11 +26,107 @@ use crate::{
     util::{Device, Emulator, Time},
 };
 
+#[cfg(feature = "locales")]
+use crate::tools::ui_widgets::Dropdown;
+
 #[cfg(target_os = "android")]
 use crate::{
     tools::android_soft_kdb::{ANDROID_SOFT_KBD_ID, AndroidSoftKbd},
     util::Platform,
 };
+
+// Texts of the panel, translated with the same `locales/*.toml` catalogues as the file browser and the voice panel (see
+// `tools::locales::set_locale`). The second argument is the English text used as is when the `locales` feature is off;
+// the `%{name}` placeholders are replaced with the `name = value` arguments.
+#[cfg(feature = "locales")]
+macro_rules! cp_text {
+    ($key:literal, $english:literal $(, $name:ident = $value:expr)* $(,)?) => {
+        rust_i18n::t!($key $(, $name = $value)*)
+    };
+}
+
+#[cfg(not(feature = "locales"))]
+macro_rules! cp_text {
+    ($key:literal, $english:literal) => {
+        std::borrow::Cow::Borrowed($english)
+    };
+    ($key:literal, $english:literal, $($name:ident = $value:expr),+ $(,)?) => {{
+        let mut text = std::borrow::Cow::Borrowed($english);
+        $(
+            text = std::borrow::Cow::Owned(text.replace(concat!("%{", stringify!($name), "}"), &$value.to_string()));
+        )+
+        text
+    }};
+}
+
+/// The translated label of a [`DefaultInteractors`] choice. The English label kept in
+/// [`ControlPanel::interactor_choices`] is the one used by the logs.
+fn interactor_label(interactor: DefaultInteractors, simultaneous: bool) -> std::borrow::Cow<'static, str> {
+    match (interactor, simultaneous) {
+        (DefaultInteractors::All, true) => {
+            cp_text!("control_panel.interaction_hands_controllers", "Interaction: Hands & Controllers")
+        }
+        (DefaultInteractors::All, false) => cp_text!("control_panel.interaction_all", "Interaction: All"),
+        (DefaultInteractors::Hands, _) => cp_text!("control_panel.interaction_hands", "Interaction: Hands"),
+        (DefaultInteractors::Controllers, _) => {
+            cp_text!("control_panel.interaction_controllers", "Interaction: Controllers")
+        }
+        (DefaultInteractors::Mouse, _) => cp_text!("control_panel.interaction_mouse", "Interaction: Mouse"),
+        _ => cp_text!("control_panel.interaction_default", "Interaction: Default"),
+    }
+}
+
+/// The language part of a locale id like `"fr_FR.UTF-8"` or `"pt-BR"`: trimmed, lower-cased and truncated at the first
+/// `'.'`, `'_'`, `'-'` or `':'` (the `LANGUAGE` variable may hold a prioritized list). An empty id stays empty.
+#[cfg(feature = "locales")]
+fn language_code(locale: &str) -> String {
+    locale.trim().to_lowercase().split(['.', '_', '-', ':']).next().unwrap_or_default().to_string()
+}
+
+/// The English name of the language of a catalogue, if known. The locale drop-down uses it instead of the endonym the
+/// catalogue gives itself (`locales.language`) because the default StereoKit font has no CJK glyphs: "日本語",
+/// "한국어" and "中文" would be drawn as "??".
+#[cfg(feature = "locales")]
+fn locale_display_name(code: &str) -> Option<&'static str> {
+    match code {
+        "de" => Some("German"),
+        "en" => Some("English"),
+        "es" => Some("Spanish"),
+        "fr" => Some("French"),
+        "it" => Some("Italian"),
+        "ja" => Some("Japanese"),
+        "ko" => Some("Korean"),
+        "pt" => Some("Portuguese"),
+        "zh" => Some("Chinese"),
+        _ => None,
+    }
+}
+
+/// The `(code, language name)` pairs of the locale drop-down: one per catalogue of
+/// [`crate::tools::locales::available_locales`], labelled with the English name of the language (see
+/// [`locale_display_name`]). A catalogue without a known name falls back to its code.
+#[cfg(feature = "locales")]
+fn available_locale_choices() -> Vec<(String, String)> {
+    crate::tools::locales::available_locales()
+        .into_iter()
+        .map(|code| {
+            let name = locale_display_name(&code).map(str::to_string).unwrap_or_else(|| code.clone());
+            (code, name)
+        })
+        .collect()
+}
+
+/// The language code of the system locale (see [`crate::tools::os_api::get_locale`]) when a catalogue matches it,
+/// `"en"` otherwise: the locale [`ControlPanel::new`] starts with.
+#[cfg(feature = "locales")]
+fn system_locale() -> String {
+    let code = language_code(&crate::tools::os_api::get_locale());
+    if crate::tools::locales::available_locales().iter().any(|locale| locale == &code) {
+        code
+    } else {
+        "en".to_string()
+    }
+}
 
 /// The runtime control panel of an app: the controls that are handy in every build, gathered in one place and drawn
 /// where the app wants it (typically on the same line as its "Exit" button).
@@ -56,6 +152,11 @@ use crate::{
 /// * the Android soft keyboard bridge on Android, see `crate::tools::android_soft_kdb`: on by default, the system
 ///   IME (dictation, translation, autocorrect…) mirrors the focused `Ui::input` field,
 /// * the fullscreen and the relative mouse modes in the Simulator, with the `[Esc]` key to leave them.
+///
+/// The texts of the panel are translated with the same `locales/*.toml` catalogues as the file browser and the voice
+/// panel when the `locales` feature is on (see `tools::locales::set_locale`); without it the English texts are used.
+/// With the feature, an `arrow_down` drop-down button on the left of the panel lists the catalogues and selects the
+/// language (see the `ControlPanel::set_locale` method), starting from the system locale.
 ///
 /// ### Fields that can be set before drawing:
 /// * `passthrough` - Whether the passthrough is active. Default is `false`: use [`ControlPanel::set_passthrough`]
@@ -94,7 +195,7 @@ use crate::{
 /// let mut window_pose = Pose::new(Vec3::new(0.0, 0.0, -0.4), Some(Quat::look_dir(Vec3::Z)));
 ///
 /// number_of_steps = 4; filename_scr = "screenshots/control_panel.jpeg"; fov_scr = 30.0;
-/// from_scr = Vec3::new(0.0, 0.0, 0.35); at_scr = Vec3::new(0.0, 0.0, -0.4);
+/// from_scr = Vec3::new(0.0, 0.0, 0.4); at_scr = Vec3::new(0.0, 0.0, -0.4);
 /// test_screenshot!( // !!!! Get a proper main loop !!!!
 ///     control_panel.update(token);
 ///     Ui::window("A window").pose(&mut window_pose).begin();
@@ -146,6 +247,12 @@ pub struct ControlPanel {
     /// The smoothed FPS displayed by the panel, in frames per second (the frame time comes from
     /// [`Time::get_step`], so this is a `f64`).
     pub fps: f64,
+    /// The locale selected in the panel, e.g. `"fr"`: a code of `tools::locales::available_locales` whose catalogue
+    /// translates the whole crate. [`ControlPanel::new`] starts with the system locale (English when no catalogue
+    /// matches it); use [`ControlPanel::set_locale`] to change it, or the drop-down button drawn on the left of the
+    /// panel.
+    #[cfg(feature = "locales")]
+    pub locale: String,
 
     /// The world lighting source StereoKit really had at the previous [`ControlPanel::update`], used to restore the
     /// app's environment when it is lost (see [`ControlPanel::set_world_lighting`]).
@@ -158,7 +265,8 @@ pub struct ControlPanel {
     /// Are we runnin an emulator/simulator ?
     is_emulator: Option<Emulator>,
     /// The [`DefaultInteractors`] choices of the current backend: the interactor set, whether it needs the
-    /// simultaneous hands & controllers tracking and the label of its cycling button.
+    /// simultaneous hands & controllers tracking and the English label used in the logs (the cycling button shows the
+    /// text of [`interactor_label`]).
     interactor_choices: Vec<(DefaultInteractors, bool, &'static str)>,
     /// Index of the choice in use in [`ControlPanel::interactor_choices`].
     current_interactor_idx: usize,
@@ -171,6 +279,16 @@ pub struct ControlPanel {
     /// The cycling button images.
     next_refresh_rate_image: Sprite,
     next_interactor_image: Sprite,
+    /// The `(code, language name)` pairs of the locale drop-down, one per catalogue (see
+    /// [`crate::tools::locales::available_locales`]).
+    #[cfg(feature = "locales")]
+    locale_choices: Vec<(String, String)>,
+    /// The locale drop-down button image.
+    #[cfg(feature = "locales")]
+    next_locale_image: Sprite,
+    /// The locale drop-down widget (open state and anchor), see [`Dropdown`].
+    #[cfg(feature = "locales")]
+    locale_dropdown: Dropdown,
     /// The app focus at the last call of [`ControlPanel::update`], see [`crate::sk::sk_app_focus`].
     last_focus: AppFocus,
 }
@@ -185,7 +303,8 @@ impl ControlPanel {
     /// * reads the display refresh rates (see [`get_all_display_refresh_rates`]),
     /// * captures [`Renderer::get_viewport_scaling`] and the `fullscreen` state of the settings
     ///   (see [`SkInfo::settings_from`]),
-    /// * registers and activates the Android soft keyboard bridge on Android (see `set_android_keyboard`).
+    /// * registers and activates the Android soft keyboard bridge on Android (see `set_android_keyboard`),
+    /// * selects the system locale when the `locales` feature is on (see `ControlPanel::set_locale`).
     ///
     /// see also [`ControlPanel::update`] [`ControlPanel::draw`]
     pub fn new(sk_info: Rc<RefCell<SkInfo>>) -> Self {
@@ -319,6 +438,14 @@ impl ControlPanel {
             current_refresh_rate,
             next_refresh_rate_image,
             next_interactor_image,
+            #[cfg(feature = "locales")]
+            locale: String::new(),
+            #[cfg(feature = "locales")]
+            locale_choices: available_locale_choices(),
+            #[cfg(feature = "locales")]
+            next_locale_image: Sprite::arrow_down(),
+            #[cfg(feature = "locales")]
+            locale_dropdown: Dropdown::default(),
             last_focus: AppFocus::Background,
             android_keyboard: false,
         };
@@ -328,6 +455,10 @@ impl ControlPanel {
         #[cfg(target_os = "android")]
         control_panel.set_android_keyboard(true);
 
+        // The panel starts with the language of the system, when a catalogue matches it.
+        #[cfg(feature = "locales")]
+        control_panel.set_locale(&system_locale());
+
         control_panel
     }
 
@@ -336,6 +467,22 @@ impl ControlPanel {
     /// [`ControlPanel::sk_info`], see [`ControlPanel::new`].
     fn send_event(&self, action: StepperAction) {
         SkInfo::send_event(&Some(self.sk_info.clone()), action);
+    }
+
+    /// Selects `locale` — a code of `tools::locales::available_locales`, e.g. `"fr"` — for the whole crate: it is
+    /// remembered by [`ControlPanel::locale`] and applied with `tools::locales::set_locale`, so the panel and the other
+    /// tools of the app draw their texts in that language from the next frame. An unknown code is still applied:
+    /// rust-i18n then falls back to English before returning the key itself.
+    ///
+    /// [`ControlPanel::new`] starts with the system locale (see the `system_locale` helper) and
+    /// [`ControlPanel::draw`] calls this function when the locale drop-down selects another language.
+    ///
+    /// see also [`ControlPanel::locale`] [`ControlPanel::draw`]
+    #[cfg(feature = "locales")]
+    pub fn set_locale(&mut self, locale: &str) {
+        self.locale = locale.to_string();
+        crate::tools::locales::set_locale(locale);
+        Log::info(format!("Control panel locale set to \"{}\"", self.locale));
     }
 
     /// Activates (`on` = `true`) or deactivates the `AndroidSoftKbd` stepper: when it is active, the focused
@@ -464,6 +611,16 @@ impl ControlPanel {
         #[cfg(not(voice_dictation))]
         let _ = token;
 
+        // The locale can also be changed outside the panel (`tools::locales::set_locale`): the drop-down button
+        // follows the language really in use.
+        #[cfg(feature = "locales")]
+        {
+            let current = crate::tools::locales::locale();
+            if self.locale != current {
+                self.locale = current;
+            }
+        }
+
         let app_focus = unsafe { crate::sk::sk_app_focus() };
         if self.last_focus != app_focus {
             self.last_focus = app_focus;
@@ -508,8 +665,35 @@ impl ControlPanel {
         let mut notif = HudNotification::default();
         notif.duration = Some(5.0);
         notif.position = Vec3::new(0.0, 0.1, -0.6);
-        notif.text = "Press [Esc] key to go back to normal".into();
+        notif.text = cp_text!("control_panel.notif_escape", "Press [Esc] key to go back to normal").into_owned();
         self.send_event(StepperAction::add("HudNotifESC", notif));
+    }
+
+    /// Draws the locale drop-down button, on the left of the panel: the `arrow_down` icon and the language name of
+    /// [`ControlPanel::locale`]. It is a [`Dropdown`], whose list is drawn by [`ControlPanel::draw_locale_list`] after
+    /// the panel so it floats over its content.
+    #[cfg(feature = "locales")]
+    fn draw_locale_button(&mut self) {
+        let label = self
+            .locale_choices
+            .iter()
+            .find(|(code, _)| code == &self.locale)
+            .map(|(_, label)| label.clone())
+            .unwrap_or_else(|| self.locale.to_uppercase());
+        self.locale_dropdown.button("cp_locale", &label, Some(&self.next_locale_image));
+    }
+
+    /// Draws the list of the locale drop-down when it is open, above the panel: pressing a language calls
+    /// [`ControlPanel::set_locale`], which retranslates the whole panel from the next frame.
+    #[cfg(feature = "locales")]
+    fn draw_locale_list(&mut self) {
+        let labels: Vec<&str> = self.locale_choices.iter().map(|(_, label)| label.as_str()).collect();
+        if let Some(index) = self.locale_dropdown.list("cp_locale", &labels)
+            && let Some((code, _)) = self.locale_choices.get(index)
+        {
+            let code = code.clone();
+            self.set_locale(&code);
+        }
     }
 
     /// Draws the control panel with the current [`Ui`] layout: the app decides where it goes (typically on the same
@@ -517,6 +701,8 @@ impl ControlPanel {
     /// [`Ui::panel_begin`]/[`Ui::panel_end`] pair.
     ///
     /// It draws:
+    /// * the locale drop-down when the `locales` feature is on: an `arrow_down` button with the current language name,
+    ///   listing the catalogues (see `ControlPanel::set_locale`),
     /// * the passthrough toggle when the device supports it (see [`ControlPanel::passthrough_blend_enabled`]) and
     ///   sends [`ControlPanel::passthrough_event`] when it changes,
     /// * the world lighting toggle when the device supports light estimation (see
@@ -535,16 +721,27 @@ impl ControlPanel {
     pub fn draw(&mut self) {
         Ui::panel_begin(Some(UiPad::Inside));
 
+        // The locale drop-down comes first, on the left of the panel.
+        #[cfg(feature = "locales")]
+        {
+            self.draw_locale_button();
+            Ui::same_line();
+        }
+
         let mut passthrough_toggled = None;
         if self.passthrough_blend_enabled {
-            passthrough_toggled = Ui::toggle("Passthrough MR", &mut self.passthrough).interact();
+            passthrough_toggled =
+                Ui::toggle(cp_text!("control_panel.passthrough_mr", "Passthrough MR"), &mut self.passthrough)
+                    .interact();
         }
         if let Some(new_value) = passthrough_toggled {
             self.set_passthrough(new_value);
         } else {
             match self.is_emulator {
                 Some(Emulator::Simulator) => {
-                    let fullscreen_toggled = Ui::toggle("fullscreen", &mut self.simulator_fullscreen).interact();
+                    let fullscreen_toggled =
+                        Ui::toggle(cp_text!("control_panel.fullscreen", "fullscreen"), &mut self.simulator_fullscreen)
+                            .interact();
                     if let Some(new_value) = fullscreen_toggled {
                         if let Some(window) = AppWindow::main() {
                             window.request_fullscreen(new_value);
@@ -557,7 +754,11 @@ impl ControlPanel {
                         }
                     }
                     Ui::same_line();
-                    let mouse_mode_toggled = Ui::toggle("mouse relative", &mut self.mouse_mode_relative).interact();
+                    let mouse_mode_toggled = Ui::toggle(
+                        cp_text!("control_panel.mouse_relative", "mouse relative"),
+                        &mut self.mouse_mode_relative,
+                    )
+                    .interact();
                     if let Some(new_value) = mouse_mode_toggled {
                         if new_value {
                             Input::mouse_mode(MouseMode::Relative);
@@ -586,36 +787,32 @@ impl ControlPanel {
         }
         if self.world_lighting_available {
             Ui::same_line();
-            if let Some(new_value) = Ui::toggle("World lighting", &mut self.world_lighting).interact() {
+            if let Some(new_value) =
+                Ui::toggle(cp_text!("control_panel.world_lighting", "World lighting"), &mut self.world_lighting)
+                    .interact()
+            {
                 self.set_world_lighting(new_value);
             }
             if Lighting::is_source_pending() {
                 // The permission dialog is in flight, the source isn't switched yet.
                 Ui::same_line();
-                Ui::label("(permission...)").use_padding(true).draw();
+                Ui::label(cp_text!("control_panel.permission_pending", "(permission...)")).use_padding(true).draw();
             }
         }
         if self.is_emulator.is_some() {
             Ui::same_line();
-            if Ui::button("Inject F1 key").press() {
+            if Ui::button(cp_text!("control_panel.inject_f1", "Inject F1 key")).press() {
                 Input::key_inject_press(Key::F1);
                 Input::key_inject_release(Key::F1);
             }
         }
-        // The Dictation toggle shows the recording state the voice dictation panel shares.
-        #[cfg(voice_dictation)]
-        {
-            use crate::tools::voice_dictation::{SHOW_PARAM_WINDOW, VOICE_PANEL_ID};
 
-            Ui::same_line();
-            let mut shown = self.dictation_recording;
-            if Ui::toggle("Dictation", &mut shown).interact().is_some() {
-                self.send_event(StepperAction::event(VOICE_PANEL_ID, SHOW_PARAM_WINDOW, "true"));
-            }
-        }
         Ui::same_line();
         self.fps = ((1.0 / Time::get_step()) + self.fps) / 2.0;
-        Ui::label(format!("FPS: {:3.0}", self.fps)).size(Vec2::new(0.1, 0.0)).use_padding(true).draw();
+        Ui::label(cp_text!("control_panel.fps", "FPS: %{fps}", fps = format!("{:3.0}", self.fps)))
+            .size(Vec2::new(0.1, 0.0))
+            .use_padding(true)
+            .draw();
 
         // The Android soft keyboard bridge, on the left of the interactors: toggled off, StereoKit's own fallback
         // keyboard comes back.
@@ -625,19 +822,35 @@ impl ControlPanel {
             // use, which is what `set_android_keyboard` compares to know if it has
             // something to do.
             let mut on = self.android_keyboard;
-            if Ui::toggle("Android Keyboard", &mut on).interact().is_some() {
+            if Ui::toggle(cp_text!("control_panel.android_keyboard", "Android Keyboard"), &mut on)
+                .interact()
+                .is_some()
+            {
                 self.set_android_keyboard(on);
             }
             Ui::same_line();
         }
+        // The Dictation toggle shows the recording state the voice dictation panel shares.
+        #[cfg(voice_dictation)]
+        {
+            use crate::tools::voice_dictation::{SHOW_PARAM_WINDOW, VOICE_PANEL_ID};
 
+            let mut shown = self.dictation_recording;
+            if Ui::toggle(cp_text!("control_panel.dictation", "Dictation"), &mut shown).interact().is_some() {
+                self.send_event(StepperAction::event(VOICE_PANEL_ID, SHOW_PARAM_WINDOW, "true"));
+            }
+            Ui::same_line();
+        }
         // DefaultInteractors choice - cycling button
         if self.interactor_choices.len() > 1 {
             let current = self.current_interactor_idx;
-            let pressed = Ui::button(self.interactor_choices[current].2).image(&self.next_interactor_image).press();
+            let (current_interactor, current_simultaneous, _) = self.interactor_choices[current];
+            let pressed = Ui::button(interactor_label(current_interactor, current_simultaneous))
+                .image(&self.next_interactor_image)
+                .press();
             if pressed {
                 // Deactivate simultaneous if currently active
-                if self.interactor_choices[current].1 {
+                if current_simultaneous {
                     pause_simultaneous_hands_and_controllers(self.sk_info.clone(), true);
                 }
                 // Cycle to next
@@ -655,15 +868,20 @@ impl ControlPanel {
                 Log::info(format!("Interactors set to: {new_label}"));
             }
         } else {
-            Ui::label(self.interactor_choices[0].2).use_padding(true).draw();
+            let (interactor, simultaneous, _) = self.interactor_choices[0];
+            Ui::label(interactor_label(interactor, simultaneous)).use_padding(true).draw();
         }
 
         Ui::same_line();
 
         if self.refresh_rate_editable {
-            let pressed = Ui::button(format!("Up to {:?} FPS", self.current_refresh_rate as u32))
-                .image(&self.next_refresh_rate_image)
-                .press();
+            let pressed = Ui::button(cp_text!(
+                "control_panel.up_to_fps",
+                "Up to %{rate} FPS",
+                rate = self.current_refresh_rate as u32
+            ))
+            .image(&self.next_refresh_rate_image)
+            .press();
             if pressed {
                 let mut restart = true;
                 for rate in &self.refresh_rates {
@@ -683,7 +901,7 @@ impl ControlPanel {
         }
 
         Ui::next_line();
-        Ui::label("Viewport scaling:").use_padding(true).draw();
+        Ui::label(cp_text!("control_panel.viewport_scaling", "Viewport scaling:")).use_padding(true).draw();
         Ui::same_line();
         Ui::label(format!("{:.2}", self.viewport_scaling)).use_padding(true).draw();
         Ui::same_line();
@@ -694,5 +912,91 @@ impl ControlPanel {
         }
 
         Ui::panel_end();
+
+        #[cfg(feature = "locales")]
+        self.draw_locale_list();
+    }
+}
+
+#[cfg(all(test, feature = "locales"))]
+mod tests {
+    use super::*;
+
+    /// The texts of the panel come from the `control_panel` section of the catalogues: every locale has all of them,
+    /// and a translated locale really changes them.
+    #[test]
+    fn control_panel_texts_are_translated() {
+        macro_rules! assert_keys {
+            ($($key:literal),+ $(,)?) => {
+                for locale in crate::tools::locales::available_locales() {
+                    $(
+                        let text = rust_i18n::t!($key, locale = locale.as_str());
+                        assert_ne!(text, $key, "no {} key in the locale {locale}", $key);
+                    )+
+                }
+            };
+        }
+
+        assert_keys!(
+            "control_panel.passthrough_mr",
+            "control_panel.fullscreen",
+            "control_panel.mouse_relative",
+            "control_panel.world_lighting",
+            "control_panel.permission_pending",
+            "control_panel.inject_f1",
+            "control_panel.dictation",
+            "control_panel.fps",
+            "control_panel.android_keyboard",
+            "control_panel.up_to_fps",
+            "control_panel.viewport_scaling",
+            "control_panel.interaction_default",
+            "control_panel.interaction_all",
+            "control_panel.interaction_hands_controllers",
+            "control_panel.interaction_hands",
+            "control_panel.interaction_controllers",
+            "control_panel.interaction_mouse",
+            "control_panel.notif_escape",
+        );
+        assert_eq!(rust_i18n::t!("control_panel.dictation", locale = "fr"), "Dictée");
+        assert_eq!(rust_i18n::t!("control_panel.fps", locale = "fr", fps = 72), "FPS : 72");
+        // The cycling button of the interactors really goes through the catalogue.
+        assert_eq!(interactor_label(DefaultInteractors::Hands, false), "Interaction: Hands");
+        assert_eq!(interactor_label(DefaultInteractors::All, true), "Interaction: Hands & Controllers");
+    }
+
+    /// The language part of the system locale ids the panel accepts.
+    #[test]
+    fn locale_codes_are_normalized() {
+        assert_eq!(language_code("fr_FR.UTF-8"), "fr");
+        assert_eq!(language_code(" pt-BR "), "pt");
+        assert_eq!(language_code("ja_JP.eucJP"), "ja");
+        assert_eq!(language_code("FR"), "fr");
+        assert_eq!(language_code("fr:de:es"), "fr");
+        assert_eq!(language_code(""), "");
+    }
+
+    /// The drop-down lists every catalogue, labelled with an ASCII language name.
+    #[test]
+    fn locale_choices_are_the_catalogues() {
+        let choices = available_locale_choices();
+        let codes: Vec<String> = choices.iter().map(|(code, _)| code.clone()).collect();
+        assert_eq!(codes, crate::tools::locales::available_locales());
+        assert_eq!(choices.iter().find(|(code, _)| code == "fr").map(|(_, label)| label.as_str()), Some("French"));
+        for (code, label) in &choices {
+            assert!(!label.is_empty(), "no language name for {code}");
+            // The default StereoKit font has no CJK glyphs: the labels must stay ASCII.
+            assert!(label.is_ascii(), "the {code} name is not ASCII: {label}");
+        }
+    }
+}
+
+#[cfg(all(test, not(feature = "locales")))]
+mod fallback_tests {
+    /// Without the `locales` feature the panel keeps its English texts, `%{name}` placeholders included.
+    #[test]
+    fn cp_text_falls_back_to_english() {
+        assert_eq!(cp_text!("control_panel.passthrough_mr", "Passthrough MR"), "Passthrough MR");
+        assert_eq!(cp_text!("control_panel.fps", "FPS: %{fps}", fps = format!("{:3.0}", 72.0)), "FPS:  72");
+        assert_eq!(cp_text!("control_panel.up_to_fps", "Up to %{rate} FPS", rate = 90u32), "Up to 90 FPS");
     }
 }
